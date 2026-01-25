@@ -547,6 +547,19 @@
         .mb-3 {
             margin-bottom: 3rem;
         }
+
+        /* Quiz Styles */
+        .quiz-option:hover {
+            border-color: var(--primary);
+            background: rgba(0, 102, 255, 0.05);
+            transform: translateX(4px);
+        }
+
+        .quiz-step.completed {
+            border-color: var(--success);
+            background: var(--success);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -554,8 +567,10 @@
 <!-- Mobile Menu -->
 <div id="mobileMenu">
     <a href="#" onclick="showSection('start'); toggleMenu();">關於協議</a>
+    <a href="#" onclick="showSection('case'); toggleMenu();">個案追蹤</a>
     <a href="#" onclick="showSection('training'); toggleMenu();">訓練工程</a>
     <a href="#" onclick="showSection('nutrition'); toggleMenu();">營養與恢復</a>
+    <a href="#" onclick="showSection('diagnosis'); toggleMenu();">系統診斷</a>
     <a href="#" onclick="showSection('tools'); toggleMenu();">工具與資源</a>
     <a href="#" onclick="showSection('action'); toggleMenu();">開始行動</a>
 </div>
@@ -569,8 +584,10 @@
 
         <div class="nav-buttons">
             <button class="nav-btn active" onclick="showSection('start')" data-section="start">關於協議</button>
+            <button class="nav-btn" onclick="showSection('case')" data-section="case">個案追蹤</button>
             <button class="nav-btn" onclick="showSection('training')" data-section="training">訓練工程</button>
             <button class="nav-btn" onclick="showSection('nutrition')" data-section="nutrition">營養與恢復</button>
+            <button class="nav-btn" onclick="showSection('diagnosis')" data-section="diagnosis">系統診斷</button>
             <button class="nav-btn" onclick="showSection('tools')" data-section="tools">工具與資源</button>
             <button class="nav-btn" onclick="showSection('action')" data-section="action">開始行動</button>
         </div>
@@ -639,19 +656,161 @@
         </div>
 
         <div class="action-grid">
+            <div class="action-card" onclick="showSection('case')">
+                <h4>📊 查看個案追蹤</h4>
+                <p>6年系統修復的完整數據紀錄</p>
+            </div>
             <div class="action-card" onclick="showSection('training')">
                 <h4>🏋️ 查看訓練哲學</h4>
-                <p>機械張力、神經適應、結構平衡三大原則</p>
+                <p>機械張力、神經適應、結構優化三大原則</p>
             </div>
             <div class="action-card" onclick="showSection('nutrition')">
                 <h4>🥗 營養與恢復</h4>
-                <p>斷食、基因優化、酒精防禦協議</p>
+                <p>代謝優化、基因修復、睡眠協議</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Section 2: 訓練工程 -->
+<!-- Section 2: 個案追蹤 -->
+<section class="section" id="case">
+    <div class="section-container">
+        <h2 class="doc-title" style="font-size: 2.5rem;">個案追蹤</h2>
+        <p class="doc-subtitle">6年系統修復的完整數據紀錄 | Case Study 2020-2026</p>
+
+        <!-- Before/After 對比 -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; margin: 3rem 0;">
+            
+            <!-- Before Card -->
+            <div style="background: white; border: 2px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); position: relative;">
+                <div style="position: absolute; top: 1rem; left: 1rem; background: rgba(255, 68, 68, 0.9); color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-weight: 700; font-size: 0.875rem; z-index: 10;">
+                    2020 年初
+                </div>
+                <div style="height: 400px; background: linear-gradient(135deg, #FEE2E2, #FECACA); display: flex; align-items: center; justify-content: center; position: relative;">
+                    <div style="text-align: center; color: #991B1B; font-weight: 700; font-size: 1.5rem;">
+                        BEFORE<br>
+                        <span style="font-size: 0.875rem; font-weight: 400;">系統崩潰狀態</span>
+                    </div>
+                </div>
+                <div style="padding: 2rem;">
+                    <h3 style="color: var(--danger); margin-bottom: 1rem; font-size: 1.25rem;">❌ 系統失效</h3>
+                    <div style="background: var(--bg-tertiary); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--danger);">
+                        <div style="color: var(--text-secondary); line-height: 2; font-size: 0.95rem;">
+                            • 嚴重落髮（頭頂明顯稀疏）<br>
+                            • 圓潤浮腫的臉型<br>
+                            • 全身性慢性發炎<br>
+                            • 持續疲勞、無動力<br>
+                            • hs-CRP 發炎指標異常
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- After Card -->
+            <div style="background: white; border: 2px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); position: relative;">
+                <div style="position: absolute; top: 1rem; left: 1rem; background: rgba(0, 200, 81, 0.9); color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-weight: 700; font-size: 0.875rem; z-index: 10;">
+                    2026 年
+                </div>
+                <div style="height: 400px; background: linear-gradient(135deg, #D1FAE5, #A7F3D0); display: flex; align-items: center; justify-content: center; position: relative;">
+                    <div style="text-align: center; color: #065F46; font-weight: 700; font-size: 1.5rem;">
+                        AFTER<br>
+                        <span style="font-size: 0.875rem; font-weight: 400;">完全重生狀態</span>
+                    </div>
+                </div>
+                <div style="padding: 2rem;">
+                    <h3 style="color: var(--success); margin-bottom: 1rem; font-size: 1.25rem;">✓ 系統優化</h3>
+                    <div style="background: var(--bg-tertiary); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--success);">
+                        <div style="color: var(--text-secondary); line-height: 2; font-size: 0.95rem;">
+                            • 頭髮恢復濃密<br>
+                            • 精實體態 (FFMI 23.6)<br>
+                            • 發炎指標正常化<br>
+                            • 精力充沛、高效能<br>
+                            • HRV 達到菁英等級 (91ms)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心發現 -->
+        <div style="background: white; border: 2px solid var(--border); padding: 2.5rem; border-radius: 16px; margin: 3rem 0;">
+            <h3 style="margin-bottom: 1.5rem; color: var(--text-primary); font-size: 1.3rem;">🔬 核心發現</h3>
+            <div class="code-block">
+                <span class="code-label">系統分析結果</span>
+                <div style="line-height: 2;">
+                    <strong style="color: var(--danger);">落髮不是「年紀問題」</strong>，而是身體系統發出的警告訊號。<br><br>
+                    
+                    經過完整血液數據追蹤，確認三大根本原因：<br>
+                    1. <strong>慢性發炎</strong> - 攻擊毛囊，導致落髮與皮膚問題<br>
+                    2. <strong>荷爾蒙失衡</strong> - 睪固酮偏低，DHT 轉換過度<br>
+                    3. <strong>代謝崩潰</strong> - 胰島素阻抗，營養無法送達毛囊
+                </div>
+            </div>
+        </div>
+
+        <!-- 數據時間軸 -->
+        <h3 style="margin: 4rem 0 2rem; font-size: 1.5rem; color: var(--text-primary);">📈 數據時間軸</h3>
+        
+        <div style="display: grid; gap: 2rem;">
+            <!-- 2020 -->
+            <div class="protocol-card">
+                <span class="tag red">2020 年初</span>
+                <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--danger);">系統崩潰期</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    嚴重落髮、浮腫、慢性疲勞
+                </p>
+                <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: 8px; font-family: 'Courier New', monospace;">
+                    <div style="color: var(--danger); font-weight: 700; font-size: 1.5rem; margin-bottom: 0.5rem;">
+                        hs-CRP: 高
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 0.875rem;">發炎指標異常</div>
+                </div>
+            </div>
+
+            <!-- 2022 -->
+            <div class="protocol-card">
+                <span class="tag orange">2022 年</span>
+                <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--warning);">系統修復期</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    開始血液檢測 + 系統化介入
+                </p>
+                <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: 8px; font-family: 'Courier New', monospace;">
+                    <div style="color: var(--warning); font-weight: 700; font-size: 1.5rem; margin-bottom: 0.5rem;">
+                        Testosterone: 515 ng/dL
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 0.875rem;">荷爾蒙偏低</div>
+                </div>
+            </div>
+
+            <!-- 2026 -->
+            <div class="protocol-card">
+                <span class="tag green">2026 年</span>
+                <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--success);">系統優化完成</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    所有指標達到菁英水平
+                </p>
+                <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: 8px; font-family: 'Courier New', monospace;">
+                    <div style="color: var(--success); font-weight: 700; font-size: 1.25rem; margin-bottom: 0.5rem;">
+                        Testosterone: 625 ng/dL<br>
+                        HOMA-IR: 0.49<br>
+                        HRV: 91 ms
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 0.875rem;">ELITE 等級</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <div style="text-align: center; margin: 4rem 0;">
+            <a href="#" onclick="showSection('training'); return false;" 
+               style="display: inline-block; background: var(--primary); color: white; padding: 1.25rem 2.5rem; border-radius: 12px; font-size: 1.125rem; font-weight: 700; text-decoration: none; box-shadow: 0 4px 14px rgba(0, 102, 255, 0.25); transition: all 0.3s ease;">
+                查看完整訓練系統 →
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Section 3: 訓練工程 -->
 <section class="section" id="training">
     <div class="section-container">
         <h2 class="doc-title" style="font-size: 2.5rem;">訓練工程</h2>
@@ -789,7 +948,7 @@
     </div>
 </section>
 
-<!-- Section 3: 營養與恢復 -->
+<!-- Section 4: 營養與恢復 -->
 <section class="section" id="nutrition">
     <div class="section-container">
         <h2 class="doc-title" style="font-size: 2.5rem;">營養與恢復</h2>
@@ -887,7 +1046,138 @@
     </div>
 </section>
 
-<!-- Section 4: 工具與資源 -->
+<!-- Section 5: 系統診斷 -->
+<section class="section" id="diagnosis">
+    <div class="section-container">
+        <h2 class="doc-title" style="font-size: 2.5rem;">系統診斷</h2>
+        <p class="doc-subtitle">4 個問題，檢測你的系統風險等級</p>
+
+        <!-- 步驟指示器 -->
+        <div style="display: flex; justify-content: center; gap: 1rem; margin: 3rem 0 2rem;">
+            <div class="quiz-step active" id="step1" style="width: 3rem; height: 3rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 3px solid var(--primary); background: var(--primary); color: white; transition: all 0.3s ease;">1</div>
+            <div class="quiz-step" id="step2" style="width: 3rem; height: 3rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 3px solid var(--border); background: white; color: var(--text-muted); transition: all 0.3s ease;">2</div>
+            <div class="quiz-step" id="step3" style="width: 3rem; height: 3rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 3px solid var(--border); background: white; color: var(--text-muted); transition: all 0.3s ease;">3</div>
+            <div class="quiz-step" id="step4" style="width: 3rem; height: 3rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 3px solid var(--border); background: white; color: var(--text-muted); transition: all 0.3s ease;">4</div>
+        </div>
+
+        <div style="max-width: 900px; margin: 0 auto;">
+            <div style="background: white; border: 2px solid var(--border); padding: 2.5rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);">
+                
+                <!-- 問題 1 -->
+                <div class="quiz-question" id="q1" style="display: block;">
+                    <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-primary);">Q1. 下午2點後會出現強烈腦霧嗎？</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 2rem;">無法專注、想睡覺、情緒低落</p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button onclick="answerQuiz(1, 3)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>A.</strong> 經常，幾乎每天 <span style="color: var(--danger); font-size: 0.875rem; margin-left: 0.5rem; font-family: 'Courier New', monospace;">[+3]</span>
+                        </button>
+                        <button onclick="answerQuiz(1, 1)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>B.</strong> 偶爾，一週 2-3 次 <span style="color: var(--warning); font-size: 0.875rem; margin-left: 0.5rem; font-family: 'Courier New', monospace;">[+1]</span>
+                        </button>
+                        <button onclick="answerQuiz(1, 0)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>C.</strong> 很少或從不 <span style="color: var(--success); font-size: 0.875rem; margin-left: 0.5rem; font-family: 'Courier New', monospace;">[0]</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 問題 2 -->
+                <div class="quiz-question" id="q2" style="display: none;">
+                    <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-primary);">Q2. 你的腰圍身高比 (WHtR) 是多少？</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">腰圍 (cm) ÷ 身高 (cm)</p>
+                    
+                    <div style="background: var(--bg-tertiary); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <input type="number" id="waist" placeholder="腰圍 (cm)" oninput="calculateWHtR()" style="padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                            <input type="number" id="height" placeholder="身高 (cm)" oninput="calculateWHtR()" style="padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: white; border-radius: 8px;">
+                            <span style="color: var(--text-secondary); font-size: 0.875rem;">計算結果: </span>
+                            <span id="whtrResult" style="color: var(--primary); font-weight: 700; font-family: 'Courier New', monospace; font-size: 2rem;">--</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button onclick="answerQuiz(2, 3)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>A.</strong> ≥ 0.53 (超標) <span style="color: var(--danger); font-family: 'Courier New', monospace;">[+3]</span>
+                        </button>
+                        <button onclick="answerQuiz(2, 1)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>B.</strong> 0.45 - 0.52 (警戒) <span style="color: var(--warning); font-family: 'Courier New', monospace;">[+1]</span>
+                        </button>
+                        <button onclick="answerQuiz(2, 0)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>C.</strong> < 0.45 (優秀) <span style="color: var(--success); font-family: 'Courier New', monospace;">[0]</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 問題 3 -->
+                <div class="quiz-question" id="q3" style="display: none;">
+                    <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-primary);">Q3. 早晨起床時的「動力感」如何？</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 2rem;">精力、鬥志、性慾</p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button onclick="answerQuiz(3, 3)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>A.</strong> 非常低落，像沒電 <span style="color: var(--danger); font-family: 'Courier New', monospace;">[+3]</span>
+                        </button>
+                        <button onclick="answerQuiz(3, 1)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>B.</strong> 普通，需要咖啡啟動 <span style="color: var(--warning); font-family: 'Courier New', monospace;">[+1]</span>
+                        </button>
+                        <button onclick="answerQuiz(3, 0)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>C.</strong> 充沛，醒來就能衝 <span style="color: var(--success); font-family: 'Courier New', monospace;">[0]</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 問題 4 -->
+                <div class="quiz-question" id="q4" style="display: none;">
+                    <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-primary);">Q4. 最近有掉髮或皮膚狀況不穩定嗎？</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 2rem;">落髮量增加、痘痘、濕疹</p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button onclick="answerQuiz(4, 3)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>A.</strong> 是，而且很明顯 <span style="color: var(--danger); font-family: 'Courier New', monospace;">[+3]</span>
+                        </button>
+                        <button onclick="answerQuiz(4, 1)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>B.</strong> 偶爾有，不太穩定 <span style="color: var(--warning); font-family: 'Courier New', monospace;">[+1]</span>
+                        </button>
+                        <button onclick="answerQuiz(4, 0)" class="quiz-option" style="width: 100%; text-align: left; padding: 1.25rem; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; font-weight: 500;">
+                            <strong>C.</strong> 沒有，狀態穩定 <span style="color: var(--success); font-family: 'Courier New', monospace;">[0]</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 結果 -->
+                <div class="quiz-result" id="quizResult" style="display: none;">
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <div style="display: inline-block; background: rgba(0, 200, 81, 0.1); border: 2px solid var(--success); border-radius: 9999px; padding: 0.5rem 1.5rem; margin-bottom: 1.5rem;">
+                            <span style="color: var(--success); font-family: 'Courier New', monospace; font-weight: 700; font-size: 0.875rem;">/// SCAN_COMPLETE</span>
+                        </div>
+                        <h3 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">診斷報告</h3>
+                        <div style="display: flex; align-items: baseline; justify-content: center; gap: 0.5rem;">
+                            <span style="color: var(--text-secondary);">總分:</span>
+                            <span id="totalScore" style="font-size: 3.5rem; font-weight: 700; font-family: 'Courier New', monospace; color: var(--primary);"></span>
+                            <span style="color: var(--text-muted); font-size: 1.5rem;">/12</span>
+                        </div>
+                    </div>
+
+                    <div id="resultContent"></div>
+
+                    <div style="margin-top: 2rem; background: rgba(0, 102, 255, 0.05); border: 2px solid var(--primary); border-radius: 12px; padding: 2rem; text-align: center;">
+                        <p style="color: var(--text-primary); margin-bottom: 1.5rem; font-size: 1.05rem;">
+                            需要完整的<strong>血液數據解讀</strong>與<strong>客製化協議</strong>？
+                        </p>
+                        <a href="https://lin.ee/dnbucVw" target="_blank" 
+                           style="display: inline-block; background: var(--success); color: white; padding: 1rem 2rem; border-radius: 12px; font-weight: 700; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0, 200, 81, 0.25);">
+                            預約一對一諮詢
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section 6: 工具與資源 -->
 <section class="section" id="tools">
     <div class="section-container">
         <h2 class="doc-title" style="font-size: 2.5rem;">工具與資源</h2>
@@ -1044,7 +1334,7 @@
     </div>
 </section>
 
-<!-- Section 5: 開始行動 -->
+<!-- Section 7: 開始行動 -->
 <section class="section" id="action">
     <div class="section-container">
         <h2 class="doc-title" style="font-size: 2.5rem;">開始行動</h2>
@@ -1200,6 +1490,115 @@
     document.addEventListener('DOMContentLoaded', function() {
         showSection('start');
     });
+
+    // Quiz Logic
+    let quizAnswers = [0, 0, 0, 0];
+
+    function calculateWHtR() {
+        const waist = parseFloat(document.getElementById('waist').value);
+        const height = parseFloat(document.getElementById('height').value);
+        
+        if (!isNaN(waist) && !isNaN(height) && height > 0) {
+            const ratio = (waist / height).toFixed(3);
+            document.getElementById('whtrResult').textContent = ratio;
+        } else {
+            document.getElementById('whtrResult').textContent = '--';
+        }
+    }
+
+    function answerQuiz(questionNum, score) {
+        quizAnswers[questionNum - 1] = score;
+        
+        // 更新步驟指示器
+        const currentStep = document.getElementById('step' + questionNum);
+        currentStep.style.borderColor = 'var(--success)';
+        currentStep.style.background = 'var(--success)';
+        currentStep.style.color = 'white';
+        currentStep.textContent = '✓';
+        currentStep.classList.add('completed');
+
+        if (questionNum < 4) {
+            const nextStep = document.getElementById('step' + (questionNum + 1));
+            nextStep.style.borderColor = 'var(--primary)';
+            nextStep.style.background = 'var(--primary)';
+            nextStep.style.color = 'white';
+        }
+
+        // 隱藏當前問題
+        document.getElementById('q' + questionNum).style.display = 'none';
+        
+        if (questionNum < 4) {
+            setTimeout(() => {
+                document.getElementById('q' + (questionNum + 1)).style.display = 'block';
+            }, 300);
+        } else {
+            setTimeout(showQuizResult, 500);
+        }
+    }
+
+    function showQuizResult() {
+        const total = quizAnswers.reduce((a, b) => a + b, 0);
+        document.getElementById('quizResult').style.display = 'block';
+        document.getElementById('totalScore').textContent = total;
+        
+        let resultHTML = '';
+        
+        if (total >= 8) {
+            resultHTML = `
+                <div style="background: rgba(255, 68, 68, 0.05); border: 2px solid var(--danger); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem;">
+                    <div class="code-block" style="background: rgba(255, 68, 68, 0.1); border-left-color: var(--danger);">
+                        <span class="code-label" style="color: var(--danger);">CRITICAL_SYSTEM_FAILURE</span>
+                        <div style="line-height: 1.9;">
+                            <strong style="color: var(--danger);">你的系統處於高壓過載狀態</strong><br><br>
+                            多項關鍵指標顯示：<br>
+                            • Cortisol 長期飆高 → 脂肪囤積 + 肌肉流失<br>
+                            • Testosterone 嚴重低落 → 無動力 + 性功能下降<br>
+                            • 慢性發炎狀態 → 掉髮 + 免疫失衡<br><br>
+                            <strong style="color: var(--danger);">建議：立即進行完整血液檢測</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (total >= 4) {
+            resultHTML = `
+                <div style="background: rgba(255, 184, 0, 0.05); border: 2px solid var(--warning); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem;">
+                    <div class="code-block" style="background: rgba(255, 184, 0, 0.1); border-left-color: var(--warning);">
+                        <span class="code-label" style="color: var(--warning);">SYSTEM_LATENCY_DETECTED</span>
+                        <div style="line-height: 1.9;">
+                            <strong style="color: var(--warning);">系統效能正在下滑</strong><br><br>
+                            出現早期警訊：<br>
+                            • 代謝效率降低，脂肪開始累積<br>
+                            • 荷爾蒙波動，影響情緒與動力<br>
+                            • 恢復能力變差，容易疲勞<br><br>
+                            <strong style="color: var(--warning);">現在介入，還能快速逆轉</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            resultHTML = `
+                <div style="background: rgba(0, 200, 81, 0.05); border: 2px solid var(--success); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem;">
+                    <div class="code-block" style="background: rgba(0, 200, 81, 0.1); border-left-color: var(--success);">
+                        <span class="code-label" style="color: var(--success);">SYSTEM_OPTIMIZED</span>
+                        <div style="line-height: 1.9;">
+                            <strong style="color: var(--success);">系統目前運作良好</strong><br><br>
+                            但要注意：<br>
+                            • 「正常」不等於「最佳化」<br>
+                            • 預防性監控能讓你保持領先<br>
+                            • 數據追蹤能發現肉眼看不見的退化<br><br>
+                            <strong style="color: var(--success);">建議：每季進行一次完整血液分析</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        document.getElementById('resultContent').innerHTML = resultHTML;
+        
+        setTimeout(() => {
+            document.getElementById('quizResult').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+    }
 </script>
 
 </body>
