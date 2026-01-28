@@ -100,8 +100,8 @@ export default function ActionPage() {
 
         <div className="mt-12 pt-8 border-t border-gray-300">
           <p className="text-gray-500 text-sm leading-relaxed">
-            📍 台中市北屯區<br />
-            🎓 CSCS 認證 • 運動醫學背景
+            📍 Coolday Fitness 北屯館<br />
+            🎓 教練主管 Howard Chen • CSCS 認證
           </p>
         </div>
       </div>

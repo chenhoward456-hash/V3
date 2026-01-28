@@ -57,9 +57,9 @@ export default function Footer() {
           <div>
             <h4 className="font-bold text-text-primary mb-3">服務地點</h4>
             <p className="text-text-secondary text-sm leading-relaxed">
-              📍 台中市北屯區<br />
-              🏋️ 一對一訓練指導<br />
-              � 客製化訓練計畫
+              📍 Coolday Fitness 北屯館<br />
+              🏋️ 教練主管 Howard Chen<br />
+              📋 一對一訓練指導 • 客製化計畫
             </p>
           </div>
         </div>

@@ -143,7 +143,7 @@ export default function HomePage() {
         >
           與 Howard 開啟對話
         </Link>
-        <p className="text-gray-500 text-sm mt-4">台中市北屯區 • 一對一訓練指導</p>
+        <p className="text-gray-500 text-sm mt-4">Coolday Fitness 北屯館 • 一對一訓練指導</p>
       </div>
     </section>
   )
