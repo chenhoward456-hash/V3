@@ -56,20 +56,20 @@ export default function DiagnosisPage() {
     if (totalScore >= 8) {
       return {
         color: 'danger',
-        title: 'CRITICAL_SYSTEM_FAILURE',
+        title: '需要優先關注',
         content: (
           <>
-            <strong className="text-danger">你的系統處於高壓過載狀態</strong><br /><br />
-            多項關鍵指標顯示：<br />
-            • Cortisol 長期飆高 → 脂肪囤積 + 肌肉流失<br />
-            • Testosterone 嚴重低落 → 無動力 + 性功能下降<br />
-            • 慢性發炎狀態 → 掉髮 + 免疫失衡<br /><br />
-            <strong className="text-danger">建議：諮詢醫師進行完整健康檢查</strong><br /><br />
+            <strong className="text-danger">根據個人經驗，你可能處於高壓力狀態</strong><br /><br />
+            常見的生活型態警訊：<br />
+            • 長期壓力可能影響代謝效率<br />
+            • 睡眠不足可能降低動力與恢復能力<br />
+            • 生活型態失衡可能影響整體狀態<br /><br />
+            <strong className="text-danger">建議：優先諮詢醫師進行完整健康檢查</strong><br /><br />
             <div className="mt-4 pt-4 border-t border-danger/20">
-              <strong className="block mb-2">💡 優先改善方向：</strong>
-              1. 立即預約醫師進行完整健康檢查<br />
+              <strong className="block mb-2">💡 個人經驗分享（僅供參考）：</strong>
+              1. 優先諮詢醫師進行完整健康檢查<br />
               2. 調整作息：確保每晚 7-8 小時睡眠<br />
-              3. 減少精緻碳水攝取，增加蛋白質與蔬菜<br />
+              3. 優化飲食：減少加工食品，增加原型食物<br />
               4. 開始輕度運動（每週 2-3 次散步或瑜伽）
             </div>
           </>
@@ -78,17 +78,17 @@ export default function DiagnosisPage() {
     } else if (totalScore >= 4) {
       return {
         color: 'warning',
-        title: 'SYSTEM_LATENCY_DETECTED',
+        title: '可以優化',
         content: (
           <>
-            <strong className="text-warning">系統效能正在下滑</strong><br /><br />
-            出現早期警訊：<br />
-            • 代謝效率降低，脂肪開始累積<br />
-            • 荷爾蒙波動，影響情緒與動力<br />
-            • 恢復能力變差，容易疲勞<br /><br />
-            <strong className="text-warning">現在介入，還能快速逆轉</strong><br /><br />
+            <strong className="text-warning">根據個人經驗，你的生活型態有優化空間</strong><br /><br />
+            常見的改善機會：<br />
+            • 訓練與營養可能需要調整<br />
+            • 睡眠品質可能影響恢復能力<br />
+            • 生活型態優化可能帶來更好的狀態<br /><br />
+            <strong className="text-warning">現在開始調整，可能帶來明顯改善</strong><br /><br />
             <div className="mt-4 pt-4 border-t border-warning/20">
-              <strong className="block mb-2">💡 優先改善方向：</strong>
+              <strong className="block mb-2">💡 個人經驗分享（僅供參考）：</strong>
               1. 開始規律運動（每週 3 次肌力訓練）<br />
               2. 優化飲食：減少加工食品，增加原型食物<br />
               3. 改善睡眠品質：固定作息、睡前 2 小時避免藍光<br />
@@ -100,21 +100,21 @@ export default function DiagnosisPage() {
     } else {
       return {
         color: 'success',
-        title: 'SYSTEM_OPTIMIZED',
+        title: '狀態良好',
         content: (
           <>
-            <strong className="text-success">系統目前運作良好</strong><br /><br />
+            <strong className="text-success">根據個人經驗，你的生活型態看起來不錯</strong><br /><br />
             但要注意：<br />
             • 「正常」不等於「最佳化」<br />
-            • 預防性監控能讓你保持領先<br />
-            • 數據追蹤能發現肉眼看不見的退化<br /><br />
+            • 持續追蹤能幫助你保持領先<br />
+            • 定期檢視生活型態能發現潛在問題<br /><br />
             <strong className="text-success">建議：可考慮定期進行健康檢查</strong><br /><br />
             <div className="mt-4 pt-4 border-t border-success/20">
-              <strong className="block mb-2">💡 持續優化方向：</strong>
+              <strong className="block mb-2">💡 個人經驗分享（僅供參考）：</strong>
               1. 維持規律運動習慣（每週 3-4 次訓練）<br />
               2. 定期追蹤訓練數據與身體狀況<br />
               3. 持續學習營養與訓練知識<br />
-              4. 考慮進階優化：HRV 追蹤、睡眠監測、補劑優化
+              4. 考慮進階優化：HRV 追蹤、睡眠監測
             </div>
           </>
         )
@@ -126,12 +126,12 @@ export default function DiagnosisPage() {
 
   return (
     <section className="section-container">
-      <h2 className="doc-title">系統診斷</h2>
-      <p className="doc-subtitle">4 個問題，檢測你的系統風險等級</p>
+      <h2 className="doc-title">生活型態評估</h2>
+      <p className="doc-subtitle">4 個問題，評估你的生活型態與訓練需求</p>
 
-      <div className="bg-danger/5 border-2 border-danger/30 rounded-xl p-6 mb-8">
+      <div className="bg-warning/5 border-2 border-warning/30 rounded-xl p-6 mb-8">
         <p className="text-text-secondary text-sm leading-relaxed">
-          ⚠️ <strong>重要提醒</strong>：此測驗僅供<strong>初步自我評估</strong>，不能取代專業醫療診斷。若有健康疑慮，請務必諮詢合格醫師進行完整檢查。
+          ⚠️ <strong>重要提醒</strong>：此評估僅供<strong>個人參考</strong>，基於教練個人經驗分享，<strong>不構成任何醫療建議或診斷</strong>。若有健康疑慮，請務必諮詢合格醫師進行完整檢查。
         </p>
       </div>
 
@@ -302,7 +302,7 @@ export default function DiagnosisPage() {
                 <div className="inline-block bg-success/10 border-2 border-success rounded-full px-6 py-2 mb-6">
                   <span className="text-success font-mono font-bold text-sm">/// SCAN_COMPLETE</span>
                 </div>
-                <h3 className="text-3xl font-bold mb-4">診斷報告</h3>
+                <h3 className="text-3xl font-bold mb-4">評估結果</h3>
                 <div className="flex items-baseline justify-center gap-2">
                   <span className="text-text-secondary">總分:</span>
                   <span className="text-6xl font-bold font-mono text-primary">{totalScore}</span>
