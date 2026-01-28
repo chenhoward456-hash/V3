@@ -12,50 +12,57 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <section className="section-container">
-      <h1 className="doc-title">
-        👋 歡迎來到<br />
-        <span className="text-primary">The Howard Protocol</span>
+    <section className="section-container" style={{backgroundColor: '#F9F9F7'}}>
+      <h1 className="doc-title" style={{color: '#2D2D2D', letterSpacing: '0.08em', lineHeight: '1.3'}}>
+        <span style={{fontSize: '0.6em', fontWeight: 'normal', display: 'block', marginBottom: '1rem', letterSpacing: '0.02em'}}>從系統崩潰到完全重生</span>
+        <span style={{color: '#2D2D2D'}}>The Howard Protocol</span>
       </h1>
-      <p className="doc-subtitle">
-        我是 Howard Chen，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。<br />
-        這套系統整合了我在肌力訓練、運動醫學與生物駭客領域的實戰經驗。
+      <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '700px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
+        你的身體，需要一套精準的操作協定。<br /><br />
+        我是 Howard Chen，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。
       </p>
 
-      <div className="mission-box">
-        <h3>✨ 為什麼不一樣？</h3>
-        <p>
-          大多數「健身教練」只會帶你練。我的工作是：<br />
-          ✓ 用運動科學原理設計訓練計畫<br />
-          ✓ 用系統化方法優化營養與恢復<br />
-          ✓ 解決姿勢問題與預防運動傷害
-        </p>
+      {/* 真誠區塊 - 6年實驗數據 */}
+      <div className="my-20 max-w-4xl mx-auto" style={{borderLeft: '4px solid #8B7355', paddingLeft: '2rem', backgroundColor: 'rgba(139, 115, 85, 0.03)', padding: '2rem 2rem 2rem 3rem', borderRadius: '0.5rem'}}>
+        <div className="flex items-start gap-4 mb-4">
+          <span className="text-5xl">📊</span>
+          <div>
+            <h3 className="text-2xl font-semibold mb-3" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>6年個人實驗數據</h3>
+            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
+              從 2020 年系統崩潰到 2026 年完全重生，完整記錄每一步調整與數據變化。
+            </p>
+            <p className="italic text-gray-500 text-sm leading-relaxed" style={{fontFamily: 'Georgia, serif'}}>
+              「這不是理論，是我在 2020 年身體系統崩潰後，花了六年時間，用自己的數據一點一滴換來的重生記錄。」
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="my-20">
-        <h3 className="text-3xl font-semibold mb-12">為什麼選擇 Howard？</h3>
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-white/50 rounded-[2rem] p-10" style={{boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02), 0 8px 20px rgba(0, 0, 0, 0.02)'}}>
-            <div className="text-4xl mb-5">📊</div>
-            <h4 className="text-xl font-medium mb-4 text-text-primary">6年個人實驗數據</h4>
-            <p className="text-text-secondary leading-relaxed">
-              從 2020 年系統崩潰到 2026 年完全重生，完整記錄每一步調整與數據變化。不是理論，是親身實踐。
+      {/* 無邊框卡片設計 - 去 AI 化 */}
+      <div className="my-24 max-w-5xl mx-auto">
+        <h3 className="text-3xl font-semibold mb-16 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>核心能力</h3>
+        <div className="grid md:grid-cols-3 gap-16">
+          <div className="text-center">
+            <div className="text-4xl mb-6" style={{color: '#8B7355'}}>🎓</div>
+            <h4 className="text-xl font-medium mb-4" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>CSCS 認證<br />運動醫學背景</h4>
+            <p className="text-gray-600 leading-relaxed text-[15px]">
+              高雄醫學大學運動醫學系畢業，CSCS 國際認證體能教練。懂解剖學、生物力學。
             </p>
           </div>
 
-          <div className="bg-white/50 rounded-[2rem] p-10" style={{boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02), 0 8px 20px rgba(0, 0, 0, 0.02)'}}>
-            <div className="text-4xl mb-5">🎓</div>
-            <h4 className="text-xl font-medium mb-4 text-text-primary">CSCS 認證 + 運動醫學背景</h4>
-            <p className="text-text-secondary leading-relaxed">
-              高雄醫學大學運動醫學系畢業，CSCS 國際認證體能教練。懂解剖學、生物力學，不只是憑感覺練。
+          <div className="text-center">
+            <div className="text-4xl mb-6" style={{color: '#8B7355'}}>🔬</div>
+            <h4 className="text-xl font-medium mb-4" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>系統化<br />訓練方法</h4>
+            <p className="text-gray-600 leading-relaxed text-[15px]">
+              整合訓練、營養、恢復的完整系統。不是單純帶練，而是建立長期健康習慣。
             </p>
           </div>
 
-          <div className="bg-white/50 rounded-[2rem] p-10" style={{boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02), 0 8px 20px rgba(0, 0, 0, 0.02)'}}>
-            <div className="text-4xl mb-5"></div>
-            <h4 className="text-xl font-medium mb-4 text-text-primary">系統化訓練方法</h4>
-            <p className="text-text-secondary leading-relaxed">
-              整合訓練、營養、恢復的完整系統。不是單純帶練，而是陪你建立長期健康的生活方式。
+          <div className="text-center">
+            <div className="text-4xl mb-6" style={{color: '#8B7355'}}>📈</div>
+            <h4 className="text-xl font-medium mb-4" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>數據驅動<br />持續優化</h4>
+            <p className="text-gray-600 leading-relaxed text-[15px]">
+              不靠感覺，靠數據說話。定期追蹤進度，根據反應調整協定。
             </p>
           </div>
         </div>
@@ -79,15 +86,15 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="text-center my-16">
+      <div className="text-center my-20">
         <Link 
           href="/action"
-          className="inline-block bg-primary text-white px-10 py-4 rounded-full font-medium text-lg hover:bg-primary-dark transition-colors"
-          style={{boxShadow: '0 4px 16px rgba(37, 99, 235, 0.2)'}}
+          className="inline-block text-white px-12 py-4 rounded-full font-medium text-lg transition-all hover:opacity-90"
+          style={{backgroundColor: '#2D2D2D', letterSpacing: '0.05em'}}
         >
-          預約免費諮詢
+          與 Howard 開啟對話
         </Link>
-        <p className="text-text-muted text-sm mt-4">台中市北屯區 • 一對一訓練指導</p>
+        <p className="text-gray-500 text-sm mt-4">台中市北屯區 • 一對一訓練指導</p>
       </div>
     </section>
   )

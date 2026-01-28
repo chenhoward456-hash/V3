@@ -1,25 +1,22 @@
 export default function Footer() {
   return (
-    <footer className="bg-white border-t border-border mt-20">
+    <footer style={{backgroundColor: '#F9F9F7'}} className="border-t border-gray-200 mt-20">
       <div className="max-w-5xl mx-auto px-6 py-12">
-        {/* 免責聲明 */}
-        <div className="bg-warning/5 border-2 border-warning/30 rounded-xl p-6 mb-8">
-          <h3 className="text-warning font-bold text-lg mb-3">⚠️ 免責聲明</h3>
-          <div className="text-text-secondary text-sm leading-relaxed space-y-2">
+        {/* 免責聲明 - 簡化設計 */}
+        <div style={{backgroundColor: 'rgba(139, 115, 85, 0.03)'}} className="rounded-lg p-5 mb-8">
+          <h3 className="text-gray-600 font-medium text-sm mb-3">⚠️ 免責聲明</h3>
+          <div className="text-gray-500 text-xs leading-relaxed space-y-1.5">
             <p>
-              本網站內容僅供<strong>教育與資訊分享</strong>之用，不構成任何醫療建議、診斷或治療方案。
+              本網站內容僅供教育與資訊分享之用，不構成任何醫療建議、診斷或治療方案。
             </p>
             <p>
-              所有訓練、營養與補劑建議均基於個人經驗與研究，<strong>不應取代專業醫療人員的意見</strong>。
+              所有訓練、營養與補劑建議均基於個人經驗與研究，不應取代專業醫療人員的意見。
             </p>
             <p>
               在開始任何訓練計畫、飲食調整或補劑使用前，請務必諮詢合格的醫師、營養師或運動專業人員。
             </p>
             <p>
-              個案追蹤結果為個人經驗，<strong>不保證適用於所有人</strong>。每個人的身體狀況、基因、生活型態皆不相同，效果因人而異。
-            </p>
-            <p className="text-danger font-semibold">
-              若您有任何健康疑慮或慢性疾病，請在執行任何建議前先徵詢您的醫療團隊。
+              個案追蹤結果為個人經驗，不保證適用於所有人。每個人的身體狀況、基因、生活型態皆不相同，效果因人而異。
             </p>
           </div>
         </div>
