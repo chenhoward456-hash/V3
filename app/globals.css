@@ -1,0 +1,175 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  body {
+    @apply bg-bg-primary text-text-primary antialiased;
+    line-height: 1.8;
+    overflow-x: hidden;
+    letter-spacing: 0.01em;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  p {
+    line-height: 1.8;
+  }
+}
+
+@layer components {
+  .section-container {
+    @apply max-w-4xl mx-auto px-8 py-20;
+  }
+
+  .doc-title {
+    @apply text-4xl md:text-5xl font-semibold mb-8 leading-snug;
+    letter-spacing: -0.02em;
+  }
+
+  .doc-subtitle {
+    @apply text-lg md:text-xl text-text-secondary mb-16 leading-loose;
+    max-width: 42rem;
+  }
+
+  .protocol-card {
+    @apply bg-white/70 rounded-[2rem] p-10 mb-10 transition-all;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.02);
+  }
+
+  .protocol-card:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.03);
+    transform: translateY(-1px);
+  }
+
+  .tag {
+    @apply inline-block px-4 py-2 rounded-full text-sm font-medium mb-4;
+  }
+
+  .tag.blue {
+    @apply bg-blue-50/80 text-primary;
+  }
+
+  .tag.green {
+    @apply bg-green-50/80 text-success;
+  }
+
+  .tag.orange {
+    @apply bg-orange-50/80 text-secondary;
+  }
+
+  .tag.red {
+    @apply bg-red-50/80 text-danger;
+  }
+
+  .code-block {
+    @apply bg-bg-tertiary/40 p-8 rounded-[1.5rem] border-l-[3px] border-primary/30;
+  }
+
+  .code-label {
+    @apply inline-block text-primary text-xs font-medium px-4 py-1.5 rounded-full mb-4 tracking-wide;
+    background-color: rgba(37, 99, 235, 0.08);
+  }
+
+  .action-grid {
+    @apply grid md:grid-cols-3 gap-8 mt-16;
+  }
+
+  .action-card {
+    @apply bg-white/50 rounded-[2rem] p-8 cursor-pointer transition-all;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 6px 16px rgba(0, 0, 0, 0.02);
+  }
+
+  .action-card:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03), 0 12px 28px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+  }
+
+  .action-card h4 {
+    @apply text-lg font-medium mb-3 text-text-primary;
+  }
+
+  .action-card p {
+    @apply text-text-secondary text-[15px] leading-loose;
+  }
+
+  .mission-box {
+    @apply rounded-[2rem] p-10 mb-12;
+    background: linear-gradient(to bottom right, rgba(37, 99, 235, 0.04), rgba(245, 158, 11, 0.04));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  .mission-box h3 {
+    @apply text-xl font-bold mb-4 text-text-primary;
+  }
+
+  .mission-box p {
+    @apply text-text-secondary leading-relaxed;
+  }
+
+  .support-box {
+    @apply bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-primary/30 rounded-3xl p-12 text-center mt-12;
+  }
+
+  .support-box ul {
+    @apply text-left max-w-2xl mx-auto mb-8 space-y-3;
+  }
+
+  .support-box li {
+    @apply text-text-secondary flex items-start gap-3;
+  }
+
+  .support-box li::before {
+    content: "✓";
+    @apply text-success font-bold text-xl flex-shrink-0;
+  }
+
+  .support-btn {
+    @apply inline-block bg-gradient-to-r from-primary to-primary-dark text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all no-underline;
+  }
+
+  .specs-table {
+    @apply w-full border-2 border-border rounded-xl overflow-hidden bg-white;
+  }
+
+  .specs-table thead {
+    @apply bg-bg-tertiary;
+  }
+
+  .specs-table th {
+    @apply text-left p-4 font-bold text-text-primary border-b-2 border-border;
+  }
+
+  .specs-table td {
+    @apply p-4 border-b border-border;
+  }
+
+  .specs-table td strong {
+    @apply block text-text-primary font-semibold mb-1;
+  }
+
+  .specs-table td span {
+    @apply block text-text-muted text-sm;
+  }
+
+  .specs-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .specs-table tbody tr:hover {
+    @apply bg-bg-secondary/50;
+  }
+}
