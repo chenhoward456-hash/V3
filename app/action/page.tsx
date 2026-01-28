@@ -18,12 +18,14 @@ export default function ActionPage() {
         我們不靠感覺，我們靠數據說話。
       </p>
 
-      {/* Howard 實戰工作照容器 */}
+      {/* Howard 實戰工作照 */}
       <div className="mb-16 flex justify-center">
         <div className="w-full max-w-2xl h-[400px] rounded-[2rem] overflow-hidden" style={{boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)'}}>
-          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-            <p className="text-gray-400 text-sm">預留 Howard 實戰工作照</p>
-          </div>
+          <img 
+            src="/howard-training.jpg" 
+            alt="Howard Chen 指導學員動作矯正" 
+            className="w-full h-full object-cover"
+          />
         </div>
       </div>
 
