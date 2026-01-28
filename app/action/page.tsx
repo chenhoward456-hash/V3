@@ -25,6 +25,7 @@ export default function ActionPage() {
             src="/howard-training.jpg" 
             alt="Howard Chen 指導學員動作矯正" 
             className="w-full h-full object-cover"
+            style={{objectPosition: 'center 30%'}}
           />
         </div>
       </div>
