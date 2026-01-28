@@ -95,7 +95,7 @@ export default function ActionPage() {
           className="inline-block px-12 py-4 rounded-full font-medium text-white transition-all hover:opacity-90"
           style={{backgroundColor: '#2D2D2D', letterSpacing: '0.05em'}}
         >
-          與 Howard 開啟對話
+          啟動優化協定 (Start Protocol)
         </a>
 
         <div className="mt-12 pt-8 border-t border-gray-300">
@@ -114,6 +114,41 @@ export default function ActionPage() {
           </p>
           <footer className="mt-4 text-gray-500 text-sm">— Howard Chen</footer>
         </blockquote>
+      </div>
+
+      {/* 快速 FAQ - 解決預約前的疑慮 */}
+      <div className="my-20 max-w-3xl mx-auto">
+        <h3 className="text-2xl font-semibold mb-8 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>預約前的常見疑問</h3>
+        
+        <div className="space-y-6">
+          <div className="border-l-4 border-gray-300 pl-6 py-2">
+            <h4 className="font-semibold mb-2" style={{color: '#2D2D2D'}}>評估需要多久時間？</h4>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              初次評估約 60-90 分鐘，包含體態評估、動作能力測試、訓練目標討論。
+            </p>
+          </div>
+
+          <div className="border-l-4 border-gray-300 pl-6 py-2">
+            <h4 className="font-semibold mb-2" style={{color: '#2D2D2D'}}>一定要去現場嗎？</h4>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              是的，初次評估需要現場進行，才能準確評估你的動作模式與體態。後續訓練可討論線上或現場。
+            </p>
+          </div>
+
+          <div className="border-l-4 border-gray-300 pl-6 py-2">
+            <h4 className="font-semibold mb-2" style={{color: '#2D2D2D'}}>費用如何計算？</h4>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              初次諮詢免費。正式訓練計畫會根據你的目標與需求客製化報價，透過 LINE 詳談。
+            </p>
+          </div>
+
+          <div className="border-l-4 border-gray-300 pl-6 py-2">
+            <h4 className="font-semibold mb-2" style={{color: '#2D2D2D'}}>我是完全新手，也適合嗎？</h4>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              非常適合！我會從基礎動作開始教學，確保你建立正確的動作模式，避免運動傷害。
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* 其他聯絡方式 - 簡化設計 */}
