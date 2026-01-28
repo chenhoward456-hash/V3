@@ -57,28 +57,27 @@ export default function NutritionPage() {
       </div>
 
       <div className="protocol-card">
-        <span className="tag green">基因優化</span>
-        <h3 className="text-2xl mb-4 font-bold">🧬 MTHFR 甲基化修復</h3>
+        <span className="tag green">個人經驗</span>
+        <h3 className="text-2xl mb-4 font-bold">🧬 甲基化支持（個人經驗）</h3>
         <p className="mb-6 text-text-secondary">
-          針對可能有 MTHFR 基因變異的族群（研究顯示約 40% 華人帶有此變異）。<br />
-          此變異可能降低葉酸代謝效率。<strong>建議先進行基因檢測確認</strong>，再決定是否需要補充。
+          我個人使用活性 B 群與 TMG 後，感覺精神狀態與恢復能力有改善。<br />
+          這只是個人經驗分享，不是醫療建議。
         </p>
         
         <div className="code-block">
-          <span className="code-label">補劑方案</span>
+          <span className="code-label">我的補劑組合</span>
           <div className="leading-loose">
-            • <strong>Methylfolate (活性葉酸)</strong>：400-800 mcg/天<br />
-            • <strong>Methylcobalamin (活性 B12)</strong>：1000 mcg/天<br />
-            • <strong>P5P (活性 B6)</strong>：25 mg/天<br />
-            • <strong>TMG (甜菜鹼)</strong>：500 mg/天
+            • <strong>活性 B 群</strong>（含 Methylfolate、Methylcobalamin）<br />
+            • <strong>TMG (甜菜鹼)</strong>
           </div>
         </div>
 
-        <div className="bg-success/8 p-6 rounded-xl border-l-4 border-success mt-6">
-          <strong className="text-success block mb-2 text-sm">✓ 預期效果</strong>
+        <div className="bg-warning/8 p-6 rounded-xl border-l-4 border-warning mt-6">
+          <strong className="text-warning block mb-2 text-sm">⚠️ 重要提醒</strong>
           <span className="text-text-secondary text-sm leading-relaxed">
-            4-6 週後，同半胱氨酸應降至 &lt; 8 μmol/L。<br />
-            部分使用者回報情緒穩定度提升與認知功能改善。
+            • 這只是個人經驗分享，不是醫療建議<br />
+            • 補劑使用前請諮詢醫師或營養師<br />
+            • 每個人體質不同，效果因人而異
           </span>
         </div>
       </div>
