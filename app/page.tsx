@@ -19,7 +19,7 @@ export default function HomePage() {
       </h1>
       <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '700px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
         你的身體，需要一套精準的操作協定。<br /><br />
-        我是 Howard Chen，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。
+        我是 Howard Chen，Coolday Fitness 北屯館教練主管，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。
       </p>
 
       {/* 30 秒身體效能快篩 - 互動區塊 */}
