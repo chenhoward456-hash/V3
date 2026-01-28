@@ -6,6 +6,7 @@ import { useState } from 'react'
 
 const navItems = [
   { label: '關於我', href: '/' },
+  { label: '系統診斷', href: '/diagnosis' },
   { label: '個案追蹤', href: '/case' },
   { label: '訓練工程', href: '/training' },
   { label: '營養恢復', href: '/nutrition' },

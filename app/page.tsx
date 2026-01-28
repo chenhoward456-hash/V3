@@ -22,6 +22,55 @@ export default function HomePage() {
         我是 Howard Chen，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。
       </p>
 
+      {/* 30 秒身體效能快篩 - 互動區塊 */}
+      <div className="my-20 max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h3 className="text-3xl font-semibold mb-4" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>你的身體系統，現在處於什麼狀態？</h3>
+          <p className="text-gray-600 text-[15px] leading-relaxed">
+            4 個問題，30 秒快速評估你的健康風險與效能指標
+          </p>
+        </div>
+        
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-[2rem] p-10 border-2 border-gray-200" style={{boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)'}}>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="text-5xl">🎯</div>
+              <div>
+                <h4 className="text-xl font-semibold" style={{color: '#2D2D2D'}}>系統診斷測驗</h4>
+                <p className="text-gray-500 text-sm">領先指標評估 • 即時結果</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-4 mb-8 text-gray-600 text-sm">
+            <div className="flex items-start gap-3">
+              <span className="text-green-600 font-bold">✓</span>
+              <span>睡眠品質與恢復能力評估</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-green-600 font-bold">✓</span>
+              <span>代謝效率與體態警訊檢測</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-green-600 font-bold">✓</span>
+              <span>壓力荷爾蒙與發炎指標篩查</span>
+            </div>
+          </div>
+
+          <Link 
+            href="/diagnosis"
+            className="block w-full text-center text-white px-8 py-4 rounded-full font-medium text-lg transition-all hover:opacity-90"
+            style={{backgroundColor: '#2D2D2D', letterSpacing: '0.05em'}}
+          >
+            開始 30 秒快篩 →
+          </Link>
+          
+          <p className="text-center text-gray-400 text-xs mt-4">
+            完全免費 • 無需註冊 • 即時查看結果
+          </p>
+        </div>
+      </div>
+
       {/* 真誠區塊 - 6年實驗數據 */}
       <div className="my-20 max-w-4xl mx-auto" style={{borderLeft: '4px solid #8B7355', paddingLeft: '2rem', backgroundColor: 'rgba(139, 115, 85, 0.03)', padding: '2rem 2rem 2rem 3rem', borderRadius: '0.5rem'}}>
         <div className="flex items-start gap-4 mb-4">
