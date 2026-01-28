@@ -56,11 +56,19 @@ export default function Footer() {
           
           <div>
             <h4 className="font-bold text-text-primary mb-3">服務地點</h4>
-            <p className="text-text-secondary text-sm leading-relaxed">
+            <p className="text-text-secondary text-sm leading-relaxed mb-3">
               📍 Coolday Fitness 北屯館<br />
               🏋️ 教練主管 Howard Chen<br />
               📋 一對一訓練指導 • 客製化計畫
             </p>
+            <a 
+              href="https://www.instagram.com/coolday.fitness.bt/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-text-secondary hover:text-primary transition-colors text-sm"
+            >
+              📷 @coolday.fitness.bt →
+            </a>
           </div>
         </div>
 
