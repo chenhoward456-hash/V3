@@ -57,7 +57,7 @@ export default function Navigation() {
               href="/" 
               className="py-6 font-semibold text-lg text-text-primary hover:text-primary transition-colors"
             >
-              Howard Chen<span className="text-text-muted ml-2 font-normal text-base">人體效能優化</span>
+              Howard<span className="text-text-muted ml-2 font-normal text-base">人體效能優化</span>
             </Link>
 
             {/* Desktop Menu */}
