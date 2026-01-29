@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { trackDiagnosisComplete, trackLineClick } from '@/lib/analytics'
 
 export default function DiagnosisPage() {
   const [currentQuestion, setCurrentQuestion] = useLocalStorage('diagnosis_currentQuestion', 1)
@@ -21,6 +22,9 @@ export default function DiagnosisPage() {
       setCurrentQuestion(questionNum + 1)
     } else {
       setShowResult(true)
+      // 追蹤診斷測驗完成
+      const totalScore = newAnswers.reduce((a, b) => a + b, 0)
+      trackDiagnosisComplete(totalScore)
     }
   }
 
@@ -328,6 +332,7 @@ export default function DiagnosisPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-block bg-success text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+                  onClick={() => trackLineClick('diagnosis_result')}
                 >
                   預約免費諮詢
                 </a>

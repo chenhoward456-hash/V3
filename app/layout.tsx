@@ -31,6 +31,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-TW" className="scroll-smooth">
+      <head>
+        {/* Google Analytics */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-8GMW6GH1QB"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-8GMW6GH1QB');
+            `,
+          }}
+        />
+      </head>
       <body>
         <Navigation />
         {children}
