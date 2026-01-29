@@ -17,6 +17,15 @@ interface BlogPost {
 // 文章列表（之後可以從檔案系統讀取）
 const blogPosts: BlogPost[] = [
   {
+    id: '3',
+    title: '為什麼你睡 8 小時還是累？HRV 告訴你睡眠品質的真相',
+    description: '睡眠時間不等於睡眠品質。透過追蹤 HRV（心率變異度），我將睡眠品質從紅燈變綠燈，分享 3 個實測有效的習慣。',
+    date: '2026-01-30',
+    category: '訓練恢復',
+    readTime: '7 分鐘',
+    slug: 'sleep-quality-hrv-optimization'
+  },
+  {
     id: '2',
     title: '沒用藥，我如何三個月內自然提升 20% 睪固酮？(515→625)',
     description: '透過科學化調整生活型態，三個月內將睪固酮從 515 提升到 625 ng/dL。分享我的實測數據與三個關鍵習慣。',
