@@ -12,7 +12,7 @@ const blogContent: Record<string, {
   'sleep-quality-hrv-optimization': {
     title: '為什麼你睡 8 小時還是累？HRV 告訴你睡眠品質的真相',
     date: '2026-01-30',
-    category: '訓練恢復',
+    category: '恢復優化',
     readTime: '7 分鐘',
     content: `
 ## 前言：睡 8 小時還是累到像殭屍？
@@ -236,7 +236,7 @@ HRV 測量的是你心跳間隔的變化。
   'testosterone-optimization-3-months': {
     title: '沒用藥，我如何三個月內自然提升 20% 睪固酮？(515→625)',
     date: '2026-01-30',
-    category: '血檢數據',
+    category: '血檢優化',
     readTime: '6 分鐘',
     content: `
 ## 前言：這是我今年做過最值得的「人體實驗」
@@ -418,7 +418,7 @@ HRV 測量的是你心跳間隔的變化。
   'hba1c-optimization-journey': {
     title: '我如何從 HbA1c 5.9% 優化到 5.1%：6年代謝優化實驗',
     date: '2026-01-29',
-    category: '血檢數據',
+    category: '血檢優化',
     readTime: '8 分鐘',
     content: `
 ## 前言：從系統崩潰到完全重生

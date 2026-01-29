@@ -18,7 +18,7 @@
        title: '你的文章標題',
        description: '文章簡介（1-2 句話）',
        date: '2026-01-30',  // 發布日期
-       category: '補品營養',  // 或 '血檢數據'、'訓練恢復'、'個案追蹤'
+       category: '血檢優化',  // 或 '營養策略'、'訓練方法'、'恢復優化'、'個案追蹤'
        readTime: '5 分鐘',
        slug: 'your-article-slug'  // 英文網址（不要有空格）
      },
@@ -35,7 +35,7 @@
      'your-article-slug': {
        title: '你的文章標題',
        date: '2026-01-30',
-       category: '補品營養',
+       category: '血檢優化',
        readTime: '5 分鐘',
        content: `
    ## 你的第一個標題

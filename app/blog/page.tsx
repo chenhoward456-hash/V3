@@ -9,7 +9,7 @@ interface BlogPost {
   title: string
   description: string
   date: string
-  category: '補品營養' | '血檢數據' | '訓練恢復' | '個案追蹤'
+  category: '血檢優化' | '營養策略' | '訓練方法' | '恢復優化' | '個案追蹤'
   readTime: string
   slug: string
 }
@@ -21,7 +21,7 @@ const blogPosts: BlogPost[] = [
     title: '為什麼你睡 8 小時還是累？HRV 告訴你睡眠品質的真相',
     description: '睡眠時間不等於睡眠品質。透過追蹤 HRV（心率變異度），我將睡眠品質從紅燈變綠燈，分享 3 個實測有效的習慣。',
     date: '2026-01-30',
-    category: '訓練恢復',
+    category: '恢復優化',
     readTime: '7 分鐘',
     slug: 'sleep-quality-hrv-optimization'
   },
@@ -30,7 +30,7 @@ const blogPosts: BlogPost[] = [
     title: '沒用藥，我如何三個月內自然提升 20% 睪固酮？(515→625)',
     description: '透過科學化調整生活型態，三個月內將睪固酮從 515 提升到 625 ng/dL。分享我的實測數據與三個關鍵習慣。',
     date: '2026-01-30',
-    category: '血檢數據',
+    category: '血檢優化',
     readTime: '6 分鐘',
     slug: 'testosterone-optimization-3-months'
   },
@@ -39,14 +39,14 @@ const blogPosts: BlogPost[] = [
     title: '我如何從 HbA1c 5.9% 優化到 5.1%：6年代謝優化實驗',
     description: '分享我從 2020 年系統崩潰到 2026 年完全重生的血糖優化旅程。這不是醫療建議，而是個人實驗紀錄。',
     date: '2026-01-29',
-    category: '血檢數據',
+    category: '血檢優化',
     readTime: '8 分鐘',
     slug: 'hba1c-optimization-journey'
   },
   // 更多文章會在這裡新增
 ]
 
-const categories = ['全部', '補品營養', '血檢數據', '訓練恢復', '個案追蹤'] as const
+const categories = ['全部', '血檢優化', '營養策略', '訓練方法', '恢復優化', '個案追蹤'] as const
 
 export default function BlogPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('全部')
