@@ -6,6 +6,9 @@ import Footer from '@/components/Footer'
 export const metadata: Metadata = {
   title: 'Howard - 台中北屯 CSCS 體能教練 | Coolday Fitness 教練主管',
   description: 'Howard，Coolday Fitness 北屯館教練主管，CSCS 認證體能教練。專精肌力訓練、代謝優化、營養調整。台中北屯一對一客製化訓練指導。',
+  verification: {
+    google: 'hSS0ZwkqpzzSA8A4RS7RW81CeoR2HOFoT-CkpEFYcf4',
+  },
   keywords: [
     '台中健身教練',
     '北屯健身',
