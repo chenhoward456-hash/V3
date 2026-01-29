@@ -17,6 +17,15 @@ interface BlogPost {
 // 文章列表（之後可以從檔案系統讀取）
 const blogPosts: BlogPost[] = [
   {
+    id: '2',
+    title: '沒用藥，我如何三個月內自然提升 20% 睪固酮？(515→625)',
+    description: '透過科學化調整生活型態，三個月內將睪固酮從 515 提升到 625 ng/dL。分享我的實測數據與三個關鍵習慣。',
+    date: '2026-01-30',
+    category: '血檢數據',
+    readTime: '6 分鐘',
+    slug: 'testosterone-optimization-3-months'
+  },
+  {
     id: '1',
     title: '我如何從 HbA1c 5.9% 優化到 5.1%：6年代謝優化實驗',
     description: '分享我從 2020 年系統崩潰到 2026 年完全重生的血糖優化旅程。這不是醫療建議，而是個人實驗紀錄。',
