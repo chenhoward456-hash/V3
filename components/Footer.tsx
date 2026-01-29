@@ -57,8 +57,10 @@ export default function Footer() {
         <div className="border-t border-border pt-6 text-center text-text-muted text-sm">
           <p>© {new Date().getFullYear()} The Howard Protocol. All rights reserved.</p>
           <p className="mt-2">本網站內容受著作權法保護，未經授權不得轉載或商業使用。</p>
-          <p className="mt-4 text-xs text-gray-400">
-            本網站內容僅供教育與資訊分享，不構成醫療建議。如有健康疑慮請諮詢專業醫療人員。
+          <p className="mt-4 text-xs text-gray-400 leading-relaxed max-w-3xl mx-auto">
+            本網站所有內容均基於個人經驗與公開研究資料分享，僅供教育與資訊參考之用，不構成任何醫療建議、診斷或治療方案。
+            所有營養、訓練與補劑相關建議均為個人學習心得，不應取代專業醫療人員的意見。
+            在進行任何健康相關決策前，請務必諮詢合格的醫師、營養師或相關專業人員。
           </p>
         </div>
       </div>
