@@ -17,6 +17,15 @@ interface BlogPost {
 // 文章列表（之後可以從檔案系統讀取）
 const blogPosts: BlogPost[] = [
   {
+    id: '5',
+    title: '2025 增肌真相：這三個科學新發現，直接打臉你的健身常識',
+    description: '長位半程比全程有效？練完不痠才是練得好？力竭通常是假的？分享 2025 年最新的增肌科學研究。',
+    date: '2026-01-30',
+    category: '訓練方法',
+    readTime: '5 分鐘',
+    slug: 'muscle-building-science-2025'
+  },
+  {
     id: '4',
     title: '女生必看！月經週期是你的減脂作弊碼：順著週期練才會瘦',
     description: '女性荷爾蒙波動極大，不懂得順著週期練，只是在跟自己的內分泌打架。分享如何利用濾泡期和黃體期優化訓練效果。',
