@@ -45,7 +45,7 @@ export default function HomePage() {
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-[2rem] p-10 border-2 border-gray-200" style={{boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)'}}>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="text-5xl">🎯</div>
+              <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm">診斷</div>
               <div>
                 <h4 className="text-xl font-semibold" style={{color: '#2D2D2D'}}>系統診斷測驗</h4>
                 <p className="text-gray-500 text-sm">領先指標評估 • 即時結果</p>
@@ -85,7 +85,7 @@ export default function HomePage() {
       {/* 真誠區塊 - 6年實驗數據 */}
       <div className="my-20 max-w-4xl mx-auto" style={{borderLeft: '4px solid #8B7355', paddingLeft: '2rem', backgroundColor: 'rgba(139, 115, 85, 0.03)', padding: '2rem 2rem 2rem 3rem', borderRadius: '0.5rem'}}>
         <div className="flex items-start gap-4 mb-4">
-          <span className="text-5xl">📊</span>
+          <div className="w-12 h-12 rounded-full border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold text-sm flex-shrink-0">DATA</div>
           <div>
             <h3 className="text-2xl font-semibold mb-3" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>6年個人實驗數據</h3>
             <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
@@ -103,7 +103,7 @@ export default function HomePage() {
         <h3 className="text-3xl font-semibold mb-16 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>核心能力</h3>
         <div className="grid md:grid-cols-3 gap-16">
           <div className="text-center">
-            <div className="text-4xl mb-6" style={{color: '#8B7355'}}>🎓</div>
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold text-xs">CSCS</div>
             <h4 className="text-xl font-medium mb-4" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>CSCS 認證<br />運動醫學背景</h4>
             <p className="text-gray-600 leading-relaxed text-[15px]">
               高雄醫學大學運動醫學系畢業，CSCS 國際認證體能教練。懂解剖學、生物力學。
@@ -111,7 +111,7 @@ export default function HomePage() {
           </div>
 
           <div className="text-center">
-            <div className="text-4xl mb-6" style={{color: '#8B7355'}}>🔬</div>
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold text-xs">系統</div>
             <h4 className="text-xl font-medium mb-4" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>系統化<br />訓練方法</h4>
             <p className="text-gray-600 leading-relaxed text-[15px]">
               整合訓練、營養、恢復的完整系統。不是單純帶練，而是建立長期健康習慣。
@@ -119,7 +119,7 @@ export default function HomePage() {
           </div>
 
           <div className="text-center">
-            <div className="text-4xl mb-6" style={{color: '#8B7355'}}>📈</div>
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold text-xs">數據</div>
             <h4 className="text-xl font-medium mb-4" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>數據驅動<br />持續優化</h4>
             <p className="text-gray-600 leading-relaxed text-[15px]">
               不靠感覺，靠數據說話。定期追蹤進度，根據反應調整協定。
@@ -132,15 +132,18 @@ export default function HomePage() {
         <h3 className="text-2xl font-semibold mb-8 text-center">從這裡開始</h3>
         <div className="action-grid">
           <Link href="/diagnosis" className="action-card">
-            <h4>� 系統診斷</h4>
+            <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xs mb-3">01</div>
+            <h4>系統診斷</h4>
             <p>4 個問題，快速評估你的健康風險</p>
           </Link>
           <Link href="/case" className="action-card">
-            <h4>📊 個案追蹤</h4>
+            <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xs mb-3">02</div>
+            <h4>個案追蹤</h4>
             <p>看看我如何從系統崩潰到完全重生</p>
           </Link>
           <Link href="/faq" className="action-card">
-            <h4>💬 常見問題</h4>
+            <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xs mb-3">03</div>
+            <h4>常見問題</h4>
             <p>關於訓練、營養的常見疑問</p>
           </Link>
         </div>

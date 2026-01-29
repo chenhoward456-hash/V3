@@ -100,8 +100,8 @@ export default function ActionPage() {
 
         <div className="mt-12 pt-8 border-t border-gray-300">
           <p className="text-gray-500 text-sm leading-relaxed">
-            📍 Coolday Fitness 北屯館<br />
-            🎓 教練主管 Howard Chen • CSCS 認證
+            <strong>地點：</strong>Coolday Fitness 北屯館<br />
+            <strong>教練：</strong>Howard Chen • CSCS 認證
           </p>
         </div>
       </div>
@@ -121,28 +121,28 @@ export default function ActionPage() {
         <h3 className="text-2xl font-semibold mb-8 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>預約前的常見疑問</h3>
         
         <div className="space-y-6">
-          <div className="border-l-4 border-gray-300 pl-6 py-2">
+          <div className="border-l-4 border-gray-900 pl-6 py-2">
             <h4 className="font-semibold mb-2" style={{color: '#2D2D2D'}}>評估需要多久時間？</h4>
             <p className="text-gray-600 text-sm leading-relaxed">
               初次評估約 60-90 分鐘，包含體態評估、動作能力測試、訓練目標討論。
             </p>
           </div>
 
-          <div className="border-l-4 border-gray-300 pl-6 py-2">
+          <div className="border-l-4 border-gray-900 pl-6 py-2">
             <h4 className="font-semibold mb-2" style={{color: '#2D2D2D'}}>一定要去現場嗎？</h4>
             <p className="text-gray-600 text-sm leading-relaxed">
               是的，初次評估需要現場進行，才能準確評估你的動作模式與體態。後續訓練可討論線上或現場。
             </p>
           </div>
 
-          <div className="border-l-4 border-gray-300 pl-6 py-2">
+          <div className="border-l-4 border-gray-900 pl-6 py-2">
             <h4 className="font-semibold mb-2" style={{color: '#2D2D2D'}}>費用如何計算？</h4>
             <p className="text-gray-600 text-sm leading-relaxed">
               初次諮詢免費。正式訓練計畫會根據你的目標與需求客製化報價，透過 LINE 詳談。
             </p>
           </div>
 
-          <div className="border-l-4 border-gray-300 pl-6 py-2">
+          <div className="border-l-4 border-gray-900 pl-6 py-2">
             <h4 className="font-semibold mb-2" style={{color: '#2D2D2D'}}>我是完全新手，也適合嗎？</h4>
             <p className="text-gray-600 text-sm leading-relaxed">
               非常適合！我會從基礎動作開始教學，確保你建立正確的動作模式，避免運動傷害。
