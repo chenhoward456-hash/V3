@@ -2,12 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Howard Chen - 台中 CSCS 體能教練',
-  description: 'Howard Chen，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。整合肌力訓練與營養優化。',
-  openGraph: {
-    title: 'Howard Chen - 台中 CSCS 體能教練',
-    description: '整合肌力訓練與營養優化的系統化訓練指導',
-  },
+  title: 'Howard - 台中北屯 CSCS 體能教練 | Coolday Fitness 教練主管',
+  description: 'Howard，Coolday Fitness 北屯館教練主管，CSCS 認證體能教練。專精肌力訓練、代謝優化、營養調整。台中北屯一對一客製化訓練指導。',
 }
 
 export default function HomePage() {
@@ -17,7 +13,7 @@ export default function HomePage() {
       <div className="flex justify-center mb-8">
         <img 
           src="/howard-profile.jpg" 
-          alt="Howard" 
+          alt="Howard - Coolday Fitness 北屯館教練主管，CSCS 認證體能教練" 
           className="rounded-full"
           style={{
             width: '120px',
