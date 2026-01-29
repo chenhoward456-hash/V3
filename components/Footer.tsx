@@ -2,25 +2,6 @@ export default function Footer() {
   return (
     <footer style={{backgroundColor: '#F9F9F7'}} className="border-t border-gray-200 mt-20">
       <div className="max-w-5xl mx-auto px-6 py-12">
-        {/* 免責聲明 - 簡化設計 */}
-        <div style={{backgroundColor: 'rgba(139, 115, 85, 0.03)'}} className="rounded-lg p-5 mb-8">
-          <h3 className="text-gray-600 font-medium text-sm mb-3">⚠️ 免責聲明</h3>
-          <div className="text-gray-500 text-xs leading-relaxed space-y-1.5">
-            <p>
-              本網站內容僅供教育與資訊分享之用，不構成任何醫療建議、診斷或治療方案。
-            </p>
-            <p>
-              所有訓練、營養與補劑建議均基於個人經驗與研究，不應取代專業醫療人員的意見。
-            </p>
-            <p>
-              在開始任何訓練計畫、飲食調整或補劑使用前，請務必諮詢合格的醫師、營養師或運動專業人員。
-            </p>
-            <p>
-              個案追蹤結果為個人經驗，不保證適用於所有人。每個人的身體狀況、基因、生活型態皆不相同，效果因人而異。
-            </p>
-          </div>
-        </div>
-
         {/* 聯絡資訊 */}
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           <div>
@@ -76,6 +57,9 @@ export default function Footer() {
         <div className="border-t border-border pt-6 text-center text-text-muted text-sm">
           <p>© {new Date().getFullYear()} The Howard Protocol. All rights reserved.</p>
           <p className="mt-2">本網站內容受著作權法保護，未經授權不得轉載或商業使用。</p>
+          <p className="mt-4 text-xs text-gray-400">
+            本網站內容僅供教育與資訊分享，不構成醫療建議。如有健康疑慮請諮詢專業醫療人員。
+          </p>
         </div>
       </div>
     </footer>
