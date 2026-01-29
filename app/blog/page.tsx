@@ -17,6 +17,15 @@ interface BlogPost {
 // 文章列表（之後可以從檔案系統讀取）
 const blogPosts: BlogPost[] = [
   {
+    id: '4',
+    title: '女生必看！月經週期是你的減脂作弊碼：順著週期練才會瘦',
+    description: '女性荷爾蒙波動極大，不懂得順著週期練，只是在跟自己的內分泌打架。分享如何利用濾泡期和黃體期優化訓練效果。',
+    date: '2026-01-30',
+    category: '訓練方法',
+    readTime: '6 分鐘',
+    slug: 'female-menstrual-cycle-training'
+  },
+  {
     id: '3',
     title: '為什麼你睡 8 小時還是累？HRV 告訴你睡眠品質的真相',
     description: '睡眠時間不等於睡眠品質。透過追蹤 HRV（心率變異度），我將睡眠品質從紅燈變綠燈，分享 3 個實測有效的習慣。',
