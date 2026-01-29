@@ -43,15 +43,6 @@ const blogPosts: BlogPost[] = [
     readTime: '6 分鐘',
     slug: 'testosterone-optimization-3-months'
   },
-  {
-    id: '1',
-    title: '我如何從 HbA1c 5.9% 優化到 5.1%：6年代謝優化實驗',
-    description: '分享我從 2020 年系統崩潰到 2026 年完全重生的血糖優化旅程。這不是醫療建議，而是個人實驗紀錄。',
-    date: '2026-01-29',
-    category: '血檢優化',
-    readTime: '8 分鐘',
-    slug: 'hba1c-optimization-journey'
-  },
   // 更多文章會在這裡新增
 ]
 

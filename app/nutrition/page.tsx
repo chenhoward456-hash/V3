@@ -28,9 +28,9 @@ export default function NutritionPage() {
             </p>
             <div className="grid md:grid-cols-3 gap-6 mt-6">
               <div className="bg-white p-4 rounded-xl border border-gray-200">
-                <p className="text-gray-400 text-xs mb-1">HbA1c</p>
-                <p className="text-2xl font-bold" style={{color: '#2D2D2D'}}>5.9% → 5.1%</p>
-                <p className="text-gray-500 text-xs mt-1">代謝優化</p>
+                <p className="text-gray-400 text-xs mb-1">同半胱氨酸</p>
+                <p className="text-2xl font-bold" style={{color: '#2D2D2D'}}>15 → 9</p>
+                <p className="text-gray-500 text-xs mt-1">μmol/L 心血管風險</p>
               </div>
               <div className="bg-white p-4 rounded-xl border border-gray-200">
                 <p className="text-gray-400 text-xs mb-1">睪固酮</p>
@@ -74,7 +74,7 @@ export default function NutritionPage() {
             </div>
             <div className="mt-6 text-gray-600 text-sm leading-relaxed">
               <strong className="block mb-2">效果：</strong>
-              HbA1c 從 5.9% 降到 5.1%，體脂從 18% 降到 12%。
+              體脂從 18% 降到 12%，代謝靈活性明顯提升。
             </div>
           </div>
 
