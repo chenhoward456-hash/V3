@@ -11,103 +11,154 @@ export const metadata: Metadata = {
 
 export default function NutritionPage() {
   return (
-    <section className="section-container">
-      <h2 className="doc-title">營養與恢復</h2>
-      <p className="doc-subtitle">訓練只是刺激，真正的成長發生在休息與營養補充階段。</p>
+    <section className="section-container" style={{backgroundColor: '#F9F9F7'}}>
+      <h2 className="doc-title" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>The Howard Nutrition Protocol</h2>
+      <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
+        我不相信「乾淨飲食」。我用數據追蹤代謝，用血檢驗證效果。這是我 6 年的優化旅程。
+      </p>
 
-      <div className="bg-success/5 border-2 border-success/30 rounded-xl p-6 mb-8">
-        <p className="text-text-secondary text-sm leading-relaxed">
-          🥗 <strong>營養策略分享</strong>：以下內容為個人研究與實踐經驗。任何飲食調整或補劑使用前，請先諮詢營養師或醫師，確保適合您的健康狀況。
-        </p>
-      </div>
-
-      <div className="protocol-card">
-        <span className="tag blue">化學層 | Chemistry</span>
-        <h3 className="text-2xl mb-4 font-bold">⚡ 代謝靈活性優化</h3>
-        <p className="mb-6 text-text-secondary">
-          人體就像油電混合車。目標不是單純的「少吃」，而是教會身體如何根據當下需求，自由切換「燃糖」或「燃脂」模式。
-        </p>
-        
-        <div className="code-block">
-          <span className="code-label">燃料控制策略</span>
-          <div className="leading-loose">
-            <strong>1. 碳水循環 (Carb Cycling)</strong><br />
-            • <strong>高碳日 (訓練日)</strong>：攝取澱粉回填肝醣，最大化肌肉合成。<br />
-            • <strong>低碳日 (休息日)</strong>：限制碳水 &lt; 50g，強迫身體燃燒脂肪作為燃料。<br /><br />
-            
-            <strong>2. 間歇性斷食 (Intermittent Fasting)</strong><br />
-            將進食窗口壓縮在 8 小時內 (12pm-8pm)。<br />
-            目的不是餓肚子，而是降低基礎胰島素水平，重啟細胞自噬 (Autophagy)。<br /><br />
-            
-            <strong>3. [外掛] 酒精防禦協議</strong><br />
-            應酬是不可避免的社交。執行以下三步驟，最小化酒精對睪固酮的打擊：<br />
-            • <strong>脂質前導</strong>：喝酒前 30 分鐘先吃高脂食物（橄欖油、堅果、酪梨），減緩酒精吸收速度<br />
-            • <strong>水分稀釋</strong>：每杯酒配一杯水，降低血液酒精濃度<br />
-            • <strong>B 群修復</strong>：隔天早上補充 B 群 + NAC（N-乙醯半胱氨酸），加速肝臟代謝
+      {/* 血檢數據優化旅程 */}
+      <div className="my-20 max-w-4xl mx-auto" style={{borderLeft: '4px solid #8B7355', paddingLeft: '2rem', backgroundColor: 'rgba(139, 115, 85, 0.03)', padding: '2rem 2rem 2rem 3rem', borderRadius: '0.5rem'}}>
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-12 h-12 rounded-full border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold text-sm flex-shrink-0">DATA</div>
+          <div>
+            <h3 className="text-2xl font-semibold mb-3" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>我的血檢優化旅程</h3>
+            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
+              2020 年系統崩潰後，我開始用血檢數據追蹤身體變化。6 年來，我記錄了每一次調整、每一個數據變化。
+            </p>
+            <div className="grid md:grid-cols-3 gap-6 mt-6">
+              <div className="bg-white p-4 rounded-xl border border-gray-200">
+                <p className="text-gray-400 text-xs mb-1">HbA1c</p>
+                <p className="text-2xl font-bold" style={{color: '#2D2D2D'}}>5.9% → 5.1%</p>
+                <p className="text-gray-500 text-xs mt-1">代謝優化</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-gray-200">
+                <p className="text-gray-400 text-xs mb-1">睪固酮</p>
+                <p className="text-2xl font-bold" style={{color: '#2D2D2D'}}>515 → 625</p>
+                <p className="text-gray-500 text-xs mt-1">ng/dL</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-gray-200">
+                <p className="text-gray-400 text-xs mb-1">CRP</p>
+                <p className="text-2xl font-bold" style={{color: '#2D2D2D'}}>2.5 → 0.8</p>
+                <p className="text-gray-500 text-xs mt-1">mg/L 發炎指標</p>
+              </div>
+            </div>
+            <p className="italic text-gray-500 text-sm leading-relaxed mt-6" style={{fontFamily: 'Georgia, serif'}}>
+              「數據不會說謊。每一個改變都有跡可循。」
+            </p>
           </div>
-        </div>
-
-        <div className="bg-primary/8 p-6 rounded-xl border-l-4 border-primary mt-6">
-          <strong className="text-primary block mb-2 text-sm">💡 工程師思維</strong>
-          <span className="text-text-secondary text-sm leading-relaxed">
-            大多數人的代謝是「卡死」的（只能燃糖，一餓就手抖）。<br />
-            這套協議是為了修復你的<strong>代謝開關</strong>，讓你即使在靜態工作時，也能高效燃脂。
-          </span>
         </div>
       </div>
 
-      <div className="protocol-card">
-        <span className="tag green">個人經驗</span>
-        <h3 className="text-2xl mb-4 font-bold">🧬 甲基化支持（個人經驗）</h3>
-        <p className="mb-6 text-text-secondary">
-          我個人使用活性 B 群與 TMG 後，感覺精神狀態與恢復能力有改善。<br />
-          這只是個人經驗分享，不是醫療建議。
-        </p>
-        
-        <div className="code-block">
-          <span className="code-label">我的補劑組合</span>
-          <div className="leading-loose">
-            • <strong>活性 B 群</strong>（含 Methylfolate、Methylcobalamin）<br />
-            • <strong>TMG (甜菜鹼)</strong>
+      {/* 三大營養策略 */}
+      <div className="my-24 max-w-5xl mx-auto">
+        <h3 className="text-3xl font-semibold mb-16 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>三大營養策略</h3>
+        <div className="space-y-12">
+          
+          {/* 策略 1 */}
+          <div className="bg-white rounded-2xl p-10 border-2 border-gray-200" style={{boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)'}}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm">01</div>
+              <h4 className="text-2xl font-semibold" style={{color: '#2D2D2D'}}>代謝靈活性：碳水循環</h4>
+            </div>
+            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
+              人體就像油電混合車。目標不是「少吃」，而是教會身體自由切換「燃糖」或「燃脂」模式。
+            </p>
+            <div className="bg-gray-50 p-6 rounded-xl mt-4">
+              <p className="text-gray-700 text-sm leading-relaxed mb-3"><strong>我的做法：</strong></p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                • 訓練日：攝取 200-250g 碳水（地瓜、白飯）<br />
+                • 休息日：限制碳水少於 50g，增加好油<br />
+                • 間歇性斷食：進食窗口 12pm-8pm
+              </p>
+            </div>
+            <div className="mt-6 text-gray-600 text-sm leading-relaxed">
+              <strong className="block mb-2">效果：</strong>
+              HbA1c 從 5.9% 降到 5.1%，體脂從 18% 降到 12%。
+            </div>
           </div>
-        </div>
 
-        <div className="bg-warning/8 p-6 rounded-xl border-l-4 border-warning mt-6">
-          <strong className="text-warning block mb-2 text-sm">⚠️ 重要提醒</strong>
-          <span className="text-text-secondary text-sm leading-relaxed">
-            • 這只是個人經驗分享，不是醫療建議<br />
-            • 補劑使用前請諮詢醫師或營養師<br />
-            • 每個人體質不同，效果因人而異
-          </span>
+          
+          {/* 策略 2 */}
+          <div className="bg-white rounded-2xl p-10 border-2 border-gray-200" style={{boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)'}}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm">02</div>
+              <h4 className="text-2xl font-semibold" style={{color: '#2D2D2D'}}>補劑使用：個人經驗分享</h4>
+            </div>
+            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
+              我個人使用這些補劑後，感覺精神狀態與恢復能力有改善。這只是個人經驗，不是醫療建議。
+            </p>
+            <div className="bg-gray-50 p-6 rounded-xl mt-4">
+              <p className="text-gray-700 text-sm leading-relaxed mb-3"><strong>我的補劑組合：</strong></p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                • 維生素 D3 5000 IU（每天）<br />
+                • Omega-3 2000mg（降低 CRP）<br />
+                • 活性 B 群（Methylfolate、Methylcobalamin）<br />
+                • 鎂 300mg + 甘氨酸 3g（睡前）
+              </p>
+            </div>
+            <div className="mt-6 bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+              <p className="text-yellow-800 text-xs leading-relaxed">
+                <strong>重要提醒：</strong>這只是個人經驗分享，不是醫療建議。補劑使用前請諮詢醫師或營養師。
+              </p>
+            </div>
+          </div>
+
+          
+          {/* 策略 3 */}
+          <div className="bg-white rounded-2xl p-10 border-2 border-gray-200" style={{boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)'}}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm">03</div>
+              <h4 className="text-2xl font-semibold" style={{color: '#2D2D2D'}}>睡眠優化：HRV 追蹤</h4>
+            </div>
+            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
+              睡眠是肌肉生長與荷爾蒙分泌的黃金時間。我用 HRV（心率變異度）追蹤恢復狀態。
+            </p>
+            <div className="bg-gray-50 p-6 rounded-xl mt-4">
+              <p className="text-gray-700 text-sm leading-relaxed mb-3"><strong>我的睡眠協議：</strong></p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                • 目標睡眠時間：7-9 小時<br />
+                • 睡前 2 小時避免藍光<br />
+                • 咖啡因截止時間：下午 2 點<br />
+                • 睡前補劑：鎂 + 甘氨酸<br />
+                • 用 Oura Ring 追蹤 HRV
+              </p>
+            </div>
+            <div className="mt-6 text-gray-600 text-sm leading-relaxed">
+              <strong className="block mb-2">效果：</strong>
+              HRV 從平均 45ms 提升到 65ms，睡眠品質明顯改善。
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="protocol-card">
-        <span className="tag orange">恢復協議</span>
-        <h3 className="text-2xl mb-4 font-bold">😴 睡眠優化指南</h3>
-        <p className="mb-6 text-text-secondary">
-          睡眠是肌肉生長與荷爾蒙分泌的黃金時間。<br />
-          睡不好，訓練再努力也是白費。
+      {/* CTA 區塊 */}
+      <div className="my-20 text-center max-w-3xl mx-auto">
+        <h3 className="text-3xl mb-6 font-semibold" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>想看完整數據？</h3>
+        <p className="text-gray-600 mb-8 leading-relaxed">
+          我在部落格分享完整的血檢數據和優化過程。
         </p>
-        
-        <div className="code-block">
-          <span className="code-label">睡眠檢查清單</span>
-          <div className="leading-loose">
-            ✓ <strong>目標睡眠時間</strong>：7-9 小時<br />
-            ✓ <strong>環境溫度</strong>：18-20°C（涼爽環境有助深度睡眠）<br />
-            ✓ <strong>睡前 2 小時</strong>：避免藍光（手機、電腦）<br />
-            ✓ <strong>咖啡因截止時間</strong>：下午 2 點後不攝取<br />
-            ✓ <strong>睡前補劑</strong>：鎂 300mg + 甘氨酸 3g
-          </div>
+        <div className="flex gap-4 justify-center mb-12">
+          <a
+            href="/blog"
+            className="inline-block px-8 py-3 rounded-full font-medium text-white transition-all hover:opacity-90"
+            style={{backgroundColor: '#2D2D2D', letterSpacing: '0.05em'}}
+          >
+            閱讀血檢優化文章
+          </a>
+          <a
+            href="https://lin.ee/dnbucVw"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block px-8 py-3 rounded-full font-medium border-2 transition-all hover:bg-gray-50"
+            style={{borderColor: '#2D2D2D', color: '#2D2D2D', letterSpacing: '0.05em'}}
+          >
+            預約營養諮詢
+          </a>
         </div>
-
-        <div className="bg-secondary/8 p-6 rounded-xl border-l-4 border-secondary mt-6">
-          <strong className="text-secondary block mb-2 text-sm">💤 進階追蹤</strong>
-          <span className="text-text-secondary text-sm leading-relaxed">
-            使用 Oura Ring 或 Whoop 追蹤 HRV（心率變異度）。<br />
-            HRV 下降 = 恢復不足，建議降低訓練強度或增加休息日。
-          </span>
-        </div>
+        <p className="text-gray-400 text-sm">
+          個人經驗分享 • 不構成醫療建議
+        </p>
       </div>
     </section>
   )

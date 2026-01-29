@@ -11,139 +11,166 @@ export const metadata: Metadata = {
 
 export default function TrainingPage() {
   return (
-    <section className="section-container">
-      <h2 className="doc-title">訓練工程</h2>
-      <p className="doc-subtitle">肌力訓練不是「練得累」就有效。這三個原則決定你的訓練品質。</p>
+    <section className="section-container" style={{backgroundColor: '#F9F9F7'}}>
+      <h2 className="doc-title" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>The Howard Training System</h2>
+      <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
+        我不用傳統的「胸背腿」分化。我的訓練系統建立在結構優化、神經適應和數據追蹤之上。
+      </p>
 
-      <div className="bg-primary/5 border-2 border-primary/30 rounded-xl p-6 mb-8">
-        <p className="text-text-secondary text-sm leading-relaxed">
-          💡 <strong>訓練原則分享</strong>：以下內容基於運動科學研究與個人訓練經驗。開始任何訓練計畫前，建議先諮詢專業教練或醫療人員評估身體狀況。
-        </p>
-      </div>
-
-      <div className="protocol-card">
-        <span className="tag blue">訓練原則 1</span>
-        <h3 className="text-2xl mb-4 font-bold">🔧 機械張力 (Mechanical Tension)</h3>
-        <p className="mb-6 text-text-secondary">
-          肌肉生長的根本原因是「物理刺激」，不是疲勞感或痠痛。<br />
-          關鍵在於：給予肌肉足夠的負荷，並逐步增加這個負荷。
-        </p>
-        
-        <div className="code-block">
-          <span className="code-label">實踐方法</span>
-          <div className="leading-loose">
-            <strong>1. 漸進式超負荷 (Progressive Overload)</strong><br />
-            每週嘗試增加重量、次數或組數。不要總是用同樣的重量練習。<br /><br />
-            
-            <strong>2. 動作幅度 (Range of Motion)</strong><br />
-            完整的動作範圍 = 更大的機械張力。半蹲不如全蹲有效。<br /><br />
-            
-            <strong>3. 時間張力 (Time Under Tension)</strong><br />
-            控制動作速度，特別是離心階段（下降）。3 秒下降比自由落體有效。
+      {/* 個人訓練哲學 */}
+      <div className="my-20 max-w-4xl mx-auto" style={{borderLeft: '4px solid #2D2D2D', paddingLeft: '2rem', backgroundColor: 'rgba(45, 45, 45, 0.03)', padding: '2rem 2rem 2rem 3rem', borderRadius: '0.5rem'}}>
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">WHY</div>
+          <div>
+            <h3 className="text-2xl font-semibold mb-3" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>我的訓練哲學</h3>
+            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
+              2020 年，我的身體系統崩潰。當時我以為「練得越累越有效」，結果換來慢性發炎、掉髮、睡眠障礙。
+            </p>
+            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
+              後來我發現問題不在訓練量，而在<strong>結構失衡</strong>。肋骨外翻導致核心無法穩定，再多的腹肌訓練都是白費。
+            </p>
+            <p className="italic text-gray-500 text-sm leading-relaxed" style={{fontFamily: 'Georgia, serif'}}>
+              「真正的訓練，是先修復結構，再談負荷。」
+            </p>
           </div>
-        </div>
-
-        <div className="bg-primary/8 p-6 rounded-xl border-l-4 border-primary mt-6">
-          <strong className="text-primary block mb-2 text-sm">💡 訓練建議</strong>
-          <span className="text-text-secondary text-sm leading-relaxed">
-            新手優先追求重量進步（每週 +2.5kg）。<br />
-            中階者可用組數/次數增加（例如從 3x8 進步到 3x10）。<br />
-            進階者需要更複雜的週期化設計。
-          </span>
         </div>
       </div>
 
-      <div className="protocol-card">
-        <span className="tag green">訓練原則 2</span>
-        <h3 className="text-2xl mb-4 font-bold">⚡ 神經適應 (Neural Adaptation)</h3>
-        <p className="mb-6 text-text-secondary">
-          初學者的力量進步主要來自「神經系統學習」，而非肌肉變大。<br />
-          大腦需要學會如何徵召更多肌纖維、更有效率地發力。
-        </p>
-        
-        <div className="code-block">
-          <span className="code-label">實踐方法</span>
-          <div className="leading-loose">
-            <strong>1. 動作模式優先 (Movement Pattern First)</strong><br />
-            學會正確的深蹲、硬舉、臥推模式，比追求重量更重要。<br /><br />
-            
-            <strong>2. RPE 自覺強度管理</strong><br />
-            用 RPE 1-10 量表評估訓練強度。新手建議停在 RPE 7-8（還能做 2-3 下）。<br /><br />
-            
-            <strong>3. 頻率 &gt; 單次訓練量</strong><br />
-            同一個動作一週練 2-3 次，比一次練爆更有效（神經需要重複刺激）。
+      {/* 三大核心原則 */}
+      <div className="my-24 max-w-5xl mx-auto">
+        <h3 className="text-3xl font-semibold mb-16 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>三大核心原則</h3>
+        <div className="space-y-12">
+          
+          {/* 原則 1 */}
+          <div className="bg-white rounded-2xl p-10 border-2 border-gray-200" style={{boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)'}}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm">01</div>
+              <h4 className="text-2xl font-semibold" style={{color: '#2D2D2D'}}>結構優先：ZOA 呼吸力學</h4>
+            </div>
+            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
+              如果肋骨外翻，橫膈膜無法與骨盆底肌平行對齊，核心就失去剛性。再多的棒式、捲腹都無法解決問題。
+            </p>
+            <div className="bg-gray-50 p-6 rounded-xl mt-4">
+              <p className="text-gray-700 text-sm leading-relaxed mb-3"><strong>什麼是 ZOA？</strong></p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Zone of Apposition（對位區）：橫膈膜與肋骨接觸的區域。當 ZOA 最大化時，核心才能產生真正的穩定性。
+              </p>
+            </div>
+            <div className="mt-6 text-gray-600 text-sm leading-relaxed">
+              <strong className="block mb-2">我的做法：</strong>
+              • 每次訓練前先做 5 分鐘呼吸矯正<br />
+              • 吐氣時將肋骨下沈，建立 IAP（腹內壓）<br />
+              • 確保核心穩定後，才開始大重量訓練
+            </div>
           </div>
-        </div>
 
-        <div className="bg-success/8 p-6 rounded-xl border-l-4 border-success mt-6">
-          <strong className="text-success block mb-2 text-sm">✓ 新手福利期</strong>
-          <span className="text-text-secondary text-sm leading-relaxed">
-            訓練 0-6 個月的新手，力量可以每週進步。這是神經適應的黃金期。<br />
-            不要浪費這段時間在花式動作上，專注在基本多關節動作（深蹲、硬舉、臥推、划船）。
-          </span>
+          
+          {/* 原則 2 */}
+          <div className="bg-white rounded-2xl p-10 border-2 border-gray-200" style={{boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)'}}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm">02</div>
+              <h4 className="text-2xl font-semibold" style={{color: '#2D2D2D'}}>神經適應：動作模式優先</h4>
+            </div>
+            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
+              新手的力量進步 80% 來自神經系統學習，不是肌肉變大。大腦需要學會如何徵召更多肌纖維。
+            </p>
+            <div className="bg-gray-50 p-6 rounded-xl mt-4">
+              <p className="text-gray-700 text-sm leading-relaxed mb-3"><strong>為什麼不追求重量？</strong></p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                錯誤的動作模式 + 大重量 = 受傷。先學會正確的深蹲、硬舉模式，力量自然會進步。
+              </p>
+            </div>
+            <div className="mt-6 text-gray-600 text-sm leading-relaxed">
+              <strong className="block mb-2">我的做法：</strong>
+              • 用 RPE 7-8 訓練（還能做 2-3 下）<br />
+              • 同一動作每週練 2-3 次（頻率大於單次訓練量）<br />
+              • 每週嘗試增加 2.5kg 或 1-2 次
+            </div>
+          </div>
+
+          
+          {/* 原則 3 */}
+          <div className="bg-white rounded-2xl p-10 border-2 border-gray-200" style={{boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)'}}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm">03</div>
+              <h4 className="text-2xl font-semibold" style={{color: '#2D2D2D'}}>數據追蹤：漸進式超負荷</h4>
+            </div>
+            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
+              不靠感覺，靠數據說話。每次訓練都記錄重量、次數、RPE，確保持續進步。
+            </p>
+            <div className="bg-gray-50 p-6 rounded-xl mt-4">
+              <p className="text-gray-700 text-sm leading-relaxed mb-3"><strong>什麼是漸進式超負荷？</strong></p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                每週嘗試增加負荷（重量、次數或組數）。這是肌肉生長的唯一途徑。
+              </p>
+            </div>
+            <div className="mt-6 text-gray-600 text-sm leading-relaxed">
+              <strong className="block mb-2">我的做法：</strong>
+              • 用 Google Sheets 記錄每次訓練<br />
+              • 追蹤深蹲、硬舉、臥推的 1RM<br />
+              • 每 4 週檢視進步幅度，調整計畫
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="protocol-card">
-        <span className="tag orange">訓練原則 3</span>
-        <h3 className="text-2xl mb-4 font-bold">⚖️ 結構優化 (Structural Optimization)</h3>
-        <p className="mb-6 text-text-secondary">
-          真正的平衡不是「推拉比例」，而是「肋骨」與「骨盆」的相對關係。<br />
-          如果喪失了 <strong>ZOA (Zone of Apposition)</strong>，核心將失去剛性，導致代償與疼痛。
-        </p>
+      {/* 我的訓練演變 */}
+      <div className="my-20 max-w-4xl mx-auto">
+        <h3 className="text-3xl font-semibold mb-12 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>我的訓練演變</h3>
         
-        <div className="code-block">
-          <span className="code-label">工程實踐</span>
-          <div className="leading-loose">
-            <strong>1. 重建 ZOA (Zone of Apposition)</strong><br />
-            修正肋骨外翻，讓橫膈膜與骨盆底肌平行對齊。這是核心剛性與脊椎穩定的唯一來源。<br /><br />
-            
-            <strong>2. 360° 呼吸力學</strong><br />
-            停止頸式呼吸。建立能在負重下維持的 IAP (腹內壓)，由內而外撐起脊椎。<br /><br />
-            
-            <strong>3. 近端穩定，遠端活動</strong><br />
-            先鎖定中軸 (Ribcage/Pelvis)，四肢的活動度 (Mobility) 自然會解鎖。
+        <div className="space-y-8">
+          <div className="border-l-4 border-gray-900 pl-8 py-4">
+            <p className="text-gray-400 text-sm mb-2">2020 年</p>
+            <h4 className="text-xl font-semibold mb-3" style={{color: '#2D2D2D'}}>系統崩潰期</h4>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              每天練 2 小時，追求「練到力竭」。結果換來慢性發炎、掉髮、睡眠障礙。當時不知道問題出在肋骨外翻和過度訓練。
+            </p>
           </div>
-        </div>
 
-        <div className="bg-secondary/8 p-6 rounded-xl border-l-4 border-secondary mt-6">
-          <strong className="text-secondary block mb-2 text-sm">⚠️ 常見系統錯誤</strong>
-          <span className="text-text-secondary text-sm leading-relaxed">
-            拼命練核心卻還是腰痠？因為肋骨外翻導致橫膈膜無法穩定脊椎。<br />
-            <strong>解法：</strong>先學會吐氣將肋骨下沈，再談大重量訓練。
-          </span>
+          <div className="border-l-4 border-gray-900 pl-8 py-4">
+            <p className="text-gray-400 text-sm mb-2">2023 年</p>
+            <h4 className="text-xl font-semibold mb-3" style={{color: '#2D2D2D'}}>發現 ZOA 的轉折點</h4>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              接觸 PRI（Postural Restoration Institute）呼吸力學後，才發現核心問題在結構失衡。開始每次訓練前做呼吸矯正，腰痛問題在 2 週內改善。
+            </p>
+          </div>
+
+          <div className="border-l-4 border-gray-900 pl-8 py-4">
+            <p className="text-gray-400 text-sm mb-2">2026 年</p>
+            <h4 className="text-xl font-semibold mb-3" style={{color: '#2D2D2D'}}>現在的訓練模式</h4>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              每週 3-4 次訓練，每次 60-90 分鐘。專注在深蹲、硬舉、臥推三大動作。用 RPE 管理強度，追蹤數據，持續進步。
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white border-2 border-border p-10 rounded-2xl mt-12">
-        <h3 className="mb-6 text-text-primary text-[1.3rem] font-bold">📋 新手訓練範本（週 3 次全身）</h3>
-        
-        <div className="bg-bg-tertiary p-6 rounded-xl mb-6">
-          <strong className="block mb-3 text-text-primary">Day A - 推為主</strong>
-          <div className="text-text-secondary leading-loose text-[15px]">
-            1. 深蹲 3x8 (RPE 7-8)<br />
-            2. 臥推 3x8<br />
-            3. 啞鈴肩推 3x10<br />
-            4. 划船 3x12 (拉動作補償)<br />
-            5. 核心訓練
-          </div>
+      {/* CTA 區塊 */}
+      <div className="my-20 text-center max-w-3xl mx-auto">
+        <h3 className="text-3xl mb-6 font-semibold" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>想了解更多？</h3>
+        <p className="text-gray-600 mb-8 leading-relaxed">
+          我在部落格分享更多訓練心得和實戰經驗。
+        </p>
+        <div className="flex gap-4 justify-center mb-12">
+          <a
+            href="/blog"
+            className="inline-block px-8 py-3 rounded-full font-medium text-white transition-all hover:opacity-90"
+            style={{backgroundColor: '#2D2D2D', letterSpacing: '0.05em'}}
+          >
+            閱讀部落格文章
+          </a>
+          <a
+            href="https://lin.ee/dnbucVw"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block px-8 py-3 rounded-full font-medium border-2 transition-all hover:bg-gray-50"
+            style={{borderColor: '#2D2D2D', color: '#2D2D2D', letterSpacing: '0.05em'}}
+          >
+            預約訓練評估
+          </a>
         </div>
-
-        <div className="bg-bg-tertiary p-6 rounded-xl">
-          <strong className="block mb-3 text-text-primary">Day B - 拉為主</strong>
-          <div className="text-text-secondary leading-loose text-[15px]">
-            1. 硬舉 3x5 (RPE 8)<br />
-            2. 引體向上 / 滑輪下拉 3x8<br />
-            3. 槓鈴划船 3x10<br />
-            4. 羅馬尼亞硬舉 3x10<br />
-            5. 面拉 3x15 (矯正圓肩)
-          </div>
-        </div>
-
-        <p className="mt-6 text-text-muted text-sm leading-relaxed">
-          * 週一 Day A、週三 Day B、週五 Day A，下週輪替<br />
-          * 每週嘗試增加重量或次數（漸進式超負荷）<br />
-          * 動作品質優先，不要為了重量犧牲姿勢
+        <p className="text-gray-400 text-sm">
+          Coolday Fitness 北屯館 • 一對一訓練指導
         </p>
       </div>
     </section>
