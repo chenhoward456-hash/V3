@@ -13,6 +13,21 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <section className="section-container" style={{backgroundColor: '#F9F9F7'}}>
+      {/* 個人頭像 - 適中大小 */}
+      <div className="flex justify-center mb-8">
+        <img 
+          src="/howard-profile.jpg" 
+          alt="Howard" 
+          className="rounded-full"
+          style={{
+            width: '120px',
+            height: '120px',
+            objectFit: 'cover',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+          }}
+        />
+      </div>
+
       <h1 className="doc-title" style={{color: '#2D2D2D', letterSpacing: '0.08em', lineHeight: '1.3'}}>
         <span style={{fontSize: '0.6em', fontWeight: 'normal', display: 'block', marginBottom: '1rem', letterSpacing: '0.02em'}}>從系統崩潰到完全重生</span>
         <span style={{color: '#2D2D2D'}}>The Howard Protocol</span>
