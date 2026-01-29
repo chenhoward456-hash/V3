@@ -7,11 +7,10 @@ import { useState } from 'react'
 const navItems = [
   { label: '關於我', href: '/' },
   { label: '系統診斷', href: '/diagnosis' },
+  { label: '知識分享', href: '/blog' },
   { label: '個案追蹤', href: '/case' },
   { label: '訓練工程', href: '/training' },
   { label: '營養恢復', href: '/nutrition' },
-  { label: '工具資源', href: '/tools' },
-  { label: '常見問題', href: '/faq' },
   { label: '預約諮詢', href: '/action' },
 ]
 
