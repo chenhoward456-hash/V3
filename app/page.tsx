@@ -1,5 +1,40 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
+
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Howard Chen',
+  alternateName: 'Howard',
+  jobTitle: 'CSCS 認證體能教練',
+  description: '台中北屯 CSCS 體能教練，專精肌力訓練、代謝優化、營養調整',
+  url: 'https://howard456.vercel.app',
+  image: 'https://howard456.vercel.app/howard-profile.jpg',
+  sameAs: [
+    'https://www.instagram.com/chenhoward/',
+    'https://lin.ee/dnbucVw',
+  ],
+  worksFor: {
+    '@type': 'Organization',
+    name: 'Coolday Fitness 北屯館',
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: '台中市',
+      addressRegion: '北屯區',
+      addressCountry: 'TW',
+    },
+  },
+  knowsAbout: [
+    '肌力訓練',
+    '體能訓練',
+    '代謝優化',
+    '營養優化',
+    '血檢優化',
+    '運動科學',
+    'CSCS',
+  ],
+}
 
 export const metadata: Metadata = {
   title: 'Howard - 台中北屯 CSCS 體能教練 | Coolday Fitness 教練主管',
@@ -8,8 +43,15 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <section className="section-container" style={{backgroundColor: '#F9F9F7'}}>
-      {/* 個人頭像 - 適中大小 */}
+    <>
+      {/* 結構化資料 */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
+      />
+      
+      <section className="section-container" style={{backgroundColor: '#F9F9F7'}}>
+        {/* 個人頭像 - 適中大小 */}
       <div className="flex justify-center mb-8">
         <img 
           src="/howard-profile.jpg" 
@@ -82,6 +124,25 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* 快速診斷區塊 */}
+      <div className="my-12 md:my-20 max-w-4xl mx-auto px-4" style={{backgroundColor: 'rgba(139, 115, 85, 0.05)', padding: '2rem md:3rem', borderRadius: '1.5rem', border: '2px solid rgba(139, 115, 85, 0.1)'}}>
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-12 h-12 rounded-full border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold text-sm flex-shrink-0">DATA</div>
+          <div>
+            <h3 className="text-2xl font-semibold mb-3" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>6年個人實驗數據</h3>
+            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
+              從 2020 年系統崩潰到 2026 年完全重生，完整記錄每一步調整與數據變化。
+            </p>
+            <p className="text-lg md:text-xl text-gray-600 mb-4 text-center leading-relaxed px-4" style={{maxWidth: '600px', margin: '0 auto 1rem'}}>
+              Coolday Fitness 北屯館教練主管 • CSCS 認證體能教練
+            </p>
+            <p className="italic text-gray-500 text-sm leading-relaxed" style={{fontFamily: 'Georgia, serif'}}>
+              「這不是理論，是我在 2020 年身體系統崩潰後，花了六年時間，用自己的數據一點一滴換來的重生記錄。」
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 真誠區塊 - 6年實驗數據 */}
       <div className="my-20 max-w-4xl mx-auto" style={{borderLeft: '4px solid #8B7355', paddingLeft: '2rem', backgroundColor: 'rgba(139, 115, 85, 0.03)', padding: '2rem 2rem 2rem 3rem', borderRadius: '0.5rem'}}>
         <div className="flex items-start gap-4 mb-4">
@@ -90,6 +151,9 @@ export default function HomePage() {
             <h3 className="text-2xl font-semibold mb-3" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>6年個人實驗數據</h3>
             <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
               從 2020 年系統崩潰到 2026 年完全重生，完整記錄每一步調整與數據變化。
+            </p>
+            <p className="text-lg md:text-xl text-gray-600 mb-4 text-center leading-relaxed px-4" style={{maxWidth: '600px', margin: '0 auto 1rem'}}>
+              Coolday Fitness 北屯館教練主管 • CSCS 認證體能教練
             </p>
             <p className="italic text-gray-500 text-sm leading-relaxed" style={{fontFamily: 'Georgia, serif'}}>
               「這不是理論，是我在 2020 年身體系統崩潰後，花了六年時間，用自己的數據一點一滴換來的重生記錄。」
@@ -100,7 +164,9 @@ export default function HomePage() {
 
       {/* 無邊框卡片設計 - 去 AI 化 */}
       <div className="my-24 max-w-5xl mx-auto">
-        <h3 className="text-3xl font-semibold mb-16 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>核心能力</h3>
+        <h1 className="text-4xl md:text-5xl font-bold mb-6 text-center" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
+          Howard
+        </h1>
         <div className="grid md:grid-cols-3 gap-16">
           <div className="text-center">
             <div className="w-16 h-16 mx-auto mb-6 rounded-full border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold text-xs">CSCS</div>
@@ -160,5 +226,6 @@ export default function HomePage() {
         <p className="text-gray-500 text-sm mt-4">Coolday Fitness 北屯館 • 一對一訓練指導</p>
       </div>
     </section>
+    </>
   )
 }

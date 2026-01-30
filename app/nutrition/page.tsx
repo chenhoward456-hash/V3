@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function NutritionPage() {
   return (
     <section className="section-container" style={{backgroundColor: '#F9F9F7'}}>
-      <h2 className="doc-title" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>The Howard Nutrition Protocol</h2>
+      <h2 className="text-3xl md:text-4xl font-bold text-center mb-6" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>The Howard Nutrition Protocol</h2>
       <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
         我不相信「乾淨飲食」。我用數據追蹤代謝，用血檢驗證效果。這是我 6 年的優化旅程。
       </p>

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function TrainingPage() {
   return (
     <section className="section-container" style={{backgroundColor: '#F9F9F7'}}>
-      <h2 className="doc-title" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>The Howard Training System</h2>
+      <h2 className="text-3xl md:text-4xl font-bold text-center mb-6" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>The Howard Training System</h2>
       <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
         我不用傳統的「胸背腿」分化。我的訓練系統建立在結構優化、神經適應和數據追蹤之上。
       </p>

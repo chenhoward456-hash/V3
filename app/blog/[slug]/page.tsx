@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { generateArticleSchema } from './schema'
 
 // 文章內容（之後可以從 Markdown 檔案讀取）
 const blogContent: Record<string, {
@@ -832,8 +833,22 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
     notFound()
   }
 
+  const articleSchema = generateArticleSchema({
+    title: post.title,
+    date: post.date,
+    category: post.category,
+    content: post.content,
+    slug: params.slug,
+  })
+
   return (
     <div style={{backgroundColor: '#F9F9F7'}} className="min-h-screen">
+      {/* 結構化資料 */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      
       <article className="max-w-3xl mx-auto px-6 py-16">
         {/* 返回按鈕 */}
         <Link 
@@ -852,7 +867,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
             <span className="text-gray-400 text-sm">{post.readTime}</span>
           </div>
           
-          <h1 className="text-4xl font-bold mb-4" style={{color: '#2D2D2D'}}>
+          <h1 className="text-2xl md:text-4xl font-bold mb-4" style={{color: '#2D2D2D'}}>
             {post.title}
           </h1>
           
