@@ -4,7 +4,7 @@ import LineButton from '@/components/LineButton'
 
 export const metadata: Metadata = {
   title: '遠端數據追蹤訂閱 - 入門版3800元起 | Howard',
-  description: '兩種方案任選：入門版月費3800元（LINE諮詢+月視訊）、進階版季度18000元（含血檢解讀+補品建議）。不用進健身房，用數據優化你的身體系統。',
+  description: '兩種方案任選：入門版月費3800元（LINE諮詢+月視訊）、進階版季度18000元（含血檢數據經驗分享+補品使用經驗）。不用進健身房，用數據優化你的身體系統。',
 }
 
 export default function RemotePage() {
@@ -148,17 +148,17 @@ export default function RemotePage() {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-warning text-lg">★</span>
-                <span className="text-gray-700"><strong>血檢報告解讀</strong>（1 次）</span>
+                <span className="text-gray-700"><strong>血檢數據經驗分享</strong>（1 次）</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-warning text-lg">★</span>
-                <span className="text-gray-700"><strong>補品策略建議</strong></span>
+                <span className="text-gray-700"><strong>補品使用經驗分享</strong></span>
               </div>
             </div>
 
             <div className="bg-white rounded-xl p-4 mb-6">
               <p className="text-sm text-gray-600">
-                <strong>適合：</strong>認真想優化、對血檢數據有興趣、願意投資 3 個月完整療程的人
+                <strong>適合：</strong>認真想優化、對數據追蹤有興趣、願意投資 3 個月完整療程的人
               </p>
             </div>
 
@@ -211,10 +211,24 @@ export default function RemotePage() {
       {/* 免責聲明 */}
       <div className="my-12 max-w-4xl mx-auto">
         <div className="bg-warning/5 border-2 border-warning/30 rounded-xl p-6">
-          <h3 className="text-lg font-bold mb-3 text-warning">⚠️ 重要聲明</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
-            此服務提供的是教練個人經驗整理與訓練指導，<strong>不構成醫療建議或診斷</strong>。血檢報告解讀僅為個人經驗分享，非醫療行為。如有健康疑慮請先諮詢合格醫師。補品使用建議僅供參考，使用前請自行評估風險。
-          </p>
+          <h3 className="text-lg font-bold mb-3 text-warning">⚠️ 重要聲明與法律保護</h3>
+          <div className="space-y-3 text-gray-600 text-sm leading-relaxed">
+            <p>
+              <strong>1. 非醫療服務：</strong>此服務提供的是教練個人經驗整理與訓練指導，<strong>不構成醫療建議、診斷或治療</strong>。我不是醫師，無法提供醫療行為。
+            </p>
+            <p>
+              <strong>2. 血檢數據分享：</strong>進階版提供的「血檢數據經驗分享」是基於我個人 6 年追蹤數據的經驗整理，<strong>非醫療報告解讀</strong>。任何數據異常請務必先諮詢合格醫師，不可延誤就醫。
+            </p>
+            <p>
+              <strong>3. 補品使用經驗：</strong>補品使用經驗分享僅為個人經驗，<strong>不構成用藥建議</strong>。使用任何補品前請自行評估風險，或諮詢醫師/藥師。我不販售補品，也不推薦特定品牌。
+            </p>
+            <p>
+              <strong>4. 效果因人而異：</strong>訓練與營養優化的效果因個人體質、配合度、生活習慣而異，<strong>不保證特定成效</strong>。需配合執行建議才能達成目標。
+            </p>
+            <p>
+              <strong>5. 個資保護：</strong>您提供的健康數據（HRV、睡眠、血檢等）將僅用於訓練指導，不會外洩給第三方。LINE 通訊已加密，但請勿在公開場合分享敏感資訊。
+            </p>
+          </div>
         </div>
       </div>
 
@@ -252,7 +266,7 @@ export default function RemotePage() {
               Q: 入門版和進階版差在哪？
             </h3>
             <p className="text-gray-600">
-              A: 入門版適合想要遠端指導的人，月費 3,800 元，不含血檢解讀和補品建議。進階版是 3 個月完整療程，季費 18,000 元，包含血檢解讀和補品策略，適合認真想優化的人。
+              A: 入門版適合想要遠端指導的人，月費 3,800 元，不含血檢數據經驗分享和補品使用經驗。進階版是 3 個月完整療程，季費 18,000 元，包含血檢數據經驗分享和補品使用經驗分享，適合認真想優化的人。
             </p>
           </div>
 
@@ -288,16 +302,25 @@ export default function RemotePage() {
               Q: 血檢費用包含在方案裡嗎？
             </h3>
             <p className="text-gray-600">
-              A: 入門版不包含血檢解讀。進階版包含 1 次血檢報告解讀，但抽血費用需自付（約 3,000-5,000 元，依檢測項目而定）。建議在第 3 個月抽血，這樣才能看到優化成效。
+              A: 入門版不包含血檢數據經驗分享。進階版包含 1 次血檢數據經驗分享，但抽血費用需自付（約 3,000-5,000 元，依檢測項目而定）。建議在第 3 個月抽血，這樣才能看到優化成效。
             </p>
           </div>
 
           <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
             <h3 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>
-              Q: 如果我在台中，可以偶爾約實體見面嗎？
+              Q: 如果我在台中，可以實體 + 遠端組合嗎？
             </h3>
             <p className="text-gray-600">
-              A: 可以，但需要另外約時間。遠端訂閱不包含實體見面，如需實體指導可以單次預約（費用另計）。
+              A: 可以！台中客戶建議先預約 1-2 次實體課程建立信任感，再轉遠端追蹤。這樣效果最好，我也能更了解你的動作品質和身體狀況。實體課程需另外約時間（費用另計）。
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
+            <h3 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>
+              Q: 可以退費嗎？
+            </h3>
+            <p className="text-gray-600">
+              A: 入門版採月繳制，當月不退費，下個月可取消不續約。進階版採季繳制，開始後 7 天內可全額退費，超過 7 天後依比例退費（例：做 1 個月後退費，退還 12,000 元）。
             </p>
           </div>
 
