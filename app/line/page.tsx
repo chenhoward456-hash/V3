@@ -155,7 +155,7 @@ export default function LineEntryPage() {
                 <span className="text-2xl">💪</span>
                 <div>
                   <h4 className="font-bold" style={{color: '#2D2D2D'}}>入門版</h4>
-                  <p className="text-primary font-bold text-lg">3,800 元/月</p>
+                  <p className="text-primary text-sm">適合新手入門</p>
                 </div>
               </div>
               <ul className="space-y-2 text-sm text-gray-600">
@@ -170,15 +170,19 @@ export default function LineEntryPage() {
                 <span className="text-2xl">🔬</span>
                 <div>
                   <h4 className="font-bold" style={{color: '#2D2D2D'}}>進階版</h4>
-                  <p className="text-warning font-bold text-lg">18,000 元/季</p>
+                  <p className="text-warning text-sm">完整優化方案</p>
                 </div>
               </div>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li>• LINE 即時諮詢（24 小時內）</li>
                 <li>• 每月 1 次視訊（60 分鐘）</li>
-                <li>• 血檢解讀 + 補品策略</li>
+                <li>• 血檢數據 + 補品使用經驗</li>
               </ul>
             </div>
+          </div>
+
+          <div className="text-center mb-6 text-sm text-gray-500">
+            <p>💡 價格會在諮詢時根據你的需求客製化報價</p>
           </div>
 
           <div className="text-center">

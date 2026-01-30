@@ -37,7 +37,7 @@ export default function RemotePage() {
           適合外縣市或時間不方便進館的客戶
         </p>
         <p className="text-gray-500 text-lg">
-          入門版 <span className="text-2xl font-bold text-primary">3,800 元/月</span> 起
+          💬 加 LINE 免費諮詢，根據你的需求客製化報價
         </p>
       </div>
 
@@ -72,13 +72,9 @@ export default function RemotePage() {
             <div className="absolute -top-4 left-8 bg-primary text-white px-4 py-1 rounded-full text-sm font-bold">
               推薦新手
             </div>
-            <h3 className="text-2xl font-bold mb-2" style={{color: '#2D2D2D'}}>
+            <h3 className="text-2xl font-bold mb-6" style={{color: '#2D2D2D'}}>
               入門版
             </h3>
-            <div className="mb-6">
-              <span className="text-4xl font-bold text-primary">3,800</span>
-              <span className="text-gray-600"> 元/月</span>
-            </div>
             
             <div className="space-y-3 mb-8">
               <div className="flex items-start gap-2">
@@ -122,7 +118,7 @@ export default function RemotePage() {
               intent="starter"
               className="block w-full text-center bg-primary text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
             >
-              選擇入門版
+              加 LINE 免費諮詢
             </LineButton>
           </div>
 
@@ -131,14 +127,9 @@ export default function RemotePage() {
             <div className="absolute -top-4 left-8 bg-warning text-white px-4 py-1 rounded-full text-sm font-bold">
               完整優化
             </div>
-            <h3 className="text-2xl font-bold mb-2" style={{color: '#2D2D2D'}}>
+            <h3 className="text-2xl font-bold mb-6" style={{color: '#2D2D2D'}}>
               進階版
             </h3>
-            <div className="mb-6">
-              <span className="text-4xl font-bold text-warning">18,000</span>
-              <span className="text-gray-600"> 元/季</span>
-              <span className="block text-sm text-gray-500 mt-1">平均 6,000 元/月</span>
-            </div>
             
             <div className="space-y-3 mb-8">
               <div className="flex items-start gap-2">
@@ -182,13 +173,13 @@ export default function RemotePage() {
               intent="advanced"
               className="block w-full text-center bg-warning text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
             >
-              選擇進階版
+              加 LINE 免費諮詢
             </LineButton>
           </div>
         </div>
 
         <div className="text-center mt-8 text-sm text-gray-500">
-          <p>💡 入門版可隨時升級進階版，補差額即可</p>
+          <p>💡 價格會在諮詢時根據你的需求與目標客製化報價</p>
         </div>
       </div>
 
