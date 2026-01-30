@@ -17,6 +17,15 @@ interface BlogPost {
 // 文章列表（之後可以從檔案系統讀取）
 const blogPosts: BlogPost[] = [
   {
+    id: '6',
+    title: '你的肚子有三層脂肪，用錯順序永遠瘦不下來',
+    description: '內臟脂肪、普通皮下脂肪、頑固脂肪，每一層的攻克戰術完全不同。分享我備賽時研究的脂肪代謝理論與實戰經驗。',
+    date: '2026-01-30',
+    category: '訓練方法',
+    readTime: '6 分鐘',
+    slug: 'three-layers-fat-loss-strategy'
+  },
+  {
     id: '5',
     title: '2025 增肌真相：這三個科學新發現，直接打臉你的健身常識',
     description: '長位半程比全程有效？練完不痠才是練得好？力竭通常是假的？分享 2025 年最新的增肌科學研究。',
