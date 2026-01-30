@@ -9,11 +9,51 @@ interface ArticleCTAProps {
     title: string
     slug: string
   }[]
+  freeResource?: {
+    title: string
+    description: string
+    fileUrl: string
+  }
 }
 
-export default function ArticleCTA({ articleTitle, relatedArticles }: ArticleCTAProps) {
+export default function ArticleCTA({ articleTitle, relatedArticles, freeResource }: ArticleCTAProps) {
   return (
     <div className="mt-16 space-y-8">
+      {/* 免費資源下載 */}
+      {freeResource && (
+        <div className="bg-gradient-to-br from-success/5 to-success/10 rounded-2xl p-10 border-2 border-success/20">
+          <div className="flex items-start gap-6">
+            <div className="text-5xl">📥</div>
+            <div className="flex-1">
+              <h3 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
+                {freeResource.title}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {freeResource.description}
+              </p>
+              <a
+                href={freeResource.fileUrl}
+                download
+                className="inline-block bg-success text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && (window as any).gtag) {
+                    (window as any).gtag('event', 'download', {
+                      file_name: freeResource.fileUrl,
+                      article_title: articleTitle
+                    });
+                  }
+                }}
+              >
+                免費下載 PDF
+              </a>
+              <p className="text-sm text-gray-500 mt-4">
+                ✓ 完整 12 週計畫　✓ 訓練動作詳解　✓ 進度追蹤表
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* 主要 CTA */}
       <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-10 text-center border-2 border-primary/20">
         <h3 className="text-2xl font-bold mb-4" style={{color: '#2D2D2D'}}>

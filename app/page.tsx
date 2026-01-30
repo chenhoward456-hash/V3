@@ -230,6 +230,42 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* 免費資源區塊 */}
+      <div className="my-24 max-w-5xl mx-auto">
+        <div className="text-center mb-12">
+          <h3 className="text-3xl font-semibold mb-4" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>免費資源下載</h3>
+          <p className="text-gray-600">實用的訓練和營養工具，立即下載開始優化</p>
+        </div>
+        
+        <div className="bg-gradient-to-br from-success/5 to-success/10 rounded-2xl p-10 border-2 border-success/20">
+          <div className="flex flex-col md:flex-row items-start gap-6">
+            <div className="text-6xl">📥</div>
+            <div className="flex-1">
+              <h4 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
+                三層脂肪攻克計畫表
+              </h4>
+              <p className="text-gray-600 mb-4 leading-relaxed">
+                完整 12 週執行計畫，分階段攻克內臟脂肪、皮下脂肪、頑固脂肪。
+                包含詳細訓練動作、飲食策略、進度追蹤表。
+              </p>
+              <div className="flex flex-wrap gap-2 mb-6">
+                <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-700">✓ 12 週完整計畫</span>
+                <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-700">✓ 訓練動作詳解</span>
+                <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-700">✓ 飲食策略</span>
+                <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-700">✓ 進度追蹤表</span>
+              </div>
+              <a
+                href="/resources/three-layers-fat-loss-plan.pdf"
+                download
+                className="inline-block bg-success text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+              >
+                免費下載 PDF
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 最新文章區塊 */}
       <div className="my-24 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-12">

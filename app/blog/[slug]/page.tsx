@@ -1114,6 +1114,11 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         {/* 階梯式 CTA */}
         <ArticleCTA 
           articleTitle={post.title}
+          freeResource={params.slug === 'three-layers-fat-loss-strategy' ? {
+            title: '免費下載：三層脂肪攻克計畫表',
+            description: '完整 12 週執行計畫，包含訓練動作、飲食策略、進度追蹤表。立即下載開始你的減脂之旅！',
+            fileUrl: '/resources/three-layers-fat-loss-plan.pdf'
+          } : undefined}
           relatedArticles={
             Object.entries(blogContent)
               .filter(([slug]) => slug !== params.slug && blogContent[slug].category === post.category)
