@@ -144,7 +144,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 真誠區塊 - 6年實驗數據 */}
+      {/* 真誠區塊 - 6年實驗數據 + 社群證明 */}
       <div className="my-20 max-w-4xl mx-auto" style={{borderLeft: '4px solid #8B7355', paddingLeft: '2rem', backgroundColor: 'rgba(139, 115, 85, 0.03)', padding: '2rem 2rem 2rem 3rem', borderRadius: '0.5rem'}}>
         <div className="flex items-start gap-4 mb-4">
           <div className="w-12 h-12 rounded-full border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold text-sm flex-shrink-0">DATA</div>
@@ -153,9 +153,23 @@ export default function HomePage() {
             <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
               從 2020 年系統崩潰到 2026 年完全重生，完整記錄每一步調整與數據變化。
             </p>
-            <p className="text-lg md:text-xl text-gray-600 mb-4 text-center leading-relaxed px-4" style={{maxWidth: '600px', margin: '0 auto 1rem'}}>
-              Coolday Fitness 北屯館教練主管 • CSCS 認證體能教練
-            </p>
+            
+            {/* 數據展示 */}
+            <div className="grid grid-cols-3 gap-4 my-6 p-4 bg-white rounded-xl">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">50+</div>
+                <div className="text-xs text-gray-500">協助學員</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">6年</div>
+                <div className="text-xs text-gray-500">實驗數據</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">100%</div>
+                <div className="text-xs text-gray-500">數據驅動</div>
+              </div>
+            </div>
+
             <p className="italic text-gray-500 text-sm leading-relaxed" style={{fontFamily: 'Georgia, serif'}}>
               「這不是理論，是我在 2020 年身體系統崩潰後，花了六年時間，用自己的數據一點一滴換來的重生記錄。」
             </p>

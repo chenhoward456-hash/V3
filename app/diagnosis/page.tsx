@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { trackDiagnosisComplete, trackLineClick } from '@/lib/analytics'
 
@@ -323,19 +324,95 @@ export default function DiagnosisPage() {
                 </div>
               </div>
 
-              <div className="bg-primary/5 border-2 border-primary rounded-xl p-8 text-center">
-                <p className="text-text-primary mb-6 text-lg">
-                  需要<strong>專業訓練指導</strong>與<strong>客製化訓練計畫</strong>？
-                </p>
-                <a
-                  href="https://lin.ee/dnbucVw"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block bg-success text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
-                  onClick={() => trackLineClick('diagnosis_result')}
-                >
-                  預約免費諮詢
-                </a>
+              {/* 個人化建議和分級引導 */}
+              <div className="space-y-6">
+                {totalScore >= 8 && (
+                  <div className="bg-danger/5 border-2 border-danger rounded-xl p-8">
+                    <h4 className="text-xl font-bold mb-4 text-danger">⚠️ 建議立即優化</h4>
+                    <p className="text-text-secondary mb-6 leading-relaxed">
+                      你的身體系統出現多個警訊，建議盡快進行專業評估和系統性調整。
+                      長期忽略這些訊號可能影響健康和生活品質。
+                    </p>
+                    <a
+                      href="https://lin.ee/dnbucVw"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block bg-danger text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all w-full text-center"
+                      onClick={() => trackLineClick('diagnosis_result_high')}
+                    >
+                      立即預約免費諮詢
+                    </a>
+                  </div>
+                )}
+
+                {totalScore >= 4 && totalScore < 8 && (
+                  <div className="bg-warning/5 border-2 border-warning rounded-xl p-8">
+                    <h4 className="text-xl font-bold mb-4 text-warning">💡 有改善空間</h4>
+                    <p className="text-text-secondary mb-6 leading-relaxed">
+                      你的身體系統有優化空間。建議先了解正確的訓練和營養方法，
+                      再決定是否需要專業指導。
+                    </p>
+                    <div className="space-y-4">
+                      <a
+                        href="https://lin.ee/dnbucVw"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-success text-white px-6 py-3 rounded-xl font-bold text-center hover:opacity-90 transition-all"
+                        onClick={() => trackLineClick('diagnosis_result_medium')}
+                      >
+                        預約免費諮詢
+                      </a>
+                      <div className="text-center">
+                        <p className="text-sm text-text-muted mb-3">或先閱讀相關文章：</p>
+                        <div className="flex flex-col gap-2">
+                          <Link href="/blog/three-layers-fat-loss-strategy" className="text-primary hover:underline text-sm">
+                            → 三層脂肪減脂策略
+                          </Link>
+                          <Link href="/blog/testosterone-optimization-3-months" className="text-primary hover:underline text-sm">
+                            → 睪固酮自然提升方法
+                          </Link>
+                          <Link href="/blog/sleep-quality-hrv-optimization" className="text-primary hover:underline text-sm">
+                            → 睡眠品質優化指南
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {totalScore < 4 && (
+                  <div className="bg-success/5 border-2 border-success rounded-xl p-8">
+                    <h4 className="text-xl font-bold mb-4 text-success">✓ 狀態良好</h4>
+                    <p className="text-text-secondary mb-6 leading-relaxed">
+                      你的身體系統運作良好！可以考慮進一步提升效能，
+                      或追蹤我的內容學習更多優化技巧。
+                    </p>
+                    <div className="space-y-4">
+                      <a
+                        href="https://www.instagram.com/chenhoward/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-primary text-white px-6 py-3 rounded-xl font-bold text-center hover:opacity-90 transition-all"
+                      >
+                        追蹤 IG 獲得每日內容
+                      </a>
+                      <div className="text-center">
+                        <p className="text-sm text-text-muted mb-3">推薦進階內容：</p>
+                        <div className="flex flex-col gap-2">
+                          <Link href="/blog/muscle-building-science-2025" className="text-primary hover:underline text-sm">
+                            → 2025 增肌真相
+                          </Link>
+                          <Link href="/training" className="text-primary hover:underline text-sm">
+                            → Howard 訓練系統
+                          </Link>
+                          <Link href="/nutrition" className="text-primary hover:underline text-sm">
+                            → 營養優化協議
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 text-center">

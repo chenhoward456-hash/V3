@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { generateArticleSchema } from './schema'
 import Breadcrumb from '@/components/Breadcrumb'
 import ArticleTracker from './ArticleTracker'
-import LineButton from '@/components/LineButton'
+import ArticleCTA from '@/components/ArticleCTA'
 
 // 文章內容（之後可以從 Markdown 檔案讀取）
 const blogContent: Record<string, {
@@ -1111,21 +1111,19 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="mt-16 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-10 text-center border-2 border-primary/20">
-          <h3 className="text-2xl font-bold mb-4" style={{color: '#2D2D2D'}}>
-            想了解個人化的健康優化方案？
-          </h3>
-          <p className="text-gray-600 mb-6">
-            透過 LINE 預約免費諮詢，分享更多實驗心得與數據追蹤經驗。
-          </p>
-          <LineButton 
-            source="blog_post"
-            className="inline-block bg-success text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
-          >
-            預約免費諮詢
-          </LineButton>
-        </div>
+        {/* 階梯式 CTA */}
+        <ArticleCTA 
+          articleTitle={post.title}
+          relatedArticles={
+            Object.entries(blogContent)
+              .filter(([slug]) => slug !== params.slug && blogContent[slug].category === post.category)
+              .slice(0, 2)
+              .map(([slug, article]) => ({
+                title: article.title,
+                slug: slug
+              }))
+          }
+        />
       </article>
     </div>
   )
