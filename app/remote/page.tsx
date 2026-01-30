@@ -10,6 +10,21 @@ export const metadata: Metadata = {
 export default function RemotePage() {
   return (
     <section className="section-container">
+      {/* 外縣市專屬警示 */}
+      <div className="max-w-4xl mx-auto mb-8">
+        <div className="bg-warning/10 border-2 border-warning/30 rounded-xl p-6">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">⚠️</span>
+            <div>
+              <h3 className="font-bold text-warning mb-2">此方案適合外縣市或無法定期進館的客戶</h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                <strong>台中地區客戶建議優先選擇實體訓練</strong>，效果更好且能即時調整動作。實體訓練可至 <Link href="/action" className="text-primary hover:underline">預約諮詢頁面</Link> 了解詳情。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Hero 區塊 */}
       <div className="max-w-4xl mx-auto text-center mb-16">
         <div className="inline-block px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-6">
@@ -19,7 +34,7 @@ export default function RemotePage() {
           24 小時健康監控
         </h1>
         <p className="text-xl text-gray-600 mb-4 leading-relaxed">
-          不用每週進健身房，用數據優化你的身體系統
+          適合外縣市或時間不方便進館的客戶
         </p>
         <p className="text-gray-500 text-lg">
           入門版 <span className="text-2xl font-bold text-primary">3,800 元/月</span> 起

@@ -18,22 +18,21 @@ const notoSansTC = Noto_Sans_TC({
 })
 
 export const metadata: Metadata = {
-  title: 'Howard - 台中北屯 CSCS 體能教練 | Coolday Fitness 教練主管',
-  description: 'Howard，Coolday Fitness 北屯館教練主管，CSCS 認證體能教練。專精肌力訓練、代謝優化、營養調整。台中北屯一對一客製化訓練指導。',
+  title: 'Howard - 台中北屯 CSCS 體能教練 | 數據優化訓練',
+  description: 'Howard，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。專精肌力訓練、代謝優化、營養調整。台中北屯一對一客製化訓練指導。',
   verification: {
     google: 'hSS0ZwkqpzzSA8A4RS7RW81CeoR2HOFoT-CkpEFYcf4',
   },
   keywords: [
     '台中健身教練',
     '北屯健身',
-    'Coolday Fitness',
     'CSCS 教練',
     '肌力訓練',
     '體能訓練',
-    '一對一教練',
-    '台中北屯',
     '代謝優化',
-    '營養優化',
+    '營養調整',
+    '數據追蹤',
+    '個人教練',
     '運動醫學',
     '生物駭客',
     '客製化訓練'
@@ -41,7 +40,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'Howard' }],
   openGraph: {
     title: 'Howard - 台中北屯 CSCS 體能教練',
-    description: 'Coolday Fitness 北屯館教練主管 | 專精肌力訓練與代謝優化 | 一對一客製化訓練指導',
+    description: 'CSCS 認證體能教練 | 專精肌力訓練與代謝優化 | 台中北屯一對一客製化訓練指導',
     type: 'website',
     locale: 'zh_TW',
     url: 'https://howard456.vercel.app',
@@ -58,7 +57,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Howard - 台中北屯 CSCS 體能教練',
-    description: 'Coolday Fitness 北屯館教練主管 | 專精肌力訓練與代謝優化',
+    description: 'CSCS 認證體能教練 | 專精肌力訓練與代謝優化',
     images: ['/howard-profile.jpg'],
   },
   icons: {

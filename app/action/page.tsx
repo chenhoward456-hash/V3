@@ -16,7 +16,7 @@ export default function ActionPage() {
       <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '800px', margin: '0 auto 3rem'}}>
         這不是另一套健身課程，而是針對你身體系統的工程調校。<br />
         我們不靠感覺，我們靠數據說話。<br /><br />
-        <span style={{fontSize: '0.95em', color: '#666'}}>提供台中一對一訓練，以及不限地點的遠端數據追蹤諮詢。</span>
+        <span style={{fontSize: '0.95em', color: '#666'}}>台中北屯一對一訓練指導。</span>
       </p>
 
       {/* Howard 實戰工作照 */}
