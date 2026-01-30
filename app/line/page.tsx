@@ -139,9 +139,14 @@ export default function LineEntryPage() {
             <h3 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
               或直接了解遠端訂閱方案
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 mb-4">
               如果你想要更系統化的追蹤與指導，可以考慮遠端訂閱服務
             </p>
+            <div className="inline-block bg-primary/10 border border-primary/30 rounded-lg px-4 py-2 text-sm">
+              <p className="text-gray-700">
+                💡 <strong>台中客戶</strong>：建議先預約實體課程 • <strong>外縣市客戶</strong>：可直接選擇遠端訂閱
+              </p>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
