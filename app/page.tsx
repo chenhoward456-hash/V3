@@ -187,73 +187,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 30 秒身體效能快篩 - 互動區塊 */}
-      <div className="my-20 max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h3 className="text-3xl font-semibold mb-4" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>你的身體系統，現在處於什麼狀態？</h3>
-          <p className="text-gray-600 text-[15px] leading-relaxed">
-            4 個問題，30 秒快速評估你的健康風險與效能指標
-          </p>
-        </div>
-        
-        <div className="bg-gradient-to-br from-gray-50 to-white rounded-[2rem] p-10 border-2 border-gray-200" style={{boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)'}}>
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm">診斷</div>
-              <div>
-                <h4 className="text-xl font-semibold" style={{color: '#2D2D2D'}}>系統診斷測驗</h4>
-                <p className="text-gray-500 text-sm">領先指標評估 • 即時結果</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="space-y-4 mb-8 text-gray-600 text-sm">
-            <div className="flex items-start gap-3">
-              <span className="text-green-600 font-bold">✓</span>
-              <span>睡眠品質與恢復能力評估</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-green-600 font-bold">✓</span>
-              <span>代謝效率與體態警訊檢測</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-green-600 font-bold">✓</span>
-              <span>壓力荷爾蒙與發炎指標篩查</span>
-            </div>
-          </div>
-
-          <Link 
-            href="/diagnosis"
-            className="block w-full text-center text-white px-8 py-4 rounded-full font-medium text-lg transition-all hover:opacity-90"
-            style={{backgroundColor: '#2D2D2D', letterSpacing: '0.05em'}}
-          >
-            開始 30 秒快篩 →
-          </Link>
-          
-          <p className="text-center text-gray-400 text-xs mt-4">
-            完全免費 • 無需註冊 • 即時查看結果
-          </p>
-        </div>
-      </div>
-
-      {/* 快速診斷區塊 */}
-      <div className="my-12 md:my-20 max-w-4xl mx-auto px-4" style={{backgroundColor: 'rgba(139, 115, 85, 0.05)', padding: '2rem md:3rem', borderRadius: '1.5rem', border: '2px solid rgba(139, 115, 85, 0.1)'}}>
-        <div className="flex items-start gap-4 mb-4">
-          <div className="w-12 h-12 rounded-full border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold text-sm flex-shrink-0">DATA</div>
-          <div>
-            <h3 className="text-2xl font-semibold mb-3" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>6年個人實驗數據</h3>
-            <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
-              從 2020 年系統崩潰到 2026 年完全重生，完整記錄每一步調整與數據變化。
-            </p>
-            <p className="text-lg md:text-xl text-gray-600 mb-4 text-center leading-relaxed px-4" style={{maxWidth: '600px', margin: '0 auto 1rem'}}>
-              Coolday Fitness 北屯館教練主管 • CSCS 認證體能教練
-            </p>
-            <p className="italic text-gray-500 text-sm leading-relaxed" style={{fontFamily: 'Georgia, serif'}}>
-              「這不是理論，是我在 2020 年身體系統崩潰後，花了六年時間，用自己的數據一點一滴換來的重生記錄。」
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* 真誠區塊 - 6年實驗數據 + 社群證明 */}
       <div className="my-20 max-w-4xl mx-auto" style={{borderLeft: '4px solid #8B7355', paddingLeft: '2rem', backgroundColor: 'rgba(139, 115, 85, 0.03)', padding: '2rem 2rem 2rem 3rem', borderRadius: '0.5rem'}}>
@@ -320,32 +253,11 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="my-20">
-        <h3 className="text-2xl font-semibold mb-8 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>如何開始</h3>
-        <div className="grid md:grid-cols-3 gap-8">
-          <Link href="/diagnosis" className="action-card">
-            <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xs mb-3">01</div>
-            <h4>系統診斷</h4>
-            <p>30 秒快速評估你的身體狀態</p>
-          </Link>
-          <Link href="/action" className="action-card">
-            <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xs mb-3">02</div>
-            <h4>線上諮詢</h4>
-            <p>與 Howard 進行一對一線上諮詢</p>
-          </Link>
-          <Link href="/case" className="action-card">
-            <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xs mb-3">03</div>
-            <h4>個案追蹤</h4>
-            <p>看看我如何從系統崩潰到完全重生</p>
-          </Link>
-        </div>
-      </div>
-
       {/* 免費資源區塊 */}
       <div className="my-24 max-w-5xl mx-auto">
         <div className="text-center mb-12">
-          <h3 className="text-3xl font-semibold mb-4" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>免費資源下載</h3>
-          <p className="text-gray-600">實用的訓練和營養工具，立即下載開始優化</p>
+          <h3 className="text-3xl font-semibold mb-4" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>免費下載：三層脂肪攻克計畫表</h3>
+          <p className="text-gray-600">完整 12 週執行計畫，立即下載開始優化</p>
         </div>
         
         <div className="bg-gradient-to-br from-success/5 to-success/10 rounded-2xl p-10 border-2 border-success/20">
@@ -420,15 +332,40 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* 還在猶豫？3 個選項 */}
+      <div className="my-20 max-w-4xl mx-auto">
+        <div className="text-center mb-10">
+          <h3 className="text-2xl font-semibold mb-3" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>還在猶豫？</h3>
+          <p className="text-gray-600">選一個最適合你現在的方式開始</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          <Link href="/diagnosis" className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:border-primary hover:shadow-lg transition-all">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm mb-4">01</div>
+            <h4 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>30 秒系統診斷</h4>
+            <p className="text-gray-600 text-sm">快速評估你的身體狀態，我會用結果頁幫你分級引導</p>
+          </Link>
+          <Link href="/line" className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:border-success hover:shadow-lg transition-all">
+            <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center text-success font-bold text-sm mb-4">02</div>
+            <h4 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>直接加 LINE</h4>
+            <p className="text-gray-600 text-sm">選擇你的目標（減脂/睡眠/增肌），我會先給你免費資源</p>
+          </Link>
+          <Link href="/case" className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:border-warning hover:shadow-lg transition-all">
+            <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center text-warning font-bold text-sm mb-4">03</div>
+            <h4 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>看我的案例</h4>
+            <p className="text-gray-600 text-sm">從系統崩潰到完全重生，6 年完整數據追蹤記錄</p>
+          </Link>
+        </div>
+      </div>
+
       <div className="text-center my-20">
         <Link 
-          href="/action"
+          href="/line"
           className="inline-block text-white px-12 py-4 rounded-full font-medium text-lg transition-all hover:opacity-90"
           style={{backgroundColor: '#2D2D2D', letterSpacing: '0.05em'}}
         >
-          與 Howard 開啟對話
+          加 LINE 開始對話
         </Link>
-        <p className="text-gray-500 text-sm mt-4">Coolday Fitness 北屯館 • 一對一訓練指導</p>
+        <p className="text-gray-500 text-sm mt-4">我會先給你免費資源，再依你的目標分流引導</p>
       </div>
     </section>
     </>
