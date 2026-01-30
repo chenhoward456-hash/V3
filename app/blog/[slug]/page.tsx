@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { generateArticleSchema } from './schema'
 import Breadcrumb from '@/components/Breadcrumb'
+import ArticleTracker from './ArticleTracker'
+import LineButton from '@/components/LineButton'
 
 // 文章內容（之後可以從 Markdown 檔案讀取）
 const blogContent: Record<string, {
@@ -844,6 +846,13 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
 
   return (
     <div style={{backgroundColor: '#F9F9F7'}} className="min-h-screen">
+      {/* GA 追蹤 */}
+      <ArticleTracker 
+        title={post.title}
+        category={post.category}
+        readTime={post.readTime}
+      />
+      
       {/* 結構化資料 */}
       <script
         type="application/ld+json"
@@ -966,14 +975,12 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           <p className="text-gray-600 mb-6">
             透過 LINE 預約免費諮詢，分享更多實驗心得與數據追蹤經驗。
           </p>
-          <a
-            href="https://lin.ee/dnbucVw"
-            target="_blank"
-            rel="noopener noreferrer"
+          <LineButton 
+            source="blog_post"
             className="inline-block bg-success text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
           >
             預約免費諮詢
-          </a>
+          </LineButton>
         </div>
       </article>
     </div>
