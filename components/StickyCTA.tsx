@@ -18,6 +18,7 @@ interface StickyCTAProps {
 export default function StickyCTA({ articleTitle, slug, intent = 'performance', resource }: StickyCTAProps) {
   const [visible, setVisible] = useState(false)
   const [closed, setClosed] = useState(false)
+  const [scrollDepth, setScrollDepth] = useState(0)
 
   useEffect(() => {
     const key = 'sticky_cta_closed'
@@ -33,6 +34,7 @@ export default function StickyCTA({ articleTitle, slug, intent = 'performance', 
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
       if (scrollHeight <= 0) return
       const scrolled = (window.scrollY / scrollHeight) * 100
+      setScrollDepth(scrolled)
       if (scrolled >= 20) {
         setVisible(true)
       }
@@ -56,6 +58,30 @@ export default function StickyCTA({ articleTitle, slug, intent = 'performance', 
     }
   }, [intent])
 
+  const dynamicCopy = useMemo(() => {
+    if (scrollDepth < 25) {
+      return {
+        title: '繼續看，下面有實測數據',
+        subtitle: '我會用結果頁幫你分級引導下一步'
+      }
+    } else if (scrollDepth < 50) {
+      return {
+        title: resource ? '看到這裡了？拿免費計畫表更快' : '看到這裡了？要不要先做診斷？',
+        subtitle: resource ? '立即下載開始執行' : '我會幫你判斷目前狀態'
+      }
+    } else if (scrollDepth < 75) {
+      return {
+        title: '快看完了，下一步要不要直接加 LINE？',
+        subtitle: '我會先給你免費資源 + 分流引導'
+      }
+    } else {
+      return {
+        title: resource ? '看完了！現在就拿計畫表開始' : '看完了！要不要直接跟我聊？',
+        subtitle: resource ? '立即下載 12 週完整計畫' : '我會先幫你分流到對的路徑'
+      }
+    }
+  }, [scrollDepth, resource])
+
   if (closed || !visible) return null
 
   return (
@@ -64,10 +90,10 @@ export default function StickyCTA({ articleTitle, slug, intent = 'performance', 
         <div className="flex items-start gap-3">
           <div className="flex-1">
             <div className="text-sm font-semibold" style={{ color: '#2D2D2D' }}>
-              {resource ? '想要更快開始？先把計畫表拿走' : '想把方向走對？先做 30 秒系統診斷'}
+              {dynamicCopy.title}
             </div>
             <div className="text-xs text-gray-600 mt-1">
-              {resource ? resource.title : '我會用結果頁幫你分級引導下一步'}
+              {dynamicCopy.subtitle}
             </div>
           </div>
 

@@ -18,18 +18,39 @@ export default function LineEntryPage() {
         title: 'A 我想減脂 / 腰圍下降',
         description: '適合：肚子卡住、體脂下降停滯、腰圍偏高',
         message: '我想減脂/改善腰圍，想從「三層脂肪」順序開始。我的目標是＿＿＿，目前困擾是＿＿＿。',
+        preview: [
+          { sender: 'user', text: '我想減脂/改善腰圍...' },
+          { sender: 'howard', text: '收到！先問你 3 個問題確認狀況：' },
+          { sender: 'howard', text: '1. 目前腰圍/身高？（算 WHtR）' },
+          { sender: 'howard', text: '2. 有在運動嗎？頻率？' },
+          { sender: 'howard', text: '3. 飲食習慣？（外食/自煮）' },
+        ]
       },
       {
         intent: 'recovery' as const,
         title: 'B 我想改善睡眠 / 精神',
         description: '適合：腦霧、睡不飽、恢復差、壓力大',
         message: '我想改善睡眠/精神/恢復，想從 HRV 與作息優化開始。我的狀況是＿＿＿，目前作息是＿＿＿。',
+        preview: [
+          { sender: 'user', text: '我想改善睡眠/精神...' },
+          { sender: 'howard', text: '了解！先確認幾個關鍵點：' },
+          { sender: 'howard', text: '1. 平均睡眠時間？幾點睡？' },
+          { sender: 'howard', text: '2. 有追蹤 HRV 或睡眠數據嗎？' },
+          { sender: 'howard', text: '3. 壓力來源？（工作/訓練/生活）' },
+        ]
       },
       {
         intent: 'muscle_gain' as const,
         title: 'C 我想增肌 / 訓練更有效',
         description: '適合：練很久沒進步、動作品質不穩、想更系統化',
         message: '我想增肌，想先確認目前訓練計畫與動作品質。我的訓練週期是＿＿＿，卡關點是＿＿＿。',
+        preview: [
+          { sender: 'user', text: '我想增肌，想確認訓練計畫...' },
+          { sender: 'howard', text: '好！先了解你的訓練背景：' },
+          { sender: 'howard', text: '1. 目前訓練頻率？（週幾次）' },
+          { sender: 'howard', text: '2. 主要動作？（深蹲/臥推/硬舉）' },
+          { sender: 'howard', text: '3. 卡關多久了？重量/圍度？' },
+        ]
       },
     ]
   }, [])
@@ -75,6 +96,28 @@ export default function LineEntryPage() {
                 你會複製這段訊息：
                 <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
                   {p.message}
+                </div>
+              </div>
+
+              {/* 預覽對話 */}
+              <div className="mt-6">
+                <div className="text-xs text-gray-500 mb-3">💬 點開後我會這樣回你：</div>
+                <div className="space-y-2">
+                  {p.preview.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`text-xs p-2 rounded-lg ${
+                        msg.sender === 'user'
+                          ? 'bg-primary/10 text-primary ml-4'
+                          : 'bg-gray-100 text-gray-700 mr-4'
+                      }`}
+                    >
+                      <div className="font-semibold text-[10px] mb-1">
+                        {msg.sender === 'user' ? '你' : 'Howard'}
+                      </div>
+                      {msg.text}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
