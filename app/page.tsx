@@ -253,6 +253,58 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* 遠端訂閱推薦 */}
+      <div className="my-20 max-w-4xl mx-auto">
+        <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-10 border-2 border-primary/20">
+          <div className="text-center mb-8">
+            <h3 className="text-3xl font-bold mb-4" style={{color: '#2D2D2D'}}>
+              不想進健身房？試試遠端數據追蹤
+            </h3>
+            <p className="text-gray-600 leading-relaxed">
+              24 小時健康監控，用數據優化你的吃睡練。<br />
+              兩種方案任選，從入門到進階都有。
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl">💪</span>
+                <div>
+                  <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>入門版</h4>
+                  <p className="text-primary font-bold">3,800 元/月</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                LINE 諮詢 + 月視訊 + 數據追蹤
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl">🔬</span>
+                <div>
+                  <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>進階版</h4>
+                  <p className="text-warning font-bold">18,000 元/季</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                含血檢解讀 + 補品策略 + 完整優化
+              </p>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <Link 
+              href="/remote"
+              className="inline-block bg-primary text-white px-10 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+            >
+              了解遠端訂閱方案
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* 免費資源區塊 */}
       <div className="my-24 max-w-5xl mx-auto">
         <div className="text-center mb-12">

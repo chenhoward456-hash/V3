@@ -131,6 +131,61 @@ export default function LineEntryPage() {
           </Link>
         </div>
       </div>
+
+      {/* 遠端訂閱方案推薦 */}
+      <div className="my-20 max-w-4xl mx-auto">
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-10 border-2 border-gray-200">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
+              或直接了解遠端訂閱方案
+            </h3>
+            <p className="text-gray-600">
+              如果你想要更系統化的追蹤與指導，可以考慮遠端訂閱服務
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl">💪</span>
+                <div>
+                  <h4 className="font-bold" style={{color: '#2D2D2D'}}>入門版</h4>
+                  <p className="text-primary font-bold text-lg">3,800 元/月</p>
+                </div>
+              </div>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>• LINE 諮詢（48 小時內回覆）</li>
+                <li>• 每月 1 次視訊（30 分鐘）</li>
+                <li>• 訓練計畫 + 飲食策略</li>
+              </ul>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl">🔬</span>
+                <div>
+                  <h4 className="font-bold" style={{color: '#2D2D2D'}}>進階版</h4>
+                  <p className="text-warning font-bold text-lg">18,000 元/季</p>
+                </div>
+              </div>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>• LINE 即時諮詢（24 小時內）</li>
+                <li>• 每月 1 次視訊（60 分鐘）</li>
+                <li>• 血檢解讀 + 補品策略</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <Link 
+              href="/remote"
+              className="inline-block bg-gray-900 text-white px-8 py-3 rounded-full font-bold hover:bg-gray-800 transition-colors"
+            >
+              查看完整方案說明 →
+            </Link>
+          </div>
+        </div>
+      </div>
     </section>
   )
 }
