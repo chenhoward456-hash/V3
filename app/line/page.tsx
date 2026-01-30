@@ -9,6 +9,7 @@ const LINE_URL = 'https://lin.ee/dnbucVw'
 type Intent = 'fat_loss' | 'recovery' | 'muscle_gain'
 
 export default function LineEntryPage() {
+  
   const [copied, setCopied] = useState<Intent | null>(null)
 
   const presets = useMemo(() => {
