@@ -333,15 +333,23 @@ export default function DiagnosisPage() {
                       你的身體系統出現多個警訊，建議盡快進行專業評估和系統性調整。
                       長期忽略這些訊號可能影響健康和生活品質。
                     </p>
-                    <a
-                      href="https://lin.ee/dnbucVw"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block bg-danger text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all w-full text-center"
-                      onClick={() => trackLineClick('diagnosis_result_high')}
-                    >
-                      立即預約免費諮詢
-                    </a>
+                    <div className="space-y-3">
+                      <Link
+                        href="/line"
+                        className="block bg-danger text-white px-8 py-4 rounded-xl font-bold text-center hover:opacity-90 transition-all"
+                      >
+                        選擇你的優化方向（減脂/睡眠/增肌）
+                      </Link>
+                      <a
+                        href="https://lin.ee/dnbucVw"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-gray-900 text-white px-6 py-3 rounded-xl font-bold text-center hover:opacity-90 transition-all"
+                        onClick={() => trackLineClick('diagnosis_result_high')}
+                      >
+                        或直接加 LINE 預約諮詢
+                      </a>
+                    </div>
                   </div>
                 )}
 
@@ -353,26 +361,23 @@ export default function DiagnosisPage() {
                       再決定是否需要專業指導。
                     </p>
                     <div className="space-y-4">
-                      <a
-                        href="https://lin.ee/dnbucVw"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        href="/line"
                         className="block bg-success text-white px-6 py-3 rounded-xl font-bold text-center hover:opacity-90 transition-all"
-                        onClick={() => trackLineClick('diagnosis_result_medium')}
                       >
-                        預約免費諮詢
-                      </a>
+                        選擇你的優化方向（減脂/睡眠/增肌）
+                      </Link>
                       <div className="text-center">
-                        <p className="text-sm text-text-muted mb-3">或先閱讀相關文章：</p>
+                        <p className="text-sm text-text-muted mb-3">或先拿免費資源 + 閱讀相關文章：</p>
                         <div className="flex flex-col gap-2">
                           <Link href="/blog/three-layers-fat-loss-strategy" className="text-primary hover:underline text-sm">
-                            → 三層脂肪減脂策略
-                          </Link>
-                          <Link href="/blog/testosterone-optimization-3-months" className="text-primary hover:underline text-sm">
-                            → 睪固酮自然提升方法
+                            → 三層脂肪減脂策略（含免費計畫表）
                           </Link>
                           <Link href="/blog/sleep-quality-hrv-optimization" className="text-primary hover:underline text-sm">
                             → 睡眠品質優化指南
+                          </Link>
+                          <Link href="/blog/testosterone-optimization-3-months" className="text-primary hover:underline text-sm">
+                            → 睪固酮自然提升方法
                           </Link>
                         </div>
                       </div>

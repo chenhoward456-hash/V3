@@ -5,6 +5,36 @@ export const trackEvent = (eventName: string, eventParams?: Record<string, any>)
   }
 };
 
+export const trackArticleView = (articleTitle: string, category: string, readTime: string, slug?: string) => {
+  trackEvent('article_view', {
+    article_title: articleTitle,
+    article_category: category,
+    read_time: readTime,
+    slug,
+  })
+}
+
+export const trackScroll75 = (articleTitle: string, slug?: string) => {
+  trackEvent('scroll_75', {
+    article_title: articleTitle,
+    slug,
+  })
+}
+
+export const trackResourceDownload = (fileUrl: string, source: string, options?: {
+  articleTitle?: string
+  slug?: string
+  variant?: string
+}) => {
+  trackEvent('resource_download', {
+    file_url: fileUrl,
+    source,
+    article_title: options?.articleTitle,
+    slug: options?.slug,
+    variant: options?.variant,
+  })
+}
+
 // 追蹤診斷測驗完成
 export const trackDiagnosisComplete = (score: number) => {
   trackEvent('diagnosis_complete', {
@@ -14,9 +44,13 @@ export const trackDiagnosisComplete = (score: number) => {
 };
 
 // 追蹤 LINE 預約點擊
-export const trackLineClick = (source: string) => {
+export const trackLineClick = (source: string, options?: { intent?: string; slug?: string; articleTitle?: string; variant?: string }) => {
   trackEvent('line_click', {
-    source: source // 'homepage', 'action_page', 'diagnosis_result', 'blog_post' 等
+    source: source,
+    intent: options?.intent,
+    slug: options?.slug,
+    article_title: options?.articleTitle,
+    variant: options?.variant,
   });
 };
 

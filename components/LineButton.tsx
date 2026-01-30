@@ -4,13 +4,22 @@ import { trackLineClick } from '@/lib/analytics'
 
 interface LineButtonProps {
   source: string
+  intent?: string
+  slug?: string
+  articleTitle?: string
+  variant?: string
   className?: string
   children: React.ReactNode
 }
 
-export default function LineButton({ source, className, children }: LineButtonProps) {
+export default function LineButton({ source, intent, slug, articleTitle, variant, className, children }: LineButtonProps) {
   const handleClick = () => {
-    trackLineClick(source)
+    trackLineClick(source, {
+      intent,
+      slug,
+      articleTitle,
+      variant,
+    })
   }
 
   return (

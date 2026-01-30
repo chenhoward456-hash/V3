@@ -2,9 +2,11 @@
 
 import Link from 'next/link'
 import LineButton from './LineButton'
+import ResourceDownloadButton from './ResourceDownloadButton'
 
 interface ArticleCTAProps {
   articleTitle: string
+  slug?: string
   relatedArticles?: {
     title: string
     slug: string
@@ -16,7 +18,7 @@ interface ArticleCTAProps {
   }
 }
 
-export default function ArticleCTA({ articleTitle, relatedArticles, freeResource }: ArticleCTAProps) {
+export default function ArticleCTA({ articleTitle, slug, relatedArticles, freeResource }: ArticleCTAProps) {
   return (
     <div className="mt-16 space-y-8">
       {/* 免費資源下載 */}
@@ -31,21 +33,13 @@ export default function ArticleCTA({ articleTitle, relatedArticles, freeResource
               <p className="text-gray-600 mb-6">
                 {freeResource.description}
               </p>
-              <a
-                href={freeResource.fileUrl}
-                download
+              <ResourceDownloadButton
+                fileUrl={freeResource.fileUrl}
+                source="blog_post"
+                articleTitle={articleTitle}
+                slug={slug}
                 className="inline-block bg-success text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
-                onClick={() => {
-                  if (typeof window !== 'undefined' && (window as any).gtag) {
-                    (window as any).gtag('event', 'download', {
-                      file_name: freeResource.fileUrl,
-                      article_title: articleTitle
-                    });
-                  }
-                }}
-              >
-                免費下載 PDF
-              </a>
+              />
               <p className="text-sm text-gray-500 mt-4">
                 ✓ 完整 12 週計畫　✓ 訓練動作詳解　✓ 進度追蹤表
               </p>

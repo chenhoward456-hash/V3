@@ -1,23 +1,22 @@
 'use client'
 
 import { useEffect } from 'react'
-import { trackArticleRead, trackLineClick } from '@/lib/analytics'
+import { trackArticleView } from '@/lib/analytics'
 import { useScrollTracking } from '@/hooks/useScrollTracking'
 
 interface ArticleTrackerProps {
   title: string
   category: string
   readTime: string
+  slug: string
 }
 
-export default function ArticleTracker({ title, category, readTime }: ArticleTrackerProps) {
-  // 追蹤文章閱讀
+export default function ArticleTracker({ title, category, readTime, slug }: ArticleTrackerProps) {
   useEffect(() => {
-    trackArticleRead(title, category, readTime)
-  }, [title, category, readTime])
+    trackArticleView(title, category, readTime, slug)
+  }, [title, category, readTime, slug])
 
-  // 追蹤捲動深度
-  useScrollTracking(title)
+  useScrollTracking(title, slug)
 
   return null
 }

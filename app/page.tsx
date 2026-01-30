@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import ResourceDownloadButton from '@/components/ResourceDownloadButton'
 
 const personSchema = {
   '@context': 'https://schema.org',
@@ -254,13 +255,11 @@ export default function HomePage() {
                 <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-700">✓ 飲食策略</span>
                 <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-700">✓ 進度追蹤表</span>
               </div>
-              <a
-                href="/resources/three-layers-fat-loss-plan.pdf"
-                download
+              <ResourceDownloadButton
+                fileUrl="/resources/three-layers-fat-loss-plan.pdf"
+                source="homepage"
                 className="inline-block bg-success text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
-              >
-                免費下載 PDF
-              </a>
+              />
             </div>
           </div>
         </div>

@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { trackArticleScroll } from '@/lib/analytics'
+import { trackArticleScroll, trackScroll75 } from '@/lib/analytics'
 
-export function useScrollTracking(articleTitle: string) {
+export function useScrollTracking(articleTitle: string, slug?: string) {
   const tracked25 = useRef(false)
   const tracked50 = useRef(false)
   const tracked75 = useRef(false)
@@ -24,6 +24,7 @@ export function useScrollTracking(articleTitle: string) {
       }
       if (scrolled >= 75 && !tracked75.current) {
         trackArticleScroll(articleTitle, 75)
+        trackScroll75(articleTitle, slug)
         tracked75.current = true
       }
       if (scrolled >= 100 && !tracked100.current) {
@@ -34,5 +35,5 @@ export function useScrollTracking(articleTitle: string) {
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [articleTitle])
+  }, [articleTitle, slug])
 }

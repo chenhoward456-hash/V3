@@ -4,6 +4,7 @@ import { generateArticleSchema } from './schema'
 import Breadcrumb from '@/components/Breadcrumb'
 import ArticleTracker from './ArticleTracker'
 import ArticleCTA from '@/components/ArticleCTA'
+import StickyCTA from '@/components/StickyCTA'
 
 // 文章內容（之後可以從 Markdown 檔案讀取）
 const blogContent: Record<string, {
@@ -1254,6 +1255,21 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
     notFound()
   }
 
+  const intent = params.slug === 'three-layers-fat-loss-strategy'
+    ? 'fat_loss'
+    : params.slug === 'sleep-quality-hrv-optimization'
+    ? 'recovery'
+    : params.slug === 'muscle-building-science-2025'
+    ? 'muscle_gain'
+    : 'performance'
+
+  const resource = params.slug === 'three-layers-fat-loss-strategy'
+    ? {
+        title: '三層脂肪攻克計畫表（PDF）',
+        fileUrl: '/resources/three-layers-fat-loss-plan.pdf',
+      }
+    : undefined
+
   const articleSchema = generateArticleSchema({
     title: post.title,
     date: post.date,
@@ -1264,11 +1280,19 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
 
   return (
     <div style={{backgroundColor: '#F9F9F7'}} className="min-h-screen">
+      <StickyCTA
+        articleTitle={post.title}
+        slug={params.slug}
+        intent={intent}
+        resource={resource}
+      />
+      
       {/* GA 追蹤 */}
       <ArticleTracker 
         title={post.title}
         category={post.category}
         readTime={post.readTime}
+        slug={params.slug}
       />
       
       {/* 結構化資料 */}
@@ -1388,6 +1412,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         {/* 階梯式 CTA */}
         <ArticleCTA 
           articleTitle={post.title}
+          slug={params.slug}
           freeResource={params.slug === 'three-layers-fat-loss-strategy' ? {
             title: '免費下載：三層脂肪攻克計畫表',
             description: '完整 12 週執行計畫，包含訓練動作、飲食策略、進度追蹤表。立即下載開始你的減脂之旅！',

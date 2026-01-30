@@ -26,7 +26,7 @@ const blogPosts: BlogPost[] = [
     slug: 'workout-dopamine-better-than-coffee',
   },
   {
-    id: '6',
+    id: '7',
     title: '你的肚子有三層脂肪，用錯順序永遠瘦不下來',
     description: '內臟脂肪、普通皮下脂肪、頑固脂肪，每一層的攻克戰術完全不同。分享我備賽時研究的脂肪代謝理論與實戰經驗。',
     date: '2026-01-30',
