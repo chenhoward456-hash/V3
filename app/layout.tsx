@@ -1,7 +1,21 @@
 import type { Metadata } from 'next'
+import { Inter, Noto_Sans_TC } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
+
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
+
+const notoSansTC = Noto_Sans_TC({ 
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-noto-sans-tc',
+})
 
 export const metadata: Metadata = {
   title: 'Howard - 台中北屯 CSCS 體能教練 | Coolday Fitness 教練主管',
@@ -59,7 +73,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="zh-TW" className="scroll-smooth">
+    <html lang="zh-TW" className={`scroll-smooth ${inter.variable} ${notoSansTC.variable}`}>
       <head>
         {/* Google Analytics */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-8GMW6GH1QB"></script>

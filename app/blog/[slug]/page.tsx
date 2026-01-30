@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { generateArticleSchema } from './schema'
+import Breadcrumb from '@/components/Breadcrumb'
 
 // 文章內容（之後可以從 Markdown 檔案讀取）
 const blogContent: Record<string, {
@@ -850,6 +851,14 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
       />
       
       <article className="max-w-3xl mx-auto px-6 py-16">
+        {/* 麵包屑導航 */}
+        <Breadcrumb 
+          items={[
+            { label: '部落格', href: '/blog' },
+            { label: post.title }
+          ]}
+        />
+        
         {/* 返回按鈕 */}
         <Link 
           href="/blog"
@@ -923,6 +932,31 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
               .join('')
           }}
         />
+
+        {/* 相關文章推薦 */}
+        <div className="mt-16 border-t-2 border-gray-200 pt-12">
+          <h3 className="text-2xl font-bold mb-8" style={{color: '#2D2D2D'}}>相關文章推薦</h3>
+          <div className="grid md:grid-cols-2 gap-6">
+            {Object.entries(blogContent)
+              .filter(([slug, article]) => 
+                slug !== params.slug && article.category === post.category
+              )
+              .slice(0, 2)
+              .map(([slug, article]) => (
+                <Link 
+                  key={slug}
+                  href={`/blog/${slug}`}
+                  className="block bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-primary transition-all hover:shadow-lg"
+                >
+                  <span className="text-xs text-primary font-medium">{article.category}</span>
+                  <h4 className="text-lg font-semibold mt-2 mb-2" style={{color: '#2D2D2D'}}>
+                    {article.title}
+                  </h4>
+                  <p className="text-gray-500 text-sm">{article.readTime}</p>
+                </Link>
+              ))}
+          </div>
+        </div>
 
         {/* CTA */}
         <div className="mt-16 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-10 text-center border-2 border-primary/20">

@@ -215,6 +215,51 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* 最新文章區塊 */}
+      <div className="my-24 max-w-5xl mx-auto">
+        <div className="flex items-center justify-between mb-12">
+          <h3 className="text-3xl font-semibold" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>最新文章</h3>
+          <Link 
+            href="/blog"
+            className="text-primary hover:underline text-sm font-medium"
+          >
+            查看全部 →
+          </Link>
+        </div>
+        <div className="grid md:grid-cols-3 gap-8">
+          <Link 
+            href="/blog/muscle-building-science-2025"
+            className="block bg-white rounded-2xl p-6 border-2 border-gray-200 hover:border-primary transition-all hover:shadow-lg"
+          >
+            <span className="text-xs text-primary font-medium">訓練方法</span>
+            <h4 className="text-lg font-semibold mt-3 mb-2" style={{color: '#2D2D2D'}}>
+              2025 增肌真相：這三個科學新發現
+            </h4>
+            <p className="text-gray-500 text-sm">5 分鐘閱讀</p>
+          </Link>
+          <Link 
+            href="/blog/testosterone-optimization-3-months"
+            className="block bg-white rounded-2xl p-6 border-2 border-gray-200 hover:border-primary transition-all hover:shadow-lg"
+          >
+            <span className="text-xs text-primary font-medium">血檢優化</span>
+            <h4 className="text-lg font-semibold mt-3 mb-2" style={{color: '#2D2D2D'}}>
+              三個月自然提升 20% 睪固酮
+            </h4>
+            <p className="text-gray-500 text-sm">6 分鐘閱讀</p>
+          </Link>
+          <Link 
+            href="/blog/sleep-quality-hrv-optimization"
+            className="block bg-white rounded-2xl p-6 border-2 border-gray-200 hover:border-primary transition-all hover:shadow-lg"
+          >
+            <span className="text-xs text-primary font-medium">恢復優化</span>
+            <h4 className="text-lg font-semibold mt-3 mb-2" style={{color: '#2D2D2D'}}>
+              HRV 告訴你睡眠品質的真相
+            </h4>
+            <p className="text-gray-500 text-sm">7 分鐘閱讀</p>
+          </Link>
+        </div>
+      </div>
+
       <div className="text-center my-20">
         <Link 
           href="/action"
