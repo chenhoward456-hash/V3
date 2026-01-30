@@ -769,6 +769,56 @@ HRV 測量的是你心跳間隔的變化。
   },
 }
 
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const post = blogContent[params.slug]
+  
+  if (!post) {
+    return {
+      title: '文章不存在 - Howard',
+    }
+  }
+
+  return {
+    title: `${post.title} - Howard`,
+    description: post.content.substring(0, 160).replace(/[#*\n]/g, ' ').trim() + '...',
+    keywords: [
+      post.category,
+      'Howard',
+      '台中健身教練',
+      'CSCS',
+      '運動科學',
+      '訓練方法',
+      '營養優化',
+      '血檢優化',
+    ],
+    authors: [{ name: 'Howard' }],
+    openGraph: {
+      title: post.title,
+      description: post.content.substring(0, 160).replace(/[#*\n]/g, ' ').trim(),
+      type: 'article',
+      publishedTime: post.date,
+      authors: ['Howard'],
+      tags: [post.category],
+      locale: 'zh_TW',
+      url: `https://howard456.vercel.app/blog/${params.slug}`,
+      images: [
+        {
+          url: 'https://howard456.vercel.app/howard-profile.jpg',
+          width: 1200,
+          height: 630,
+          alt: post.title,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.content.substring(0, 160).replace(/[#*\n]/g, ' ').trim(),
+      images: ['https://howard456.vercel.app/howard-profile.jpg'],
+    },
+  }
+}
+
 export async function generateStaticParams() {
   return Object.keys(blogContent).map((slug) => ({
     slug: slug,
