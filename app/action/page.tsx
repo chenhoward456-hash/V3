@@ -15,7 +15,8 @@ export default function ActionPage() {
       <h2 className="doc-title" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>優化，從理解自己的數據開始</h2>
       <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '800px', margin: '0 auto 3rem'}}>
         這不是另一套健身課程，而是針對你身體系統的工程調校。<br />
-        我們不靠感覺，我們靠數據說話。
+        我們不靠感覺，我們靠數據說話。<br /><br />
+        <span style={{fontSize: '0.95em', color: '#666'}}>提供台中一對一訓練，以及不限地點的遠端數據追蹤諮詢。</span>
       </p>
 
       {/* Howard 實戰工作照 */}

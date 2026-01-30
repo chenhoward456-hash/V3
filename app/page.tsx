@@ -72,7 +72,8 @@ export default function HomePage() {
       </h1>
       <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '700px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
         你的身體，需要一套精準的操作協定。<br /><br />
-        我是 Howard，Coolday Fitness 北屯館教練主管，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。
+        我是 Howard，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。專注於數據優化與系統性訓練設計。<br /><br />
+        <span style={{fontSize: '0.95em', color: '#666'}}>提供一對一訓練指導與遠端數據追蹤諮詢。</span>
       </p>
 
       {/* 30 秒身體效能快篩 - 互動區塊 */}
@@ -195,22 +196,22 @@ export default function HomePage() {
       </div>
 
       <div className="my-20">
-        <h3 className="text-2xl font-semibold mb-8 text-center">從這裡開始</h3>
-        <div className="action-grid">
+        <h3 className="text-2xl font-semibold mb-8 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>如何開始</h3>
+        <div className="grid md:grid-cols-3 gap-8">
           <Link href="/diagnosis" className="action-card">
             <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xs mb-3">01</div>
             <h4>系統診斷</h4>
-            <p>4 個問題，快速評估你的健康風險</p>
+            <p>30 秒快速評估你的身體狀態</p>
+          </Link>
+          <Link href="/action" className="action-card">
+            <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xs mb-3">02</div>
+            <h4>線上諮詢</h4>
+            <p>與 Howard 進行一對一線上諮詢</p>
           </Link>
           <Link href="/case" className="action-card">
-            <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xs mb-3">02</div>
+            <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xs mb-3">03</div>
             <h4>個案追蹤</h4>
             <p>看看我如何從系統崩潰到完全重生</p>
-          </Link>
-          <Link href="/faq" className="action-card">
-            <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xs mb-3">03</div>
-            <h4>常見問題</h4>
-            <p>關於訓練、營養的常見疑問</p>
           </Link>
         </div>
       </div>
