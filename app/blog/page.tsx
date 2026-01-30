@@ -18,6 +18,15 @@ interface BlogPost {
 const blogPosts: BlogPost[] = [
   {
     id: '6',
+    title: '健身比咖啡還提神？多巴胺的痛苦複利效應',
+    description: '為什麼健身後腦袋特別清醒？大腦的痛苦與快樂平衡機制，如何用訓練取代廉價快感。',
+    date: '2026-01-30',
+    category: '訓練方法',
+    readTime: '5 分鐘',
+    slug: 'workout-dopamine-better-than-coffee',
+  },
+  {
+    id: '6',
     title: '你的肚子有三層脂肪，用錯順序永遠瘦不下來',
     description: '內臟脂肪、普通皮下脂肪、頑固脂肪，每一層的攻克戰術完全不同。分享我備賽時研究的脂肪代謝理論與實戰經驗。',
     date: '2026-01-30',
