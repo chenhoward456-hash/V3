@@ -3,8 +3,8 @@ import Link from 'next/link'
 import LineButton from '@/components/LineButton'
 
 export const metadata: Metadata = {
-  title: '遠端數據追蹤訂閱 - 24 小時健康監控 | Howard',
-  description: '月費 5000 元，包含 LINE 即時諮詢、每月視訊、血檢報告解讀、吃睡練補品全方位監控。不用進健身房，用數據優化你的身體系統。',
+  title: '遠端數據追蹤訂閱 - 入門版3800元起 | Howard',
+  description: '兩種方案任選：入門版月費3800元（LINE諮詢+月視訊）、進階版季度18000元（含血檢解讀+補品建議）。不用進健身房，用數據優化你的身體系統。',
 }
 
 export default function RemotePage() {
@@ -22,7 +22,7 @@ export default function RemotePage() {
           不用每週進健身房，用數據優化你的身體系統
         </p>
         <p className="text-gray-500 text-lg">
-          月費 <span className="text-3xl font-bold text-primary">5,000 元</span>
+          入門版 <span className="text-2xl font-bold text-primary">3,800 元/月</span> 起
         </p>
       </div>
 
@@ -42,136 +42,138 @@ export default function RemotePage() {
         </p>
       </div>
 
-      {/* 方案內容 */}
+      {/* 方案選擇 */}
       <div className="my-20 max-w-5xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12" style={{color: '#2D2D2D'}}>
-          訂閱包含什麼？
+        <h2 className="text-3xl font-bold text-center mb-4" style={{color: '#2D2D2D'}}>
+          選擇適合你的方案
         </h2>
+        <p className="text-center text-gray-600 mb-12">
+          兩種方案都包含遠端數據追蹤，差別在於深度與頻率
+        </p>
 
         <div className="grid md:grid-cols-2 gap-8">
-          {/* 1. LINE 即時諮詢 */}
-          <div className="bg-white rounded-2xl p-8 border-2 border-gray-200">
-            <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center text-success font-bold text-lg mb-4">
-              01
+          {/* 入門版 */}
+          <div className="bg-white rounded-2xl p-8 border-2 border-primary/30 relative">
+            <div className="absolute -top-4 left-8 bg-primary text-white px-4 py-1 rounded-full text-sm font-bold">
+              推薦新手
             </div>
-            <h3 className="text-xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-              LINE 即時諮詢
+            <h3 className="text-2xl font-bold mb-2" style={{color: '#2D2D2D'}}>
+              入門版
             </h3>
-            <p className="text-gray-600 mb-4">
-              24 小時內回覆，隨時解答你的疑問
-            </p>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>訓練動作調整建議</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>飲食策略即時優化</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>補品使用時機指導</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>睡眠品質問題排查</span>
-              </li>
-            </ul>
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-primary">3,800</span>
+              <span className="text-gray-600"> 元/月</span>
+            </div>
+            
+            <div className="space-y-3 mb-8">
+              <div className="flex items-start gap-2">
+                <span className="text-success text-lg">✓</span>
+                <span className="text-gray-700">LINE 諮詢（48 小時內回覆）</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success text-lg">✓</span>
+                <span className="text-gray-700">每月 1 次視訊（30 分鐘）</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success text-lg">✓</span>
+                <span className="text-gray-700">訓練計畫調整</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success text-lg">✓</span>
+                <span className="text-gray-700">飲食策略建議</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success text-lg">✓</span>
+                <span className="text-gray-700">每週數據追蹤</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-gray-400 text-lg">✗</span>
+                <span className="text-gray-400 line-through">血檢報告解讀</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-gray-400 text-lg">✗</span>
+                <span className="text-gray-400 line-through">補品策略建議</span>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <p className="text-sm text-gray-600">
+                <strong>適合：</strong>有訓練基礎、想要遠端指導、預算有限的人
+              </p>
+            </div>
+
+            <LineButton
+              source="remote_page"
+              intent="starter"
+              className="block w-full text-center bg-primary text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+            >
+              選擇入門版
+            </LineButton>
           </div>
 
-          {/* 2. 每月視訊諮詢 */}
-          <div className="bg-white rounded-2xl p-8 border-2 border-gray-200">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg mb-4">
-              02
+          {/* 進階版 */}
+          <div className="bg-gradient-to-br from-warning/5 to-warning/10 rounded-2xl p-8 border-2 border-warning/50 relative">
+            <div className="absolute -top-4 left-8 bg-warning text-white px-4 py-1 rounded-full text-sm font-bold">
+              完整優化
             </div>
-            <h3 className="text-xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-              每月視訊諮詢
+            <h3 className="text-2xl font-bold mb-2" style={{color: '#2D2D2D'}}>
+              進階版
             </h3>
-            <p className="text-gray-600 mb-4">
-              每月 1 次深度對談（60 分鐘）
-            </p>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>檢視當月數據變化</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>調整下個月協定</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>動作品質影片檢視</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>長期目標規劃</span>
-              </li>
-            </ul>
-          </div>
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-warning">18,000</span>
+              <span className="text-gray-600"> 元/季</span>
+              <span className="block text-sm text-gray-500 mt-1">平均 6,000 元/月</span>
+            </div>
+            
+            <div className="space-y-3 mb-8">
+              <div className="flex items-start gap-2">
+                <span className="text-success text-lg">✓</span>
+                <span className="text-gray-700"><strong>LINE 即時諮詢</strong>（24 小時內回覆）</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success text-lg">✓</span>
+                <span className="text-gray-700"><strong>每月 1 次視訊</strong>（60 分鐘）</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success text-lg">✓</span>
+                <span className="text-gray-700">訓練計畫調整</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success text-lg">✓</span>
+                <span className="text-gray-700">飲食策略建議</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success text-lg">✓</span>
+                <span className="text-gray-700">每週數據追蹤</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-warning text-lg">★</span>
+                <span className="text-gray-700"><strong>血檢報告解讀</strong>（1 次）</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-warning text-lg">★</span>
+                <span className="text-gray-700"><strong>補品策略建議</strong></span>
+              </div>
+            </div>
 
-          {/* 3. 血檢報告解讀 */}
-          <div className="bg-white rounded-2xl p-8 border-2 border-gray-200">
-            <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center text-warning font-bold text-lg mb-4">
-              03
+            <div className="bg-white rounded-xl p-4 mb-6">
+              <p className="text-sm text-gray-600">
+                <strong>適合：</strong>認真想優化、對血檢數據有興趣、願意投資 3 個月完整療程的人
+              </p>
             </div>
-            <h3 className="text-xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-              血檢報告解讀
-            </h3>
-            <p className="text-gray-600 mb-4">
-              基於個人經驗的數據優化建議
-            </p>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>睪固酮、甲狀腺、發炎指標</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>營養素缺乏判斷</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>補品策略建議</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-warning">⚠️</span>
-                <span className="text-xs">抽血費用需自付，建議 3-6 個月檢測一次</span>
-              </li>
-            </ul>
-          </div>
 
-          {/* 4. 吃睡練全方位監控 */}
-          <div className="bg-white rounded-2xl p-8 border-2 border-gray-200">
-            <div className="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center text-danger font-bold text-lg mb-4">
-              04
-            </div>
-            <h3 className="text-xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-              吃睡練全方位監控
-            </h3>
-            <p className="text-gray-600 mb-4">
-              每週數據追蹤與協定調整
-            </p>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>HRV 睡眠品質追蹤</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>訓練量與恢復平衡</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>飲食熱量與營養素配比</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-success">✓</span>
-                <span>補品使用時機優化</span>
-              </li>
-            </ul>
+            <LineButton
+              source="remote_page"
+              intent="advanced"
+              className="block w-full text-center bg-warning text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+            >
+              選擇進階版
+            </LineButton>
           </div>
+        </div>
+
+        <div className="text-center mt-8 text-sm text-gray-500">
+          <p>💡 入門版可隨時升級進階版，補差額即可</p>
         </div>
       </div>
 
@@ -234,7 +236,7 @@ export default function RemotePage() {
         </LineButton>
 
         <p className="text-gray-500 text-sm mt-6">
-          月費 5,000 元 • 隨時可取消 • 不綁約
+          入門版隨時可取消 • 進階版 3 個月完整療程
         </p>
       </div>
 
@@ -247,10 +249,28 @@ export default function RemotePage() {
         <div className="space-y-6">
           <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
             <h3 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>
-              Q: 需要綁約嗎？
+              Q: 入門版和進階版差在哪？
             </h3>
             <p className="text-gray-600">
-              A: 不需要。採月繳制，隨時可以取消，不會有違約金。
+              A: 入門版適合想要遠端指導的人，月費 3,800 元，不含血檢解讀和補品建議。進階版是 3 個月完整療程，季費 18,000 元，包含血檢解讀和補品策略，適合認真想優化的人。
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
+            <h3 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>
+              Q: 可以先試入門版再升級嗎？
+            </h3>
+            <p className="text-gray-600">
+              A: 可以。入門版隨時可以升級進階版，補差額即可。建議先做 1-2 個月入門版，確認適合後再升級。
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
+            <h3 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>
+              Q: 進階版需要綁約嗎？
+            </h3>
+            <p className="text-gray-600">
+              A: 進階版是 3 個月完整療程，一次性收費 18,000 元。因為血檢優化需要完整週期才能看到效果，所以建議至少做滿 3 個月。
             </p>
           </div>
 
@@ -265,10 +285,10 @@ export default function RemotePage() {
 
           <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
             <h3 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>
-              Q: 血檢費用包含在月費裡嗎？
+              Q: 血檢費用包含在方案裡嗎？
             </h3>
             <p className="text-gray-600">
-              A: 不包含。抽血費用需自付（約 2000-5000 元，依檢測項目而定）。我會提供報告解讀與優化建議，但不包含抽血本身的費用。
+              A: 入門版不包含血檢解讀。進階版包含 1 次血檢報告解讀，但抽血費用需自付（約 3,000-5,000 元，依檢測項目而定）。建議在第 3 個月抽血，這樣才能看到優化成效。
             </p>
           </div>
 
