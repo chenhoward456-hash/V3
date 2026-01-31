@@ -167,13 +167,6 @@ export default function CasePage() {
                     <p className="text-sm text-gray-500">Certified Strength & Conditioning Specialist</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-primary font-mono text-sm">▸</span>
-                  <div>
-                    <p className="font-medium text-gray-900">ZOA 呼吸力學認證</p>
-                    <p className="text-sm text-gray-500">Breathing Mechanics Certification</p>
-                  </div>
-                </div>
               </div>
             </div>
 
