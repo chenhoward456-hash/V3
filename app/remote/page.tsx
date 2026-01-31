@@ -3,8 +3,8 @@ import Link from 'next/link'
 import LineButton from '@/components/LineButton'
 
 export const metadata: Metadata = {
-  title: '遠端數據追蹤訂閱 - 入門版3800元起 | Howard',
-  description: '兩種方案任選：入門版月費3800元（LINE諮詢+月視訊）、進階版季度18000元（含血檢數據經驗分享+補品使用經驗）。不用進健身房，用數據優化你的身體系統。',
+  title: '遠端數據追蹤訂閱 - 免費諮詢 | Howard',
+  description: '24 小時健康監控，適合外縣市或無法定期進館的客戶。提供 LINE 諮詢、月視訊、訓練計畫、血檢數據經驗分享。加 LINE 免費諮詢，根據需求客製化報價。',
 }
 
 export default function RemotePage() {
