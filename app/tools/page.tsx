@@ -15,6 +15,181 @@ export default function ToolsPage() {
       <h2 className="doc-title">工具與資源</h2>
       <p className="doc-subtitle">Howard 實測使用的裝備清單 + 推薦書單。品質優先，沒有業配。</p>
 
+      {/* Howard Protocol 執行流程圖 */}
+      <div className="my-16 max-w-5xl mx-auto">
+        <h3 className="text-3xl font-bold text-center mb-4" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
+          Howard Protocol 執行流程
+        </h3>
+        <p className="text-center text-gray-600 mb-12">
+          系統化的數據追蹤與優化流程，透明且有科學根據
+        </p>
+
+        <div className="bg-white border-2 border-gray-200 rounded-2xl p-8">
+          {/* 流程步驟 */}
+          <div className="space-y-6">
+            {/* Step 1 */}
+            <div className="flex gap-6">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                  01
+                </div>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>
+                  數據採集 (Data Collection)
+                </h4>
+                <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                  建立你的身體基線數據，了解目前系統狀態
+                </p>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid md:grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <span className="font-mono text-primary">▸</span> 體組成分析
+                    </div>
+                    <div>
+                      <span className="font-mono text-primary">▸</span> HRV 睡眠追蹤
+                    </div>
+                    <div>
+                      <span className="font-mono text-primary">▸</span> 訓練能力測試
+                    </div>
+                    <div>
+                      <span className="font-mono text-primary">▸</span> 飲食記錄分析
+                    </div>
+                    <div>
+                      <span className="font-mono text-primary">▸</span> 血檢數據（選配）
+                    </div>
+                    <div>
+                      <span className="font-mono text-primary">▸</span> 生活型態評估
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Arrow */}
+            <div className="flex justify-center">
+              <div className="text-3xl text-gray-300">↓</div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="flex gap-6">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-success text-white flex items-center justify-center font-bold">
+                  02
+                </div>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>
+                  模型建立 (Protocol Design)
+                </h4>
+                <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                  根據數據設計專屬的優化協定
+                </p>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid md:grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="font-mono text-success">✓</span> 訓練量化設計（組數/次數/強度）
+                    </div>
+                    <div>
+                      <span className="font-mono text-success">✓</span> 營養介入策略（熱量/營養素）
+                    </div>
+                    <div>
+                      <span className="font-mono text-success">✓</span> 恢復優化方案（睡眠/壓力管理）
+                    </div>
+                    <div>
+                      <span className="font-mono text-success">✓</span> 補品使用時機（依個人需求）
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Arrow */}
+            <div className="flex justify-center">
+              <div className="text-3xl text-gray-300">↓</div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="flex gap-6">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-warning text-white flex items-center justify-center font-bold">
+                  03
+                </div>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>
+                  執行追蹤 (Execution & Monitoring)
+                </h4>
+                <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                  持續監控數據變化，確保協定有效執行
+                </p>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid md:grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="font-mono text-warning">●</span> 每日 HRV 監測（恢復狀態）
+                    </div>
+                    <div>
+                      <span className="font-mono text-warning">●</span> 每週訓練量追蹤（進步曲線）
+                    </div>
+                    <div>
+                      <span className="font-mono text-warning">●</span> 每月體組成檢測（成效驗證）
+                    </div>
+                    <div>
+                      <span className="font-mono text-warning">●</span> LINE 即時回饋（問題排除）
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Arrow */}
+            <div className="flex justify-center">
+              <div className="text-3xl text-gray-300">↓</div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="flex gap-6">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-gray-900 text-white flex items-center justify-center font-bold">
+                  04
+                </div>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>
+                  協定修正 (Protocol Adjustment)
+                </h4>
+                <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                  根據數據反饋動態調整，持續優化系統
+                </p>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-mono text-gray-900">→</span> 如果 HRV 下降 → 降低訓練量或增加恢復日
+                    </div>
+                    <div>
+                      <span className="font-mono text-gray-900">→</span> 如果體重停滯 → 調整熱量或營養素比例
+                    </div>
+                    <div>
+                      <span className="font-mono text-gray-900">→</span> 如果睡眠品質差 → 優化作息或補充鎂
+                    </div>
+                    <div>
+                      <span className="font-mono text-gray-900">→</span> 如果訓練表現下降 → 檢查恢復與營養狀態
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 循環標示 */}
+          <div className="mt-8 pt-6 border-t-2 border-gray-100 text-center">
+            <p className="text-sm text-gray-500">
+              ♻️ 這是一個持續循環的過程，每 4-6 週重新評估並調整協定
+            </p>
+          </div>
+        </div>
+      </div>
+
       <h3 className="my-10 text-[1.3rem] font-bold text-text-primary">💊 基礎補劑建議</h3>
       
       <div className="bg-white border-2 border-border p-10 rounded-2xl mb-8">

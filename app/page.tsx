@@ -360,12 +360,12 @@ export default function HomePage() {
       <div className="text-center my-20">
         <Link 
           href="/line"
-          className="inline-block text-white px-12 py-4 rounded-full font-medium text-lg transition-all hover:opacity-90"
+          className="inline-block text-white px-12 py-4 rounded-full font-medium text-lg transition-all hover:opacity-90 hover:scale-105"
           style={{backgroundColor: '#2D2D2D', letterSpacing: '0.05em'}}
         >
-          加 LINE 開始對話
+          啟動優化協定 (Activate Protocol)
         </Link>
-        <p className="text-gray-500 text-sm mt-4">我會先給你免費資源，再依你的目標分流引導</p>
+        <p className="text-gray-500 text-sm mt-4">加入 LINE，開始你的系統優化計畫</p>
       </div>
     </section>
     </>

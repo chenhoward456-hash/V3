@@ -138,6 +138,99 @@ export default function CasePage() {
         </div>
       </div>
 
+      {/* Technical Stack */}
+      <div className="my-24 max-w-4xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-12" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
+          Technical Stack
+        </h2>
+        <p className="text-center text-gray-600 mb-12">
+          專業背景與技術規格
+        </p>
+
+        <div className="bg-white border-2 border-gray-200 rounded-2xl p-8">
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* 學歷認證 */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-400 mb-4 tracking-wider">EDUCATION & CERTIFICATION</h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <span className="text-primary font-mono text-sm">▸</span>
+                  <div>
+                    <p className="font-medium text-gray-900">高雄醫學大學 運動醫學系</p>
+                    <p className="text-sm text-gray-500">Bachelor of Sports Medicine</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-primary font-mono text-sm">▸</span>
+                  <div>
+                    <p className="font-medium text-gray-900">NSCA-CSCS 肌力與體能專家</p>
+                    <p className="text-sm text-gray-500">Certified Strength & Conditioning Specialist</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-primary font-mono text-sm">▸</span>
+                  <div>
+                    <p className="font-medium text-gray-900">ZOA 呼吸力學認證</p>
+                    <p className="text-sm text-gray-500">Breathing Mechanics Certification</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 技術專長 */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-400 mb-4 tracking-wider">TECHNICAL EXPERTISE</h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <span className="text-success font-mono text-sm">✓</span>
+                  <div>
+                    <p className="font-medium text-gray-900">數據追蹤與分析</p>
+                    <p className="text-sm text-gray-500">HRV / 血檢 / 體組成 / 訓練量化</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-success font-mono text-sm">✓</span>
+                  <div>
+                    <p className="font-medium text-gray-900">系統化訓練設計</p>
+                    <p className="text-sm text-gray-500">肌力 / 代謝 / 恢復 / 營養介入</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-success font-mono text-sm">✓</span>
+                  <div>
+                    <p className="font-medium text-gray-900">個人實驗數據庫</p>
+                    <p className="text-sm text-gray-500">6 年完整追蹤記錄（2020-2026）</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 數據規格 */}
+          <div className="mt-8 pt-8 border-t-2 border-gray-100">
+            <h3 className="text-sm font-bold text-gray-400 mb-4 tracking-wider">PERFORMANCE METRICS (2026)</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="font-mono text-2xl font-bold text-primary">625</div>
+                <div className="text-xs text-gray-500 mt-1">Testosterone (ng/dL)</div>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="font-mono text-2xl font-bold text-success">0.49</div>
+                <div className="text-xs text-gray-500 mt-1">HOMA-IR</div>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="font-mono text-2xl font-bold text-warning">91</div>
+                <div className="text-xs text-gray-500 mt-1">HRV (ms)</div>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="font-mono text-2xl font-bold text-gray-900">ELITE</div>
+                <div className="text-xs text-gray-500 mt-1">Overall Grade</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="text-center my-16">
         <Link 
           href="/training"
