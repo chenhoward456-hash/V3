@@ -221,6 +221,87 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* 實測案例 - Zone 2 訓練 */}
+      <div className="my-24 max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>
+            實測案例
+          </h2>
+          <p className="text-gray-600 text-lg">
+            備賽期間的 Zone 2 有氧訓練數據
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-br from-success/5 to-success/10 rounded-2xl p-8 md:p-10 border-2 border-success/20">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-4xl">🏃</span>
+            <div>
+              <h3 className="text-2xl font-bold" style={{color: '#2D2D2D'}}>Zone 2 登階機 5 大好處</h3>
+              <p className="text-sm text-gray-600">12 週 Whoop 實測數據</p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white rounded-xl p-5 text-center">
+              <div className="text-3xl font-bold text-success mb-2">+40%</div>
+              <div className="text-sm font-medium text-gray-700 mb-1">HRV 提升</div>
+              <div className="text-xs text-gray-500">65ms → 91ms</div>
+            </div>
+            <div className="bg-white rounded-xl p-5 text-center">
+              <div className="text-3xl font-bold text-primary mb-2">-10%</div>
+              <div className="text-sm font-medium text-gray-700 mb-1">靜息心率</div>
+              <div className="text-xs text-gray-500">58bpm → 52bpm</div>
+            </div>
+            <div className="bg-white rounded-xl p-5 text-center">
+              <div className="text-3xl font-bold text-warning mb-2">+33%</div>
+              <div className="text-sm font-medium text-gray-700 mb-1">深睡比例</div>
+              <div className="text-xs text-gray-500">18% → 24%</div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 mb-6">
+            <h4 className="font-bold mb-3" style={{color: '#2D2D2D'}}>5 大好處</h4>
+            <div className="space-y-2 text-sm text-gray-700">
+              <div className="flex items-start gap-2">
+                <span className="text-success">✓</span>
+                <span><strong>提升 HRV</strong> - 副交感神經活性強，壓力恢復力佳</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success">✓</span>
+                <span><strong>降低 RHR</strong> - 心臟效率提升，心肺功能強化</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success">✓</span>
+                <span><strong>睡眠更好</strong> - 穩定神經系統，深睡比例高</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success">✓</span>
+                <span><strong>核心穩定</strong> - 大肌群連動，排列穩定</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-success">✓</span>
+                <span><strong>穩定情緒</strong> - Zone 2 有氧最能舒壓，腦內啡上升</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 bg-gray-50 rounded-lg border-l-4 border-success mb-6">
+            <p className="text-sm text-gray-700 leading-relaxed">
+              💡 <strong>重點</strong>：Zone 2 有氧不是只有創造熱量赤字，它能讓粒線體效率更佳，大家不重訓至少好好善待自己的心肺能力！
+            </p>
+          </div>
+
+          <div className="text-center">
+            <Link 
+              href="/blog/zone-2-cardio-benefits"
+              className="inline-block bg-success text-white px-8 py-3 rounded-xl font-bold hover:opacity-90 transition-all"
+            >
+              閱讀完整文章 →
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* 無邊框卡片設計 - 去 AI 化 */}
       <div className="my-24 max-w-5xl mx-auto">
         <h1 className="text-4xl md:text-5xl font-bold mb-6 text-center" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>

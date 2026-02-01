@@ -17,6 +17,15 @@ interface BlogPost {
 // 文章列表（之後可以從檔案系統讀取）
 const blogPosts: BlogPost[] = [
   {
+    id: '8',
+    title: 'Zone 2 有氧訓練的 5 大好處 - Whoop 實測數據分享',
+    description: '備賽期間用 Whoop 追蹤 12 週 Zone 2 訓練，HRV 提升 40%、深睡增加 33%。Zone 2 不只是消耗熱量，更是系統優化的關鍵。',
+    date: '2026-02-01',
+    category: '訓練方法',
+    readTime: '8 分鐘',
+    slug: 'zone-2-cardio-benefits',
+  },
+  {
     id: '6',
     title: '健身比咖啡還提神？多巴胺的痛苦複利效應',
     description: '為什麼健身後腦袋特別清醒？大腦的痛苦與快樂平衡機制，如何用訓練取代廉價快感。',

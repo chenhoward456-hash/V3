@@ -224,6 +224,96 @@ export default function CasePage() {
         </div>
       </div>
 
+      {/* 訓練方法論 - Zone 2 實測 */}
+      <div className="my-24 max-w-4xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-4" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
+          訓練方法論
+        </h2>
+        <p className="text-center text-gray-600 mb-12">
+          備賽期間的 Zone 2 有氧實測數據
+        </p>
+
+        <div className="bg-gradient-to-br from-success/5 to-success/10 rounded-2xl p-8 border-2 border-success/20">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-3xl">🏃</span>
+            <div>
+              <h3 className="text-2xl font-bold" style={{color: '#2D2D2D'}}>Zone 2 登階機 5 大好處</h3>
+              <p className="text-sm text-gray-600">12 週 Whoop 實測數據</p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-white rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">✅</span>
+                <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>提升 HRV</h4>
+              </div>
+              <p className="text-gray-600 text-sm mb-2">Higher HRV</p>
+              <div className="bg-success/10 rounded-lg p-3">
+                <p className="text-sm text-gray-700">65ms → <strong className="text-success">91ms</strong> (+40%)</p>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">副交感神經活性強，壓力恢復力佳</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">✅</span>
+                <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>降低 RHR</h4>
+              </div>
+              <p className="text-gray-600 text-sm mb-2">Lower Resting Heart Rate</p>
+              <div className="bg-primary/10 rounded-lg p-3">
+                <p className="text-sm text-gray-700">58bpm → <strong className="text-primary">52bpm</strong> (-10%)</p>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">心臟效率提升，心肺功能強化</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">✅</span>
+                <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>睡眠更好</h4>
+              </div>
+              <p className="text-gray-600 text-sm mb-2">Better Sleep Quality</p>
+              <div className="bg-warning/10 rounded-lg p-3">
+                <p className="text-sm text-gray-700">深睡 18% → <strong className="text-warning">24%</strong> (+33%)</p>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">穩定神經系統，深睡比例高</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">✅</span>
+                <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>核心穩定</h4>
+              </div>
+              <p className="text-gray-600 text-sm mb-2">Stronger Core & Lower Body</p>
+              <p className="text-xs text-gray-500">大肌群連動，排列穩定</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">✅</span>
+              <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>穩定情緒</h4>
+            </div>
+            <p className="text-sm text-gray-600">Zone 2 有氧最能舒壓 → 腦內啡上升，心情穩定</p>
+          </div>
+
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg border-l-4 border-success">
+            <p className="text-sm text-gray-700 leading-relaxed">
+              💡 <strong>重點</strong>：Zone 2 有氧不是只有創造熱量赤字，它能讓粒線體效率更佳，大家不重訓至少好好善待自己的心肺能力！
+            </p>
+          </div>
+
+          <div className="text-center mt-6">
+            <Link 
+              href="/blog/zone-2-cardio-benefits"
+              className="inline-block text-success hover:underline font-medium"
+            >
+              閱讀完整文章 →
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <div className="text-center my-16">
         <Link 
           href="/training"
