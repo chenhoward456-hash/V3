@@ -3,8 +3,8 @@ import Link from 'next/link'
 import LineButton from '@/components/LineButton'
 
 export const metadata: Metadata = {
-  title: '遠端數據追蹤訂閱 - 免費諮詢 | Howard',
-  description: '24 小時健康監控，適合外縣市或無法定期進館的客戶。提供 LINE 諮詢、月視訊、訓練計畫、血檢數據經驗分享。加 LINE 免費諮詢，根據需求客製化報價。',
+  title: '數據追蹤訂閱制 - 實體+監控組合或純遠端 | Howard',
+  description: '根據地區選擇最適合的方案：台中推薦實體訓練+24小時數據監控組合，外縣市推薦純遠端訂閱。提供LINE諮詢、月視訊、訓練計畫、血檢數據經驗分享。加LINE免費諮詢。',
 }
 
 export default function RemotePage() {
