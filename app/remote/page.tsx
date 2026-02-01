@@ -10,16 +10,17 @@ export const metadata: Metadata = {
 export default function RemotePage() {
   return (
     <section className="section-container">
-      {/* 外縣市專屬警示 */}
+      {/* 智能分流提示 */}
       <div className="max-w-4xl mx-auto mb-8">
-        <div className="bg-warning/10 border-2 border-warning/30 rounded-xl p-6">
+        <div className="bg-primary/10 border-2 border-primary/30 rounded-xl p-6">
           <div className="flex items-start gap-3">
-            <span className="text-2xl">⚠️</span>
+            <span className="text-2xl">💡</span>
             <div>
-              <h3 className="font-bold text-warning mb-2">此方案適合外縣市或無法定期進館的客戶</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                <strong>台中地區客戶建議優先選擇實體訓練</strong>，效果更好且能即時調整動作。實體訓練可至 <Link href="/action" className="text-primary hover:underline">預約諮詢頁面</Link> 了解詳情。
-              </p>
+              <h3 className="font-bold text-primary mb-2">根據你的地區，我們有不同的推薦方案</h3>
+              <div className="text-gray-600 text-sm leading-relaxed space-y-2">
+                <p><strong>📍 台中地區</strong>：建議「實體訓練 + 數據監控組合」，效果更好</p>
+                <p><strong>🌏 外縣市</strong>：建議「純遠端數據追蹤訂閱」，24 小時監控</p>
+              </div>
             </div>
           </div>
         </div>
@@ -28,16 +29,16 @@ export default function RemotePage() {
       {/* Hero 區塊 */}
       <div className="max-w-4xl mx-auto text-center mb-16">
         <div className="inline-block px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-6">
-          遠端數據追蹤訂閱制
+          數據追蹤訂閱制
         </div>
         <h1 className="text-4xl md:text-5xl font-bold mb-6" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
-          24 小時健康監控
+          24 小時系統監控
         </h1>
         <p className="text-xl text-gray-600 mb-4 leading-relaxed">
-          適合外縣市或時間不方便進館的客戶
+          純遠端訂閱 或 實體+監控組合，根據你的需求選擇
         </p>
         <p className="text-gray-500 text-lg">
-          💬 加 LINE 免費諮詢，根據你的需求客製化報價
+          💬 加 LINE 免費諮詢，根據你的地區與需求推薦最適合的方案
         </p>
       </div>
 
@@ -58,17 +59,78 @@ export default function RemotePage() {
       </div>
 
       {/* 方案選擇 */}
-      <div className="my-20 max-w-5xl mx-auto">
+      <div className="my-20 max-w-6xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-4" style={{color: '#2D2D2D'}}>
           選擇適合你的方案
         </h2>
         <p className="text-center text-gray-600 mb-12">
-          兩種方案都包含遠端數據追蹤，差別在於深度與頻率
+          根據你的地區與需求，選擇最適合的優化方案
         </p>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* 實體+監控組合（台中專屬） */}
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-8 border-2 border-primary/50 relative">
+            <div className="absolute -top-4 left-8 bg-primary text-white px-4 py-1 rounded-full text-sm font-bold">
+              台中推薦
+            </div>
+            <h3 className="text-2xl font-bold mb-6" style={{color: '#2D2D2D'}}>
+              實體+監控組合
+            </h3>
+            
+            <div className="space-y-3 mb-8">
+              <div className="bg-white rounded-lg p-3 mb-4">
+                <p className="text-xs text-gray-500 mb-2">📍 實體訓練</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <span className="text-primary text-lg">✓</span>
+                    <span className="text-gray-700">動作評估與矯正</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-primary text-lg">✓</span>
+                    <span className="text-gray-700">客製化訓練計畫</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-primary text-lg">✓</span>
+                    <span className="text-gray-700">即時指導與調整</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-3">
+                <p className="text-xs text-gray-500 mb-2">📊 數據監控</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <span className="text-success text-lg">✓</span>
+                    <span className="text-gray-700">24 小時 LINE 諮詢</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-success text-lg">✓</span>
+                    <span className="text-gray-700">HRV、睡眠追蹤</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-success text-lg">✓</span>
+                    <span className="text-gray-700">營養與補品策略</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 mb-6">
+              <p className="text-sm text-gray-600">
+                <strong>適合：</strong>台中地區，想要最佳優化效果的人
+              </p>
+            </div>
+
+            <Link
+              href="/action"
+              className="block w-full text-center bg-primary text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+            >
+              了解實體訓練 →
+            </Link>
+          </div>
+
           {/* 入門版 */}
-          <div className="bg-white rounded-2xl p-8 border-2 border-primary/30 relative">
+          <div className="bg-white rounded-2xl p-8 border-2 border-gray-200 relative">
             <div className="absolute -top-4 left-8 bg-primary text-white px-4 py-1 rounded-full text-sm font-bold">
               推薦新手
             </div>
