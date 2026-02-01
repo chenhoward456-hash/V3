@@ -77,107 +77,53 @@ export default function HomePage() {
         <span style={{fontSize: '0.95em', color: '#666'}}>台中北屯一對一訓練指導。</span>
       </p>
 
-      {/* 3 秒決策路徑 - 立即分流 */}
+      {/* 系統診斷導向 */}
       <div className="my-16 max-w-5xl mx-auto">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>
-            你現在最想解決什麼？
+            你的身體系統需要優化嗎？
           </h2>
-          <p className="text-gray-600 text-lg">
-            選一個目標，我會給你最精準的路徑
+          <p className="text-gray-600 text-lg mb-6">
+            完成 30 秒診斷，了解你的系統狀態
           </p>
+          <Link 
+            href="/diagnosis"
+            className="inline-block bg-primary text-white px-10 py-4 rounded-xl font-bold text-lg hover:opacity-90 transition-all hover:scale-105"
+          >
+            開始系統診斷 →
+          </Link>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* 減脂路徑 */}
-          <Link
-            href="/line?intent=fat_loss"
-            className="group bg-white rounded-2xl p-8 border-2 border-gray-200 hover:border-danger hover:shadow-xl transition-all"
-          >
-            <div className="text-5xl mb-4">🔴</div>
-            <h3 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-              減脂卡關
+        <div className="grid md:grid-cols-3 gap-8 mt-12">
+          <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
+            <div className="text-4xl mb-4">�</div>
+            <h3 className="text-xl font-bold mb-3" style={{color: '#2D2D2D'}}>
+              數據追蹤
             </h3>
-            <p className="text-gray-600 mb-4 leading-relaxed">
-              肚子卡住、體脂下降停滯、腰圍偏高
+            <p className="text-gray-600 text-sm leading-relaxed">
+              HRV、睡眠品質、血檢數據、體組成分析。用數據找出系統瓶頸。
             </p>
-            <div className="text-sm text-gray-500 mb-4">
-              我會先給你：
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-success">✓</span>
-                <span className="text-gray-700">三層脂肪攻克計畫表（PDF）</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-success">✓</span>
-                <span className="text-gray-700">WHtR 腰圍身高比診斷</span>
-              </div>
-            </div>
-            <div className="mt-6 text-danger font-bold group-hover:translate-x-2 transition-transform">
-              開始優化 →
-            </div>
-          </Link>
+          </div>
 
-          {/* 睡眠/精神路徑 */}
-          <Link
-            href="/line?intent=recovery"
-            className="group bg-white rounded-2xl p-8 border-2 border-gray-200 hover:border-warning hover:shadow-xl transition-all"
-          >
-            <div className="text-5xl mb-4">🟡</div>
-            <h3 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-              睡不飽/沒精神
+          <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
+            <div className="text-4xl mb-4">⚙️</div>
+            <h3 className="text-xl font-bold mb-3" style={{color: '#2D2D2D'}}>
+              系統優化
             </h3>
-            <p className="text-gray-600 mb-4 leading-relaxed">
-              腦霧、睡不飽、恢復差、壓力大
+            <p className="text-gray-600 text-sm leading-relaxed">
+              訓練、營養、恢復、補品策略。根據數據調整優化協定。
             </p>
-            <div className="text-sm text-gray-500 mb-4">
-              我會先給你：
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-success">✓</span>
-                <span className="text-gray-700">HRV 睡眠品質優化指南</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-success">✓</span>
-                <span className="text-gray-700">壓力荷爾蒙評估</span>
-              </div>
-            </div>
-            <div className="mt-6 text-warning font-bold group-hover:translate-x-2 transition-transform">
-              開始優化 →
-            </div>
-          </Link>
+          </div>
 
-          {/* 增肌路徑 */}
-          <Link
-            href="/line?intent=muscle_gain"
-            className="group bg-white rounded-2xl p-8 border-2 border-gray-200 hover:border-success hover:shadow-xl transition-all"
-          >
-            <div className="text-5xl mb-4">🟢</div>
-            <h3 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-              增肌沒進步
+          <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
+            <div className="text-4xl mb-4">�</div>
+            <h3 className="text-xl font-bold mb-3" style={{color: '#2D2D2D'}}>
+              持續監控
             </h3>
-            <p className="text-gray-600 mb-4 leading-relaxed">
-              練很久沒進步、動作品質不穩、想更系統化
+            <p className="text-gray-600 text-sm leading-relaxed">
+              24 小時 LINE 諮詢、月視訊追蹤。確保系統持續運作。
             </p>
-            <div className="text-sm text-gray-500 mb-4">
-              我會先給你：
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-success">✓</span>
-                <span className="text-gray-700">2025 增肌科學新發現</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-success">✓</span>
-                <span className="text-gray-700">訓練計畫檢視</span>
-              </div>
-            </div>
-            <div className="mt-6 text-success font-bold group-hover:translate-x-2 transition-transform">
-              開始優化 →
-            </div>
-          </Link>
+          </div>
         </div>
 
         <div className="text-center mt-8">
