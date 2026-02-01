@@ -11,6 +11,7 @@ export default function DiagnosisPage() {
   const [showResult, setShowResult] = useLocalStorage('diagnosis_showResult', false)
   const [waist, setWaist] = useLocalStorage('diagnosis_waist', '')
   const [height, setHeight] = useLocalStorage('diagnosis_height', '')
+  const [location, setLocation] = useLocalStorage('diagnosis_location', '')
   const [whtr, setWhtr] = useState('--')
   const [, , isClient] = useLocalStorage('_client_check', true)
 
@@ -22,11 +23,17 @@ export default function DiagnosisPage() {
     if (questionNum < 4) {
       setCurrentQuestion(questionNum + 1)
     } else {
-      setShowResult(true)
-      // 追蹤診斷測驗完成
-      const totalScore = newAnswers.reduce((a, b) => a + b, 0)
-      trackDiagnosisComplete(totalScore)
+      // 第 4 題完成後，進入地區選擇
+      setCurrentQuestion(5)
     }
+  }
+
+  const handleLocationSelect = (loc: string) => {
+    setLocation(loc)
+    setShowResult(true)
+    // 追蹤診斷測驗完成
+    const totalScore = answers.reduce((a, b) => a + b, 0)
+    trackDiagnosisComplete(totalScore)
   }
 
   const calculateWHtR = () => {
@@ -131,8 +138,8 @@ export default function DiagnosisPage() {
 
   return (
     <section className="section-container">
-      <h2 className="doc-title">生活型態評估</h2>
-      <p className="doc-subtitle">4 個問題，評估你的生活型態與訓練需求</p>
+      <h2 className="doc-title">系統診斷測驗</h2>
+      <p className="doc-subtitle">5 個問題，評估你的系統狀態並推薦最適合的方案</p>
 
       <div className="bg-warning/5 border-2 border-warning/30 rounded-xl p-6 mb-8">
         <p className="text-text-secondary text-sm leading-relaxed">
@@ -141,7 +148,7 @@ export default function DiagnosisPage() {
       </div>
 
       <div className="flex justify-center gap-4 my-12">
-        {[1, 2, 3, 4].map((step) => (
+        {[1, 2, 3, 4, 5].map((step) => (
           <div
             key={step}
             className={`w-12 h-12 rounded-full flex items-center justify-center font-bold border-3 transition-all ${
@@ -301,6 +308,40 @@ export default function DiagnosisPage() {
             </div>
           )}
 
+          {!showResult && currentQuestion === 5 && (
+            <div>
+              <h3 className="text-2xl mb-2 text-text-primary font-bold">Q5. 你目前在哪個地區？</h3>
+              <p className="text-text-secondary text-[15px] mb-8">幫助我們推薦最適合你的方案</p>
+              
+              <div className="flex flex-col gap-4">
+                <button
+                  onClick={() => handleLocationSelect('taichung')}
+                  className="w-full text-left p-6 bg-bg-tertiary border-2 border-border rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">📍</span>
+                    <div>
+                      <div className="font-bold text-lg mb-1">台中地區</div>
+                      <div className="text-sm text-gray-600">推薦：實體訓練 + 數據監控組合</div>
+                    </div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleLocationSelect('other')}
+                  className="w-full text-left p-6 bg-bg-tertiary border-2 border-border rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">🌏</span>
+                    <div>
+                      <div className="font-bold text-lg mb-1">外縣市</div>
+                      <div className="text-sm text-gray-600">推薦：純遠端數據追蹤訂閱</div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
           {showResult && (
             <div>
               <div className="text-center mb-8">
@@ -324,67 +365,67 @@ export default function DiagnosisPage() {
                 </div>
               </div>
 
-              {/* 個人化建議和分級引導 */}
+              {/* 智能分流推薦 */}
               <div className="space-y-6">
-                {totalScore >= 8 && (
-                  <div className="bg-danger/5 border-2 border-danger rounded-xl p-8">
-                    <h4 className="text-xl font-bold mb-4 text-danger">⚠️ 建議立即優化</h4>
+                {/* 高分 + 台中 → 實體+監控組合 */}
+                {totalScore >= 4 && location === 'taichung' && (
+                  <div className="bg-primary/5 border-2 border-primary rounded-xl p-8">
+                    <h4 className="text-xl font-bold mb-4 text-primary">🎯 為你推薦：實體訓練 + 數據監控組合</h4>
                     <p className="text-text-secondary mb-6 leading-relaxed">
-                      你的身體系統出現多個警訊，建議盡快進行專業評估和系統性調整。
-                      長期忽略這些訊號可能影響健康和生活品質。
+                      你在台中地區，建議先透過實體訓練建立信任與動作基礎，
+                      再搭配 24 小時數據監控，達到最佳優化效果。
                     </p>
-                    <div className="space-y-3">
-                      <Link
-                        href="/line"
-                        className="block bg-danger text-white px-8 py-4 rounded-xl font-bold text-center hover:opacity-90 transition-all"
-                      >
-                        選擇你的優化方向（減脂/睡眠/增肌）
-                      </Link>
-                      <a
-                        href="https://lin.ee/dnbucVw"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block bg-gray-900 text-white px-6 py-3 rounded-xl font-bold text-center hover:opacity-90 transition-all"
-                        onClick={() => trackLineClick('diagnosis_result_high')}
-                      >
-                        或直接加 LINE 預約諮詢
-                      </a>
+                    <div className="bg-white rounded-xl p-6 mb-6">
+                      <h5 className="font-bold mb-3">📍 實體訓練（Coolday Fitness 北屯館）</h5>
+                      <ul className="space-y-2 text-sm text-gray-700 mb-4">
+                        <li>✓ 動作評估與矯正</li>
+                        <li>✓ 客製化訓練計畫</li>
+                        <li>✓ 即時指導與調整</li>
+                      </ul>
+                      <h5 className="font-bold mb-3">📊 數據監控（遠端訂閱）</h5>
+                      <ul className="space-y-2 text-sm text-gray-700">
+                        <li>✓ 24 小時 LINE 諮詢</li>
+                        <li>✓ HRV、睡眠、血檢追蹤</li>
+                        <li>✓ 營養與補品策略</li>
+                      </ul>
                     </div>
+                    <Link
+                      href="/action"
+                      className="block bg-primary text-white px-8 py-4 rounded-xl font-bold text-center hover:opacity-90 transition-all"
+                    >
+                      了解實體訓練方案 →
+                    </Link>
                   </div>
                 )}
 
-                {totalScore >= 4 && totalScore < 8 && (
-                  <div className="bg-warning/5 border-2 border-warning rounded-xl p-8">
-                    <h4 className="text-xl font-bold mb-4 text-warning">💡 有改善空間</h4>
+                {/* 高分 + 外縣市 → 純遠端訂閱 */}
+                {totalScore >= 4 && location === 'other' && (
+                  <div className="bg-success/5 border-2 border-success rounded-xl p-8">
+                    <h4 className="text-xl font-bold mb-4 text-success">🎯 為你推薦：純遠端數據追蹤訂閱</h4>
                     <p className="text-text-secondary mb-6 leading-relaxed">
-                      你的身體系統有優化空間。建議先了解正確的訓練和營養方法，
-                      再決定是否需要專業指導。
+                      你在外縣市，建議透過遠端數據追蹤系統，
+                      24 小時監控你的身體狀態，達到系統性優化。
                     </p>
-                    <div className="space-y-4">
-                      <Link
-                        href="/line"
-                        className="block bg-success text-white px-6 py-3 rounded-xl font-bold text-center hover:opacity-90 transition-all"
-                      >
-                        選擇你的優化方向（減脂/睡眠/增肌）
-                      </Link>
-                      <div className="text-center">
-                        <p className="text-sm text-text-muted mb-3">或先拿免費資源 + 閱讀相關文章：</p>
-                        <div className="flex flex-col gap-2">
-                          <Link href="/blog/three-layers-fat-loss-strategy" className="text-primary hover:underline text-sm">
-                            → 三層脂肪減脂策略（含免費計畫表）
-                          </Link>
-                          <Link href="/blog/sleep-quality-hrv-optimization" className="text-primary hover:underline text-sm">
-                            → 睡眠品質優化指南
-                          </Link>
-                          <Link href="/blog/testosterone-optimization-3-months" className="text-primary hover:underline text-sm">
-                            → 睪固酮自然提升方法
-                          </Link>
-                        </div>
-                      </div>
+                    <div className="bg-white rounded-xl p-6 mb-6">
+                      <h5 className="font-bold mb-3">📊 遠端訂閱包含</h5>
+                      <ul className="space-y-2 text-sm text-gray-700">
+                        <li>✓ LINE 即時諮詢（24-48 小時內回覆）</li>
+                        <li>✓ 每月視訊追蹤（30-60 分鐘）</li>
+                        <li>✓ 訓練計畫 + 飲食策略</li>
+                        <li>✓ 數據追蹤（HRV、睡眠、體組成）</li>
+                        <li>✓ 血檢數據經驗分享（進階版）</li>
+                      </ul>
                     </div>
+                    <Link
+                      href="/remote"
+                      className="block bg-success text-white px-8 py-4 rounded-xl font-bold text-center hover:opacity-90 transition-all"
+                    >
+                      了解遠端訂閱方案 →
+                    </Link>
                   </div>
                 )}
 
+                {/* 低分 → 免費資源 */}
                 {totalScore < 4 && (
                   <div className="bg-success/5 border-2 border-success rounded-xl p-8">
                     <h4 className="text-xl font-bold mb-4 text-success">✓ 狀態良好</h4>
