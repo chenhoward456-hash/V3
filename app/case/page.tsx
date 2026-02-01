@@ -27,7 +27,7 @@ export default function CasePage() {
           <div className="absolute -top-3 -left-3 bg-danger/75 text-white px-4 py-1.5 rounded-full font-normal text-sm z-10">
             2020 年初
           </div>
-          <div className="h-[420px] rounded-[1.5rem] overflow-hidden" style={{boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.03)'}}>
+          <div className="h-[300px] md:h-[420px] rounded-[1.5rem] overflow-hidden" style={{boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.03)'}}>
             <img 
               src="/before.jpg" 
               alt="2020 年系統崩潰狀態" 
@@ -52,7 +52,7 @@ export default function CasePage() {
           <div className="absolute -top-3 -left-3 bg-success/75 text-white px-4 py-1.5 rounded-full font-normal text-sm z-10">
             2026 年
           </div>
-          <div className="h-[420px] rounded-[1.5rem] overflow-hidden" style={{boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.03)'}}>
+          <div className="h-[300px] md:h-[420px] rounded-[1.5rem] overflow-hidden" style={{boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.03)'}}>
             <img 
               src="/after.jpg" 
               alt="2026 年完全重生狀態 - 頭髮恢復與體態改善" 

@@ -42,7 +42,7 @@ export default function ToolsPage() {
                   建立你的身體基線數據，了解目前系統狀態
                 </p>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="grid md:grid-cols-3 gap-3 text-sm">
+                  <div className="grid md:grid-cols-3 gap-3 text-base md:text-sm">
                     <div>
                       <span className="font-mono text-primary">▸</span> 體組成分析
                     </div>
@@ -86,7 +86,7 @@ export default function ToolsPage() {
                   根據數據設計專屬的優化協定
                 </p>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="grid md:grid-cols-2 gap-3 text-sm">
+                  <div className="grid md:grid-cols-2 gap-3 text-base md:text-sm">
                     <div>
                       <span className="font-mono text-success">✓</span> 訓練量化設計（組數/次數/強度）
                     </div>
@@ -124,7 +124,7 @@ export default function ToolsPage() {
                   持續監控數據變化，確保協定有效執行
                 </p>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="grid md:grid-cols-2 gap-3 text-sm">
+                  <div className="grid md:grid-cols-2 gap-3 text-base md:text-sm">
                     <div>
                       <span className="font-mono text-warning">●</span> 每日 HRV 監測（恢復狀態）
                     </div>
@@ -162,7 +162,7 @@ export default function ToolsPage() {
                   根據數據反饋動態調整，持續優化系統
                 </p>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-base md:text-sm">
                     <div>
                       <span className="font-mono text-gray-900">→</span> 如果 HRV 下降 → 降低訓練量或增加恢復日
                     </div>

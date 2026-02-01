@@ -67,8 +67,8 @@ export default function HomePage() {
         />
       </div>
 
-      <h1 className="doc-title" style={{color: '#2D2D2D', letterSpacing: '0.08em', lineHeight: '1.3'}}>
-        <span style={{fontSize: '0.6em', fontWeight: 'normal', display: 'block', marginBottom: '1rem', letterSpacing: '0.02em'}}>從系統崩潰到完全重生</span>
+      <h1 className="text-3xl md:text-5xl font-bold text-center mb-6" style={{color: '#2D2D2D', letterSpacing: '0.08em', lineHeight: '1.3'}}>
+        <span className="text-lg md:text-3xl" style={{fontWeight: 'normal', display: 'block', marginBottom: '1rem', letterSpacing: '0.02em'}}>從系統崩潰到完全重生</span>
         <span style={{color: '#2D2D2D'}}>The Howard Protocol</span>
       </h1>
       <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '700px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
