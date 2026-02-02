@@ -73,8 +73,7 @@ export default function HomePage() {
       <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '700px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
         我是 Howard，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。<br />
         6 年實驗數據經驗，專注於科學化遠端管理。<br />
-        24 小時內回覆你的訓練問題。<br />
-        <span style={{fontSize: '0.95em', color: '#666'}}>台中北屯一對一訓練指導。</span>
+        24 小時內回覆你的訓練問題。
       </p>
 
       {/* 系統診斷導向 */}
