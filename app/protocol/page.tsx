@@ -36,7 +36,7 @@ export default function ProtocolPage() {
         <ul className="space-y-2 text-gray-600 mb-4">
           <li>• 訓練很認真，但沒有追蹤數據，不知道是否有進步</li>
           <li>• 飲食很嚴格，但沒有考慮睡眠和壓力，效果打折</li>
-          <li>• 補品吃很多，但沒有血檢數據，不知道是否真的需要</li>
+          <li>• 補品吃很多，但沒有數據追蹤，不知道是否真的需要</li>
           <li>• 目標很明確，但沒有系統化執行，最後半途而廢</li>
         </ul>
         <p className="italic text-gray-500 text-sm leading-relaxed" style={{fontFamily: 'Georgia, serif'}}>

@@ -14,17 +14,17 @@ export default function NutritionPage() {
     <section className="section-container" style={{backgroundColor: '#F9F9F7'}}>
       <h2 className="text-3xl md:text-4xl font-bold text-center mb-6" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>The Howard Nutrition Protocol</h2>
       <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
-        我不相信「乾淨飲食」。我用數據追蹤代謝，用血檢驗證效果。這是我 6 年的優化旅程。
+        我不相信「乾淨飲食」。我用數據追蹤代謝，用實際成效驗證效果。這是我 6 年的優化旅程。
       </p>
 
-      {/* 血檢數據優化旅程 */}
+      {/* 數據追蹤優化旅程 */}
       <div className="my-20 max-w-4xl mx-auto" style={{borderLeft: '4px solid #8B7355', paddingLeft: '2rem', backgroundColor: 'rgba(139, 115, 85, 0.03)', padding: '2rem 2rem 2rem 3rem', borderRadius: '0.5rem'}}>
         <div className="flex items-start gap-4 mb-4">
           <div className="w-12 h-12 rounded-full border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold text-sm flex-shrink-0">DATA</div>
           <div>
-            <h3 className="text-2xl font-semibold mb-3" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>我的血檢優化旅程</h3>
+            <h3 className="text-2xl font-semibold mb-3" style={{color: '#2D2D2D', letterSpacing: '0.02em'}}>我的數據追蹤旅程</h3>
             <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
-              2020 年系統崩潰後，我開始用血檢數據追蹤身體變化。6 年來，我記錄了每一次調整、每一個數據變化。
+              2020 年系統崩潰後，我開始用數據追蹤記錄身體變化。6 年來，我記錄了每一次調整、每一個數據變化。
             </p>
             <div className="grid md:grid-cols-3 gap-6 mt-6">
               <div className="bg-white p-4 rounded-xl border border-gray-200">
@@ -136,7 +136,7 @@ export default function NutritionPage() {
       <div className="my-20 text-center max-w-3xl mx-auto">
         <h3 className="text-3xl mb-6 font-semibold" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>想看完整數據？</h3>
         <p className="text-gray-600 mb-8 leading-relaxed">
-          我在部落格分享完整的血檢數據和優化過程。
+          我在部落格分享完整的實驗數據和優化過程。
         </p>
         <div className="flex gap-4 justify-center mb-12">
           <a
@@ -144,7 +144,7 @@ export default function NutritionPage() {
             className="inline-block px-8 py-3 rounded-full font-medium text-white transition-all hover:opacity-90"
             style={{backgroundColor: '#2D2D2D', letterSpacing: '0.05em'}}
           >
-            閱讀血檢優化文章
+            閱讀數據優化文章
           </a>
           <a
             href="https://lin.ee/dnbucVw"

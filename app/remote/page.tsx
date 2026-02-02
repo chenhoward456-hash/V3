@@ -4,7 +4,7 @@ import LineButton from '@/components/LineButton'
 
 export const metadata: Metadata = {
   title: '數據追蹤訂閱制 - 實體+監控組合或純遠端 | Howard',
-  description: '根據地區選擇最適合的方案：台中推薦實體訓練+24小時數據監控組合，外縣市推薦純遠端訂閱。提供LINE諮詢、月視訊、訓練計畫、血檢數據經驗分享。加LINE免費諮詢。',
+  description: '根據地區選擇最適合的方案：台中推薦實體訓練+24小時數據監控組合，外縣市推薦純遠端訂閱。提供LINE諮詢、月視訊、訓練計畫、個人實驗數據分享。加LINE免費諮詢。',
 }
 
 export default function RemotePage() {
@@ -161,7 +161,7 @@ export default function RemotePage() {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-gray-400 text-lg">✗</span>
-                <span className="text-gray-400 line-through">血檢報告解讀</span>
+                <span className="text-gray-400 line-through">個人數據分享</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-gray-400 text-lg">✗</span>
@@ -216,8 +216,7 @@ export default function RemotePage() {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-warning text-lg">★</span>
-                <span className="text-gray-700"><strong>血檢數據經驗分享</strong>（1 次）</span>
-              </div>
+                              </div>
               <div className="flex items-start gap-2">
                 <span className="text-warning text-lg">★</span>
                 <span className="text-gray-700"><strong>補品使用經驗分享</strong></span>
@@ -259,7 +258,7 @@ export default function RemotePage() {
               <li>• 已經有訓練基礎，想更精準優化</li>
               <li>• 重視數據追蹤與系統化方法</li>
               <li>• 想改善睡眠、壓力、恢復問題</li>
-              <li>• 對血檢數據優化有興趣</li>
+              <li>• 對個人實驗數據優化有興趣</li>
             </ul>
           </div>
 
@@ -285,7 +284,7 @@ export default function RemotePage() {
               <strong>1. 非醫療服務：</strong>此服務提供的是教練個人經驗整理與訓練指導，<strong>不構成醫療建議、診斷或治療</strong>。我不是醫師，無法提供醫療行為。
             </p>
             <p>
-              <strong>2. 血檢數據分享：</strong>進階版提供的「血檢數據經驗分享」是基於我個人 6 年追蹤數據的經驗整理，<strong>非醫療報告解讀</strong>。任何數據異常請務必先諮詢合格醫師，不可延誤就醫。
+              <strong>2. 個人實驗數據分享：</strong>進階版提供的「個人實驗數據分享」是基於我個人 6 年追蹤數據的經驗整理，<strong>非醫療報告解讀</strong>。任何數據異常請務必先諮詢合格醫師，不可延誤就醫。
             </p>
             <p>
               <strong>3. 補品使用經驗：</strong>補品使用經驗分享僅為個人經驗，<strong>不構成用藥建議</strong>。使用任何補品前請自行評估風險，或諮詢醫師/藥師。我不販售補品，也不推薦特定品牌。
@@ -294,7 +293,7 @@ export default function RemotePage() {
               <strong>4. 效果因人而異：</strong>訓練與營養優化的效果因個人體質、配合度、生活習慣而異，<strong>不保證特定成效</strong>。需配合執行建議才能達成目標。
             </p>
             <p>
-              <strong>5. 個資保護：</strong>您提供的健康數據（HRV、睡眠、血檢等）將僅用於訓練指導，不會外洩給第三方。LINE 通訊已加密，但請勿在公開場合分享敏感資訊。
+              <strong>5. 個資保護：</strong>您提供的健康數據（HRV、睡眠、相關檢測等）將僅用於訓練指導，不會外洩給第三方。LINE 通訊已加密，但請勿在公開場合分享敏感資訊。
             </p>
           </div>
         </div>
@@ -334,7 +333,7 @@ export default function RemotePage() {
               Q: 入門版和進階版差在哪？
             </h3>
             <p className="text-gray-600">
-              A: 入門版適合想要遠端指導的人，不含血檢數據經驗分享和補品使用經驗。進階版是 3 個月完整療程，包含血檢數據經驗分享和補品使用經驗分享，適合認真想優化的人。價格會在諮詢時根據你的需求報價。
+              A: 入門版適合想要遠端指導的人，不含個人實驗數據分享和補品使用經驗。進階版是 3 個月完整療程，包含個人實驗數據分享和補品使用經驗分享，適合認真想優化的人。價格會在諮詢時根據你的需求報價。
             </p>
           </div>
 
@@ -352,7 +351,7 @@ export default function RemotePage() {
               Q: 進階版需要綁約嗎？
             </h3>
             <p className="text-gray-600">
-              A: 進階版是 3 個月完整療程，一次性收費。因為血檢優化需要完整週期才能看到效果，所以建議至少做滿 3 個月。價格會在諮詢時根據你的需求報價。
+              A: 進階版是 3 個月完整療程，一次性收費。因為數據優化需要完整週期才能看到效果，所以建議至少做滿 3 個月。價格會在諮詢時根據你的需求報價。
             </p>
           </div>
 
@@ -367,10 +366,10 @@ export default function RemotePage() {
 
           <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
             <h3 className="text-lg font-bold mb-2" style={{color: '#2D2D2D'}}>
-              Q: 血檢費用包含在方案裡嗎？
+              Q: 個人實驗數據分享費用包含在方案裡嗎？
             </h3>
             <p className="text-gray-600">
-              A: 入門版不包含血檢數據經驗分享。進階版包含 1 次血檢數據經驗分享，但抽血費用需自付（約 3,000-5,000 元，依檢測項目而定）。建議在第 3 個月抽血，這樣才能看到優化成效。
+              A: 入門版不包含個人實驗數據分享。進階版包含 1 次個人實驗數據分享，但相關檢測費用需自付（約 3,000-5,000 元，依檢測項目而定）。建議在第 3 個月進行檢測，這樣才能看到優化成效。
             </p>
           </div>
 
