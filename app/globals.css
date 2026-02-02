@@ -69,8 +69,7 @@
   }
 
   .protocol-card {
-    @apply bg-white/70 p-10 mb-10 transition-all;
-    border-radius: 2px;
+    @apply bg-white/70 rounded-[2rem] p-10 mb-10 transition-all;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.02);
   }
 
@@ -80,8 +79,7 @@
   }
 
   .tag {
-    @apply inline-block px-4 py-2 text-sm font-medium mb-4;
-    border-radius: 2px;
+    @apply inline-block px-4 py-2 rounded-full text-sm font-medium mb-4;
   }
 
   .tag.blue {
@@ -101,14 +99,12 @@
   }
 
   .code-block {
-    @apply bg-bg-tertiary/40 p-8 border-l-[3px] border-primary/30;
-    border-radius: 2px;
+    @apply bg-bg-tertiary/40 p-8 rounded-[1.5rem] border-l-[3px] border-primary/30;
   }
 
   .code-label {
-    @apply inline-block text-primary text-xs font-medium px-4 py-1.5 mb-4 tracking-wide;
+    @apply inline-block text-primary text-xs font-medium px-4 py-1.5 rounded-full mb-4 tracking-wide;
     background-color: rgba(37, 99, 235, 0.08);
-    border-radius: 2px;
   }
 
   .action-grid {
@@ -116,8 +112,7 @@
   }
 
   .action-card {
-    @apply bg-white/50 p-8 cursor-pointer transition-all;
-    border-radius: 2px;
+    @apply bg-white/50 rounded-[2rem] p-8 cursor-pointer transition-all;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 6px 16px rgba(0, 0, 0, 0.02);
   }
 
@@ -135,8 +130,7 @@
   }
 
   .mission-box {
-    @apply p-10 mb-12;
-    border-radius: 2px;
+    @apply rounded-[2rem] p-10 mb-12;
     background: linear-gradient(to bottom right, rgba(37, 99, 235, 0.04), rgba(245, 158, 11, 0.04));
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   }
@@ -150,8 +144,7 @@
   }
 
   .support-box {
-    @apply bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-primary/30 p-12 text-center mt-12;
-    border-radius: 2px;
+    @apply bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-primary/30 rounded-3xl p-12 text-center mt-12;
   }
 
   .support-box ul {
@@ -168,14 +161,11 @@
   }
 
   .support-btn {
-    @apply inline-block bg-gradient-to-r from-primary to-primary-dark text-white px-8 py-4 font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 no-underline;
-    border-radius: 2px;
-    transition: all 0.3s ease;
+    @apply inline-block bg-gradient-to-r from-primary to-primary-dark text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all no-underline;
   }
 
   .specs-table {
-    @apply w-full border-2 border-border overflow-hidden bg-white;
-    border-radius: 2px;
+    @apply w-full border-2 border-border rounded-xl overflow-hidden bg-white;
   }
 
   .specs-table thead {
