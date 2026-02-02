@@ -32,10 +32,10 @@ export default function RemotePage() {
           數據追蹤訂閱制
         </div>
         <h1 className="text-4xl md:text-5xl font-bold mb-6" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
-          24 小時系統監控
+          科學化遠端管理訂閱
         </h1>
         <p className="text-xl text-gray-600 mb-4 leading-relaxed">
-          純遠端訂閱 或 實體+監控組合，根據你的需求選擇
+          純遠端管理 或 實體+管理組合，根據你的需求選擇最適合的方案
         </p>
         <p className="text-gray-500 text-lg">
           💬 加 LINE 免費諮詢，根據你的地區與需求推薦最適合的方案
@@ -44,9 +44,9 @@ export default function RemotePage() {
 
       {/* 核心價值主張 */}
       <div className="my-20 max-w-4xl mx-auto" style={{borderLeft: '4px solid #8B7355', paddingLeft: '2rem', backgroundColor: 'rgba(139, 115, 85, 0.03)', padding: '2rem 2rem 2rem 3rem', borderRadius: '0.5rem'}}>
-        <h2 className="text-2xl font-bold mb-4" style={{color: '#2D2D2D'}}>
-          為什麼選擇遠端追蹤？
-        </h2>
+        <h3 className="text-2xl font-bold mb-6" style={{color: '#2D2D2D'}}>
+          純遠端管理訂閱
+        </h3>
         <p className="text-gray-600 leading-relaxed mb-4">
           健身房只是工具，真正影響你身體的是「24 小時的生活型態」。
         </p>
@@ -74,7 +74,7 @@ export default function RemotePage() {
               台中推薦
             </div>
             <h3 className="text-2xl font-bold mb-6" style={{color: '#2D2D2D'}}>
-              實體+監控組合
+              實體指導 + 遠端管理
             </h3>
             
             <div className="space-y-3 mb-8">

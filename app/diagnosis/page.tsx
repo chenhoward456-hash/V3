@@ -138,8 +138,8 @@ export default function DiagnosisPage() {
 
   return (
     <section className="section-container">
-      <h2 className="doc-title">系統診斷測驗</h2>
-      <p className="doc-subtitle">5 個問題，評估你的系統狀態並推薦最適合的方案</p>
+      <h2 className="doc-title">遠端管理適應性評估</h2>
+      <p className="doc-subtitle">5 個問題，評估你是否適合科學化遠端管理</p>
 
       <div className="bg-warning/5 border-2 border-warning/30 rounded-xl p-6 mb-8">
         <p className="text-text-secondary text-sm leading-relaxed">
@@ -370,10 +370,10 @@ export default function DiagnosisPage() {
                 {/* 高分 + 台中 → 實體+監控組合 */}
                 {totalScore >= 4 && location === 'taichung' && (
                   <div className="bg-primary/5 border-2 border-primary rounded-xl p-8">
-                    <h4 className="text-xl font-bold mb-4 text-primary">🎯 為你推薦：實體訓練 + 數據監控組合</h4>
+                    <h4 className="text-xl font-bold mb-4 text-primary">🎯 為你推薦：實體指導 + 遠端管理組合</h4>
                     <p className="text-text-secondary mb-6 leading-relaxed">
-                      你在台中地區，建議先透過實體訓練建立信任與動作基礎，
-                      再搭配 24 小時數據監控，達到最佳優化效果。
+                      你在台中地區，建議結合實體指導與遠端管理。
+                      每月 2 次視訊 + 24 小時內 LINE 回覆，達到最佳效果。
                     </p>
                     <div className="bg-white rounded-xl p-6 mb-6">
                       <h5 className="font-bold mb-3">📍 實體訓練（Coolday Fitness 北屯館）</h5>
@@ -401,10 +401,10 @@ export default function DiagnosisPage() {
                 {/* 高分 + 外縣市 → 純遠端訂閱 */}
                 {totalScore >= 4 && location === 'other' && (
                   <div className="bg-success/5 border-2 border-success rounded-xl p-8">
-                    <h4 className="text-xl font-bold mb-4 text-success">🎯 為你推薦：純遠端數據追蹤訂閱</h4>
+                    <h4 className="text-xl font-bold mb-4 text-success">🎯 為你推薦：純遠端管理訂閱</h4>
                     <p className="text-text-secondary mb-6 leading-relaxed">
-                      你在外縣市，建議透過遠端數據追蹤系統，
-                      24 小時監控你的身體狀態，達到系統性優化。
+                      你在外縣市，推薦純遠端管理訂閱。
+                      每月 2 次視訊 + 24 小時內 LINE 回覆，科學化管理你的訓練。
                     </p>
                     <div className="bg-white rounded-xl p-6 mb-6">
                       <h5 className="font-bold mb-3">📊 遠端訂閱包含</h5>
@@ -428,10 +428,10 @@ export default function DiagnosisPage() {
                 {/* 低分 → 免費資源 */}
                 {totalScore < 4 && (
                   <div className="bg-success/5 border-2 border-success rounded-xl p-8">
-                    <h4 className="text-xl font-bold mb-4 text-success">✓ 狀態良好</h4>
+                    <h4 className="text-xl font-bold mb-4 text-success">✓ 訓練基礎良好</h4>
                     <p className="text-text-secondary mb-6 leading-relaxed">
-                      你的身體系統運作良好！可以考慮進一步提升效能，
-                      或追蹤我的內容學習更多優化技巧。
+                      你的訓練基礎很好！建議先從免費資源開始，
+                      或考慮基礎訂閱方案測試遠端管理。
                     </p>
                     <div className="space-y-4">
                       <a

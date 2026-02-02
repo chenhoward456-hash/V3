@@ -68,12 +68,12 @@ export default function HomePage() {
       </div>
 
       <h1 className="text-3xl md:text-5xl font-bold text-center mb-6" style={{color: '#2D2D2D', letterSpacing: '0.08em', lineHeight: '1.3'}}>
-        <span className="text-lg md:text-3xl" style={{fontWeight: 'normal', display: 'block', marginBottom: '1rem', letterSpacing: '0.02em'}}>從系統崩潰到完全重生</span>
         <span style={{color: '#2D2D2D'}}>The Howard Protocol</span>
       </h1>
       <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '700px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
-        你的身體，需要一套精準的操作協定。<br /><br />
-        我是 Howard，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。專注於數據優化與系統性訓練設計。<br /><br />
+        我是 Howard，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。<br />
+        6 年實驗數據經驗，專注於科學化遠端管理。<br />
+        24 小時內回覆你的訓練問題。<br />
         <span style={{fontSize: '0.95em', color: '#666'}}>台中北屯一對一訓練指導。</span>
       </p>
 
@@ -81,16 +81,16 @@ export default function HomePage() {
       <div className="my-16 max-w-5xl mx-auto">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>
-            你的身體系統需要優化嗎？
+            你的訓練需要遠端管理嗎？
           </h2>
           <p className="text-gray-600 text-lg mb-6">
-            完成 30 秒診斷，了解你的系統狀態
+            完成 30 秒評估，了解你是否適合科學化遠端管理
           </p>
           <Link 
             href="/diagnosis"
             className="inline-block bg-primary text-white px-10 py-4 rounded-xl font-bold text-lg hover:opacity-90 transition-all hover:scale-105"
           >
-            開始系統診斷 →
+            開始適應性評估 →
           </Link>
         </div>
 
@@ -98,37 +98,37 @@ export default function HomePage() {
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
             <div className="text-4xl mb-4">�</div>
             <h3 className="text-xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-              數據追蹤
+              科學化遠端管理
             </h3>
             <p className="text-gray-600 text-sm leading-relaxed">
-              HRV、睡眠品質、血檢數據、體組成分析。用數據找出系統瓶頸。
+              24 小時內 LINE 回覆、每月 2 次視訊追蹤。根據數據調整訓練方案。
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
+            <div className="text-4xl mb-4">📊</div>
+            <h3 className="text-xl font-bold mb-3" style={{color: '#2D2D2D'}}>
+              數據化追蹤分析
+            </h3>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              HRV、睡眠品質、訓練數據。用科學方法優化你的訓練效果。
             </p>
           </div>
 
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
             <div className="text-4xl mb-4">⚙️</div>
             <h3 className="text-xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-              系統優化
+              個人化訓練方案
             </h3>
             <p className="text-gray-600 text-sm leading-relaxed">
-              訓練、營養、恢復、補品策略。根據數據調整優化協定。
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
-            <div className="text-4xl mb-4">�</div>
-            <h3 className="text-xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-              持續監控
-            </h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              24 小時 LINE 諮詢、月視訊追蹤。確保系統持續運作。
+              客製化訓練計畫、營養策略。根據數據動態調整。
             </p>
           </div>
         </div>
 
         <div className="text-center mt-8">
           <Link href="/diagnosis" className="text-gray-500 hover:text-primary text-sm underline">
-            或先做 30 秒系統診斷，讓我幫你判斷 →
+            或先做 30 秒適應性評估，了解你的管理需求 →
           </Link>
         </div>
       </div>
