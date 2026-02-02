@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Noto_Sans_TC } from 'next/font/google'
+import { Inter, Noto_Sans_TC, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
@@ -15,6 +15,13 @@ const notoSansTC = Noto_Sans_TC({
   weight: ['400', '500', '600', '700'],
   display: 'swap',
   variable: '--font-noto-sans-tc',
+})
+
+const playfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['400', '700', '900'],
+  display: 'swap',
+  variable: '--font-playfair',
 })
 
 export const metadata: Metadata = {
@@ -72,7 +79,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="zh-TW" className={`scroll-smooth ${inter.variable} ${notoSansTC.variable}`}>
+    <html lang="zh-TW" className={`scroll-smooth ${inter.variable} ${notoSansTC.variable} ${playfairDisplay.variable}`}>
       <head>
         {/* Google Analytics */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-8GMW6GH1QB"></script>
