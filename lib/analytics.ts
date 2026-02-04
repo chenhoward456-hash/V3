@@ -108,3 +108,25 @@ export const trackNavigation = (destination: string) => {
     destination: destination
   });
 };
+
+// 自定義事件類型
+export const AnalyticsEvents = {
+  // 診斷相關
+  DIAGNOSIS_STARTED: 'diagnosis_started',
+  DIAGNOSIS_COMPLETED: 'diagnosis_completed',
+  DIAGNOSIS_QUESTION_ANSWERED: 'diagnosis_question_answered',
+  
+  // 服務相關
+  SERVICE_VIEWED: 'service_viewed',
+  SERVICE_INQUIRY: 'service_inquiry',
+  LINE_CLICKED: 'line_clicked',
+  
+  // 使用者行為
+  CTA_CLICKED: 'cta_clicked',
+  SCROLL_DEPTH: 'scroll_depth',
+  TIME_ON_PAGE: 'time_on_page',
+  
+  // 商業轉換
+  CONSULTATION_REQUESTED: 'consultation_requested',
+  SUBSCRIPTION_INQUIRED: 'subscription_inquired'
+} as const;
