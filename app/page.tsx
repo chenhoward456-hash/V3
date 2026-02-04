@@ -109,10 +109,24 @@ export default function HomePage() {
           </p>
           <Link 
             href="/diagnosis"
-            className="inline-block bg-primary text-white px-10 py-4 rounded-xl font-bold text-lg hover:opacity-90 transition-all hover:scale-105"
+            className="inline-block bg-primary text-white px-10 py-4 rounded-xl font-bold text-lg hover:opacity-90 transition-all hover:scale-105 mb-4"
           >
             開始適應性評估 →
           </Link>
+          <div className="text-center">
+            <p className="text-gray-500 mb-2">或直接加 LINE 免費諮詢</p>
+            <a
+              href="https://lin.ee/dnbucVw"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-600 transition-all"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
+              加 LINE 諮詢
+            </a>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 mt-12">
