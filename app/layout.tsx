@@ -6,8 +6,8 @@ import Footer from '@/components/Footer'
 
 const inter = Inter({ 
   subsets: ['latin'],
-  display: 'swap',
   variable: '--font-inter',
+  display: 'swap'
 })
 
 const notoSansTC = Noto_Sans_TC({ 

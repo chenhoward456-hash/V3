@@ -1,7 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import LoadingButton from '@/components/ui/LoadingButton'
+import { useFormError } from '@/components/ui/ErrorBoundary'
+import type { DiagnosisData } from '@/types'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { trackDiagnosisComplete, trackLineClick } from '@/lib/analytics'
 

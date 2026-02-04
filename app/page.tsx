@@ -38,8 +38,29 @@ const personSchema = {
 }
 
 export const metadata: Metadata = {
-  title: 'Howard - 台中北屯 CSCS 體能教練 | 數據優化訓練',
-  description: 'Howard，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。專精肌力訓練、代謝優化、營養調整。台中北屯一對一客製化訓練指導。',
+  title: 'Howard - CSCS 數據化訓練管理 | 遠端訂閱制',
+  description: 'CSCS 認證體能教練，提供科學化遠端管理訂閱。24小時內回覆，每月2次視訊追蹤。全台灣適用，台中地區可加選實體指導。',
+  keywords: ['CSCS教練', '遠端訓練', '數據管理', '訂閱制', '科學化訓練', '個人化指導'],
+  openGraph: {
+    title: 'Howard - 科學化遠端管理訂閱',
+    description: '24小時內回覆，每月2次視訊追蹤，科學化數據管理',
+    type: 'website',
+    url: 'https://howard-protocol.com',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Howard - 科學化遠端管理訂閱'
+      }
+    ]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Howard - 科學化遠端管理訂閱',
+    description: '24小時內回覆，每月2次視訊追蹤',
+    images: ['/og-image.jpg']
+  }
 }
 
 export default function HomePage() {
@@ -54,16 +75,17 @@ export default function HomePage() {
       <section className="section-container" style={{backgroundColor: '#F9F9F7'}}>
         {/* 個人頭像 - 適中大小 */}
       <div className="flex justify-center mb-8">
-        <img 
+        <Image
           src="/howard-profile.jpg" 
           alt="Howard - Coolday Fitness 北屯館教練主管，CSCS 認證體能教練" 
+          width={120}
+          height={120}
           className="rounded-full"
           style={{
-            width: '120px',
-            height: '120px',
             objectFit: 'cover',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
           }}
+          priority
         />
       </div>
 
