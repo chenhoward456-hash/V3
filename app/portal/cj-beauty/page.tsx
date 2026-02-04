@@ -19,13 +19,35 @@ export default function CJBeautyPortal() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // 模擬載入數據
-    setTimeout(() => {
+    // 載入真實數據
+    loadRealData()
+  }, [])
+
+  const loadRealData = async () => {
+    try {
+      setIsLoading(true)
+      
+      // 從 localStorage 載入 CSV 數據
+      const savedMetrics = localStorage.getItem('cj-beauty-metrics')
+      const savedSupplements = localStorage.getItem('cj-beauty-supplements')
+      
+      if (savedMetrics) {
+        setMetrics(JSON.parse(savedMetrics))
+      } else {
+        // 如果沒有保存的數據，使用模擬數據
+        setMetrics(cjBeautyData.metrics)
+      }
+      
+      setCompletedTasks([])
+      setIsLoading(false)
+    } catch (error) {
+      console.error('Error loading real data:', error)
+      // 如果載入失敗，使用模擬數據
       setMetrics(cjBeautyData.metrics)
       setCompletedTasks([])
       setIsLoading(false)
-    }, 1000)
-  }, [])
+    }
+  }
 
   const handleTaskComplete = (taskId: string) => {
     setCompletedTasks(prev => [...prev, taskId])
@@ -53,6 +75,7 @@ export default function CJBeautyPortal() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
           <p className="text-gray-600">載入中...</p>
+          <p className="text-xs text-gray-400 mt-2">承鈞美麗儀表板</p>
         </div>
       </div>
     )
