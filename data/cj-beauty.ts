@@ -1,5 +1,47 @@
 export const cjBeautyData = {
   metrics: [
+    // 核心美麗指標
+    {
+      id: 'collagen_index',
+      name: '膠原蛋白指數',
+      current: 65,
+      target: 80,
+      unit: '指數',
+      description: '皮膚彈性與緊緻度指標，影響皮膚年輕感'
+    },
+    {
+      id: 'antioxidant_capacity',
+      name: '抗氧化能力',
+      current: 45,
+      target: 70,
+      unit: '指數',
+      description: '身體抗氧化能力，影響皮膚老化速度'
+    },
+    {
+      id: 'skin_hydration',
+      name: '皮膚含水量',
+      current: 55,
+      target: 65,
+      unit: '%',
+      description: '皮膚水分含量，影響皮膚光澤與彈性'
+    },
+    {
+      id: 'hormone_balance',
+      name: '荷爾蒙平衡',
+      current: 70,
+      target: 85,
+      unit: '指數',
+      description: '內分泌系統平衡，影響整體狀態'
+    },
+    {
+      id: 'metabolic_age',
+      name: '代謝年齡',
+      current: 32,
+      target: 28,
+      unit: '歲',
+      description: '身體代謝年齡，反映身體健康狀態'
+    },
+    // 健康基礎指標
     {
       id: 'hcy',
       name: '同半胱胺酸',
@@ -17,14 +59,6 @@ export const cjBeautyData = {
       description: '鐵質儲存指標，影響能量代謝與免疫'
     },
     {
-      id: 'body_fat',
-      name: '體脂肪率',
-      current: 28.5,
-      target: 25.0,
-      unit: '%',
-      description: '身體組成指標，影響代謝健康'
-    },
-    {
       id: 'vitamin_d',
       name: '維生素 D',
       current: 35,
@@ -39,14 +73,6 @@ export const cjBeautyData = {
       target: 8.0,
       unit: '%',
       description: '抗炎指標，影響皮膚健康與心血管'
-    },
-    {
-      id: 'crp',
-      name: 'C-反應蛋白',
-      current: 2.8,
-      target: 1.0,
-      unit: 'mg/L',
-      description: '發炎指標，過高表示身體發炎'
     }
   ],
   weeklyProgress: [
