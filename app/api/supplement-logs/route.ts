@@ -21,18 +21,9 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. 驗證身份
-    const { user, error: authError } = await verifyAuth(request)
-    if (authError || !user) {
-      return createErrorResponse(authError || '身份驗證失敗', 401)
-    }
-
-    // 2. 檢查權限（目前只有教練可以存取）
-    if (!isCoach(user)) {
-      return createErrorResponse('權限不足，需要教練角色', 403)
-    }
-
-    // 3. 獲取請求參數
+    // GET 方法允許公開存取，學員可以用連結查看自己的資料
+    
+    // 獲取請求參數
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('clientId')
     const date = searchParams.get('date')
