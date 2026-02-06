@@ -38,7 +38,11 @@ export function useClientData(
       const error = await response.json()
       throw new Error(error.error || '獲取資料失敗')
     }
-    return response.json()
+    const json = await response.json()
+    if (!json.success) {
+      throw new Error(json.error || 'Failed to fetch')
+    }
+    return json.data
   }
 
   const { data, error, isLoading, mutate } = useSWR(
