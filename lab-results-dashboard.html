@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>承鈞 健康檢測監控儀表板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .title {
+            font-size: 32px;
+            font-weight: 300;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .client-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 12px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .client-name {
+            font-size: 18px;
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+        
+        .client-meta {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .date {
+            text-align: right;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .lab-results {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            font-weight: 300;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #3b82f6;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .test-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-card.normal {
+            border-left-color: #10b981;
+        }
+        
+        .test-card.low {
+            border-left-color: #f59e0b;
+        }
+        
+        .test-card.high {
+            border-left-color: #ef4444;
+        }
+        
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .test-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+        
+        .test-category {
+            font-size: 12px;
+            color: #666;
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .test-value {
+            text-align: right;
+        }
+        
+        .value-number {
+            font-size: 24px;
+            font-weight: 300;
+            color: #1a1a1a;
+            line-height: 1;
+        }
+        
+        .value-unit {
+            font-size: 14px;
+            color: #666;
+            margin-left: 4px;
+        }
+        
+        .test-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-normal {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-low {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-high {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .reference-range {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .test-date {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .summary-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .summary-item {
+            text-align: center;
+            padding: 16px;
+            background: rgba(59, 130, 246, 0.05);
+            border-radius: 12px;
+        }
+        
+        .summary-value {
+            font-size: 24px;
+            font-weight: 500;
+            color: #3b82f6;
+            margin-bottom: 4px;
+        }
+        
+        .summary-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .alert-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+        }
+        
+        .alert-item {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .alert-title {
+            font-weight: 500;
+            color: #92400e;
+            margin-bottom: 4px;
+        }
+        
+        .alert-description {
+            color: #78350f;
+            font-size: 14px;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+        }
+        
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .dot-normal { background: #10b981; }
+        .dot-low { background: #f59e0b; }
+        .dot-high { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1 class="title">承鈞 健康檢測監控儀表板</h1>
+            <p class="subtitle">實驗室檢測數據 • 健康狀態追蹤 • 醫學參考範圍</p>
+            
+            <div class="client-info">
+                <div>
+                    <div class="client-name">承鈞 • 25歲 • 女性</div>
+                    <div class="client-meta">檢測日期：2024/01/15 • 監控週期：每月更新</div>
+                </div>
+                <div class="date">
+                    <div>最後更新</div>
+                    <div id="current-date" style="font-weight: 500; color: #1a1a1a;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 警示區域 -->
+        <div class="alert-section" id="alerts-section">
+            <h2 class="section-title">⚠️ 健康警示</h2>
+            <div id="alerts-container">
+                <!-- 警示將通過 JavaScript 動態生成 -->
+            </div>
+        </div>
+
+        <!-- 實驗室檢測結果 -->
+        <div class="lab-results">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 class="section-title">🔬 實驗室檢測數據</h2>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot dot-normal"></div>
+                        <span>正常範圍</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-low"></div>
+                        <span>偏低</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-high"></div>
+                        <span>偏高</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="test-grid" id="tests-container">
+                <!-- 檢測項目將通過 JavaScript 動態生成 -->
+            </div>
+        </div>
+        
+        <!-- 數據總結 -->
+        <div class="summary-section">
+            <h2 class="section-title">📊 檢測數據總結</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-value" id="total-tests">0</div>
+                    <div class="summary-label">總檢測項目</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="normal-count">0</div>
+                    <div class="summary-label">正常項目</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="abnormal-count">0</div>
+                    <div class="summary-label">異常項目</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="attention-count">0</div>
+                    <div class="summary-label">需要關注</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 基於實際檢測報告的數據
+        const labResults = [
+            {
+                name: "維生素D",
+                category: "維生素檢測",
+                value: 25.3,
+                unit: "ng/mL",
+                reference: "30-100",
+                status: "low",
+                date: "2024/01/15",
+                description: "維生素D偏低，建議補充"
+            },
+            {
+                name: "維生素B12",
+                category: "維生素檢測",
+                value: 412,
+                unit: "pg/mL",
+                reference: "200-900",
+                status: "normal",
+                date: "2024/01/15",
+                description: "維生素B12在正常範圍"
+            },
+            {
+                name: "葉酸",
+                category: "維生素檢測",
+                value: 18.2,
+                unit: "ng/mL",
+                reference: "5-20",
+                status: "normal",
+                date: "2024/01/15",
+                description: "葉酸水平正常"
+            },
+            {
+                name: "鐵蛋白",
+                category: "礦物質檢測",
+                value: 45,
+                unit: "ng/mL",
+                reference: "15-150",
+                status: "normal",
+                date: "2024/01/15",
+                description: "鐵蛋白水平正常"
+            },
+            {
+                name: "鎂",
+                category: "礦物質檢測",
+                value: 2.1,
+                unit: "mg/dL",
+                reference: "1.7-2.2",
+                status: "normal",
+                date: "2024/01/15",
+                description: "鎂水平正常"
+            },
+            {
+                name: "鋅",
+                category: "礦物質檢測",
+                value: 85,
+                unit: "µg/dL",
+                reference: "60-120",
+                status: "normal",
+                date: "2024/01/15",
+                description: "鋅水平正常"
+            },
+            {
+                name: "Omega-3指數",
+                category: "脂肪酸檢測",
+                value: 4.2,
+                unit: "%",
+                reference: "8-12",
+                status: "low",
+                date: "2024/01/15",
+                description: "Omega-3指數偏低，建議補充魚油"
+            },
+            {
+                name: "同半胱胺酸",
+                category: "心血管檢測",
+                value: 8.5,
+                unit: "µmol/L",
+                reference: "5-15",
+                status: "normal",
+                date: "2024/01/15",
+                description: "同半胱胺酸水平正常"
+            },
+            {
+                name: "C-反應蛋白",
+                category: "發炎指標",
+                value: 1.8,
+                unit: "mg/L",
+                reference: "0-3",
+                status: "normal",
+                date: "2024/01/15",
+                description: "C-反應蛋白正常，無明顯發炎"
+            },
+            {
+                name: "甲狀腺促素(TSH)",
+                category: "內分泌檢測",
+                value: 2.4,
+                unit: "µIU/mL",
+                reference: "0.4-4.0",
+                status: "normal",
+                date: "2024/01/15",
+                description: "甲狀腺功能正常"
+            },
+            {
+                name: "空腹血糖",
+                category: "代謝檢測",
+                value: 85,
+                unit: "mg/dL",
+                reference: "70-99",
+                status: "normal",
+                date: "2024/01/15",
+                description: "空腹血糖正常"
+            },
+            {
+                name: "膽固醇",
+                category: "血脂檢測",
+                value: 185,
+                unit: "mg/dL",
+                reference: "<200",
+                status: "normal",
+                date: "2024/01/15",
+                description: "膽固醇水平正常"
+            }
+        ];
+
+        // 獲取狀態顯示文字
+        function getStatusText(status) {
+            const statusMap = {
+                'normal': '正常',
+                'low': '偏低',
+                'high': '偏高'
+            };
+            return statusMap[status] || '未知';
+        }
+
+        // 獲取狀態樣式
+        function getStatusClass(status) {
+            return `status-${status}`;
+        }
+
+        // 獲取卡片樣式
+        function getCardClass(status) {
+            return status;
+        }
+
+        // 生成警示信息
+        function generateAlerts() {
+            const alertsContainer = document.getElementById('alerts-container');
+            alertsContainer.innerHTML = '';
+            
+            const abnormalTests = labResults.filter(test => test.status !== 'normal');
+            
+            if (abnormalTests.length === 0) {
+                alertsContainer.innerHTML = `
+                    <div style="background: #dcfce7; border-left: 4px solid #10b981; border-radius: 8px; padding: 16px;">
+                        <div style="font-weight: 500; color: #166534; margin-bottom: 4px;">✅ 健康狀況良好</div>
+                        <div style="color: #15803d; font-size: 14px;">所有檢測項目都在正常範圍內，繼續保持健康的生活方式！</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            abnormalTests.forEach(test => {
+                const alertItem = document.createElement('div');
+                alertItem.className = 'alert-item';
+                alertItem.innerHTML = `
+                    <div class="alert-title">${test.name}: ${getStatusText(test.status)}</div>
+                    <div class="alert-description">${test.description} (當前值: ${test.value} ${test.unit}, 參考範圍: ${test.reference} ${test.unit})</div>
+                `;
+                alertsContainer.appendChild(alertItem);
+            });
+        }
+
+        // 渲染檢測項目
+        function renderTests() {
+            const container = document.getElementById('tests-container');
+            container.innerHTML = '';
+            
+            labResults.forEach(test => {
+                const card = document.createElement('div');
+                card.className = `test-card ${getCardClass(test.status)}`;
+                card.innerHTML = `
+                    <div class="test-header">
+                        <div>
+                            <div class="test-name">${test.name}</div>
+                            <div class="test-category">${test.category}</div>
+                        </div>
+                        <div class="test-value">
+                            <span class="value-number">${test.value}</span>
+                            <span class="value-unit">${test.unit}</span>
+                        </div>
+                    </div>
+                    <div class="test-status">
+                        <span class="status-badge ${getStatusClass(test.status)}">${getStatusText(test.status)}</span>
+                    </div>
+                    <div class="reference-range">
+                        參考範圍: ${test.reference} ${test.unit}
+                    </div>
+                    <div class="test-date">
+                        檢測日期: ${test.date}
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // 更新總結統計
+        function updateSummary() {
+            const totalTests = labResults.length;
+            const normalTests = labResults.filter(test => test.status === 'normal').length;
+            const abnormalTests = labResults.filter(test => test.status !== 'normal').length;
+            const attentionTests = labResults.filter(test => test.status === 'low').length;
+            
+            document.getElementById('total-tests').textContent = totalTests;
+            document.getElementById('normal-count').textContent = normalTests;
+            document.getElementById('abnormal-count').textContent = abnormalTests;
+            document.getElementById('attention-count').textContent = attentionTests;
+        }
+
+        // 初始化
+        function init() {
+            // 設置日期
+            document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-TW');
+            
+            // 渲染內容
+            generateAlerts();
+            renderTests();
+            updateSummary();
+        }
+
+        // 啟動應用
+        init();
+    </script>
+</body>
+</html>

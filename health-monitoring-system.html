@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人化健康監控系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .title {
+            font-size: 32px;
+            font-weight: 300;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .client-selector {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+        }
+        
+        .selector-title {
+            font-size: 24px;
+            font-weight: 300;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+        
+        .client-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        
+        .client-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .client-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .client-name {
+            font-size: 18px;
+            font-weight: 500;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+        
+        .client-info {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .client-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .status-normal { background: #10b981; }
+        .status-attention { background: #f59e0b; }
+        .status-alert { background: #ef4444; }
+        
+        .add-client {
+            background: rgba(59, 130, 246, 0.1);
+            border: 2px dashed #3b82f6;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .add-client:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #2563eb;
+        }
+        
+        .add-icon {
+            font-size: 32px;
+            color: #3b82f6;
+            margin-bottom: 8px;
+        }
+        
+        .add-text {
+            color: #3b82f6;
+            font-weight: 500;
+        }
+        
+        .admin-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+        }
+        
+        .admin-title {
+            font-size: 24px;
+            font-weight: 300;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+        
+        .admin-form {
+            display: grid;
+            gap: 16px;
+        }
+        
+        .form-group {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+        
+        .form-input {
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-textarea {
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+            font-family: monospace;
+        }
+        
+        .form-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .form-button:hover {
+            background: #2563eb;
+        }
+        
+        .url-display {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+            margin-top: 8px;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .instructions-title {
+            font-size: 24px;
+            font-weight: 300;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+        }
+        
+        .instructions-list {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .instructions-list li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1 class="title">個人化健康監控系統</h1>
+            <p class="subtitle">預防醫學 3.0 • 數據優化 • 系統化管理</p>
+        </div>
+
+        <!-- 管理面板 -->
+        <div class="admin-panel">
+            <h2 class="admin-title">🔧 管理面板</h2>
+            <div class="admin-form">
+                <div class="form-group">
+                    <label class="form-label">學員姓名:</label>
+                    <input type="text" id="client-name" class="form-input" placeholder="例: 承鈞">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">年齡:</label>
+                    <input type="number" id="client-age" class="form-input" placeholder="例: 25">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">性別:</label>
+                    <select id="client-gender" class="form-input">
+                        <option value="女性">女性</option>
+                        <option value="男性">男性</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">檢測數據:</label>
+                    <textarea id="lab-data" class="form-textarea" placeholder='[
+  {
+    "name": "維生素D",
+    "value": 25.3,
+    "unit": "ng/mL",
+    "reference": "30-100",
+    "status": "low"
+  }
+]'></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"></label>
+                    <button class="form-button" onclick="generateClientDashboard()">生成個人化儀表板</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">儀表板網址:</label>
+                    <div id="generated-url" class="url-display" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 學員列表 -->
+        <div class="client-selector">
+            <h2 class="selector-title">👥 學員監控儀表板</h2>
+            <div class="client-grid" id="client-grid">
+                <!-- 學員卡片將通過 JavaScript 動態生成 -->
+            </div>
+        </div>
+        
+        <!-- 使用說明 -->
+        <div class="instructions">
+            <h2 class="instructions-title">📖 使用說明</h2>
+            <ul class="instructions-list">
+                <li>📝 <strong>新增學員</strong>：在管理面板填寫學員基本資訊和檢測數據</li>
+                <li>🔗 <strong>生成網址</strong>：點擊「生成個人化儀表板」獲得專屬網址</li>
+                <li>📱 <strong>分享給學員</strong>：將網址發給學員，他們可以隨時查看</li>
+                <li>📊 <strong>更新數據</strong>：當有新檢測數據時，重新生成即可更新</li>
+                <li>🎯 <strong>個人化監控</strong>：每個學員都有獨立的監控儀表板</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 學員數據庫
+        let clients = [
+            {
+                id: "chengjun",
+                name: "承鈞",
+                age: 25,
+                gender: "女性",
+                lastUpdate: "2024/01/15",
+                status: "attention",
+                labResults: [
+                    {
+                        name: "維生素D",
+                        category: "維生素檢測",
+                        value: 25.3,
+                        unit: "ng/mL",
+                        reference: "30-100",
+                        status: "low",
+                        date: "2024/01/15",
+                        description: "維生素D偏低，建議補充"
+                    },
+                    {
+                        name: "維生素B12",
+                        category: "維生素檢測",
+                        value: 412,
+                        unit: "pg/mL",
+                        reference: "200-900",
+                        status: "normal",
+                        date: "2024/01/15",
+                        description: "維生素B12在正常範圍"
+                    },
+                    {
+                        name: "葉酸",
+                        category: "維生素檢測",
+                        value: 18.2,
+                        unit: "ng/mL",
+                        reference: "5-20",
+                        status: "normal",
+                        date: "2024/01/15",
+                        description: "葉酸水平正常"
+                    },
+                    {
+                        name: "鐵蛋白",
+                        category: "礦物質檢測",
+                        value: 45,
+                        unit: "ng/mL",
+                        reference: "15-150",
+                        status: "normal",
+                        date: "2024/01/15",
+                        description: "鐵蛋白水平正常"
+                    },
+                    {
+                        name: "Omega-3指數",
+                        category: "脂肪酸檢測",
+                        value: 4.2,
+                        unit: "%",
+                        reference: "8-12",
+                        status: "low",
+                        date: "2024/01/15",
+                        description: "Omega-3指數偏低，建議補充魚油"
+                    }
+                ]
+            }
+        ];
+
+        // 從 URL 參數獲取學員 ID
+        function getClientIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('client');
+        }
+
+        // 生成學員儀表板
+        function generateClientDashboard() {
+            const name = document.getElementById('client-name').value;
+            const age = document.getElementById('client-age').value;
+            const gender = document.getElementById('client-gender').value;
+            const labDataText = document.getElementById('lab-data').value;
+            
+            if (!name || !age || !labDataText) {
+                alert('請填寫完整資訊');
+                return;
+            }
+            
+            let labData;
+            try {
+                labData = JSON.parse(labDataText);
+            } catch (e) {
+                alert('檢測數據格式錯誤，請檢查 JSON 格式');
+                return;
+            }
+            
+            // 生成學員 ID
+            const clientId = name.toLowerCase().replace(/\s+/g, '-');
+            
+            // 添加到學員列表
+            const newClient = {
+                id: clientId,
+                name: name,
+                age: parseInt(age),
+                gender: gender,
+                lastUpdate: new Date().toLocaleDateString('zh-TW'),
+                status: labData.some(test => test.status !== 'normal') ? 'attention' : 'normal',
+                labResults: labData.map(test => ({
+                    ...test,
+                    category: test.category || "檢測項目",
+                    date: test.date || new Date().toLocaleDateString('zh-TW'),
+                    description: test.description || `${test.name}檢測結果`
+                }))
+            };
+            
+            // 檢查是否已存在
+            const existingIndex = clients.findIndex(c => c.id === clientId);
+            if (existingIndex >= 0) {
+                clients[existingIndex] = newClient;
+            } else {
+                clients.push(newClient);
+            }
+            
+            // 生成 URL
+            const url = `${window.location.origin}${window.location.pathname}?client=${clientId}`;
+            const urlDisplay = document.getElementById('generated-url');
+            urlDisplay.textContent = url;
+            urlDisplay.style.display = 'block';
+            
+            // 更新學員列表
+            renderClients();
+            
+            // 清空表單
+            document.getElementById('client-name').value = '';
+            document.getElementById('client-age').value = '';
+            document.getElementById('lab-data').value = '';
+            
+            alert(`✅ ${name} 的個人化儀表板已生成！\n\n網址: ${url}\n\n請將此網址分享給學員`);
+        }
+
+        // 渲染學員列表
+        function renderClients() {
+            const container = document.getElementById('client-grid');
+            container.innerHTML = '';
+            
+            clients.forEach(client => {
+                const card = document.createElement('a');
+                card.href = `?client=${client.id}`;
+                card.className = 'client-card';
+                card.innerHTML = `
+                    <div class="client-name">${client.name}</div>
+                    <div class="client-info">${client.age}歲 • ${client.gender}</div>
+                    <div class="client-info">最後更新: ${client.lastUpdate}</div>
+                    <div class="client-status">
+                        <div class="status-dot status-${client.status}"></div>
+                        <span>${client.status === 'normal' ? '正常' : '需要關注'}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            
+            // 添加新增學員按鈕
+            const addCard = document.createElement('div');
+            addCard.className = 'add-client';
+            addCard.onclick = () => {
+                document.getElementById('client-name').focus();
+            };
+            addCard.innerHTML = `
+                <div class="add-icon">+</div>
+                <div class="add-text">新增學員</div>
+            `;
+            container.appendChild(addCard);
+        }
+
+        // 顯示特定學員的儀表板
+        function showClientDashboard(clientId) {
+            const client = clients.find(c => c.id === clientId);
+            if (!client) return;
+            
+            // 這裡可以切換到儀表板視圖，或重定向到儀表板頁面
+            // 為了簡化，我們直接在當前頁面顯示
+            document.querySelector('.container').innerHTML = `
+                <div class="header">
+                    <h1 class="title">${client.name} 健康檢測監控儀表板</h1>
+                    <p class="subtitle">實驗室檢測數據 • 健康狀態追蹤 • 醫學參考範圍</p>
+                    <div style="margin-top: 16px;">
+                        <a href="?" style="color: #3b82f6; text-decoration: none;">← 返回學員列表</a>
+                    </div>
+                </div>
+                
+                <div class="client-info" style="background: rgba(59, 130, 246, 0.1); border-radius: 12px; padding: 16px; margin-bottom: 32px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 18px; font-weight: 500; color: #1a1a1a;">${client.name} • ${client.age}歲 • ${client.gender}</div>
+                            <div style="color: #666; font-size: 14px;">檢測日期：${client.lastUpdate} • 監控週期：每月更新</div>
+                        </div>
+                        <div style="text-align: right; color: #666; font-size: 14px;">
+                            <div>最後更新</div>
+                            <div style="font-weight: 500; color: #1a1a1a;">${new Date().toLocaleDateString('zh-TW')}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="lab-results" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 16px; padding: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);">
+                    <h2 style="font-size: 24px; font-weight: 300; color: #1a1a1a; margin-bottom: 24px;">🔬 實驗室檢測數據</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        ${client.labResults.map(test => `
+                            <div class="test-card ${test.status}" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border-left: 4px solid ${test.status === 'normal' ? '#10b981' : test.status === 'low' ? '#f59e0b' : '#ef4444'};">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                                    <div>
+                                        <div style="font-size: 16px; font-weight: 500; color: #1a1a1a; margin-bottom: 4px;">${test.name}</div>
+                                        <div style="font-size: 12px; color: #666; background: #f3f4f6; padding: 4px 8px; border-radius: 4px; display: inline-block;">${test.category}</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <span style="font-size: 24px; font-weight: 300; color: #1a1a1a;">${test.value}</span>
+                                        <span style="font-size: 14px; color: #666; margin-left: 4px;">${test.unit}</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                    <span style="padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; background: ${test.status === 'normal' ? '#dcfce7' : test.status === 'low' ? '#fef3c7' : '#fee2e2'}; color: ${test.status === 'normal' ? '#166534' : test.status === 'low' ? '#92400e' : '#991b1b'};">
+                                        ${test.status === 'normal' ? '正常' : test.status === 'low' ? '偏低' : '偏高'}
+                                    </span>
+                                </div>
+                                <div style="font-size: 14px; color: #666; margin-bottom: 8px;">
+                                    參考範圍: ${test.reference} ${test.unit}
+                                </div>
+                                <div style="font-size: 12px; color: #999;">
+                                    檢測日期: ${test.date}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 初始化
+        function init() {
+            const clientId = getClientIdFromUrl();
+            if (clientId) {
+                showClientDashboard(clientId);
+            } else {
+                renderClients();
+            }
+        }
+
+        // 啟動應用
+        init();
+    </script>
+</body>
+</html>

@@ -1,129 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { cjBeautyData, supplementsData } from '@/data/cj-beauty'
-import { TaskCompleteAnimation, ProgressRing, FloatingNotification, Confetti } from '@/components/ui/Animations'
-
-interface Metric {
-  id: string
-  name: string
-  current: number
-  target: number
-  unit: string
-  description: string
-}
-
 export default function CJBeautyPortal() {
-  const [metrics, setMetrics] = useState<Metric[]>([])
-  const [completedTasks, setCompletedTasks] = useState<string[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [showNotification, setShowNotification] = useState(false)
-  const [notificationMessage, setNotificationMessage] = useState('')
-  const [notificationType, setNotificationType] = useState<'success' | 'info' | 'warning'>('success')
-  const [lastCompletedTask, setLastCompletedTask] = useState('')
-  const [showConfetti, setShowConfetti] = useState(false)
-
-  useEffect(() => {
-    // 載入真實數據
-    loadRealData()
-  }, [])
-
-  const loadRealData = async () => {
-    try {
-      setIsLoading(true)
-      
-      // 嘗試從 localStorage 載入數據
-      const savedMetrics = localStorage.getItem('cj-beauty-metrics')
-      const savedSupplements = localStorage.getItem('cj-beauty-supplements')
-      
-      if (savedMetrics) {
-        setMetrics(JSON.parse(savedMetrics))
-      } else {
-        // 如果沒有保存的數據，使用模擬數據
-        setMetrics(cjBeautyData.metrics)
-      }
-      
-      setCompletedTasks([])
-      setIsLoading(false)
-    } catch (error) {
-      console.error('Error loading real data:', error)
-      // 如果載入失敗，使用模擬數據
-      setMetrics(cjBeautyData.metrics)
-      setCompletedTasks([])
-      setIsLoading(false)
-    }
-  }
-
-  const syncFromWebhook = async () => {
-    try {
-      setIsLoading(true)
-      
-      const response = await fetch('/api/sync-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          source: 'manual'
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (data.success && data.metrics) {
-        setMetrics(data.metrics)
-        localStorage.setItem('cj-beauty-metrics', JSON.stringify(data.metrics))
-        alert('數據同步成功！')
-      } else {
-        alert('同步失敗：' + (data.error || '未知錯誤'))
-      }
-    } catch (error) {
-      alert('同步失敗：' + error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleTaskComplete = (taskId: string) => {
-    const supplement = supplementsData.find(s => s.id === taskId)
-    if (supplement && !completedTasks.includes(taskId)) {
-      setCompletedTasks(prev => [...prev, taskId])
-      setLastCompletedTask(supplement.name)
-      setShowConfetti(true)
-      setNotificationMessage(`✅ ${supplement.name} 已完成！`)
-      setNotificationType('success')
-      setShowNotification(true)
-    }
-  }
-
-  const getStatusColor = (current: number, target: number) => {
-    const ratio = current / target
-    if (ratio >= 0.9) return 'green'
-    if (ratio >= 0.7) return 'yellow'
-    return 'red'
-  }
-
-  const getStatusEmoji = (color: string) => {
-    switch(color) {
-      case 'green': return '🟢'
-      case 'yellow': return '🟡'
-      case 'red': return '🔴'
-      default: return '⚪'
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#F9F9FB] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">載入中...</p>
-          <p className="text-xs text-gray-400 mt-2">承鈞美麗儀表板</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
@@ -159,47 +36,131 @@ export default function CJBeautyPortal() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {metrics.map((metric) => {
-              const status = getStatusColor(metric.current, metric.target)
-              const emoji = getStatusEmoji(status)
-              const progress = Math.min((metric.current / metric.target) * 100, 100)
-              
-              return (
-                <div key={metric.id} className="group relative">
-                  <div className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
-                    status === 'red' ? 'bg-gradient-to-br from-red-50 to-red-100' :
-                    status === 'yellow' ? 'bg-gradient-to-br from-yellow-50 to-yellow-100' :
-                    'bg-gradient-to-br from-green-50 to-green-100'
-                  }`}></div>
-                  
-                  <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium text-gray-900">{metric.name}</h3>
-                      <span className="text-3xl">{emoji}</span>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-light text-gray-900">{metric.current}</span>
-                        <span className="text-sm text-gray-500">/ {metric.target} {metric.unit}</span>
-                      </div>
-                      
-                      <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full transition-all duration-500 ${
-                            status === 'green' ? 'bg-green-500' : 
-                            status === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-gray-600">{metric.description}</p>
+            {/* 膠原蛋白指數 */}
+            <div className="group relative">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-green-50 to-green-100"></div>
+              <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">膠原蛋白指數</h3>
+                  <span className="text-3xl">🟢</span>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-light text-gray-900">65</span>
+                    <span className="text-sm text-gray-500">/ 80 指數</span>
+                  </div>
+                  <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                    <div className="h-2 rounded-full bg-green-500" style={{ width: '81%' }} />
                   </div>
                 </div>
-              )
-            })}
+                <p className="text-sm text-gray-600">皮膚彈性與緊緻度指標，影響皮膚年輕感</p>
+              </div>
+            </div>
+
+            {/* 抗氧化能力 */}
+            <div className="group relative">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-yellow-50 to-yellow-100"></div>
+              <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">抗氧化能力</h3>
+                  <span className="text-3xl">🟡</span>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-light text-gray-900">45</span>
+                    <span className="text-sm text-gray-500">/ 70 指數</span>
+                  </div>
+                  <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                    <div className="h-2 rounded-full bg-yellow-500" style={{ width: '64%' }} />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600">身體抗氧化能力，影響皮膚老化速度</p>
+              </div>
+            </div>
+
+            {/* 皮膚含水量 */}
+            <div className="group relative">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-yellow-50 to-yellow-100"></div>
+              <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">皮膚含水量</h3>
+                  <span className="text-3xl">🟡</span>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-light text-gray-900">55</span>
+                    <span className="text-sm text-gray-500">/ 65 %</span>
+                  </div>
+                  <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                    <div className="h-2 rounded-full bg-yellow-500" style={{ width: '85%' }} />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600">皮膚水分含量，影響皮膚光澤與彈性</p>
+              </div>
+            </div>
+
+            {/* 荷爾蒙平衡 */}
+            <div className="group relative">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-yellow-50 to-yellow-100"></div>
+              <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">荷爾蒙平衡</h3>
+                  <span className="text-3xl">🟡</span>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-light text-gray-900">70</span>
+                    <span className="text-sm text-gray-500">/ 85 指數</span>
+                  </div>
+                  <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                    <div className="h-2 rounded-full bg-yellow-500" style={{ width: '82%' }} />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600">內分泌系統平衡，影響整體狀態</p>
+              </div>
+            </div>
+
+            {/* 代謝年齡 */}
+            <div className="group relative">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-red-50 to-red-100"></div>
+              <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">代謝年齡</h3>
+                  <span className="text-3xl">🔴</span>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-light text-gray-900">32</span>
+                    <span className="text-sm text-gray-500">/ 28 歲</span>
+                  </div>
+                  <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                    <div className="h-2 rounded-full bg-red-500" style={{ width: '87%' }} />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600">身體代謝年齡，反映身體健康狀態</p>
+              </div>
+            </div>
+
+            {/* 鐵蛋白 */}
+            <div className="group relative">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-yellow-50 to-yellow-100"></div>
+              <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">鐵蛋白</h3>
+                  <span className="text-3xl">🟡</span>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-light text-gray-900">45</span>
+                    <span className="text-sm text-gray-500">/ 50 ng/mL</span>
+                  </div>
+                  <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                    <div className="h-2 rounded-full bg-yellow-500" style={{ width: '90%' }} />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600">鐵質儲存指標，影響能量代謝與免疫</p>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -208,71 +169,127 @@ export default function CJBeautyPortal() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-light text-gray-900">今日任務</h2>
             <div className="text-sm text-gray-600">
-              已完成 {completedTasks.length} / {supplementsData.filter(s => s.level === 1).length}
+              已完成 0 / 8
             </div>
           </div>
           
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {supplementsData
-                .filter(supplement => supplement.level === 1)
-                .map((supplement) => (
-                  <button
-                    key={supplement.id}
-                    onClick={() => handleTaskComplete(supplement.id)}
-                    disabled={completedTasks.includes(supplement.id)}
-                    className={`relative group transition-all duration-300 ${
-                      completedTasks.includes(supplement.id)
-                        ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200 cursor-not-allowed' 
-                        : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md'
-                    } rounded-xl p-4 text-left`}
-                  >
-                    {completedTasks.includes(supplement.id) && (
-                      <div className="absolute top-2 right-2">
-                        <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        completedTasks.includes(supplement.id) ? 'bg-green-500' : 'bg-blue-500'
-                      }`}>
-                        <span className="text-white text-lg">
-                          {completedTasks.includes(supplement.id) ? '✓' : '💊'}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className={`font-medium text-sm ${
-                          completedTasks.includes(supplement.id) ? 'text-green-700' : 'text-gray-900'
-                        }`}>
-                          {supplement.name}
-                        </h4>
-                        <p className="text-xs text-gray-500 mt-1">{supplement.dosage}</p>
-                        <p className="text-xs text-gray-400">{supplement.timing}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+              {/* 葉酸 */}
+              <button className="relative group transition-all duration-300 bg-white border-gray-200 hover:border-blue-300 hover:shadow-md rounded-xl p-4 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500">
+                    <span className="text-white text-lg">💊</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-gray-900">葉酸</h4>
+                    <p className="text-xs text-gray-500 mt-1">800mcg</p>
+                    <p className="text-xs text-gray-400">早餐後</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* 維生素 B12 */}
+              <button className="relative group transition-all duration-300 bg-white border-gray-200 hover:border-blue-300 hover:shadow-md rounded-xl p-4 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500">
+                    <span className="text-white text-lg">💊</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-gray-900">維生素 B12</h4>
+                    <p className="text-xs text-gray-500 mt-1">1000mcg</p>
+                    <p className="text-xs text-gray-400">早餐後</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* 維生素 C */}
+              <button className="relative group transition-all duration-300 bg-white border-gray-200 hover:border-blue-300 hover:shadow-md rounded-xl p-4 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500">
+                    <span className="text-white text-lg">💊</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-gray-900">維生素 C</h4>
+                    <p className="text-xs text-gray-500 mt-1">1000mg</p>
+                    <p className="text-xs text-gray-400">早餐後</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* 維生素 D */}
+              <button className="relative group transition-all duration-300 bg-white border-gray-200 hover:border-blue-300 hover:shadow-md rounded-xl p-4 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500">
+                    <span className="text-white text-lg">💊</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-gray-900">維生素 D</h4>
+                    <p className="text-xs text-gray-500 mt-1">2000IU</p>
+                    <p className="text-xs text-gray-400">早餐後</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* 鎂 */}
+              <button className="relative group transition-all duration-300 bg-white border-gray-200 hover:border-blue-300 hover:shadow-md rounded-xl p-4 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500">
+                    <span className="text-white text-lg">💊</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-gray-900">鎂</h4>
+                    <p className="text-xs text-gray-500 mt-1">400mg</p>
+                    <p className="text-xs text-gray-400">晚餐後</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* 鋅 */}
+              <button className="relative group transition-all duration-300 bg-white border-gray-200 hover:border-blue-300 hover:shadow-md rounded-xl p-4 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500">
+                    <span className="text-white text-lg">💊</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-gray-900">鋅</h4>
+                    <p className="text-xs text-gray-500 mt-1">30mg</p>
+                    <p className="text-xs text-gray-400">晚餐後</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Omega-3 */}
+              <button className="relative group transition-all duration-300 bg-white border-gray-200 hover:border-blue-300 hover:shadow-md rounded-xl p-4 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500">
+                    <span className="text-white text-lg">🐟</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-gray-900">Omega-3</h4>
+                    <p className="text-xs text-gray-500 mt-1">2000mg</p>
+                    <p className="text-xs text-gray-400">晚餐後</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* 膠原蛋白 */}
+              <button className="relative group transition-all duration-300 bg-white border-gray-200 hover:border-blue-300 hover:shadow-md rounded-xl p-4 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500">
+                    <span className="text-white text-lg">💎</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-gray-900">膠原蛋白</h4>
+                    <p className="text-xs text-gray-500 mt-1">10g</p>
+                    <p className="text-xs text-gray-400">睡前</p>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
       </div>
-      
-      {/* 動畫組件 */}
-      <TaskCompleteAnimation 
-        isComplete={lastCompletedTask !== ''} 
-        onComplete={() => setLastCompletedTask('')}
-      />
-      
-      <FloatingNotification
-        message={notificationMessage}
-        type={notificationType}
-        onClose={() => setShowNotification(false)}
-      />
-      
-      <Confetti trigger={showConfetti} />
     </div>
   )
 }

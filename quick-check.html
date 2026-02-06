@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>承鈞美麗儀表板 - 快速檢查</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #F9F9FB;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .success {
+            background: #efe;
+            border: 1px solid #cfc;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 8px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .console {
+            background: #1e1e1e;
+            color: #fff;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>承鈞美麗儀表板 - 快速檢查</h1>
+    
+    <div class="success">
+        <h3>✅ 服務器狀態</h3>
+        <p>HTTP 200 - 服務器正常運行</p>
+    </div>
+    
+    <div class="warning">
+        <h3>⚠️ 可能的問題</h3>
+        <p>頁面載入但沒有正確渲染，可能是 JavaScript 錯誤</p>
+    </div>
+    
+    <div class="error">
+        <h3>🔍 請檢查瀏覽器控制台</h3>
+        <p>按 F12 打開開發者工具，查看 Console 錯誤訊息</p>
+        <p>常見錯誤：</p>
+        <ul>
+            <li>Module not found</li>
+            <li>Cannot read property</li>
+            <li>TypeScript compilation error</li>
+            <li>Import error</li>
+        </ul>
+    </div>
+    
+    <div class="console">
+        <h3>📋 快速修復步驟</h3>
+        <ol>
+            <li>按 F12 打開開發者工具</li>
+            <li>查看 Console 錯誤訊息</li>
+            <li>複製錯誤訊息給我</li>
+            <li>嘗試重新整理頁面 (Ctrl+Shift+R)</li>
+            <li>嘗試清除瀏覽器快取</li>
+        </ol>
+    </div>
+    
+    <div style="text-align: center; margin-top: 20px;">
+        <button class="button" onclick="window.open('http://localhost:3000/portal/cj-beauty', '_blank')">
+            🌐 打開儀表板
+        </button>
+        <button class="button" onclick="window.open('http://localhost:3000/portal/cj-beauty-simple', '_blank')">
+            📊 打開簡化版
+        </button>
+        <button class="button" onclick="window.open('http://localhost:3000/portal/simple-diagnostic', '_blank')">
+            🔍 打開診斷頁面
+        </button>
+    </div>
+    
+    <div class="console">
+        <h3>💬 請告訴我</h3>
+        <p>1. 你看到什麼？（空白頁面、錯誤訊息、程式碼）</p>
+        <p>2. 瀏覽器控制台有什麼錯誤訊息？</p>
+        <p>3. 嘗試簡化版儀表板能打開嗎？</p>
+        <p>4. 診斷頁面能打開嗎？</p>
+    </div>
+    
+    <script>
+        // 檢查基本的 JavaScript 功能
+        console.log('✅ JavaScript 正常運行');
+        
+        // 檢查瀏覽器支援
+        if (typeof fetch !== 'undefined') {
+            console.log('✅ Fetch API 支援');
+        } else {
+            console.log('❌ Fetch API 不支援');
+        }
+        
+        // 檢查 React
+        if (typeof React !== 'undefined') {
+            console.log('✅ React 載入');
+        } else {
+            console.log('❌ React 未載入');
+        }
+        
+        // 檢查 Next.js
+        if (typeof window.next !== 'undefined') {
+            console.log('✅ Next.js 載入');
+        } else {
+            console.log('❌ Next.js 未載入');
+        }
+        
+        console.log('🔍 請檢查瀏覽器控制台的完整錯誤訊息');
+    </script>
+</body>
+</html>
