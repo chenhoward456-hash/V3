@@ -47,6 +47,7 @@ export function useClientData(
     {
       revalidateOnFocus,
       dedupingInterval,
+      refreshInterval: 30000, // 30秒自動刷新
       errorRetryCount: 3,
       onError: (error) => {
         console.error('客戶資料獲取失敗:', error)

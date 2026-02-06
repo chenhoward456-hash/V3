@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import SupplementChecklist from './components/SupplementChecklist'
 import LabResultTrendChart from './components/LabResultTrendChart'
 import BodyCompositionTracker from './components/BodyCompositionTracker'
@@ -116,60 +115,6 @@ export default function ClientDashboard() {
     if (!trendData[testName]) return []
     return trendData[testName]
   }, [trendData])
-  
-  // 設閱即時更新
-  useEffect(() => {
-    if (!clientId) return
-    
-    const channel = supabase
-      .channel('client-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'clients',
-          filter: `unique_code=eq.${clientId}`,
-        },
-        (payload) => {
-          console.log('客戶資料更新了！', payload)
-          // 觸發 SWR 重新獲取
-          mutate()
-        }
-      )
-      .subscribe()
-    
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [clientId, mutate])
-  
-  // 監聽血檢結果變化
-  useEffect(() => {
-    if (!clientId) return
-    
-    const channel = supabase
-      .channel('lab-results-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'lab_results',
-          filter: `client_id=eq.${clientId}`,
-        },
-        (payload) => {
-          console.log('血檢結果更新了！', payload)
-          // 觸發 SWR 重新獲取
-          mutate()
-        }
-      )
-      .subscribe()
-    
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [clientId, mutate])
   
   if (isLoading) {
     return (
