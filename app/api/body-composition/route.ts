@@ -27,29 +27,40 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('clientId')
     
+    console.log('🔍 API GET /api/body-composition - clientId:', clientId)
+    
     if (!clientId) {
+      console.log('❌ 缺少客戶 ID')
       return createErrorResponse('缺少客戶 ID', 400)
     }
     
     // 獲取客戶 ID
+    console.log('🔍 開始查詢客戶 ID...')
     const { data: client } = await supabase
       .from('clients')
       .select('id')
       .eq('unique_code', clientId)
       .single()
     
+    console.log('📊 客戶 ID 查詢結果:', { client })
+    
     if (!client) {
-      return NextResponse.json({ error: '找不到客戶' }, { status: 404 })
+      console.log('❌ 找不到客戶')
+      return createErrorResponse('找不到客戶', 404)
     }
     
     // 獲取身體數據記錄
+    console.log('🔍 開始查詢身體數據記錄...')
     const { data, error } = await supabase
       .from('body_composition')
       .select('*')
       .eq('client_id', client.id)
       .order('date', { ascending: false })
     
+    console.log('📊 身體數據記錄查詢:', { data, error })
+    
     if (error) {
+      console.log('❌ 獲取身體數據失敗:', error)
       return createErrorResponse('獲取身體數據失敗', 500)
     }
     

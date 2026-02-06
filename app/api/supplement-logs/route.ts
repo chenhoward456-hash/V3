@@ -28,7 +28,10 @@ export async function GET(request: NextRequest) {
     const clientId = searchParams.get('clientId')
     const date = searchParams.get('date')
     
+    console.log('🔍 API GET /api/supplement-logs - clientId:', clientId, 'date:', date)
+    
     if (!clientId) {
+      console.log('❌ 缺少客戶 ID')
       return createErrorResponse('缺少客戶 ID', 400)
     }
     
@@ -113,13 +116,17 @@ export async function POST(request: NextRequest) {
     }
     
     // 獲取客戶 ID
+    console.log('🔍 開始查詢客戶 ID...')
     const { data: client } = await supabase
       .from('clients')
       .select('id')
       .eq('unique_code', clientId)
       .single()
     
+    console.log('📊 客戶 ID 查詢結果:', { client })
+    
     if (!client) {
+      console.log('❌ 找不到客戶')
       return createErrorResponse('找不到客戶', 404)
     }
     

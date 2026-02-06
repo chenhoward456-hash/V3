@@ -27,11 +27,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('clientId')
     
+    console.log('🔍 API GET /api/clients - clientId:', clientId)
+    
     if (!clientId) {
+      console.log('❌ 缺少客戶 ID')
       return createErrorResponse('缺少客戶 ID', 400)
     }
     
     // 獲取客戶資料
+    console.log('🔍 開始查詢客戶資料...')
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select(`
@@ -42,11 +46,15 @@ export async function GET(request: NextRequest) {
       .eq('unique_code', clientId)
       .single()
     
+    console.log('📊 查詢結果:', { client, clientError })
+    
     if (clientError) {
+      console.log('❌ 客戶查詢錯誤:', clientError)
       return createErrorResponse('找不到客戶資料', 404)
     }
     
     if (!client) {
+      console.log('❌ 客戶資料為空')
       return createErrorResponse('客戶資料不存在', 404)
     }
     

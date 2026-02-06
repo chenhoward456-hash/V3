@@ -27,33 +27,44 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('clientId')
     
+    console.log('🔍 API GET /api/supplements - clientId:', clientId)
+    
     if (!clientId) {
+      console.log('❌ 缺少客戶 ID')
       return createErrorResponse('缺少客戶 ID', 400)
     }
     
     // 獲取客戶 ID
+    console.log('🔍 開始查詢客戶 ID...')
     const { data: client } = await supabase
       .from('clients')
       .select('id')
       .eq('unique_code', clientId)
       .single()
     
+    console.log('📊 客戶 ID 查詢結果:', { client })
+    
     if (!client) {
-      return NextResponse.json({ error: '找不到客戶' }, { status: 404 })
+      console.log('❌ 找不到客戶')
+      return createErrorResponse('找不到客戶', 404)
     }
     
     // 獲取補品列表
+    console.log('🔍 開始查詢補品列表...')
     const { data, error } = await supabase
       .from('supplements')
       .select('*')
       .eq('client_id', client.id)
       .order('sort_order', { ascending: true })
     
+    console.log('📊 補品列表查詢:', { data, error })
+    
     if (error) {
-      return NextResponse.json({ error: '獲取補品列表失敗' }, { status: 500 })
+      console.log('❌ 獲取補品列表失敗:', error)
+      return createErrorResponse('獲取補品列表失敗', 500)
     }
     
-    return NextResponse.json(data)
+    return createSuccessResponse(data)
     
   } catch (error) {
     console.error('API 錯誤:', error)
