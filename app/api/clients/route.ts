@@ -86,10 +86,26 @@ export async function GET(request: NextRequest) {
       console.warn('獲取身體數據記錄失敗:', bodyError)
     }
     
+    // 獲取最近 30 天的每日感受記錄
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    
+    const { data: wellnessData, error: wellnessError } = await supabase
+      .from('daily_wellness')
+      .select('*')
+      .eq('client_id', client.id)
+      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
+      .order('date', { ascending: false })
+    
+    if (wellnessError) {
+      console.warn('獲取每日感受記錄失敗:', wellnessError)
+    }
+    
     return createSuccessResponse({
       client,
       todayLogs: logs || [],
-      bodyData: bodyRecords || []
+      bodyData: bodyRecords || [],
+      wellness: wellnessData || []
     })
     
   } catch (error) {

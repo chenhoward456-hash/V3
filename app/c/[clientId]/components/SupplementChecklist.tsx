@@ -60,26 +60,21 @@ function SupplementChecklist({
     // 立即更新 UI（樂觀更新）
     addOptimisticLog({ supplement_id: supplementId, completed: newCompleted })
     
-    // 背景同步到資料庫
-    try {
-      const response = await fetch('/api/supplement-logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: clientId,
-          supplement_id: supplementId,
-          date: today,
-          completed: newCompleted
-        })
+    // 背景同步到資料庫（不等待完成）
+    fetch('/api/supplement-logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: clientId,
+        supplement_id: supplementId,
+        date: today,
+        completed: newCompleted
       })
-      
-      if (!response.ok) {
-        throw new Error('打卡失敗')
-      }
-    } catch (error) {
+    }).catch(error => {
       console.error('打卡失敗:', error)
-      // 可以加上錯誤提示
-    }
+      // 回滾樂觀更新
+      addOptimisticLog({ supplement_id: supplementId, completed: !newCompleted })
+    })
   }
   
   // 檢查是否已打勾
