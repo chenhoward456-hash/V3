@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useOptimistic } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import React from 'react'
 
 interface Supplement {
@@ -30,10 +29,6 @@ function SupplementChecklist({
   supplements,
   initialLogs = []
 }: SupplementChecklistProps) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
   const today = new Date().toISOString().split('T')[0]
   
   // 樂觀更新狀態
@@ -67,18 +62,20 @@ function SupplementChecklist({
     
     // 背景同步到資料庫
     try {
-      const { error } = await supabase
-        .from('supplement_logs')
-        .upsert({
+      const response = await fetch('/api/supplement-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           client_id: clientId,
           supplement_id: supplementId,
           date: today,
           completed: newCompleted
-        }, {
-          onConflict: 'supplement_id,date'
         })
+      })
       
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('打卡失敗')
+      }
     } catch (error) {
       console.error('打卡失敗:', error)
       // 可以加上錯誤提示

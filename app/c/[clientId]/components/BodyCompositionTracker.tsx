@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import React from 'react'
 
 interface BodyComposition {
@@ -24,11 +23,6 @@ function BodyCompositionTracker({
   clientId, 
   initialData = []
 }: BodyCompositionTrackerProps) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-  
   const [records, setRecords] = useState<BodyComposition[]>(initialData)
   const [isAdding, setIsAdding] = useState(false)
   const [newRecord, setNewRecord] = useState<Partial<BodyComposition>>({
@@ -59,9 +53,10 @@ function BodyCompositionTracker({
     try {
       const bmi = calculateBMI(newRecord.height, newRecord.weight)
       
-      const { data, error } = await supabase
-        .from('body_composition')
-        .insert({
+      const response = await fetch('/api/body-composition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           client_id: clientId,
           date: newRecord.date,
           height: newRecord.height,
@@ -69,14 +64,16 @@ function BodyCompositionTracker({
           body_fat: newRecord.body_fat,
           muscle_mass: newRecord.muscle_mass,
           visceral_fat: newRecord.visceral_fat,
-          bmi: bmi
+          bmi
         })
-        .select()
-        .single()
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('新增失敗')
+      }
 
-      setRecords(prev => [...prev, data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+      const data = await response.json()
+      setRecords(prev => [...prev, data.data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
       setNewRecord({
         date: new Date().toISOString().split('T')[0],
         height: undefined,
@@ -99,12 +96,15 @@ function BodyCompositionTracker({
     if (!confirm('確定要刪除這筆記錄嗎？')) return
 
     try {
-      const { error } = await supabase
-        .from('body_composition')
-        .delete()
-        .eq('id', id)
+      const response = await fetch('/api/body-composition', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('刪除失敗')
+      }
 
       setRecords(prev => prev.filter(record => record.id !== id))
     } catch (error) {

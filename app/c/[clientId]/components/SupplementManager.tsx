@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
 
 interface Supplement {
   id: string
@@ -22,11 +21,6 @@ export default function SupplementManager({
   initialSupplements, 
   onUpdate 
 }: SupplementManagerProps) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-  
   const [supplements, setSupplements] = useState<Supplement[]>(initialSupplements)
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -60,21 +54,24 @@ export default function SupplementManager({
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('supplements')
-        .insert({
+      const response = await fetch('/api/supplements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           client_id: clientId,
           name: newSupplement.name,
           dosage: newSupplement.dosage,
           timing: newSupplement.timing || '早餐',
           why: newSupplement.why
         })
-        .select()
-        .single()
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('新增失敗')
+      }
 
-      const updatedSupplements = [...supplements, data]
+      const data = await response.json()
+      const updatedSupplements = [...supplements, data.data]
       setSupplements(updatedSupplements)
       onUpdate(updatedSupplements)
       
@@ -91,17 +88,22 @@ export default function SupplementManager({
   const handleUpdate = async (id: string, updates: Partial<Supplement>) => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('supplements')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
+      const response = await fetch('/api/supplements', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          ...updates
+        })
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('更新失敗')
+      }
 
+      const data = await response.json()
       const updatedSupplements = supplements.map(sup => 
-        sup.id === id ? data : sup
+        sup.id === id ? data.data : sup
       )
       setSupplements(updatedSupplements)
       onUpdate(updatedSupplements)
@@ -119,14 +121,17 @@ export default function SupplementManager({
 
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('supplements')
-        .delete()
-        .eq('id', id)
+      const response = await fetch('/api/supplements', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('刪除失敗')
+      }
 
-      const updatedSupplements = supplements.filter(sup => sup.id !== id)
+      const updatedSupplements = supplements.filter(supplement => supplement.id !== id)
       setSupplements(updatedSupplements)
       onUpdate(updatedSupplements)
     } catch (error) {

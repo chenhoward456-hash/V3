@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { calculateLabStatus } from '@/utils/labStatus'
 
 interface LabResult {
@@ -25,11 +24,6 @@ export default function LabResultEditor({
   labResults, 
   onUpdate 
 }: LabResultEditorProps) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-  
   const [editingId, setEditingId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [newResult, setNewResult] = useState<Partial<LabResult>>({
@@ -71,17 +65,19 @@ export default function LabResultEditor({
         updates.status = calculateLabStatus(updatedResult.test_name, Number(value))
       }
 
-      const { data, error } = await supabase
-        .from('lab_results')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
+      const response = await fetch('/api/lab-results', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...updates })
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('更新失敗')
+      }
 
+      const data = await response.json()
       const updatedResults = labResults.map(result => 
-        result.id === id ? data : result
+        result.id === id ? data.data : result
       )
       onUpdate(updatedResults)
     } catch (error) {
@@ -102,9 +98,10 @@ export default function LabResultEditor({
     try {
       const status = calculateLabStatus(newResult.test_name!, Number(newResult.value))
       
-      const { data, error } = await supabase
-        .from('lab_results')
-        .insert({
+      const response = await fetch('/api/lab-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           client_id: clientId,
           test_name: newResult.test_name,
           value: Number(newResult.value),
@@ -113,12 +110,14 @@ export default function LabResultEditor({
           status,
           date: newResult.date
         })
-        .select()
-        .single()
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('新增失敗')
+      }
 
-      const updatedResults = [...labResults, data]
+      const data = await response.json()
+      const updatedResults = [...labResults, data.data]
       onUpdate(updatedResults)
       
       setNewResult({
@@ -141,12 +140,15 @@ export default function LabResultEditor({
 
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('lab_results')
-        .delete()
-        .eq('id', id)
+      const response = await fetch('/api/lab-results', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('刪除失敗')
+      }
 
       const updatedResults = labResults.filter(result => result.id !== id)
       onUpdate(updatedResults)
