@@ -196,3 +196,22 @@
     @apply bg-bg-secondary/50;
   }
 }
+
+/* Modal 動畫 */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* 手機安全區域 */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}

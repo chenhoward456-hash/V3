@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { calculateLabStatus } from '@/utils/labStatus'
 import { useClientData } from '@/hooks/useClientData'
 import { LineChart, Tooltip, Legend, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Line } from 'recharts'
-import { CheckCircle2, TrendingUp, TrendingDown, Calendar, Smile, BatteryCharging } from 'lucide-react'
+import { CheckCircle2, TrendingUp, TrendingDown, Calendar, Smile, BatteryCharging, Edit2, Save, X, Plus } from 'lucide-react'
 import React from 'react'
 
 interface LabResult {
@@ -279,6 +279,153 @@ export default function ClientDashboard() {
     mood: todayWellness?.mood || null,
     note: todayWellness?.note || ''
   })
+  
+  // 身體數據編輯狀態
+  const [editingBodyData, setEditingBodyData] = useState(false)
+  const [tempBodyData, setTempBodyData] = useState<any>({})
+  
+  // 新增身體數據 Modal 狀態
+  const [showAddBodyDataModal, setShowAddBodyDataModal] = useState(false)
+  const [newBodyData, setNewBodyData] = useState({
+    date: new Date().toISOString().split('T')[0],
+    weight: '',
+    body_fat: '',
+    muscle_mass: '',
+    height: latestBodyData?.height || '',
+    visceral_fat: ''
+  })
+  
+  // 處理身體數據編輯
+  const handleEditBodyData = () => {
+    setEditingBodyData(true)
+    setTempBodyData(latestBodyData || {})
+  }
+  
+  // 處理身體數據保存
+  const handleSaveBodyData = async () => {
+    try {
+      const response = await fetch('/api/body-composition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: clientData?.client?.id,
+          date: new Date().toISOString().split('T')[0],
+          ...tempBodyData
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('保存失敗')
+      }
+      
+      // 重新獲取資料
+      mutate()
+      setEditingBodyData(false)
+      
+      // 顯示成功提示
+      alert('身體數據已更新！')
+    } catch (error) {
+      console.error('保存失敗:', error)
+      alert('保存失敗，請重試')
+    }
+  }
+  
+  // 處理身體數據取消
+  const handleCancelBodyData = () => {
+    setEditingBodyData(false)
+    setTempBodyData(latestBodyData || {})
+  }
+  
+  // 處理新增身體數據
+  const handleAddBodyData = async () => {
+    // 驗證必填欄位
+    if (!newBodyData.weight) {
+      alert('請輸入體重')
+      return
+    }
+    
+    // 驗證數值範圍
+    const weight = parseFloat(newBodyData.weight)
+    if (weight < 20 || weight > 300) {
+      alert('體重請輸入 20-300 kg')
+      return
+    }
+    
+    if (newBodyData.body_fat) {
+      const bodyFat = parseFloat(newBodyData.body_fat)
+      if (bodyFat < 1 || bodyFat > 60) {
+        alert('體脂請輸入 1-60 %')
+        return
+      }
+    }
+    
+    if (newBodyData.muscle_mass) {
+      const muscleMass = parseFloat(newBodyData.muscle_mass)
+      if (muscleMass < 10 || muscleMass > 100) {
+        alert('肌肉量請輸入 10-100 kg')
+        return
+      }
+    }
+    
+    if (newBodyData.height) {
+      const height = parseFloat(newBodyData.height)
+      if (height < 100 || height > 250) {
+        alert('身高請輸入 100-250 cm')
+        return
+      }
+    }
+    
+    if (newBodyData.visceral_fat) {
+      const visceralFat = parseFloat(newBodyData.visceral_fat)
+      if (visceralFat < 1 || visceralFat > 30) {
+        alert('內臟脂肪請輸入 1-30')
+        return
+      }
+    }
+    
+    try {
+      const response = await fetch('/api/body-composition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: clientId,
+          date: newBodyData.date,
+          weight: weight,
+          body_fat: newBodyData.body_fat ? parseFloat(newBodyData.body_fat) : null,
+          muscle_mass: newBodyData.muscle_mass ? parseFloat(newBodyData.muscle_mass) : null,
+          height: newBodyData.height ? parseFloat(newBodyData.height) : null,
+          visceral_fat: newBodyData.visceral_fat ? parseFloat(newBodyData.visceral_fat) : null
+        })
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || '新增失敗')
+      }
+      
+      // 關閉 modal
+      setShowAddBodyDataModal(false)
+      
+      // 重置表單
+      setNewBodyData({
+        date: new Date().toISOString().split('T')[0],
+        weight: '',
+        body_fat: '',
+        muscle_mass: '',
+        height: latestBodyData?.height || '',
+        visceral_fat: ''
+      })
+      
+      // 重新獲取資料
+      mutate()
+      
+      // 顯示成功提示
+      alert('紀錄已儲存！')
+    } catch (error) {
+      console.error('新增失敗:', error)
+      alert(error instanceof Error ? error.message : '新增失敗，請重試')
+    }
+  }
   
   if (isLoading) {
     return (
@@ -575,10 +722,28 @@ export default function ClientDashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {/* 體重 */}
           <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="text-sm font-medium text-gray-600 mb-1">體重</div>
-            <div className="text-3xl font-bold text-gray-900">{latestBodyData?.weight || '--'}</div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-gray-600">體重</span>
+              <button 
+                onClick={handleEditBodyData}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <Edit2 size={14} />
+              </button>
+            </div>
+            {editingBodyData ? (
+              <input 
+                type="number" 
+                step="0.1"
+                value={tempBodyData.weight || ''}
+                onChange={(e) => setTempBodyData((prev: any) => ({ ...prev, weight: parseFloat(e.target.value) }))}
+                className="text-3xl font-bold text-gray-900 w-full bg-transparent border-b-2 border-blue-500 focus:outline-none"
+              />
+            ) : (
+              <div className="text-3xl font-bold text-gray-900">{latestBodyData?.weight || '--'}</div>
+            )}
             <div className="text-sm text-gray-500">kg</div>
-            {latestBodyData?.weight && clientData.bodyData.length > 1 && (
+            {latestBodyData?.weight && clientData.bodyData.length > 1 && !editingBodyData && (
               <div className="flex items-center text-sm text-gray-500">
                 {clientData.bodyData[0].weight > clientData.bodyData[1].weight ? (
                   <TrendingUp className="text-green-500 text-sm" size={12} />
@@ -594,10 +759,28 @@ export default function ClientDashboard() {
           
           {/* 體脂 */}
           <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="text-sm font-medium text-gray-600 mb-1">體脂肪</div>
-            <div className="text-3xl font-bold text-gray-900">{latestBodyData?.body_fat || '--'}</div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-gray-600">體脂肪</span>
+              <button 
+                onClick={handleEditBodyData}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <Edit2 size={14} />
+              </button>
+            </div>
+            {editingBodyData ? (
+              <input 
+                type="number" 
+                step="0.1"
+                value={tempBodyData.body_fat || ''}
+                onChange={(e) => setTempBodyData((prev: any) => ({ ...prev, body_fat: parseFloat(e.target.value) }))}
+                className="text-3xl font-bold text-gray-900 w-full bg-transparent border-b-2 border-blue-500 focus:outline-none"
+              />
+            ) : (
+              <div className="text-3xl font-bold text-gray-900">{latestBodyData?.body_fat || '--'}</div>
+            )}
             <div className="text-sm text-gray-500">%</div>
-            {bodyFatTrend && (
+            {bodyFatTrend && !editingBodyData && (
               <div className="flex items-center text-sm text-gray-500">
                 {bodyFatTrend?.trend === 'up' ? (
                   <TrendingUp className="text-red-500 text-sm" size={12} />
@@ -625,6 +808,26 @@ export default function ClientDashboard() {
             <div className="text-sm text-gray-500">kg</div>
           </div>
         </div>
+        
+        {/* 編輯控制按鈕 */}
+        {editingBodyData && (
+          <div className="flex justify-end space-x-2 mb-4">
+            <button
+              onClick={handleCancelBodyData}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
+            >
+              <X size={16} className="mr-1" />
+              取消
+            </button>
+            <button
+              onClick={handleSaveBodyData}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+            >
+              <Save size={16} className="mr-1" />
+              保存
+            </button>
+          </div>
+        )}
         
         {/* 趨勢圖 */}
         <div className="bg-white rounded-3xl shadow-sm p-6">
@@ -770,6 +973,136 @@ export default function ClientDashboard() {
           </div>
         </div>
       </div>
+      
+      {/* 固定底部新增按鈕 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-safe">
+        <div className="max-w-4xl mx-auto">
+          <button
+            onClick={() => setShowAddBodyDataModal(true)}
+            className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+          >
+            <Plus size={20} className="mr-2" />
+            新增身體紀錄
+          </button>
+        </div>
+      </div>
+      
+      {/* 新增身體數據 Modal */}
+      {showAddBodyDataModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
+          <div className="bg-white w-full max-w-lg rounded-t-3xl p-6 animate-slide-up">
+            {/* 標題和關閉按鈕 */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">新增身體數據</h3>
+              <button
+                onClick={() => setShowAddBodyDataModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            {/* 表單欄位 */}
+            <div className="space-y-4">
+              {/* 日期 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">日期</label>
+                <input
+                  type="date"
+                  value={newBodyData.date}
+                  onChange={(e) => setNewBodyData(prev => ({ ...prev, date: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              {/* 體重 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">體重 (kg) *</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="20"
+                  max="300"
+                  value={newBodyData.weight}
+                  onChange={(e) => setNewBodyData(prev => ({ ...prev, weight: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="請輸入體重"
+                />
+              </div>
+              
+              {/* 體脂 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">體脂 (%)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  max="60"
+                  value={newBodyData.body_fat}
+                  onChange={(e) => setNewBodyData(prev => ({ ...prev, body_fat: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="選填"
+                />
+              </div>
+              
+              {/* 肌肉量 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">肌肉量 (kg)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="10"
+                  max="100"
+                  value={newBodyData.muscle_mass}
+                  onChange={(e) => setNewBodyData(prev => ({ ...prev, muscle_mass: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="選填"
+                />
+              </div>
+              
+              {/* 身高 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">身高 (cm)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="100"
+                  max="250"
+                  value={newBodyData.height}
+                  onChange={(e) => setNewBodyData(prev => ({ ...prev, height: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="選填"
+                />
+              </div>
+              
+              {/* 內臟脂肪 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">內臟脂肪</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  max="30"
+                  value={newBodyData.visceral_fat}
+                  onChange={(e) => setNewBodyData(prev => ({ ...prev, visceral_fat: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="選填"
+                />
+              </div>
+            </div>
+            
+            {/* 提交按鈕 */}
+            <div className="mt-6">
+              <button
+                onClick={handleAddBodyData}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+              >
+                儲存紀錄
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

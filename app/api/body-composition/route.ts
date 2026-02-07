@@ -74,18 +74,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. 驗證身份
-    const { user, error: authError } = await verifyAuth(request)
-    if (authError || !user) {
-      return createErrorResponse(authError || '身份驗證失敗', 401)
-    }
-
-    // 2. 檢查權限（目前只有教練可以存取）
-    if (!isCoach(user)) {
-      return createErrorResponse('權限不足，需要教練角色', 403)
-    }
-
-    // 3. 獲取請求內容
+    // 1. 獲取請求內容
     const body = await request.json()
     const { clientId, date, height, weight, bodyFat, muscleMass, visceralFat, bmi } = body
     
@@ -137,12 +126,17 @@ export async function POST(request: NextRequest) {
     // 獲取客戶 ID
     const { data: client } = await supabase
       .from('clients')
-      .select('id')
+      .select('id, expires_at')
       .eq('unique_code', clientId)
       .single()
     
     if (!client) {
       return createErrorResponse('找不到客戶', 404)
+    }
+    
+    // 檢查客戶是否未過期
+    if (client.expires_at && new Date(client.expires_at) < new Date()) {
+      return createErrorResponse('客戶已過期', 403)
     }
     
     // 創建身體數據記錄
