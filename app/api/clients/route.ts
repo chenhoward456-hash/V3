@@ -100,12 +100,25 @@ export async function GET(request: NextRequest) {
     if (wellnessError) {
       console.warn('獲取每日感受記錄失敗:', wellnessError)
     }
-    
+
+    // 獲取最近 30 天補品打卡記錄
+    const { data: recentLogs, error: recentLogsError } = await supabase
+      .from('supplement_logs')
+      .select('*')
+      .eq('client_id', client.id)
+      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
+      .order('date', { ascending: false })
+
+    if (recentLogsError) {
+      console.warn('獲取近期補品打卡記錄失敗:', recentLogsError)
+    }
+
     return createSuccessResponse({
       client,
       todayLogs: logs || [],
       bodyData: bodyRecords || [],
-      wellness: wellnessData || []
+      wellness: wellnessData || [],
+      recentLogs: recentLogs || []
     })
     
   } catch (error) {

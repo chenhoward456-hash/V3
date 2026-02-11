@@ -105,14 +105,51 @@ export default function ClientDashboard() {
     return { normal, total: clientData.client.lab_results.length }
   }, [clientData?.client?.lab_results])
 
-  // 補品完成率
-  const supplementStats = useMemo(() => {
+  // 今日補品完成率
+  const todaySupplementStats = useMemo(() => {
     if (!clientData?.todayLogs || !clientData?.client?.supplements) return { completed: 0, total: 0, rate: 0 }
     const completed = clientData.todayLogs.filter((log: any) => log.completed).length
     const total = clientData.client.supplements.length
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0
     return { completed, total, rate }
   }, [clientData?.todayLogs, clientData?.client?.supplements])
+
+  // 本週 / 本月 / 上週補品服從率
+  const supplementComplianceStats = useMemo(() => {
+    const totalSupplements = clientData?.client?.supplements?.length || 0
+    if (!totalSupplements || !clientData?.recentLogs) return { weekRate: 0, monthRate: 0, weekDelta: null as number | null }
+
+    const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+
+    const daysAgo = (n: number) => {
+      const d = new Date(now)
+      d.setDate(d.getDate() - n)
+      return d.toISOString().split('T')[0]
+    }
+
+    const logs = clientData.recentLogs as any[]
+
+    // 本週（最近 7 天）
+    const weekStart = daysAgo(6)
+    const weekCompleted = logs.filter((l: any) => l.date >= weekStart && l.date <= todayStr && l.completed).length
+    const weekRate = Math.round((weekCompleted / (7 * totalSupplements)) * 100)
+
+    // 本月（最近 30 天）
+    const monthStart = daysAgo(29)
+    const monthCompleted = logs.filter((l: any) => l.date >= monthStart && l.date <= todayStr && l.completed).length
+    const monthRate = Math.round((monthCompleted / (30 * totalSupplements)) * 100)
+
+    // 上週（7-13 天前）
+    const lastWeekStart = daysAgo(13)
+    const lastWeekEnd = daysAgo(7)
+    const lastWeekCompleted = logs.filter((l: any) => l.date >= lastWeekStart && l.date <= lastWeekEnd && l.completed).length
+    const lastWeekRate = Math.round((lastWeekCompleted / (7 * totalSupplements)) * 100)
+
+    const weekDelta = weekRate - lastWeekRate
+
+    return { weekRate, monthRate, weekDelta }
+  }, [clientData?.recentLogs, clientData?.client?.supplements])
 
   // 體脂趨勢比較
   const bodyFatTrend = useMemo(() => {
@@ -121,29 +158,41 @@ export default function ClientDashboard() {
     return { diff: Math.abs(diff).toFixed(1), direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'same' }
   }, [latestBodyData, prevBodyData])
 
-  // 連續打卡天數（如果今天還沒記錄，從昨天開始算）
+  // 連續打卡天數（用 supplement_logs，每天至少一筆 completed=true 就算）
   const streakDays = useMemo(() => {
-    if (!clientData?.wellness?.length) return 0
-    const sorted = [...clientData.wellness].sort((a: any, b: any) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
+    if (!clientData?.recentLogs?.length) return 0
+    const completedLogs = (clientData.recentLogs as any[]).filter((l: any) => l.completed)
+    if (!completedLogs.length) return 0
+
+    // 取得有打卡的不重複日期（降序）
+    const datesWithCompleted = [...new Set(completedLogs.map((l: any) => l.date))].sort().reverse()
+
     const now = new Date()
     const todayStr = now.toISOString().split('T')[0]
-    // 如果最新一筆是今天，從今天算；否則從昨天算
-    const startOffset = sorted[0].date === todayStr ? 0 : 1
+    const startOffset = datesWithCompleted[0] === todayStr ? 0 : 1
     let streak = 0
-    for (let i = 0; i < sorted.length; i++) {
+    for (let i = 0; i < datesWithCompleted.length; i++) {
       const expected = new Date(now)
       expected.setDate(expected.getDate() - (i + startOffset))
       const expectedStr = expected.toISOString().split('T')[0]
-      if (sorted[i].date === expectedStr) {
+      if (datesWithCompleted[i] === expectedStr) {
         streak++
       } else {
         break
       }
     }
     return streak
-  }, [clientData?.wellness])
+  }, [clientData?.recentLogs])
+
+  // 激勵文字
+  const streakMessage = useMemo(() => {
+    if (streakDays >= 30) return '健康達人！'
+    if (streakDays >= 14) return '超棒的習慣！'
+    if (streakDays >= 7) return '一週達成！'
+    if (streakDays >= 3) return '保持下去！'
+    if (streakDays >= 1) return '好的開始！'
+    return '今天開始吧！'
+  }, [streakDays])
 
   // 趨勢圖數據（修正 key 對應）
   const trendData = useMemo(() => {
@@ -347,9 +396,16 @@ export default function ClientDashboard() {
           {/* 區塊一：健康總覽摘要卡片 */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-blue-50 rounded-2xl p-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">補品服從率</p>
-              <p className="text-2xl font-bold text-blue-600">{supplementStats.rate}%</p>
-              <p className="text-xs text-gray-400">{supplementStats.completed}/{supplementStats.total}</p>
+              <p className="text-xs text-gray-500 mb-1">本週服從率</p>
+              <p className="text-2xl font-bold text-blue-600">{supplementComplianceStats.weekRate}%</p>
+              <div className="text-xs text-gray-400">
+                <span>本月 {supplementComplianceStats.monthRate}%</span>
+                {supplementComplianceStats.weekDelta !== null && supplementComplianceStats.weekDelta !== 0 && (
+                  <span className={`ml-1 ${supplementComplianceStats.weekDelta > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                    {supplementComplianceStats.weekDelta > 0 ? '↑' : '↓'}{Math.abs(supplementComplianceStats.weekDelta)}%
+                  </span>
+                )}
+              </div>
             </div>
             <div className="bg-green-50 rounded-2xl p-4 text-center">
               <p className="text-xs text-gray-500 mb-1">血檢正常</p>
@@ -381,7 +437,10 @@ export default function ClientDashboard() {
         <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">今日打卡</h2>
+              <h2 className="text-xl font-semibold text-gray-900">
+                今日打卡
+                <span className="ml-2 text-sm font-normal text-gray-500">{streakMessage}</span>
+              </h2>
               <p className="text-sm text-gray-500">
                 {new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}
               </p>
@@ -392,6 +451,30 @@ export default function ClientDashboard() {
               </div>
             )}
           </div>
+
+          {/* 今日完成率進度條 */}
+          {clientData.client.supplements && clientData.client.supplements.length > 0 && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-gray-600">
+                  {todaySupplementStats.completed === todaySupplementStats.total && todaySupplementStats.total > 0
+                    ? '今日全數完成'
+                    : `${todaySupplementStats.completed}/${todaySupplementStats.total} 已完成`}
+                </span>
+                <span className="text-sm font-medium text-gray-700">{todaySupplementStats.rate}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className={`h-2.5 rounded-full transition-all ${
+                    todaySupplementStats.completed === todaySupplementStats.total && todaySupplementStats.total > 0
+                      ? 'bg-green-500'
+                      : 'bg-blue-500'
+                  }`}
+                  style={{ width: `${todaySupplementStats.rate}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           {clientData.client.supplements && clientData.client.supplements.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -604,20 +687,65 @@ export default function ClientDashboard() {
           )}
         </div>
 
-        {/* ===== 教練備註（僅在無 coach_summary 時顯示靜態文字） ===== */}
-        {!clientData.client.coach_summary && (
-          <div className="bg-white rounded-3xl shadow-sm p-6 mb-20">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Howard 教練備註</h2>
-            <div className="flex items-start">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Howard 教練</h3>
-                <p className="text-gray-600">
-                  {clientData?.client?.coach_note || '持續追蹤中，有問題隨時 LINE 我！— Howard 教練'}
-                </p>
+        {/* ===== 行動計畫 / 教練備註 ===== */}
+        {(() => {
+          const hasGoals = !!clientData.client.health_goals
+          const hasCheckup = !!clientData.client.next_checkup_date
+          const hasSummary = !!clientData.client.coach_summary
+          const hasAny = hasGoals || hasCheckup || hasSummary
+
+          if (hasAny) {
+            const checkupDate = hasCheckup ? new Date(clientData.client.next_checkup_date) : null
+            const isOverdue = checkupDate ? checkupDate < new Date() : false
+            const topSupplements = clientData.client.supplements
+              ?.slice()
+              .sort((a: any, b: any) => (a.sort_order ?? Infinity) - (b.sort_order ?? Infinity))
+              .slice(0, 3)
+
+            return (
+              <div className="bg-white rounded-3xl shadow-sm p-6 mb-20">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">📋 你的行動計畫</h2>
+                <div className="space-y-3">
+                  {hasGoals && (
+                    <div className="flex items-start">
+                      <span className="mr-2 flex-shrink-0">🎯</span>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">目標：</span>{clientData.client.health_goals}
+                      </p>
+                    </div>
+                  )}
+                  {hasCheckup && (
+                    <div className="flex items-start">
+                      <span className="mr-2 flex-shrink-0">📅</span>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">下次回檢：</span>
+                        <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+                          {checkupDate!.toLocaleDateString('zh-TW')}
+                          {isOverdue && ' （已逾期）'}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                  {topSupplements && topSupplements.length > 0 && (
+                    <div className="flex items-start">
+                      <span className="mr-2 flex-shrink-0">💊</span>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">今日重點：</span>
+                        {topSupplements.map((s: any) => s.name).join('、')}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
+            )
+          }
+
+          return (
+            <div className="bg-white rounded-3xl shadow-sm p-6 mb-20">
+              <p className="text-gray-600">持續追蹤中，有問題隨時 LINE 我！— Howard 教練</p>
             </div>
-          </div>
-        )}
+          )
+        })()}
       </div>
 
       {/* 固定底部新增按鈕 */}
