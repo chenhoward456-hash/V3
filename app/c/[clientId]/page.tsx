@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { useClientData } from '@/hooks/useClientData'
-import { Calendar, X, Plus, Scale, Activity, Dumbbell, Ruler, Heart } from 'lucide-react'
+import { Calendar, X, Plus, Scale, Activity, Dumbbell, Ruler, Heart, Lock, Unlock, Pencil, Trash2 } from 'lucide-react'
 import React from 'react'
 import LazyChart from '@/components/charts/LazyChart'
 
@@ -58,6 +58,121 @@ export default function ClientDashboard() {
     mood: null as number | null,
     note: ''
   })
+
+  // 教練模式
+  const [isCoachMode, setIsCoachMode] = useState(false)
+  const [showPinPopover, setShowPinPopover] = useState(false)
+  const [pinInput, setPinInput] = useState('')
+  const [pinError, setPinError] = useState(false)
+
+  // 血檢編輯
+  const [showLabModal, setShowLabModal] = useState(false)
+  const [editingLab, setEditingLab] = useState<any>(null)
+  const [labForm, setLabForm] = useState({ test_name: '', value: '', unit: '', reference_range: '', date: new Date().toISOString().split('T')[0], custom_advice: '', custom_target: '' })
+
+  // 補品管理
+  const [showSupplementModal, setShowSupplementModal] = useState(false)
+  const [editingSupplement, setEditingSupplement] = useState<any>(null)
+  const [showSupplementForm, setShowSupplementForm] = useState(false)
+  const [supplementForm, setSupplementForm] = useState({ name: '', dosage: '', timing: '早餐', why: '', sort_order: '0' })
+
+  // 初始化教練模式
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('coachMode')
+      if (saved === 'true') setIsCoachMode(true)
+    }
+  }, [])
+
+  const handlePinSubmit = () => {
+    if (pinInput === process.env.NEXT_PUBLIC_COACH_PIN) {
+      setIsCoachMode(true)
+      sessionStorage.setItem('coachMode', 'true')
+      setShowPinPopover(false)
+      setPinInput('')
+      setPinError(false)
+    } else {
+      setPinError(true)
+    }
+  }
+
+  const coachHeaders = { 'Content-Type': 'application/json', 'x-coach-pin': process.env.NEXT_PUBLIC_COACH_PIN || '' }
+
+  // 血檢 CRUD
+  const handleSaveLab = async () => {
+    if (!labForm.test_name || !labForm.value || !labForm.date) { alert('請填寫必要欄位'); return }
+    try {
+      const url = '/api/lab-results'
+      if (editingLab) {
+        const res = await fetch(url, { method: 'PUT', headers: coachHeaders, body: JSON.stringify({ id: editingLab.id, testName: labForm.test_name, value: Number(labForm.value), unit: labForm.unit, referenceRange: labForm.reference_range, date: labForm.date, customAdvice: labForm.custom_advice || null, customTarget: labForm.custom_target || null }) })
+        if (!res.ok) throw new Error('更新失敗')
+      } else {
+        const res = await fetch(url, { method: 'POST', headers: coachHeaders, body: JSON.stringify({ clientId, testName: labForm.test_name, value: Number(labForm.value), unit: labForm.unit, referenceRange: labForm.reference_range, date: labForm.date, customAdvice: labForm.custom_advice || null, customTarget: labForm.custom_target || null }) })
+        if (!res.ok) throw new Error('新增失敗')
+      }
+      setShowLabModal(false)
+      setEditingLab(null)
+      mutate()
+    } catch { alert('操作失敗，請重試') }
+  }
+
+  const handleDeleteLab = async (id: string) => {
+    if (!confirm('確定刪除？')) return
+    try {
+      const res = await fetch(`/api/lab-results?id=${id}`, { method: 'DELETE', headers: coachHeaders })
+      if (!res.ok) throw new Error('刪除失敗')
+      mutate()
+    } catch { alert('刪除失敗') }
+  }
+
+  const openLabModal = (lab?: any) => {
+    if (lab) {
+      setEditingLab(lab)
+      setLabForm({ test_name: lab.test_name, value: String(lab.value), unit: lab.unit || '', reference_range: lab.reference_range || '', date: lab.date, custom_advice: lab.custom_advice || '', custom_target: lab.custom_target || '' })
+    } else {
+      setEditingLab(null)
+      setLabForm({ test_name: '', value: '', unit: '', reference_range: '', date: new Date().toISOString().split('T')[0], custom_advice: '', custom_target: '' })
+    }
+    setShowLabModal(true)
+  }
+
+  // 補品 CRUD
+  const handleSaveSupplement = async () => {
+    if (!supplementForm.name || !supplementForm.dosage || !supplementForm.timing) { alert('請填寫必要欄位'); return }
+    try {
+      const url = '/api/supplements'
+      if (editingSupplement) {
+        const res = await fetch(url, { method: 'PUT', headers: coachHeaders, body: JSON.stringify({ id: editingSupplement.id, name: supplementForm.name, dosage: supplementForm.dosage, timing: supplementForm.timing, why: supplementForm.why, sortOrder: Number(supplementForm.sort_order) || 0 }) })
+        if (!res.ok) throw new Error('更新失敗')
+      } else {
+        const res = await fetch(url, { method: 'POST', headers: coachHeaders, body: JSON.stringify({ clientId, name: supplementForm.name, dosage: supplementForm.dosage, timing: supplementForm.timing, why: supplementForm.why, sortOrder: Number(supplementForm.sort_order) || 0 }) })
+        if (!res.ok) throw new Error('新增失敗')
+      }
+      setShowSupplementForm(false)
+      setEditingSupplement(null)
+      mutate()
+    } catch { alert('操作失敗，請重試') }
+  }
+
+  const handleDeleteSupplement = async (id: string) => {
+    if (!confirm('確定刪除此補品？')) return
+    try {
+      const res = await fetch(`/api/supplements?id=${id}`, { method: 'DELETE', headers: coachHeaders })
+      if (!res.ok) throw new Error('刪除失敗')
+      mutate()
+    } catch { alert('刪除失敗') }
+  }
+
+  const openSupplementForm = (supp?: any) => {
+    if (supp) {
+      setEditingSupplement(supp)
+      setSupplementForm({ name: supp.name, dosage: supp.dosage, timing: supp.timing || '早餐', why: supp.why || '', sort_order: String(supp.sort_order || 0) })
+    } else {
+      setEditingSupplement(null)
+      setSupplementForm({ name: '', dosage: '', timing: '早餐', why: '', sort_order: '0' })
+    }
+    setShowSupplementForm(true)
+  }
 
   // 今日感受資料
   const todayWellness = useMemo(() => {
@@ -360,14 +475,50 @@ export default function ClientDashboard() {
                 {new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
-            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-              clientData.client.status === 'normal'
-                ? 'bg-green-100 text-green-800'
-                : clientData.client.status === 'attention'
-                ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {clientData.client.status === 'normal' ? '健康狀態良好' : '需要關注'}
+            <div className="flex items-center gap-2">
+              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                clientData.client.status === 'normal'
+                  ? 'bg-green-100 text-green-800'
+                  : clientData.client.status === 'attention'
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                <span className="hidden sm:inline">{clientData.client.status === 'normal' ? '健康狀態良好' : '需要關注'}</span>
+                <span className="sm:hidden">{clientData.client.status === 'normal' ? '良好' : '關注'}</span>
+              </div>
+              {/* 教練鎖頭 */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    if (isCoachMode) {
+                      setIsCoachMode(false)
+                      sessionStorage.removeItem('coachMode')
+                    } else {
+                      setShowPinPopover(!showPinPopover)
+                    }
+                  }}
+                  className={`p-2 rounded-full transition-colors ${isCoachMode ? 'bg-green-100 text-green-700' : 'text-gray-400 hover:bg-gray-100'}`}
+                >
+                  {isCoachMode ? <Unlock size={18} /> : <Lock size={18} />}
+                </button>
+                {showPinPopover && !isCoachMode && (
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border p-3 z-50 w-48">
+                    <input
+                      type="password"
+                      value={pinInput}
+                      onChange={(e) => { setPinInput(e.target.value); setPinError(false) }}
+                      onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
+                      placeholder="輸入教練密碼"
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${pinError ? 'border-red-400' : 'border-gray-300'}`}
+                      autoFocus
+                    />
+                    {pinError && <p className="text-xs text-red-500 mt-1">密碼錯誤</p>}
+                    <button onClick={handlePinSubmit} className="w-full mt-2 bg-blue-600 text-white py-1.5 rounded-lg text-sm hover:bg-blue-700">
+                      解鎖
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -377,7 +528,7 @@ export default function ClientDashboard() {
               <h3 className="text-sm font-semibold text-blue-800 mb-2">Howard 教練的健康分析</h3>
               <p className="text-sm text-gray-700 whitespace-pre-line">{clientData.client.coach_summary}</p>
               {(clientData.client.next_checkup_date || clientData.client.health_goals) && (
-                <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-blue-100">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 mt-3 pt-3 border-t border-blue-100">
                   {clientData.client.next_checkup_date && (
                     <span className="text-xs text-gray-600">
                       📅 下次回檢：{new Date(clientData.client.next_checkup_date).toLocaleDateString('zh-TW')}
@@ -445,11 +596,18 @@ export default function ClientDashboard() {
                 {new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}
               </p>
             </div>
-            {streakDays > 0 && (
-              <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
-                連續 {streakDays} 天
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {isCoachMode && (
+                <button onClick={() => setShowSupplementModal(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700">
+                  管理補品
+                </button>
+              )}
+              {streakDays > 0 && (
+                <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+                  連續 {streakDays} 天
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 今日完成率進度條 */}
@@ -533,7 +691,7 @@ export default function ClientDashboard() {
                     <button
                       key={score}
                       onClick={() => setWellnessForm(prev => ({ ...prev, [key]: score }))}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm font-medium transition-all ${
                         wellnessForm[key] === score
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -652,7 +810,14 @@ export default function ClientDashboard() {
 
         {/* ===== 區塊五：血檢指標 ===== */}
         <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">血檢指標</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900">血檢指標</h2>
+            {isCoachMode && (
+              <button onClick={() => openLabModal()} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700 flex items-center">
+                <Plus size={16} className="mr-1" /> 新增血檢
+              </button>
+            )}
+          </div>
 
           {clientData.client.lab_results && clientData.client.lab_results.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -668,16 +833,26 @@ export default function ClientDashboard() {
                   : 'bg-red-500'
 
                 return (
-                  <div key={result.id} className={`rounded-xl p-4 border ${statusColor}`}>
+                  <div key={result.id} className={`rounded-xl p-4 border ${statusColor} relative`}>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-medium text-gray-900">{result.test_name}</h3>
-                      <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
+                      <div className="flex items-center gap-1">
+                        {isCoachMode && (
+                          <>
+                            <button onClick={() => openLabModal(result)} className="p-1 hover:bg-white/50 rounded"><Pencil size={14} className="text-gray-500" /></button>
+                            <button onClick={() => handleDeleteLab(result.id)} className="p-1 hover:bg-white/50 rounded"><Trash2 size={14} className="text-red-400" /></button>
+                          </>
+                        )}
+                        <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
+                      </div>
                     </div>
                     <p className="text-2xl font-bold text-gray-900">
                       {result.value} <span className="text-sm font-normal text-gray-500">{result.unit}</span>
                     </p>
-                    {advice && <p className="text-sm text-gray-600 mt-2">{advice}</p>}
-                    <p className="text-xs text-gray-400 mt-1">參考範圍：{result.reference_range}</p>
+                    {(result.custom_advice || advice) && (
+                      <p className="text-sm text-gray-600 mt-2">{result.custom_advice || advice}</p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">參考範圍：{result.custom_target || result.reference_range}</p>
                   </div>
                 )
               })}
@@ -749,7 +924,7 @@ export default function ClientDashboard() {
       </div>
 
       {/* 固定底部新增按鈕 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-safe z-[100]">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-[100]" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
         <div className="max-w-4xl mx-auto">
           <button
             onClick={() => setShowAddBodyDataModal(true)}
@@ -768,7 +943,7 @@ export default function ClientDashboard() {
           onClick={() => setShowAddBodyDataModal(false)}
         >
           <div
-            className="bg-white w-full max-w-lg rounded-t-3xl p-6 animate-slide-up shadow-2xl"
+            className="bg-white w-full max-w-lg rounded-t-3xl p-6 animate-slide-up shadow-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
@@ -908,6 +1083,126 @@ export default function ClientDashboard() {
                 取消
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 血檢編輯 Modal */}
+      {showLabModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-end md:items-center justify-center z-[100] backdrop-blur-sm" onClick={() => setShowLabModal(false)}>
+          <div className="bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl p-6 md:mx-4 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">{editingLab ? '編輯血檢' : '新增血檢'}</h3>
+              <button onClick={() => setShowLabModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">指標名稱 *</label>
+                <input type="text" value={labForm.test_name} onChange={(e) => setLabForm(p => ({ ...p, test_name: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如：HOMA-IR" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">數值 *</label>
+                  <input type="number" step="0.01" value={labForm.value} onChange={(e) => setLabForm(p => ({ ...p, value: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">單位</label>
+                  <input type="text" value={labForm.unit} onChange={(e) => setLabForm(p => ({ ...p, unit: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">參考範圍</label>
+                <input type="text" value={labForm.reference_range} onChange={(e) => setLabForm(p => ({ ...p, reference_range: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如：<1.4" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">檢測日期 *</label>
+                <input type="date" value={labForm.date} onChange={(e) => setLabForm(p => ({ ...p, date: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">自訂目標範圍</label>
+                <input type="text" value={labForm.custom_target} onChange={(e) => setLabForm(p => ({ ...p, custom_target: e.target.value }))} placeholder="留空則使用預設範圍" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">自訂建議</label>
+                <textarea value={labForm.custom_advice} onChange={(e) => setLabForm(p => ({ ...p, custom_advice: e.target.value }))} rows={2} placeholder="留空則使用預設建議" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <button onClick={() => setShowLabModal(false)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">取消</button>
+              <button onClick={handleSaveLab} className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">儲存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 補品管理 Modal */}
+      {showSupplementModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-end md:items-center justify-center z-[100] backdrop-blur-sm" onClick={() => { setShowSupplementModal(false); setShowSupplementForm(false) }}>
+          <div className="bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl p-6 md:mx-4 shadow-2xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">管理補品</h3>
+              <button onClick={() => { setShowSupplementModal(false); setShowSupplementForm(false) }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+
+            {!showSupplementForm ? (
+              <>
+                <div className="space-y-2 mb-4">
+                  {clientData.client.supplements?.map((supp: any) => (
+                    <div key={supp.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 text-sm">{supp.name}</p>
+                        <p className="text-xs text-gray-500">{supp.dosage} · {supp.timing}</p>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button onClick={() => openSupplementForm(supp)} className="p-1.5 hover:bg-gray-100 rounded"><Pencil size={14} className="text-gray-500" /></button>
+                        <button onClick={() => handleDeleteSupplement(supp.id)} className="p-1.5 hover:bg-gray-100 rounded"><Trash2 size={14} className="text-red-400" /></button>
+                      </div>
+                    </div>
+                  ))}
+                  {(!clientData.client.supplements || clientData.client.supplements.length === 0) && (
+                    <p className="text-gray-400 text-center py-4 text-sm">尚無補品</p>
+                  )}
+                </div>
+                <button onClick={() => openSupplementForm()} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 flex items-center justify-center">
+                  <Plus size={16} className="mr-1" /> 新增補品
+                </button>
+              </>
+            ) : (
+              <>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">{editingSupplement ? '編輯補品' : '新增補品'}</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">名稱 *</label>
+                    <input type="text" value={supplementForm.name} onChange={(e) => setSupplementForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">劑量 *</label>
+                    <input type="text" value={supplementForm.dosage} onChange={(e) => setSupplementForm(p => ({ ...p, dosage: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如：1000mg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">服用時間 *</label>
+                    <select value={supplementForm.timing} onChange={(e) => setSupplementForm(p => ({ ...p, timing: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="早餐">早餐</option>
+                      <option value="午餐前">午餐前</option>
+                      <option value="晚餐">晚餐</option>
+                      <option value="睡前">睡前</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">原因</label>
+                    <input type="text" value={supplementForm.why} onChange={(e) => setSupplementForm(p => ({ ...p, why: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="為什麼要吃" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">排序</label>
+                    <input type="number" value={supplementForm.sort_order} onChange={(e) => setSupplementForm(p => ({ ...p, sort_order: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <button onClick={() => setShowSupplementForm(false)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">返回</button>
+                  <button onClick={handleSaveSupplement} className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">儲存</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

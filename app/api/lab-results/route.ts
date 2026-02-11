@@ -3,6 +3,11 @@ import { createClient } from '@supabase/supabase-js'
 import { validateLabValue, validateDate, sanitizeInput } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware'
 
+function verifyCoachPin(request: NextRequest): boolean {
+  const pin = request.headers.get('x-coach-pin')
+  return !!pin && pin === process.env.COACH_PIN
+}
+
 // 檢查環境變數
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('Missing required environment variables for Supabase')
@@ -74,52 +79,49 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. 驗證身份
-    const { user, error: authError } = await verifyAuth(request)
-    if (authError || !user) {
-      return createErrorResponse(authError || '身份驗證失敗', 401)
-    }
-
-    // 2. 檢查權限（目前只有教練可以存取）
-    if (!isCoach(user)) {
-      return createErrorResponse('權限不足，需要教練角色', 403)
+    // 驗證教練權限（JWT 或 PIN）
+    if (!verifyCoachPin(request)) {
+      const { user, error: authError } = await verifyAuth(request)
+      if (authError || !user || !isCoach(user)) {
+        return createErrorResponse('權限不足', 403)
+      }
     }
     const body = await request.json()
-    const { clientId, testName, value, unit, referenceRange, date } = body
-    
+    const { clientId, testName, value, unit, referenceRange, date, customAdvice, customTarget } = body
+
     // 驗證輸入
     if (!clientId || !testName || value === undefined || !date) {
       return createErrorResponse('缺少必要欄位', 400)
     }
-    
+
     // 驗證並清理輸入
     const sanitizedName = sanitizeInput(testName)
     const sanitizedUnit = sanitizeInput(unit || '')
     const sanitizedReference = sanitizeInput(referenceRange || '')
-    
+
     // 驗證血檢數值
     const valueValidation = validateLabValue(sanitizedName, value)
     if (!valueValidation.isValid) {
       return NextResponse.json({ error: valueValidation.error }, { status: 400 })
     }
-    
+
     // 驗證日期
     const dateValidation = validateDate(date)
     if (!dateValidation.isValid) {
       return NextResponse.json({ error: dateValidation.error }, { status: 400 })
     }
-    
+
     // 獲取客戶 ID
     const { data: client } = await supabase
       .from('clients')
       .select('id')
       .eq('unique_code', clientId)
       .single()
-    
+
     if (!client) {
       return NextResponse.json({ error: '找不到客戶' }, { status: 404 })
     }
-    
+
     // 創建血檢結果
     const { data, error } = await supabase
       .from('lab_results')
@@ -130,7 +132,9 @@ export async function POST(request: NextRequest) {
         unit: sanitizedUnit,
         reference_range: sanitizedReference,
         date,
-        status: 'normal' // 會由觸發器自動更新
+        status: 'normal',
+        custom_advice: customAdvice || null,
+        custom_target: customTarget || null
       })
       .select()
       .single()
@@ -149,41 +153,38 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    // 1. 驗證身份
-    const { user, error: authError } = await verifyAuth(request)
-    if (authError || !user) {
-      return createErrorResponse(authError || '身份驗證失敗', 401)
-    }
-
-    // 2. 檢查權限（目前只有教練可以存取）
-    if (!isCoach(user)) {
-      return createErrorResponse('權限不足，需要教練角色', 403)
+    // 驗證教練權限（JWT 或 PIN）
+    if (!verifyCoachPin(request)) {
+      const { user, error: authError } = await verifyAuth(request)
+      if (authError || !user || !isCoach(user)) {
+        return createErrorResponse('權限不足', 403)
+      }
     }
     const body = await request.json()
-    const { id, testName, value, unit, referenceRange, date } = body
-    
+    const { id, testName, value, unit, referenceRange, date, customAdvice, customTarget } = body
+
     // 驗證輸入
     if (!id || !testName || value === undefined || !date) {
       return createErrorResponse('缺少必要欄位', 400)
     }
-    
+
     // 驗證並清理輸入
     const sanitizedName = sanitizeInput(testName)
     const sanitizedUnit = sanitizeInput(unit || '')
     const sanitizedReference = sanitizeInput(referenceRange || '')
-    
+
     // 驗證血檢數值
     const valueValidation = validateLabValue(sanitizedName, value)
     if (!valueValidation.isValid) {
       return NextResponse.json({ error: valueValidation.error }, { status: 400 })
     }
-    
+
     // 驗證日期
     const dateValidation = validateDate(date)
     if (!dateValidation.isValid) {
       return NextResponse.json({ error: dateValidation.error }, { status: 400 })
     }
-    
+
     // 更新血檢結果
     const { data, error } = await supabase
       .from('lab_results')
@@ -192,7 +193,9 @@ export async function PUT(request: NextRequest) {
         value,
         unit: sanitizedUnit,
         reference_range: sanitizedReference,
-        date
+        date,
+        custom_advice: customAdvice || null,
+        custom_target: customTarget || null
       })
       .eq('id', id)
       .select()
@@ -212,15 +215,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    // 1. 驗證身份
-    const { user, error: authError } = await verifyAuth(request)
-    if (authError || !user) {
-      return createErrorResponse(authError || '身份驗證失敗', 401)
-    }
-
-    // 2. 檢查權限（目前只有教練可以存取）
-    if (!isCoach(user)) {
-      return createErrorResponse('權限不足，需要教練角色', 403)
+    // 驗證教練權限（JWT 或 PIN）
+    if (!verifyCoachPin(request)) {
+      const { user, error: authError } = await verifyAuth(request)
+      if (authError || !user || !isCoach(user)) {
+        return createErrorResponse('權限不足', 403)
+      }
     }
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

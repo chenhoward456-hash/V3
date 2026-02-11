@@ -13,6 +13,8 @@ interface LabResult {
   reference_range: string
   status: 'normal' | 'attention' | 'alert'
   date: string
+  custom_advice?: string
+  custom_target?: string
 }
 
 interface Supplement {
@@ -490,6 +492,26 @@ export default function ClientEditor() {
                       type="date"
                       value={result.date}
                       onChange={(e) => updateLabResult(index, 'date', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">自訂建議</label>
+                    <textarea
+                      value={result.custom_advice || ''}
+                      onChange={(e) => updateLabResult(index, 'custom_advice', e.target.value)}
+                      rows={2}
+                      placeholder="留空則使用預設建議"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">自訂目標範圍</label>
+                    <input
+                      type="text"
+                      value={result.custom_target || ''}
+                      onChange={(e) => updateLabResult(index, 'custom_target', e.target.value)}
+                      placeholder="留空則使用預設範圍"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>

@@ -25,6 +25,12 @@ const playfairDisplay = Playfair_Display({
   variable: '--font-playfair',
 })
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover' as const,
+}
+
 export const metadata: Metadata = {
   title: 'Howard - 台中北屯 CSCS 體能教練 | 數據優化訓練',
   description: 'Howard，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。專精肌力訓練、代謝優化、營養調整。台中北屯一對一客製化訓練指導。',

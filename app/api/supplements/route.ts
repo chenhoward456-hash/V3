@@ -3,6 +3,11 @@ import { createClient } from '@supabase/supabase-js'
 import { validateSupplementName, validateSupplementDosage, sanitizeInput } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware'
 
+function verifyCoachPin(request: NextRequest): boolean {
+  const pin = request.headers.get('x-coach-pin')
+  return !!pin && pin === process.env.COACH_PIN
+}
+
 // 檢查環境變數
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('Missing required environment variables for Supabase')
@@ -74,15 +79,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. 驗證身份
-    const { user, error: authError } = await verifyAuth(request)
-    if (authError || !user) {
-      return createErrorResponse(authError || '身份驗證失敗', 401)
-    }
-
-    // 2. 檢查權限（目前只有教練可以存取）
-    if (!isCoach(user)) {
-      return createErrorResponse('權限不足，需要教練角色', 403)
+    // 驗證教練權限（JWT 或 PIN）
+    if (!verifyCoachPin(request)) {
+      const { user, error: authError } = await verifyAuth(request)
+      if (authError || !user || !isCoach(user)) {
+        return createErrorResponse('權限不足', 403)
+      }
     }
 
     // 3. 獲取請求內容
@@ -151,15 +153,12 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    // 1. 驗證身份
-    const { user, error: authError } = await verifyAuth(request)
-    if (authError || !user) {
-      return createErrorResponse(authError || '身份驗證失敗', 401)
-    }
-
-    // 2. 檢查權限（目前只有教練可以存取）
-    if (!isCoach(user)) {
-      return createErrorResponse('權限不足，需要教練角色', 403)
+    // 驗證教練權限（JWT 或 PIN）
+    if (!verifyCoachPin(request)) {
+      const { user, error: authError } = await verifyAuth(request)
+      if (authError || !user || !isCoach(user)) {
+        return createErrorResponse('權限不足', 403)
+      }
     }
 
     // 3. 獲取請求內容
@@ -217,15 +216,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    // 1. 驗證身份
-    const { user, error: authError } = await verifyAuth(request)
-    if (authError || !user) {
-      return createErrorResponse(authError || '身份驗證失敗', 401)
-    }
-
-    // 2. 檢查權限（目前只有教練可以存取）
-    if (!isCoach(user)) {
-      return createErrorResponse('權限不足，需要教練角色', 403)
+    // 驗證教練權限（JWT 或 PIN）
+    if (!verifyCoachPin(request)) {
+      const { user, error: authError } = await verifyAuth(request)
+      if (authError || !user || !isCoach(user)) {
+        return createErrorResponse('權限不足', 403)
+      }
     }
 
     // 3. 獲取請求參數
