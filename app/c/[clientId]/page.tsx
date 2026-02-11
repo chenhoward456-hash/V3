@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { calculateLabStatus } from '@/utils/labStatus'
 import { useClientData } from '@/hooks/useClientData'
-import { LineChart, Tooltip, Legend, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Line } from 'recharts'
-import { CheckCircle2, TrendingUp, TrendingDown, Calendar, Smile, BatteryCharging, Edit2, Save, X, Plus } from 'lucide-react'
+import { Calendar, X, Plus, Scale, Activity, Dumbbell, Ruler, Heart } from 'lucide-react'
 import React from 'react'
+import LazyChart from '@/components/charts/LazyChart'
 
 interface LabResult {
   id: string
@@ -18,272 +17,22 @@ interface LabResult {
   date: string
 }
 
-interface Supplement {
-  id: string
-  name: string
-  dosage: string
-  timing: string
-  why?: string
-}
-
-interface SupplementLog {
-  id: string
-  supplement_id: string
-  date: string
-  completed: boolean
-}
-
-interface BodyComposition {
-  id: string
-  date: string
-  height?: number | null
-  weight?: number | null
-  body_fat?: number | null
-  muscle_mass?: number | null
-  visceral_fat?: number | null
-  bmi?: number | null
-}
-
-interface WellnessData {
-  id: string
-  client_id: string
-  date: string
-  sleep_quality: number | null
-  energy_level: number | null
-  mood: number | null
-  note: string | null
-  created_at: string
-}
-
-interface Client {
-  id: string
-  unique_code: string
-  name: string
-  age: number
-  gender: string
-  status: 'normal' | 'attention' | 'alert'
-  lab_results: LabResult[]
-  supplements: Supplement[]
+function getLabAdvice(testName: string, value: number): string {
+  switch(testName) {
+    case 'HOMA-IR': return value < 1.0 ? '胰島素敏感度很好' : value < 1.4 ? '胰島素敏感度正常' : '胰島素阻抗偏高'
+    case '同半胱胺酸': return value < 8 ? '甲基化代謝正常' : '甲基化代謝需要改善'
+    case '維生素D': return value > 50 ? '維生素D充足' : value > 30 ? '維生素D偏低，建議補充' : '維生素D不足'
+    case '鐵蛋白': return value >= 50 && value <= 150 ? '鐵儲存正常' : value < 50 ? '鐵儲存偏低' : '鐵儲存偏高'
+    default: return ''
+  }
 }
 
 export default function ClientDashboard() {
-  const params = useParams()
-  const clientId = params.clientId as string
-  
-  // 使用 SWR 獲取客戶資料
-  const { data: clientData, error, isLoading, mutate } = useClientData(clientId)
-  
-  // 計算血檢狀態統計
-  const labStats = useMemo(() => {
-    if (!clientData?.client?.lab_results) return { normal: 0, attention: 0, alert: 0 }
-    
-    return clientData.client.lab_results.reduce((stats: any, result: any) => {
-      stats[result.status]++
-      return stats
-    }, { normal: 0, attention: 0, alert: 0 })
-  }, [clientData?.client?.lab_results])
-  
-  // 計算補品完成率
-  const supplementStats = useMemo(() => {
-    if (!clientData?.todayLogs || !clientData?.client?.supplements) return { completed: 0, total: 0, rate: 0 }
-    
-    const completed = clientData.todayLogs.filter(log => log.completed).length
-    const total = clientData.client.supplements.length
-    const rate = total > 0 ? Math.round((completed / total) * 100) : 0
-    
-    return { completed, total, rate }
-  }, [clientData?.todayLogs, clientData?.client?.supplements])
-  
-  // 計算體脂趨勢
-  const bodyFatTrend = useMemo(() => {
-    if (!clientData?.bodyData || clientData.bodyData.length < 2) return null
-    
-    const sortedData = clientData.bodyData
-      .filter(record => record.body_fat !== null)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    
-    if (sortedData.length < 2) return null
-    
-    const latest = sortedData[sortedData.length - 1]
-    const previous = sortedData[sortedData.length - 2]
-    const change = latest.body_fat - previous.body_fat
-    const changePercent = previous.body_fat > 0 ? (change / previous.body_fat * 100) : 0
-    
-    return {
-      current: latest.body_fat,
-      change: changePercent,
-      trend: changePercent > 0 ? 'up' : 'down'
-    }
-  }, [clientData?.bodyData])
-  
-  // 計算趨勢資料
-  const trendData = useMemo(() => {
-    const trends: Record<string, any[]> = {}
-    
-    // 血檢趨勢
-    if (clientData?.client?.lab_results) {
-      const uniqueTests = [...new Set(clientData.client.lab_results.map((r: any) => r.test_name))]
-      uniqueTests.forEach((testName: any) => {
-        trends[testName] = clientData.client.lab_results
-          .filter((result: any) => result.test_name === testName)
-          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-          .map((result: any) => ({
-            date: new Date(result.date).toLocaleDateString('zh-TW', { 
-              year: 'numeric', 
-              month: '2-digit', 
-              day: '2-digit' 
-            }),
-            value: result.value,
-            status: result.status
-          }))
-      })
-    }
-    
-    // 身體數據趨勢
-    if (clientData?.bodyData && clientData.bodyData.length > 0) {
-      // 體重趨勢
-      const weightData = clientData.bodyData
-        .filter(record => record.weight !== null && record.weight !== undefined)
-        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .map((record: any) => ({
-          date: new Date(record.date).toLocaleDateString('zh-TW', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit' 
-          }),
-          value: record.weight,
-          status: 'normal'
-        }))
-      
-      if (weightData.length > 0) {
-        trends['體重'] = weightData
-      }
-      
-      // 體脂肪趨勢
-      const bodyFatData = clientData.bodyData
-        .filter(record => record.body_fat !== null && record.body_fat !== undefined)
-        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .map((record: any) => ({
-          date: new Date(record.date).toLocaleDateString('zh-TW', { 
-            year: 'numeric', 
-            month: '2-digit', 
-            day: '2-digit' 
-          }),
-          value: record.body_fat,
-          status: 'normal'
-        }))
-      
-      if (bodyFatData.length > 0) {
-        trends['體脂肪'] = bodyFatData
-      }
-    }
-    
-    return trends
-  }, [clientData?.client?.lab_results, clientData?.bodyData])
-  
-  // 處理補品打卡
-  const handleSupplementToggle = useCallback(async (supplementId: string) => {
-    const today = new Date().toISOString().split('T')[0]
-    
-    try {
-      const response = await fetch('/api/supplement-logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: clientData?.client?.id,
-          supplement_id: supplementId,
-          date: today,
-          completed: !clientData?.todayLogs.find(log => log.supplement_id === supplementId)?.completed
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error('打卡失敗')
-      }
-      
-      // 重新獲取資料
-      mutate()
-    } catch (error) {
-      console.error('打卡失敗:', error)
-    }
-  }, [clientData?.client?.todayLogs, clientData?.client?.id, mutate])
-  
-  // 處理每日感受提交
-  const handleWellnessSubmit = useCallback(async (wellnessData: {
-    sleep_quality: number
-    energy_level: number
-    mood: number
-    note: string
-  }) => {
-    try {
-      const response = await fetch('/api/daily-wellness', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId: clientId,
-          date: new Date().toISOString().split('T')[0],
-          ...wellnessData
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error('提交失敗')
-      }
-      
-      // 重新獲取資料
-      mutate()
-      
-      // 顯示成功提示
-      alert('每日感受已記錄！')
-    } catch (error) {
-      console.error('提交失敗:', error)
-      alert('提交失敗，請重試')
-    }
-  }, [clientId, mutate])
-  
-  // 獲取今日感受
-  const todayWellness = clientData?.wellness?.find(w => w.date === new Date().toISOString().split('T')[0])
-  
-  // 獲取連續打卡天數
-  const streakDays = useMemo(() => {
-    if (!clientData?.wellness || clientData.wellness.length === 0) return 0
-    
-    const sortedDates = clientData.wellness
-      .map(w => w.date)
-      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-    
-    let streak = 0
-    const today = new Date().toISOString().split('T')[0]
-    
-    for (const date of sortedDates) {
-      if (date === today) {
-        streak++
-      } else {
-        break
-      }
-    }
-    
-    return streak
-  }, [clientData?.wellness])
-  
-  // 獲取最新身體數據
-  const latestBodyData = clientData?.bodyData?.[0]
-  
-  // 設計趨勢圖類型切換
-  const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
-  
-  // 每日感受狀態
-  const [wellnessState, setWellnessState] = useState({
-    sleep_quality: todayWellness?.sleep_quality || null,
-    energy_level: todayWellness?.energy_level || null,
-    mood: todayWellness?.mood || null,
-    note: todayWellness?.note || ''
-  })
-  
-  // 身體數據編輯狀態
-  const [editingBodyData, setEditingBodyData] = useState(false)
-  const [tempBodyData, setTempBodyData] = useState<any>({})
-  
+  const { clientId } = useParams()
+  const { data: clientData, error, isLoading, mutate } = useClientData(clientId as string)
+
+  const today = new Date().toISOString().split('T')[0]
+
   // 新增身體數據 Modal 狀態
   const [showAddBodyDataModal, setShowAddBodyDataModal] = useState(false)
   const [newBodyData, setNewBodyData] = useState({
@@ -291,142 +40,231 @@ export default function ClientDashboard() {
     weight: '',
     body_fat: '',
     muscle_mass: '',
-    height: latestBodyData?.height || '',
+    height: '',
     visceral_fat: ''
   })
-  
-  // 處理身體數據編輯
-  const handleEditBodyData = () => {
-    setEditingBodyData(true)
-    setTempBodyData(latestBodyData || {})
-  }
-  
-  // 處理身體數據保存
-  const handleSaveBodyData = async () => {
-    try {
-      const response = await fetch('/api/body-composition', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: clientData?.client?.id,
-          date: new Date().toISOString().split('T')[0],
-          ...tempBodyData
-        })
+
+  // 趨勢圖狀態
+  const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
+
+  // 補品打卡 loading 狀態
+  const [togglingSupplements, setTogglingSupplements] = useState<Set<string>>(new Set())
+
+  // 每日感受表單
+  const [submittingWellness, setSubmittingWellness] = useState(false)
+  const [wellnessForm, setWellnessForm] = useState({
+    sleep_quality: null as number | null,
+    energy_level: null as number | null,
+    mood: null as number | null,
+    note: ''
+  })
+
+  // 今日感受資料
+  const todayWellness = useMemo(() => {
+    return clientData?.wellness?.find((w: any) => w.date === today) || null
+  }, [clientData?.wellness, today])
+
+  // 載入後填入今日感受預設值
+  useEffect(() => {
+    if (todayWellness) {
+      setWellnessForm({
+        sleep_quality: todayWellness.sleep_quality,
+        energy_level: todayWellness.energy_level,
+        mood: todayWellness.mood,
+        note: todayWellness.note || ''
       })
-      
-      if (!response.ok) {
-        throw new Error('保存失敗')
-      }
-      
-      // 重新獲取資料
-      mutate()
-      setEditingBodyData(false)
-      
-      // 顯示成功提示
-      alert('身體數據已更新！')
-    } catch (error) {
-      console.error('保存失敗:', error)
-      alert('保存失敗，請重試')
     }
-  }
-  
-  // 處理身體數據取消
-  const handleCancelBodyData = () => {
-    setEditingBodyData(false)
-    setTempBodyData(latestBodyData || {})
-  }
-  
-  // 處理新增身體數據
+  }, [todayWellness])
+
+  // 最新 & 前一筆身體數據
+  const latestBodyData = useMemo(() => {
+    if (!clientData?.bodyData || clientData.bodyData.length === 0) return null
+    return clientData.bodyData.reduce((latest: any, current: any) =>
+      new Date(current.date) > new Date(latest.date) ? current : latest
+    )
+  }, [clientData?.bodyData])
+
+  const prevBodyData = useMemo(() => {
+    if (!clientData?.bodyData || clientData.bodyData.length < 2) return null
+    const sorted = [...clientData.bodyData].sort((a: any, b: any) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
+    return sorted[1]
+  }, [clientData?.bodyData])
+
+  // BMI
+  const bmi = useMemo(() => {
+    if (!latestBodyData?.weight || !latestBodyData?.height) return null
+    return (latestBodyData.weight / ((latestBodyData.height / 100) ** 2)).toFixed(1)
+  }, [latestBodyData])
+
+  // 血檢統計
+  const labStats = useMemo(() => {
+    if (!clientData?.client?.lab_results) return { normal: 0, total: 0 }
+    const normal = clientData.client.lab_results.filter((r: any) => r.status === 'normal').length
+    return { normal, total: clientData.client.lab_results.length }
+  }, [clientData?.client?.lab_results])
+
+  // 補品完成率
+  const supplementStats = useMemo(() => {
+    if (!clientData?.todayLogs || !clientData?.client?.supplements) return { completed: 0, total: 0, rate: 0 }
+    const completed = clientData.todayLogs.filter((log: any) => log.completed).length
+    const total = clientData.client.supplements.length
+    const rate = total > 0 ? Math.round((completed / total) * 100) : 0
+    return { completed, total, rate }
+  }, [clientData?.todayLogs, clientData?.client?.supplements])
+
+  // 體脂趨勢比較
+  const bodyFatTrend = useMemo(() => {
+    if (!latestBodyData?.body_fat || !prevBodyData?.body_fat) return null
+    const diff = latestBodyData.body_fat - prevBodyData.body_fat
+    return { diff: Math.abs(diff).toFixed(1), direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'same' }
+  }, [latestBodyData, prevBodyData])
+
+  // 連續打卡天數（如果今天還沒記錄，從昨天開始算）
+  const streakDays = useMemo(() => {
+    if (!clientData?.wellness?.length) return 0
+    const sorted = [...clientData.wellness].sort((a: any, b: any) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
+    const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+    // 如果最新一筆是今天，從今天算；否則從昨天算
+    const startOffset = sorted[0].date === todayStr ? 0 : 1
+    let streak = 0
+    for (let i = 0; i < sorted.length; i++) {
+      const expected = new Date(now)
+      expected.setDate(expected.getDate() - (i + startOffset))
+      const expectedStr = expected.toISOString().split('T')[0]
+      if (sorted[i].date === expectedStr) {
+        streak++
+      } else {
+        break
+      }
+    }
+    return streak
+  }, [clientData?.wellness])
+
+  // 趨勢圖數據（修正 key 對應）
+  const trendData = useMemo(() => {
+    const trends: Record<string, any[]> = {}
+    if (clientData?.bodyData && clientData.bodyData.length > 0) {
+      const weightData = clientData.bodyData
+        .filter((record: any) => record.weight != null)
+        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .map((record: any) => ({
+          date: new Date(record.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+          value: record.weight
+        }))
+      if (weightData.length > 0) trends['weight'] = weightData
+
+      const bodyFatData = clientData.bodyData
+        .filter((record: any) => record.body_fat != null)
+        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .map((record: any) => ({
+          date: new Date(record.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+          value: record.body_fat
+        }))
+      if (bodyFatData.length > 0) trends['body_fat'] = bodyFatData
+    }
+    return trends
+  }, [clientData?.bodyData])
+
+  // 新增身體數據
   const handleAddBodyData = async () => {
-    // 驗證必填欄位
-    if (!newBodyData.weight) {
+    if (!newBodyData.weight || newBodyData.weight.trim() === '') {
       alert('請輸入體重')
       return
     }
-    
-    // 驗證數值範圍
     const weight = parseFloat(newBodyData.weight)
-    if (weight < 20 || weight > 300) {
-      alert('體重請輸入 20-300 kg')
+    if (isNaN(weight) || weight < 20 || weight > 300) {
+      alert('體重請輸入 20-300kg 之間的數值')
       return
     }
-    
-    if (newBodyData.body_fat) {
-      const bodyFat = parseFloat(newBodyData.body_fat)
-      if (bodyFat < 1 || bodyFat > 60) {
-        alert('體脂請輸入 1-60 %')
-        return
-      }
-    }
-    
-    if (newBodyData.muscle_mass) {
-      const muscleMass = parseFloat(newBodyData.muscle_mass)
-      if (muscleMass < 10 || muscleMass > 100) {
-        alert('肌肉量請輸入 10-100 kg')
-        return
-      }
-    }
-    
-    if (newBodyData.height) {
-      const height = parseFloat(newBodyData.height)
-      if (height < 100 || height > 250) {
-        alert('身高請輸入 100-250 cm')
-        return
-      }
-    }
-    
-    if (newBodyData.visceral_fat) {
-      const visceralFat = parseFloat(newBodyData.visceral_fat)
-      if (visceralFat < 1 || visceralFat > 30) {
-        alert('內臟脂肪請輸入 1-30')
-        return
-      }
-    }
-    
     try {
       const response = await fetch('/api/body-composition', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clientId: clientId,
+          clientId,
           date: newBodyData.date,
-          weight: weight,
-          body_fat: newBodyData.body_fat ? parseFloat(newBodyData.body_fat) : null,
-          muscle_mass: newBodyData.muscle_mass ? parseFloat(newBodyData.muscle_mass) : null,
+          weight,
+          bodyFat: newBodyData.body_fat ? parseFloat(newBodyData.body_fat) : null,
+          muscleMass: newBodyData.muscle_mass ? parseFloat(newBodyData.muscle_mass) : null,
           height: newBodyData.height ? parseFloat(newBodyData.height) : null,
-          visceral_fat: newBodyData.visceral_fat ? parseFloat(newBodyData.visceral_fat) : null
+          visceralFat: newBodyData.visceral_fat ? parseFloat(newBodyData.visceral_fat) : null
         })
       })
-      
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || '新增失敗')
-      }
-      
-      // 關閉 modal
+      if (!response.ok) throw new Error('保存失敗')
       setShowAddBodyDataModal(false)
-      
-      // 重置表單
-      setNewBodyData({
-        date: new Date().toISOString().split('T')[0],
-        weight: '',
-        body_fat: '',
-        muscle_mass: '',
-        height: latestBodyData?.height || '',
-        visceral_fat: ''
-      })
-      
-      // 重新獲取資料
+      setNewBodyData({ date: new Date().toISOString().split('T')[0], weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
       mutate()
-      
-      // 顯示成功提示
-      alert('紀錄已儲存！')
-    } catch (error) {
-      console.error('新增失敗:', error)
-      alert(error instanceof Error ? error.message : '新增失敗，請重試')
+      alert('身體數據已成功記錄！')
+    } catch (err) {
+      console.error('新增失敗:', err)
+      alert('新增失敗，請重試')
     }
   }
-  
+
+  // 切換補品打卡
+  const handleToggleSupplement = async (supplementId: string, currentCompleted: boolean) => {
+    setTogglingSupplements(prev => new Set(prev).add(supplementId))
+    try {
+      const response = await fetch('/api/supplement-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId,
+          supplementId,
+          date: today,
+          completed: !currentCompleted
+        })
+      })
+      if (!response.ok) throw new Error('打卡失敗')
+      mutate()
+    } catch (err) {
+      console.error('打卡失敗:', err)
+      alert('打卡失敗，請重試')
+    } finally {
+      setTogglingSupplements(prev => {
+        const next = new Set(prev)
+        next.delete(supplementId)
+        return next
+      })
+    }
+  }
+
+  // 提交每日感受
+  const handleSubmitWellness = async () => {
+    if (!wellnessForm.sleep_quality && !wellnessForm.energy_level && !wellnessForm.mood) {
+      alert('請至少填寫一項評分')
+      return
+    }
+    setSubmittingWellness(true)
+    try {
+      const response = await fetch('/api/daily-wellness', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId,
+          date: today,
+          sleep_quality: wellnessForm.sleep_quality,
+          energy_level: wellnessForm.energy_level,
+          mood: wellnessForm.mood,
+          note: wellnessForm.note || null
+        })
+      })
+      if (!response.ok) throw new Error('提交失敗')
+      mutate()
+      alert('今日感受已記錄！')
+    } catch (err) {
+      console.error('提交失敗:', err)
+      alert('提交失敗，請重試')
+    } finally {
+      setSubmittingWellness(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -437,21 +275,18 @@ export default function ClientDashboard() {
       </div>
     )
   }
-  
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center bg-white rounded-2xl shadow-sm p-8 max-w-md">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">錯誤</h1>
-          <p className="text-gray-600 mb-6">{error.message}</p>
-          <p className="text-sm text-gray-500">
-            請確認網址是否正確，或聯繫 Howard 教練
-          </p>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">載入失敗</h1>
+          <p className="text-gray-600">{error.message}</p>
         </div>
       </div>
     )
   }
-  
+
   if (!clientData?.client) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -462,382 +297,226 @@ export default function ClientDashboard() {
       </div>
     )
   }
-  
-  const client = clientData.client
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 區塊一：健康總覽 */}
-      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-semibold text-gray-900">{client.name}</h1>
-            <p className="text-lg text-gray-500">
-              {new Date().toLocaleDateString('zh-TW', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
-          </div>
-          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-            client.status === 'normal' 
-              ? 'bg-green-100 text-green-800' 
-              : client.status === 'attention'
-              ? 'bg-yellow-100 text-yellow-800'
-              : 'bg-red-100 text-red-800'
-          }`}>
-            {client.status === 'normal' ? '健康狀態良好' : '需要關注'}
-          </div>
-        </div>
-        
-        {/* 摘要統計卡片 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          {/* 補品服從率 */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-600">📋 補品服從率</span>
-              <span className="text-2xl font-bold text-blue-600">{supplementStats.rate}%</span>
+      <div className="max-w-4xl mx-auto px-4 py-6">
+
+        {/* ===== 標題區 ===== */}
+        <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{clientData.client.name}</h1>
+              <p className="text-gray-600">
+                {new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-              <div 
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${supplementStats.rate}%` }}
-              ></div>
-            </div>
-            <div className="text-xs text-gray-500 text-center">
-              {supplementStats.completed}/{supplementStats.total} 已完成
+            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+              clientData.client.status === 'normal'
+                ? 'bg-green-100 text-green-800'
+                : clientData.client.status === 'attention'
+                ? 'bg-yellow-100 text-yellow-800'
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {clientData.client.status === 'normal' ? '健康狀態良好' : '需要關注'}
             </div>
           </div>
-          
-          {/* 血檢狀態 */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-600">🔬 血檢狀態</span>
-              <span className="text-2xl font-bold text-green-600">{labStats.normal}</span>
+
+          {/* 區塊一：健康總覽摘要卡片 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-blue-50 rounded-2xl p-4 text-center">
+              <p className="text-xs text-gray-500 mb-1">補品服從率</p>
+              <p className="text-2xl font-bold text-blue-600">{supplementStats.rate}%</p>
+              <p className="text-xs text-gray-400">{supplementStats.completed}/{supplementStats.total}</p>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(labStats.normal / (labStats.normal + labStats.attention + labStats.alert)) * 100}%` }}
-              ></div>
+            <div className="bg-green-50 rounded-2xl p-4 text-center">
+              <p className="text-xs text-gray-500 mb-1">血檢正常</p>
+              <p className="text-2xl font-bold text-green-600">{labStats.normal}/{labStats.total}</p>
+              <p className="text-xs text-gray-400">指標正常</p>
             </div>
-            <div className="text-xs text-gray-500 text-center">
-              {labStats.normal}/{labStats.normal + labStats.attention + labStats.alert} 項標正常
+            <div className="bg-orange-50 rounded-2xl p-4 text-center">
+              <p className="text-xs text-gray-500 mb-1">體脂趨勢</p>
+              <p className="text-2xl font-bold text-orange-600">
+                {latestBodyData?.body_fat ? `${latestBodyData.body_fat}%` : '--'}
+              </p>
+              <p className="text-xs text-gray-400">
+                {bodyFatTrend
+                  ? bodyFatTrend.direction === 'down' ? `↓${bodyFatTrend.diff}%` : bodyFatTrend.direction === 'up' ? `↑${bodyFatTrend.diff}%` : '持平'
+                  : ''}
+              </p>
             </div>
-          </div>
-          
-          {/* 體脂趨勢 */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-600">📉 體脂趨勢</span>
-              <span className="text-2xl font-bold text-purple-600">
-                {latestBodyData?.body_fat || '--'}%
-              </span>
-            </div>
-            <div className="flex items-center justify-center">
-              {bodyFatTrend?.trend === 'up' ? (
-                <TrendingUp className="text-red-500" size={16} />
-              ) : (
-                <TrendingDown className="text-green-500" size={16} />
-              )}
-              <span className="text-sm text-gray-600 ml-1">
-                {bodyFatTrend?.change ? (bodyFatTrend.change > 0 ? '+' : '') + bodyFatTrend.change.toFixed(1) + '%' : '首次記錄'}
-              </span>
-            </div>
-            <div className="text-xs text-gray-500 text-center">
-              {bodyFatTrend?.change ? 'vs 上次: ' + (bodyFatTrend.current - (bodyFatTrend.change / 100)).toFixed(1) + '%' : '首次記錄'}
-            </div>
-          </div>
-          
-          {/* 今日感受 */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-600">😊 今日感受</span>
-              {todayWellness ? (
-                <div className="flex items-center">
-                  <span className="text-2xl mr-2">
-                    {todayWellness.mood === 5 ? '😊' : todayWellness.mood === 4 ? '😊' : todayWellness.mood === 3 ? '😐' : todayWellness.mood === 2 ? '😐' : '😔'}
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    {todayWellness.note || ''}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center text-gray-400">
-                  <span className="text-2xl mr-2">📝</span>
-                  <span className="text-sm text-gray-400">未記錄</span>
-                </div>
-              )}
+            <div className="bg-purple-50 rounded-2xl p-4 text-center">
+              <p className="text-xs text-gray-500 mb-1">今日感受</p>
+              <p className="text-2xl">
+                {todayWellness?.mood ? ['', '😫', '😔', '😐', '😊', '😄'][todayWellness.mood] : '--'}
+              </p>
+              <p className="text-xs text-gray-400">{todayWellness ? '已記錄' : '未記錄'}</p>
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* 區塊二：每日打卡區 */}
-      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">📅 今日打卡</h2>
-            <p className="text-gray-500">
-              {new Date().toLocaleDateString('zh-TW', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
+
+        {/* ===== 區塊二：每日打卡 ===== */}
+        <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">今日打卡</h2>
+              <p className="text-sm text-gray-500">
+                {new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+            {streakDays > 0 && (
+              <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+                連續 {streakDays} 天
+              </div>
+            )}
           </div>
-          <div className="text-right">
-            <span className="text-sm text-gray-500">連續打卡</span>
-            <span className="ml-2 text-2xl font-bold text-blue-600">🔥 {streakDays}</span>
-          </div>
-        </div>
-        
-        {/* 補品打卡網格 */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          {clientData.client.supplements.map((supplement: Supplement) => {
-            const isCompleted = clientData.todayLogs?.find(log => log.supplement_id === supplement.id)?.completed
-            return (
-              <div 
-                key={supplement.id}
-                className={`bg-white rounded-2xl p-4 shadow-sm border-2 ${
-                  isCompleted ? 'border-green-500 bg-green-50' : 'border-gray-200'
-                } transition-all duration-200 hover:shadow-md cursor-pointer`}
-                onClick={() => handleSupplementToggle(supplement.id)}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <div className={`w-6 h-6 border-2 rounded-md flex items-center justify-center transition-all duration-200 ${
-                      isCompleted 
-                        ? 'bg-green-500 border-green-500' 
-                        : 'border-gray-300 bg-white'
+
+          {clientData.client.supplements && clientData.client.supplements.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {clientData.client.supplements.map((supplement: any) => {
+                const log = clientData.todayLogs?.find((l: any) => l.supplement_id === supplement.id)
+                const isCompleted = log?.completed || false
+                const isToggling = togglingSupplements.has(supplement.id)
+
+                return (
+                  <button
+                    key={supplement.id}
+                    onClick={() => handleToggleSupplement(supplement.id, isCompleted)}
+                    disabled={isToggling}
+                    className={`flex items-center p-4 rounded-xl border-2 transition-all text-left ${
+                      isCompleted
+                        ? 'border-green-300 bg-green-50'
+                        : 'border-gray-200 bg-white hover:border-blue-300'
+                    } ${isToggling ? 'opacity-50' : ''}`}
+                  >
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 flex-shrink-0 ${
+                      isCompleted ? 'border-green-500 bg-green-500' : 'border-gray-300'
                     }`}>
-                      {isCompleted && (
-                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
+                      {isCompleted && <span className="text-white text-xs font-bold">✓</span>}
                     </div>
-                    <div className="ml-3">
-                      <h3 className="font-medium text-gray-900">{supplement.name}</h3>
-                      <p className="text-sm text-gray-500">{supplement.dosage}</p>
+                    <div className="min-w-0">
+                      <p className={`font-medium ${isCompleted ? 'text-green-700 line-through' : 'text-gray-900'}`}>
+                        {supplement.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {supplement.dosage}{supplement.timing ? ` · ${supplement.timing}` : ''}
+                      </p>
                     </div>
-                  </div>
-                  <div className="text-sm text-gray-500">{supplement.timing}</div>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-400 text-center py-4">尚未設定補品清單</p>
+          )}
+        </div>
+
+        {/* ===== 區塊三：每日感受 ===== */}
+        <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">每日感受</h2>
+
+          <div className="space-y-4">
+            {[
+              { key: 'sleep_quality' as const, label: '睡眠品質', emoji: '😴' },
+              { key: 'energy_level' as const, label: '精力水平', emoji: '⚡' },
+              { key: 'mood' as const, label: '心情', emoji: '😊' },
+            ].map(({ key, label, emoji }) => (
+              <div key={key}>
+                <p className="text-sm font-medium text-gray-700 mb-2">{emoji} {label}</p>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map(score => (
+                    <button
+                      key={score}
+                      onClick={() => setWellnessForm(prev => ({ ...prev, [key]: score }))}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                        wellnessForm[key] === score
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {score}
+                    </button>
+                  ))}
                 </div>
               </div>
-            )
-          })}
-        </div>
-        
-        {/* 每日感受滑桿 */}
-        <div className="space-y-4 mb-6">
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-600">😴 睡眠品質</span>
-              <div className="flex items-center space-x-2">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <button
-                    key={value}
-                    className={`w-8 h-8 rounded-lg border-2 ${
-                      wellnessState.sleep_quality === value
-                        ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-400'
-                    }`}
-                    onClick={() => setWellnessState(prev => ({ ...prev, sleep_quality: value }))}
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-600">⚡ 精力水平</span>
-              <div className="flex items-center space-x-2">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <button
-                    key={value}
-                    className={`w-8 h-8 rounded-lg border-2 ${
-                      wellnessState.energy_level === value
-                        ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-400'
-                    }`}
-                    onClick={() => setWellnessState(prev => ({ ...prev, energy_level: value }))}
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-600">😊 心情</span>
-              <div className="flex items-center space-x-2">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <button
-                    key={value}
-                    className={`w-8 h-8 rounded-lg border-2 ${
-                      wellnessState.mood === value
-                        ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-400'
-                    }`}
-                    onClick={() => setWellnessState(prev => ({ ...prev, mood: value }))}
-                  >
-                    {value === 1 ? '😔' : value === 2 ? '😐' : value === 3 ? '😊' : value === 4 ? '😊' : '😊'}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <textarea
-              placeholder="今日感受記錄..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows={3}
-              value={wellnessState.note}
-              onChange={(e) => setWellnessState(prev => ({ ...prev, note: e.target.value }))}
-            />
-            <button
-              onClick={() => {
-                if (wellnessState.sleep_quality && wellnessState.energy_level && wellnessState.mood) {
-                  handleWellnessSubmit(wellnessState)
-                }
-              }}
-              className="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              提交今日感受
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {/* 區塊三：身體組成趨勢 */}
-      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">📊 身體數據追蹤</h2>
-        
-        {/* 最新數據卡片 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          {/* 體重 */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-gray-600">體重</span>
-              <button 
-                onClick={handleEditBodyData}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <Edit2 size={14} />
-              </button>
-            </div>
-            {editingBodyData ? (
-              <input 
-                type="number" 
-                step="0.1"
-                value={tempBodyData.weight || ''}
-                onChange={(e) => setTempBodyData((prev: any) => ({ ...prev, weight: parseFloat(e.target.value) }))}
-                className="text-3xl font-bold text-gray-900 w-full bg-transparent border-b-2 border-blue-500 focus:outline-none"
+            ))}
+
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">今日感受記錄</p>
+              <textarea
+                value={wellnessForm.note}
+                onChange={(e) => setWellnessForm(prev => ({ ...prev, note: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                rows={3}
+                placeholder="今天感覺如何？"
               />
-            ) : (
-              <div className="text-3xl font-bold text-gray-900">{latestBodyData?.weight || '--'}</div>
-            )}
-            <div className="text-sm text-gray-500">kg</div>
-            {latestBodyData?.weight && clientData.bodyData.length > 1 && !editingBodyData && (
-              <div className="flex items-center text-sm text-gray-500">
-                {clientData.bodyData[0].weight > clientData.bodyData[1].weight ? (
-                  <TrendingUp className="text-green-500 text-sm" size={12} />
-                ) : (
-                  <TrendingDown className="text-red-500 text-sm" size={12} />
-                )}
-                <span className="ml-1">
-                  {Math.abs(latestBodyData.weight - clientData.bodyData[1].weight).toFixed(1)} kg
-                </span>
-              </div>
-            )}
-          </div>
-          
-          {/* 體脂 */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-gray-600">體脂肪</span>
-              <button 
-                onClick={handleEditBodyData}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <Edit2 size={14} />
-              </button>
             </div>
-            {editingBodyData ? (
-              <input 
-                type="number" 
-                step="0.1"
-                value={tempBodyData.body_fat || ''}
-                onChange={(e) => setTempBodyData((prev: any) => ({ ...prev, body_fat: parseFloat(e.target.value) }))}
-                className="text-3xl font-bold text-gray-900 w-full bg-transparent border-b-2 border-blue-500 focus:outline-none"
-              />
-            ) : (
-              <div className="text-3xl font-bold text-gray-900">{latestBodyData?.body_fat || '--'}</div>
-            )}
-            <div className="text-sm text-gray-500">%</div>
-            {bodyFatTrend && !editingBodyData && (
-              <div className="flex items-center text-sm text-gray-500">
-                {bodyFatTrend?.trend === 'up' ? (
-                  <TrendingUp className="text-red-500 text-sm" size={12} />
-                ) : (
-                  <TrendingDown className="text-green-500 text-sm" size={12} />
-                )}
-                <span className="ml-1">
-                  {Math.abs(bodyFatTrend?.change).toFixed(1)}%
-                </span>
-              </div>
-            )}
-          </div>
-          
-          {/* BMI */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="text-sm font-medium text-gray-600 mb-1">BMI</div>
-            <div className="text-3xl font-bold text-gray-900">{latestBodyData?.bmi || '--'}</div>
-            <div className="text-sm text-gray-500">kg/m²</div>
-          </div>
-          
-          {/* 肌肉量 */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="text-sm font-medium text-gray-600 mb-1">肌肉量</div>
-            <div className="text-3xl font-bold text-gray-900">{latestBodyData?.muscle_mass || '--'}</div>
-            <div className="text-sm text-gray-500">kg</div>
+
+            <button
+              onClick={handleSubmitWellness}
+              disabled={submittingWellness}
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {submittingWellness ? '提交中...' : todayWellness ? '更新感受' : '記錄感受'}
+            </button>
           </div>
         </div>
-        
-        {/* 編輯控制按鈕 */}
-        {editingBodyData && (
-          <div className="flex justify-end space-x-2 mb-4">
-            <button
-              onClick={handleCancelBodyData}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
-            >
-              <X size={16} className="mr-1" />
-              取消
-            </button>
-            <button
-              onClick={handleSaveBodyData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-            >
-              <Save size={16} className="mr-1" />
-              保存
-            </button>
+
+        {/* ===== 區塊四：身體數據追蹤 ===== */}
+        <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">身體數據追蹤</h2>
+
+          {/* 身體數據卡片 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-xs text-gray-500 mb-1">體重</p>
+              <p className="text-xl font-bold text-gray-900">
+                {latestBodyData?.weight ? `${latestBodyData.weight} kg` : '--'}
+              </p>
+              {prevBodyData?.weight != null && latestBodyData?.weight != null && prevBodyData.weight !== latestBodyData.weight && (
+                <p className={`text-xs mt-1 ${latestBodyData.weight < prevBodyData.weight ? 'text-green-600' : 'text-red-500'}`}>
+                  {latestBodyData.weight < prevBodyData.weight ? '↓' : '↑'}
+                  {Math.abs(latestBodyData.weight - prevBodyData.weight).toFixed(1)} kg
+                </p>
+              )}
+            </div>
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-xs text-gray-500 mb-1">體脂</p>
+              <p className="text-xl font-bold text-gray-900">
+                {latestBodyData?.body_fat ? `${latestBodyData.body_fat}%` : '--'}
+              </p>
+              {prevBodyData?.body_fat != null && latestBodyData?.body_fat != null && prevBodyData.body_fat !== latestBodyData.body_fat && (
+                <p className={`text-xs mt-1 ${latestBodyData.body_fat < prevBodyData.body_fat ? 'text-green-600' : 'text-red-500'}`}>
+                  {latestBodyData.body_fat < prevBodyData.body_fat ? '↓' : '↑'}
+                  {Math.abs(latestBodyData.body_fat - prevBodyData.body_fat).toFixed(1)}%
+                </p>
+              )}
+            </div>
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-xs text-gray-500 mb-1">BMI</p>
+              <p className="text-xl font-bold text-gray-900">{bmi || '--'}</p>
+            </div>
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-xs text-gray-500 mb-1">肌肉量</p>
+              <p className="text-xl font-bold text-gray-900">
+                {latestBodyData?.muscle_mass ? `${latestBodyData.muscle_mass} kg` : '--'}
+              </p>
+              {prevBodyData?.muscle_mass != null && latestBodyData?.muscle_mass != null && prevBodyData.muscle_mass !== latestBodyData.muscle_mass && (
+                <p className={`text-xs mt-1 ${latestBodyData.muscle_mass > prevBodyData.muscle_mass ? 'text-green-600' : 'text-red-500'}`}>
+                  {latestBodyData.muscle_mass > prevBodyData.muscle_mass ? '↑' : '↓'}
+                  {Math.abs(latestBodyData.muscle_mass - prevBodyData.muscle_mass).toFixed(1)} kg
+                </p>
+              )}
+            </div>
           </div>
-        )}
-        
-        {/* 趨勢圖 */}
-        <div className="bg-white rounded-3xl shadow-sm p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">📈 身體數據趨勢圖</h3>
-          <div className="mb-4">
+
+          {/* 趨勢圖切換按鈕 */}
+          <div className="flex space-x-2 mb-4">
             <button
               onClick={() => setTrendType('weight')}
               className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                trendType === 'weight' 
-                  ? 'bg-blue-600 text-white' 
+                trendType === 'weight'
+                  ? 'bg-blue-600 text-white'
                   : 'bg-gray-200 text-gray-700'
               }`}
             >
@@ -846,136 +525,79 @@ export default function ClientDashboard() {
             <button
               onClick={() => setTrendType('body_fat')}
               className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                trendType === 'body_fat' 
-                  ? 'bg-blue-600 text-white' 
+                trendType === 'body_fat'
+                  ? 'bg-blue-600 text-white'
                   : 'bg-gray-200 text-gray-700'
               }`}
             >
               體脂趨勢
             </button>
           </div>
-          
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData[trendType] || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }} />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#3b82f6" 
-                  strokeWidth={2} 
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+
+          {/* 趨勢圖 */}
+          <div className="h-64 w-full min-w-0">
+            <LazyChart
+              data={trendData[trendType] || []}
+              height={256}
+              stroke="#3b82f6"
+              strokeWidth={2}
+            />
           </div>
         </div>
-      </div>
-      
-      {/* 區塊四：血檢追蹤 */}
-      <div className="bg-white rounded-3xl shadow-sm p-6">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">🔬 血檢指標</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Object.keys(trendData).filter(testName => !['體重', '體脂肪'].includes(testName)).map((testName) => {
-            const testResults = trendData[testName]
-            if (testResults.length === 0) return null
-            
-            const latestResult = testResults[testResults.length - 1]
-            const status = latestResult.status
-            const value = latestResult.value
-            const unit = latestResult.unit
-            const referenceRange = latestResult.reference_range
-            
-            // 白話解釋
-            let explanation = ''
-            if (testName === 'HOMA-IR') {
-              if (value < 1.4) explanation = '胰島素敏感度很好'
-              else if (value < 1.4) explanation = '胰島素敏感度正常'
-              else explanation = '胰島素敏感度需要改善'
-            } else if (testName === '同半胱胺酸') {
-              if (value < 8) explanation = '甲基化代謝正常'
-              else explanation = '甲基化代謝需要改善'
-            } else if (testName === '維生素D') {
-              if (value > 50) explanation = '維生素D充足'
-              else if (value >= 30) explanation = '維生素D偏低，建議補充'
-              else explanation = '維生素D不足'
-            } else if (testName === '鐵蛋白') {
-              if (value >= 50 && value <= 150) explanation = '鐵儲存正常'
-              else explanation = '鐵儲存偏低'
-            }
-            
-            return (
-              <div key={testName} className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-2 ${
-                      status === 'normal' 
-                        ? 'bg-green-500' 
-                        : status === 'attention' 
-                        ? 'bg-yellow-500' 
-                        : 'bg-red-500'
-                    }`}></div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">{testName}</h3>
-                      <p className="text-sm text-gray-600">{referenceRange} {unit}</p>
+
+        {/* ===== 區塊五：血檢指標 ===== */}
+        <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6">血檢指標</h2>
+
+          {clientData.client.lab_results && clientData.client.lab_results.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {clientData.client.lab_results.map((result: any) => {
+                const advice = getLabAdvice(result.test_name, result.value)
+                const statusColor =
+                  result.status === 'normal' ? 'border-green-200 bg-green-50'
+                  : result.status === 'attention' ? 'border-yellow-200 bg-yellow-50'
+                  : 'border-red-200 bg-red-50'
+                const dotColor =
+                  result.status === 'normal' ? 'bg-green-500'
+                  : result.status === 'attention' ? 'bg-yellow-500'
+                  : 'bg-red-500'
+
+                return (
+                  <div key={result.id} className={`rounded-xl p-4 border ${statusColor}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium text-gray-900">{result.test_name}</h3>
+                      <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
                     </div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {result.value} <span className="text-sm font-normal text-gray-500">{result.unit}</span>
+                    </p>
+                    {advice && <p className="text-sm text-gray-600 mt-2">{advice}</p>}
+                    <p className="text-xs text-gray-400 mt-1">參考範圍：{result.reference_range}</p>
                   </div>
-                  <div className={`text-2xl font-light text-gray-900 ${
-                    status === 'normal' 
-                      ? 'text-green-600' 
-                      : status === 'attention' 
-                      ? 'text-yellow-600' 
-                      : 'text-red-600'
-                  }`}>
-                    {value}
-                  </div>
-                </div>
-                <div className="text-sm text-gray-600 mb-2">{explanation}</div>
-                {testResults.length > 1 && (
-                  <div className="h-32">
-                    <ResponsiveContainer width="100%" height={100}>
-                      <LineChart data={testResults}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip contentStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }} />
-                        <Line 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke="#3b82f6" 
-                          strokeWidth={2} 
-                          dot={false}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-400 text-center py-4">尚無血檢資料</p>
+          )}
         </div>
-      </div>
-      
-      {/* 區塊五：Howard 教練備註 */}
-      <div className="bg-white rounded-3xl shadow-sm p-6">
-        <div className="flex items-center mb-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white">
-            <span className="text-2xl">👨</span>
-          </div>
-          <div className="ml-4">
-            <h3 className="text-lg font-semibold text-gray-900">Howard 教練</h3>
-            <p className="text-gray-600">
-              {clientData?.client?.coach_note || '持續追蹤中，有問題隨時 LINE 我！— Howard 教練'}
-            </p>
+
+        {/* ===== 教練備註 ===== */}
+        <div className="bg-white rounded-3xl shadow-sm p-6 mb-20">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Howard 教練備註</h2>
+          <div className="flex items-start">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Howard 教練</h3>
+              <p className="text-gray-600">
+                {clientData?.client?.coach_note || '持續追蹤中，有問題隨時 LINE 我！— Howard 教練'}
+              </p>
+            </div>
           </div>
         </div>
       </div>
-      
+
       {/* 固定底部新增按鈕 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-safe z-[100]">
         <div className="max-w-4xl mx-auto">
           <button
             onClick={() => setShowAddBodyDataModal(true)}
@@ -986,118 +608,152 @@ export default function ClientDashboard() {
           </button>
         </div>
       </div>
-      
+
       {/* 新增身體數據 Modal */}
       {showAddBodyDataModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-          <div className="bg-white w-full max-w-lg rounded-t-3xl p-6 animate-slide-up">
-            {/* 標題和關閉按鈕 */}
+        <div
+          className="fixed inset-0 bg-black bg-opacity-60 flex items-end justify-center z-[100] backdrop-blur-sm"
+          onClick={() => setShowAddBodyDataModal(false)}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-t-3xl p-6 animate-slide-up shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900">新增身體數據</h3>
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                  <Plus size={16} className="text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">新增身體數據</h3>
+              </div>
               <button
                 onClick={() => setShowAddBodyDataModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-all"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
-            
-            {/* 表單欄位 */}
+
             <div className="space-y-4">
-              {/* 日期 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">日期</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Calendar size={16} className="mr-1 text-gray-500" />
+                  日期
+                </label>
                 <input
                   type="date"
                   value={newBodyData.date}
-                  onChange={(e) => setNewBodyData(prev => ({ ...prev, date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => setNewBodyData((prev: any) => ({ ...prev, date: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
               </div>
-              
-              {/* 體重 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">體重 (kg) *</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="20"
-                  max="300"
-                  value={newBodyData.weight}
-                  onChange={(e) => setNewBodyData(prev => ({ ...prev, weight: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="請輸入體重"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Scale size={16} className="mr-1 text-gray-500" />
+                  體重 (kg) <span className="text-red-500 ml-1">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="20"
+                    max="300"
+                    value={newBodyData.weight}
+                    onChange={(e) => setNewBodyData((prev: any) => ({ ...prev, weight: e.target.value }))}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="請輸入體重"
+                  />
+                  <span className="absolute right-3 top-3 text-gray-500 text-sm">kg</span>
+                </div>
               </div>
-              
-              {/* 體脂 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">體脂 (%)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  max="60"
-                  value={newBodyData.body_fat}
-                  onChange={(e) => setNewBodyData(prev => ({ ...prev, body_fat: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="選填"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Activity size={16} className="mr-1 text-gray-500" />
+                  體脂 (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    max="60"
+                    value={newBodyData.body_fat}
+                    onChange={(e) => setNewBodyData((prev: any) => ({ ...prev, body_fat: e.target.value }))}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="選填"
+                  />
+                  <span className="absolute right-3 top-3 text-gray-500 text-sm">%</span>
+                </div>
               </div>
-              
-              {/* 肌肉量 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">肌肉量 (kg)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="10"
-                  max="100"
-                  value={newBodyData.muscle_mass}
-                  onChange={(e) => setNewBodyData(prev => ({ ...prev, muscle_mass: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="選填"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Dumbbell size={16} className="mr-1 text-gray-500" />
+                  肌肉量 (kg)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="10"
+                    max="100"
+                    value={newBodyData.muscle_mass}
+                    onChange={(e) => setNewBodyData((prev: any) => ({ ...prev, muscle_mass: e.target.value }))}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="選填"
+                  />
+                  <span className="absolute right-3 top-3 text-gray-500 text-sm">kg</span>
+                </div>
               </div>
-              
-              {/* 身高 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">身高 (cm)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="100"
-                  max="250"
-                  value={newBodyData.height}
-                  onChange={(e) => setNewBodyData(prev => ({ ...prev, height: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="選填"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Ruler size={16} className="mr-1 text-gray-500" />
+                  身高 (cm)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="100"
+                    max="250"
+                    value={newBodyData.height}
+                    onChange={(e) => setNewBodyData((prev: any) => ({ ...prev, height: e.target.value }))}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="選填"
+                  />
+                  <span className="absolute right-3 top-3 text-gray-500 text-sm">cm</span>
+                </div>
               </div>
-              
-              {/* 內臟脂肪 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">內臟脂肪</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <Heart size={16} className="mr-1 text-gray-500" />
+                  內臟脂肪
+                </label>
                 <input
                   type="number"
                   step="0.1"
                   min="1"
                   max="30"
                   value={newBodyData.visceral_fat}
-                  onChange={(e) => setNewBodyData(prev => ({ ...prev, visceral_fat: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => setNewBodyData((prev: any) => ({ ...prev, visceral_fat: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   placeholder="選填"
                 />
               </div>
             </div>
-            
-            {/* 提交按鈕 */}
-            <div className="mt-6">
+
+            <div className="mt-6 space-y-3">
               <button
                 onClick={handleAddBodyData}
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-medium hover:bg-blue-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center shadow-lg"
               >
+                <Plus size={20} className="mr-2" />
                 儲存紀錄
+              </button>
+              <button
+                onClick={() => setShowAddBodyDataModal(false)}
+                className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-200 transition-all"
+              >
+                取消
               </button>
             </div>
           </div>

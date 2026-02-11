@@ -84,52 +84,41 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. 驗證身份
-    const { user, error: authError } = await verifyAuth(request)
-    if (authError || !user) {
-      return createErrorResponse(authError || '身份驗證失敗', 401)
-    }
-
-    // 2. 檢查權限（目前只有教練可以存取）
-    if (!isCoach(user)) {
-      return createErrorResponse('權限不足，需要教練角色', 403)
-    }
-
-    // 3. 獲取請求內容
     const body = await request.json()
     const { clientId, supplementId, date, completed } = body
-    
+
     // 驗證輸入
     if (!clientId || !supplementId || !date) {
       return createErrorResponse('缺少必要欄位', 400)
     }
-    
+
     // 驗證日期
     const dateValidation = validateDate(date)
     if (!dateValidation.isValid) {
       return createErrorResponse(dateValidation.error, 400)
     }
-    
+
     // 驗證 completed
     if (typeof completed !== 'boolean') {
       return createErrorResponse('completed 必須是布林值', 400)
     }
-    
-    // 獲取客戶 ID
-    console.log('🔍 開始查詢客戶 ID...')
+
+    // 根據 unique_code 查詢客戶
     const { data: client } = await supabase
       .from('clients')
-      .select('id')
+      .select('id, expires_at')
       .eq('unique_code', clientId)
       .single()
-    
-    console.log('📊 客戶 ID 查詢結果:', { client })
-    
+
     if (!client) {
-      console.log('❌ 找不到客戶')
       return createErrorResponse('找不到客戶', 404)
     }
-    
+
+    // 檢查是否過期
+    if (client.expires_at && new Date(client.expires_at) < new Date()) {
+      return createErrorResponse('客戶已過期', 403)
+    }
+
     // 創建或更新打卡記錄
     const { data, error } = await supabase
       .from('supplement_logs')
@@ -141,13 +130,13 @@ export async function POST(request: NextRequest) {
       })
       .select()
       .single()
-    
+
     if (error) {
       return createErrorResponse('記錄打卡失敗', 500)
     }
-    
+
     return createSuccessResponse(data)
-    
+
   } catch (error) {
     console.error('API 錯誤:', error)
     return createErrorResponse('伺服器錯誤', 500)
