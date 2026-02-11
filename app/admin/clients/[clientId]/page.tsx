@@ -30,6 +30,9 @@ interface Client {
   age: number
   gender: string
   status: 'normal' | 'attention' | 'alert'
+  coach_summary: string
+  next_checkup_date: string
+  health_goals: string
   lab_results: LabResult[]
   supplements: Supplement[]
 }
@@ -54,6 +57,9 @@ export default function ClientEditor() {
         age: 25,
         gender: '女性',
         status: 'normal',
+        coach_summary: '',
+        next_checkup_date: '',
+        health_goals: '',
         lab_results: [],
         supplements: []
       })
@@ -110,6 +116,9 @@ export default function ClientEditor() {
             age: client.age,
             gender: client.gender,
             status: client.status,
+            coach_summary: client.coach_summary || null,
+            next_checkup_date: client.next_checkup_date || null,
+            health_goals: client.health_goals || null,
             expires_at: expiresAt.toISOString()
           })
           .select()
@@ -153,7 +162,10 @@ export default function ClientEditor() {
             name: client.name,
             age: client.age,
             gender: client.gender,
-            status: client.status
+            status: client.status,
+            coach_summary: client.coach_summary || null,
+            next_checkup_date: client.next_checkup_date || null,
+            health_goals: client.health_goals || null
           })
           .eq('id', clientId)
         
@@ -371,6 +383,42 @@ export default function ClientEditor() {
           </div>
         </div>
         
+        {/* Coach Notes */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">教練備註</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">教練健康摘要</label>
+              <textarea
+                value={client.coach_summary || ''}
+                onChange={(e) => updateClient('coach_summary', e.target.value)}
+                rows={4}
+                placeholder="本月健康分析..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">下次回檢日期</label>
+              <input
+                type="date"
+                value={client.next_checkup_date || ''}
+                onChange={(e) => updateClient('next_checkup_date', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">健康目標</label>
+              <textarea
+                value={client.health_goals || ''}
+                onChange={(e) => updateClient('health_goals', e.target.value)}
+                rows={3}
+                placeholder="例如：同半胱胺酸降到 8 以下"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Lab Results */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center justify-between mb-4">

@@ -322,6 +322,28 @@ export default function ClientDashboard() {
             </div>
           </div>
 
+          {/* 教練健康分析卡片 */}
+          {clientData.client.coach_summary && (
+            <div className="bg-blue-50 rounded-2xl p-5 mb-4">
+              <h3 className="text-sm font-semibold text-blue-800 mb-2">Howard 教練的健康分析</h3>
+              <p className="text-sm text-gray-700 whitespace-pre-line">{clientData.client.coach_summary}</p>
+              {(clientData.client.next_checkup_date || clientData.client.health_goals) && (
+                <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-blue-100">
+                  {clientData.client.next_checkup_date && (
+                    <span className="text-xs text-gray-600">
+                      📅 下次回檢：{new Date(clientData.client.next_checkup_date).toLocaleDateString('zh-TW')}
+                    </span>
+                  )}
+                  {clientData.client.health_goals && (
+                    <span className="text-xs text-gray-600">
+                      🎯 目標：{clientData.client.health_goals}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* 區塊一：健康總覽摘要卡片 */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-blue-50 rounded-2xl p-4 text-center">
@@ -582,18 +604,20 @@ export default function ClientDashboard() {
           )}
         </div>
 
-        {/* ===== 教練備註 ===== */}
-        <div className="bg-white rounded-3xl shadow-sm p-6 mb-20">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Howard 教練備註</h2>
-          <div className="flex items-start">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Howard 教練</h3>
-              <p className="text-gray-600">
-                {clientData?.client?.coach_note || '持續追蹤中，有問題隨時 LINE 我！— Howard 教練'}
-              </p>
+        {/* ===== 教練備註（僅在無 coach_summary 時顯示靜態文字） ===== */}
+        {!clientData.client.coach_summary && (
+          <div className="bg-white rounded-3xl shadow-sm p-6 mb-20">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Howard 教練備註</h2>
+            <div className="flex items-start">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Howard 教練</h3>
+                <p className="text-gray-600">
+                  {clientData?.client?.coach_note || '持續追蹤中，有問題隨時 LINE 我！— Howard 教練'}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 固定底部新增按鈕 */}
