@@ -149,19 +149,6 @@ export default function TrainingLog({ todayTraining, trainingLogs, clientId, onM
     return weeks
   }, [trainingLogs, today])
 
-  // ===== RPE 趨勢圖 =====
-  const rpeChartData = useMemo(() => {
-    if (!trainingLogs?.length) return []
-    return [...trainingLogs]
-      .filter((l: any) => l.rpe != null && l.training_type !== 'rest')
-      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map((l: any) => ({
-        date: new Date(l.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
-        RPE: l.rpe,
-        type: getTypeLabel(l.training_type),
-      }))
-  }, [trainingLogs])
-
   const getTypeEmoji = (type: string) => {
     return TRAINING_TYPES.find(t => t.value === type)?.emoji || ''
   }
@@ -184,6 +171,19 @@ export default function TrainingLog({ todayTraining, trainingLogs, clientId, onM
     }
     return colors[type] || 'bg-gray-100 text-gray-500'
   }
+
+  // ===== RPE 趨勢圖 =====
+  const rpeChartData = useMemo(() => {
+    if (!trainingLogs?.length) return []
+    return [...trainingLogs]
+      .filter((l: any) => l.rpe != null && l.training_type !== 'rest')
+      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map((l: any) => ({
+        date: new Date(l.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+        RPE: l.rpe,
+        type: getTypeLabel(l.training_type),
+      }))
+  }, [trainingLogs])
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
