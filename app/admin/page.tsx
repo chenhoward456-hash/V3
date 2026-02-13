@@ -469,7 +469,7 @@ export default function AdminDashboard() {
                     return (
                       <tr key={client.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-5 py-4">
-                          <Link href={`/admin/clients/${client.id}`} className="hover:text-blue-600">
+                          <Link href={`/admin/clients/${client.id}/overview`} className="hover:text-blue-600">
                             <div className="text-sm font-medium text-gray-900">
                               {client.name}
                               {client.training_enabled && todayTrainingMap[client.id] && (

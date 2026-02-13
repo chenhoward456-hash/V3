@@ -329,6 +329,11 @@ export default function ClientEditor() {
                 {clientId === 'new' ? '新增學員' : `編輯 ${client.name}`}
               </h1>
             </div>
+            {clientId !== 'new' && (
+              <Link href={`/admin/clients/${clientId}/overview`} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                📊 總覽
+              </Link>
+            )}
           </div>
         </div>
       </div>
