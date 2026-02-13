@@ -20,23 +20,28 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // 先用 id 查，查不到再用 unique_code 查
+    let clientRes = await supabase.from('clients').select('*').eq('id', clientId).single()
+    if (!clientRes.data) {
+      clientRes = await supabase.from('clients').select('*').eq('unique_code', clientId).single()
+    }
+    if (!clientRes.data) {
+      return NextResponse.json({ error: '找不到學員資料' }, { status: 404 })
+    }
+
+    const realId = clientRes.data.id
     const sixtyDaysAgo = new Date()
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
     const sinceDate = sixtyDaysAgo.toISOString().split('T')[0]
 
-    const [clientRes, suppRes, logsRes, wellRes, trainRes, bodyRes, labRes] = await Promise.all([
-      supabase.from('clients').select('*').eq('id', clientId).single(),
-      supabase.from('supplements').select('*').eq('client_id', clientId),
-      supabase.from('supplement_logs').select('*').eq('client_id', clientId).gte('date', sinceDate).order('date', { ascending: true }),
-      supabase.from('daily_wellness').select('*').eq('client_id', clientId).gte('date', sinceDate).order('date', { ascending: true }),
-      supabase.from('training_logs').select('*').eq('client_id', clientId).gte('date', sinceDate).order('date', { ascending: true }),
-      supabase.from('body_composition').select('*').eq('client_id', clientId).order('date', { ascending: true }),
-      supabase.from('lab_results').select('*').eq('client_id', clientId).order('date', { ascending: false }),
+    const [suppRes, logsRes, wellRes, trainRes, bodyRes, labRes] = await Promise.all([
+      supabase.from('supplements').select('*').eq('client_id', realId),
+      supabase.from('supplement_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
+      supabase.from('daily_wellness').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
+      supabase.from('training_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
+      supabase.from('body_composition').select('*').eq('client_id', realId).order('date', { ascending: true }),
+      supabase.from('lab_results').select('*').eq('client_id', realId).order('date', { ascending: false }),
     ])
-
-    if (!clientRes.data) {
-      return NextResponse.json({ error: '找不到學員資料' }, { status: 404 })
-    }
 
     return NextResponse.json({
       client: clientRes.data,
