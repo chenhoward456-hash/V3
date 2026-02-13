@@ -41,17 +41,21 @@ export interface WellnessData {
 export interface TrainingLog {
   id: string
   date: string
-  training_type: 'upper_body' | 'lower_body' | 'full_body' | 'cardio' | 'rest'
+  training_type: 'push' | 'pull' | 'legs' | 'full_body' | 'cardio' | 'rest' | 'chest' | 'shoulder' | 'arms'
   duration: number | null
   rpe: number | null
   note: string | null
 }
 
 export const TRAINING_TYPES = [
-  { value: 'upper_body', label: '上肢', emoji: '💪' },
-  { value: 'lower_body', label: '下肢', emoji: '🦵' },
+  { value: 'push', label: '推', emoji: '🫸' },
+  { value: 'pull', label: '拉', emoji: '🫷' },
+  { value: 'legs', label: '腿', emoji: '🦵' },
   { value: 'full_body', label: '全身', emoji: '🏋️' },
   { value: 'cardio', label: '有氧', emoji: '🏃' },
+  { value: 'chest', label: '胸', emoji: '💪' },
+  { value: 'shoulder', label: '肩', emoji: '🏔️' },
+  { value: 'arms', label: '手臂', emoji: '💪🏼' },
   { value: 'rest', label: '休息', emoji: '😴' },
 ] as const
 

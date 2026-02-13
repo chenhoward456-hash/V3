@@ -115,12 +115,12 @@ export default function TrainingLog({ todayTraining, trainingLogs, clientId, onM
         {/* 訓練類型 */}
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">訓練類型</p>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {TRAINING_TYPES.map(({ value, label, emoji }) => (
               <button
                 key={value}
                 onClick={() => setForm(prev => ({ ...prev, training_type: value }))}
-                className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`min-h-[44px] py-2 rounded-lg text-sm font-medium transition-all ${
                   form.training_type === value
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'

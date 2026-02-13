@@ -19,7 +19,7 @@ function createSuccessResponse(data: any, message?: string) {
   })
 }
 
-const VALID_TRAINING_TYPES = ['upper_body', 'lower_body', 'full_body', 'cardio', 'rest']
+const VALID_TRAINING_TYPES = ['push', 'pull', 'legs', 'full_body', 'cardio', 'rest', 'chest', 'shoulder', 'arms']
 
 export async function GET(request: NextRequest) {
   try {

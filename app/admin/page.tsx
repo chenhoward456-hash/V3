@@ -285,11 +285,15 @@ export default function AdminDashboard() {
 
   const getTrainingEmoji = (type: string) => {
     const map: Record<string, string> = {
-      upper_body: '💪',
-      lower_body: '🦵',
+      push: '🫸',
+      pull: '🫷',
+      legs: '🦵',
       full_body: '🏋️',
       cardio: '🏃',
       rest: '😴',
+      chest: '💪',
+      shoulder: '🏔️',
+      arms: '💪🏼',
     }
     return map[type] || ''
   }
