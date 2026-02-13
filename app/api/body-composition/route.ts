@@ -92,27 +92,27 @@ export async function POST(request: NextRequest) {
     // 驗證身體數據
     const validations = []
     
-    if (height !== undefined) {
+    if (height != null) {
       validations.push(validateBodyComposition('height', height))
     }
-    
-    if (weight !== undefined) {
+
+    if (weight != null) {
       validations.push(validateBodyComposition('weight', weight))
     }
-    
-    if (bodyFat !== undefined) {
+
+    if (bodyFat != null) {
       validations.push(validateBodyComposition('body_fat', bodyFat))
     }
-    
-    if (muscleMass !== undefined) {
+
+    if (muscleMass != null) {
       validations.push(validateBodyComposition('muscle_mass', muscleMass))
     }
-    
-    if (visceralFat !== undefined) {
+
+    if (visceralFat != null) {
       validations.push(validateBodyComposition('visceral_fat', visceralFat))
     }
-    
-    if (bmi !== undefined) {
+
+    if (bmi != null) {
       validations.push(validateBodyComposition('bmi', bmi))
     }
     
@@ -139,21 +139,42 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('客戶已過期', 403)
     }
     
-    // 創建身體數據記錄
-    const { data, error } = await supabase
+    // 查詢同日是否已有記錄
+    const { data: existing } = await supabase
       .from('body_composition')
-      .insert({
-        client_id: client.id,
-        date,
-        height: height || null,
-        weight: weight || null,
-        body_fat: bodyFat || null,
-        muscle_mass: muscleMass || null,
-        visceral_fat: visceralFat || null,
-        bmi: bmi || null
-      })
-      .select()
-      .single()
+      .select('id')
+      .eq('client_id', client.id)
+      .eq('date', date)
+      .maybeSingle()
+
+    const record = {
+      client_id: client.id,
+      date,
+      height: height ?? null,
+      weight: weight ?? null,
+      body_fat: bodyFat ?? null,
+      muscle_mass: muscleMass ?? null,
+      visceral_fat: visceralFat ?? null,
+      bmi: bmi ?? null,
+    }
+
+    let data, error
+    if (existing) {
+      // 同一天更新
+      ;({ data, error } = await supabase
+        .from('body_composition')
+        .update(record)
+        .eq('id', existing.id)
+        .select()
+        .single())
+    } else {
+      // 新增
+      ;({ data, error } = await supabase
+        .from('body_composition')
+        .insert(record)
+        .select()
+        .single())
+    }
     
     if (error) {
       return createErrorResponse('建立身體數據失敗', 500)

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export const metadata: Metadata = {
   title: '個案追蹤 - The Howard Protocol',
@@ -27,11 +28,12 @@ export default function CasePage() {
           <div className="absolute -top-3 -left-3 bg-danger/75 text-white px-4 py-1.5 rounded-full font-normal text-sm z-10">
             2020 年初
           </div>
-          <div className="h-[300px] md:h-[420px] rounded-[1.5rem] overflow-hidden" style={{boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.03)'}}>
-            <img 
-              src="/before.jpg" 
-              alt="2020 年系統崩潰狀態" 
-              className="w-full h-full object-cover"
+          <div className="relative h-[300px] md:h-[420px] rounded-[1.5rem] overflow-hidden" style={{boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.03)'}}>
+            <Image
+              src="/before.jpg"
+              alt="2020 年系統崩潰狀態"
+              fill
+              className="object-cover"
             />
           </div>
           <div className="mt-6">
@@ -52,11 +54,12 @@ export default function CasePage() {
           <div className="absolute -top-3 -left-3 bg-success/75 text-white px-4 py-1.5 rounded-full font-normal text-sm z-10">
             2026 年
           </div>
-          <div className="h-[300px] md:h-[420px] rounded-[1.5rem] overflow-hidden" style={{boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.03)'}}>
-            <img 
-              src="/after.jpg" 
-              alt="2026 年完全重生狀態 - 頭髮恢復與體態改善" 
-              className="w-full h-full object-cover object-[center_20%]"
+          <div className="relative h-[300px] md:h-[420px] rounded-[1.5rem] overflow-hidden" style={{boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.03)'}}>
+            <Image
+              src="/after.jpg"
+              alt="2026 年完全重生狀態 - 頭髮恢復與體態改善"
+              fill
+              className="object-cover"
               style={{ objectPosition: 'center 20%' }}
             />
           </div>

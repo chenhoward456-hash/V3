@@ -35,6 +35,7 @@ interface Client {
   coach_summary: string
   next_checkup_date: string
   health_goals: string
+  training_enabled: boolean
   lab_results: LabResult[]
   supplements: Supplement[]
 }
@@ -62,6 +63,7 @@ export default function ClientEditor() {
         coach_summary: '',
         next_checkup_date: '',
         health_goals: '',
+        training_enabled: false,
         lab_results: [],
         supplements: []
       })
@@ -121,6 +123,7 @@ export default function ClientEditor() {
             coach_summary: client.coach_summary || null,
             next_checkup_date: client.next_checkup_date || null,
             health_goals: client.health_goals || null,
+            training_enabled: client.training_enabled,
             expires_at: expiresAt.toISOString()
           })
           .select()
@@ -167,7 +170,8 @@ export default function ClientEditor() {
             status: client.status,
             coach_summary: client.coach_summary || null,
             next_checkup_date: client.next_checkup_date || null,
-            health_goals: client.health_goals || null
+            health_goals: client.health_goals || null,
+            training_enabled: client.training_enabled
           })
           .eq('id', clientId)
         
@@ -385,6 +389,29 @@ export default function ClientEditor() {
           </div>
         </div>
         
+        {/* Feature Toggles */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">功能設定</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-700">啟用訓練追蹤</p>
+              <p className="text-xs text-gray-500 mt-0.5">開啟後學員可記錄每日訓練</p>
+            </div>
+            <button
+              onClick={() => updateClient('training_enabled', !client.training_enabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                client.training_enabled ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  client.training_enabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
         {/* Coach Notes */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">教練備註</h2>

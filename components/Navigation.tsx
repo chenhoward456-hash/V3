@@ -7,12 +7,9 @@ import { useState } from 'react'
 const navItems = [
   { label: '關於我', href: '/' },
   { label: '系統診斷', href: '/diagnosis' },
-  { label: '遠端訂閱', href: '/remote' },
   { label: '知識分享', href: '/blog' },
   { label: '個案追蹤', href: '/case' },
-  { label: '訓練工程', href: '/training' },
-  { label: '營養恢復', href: '/nutrition' },
-  { label: '預約諮詢', href: '/action' },
+  { label: '遠端訂閱', href: '/remote' },
 ]
 
 export default function Navigation() {
@@ -79,10 +76,10 @@ export default function Navigation() {
 
             <div className="flex items-center gap-4">
               <Link
-                href="/remote"
+                href="/action"
                 className="hidden lg:inline-block bg-primary text-white px-5 py-2.5 rounded-full font-medium text-sm hover:bg-primary-dark transition-colors"
               >
-                遠端訂閱
+                預約諮詢
               </Link>
 
               {/* Mobile Menu Button */}

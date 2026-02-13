@@ -1,9 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter, Noto_Sans_TC, Playfair_Display } from 'next/font/google'
 import './globals.css'
-import Navigation from '@/components/Navigation'
-import Footer from '@/components/Footer'
-import ScrollProgress from '@/components/ui/ScrollProgress'
+import LayoutShell from '@/components/LayoutShell'
+import ManifestLink from '@/components/ManifestLink'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -88,6 +87,13 @@ export default function RootLayout({
   return (
     <html lang="zh-TW" className={`scroll-smooth ${inter.variable} ${notoSansTC.variable} ${playfairDisplay.variable}`}>
       <head>
+        {/* PWA */}
+        <ManifestLink />
+        <meta name="theme-color" content="#2563eb" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Howard" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         {/* Google Analytics */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-8GMW6GH1QB"></script>
         <script
@@ -102,10 +108,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <ScrollProgress />
-        <Navigation />
-        <main>{children}</main>
-        <Footer />
+        <LayoutShell>{children}</LayoutShell>
       </body>
     </html>
   )

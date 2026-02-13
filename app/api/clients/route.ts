@@ -101,6 +101,23 @@ export async function GET(request: NextRequest) {
       console.warn('獲取每日感受記錄失敗:', wellnessError)
     }
 
+    // 獲取最近 30 天訓練紀錄（僅在 training_enabled 時查詢）
+    let trainingLogs: any[] = []
+    if (client.training_enabled) {
+      const { data: trainingData, error: trainingError } = await supabase
+        .from('training_logs')
+        .select('*')
+        .eq('client_id', client.id)
+        .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
+        .order('date', { ascending: false })
+
+      if (trainingError) {
+        console.warn('獲取訓練紀錄失敗:', trainingError)
+      } else {
+        trainingLogs = trainingData || []
+      }
+    }
+
     // 獲取最近 30 天補品打卡記錄
     const { data: recentLogs, error: recentLogsError } = await supabase
       .from('supplement_logs')
@@ -118,7 +135,8 @@ export async function GET(request: NextRequest) {
       todayLogs: logs || [],
       bodyData: bodyRecords || [],
       wellness: wellnessData || [],
-      recentLogs: recentLogs || []
+      recentLogs: recentLogs || [],
+      trainingLogs,
     })
     
   } catch (error) {

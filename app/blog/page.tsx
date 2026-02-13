@@ -1,21 +1,25 @@
-'use client'
+import type { Metadata } from 'next'
+import BlogFilter from '@/components/BlogFilter'
 
-import Link from 'next/link'
-import { useState } from 'react'
-
-// 文章資料結構
-interface BlogPost {
-  id: string
-  title: string
-  description: string
-  date: string
-  category: '血檢優化' | '營養策略' | '訓練方法' | '恢復優化' | '個案追蹤'
-  readTime: string
-  slug: string
+export const metadata: Metadata = {
+  title: '知識分享 - Howard | 訓練、營養、恢復優化',
+  description: '個人實驗紀錄、研究心得與學習筆記。涵蓋訓練方法、營養策略、睡眠恢復、血檢優化等主題。',
+  openGraph: {
+    title: '知識分享 - Howard',
+    description: '訓練、營養、恢復優化的實戰經驗分享',
+  },
 }
 
-// 文章列表（之後可以從檔案系統讀取）
-const blogPosts: BlogPost[] = [
+const blogPosts = [
+  {
+    id: '9',
+    title: '早上別只喝白開水 — 一杯不到 1 塊的電解質水配方',
+    description: '喝了半小時就跑廁所，然後還是口渴、腦袋昏昏的？問題不是你喝太少，是白開水「留不住」。分享我每天早上的電解質水配方。',
+    date: '2026-02-11',
+    category: '營養策略',
+    readTime: '4 分鐘',
+    slug: 'morning-electrolyte-water',
+  },
   {
     id: '8',
     title: 'Zone 2 有氧訓練的 5 大好處 - Whoop 實測數據分享',
@@ -41,7 +45,7 @@ const blogPosts: BlogPost[] = [
     date: '2026-01-30',
     category: '訓練方法',
     readTime: '6 分鐘',
-    slug: 'three-layers-fat-loss-strategy'
+    slug: 'three-layers-fat-loss-strategy',
   },
   {
     id: '5',
@@ -50,7 +54,7 @@ const blogPosts: BlogPost[] = [
     date: '2026-01-30',
     category: '訓練方法',
     readTime: '5 分鐘',
-    slug: 'muscle-building-science-2025'
+    slug: 'muscle-building-science-2025',
   },
   {
     id: '4',
@@ -59,7 +63,7 @@ const blogPosts: BlogPost[] = [
     date: '2026-01-30',
     category: '訓練方法',
     readTime: '6 分鐘',
-    slug: 'female-menstrual-cycle-training'
+    slug: 'female-menstrual-cycle-training',
   },
   {
     id: '3',
@@ -68,7 +72,7 @@ const blogPosts: BlogPost[] = [
     date: '2026-01-30',
     category: '恢復優化',
     readTime: '7 分鐘',
-    slug: 'sleep-quality-hrv-optimization'
+    slug: 'sleep-quality-hrv-optimization',
   },
   {
     id: '2',
@@ -77,26 +81,16 @@ const blogPosts: BlogPost[] = [
     date: '2026-01-30',
     category: '血檢優化',
     readTime: '6 分鐘',
-    slug: 'testosterone-optimization-3-months'
+    slug: 'testosterone-optimization-3-months',
   },
-  // 更多文章會在這裡新增
 ]
 
-const categories = ['全部', '血檢優化', '營養策略', '訓練方法', '恢復優化', '個案追蹤'] as const
-
 export default function BlogPage() {
-  const [selectedCategory, setSelectedCategory] = useState<string>('全部')
-
-  const filteredPosts = selectedCategory === '全部' 
-    ? blogPosts 
-    : blogPosts.filter(post => post.category === selectedCategory)
-
   return (
-    <div style={{backgroundColor: '#F9F9F7'}} className="min-h-screen">
+    <div style={{ backgroundColor: '#F9F9F7' }} className="min-h-screen">
       <div className="max-w-5xl mx-auto px-6 py-16">
-        {/* 標題區 */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold mb-4" style={{color: '#2D2D2D'}}>
+          <h1 className="text-4xl font-bold mb-4" style={{ color: '#2D2D2D' }}>
             知識分享
           </h1>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
@@ -105,63 +99,10 @@ export default function BlogPage() {
           </p>
         </div>
 
-        {/* 分類篩選 */}
-        <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-6 py-2 rounded-full font-medium transition-all ${
-                selectedCategory === category
-                  ? 'bg-primary text-white shadow-lg'
-                  : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
+        <BlogFilter posts={blogPosts} />
 
-        {/* 文章列表 */}
-        <div className="grid md:grid-cols-2 gap-8">
-          {filteredPosts.length > 0 ? (
-            filteredPosts.map((post) => (
-              <Link
-                key={post.id}
-                href={`/blog/${post.slug}`}
-                className="bg-white rounded-2xl p-8 border border-gray-200 hover:shadow-xl transition-all hover:-translate-y-1"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
-                    {post.category}
-                  </span>
-                  <span className="text-gray-400 text-sm">{post.readTime}</span>
-                </div>
-                
-                <h2 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-                  {post.title}
-                </h2>
-                
-                <p className="text-gray-600 mb-4 leading-relaxed">
-                  {post.description}
-                </p>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">{post.date}</span>
-                  <span className="text-primary font-medium">閱讀更多 →</span>
-                </div>
-              </Link>
-            ))
-          ) : (
-            <div className="col-span-2 text-center py-16">
-              <p className="text-gray-400 text-lg">此分類暫無文章</p>
-            </div>
-          )}
-        </div>
-
-        {/* 訂閱提示 */}
         <div className="mt-16 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-10 text-center border-2 border-primary/20">
-          <h3 className="text-2xl font-bold mb-4" style={{color: '#2D2D2D'}}>
+          <h3 className="text-2xl font-bold mb-4" style={{ color: '#2D2D2D' }}>
             想獲得更深度的內容？
           </h3>
           <p className="text-gray-600 mb-6 max-w-2xl mx-auto">

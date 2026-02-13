@@ -12,6 +12,7 @@ interface UseClientDataResult {
     bodyData: any[]
     wellness: any[]
     recentLogs: any[]
+    trainingLogs: any[]
   }
   error?: Error
   isLoading: boolean

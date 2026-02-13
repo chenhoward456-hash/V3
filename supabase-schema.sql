@@ -128,7 +128,40 @@ CREATE POLICY "Public can insert supplement_logs" ON supplement_logs
 CREATE POLICY "Public can update supplement_logs" ON supplement_logs
   FOR UPDATE USING (true);
 
--- 9. 建立範例資料（可選）
+-- 9. 客戶表新增 training_enabled 欄位
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS training_enabled BOOLEAN DEFAULT FALSE;
+
+-- 10. 訓練紀錄表
+CREATE TABLE training_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  training_type TEXT NOT NULL CHECK (training_type IN ('upper_body', 'lower_body', 'full_body', 'cardio', 'rest')),
+  duration INTEGER CHECK (duration > 0 OR training_type = 'rest'),
+  rpe INTEGER CHECK (rpe >= 1 AND rpe <= 10),
+  note TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(client_id, date)
+);
+
+-- 訓練紀錄索引
+CREATE INDEX idx_training_logs_client_id ON training_logs(client_id);
+CREATE INDEX idx_training_logs_date ON training_logs(date);
+CREATE INDEX idx_training_logs_client_date ON training_logs(client_id, date);
+
+-- 訓練紀錄 RLS
+ALTER TABLE training_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view training_logs via client" ON training_logs
+  FOR SELECT USING (true);
+
+CREATE POLICY "Public can insert training_logs" ON training_logs
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Public can update training_logs" ON training_logs
+  FOR UPDATE USING (true);
+
+-- 11. 建立範例資料（可選）
 INSERT INTO clients (unique_code, name, age, gender, status) VALUES
   ('k8f3m2n5', '承鈞', 25, '女性', 'attention');
 
