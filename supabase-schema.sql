@@ -138,6 +138,7 @@ CREATE TABLE training_logs (
   date DATE NOT NULL,
   training_type TEXT NOT NULL CHECK (training_type IN ('push', 'pull', 'legs', 'full_body', 'cardio', 'rest', 'chest', 'shoulder', 'arms')),
   duration INTEGER CHECK (duration > 0 OR training_type = 'rest'),
+  sets INTEGER CHECK (sets > 0),
   rpe INTEGER CHECK (rpe >= 1 AND rpe <= 10),
   note TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),

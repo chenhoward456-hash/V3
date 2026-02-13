@@ -43,6 +43,7 @@ export interface TrainingLog {
   date: string
   training_type: 'push' | 'pull' | 'legs' | 'full_body' | 'cardio' | 'rest' | 'chest' | 'shoulder' | 'arms'
   duration: number | null
+  sets: number | null
   rpe: number | null
   note: string | null
 }

@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, date, training_type, duration, rpe, note } = body
+    const { clientId, date, training_type, duration, sets, rpe, note } = body
 
     if (!clientId || !date) {
       return createErrorResponse('缺少客戶 ID 或日期', 400)
@@ -112,9 +112,11 @@ export async function POST(request: NextRequest) {
 
     if (training_type === 'rest') {
       upsertData.duration = null
+      upsertData.sets = null
       upsertData.rpe = null
     } else {
       upsertData.duration = duration
+      upsertData.sets = sets || null
       upsertData.rpe = rpe
     }
 
