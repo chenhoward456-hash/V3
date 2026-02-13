@@ -365,6 +365,7 @@ export default function ClientDashboard() {
           <TrainingLog
             todayTraining={todayTraining}
             trainingLogs={clientData.trainingLogs || []}
+            wellness={clientData.wellness || []}
             clientId={clientId as string}
             onMutate={mutate}
           />

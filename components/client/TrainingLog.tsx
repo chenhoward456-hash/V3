@@ -7,11 +7,12 @@ import { TRAINING_TYPES } from './types'
 interface TrainingLogProps {
   todayTraining: any
   trainingLogs: any[]
+  wellness: any[]
   clientId: string
   onMutate: () => void
 }
 
-export default function TrainingLog({ todayTraining, trainingLogs, clientId, onMutate }: TrainingLogProps) {
+export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, onMutate }: TrainingLogProps) {
   const today = new Date().toISOString().split('T')[0]
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
@@ -184,6 +185,134 @@ export default function TrainingLog({ todayTraining, trainingLogs, clientId, onM
         type: getTypeLabel(l.training_type),
       }))
   }, [trainingLogs])
+
+  // ===== 訓練洞察：交叉分析訓練 × 恢復 =====
+  const insights = useMemo(() => {
+    if (!trainingLogs?.length || !wellness?.length) return null
+
+    const wellnessMap: Record<string, any> = {}
+    for (const w of wellness) {
+      wellnessMap[w.date] = w
+    }
+
+    // 取得隔天日期
+    const nextDay = (dateStr: string) => {
+      const d = new Date(dateStr)
+      d.setDate(d.getDate() + 1)
+      return d.toISOString().split('T')[0]
+    }
+
+    // 每種訓練類型 → 隔天恢復數據
+    const typeStats: Record<string, {
+      count: number
+      avgRpe: number
+      avgDuration: number
+      totalSets: number
+      nextDaySleep: number[]
+      nextDayEnergy: number[]
+      nextDayMood: number[]
+    }> = {}
+
+    const activeLogs = trainingLogs.filter((l: any) => l.training_type !== 'rest')
+
+    for (const log of activeLogs) {
+      const type = log.training_type
+      if (!typeStats[type]) {
+        typeStats[type] = { count: 0, avgRpe: 0, avgDuration: 0, totalSets: 0, nextDaySleep: [], nextDayEnergy: [], nextDayMood: [] }
+      }
+      const s = typeStats[type]
+      s.count++
+      s.avgRpe += log.rpe || 0
+      s.avgDuration += log.duration || 0
+      s.totalSets += log.sets || 0
+
+      // 隔天恢復
+      const nextW = wellnessMap[nextDay(log.date)]
+      if (nextW) {
+        if (nextW.sleep_quality != null) s.nextDaySleep.push(nextW.sleep_quality)
+        if (nextW.energy_level != null) s.nextDayEnergy.push(nextW.energy_level)
+        if (nextW.mood != null) s.nextDayMood.push(nextW.mood)
+      }
+    }
+
+    // 計算平均
+    const typeAnalysis = Object.entries(typeStats)
+      .map(([type, s]) => {
+        const avg = (arr: number[]) => arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : null
+        return {
+          type,
+          label: getTypeLabel(type),
+          emoji: getTypeEmoji(type),
+          count: s.count,
+          avgRpe: s.count > 0 ? (s.avgRpe / s.count).toFixed(1) : '--',
+          avgDuration: s.count > 0 ? Math.round(s.avgDuration / s.count) : 0,
+          avgNextSleep: avg(s.nextDaySleep),
+          avgNextEnergy: avg(s.nextDayEnergy),
+          avgNextMood: avg(s.nextDayMood),
+        }
+      })
+      .sort((a, b) => b.count - a.count)
+
+    // 找出恢復最差的訓練類型
+    const withRecovery = typeAnalysis.filter(t => t.avgNextEnergy != null)
+    let worstRecovery: typeof typeAnalysis[0] | null = null
+    let bestRecovery: typeof typeAnalysis[0] | null = null
+    if (withRecovery.length >= 2) {
+      worstRecovery = withRecovery.reduce((worst, t) =>
+        (t.avgNextEnergy ?? 5) < (worst.avgNextEnergy ?? 5) ? t : worst
+      )
+      bestRecovery = withRecovery.reduce((best, t) =>
+        (t.avgNextEnergy ?? 0) > (best.avgNextEnergy ?? 0) ? t : best
+      )
+    }
+
+    // 低潮日：RPE >= 9 或隔天精力 <= 2
+    const roughDays: { date: string; type: string; reason: string }[] = []
+    for (const log of activeLogs) {
+      const nextW = wellnessMap[nextDay(log.date)]
+      if (log.rpe >= 9) {
+        roughDays.push({
+          date: log.date,
+          type: log.training_type,
+          reason: `RPE ${log.rpe}`
+        })
+      }
+      if (nextW && nextW.energy_level != null && nextW.energy_level <= 2) {
+        roughDays.push({
+          date: log.date,
+          type: log.training_type,
+          reason: `隔天精力 ${nextW.energy_level}/5`
+        })
+      }
+    }
+    // 去重同一天
+    const uniqueRoughDays = roughDays.filter((d, i, arr) =>
+      arr.findIndex(x => x.date === d.date) === i
+    ).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
+
+    return { typeAnalysis, worstRecovery, bestRecovery, roughDays: uniqueRoughDays }
+  }, [trainingLogs, wellness])
+
+  const [showInsights, setShowInsights] = useState(false)
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr)
+    return `${d.getMonth() + 1}/${d.getDate()}`
+  }
+
+  const scoreBar = (value: number | null, max: number = 5) => {
+    if (value == null) return <span className="text-gray-400 text-xs">--</span>
+    const pct = (value / max) * 100
+    const color = value >= 4 ? 'bg-green-400' : value >= 3 ? 'bg-yellow-400' : 'bg-red-400'
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+          <div className={`${color} h-1.5 rounded-full`} style={{ width: `${pct}%` }} />
+        </div>
+        <span className="text-xs text-gray-600 w-6 text-right">{value.toFixed(1)}</span>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
@@ -399,6 +528,85 @@ export default function TrainingLog({ todayTraining, trainingLogs, clientId, onM
                 />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* ===== 訓練洞察 ===== */}
+        {insights && insights.typeAnalysis.length > 0 && (
+          <div className="pt-4 border-t border-gray-100">
+            <button
+              onClick={() => setShowInsights(!showInsights)}
+              className="w-full flex items-center justify-between text-sm font-medium text-gray-700"
+            >
+              <span>🔍 訓練洞察</span>
+              <span className="text-gray-400 text-xs">{showInsights ? '收起' : '展開'}</span>
+            </button>
+
+            {showInsights && (
+              <div className="mt-3 space-y-4">
+                {/* 自動洞察文字 */}
+                {(insights.worstRecovery || insights.bestRecovery) && (
+                  <div className="space-y-2">
+                    {insights.bestRecovery && insights.bestRecovery.avgNextEnergy != null && (
+                      <div className="bg-green-50 rounded-xl px-4 py-3 text-sm text-green-700">
+                        ✅ {insights.bestRecovery.emoji} {insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）
+                      </div>
+                    )}
+                    {insights.worstRecovery && insights.worstRecovery.avgNextEnergy != null && (
+                      <div className="bg-red-50 rounded-xl px-4 py-3 text-sm text-red-700">
+                        ⚠️ {insights.worstRecovery.emoji} {insights.worstRecovery.label}日後恢復最差（隔天精力 {insights.worstRecovery.avgNextEnergy.toFixed(1)}/5）
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 各類型分析表 */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">各類型統計（含隔天恢復）</p>
+                  <div className="space-y-2">
+                    {insights.typeAnalysis.map((t) => (
+                      <div key={t.type} className="bg-gray-50 rounded-xl px-4 py-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">{t.emoji} {t.label}</span>
+                          <span className="text-xs text-gray-500">{t.count} 次 · 均 RPE {t.avgRpe} · {t.avgDuration} 分鐘</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <span className="text-[10px] text-gray-400">隔天睡眠</span>
+                            {scoreBar(t.avgNextSleep)}
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-gray-400">隔天精力</span>
+                            {scoreBar(t.avgNextEnergy)}
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-gray-400">隔天心情</span>
+                            {scoreBar(t.avgNextMood)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 低潮日 */}
+                {insights.roughDays.length > 0 && (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2">需注意的訓練日</p>
+                    <div className="space-y-1">
+                      {insights.roughDays.map((d, i) => (
+                        <div key={i} className="flex items-center justify-between bg-red-50 rounded-lg px-3 py-2 text-sm">
+                          <span className="text-red-700">
+                            {formatDate(d.date)} {getTypeEmoji(d.type)} {getTypeLabel(d.type)}
+                          </span>
+                          <span className="text-red-500 text-xs">{d.reason}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
