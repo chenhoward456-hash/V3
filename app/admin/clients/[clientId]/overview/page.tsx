@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -27,27 +26,17 @@ export default function ClientOverview() {
 
   const fetchAllData = async () => {
     try {
-      const sixtyDaysAgo = new Date()
-      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
-      const sinceDate = sixtyDaysAgo.toISOString().split('T')[0]
+      const res = await fetch(`/api/client-overview?clientId=${clientId}`)
+      if (!res.ok) throw new Error('Failed to fetch')
+      const data = await res.json()
 
-      const [clientRes, suppRes, logsRes, wellRes, trainRes, bodyRes, labRes] = await Promise.all([
-        supabase.from('clients').select('*').eq('id', clientId).single(),
-        supabase.from('supplements').select('*').eq('client_id', clientId),
-        supabase.from('supplement_logs').select('*').eq('client_id', clientId).gte('date', sinceDate).order('date', { ascending: true }),
-        supabase.from('daily_wellness').select('*').eq('client_id', clientId).gte('date', sinceDate).order('date', { ascending: true }),
-        supabase.from('training_logs').select('*').eq('client_id', clientId).gte('date', sinceDate).order('date', { ascending: true }),
-        supabase.from('body_composition').select('*').eq('client_id', clientId).order('date', { ascending: true }),
-        supabase.from('lab_results').select('*').eq('client_id', clientId).order('date', { ascending: false }),
-      ])
-
-      setClient(clientRes.data)
-      setSupplements(suppRes.data || [])
-      setSupplementLogs(logsRes.data || [])
-      setWellness(wellRes.data || [])
-      setTrainingLogs(trainRes.data || [])
-      setBodyData(bodyRes.data || [])
-      setLabResults(labRes.data || [])
+      setClient(data.client)
+      setSupplements(data.supplements || [])
+      setSupplementLogs(data.supplementLogs || [])
+      setWellness(data.wellness || [])
+      setTrainingLogs(data.trainingLogs || [])
+      setBodyData(data.bodyData || [])
+      setLabResults(data.labResults || [])
     } catch (err) {
       console.error('載入資料錯誤:', err)
     } finally {
