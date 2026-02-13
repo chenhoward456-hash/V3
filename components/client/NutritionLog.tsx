@@ -1,0 +1,255 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+
+interface NutritionLogProps {
+  todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null } | null
+  nutritionLogs: any[]
+  clientId: string
+  onMutate: () => void
+}
+
+export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, onMutate }: NutritionLogProps) {
+  const [saving, setSaving] = useState(false)
+  const [note, setNote] = useState(todayNutrition?.note || '')
+  const [showNote, setShowNote] = useState(false)
+
+  const today = new Date().toISOString().split('T')[0]
+
+  const handleSubmit = async (compliant: boolean) => {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/nutrition-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, date: today, compliant, note: note || null })
+      })
+      if (!res.ok) throw new Error('記錄失敗')
+      onMutate()
+    } catch {
+      alert('記錄失敗，請重試')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSaveNote = async () => {
+    if (todayNutrition?.compliant == null) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/nutrition-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, date: today, compliant: todayNutrition.compliant, note: note || null })
+      })
+      if (!res.ok) throw new Error('儲存失敗')
+      onMutate()
+      setShowNote(false)
+    } catch {
+      alert('儲存失敗，請重試')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // 本週 7 天一覽
+  const weekDays = useMemo(() => {
+    const now = new Date()
+    const dayOfWeek = now.getDay()
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+    const monday = new Date(now)
+    monday.setDate(now.getDate() - mondayOffset)
+
+    const days: { date: string; label: string; log: any; isToday: boolean }[] = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday)
+      d.setDate(monday.getDate() + i)
+      const dateStr = d.toISOString().split('T')[0]
+      days.push({
+        date: dateStr,
+        label: ['一', '二', '三', '四', '五', '六', '日'][i],
+        log: nutritionLogs.find((l: any) => l.date === dateStr) || null,
+        isToday: dateStr === today,
+      })
+    }
+    return days
+  }, [nutritionLogs, today])
+
+  // 本週合規率
+  const weekStats = useMemo(() => {
+    const weekLogs = weekDays.filter(d => d.log != null)
+    const compliant = weekLogs.filter(d => d.log?.compliant).length
+    const total = weekLogs.length
+    return { compliant, total, rate: total > 0 ? Math.round((compliant / total) * 100) : 0 }
+  }, [weekDays])
+
+  // 近 30 天合規趨勢
+  const monthStats = useMemo(() => {
+    if (!nutritionLogs.length) return { compliant: 0, total: 0, rate: 0 }
+    const compliant = nutritionLogs.filter((l: any) => l.compliant).length
+    return { compliant, total: nutritionLogs.length, rate: Math.round((compliant / nutritionLogs.length) * 100) }
+  }, [nutritionLogs])
+
+  const hasRecorded = todayNutrition?.compliant != null
+
+  return (
+    <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-gray-900">🍽️ 飲食紀錄</h2>
+        {hasRecorded && (
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+            todayNutrition.compliant ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}>
+            {todayNutrition.compliant ? '已合規' : '未合規'}
+          </span>
+        )}
+      </div>
+
+      {/* 今日狀態按鈕 */}
+      {!hasRecorded ? (
+        <div className="mb-4">
+          <p className="text-sm text-gray-500 mb-3">今天有照計畫吃嗎？</p>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => handleSubmit(true)}
+              disabled={saving}
+              className="flex items-center justify-center gap-2 py-4 bg-green-50 border-2 border-green-200 rounded-2xl text-green-700 font-semibold hover:bg-green-100 transition-colors disabled:opacity-50"
+            >
+              <span className="text-2xl">✅</span>
+              <span>照計畫吃</span>
+            </button>
+            <button
+              onClick={() => handleSubmit(false)}
+              disabled={saving}
+              className="flex items-center justify-center gap-2 py-4 bg-red-50 border-2 border-red-200 rounded-2xl text-red-700 font-semibold hover:bg-red-100 transition-colors disabled:opacity-50"
+            >
+              <span className="text-2xl">❌</span>
+              <span>沒照計畫</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mb-4">
+          <div className="flex items-center gap-3 mb-3">
+            <button
+              onClick={() => handleSubmit(true)}
+              disabled={saving}
+              className={`flex-1 py-3 rounded-2xl font-medium text-sm transition-colors ${
+                todayNutrition.compliant
+                  ? 'bg-green-100 border-2 border-green-400 text-green-700'
+                  : 'bg-gray-50 border-2 border-gray-200 text-gray-400 hover:bg-green-50'
+              }`}
+            >
+              ✅ 照計畫吃
+            </button>
+            <button
+              onClick={() => handleSubmit(false)}
+              disabled={saving}
+              className={`flex-1 py-3 rounded-2xl font-medium text-sm transition-colors ${
+                !todayNutrition.compliant
+                  ? 'bg-red-100 border-2 border-red-400 text-red-700'
+                  : 'bg-gray-50 border-2 border-gray-200 text-gray-400 hover:bg-red-50'
+              }`}
+            >
+              ❌ 沒照計畫
+            </button>
+          </div>
+
+          {/* 備註 */}
+          {todayNutrition.note && !showNote && (
+            <div className="bg-gray-50 rounded-xl p-3 mb-2">
+              <p className="text-sm text-gray-600">{todayNutrition.note}</p>
+              <button onClick={() => { setNote(todayNutrition.note || ''); setShowNote(true) }} className="text-xs text-blue-600 mt-1">
+                編輯備註
+              </button>
+            </div>
+          )}
+          {!todayNutrition.note && !showNote && (
+            <button onClick={() => setShowNote(true)} className="text-sm text-blue-600">
+              + 新增備註
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* 備註輸入 */}
+      {showNote && (
+        <div className="mb-4">
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="今天吃了什麼？有什麼特別情況？"
+            rows={2}
+            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          />
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={handleSaveNote}
+              disabled={saving}
+              className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              儲存
+            </button>
+            <button
+              onClick={() => setShowNote(false)}
+              className="px-4 py-1.5 text-gray-500 text-sm"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 本週一覽 */}
+      <div className="border-t border-gray-100 pt-4 mt-2">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-medium text-gray-700">本週一覽</p>
+          {weekStats.total > 0 && (
+            <span className={`text-sm font-bold ${weekStats.rate >= 80 ? 'text-green-600' : weekStats.rate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+              {weekStats.rate}%
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-7 gap-2">
+          {weekDays.map((day) => (
+            <div key={day.date} className="text-center">
+              <p className={`text-xs mb-1 ${day.isToday ? 'font-bold text-blue-600' : 'text-gray-400'}`}>{day.label}</p>
+              <div className={`w-8 h-8 mx-auto flex items-center justify-center rounded-lg text-lg ${
+                day.isToday ? 'ring-2 ring-blue-400' : ''
+              } ${
+                day.log == null
+                  ? 'bg-gray-50'
+                  : day.log.compliant
+                    ? 'bg-green-50'
+                    : 'bg-red-50'
+              }`}>
+                {day.log == null ? '' : day.log.compliant ? '✅' : '❌'}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 近 30 天趨勢 */}
+      {monthStats.total > 0 && (
+        <div className="border-t border-gray-100 pt-3 mt-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500">近 30 天合規率</p>
+            <div className="flex items-center gap-2">
+              <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${monthStats.rate >= 80 ? 'bg-green-500' : monthStats.rate >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                  style={{ width: `${monthStats.rate}%` }}
+                />
+              </div>
+              <span className={`text-sm font-bold ${monthStats.rate >= 80 ? 'text-green-600' : monthStats.rate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {monthStats.rate}%
+              </span>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">{monthStats.compliant}/{monthStats.total} 天合規</p>
+        </div>
+      )}
+    </div>
+  )
+}

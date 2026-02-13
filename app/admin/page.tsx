@@ -17,6 +17,7 @@ interface Client {
   expires_at: string
   next_checkup_date: string | null
   training_enabled: boolean
+  nutrition_enabled: boolean
 }
 
 interface TrainingLogRecord {
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
   const [todayWellnessIds, setTodayWellnessIds] = useState<Set<string>>(new Set())
   const [todayLogIds, setTodayLogIds] = useState<Set<string>>(new Set())
   const [todayTrainingMap, setTodayTrainingMap] = useState<Record<string, string>>({})
+  const [todayNutritionMap, setTodayNutritionMap] = useState<Record<string, boolean>>({})
 
   // 搜尋、排序、篩選
   const [search, setSearch] = useState('')
@@ -70,13 +72,14 @@ export default function AdminDashboard() {
       const today = new Date().toISOString().split('T')[0]
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-      const [clientsRes, logsRes, supplementsRes, wellnessRes, todayLogsRes, trainingRes] = await Promise.all([
+      const [clientsRes, logsRes, supplementsRes, wellnessRes, todayLogsRes, trainingRes, nutritionRes] = await Promise.all([
         supabase.from('clients').select('*').order('created_at', { ascending: false }),
         supabase.from('supplement_logs').select('client_id, supplement_id, date, completed').gte('date', sevenDaysAgo),
         supabase.from('supplements').select('client_id'),
         supabase.from('daily_wellness').select('client_id').eq('date', today),
         supabase.from('supplement_logs').select('client_id').eq('date', today).eq('completed', true),
         supabase.from('training_logs').select('client_id, training_type').eq('date', today),
+        supabase.from('nutrition_logs').select('client_id, compliant').eq('date', today),
       ])
 
       setClients(clientsRes.data || [])
@@ -89,6 +92,11 @@ export default function AdminDashboard() {
         tMap[r.client_id] = r.training_type
       }
       setTodayTrainingMap(tMap)
+      const nMap: Record<string, boolean> = {}
+      for (const r of (nutritionRes.data || []) as any[]) {
+        nMap[r.client_id] = r.compliant
+      }
+      setTodayNutritionMap(nMap)
     } catch (error) {
       console.error('載入資料錯誤:', error)
     } finally {
@@ -475,6 +483,11 @@ export default function AdminDashboard() {
                               {client.training_enabled && todayTrainingMap[client.id] && (
                                 <span className="ml-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>
                                   {getTrainingEmoji(todayTrainingMap[client.id])}
+                                </span>
+                              )}
+                              {client.nutrition_enabled && todayNutritionMap[client.id] !== undefined && (
+                                <span className="ml-1" title={`今日飲食：${todayNutritionMap[client.id] ? '合規' : '未合規'}`}>
+                                  {todayNutritionMap[client.id] ? '🥗' : '🍔'}
                                 </span>
                               )}
                             </div>

@@ -166,6 +166,35 @@ CREATE POLICY "Public can update training_logs" ON training_logs
 INSERT INTO clients (unique_code, name, age, gender, status) VALUES
   ('k8f3m2n5', '承鈞', 25, '女性', 'attention');
 
+-- 12. 客戶表新增 nutrition_enabled 欄位
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS nutrition_enabled BOOLEAN DEFAULT FALSE;
+
+-- 13. 飲食紀錄表
+CREATE TABLE nutrition_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  compliant BOOLEAN NOT NULL DEFAULT TRUE,
+  note TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(client_id, date)
+);
+
+-- 飲食紀錄索引
+CREATE INDEX idx_nutrition_logs_client_date ON nutrition_logs(client_id, date);
+
+-- 飲食紀錄 RLS
+ALTER TABLE nutrition_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view nutrition_logs via client" ON nutrition_logs
+  FOR SELECT USING (true);
+
+CREATE POLICY "Public can insert nutrition_logs" ON nutrition_logs
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Public can update nutrition_logs" ON nutrition_logs
+  FOR UPDATE USING (true);
+
 -- 為承鈞添加血檢數據
 INSERT INTO lab_results (client_id, test_name, value, unit, reference_range, date, status) VALUES
   ((SELECT id FROM clients WHERE unique_code = 'k8f3m2n5'), 'HOMA-IR', 0.27, '', '<1.4', '2024-01-15', 'normal'),

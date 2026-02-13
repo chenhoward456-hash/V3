@@ -19,6 +19,7 @@ export default function ClientOverview() {
   const [trainingLogs, setTrainingLogs] = useState<any[]>([])
   const [bodyData, setBodyData] = useState<any[]>([])
   const [labResults, setLabResults] = useState<any[]>([])
+  const [nutritionLogs, setNutritionLogs] = useState<any[]>([])
 
   useEffect(() => {
     fetchAllData()
@@ -37,6 +38,7 @@ export default function ClientOverview() {
       setTrainingLogs(data.trainingLogs || [])
       setBodyData(data.bodyData || [])
       setLabResults(data.labResults || [])
+      setNutritionLogs(data.nutritionLogs || [])
     } catch (err) {
       console.error('載入資料錯誤:', err)
     } finally {
@@ -79,8 +81,17 @@ export default function ClientOverview() {
       weightChange = (latest - prev).toFixed(1)
     }
 
-    return { weekCompliance, monthCompliance, weekTrainingDays, avgEnergy, weightChange, latestWeight: recentBody.length > 0 ? recentBody[recentBody.length - 1].weight : null }
-  }, [supplements, supplementLogs, wellness, trainingLogs, bodyData])
+    // 飲食合規率
+    const weekNutrition = nutritionLogs.filter(l => l.date >= weekStart && l.date <= todayStr)
+    const weekNutritionCompliant = weekNutrition.filter(l => l.compliant).length
+    const weekNutritionRate = weekNutrition.length > 0 ? Math.round((weekNutritionCompliant / weekNutrition.length) * 100) : null
+
+    const monthNutrition = nutritionLogs.filter(l => l.date >= monthStart && l.date <= todayStr)
+    const monthNutritionCompliant = monthNutrition.filter(l => l.compliant).length
+    const monthNutritionRate = monthNutrition.length > 0 ? Math.round((monthNutritionCompliant / monthNutrition.length) * 100) : null
+
+    return { weekCompliance, monthCompliance, weekTrainingDays, avgEnergy, weightChange, latestWeight: recentBody.length > 0 ? recentBody[recentBody.length - 1].weight : null, weekNutritionRate, monthNutritionRate }
+  }, [supplements, supplementLogs, wellness, trainingLogs, bodyData, nutritionLogs])
 
   // ===== 補品服從率趨勢（每日） =====
   const complianceTrend = useMemo(() => {
@@ -225,6 +236,147 @@ export default function ClientOverview() {
     }).sort((a, b) => b.count - a.count)
   }, [trainingLogs, wellness])
 
+  // ===== 飲食合規趨勢 =====
+  const nutritionTrend = useMemo(() => {
+    if (!nutritionLogs.length) return []
+    const byWeek: Record<string, { compliant: number; total: number }> = {}
+    for (const log of nutritionLogs) {
+      const d = new Date(log.date)
+      const weekStart = new Date(d)
+      const day = d.getDay()
+      const diff = day === 0 ? 6 : day - 1
+      weekStart.setDate(d.getDate() - diff)
+      const key = weekStart.toISOString().split('T')[0]
+      if (!byWeek[key]) byWeek[key] = { compliant: 0, total: 0 }
+      byWeek[key].total++
+      if (log.compliant) byWeek[key].compliant++
+    }
+    return Object.entries(byWeek)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, stats]) => ({
+        date: new Date(date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+        飲食合規率: Math.round((stats.compliant / stats.total) * 100),
+      }))
+  }, [nutritionLogs])
+
+  // ===== 週報自動產出 =====
+  const weeklyReport = useMemo(() => {
+    const today = new Date()
+    const todayStr = today.toISOString().split('T')[0]
+    const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(today.getDate() - 6)
+    const weekStart = sevenDaysAgo.toISOString().split('T')[0]
+    const fourteenDaysAgo = new Date(today); fourteenDaysAgo.setDate(today.getDate() - 13)
+    const lastWeekStart = fourteenDaysAgo.toISOString().split('T')[0]
+    const lastWeekEnd = new Date(today); lastWeekEnd.setDate(today.getDate() - 7)
+    const lastWeekEndStr = lastWeekEnd.toISOString().split('T')[0]
+
+    // 訓練摘要
+    const weekTraining = trainingLogs.filter(l => l.date >= weekStart && l.date <= todayStr && l.training_type !== 'rest')
+    const trainingDays = weekTraining.length
+    const typeCounts: Record<string, number> = {}
+    let totalRpe = 0, rpeCount = 0
+    for (const l of weekTraining) {
+      typeCounts[l.training_type] = (typeCounts[l.training_type] || 0) + 1
+      if (l.rpe != null) { totalRpe += l.rpe; rpeCount++ }
+    }
+    const avgRpe = rpeCount > 0 ? (totalRpe / rpeCount).toFixed(1) : null
+    const topTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).slice(0, 3)
+      .map(([type, count]) => `${TRAINING_TYPES.find(t => t.value === type)?.label || type}${count}次`)
+
+    // 身心趨勢
+    const weekWellness = wellness.filter(w => w.date >= weekStart && w.date <= todayStr)
+    const lastWeekWellness = wellness.filter(w => w.date >= lastWeekStart && w.date <= lastWeekEndStr)
+    const avg = (arr: any[], field: string) => {
+      const vals = arr.filter(w => w[field] != null).map(w => w[field])
+      return vals.length > 0 ? vals.reduce((a: number, b: number) => a + b, 0) / vals.length : null
+    }
+    const avgSleep = avg(weekWellness, 'sleep_quality')
+    const avgEnergy = avg(weekWellness, 'energy_level')
+    const avgMood = avg(weekWellness, 'mood')
+    const lastAvgSleep = avg(lastWeekWellness, 'sleep_quality')
+    const lastAvgEnergy = avg(lastWeekWellness, 'energy_level')
+    const lastAvgMood = avg(lastWeekWellness, 'mood')
+    const arrow = (curr: number | null, prev: number | null) => {
+      if (curr == null || prev == null) return ''
+      const diff = curr - prev
+      if (Math.abs(diff) < 0.2) return ''
+      return diff > 0 ? ' ↑' : ' ↓'
+    }
+
+    // 補品合規率
+    const totalSupps = supplements.length
+    const weekSuppLogs = supplementLogs.filter(l => l.date >= weekStart && l.date <= todayStr && l.completed)
+    const lastWeekSuppLogs = supplementLogs.filter(l => l.date >= lastWeekStart && l.date <= lastWeekEndStr && l.completed)
+    const weekSuppRate = totalSupps > 0 ? Math.round((weekSuppLogs.length / (7 * totalSupps)) * 100) : null
+    const lastWeekSuppRate = totalSupps > 0 ? Math.round((lastWeekSuppLogs.length / (7 * totalSupps)) * 100) : null
+
+    // 體重變化
+    const recentBody = bodyData.filter(b => b.weight != null)
+    const weekBody = recentBody.filter(b => b.date >= weekStart && b.date <= todayStr)
+    const lastWeekBody = recentBody.filter(b => b.date >= lastWeekStart && b.date <= lastWeekEndStr)
+    let weightDelta: string | null = null
+    if (weekBody.length > 0 && lastWeekBody.length > 0) {
+      const latestW = weekBody[weekBody.length - 1].weight
+      const lastW = lastWeekBody[lastWeekBody.length - 1].weight
+      weightDelta = (latestW - lastW).toFixed(1)
+    }
+
+    // 飲食合規
+    const weekNutrition = nutritionLogs.filter(l => l.date >= weekStart && l.date <= todayStr)
+    const lastWeekNutrition = nutritionLogs.filter(l => l.date >= lastWeekStart && l.date <= lastWeekEndStr)
+    const weekNutRate = weekNutrition.length > 0 ? Math.round((weekNutrition.filter(l => l.compliant).length / weekNutrition.length) * 100) : null
+    const lastWeekNutRate = lastWeekNutrition.length > 0 ? Math.round((lastWeekNutrition.filter(l => l.compliant).length / lastWeekNutrition.length) * 100) : null
+
+    // 自動產出文字摘要
+    const lines: string[] = []
+    if (trainingDays > 0) {
+      lines.push(`本週訓練 ${trainingDays} 天${topTypes.length > 0 ? `（${topTypes.join('、')}）` : ''}${avgRpe ? `，平均 RPE ${avgRpe}` : ''}。`)
+    } else {
+      lines.push('本週無訓練記錄。')
+    }
+
+    const wellnessParts: string[] = []
+    if (avgSleep != null) wellnessParts.push(`睡眠 ${avgSleep.toFixed(1)}${arrow(avgSleep, lastAvgSleep)}`)
+    if (avgEnergy != null) wellnessParts.push(`精力 ${avgEnergy.toFixed(1)}${arrow(avgEnergy, lastAvgEnergy)}`)
+    if (avgMood != null) wellnessParts.push(`心情 ${avgMood.toFixed(1)}${arrow(avgMood, lastAvgMood)}`)
+    if (wellnessParts.length > 0) {
+      lines.push(`身心狀態：${wellnessParts.join('、')}。`)
+    }
+
+    const complianceParts: string[] = []
+    if (weekSuppRate != null) {
+      const suppDelta = lastWeekSuppRate != null ? weekSuppRate - lastWeekSuppRate : null
+      complianceParts.push(`補品 ${weekSuppRate}%${suppDelta != null && Math.abs(suppDelta) >= 5 ? (suppDelta > 0 ? ' ↑' : ' ↓') : ''}`)
+    }
+    if (weekNutRate != null) {
+      const nutDelta = lastWeekNutRate != null ? weekNutRate - lastWeekNutRate : null
+      complianceParts.push(`飲食 ${weekNutRate}%${nutDelta != null && Math.abs(nutDelta) >= 5 ? (nutDelta > 0 ? ' ↑' : ' ↓') : ''}`)
+    }
+    if (complianceParts.length > 0) {
+      lines.push(`合規率：${complianceParts.join('、')}。`)
+    }
+
+    if (weightDelta != null) {
+      const w = Number(weightDelta)
+      if (Math.abs(w) >= 0.1) {
+        lines.push(`體重${w > 0 ? '增加' : '減少'} ${Math.abs(w)} kg。`)
+      }
+    }
+
+    return {
+      trainingDays, topTypes, avgRpe,
+      avgSleep, avgEnergy, avgMood,
+      sleepArrow: arrow(avgSleep, lastAvgSleep),
+      energyArrow: arrow(avgEnergy, lastAvgEnergy),
+      moodArrow: arrow(avgMood, lastAvgMood),
+      weekSuppRate, lastWeekSuppRate,
+      weekNutRate, lastWeekNutRate,
+      weightDelta,
+      summary: lines.join('\n'),
+      weekLabel: `${sevenDaysAgo.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })} - ${today.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })}`,
+    }
+  }, [trainingLogs, wellness, supplements, supplementLogs, bodyData, nutritionLogs])
+
   // ===== 需注意事項 =====
   const alerts = useMemo(() => {
     const items: string[] = []
@@ -315,6 +467,66 @@ export default function ClientOverview() {
           </div>
         )}
 
+        {/* ===== 本週報告 ===== */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-blue-900">📋 本週報告</h3>
+            <span className="text-xs text-blue-600 font-medium">{weeklyReport.weekLabel}</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            {client.training_enabled && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">訓練天數</p>
+                <p className="text-2xl font-bold text-blue-700">{weeklyReport.trainingDays}</p>
+                {weeklyReport.avgRpe && <p className="text-xs text-gray-400">RPE {weeklyReport.avgRpe}</p>}
+              </div>
+            )}
+            <div className="bg-white/70 rounded-xl p-3 text-center">
+              <p className="text-xs text-gray-500 mb-0.5">精力</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {weeklyReport.avgEnergy != null ? weeklyReport.avgEnergy.toFixed(1) : '--'}
+              </p>
+              {weeklyReport.energyArrow && <p className="text-xs text-gray-400">vs 上週{weeklyReport.energyArrow}</p>}
+            </div>
+            {weeklyReport.weekSuppRate != null && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">補品服從</p>
+                <p className={`text-2xl font-bold ${weeklyReport.weekSuppRate >= 80 ? 'text-green-600' : weeklyReport.weekSuppRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {weeklyReport.weekSuppRate}%
+                </p>
+                {weeklyReport.lastWeekSuppRate != null && (
+                  <p className="text-xs text-gray-400">上週 {weeklyReport.lastWeekSuppRate}%</p>
+                )}
+              </div>
+            )}
+            {client.nutrition_enabled && weeklyReport.weekNutRate != null && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">飲食合規</p>
+                <p className={`text-2xl font-bold ${weeklyReport.weekNutRate >= 80 ? 'text-green-600' : weeklyReport.weekNutRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {weeklyReport.weekNutRate}%
+                </p>
+                {weeklyReport.lastWeekNutRate != null && (
+                  <p className="text-xs text-gray-400">上週 {weeklyReport.lastWeekNutRate}%</p>
+                )}
+              </div>
+            )}
+            {weeklyReport.weightDelta != null && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">體重變化</p>
+                <p className={`text-2xl font-bold ${Number(weeklyReport.weightDelta) > 0 ? 'text-red-600' : Number(weeklyReport.weightDelta) < 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                  {Number(weeklyReport.weightDelta) > 0 ? '+' : ''}{weeklyReport.weightDelta}
+                </p>
+                <p className="text-xs text-gray-400">kg</p>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white/60 rounded-xl p-3">
+            <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{weeklyReport.summary}</p>
+          </div>
+        </div>
+
         {/* ===== 核心指標卡片 ===== */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="bg-white rounded-2xl shadow-sm p-5">
@@ -349,6 +561,17 @@ export default function ClientOverview() {
             </p>
             <p className="text-xs text-gray-400 mt-1">正常</p>
           </div>
+          {client.nutrition_enabled && keyMetrics.weekNutritionRate != null && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">週飲食合規</p>
+              <p className={`text-3xl font-bold ${keyMetrics.weekNutritionRate >= 80 ? 'text-green-600' : keyMetrics.weekNutritionRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {keyMetrics.weekNutritionRate}%
+              </p>
+              {keyMetrics.monthNutritionRate != null && (
+                <p className="text-xs text-gray-400 mt-1">月 {keyMetrics.monthNutritionRate}%</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ===== 第一排圖表：補品 + 感受 ===== */}
@@ -392,6 +615,22 @@ export default function ClientOverview() {
             )}
           </div>
         </div>
+
+        {/* ===== 飲食合規趨勢 ===== */}
+        {client.nutrition_enabled && nutritionTrend.length >= 2 && (
+          <div className="bg-white rounded-2xl shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">🍽️ 飲食合規趨勢（週）</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={nutritionTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" fontSize={11} />
+                <YAxis domain={[0, 100]} fontSize={11} />
+                <Tooltip formatter={(v: any) => [`${v}%`, '飲食合規率']} />
+                <Bar dataKey="飲食合規率" fill="#22c55e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {/* ===== 第二排：訓練日曆 + RPE + 訓練分佈 ===== */}
         {client.training_enabled && (

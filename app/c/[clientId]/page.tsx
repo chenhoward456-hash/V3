@@ -14,6 +14,7 @@ import ActionPlan from '@/components/client/ActionPlan'
 import WellnessTrend from '@/components/client/WellnessTrend'
 import HealthReport from '@/components/client/HealthReport'
 import TrainingLog from '@/components/client/TrainingLog'
+import NutritionLog from '@/components/client/NutritionLog'
 import PwaPrompt from '@/components/client/PwaPrompt'
 
 export default function ClientDashboard() {
@@ -77,6 +78,11 @@ export default function ClientDashboard() {
   const todayTraining = useMemo(() => {
     return clientData?.trainingLogs?.find((t: any) => t.date === today) || null
   }, [clientData?.trainingLogs, today])
+
+  // 今日飲食
+  const todayNutrition = useMemo(() => {
+    return clientData?.nutritionLogs?.find((n: any) => n.date === today) || null
+  }, [clientData?.nutritionLogs, today])
 
   // 身體數據 — 每個欄位各自找最新有值的那筆
   const sortedBodyData = useMemo(() => {
@@ -366,6 +372,15 @@ export default function ClientDashboard() {
             todayTraining={todayTraining}
             trainingLogs={clientData.trainingLogs || []}
             wellness={clientData.wellness || []}
+            clientId={clientId as string}
+            onMutate={mutate}
+          />
+        )}
+
+        {clientData.client.nutrition_enabled && (
+          <NutritionLog
+            todayNutrition={todayNutrition}
+            nutritionLogs={clientData.nutritionLogs || []}
             clientId={clientId as string}
             onMutate={mutate}
           />

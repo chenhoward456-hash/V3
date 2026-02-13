@@ -60,6 +60,13 @@ export const TRAINING_TYPES = [
   { value: 'rest', label: '休息', emoji: '😴' },
 ] as const
 
+export interface NutritionLog {
+  id: string
+  date: string
+  compliant: boolean
+  note: string | null
+}
+
 export interface ClientInfo {
   name: string
   status: string

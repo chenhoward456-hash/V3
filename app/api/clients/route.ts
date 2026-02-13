@@ -118,6 +118,23 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 獲取最近 30 天飲食紀錄（僅在 nutrition_enabled 時查詢）
+    let nutritionLogs: any[] = []
+    if (client.nutrition_enabled) {
+      const { data: nutritionData, error: nutritionError } = await supabase
+        .from('nutrition_logs')
+        .select('*')
+        .eq('client_id', client.id)
+        .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
+        .order('date', { ascending: false })
+
+      if (nutritionError) {
+        console.warn('獲取飲食紀錄失敗:', nutritionError)
+      } else {
+        nutritionLogs = nutritionData || []
+      }
+    }
+
     // 獲取最近 30 天補品打卡記錄
     const { data: recentLogs, error: recentLogsError } = await supabase
       .from('supplement_logs')
@@ -137,6 +154,7 @@ export async function GET(request: NextRequest) {
       wellness: wellnessData || [],
       recentLogs: recentLogs || [],
       trainingLogs,
+      nutritionLogs,
     })
     
   } catch (error) {

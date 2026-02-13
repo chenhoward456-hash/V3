@@ -34,13 +34,14 @@ export async function GET(request: NextRequest) {
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
     const sinceDate = sixtyDaysAgo.toISOString().split('T')[0]
 
-    const [suppRes, logsRes, wellRes, trainRes, bodyRes, labRes] = await Promise.all([
+    const [suppRes, logsRes, wellRes, trainRes, bodyRes, labRes, nutritionRes] = await Promise.all([
       supabase.from('supplements').select('*').eq('client_id', realId),
       supabase.from('supplement_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('daily_wellness').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('training_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('body_composition').select('*').eq('client_id', realId).order('date', { ascending: true }),
       supabase.from('lab_results').select('*').eq('client_id', realId).order('date', { ascending: false }),
+      supabase.from('nutrition_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
     ])
 
     return NextResponse.json({
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest) {
       trainingLogs: trainRes.data || [],
       bodyData: bodyRes.data || [],
       labResults: labRes.data || [],
+      nutritionLogs: nutritionRes.data || [],
     })
   } catch (err) {
     console.error('Overview API error:', err)
