@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { useClientData } from '@/hooks/useClientData'
-import { Lock, Unlock } from 'lucide-react'
+import { Lock, Unlock, ChevronLeft, ChevronRight } from 'lucide-react'
 import HealthOverview from '@/components/client/HealthOverview'
 import DailyCheckIn from '@/components/client/DailyCheckIn'
 import DailyWellness from '@/components/client/DailyWellness'
@@ -22,6 +22,30 @@ export default function ClientDashboard() {
   const { data: clientData, error, isLoading, mutate } = useClientData(clientId as string)
 
   const today = new Date().toISOString().split('T')[0]
+
+  // 日期導航
+  const [selectedDate, setSelectedDate] = useState(today)
+  const isToday = selectedDate === today
+
+  const changeDate = (offset: number) => {
+    const d = new Date(selectedDate)
+    d.setDate(d.getDate() + offset)
+    const newDate = d.toISOString().split('T')[0]
+    // 限制不能超過今天，不能早於 30 天前
+    if (newDate > today) return
+    const thirtyAgo = new Date()
+    thirtyAgo.setDate(thirtyAgo.getDate() - 30)
+    if (newDate < thirtyAgo.toISOString().split('T')[0]) return
+    setSelectedDate(newDate)
+  }
+
+  const formatSelectedDate = (dateStr: string) => {
+    const d = new Date(dateStr)
+    if (dateStr === today) return '今天'
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1)
+    if (dateStr === yesterday.toISOString().split('T')[0]) return '昨天'
+    return d.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })
+  }
 
   // 教練模式
   const [isCoachMode, setIsCoachMode] = useState(false)
@@ -59,7 +83,7 @@ export default function ClientDashboard() {
       const res = await fetch('/api/supplement-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId, supplementId, date: today, completed: !currentCompleted })
+        body: JSON.stringify({ clientId, supplementId, date: selectedDate, completed: !currentCompleted })
       })
       if (!res.ok) throw new Error('打卡失敗')
       mutate()
@@ -69,20 +93,27 @@ export default function ClientDashboard() {
     }
   }
 
-  // 今日感受
+  // 選擇日的感受
   const todayWellness = useMemo(() => {
-    return clientData?.wellness?.find((w: any) => w.date === today) || null
-  }, [clientData?.wellness, today])
+    return clientData?.wellness?.find((w: any) => w.date === selectedDate) || null
+  }, [clientData?.wellness, selectedDate])
 
-  // 今日訓練
+  // 選擇日的訓練
   const todayTraining = useMemo(() => {
-    return clientData?.trainingLogs?.find((t: any) => t.date === today) || null
-  }, [clientData?.trainingLogs, today])
+    return clientData?.trainingLogs?.find((t: any) => t.date === selectedDate) || null
+  }, [clientData?.trainingLogs, selectedDate])
 
-  // 今日飲食
+  // 選擇日的飲食
   const todayNutrition = useMemo(() => {
-    return clientData?.nutritionLogs?.find((n: any) => n.date === today) || null
-  }, [clientData?.nutritionLogs, today])
+    return clientData?.nutritionLogs?.find((n: any) => n.date === selectedDate) || null
+  }, [clientData?.nutritionLogs, selectedDate])
+
+  // 選擇日的補品打卡（從 recentLogs 篩選）
+  const selectedDateLogs = useMemo(() => {
+    if (!clientData?.recentLogs) return clientData?.todayLogs || []
+    if (selectedDate === today) return clientData?.todayLogs || []
+    return clientData.recentLogs.filter((l: any) => l.date === selectedDate)
+  }, [clientData?.recentLogs, clientData?.todayLogs, selectedDate, today])
 
   // 身體數據 — 每個欄位各自找最新有值的那筆
   const sortedBodyData = useMemo(() => {
@@ -152,11 +183,11 @@ export default function ClientDashboard() {
 
   // 補品統計
   const todaySupplementStats = useMemo(() => {
-    if (!clientData?.todayLogs || !clientData?.client?.supplements) return { completed: 0, total: 0, rate: 0 }
-    const completed = clientData.todayLogs.filter((log: any) => log.completed).length
+    if (!selectedDateLogs || !clientData?.client?.supplements) return { completed: 0, total: 0, rate: 0 }
+    const completed = selectedDateLogs.filter((log: any) => log.completed).length
     const total = clientData.client.supplements.length
     return { completed, total, rate: total > 0 ? Math.round((completed / total) * 100) : 0 }
-  }, [clientData?.todayLogs, clientData?.client?.supplements])
+  }, [selectedDateLogs, clientData?.client?.supplements])
 
   const supplementComplianceStats = useMemo(() => {
     const totalSupplements = clientData?.client?.supplements?.length || 0
@@ -277,7 +308,7 @@ export default function ClientDashboard() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{clientData.client.name}</h1>
               <p className="text-gray-600">
-                {new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
+                {new Date(selectedDate).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -335,6 +366,33 @@ export default function ClientDashboard() {
             </div>
           )}
 
+          {/* 日期導航 */}
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <button
+              onClick={() => changeDate(-1)}
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              onClick={() => setSelectedDate(today)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                isToday
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {formatSelectedDate(selectedDate)}
+            </button>
+            <button
+              onClick={() => changeDate(1)}
+              disabled={isToday}
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
           <HealthOverview
             weekRate={supplementComplianceStats.weekRate}
             monthRate={supplementComplianceStats.monthRate}
@@ -350,7 +408,7 @@ export default function ClientDashboard() {
 
         <DailyCheckIn
           supplements={clientData.client.supplements || []}
-          todayLogs={clientData.todayLogs || []}
+          todayLogs={selectedDateLogs}
           todayStats={todaySupplementStats}
           streakDays={streakDays}
           streakMessage={streakMessage}
@@ -364,6 +422,7 @@ export default function ClientDashboard() {
         <DailyWellness
           todayWellness={todayWellness}
           clientId={clientId as string}
+          date={selectedDate}
           onMutate={mutate}
         />
 
@@ -373,6 +432,7 @@ export default function ClientDashboard() {
             trainingLogs={clientData.trainingLogs || []}
             wellness={clientData.wellness || []}
             clientId={clientId as string}
+            date={selectedDate}
             onMutate={mutate}
           />
         )}
@@ -382,6 +442,7 @@ export default function ClientDashboard() {
             todayNutrition={todayNutrition}
             nutritionLogs={clientData.nutritionLogs || []}
             clientId={clientId as string}
+            date={selectedDate}
             onMutate={mutate}
           />
         )}

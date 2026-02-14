@@ -9,11 +9,12 @@ interface TrainingLogProps {
   trainingLogs: any[]
   wellness: any[]
   clientId: string
+  date?: string
   onMutate: () => void
 }
 
-export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, onMutate }: TrainingLogProps) {
-  const today = new Date().toISOString().split('T')[0]
+export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate }: TrainingLogProps) {
+  const today = date || new Date().toISOString().split('T')[0]
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
     training_type: todayTraining?.training_type ?? null as string | null,

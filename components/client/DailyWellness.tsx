@@ -5,11 +5,12 @@ import { useState, useEffect } from 'react'
 interface DailyWellnessProps {
   todayWellness: any
   clientId: string
+  date?: string
   onMutate: () => void
 }
 
-export default function DailyWellness({ todayWellness, clientId, onMutate }: DailyWellnessProps) {
-  const today = new Date().toISOString().split('T')[0]
+export default function DailyWellness({ todayWellness, clientId, date, onMutate }: DailyWellnessProps) {
+  const today = date || new Date().toISOString().split('T')[0]
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
     sleep_quality: todayWellness?.sleep_quality ?? null as number | null,

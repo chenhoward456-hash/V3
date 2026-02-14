@@ -6,15 +6,16 @@ interface NutritionLogProps {
   todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null } | null
   nutritionLogs: any[]
   clientId: string
+  date?: string
   onMutate: () => void
 }
 
-export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, onMutate }: NutritionLogProps) {
+export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, onMutate }: NutritionLogProps) {
   const [saving, setSaving] = useState(false)
   const [note, setNote] = useState(todayNutrition?.note || '')
   const [showNote, setShowNote] = useState(false)
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = date || new Date().toISOString().split('T')[0]
 
   const handleSubmit = async (compliant: boolean) => {
     setSaving(true)

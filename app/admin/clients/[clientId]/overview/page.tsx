@@ -12,6 +12,7 @@ import { TRAINING_TYPES } from '@/components/client/types'
 export default function ClientOverview() {
   const { clientId } = useParams()
   const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
   const [client, setClient] = useState<any>(null)
   const [supplements, setSupplements] = useState<any[]>([])
   const [supplementLogs, setSupplementLogs] = useState<any[]>([])
@@ -471,7 +472,23 @@ export default function ClientOverview() {
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-blue-900">📋 本週報告</h3>
-            <span className="text-xs text-blue-600 font-medium">{weeklyReport.weekLabel}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-blue-600 font-medium">{weeklyReport.weekLabel}</span>
+              <button
+                onClick={() => {
+                  const text = `📋 ${client.name} 週報（${weeklyReport.weekLabel}）\n\n${weeklyReport.summary}`
+                  navigator.clipboard.writeText(text).then(() => {
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                  })
+                }}
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  copied ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {copied ? '已複製 ✓' : '複製文字'}
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
