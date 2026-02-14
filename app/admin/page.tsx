@@ -495,7 +495,17 @@ export default function AdminDashboard() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-gray-400">{client.age}歲 · {client.gender}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">
+                              {client.age}歲 · {client.gender}
+                              <span className="ml-1.5 inline-flex gap-0.5">
+                                {client.body_composition_enabled && <span title="體重/體態">⚖️</span>}
+                                {client.wellness_enabled && <span title="每日感受">😊</span>}
+                                {client.nutrition_enabled && <span title="飲食">🥗</span>}
+                                {client.training_enabled && <span title="訓練">🏋️</span>}
+                                {client.supplement_enabled && <span title="補品">💊</span>}
+                                {client.lab_enabled && <span title="血檢">🩸</span>}
+                              </span>
+                            </div>
                           </Link>
                         </td>
                         <td className="px-5 py-4">

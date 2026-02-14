@@ -488,6 +488,34 @@ export default function ClientDashboard() {
           topSupplements={clientData.client.supplement_enabled ? topSupplements : []}
         />
 
+        {/* 未開放功能提示 */}
+        {(() => {
+          const locked = []
+          if (!clientData.client.wellness_enabled) locked.push({ icon: '😊', label: '每日感受紀錄' })
+          if (!clientData.client.nutrition_enabled) locked.push({ icon: '🥗', label: '飲食追蹤' })
+          if (!clientData.client.training_enabled) locked.push({ icon: '🏋️', label: '訓練追蹤' })
+          if (!clientData.client.supplement_enabled) locked.push({ icon: '💊', label: '補品管理' })
+          if (!clientData.client.lab_enabled) locked.push({ icon: '🩸', label: '血檢追蹤' })
+          if (locked.length === 0) return null
+          return (
+            <div className="bg-gray-50 rounded-3xl p-6 mb-6 border border-gray-100">
+              <div className="flex items-center gap-2 mb-3">
+                <Lock size={16} className="text-gray-400" />
+                <h3 className="text-sm font-semibold text-gray-500">更多功能</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {locked.map(({ icon, label }) => (
+                  <div key={label} className="flex items-center gap-2 bg-white rounded-xl px-3 py-2.5 opacity-50">
+                    <span className="text-lg">{icon}</span>
+                    <span className="text-sm text-gray-400">{label}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-3 text-center">和教練討論開啟更多追蹤功能</p>
+            </div>
+          )
+        })()}
+
         {isCoachMode && (
           <HealthReport
             client={clientData.client}

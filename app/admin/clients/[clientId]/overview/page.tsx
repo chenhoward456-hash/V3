@@ -499,14 +499,16 @@ export default function ClientOverview() {
                 {weeklyReport.avgRpe && <p className="text-xs text-gray-400">RPE {weeklyReport.avgRpe}</p>}
               </div>
             )}
-            <div className="bg-white/70 rounded-xl p-3 text-center">
-              <p className="text-xs text-gray-500 mb-0.5">精力</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {weeklyReport.avgEnergy != null ? weeklyReport.avgEnergy.toFixed(1) : '--'}
-              </p>
-              {weeklyReport.energyArrow && <p className="text-xs text-gray-400">vs 上週{weeklyReport.energyArrow}</p>}
-            </div>
-            {weeklyReport.weekSuppRate != null && (
+            {client.wellness_enabled && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">精力</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {weeklyReport.avgEnergy != null ? weeklyReport.avgEnergy.toFixed(1) : '--'}
+                </p>
+                {weeklyReport.energyArrow && <p className="text-xs text-gray-400">vs 上週{weeklyReport.energyArrow}</p>}
+              </div>
+            )}
+            {client.supplement_enabled && weeklyReport.weekSuppRate != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">補品服從</p>
                 <p className={`text-2xl font-bold ${weeklyReport.weekSuppRate >= 80 ? 'text-green-600' : weeklyReport.weekSuppRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
@@ -528,7 +530,7 @@ export default function ClientOverview() {
                 )}
               </div>
             )}
-            {weeklyReport.weightDelta != null && (
+            {client.body_composition_enabled && weeklyReport.weightDelta != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">體重變化</p>
                 <p className={`text-2xl font-bold ${Number(weeklyReport.weightDelta) > 0 ? 'text-red-600' : Number(weeklyReport.weightDelta) < 0 ? 'text-green-600' : 'text-gray-600'}`}>
@@ -545,39 +547,49 @@ export default function ClientOverview() {
         </div>
 
         {/* ===== 核心指標卡片 ===== */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <p className="text-xs text-gray-500 mb-1">週補品服從率</p>
-            <p className={`text-3xl font-bold ${keyMetrics.weekCompliance >= 80 ? 'text-green-600' : keyMetrics.weekCompliance >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-              {keyMetrics.weekCompliance}%
-            </p>
-            <p className="text-xs text-gray-400 mt-1">月 {keyMetrics.monthCompliance}%</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <p className="text-xs text-gray-500 mb-1">本週訓練</p>
-            <p className="text-3xl font-bold text-blue-600">{keyMetrics.weekTrainingDays} 天</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <p className="text-xs text-gray-500 mb-1">近 7 天精力</p>
-            <p className="text-3xl font-bold text-purple-600">{keyMetrics.avgEnergy}</p>
-            <p className="text-xs text-gray-400 mt-1">滿分 5</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <p className="text-xs text-gray-500 mb-1">最新體重</p>
-            <p className="text-3xl font-bold text-gray-900">{keyMetrics.latestWeight ?? '--'}</p>
-            {keyMetrics.weightChange && (
-              <p className={`text-xs mt-1 ${Number(keyMetrics.weightChange) > 0 ? 'text-red-500' : 'text-green-500'}`}>
-                {Number(keyMetrics.weightChange) > 0 ? '↑' : '↓'} {Math.abs(Number(keyMetrics.weightChange))} kg
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {client.supplement_enabled && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">週補品服從率</p>
+              <p className={`text-3xl font-bold ${keyMetrics.weekCompliance >= 80 ? 'text-green-600' : keyMetrics.weekCompliance >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {keyMetrics.weekCompliance}%
               </p>
-            )}
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <p className="text-xs text-gray-500 mb-1">血檢指標</p>
-            <p className="text-3xl font-bold text-gray-900">
-              {latestLabs.filter(l => l.status === 'normal').length}/{latestLabs.length}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">正常</p>
-          </div>
+              <p className="text-xs text-gray-400 mt-1">月 {keyMetrics.monthCompliance}%</p>
+            </div>
+          )}
+          {client.training_enabled && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">本週訓練</p>
+              <p className="text-3xl font-bold text-blue-600">{keyMetrics.weekTrainingDays} 天</p>
+            </div>
+          )}
+          {client.wellness_enabled && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">近 7 天精力</p>
+              <p className="text-3xl font-bold text-purple-600">{keyMetrics.avgEnergy}</p>
+              <p className="text-xs text-gray-400 mt-1">滿分 5</p>
+            </div>
+          )}
+          {client.body_composition_enabled && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">最新體重</p>
+              <p className="text-3xl font-bold text-gray-900">{keyMetrics.latestWeight ?? '--'}</p>
+              {keyMetrics.weightChange && (
+                <p className={`text-xs mt-1 ${Number(keyMetrics.weightChange) > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                  {Number(keyMetrics.weightChange) > 0 ? '↑' : '↓'} {Math.abs(Number(keyMetrics.weightChange))} kg
+                </p>
+              )}
+            </div>
+          )}
+          {client.lab_enabled && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">血檢指標</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {latestLabs.filter(l => l.status === 'normal').length}/{latestLabs.length}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">正常</p>
+            </div>
+          )}
           {client.nutrition_enabled && keyMetrics.weekNutritionRate != null && (
             <div className="bg-white rounded-2xl shadow-sm p-5">
               <p className="text-xs text-gray-500 mb-1">週飲食合規</p>
@@ -592,46 +604,52 @@ export default function ClientOverview() {
         </div>
 
         {/* ===== 第一排圖表：補品 + 感受 ===== */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 補品服從率趨勢 */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">💊 補品服從率趨勢</h3>
-            {complianceTrend.length >= 2 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={complianceTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" fontSize={11} />
-                  <YAxis domain={[0, 100]} fontSize={11} />
-                  <Tooltip formatter={(v: any) => [`${v}%`, '服從率']} />
-                  <Line type="monotone" dataKey="服從率" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">資料不足</div>
+        {(client.supplement_enabled || client.wellness_enabled) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 補品服從率趨勢 */}
+            {client.supplement_enabled && (
+              <div className="bg-white rounded-2xl shadow-sm p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">💊 補品服從率趨勢</h3>
+                {complianceTrend.length >= 2 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={complianceTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" fontSize={11} />
+                      <YAxis domain={[0, 100]} fontSize={11} />
+                      <Tooltip formatter={(v: any) => [`${v}%`, '服從率']} />
+                      <Line type="monotone" dataKey="服從率" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">資料不足</div>
+                )}
+              </div>
             )}
-          </div>
 
-          {/* 感受趨勢 */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">😊 感受趨勢</h3>
-            {wellnessTrend.length >= 2 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={wellnessTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" fontSize={11} />
-                  <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} fontSize={11} />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="睡眠" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} />
-                  <Line type="monotone" dataKey="精力" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} />
-                  <Line type="monotone" dataKey="心情" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">資料不足</div>
+            {/* 感受趨勢 */}
+            {client.wellness_enabled && (
+              <div className="bg-white rounded-2xl shadow-sm p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">😊 感受趨勢</h3>
+                {wellnessTrend.length >= 2 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={wellnessTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" fontSize={11} />
+                      <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} fontSize={11} />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="睡眠" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} />
+                      <Line type="monotone" dataKey="精力" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} />
+                      <Line type="monotone" dataKey="心情" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">資料不足</div>
+                )}
+              </div>
             )}
           </div>
-        </div>
+        )}
 
         {/* ===== 飲食合規趨勢 ===== */}
         {client.nutrition_enabled && nutritionTrend.length >= 2 && (
@@ -721,7 +739,7 @@ export default function ClientOverview() {
         )}
 
         {/* ===== 第三排：體組成趨勢 ===== */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {client.body_composition_enabled && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {bodyTrend.weight.length >= 2 && (
             <div className="bg-white rounded-2xl shadow-sm p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">⚖️ 體重趨勢</h3>
@@ -750,10 +768,10 @@ export default function ClientOverview() {
               </ResponsiveContainer>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* ===== 訓練 × 恢復分析 ===== */}
-        {recoveryAnalysis.length > 0 && (
+        {client.training_enabled && client.wellness_enabled && recoveryAnalysis.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">🔍 訓練 × 恢復分析</h3>
             <div className="overflow-x-auto">
@@ -796,7 +814,7 @@ export default function ClientOverview() {
         )}
 
         {/* ===== 血檢指標 ===== */}
-        {latestLabs.length > 0 && (
+        {client.lab_enabled && latestLabs.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">🩸 血檢指標（最新）</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
