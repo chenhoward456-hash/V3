@@ -126,6 +126,28 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     return { compliant, total: nutritionLogs.length, rate: Math.round((compliant / nutritionLogs.length) * 100) }
   }, [nutritionLogs])
 
+  // 近 7 天蛋白質/水量趨勢
+  const nutrientTrend = useMemo(() => {
+    if (!proteinTarget && !waterTarget) return null
+    const days: { label: string; protein: number | null; water: number | null }[] = []
+    const now = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(now.getDate() - i)
+      const dateStr = d.toISOString().split('T')[0]
+      const log = nutritionLogs.find((l: any) => l.date === dateStr)
+      days.push({
+        label: d.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }),
+        protein: log?.protein_grams ?? null,
+        water: log?.water_ml ?? null,
+      })
+    }
+    const hasAnyProtein = proteinTarget && days.some(d => d.protein != null)
+    const hasAnyWater = waterTarget && days.some(d => d.water != null)
+    if (!hasAnyProtein && !hasAnyWater) return null
+    return { days, hasAnyProtein, hasAnyWater }
+  }, [nutritionLogs, proteinTarget, waterTarget])
+
   const hasRecorded = todayNutrition?.compliant != null
 
   return (
@@ -341,6 +363,72 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           ))}
         </div>
       </div>
+
+      {/* 蛋白質/水量 7 天趨勢 */}
+      {nutrientTrend && (
+        <div className="border-t border-gray-100 pt-4 mt-2 space-y-4">
+          {nutrientTrend.hasAnyProtein && proteinTarget && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-700">近 7 天蛋白質</p>
+                <p className="text-xs text-gray-400">目標 {proteinTarget}g</p>
+              </div>
+              <div className="flex items-end gap-1 h-16">
+                {nutrientTrend.days.map((d, i) => {
+                  const pct = d.protein != null ? Math.min(100, (d.protein / proteinTarget) * 100) : 0
+                  const reached = d.protein != null && d.protein >= proteinTarget
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                      <div className="w-full flex flex-col justify-end h-12">
+                        {d.protein != null ? (
+                          <div
+                            className={`w-full rounded-t transition-all ${reached ? 'bg-green-400' : 'bg-blue-300'}`}
+                            style={{ height: `${Math.max(4, pct)}%` }}
+                            title={`${d.protein}g`}
+                          />
+                        ) : (
+                          <div className="w-full h-1 bg-gray-100 rounded" />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-gray-400">{d.label.split('/')[1]}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          {nutrientTrend.hasAnyWater && waterTarget && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-700">近 7 天飲水量</p>
+                <p className="text-xs text-gray-400">目標 {waterTarget}ml</p>
+              </div>
+              <div className="flex items-end gap-1 h-16">
+                {nutrientTrend.days.map((d, i) => {
+                  const pct = d.water != null ? Math.min(100, (d.water / waterTarget) * 100) : 0
+                  const reached = d.water != null && d.water >= waterTarget
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                      <div className="w-full flex flex-col justify-end h-12">
+                        {d.water != null ? (
+                          <div
+                            className={`w-full rounded-t transition-all ${reached ? 'bg-green-400' : 'bg-cyan-300'}`}
+                            style={{ height: `${Math.max(4, pct)}%` }}
+                            title={`${d.water}ml`}
+                          />
+                        ) : (
+                          <div className="w-full h-1 bg-gray-100 rounded" />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-gray-400">{d.label.split('/')[1]}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 近 30 天趨勢 */}
       {monthStats.total > 0 && (

@@ -260,6 +260,19 @@ export default function ClientOverview() {
       }))
   }, [nutritionLogs])
 
+  // ===== 蛋白質/水量趨勢 =====
+  const proteinWaterTrend = useMemo(() => {
+    if (!nutritionLogs.length) return []
+    return nutritionLogs
+      .filter((l: any) => l.protein_grams != null || l.water_ml != null)
+      .sort((a: any, b: any) => a.date.localeCompare(b.date))
+      .map((l: any) => ({
+        date: new Date(l.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+        蛋白質: l.protein_grams ?? null,
+        飲水量: l.water_ml ? Math.round(l.water_ml / 100) * 100 : null,
+      }))
+  }, [nutritionLogs])
+
   // ===== 週報自動產出 =====
   const weeklyReport = useMemo(() => {
     const today = new Date()
@@ -664,6 +677,49 @@ export default function ClientOverview() {
                 <Bar dataKey="飲食合規率" fill="#22c55e" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* ===== 蛋白質/水量趨勢 ===== */}
+        {client.nutrition_enabled && proteinWaterTrend.length >= 2 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {proteinWaterTrend.some(d => d.蛋白質 != null) && (
+              <div className="bg-white rounded-2xl shadow-sm p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">🥩 蛋白質攝取趨勢</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={proteinWaterTrend.filter(d => d.蛋白質 != null)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" fontSize={11} />
+                    <YAxis fontSize={11} />
+                    <Tooltip formatter={(v: any) => [`${v}g`, '蛋白質']} />
+                    {client.protein_target && (
+                      <Line type="monotone" dataKey={() => client.protein_target} stroke="#ef4444" strokeDasharray="5 5" dot={false} name="目標" />
+                    )}
+                    <Bar dataKey="蛋白質" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+                {client.protein_target && (
+                  <p className="text-xs text-gray-400 mt-1 text-center">目標：{client.protein_target}g / 天</p>
+                )}
+              </div>
+            )}
+            {proteinWaterTrend.some(d => d.飲水量 != null) && (
+              <div className="bg-white rounded-2xl shadow-sm p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">💧 飲水量趨勢</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={proteinWaterTrend.filter(d => d.飲水量 != null)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" fontSize={11} />
+                    <YAxis fontSize={11} />
+                    <Tooltip formatter={(v: any) => [`${v}ml`, '飲水量']} />
+                    <Bar dataKey="飲水量" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+                {client.water_target && (
+                  <p className="text-xs text-gray-400 mt-1 text-center">目標：{client.water_target}ml / 天</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
