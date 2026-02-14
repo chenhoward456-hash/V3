@@ -195,7 +195,15 @@ CREATE POLICY "Public can insert nutrition_logs" ON nutrition_logs
 CREATE POLICY "Public can update nutrition_logs" ON nutrition_logs
   FOR UPDATE USING (true);
 
--- 14. 客戶表新增功能權限欄位
+-- 14. 飲食紀錄新增蛋白質與水量欄位
+ALTER TABLE nutrition_logs ADD COLUMN IF NOT EXISTS protein_grams NUMERIC;
+ALTER TABLE nutrition_logs ADD COLUMN IF NOT EXISTS water_ml NUMERIC;
+
+-- 15. 客戶表新增蛋白質與水量目標
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS protein_target NUMERIC;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS water_target NUMERIC;
+
+-- 16. 客戶表新增功能權限欄位
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS body_composition_enabled BOOLEAN DEFAULT TRUE;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS wellness_enabled BOOLEAN DEFAULT FALSE;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS supplement_enabled BOOLEAN DEFAULT FALSE;

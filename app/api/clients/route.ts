@@ -63,98 +63,78 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('客戶資料已過期', 403)
     }
     
-    // 獲取今日補品打卡記錄
+    // 根據已開啟功能平行查詢資料
     const today = new Date().toISOString().split('T')[0]
-    const { data: logs, error: logsError } = await supabase
-      .from('supplement_logs')
-      .select('*')
-      .eq('client_id', client.id)
-      .eq('date', today)
-    
-    if (logsError) {
-      console.warn('獲取補品打卡記錄失敗:', logsError)
-    }
-    
-    // 獲取身體數據記錄
-    const { data: bodyRecords, error: bodyError } = await supabase
-      .from('body_composition')
-      .select('*')
-      .eq('client_id', client.id)
-      .order('date', { ascending: false })
-    
-    if (bodyError) {
-      console.warn('獲取身體數據記錄失敗:', bodyError)
-    }
-    
-    // 獲取最近 30 天的每日感受記錄
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    
-    const { data: wellnessData, error: wellnessError } = await supabase
-      .from('daily_wellness')
-      .select('*')
-      .eq('client_id', client.id)
-      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
-      .order('date', { ascending: false })
-    
-    if (wellnessError) {
-      console.warn('獲取每日感受記錄失敗:', wellnessError)
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0]
+
+    // 建立需要執行的查詢（用 async 包裝確保回傳 Promise）
+    const queryEntries: { key: string; query: Promise<{ data: any; error: any }> }[] = []
+
+    const wrap = (q: PromiseLike<any>) => new Promise<{ data: any; error: any }>((resolve) => q.then(resolve))
+
+    // 補品相關（supplement_enabled）
+    if (client.supplement_enabled) {
+      queryEntries.push({
+        key: 'todayLogs',
+        query: wrap(supabase.from('supplement_logs').select('*').eq('client_id', client.id).eq('date', today)),
+      })
+      queryEntries.push({
+        key: 'recentLogs',
+        query: wrap(supabase.from('supplement_logs').select('*').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
+      })
     }
 
-    // 獲取最近 30 天訓練紀錄（僅在 training_enabled 時查詢）
-    let trainingLogs: any[] = []
+    // 體組成（body_composition_enabled）
+    if (client.body_composition_enabled) {
+      queryEntries.push({
+        key: 'bodyData',
+        query: wrap(supabase.from('body_composition').select('*').eq('client_id', client.id).order('date', { ascending: false })),
+      })
+    }
+
+    // 每日感受（wellness_enabled）
+    if (client.wellness_enabled) {
+      queryEntries.push({
+        key: 'wellness',
+        query: wrap(supabase.from('daily_wellness').select('*').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
+      })
+    }
+
+    // 訓練（training_enabled）
     if (client.training_enabled) {
-      const { data: trainingData, error: trainingError } = await supabase
-        .from('training_logs')
-        .select('*')
-        .eq('client_id', client.id)
-        .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('date', { ascending: false })
-
-      if (trainingError) {
-        console.warn('獲取訓練紀錄失敗:', trainingError)
-      } else {
-        trainingLogs = trainingData || []
-      }
+      queryEntries.push({
+        key: 'trainingLogs',
+        query: wrap(supabase.from('training_logs').select('*').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
+      })
     }
 
-    // 獲取最近 30 天飲食紀錄（僅在 nutrition_enabled 時查詢）
-    let nutritionLogs: any[] = []
+    // 飲食（nutrition_enabled）
     if (client.nutrition_enabled) {
-      const { data: nutritionData, error: nutritionError } = await supabase
-        .from('nutrition_logs')
-        .select('*')
-        .eq('client_id', client.id)
-        .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('date', { ascending: false })
-
-      if (nutritionError) {
-        console.warn('獲取飲食紀錄失敗:', nutritionError)
-      } else {
-        nutritionLogs = nutritionData || []
-      }
+      queryEntries.push({
+        key: 'nutritionLogs',
+        query: wrap(supabase.from('nutrition_logs').select('*').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
+      })
     }
 
-    // 獲取最近 30 天補品打卡記錄
-    const { data: recentLogs, error: recentLogsError } = await supabase
-      .from('supplement_logs')
-      .select('*')
-      .eq('client_id', client.id)
-      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
-      .order('date', { ascending: false })
-
-    if (recentLogsError) {
-      console.warn('獲取近期補品打卡記錄失敗:', recentLogsError)
+    // 平行執行所有查詢
+    const results = await Promise.all(queryEntries.map(e => e.query))
+    const resolved: Record<string, any[]> = {}
+    for (let i = 0; i < queryEntries.length; i++) {
+      const { data, error } = results[i]
+      if (error) console.warn(`查詢 ${queryEntries[i].key} 失敗:`, error)
+      resolved[queryEntries[i].key] = data || []
     }
 
     return createSuccessResponse({
       client,
-      todayLogs: logs || [],
-      bodyData: bodyRecords || [],
-      wellness: wellnessData || [],
-      recentLogs: recentLogs || [],
-      trainingLogs,
-      nutritionLogs,
+      todayLogs: resolved.todayLogs || [],
+      bodyData: resolved.bodyData || [],
+      wellness: resolved.wellness || [],
+      recentLogs: resolved.recentLogs || [],
+      trainingLogs: resolved.trainingLogs || [],
+      nutritionLogs: resolved.nutritionLogs || [],
     })
     
   } catch (error) {

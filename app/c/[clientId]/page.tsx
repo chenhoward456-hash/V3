@@ -451,6 +451,8 @@ export default function ClientDashboard() {
             nutritionLogs={clientData.nutritionLogs || []}
             clientId={clientId as string}
             date={selectedDate}
+            proteinTarget={clientData.client.protein_target}
+            waterTarget={clientData.client.water_target}
             onMutate={mutate}
           />
         )}

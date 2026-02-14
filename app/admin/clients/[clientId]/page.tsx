@@ -41,6 +41,8 @@ interface Client {
   wellness_enabled: boolean
   supplement_enabled: boolean
   lab_enabled: boolean
+  protein_target: number | null
+  water_target: number | null
   lab_results: LabResult[]
   supplements: Supplement[]
 }
@@ -74,6 +76,8 @@ export default function ClientEditor() {
         wellness_enabled: false,
         supplement_enabled: false,
         lab_enabled: false,
+        protein_target: null,
+        water_target: null,
         lab_results: [],
         supplements: []
       })
@@ -139,6 +143,8 @@ export default function ClientEditor() {
             wellness_enabled: client.wellness_enabled,
             supplement_enabled: client.supplement_enabled,
             lab_enabled: client.lab_enabled,
+            protein_target: client.protein_target || null,
+            water_target: client.water_target || null,
             expires_at: expiresAt.toISOString()
           })
           .select()
@@ -191,7 +197,9 @@ export default function ClientEditor() {
             body_composition_enabled: client.body_composition_enabled,
             wellness_enabled: client.wellness_enabled,
             supplement_enabled: client.supplement_enabled,
-            lab_enabled: client.lab_enabled
+            lab_enabled: client.lab_enabled,
+            protein_target: client.protein_target || null,
+            water_target: client.water_target || null
           })
           .eq('id', clientId)
         
@@ -448,6 +456,36 @@ export default function ClientEditor() {
             ))}
           </div>
         </div>
+
+        {/* Nutrition Targets */}
+        {client.nutrition_enabled && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">飲食目標設定</h2>
+            <p className="text-xs text-gray-400 mb-4">設定後學員記錄飲食時會看到目標對比</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">每日蛋白質目標（g）</label>
+                <input
+                  type="number"
+                  value={client.protein_target ?? ''}
+                  onChange={(e) => updateClient('protein_target', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="例如：120"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">每日飲水目標（ml）</label>
+                <input
+                  type="number"
+                  value={client.water_target ?? ''}
+                  onChange={(e) => updateClient('water_target', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="例如：2500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Coach Notes */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">

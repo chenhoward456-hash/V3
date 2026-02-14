@@ -3,17 +3,22 @@
 import { useState, useMemo } from 'react'
 
 interface NutritionLogProps {
-  todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null } | null
+  todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null } | null
   nutritionLogs: any[]
   clientId: string
   date?: string
+  proteinTarget?: number | null
+  waterTarget?: number | null
   onMutate: () => void
 }
 
-export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, onMutate }: NutritionLogProps) {
+export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, onMutate }: NutritionLogProps) {
   const [saving, setSaving] = useState(false)
   const [note, setNote] = useState(todayNutrition?.note || '')
   const [showNote, setShowNote] = useState(false)
+  const [proteinInput, setProteinInput] = useState<string>(todayNutrition?.protein_grams?.toString() || '')
+  const [waterInput, setWaterInput] = useState<string>(todayNutrition?.water_ml?.toString() || '')
+  const [savingNutrients, setSavingNutrients] = useState(false)
 
   const today = date || new Date().toISOString().split('T')[0]
 
@@ -23,7 +28,11 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       const res = await fetch('/api/nutrition-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId, date: today, compliant, note: note || null })
+        body: JSON.stringify({
+          clientId, date: today, compliant, note: note || null,
+          protein_grams: proteinInput ? Number(proteinInput) : null,
+          water_ml: waterInput ? Number(waterInput) : null,
+        })
       })
       if (!res.ok) throw new Error('記錄失敗')
       onMutate()
@@ -41,7 +50,11 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       const res = await fetch('/api/nutrition-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId, date: today, compliant: todayNutrition.compliant, note: note || null })
+        body: JSON.stringify({
+          clientId, date: today, compliant: todayNutrition.compliant, note: note || null,
+          protein_grams: proteinInput ? Number(proteinInput) : null,
+          water_ml: waterInput ? Number(waterInput) : null,
+        })
       })
       if (!res.ok) throw new Error('儲存失敗')
       onMutate()
@@ -50,6 +63,28 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       alert('儲存失敗，請重試')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleSaveNutrients = async () => {
+    if (todayNutrition?.compliant == null) return
+    setSavingNutrients(true)
+    try {
+      const res = await fetch('/api/nutrition-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId, date: today, compliant: todayNutrition.compliant, note: todayNutrition.note || null,
+          protein_grams: proteinInput ? Number(proteinInput) : null,
+          water_ml: waterInput ? Number(waterInput) : null,
+        })
+      })
+      if (!res.ok) throw new Error('儲存失敗')
+      onMutate()
+    } catch {
+      alert('儲存失敗，請重試')
+    } finally {
+      setSavingNutrients(false)
     }
   }
 
@@ -169,6 +204,82 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
             <button onClick={() => setShowNote(true)} className="text-sm text-blue-600">
               + 新增備註
             </button>
+          )}
+
+          {/* 蛋白質 & 水量 */}
+          {(proteinTarget || waterTarget) && (
+            <div className="mt-4 space-y-3">
+              {proteinTarget && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-sm text-gray-600">蛋白質</label>
+                    <span className="text-xs text-gray-400">目標 {proteinTarget}g</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={proteinInput}
+                      onChange={(e) => setProteinInput(e.target.value)}
+                      placeholder="0"
+                      className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-500">g</span>
+                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          proteinInput && Number(proteinInput) >= proteinTarget ? 'bg-green-500' : 'bg-blue-400'
+                        }`}
+                        style={{ width: `${Math.min(100, proteinInput ? (Number(proteinInput) / proteinTarget) * 100 : 0)}%` }}
+                      />
+                    </div>
+                    {proteinInput && (
+                      <span className={`text-xs font-medium ${Number(proteinInput) >= proteinTarget ? 'text-green-600' : 'text-blue-600'}`}>
+                        {Math.round((Number(proteinInput) / proteinTarget) * 100)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              {waterTarget && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-sm text-gray-600">飲水量</label>
+                    <span className="text-xs text-gray-400">目標 {waterTarget}ml</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={waterInput}
+                      onChange={(e) => setWaterInput(e.target.value)}
+                      placeholder="0"
+                      step="100"
+                      className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-500">ml</span>
+                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          waterInput && Number(waterInput) >= waterTarget ? 'bg-green-500' : 'bg-cyan-400'
+                        }`}
+                        style={{ width: `${Math.min(100, waterInput ? (Number(waterInput) / waterTarget) * 100 : 0)}%` }}
+                      />
+                    </div>
+                    {waterInput && (
+                      <span className={`text-xs font-medium ${Number(waterInput) >= waterTarget ? 'text-green-600' : 'text-cyan-600'}`}>
+                        {Math.round((Number(waterInput) / waterTarget) * 100)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={handleSaveNutrients}
+                disabled={savingNutrients}
+                className="w-full py-2 bg-blue-50 text-blue-600 text-sm font-medium rounded-xl hover:bg-blue-100 transition-colors disabled:opacity-50"
+              >
+                {savingNutrients ? '儲存中...' : '儲存飲食數據'}
+              </button>
+            </div>
           )}
         </div>
       )}

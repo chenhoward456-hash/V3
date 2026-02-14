@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, date, compliant, note } = body
+    const { clientId, date, compliant, note, protein_grams, water_ml } = body
 
     if (!clientId || !date) {
       return createErrorResponse('缺少客戶 ID 或日期', 400)
@@ -97,6 +97,8 @@ export async function POST(request: NextRequest) {
         date,
         compliant,
         note: note || null,
+        protein_grams: protein_grams ?? null,
+        water_ml: water_ml ?? null,
       }, {
         onConflict: 'client_id,date'
       })
