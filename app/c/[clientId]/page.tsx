@@ -394,37 +394,41 @@ export default function ClientDashboard() {
           </div>
 
           <HealthOverview
-            weekRate={supplementComplianceStats.weekRate}
-            monthRate={supplementComplianceStats.monthRate}
-            weekDelta={supplementComplianceStats.weekDelta}
-            labNormal={labStats.normal}
-            labTotal={labStats.total}
-            bodyFat={latestByField.body_fat?.body_fat ?? null}
-            bodyFatTrend={bodyFatTrend}
-            todayMood={todayWellness?.mood}
-            hasWellness={!!todayWellness}
+            weekRate={clientData.client.supplement_enabled ? supplementComplianceStats.weekRate : 0}
+            monthRate={clientData.client.supplement_enabled ? supplementComplianceStats.monthRate : 0}
+            weekDelta={clientData.client.supplement_enabled ? supplementComplianceStats.weekDelta : null}
+            labNormal={clientData.client.lab_enabled ? labStats.normal : 0}
+            labTotal={clientData.client.lab_enabled ? labStats.total : 0}
+            bodyFat={clientData.client.body_composition_enabled ? (latestByField.body_fat?.body_fat ?? null) : null}
+            bodyFatTrend={clientData.client.body_composition_enabled ? bodyFatTrend : null}
+            todayMood={clientData.client.wellness_enabled ? todayWellness?.mood : undefined}
+            hasWellness={clientData.client.wellness_enabled ? !!todayWellness : false}
           />
         </div>
 
-        <DailyCheckIn
-          supplements={clientData.client.supplements || []}
-          todayLogs={selectedDateLogs}
-          todayStats={todaySupplementStats}
-          streakDays={streakDays}
-          streakMessage={streakMessage}
-          isCoachMode={isCoachMode}
-          togglingSupplements={togglingSupplements}
-          recentLogs={clientData.recentLogs || []}
-          onToggleSupplement={handleToggleSupplement}
-          onManageSupplements={() => setShowSupplementModal(true)}
-        />
+        {clientData.client.supplement_enabled && (
+          <DailyCheckIn
+            supplements={clientData.client.supplements || []}
+            todayLogs={selectedDateLogs}
+            todayStats={todaySupplementStats}
+            streakDays={streakDays}
+            streakMessage={streakMessage}
+            isCoachMode={isCoachMode}
+            togglingSupplements={togglingSupplements}
+            recentLogs={clientData.recentLogs || []}
+            onToggleSupplement={handleToggleSupplement}
+            onManageSupplements={() => setShowSupplementModal(true)}
+          />
+        )}
 
-        <DailyWellness
-          todayWellness={todayWellness}
-          clientId={clientId as string}
-          date={selectedDate}
-          onMutate={mutate}
-        />
+        {clientData.client.wellness_enabled && (
+          <DailyWellness
+            todayWellness={todayWellness}
+            clientId={clientId as string}
+            date={selectedDate}
+            onMutate={mutate}
+          />
+        )}
 
         {clientData.client.training_enabled && (
           <TrainingLog
@@ -447,31 +451,37 @@ export default function ClientDashboard() {
           />
         )}
 
-        <WellnessTrend wellness={clientData.wellness || []} />
+        {clientData.client.wellness_enabled && (
+          <WellnessTrend wellness={clientData.wellness || []} />
+        )}
 
-        <BodyComposition
-          latestBodyData={latestBodyData}
-          prevBodyData={prevBodyData}
-          bmi={bmi}
-          trendData={trendData}
-          bodyData={clientData.bodyData || []}
-          clientId={clientId as string}
-          onMutate={mutate}
-        />
+        {clientData.client.body_composition_enabled && (
+          <BodyComposition
+            latestBodyData={latestBodyData}
+            prevBodyData={prevBodyData}
+            bmi={bmi}
+            trendData={trendData}
+            bodyData={clientData.bodyData || []}
+            clientId={clientId as string}
+            onMutate={mutate}
+          />
+        )}
 
-        <LabResults
-          labResults={clientData.client.lab_results || []}
-          isCoachMode={isCoachMode}
-          clientId={clientId as string}
-          coachHeaders={coachHeaders}
-          onMutate={mutate}
-        />
+        {clientData.client.lab_enabled && (
+          <LabResults
+            labResults={clientData.client.lab_results || []}
+            isCoachMode={isCoachMode}
+            clientId={clientId as string}
+            coachHeaders={coachHeaders}
+            onMutate={mutate}
+          />
+        )}
 
         <ActionPlan
           healthGoals={clientData.client.health_goals}
           nextCheckupDate={clientData.client.next_checkup_date}
           coachSummary={clientData.client.coach_summary}
-          topSupplements={topSupplements}
+          topSupplements={clientData.client.supplement_enabled ? topSupplements : []}
         />
 
         {isCoachMode && (
@@ -487,7 +497,7 @@ export default function ClientDashboard() {
         <PwaPrompt />
       </div>
 
-      {showSupplementModal && (
+      {showSupplementModal && clientData.client.supplement_enabled && (
         <SupplementModal
           supplements={clientData.client.supplements || []}
           clientId={clientId as string}

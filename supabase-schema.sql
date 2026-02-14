@@ -195,6 +195,12 @@ CREATE POLICY "Public can insert nutrition_logs" ON nutrition_logs
 CREATE POLICY "Public can update nutrition_logs" ON nutrition_logs
   FOR UPDATE USING (true);
 
+-- 14. 客戶表新增功能權限欄位
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS body_composition_enabled BOOLEAN DEFAULT TRUE;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS wellness_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS supplement_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS lab_enabled BOOLEAN DEFAULT FALSE;
+
 -- 為承鈞添加血檢數據
 INSERT INTO lab_results (client_id, test_name, value, unit, reference_range, date, status) VALUES
   ((SELECT id FROM clients WHERE unique_code = 'k8f3m2n5'), 'HOMA-IR', 0.27, '', '<1.4', '2024-01-15', 'normal'),

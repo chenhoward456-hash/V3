@@ -18,6 +18,10 @@ interface Client {
   next_checkup_date: string | null
   training_enabled: boolean
   nutrition_enabled: boolean
+  body_composition_enabled: boolean
+  wellness_enabled: boolean
+  supplement_enabled: boolean
+  lab_enabled: boolean
 }
 
 interface TrainingLogRecord {

@@ -37,6 +37,10 @@ interface Client {
   health_goals: string
   training_enabled: boolean
   nutrition_enabled: boolean
+  body_composition_enabled: boolean
+  wellness_enabled: boolean
+  supplement_enabled: boolean
+  lab_enabled: boolean
   lab_results: LabResult[]
   supplements: Supplement[]
 }
@@ -66,6 +70,10 @@ export default function ClientEditor() {
         health_goals: '',
         training_enabled: false,
         nutrition_enabled: false,
+        body_composition_enabled: true,
+        wellness_enabled: false,
+        supplement_enabled: false,
+        lab_enabled: false,
         lab_results: [],
         supplements: []
       })
@@ -127,6 +135,10 @@ export default function ClientEditor() {
             health_goals: client.health_goals || null,
             training_enabled: client.training_enabled,
             nutrition_enabled: client.nutrition_enabled,
+            body_composition_enabled: client.body_composition_enabled,
+            wellness_enabled: client.wellness_enabled,
+            supplement_enabled: client.supplement_enabled,
+            lab_enabled: client.lab_enabled,
             expires_at: expiresAt.toISOString()
           })
           .select()
@@ -175,7 +187,11 @@ export default function ClientEditor() {
             next_checkup_date: client.next_checkup_date || null,
             health_goals: client.health_goals || null,
             training_enabled: client.training_enabled,
-            nutrition_enabled: client.nutrition_enabled
+            nutrition_enabled: client.nutrition_enabled,
+            body_composition_enabled: client.body_composition_enabled,
+            wellness_enabled: client.wellness_enabled,
+            supplement_enabled: client.supplement_enabled,
+            lab_enabled: client.lab_enabled
           })
           .eq('id', clientId)
         
@@ -401,43 +417,35 @@ export default function ClientEditor() {
         {/* Feature Toggles */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">功能設定</h2>
+          <p className="text-xs text-gray-400 mb-4">依學員階段逐步開放功能</p>
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-700">啟用訓練追蹤</p>
-                <p className="text-xs text-gray-500 mt-0.5">開啟後學員可記錄每日訓練</p>
-              </div>
-              <button
-                onClick={() => updateClient('training_enabled', !client.training_enabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  client.training_enabled ? 'bg-blue-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    client.training_enabled ? 'translate-x-6' : 'translate-x-1'
+            {([
+              { key: 'body_composition_enabled', label: '體重/體態紀錄', desc: '體重、體脂、肌肉量登記（最基本功能）' },
+              { key: 'wellness_enabled', label: '每日感受紀錄', desc: '心情、睡眠品質、能量追蹤' },
+              { key: 'nutrition_enabled', label: '飲食追蹤', desc: '每日飲食合規紀錄' },
+              { key: 'training_enabled', label: '訓練追蹤', desc: '每日訓練類型與強度紀錄' },
+              { key: 'supplement_enabled', label: '補品管理', desc: '補品清單與每日打卡' },
+              { key: 'lab_enabled', label: '血檢追蹤', desc: '血檢數據與健康指標' },
+            ] as const).map(({ key, label, desc }) => (
+              <div key={key} className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">{label}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                </div>
+                <button
+                  onClick={() => updateClient(key, !(client as any)[key])}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    (client as any)[key] ? 'bg-blue-600' : 'bg-gray-300'
                   }`}
-                />
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-700">啟用飲食追蹤</p>
-                <p className="text-xs text-gray-500 mt-0.5">開啟後學員可記錄每日飲食合規</p>
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      (client as any)[key] ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               </div>
-              <button
-                onClick={() => updateClient('nutrition_enabled', !client.nutrition_enabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  client.nutrition_enabled ? 'bg-blue-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    client.nutrition_enabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
+            ))}
           </div>
         </div>
 
