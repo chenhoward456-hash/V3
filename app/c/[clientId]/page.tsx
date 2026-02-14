@@ -52,29 +52,55 @@ export default function ClientDashboard() {
   const [showPinPopover, setShowPinPopover] = useState(false)
   const [pinInput, setPinInput] = useState('')
   const [pinError, setPinError] = useState(false)
+  const [pinLoading, setPinLoading] = useState(false)
+  const [savedPin, setSavedPin] = useState('')
   const [showSupplementModal, setShowSupplementModal] = useState(false)
   const [togglingSupplements, setTogglingSupplements] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = sessionStorage.getItem('coachMode')
-      if (saved === 'true') setIsCoachMode(true)
+      const pin = sessionStorage.getItem('coachPin')
+      if (saved === 'true' && pin) {
+        setIsCoachMode(true)
+        setSavedPin(pin)
+      }
     }
   }, [])
 
-  const handlePinSubmit = () => {
-    if (pinInput === process.env.NEXT_PUBLIC_COACH_PIN) {
-      setIsCoachMode(true)
-      sessionStorage.setItem('coachMode', 'true')
-      setShowPinPopover(false)
-      setPinInput('')
-      setPinError(false)
-    } else {
+  const handlePinSubmit = async () => {
+    if (!pinInput || pinLoading) return
+    setPinLoading(true)
+    setPinError(false)
+    try {
+      const res = await fetch('/api/coach/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: pinInput })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.valid) {
+          setIsCoachMode(true)
+          setSavedPin(pinInput)
+          sessionStorage.setItem('coachMode', 'true')
+          sessionStorage.setItem('coachPin', pinInput)
+          setShowPinPopover(false)
+          setPinInput('')
+        } else {
+          setPinError(true)
+        }
+      } else {
+        setPinError(true)
+      }
+    } catch {
       setPinError(true)
+    } finally {
+      setPinLoading(false)
     }
   }
 
-  const coachHeaders = { 'Content-Type': 'application/json', 'x-coach-pin': process.env.NEXT_PUBLIC_COACH_PIN || '' }
+  const coachHeaders = { 'Content-Type': 'application/json', 'x-coach-pin': savedPin }
 
   // 切換補品打卡
   const handleToggleSupplement = async (supplementId: string, currentCompleted: boolean) => {
@@ -323,7 +349,7 @@ export default function ClientDashboard() {
               <div className="relative">
                 <button
                   onClick={() => {
-                    if (isCoachMode) { setIsCoachMode(false); sessionStorage.removeItem('coachMode') }
+                    if (isCoachMode) { setIsCoachMode(false); setSavedPin(''); sessionStorage.removeItem('coachMode'); sessionStorage.removeItem('coachPin') }
                     else { setShowPinPopover(!showPinPopover) }
                   }}
                   className={`p-2 rounded-full transition-colors ${isCoachMode ? 'bg-green-100 text-green-700' : 'text-gray-400 hover:bg-gray-100'}`}

@@ -8,12 +8,12 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    
+
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
@@ -22,21 +22,21 @@ export default function AdminLogin() {
         },
         body: JSON.stringify({ password }),
       })
-      
+
       if (response.ok) {
-        // 設置 cookie
-        document.cookie = `admin_password=${password}; path=/; max-age=86400`
         router.push('/admin')
+      } else if (response.status === 429) {
+        setError('嘗試次數過多，請稍後再試')
       } else {
         setError('密碼錯誤')
       }
-    } catch (err) {
+    } catch {
       setError('登入失敗，請重試')
     } finally {
       setLoading(false)
     }
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
@@ -44,7 +44,7 @@ export default function AdminLogin() {
           <h1 className="text-2xl font-bold text-gray-900">教練後台</h1>
           <p className="text-gray-600 mt-1">Howard 健康管理系統</p>
         </div>
-        
+
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
@@ -60,11 +60,11 @@ export default function AdminLogin() {
               required
             />
           </div>
-          
+
           {error && (
             <div className="text-red-600 text-sm">{error}</div>
           )}
-          
+
           <button
             type="submit"
             disabled={loading}
@@ -73,7 +73,7 @@ export default function AdminLogin() {
             {loading ? '登入中...' : '登入'}
           </button>
         </form>
-        
+
         <div className="mt-6 text-center text-xs text-gray-500">
           <p>此系統僅供授權教練使用</p>
         </div>

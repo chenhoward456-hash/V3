@@ -22,52 +22,40 @@ const supabase = createClient(
 export async function GET(request: NextRequest) {
   try {
     // GET 方法允許公開存取，學員可以用連結查看自己的資料
-    
+
     // 獲取請求參數
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('clientId')
-    
-    console.log('🔍 API GET /api/body-composition - clientId:', clientId)
-    
+
     if (!clientId) {
-      console.log('❌ 缺少客戶 ID')
       return createErrorResponse('缺少客戶 ID', 400)
     }
-    
+
     // 獲取客戶 ID
-    console.log('🔍 開始查詢客戶 ID...')
     const { data: client } = await supabase
       .from('clients')
       .select('id')
       .eq('unique_code', clientId)
       .single()
-    
-    console.log('📊 客戶 ID 查詢結果:', { client })
-    
+
     if (!client) {
-      console.log('❌ 找不到客戶')
       return createErrorResponse('找不到客戶', 404)
     }
-    
+
     // 獲取身體數據記錄
-    console.log('🔍 開始查詢身體數據記錄...')
     const { data, error } = await supabase
       .from('body_composition')
       .select('*')
       .eq('client_id', client.id)
       .order('date', { ascending: false })
-    
-    console.log('📊 身體數據記錄查詢:', { data, error })
-    
+
     if (error) {
-      console.log('❌ 獲取身體數據失敗:', error)
       return createErrorResponse('獲取身體數據失敗', 500)
     }
-    
+
     return createSuccessResponse(data)
-    
+
   } catch (error) {
-    console.error('API 錯誤:', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
@@ -77,21 +65,21 @@ export async function POST(request: NextRequest) {
     // 1. 獲取請求內容
     const body = await request.json()
     const { clientId, date, height, weight, bodyFat, muscleMass, visceralFat, bmi } = body
-    
+
     // 驗證輸入
     if (!clientId || !date) {
       return createErrorResponse('缺少必要欄位', 400)
     }
-    
+
     // 驗證日期
     const dateValidation = validateDate(date)
     if (!dateValidation.isValid) {
       return createErrorResponse(dateValidation.error, 400)
     }
-    
+
     // 驗證身體數據
     const validations = []
-    
+
     if (height != null) {
       validations.push(validateBodyComposition('height', height))
     }
@@ -115,30 +103,30 @@ export async function POST(request: NextRequest) {
     if (bmi != null) {
       validations.push(validateBodyComposition('bmi', bmi))
     }
-    
+
     // 檢查所有驗證結果
     for (const validation of validations) {
       if (!validation.isValid) {
         return createErrorResponse(validation.error, 400)
       }
     }
-    
+
     // 獲取客戶 ID
     const { data: client } = await supabase
       .from('clients')
       .select('id, expires_at')
       .eq('unique_code', clientId)
       .single()
-    
+
     if (!client) {
       return createErrorResponse('找不到客戶', 404)
     }
-    
+
     // 檢查客戶是否未過期
     if (client.expires_at && new Date(client.expires_at) < new Date()) {
       return createErrorResponse('客戶已過期', 403)
     }
-    
+
     // 查詢同日是否已有記錄
     const { data: existing } = await supabase
       .from('body_composition')
@@ -175,15 +163,14 @@ export async function POST(request: NextRequest) {
         .select()
         .single())
     }
-    
+
     if (error) {
       return createErrorResponse('建立身體數據失敗', 500)
     }
-    
+
     return createSuccessResponse(data)
-    
+
   } catch (error) {
-    console.error('API 錯誤:', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
@@ -204,12 +191,12 @@ export async function PUT(request: NextRequest) {
     // 3. 獲取請求內容
     const body = await request.json()
     const { id, date, height, weight, bodyFat, muscleMass, visceralFat, bmi } = body
-    
+
     // 驗證輸入
     if (!id) {
       return createErrorResponse('缺少身體數據 ID', 400)
     }
-    
+
     // 驗證日期
     if (date) {
       const dateValidation = validateDate(date)
@@ -217,48 +204,48 @@ export async function PUT(request: NextRequest) {
         return createErrorResponse(dateValidation.error, 400)
       }
     }
-    
+
     // 驗證身體數據
     const validations = []
     const updateData: any = { date }
-    
+
     if (height !== undefined) {
       validations.push(validateBodyComposition('height', height))
       updateData.height = height
     }
-    
+
     if (weight !== undefined) {
       validations.push(validateBodyComposition('weight', weight))
       updateData.weight = weight
     }
-    
+
     if (bodyFat !== undefined) {
       validations.push(validateBodyComposition('body_fat', bodyFat))
       updateData.body_fat = bodyFat
     }
-    
+
     if (muscleMass !== undefined) {
       validations.push(validateBodyComposition('muscle_mass', muscleMass))
       updateData.muscle_mass = muscleMass
     }
-    
+
     if (visceralFat !== undefined) {
       validations.push(validateBodyComposition('visceral_fat', visceralFat))
       updateData.visceral_fat = visceralFat
     }
-    
+
     if (bmi !== undefined) {
       validations.push(validateBodyComposition('bmi', bmi))
       updateData.bmi = bmi
     }
-    
+
     // 檢查所有驗證結果
     for (const validation of validations) {
       if (!validation.isValid) {
         return createErrorResponse(validation.error, 400)
       }
     }
-    
+
     // 更新身體數據記錄
     const { data, error } = await supabase
       .from('body_composition')
@@ -266,15 +253,14 @@ export async function PUT(request: NextRequest) {
       .eq('id', id)
       .select()
       .single()
-    
+
     if (error) {
       return createErrorResponse('更新身體數據失敗', 500)
     }
-    
+
     return createSuccessResponse(data)
-    
+
   } catch (error) {
-    console.error('API 錯誤:', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
@@ -295,25 +281,24 @@ export async function DELETE(request: NextRequest) {
     // 3. 獲取請求參數
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    
+
     if (!id) {
       return createErrorResponse('缺少身體數據 ID', 400)
     }
-    
+
     // 刪除身體數據記錄
     const { error } = await supabase
       .from('body_composition')
       .delete()
       .eq('id', id)
-    
+
     if (error) {
       return createErrorResponse('刪除身體數據失敗', 500)
     }
-    
+
     return createSuccessResponse({ success: true })
-    
+
   } catch (error) {
-    console.error('API 錯誤:', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
