@@ -52,6 +52,7 @@ export default function AdminDashboard() {
   const [allSupplements, setAllSupplements] = useState<SupplementRecord[]>([])
   const [todayWellnessIds, setTodayWellnessIds] = useState<Set<string>>(new Set())
   const [todayLogIds, setTodayLogIds] = useState<Set<string>>(new Set())
+  const [todayBodyIds, setTodayBodyIds] = useState<Set<string>>(new Set())
   const [todayTrainingMap, setTodayTrainingMap] = useState<Record<string, string>>({})
   const [todayNutritionMap, setTodayNutritionMap] = useState<Record<string, boolean>>({})
 
@@ -76,7 +77,7 @@ export default function AdminDashboard() {
       const today = new Date().toISOString().split('T')[0]
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-      const [clientsRes, logsRes, supplementsRes, wellnessRes, todayLogsRes, trainingRes, nutritionRes] = await Promise.all([
+      const [clientsRes, logsRes, supplementsRes, wellnessRes, todayLogsRes, trainingRes, nutritionRes, bodyRes] = await Promise.all([
         supabase.from('clients').select('*').order('created_at', { ascending: false }),
         supabase.from('supplement_logs').select('client_id, supplement_id, date, completed').gte('date', sevenDaysAgo),
         supabase.from('supplements').select('client_id'),
@@ -84,6 +85,7 @@ export default function AdminDashboard() {
         supabase.from('supplement_logs').select('client_id').eq('date', today).eq('completed', true),
         supabase.from('training_logs').select('client_id, training_type').eq('date', today),
         supabase.from('nutrition_logs').select('client_id, compliant').eq('date', today),
+        supabase.from('body_composition').select('client_id').eq('date', today),
       ])
 
       setClients(clientsRes.data || [])
@@ -101,6 +103,7 @@ export default function AdminDashboard() {
         nMap[r.client_id] = r.compliant
       }
       setTodayNutritionMap(nMap)
+      setTodayBodyIds(new Set((bodyRes.data || []).map((r: any) => r.client_id)))
     } catch (error) {
       console.error('載入資料錯誤:', error)
     } finally {
@@ -462,6 +465,9 @@ export default function AdminDashboard() {
                     <th onClick={() => handleSort('compliance')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">
                       本週服從率 <SortIcon column="compliance" />
                     </th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">
+                      今日進度
+                    </th>
                     <th onClick={() => handleSort('lastActivity')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">
                       最後活動 <SortIcon column="lastActivity" />
                     </th>
@@ -525,6 +531,25 @@ export default function AdminDashboard() {
                           ) : (
                             <span className="text-sm text-gray-400">--</span>
                           )}
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-wrap gap-1">
+                            {client.body_composition_enabled && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${todayBodyIds.has(client.id) ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-300'}`} title="體重">⚖️</span>
+                            )}
+                            {client.wellness_enabled && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${todayWellnessIds.has(client.id) ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-300'}`} title="感受">😊</span>
+                            )}
+                            {client.nutrition_enabled && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${todayNutritionMap[client.id] !== undefined ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-300'}`} title="飲食">🥗</span>
+                            )}
+                            {client.training_enabled && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${todayTrainingMap[client.id] ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-300'}`} title="訓練">🏋️</span>
+                            )}
+                            {client.supplement_enabled && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${todayLogIds.has(client.id) ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-300'}`} title="補品">💊</span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-5 py-4">
                           <span className={`text-sm ${activity.color}`}>{activity.text}</span>

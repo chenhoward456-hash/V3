@@ -377,6 +377,27 @@ export default function ClientOverview() {
       }
     }
 
+    // 蛋白質/水量平均
+    const weekNutritionWithProtein = weekNutrition.filter((l: any) => l.protein_grams != null)
+    const avgProtein = weekNutritionWithProtein.length > 0
+      ? Math.round(weekNutritionWithProtein.reduce((s: number, l: any) => s + l.protein_grams, 0) / weekNutritionWithProtein.length)
+      : null
+    const weekNutritionWithWater = weekNutrition.filter((l: any) => l.water_ml != null)
+    const avgWater = weekNutritionWithWater.length > 0
+      ? Math.round(weekNutritionWithWater.reduce((s: number, l: any) => s + l.water_ml, 0) / weekNutritionWithWater.length)
+      : null
+
+    const nutrientParts: string[] = []
+    if (avgProtein != null) {
+      nutrientParts.push(`蛋白質平均 ${avgProtein}g${client?.protein_target ? `（目標 ${client.protein_target}g）` : ''}`)
+    }
+    if (avgWater != null) {
+      nutrientParts.push(`飲水平均 ${avgWater}ml${client?.water_target ? `（目標 ${client.water_target}ml）` : ''}`)
+    }
+    if (nutrientParts.length > 0) {
+      lines.push(`營養攝取：${nutrientParts.join('、')}。`)
+    }
+
     return {
       trainingDays, topTypes, avgRpe,
       avgSleep, avgEnergy, avgMood,
@@ -386,6 +407,7 @@ export default function ClientOverview() {
       weekSuppRate, lastWeekSuppRate,
       weekNutRate, lastWeekNutRate,
       weightDelta,
+      avgProtein, avgWater,
       summary: lines.join('\n'),
       weekLabel: `${sevenDaysAgo.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })} - ${today.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })}`,
     }
@@ -550,6 +572,24 @@ export default function ClientOverview() {
                   {Number(weeklyReport.weightDelta) > 0 ? '+' : ''}{weeklyReport.weightDelta}
                 </p>
                 <p className="text-xs text-gray-400">kg</p>
+              </div>
+            )}
+            {client.nutrition_enabled && weeklyReport.avgProtein != null && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">平均蛋白質</p>
+                <p className={`text-2xl font-bold ${client.protein_target && weeklyReport.avgProtein >= client.protein_target ? 'text-green-600' : 'text-blue-600'}`}>
+                  {weeklyReport.avgProtein}g
+                </p>
+                {client.protein_target && <p className="text-xs text-gray-400">目標 {client.protein_target}g</p>}
+              </div>
+            )}
+            {client.nutrition_enabled && weeklyReport.avgWater != null && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">平均飲水</p>
+                <p className={`text-2xl font-bold ${client.water_target && weeklyReport.avgWater >= client.water_target ? 'text-green-600' : 'text-cyan-600'}`}>
+                  {weeklyReport.avgWater}ml
+                </p>
+                {client.water_target && <p className="text-xs text-gray-400">目標 {client.water_target}ml</p>}
               </div>
             )}
           </div>
