@@ -20,11 +20,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 先用 id 查，查不到再用 unique_code 查
-    let clientRes = await supabase.from('clients').select('*').eq('id', clientId).single()
-    if (!clientRes.data) {
-      clientRes = await supabase.from('clients').select('*').eq('unique_code', clientId).single()
-    }
+    // 只允許 unique_code 查詢，不允許 raw id 查詢
+    const clientRes = await supabase.from('clients').select('*').eq('unique_code', clientId).single()
+
     if (!clientRes.data) {
       return NextResponse.json({ error: '找不到學員資料' }, { status: 404 })
     }
@@ -55,7 +53,6 @@ export async function GET(request: NextRequest) {
       nutritionLogs: nutritionRes.data || [],
     })
   } catch (err) {
-    console.error('Overview API error:', err)
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }

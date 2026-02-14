@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sanitizeTextField, validateNumericField } from '@/lib/auth-middleware'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -66,7 +67,6 @@ export async function GET(request: NextRequest) {
     return createSuccessResponse(training)
 
   } catch (error) {
-    console.error('API 錯誤:', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
@@ -93,6 +93,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 驗證 sets 欄位
+    const setsValidation = validateNumericField(sets, 0, 100, 'sets')
+    if (!setsValidation.isValid) {
+      return createErrorResponse(setsValidation.error, 400)
+    }
+
+    // 清理 note 欄位
+    const sanitizedNote = sanitizeTextField(note)
+
     const { data: client, error: clientError } = await supabaseAdmin
       .from('clients')
       .select('id')
@@ -107,7 +116,7 @@ export async function POST(request: NextRequest) {
       client_id: client.id,
       date,
       training_type,
-      note: note || null,
+      note: sanitizedNote,
     }
 
     if (training_type === 'rest') {
@@ -129,14 +138,12 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (trainingError) {
-      console.error('訓練紀錄 Upsert 錯誤:', trainingError)
       return createErrorResponse('新增/更新訓練紀錄失敗', 500)
     }
 
     return createSuccessResponse(training, '訓練紀錄已記錄')
 
   } catch (error) {
-    console.error('API 錯誤:', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }

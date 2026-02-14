@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sanitizeTextField, validateNumericField } from '@/lib/auth-middleware'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,7 +63,6 @@ export async function GET(request: NextRequest) {
     return createSuccessResponse(nutrition)
 
   } catch (error) {
-    console.error('API 錯誤:', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
@@ -80,6 +80,21 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('compliant 必須為布林值', 400)
     }
 
+    // 驗證 protein_grams
+    const proteinValidation = validateNumericField(protein_grams, 0, 1000, 'protein_grams')
+    if (!proteinValidation.isValid) {
+      return createErrorResponse(proteinValidation.error, 400)
+    }
+
+    // 驗證 water_ml
+    const waterValidation = validateNumericField(water_ml, 0, 10000, 'water_ml')
+    if (!waterValidation.isValid) {
+      return createErrorResponse(waterValidation.error, 400)
+    }
+
+    // 清理 note 欄位
+    const sanitizedNote = sanitizeTextField(note)
+
     const { data: client, error: clientError } = await supabaseAdmin
       .from('clients')
       .select('id')
@@ -96,7 +111,7 @@ export async function POST(request: NextRequest) {
         client_id: client.id,
         date,
         compliant,
-        note: note || null,
+        note: sanitizedNote,
         protein_grams: protein_grams ?? null,
         water_ml: water_ml ?? null,
       }, {
@@ -106,14 +121,12 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (nutritionError) {
-      console.error('飲食紀錄 Upsert 錯誤:', nutritionError)
       return createErrorResponse('新增/更新飲食紀錄失敗', 500)
     }
 
     return createSuccessResponse(nutrition, '飲食紀錄已記錄')
 
   } catch (error) {
-    console.error('API 錯誤:', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
