@@ -394,15 +394,19 @@ export default function ClientDashboard() {
           </div>
 
           <HealthOverview
-            weekRate={clientData.client.supplement_enabled ? supplementComplianceStats.weekRate : 0}
-            monthRate={clientData.client.supplement_enabled ? supplementComplianceStats.monthRate : 0}
-            weekDelta={clientData.client.supplement_enabled ? supplementComplianceStats.weekDelta : null}
-            labNormal={clientData.client.lab_enabled ? labStats.normal : 0}
-            labTotal={clientData.client.lab_enabled ? labStats.total : 0}
-            bodyFat={clientData.client.body_composition_enabled ? (latestByField.body_fat?.body_fat ?? null) : null}
-            bodyFatTrend={clientData.client.body_composition_enabled ? bodyFatTrend : null}
-            todayMood={clientData.client.wellness_enabled ? todayWellness?.mood : undefined}
-            hasWellness={clientData.client.wellness_enabled ? !!todayWellness : false}
+            weekRate={supplementComplianceStats.weekRate}
+            monthRate={supplementComplianceStats.monthRate}
+            weekDelta={supplementComplianceStats.weekDelta}
+            labNormal={labStats.normal}
+            labTotal={labStats.total}
+            bodyFat={latestByField.body_fat?.body_fat ?? null}
+            bodyFatTrend={bodyFatTrend}
+            todayMood={todayWellness?.mood}
+            hasWellness={!!todayWellness}
+            supplementEnabled={clientData.client.supplement_enabled}
+            labEnabled={clientData.client.lab_enabled}
+            bodyCompositionEnabled={clientData.client.body_composition_enabled}
+            wellnessEnabled={clientData.client.wellness_enabled}
           />
         </div>
 
