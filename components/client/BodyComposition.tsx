@@ -97,35 +97,31 @@ export default function BodyComposition({
         <div className="h-64 w-full min-w-0">
           <LazyChart data={trendData[trendType] || []} height={256} stroke="#3b82f6" strokeWidth={2} />
         </div>
+
+        <button
+          onClick={() => {
+            const today = new Date().toISOString().split('T')[0]
+            const todayRecord = bodyData?.find((r: any) => r.date === today)
+            if (todayRecord) {
+              setForm({
+                date: today,
+                weight: todayRecord.weight != null ? String(todayRecord.weight) : '',
+                body_fat: todayRecord.body_fat != null ? String(todayRecord.body_fat) : '',
+                muscle_mass: todayRecord.muscle_mass != null ? String(todayRecord.muscle_mass) : '',
+                height: todayRecord.height != null ? String(todayRecord.height) : '',
+                visceral_fat: todayRecord.visceral_fat != null ? String(todayRecord.visceral_fat) : '',
+              })
+            } else {
+              setForm({ date: today, weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
+            }
+            setShowModal(true)
+          }}
+          className="w-full mt-4 bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+        >
+          <Plus size={20} className="mr-2" /> 新增身體紀錄
+        </button>
       </div>
 
-      {/* 固定底部新增按鈕 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-[100]" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-        <div className="max-w-4xl mx-auto">
-          <button
-            onClick={() => {
-              const today = new Date().toISOString().split('T')[0]
-              const todayRecord = bodyData?.find((r: any) => r.date === today)
-              if (todayRecord) {
-                setForm({
-                  date: today,
-                  weight: todayRecord.weight != null ? String(todayRecord.weight) : '',
-                  body_fat: todayRecord.body_fat != null ? String(todayRecord.body_fat) : '',
-                  muscle_mass: todayRecord.muscle_mass != null ? String(todayRecord.muscle_mass) : '',
-                  height: todayRecord.height != null ? String(todayRecord.height) : '',
-                  visceral_fat: todayRecord.visceral_fat != null ? String(todayRecord.visceral_fat) : '',
-                })
-              } else {
-                setForm({ date: today, weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
-              }
-              setShowModal(true)
-            }}
-            className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
-          >
-            <Plus size={20} className="mr-2" /> 新增身體紀錄
-          </button>
-        </div>
-      </div>
 
       {/* Modal */}
       {showModal && (

@@ -383,11 +383,13 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                         {d.protein != null ? (
                           <div
                             className={`w-full rounded-t transition-all ${reached ? 'bg-green-400' : 'bg-blue-300'}`}
-                            style={{ height: `${Math.max(4, pct)}%` }}
+                            style={{ height: `${Math.max(8, pct)}%` }}
                             title={`${d.protein}g`}
                           />
                         ) : (
-                          <div className="w-full h-1 bg-gray-100 rounded" />
+                          <div className="w-full h-full flex items-end justify-center">
+                            <div className="w-full h-2 bg-gray-100 rounded border border-dashed border-gray-200" title="未記錄" />
+                          </div>
                         )}
                       </div>
                       <span className="text-[10px] text-gray-400">{d.label.split('/')[1]}</span>
@@ -413,11 +415,13 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                         {d.water != null ? (
                           <div
                             className={`w-full rounded-t transition-all ${reached ? 'bg-green-400' : 'bg-cyan-300'}`}
-                            style={{ height: `${Math.max(4, pct)}%` }}
+                            style={{ height: `${Math.max(8, pct)}%` }}
                             title={`${d.water}ml`}
                           />
                         ) : (
-                          <div className="w-full h-1 bg-gray-100 rounded" />
+                          <div className="w-full h-full flex items-end justify-center">
+                            <div className="w-full h-2 bg-gray-100 rounded border border-dashed border-gray-200" title="未記錄" />
+                          </div>
                         )}
                       </div>
                       <span className="text-[10px] text-gray-400">{d.label.split('/')[1]}</span>
