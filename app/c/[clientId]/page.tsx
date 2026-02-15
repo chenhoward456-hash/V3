@@ -56,6 +56,7 @@ export default function ClientDashboard() {
   const [savedPin, setSavedPin] = useState('')
   const [showSupplementModal, setShowSupplementModal] = useState(false)
   const [togglingSupplements, setTogglingSupplements] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState('')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -326,7 +327,7 @@ export default function ClientDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
 
         {/* 標題區 */}
         <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
@@ -437,7 +438,7 @@ export default function ClientDashboard() {
         </div>
 
         {clientData.client.supplement_enabled && (
-          <DailyCheckIn
+          <div id="section-supplements" className="scroll-mt-4"><DailyCheckIn
             supplements={clientData.client.supplements || []}
             todayLogs={selectedDateLogs}
             todayStats={todaySupplementStats}
@@ -448,31 +449,31 @@ export default function ClientDashboard() {
             recentLogs={clientData.recentLogs || []}
             onToggleSupplement={handleToggleSupplement}
             onManageSupplements={() => setShowSupplementModal(true)}
-          />
+          /></div>
         )}
 
         {clientData.client.wellness_enabled && (
-          <DailyWellness
+          <div id="section-wellness" className="scroll-mt-4"><DailyWellness
             todayWellness={todayWellness}
             clientId={clientId as string}
             date={selectedDate}
             onMutate={mutate}
-          />
+          /></div>
         )}
 
         {clientData.client.training_enabled && (
-          <TrainingLog
+          <div id="section-training" className="scroll-mt-4"><TrainingLog
             todayTraining={todayTraining}
             trainingLogs={clientData.trainingLogs || []}
             wellness={clientData.wellness || []}
             clientId={clientId as string}
             date={selectedDate}
             onMutate={mutate}
-          />
+          /></div>
         )}
 
         {clientData.client.nutrition_enabled && (
-          <NutritionLog
+          <div id="section-nutrition" className="scroll-mt-4"><NutritionLog
             todayNutrition={todayNutrition}
             nutritionLogs={clientData.nutritionLogs || []}
             clientId={clientId as string}
@@ -480,7 +481,7 @@ export default function ClientDashboard() {
             proteinTarget={clientData.client.protein_target}
             waterTarget={clientData.client.water_target}
             onMutate={mutate}
-          />
+          /></div>
         )}
 
         {clientData.client.wellness_enabled && (
@@ -488,7 +489,7 @@ export default function ClientDashboard() {
         )}
 
         {clientData.client.body_composition_enabled && (
-          <BodyComposition
+          <div id="section-body" className="scroll-mt-4"><BodyComposition
             latestBodyData={latestBodyData}
             prevBodyData={prevBodyData}
             bmi={bmi}
@@ -496,17 +497,17 @@ export default function ClientDashboard() {
             bodyData={clientData.bodyData || []}
             clientId={clientId as string}
             onMutate={mutate}
-          />
+          /></div>
         )}
 
         {clientData.client.lab_enabled && (
-          <LabResults
+          <div id="section-lab" className="scroll-mt-4"><LabResults
             labResults={clientData.client.lab_results || []}
             isCoachMode={isCoachMode}
             clientId={clientId as string}
             coachHeaders={coachHeaders}
             onMutate={mutate}
-          />
+          /></div>
         )}
 
         <ActionPlan
@@ -566,6 +567,37 @@ export default function ClientDashboard() {
           onMutate={mutate}
         />
       )}
+
+      {/* 底部導航 */}
+      {(() => {
+        const tabs: { id: string; icon: string; label: string }[] = []
+        if (clientData.client.supplement_enabled) tabs.push({ id: 'section-supplements', icon: '💊', label: '補品' })
+        if (clientData.client.wellness_enabled) tabs.push({ id: 'section-wellness', icon: '😊', label: '感受' })
+        if (clientData.client.training_enabled) tabs.push({ id: 'section-training', icon: '🏋️', label: '訓練' })
+        if (clientData.client.nutrition_enabled) tabs.push({ id: 'section-nutrition', icon: '🥗', label: '飲食' })
+        if (clientData.client.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
+        if (clientData.client.lab_enabled) tabs.push({ id: 'section-lab', icon: '🩸', label: '血檢' })
+        if (tabs.length <= 1) return null
+        return (
+          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            <div className="max-w-4xl mx-auto flex">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id)
+                    document.getElementById(tab.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }}
+                  className={`flex-1 flex flex-col items-center py-2 transition-colors ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`}
+                >
+                  <span className="text-lg leading-none">{tab.icon}</span>
+                  <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
+        )
+      })()}
     </div>
   )
 }
