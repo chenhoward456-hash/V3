@@ -20,8 +20,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 只允許 unique_code 查詢，不允許 raw id 查詢
-    const clientRes = await supabase.from('clients').select('*').eq('unique_code', clientId).single()
+    // 支援 UUID 和 unique_code 兩種查詢方式
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)
+    const clientRes = isUUID
+      ? await supabase.from('clients').select('*').eq('id', clientId).single()
+      : await supabase.from('clients').select('*').eq('unique_code', clientId).single()
 
     if (!clientRes.data) {
       return NextResponse.json({ error: '找不到學員資料' }, { status: 404 })
