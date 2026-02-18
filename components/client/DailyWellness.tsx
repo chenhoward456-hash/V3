@@ -6,16 +6,20 @@ interface DailyWellnessProps {
   todayWellness: any
   clientId: string
   date?: string
+  competitionEnabled?: boolean
   onMutate: () => void
 }
 
-export default function DailyWellness({ todayWellness, clientId, date, onMutate }: DailyWellnessProps) {
+export default function DailyWellness({ todayWellness, clientId, date, competitionEnabled, onMutate }: DailyWellnessProps) {
   const today = date || new Date().toISOString().split('T')[0]
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
     sleep_quality: todayWellness?.sleep_quality ?? null as number | null,
     energy_level: todayWellness?.energy_level ?? null as number | null,
     mood: todayWellness?.mood ?? null as number | null,
+    hunger: todayWellness?.hunger ?? null as number | null,
+    digestion: todayWellness?.digestion ?? null as number | null,
+    training_drive: todayWellness?.training_drive ?? null as number | null,
     note: todayWellness?.note || ''
   })
 
@@ -26,6 +30,9 @@ export default function DailyWellness({ todayWellness, clientId, date, onMutate 
         sleep_quality: todayWellness.sleep_quality ?? null,
         energy_level: todayWellness.energy_level ?? null,
         mood: todayWellness.mood ?? null,
+        hunger: todayWellness.hunger ?? null,
+        digestion: todayWellness.digestion ?? null,
+        training_drive: todayWellness.training_drive ?? null,
         note: todayWellness.note || '',
       })
     }
@@ -46,6 +53,9 @@ export default function DailyWellness({ todayWellness, clientId, date, onMutate 
           sleep_quality: form.sleep_quality,
           energy_level: form.energy_level,
           mood: form.mood,
+          hunger: form.hunger ?? null,
+          digestion: form.digestion ?? null,
+          training_drive: form.training_drive ?? null,
           note: form.note || null
         })
       })
@@ -63,12 +73,20 @@ export default function DailyWellness({ todayWellness, clientId, date, onMutate 
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">每日感受</h2>
       <div className="space-y-4">
-        {[
-          { key: 'sleep_quality' as const, label: '睡眠品質', emoji: '😴' },
-          { key: 'energy_level' as const, label: '精力水平', emoji: '⚡' },
-          { key: 'mood' as const, label: '心情', emoji: '😊' },
-        ].map(({ key, label, emoji }) => (
+        {([
+          { key: 'sleep_quality' as const, label: '睡眠品質', emoji: '😴', compOnly: false },
+          { key: 'energy_level' as const, label: '精力水平', emoji: '⚡', compOnly: false },
+          { key: 'mood' as const, label: '心情', emoji: '😊', compOnly: false },
+          { key: 'hunger' as const, label: '飢餓感', emoji: '🍽️', compOnly: true },
+          { key: 'digestion' as const, label: '消化狀況', emoji: '🫁', compOnly: true },
+          { key: 'training_drive' as const, label: '訓練慾望', emoji: '💪', compOnly: true },
+        ]).filter(item => !item.compOnly || competitionEnabled).map(({ key, label, emoji, compOnly }, idx, arr) => (
           <div key={key}>
+            {compOnly && idx > 0 && !arr[idx - 1].compOnly && (
+              <div className="border-t border-amber-200 pt-3 mb-3">
+                <p className="text-xs font-semibold text-amber-600 mb-2">🏆 備賽指標</p>
+              </div>
+            )}
             <p className="text-sm font-medium text-gray-700 mb-2">{emoji} {label}</p>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map(score => (

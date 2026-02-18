@@ -41,8 +41,15 @@ interface Client {
   wellness_enabled: boolean
   supplement_enabled: boolean
   lab_enabled: boolean
+  competition_enabled: boolean
+  competition_date: string | null
+  prep_phase: string
   protein_target: number | null
   water_target: number | null
+  carbs_target: number | null
+  fat_target: number | null
+  calories_target: number | null
+  sodium_target: number | null
   lab_results: LabResult[]
   supplements: Supplement[]
 }
@@ -76,8 +83,15 @@ export default function ClientEditor() {
         wellness_enabled: false,
         supplement_enabled: false,
         lab_enabled: false,
+        competition_enabled: false,
+        competition_date: null,
+        prep_phase: 'off_season',
         protein_target: null,
         water_target: null,
+        carbs_target: null,
+        fat_target: null,
+        calories_target: null,
+        sodium_target: null,
         lab_results: [],
         supplements: []
       })
@@ -143,8 +157,15 @@ export default function ClientEditor() {
             wellness_enabled: client.wellness_enabled,
             supplement_enabled: client.supplement_enabled,
             lab_enabled: client.lab_enabled,
+            competition_enabled: client.competition_enabled,
+            competition_date: client.competition_date || null,
+            prep_phase: client.prep_phase || 'off_season',
             protein_target: client.protein_target || null,
             water_target: client.water_target || null,
+            carbs_target: client.carbs_target || null,
+            fat_target: client.fat_target || null,
+            calories_target: client.calories_target || null,
+            sodium_target: client.sodium_target || null,
             expires_at: expiresAt.toISOString()
           })
           .select()
@@ -198,8 +219,15 @@ export default function ClientEditor() {
             wellness_enabled: client.wellness_enabled,
             supplement_enabled: client.supplement_enabled,
             lab_enabled: client.lab_enabled,
+            competition_enabled: client.competition_enabled,
+            competition_date: client.competition_date || null,
+            prep_phase: client.prep_phase || 'off_season',
             protein_target: client.protein_target || null,
-            water_target: client.water_target || null
+            water_target: client.water_target || null,
+            carbs_target: client.carbs_target || null,
+            fat_target: client.fat_target || null,
+            calories_target: client.calories_target || null,
+            sodium_target: client.sodium_target || null
           })
           .eq('id', clientId)
         
@@ -434,6 +462,7 @@ export default function ClientEditor() {
               { key: 'training_enabled', label: '訓練追蹤', desc: '每日訓練類型與強度紀錄' },
               { key: 'supplement_enabled', label: '補品管理', desc: '補品清單與每日打卡' },
               { key: 'lab_enabled', label: '血檢追蹤', desc: '血檢數據與健康指標' },
+              { key: 'competition_enabled', label: '備賽模式 🏆', desc: '健美備賽倒數、完整巨量營養素、進階感受追蹤' },
             ] as const).map(({ key, label, desc }) => (
               <div key={key} className="flex items-center justify-between">
                 <div>
@@ -481,6 +510,88 @@ export default function ClientEditor() {
                   onChange={(e) => updateClient('water_target', e.target.value ? Number(e.target.value) : null)}
                   placeholder="例如：2500"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Competition Prep Settings */}
+        {client.competition_enabled && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-amber-400">
+            <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽設定</h2>
+            <p className="text-xs text-gray-400 mb-4">設定比賽資訊與巨量營養素目標</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">比賽日期</label>
+                <input
+                  type="date"
+                  value={client.competition_date || ''}
+                  onChange={(e) => updateClient('competition_date', e.target.value || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {client.competition_date && (
+                  <p className="text-xs text-amber-600 mt-1 font-medium">
+                    距離比賽還有 {Math.max(0, Math.ceil((new Date(client.competition_date).getTime() - new Date().getTime()) / 86400000))} 天
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">備賽階段</label>
+                <select
+                  value={client.prep_phase || 'off_season'}
+                  onChange={(e) => updateClient('prep_phase', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="off_season">休賽期</option>
+                  <option value="bulk">增肌期</option>
+                  <option value="cut">減脂期</option>
+                  <option value="peak_week">Peak Week</option>
+                  <option value="competition">比賽日</option>
+                  <option value="recovery">賽後恢復</option>
+                </select>
+              </div>
+            </div>
+            <h3 className="text-sm font-medium text-gray-700 mb-3">每日巨量營養素目標</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">熱量 (kcal)</label>
+                <input
+                  type="number"
+                  value={client.calories_target ?? ''}
+                  onChange={(e) => updateClient('calories_target', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="2200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">碳水 (g)</label>
+                <input
+                  type="number"
+                  value={client.carbs_target ?? ''}
+                  onChange={(e) => updateClient('carbs_target', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="250"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">脂肪 (g)</label>
+                <input
+                  type="number"
+                  value={client.fat_target ?? ''}
+                  onChange={(e) => updateClient('fat_target', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="60"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">鈉 (mg)</label>
+                <input
+                  type="number"
+                  value={client.sodium_target ?? ''}
+                  onChange={(e) => updateClient('sodium_target', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="2000"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
