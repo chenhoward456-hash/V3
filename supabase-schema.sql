@@ -225,3 +225,30 @@ INSERT INTO supplements (client_id, name, dosage, timing, why, sort_order) VALUE
   ((SELECT id FROM clients WHERE unique_code = 'k8f3m2n5'), '鉻', '600mcg', '午餐前', '穩定血糖', 5),
   ((SELECT id FROM clients WHERE unique_code = 'k8f3m2n5'), '魚油', '2g', '晚餐', '抗發炎', 6),
   ((SELECT id FROM clients WHERE unique_code = 'k8f3m2n5'), '甘胺酸鎂', '400mg', '睡前', '放鬆改善睡眠', 7);
+
+-- ============================================
+-- 17. 備賽監控模組 (Competition Prep)
+-- ============================================
+
+-- clients 表新增備賽相關欄位
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS competition_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS competition_date DATE;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS prep_phase TEXT DEFAULT 'off_season';
+-- prep_phase 值: 'off_season', 'bulk', 'cut', 'peak_week', 'competition', 'recovery'
+
+-- 巨量營養素每日目標
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS carbs_target NUMERIC;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS fat_target NUMERIC;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS calories_target NUMERIC;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS sodium_target NUMERIC;
+
+-- nutrition_logs 表新增巨量營養素欄位
+ALTER TABLE nutrition_logs ADD COLUMN IF NOT EXISTS carbs_grams NUMERIC;
+ALTER TABLE nutrition_logs ADD COLUMN IF NOT EXISTS fat_grams NUMERIC;
+ALTER TABLE nutrition_logs ADD COLUMN IF NOT EXISTS calories NUMERIC;
+ALTER TABLE nutrition_logs ADD COLUMN IF NOT EXISTS sodium_mg NUMERIC;
+
+-- daily_wellness 表新增備賽感受指標
+ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS hunger INTEGER CHECK (hunger >= 1 AND hunger <= 5);
+ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS digestion INTEGER CHECK (digestion >= 1 AND digestion <= 5);
+ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS training_drive INTEGER CHECK (training_drive >= 1 AND training_drive <= 5);

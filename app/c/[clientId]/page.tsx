@@ -420,6 +420,36 @@ export default function ClientDashboard() {
             </button>
           </div>
 
+          {/* 備賽倒數 Banner */}
+          {clientData.client.competition_enabled && clientData.client.competition_date && (() => {
+            const daysLeft = Math.ceil((new Date(clientData.client.competition_date).getTime() - new Date().getTime()) / 86400000)
+            const phaseLabels: Record<string, string> = { off_season: '休賽期', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' }
+            const phase = clientData.client.prep_phase || 'off_season'
+            const urgencyColor = daysLeft <= 7 ? 'from-red-500 to-red-600' : daysLeft <= 14 ? 'from-amber-500 to-orange-500' : daysLeft <= 30 ? 'from-amber-400 to-yellow-500' : 'from-blue-500 to-blue-600'
+            const urgencyBg = daysLeft <= 7 ? 'bg-red-50 border-red-200' : daysLeft <= 14 ? 'bg-amber-50 border-amber-200' : daysLeft <= 30 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
+            return (
+              <div className={`${urgencyBg} border rounded-2xl p-4 mb-4`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🏆</span>
+                      <span className={`px-2 py-0.5 text-xs font-bold rounded-full text-white bg-gradient-to-r ${urgencyColor}`}>
+                        {phaseLabels[phase] || phase}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {new Date(clientData.client.competition_date).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-black text-gray-900">{Math.max(0, daysLeft)}</p>
+                    <p className="text-xs text-gray-500 font-medium">{daysLeft > 0 ? '天後比賽' : daysLeft === 0 ? '今天比賽！' : '已結束'}</p>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
           <HealthOverview
             weekRate={supplementComplianceStats.weekRate}
             monthRate={supplementComplianceStats.monthRate}
@@ -434,6 +464,9 @@ export default function ClientDashboard() {
             labEnabled={clientData.client.lab_enabled}
             bodyCompositionEnabled={clientData.client.body_composition_enabled}
             wellnessEnabled={clientData.client.wellness_enabled}
+            competitionEnabled={clientData.client.competition_enabled}
+            todayCalories={todayNutrition?.calories}
+            caloriesTarget={clientData.client.calories_target}
           />
         </div>
 
@@ -457,6 +490,7 @@ export default function ClientDashboard() {
             todayWellness={todayWellness}
             clientId={clientId as string}
             date={selectedDate}
+            competitionEnabled={clientData.client.competition_enabled}
             onMutate={mutate}
           /></div>
         )}
@@ -480,6 +514,11 @@ export default function ClientDashboard() {
             date={selectedDate}
             proteinTarget={clientData.client.protein_target}
             waterTarget={clientData.client.water_target}
+            competitionEnabled={clientData.client.competition_enabled}
+            carbsTarget={clientData.client.carbs_target}
+            fatTarget={clientData.client.fat_target}
+            caloriesTarget={clientData.client.calories_target}
+            sodiumTarget={clientData.client.sodium_target}
             onMutate={mutate}
           /></div>
         )}
@@ -496,6 +535,7 @@ export default function ClientDashboard() {
             trendData={trendData}
             bodyData={clientData.bodyData || []}
             clientId={clientId as string}
+            competitionEnabled={clientData.client.competition_enabled}
             onMutate={mutate}
           /></div>
         )}
