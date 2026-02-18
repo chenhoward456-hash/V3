@@ -3,21 +3,28 @@
 import { useState, useMemo } from 'react'
 
 interface NutritionLogProps {
-  todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null } | null
+  todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null; carbs_grams?: number | null; fat_grams?: number | null; calories?: number | null } | null
   nutritionLogs: any[]
   clientId: string
   date?: string
   proteinTarget?: number | null
   waterTarget?: number | null
+  competitionEnabled?: boolean
+  carbsTarget?: number | null
+  fatTarget?: number | null
+  caloriesTarget?: number | null
   onMutate: () => void
 }
 
-export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, onMutate }: NutritionLogProps) {
+export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, onMutate }: NutritionLogProps) {
   const [saving, setSaving] = useState(false)
   const [note, setNote] = useState(todayNutrition?.note || '')
   const [showNote, setShowNote] = useState(false)
   const [proteinInput, setProteinInput] = useState<string>(todayNutrition?.protein_grams?.toString() || '')
   const [waterInput, setWaterInput] = useState<string>(todayNutrition?.water_ml?.toString() || '')
+  const [carbsInput, setCarbsInput] = useState<string>(todayNutrition?.carbs_grams?.toString() || '')
+  const [fatInput, setFatInput] = useState<string>(todayNutrition?.fat_grams?.toString() || '')
+  const [caloriesInput, setCaloriesInput] = useState<string>(todayNutrition?.calories?.toString() || '')
   const [savingNutrients, setSavingNutrients] = useState(false)
 
   const today = date || new Date().toISOString().split('T')[0]
@@ -32,6 +39,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           clientId, date: today, compliant, note: note || null,
           protein_grams: proteinInput ? Number(proteinInput) : null,
           water_ml: waterInput ? Number(waterInput) : null,
+          carbs_grams: carbsInput ? Number(carbsInput) : null,
+          fat_grams: fatInput ? Number(fatInput) : null,
+          calories: caloriesInput ? Number(caloriesInput) : null,
         })
       })
       if (!res.ok) throw new Error('記錄失敗')
@@ -54,6 +64,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           clientId, date: today, compliant: todayNutrition.compliant, note: note || null,
           protein_grams: proteinInput ? Number(proteinInput) : null,
           water_ml: waterInput ? Number(waterInput) : null,
+          carbs_grams: carbsInput ? Number(carbsInput) : null,
+          fat_grams: fatInput ? Number(fatInput) : null,
+          calories: caloriesInput ? Number(caloriesInput) : null,
         })
       })
       if (!res.ok) throw new Error('儲存失敗')
@@ -77,6 +90,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           clientId, date: today, compliant: todayNutrition.compliant, note: todayNutrition.note || null,
           protein_grams: proteinInput ? Number(proteinInput) : null,
           water_ml: waterInput ? Number(waterInput) : null,
+          carbs_grams: carbsInput ? Number(carbsInput) : null,
+          fat_grams: fatInput ? Number(fatInput) : null,
+          calories: caloriesInput ? Number(caloriesInput) : null,
         })
       })
       if (!res.ok) throw new Error('儲存失敗')
@@ -292,6 +308,51 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                       </span>
                     )}
                   </div>
+                </div>
+              )}
+              {/* 備賽巨量營養素 */}
+              {competitionEnabled && (
+                <div className="border-t border-gray-100 pt-3 mt-1 space-y-3">
+                  <p className="text-xs font-semibold text-amber-600">🏆 備賽巨量營養素</p>
+                  {[
+                    { label: '熱量', emoji: '🔥', value: caloriesInput, setter: setCaloriesInput, target: caloriesTarget, unit: 'kcal', color: 'orange' },
+                    { label: '碳水', emoji: '🍚', value: carbsInput, setter: setCarbsInput, target: carbsTarget, unit: 'g', color: 'amber' },
+                    { label: '脂肪', emoji: '🥑', value: fatInput, setter: setFatInput, target: fatTarget, unit: 'g', color: 'yellow' },
+                  ].map(({ label, emoji, value, setter, target, unit, color }) => (
+                    <div key={label}>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-sm text-gray-600">{emoji} {label}</label>
+                        {target && <span className="text-xs text-gray-400">目標 {target}{unit}</span>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={value}
+                          onChange={(e) => setter(e.target.value)}
+                          placeholder="0"
+                          className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-500">{unit}</span>
+                        {target ? (
+                          <>
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${value && Number(value) >= target ? 'bg-green-500' : `bg-${color}-400`}`}
+                                style={{ width: `${Math.min(100, value ? (Number(value) / target) * 100 : 0)}%` }}
+                              />
+                            </div>
+                            {value && (
+                              <span className={`text-xs font-medium ${Number(value) >= target ? 'text-green-600' : `text-${color}-600`}`}>
+                                {Math.round((Number(value) / target) * 100)}%
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <div className="flex-1" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
               <button

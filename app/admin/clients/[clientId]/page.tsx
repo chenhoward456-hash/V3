@@ -43,6 +43,10 @@ interface Client {
   lab_enabled: boolean
   protein_target: number | null
   water_target: number | null
+  competition_enabled: boolean
+  carbs_target: number | null
+  fat_target: number | null
+  calories_target: number | null
   lab_results: LabResult[]
   supplements: Supplement[]
 }
@@ -78,6 +82,10 @@ export default function ClientEditor() {
         lab_enabled: false,
         protein_target: null,
         water_target: null,
+        competition_enabled: false,
+        carbs_target: null,
+        fat_target: null,
+        calories_target: null,
         lab_results: [],
         supplements: []
       })
@@ -145,6 +153,10 @@ export default function ClientEditor() {
             lab_enabled: client.lab_enabled,
             protein_target: client.protein_target || null,
             water_target: client.water_target || null,
+            competition_enabled: client.competition_enabled,
+            carbs_target: client.carbs_target || null,
+            fat_target: client.fat_target || null,
+            calories_target: client.calories_target || null,
             expires_at: expiresAt.toISOString()
           })
           .select()
@@ -199,7 +211,11 @@ export default function ClientEditor() {
             supplement_enabled: client.supplement_enabled,
             lab_enabled: client.lab_enabled,
             protein_target: client.protein_target || null,
-            water_target: client.water_target || null
+            water_target: client.water_target || null,
+            competition_enabled: client.competition_enabled,
+            carbs_target: client.carbs_target || null,
+            fat_target: client.fat_target || null,
+            calories_target: client.calories_target || null,
           })
           .eq('id', clientId)
         
@@ -434,6 +450,7 @@ export default function ClientEditor() {
               { key: 'training_enabled', label: '訓練追蹤', desc: '每日訓練類型與強度紀錄' },
               { key: 'supplement_enabled', label: '補品管理', desc: '補品清單與每日打卡' },
               { key: 'lab_enabled', label: '血檢追蹤', desc: '血檢數據與健康指標' },
+              { key: 'competition_enabled', label: '備賽模式', desc: '啟用熱量/碳水/脂肪巨量追蹤' },
             ] as const).map(({ key, label, desc }) => (
               <div key={key} className="flex items-center justify-between">
                 <div>
@@ -480,6 +497,46 @@ export default function ClientEditor() {
                   value={client.water_target ?? ''}
                   onChange={(e) => updateClient('water_target', e.target.value ? Number(e.target.value) : null)}
                   placeholder="例如：2500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Competition Targets */}
+        {client.competition_enabled && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">備賽巨量目標設定</h2>
+            <p className="text-xs text-gray-400 mb-4">設定後學員飲食記錄頁會顯示熱量/碳水/脂肪追蹤</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">每日熱量目標（kcal）</label>
+                <input
+                  type="number"
+                  value={client.calories_target ?? ''}
+                  onChange={(e) => updateClient('calories_target', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="例如：2200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">每日碳水目標（g）</label>
+                <input
+                  type="number"
+                  value={client.carbs_target ?? ''}
+                  onChange={(e) => updateClient('carbs_target', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="例如：200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">每日脂肪目標（g）</label>
+                <input
+                  type="number"
+                  value={client.fat_target ?? ''}
+                  onChange={(e) => updateClient('fat_target', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="例如：60"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, date, compliant, note, protein_grams, water_ml } = body
+    const { clientId, date, compliant, note, protein_grams, water_ml, carbs_grams, fat_grams, calories } = body
 
     if (!clientId || !date) {
       return createErrorResponse('缺少客戶 ID 或日期', 400)
@@ -91,6 +91,16 @@ export async function POST(request: NextRequest) {
     if (!waterValidation.isValid) {
       return createErrorResponse(waterValidation.error, 400)
     }
+
+    // 驗證備賽巨量營養素欄位
+    const carbsValidation = validateNumericField(carbs_grams, 0, 2000, 'carbs_grams')
+    if (!carbsValidation.isValid) return createErrorResponse(carbsValidation.error, 400)
+
+    const fatValidation = validateNumericField(fat_grams, 0, 500, 'fat_grams')
+    if (!fatValidation.isValid) return createErrorResponse(fatValidation.error, 400)
+
+    const caloriesValidation = validateNumericField(calories, 0, 10000, 'calories')
+    if (!caloriesValidation.isValid) return createErrorResponse(caloriesValidation.error, 400)
 
     // 清理 note 欄位
     const sanitizedNote = sanitizeTextField(note)
@@ -114,6 +124,9 @@ export async function POST(request: NextRequest) {
         note: sanitizedNote,
         protein_grams: protein_grams ?? null,
         water_ml: water_ml ?? null,
+        carbs_grams: carbs_grams ?? null,
+        fat_grams: fat_grams ?? null,
+        calories: calories ?? null,
       }, {
         onConflict: 'client_id,date'
       })

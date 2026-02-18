@@ -480,6 +480,10 @@ export default function ClientDashboard() {
             date={selectedDate}
             proteinTarget={clientData.client.protein_target}
             waterTarget={clientData.client.water_target}
+            competitionEnabled={clientData.client.competition_enabled}
+            carbsTarget={clientData.client.carbs_target}
+            fatTarget={clientData.client.fat_target}
+            caloriesTarget={clientData.client.calories_target}
             onMutate={mutate}
           /></div>
         )}
