@@ -330,95 +330,93 @@ export default function ClientDashboard() {
       <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
 
         {/* 標題區 */}
-        <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{clientData.client.name}</h1>
-              <p className="text-gray-600">
-                {new Date(selectedDate).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
-              </p>
+        <div className="bg-white rounded-3xl shadow-sm p-5 mb-6">
+          {/* 頂部：姓名 + 狀態 + 教練鎖 */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
+                {clientData.client.name.charAt(0)}
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 leading-tight">{clientData.client.name}</h1>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                  clientData.client.status === 'normal' ? 'bg-green-100 text-green-700'
+                  : clientData.client.status === 'attention' ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-red-100 text-red-700'
+                }`}>
+                  {clientData.client.status === 'normal' ? '● 狀態良好' : '● 需要關注'}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                clientData.client.status === 'normal' ? 'bg-green-100 text-green-800'
-                : clientData.client.status === 'attention' ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-red-100 text-red-800'
-              }`}>
-                <span className="hidden sm:inline">{clientData.client.status === 'normal' ? '健康狀態良好' : '需要關注'}</span>
-                <span className="sm:hidden">{clientData.client.status === 'normal' ? '良好' : '關注'}</span>
-              </div>
-              <div className="relative">
-                <button
-                  onClick={() => {
-                    if (isCoachMode) { setIsCoachMode(false); setSavedPin(''); sessionStorage.removeItem('coachMode'); sessionStorage.removeItem('coachPin') }
-                    else { setShowPinPopover(!showPinPopover) }
-                  }}
-                  className={`p-2 rounded-full transition-colors ${isCoachMode ? 'bg-green-100 text-green-700' : 'text-gray-400 hover:bg-gray-100'}`}
-                >
-                  {isCoachMode ? <Unlock size={18} /> : <Lock size={18} />}
-                </button>
-                {showPinPopover && !isCoachMode && (
-                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border p-3 z-50 w-48">
-                    <input
-                      type="password"
-                      value={pinInput}
-                      onChange={(e) => { setPinInput(e.target.value); setPinError(false) }}
-                      onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
-                      placeholder="輸入教練密碼"
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${pinError ? 'border-red-400' : 'border-gray-300'}`}
-                      autoFocus
-                    />
-                    {pinError && <p className="text-xs text-red-500 mt-1">密碼錯誤</p>}
-                    <button onClick={handlePinSubmit} className="w-full mt-2 bg-blue-600 text-white py-1.5 rounded-lg text-sm hover:bg-blue-700">解鎖</button>
-                  </div>
-                )}
-              </div>
+            <div className="relative">
+              <button
+                onClick={() => {
+                  if (isCoachMode) { setIsCoachMode(false); setSavedPin(''); sessionStorage.removeItem('coachMode'); sessionStorage.removeItem('coachPin') }
+                  else { setShowPinPopover(!showPinPopover) }
+                }}
+                className={`p-2 rounded-full transition-colors ${isCoachMode ? 'bg-green-100 text-green-700' : 'text-gray-400 hover:bg-gray-100'}`}
+              >
+                {isCoachMode ? <Unlock size={18} /> : <Lock size={18} />}
+              </button>
+              {showPinPopover && !isCoachMode && (
+                <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border p-3 z-50 w-48">
+                  <input
+                    type="password"
+                    value={pinInput}
+                    onChange={(e) => { setPinInput(e.target.value); setPinError(false) }}
+                    onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
+                    placeholder="輸入教練密碼"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${pinError ? 'border-red-400' : 'border-gray-300'}`}
+                    autoFocus
+                  />
+                  {pinError && <p className="text-xs text-red-500 mt-1">密碼錯誤</p>}
+                  <button onClick={handlePinSubmit} className="w-full mt-2 bg-blue-600 text-white py-1.5 rounded-lg text-sm hover:bg-blue-700">解鎖</button>
+                </div>
+              )}
             </div>
           </div>
 
+          {/* 日期導航 */}
+          <div className="flex items-center justify-between bg-gray-50 rounded-2xl px-3 py-2 mb-3">
+            <button onClick={() => changeDate(-1)} className="p-1.5 rounded-full hover:bg-gray-200 transition-colors text-gray-500">
+              <ChevronLeft size={18} />
+            </button>
+            <div className="text-center">
+              <button
+                onClick={() => setSelectedDate(today)}
+                className={`text-sm font-semibold px-3 py-1 rounded-full transition-colors ${isToday ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
+              >
+                {formatSelectedDate(selectedDate)}
+              </button>
+              {!isToday && (
+                <p className="text-xs text-gray-400">{new Date(selectedDate).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}</p>
+              )}
+            </div>
+            <button
+              onClick={() => changeDate(1)}
+              disabled={isToday}
+              className="p-1.5 rounded-full hover:bg-gray-200 transition-colors text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
           {clientData.client.coach_summary && (
-            <div className="bg-blue-50 rounded-2xl p-5 mb-4">
-              <h3 className="text-sm font-semibold text-blue-800 mb-2">Howard 教練的健康分析</h3>
-              <p className="text-sm text-gray-700 whitespace-pre-line">{clientData.client.coach_summary}</p>
+            <div className="bg-blue-50 rounded-2xl p-4 mb-3">
+              <h3 className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1.5">Howard 教練的健康分析</h3>
+              <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{clientData.client.coach_summary}</p>
               {(clientData.client.next_checkup_date || clientData.client.health_goals) && (
-                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 mt-3 pt-3 border-t border-blue-100">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 pt-2.5 border-t border-blue-100">
                   {clientData.client.next_checkup_date && (
-                    <span className="text-xs text-gray-600">📅 下次回檢：{new Date(clientData.client.next_checkup_date).toLocaleDateString('zh-TW')}</span>
+                    <span className="text-xs text-blue-600">📅 下次回檢：{new Date(clientData.client.next_checkup_date).toLocaleDateString('zh-TW')}</span>
                   )}
                   {clientData.client.health_goals && (
-                    <span className="text-xs text-gray-600">🎯 目標：{clientData.client.health_goals}</span>
+                    <span className="text-xs text-blue-600">🎯 {clientData.client.health_goals}</span>
                   )}
                 </div>
               )}
             </div>
           )}
-
-          {/* 日期導航 */}
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <button
-              onClick={() => changeDate(-1)}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              onClick={() => setSelectedDate(today)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                isToday
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {formatSelectedDate(selectedDate)}
-            </button>
-            <button
-              onClick={() => changeDate(1)}
-              disabled={isToday}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
 
           <HealthOverview
             weekRate={supplementComplianceStats.weekRate}
