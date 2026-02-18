@@ -12,6 +12,15 @@ export const metadata: Metadata = {
 
 const blogPosts = [
   {
+    id: '10',
+    title: '睡眠效能協議：睡眠不能補考，但可以預先儲值',
+    description: '熬夜補眠根本還不了睡眠債。分享我實測有效的睡眠環境設定、三件法寶、和完整的睡前協議，讓每分鐘睡眠發揮最大效益。',
+    date: '2026-02-18',
+    category: '恢復優化',
+    readTime: '6 分鐘',
+    slug: 'sleep-efficiency-protocol',
+  },
+  {
     id: '9',
     title: '早上別只喝白開水 — 一杯不到 1 塊的電解質水配方',
     description: '喝了半小時就跑廁所，然後還是口渴、腦袋昏昏的？問題不是你喝太少，是白開水「留不住」。分享我每天早上的電解質水配方。',
