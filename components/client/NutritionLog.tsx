@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import NutrientSlider from './NutrientSlider'
 
 interface NutritionLogProps {
-  todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null; carbs_grams?: number | null; fat_grams?: number | null; calories?: number | null; sodium_mg?: number | null } | null
+  todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null; carbs_grams?: number | null; fat_grams?: number | null; calories?: number | null } | null
   nutritionLogs: any[]
   clientId: string
   date?: string
@@ -14,11 +14,10 @@ interface NutritionLogProps {
   carbsTarget?: number | null
   fatTarget?: number | null
   caloriesTarget?: number | null
-  sodiumTarget?: number | null
   onMutate: () => void
 }
 
-export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, sodiumTarget, onMutate }: NutritionLogProps) {
+export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, onMutate }: NutritionLogProps) {
   const [saving, setSaving] = useState(false)
   const [note, setNote] = useState(todayNutrition?.note || '')
   const [showNote, setShowNote] = useState(false)
@@ -26,11 +25,18 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   const [waterInput, setWaterInput] = useState<string>(todayNutrition?.water_ml?.toString() || '')
   const [carbsInput, setCarbsInput] = useState<string>(todayNutrition?.carbs_grams?.toString() || '')
   const [fatInput, setFatInput] = useState<string>(todayNutrition?.fat_grams?.toString() || '')
-  const [caloriesInput, setCaloriesInput] = useState<string>(todayNutrition?.calories?.toString() || '')
-  const [sodiumInput, setSodiumInput] = useState<string>(todayNutrition?.sodium_mg?.toString() || '')
   const [savingNutrients, setSavingNutrients] = useState(false)
 
   const today = date || new Date().toISOString().split('T')[0]
+
+  // 自動計算熱量：蛋白質×4 + 碳水×4 + 脂肪×9
+  const computedCalories = useMemo(() => {
+    const p = proteinInput ? Number(proteinInput) : 0
+    const c = carbsInput ? Number(carbsInput) : 0
+    const f = fatInput ? Number(fatInput) : 0
+    if (!p && !c && !f) return null
+    return Math.round(p * 4 + c * 4 + f * 9)
+  }, [proteinInput, carbsInput, fatInput])
 
   const handleSubmit = async (compliant: boolean) => {
     setSaving(true)
@@ -44,8 +50,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           water_ml: waterInput ? Number(waterInput) : null,
           carbs_grams: carbsInput ? Number(carbsInput) : null,
           fat_grams: fatInput ? Number(fatInput) : null,
-          calories: caloriesInput ? Number(caloriesInput) : null,
-          sodium_mg: sodiumInput ? Number(sodiumInput) : null,
+          calories: computedCalories,
         })
       })
       if (!res.ok) throw new Error('記錄失敗')
@@ -70,8 +75,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           water_ml: waterInput ? Number(waterInput) : null,
           carbs_grams: carbsInput ? Number(carbsInput) : null,
           fat_grams: fatInput ? Number(fatInput) : null,
-          calories: caloriesInput ? Number(caloriesInput) : null,
-          sodium_mg: sodiumInput ? Number(sodiumInput) : null,
+          calories: computedCalories,
         })
       })
       if (!res.ok) throw new Error('儲存失敗')
@@ -97,8 +101,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           water_ml: waterInput ? Number(waterInput) : null,
           carbs_grams: carbsInput ? Number(carbsInput) : null,
           fat_grams: fatInput ? Number(fatInput) : null,
-          calories: caloriesInput ? Number(caloriesInput) : null,
-          sodium_mg: sodiumInput ? Number(sodiumInput) : null,
+          calories: computedCalories,
         })
       })
       if (!res.ok) throw new Error('儲存失敗')
@@ -193,13 +196,13 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
             {caloriesTarget && (
               <div className="text-center">
                 <p className="text-[10px] text-gray-500 mb-1">🔥 熱量</p>
-                <p className={`text-lg font-bold ${caloriesInput && Number(caloriesInput) >= caloriesTarget * 0.9 && Number(caloriesInput) <= caloriesTarget * 1.1 ? 'text-green-600' : Number(caloriesInput) ? 'text-orange-600' : 'text-gray-300'}`}>
-                  {caloriesInput ? Number(caloriesInput) : '--'}
+                <p className={`text-lg font-bold ${computedCalories && computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1 ? 'text-green-600' : computedCalories ? 'text-orange-600' : 'text-gray-300'}`}>
+                  {computedCalories ?? '--'}
                 </p>
                 <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
                   <div
-                    className={`h-full rounded-full transition-all ${caloriesInput && Number(caloriesInput) >= caloriesTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
-                    style={{ width: `${Math.min(100, caloriesInput ? (Number(caloriesInput) / caloriesTarget) * 100 : 0)}%` }}
+                    className={`h-full rounded-full transition-all ${computedCalories && computedCalories >= caloriesTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
+                    style={{ width: `${Math.min(100, computedCalories ? (computedCalories / caloriesTarget) * 100 : 0)}%` }}
                   />
                 </div>
                 <p className="text-[10px] text-gray-400 mt-0.5">/ {caloriesTarget}</p>
@@ -330,13 +333,6 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                 <div className="border-t border-gray-100 pt-3 mt-1 space-y-4">
                   <p className="text-xs font-semibold text-amber-600">🏆 備賽巨量營養素</p>
                   <NutrientSlider
-                    label="熱量" emoji="🔥"
-                    value={caloriesInput} onChange={setCaloriesInput}
-                    target={caloriesTarget} unit="kcal"
-                    max={Math.max(5000, (caloriesTarget || 2500) * 1.5)} step={50}
-                    color="orange"
-                  />
-                  <NutrientSlider
                     label="碳水" emoji="🍚"
                     value={carbsInput} onChange={setCarbsInput}
                     target={carbsTarget} unit="g"
@@ -350,15 +346,33 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                     max={Math.max(200, (fatTarget || 80) * 2)} step={5}
                     color="yellow"
                   />
-                  {sodiumTarget && (
-                    <NutrientSlider
-                      label="鈉" emoji="🧂"
-                      value={sodiumInput} onChange={setSodiumInput}
-                      target={sodiumTarget} unit="mg"
-                      max={Math.max(5000, (sodiumTarget || 2000) * 2)} step={50}
-                      color="rose"
-                    />
-                  )}
+                  {/* 自動計算熱量顯示 */}
+                  <div className="bg-orange-50 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">🔥 熱量（自動計算）</span>
+                      <span className={`text-lg font-bold ${
+                        computedCalories && caloriesTarget && computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1
+                          ? 'text-green-600'
+                          : computedCalories ? 'text-orange-600' : 'text-gray-300'
+                      }`}>
+                        {computedCalories ?? '--'} <span className="text-xs font-normal text-gray-400">kcal</span>
+                      </span>
+                    </div>
+                    {caloriesTarget && computedCalories && (
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${computedCalories >= caloriesTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
+                            style={{ width: `${Math.min(100, (computedCalories / caloriesTarget) * 100)}%` }}
+                          />
+                        </div>
+                        <span className={`text-xs font-medium ${computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1 ? 'text-green-600' : 'text-orange-600'}`}>
+                          {Math.round((computedCalories / caloriesTarget) * 100)}%
+                        </span>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-gray-400 mt-1">= 蛋白質×4 + 碳水×4 + 脂肪×9{caloriesTarget ? ` ｜ 目標 ${caloriesTarget} kcal` : ''}</p>
+                  </div>
                 </div>
               )}
               <button

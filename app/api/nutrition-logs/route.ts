@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, date, compliant, note, protein_grams, water_ml, carbs_grams, fat_grams, calories, sodium_mg } = body
+    const { clientId, date, compliant, note, protein_grams, water_ml, carbs_grams, fat_grams, calories } = body
 
     if (!clientId || !date) {
       return createErrorResponse('缺少客戶 ID 或日期', 400)
@@ -102,9 +102,6 @@ export async function POST(request: NextRequest) {
     const caloriesValidation = validateNumericField(calories, 0, 10000, 'calories')
     if (!caloriesValidation.isValid) return createErrorResponse(caloriesValidation.error, 400)
 
-    const sodiumValidation = validateNumericField(sodium_mg, 0, 20000, 'sodium_mg')
-    if (!sodiumValidation.isValid) return createErrorResponse(sodiumValidation.error, 400)
-
     // 清理 note 欄位
     const sanitizedNote = sanitizeTextField(note)
 
@@ -130,7 +127,6 @@ export async function POST(request: NextRequest) {
         carbs_grams: carbs_grams ?? null,
         fat_grams: fat_grams ?? null,
         calories: calories ?? null,
-        sodium_mg: sodium_mg ?? null,
       }, {
         onConflict: 'client_id,date'
       })

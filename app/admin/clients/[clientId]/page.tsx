@@ -49,7 +49,7 @@ interface Client {
   carbs_target: number | null
   fat_target: number | null
   calories_target: number | null
-  sodium_target: number | null
+
   lab_results: LabResult[]
   supplements: Supplement[]
 }
@@ -91,7 +91,7 @@ export default function ClientEditor() {
         carbs_target: null,
         fat_target: null,
         calories_target: null,
-        sodium_target: null,
+
         lab_results: [],
         supplements: []
       })
@@ -165,7 +165,7 @@ export default function ClientEditor() {
             carbs_target: client.carbs_target || null,
             fat_target: client.fat_target || null,
             calories_target: client.calories_target || null,
-            sodium_target: client.sodium_target || null,
+
             expires_at: expiresAt.toISOString()
           })
           .select()
@@ -226,8 +226,7 @@ export default function ClientEditor() {
             water_target: client.water_target || null,
             carbs_target: client.carbs_target || null,
             fat_target: client.fat_target || null,
-            calories_target: client.calories_target || null,
-            sodium_target: client.sodium_target || null
+            calories_target: client.calories_target || null
           })
           .eq('id', clientId)
 
@@ -553,7 +552,7 @@ export default function ClientEditor() {
               </div>
             </div>
             <h3 className="text-sm font-medium text-gray-700 mb-3">每日巨量營養素目標</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">熱量 (kcal)</label>
                 <input
@@ -581,16 +580,6 @@ export default function ClientEditor() {
                   value={client.fat_target ?? ''}
                   onChange={(e) => updateClient('fat_target', e.target.value ? Number(e.target.value) : null)}
                   placeholder="60"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">鈉 (mg)</label>
-                <input
-                  type="number"
-                  value={client.sodium_target ?? ''}
-                  onChange={(e) => updateClient('sodium_target', e.target.value ? Number(e.target.value) : null)}
-                  placeholder="2000"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

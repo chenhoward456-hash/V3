@@ -54,7 +54,13 @@ export default function AdminDashboard() {
     fetch('/api/admin/verify')
       .then(res => { if (!res.ok) { router.push('/admin/login'); return }; fetchData() })
       .catch(() => router.push('/admin/login'))
-  }, [router])
+
+    // 從編輯頁返回時重新載入
+    const handleFocus = () => { fetchData() }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const fetchData = async () => {
     try {

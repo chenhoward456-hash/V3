@@ -344,7 +344,6 @@ export default function ClientDashboard() {
             carbsTarget={c.carbs_target}
             fatTarget={c.fat_target}
             caloriesTarget={c.calories_target}
-            sodiumTarget={c.sodium_target}
             onMutate={mutate}
           /></div>
         )}
