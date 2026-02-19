@@ -14,6 +14,9 @@ interface HealthOverviewProps {
   labEnabled?: boolean
   bodyCompositionEnabled?: boolean
   wellnessEnabled?: boolean
+  competitionEnabled?: boolean
+  todayCalories?: number | null
+  caloriesTarget?: number | null
 }
 
 export default function HealthOverview({
@@ -25,6 +28,9 @@ export default function HealthOverview({
   labEnabled = true,
   bodyCompositionEnabled = true,
   wellnessEnabled = true,
+  competitionEnabled = false,
+  todayCalories = null,
+  caloriesTarget = null,
 }: HealthOverviewProps) {
   const cards = []
 
@@ -96,6 +102,21 @@ export default function HealthOverview({
           <span className="text-lg font-medium text-gray-500">{bodyFat != null ? '%' : ''}</span>
         </p>
         <p className="text-xs text-gray-400">{bodyFat != null ? '最新量測值' : '尚無數據'}</p>
+      </div>
+    )
+  }
+
+  if (competitionEnabled && caloriesTarget) {
+    const pct = todayCalories ? Math.round((todayCalories / caloriesTarget) * 100) : 0
+    cards.push(
+      <div key="calories" className="bg-amber-50 rounded-2xl p-4 text-center">
+        <p className="text-xs text-gray-500 mb-1">今日熱量</p>
+        <p className="text-2xl font-bold text-amber-600">
+          {todayCalories ? `${todayCalories}` : '--'}
+        </p>
+        <p className="text-xs text-gray-400">
+          {todayCalories ? `${pct}% of ${caloriesTarget}kcal` : `目標 ${caloriesTarget}kcal`}
+        </p>
       </div>
     )
   }

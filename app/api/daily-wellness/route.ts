@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, date, sleep_quality, energy_level, mood, note } = body
+    const { clientId, date, sleep_quality, energy_level, mood, note, hunger, digestion, training_drive } = body
 
     if (!clientId || !date) {
       return createErrorResponse('缺少客戶 ID 或日期', 400)
@@ -93,6 +93,17 @@ export async function POST(request: NextRequest) {
 
     if (mood != null && (mood < 1 || mood > 5)) {
       return createErrorResponse('心情分數必須在 1-5 之間', 400)
+    }
+
+    // 驗證備賽感受欄位
+    if (hunger != null && (hunger < 1 || hunger > 5)) {
+      return createErrorResponse('飢餓感分數必須在 1-5 之間', 400)
+    }
+    if (digestion != null && (digestion < 1 || digestion > 5)) {
+      return createErrorResponse('消化狀況分數必須在 1-5 之間', 400)
+    }
+    if (training_drive != null && (training_drive < 1 || training_drive > 5)) {
+      return createErrorResponse('訓練慾望分數必須在 1-5 之間', 400)
     }
 
     // 清理 note 欄位
@@ -118,7 +129,10 @@ export async function POST(request: NextRequest) {
         sleep_quality,
         energy_level,
         mood,
-        note: sanitizedNote
+        note: sanitizedNote,
+        hunger: hunger ?? null,
+        digestion: digestion ?? null,
+        training_drive: training_drive ?? null,
       }, {
         onConflict: 'client_id,date'
       })

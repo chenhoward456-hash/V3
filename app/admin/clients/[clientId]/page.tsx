@@ -41,12 +41,15 @@ interface Client {
   wellness_enabled: boolean
   supplement_enabled: boolean
   lab_enabled: boolean
+  competition_enabled: boolean
+  competition_date: string | null
+  prep_phase: string
   protein_target: number | null
   water_target: number | null
-  competition_enabled: boolean
   carbs_target: number | null
   fat_target: number | null
   calories_target: number | null
+  sodium_target: number | null
   lab_results: LabResult[]
   supplements: Supplement[]
 }
@@ -55,12 +58,12 @@ export default function ClientEditor() {
   const params = useParams()
   const router = useRouter()
   const clientId = params.clientId as string
-  
+
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  
+
   useEffect(() => {
     if (clientId === 'new') {
       // 新增學員
@@ -80,12 +83,15 @@ export default function ClientEditor() {
         wellness_enabled: false,
         supplement_enabled: false,
         lab_enabled: false,
+        competition_enabled: false,
+        competition_date: null,
+        prep_phase: 'off_season',
         protein_target: null,
         water_target: null,
-        competition_enabled: false,
         carbs_target: null,
         fat_target: null,
         calories_target: null,
+        sodium_target: null,
         lab_results: [],
         supplements: []
       })
@@ -95,7 +101,7 @@ export default function ClientEditor() {
       fetchClient()
     }
   }, [clientId])
-  
+
   const fetchClient = async () => {
     try {
       const { data, error } = await supabase
@@ -107,12 +113,12 @@ export default function ClientEditor() {
         `)
         .eq('id', clientId)
         .single()
-      
+
       if (error) {
         setError('載入學員資料失敗')
         return
       }
-      
+
       setClient(data)
     } catch (error) {
       setError('載入學員資料失敗')
@@ -120,20 +126,20 @@ export default function ClientEditor() {
       setLoading(false)
     }
   }
-  
+
   const handleSave = async () => {
     if (!client) return
-    
+
     setSaving(true)
     setError('')
-    
+
     try {
       if (clientId === 'new') {
         // 新增學員
         const uniqueCode = generateUniqueCode()
         const expiresAt = new Date()
         expiresAt.setMonth(expiresAt.getMonth() + 3)
-        
+
         const { data: newClient, error: clientError } = await supabase
           .from('clients')
           .insert({
@@ -151,46 +157,49 @@ export default function ClientEditor() {
             wellness_enabled: client.wellness_enabled,
             supplement_enabled: client.supplement_enabled,
             lab_enabled: client.lab_enabled,
+            competition_enabled: client.competition_enabled,
+            competition_date: client.competition_date || null,
+            prep_phase: client.prep_phase || 'off_season',
             protein_target: client.protein_target || null,
             water_target: client.water_target || null,
-            competition_enabled: client.competition_enabled,
             carbs_target: client.carbs_target || null,
             fat_target: client.fat_target || null,
             calories_target: client.calories_target || null,
+            sodium_target: client.sodium_target || null,
             expires_at: expiresAt.toISOString()
           })
           .select()
           .single()
-        
+
         if (clientError) {
           setError('新增學員失敗')
           return
         }
-        
+
         // 新增檢測數據
         if (client.lab_results.length > 0) {
           const labResultsWithClientId = client.lab_results.map(result => ({
             ...result,
             client_id: newClient.id
           }))
-          
+
           await supabase
             .from('lab_results')
             .insert(labResultsWithClientId)
         }
-        
+
         // 新增補品
         if (client.supplements.length > 0) {
           const supplementsWithClientId = client.supplements.map(supplement => ({
             ...supplement,
             client_id: newClient.id
           }))
-          
+
           await supabase
             .from('supplements')
             .insert(supplementsWithClientId)
         }
-        
+
         router.push('/admin')
       } else {
         // 更新現有學員
@@ -210,20 +219,23 @@ export default function ClientEditor() {
             wellness_enabled: client.wellness_enabled,
             supplement_enabled: client.supplement_enabled,
             lab_enabled: client.lab_enabled,
+            competition_enabled: client.competition_enabled,
+            competition_date: client.competition_date || null,
+            prep_phase: client.prep_phase || 'off_season',
             protein_target: client.protein_target || null,
             water_target: client.water_target || null,
-            competition_enabled: client.competition_enabled,
             carbs_target: client.carbs_target || null,
             fat_target: client.fat_target || null,
             calories_target: client.calories_target || null,
+            sodium_target: client.sodium_target || null
           })
           .eq('id', clientId)
-        
+
         if (clientError) {
           setError('更新學員資料失敗')
           return
         }
-        
+
         // 更新檢測數據
         for (const result of client.lab_results) {
           if (result.id) {
@@ -240,7 +252,7 @@ export default function ClientEditor() {
               })
           }
         }
-        
+
         // 更新補品
         for (const supplement of client.supplements) {
           if (supplement.id) {
@@ -257,7 +269,7 @@ export default function ClientEditor() {
               })
           }
         }
-        
+
         router.push('/admin')
       }
     } catch (error) {
@@ -266,7 +278,7 @@ export default function ClientEditor() {
       setSaving(false)
     }
   }
-  
+
   const generateUniqueCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
     let result = ''
@@ -275,12 +287,12 @@ export default function ClientEditor() {
     }
     return result
   }
-  
+
   const updateClient = (field: string, value: any) => {
     if (!client) return
     setClient({ ...client, [field]: value })
   }
-  
+
   const addLabResult = () => {
     if (!client) return
     setClient({
@@ -295,20 +307,20 @@ export default function ClientEditor() {
       }]
     })
   }
-  
+
   const updateLabResult = (index: number, field: string, value: any) => {
     if (!client) return
     const updatedResults = [...client.lab_results]
     updatedResults[index] = { ...updatedResults[index], [field]: value }
     setClient({ ...client, lab_results: updatedResults })
   }
-  
+
   const removeLabResult = (index: number) => {
     if (!client) return
     const updatedResults = client.lab_results.filter((_, i) => i !== index)
     setClient({ ...client, lab_results: updatedResults })
   }
-  
+
   const addSupplement = () => {
     if (!client) return
     setClient({
@@ -321,20 +333,20 @@ export default function ClientEditor() {
       }]
     })
   }
-  
+
   const updateSupplement = (index: number, field: string, value: any) => {
     if (!client) return
     const updatedSupplements = [...client.supplements]
     updatedSupplements[index] = { ...updatedSupplements[index], [field]: value }
     setClient({ ...client, supplements: updatedSupplements })
   }
-  
+
   const removeSupplement = (index: number) => {
     if (!client) return
     const updatedSupplements = client.supplements.filter((_, i) => i !== index)
     setClient({ ...client, supplements: updatedSupplements })
   }
-  
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -345,7 +357,7 @@ export default function ClientEditor() {
       </div>
     )
   }
-  
+
   if (!client) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -358,7 +370,7 @@ export default function ClientEditor() {
       </div>
     )
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -381,7 +393,7 @@ export default function ClientEditor() {
           </div>
         </div>
       </div>
-      
+
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
@@ -389,7 +401,7 @@ export default function ClientEditor() {
             {error}
           </div>
         )}
-        
+
         {/* Basic Info */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">基本資料</h2>
@@ -437,7 +449,7 @@ export default function ClientEditor() {
             </div>
           </div>
         </div>
-        
+
         {/* Feature Toggles */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">功能設定</h2>
@@ -450,7 +462,7 @@ export default function ClientEditor() {
               { key: 'training_enabled', label: '訓練追蹤', desc: '每日訓練類型與強度紀錄' },
               { key: 'supplement_enabled', label: '補品管理', desc: '補品清單與每日打卡' },
               { key: 'lab_enabled', label: '血檢追蹤', desc: '血檢數據與健康指標' },
-              { key: 'competition_enabled', label: '備賽模式', desc: '啟用熱量/碳水/脂肪巨量追蹤' },
+              { key: 'competition_enabled', label: '備賽模式 🏆', desc: '健美備賽倒數、完整巨量營養素、進階感受追蹤' },
             ] as const).map(({ key, label, desc }) => (
               <div key={key} className="flex items-center justify-between">
                 <div>
@@ -504,40 +516,82 @@ export default function ClientEditor() {
           </div>
         )}
 
-        {/* Competition Targets */}
+        {/* Competition Prep Settings */}
         {client.competition_enabled && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">備賽巨量目標設定</h2>
-            <p className="text-xs text-gray-400 mb-4">設定後學員飲食記錄頁會顯示熱量/碳水/脂肪追蹤</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-amber-400">
+            <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽設定</h2>
+            <p className="text-xs text-gray-400 mb-4">設定比賽資訊與巨量營養素目標</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">每日熱量目標（kcal）</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">比賽日期</label>
+                <input
+                  type="date"
+                  value={client.competition_date || ''}
+                  onChange={(e) => updateClient('competition_date', e.target.value || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {client.competition_date && (
+                  <p className="text-xs text-amber-600 mt-1 font-medium">
+                    距離比賽還有 {Math.max(0, Math.ceil((new Date(client.competition_date).getTime() - new Date().getTime()) / 86400000))} 天
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">備賽階段</label>
+                <select
+                  value={client.prep_phase || 'off_season'}
+                  onChange={(e) => updateClient('prep_phase', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="off_season">休賽期</option>
+                  <option value="bulk">增肌期</option>
+                  <option value="cut">減脂期</option>
+                  <option value="peak_week">Peak Week</option>
+                  <option value="competition">比賽日</option>
+                  <option value="recovery">賽後恢復</option>
+                </select>
+              </div>
+            </div>
+            <h3 className="text-sm font-medium text-gray-700 mb-3">每日巨量營養素目標</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">熱量 (kcal)</label>
                 <input
                   type="number"
                   value={client.calories_target ?? ''}
                   onChange={(e) => updateClient('calories_target', e.target.value ? Number(e.target.value) : null)}
-                  placeholder="例如：2200"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="2200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">每日碳水目標（g）</label>
+                <label className="block text-xs text-gray-500 mb-1">碳水 (g)</label>
                 <input
                   type="number"
                   value={client.carbs_target ?? ''}
                   onChange={(e) => updateClient('carbs_target', e.target.value ? Number(e.target.value) : null)}
-                  placeholder="例如：200"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="250"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">每日脂肪目標（g）</label>
+                <label className="block text-xs text-gray-500 mb-1">脂肪 (g)</label>
                 <input
                   type="number"
                   value={client.fat_target ?? ''}
                   onChange={(e) => updateClient('fat_target', e.target.value ? Number(e.target.value) : null)}
-                  placeholder="例如：60"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="60"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">鈉 (mg)</label>
+                <input
+                  type="number"
+                  value={client.sodium_target ?? ''}
+                  onChange={(e) => updateClient('sodium_target', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="2000"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -591,7 +645,7 @@ export default function ClientEditor() {
               新增檢測項目
             </button>
           </div>
-          
+
           <div className="space-y-4">
             {client.lab_results.map((result, index) => (
               <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -685,7 +739,7 @@ export default function ClientEditor() {
             ))}
           </div>
         </div>
-        
+
         {/* Supplements */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -697,7 +751,7 @@ export default function ClientEditor() {
               新增補品
             </button>
           </div>
-          
+
           <div className="space-y-4">
             {client.supplements.map((supplement, index) => (
               <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -754,7 +808,7 @@ export default function ClientEditor() {
             ))}
           </div>
         </div>
-        
+
         {/* Actions */}
         <div className="flex justify-end space-x-4">
           <Link

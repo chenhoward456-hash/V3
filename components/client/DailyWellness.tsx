@@ -6,6 +6,7 @@ interface DailyWellnessProps {
   todayWellness: any
   clientId: string
   date?: string
+  competitionEnabled?: boolean
   onMutate: () => void
 }
 
@@ -33,13 +34,40 @@ const MOOD_OPTIONS = [
   { score: 5, emoji: '😄', label: '很好' },
 ]
 
-export default function DailyWellness({ todayWellness, clientId, date, onMutate }: DailyWellnessProps) {
+const HUNGER_OPTIONS = [
+  { score: 1, emoji: '🤤', label: '很餓' },
+  { score: 2, emoji: '😋', label: '有點餓' },
+  { score: 3, emoji: '😐', label: '普通' },
+  { score: 4, emoji: '😌', label: '剛好' },
+  { score: 5, emoji: '🫃', label: '很飽' },
+]
+
+const DIGESTION_OPTIONS = [
+  { score: 1, emoji: '🤢', label: '很差' },
+  { score: 2, emoji: '😣', label: '不好' },
+  { score: 3, emoji: '😐', label: '普通' },
+  { score: 4, emoji: '😊', label: '不錯' },
+  { score: 5, emoji: '💪', label: '很好' },
+]
+
+const TRAINING_DRIVE_OPTIONS = [
+  { score: 1, emoji: '😩', label: '不想' },
+  { score: 2, emoji: '😔', label: '勉強' },
+  { score: 3, emoji: '😐', label: '普通' },
+  { score: 4, emoji: '💪', label: '想練' },
+  { score: 5, emoji: '🔥', label: '超想' },
+]
+
+export default function DailyWellness({ todayWellness, clientId, date, competitionEnabled, onMutate }: DailyWellnessProps) {
   const today = date || new Date().toISOString().split('T')[0]
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
     sleep_quality: todayWellness?.sleep_quality ?? null as number | null,
     energy_level: todayWellness?.energy_level ?? null as number | null,
     mood: todayWellness?.mood ?? null as number | null,
+    hunger: todayWellness?.hunger ?? null as number | null,
+    digestion: todayWellness?.digestion ?? null as number | null,
+    training_drive: todayWellness?.training_drive ?? null as number | null,
     note: todayWellness?.note || ''
   })
 
@@ -49,6 +77,9 @@ export default function DailyWellness({ todayWellness, clientId, date, onMutate 
         sleep_quality: todayWellness.sleep_quality ?? null,
         energy_level: todayWellness.energy_level ?? null,
         mood: todayWellness.mood ?? null,
+        hunger: todayWellness.hunger ?? null,
+        digestion: todayWellness.digestion ?? null,
+        training_drive: todayWellness.training_drive ?? null,
         note: todayWellness.note || '',
       })
     }
@@ -69,6 +100,9 @@ export default function DailyWellness({ todayWellness, clientId, date, onMutate 
           sleep_quality: form.sleep_quality,
           energy_level: form.energy_level,
           mood: form.mood,
+          hunger: form.hunger ?? null,
+          digestion: form.digestion ?? null,
+          training_drive: form.training_drive ?? null,
           note: form.note || null
         })
       })
@@ -81,11 +115,16 @@ export default function DailyWellness({ todayWellness, clientId, date, onMutate 
     }
   }
 
-  const fields = [
-    { key: 'sleep_quality' as const, label: '睡眠品質', options: SLEEP_OPTIONS },
-    { key: 'energy_level' as const, label: '精力水平', options: ENERGY_OPTIONS },
-    { key: 'mood' as const, label: '今日心情', options: MOOD_OPTIONS },
+  const fields: { key: 'sleep_quality' | 'energy_level' | 'mood' | 'hunger' | 'digestion' | 'training_drive'; label: string; options: { score: number; emoji: string; label: string }[]; compOnly: boolean }[] = [
+    { key: 'sleep_quality', label: '睡眠品質', options: SLEEP_OPTIONS, compOnly: false },
+    { key: 'energy_level', label: '精力水平', options: ENERGY_OPTIONS, compOnly: false },
+    { key: 'mood', label: '今日心情', options: MOOD_OPTIONS, compOnly: false },
+    { key: 'hunger', label: '飢餓感', options: HUNGER_OPTIONS, compOnly: true },
+    { key: 'digestion', label: '消化狀況', options: DIGESTION_OPTIONS, compOnly: true },
+    { key: 'training_drive', label: '訓練慾望', options: TRAINING_DRIVE_OPTIONS, compOnly: true },
   ]
+
+  const visibleFields = fields.filter(item => !item.compOnly || competitionEnabled)
 
   const allFilled = form.sleep_quality && form.energy_level && form.mood
 
@@ -99,8 +138,13 @@ export default function DailyWellness({ todayWellness, clientId, date, onMutate 
       </div>
 
       <div className="space-y-5">
-        {fields.map(({ key, label, options }) => (
+        {visibleFields.map(({ key, label, options, compOnly }, idx) => (
           <div key={key}>
+            {compOnly && idx > 0 && !visibleFields[idx - 1].compOnly && (
+              <div className="border-t border-amber-200 pt-3 mb-3">
+                <p className="text-xs font-semibold text-amber-600 mb-2">🏆 備賽指標</p>
+              </div>
+            )}
             <p className="text-sm font-medium text-gray-700 mb-2">{label}</p>
             <div className="flex gap-2">
               {options.map(({ score, emoji, label: optLabel }) => {

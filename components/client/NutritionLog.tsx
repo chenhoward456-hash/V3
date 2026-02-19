@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import NutrientSlider from './NutrientSlider'
 
 interface NutritionLogProps {
-  todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null; carbs_grams?: number | null; fat_grams?: number | null; calories?: number | null } | null
+  todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null; carbs_grams?: number | null; fat_grams?: number | null; calories?: number | null; sodium_mg?: number | null } | null
   nutritionLogs: any[]
   clientId: string
   date?: string
@@ -14,10 +14,11 @@ interface NutritionLogProps {
   carbsTarget?: number | null
   fatTarget?: number | null
   caloriesTarget?: number | null
+  sodiumTarget?: number | null
   onMutate: () => void
 }
 
-export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, onMutate }: NutritionLogProps) {
+export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, sodiumTarget, onMutate }: NutritionLogProps) {
   const [saving, setSaving] = useState(false)
   const [note, setNote] = useState(todayNutrition?.note || '')
   const [showNote, setShowNote] = useState(false)
@@ -26,6 +27,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   const [carbsInput, setCarbsInput] = useState<string>(todayNutrition?.carbs_grams?.toString() || '')
   const [fatInput, setFatInput] = useState<string>(todayNutrition?.fat_grams?.toString() || '')
   const [caloriesInput, setCaloriesInput] = useState<string>(todayNutrition?.calories?.toString() || '')
+  const [sodiumInput, setSodiumInput] = useState<string>(todayNutrition?.sodium_mg?.toString() || '')
   const [savingNutrients, setSavingNutrients] = useState(false)
 
   const today = date || new Date().toISOString().split('T')[0]
@@ -43,6 +45,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           carbs_grams: carbsInput ? Number(carbsInput) : null,
           fat_grams: fatInput ? Number(fatInput) : null,
           calories: caloriesInput ? Number(caloriesInput) : null,
+          sodium_mg: sodiumInput ? Number(sodiumInput) : null,
         })
       })
       if (!res.ok) throw new Error('記錄失敗')
@@ -68,6 +71,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           carbs_grams: carbsInput ? Number(carbsInput) : null,
           fat_grams: fatInput ? Number(fatInput) : null,
           calories: caloriesInput ? Number(caloriesInput) : null,
+          sodium_mg: sodiumInput ? Number(sodiumInput) : null,
         })
       })
       if (!res.ok) throw new Error('儲存失敗')
@@ -94,6 +98,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           carbs_grams: carbsInput ? Number(carbsInput) : null,
           fat_grams: fatInput ? Number(fatInput) : null,
           calories: caloriesInput ? Number(caloriesInput) : null,
+          sodium_mg: sodiumInput ? Number(sodiumInput) : null,
         })
       })
       if (!res.ok) throw new Error('儲存失敗')
@@ -345,6 +350,15 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                     max={Math.max(200, (fatTarget || 80) * 2)} step={5}
                     color="yellow"
                   />
+                  {sodiumTarget && (
+                    <NutrientSlider
+                      label="鈉" emoji="🧂"
+                      value={sodiumInput} onChange={setSodiumInput}
+                      target={sodiumTarget} unit="mg"
+                      max={Math.max(5000, (sodiumTarget || 2000) * 2)} step={50}
+                      color="rose"
+                    />
+                  )}
                 </div>
               )}
               <button
