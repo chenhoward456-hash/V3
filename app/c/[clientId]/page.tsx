@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { useClientData } from '@/hooks/useClientData'
+import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { Lock, Unlock, ChevronLeft, ChevronRight } from 'lucide-react'
 import HealthOverview from '@/components/client/HealthOverview'
 import DailyCheckIn from '@/components/client/DailyCheckIn'
@@ -31,7 +32,6 @@ export default function ClientDashboard() {
     const d = new Date(selectedDate)
     d.setDate(d.getDate() + offset)
     const newDate = d.toISOString().split('T')[0]
-    // 限制不能超過今天，不能早於 30 天前
     if (newDate > today) return
     const thirtyAgo = new Date()
     thirtyAgo.setDate(thirtyAgo.getDate() - 30)
@@ -88,22 +88,14 @@ export default function ClientDashboard() {
           sessionStorage.setItem('coachPin', pinInput)
           setShowPinPopover(false)
           setPinInput('')
-        } else {
-          setPinError(true)
-        }
-      } else {
-        setPinError(true)
-      }
-    } catch {
-      setPinError(true)
-    } finally {
-      setPinLoading(false)
-    }
+        } else { setPinError(true) }
+      } else { setPinError(true) }
+    } catch { setPinError(true) }
+    finally { setPinLoading(false) }
   }
 
   const coachHeaders = { 'Content-Type': 'application/json', 'x-coach-pin': savedPin }
 
-  // 切換補品打卡
   const handleToggleSupplement = async (supplementId: string, currentCompleted: boolean) => {
     setTogglingSupplements(prev => new Set(prev).add(supplementId))
     try {
@@ -120,177 +112,15 @@ export default function ClientDashboard() {
     }
   }
 
-  // 選擇日的感受
-  const todayWellness = useMemo(() => {
-    return clientData?.wellness?.find((w: any) => w.date === selectedDate) || null
-  }, [clientData?.wellness, selectedDate])
-
-  // 選擇日的訓練
-  const todayTraining = useMemo(() => {
-    return clientData?.trainingLogs?.find((t: any) => t.date === selectedDate) || null
-  }, [clientData?.trainingLogs, selectedDate])
-
-  // 選擇日的飲食
-  const todayNutrition = useMemo(() => {
-    return clientData?.nutritionLogs?.find((n: any) => n.date === selectedDate) || null
-  }, [clientData?.nutritionLogs, selectedDate])
-
-  // 選擇日的補品打卡（從 recentLogs 篩選）
-  const selectedDateLogs = useMemo(() => {
-    if (!clientData?.recentLogs) return clientData?.todayLogs || []
-    if (selectedDate === today) return clientData?.todayLogs || []
-    return clientData.recentLogs.filter((l: any) => l.date === selectedDate)
-  }, [clientData?.recentLogs, clientData?.todayLogs, selectedDate, today])
-
-  // 身體數據 — 每個欄位各自找最新有值的那筆
-  const sortedBodyData = useMemo(() => {
-    if (!clientData?.bodyData?.length) return []
-    return [...clientData.bodyData].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [clientData?.bodyData])
-
-  const latestByField = useMemo(() => {
-    const find = (field: string) => sortedBodyData.find((r: any) => r[field] != null)
-    return {
-      weight: find('weight'),
-      body_fat: find('body_fat'),
-      muscle_mass: find('muscle_mass'),
-      height: find('height'),
-    }
-  }, [sortedBodyData])
-
-  // 整筆最新（給 BodyComposition 傳所有欄位用）
-  const latestBodyData = useMemo(() => {
-    if (!sortedBodyData.length) return null
-    // 組合各欄位最新值
-    return {
-      ...sortedBodyData[0],
-      weight: latestByField.weight?.weight ?? null,
-      body_fat: latestByField.body_fat?.body_fat ?? null,
-      muscle_mass: latestByField.muscle_mass?.muscle_mass ?? null,
-      height: latestByField.height?.height ?? null,
-    }
-  }, [sortedBodyData, latestByField])
-
-  const prevBodyData = useMemo(() => {
-    // 每個欄位各自找第二新的
-    const findPrev = (field: string) => {
-      const items = sortedBodyData.filter((r: any) => r[field] != null)
-      return items.length >= 2 ? items[1] : null
-    }
-    return {
-      weight: findPrev('weight')?.weight ?? null,
-      body_fat: findPrev('body_fat')?.body_fat ?? null,
-      muscle_mass: findPrev('muscle_mass')?.muscle_mass ?? null,
-    }
-  }, [sortedBodyData])
-
-  const bmi = useMemo(() => {
-    const w = latestByField.weight?.weight
-    const h = latestByField.height?.height
-    if (!w || !h) return null
-    return (w / ((h / 100) ** 2)).toFixed(1)
-  }, [latestByField])
-
-  // 血檢統計（按指標分組，取每個指標最新一筆的狀態）
-  const labStats = useMemo(() => {
-    if (!clientData?.client?.lab_results?.length) return { normal: 0, total: 0 }
-    const latestByName = new Map<string, any>()
-    for (const r of clientData.client.lab_results) {
-      const existing = latestByName.get(r.test_name)
-      if (!existing || new Date(r.date) > new Date(existing.date)) {
-        latestByName.set(r.test_name, r)
-      }
-    }
-    let normal = 0
-    for (const r of latestByName.values()) {
-      if (r.status === 'normal') normal++
-    }
-    return { normal, total: latestByName.size }
-  }, [clientData?.client?.lab_results])
-
-  // 補品統計
-  const todaySupplementStats = useMemo(() => {
-    if (!selectedDateLogs || !clientData?.client?.supplements) return { completed: 0, total: 0, rate: 0 }
-    const completed = selectedDateLogs.filter((log: any) => log.completed).length
-    const total = clientData.client.supplements.length
-    return { completed, total, rate: total > 0 ? Math.round((completed / total) * 100) : 0 }
-  }, [selectedDateLogs, clientData?.client?.supplements])
-
-  const supplementComplianceStats = useMemo(() => {
-    const totalSupplements = clientData?.client?.supplements?.length || 0
-    if (!totalSupplements || !clientData?.recentLogs) return { weekRate: 0, monthRate: 0, weekDelta: null as number | null }
-    const now = new Date()
-    const todayStr = now.toISOString().split('T')[0]
-    const daysAgo = (n: number) => { const d = new Date(now); d.setDate(d.getDate() - n); return d.toISOString().split('T')[0] }
-    const logs = clientData.recentLogs as any[]
-    const weekStart = daysAgo(6)
-    const weekCompleted = logs.filter((l: any) => l.date >= weekStart && l.date <= todayStr && l.completed).length
-    const weekRate = Math.round((weekCompleted / (7 * totalSupplements)) * 100)
-    const monthStart = daysAgo(29)
-    const monthCompleted = logs.filter((l: any) => l.date >= monthStart && l.date <= todayStr && l.completed).length
-    const monthRate = Math.round((monthCompleted / (30 * totalSupplements)) * 100)
-    const lastWeekStart = daysAgo(13)
-    const lastWeekEnd = daysAgo(7)
-    const lastWeekCompleted = logs.filter((l: any) => l.date >= lastWeekStart && l.date <= lastWeekEnd && l.completed).length
-    const lastWeekRate = Math.round((lastWeekCompleted / (7 * totalSupplements)) * 100)
-    return { weekRate, monthRate, weekDelta: weekRate - lastWeekRate }
-  }, [clientData?.recentLogs, clientData?.client?.supplements])
-
-  // 體脂趨勢
-  const bodyFatTrend = useMemo(() => {
-    const latest = latestByField.body_fat?.body_fat
-    const prev = prevBodyData?.body_fat
-    if (latest == null || prev == null) return null
-    const diff = latest - prev
-    return { diff: Math.abs(diff).toFixed(1), direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'same' }
-  }, [latestByField, prevBodyData])
-
-  // 連續天數
-  const streakDays = useMemo(() => {
-    if (!clientData?.recentLogs?.length) return 0
-    const completedLogs = (clientData.recentLogs as any[]).filter((l: any) => l.completed)
-    if (!completedLogs.length) return 0
-    const datesWithCompleted = [...new Set(completedLogs.map((l: any) => l.date))].sort().reverse()
-    const now = new Date()
-    const todayStr = now.toISOString().split('T')[0]
-    const startOffset = datesWithCompleted[0] === todayStr ? 0 : 1
-    let streak = 0
-    for (let i = 0; i < datesWithCompleted.length; i++) {
-      const expected = new Date(now)
-      expected.setDate(expected.getDate() - (i + startOffset))
-      if (datesWithCompleted[i] === expected.toISOString().split('T')[0]) { streak++ } else { break }
-    }
-    return streak
-  }, [clientData?.recentLogs])
-
-  const streakMessage = useMemo(() => {
-    if (streakDays >= 30) return '健康達人！'
-    if (streakDays >= 14) return '超棒的習慣！'
-    if (streakDays >= 7) return '一週達成！'
-    if (streakDays >= 3) return '保持下去！'
-    if (streakDays >= 1) return '好的開始！'
-    return '今天開始吧！'
-  }, [streakDays])
-
-  // 趨勢圖
-  const trendData = useMemo(() => {
-    const trends: Record<string, any[]> = {}
-    if (clientData?.bodyData?.length) {
-      for (const key of ['weight', 'body_fat'] as const) {
-        const data = clientData.bodyData
-          .filter((r: any) => r[key] != null)
-          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-          .map((r: any) => ({ date: new Date(r.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }), value: r[key] }))
-        if (data.length > 0) trends[key] = data
-      }
-    }
-    return trends
-  }, [clientData?.bodyData])
-
-  // Top supplements for action plan
-  const topSupplements = useMemo(() => {
-    return clientData?.client?.supplements?.slice().sort((a: any, b: any) => (a.sort_order ?? Infinity) - (b.sort_order ?? Infinity)).slice(0, 3)
-  }, [clientData?.client?.supplements])
+  // 所有統計數據從 hook 取得
+  const {
+    todayWellness, todayTraining, todayNutrition,
+    selectedDateLogs,
+    latestBodyData, prevBodyData, latestByField, bmi,
+    labStats, todaySupplementStats, supplementComplianceStats,
+    bodyFatTrend, streakDays, streakMessage,
+    trendData, topSupplements,
+  } = useDashboardStats(clientData, selectedDate, today)
 
   if (isLoading) {
     return (
@@ -325,26 +155,27 @@ export default function ClientDashboard() {
     )
   }
 
+  const c = clientData.client
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
 
         {/* 標題區 */}
         <div className="bg-white rounded-3xl shadow-sm p-5 mb-6">
-          {/* 頂部：姓名 + 狀態 + 教練鎖 */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
-                {clientData.client.name.charAt(0)}
+                {c.name.charAt(0)}
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 leading-tight">{clientData.client.name}</h1>
+                <h1 className="text-xl font-bold text-gray-900 leading-tight">{c.name}</h1>
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  clientData.client.status === 'normal' ? 'bg-green-100 text-green-700'
-                  : clientData.client.status === 'attention' ? 'bg-yellow-100 text-yellow-700'
+                  c.status === 'normal' ? 'bg-green-100 text-green-700'
+                  : c.status === 'attention' ? 'bg-yellow-100 text-yellow-700'
                   : 'bg-red-100 text-red-700'
                 }`}>
-                  {clientData.client.status === 'normal' ? '● 狀態良好' : '● 需要關注'}
+                  {c.status === 'normal' ? '● 狀態良好' : '● 需要關注'}
                 </span>
               </div>
             </div>
@@ -401,18 +232,14 @@ export default function ClientDashboard() {
             </button>
           </div>
 
-          {clientData.client.coach_summary && (
+          {c.coach_summary && (
             <div className="bg-blue-50 rounded-2xl p-4 mb-3">
               <h3 className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1.5">Howard 教練的健康分析</h3>
-              <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{clientData.client.coach_summary}</p>
-              {(clientData.client.next_checkup_date || clientData.client.health_goals) && (
+              <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{c.coach_summary}</p>
+              {(c.next_checkup_date || c.health_goals) && (
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 pt-2.5 border-t border-blue-100">
-                  {clientData.client.next_checkup_date && (
-                    <span className="text-xs text-blue-600">📅 下次回檢：{new Date(clientData.client.next_checkup_date).toLocaleDateString('zh-TW')}</span>
-                  )}
-                  {clientData.client.health_goals && (
-                    <span className="text-xs text-blue-600">🎯 {clientData.client.health_goals}</span>
-                  )}
+                  {c.next_checkup_date && <span className="text-xs text-blue-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
+                  {c.health_goals && <span className="text-xs text-blue-600">🎯 {c.health_goals}</span>}
                 </div>
               )}
             </div>
@@ -428,16 +255,16 @@ export default function ClientDashboard() {
             bodyFatTrend={bodyFatTrend}
             todayMood={todayWellness?.mood}
             hasWellness={!!todayWellness}
-            supplementEnabled={clientData.client.supplement_enabled}
-            labEnabled={clientData.client.lab_enabled}
-            bodyCompositionEnabled={clientData.client.body_composition_enabled}
-            wellnessEnabled={clientData.client.wellness_enabled}
+            supplementEnabled={c.supplement_enabled}
+            labEnabled={c.lab_enabled}
+            bodyCompositionEnabled={c.body_composition_enabled}
+            wellnessEnabled={c.wellness_enabled}
           />
         </div>
 
-        {clientData.client.supplement_enabled && (
+        {c.supplement_enabled && (
           <div id="section-supplements" className="scroll-mt-4"><DailyCheckIn
-            supplements={clientData.client.supplements || []}
+            supplements={c.supplements || []}
             todayLogs={selectedDateLogs}
             todayStats={todaySupplementStats}
             streakDays={streakDays}
@@ -450,7 +277,7 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {clientData.client.wellness_enabled && (
+        {c.wellness_enabled && (
           <div id="section-wellness" className="scroll-mt-4"><DailyWellness
             todayWellness={todayWellness}
             clientId={clientId as string}
@@ -459,7 +286,7 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {clientData.client.training_enabled && (
+        {c.training_enabled && (
           <div id="section-training" className="scroll-mt-4"><TrainingLog
             todayTraining={todayTraining}
             trainingLogs={clientData.trainingLogs || []}
@@ -470,27 +297,25 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {clientData.client.nutrition_enabled && (
+        {c.nutrition_enabled && (
           <div id="section-nutrition" className="scroll-mt-4"><NutritionLog
             todayNutrition={todayNutrition}
             nutritionLogs={clientData.nutritionLogs || []}
             clientId={clientId as string}
             date={selectedDate}
-            proteinTarget={clientData.client.protein_target}
-            waterTarget={clientData.client.water_target}
-            competitionEnabled={clientData.client.competition_enabled}
-            carbsTarget={clientData.client.carbs_target}
-            fatTarget={clientData.client.fat_target}
-            caloriesTarget={clientData.client.calories_target}
+            proteinTarget={c.protein_target}
+            waterTarget={c.water_target}
+            competitionEnabled={c.competition_enabled}
+            carbsTarget={c.carbs_target}
+            fatTarget={c.fat_target}
+            caloriesTarget={c.calories_target}
             onMutate={mutate}
           /></div>
         )}
 
-        {clientData.client.wellness_enabled && (
-          <WellnessTrend wellness={clientData.wellness || []} />
-        )}
+        {c.wellness_enabled && <WellnessTrend wellness={clientData.wellness || []} />}
 
-        {clientData.client.body_composition_enabled && (
+        {c.body_composition_enabled && (
           <div id="section-body" className="scroll-mt-4"><BodyComposition
             latestBodyData={latestBodyData}
             prevBodyData={prevBodyData}
@@ -502,9 +327,9 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {clientData.client.lab_enabled && (
+        {c.lab_enabled && (
           <div id="section-lab" className="scroll-mt-4"><LabResults
-            labResults={clientData.client.lab_results || []}
+            labResults={c.lab_results || []}
             isCoachMode={isCoachMode}
             clientId={clientId as string}
             coachHeaders={coachHeaders}
@@ -513,20 +338,20 @@ export default function ClientDashboard() {
         )}
 
         <ActionPlan
-          healthGoals={clientData.client.health_goals}
-          nextCheckupDate={clientData.client.next_checkup_date}
-          coachSummary={clientData.client.coach_summary}
-          topSupplements={clientData.client.supplement_enabled ? topSupplements : []}
+          healthGoals={c.health_goals}
+          nextCheckupDate={c.next_checkup_date}
+          coachSummary={c.coach_summary}
+          topSupplements={c.supplement_enabled ? topSupplements : []}
         />
 
         {/* 未開放功能提示 */}
         {(() => {
           const locked = []
-          if (!clientData.client.wellness_enabled) locked.push({ icon: '😊', label: '每日感受紀錄' })
-          if (!clientData.client.nutrition_enabled) locked.push({ icon: '🥗', label: '飲食追蹤' })
-          if (!clientData.client.training_enabled) locked.push({ icon: '🏋️', label: '訓練追蹤' })
-          if (!clientData.client.supplement_enabled) locked.push({ icon: '💊', label: '補品管理' })
-          if (!clientData.client.lab_enabled) locked.push({ icon: '🩸', label: '血檢追蹤' })
+          if (!c.wellness_enabled) locked.push({ icon: '😊', label: '每日感受紀錄' })
+          if (!c.nutrition_enabled) locked.push({ icon: '🥗', label: '飲食追蹤' })
+          if (!c.training_enabled) locked.push({ icon: '🏋️', label: '訓練追蹤' })
+          if (!c.supplement_enabled) locked.push({ icon: '💊', label: '補品管理' })
+          if (!c.lab_enabled) locked.push({ icon: '🩸', label: '血檢追蹤' })
           if (locked.length === 0) return null
           return (
             <div className="bg-gray-50 rounded-3xl p-6 mb-6 border border-gray-100">
@@ -548,21 +373,17 @@ export default function ClientDashboard() {
         })()}
 
         {isCoachMode && (
-          <HealthReport
-            client={clientData.client}
-            latestBodyData={latestBodyData}
-            bmi={bmi}
-            weekRate={supplementComplianceStats.weekRate}
-            monthRate={supplementComplianceStats.monthRate}
+          <HealthReport client={c} latestBodyData={latestBodyData} bmi={bmi}
+            weekRate={supplementComplianceStats.weekRate} monthRate={supplementComplianceStats.monthRate}
           />
         )}
 
         <PwaPrompt />
       </div>
 
-      {showSupplementModal && clientData.client.supplement_enabled && (
+      {showSupplementModal && c.supplement_enabled && (
         <SupplementModal
-          supplements={clientData.client.supplements || []}
+          supplements={c.supplements || []}
           clientId={clientId as string}
           coachHeaders={coachHeaders}
           onClose={() => setShowSupplementModal(false)}
@@ -573,12 +394,12 @@ export default function ClientDashboard() {
       {/* 底部導航 */}
       {(() => {
         const tabs: { id: string; icon: string; label: string }[] = []
-        if (clientData.client.supplement_enabled) tabs.push({ id: 'section-supplements', icon: '💊', label: '補品' })
-        if (clientData.client.wellness_enabled) tabs.push({ id: 'section-wellness', icon: '😊', label: '感受' })
-        if (clientData.client.training_enabled) tabs.push({ id: 'section-training', icon: '🏋️', label: '訓練' })
-        if (clientData.client.nutrition_enabled) tabs.push({ id: 'section-nutrition', icon: '🥗', label: '飲食' })
-        if (clientData.client.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
-        if (clientData.client.lab_enabled) tabs.push({ id: 'section-lab', icon: '🩸', label: '血檢' })
+        if (c.supplement_enabled) tabs.push({ id: 'section-supplements', icon: '💊', label: '補品' })
+        if (c.wellness_enabled) tabs.push({ id: 'section-wellness', icon: '😊', label: '感受' })
+        if (c.training_enabled) tabs.push({ id: 'section-training', icon: '🏋️', label: '訓練' })
+        if (c.nutrition_enabled) tabs.push({ id: 'section-nutrition', icon: '🥗', label: '飲食' })
+        if (c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
+        if (c.lab_enabled) tabs.push({ id: 'section-lab', icon: '🩸', label: '血檢' })
         if (tabs.length <= 1) return null
         return (
           <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>

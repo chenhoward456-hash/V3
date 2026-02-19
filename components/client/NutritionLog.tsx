@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import NutrientSlider from './NutrientSlider'
 
 interface NutritionLogProps {
   todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null; carbs_grams?: number | null; fat_grams?: number | null; calories?: number | null } | null
@@ -244,121 +245,58 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
             </button>
           )}
 
-          {/* 蛋白質 & 水量 */}
+          {/* 蛋白質 & 水量（滑桿模式） */}
           {(proteinTarget || waterTarget) && (
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-4">
               {proteinTarget && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-sm text-gray-600">蛋白質</label>
-                    <span className="text-xs text-gray-400">目標 {proteinTarget}g</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={proteinInput}
-                      onChange={(e) => setProteinInput(e.target.value)}
-                      placeholder="0"
-                      className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-500">g</span>
-                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          proteinInput && Number(proteinInput) >= proteinTarget ? 'bg-green-500' : 'bg-blue-400'
-                        }`}
-                        style={{ width: `${Math.min(100, proteinInput ? (Number(proteinInput) / proteinTarget) * 100 : 0)}%` }}
-                      />
-                    </div>
-                    {proteinInput && (
-                      <span className={`text-xs font-medium ${Number(proteinInput) >= proteinTarget ? 'text-green-600' : 'text-blue-600'}`}>
-                        {Math.round((Number(proteinInput) / proteinTarget) * 100)}%
-                      </span>
-                    )}
-                  </div>
-                </div>
+                <NutrientSlider
+                  label="蛋白質" emoji="🥩"
+                  value={proteinInput} onChange={setProteinInput}
+                  target={proteinTarget} unit="g"
+                  max={Math.max(300, (proteinTarget || 150) * 1.5)} step={5}
+                  color="blue"
+                />
               )}
               {waterTarget && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-sm text-gray-600">飲水量</label>
-                    <span className="text-xs text-gray-400">目標 {waterTarget}ml</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={waterInput}
-                      onChange={(e) => setWaterInput(e.target.value)}
-                      placeholder="0"
-                      step="100"
-                      className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-500">ml</span>
-                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          waterInput && Number(waterInput) >= waterTarget ? 'bg-green-500' : 'bg-cyan-400'
-                        }`}
-                        style={{ width: `${Math.min(100, waterInput ? (Number(waterInput) / waterTarget) * 100 : 0)}%` }}
-                      />
-                    </div>
-                    {waterInput && (
-                      <span className={`text-xs font-medium ${Number(waterInput) >= waterTarget ? 'text-green-600' : 'text-cyan-600'}`}>
-                        {Math.round((Number(waterInput) / waterTarget) * 100)}%
-                      </span>
-                    )}
-                  </div>
-                </div>
+                <NutrientSlider
+                  label="飲水量" emoji="💧"
+                  value={waterInput} onChange={setWaterInput}
+                  target={waterTarget} unit="ml"
+                  max={Math.max(5000, (waterTarget || 2500) * 1.5)} step={100}
+                  color="cyan"
+                />
               )}
               {/* 備賽巨量營養素 */}
               {competitionEnabled && (
-                <div className="border-t border-gray-100 pt-3 mt-1 space-y-3">
+                <div className="border-t border-gray-100 pt-3 mt-1 space-y-4">
                   <p className="text-xs font-semibold text-amber-600">🏆 備賽巨量營養素</p>
-                  {[
-                    { label: '熱量', emoji: '🔥', value: caloriesInput, setter: setCaloriesInput, target: caloriesTarget, unit: 'kcal', color: 'orange' },
-                    { label: '碳水', emoji: '🍚', value: carbsInput, setter: setCarbsInput, target: carbsTarget, unit: 'g', color: 'amber' },
-                    { label: '脂肪', emoji: '🥑', value: fatInput, setter: setFatInput, target: fatTarget, unit: 'g', color: 'yellow' },
-                  ].map(({ label, emoji, value, setter, target, unit, color }) => (
-                    <div key={label}>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-sm text-gray-600">{emoji} {label}</label>
-                        {target && <span className="text-xs text-gray-400">目標 {target}{unit}</span>}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={value}
-                          onChange={(e) => setter(e.target.value)}
-                          placeholder="0"
-                          className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-500">{unit}</span>
-                        {target ? (
-                          <>
-                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all ${value && Number(value) >= target ? 'bg-green-500' : `bg-${color}-400`}`}
-                                style={{ width: `${Math.min(100, value ? (Number(value) / target) * 100 : 0)}%` }}
-                              />
-                            </div>
-                            {value && (
-                              <span className={`text-xs font-medium ${Number(value) >= target ? 'text-green-600' : `text-${color}-600`}`}>
-                                {Math.round((Number(value) / target) * 100)}%
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          <div className="flex-1" />
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                  <NutrientSlider
+                    label="熱量" emoji="🔥"
+                    value={caloriesInput} onChange={setCaloriesInput}
+                    target={caloriesTarget} unit="kcal"
+                    max={Math.max(5000, (caloriesTarget || 2500) * 1.5)} step={50}
+                    color="orange"
+                  />
+                  <NutrientSlider
+                    label="碳水" emoji="🍚"
+                    value={carbsInput} onChange={setCarbsInput}
+                    target={carbsTarget} unit="g"
+                    max={Math.max(500, (carbsTarget || 250) * 1.5)} step={5}
+                    color="amber"
+                  />
+                  <NutrientSlider
+                    label="脂肪" emoji="🥑"
+                    value={fatInput} onChange={setFatInput}
+                    target={fatTarget} unit="g"
+                    max={Math.max(200, (fatTarget || 80) * 2)} step={5}
+                    color="yellow"
+                  />
                 </div>
               )}
               <button
                 onClick={handleSaveNutrients}
                 disabled={savingNutrients}
-                className="w-full py-2 bg-blue-50 text-blue-600 text-sm font-medium rounded-xl hover:bg-blue-100 transition-colors disabled:opacity-50"
+                className="w-full py-2.5 bg-blue-50 text-blue-600 text-sm font-medium rounded-xl hover:bg-blue-100 transition-colors disabled:opacity-50"
               >
                 {savingNutrients ? '儲存中...' : '儲存飲食數據'}
               </button>
