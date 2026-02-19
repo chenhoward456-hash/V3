@@ -58,12 +58,12 @@ export default function ClientEditor() {
   const params = useParams()
   const router = useRouter()
   const clientId = params.clientId as string
-  
+
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  
+
   useEffect(() => {
     if (clientId === 'new') {
       // 新增學員
@@ -101,7 +101,7 @@ export default function ClientEditor() {
       fetchClient()
     }
   }, [clientId])
-  
+
   const fetchClient = async () => {
     try {
       const { data, error } = await supabase
@@ -113,12 +113,12 @@ export default function ClientEditor() {
         `)
         .eq('id', clientId)
         .single()
-      
+
       if (error) {
         setError('載入學員資料失敗')
         return
       }
-      
+
       setClient(data)
     } catch (error) {
       setError('載入學員資料失敗')
@@ -126,20 +126,20 @@ export default function ClientEditor() {
       setLoading(false)
     }
   }
-  
+
   const handleSave = async () => {
     if (!client) return
-    
+
     setSaving(true)
     setError('')
-    
+
     try {
       if (clientId === 'new') {
         // 新增學員
         const uniqueCode = generateUniqueCode()
         const expiresAt = new Date()
         expiresAt.setMonth(expiresAt.getMonth() + 3)
-        
+
         const { data: newClient, error: clientError } = await supabase
           .from('clients')
           .insert({
@@ -170,36 +170,36 @@ export default function ClientEditor() {
           })
           .select()
           .single()
-        
+
         if (clientError) {
           setError('新增學員失敗')
           return
         }
-        
+
         // 新增檢測數據
         if (client.lab_results.length > 0) {
           const labResultsWithClientId = client.lab_results.map(result => ({
             ...result,
             client_id: newClient.id
           }))
-          
+
           await supabase
             .from('lab_results')
             .insert(labResultsWithClientId)
         }
-        
+
         // 新增補品
         if (client.supplements.length > 0) {
           const supplementsWithClientId = client.supplements.map(supplement => ({
             ...supplement,
             client_id: newClient.id
           }))
-          
+
           await supabase
             .from('supplements')
             .insert(supplementsWithClientId)
         }
-        
+
         router.push('/admin')
       } else {
         // 更新現有學員
@@ -230,12 +230,12 @@ export default function ClientEditor() {
             sodium_target: client.sodium_target || null
           })
           .eq('id', clientId)
-        
+
         if (clientError) {
           setError('更新學員資料失敗')
           return
         }
-        
+
         // 更新檢測數據
         for (const result of client.lab_results) {
           if (result.id) {
@@ -252,7 +252,7 @@ export default function ClientEditor() {
               })
           }
         }
-        
+
         // 更新補品
         for (const supplement of client.supplements) {
           if (supplement.id) {
@@ -269,7 +269,7 @@ export default function ClientEditor() {
               })
           }
         }
-        
+
         router.push('/admin')
       }
     } catch (error) {
@@ -278,7 +278,7 @@ export default function ClientEditor() {
       setSaving(false)
     }
   }
-  
+
   const generateUniqueCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
     let result = ''
@@ -287,12 +287,12 @@ export default function ClientEditor() {
     }
     return result
   }
-  
+
   const updateClient = (field: string, value: any) => {
     if (!client) return
     setClient({ ...client, [field]: value })
   }
-  
+
   const addLabResult = () => {
     if (!client) return
     setClient({
@@ -307,20 +307,20 @@ export default function ClientEditor() {
       }]
     })
   }
-  
+
   const updateLabResult = (index: number, field: string, value: any) => {
     if (!client) return
     const updatedResults = [...client.lab_results]
     updatedResults[index] = { ...updatedResults[index], [field]: value }
     setClient({ ...client, lab_results: updatedResults })
   }
-  
+
   const removeLabResult = (index: number) => {
     if (!client) return
     const updatedResults = client.lab_results.filter((_, i) => i !== index)
     setClient({ ...client, lab_results: updatedResults })
   }
-  
+
   const addSupplement = () => {
     if (!client) return
     setClient({
@@ -333,20 +333,20 @@ export default function ClientEditor() {
       }]
     })
   }
-  
+
   const updateSupplement = (index: number, field: string, value: any) => {
     if (!client) return
     const updatedSupplements = [...client.supplements]
     updatedSupplements[index] = { ...updatedSupplements[index], [field]: value }
     setClient({ ...client, supplements: updatedSupplements })
   }
-  
+
   const removeSupplement = (index: number) => {
     if (!client) return
     const updatedSupplements = client.supplements.filter((_, i) => i !== index)
     setClient({ ...client, supplements: updatedSupplements })
   }
-  
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -357,7 +357,7 @@ export default function ClientEditor() {
       </div>
     )
   }
-  
+
   if (!client) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -370,7 +370,7 @@ export default function ClientEditor() {
       </div>
     )
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -393,7 +393,7 @@ export default function ClientEditor() {
           </div>
         </div>
       </div>
-      
+
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
@@ -401,7 +401,7 @@ export default function ClientEditor() {
             {error}
           </div>
         )}
-        
+
         {/* Basic Info */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">基本資料</h2>
@@ -449,7 +449,7 @@ export default function ClientEditor() {
             </div>
           </div>
         </div>
-        
+
         {/* Feature Toggles */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">功能設定</h2>
@@ -645,7 +645,7 @@ export default function ClientEditor() {
               新增檢測項目
             </button>
           </div>
-          
+
           <div className="space-y-4">
             {client.lab_results.map((result, index) => (
               <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -739,7 +739,7 @@ export default function ClientEditor() {
             ))}
           </div>
         </div>
-        
+
         {/* Supplements */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -751,7 +751,7 @@ export default function ClientEditor() {
               新增補品
             </button>
           </div>
-          
+
           <div className="space-y-4">
             {client.supplements.map((supplement, index) => (
               <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -808,7 +808,7 @@ export default function ClientEditor() {
             ))}
           </div>
         </div>
-        
+
         {/* Actions */}
         <div className="flex justify-end space-x-4">
           <Link

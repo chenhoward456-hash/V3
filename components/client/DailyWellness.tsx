@@ -10,6 +10,54 @@ interface DailyWellnessProps {
   onMutate: () => void
 }
 
+const SLEEP_OPTIONS = [
+  { score: 1, emoji: '😩', label: '很差' },
+  { score: 2, emoji: '😪', label: '不好' },
+  { score: 3, emoji: '😐', label: '普通' },
+  { score: 4, emoji: '😌', label: '不錯' },
+  { score: 5, emoji: '😴', label: '很好' },
+]
+
+const ENERGY_OPTIONS = [
+  { score: 1, emoji: '🪫', label: '沒電' },
+  { score: 2, emoji: '😓', label: '疲憊' },
+  { score: 3, emoji: '😐', label: '普通' },
+  { score: 4, emoji: '⚡', label: '充沛' },
+  { score: 5, emoji: '🔥', label: '滿滿' },
+]
+
+const MOOD_OPTIONS = [
+  { score: 1, emoji: '😫', label: '很差' },
+  { score: 2, emoji: '😔', label: '不好' },
+  { score: 3, emoji: '😐', label: '普通' },
+  { score: 4, emoji: '😊', label: '不錯' },
+  { score: 5, emoji: '😄', label: '很好' },
+]
+
+const HUNGER_OPTIONS = [
+  { score: 1, emoji: '🤤', label: '很餓' },
+  { score: 2, emoji: '😋', label: '有點餓' },
+  { score: 3, emoji: '😐', label: '普通' },
+  { score: 4, emoji: '😌', label: '剛好' },
+  { score: 5, emoji: '🫃', label: '很飽' },
+]
+
+const DIGESTION_OPTIONS = [
+  { score: 1, emoji: '🤢', label: '很差' },
+  { score: 2, emoji: '😣', label: '不好' },
+  { score: 3, emoji: '😐', label: '普通' },
+  { score: 4, emoji: '😊', label: '不錯' },
+  { score: 5, emoji: '💪', label: '很好' },
+]
+
+const TRAINING_DRIVE_OPTIONS = [
+  { score: 1, emoji: '😩', label: '不想' },
+  { score: 2, emoji: '😔', label: '勉強' },
+  { score: 3, emoji: '😐', label: '普通' },
+  { score: 4, emoji: '💪', label: '想練' },
+  { score: 5, emoji: '🔥', label: '超想' },
+]
+
 export default function DailyWellness({ todayWellness, clientId, date, competitionEnabled, onMutate }: DailyWellnessProps) {
   const today = date || new Date().toISOString().split('T')[0]
   const [submitting, setSubmitting] = useState(false)
@@ -23,7 +71,6 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
     note: todayWellness?.note || ''
   })
 
-  // 當 todayWellness 資料載入後同步表單
   useEffect(() => {
     if (todayWellness) {
       setForm({
@@ -61,7 +108,6 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
       })
       if (!response.ok) throw new Error('提交失敗')
       onMutate()
-      alert('今日感受已記錄！')
     } catch {
       alert('提交失敗，請重試')
     } finally {
@@ -69,60 +115,76 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
     }
   }
 
+  const fields: { key: 'sleep_quality' | 'energy_level' | 'mood' | 'hunger' | 'digestion' | 'training_drive'; label: string; options: { score: number; emoji: string; label: string }[]; compOnly: boolean }[] = [
+    { key: 'sleep_quality', label: '睡眠品質', options: SLEEP_OPTIONS, compOnly: false },
+    { key: 'energy_level', label: '精力水平', options: ENERGY_OPTIONS, compOnly: false },
+    { key: 'mood', label: '今日心情', options: MOOD_OPTIONS, compOnly: false },
+    { key: 'hunger', label: '飢餓感', options: HUNGER_OPTIONS, compOnly: true },
+    { key: 'digestion', label: '消化狀況', options: DIGESTION_OPTIONS, compOnly: true },
+    { key: 'training_drive', label: '訓練慾望', options: TRAINING_DRIVE_OPTIONS, compOnly: true },
+  ]
+
+  const visibleFields = fields.filter(item => !item.compOnly || competitionEnabled)
+
+  const allFilled = form.sleep_quality && form.energy_level && form.mood
+
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">每日感受</h2>
-      <div className="space-y-4">
-        {([
-          { key: 'sleep_quality' as const, label: '睡眠品質', emoji: '😴', compOnly: false },
-          { key: 'energy_level' as const, label: '精力水平', emoji: '⚡', compOnly: false },
-          { key: 'mood' as const, label: '心情', emoji: '😊', compOnly: false },
-          { key: 'hunger' as const, label: '飢餓感', emoji: '🍽️', compOnly: true },
-          { key: 'digestion' as const, label: '消化狀況', emoji: '🫁', compOnly: true },
-          { key: 'training_drive' as const, label: '訓練慾望', emoji: '💪', compOnly: true },
-        ]).filter(item => !item.compOnly || competitionEnabled).map(({ key, label, emoji, compOnly }, idx, arr) => (
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-lg font-bold text-gray-900">每日感受</h2>
+        {todayWellness && (
+          <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-medium">已記錄</span>
+        )}
+      </div>
+
+      <div className="space-y-5">
+        {visibleFields.map(({ key, label, options, compOnly }, idx) => (
           <div key={key}>
-            {compOnly && idx > 0 && !arr[idx - 1].compOnly && (
+            {compOnly && idx > 0 && !visibleFields[idx - 1].compOnly && (
               <div className="border-t border-amber-200 pt-3 mb-3">
                 <p className="text-xs font-semibold text-amber-600 mb-2">🏆 備賽指標</p>
               </div>
             )}
-            <p className="text-sm font-medium text-gray-700 mb-2">{emoji} {label}</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">{label}</p>
             <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map(score => (
-                <button
-                  key={score}
-                  onClick={() => setForm(prev => ({ ...prev, [key]: score }))}
-                  className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm font-medium transition-all ${
-                    form[key] === score
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {score}
-                </button>
-              ))}
+              {options.map(({ score, emoji, label: optLabel }) => {
+                const selected = form[key] === score
+                return (
+                  <button
+                    key={score}
+                    onClick={() => setForm(prev => ({ ...prev, [key]: selected ? null : score }))}
+                    className={`flex-1 flex flex-col items-center py-2.5 rounded-xl text-center transition-all ${
+                      selected
+                        ? 'bg-blue-600 text-white shadow-sm scale-105'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="text-xl leading-none mb-1">{emoji}</span>
+                    <span className={`text-[10px] font-medium ${selected ? 'text-blue-100' : 'text-gray-400'}`}>{optLabel}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
         ))}
 
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">今日感受記錄</p>
+          <p className="text-sm font-medium text-gray-700 mb-2">備註 <span className="text-gray-400 font-normal">（選填）</span></p>
           <textarea
             value={form.note}
             onChange={(e) => setForm(prev => ({ ...prev, note: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            rows={3}
-            placeholder="今天感覺如何？"
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 text-sm"
+            rows={2}
+            placeholder="今天特別的感受？"
           />
         </div>
 
         <button
           onClick={handleSubmit}
-          disabled={submitting}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+          disabled={submitting || !allFilled}
+          className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-40"
         >
-          {submitting ? '提交中...' : todayWellness ? '更新感受' : '記錄感受'}
+          {submitting ? '儲存中...' : todayWellness ? '更新感受' : '記錄感受'}
         </button>
       </div>
     </div>

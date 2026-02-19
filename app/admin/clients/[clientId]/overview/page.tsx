@@ -273,6 +273,30 @@ export default function ClientOverview() {
       }))
   }, [nutritionLogs])
 
+  // ===== 備賽巨量營養素趨勢 =====
+  const macroTrend = useMemo(() => {
+    if (!client?.competition_enabled || !nutritionLogs.length) return { calories: [], carbs: [], fat: [] }
+    const calories = nutritionLogs
+      .filter((l: any) => l.calories != null)
+      .map((l: any) => ({
+        date: new Date(l.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+        熱量: l.calories,
+      }))
+    const carbs = nutritionLogs
+      .filter((l: any) => l.carbs_grams != null)
+      .map((l: any) => ({
+        date: new Date(l.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+        碳水: l.carbs_grams,
+      }))
+    const fat = nutritionLogs
+      .filter((l: any) => l.fat_grams != null)
+      .map((l: any) => ({
+        date: new Date(l.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+        脂肪: l.fat_grams,
+      }))
+    return { calories, carbs, fat }
+  }, [nutritionLogs, client?.competition_enabled])
+
   // ===== 週報自動產出 =====
   const weeklyReport = useMemo(() => {
     const today = new Date()
@@ -387,6 +411,20 @@ export default function ClientOverview() {
       ? Math.round(weekNutritionWithWater.reduce((s: number, l: any) => s + l.water_ml, 0) / weekNutritionWithWater.length)
       : null
 
+    // 備賽巨量營養素平均
+    const weekNutritionWithCalories = weekNutrition.filter((l: any) => l.calories != null)
+    const avgCalories = weekNutritionWithCalories.length > 0
+      ? Math.round(weekNutritionWithCalories.reduce((s: number, l: any) => s + l.calories, 0) / weekNutritionWithCalories.length)
+      : null
+    const weekNutritionWithCarbs = weekNutrition.filter((l: any) => l.carbs_grams != null)
+    const avgCarbs = weekNutritionWithCarbs.length > 0
+      ? Math.round(weekNutritionWithCarbs.reduce((s: number, l: any) => s + l.carbs_grams, 0) / weekNutritionWithCarbs.length)
+      : null
+    const weekNutritionWithFat = weekNutrition.filter((l: any) => l.fat_grams != null)
+    const avgFat = weekNutritionWithFat.length > 0
+      ? Math.round(weekNutritionWithFat.reduce((s: number, l: any) => s + l.fat_grams, 0) / weekNutritionWithFat.length)
+      : null
+
     const nutrientParts: string[] = []
     if (avgProtein != null) {
       nutrientParts.push(`蛋白質平均 ${avgProtein}g${client?.protein_target ? `（目標 ${client.protein_target}g）` : ''}`)
@@ -396,6 +434,17 @@ export default function ClientOverview() {
     }
     if (nutrientParts.length > 0) {
       lines.push(`營養攝取：${nutrientParts.join('、')}。`)
+    }
+
+    // 備賽巨量摘要
+    if (client?.competition_enabled) {
+      const macroParts: string[] = []
+      if (avgCalories != null) macroParts.push(`熱量 ${avgCalories}kcal${client?.calories_target ? `/${client.calories_target}` : ''}`)
+      if (avgCarbs != null) macroParts.push(`碳水 ${avgCarbs}g${client?.carbs_target ? `/${client.carbs_target}` : ''}`)
+      if (avgFat != null) macroParts.push(`脂肪 ${avgFat}g${client?.fat_target ? `/${client.fat_target}` : ''}`)
+      if (macroParts.length > 0) {
+        lines.push(`備賽巨量：${macroParts.join('、')}。`)
+      }
     }
 
     return {
@@ -408,6 +457,7 @@ export default function ClientOverview() {
       weekNutRate, lastWeekNutRate,
       weightDelta,
       avgProtein, avgWater,
+      avgCalories, avgCarbs, avgFat,
       summary: lines.join('\n'),
       weekLabel: `${sevenDaysAgo.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })} - ${today.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })}`,
     }
@@ -592,6 +642,33 @@ export default function ClientOverview() {
                 {client.water_target && <p className="text-xs text-gray-400">目標 {client.water_target}ml</p>}
               </div>
             )}
+            {client.competition_enabled && weeklyReport.avgCalories != null && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">🔥 平均熱量</p>
+                <p className={`text-2xl font-bold ${client.calories_target && weeklyReport.avgCalories >= client.calories_target * 0.9 && weeklyReport.avgCalories <= client.calories_target * 1.1 ? 'text-green-600' : 'text-orange-600'}`}>
+                  {weeklyReport.avgCalories}
+                </p>
+                {client.calories_target && <p className="text-xs text-gray-400">目標 {client.calories_target}kcal</p>}
+              </div>
+            )}
+            {client.competition_enabled && weeklyReport.avgCarbs != null && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">🍚 平均碳水</p>
+                <p className={`text-2xl font-bold ${client.carbs_target && weeklyReport.avgCarbs >= client.carbs_target * 0.9 && weeklyReport.avgCarbs <= client.carbs_target * 1.1 ? 'text-green-600' : 'text-amber-600'}`}>
+                  {weeklyReport.avgCarbs}g
+                </p>
+                {client.carbs_target && <p className="text-xs text-gray-400">目標 {client.carbs_target}g</p>}
+              </div>
+            )}
+            {client.competition_enabled && weeklyReport.avgFat != null && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">🥑 平均脂肪</p>
+                <p className={`text-2xl font-bold ${client.fat_target && weeklyReport.avgFat >= client.fat_target * 0.9 && weeklyReport.avgFat <= client.fat_target * 1.1 ? 'text-green-600' : 'text-yellow-600'}`}>
+                  {weeklyReport.avgFat}g
+                </p>
+                {client.fat_target && <p className="text-xs text-gray-400">目標 {client.fat_target}g</p>}
+              </div>
+            )}
           </div>
 
           <div className="bg-white/60 rounded-xl p-3">
@@ -760,6 +837,60 @@ export default function ClientOverview() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ===== 備賽巨量營養素趨勢 ===== */}
+        {client.competition_enabled && (macroTrend.calories.length >= 2 || macroTrend.carbs.length >= 2 || macroTrend.fat.length >= 2) && (
+          <div className="bg-white rounded-2xl shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">🏆 備賽巨量營養素趨勢</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {macroTrend.calories.length >= 2 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">🔥 熱量 (kcal)</p>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <LineChart data={macroTrend.calories}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" fontSize={10} />
+                      <YAxis fontSize={10} />
+                      <Tooltip formatter={(v: any) => [`${v} kcal`, '熱量']} />
+                      <Line type="monotone" dataKey="熱量" stroke="#f97316" strokeWidth={2} dot={{ r: 2 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  {client.calories_target && <p className="text-xs text-gray-400 text-center">目標：{client.calories_target} kcal</p>}
+                </div>
+              )}
+              {macroTrend.carbs.length >= 2 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">🍚 碳水 (g)</p>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <LineChart data={macroTrend.carbs}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" fontSize={10} />
+                      <YAxis fontSize={10} />
+                      <Tooltip formatter={(v: any) => [`${v}g`, '碳水']} />
+                      <Line type="monotone" dataKey="碳水" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  {client.carbs_target && <p className="text-xs text-gray-400 text-center">目標：{client.carbs_target}g</p>}
+                </div>
+              )}
+              {macroTrend.fat.length >= 2 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">🥑 脂肪 (g)</p>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <LineChart data={macroTrend.fat}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" fontSize={10} />
+                      <YAxis fontSize={10} />
+                      <Tooltip formatter={(v: any) => [`${v}g`, '脂肪']} />
+                      <Line type="monotone" dataKey="脂肪" stroke="#eab308" strokeWidth={2} dot={{ r: 2 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  {client.fat_target && <p className="text-xs text-gray-400 text-center">目標：{client.fat_target}g</p>}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
