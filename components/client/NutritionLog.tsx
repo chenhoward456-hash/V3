@@ -180,6 +180,60 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
         )}
       </div>
 
+      {/* 備賽巨量營養素進度快照 */}
+      {competitionEnabled && hasRecorded && (caloriesTarget || carbsTarget || fatTarget) && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 mb-4">
+          <p className="text-xs font-semibold text-amber-700 mb-3">🏆 今日巨量營養素</p>
+          <div className="grid grid-cols-3 gap-3">
+            {caloriesTarget && (
+              <div className="text-center">
+                <p className="text-[10px] text-gray-500 mb-1">🔥 熱量</p>
+                <p className={`text-lg font-bold ${caloriesInput && Number(caloriesInput) >= caloriesTarget * 0.9 && Number(caloriesInput) <= caloriesTarget * 1.1 ? 'text-green-600' : Number(caloriesInput) ? 'text-orange-600' : 'text-gray-300'}`}>
+                  {caloriesInput ? Number(caloriesInput) : '--'}
+                </p>
+                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
+                  <div
+                    className={`h-full rounded-full transition-all ${caloriesInput && Number(caloriesInput) >= caloriesTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
+                    style={{ width: `${Math.min(100, caloriesInput ? (Number(caloriesInput) / caloriesTarget) * 100 : 0)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-0.5">/ {caloriesTarget}</p>
+              </div>
+            )}
+            {carbsTarget && (
+              <div className="text-center">
+                <p className="text-[10px] text-gray-500 mb-1">🍚 碳水</p>
+                <p className={`text-lg font-bold ${carbsInput && Number(carbsInput) >= carbsTarget * 0.9 && Number(carbsInput) <= carbsTarget * 1.1 ? 'text-green-600' : Number(carbsInput) ? 'text-amber-600' : 'text-gray-300'}`}>
+                  {carbsInput ? `${Number(carbsInput)}g` : '--'}
+                </p>
+                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
+                  <div
+                    className={`h-full rounded-full transition-all ${carbsInput && Number(carbsInput) >= carbsTarget * 0.9 ? 'bg-green-500' : 'bg-amber-400'}`}
+                    style={{ width: `${Math.min(100, carbsInput ? (Number(carbsInput) / carbsTarget) * 100 : 0)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-0.5">/ {carbsTarget}g</p>
+              </div>
+            )}
+            {fatTarget && (
+              <div className="text-center">
+                <p className="text-[10px] text-gray-500 mb-1">🥑 脂肪</p>
+                <p className={`text-lg font-bold ${fatInput && Number(fatInput) >= fatTarget * 0.9 && Number(fatInput) <= fatTarget * 1.1 ? 'text-green-600' : Number(fatInput) ? 'text-yellow-600' : 'text-gray-300'}`}>
+                  {fatInput ? `${Number(fatInput)}g` : '--'}
+                </p>
+                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
+                  <div
+                    className={`h-full rounded-full transition-all ${fatInput && Number(fatInput) >= fatTarget * 0.9 ? 'bg-green-500' : 'bg-yellow-400'}`}
+                    style={{ width: `${Math.min(100, fatInput ? (Number(fatInput) / fatTarget) * 100 : 0)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-0.5">/ {fatTarget}g</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 今日狀態按鈕 */}
       {!hasRecorded ? (
         <div className="mb-4">
