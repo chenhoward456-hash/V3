@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { useClientData } from '@/hooks/useClientData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
-import { Lock, Unlock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import HealthOverview from '@/components/client/HealthOverview'
 import DailyCheckIn from '@/components/client/DailyCheckIn'
 import DailyWellness from '@/components/client/DailyWellness'
@@ -57,6 +57,7 @@ export default function ClientDashboard() {
   const [showSupplementModal, setShowSupplementModal] = useState(false)
   const [togglingSupplements, setTogglingSupplements] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState('')
+  const [showCoachSummary, setShowCoachSummary] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -157,6 +158,7 @@ export default function ClientDashboard() {
   }
 
   const c = clientData.client
+  const isCompetition = c.competition_enabled
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -233,28 +235,15 @@ export default function ClientDashboard() {
             </button>
           </div>
 
-          {c.coach_summary && (
-            <div className="bg-blue-50 rounded-2xl p-4 mb-3">
-              <h3 className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1.5">Howard 教練的健康分析</h3>
-              <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{c.coach_summary}</p>
-              {(c.next_checkup_date || c.health_goals) && (
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 pt-2.5 border-t border-blue-100">
-                  {c.next_checkup_date && <span className="text-xs text-blue-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
-                  {c.health_goals && <span className="text-xs text-blue-600">🎯 {c.health_goals}</span>}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* 備賽倒數 Banner */}
-          {c.competition_enabled && c.competition_date && (() => {
+          {isCompetition && c.competition_date && (() => {
             const daysLeft = Math.ceil((new Date(c.competition_date).getTime() - new Date().getTime()) / 86400000)
             const phaseLabels: Record<string, string> = { off_season: '休賽期', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' }
             const phase = c.prep_phase || 'off_season'
             const urgencyColor = daysLeft <= 7 ? 'from-red-500 to-red-600' : daysLeft <= 14 ? 'from-amber-500 to-orange-500' : daysLeft <= 30 ? 'from-amber-400 to-yellow-500' : 'from-blue-500 to-blue-600'
             const urgencyBg = daysLeft <= 7 ? 'bg-red-50 border-red-200' : daysLeft <= 14 ? 'bg-amber-50 border-amber-200' : daysLeft <= 30 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
             return (
-              <div className={`${urgencyBg} border rounded-2xl p-4 mb-4`}>
+              <div className={`${urgencyBg} border rounded-2xl p-4 mb-3`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -275,7 +264,6 @@ export default function ClientDashboard() {
               </div>
             )
           })()}
-
 
           {/* 今日概覽卡片 */}
           {isToday && (
@@ -308,7 +296,7 @@ export default function ClientDashboard() {
               </div>
 
               {/* 備賽模式：今日體重 vs 目標 */}
-              {c.competition_enabled && c.target_weight && latestBodyData?.weight && (
+              {isCompetition && c.target_weight && latestBodyData?.weight && (
                 <div className="flex items-center gap-3 mt-2 pt-2 border-t border-blue-100">
                   <span className="text-xs text-gray-500">⚖️ 最新體重</span>
                   <span className="text-sm font-bold text-gray-800">{latestBodyData.weight} kg</span>
@@ -336,6 +324,30 @@ export default function ClientDashboard() {
             </div>
           )}
 
+          {/* 教練健康摘要（可展開） */}
+          {c.coach_summary && (
+            <div className="mb-3">
+              <button
+                onClick={() => setShowCoachSummary(!showCoachSummary)}
+                className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                <ChevronDown size={14} className={`transition-transform ${showCoachSummary ? 'rotate-180' : ''}`} />
+                {showCoachSummary ? '收起健康分析' : '查看教練健康分析'}
+              </button>
+              {showCoachSummary && (
+                <div className="bg-blue-50 rounded-2xl p-4 mt-2">
+                  <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{c.coach_summary}</p>
+                  {(c.next_checkup_date || c.health_goals) && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 pt-2.5 border-t border-blue-100">
+                      {c.next_checkup_date && <span className="text-xs text-blue-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
+                      {c.health_goals && <span className="text-xs text-blue-600">🎯 {c.health_goals}</span>}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <HealthOverview
             weekRate={supplementComplianceStats.weekRate}
             monthRate={supplementComplianceStats.monthRate}
@@ -347,14 +359,49 @@ export default function ClientDashboard() {
             todayMood={todayWellness?.mood}
             hasWellness={!!todayWellness}
             supplementEnabled={c.supplement_enabled}
-            labEnabled={c.lab_enabled}
+            labEnabled={!isCompetition && c.lab_enabled}
             bodyCompositionEnabled={c.body_composition_enabled}
             wellnessEnabled={c.wellness_enabled}
-            competitionEnabled={c.competition_enabled}
+            competitionEnabled={isCompetition}
             todayCalories={todayNutrition?.calories}
             caloriesTarget={c.calories_target}
           />
         </div>
+
+        {/* === 備賽選手：體重軌跡優先 === */}
+        {isCompetition && c.body_composition_enabled && (
+          <div id="section-body" className="scroll-mt-4"><BodyComposition
+            latestBodyData={latestBodyData}
+            prevBodyData={prevBodyData}
+            bmi={bmi}
+            trendData={trendData}
+            bodyData={clientData.bodyData || []}
+            clientId={clientId as string}
+            competitionEnabled={clientData.client.competition_enabled}
+            targetWeight={clientData.client.target_weight}
+            competitionDate={clientData.client.competition_date}
+            onMutate={mutate}
+          /></div>
+        )}
+
+        {/* 飲食（備賽選手排第二） */}
+        {isCompetition && c.nutrition_enabled && (
+          <div id="section-nutrition" className="scroll-mt-4"><NutritionLog
+            todayNutrition={todayNutrition}
+            nutritionLogs={clientData.nutritionLogs || []}
+            clientId={clientId as string}
+            date={selectedDate}
+            proteinTarget={c.protein_target}
+            waterTarget={c.water_target}
+            competitionEnabled={c.competition_enabled}
+            carbsTarget={c.carbs_target}
+            fatTarget={c.fat_target}
+            caloriesTarget={c.calories_target}
+            onMutate={mutate}
+          /></div>
+        )}
+
+        {/* === 一般學員區塊順序 / 備賽學員剩餘區塊 === */}
 
         {c.supplement_enabled && (
           <div id="section-supplements" className="scroll-mt-4"><DailyCheckIn
@@ -392,7 +439,8 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {c.nutrition_enabled && (
+        {/* 一般學員的飲食（非備賽才在這裡顯示） */}
+        {!isCompetition && c.nutrition_enabled && (
           <div id="section-nutrition" className="scroll-mt-4"><NutritionLog
             todayNutrition={todayNutrition}
             nutritionLogs={clientData.nutritionLogs || []}
@@ -410,7 +458,8 @@ export default function ClientDashboard() {
 
         {c.wellness_enabled && <WellnessTrend wellness={clientData.wellness || []} />}
 
-        {c.body_composition_enabled && (
+        {/* 一般學員的身體數據（非備賽才在這裡顯示） */}
+        {!isCompetition && c.body_composition_enabled && (
           <div id="section-body" className="scroll-mt-4"><BodyComposition
             latestBodyData={latestBodyData}
             prevBodyData={prevBodyData}
@@ -492,11 +541,12 @@ export default function ClientDashboard() {
       {/* 底部導航 */}
       {(() => {
         const tabs: { id: string; icon: string; label: string }[] = []
+        if (isCompetition && c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
+        if (c.nutrition_enabled) tabs.push({ id: 'section-nutrition', icon: '🥗', label: '飲食' })
         if (c.supplement_enabled) tabs.push({ id: 'section-supplements', icon: '💊', label: '補品' })
         if (c.wellness_enabled) tabs.push({ id: 'section-wellness', icon: '😊', label: '感受' })
         if (c.training_enabled) tabs.push({ id: 'section-training', icon: '🏋️', label: '訓練' })
-        if (c.nutrition_enabled) tabs.push({ id: 'section-nutrition', icon: '🥗', label: '飲食' })
-        if (c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
+        if (!isCompetition && c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
         if (c.lab_enabled) tabs.push({ id: 'section-lab', icon: '🩸', label: '血檢' })
         if (tabs.length <= 1) return null
         return (
