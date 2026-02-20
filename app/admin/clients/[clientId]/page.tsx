@@ -33,6 +33,7 @@ interface Client {
   gender: string
   status: 'normal' | 'attention' | 'alert'
   coach_summary: string
+  coach_weekly_note: string
   next_checkup_date: string
   health_goals: string
   training_enabled: boolean
@@ -76,6 +77,7 @@ export default function ClientEditor() {
         gender: '女性',
         status: 'normal',
         coach_summary: '',
+        coach_weekly_note: '',
         next_checkup_date: '',
         health_goals: '',
         training_enabled: false,
@@ -151,6 +153,7 @@ export default function ClientEditor() {
             gender: client.gender,
             status: client.status,
             coach_summary: client.coach_summary || null,
+            coach_weekly_note: client.coach_weekly_note || null,
             next_checkup_date: client.next_checkup_date || null,
             health_goals: client.health_goals || null,
             training_enabled: client.training_enabled,
@@ -214,6 +217,7 @@ export default function ClientEditor() {
             gender: client.gender,
             status: client.status,
             coach_summary: client.coach_summary || null,
+            coach_weekly_note: client.coach_weekly_note || null,
             next_checkup_date: client.next_checkup_date || null,
             health_goals: client.health_goals || null,
             training_enabled: client.training_enabled,
@@ -606,6 +610,17 @@ export default function ClientEditor() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">教練備註</h2>
           <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">💬 本週回饋給學員</label>
+              <p className="text-xs text-gray-400 mb-1">學員打開 app 第一眼就會看到，建議每週更新</p>
+              <textarea
+                value={client.coach_weekly_note || ''}
+                onChange={(e) => updateClient('coach_weekly_note', e.target.value)}
+                rows={2}
+                placeholder="例如：這週體重控制得不錯，繼續保持！碳水可以再多吃一點。"
+                className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">教練健康摘要</label>
               <textarea

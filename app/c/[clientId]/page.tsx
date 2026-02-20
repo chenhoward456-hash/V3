@@ -119,6 +119,7 @@ export default function ClientDashboard() {
     latestBodyData, prevBodyData, latestByField, bmi,
     labStats, todaySupplementStats, supplementComplianceStats,
     bodyFatTrend, streakDays, streakMessage,
+    overallStreak, todayCompletedItems,
     trendData, topSupplements,
   } = useDashboardStats(clientData, selectedDate, today)
 
@@ -275,6 +276,65 @@ export default function ClientDashboard() {
             )
           })()}
 
+
+          {/* 今日概覽卡片 */}
+          {isToday && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-4 mb-3">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📋</span>
+                  <span className="text-sm font-semibold text-gray-700">今日概覽</span>
+                </div>
+                {overallStreak > 0 && (
+                  <div className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1 shadow-sm">
+                    <span className="text-sm">🔥</span>
+                    <span className="text-sm font-bold text-orange-600">{overallStreak}</span>
+                    <span className="text-[10px] text-gray-500">天連續</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 今日完成項目 */}
+              <div className="flex flex-wrap gap-2 mb-2">
+                {todayCompletedItems.length > 0 ? (
+                  todayCompletedItems.map(item => (
+                    <span key={item.label} className="inline-flex items-center gap-1 bg-green-100 text-green-700 rounded-full px-2.5 py-1 text-xs font-medium">
+                      <span>{item.icon}</span> {item.label} ✓
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-gray-400">今天還沒有記錄，開始吧！</span>
+                )}
+              </div>
+
+              {/* 備賽模式：今日體重 vs 目標 */}
+              {c.competition_enabled && c.target_weight && latestBodyData?.weight && (
+                <div className="flex items-center gap-3 mt-2 pt-2 border-t border-blue-100">
+                  <span className="text-xs text-gray-500">⚖️ 最新體重</span>
+                  <span className="text-sm font-bold text-gray-800">{latestBodyData.weight} kg</span>
+                  <span className="text-xs text-gray-400">→</span>
+                  <span className="text-xs text-gray-500">🎯 目標</span>
+                  <span className="text-sm font-bold text-red-500">{c.target_weight} kg</span>
+                  <span className={`text-xs font-medium ml-auto ${Math.abs(latestBodyData.weight - c.target_weight) <= 1 ? 'text-green-600' : 'text-amber-600'}`}>
+                    差 {Math.abs(latestBodyData.weight - c.target_weight).toFixed(1)} kg
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 教練本週回饋 */}
+          {c.coach_weekly_note && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
+              <div className="flex items-start gap-2">
+                <span className="text-lg shrink-0">💬</span>
+                <div>
+                  <p className="text-xs font-semibold text-amber-700 mb-1">教練本週回饋</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{c.coach_weekly_note}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <HealthOverview
             weekRate={supplementComplianceStats.weekRate}
