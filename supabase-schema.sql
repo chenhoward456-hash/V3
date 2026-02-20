@@ -242,6 +242,7 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS fat_target NUMERIC;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS calories_target NUMERIC;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS sodium_target NUMERIC;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS target_weight NUMERIC;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS coach_weekly_note TEXT;
 
 -- nutrition_logs 表新增巨量營養素欄位
 ALTER TABLE nutrition_logs ADD COLUMN IF NOT EXISTS carbs_grams NUMERIC;

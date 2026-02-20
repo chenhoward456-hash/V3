@@ -127,7 +127,7 @@ export function useDashboardStats(clientData: any, selectedDate: string, today: 
     return { diff: Math.abs(diff).toFixed(1), direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'same' }
   }, [latestByField, prevBodyData])
 
-  // 連續天數
+  // 補品連續天數（原邏輯）
   const streakDays = useMemo(() => {
     if (!clientData?.recentLogs?.length) return 0
     const completedLogs = (clientData.recentLogs as any[]).filter((l: any) => l.completed)
@@ -153,6 +153,71 @@ export function useDashboardStats(clientData: any, selectedDate: string, today: 
     if (streakDays >= 1) return '好的開始！'
     return '今天開始吧！'
   }, [streakDays])
+
+  // 綜合連續記錄天數（任何一項有記錄就算）
+  const overallStreak = useMemo(() => {
+    const activeDates = new Set<string>()
+
+    // 補品打卡
+    if (clientData?.recentLogs?.length) {
+      for (const l of clientData.recentLogs as any[]) {
+        if (l.completed) activeDates.add(l.date)
+      }
+    }
+    // 飲食紀錄
+    if (clientData?.nutritionLogs?.length) {
+      for (const n of clientData.nutritionLogs as any[]) {
+        if (n.compliant != null) activeDates.add(n.date)
+      }
+    }
+    // 感受紀錄
+    if (clientData?.wellness?.length) {
+      for (const w of clientData.wellness as any[]) {
+        activeDates.add(w.date)
+      }
+    }
+    // 身體數據
+    if (clientData?.bodyData?.length) {
+      for (const b of clientData.bodyData as any[]) {
+        activeDates.add(b.date)
+      }
+    }
+    // 訓練紀錄
+    if (clientData?.trainingLogs?.length) {
+      for (const t of clientData.trainingLogs as any[]) {
+        activeDates.add(t.date)
+      }
+    }
+
+    if (activeDates.size === 0) return 0
+
+    const sortedDates = [...activeDates].sort().reverse()
+    const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+    const startOffset = sortedDates[0] === todayStr ? 0 : 1
+    let streak = 0
+    for (let i = 0; i < sortedDates.length; i++) {
+      const expected = new Date(now)
+      expected.setDate(expected.getDate() - (i + startOffset))
+      if (sortedDates[i] === expected.toISOString().split('T')[0]) { streak++ } else { break }
+    }
+    return streak
+  }, [clientData?.recentLogs, clientData?.nutritionLogs, clientData?.wellness, clientData?.bodyData, clientData?.trainingLogs])
+
+  // 今日已完成的項目（用於今日概覽卡片）
+  const todayCompletedItems = useMemo(() => {
+    const items: { icon: string; label: string }[] = []
+    if (todayWellness) items.push({ icon: '😊', label: '感受' })
+    if (todayTraining) items.push({ icon: '🏋️', label: '訓練' })
+    if (todayNutrition?.compliant != null) items.push({ icon: '🥗', label: '飲食' })
+    // 今天有量體重
+    const todayBody = clientData?.bodyData?.find((b: any) => b.date === today)
+    if (todayBody) items.push({ icon: '⚖️', label: '體重' })
+    // 今天有打補品卡
+    const todaySupLogs = clientData?.todayLogs || []
+    if (todaySupLogs.some((l: any) => l.completed)) items.push({ icon: '💊', label: '補品' })
+    return items
+  }, [todayWellness, todayTraining, todayNutrition, clientData?.bodyData, clientData?.todayLogs, today])
 
   // 趨勢圖
   const trendData = useMemo(() => {
@@ -180,6 +245,7 @@ export function useDashboardStats(clientData: any, selectedDate: string, today: 
     latestBodyData, prevBodyData, latestByField, bmi,
     labStats, todaySupplementStats, supplementComplianceStats,
     bodyFatTrend, streakDays, streakMessage,
+    overallStreak, todayCompletedItems,
     trendData, topSupplements,
   }
 }
