@@ -359,6 +359,8 @@ export default function ClientDashboard() {
             bodyData={clientData.bodyData || []}
             clientId={clientId as string}
             competitionEnabled={clientData.client.competition_enabled}
+            targetWeight={clientData.client.target_weight}
+            competitionDate={clientData.client.competition_date}
             onMutate={mutate}
           /></div>
         )}

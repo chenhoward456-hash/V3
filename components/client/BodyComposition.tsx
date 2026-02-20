@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Calendar, X, Plus, Scale, Activity, Dumbbell, Ruler, Heart } from 'lucide-react'
 import LazyChart from '@/components/charts/LazyChart'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 
 interface BodyCompositionProps {
   latestBodyData: any
@@ -12,11 +13,13 @@ interface BodyCompositionProps {
   bodyData: any[]
   clientId: string
   competitionEnabled?: boolean
+  targetWeight?: number | null
+  competitionDate?: string | null
   onMutate: () => void
 }
 
 export default function BodyComposition({
-  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, onMutate
+  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, onMutate
 }: BodyCompositionProps) {
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
@@ -36,20 +39,108 @@ export default function BodyComposition({
     const sorted = [...bodyData]
       .filter((r: any) => r.weight != null)
       .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    if (sorted.length < 3) return null // 至少 3 筆才有意義
+    if (sorted.length < 3) return null
 
     return sorted.map((r: any, idx: number) => {
-      // 往回找最多 7 天的資料算平均
       const windowStart = Math.max(0, idx - 6)
       const window = sorted.slice(windowStart, idx + 1)
       const ma = window.reduce((sum: number, d: any) => sum + d.weight, 0) / window.length
       return {
         date: new Date(r.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+        rawDate: r.date,
         value: r.weight,
         ma7: Math.round(ma * 10) / 10,
       }
     })
   }, [bodyData])
+
+  // 體重軌跡 vs 目標體重（含預測線）
+  const trajectoryData = useMemo(() => {
+    if (!competitionEnabled || !targetWeight || !competitionDate || !weightMAData || weightMAData.length < 3) return null
+
+    const compDate = new Date(competitionDate)
+    const now = new Date()
+    const daysToComp = Math.ceil((compDate.getTime() - now.getTime()) / 86400000)
+    if (daysToComp < 0) return null // 比賽已過
+
+    // 取近 14 天的 MA7 做線性回歸
+    const recentMA = weightMAData.slice(-14)
+    const n = recentMA.length
+
+    // 線性回歸：y = a + bx（x = 天數索引）
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0
+    recentMA.forEach((d, i) => {
+      sumX += i
+      sumY += d.ma7
+      sumXY += i * d.ma7
+      sumX2 += i * i
+    })
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
+    const lastMA = recentMA[recentMA.length - 1].ma7
+
+    // 預測比賽日體重
+    const predictedWeight = Math.round((lastMA + slope * daysToComp) * 10) / 10
+
+    // 構建圖表數據：實際數據 + 預測延伸
+    const chartData: { date: string; actual: number | null; ma7: number | null; predicted: number | null }[] = []
+
+    // 加入歷史數據（最近 30 天）
+    const recent30 = weightMAData.slice(-30)
+    recent30.forEach((d) => {
+      chartData.push({
+        date: d.date,
+        actual: d.value,
+        ma7: d.ma7,
+        predicted: null,
+      })
+    })
+
+    // 從最後一個 MA7 開始預測到比賽日
+    const lastEntry = recent30[recent30.length - 1]
+    // 把最後一個點也加到 predicted 讓線連接
+    chartData[chartData.length - 1].predicted = lastEntry.ma7
+
+    // 每 3 天加一個預測點（或到比賽日）
+    const interval = Math.max(1, Math.min(3, Math.floor(daysToComp / 6)))
+    for (let day = interval; day <= daysToComp; day += interval) {
+      const predDate = new Date(now)
+      predDate.setDate(now.getDate() + day)
+      const predWeight = Math.round((lastMA + slope * day) * 10) / 10
+      chartData.push({
+        date: predDate.toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+        actual: null,
+        ma7: null,
+        predicted: predWeight,
+      })
+    }
+
+    // 確保比賽日那天有一個點
+    const compDateStr = compDate.toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' })
+    const lastChartDate = chartData[chartData.length - 1]?.date
+    if (lastChartDate !== compDateStr) {
+      chartData.push({
+        date: compDateStr,
+        actual: null,
+        ma7: null,
+        predicted: predictedWeight,
+      })
+    }
+
+    // 計算 Y 軸範圍
+    const allValues = [
+      ...chartData.map(d => d.actual).filter((v): v is number => v != null),
+      ...chartData.map(d => d.ma7).filter((v): v is number => v != null),
+      ...chartData.map(d => d.predicted).filter((v): v is number => v != null),
+      targetWeight,
+    ]
+    const minY = Math.floor(Math.min(...allValues) - 1)
+    const maxY = Math.ceil(Math.max(...allValues) + 1)
+
+    const diff = Math.abs(predictedWeight - targetWeight)
+    const onTrack = diff <= 0.5
+
+    return { chartData, predictedWeight, daysToComp, slope, lastMA, minY, maxY, onTrack, diff }
+  }, [competitionEnabled, targetWeight, competitionDate, weightMAData])
 
   const handleSubmit = async () => {
     if (!form.weight || form.weight.trim() === '') { alert('請輸入體重'); return }
@@ -120,8 +211,96 @@ export default function BodyComposition({
           <LazyChart data={trendData[trendType] || []} height={256} stroke="#3b82f6" strokeWidth={2} />
         </div>
 
-        {/* 7 日移動平均線（備賽模式） */}
-        {competitionEnabled && weightMAData && weightMAData.length >= 3 && (
+        {/* 體重軌跡 vs 目標體重（備賽模式） */}
+        {trajectoryData && targetWeight && (
+          <div className="mt-4 border-t border-amber-200 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-700">🏆 體重軌跡 vs 目標</p>
+              <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-400 inline-block rounded" /> 實際</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-orange-400 inline-block rounded" /> 7日均</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-400 inline-block rounded" style={{borderTop: '2px dashed #9ca3af', height: 0}} /> 預測</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-red-400 inline-block rounded" style={{borderTop: '2px dashed #f87171', height: 0}} /> 目標</span>
+              </div>
+            </div>
+
+            <div className="h-56 w-full min-w-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trajectoryData.chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="date" fontSize={10} tick={{ fill: '#9ca3af' }} interval="preserveStartEnd" />
+                  <YAxis domain={[trajectoryData.minY, trajectoryData.maxY]} fontSize={10} tick={{ fill: '#9ca3af' }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderRadius: 8, border: 'none', fontSize: 12 }}
+                    labelStyle={{ color: '#ccc' }}
+                    formatter={(value: any, name: any) => {
+                      const labels: Record<string, string> = { actual: '實際體重', ma7: '7日均值', predicted: '預測' }
+                      return [`${value} kg`, labels[name as string] || name]
+                    }}
+                  />
+                  <ReferenceLine
+                    y={targetWeight}
+                    stroke="#f87171"
+                    strokeDasharray="6 3"
+                    strokeWidth={1.5}
+                    label={{ value: `目標 ${targetWeight}kg`, position: 'right', fontSize: 10, fill: '#f87171' }}
+                  />
+                  <Line type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2, fill: '#3b82f6' }} connectNulls={false} />
+                  <Line type="monotone" dataKey="ma7" stroke="#f97316" strokeWidth={2} dot={{ r: 2, fill: '#f97316' }} connectNulls={false} />
+                  <Line type="monotone" dataKey="predicted" stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="4 3" dot={{ r: 2, fill: '#9ca3af' }} connectNulls={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 資訊摘要 */}
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-[10px] text-gray-400 mb-0.5">目前體重（7日均）</p>
+                <p className="text-lg font-bold text-orange-600">{trajectoryData.lastMA} kg</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-[10px] text-gray-400 mb-0.5">目標體重</p>
+                <p className="text-lg font-bold text-red-500">{targetWeight} kg</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-[10px] text-gray-400 mb-0.5">預測比賽日體重</p>
+                <p className={`text-lg font-bold ${trajectoryData.onTrack ? 'text-green-600' : 'text-amber-600'}`}>
+                  {trajectoryData.predictedWeight} kg
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-[10px] text-gray-400 mb-0.5">距離比賽</p>
+                <p className="text-lg font-bold text-gray-700">{trajectoryData.daysToComp} 天</p>
+              </div>
+            </div>
+
+            {/* 狀態判斷 */}
+            <div className={`mt-3 rounded-xl px-4 py-3 text-sm font-medium ${
+              trajectoryData.onTrack
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : trajectoryData.predictedWeight > targetWeight
+                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                  : 'bg-blue-50 text-blue-700 border border-blue-200'
+            }`}>
+              {trajectoryData.onTrack
+                ? '✅ 在軌道上！照目前趨勢，比賽日可以達到目標體重'
+                : trajectoryData.predictedWeight > targetWeight
+                  ? `⚠️ 預計比目標重 ${trajectoryData.diff.toFixed(1)} kg，需要加速減重`
+                  : `💡 預計比目標輕 ${trajectoryData.diff.toFixed(1)} kg，減重速度良好`
+              }
+            </div>
+
+            {/* 每週掉重速率 */}
+            {trajectoryData.slope !== 0 && (
+              <p className="text-[10px] text-gray-400 mt-2 text-center">
+                目前趨勢：每週 {trajectoryData.slope > 0 ? '+' : ''}{(trajectoryData.slope * 7).toFixed(2)} kg/週
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* 7 日移動平均線（備賽模式，無目標體重時 fallback） */}
+        {competitionEnabled && !trajectoryData && weightMAData && weightMAData.length >= 3 && (
           <div className="mt-4 border-t border-amber-200 pt-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-gray-700">🏆 體重 7 日移動平均</p>
@@ -140,13 +319,11 @@ export default function BodyComposition({
                 const maPct = ((d.ma7 - minW) / range) * 100
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center relative" style={{height: '100%'}}>
-                    {/* MA dot */}
                     <div
                       className="absolute w-2 h-2 bg-orange-400 rounded-full z-10"
                       style={{ bottom: `${maPct}%`, transform: 'translateY(50%)' }}
                       title={`7日均: ${d.ma7}kg`}
                     />
-                    {/* Raw dot */}
                     <div
                       className="absolute w-2 h-2 bg-blue-500 rounded-full z-10"
                       style={{ bottom: `${rawPct}%`, transform: 'translateY(50%)' }}
