@@ -49,6 +49,7 @@ interface Client {
   carbs_target: number | null
   fat_target: number | null
   calories_target: number | null
+  target_weight: number | null
 
   lab_results: LabResult[]
   supplements: Supplement[]
@@ -91,6 +92,7 @@ export default function ClientEditor() {
         carbs_target: null,
         fat_target: null,
         calories_target: null,
+        target_weight: null,
 
         lab_results: [],
         supplements: []
@@ -165,6 +167,7 @@ export default function ClientEditor() {
             carbs_target: client.carbs_target || null,
             fat_target: client.fat_target || null,
             calories_target: client.calories_target || null,
+            target_weight: client.target_weight || null,
 
             expires_at: expiresAt.toISOString()
           })
@@ -226,7 +229,8 @@ export default function ClientEditor() {
             water_target: client.water_target || null,
             carbs_target: client.carbs_target || null,
             fat_target: client.fat_target || null,
-            calories_target: client.calories_target || null
+            calories_target: client.calories_target || null,
+            target_weight: client.target_weight || null
           })
           .eq('id', clientId)
 
@@ -550,6 +554,17 @@ export default function ClientEditor() {
                   <option value="recovery">賽後恢復</option>
                 </select>
               </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">目標體重 (kg)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={client.target_weight ?? ''}
+                onChange={(e) => updateClient('target_weight', e.target.value ? Number(e.target.value) : null)}
+                placeholder="比賽日目標體重，例如：65.0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
             <h3 className="text-sm font-medium text-gray-700 mb-3">每日巨量營養素目標</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
