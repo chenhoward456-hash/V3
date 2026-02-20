@@ -525,8 +525,14 @@ export default function ClientOverview() {
             <div className="flex items-center gap-4">
               <Link href="/admin" className="text-gray-600 hover:text-gray-900">← 返回</Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">{client.name} — 學員總覽</h1>
-                <p className="text-xs text-gray-500">{client.age}歲 · {client.gender}</p>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold text-gray-900">{client.name} — 學員總覽</h1>
+                  {client.competition_enabled && client.competition_date && (() => {
+                    const d = Math.ceil((new Date(client.competition_date).getTime() - Date.now()) / 86400000)
+                    return d > 0 ? <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${d <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {d}天</span> : null
+                  })()}
+                </div>
+                <p className="text-xs text-gray-500">{client.age}歲 · {client.gender}{client.competition_enabled ? ` · ${({ off_season: '非賽季', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' } as Record<string, string>)[client.prep_phase || ''] || ''}` : ''}</p>
               </div>
             </div>
             <Link
@@ -541,17 +547,82 @@ export default function ClientOverview() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        {/* ===== 警示 ===== */}
-        {alerts.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-            <p className="text-sm font-medium text-red-800 mb-2">⚠️ 需要注意</p>
-            <div className="space-y-1">
+        {/* ===== 頂部快速摘要：紅綠燈 ===== */}
+        <div className={`rounded-2xl p-5 border ${
+          alerts.length >= 2 ? 'bg-red-50 border-red-200' : alerts.length === 1 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'
+        }`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">{alerts.length >= 2 ? '🔴' : alerts.length === 1 ? '🟡' : '🟢'}</span>
+              <div>
+                <h2 className="text-base font-bold text-gray-900">{client.name} — 快速摘要</h2>
+                <p className="text-xs text-gray-500">
+                  {client.competition_enabled && client.competition_date && (() => {
+                    const d = Math.ceil((new Date(client.competition_date).getTime() - Date.now()) / 86400000)
+                    return d > 0 ? `🏆 距比賽 ${d} 天 · ${
+                      (({ off_season: '非賽季', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' } as Record<string, string>)[client.prep_phase || ''] || client.prep_phase || '')
+                    }` : '比賽已結束'
+                  })()}
+                  {!client.competition_enabled && (client.health_goals || `${client.age}歲 · ${client.gender}`)}
+                </p>
+              </div>
+            </div>
+            <Link href={`/admin/clients/${clientId}`} className="px-3 py-1.5 bg-white text-gray-700 rounded-lg text-xs hover:bg-gray-100 transition-colors shadow-sm">
+              編輯
+            </Link>
+          </div>
+
+          {/* 關鍵指標一排 */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
+            {client.supplement_enabled && (
+              <div className="bg-white/70 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-gray-500">補品</p>
+                <p className={`text-lg font-bold ${keyMetrics.weekCompliance >= 80 ? 'text-green-600' : keyMetrics.weekCompliance >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>{keyMetrics.weekCompliance}%</p>
+              </div>
+            )}
+            {client.nutrition_enabled && keyMetrics.weekNutritionRate != null && (
+              <div className="bg-white/70 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-gray-500">飲食</p>
+                <p className={`text-lg font-bold ${keyMetrics.weekNutritionRate >= 80 ? 'text-green-600' : keyMetrics.weekNutritionRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>{keyMetrics.weekNutritionRate}%</p>
+              </div>
+            )}
+            {client.training_enabled && (
+              <div className="bg-white/70 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-gray-500">訓練</p>
+                <p className="text-lg font-bold text-blue-600">{keyMetrics.weekTrainingDays}天</p>
+              </div>
+            )}
+            {client.wellness_enabled && (
+              <div className="bg-white/70 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-gray-500">精力</p>
+                <p className="text-lg font-bold text-purple-600">{keyMetrics.avgEnergy}</p>
+              </div>
+            )}
+            {client.body_composition_enabled && keyMetrics.latestWeight && (
+              <div className="bg-white/70 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-gray-500">體重</p>
+                <p className="text-lg font-bold text-gray-900">{keyMetrics.latestWeight}<span className="text-xs font-normal">kg</span></p>
+              </div>
+            )}
+            {client.body_composition_enabled && keyMetrics.weightChange && (
+              <div className="bg-white/70 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-gray-500">週變化</p>
+                <p className={`text-lg font-bold ${Number(keyMetrics.weightChange) > 0 ? 'text-red-500' : Number(keyMetrics.weightChange) < 0 ? 'text-green-500' : 'text-gray-500'}`}>{Number(keyMetrics.weightChange) > 0 ? '+' : ''}{keyMetrics.weightChange}</p>
+              </div>
+            )}
+          </div>
+
+          {/* 警報文字 */}
+          {alerts.length > 0 && (
+            <div className="bg-white/50 rounded-lg px-3 py-2">
               {alerts.map((a, i) => (
-                <p key={i} className="text-sm text-red-700">• {a}</p>
+                <p key={i} className="text-xs text-red-700">⚠️ {a}</p>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* 原有警示區塊已整合到頂部摘要 */}
 
         {/* ===== 本週報告 ===== */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
