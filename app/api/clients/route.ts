@@ -58,6 +58,11 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('客戶資料不存在', 404)
     }
     
+    // 檢查是否停用
+    if (client.is_active === false) {
+      return createErrorResponse('此帳號已暫停，請聯繫教練', 403)
+    }
+
     // 檢查是否過期
     if (new Date(client.expires_at) < new Date()) {
       return createErrorResponse('客戶資料已過期', 403)
