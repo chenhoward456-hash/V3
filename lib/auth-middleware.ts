@@ -47,37 +47,56 @@ export function rateLimit(key: string, maxRequests: number = 10, windowMs: numbe
   return { allowed: true, remaining: maxRequests - entry.count }
 }
 
-// ===== Admin Session =====
+// ===== Admin Session (HMAC-signed, stateless) =====
 const ADMIN_SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 hours
-const adminSessions = new Map<string, { expiresAt: number }>()
+
+function getSessionSecret(): string {
+  // 用 ADMIN_PASSWORD 當 HMAC secret（一定存在，否則登入也不會過）
+  return process.env.ADMIN_PASSWORD || 'fallback-secret-key'
+}
 
 /**
- * 建立 admin session，回傳 session token
+ * 建立 admin session，回傳 HMAC-signed token（stateless，不依賴 in-memory）
+ * 格式: expiresAt.signature
  */
 export function createAdminSession(): string {
-  const token = crypto.randomBytes(32).toString('hex')
-  adminSessions.set(token, { expiresAt: Date.now() + ADMIN_SESSION_DURATION })
-  return token
+  const expiresAt = Date.now() + ADMIN_SESSION_DURATION
+  const payload = `admin:${expiresAt}`
+  const signature = crypto.createHmac('sha256', getSessionSecret()).update(payload).digest('hex')
+  return `${expiresAt}.${signature}`
 }
 
 /**
- * 驗證 admin session token
+ * 驗證 admin session token（stateless）
  */
 export function verifyAdminSession(token: string): boolean {
-  const session = adminSessions.get(token)
-  if (!session) return false
-  if (session.expiresAt < Date.now()) {
-    adminSessions.delete(token)
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 2) return false
+
+    const [expiresAtStr, signature] = parts
+    const expiresAt = parseInt(expiresAtStr, 10)
+
+    // 檢查是否過期
+    if (isNaN(expiresAt) || expiresAt < Date.now()) return false
+
+    // 驗證簽名
+    const payload = `admin:${expiresAt}`
+    const expectedSig = crypto.createHmac('sha256', getSessionSecret()).update(payload).digest('hex')
+
+    // timing-safe 比較
+    if (signature.length !== expectedSig.length) return false
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))
+  } catch {
     return false
   }
-  return true
 }
 
 /**
- * 銷毀 admin session
+ * 銷毀 admin session（stateless 版本不需要 server-side 清理，cookie 會被覆蓋）
  */
-export function destroyAdminSession(token: string): void {
-  adminSessions.delete(token)
+export function destroyAdminSession(_token: string): void {
+  // no-op: stateless token, 由 cookie 刪除處理
 }
 
 // ===== Coach PIN 驗證（統一函數）=====
