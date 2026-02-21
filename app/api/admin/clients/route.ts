@@ -103,7 +103,7 @@ export async function PUT(request: NextRequest) {
 
     if (clientError) {
       console.error('Update client error:', clientError)
-      return NextResponse.json({ error: '更新學員失敗', detail: clientError.message }, { status: 500 })
+      return NextResponse.json({ error: `更新學員失敗: ${clientError.message}`, detail: clientError.message, code: clientError.code }, { status: 500 })
     }
 
     // 更新血檢
