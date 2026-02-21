@@ -95,18 +95,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
     }
 
-    // 更新 client
-    const { error: clientError } = await supabase
-      .from('clients')
-      .update(clientData)
-      .eq('id', clientId)
-
-    if (clientError) {
-      console.error('Update client error:', clientError)
-      return NextResponse.json({ error: `更新學員失敗: ${clientError.message}`, detail: clientError.message, code: clientError.code }, { status: 500 })
-    }
-
-    // 更新血檢
+    // 先更新血檢（會觸發 trigger 覆蓋 status）
     if (labResults) {
       for (const result of labResults) {
         if (result.id) {
@@ -117,7 +106,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // 更新補品
+    // 再更新補品
     if (supplements) {
       for (const supplement of supplements) {
         if (supplement.id) {
@@ -126,6 +115,17 @@ export async function PUT(request: NextRequest) {
           await supabase.from('supplements').insert({ ...supplement, client_id: clientId })
         }
       }
+    }
+
+    // 最後更新 client（教練設的 status 不會被 trigger 覆蓋）
+    const { error: clientError } = await supabase
+      .from('clients')
+      .update(clientData)
+      .eq('id', clientId)
+
+    if (clientError) {
+      console.error('Update client error:', clientError)
+      return NextResponse.json({ error: `更新學員失敗: ${clientError.message}`, detail: clientError.message, code: clientError.code }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
