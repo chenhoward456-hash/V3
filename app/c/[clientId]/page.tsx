@@ -136,11 +136,14 @@ export default function ClientDashboard() {
   }
 
   if (error) {
+    const isSuspended = error.message.includes('暫停')
+    const isExpired = error.message.includes('過期')
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">載入失敗</h1>
-          <p className="text-gray-600">{error.message}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <div className="text-5xl mb-4">{isSuspended ? '⛔' : isExpired ? '⏰' : '❌'}</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{isSuspended ? '帳號已暫停' : isExpired ? '帳號已過期' : '載入失敗'}</h1>
+          <p className="text-gray-600">{isSuspended ? '請聯繫你的教練重新啟用' : error.message}</p>
         </div>
       </div>
     )

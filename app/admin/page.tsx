@@ -32,6 +32,7 @@ interface Client {
   prep_phase: string | null
   coach_weekly_note: string | null
   target_weight: number | null
+  is_active: boolean
 }
 
 interface TrainingLogRecord { client_id: string; training_type: string }
@@ -352,7 +353,7 @@ export default function AdminDashboard() {
                             🏆 {daysToComp}天
                           </span>
                         )}
-                        <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${client.status==='normal'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{client.status==='normal'?'正常':'關注'}</span>
+                        <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'關注'}</span>
                       </div>
                       {stat?.supplementCount>0?<span className={`text-lg font-bold ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span>:<span className="text-sm text-gray-300">--</span>}
                     </div>
@@ -386,7 +387,7 @@ export default function AdminDashboard() {
             <tbody className="divide-y divide-gray-50">{filteredClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const daysToComp = client.competition_enabled && client.competition_date ? Math.ceil((new Date(client.competition_date).getTime() - Date.now()) / 86400000) : null; return (
               <tr key={client.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-blue-600"><div className="text-sm font-medium text-gray-900">{client.name}{client.competition_enabled && daysToComp && daysToComp > 0 && <span className={`ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingEmoji(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className="ml-1" title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'🥗':'🍔'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{client.competition_enabled && ` · ${getPrepPhaseLabel(client.prep_phase)}`}<span className="ml-1.5 inline-flex gap-0.5">{client.body_composition_enabled&&<span title="體重/體態">⚖️</span>}{client.wellness_enabled&&<span title="每日感受">😊</span>}{client.nutrition_enabled&&<span title="飲食">🥗</span>}{client.training_enabled&&<span title="訓練">🏋️</span>}{client.supplement_enabled&&<span title="補品">💊</span>}{client.lab_enabled&&<span title="血檢">🩸</span>}</span></div></Link></td>
-                <td className="px-5 py-4"><span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${client.status==='normal'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{client.status==='normal'?'正常':'需要關注'}</span></td>
+                <td className="px-5 py-4"><span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'需要關注'}</span></td>
                 <td className="px-5 py-4">{stat?.supplementCount>0?<span className={`text-sm font-medium ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span>:<span className="text-sm text-gray-400">--</span>}</td>
                 <td className="px-5 py-4"><div className="flex flex-wrap gap-1">{client.body_composition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayBodyIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="體重">⚖️</span>}{client.wellness_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayWellnessIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="感受">😊</span>}{client.nutrition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayNutritionMap[client.id]!==undefined?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="飲食">🥗</span>}{client.training_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayTrainingMap[client.id]?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="訓練">🏋️</span>}{client.supplement_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayLogIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="補品">💊</span>}</div></td>
                 <td className="px-5 py-4"><span className={`text-sm ${act.color}`}>{act.text}</span></td>

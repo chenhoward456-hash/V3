@@ -51,6 +51,7 @@ interface Client {
   fat_target: number | null
   calories_target: number | null
   target_weight: number | null
+  is_active: boolean
 
   lab_results: LabResult[]
   supplements: Supplement[]
@@ -95,6 +96,7 @@ export default function ClientEditor() {
         fat_target: null,
         calories_target: null,
         target_weight: null,
+        is_active: true,
 
         lab_results: [],
         supplements: []
@@ -171,6 +173,7 @@ export default function ClientEditor() {
             fat_target: client.fat_target || null,
             calories_target: client.calories_target || null,
             target_weight: client.target_weight || null,
+            is_active: client.is_active,
 
             expires_at: expiresAt.toISOString()
           })
@@ -234,7 +237,8 @@ export default function ClientEditor() {
             carbs_target: client.carbs_target || null,
             fat_target: client.fat_target || null,
             calories_target: client.calories_target || null,
-            target_weight: client.target_weight || null
+            target_weight: client.target_weight || null,
+            is_active: client.is_active
           })
           .eq('id', clientId)
 
@@ -454,6 +458,24 @@ export default function ClientEditor() {
                 <option value="alert">警示</option>
               </select>
             </div>
+          </div>
+        </div>
+
+        {/* 帳號啟用狀態 */}
+        <div className={`rounded-lg shadow p-6 mb-6 ${client.is_active ? 'bg-white' : 'bg-red-50 border-2 border-red-300'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-medium text-gray-900">帳號權限</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {client.is_active ? '學員可正常使用 app' : '⛔ 已停用 — 學員打開網址會看到「帳號已暫停」'}
+              </p>
+            </div>
+            <button
+              onClick={() => updateClient('is_active', !client.is_active)}
+              className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${client.is_active ? 'bg-green-500' : 'bg-red-400'}`}
+            >
+              <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow ${client.is_active ? 'translate-x-7' : 'translate-x-1'}`} />
+            </button>
           </div>
         </div>
 
