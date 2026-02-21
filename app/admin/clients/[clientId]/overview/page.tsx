@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, BarChart, Bar
+  ResponsiveContainer, BarChart, Bar, ReferenceLine, Cell
 } from 'recharts'
 import { TRAINING_TYPES } from '@/components/client/types'
 
@@ -296,6 +296,75 @@ export default function ClientOverview() {
       }))
     return { calories, carbs, fat }
   }, [nutritionLogs, client?.competition_enabled])
+
+  // ===== 巨量營養素偏差報告 =====
+  const macroDeviation = useMemo(() => {
+    if (!client || !nutritionLogs.length) return null
+    const hasTargets = client.calories_target || client.protein_target || client.carbs_target || client.fat_target
+
+    if (!hasTargets) return null
+
+    // 取近 14 天的資料
+    const today = new Date()
+    const todayStr = today.toISOString().split('T')[0]
+    const fourteenDaysAgo = new Date(today); fourteenDaysAgo.setDate(today.getDate() - 13)
+    const startStr = fourteenDaysAgo.toISOString().split('T')[0]
+
+    const recentLogs = nutritionLogs
+      .filter((l: any) => l.date >= startStr && l.date <= todayStr)
+      .sort((a: any, b: any) => a.date.localeCompare(b.date))
+
+    if (recentLogs.length === 0) return null
+
+    // 每日偏差（百分比）
+    const dailyData = recentLogs.map((l: any) => {
+      const day: any = {
+        date: new Date(l.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+        rawDate: l.date,
+      }
+      if (client.calories_target && l.calories != null) {
+        day.calDev = Math.round(((l.calories - client.calories_target) / client.calories_target) * 100)
+        day.calories = l.calories
+      }
+      if (client.protein_target && l.protein_grams != null) {
+        day.proDev = Math.round(((l.protein_grams - client.protein_target) / client.protein_target) * 100)
+        day.protein = l.protein_grams
+      }
+      if (client.carbs_target && l.carbs_grams != null) {
+        day.carbDev = Math.round(((l.carbs_grams - client.carbs_target) / client.carbs_target) * 100)
+        day.carbs = l.carbs_grams
+      }
+      if (client.fat_target && l.fat_grams != null) {
+        day.fatDev = Math.round(((l.fat_grams - client.fat_target) / client.fat_target) * 100)
+        day.fat = l.fat_grams
+      }
+      return day
+    })
+
+    // 計算平均偏差
+    const avgDev = (key: string) => {
+      const vals = dailyData.filter((d: any) => d[key] != null).map((d: any) => d[key])
+      return vals.length > 0 ? Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length) : null
+    }
+
+    // 超標天數
+    const overDays = (key: string, threshold: number) => {
+      return dailyData.filter((d: any) => d[key] != null && Math.abs(d[key]) > threshold).length
+    }
+
+    return {
+      dailyData,
+      avgCalDev: avgDev('calDev'),
+      avgProDev: avgDev('proDev'),
+      avgCarbDev: avgDev('carbDev'),
+      avgFatDev: avgDev('fatDev'),
+      calOverDays: overDays('calDev', 10),
+      proOverDays: overDays('proDev', 10),
+      carbOverDays: overDays('carbDev', 10),
+      fatOverDays: overDays('fatDev', 10),
+      totalDays: dailyData.length,
+    }
+  }, [nutritionLogs, client])
 
   // ===== 週報自動產出 =====
   const weeklyReport = useMemo(() => {
@@ -962,6 +1031,146 @@ export default function ClientOverview() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ===== 巨量營養素偏差報告 ===== */}
+        {macroDeviation && macroDeviation.dailyData.length >= 3 && (
+          <div className="bg-white rounded-2xl shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">📊 巨量營養素偏差報告</h3>
+            <p className="text-xs text-gray-400 mb-4">近 14 天每日攝取 vs 目標的偏差百分比，綠色 = ±10% 以內</p>
+
+            {/* 偏差摘要卡片 */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+              {macroDeviation.avgCalDev != null && (
+                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgCalDev) <= 10 ? 'bg-green-50' : Math.abs(macroDeviation.avgCalDev) <= 20 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                  <p className="text-xs text-gray-500 mb-0.5">🔥 熱量偏差</p>
+                  <p className={`text-xl font-bold ${Math.abs(macroDeviation.avgCalDev) <= 10 ? 'text-green-600' : Math.abs(macroDeviation.avgCalDev) <= 20 ? 'text-amber-600' : 'text-red-600'}`}>
+                    {macroDeviation.avgCalDev > 0 ? '+' : ''}{macroDeviation.avgCalDev}%
+                  </p>
+                  <p className="text-[10px] text-gray-400">{macroDeviation.calOverDays}/{macroDeviation.totalDays} 天超標</p>
+                </div>
+              )}
+              {macroDeviation.avgProDev != null && (
+                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgProDev) <= 10 ? 'bg-green-50' : Math.abs(macroDeviation.avgProDev) <= 20 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                  <p className="text-xs text-gray-500 mb-0.5">🥩 蛋白質偏差</p>
+                  <p className={`text-xl font-bold ${Math.abs(macroDeviation.avgProDev) <= 10 ? 'text-green-600' : Math.abs(macroDeviation.avgProDev) <= 20 ? 'text-amber-600' : 'text-red-600'}`}>
+                    {macroDeviation.avgProDev > 0 ? '+' : ''}{macroDeviation.avgProDev}%
+                  </p>
+                  <p className="text-[10px] text-gray-400">{macroDeviation.proOverDays}/{macroDeviation.totalDays} 天超標</p>
+                </div>
+              )}
+              {macroDeviation.avgCarbDev != null && (
+                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgCarbDev) <= 10 ? 'bg-green-50' : Math.abs(macroDeviation.avgCarbDev) <= 20 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                  <p className="text-xs text-gray-500 mb-0.5">🍚 碳水偏差</p>
+                  <p className={`text-xl font-bold ${Math.abs(macroDeviation.avgCarbDev) <= 10 ? 'text-green-600' : Math.abs(macroDeviation.avgCarbDev) <= 20 ? 'text-amber-600' : 'text-red-600'}`}>
+                    {macroDeviation.avgCarbDev > 0 ? '+' : ''}{macroDeviation.avgCarbDev}%
+                  </p>
+                  <p className="text-[10px] text-gray-400">{macroDeviation.carbOverDays}/{macroDeviation.totalDays} 天超標</p>
+                </div>
+              )}
+              {macroDeviation.avgFatDev != null && (
+                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgFatDev) <= 10 ? 'bg-green-50' : Math.abs(macroDeviation.avgFatDev) <= 20 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                  <p className="text-xs text-gray-500 mb-0.5">🥑 脂肪偏差</p>
+                  <p className={`text-xl font-bold ${Math.abs(macroDeviation.avgFatDev) <= 10 ? 'text-green-600' : Math.abs(macroDeviation.avgFatDev) <= 20 ? 'text-amber-600' : 'text-red-600'}`}>
+                    {macroDeviation.avgFatDev > 0 ? '+' : ''}{macroDeviation.avgFatDev}%
+                  </p>
+                  <p className="text-[10px] text-gray-400">{macroDeviation.fatOverDays}/{macroDeviation.totalDays} 天超標</p>
+                </div>
+              )}
+            </div>
+
+            {/* 偏差柱狀圖 — 熱量 */}
+            {macroDeviation.dailyData.some((d: any) => d.calDev != null) && (
+              <div className="mb-4">
+                <p className="text-xs text-gray-500 mb-2 font-medium">🔥 每日熱量偏差 (%)（目標 {client.calories_target} kcal）</p>
+                <ResponsiveContainer width="100%" height={140}>
+                  <BarChart data={macroDeviation.dailyData.filter((d: any) => d.calDev != null)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" fontSize={10} />
+                    <YAxis fontSize={10} tickFormatter={(v: number) => `${v}%`} />
+                    <Tooltip formatter={(v: any, _: any, props: any) => [`${v}%（${props.payload.calories} kcal）`, '偏差']} />
+                    <ReferenceLine y={0} stroke="#666" strokeWidth={1} />
+                    <ReferenceLine y={10} stroke="#22c55e" strokeDasharray="3 3" strokeWidth={0.5} />
+                    <ReferenceLine y={-10} stroke="#22c55e" strokeDasharray="3 3" strokeWidth={0.5} />
+                    <Bar dataKey="calDev" radius={[2, 2, 0, 0]}>
+                      {macroDeviation.dailyData.filter((d: any) => d.calDev != null).map((entry: any, index: number) => (
+                        <Cell key={index} fill={Math.abs(entry.calDev) <= 10 ? '#22c55e' : Math.abs(entry.calDev) <= 20 ? '#f59e0b' : '#ef4444'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* 偏差柱狀圖 — 蛋白質 */}
+            {macroDeviation.dailyData.some((d: any) => d.proDev != null) && (
+              <div className="mb-4">
+                <p className="text-xs text-gray-500 mb-2 font-medium">🥩 每日蛋白質偏差 (%)（目標 {client.protein_target}g）</p>
+                <ResponsiveContainer width="100%" height={140}>
+                  <BarChart data={macroDeviation.dailyData.filter((d: any) => d.proDev != null)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" fontSize={10} />
+                    <YAxis fontSize={10} tickFormatter={(v: number) => `${v}%`} />
+                    <Tooltip formatter={(v: any, _: any, props: any) => [`${v}%（${props.payload.protein}g）`, '偏差']} />
+                    <ReferenceLine y={0} stroke="#666" strokeWidth={1} />
+                    <ReferenceLine y={10} stroke="#22c55e" strokeDasharray="3 3" strokeWidth={0.5} />
+                    <ReferenceLine y={-10} stroke="#22c55e" strokeDasharray="3 3" strokeWidth={0.5} />
+                    <Bar dataKey="proDev" radius={[2, 2, 0, 0]}>
+                      {macroDeviation.dailyData.filter((d: any) => d.proDev != null).map((entry: any, index: number) => (
+                        <Cell key={index} fill={Math.abs(entry.proDev) <= 10 ? '#22c55e' : Math.abs(entry.proDev) <= 20 ? '#f59e0b' : '#ef4444'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* 偏差柱狀圖 — 碳水 */}
+            {macroDeviation.dailyData.some((d: any) => d.carbDev != null) && (
+              <div className="mb-4">
+                <p className="text-xs text-gray-500 mb-2 font-medium">🍚 每日碳水偏差 (%)（目標 {client.carbs_target}g）</p>
+                <ResponsiveContainer width="100%" height={140}>
+                  <BarChart data={macroDeviation.dailyData.filter((d: any) => d.carbDev != null)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" fontSize={10} />
+                    <YAxis fontSize={10} tickFormatter={(v: number) => `${v}%`} />
+                    <Tooltip formatter={(v: any, _: any, props: any) => [`${v}%（${props.payload.carbs}g）`, '偏差']} />
+                    <ReferenceLine y={0} stroke="#666" strokeWidth={1} />
+                    <ReferenceLine y={10} stroke="#22c55e" strokeDasharray="3 3" strokeWidth={0.5} />
+                    <ReferenceLine y={-10} stroke="#22c55e" strokeDasharray="3 3" strokeWidth={0.5} />
+                    <Bar dataKey="carbDev" radius={[2, 2, 0, 0]}>
+                      {macroDeviation.dailyData.filter((d: any) => d.carbDev != null).map((entry: any, index: number) => (
+                        <Cell key={index} fill={Math.abs(entry.carbDev) <= 10 ? '#22c55e' : Math.abs(entry.carbDev) <= 20 ? '#f59e0b' : '#ef4444'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* 偏差柱狀圖 — 脂肪 */}
+            {macroDeviation.dailyData.some((d: any) => d.fatDev != null) && (
+              <div>
+                <p className="text-xs text-gray-500 mb-2 font-medium">🥑 每日脂肪偏差 (%)（目標 {client.fat_target}g）</p>
+                <ResponsiveContainer width="100%" height={140}>
+                  <BarChart data={macroDeviation.dailyData.filter((d: any) => d.fatDev != null)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" fontSize={10} />
+                    <YAxis fontSize={10} tickFormatter={(v: number) => `${v}%`} />
+                    <Tooltip formatter={(v: any, _: any, props: any) => [`${v}%（${props.payload.fat}g）`, '偏差']} />
+                    <ReferenceLine y={0} stroke="#666" strokeWidth={1} />
+                    <ReferenceLine y={10} stroke="#22c55e" strokeDasharray="3 3" strokeWidth={0.5} />
+                    <ReferenceLine y={-10} stroke="#22c55e" strokeDasharray="3 3" strokeWidth={0.5} />
+                    <Bar dataKey="fatDev" radius={[2, 2, 0, 0]}>
+                      {macroDeviation.dailyData.filter((d: any) => d.fatDev != null).map((entry: any, index: number) => (
+                        <Cell key={index} fill={Math.abs(entry.fatDev) <= 10 ? '#22c55e' : Math.abs(entry.fatDev) <= 20 ? '#f59e0b' : '#ef4444'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         )}
 
