@@ -244,6 +244,8 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS sodium_target NUMERIC;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS target_weight NUMERIC;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS coach_weekly_note TEXT;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS carbs_training_day NUMERIC;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS carbs_rest_day NUMERIC;
 
 -- nutrition_logs 表新增巨量營養素欄位
 ALTER TABLE nutrition_logs ADD COLUMN IF NOT EXISTS carbs_grams NUMERIC;
