@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+
+type EditorTab = 'basic' | 'features' | 'notes' | 'lab' | 'supplements'
 
 interface LabResult {
   id?: string
@@ -66,6 +68,19 @@ export default function ClientEditor() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [activeTab, setActiveTab] = useState<EditorTab>('basic')
+
+  const tabs: { key: EditorTab; label: string; icon: string }[] = useMemo(() => {
+    if (!client) return []
+    const t: { key: EditorTab; label: string; icon: string }[] = [
+      { key: 'basic', label: '基本資料', icon: '👤' },
+      { key: 'features', label: '功能 / 目標', icon: '⚙️' },
+      { key: 'notes', label: '教練筆記', icon: '💬' },
+    ]
+    if (client.lab_enabled) t.push({ key: 'lab', label: '血檢', icon: '🩸' })
+    if (client.supplement_enabled) t.push({ key: 'supplements', label: '補品', icon: '💊' })
+    return t
+  }, [client?.lab_enabled, client?.supplement_enabled])
 
   useEffect(() => {
     if (clientId === 'new') {
@@ -406,462 +421,510 @@ export default function ClientEditor() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
 
-        {/* Basic Info */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">基本資料</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">姓名</label>
-              <input
-                type="text"
-                value={client.name}
-                onChange={(e) => updateClient('name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">年齡</label>
-              <input
-                type="number"
-                value={client.age}
-                onChange={(e) => updateClient('age', Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">性別</label>
-              <select
-                value={client.gender}
-                onChange={(e) => updateClient('gender', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="女性">女性</option>
-                <option value="男性">男性</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">狀態</label>
-              <select
-                value={client.status}
-                onChange={(e) => updateClient('status', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="normal">正常</option>
-                <option value="attention">需要關注</option>
-                <option value="alert">警示</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* 帳號啟用狀態 */}
-        <div className={`rounded-lg shadow p-6 mb-6 ${client.is_active ? 'bg-white' : 'bg-red-50 border-2 border-red-300'}`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-medium text-gray-900">帳號權限</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                {client.is_active ? '學員可正常使用 app' : '⛔ 已停用 — 學員打開網址會看到「帳號已暫停」'}
-              </p>
-            </div>
+        {/* Tab Navigation */}
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 overflow-x-auto">
+          {tabs.map(tab => (
             <button
-              onClick={() => updateClient('is_active', !client.is_active)}
-              className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${client.is_active ? 'bg-green-500' : 'bg-red-400'}`}
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 min-w-0 px-3 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                activeTab === tab.key
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
             >
-              <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow ${client.is_active ? 'translate-x-7' : 'translate-x-1'}`} />
+              <span className="mr-1">{tab.icon}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
             </button>
-          </div>
+          ))}
         </div>
 
-        {/* Feature Toggles */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">功能設定</h2>
-          <p className="text-xs text-gray-400 mb-4">依學員階段逐步開放功能</p>
-          <div className="space-y-4">
-            {([
-              { key: 'body_composition_enabled', label: '體重/體態紀錄', desc: '體重、體脂、肌肉量登記（最基本功能）' },
-              { key: 'wellness_enabled', label: '每日感受紀錄', desc: '心情、睡眠品質、能量追蹤' },
-              { key: 'nutrition_enabled', label: '飲食追蹤', desc: '每日飲食合規紀錄' },
-              { key: 'training_enabled', label: '訓練追蹤', desc: '每日訓練類型與強度紀錄' },
-              { key: 'supplement_enabled', label: '補品管理', desc: '補品清單與每日打卡' },
-              { key: 'lab_enabled', label: '血檢追蹤', desc: '血檢數據與健康指標' },
-              { key: 'competition_enabled', label: '備賽模式 🏆', desc: '健美備賽倒數、完整巨量營養素、進階感受追蹤' },
-            ] as const).map(({ key, label, desc }) => (
-              <div key={key} className="flex items-center justify-between">
+        {/* ===== Tab: 基本資料 ===== */}
+        {activeTab === 'basic' && (
+          <div className="space-y-6">
+            {/* Basic Info */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">基本資料</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">{label}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
-                </div>
-                <button
-                  onClick={() => updateClient(key, !(client as any)[key])}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    (client as any)[key] ? 'bg-blue-600' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      (client as any)[key] ? 'translate-x-6' : 'translate-x-1'
-                    }`}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">姓名</label>
+                  <input
+                    type="text"
+                    value={client.name}
+                    onChange={(e) => updateClient('name', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Nutrition Targets */}
-        {client.nutrition_enabled && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">飲食目標設定</h2>
-            <p className="text-xs text-gray-400 mb-4">設定後學員記錄飲食時會看到目標對比</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">每日蛋白質目標（g）</label>
-                <input
-                  type="number"
-                  value={client.protein_target ?? ''}
-                  onChange={(e) => updateClient('protein_target', e.target.value ? Number(e.target.value) : null)}
-                  placeholder="例如：120"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">每日飲水目標（ml）</label>
-                <input
-                  type="number"
-                  value={client.water_target ?? ''}
-                  onChange={(e) => updateClient('water_target', e.target.value ? Number(e.target.value) : null)}
-                  placeholder="例如：2500"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">年齡</label>
+                  <input
+                    type="number"
+                    value={client.age}
+                    onChange={(e) => updateClient('age', Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">性別</label>
+                  <select
+                    value={client.gender}
+                    onChange={(e) => updateClient('gender', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="女性">女性</option>
+                    <option value="男性">男性</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">狀態</label>
+                  <select
+                    value={client.status}
+                    onChange={(e) => updateClient('status', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="normal">正常</option>
+                    <option value="attention">需要關注</option>
+                    <option value="alert">警示</option>
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Competition Prep Settings */}
-        {client.competition_enabled && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-amber-400">
-            <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽設定</h2>
-            <p className="text-xs text-gray-400 mb-4">設定比賽資訊與巨量營養素目標</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">比賽日期</label>
-                <input
-                  type="date"
-                  value={client.competition_date || ''}
-                  onChange={(e) => updateClient('competition_date', e.target.value || null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {client.competition_date && (
-                  <p className="text-xs text-amber-600 mt-1 font-medium">
-                    距離比賽還有 {Math.max(0, Math.ceil((new Date(client.competition_date).getTime() - new Date().getTime()) / 86400000))} 天
+            {/* 帳號啟用狀態 */}
+            <div className={`rounded-lg shadow p-6 ${client.is_active ? 'bg-white' : 'bg-red-50 border-2 border-red-300'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-medium text-gray-900">帳號權限</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {client.is_active ? '學員可正常使用 app' : '⛔ 已停用 — 學員打開網址會看到「帳號已暫停」'}
                   </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">備賽階段</label>
-                <select
-                  value={client.prep_phase || 'off_season'}
-                  onChange={(e) => updateClient('prep_phase', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="off_season">休賽期</option>
-                  <option value="bulk">增肌期</option>
-                  <option value="cut">減脂期</option>
-                  <option value="peak_week">Peak Week</option>
-                  <option value="competition">比賽日</option>
-                  <option value="recovery">賽後恢復</option>
-                </select>
-              </div>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">目標體重 (kg)</label>
-              <input
-                type="number"
-                step="0.1"
-                value={client.target_weight ?? ''}
-                onChange={(e) => updateClient('target_weight', e.target.value ? Number(e.target.value) : null)}
-                placeholder="比賽日目標體重，例如：65.0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <h3 className="text-sm font-medium text-gray-700 mb-3">每日巨量營養素目標</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">熱量 (kcal)</label>
-                <input
-                  type="number"
-                  value={client.calories_target ?? ''}
-                  onChange={(e) => updateClient('calories_target', e.target.value ? Number(e.target.value) : null)}
-                  placeholder="2200"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">碳水 (g)</label>
-                <input
-                  type="number"
-                  value={client.carbs_target ?? ''}
-                  onChange={(e) => updateClient('carbs_target', e.target.value ? Number(e.target.value) : null)}
-                  placeholder="250"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">脂肪 (g)</label>
-                <input
-                  type="number"
-                  value={client.fat_target ?? ''}
-                  onChange={(e) => updateClient('fat_target', e.target.value ? Number(e.target.value) : null)}
-                  placeholder="60"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Coach Notes */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">教練備註</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">💬 本週回饋給學員</label>
-              <p className="text-xs text-gray-400 mb-1">學員打開 app 第一眼就會看到，建議每週更新</p>
-              <textarea
-                value={client.coach_weekly_note || ''}
-                onChange={(e) => updateClient('coach_weekly_note', e.target.value)}
-                rows={2}
-                placeholder="例如：這週體重控制得不錯，繼續保持！碳水可以再多吃一點。"
-                className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">教練健康摘要</label>
-              <textarea
-                value={client.coach_summary || ''}
-                onChange={(e) => updateClient('coach_summary', e.target.value)}
-                rows={4}
-                placeholder="本月健康分析..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">下次回檢日期</label>
-              <input
-                type="date"
-                value={client.next_checkup_date || ''}
-                onChange={(e) => updateClient('next_checkup_date', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">健康目標</label>
-              <textarea
-                value={client.health_goals || ''}
-                onChange={(e) => updateClient('health_goals', e.target.value)}
-                rows={3}
-                placeholder="例如：同半胱胺酸降到 8 以下"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Lab Results */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-gray-900">血檢數據</h2>
-            <button
-              onClick={addLabResult}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              新增檢測項目
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {client.lab_results.map((result, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">檢測項目</label>
-                    <input
-                      type="text"
-                      value={result.test_name}
-                      onChange={(e) => updateLabResult(index, 'test_name', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">數值</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={result.value}
-                      onChange={(e) => updateLabResult(index, 'value', Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">單位</label>
-                    <input
-                      type="text"
-                      value={result.unit}
-                      onChange={(e) => updateLabResult(index, 'unit', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">參考範圍</label>
-                    <input
-                      type="text"
-                      value={result.reference_range}
-                      onChange={(e) => updateLabResult(index, 'reference_range', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">狀態</label>
-                    <select
-                      value={result.status}
-                      onChange={(e) => updateLabResult(index, 'status', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="normal">正常</option>
-                      <option value="attention">注意</option>
-                      <option value="alert">警示</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">檢測日期</label>
-                    <input
-                      type="date"
-                      value={result.date}
-                      onChange={(e) => updateLabResult(index, 'date', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="lg:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">自訂建議</label>
-                    <textarea
-                      value={result.custom_advice || ''}
-                      onChange={(e) => updateLabResult(index, 'custom_advice', e.target.value)}
-                      rows={2}
-                      placeholder="留空則使用預設建議"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">自訂目標範圍</label>
-                    <input
-                      type="text"
-                      value={result.custom_target || ''}
-                      onChange={(e) => updateLabResult(index, 'custom_target', e.target.value)}
-                      placeholder="留空則使用預設範圍"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
                 </div>
                 <button
-                  onClick={() => removeLabResult(index)}
-                  className="mt-4 text-red-600 hover:text-red-800 text-sm"
+                  onClick={() => updateClient('is_active', !client.is_active)}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${client.is_active ? 'bg-green-500' : 'bg-red-400'}`}
                 >
-                  刪除
+                  <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow ${client.is_active ? 'translate-x-7' : 'translate-x-1'}`} />
                 </button>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Supplements */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-gray-900">補品清單</h2>
-            <button
-              onClick={addSupplement}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              新增補品
-            </button>
-          </div>
+        {/* ===== Tab: 功能 / 目標 ===== */}
+        {activeTab === 'features' && (
+          <div className="space-y-6">
+            {/* Feature Toggles */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">功能設定</h2>
+              <p className="text-xs text-gray-400 mb-4">依學員階段逐步開放功能</p>
+              <div className="space-y-4">
+                {([
+                  { key: 'body_composition_enabled', label: '體重/體態紀錄', desc: '體重、體脂、肌肉量登記（最基本功能）' },
+                  { key: 'wellness_enabled', label: '每日感受紀錄', desc: '心情、睡眠品質、能量追蹤' },
+                  { key: 'nutrition_enabled', label: '飲食追蹤', desc: '每日飲食合規紀錄' },
+                  { key: 'training_enabled', label: '訓練追蹤', desc: '每日訓練類型與強度紀錄' },
+                  { key: 'supplement_enabled', label: '補品管理', desc: '補品清單與每日打卡' },
+                  { key: 'lab_enabled', label: '血檢追蹤', desc: '血檢數據與健康指標' },
+                  { key: 'competition_enabled', label: '備賽模式 🏆', desc: '健美備賽倒數、完整巨量營養素、進階感受追蹤' },
+                ] as const).map(({ key, label, desc }) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">{label}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                    </div>
+                    <button
+                      onClick={() => updateClient(key, !(client as any)[key])}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        (client as any)[key] ? 'bg-blue-600' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          (client as any)[key] ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          <div className="space-y-4">
-            {client.supplements.map((supplement, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4">
+            {/* Nutrition Targets */}
+            {client.nutrition_enabled && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-lg font-medium text-gray-900 mb-4">飲食目標設定</h2>
+                <p className="text-xs text-gray-400 mb-4">設定後學員記錄飲食時會看到目標對比</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">補品名稱</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">每日蛋白質目標（g）</label>
                     <input
-                      type="text"
-                      value={supplement.name}
-                      onChange={(e) => updateSupplement(index, 'name', e.target.value)}
+                      type="number"
+                      value={client.protein_target ?? ''}
+                      onChange={(e) => updateClient('protein_target', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="例如：120"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">劑量</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">每日飲水目標（ml）</label>
                     <input
-                      type="text"
-                      value={supplement.dosage}
-                      onChange={(e) => updateSupplement(index, 'dosage', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">服用時間</label>
-                    <select
-                      value={supplement.timing}
-                      onChange={(e) => updateSupplement(index, 'timing', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="早餐">早餐</option>
-                      <option value="午餐">午餐</option>
-                      <option value="晚餐">晚餐</option>
-                      <option value="訓練後">訓練後</option>
-                      <option value="睡前">睡前</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">說明（可選）</label>
-                    <input
-                      type="text"
-                      value={supplement.why || ''}
-                      onChange={(e) => updateSupplement(index, 'why', e.target.value)}
+                      type="number"
+                      value={client.water_target ?? ''}
+                      onChange={(e) => updateClient('water_target', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="例如：2500"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Competition Prep Settings */}
+            {client.competition_enabled && (
+              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-400">
+                <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽設定</h2>
+                <p className="text-xs text-gray-400 mb-4">設定比賽資訊與巨量營養素目標</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">比賽日期</label>
+                    <input
+                      type="date"
+                      value={client.competition_date || ''}
+                      onChange={(e) => updateClient('competition_date', e.target.value || null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {client.competition_date && (
+                      <p className="text-xs text-amber-600 mt-1 font-medium">
+                        距離比賽還有 {Math.max(0, Math.ceil((new Date(client.competition_date).getTime() - new Date().getTime()) / 86400000))} 天
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">備賽階段</label>
+                    <select
+                      value={client.prep_phase || 'off_season'}
+                      onChange={(e) => updateClient('prep_phase', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="off_season">休賽期</option>
+                      <option value="bulk">增肌期</option>
+                      <option value="cut">減脂期</option>
+                      <option value="peak_week">Peak Week</option>
+                      <option value="competition">比賽日</option>
+                      <option value="recovery">賽後恢復</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">目標體重 (kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={client.target_weight ?? ''}
+                    onChange={(e) => updateClient('target_weight', e.target.value ? Number(e.target.value) : null)}
+                    placeholder="比賽日目標體重，例如：65.0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">每日巨量營養素目標</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">熱量 (kcal)</label>
+                    <input
+                      type="number"
+                      value={client.calories_target ?? ''}
+                      onChange={(e) => updateClient('calories_target', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="2200"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">碳水 (g)</label>
+                    <input
+                      type="number"
+                      value={client.carbs_target ?? ''}
+                      onChange={(e) => updateClient('carbs_target', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="250"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">脂肪 (g)</label>
+                    <input
+                      type="number"
+                      value={client.fat_target ?? ''}
+                      onChange={(e) => updateClient('fat_target', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="60"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===== Tab: 教練筆記 ===== */}
+        {activeTab === 'notes' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">教練備註</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">💬 本週回饋給學員</label>
+                  <p className="text-xs text-gray-400 mb-1">學員打開 app 第一眼就會看到，建議每週更新</p>
+                  <textarea
+                    value={client.coach_weekly_note || ''}
+                    onChange={(e) => updateClient('coach_weekly_note', e.target.value)}
+                    rows={3}
+                    placeholder="例如：這週體重控制得不錯，繼續保持！碳水可以再多吃一點。"
+                    className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">教練健康摘要</label>
+                  <textarea
+                    value={client.coach_summary || ''}
+                    onChange={(e) => updateClient('coach_summary', e.target.value)}
+                    rows={5}
+                    placeholder="本月健康分析..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">下次回檢日期</label>
+                  <input
+                    type="date"
+                    value={client.next_checkup_date || ''}
+                    onChange={(e) => updateClient('next_checkup_date', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">健康目標</label>
+                  <textarea
+                    value={client.health_goals || ''}
+                    onChange={(e) => updateClient('health_goals', e.target.value)}
+                    rows={3}
+                    placeholder="例如：同半胱胺酸降到 8 以下"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== Tab: 血檢 ===== */}
+        {activeTab === 'lab' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium text-gray-900">血檢數據</h2>
                 <button
-                  onClick={() => removeSupplement(index)}
-                  className="mt-4 text-red-600 hover:text-red-800 text-sm"
+                  onClick={addLabResult}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  刪除
+                  新增檢測項目
                 </button>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Actions */}
-        <div className="flex justify-end space-x-4">
+              {client.lab_results.length === 0 && (
+                <p className="text-center text-gray-400 py-8">尚未新增血檢數據，點擊上方按鈕新增</p>
+              )}
+
+              <div className="space-y-4">
+                {client.lab_results.map((result, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">檢測項目</label>
+                        <input
+                          type="text"
+                          value={result.test_name}
+                          onChange={(e) => updateLabResult(index, 'test_name', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">數值</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={result.value}
+                          onChange={(e) => updateLabResult(index, 'value', Number(e.target.value))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">單位</label>
+                        <input
+                          type="text"
+                          value={result.unit}
+                          onChange={(e) => updateLabResult(index, 'unit', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">參考範圍</label>
+                        <input
+                          type="text"
+                          value={result.reference_range}
+                          onChange={(e) => updateLabResult(index, 'reference_range', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">狀態</label>
+                        <select
+                          value={result.status}
+                          onChange={(e) => updateLabResult(index, 'status', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="normal">正常</option>
+                          <option value="attention">注意</option>
+                          <option value="alert">警示</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">檢測日期</label>
+                        <input
+                          type="date"
+                          value={result.date}
+                          onChange={(e) => updateLabResult(index, 'date', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="lg:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">自訂建議</label>
+                        <textarea
+                          value={result.custom_advice || ''}
+                          onChange={(e) => updateLabResult(index, 'custom_advice', e.target.value)}
+                          rows={2}
+                          placeholder="留空則使用預設建議"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">自訂目標範圍</label>
+                        <input
+                          type="text"
+                          value={result.custom_target || ''}
+                          onChange={(e) => updateLabResult(index, 'custom_target', e.target.value)}
+                          placeholder="留空則使用預設範圍"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeLabResult(index)}
+                      className="mt-4 text-red-600 hover:text-red-800 text-sm"
+                    >
+                      刪除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== Tab: 補品 ===== */}
+        {activeTab === 'supplements' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium text-gray-900">補品清單</h2>
+                <button
+                  onClick={addSupplement}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  新增補品
+                </button>
+              </div>
+
+              {client.supplements.length === 0 && (
+                <p className="text-center text-gray-400 py-8">尚未新增補品，點擊上方按鈕新增</p>
+              )}
+
+              <div className="space-y-4">
+                {client.supplements.map((supplement, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">補品名稱</label>
+                        <input
+                          type="text"
+                          value={supplement.name}
+                          onChange={(e) => updateSupplement(index, 'name', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">劑量</label>
+                        <input
+                          type="text"
+                          value={supplement.dosage}
+                          onChange={(e) => updateSupplement(index, 'dosage', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">服用時間</label>
+                        <select
+                          value={supplement.timing}
+                          onChange={(e) => updateSupplement(index, 'timing', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="早餐">早餐</option>
+                          <option value="午餐">午餐</option>
+                          <option value="晚餐">晚餐</option>
+                          <option value="訓練後">訓練後</option>
+                          <option value="睡前">睡前</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">說明（可選）</label>
+                        <input
+                          type="text"
+                          value={supplement.why || ''}
+                          onChange={(e) => updateSupplement(index, 'why', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeSupplement(index)}
+                      className="mt-4 text-red-600 hover:text-red-800 text-sm"
+                    >
+                      刪除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Actions — 固定在底部，所有 tab 都看得到 */}
+        <div className="flex justify-end space-x-4 mt-6 sticky bottom-4">
           <Link
             href="/admin"
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors bg-white shadow-sm"
           >
             取消
           </Link>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-sm"
           >
             {saving ? '保存中...' : '保存'}
           </button>
