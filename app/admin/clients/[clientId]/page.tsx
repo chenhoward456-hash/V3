@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
 type EditorTab = 'basic' | 'features' | 'notes' | 'lab' | 'supplements'
@@ -129,21 +128,12 @@ export default function ClientEditor() {
 
   const fetchClient = async () => {
     try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select(`
-          *,
-          lab_results (*),
-          supplements (*)
-        `)
-        .eq('id', clientId)
-        .single()
-
-      if (error) {
+      const res = await fetch(`/api/admin/clients?id=${clientId}`)
+      if (!res.ok) {
         setError('載入學員資料失敗')
         return
       }
-
+      const data = await res.json()
       setClient(data)
     } catch (error) {
       setError('載入學員資料失敗')
@@ -159,149 +149,80 @@ export default function ClientEditor() {
     setError('')
 
     try {
+      // 組裝 client 欄位（不含 lab_results / supplements）
+      const clientFields = {
+        name: client.name,
+        age: client.age,
+        gender: client.gender,
+        status: client.status,
+        coach_summary: client.coach_summary || null,
+        coach_weekly_note: client.coach_weekly_note || null,
+        next_checkup_date: client.next_checkup_date || null,
+        health_goals: client.health_goals || null,
+        training_enabled: client.training_enabled,
+        nutrition_enabled: client.nutrition_enabled,
+        body_composition_enabled: client.body_composition_enabled,
+        wellness_enabled: client.wellness_enabled,
+        supplement_enabled: client.supplement_enabled,
+        lab_enabled: client.lab_enabled,
+        competition_enabled: client.competition_enabled,
+        competition_date: client.competition_date || null,
+        prep_phase: client.prep_phase || 'off_season',
+        protein_target: client.protein_target || null,
+        water_target: client.water_target || null,
+        carbs_target: client.carbs_target || null,
+        fat_target: client.fat_target || null,
+        calories_target: client.calories_target || null,
+        target_weight: client.target_weight || null,
+        is_active: client.is_active,
+        carbs_training_day: client.carbs_training_day || null,
+        carbs_rest_day: client.carbs_rest_day || null,
+      }
+
       if (clientId === 'new') {
         // 新增學員
         const uniqueCode = generateUniqueCode()
         const expiresAt = new Date()
         expiresAt.setMonth(expiresAt.getMonth() + 3)
 
-        const { data: newClient, error: clientError } = await supabase
-          .from('clients')
-          .insert({
-            unique_code: uniqueCode,
-            name: client.name,
-            age: client.age,
-            gender: client.gender,
-            status: client.status,
-            coach_summary: client.coach_summary || null,
-            coach_weekly_note: client.coach_weekly_note || null,
-            next_checkup_date: client.next_checkup_date || null,
-            health_goals: client.health_goals || null,
-            training_enabled: client.training_enabled,
-            nutrition_enabled: client.nutrition_enabled,
-            body_composition_enabled: client.body_composition_enabled,
-            wellness_enabled: client.wellness_enabled,
-            supplement_enabled: client.supplement_enabled,
-            lab_enabled: client.lab_enabled,
-            competition_enabled: client.competition_enabled,
-            competition_date: client.competition_date || null,
-            prep_phase: client.prep_phase || 'off_season',
-            protein_target: client.protein_target || null,
-            water_target: client.water_target || null,
-            carbs_target: client.carbs_target || null,
-            fat_target: client.fat_target || null,
-            calories_target: client.calories_target || null,
-            target_weight: client.target_weight || null,
-            is_active: client.is_active,
-            carbs_training_day: client.carbs_training_day || null,
-            carbs_rest_day: client.carbs_rest_day || null,
+        const res = await fetch('/api/admin/clients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientData: {
+              ...clientFields,
+              unique_code: uniqueCode,
+              expires_at: expiresAt.toISOString(),
+            },
+            labResults: client.lab_results,
+            supplements: client.supplements,
+          }),
+        })
 
-            expires_at: expiresAt.toISOString()
-          })
-          .select()
-          .single()
-
-        if (clientError) {
-          setError('新增學員失敗')
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          setError(data.error || '新增學員失敗')
           return
-        }
-
-        // 新增檢測數據
-        if (client.lab_results.length > 0) {
-          const labResultsWithClientId = client.lab_results.map(result => ({
-            ...result,
-            client_id: newClient.id
-          }))
-
-          await supabase
-            .from('lab_results')
-            .insert(labResultsWithClientId)
-        }
-
-        // 新增補品
-        if (client.supplements.length > 0) {
-          const supplementsWithClientId = client.supplements.map(supplement => ({
-            ...supplement,
-            client_id: newClient.id
-          }))
-
-          await supabase
-            .from('supplements')
-            .insert(supplementsWithClientId)
         }
 
         router.push('/admin')
       } else {
         // 更新現有學員
-        const { error: clientError } = await supabase
-          .from('clients')
-          .update({
-            name: client.name,
-            age: client.age,
-            gender: client.gender,
-            status: client.status,
-            coach_summary: client.coach_summary || null,
-            coach_weekly_note: client.coach_weekly_note || null,
-            next_checkup_date: client.next_checkup_date || null,
-            health_goals: client.health_goals || null,
-            training_enabled: client.training_enabled,
-            nutrition_enabled: client.nutrition_enabled,
-            body_composition_enabled: client.body_composition_enabled,
-            wellness_enabled: client.wellness_enabled,
-            supplement_enabled: client.supplement_enabled,
-            lab_enabled: client.lab_enabled,
-            competition_enabled: client.competition_enabled,
-            competition_date: client.competition_date || null,
-            prep_phase: client.prep_phase || 'off_season',
-            protein_target: client.protein_target || null,
-            water_target: client.water_target || null,
-            carbs_target: client.carbs_target || null,
-            fat_target: client.fat_target || null,
-            calories_target: client.calories_target || null,
-            target_weight: client.target_weight || null,
-            is_active: client.is_active,
-            carbs_training_day: client.carbs_training_day || null,
-            carbs_rest_day: client.carbs_rest_day || null
-          })
-          .eq('id', clientId)
+        const res = await fetch('/api/admin/clients', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientId,
+            clientData: clientFields,
+            labResults: client.lab_results,
+            supplements: client.supplements,
+          }),
+        })
 
-        if (clientError) {
-          setError('更新學員資料失敗')
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          setError(data.error || '更新學員資料失敗')
           return
-        }
-
-        // 更新檢測數據
-        for (const result of client.lab_results) {
-          if (result.id) {
-            await supabase
-              .from('lab_results')
-              .update(result)
-              .eq('id', result.id)
-          } else {
-            await supabase
-              .from('lab_results')
-              .insert({
-                ...result,
-                client_id: clientId
-              })
-          }
-        }
-
-        // 更新補品
-        for (const supplement of client.supplements) {
-          if (supplement.id) {
-            await supabase
-              .from('supplements')
-              .update(supplement)
-              .eq('id', supplement.id)
-          } else {
-            await supabase
-              .from('supplements')
-              .insert({
-                ...supplement,
-                client_id: clientId
-              })
-          }
         }
 
         router.push('/admin')
