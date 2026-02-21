@@ -397,7 +397,11 @@ export default function ClientDashboard() {
             proteinTarget={c.protein_target}
             waterTarget={c.water_target}
             competitionEnabled={c.competition_enabled}
-            carbsTarget={c.carbs_target}
+            carbsTarget={c.carbs_training_day && c.carbs_rest_day
+              ? (todayTraining && todayTraining.training_type !== 'rest' ? c.carbs_training_day : c.carbs_rest_day)
+              : c.carbs_target}
+            carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
+            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
             fatTarget={c.fat_target}
             caloriesTarget={c.calories_target}
             onMutate={mutate}
@@ -452,7 +456,11 @@ export default function ClientDashboard() {
             proteinTarget={c.protein_target}
             waterTarget={c.water_target}
             competitionEnabled={c.competition_enabled}
-            carbsTarget={c.carbs_target}
+            carbsTarget={c.carbs_training_day && c.carbs_rest_day
+              ? (todayTraining && todayTraining.training_type !== 'rest' ? c.carbs_training_day : c.carbs_rest_day)
+              : c.carbs_target}
+            carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
+            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
             fatTarget={c.fat_target}
             caloriesTarget={c.calories_target}
             onMutate={mutate}

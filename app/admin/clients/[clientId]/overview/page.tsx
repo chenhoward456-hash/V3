@@ -300,7 +300,8 @@ export default function ClientOverview() {
   // ===== 巨量營養素偏差報告 =====
   const macroDeviation = useMemo(() => {
     if (!client || !nutritionLogs.length) return null
-    const hasTargets = client.calories_target || client.protein_target || client.carbs_target || client.fat_target
+    const hasCarbCycling = client.carbs_training_day && client.carbs_rest_day
+    const hasTargets = client.calories_target || client.protein_target || client.carbs_target || client.fat_target || hasCarbCycling
 
     if (!hasTargets) return null
 
@@ -330,9 +331,15 @@ export default function ClientOverview() {
         day.proDev = Math.round(((l.protein_grams - client.protein_target) / client.protein_target) * 100)
         day.protein = l.protein_grams
       }
-      if (client.carbs_target && l.carbs_grams != null) {
-        day.carbDev = Math.round(((l.carbs_grams - client.carbs_target) / client.carbs_target) * 100)
+      // 碳水：碳循環模式下根據當天有無訓練動態選擇目標
+      const dailyCarbTarget = hasCarbCycling
+        ? (trainingLogs.some((t: any) => t.date === l.date && t.training_type !== 'rest') ? client.carbs_training_day : client.carbs_rest_day)
+        : client.carbs_target
+      if (dailyCarbTarget && l.carbs_grams != null) {
+        day.carbDev = Math.round(((l.carbs_grams - dailyCarbTarget) / dailyCarbTarget) * 100)
         day.carbs = l.carbs_grams
+        day.carbTarget = dailyCarbTarget
+        day.isTrainingDay = trainingLogs.some((t: any) => t.date === l.date && t.training_type !== 'rest')
       }
       if (client.fat_target && l.fat_grams != null) {
         day.fatDev = Math.round(((l.fat_grams - client.fat_target) / client.fat_target) * 100)
@@ -364,7 +371,7 @@ export default function ClientOverview() {
       fatOverDays: overDays('fatDev', 10),
       totalDays: dailyData.length,
     }
-  }, [nutritionLogs, client])
+  }, [nutritionLogs, client, trainingLogs])
 
   // ===== 週報自動產出 =====
   const weeklyReport = useMemo(() => {
@@ -1129,13 +1136,19 @@ export default function ClientOverview() {
             {/* 偏差柱狀圖 — 碳水 */}
             {macroDeviation.dailyData.some((d: any) => d.carbDev != null) && (
               <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-2 font-medium">🍚 每日碳水偏差 (%)（目標 {client.carbs_target}g）</p>
+                <p className="text-xs text-gray-500 mb-2 font-medium">
+                  🍚 每日碳水偏差 (%)
+                  {client.carbs_training_day && client.carbs_rest_day
+                    ? `（🔄 訓練日 ${client.carbs_training_day}g / 休息日 ${client.carbs_rest_day}g）`
+                    : `（目標 ${client.carbs_target}g）`
+                  }
+                </p>
                 <ResponsiveContainer width="100%" height={140}>
                   <BarChart data={macroDeviation.dailyData.filter((d: any) => d.carbDev != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" fontSize={10} />
                     <YAxis fontSize={10} tickFormatter={(v: number) => `${v}%`} />
-                    <Tooltip formatter={(v: any, _: any, props: any) => [`${v}%（${props.payload.carbs}g）`, '偏差']} />
+                    <Tooltip formatter={(v: any, _: any, props: any) => [`${v}%（${props.payload.carbs}g${props.payload.carbTarget ? ` / 目標${props.payload.carbTarget}g` : ''}${props.payload.isTrainingDay != null ? (props.payload.isTrainingDay ? ' 訓練日' : ' 休息日') : ''}）`, '偏差']} />
                     <ReferenceLine y={0} stroke="#666" strokeWidth={1} />
                     <ReferenceLine y={10} stroke="#22c55e" strokeDasharray="3 3" strokeWidth={0.5} />
                     <ReferenceLine y={-10} stroke="#22c55e" strokeDasharray="3 3" strokeWidth={0.5} />

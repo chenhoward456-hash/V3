@@ -14,10 +14,12 @@ interface NutritionLogProps {
   carbsTarget?: number | null
   fatTarget?: number | null
   caloriesTarget?: number | null
+  carbsCyclingEnabled?: boolean
+  isTrainingDay?: boolean
   onMutate: () => void
 }
 
-export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, onMutate }: NutritionLogProps) {
+export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, carbsCyclingEnabled, isTrainingDay, onMutate }: NutritionLogProps) {
   const [saving, setSaving] = useState(false)
   const [note, setNote] = useState(todayNutrition?.note || '')
   const [showNote, setShowNote] = useState(false)
@@ -191,7 +193,14 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       {/* 備賽巨量營養素進度快照 */}
       {competitionEnabled && hasRecorded && (caloriesTarget || carbsTarget || fatTarget) && (
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 mb-4">
-          <p className="text-xs font-semibold text-amber-700 mb-3">🏆 今日巨量營養素</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-amber-700">🏆 今日巨量營養素</p>
+            {carbsCyclingEnabled && (
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isTrainingDay ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-100 text-gray-600'}`}>
+                🔄 {isTrainingDay ? '訓練日' : '休息日'}
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-3 gap-3">
             {caloriesTarget && (
               <div className="text-center">
@@ -331,7 +340,14 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
               {/* 備賽巨量營養素 */}
               {competitionEnabled && (
                 <div className="border-t border-gray-100 pt-3 mt-1 space-y-4">
-                  <p className="text-xs font-semibold text-amber-600">🏆 備賽巨量營養素</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-amber-600">🏆 備賽巨量營養素</p>
+                    {carbsCyclingEnabled && (
+                      <span className={`text-[10px] font-medium ${isTrainingDay ? 'text-cyan-600' : 'text-gray-500'}`}>
+                        🔄 {isTrainingDay ? '訓練日碳水' : '休息日碳水'}
+                      </span>
+                    )}
+                  </div>
                   <NutrientSlider
                     label="碳水" emoji="🍚"
                     value={carbsInput} onChange={setCarbsInput}

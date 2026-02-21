@@ -54,6 +54,8 @@ interface Client {
   calories_target: number | null
   target_weight: number | null
   is_active: boolean
+  carbs_training_day: number | null
+  carbs_rest_day: number | null
 
   lab_results: LabResult[]
   supplements: Supplement[]
@@ -112,6 +114,8 @@ export default function ClientEditor() {
         calories_target: null,
         target_weight: null,
         is_active: true,
+        carbs_training_day: null,
+        carbs_rest_day: null,
 
         lab_results: [],
         supplements: []
@@ -189,6 +193,8 @@ export default function ClientEditor() {
             calories_target: client.calories_target || null,
             target_weight: client.target_weight || null,
             is_active: client.is_active,
+            carbs_training_day: client.carbs_training_day || null,
+            carbs_rest_day: client.carbs_rest_day || null,
 
             expires_at: expiresAt.toISOString()
           })
@@ -253,7 +259,9 @@ export default function ClientEditor() {
             fat_target: client.fat_target || null,
             calories_target: client.calories_target || null,
             target_weight: client.target_weight || null,
-            is_active: client.is_active
+            is_active: client.is_active,
+            carbs_training_day: client.carbs_training_day || null,
+            carbs_rest_day: client.carbs_rest_day || null
           })
           .eq('id', clientId)
 
@@ -583,6 +591,43 @@ export default function ClientEditor() {
                     />
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* 碳循環設定 */}
+            {client.nutrition_enabled && client.competition_enabled && (
+              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-cyan-400">
+                <h2 className="text-lg font-medium text-gray-900 mb-1">🔄 碳循環設定</h2>
+                <p className="text-xs text-gray-400 mb-4">設定後系統會根據當天有無訓練自動切換碳水目標</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">訓練日碳水（g）</label>
+                    <input
+                      type="number"
+                      value={client.carbs_training_day ?? ''}
+                      onChange={(e) => updateClient('carbs_training_day', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="例如：300"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">有記錄訓練（非休息日）時使用</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">休息日碳水（g）</label>
+                    <input
+                      type="number"
+                      value={client.carbs_rest_day ?? ''}
+                      onChange={(e) => updateClient('carbs_rest_day', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="例如：100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">休息日 / 未記錄訓練時使用</p>
+                  </div>
+                </div>
+                {client.carbs_training_day && client.carbs_rest_day && (
+                  <div className="mt-3 bg-cyan-50 rounded-lg px-3 py-2 text-xs text-cyan-700">
+                    訓練日 {client.carbs_training_day}g → 休息日 {client.carbs_rest_day}g（差距 {client.carbs_training_day - client.carbs_rest_day}g）
+                  </div>
+                )}
               </div>
             )}
 
