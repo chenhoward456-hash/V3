@@ -22,6 +22,10 @@ export interface NutritionInput {
   goalType: 'cut' | 'bulk'
   dietStartDate: string | null  // 開始日期 (ISO)
 
+  // 身體組成（用於 Katch-McArdle BMR 估算 TDEE）
+  height?: number | null        // 身高 cm
+  bodyFatPct?: number | null    // 體脂率 %（例如 10 = 10%）
+
   // Deadline-aware（目標體重 + 目標日期）
   targetWeight: number | null
   targetDate: string | null  // 比賽日或目標日 (ISO)
@@ -310,24 +314,64 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     daysToTarget = Math.max(1, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
   }
 
-  // 6. 估算 Adaptive TDEE
-  // TDEE 和 goal-driven 用同一個能量密度，確保一致性
-  // 如果 TDEE 用 7700 反推但 goal-driven 用 5500 預測 → TDEE 高估 + 赤字低估 → 卡路里偏高
+  // 6. 估算 TDEE
+  // 策略：
+  //   A) Katch-McArdle 公式 TDEE（有體脂率時，最穩定的基準）
+  //   B) Adaptive TDEE（有飲食記錄+體重變化，最準但依賴數據品質）
+  //   C) 簡化公式（體重 × 係數，最粗略的 fallback）
+  //
+  // 選擇邏輯：
+  //   - 合規率 ≥ 70% + 有飲食記錄 → 用 Adaptive，但不低於公式值的 80%（sanity check）
+  //   - 合規率 < 70% 或無飲食記錄 → 直接用公式值（飲食數據不可信）
   const tdeeDensity = daysToTarget != null ? getEnergyDensity(daysToTarget, dietDurationWeeks) : ENERGY_DENSITY.LATE_PHASE
-  let estimatedTDEE: number | null = null
-  if (input.avgDailyCalories != null) {
-    // 優先用 Adaptive TDEE（最準確，基於實際攝取 vs 體重變化）
-    estimatedTDEE = Math.round(input.avgDailyCalories - (weeklyChange * tdeeDensity / 7))
-  } else if (input.currentCalories != null) {
-    // Fallback: 用教練設定的當前目標卡路里 + 體重變化反推
-    estimatedTDEE = Math.round(input.currentCalories - (weeklyChange * tdeeDensity / 7))
-    warnings.push('⚠️ 尚無飲食記錄，TDEE 基於目前設定的目標卡路里推算，準確度較低。建議記錄每日飲食提高精度')
+  const isMale = input.gender === '男性'
+
+  // A) 公式 TDEE（Katch-McArdle 或簡化）
+  let formulaTDEE: number | null = null
+  if (input.bodyFatPct != null && input.bodyFatPct > 0) {
+    // Katch-McArdle: BMR = 370 + 21.6 × LBM(kg)
+    const lbm = input.bodyWeight * (1 - input.bodyFatPct / 100)
+    const bmr = 370 + 21.6 * lbm
+    // 活動係數：備賽選手重訓 4-5 天，但有氧少、NEAT 因長期減脂而降低
+    // 備賽中後期代謝適應約 -10%（Trexler 2014: adaptive thermogenesis）
+    const activityMultiplier = input.trainingDaysPerWeek >= 4 ? 1.45 : 1.35
+    const metabolicAdaptation = dietDurationWeeks != null && dietDurationWeeks >= 8 ? 0.90 : 0.95
+    formulaTDEE = Math.round(bmr * activityMultiplier * metabolicAdaptation)
   } else {
-    // 最終 Fallback: 簡化公式估算（粗略）
-    // 無身高年齡資料，用簡化公式：男性 TDEE ≈ 體重 × 30, 女性 ≈ 體重 × 27
-    const isMale = input.gender === '男性'
-    estimatedTDEE = Math.round(input.bodyWeight * (isMale ? 30 : 27))
-    warnings.push(`⚠️ 無飲食記錄，TDEE 以體重公式粗估（${estimatedTDEE}kcal），建議記錄每日飲食讓系統自動校正`)
+    // 無體脂率 → 簡化公式
+    formulaTDEE = Math.round(input.bodyWeight * (isMale ? 30 : 27))
+  }
+
+  // B) Adaptive TDEE（飲食記錄 + 體重變化反推）
+  let adaptiveTDEE: number | null = null
+  if (input.avgDailyCalories != null) {
+    adaptiveTDEE = Math.round(input.avgDailyCalories - (weeklyChange * tdeeDensity / 7))
+  } else if (input.currentCalories != null) {
+    adaptiveTDEE = Math.round(input.currentCalories - (weeklyChange * tdeeDensity / 7))
+  }
+
+  // C) 決定最終 TDEE
+  let estimatedTDEE: number | null = null
+  const complianceThreshold = 70  // 合規率門檻
+
+  if (input.nutritionCompliance >= complianceThreshold && adaptiveTDEE != null) {
+    // 飲食數據可信 → 用 Adaptive TDEE
+    // 但做 sanity check：不低於公式值的 80%（避免飲食記錄嚴重低報）
+    const minTDEE = Math.round(formulaTDEE * 0.80)
+    if (adaptiveTDEE < minTDEE) {
+      estimatedTDEE = minTDEE
+      warnings.push(`⚠️ 飲食記錄反推 TDEE ${adaptiveTDEE}kcal 明顯偏低（公式估算 ${formulaTDEE}kcal），已修正至 ${minTDEE}kcal。可能是記錄不完整`)
+    } else {
+      estimatedTDEE = adaptiveTDEE
+    }
+  } else if (adaptiveTDEE != null) {
+    // 有飲食記錄但合規率低 → 不信任 adaptive，用公式值
+    estimatedTDEE = formulaTDEE
+    warnings.push(`⚠️ 飲食合規率 ${input.nutritionCompliance}% 偏低，TDEE 改用${input.bodyFatPct != null ? 'Katch-McArdle 公式' : '體重公式'}估算（${estimatedTDEE}kcal）。提高記錄完整度可讓系統自動校正`)
+  } else {
+    // 完全沒有飲食記錄 → 用公式值
+    estimatedTDEE = formulaTDEE
+    warnings.push(`⚠️ 無飲食記錄，TDEE 以${input.bodyFatPct != null ? 'Katch-McArdle 公式' : '體重公式'}估算（${estimatedTDEE}kcal），建議記錄每日飲食讓系統自動校正`)
   }
 
   // 7. Deadline-aware 計算（用前面算好的 daysToTarget）
