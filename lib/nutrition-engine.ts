@@ -131,20 +131,9 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     }
   }
 
-  // 2. 檢查合規率
+  // 2. 合規率低時加入警告，但不阻擋引擎運作（體重是最真實的指標）
   if (input.nutritionCompliance < 70) {
-    return {
-      status: 'low_compliance',
-      statusLabel: '合規率偏低',
-      statusEmoji: '⚠️',
-      message: `飲食合規率僅 ${input.nutritionCompliance}%，建議先把合規率提升到 70% 以上再調整目標。目前的數據無法準確判斷進度。`,
-      suggestedCalories: null, suggestedProtein: null, suggestedCarbs: null, suggestedFat: null,
-      suggestedCarbsTrainingDay: null, suggestedCarbsRestDay: null,
-      caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
-      estimatedTDEE: null, weeklyWeightChangeRate: null,
-      dietDurationWeeks: null, dietBreakSuggested: false, warnings: [],
-      deadlineInfo: null, autoApply: false,
-    }
+    warnings.push(`飲食合規率 ${input.nutritionCompliance}%，建議提高記錄完整度以提升建議準確性`)
   }
 
   // 3. 計算週均體重變化率
