@@ -14,6 +14,10 @@ export default function ClientOverview() {
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [dateRange, setDateRange] = useState<'7' | '14' | '30'>('14')
+  const [suggestion, setSuggestion] = useState<any>(null)
+  const [suggestionMeta, setSuggestionMeta] = useState<any>(null)
+  const [applyingsuggestion, setApplyingsuggestion] = useState(false)
+  const [suggestionApplied, setSuggestionApplied] = useState(false)
   const [client, setClient] = useState<any>(null)
   const [supplements, setSupplements] = useState<any[]>([])
   const [supplementLogs, setSupplementLogs] = useState<any[]>([])
@@ -41,10 +45,48 @@ export default function ClientOverview() {
       setBodyData(data.bodyData || [])
       setLabResults(data.labResults || [])
       setNutritionLogs(data.nutritionLogs || [])
+      // 同時抓取營養建議
+      if (data.client?.goal_type && data.client?.nutrition_enabled) {
+        fetch(`/api/nutrition-suggestions?clientId=${data.client.id}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d) { setSuggestion(d.suggestion); setSuggestionMeta(d.meta) } })
+          .catch(() => {})
+      }
     } catch (err) {
       console.error('載入資料錯誤:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // 一鍵套用建議
+  const applySuggestion = async () => {
+    if (!suggestion || suggestion.status === 'on_track' || suggestion.status === 'insufficient_data' || suggestion.status === 'low_compliance') return
+    setApplyingsuggestion(true)
+    try {
+      const updates: any = {}
+      if (suggestion.suggestedCalories != null) updates.calories_target = suggestion.suggestedCalories
+      if (suggestion.suggestedProtein != null) updates.protein_target = suggestion.suggestedProtein
+      if (suggestion.suggestedCarbs != null) updates.carbs_target = suggestion.suggestedCarbs
+      if (suggestion.suggestedFat != null) updates.fat_target = suggestion.suggestedFat
+      if (suggestion.suggestedCarbsTrainingDay != null) updates.carbs_training_day = suggestion.suggestedCarbsTrainingDay
+      if (suggestion.suggestedCarbsRestDay != null) updates.carbs_rest_day = suggestion.suggestedCarbsRestDay
+
+      const res = await fetch('/api/admin/clients', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id, clientData: updates }),
+      })
+      if (res.ok) {
+        setSuggestionApplied(true)
+        // 更新本地 client state
+        setClient((prev: any) => ({ ...prev, ...updates }))
+        setTimeout(() => setSuggestionApplied(false), 3000)
+      }
+    } catch (err) {
+      console.error('套用建議失敗:', err)
+    } finally {
+      setApplyingsuggestion(false)
     }
   }
 
@@ -866,6 +908,136 @@ export default function ClientOverview() {
             <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{weeklyReport.summary}</p>
           </div>
         </div>
+
+        {/* ===== 營養建議引擎 ===== */}
+        {suggestion && suggestion.status !== 'insufficient_data' && (
+          <div className={`rounded-2xl p-5 border ${
+            suggestion.status === 'on_track' ? 'bg-green-50 border-green-200' :
+            suggestion.status === 'low_compliance' ? 'bg-gray-50 border-gray-200' :
+            suggestion.status === 'too_fast' || suggestion.status === 'wrong_direction' ? 'bg-red-50 border-red-200' :
+            'bg-amber-50 border-amber-200'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{suggestion.statusEmoji}</span>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">🧮 營養建議引擎</h3>
+                  <p className="text-xs text-gray-500">
+                    {suggestionMeta?.goalType === 'cut' ? '🔻 減脂模式' : '🔺 增肌模式'}
+                    {suggestion.weeklyWeightChangeRate != null && ` · 週變化 ${suggestion.weeklyWeightChangeRate > 0 ? '+' : ''}${suggestion.weeklyWeightChangeRate.toFixed(2)}%`}
+                    {suggestion.estimatedTDEE && ` · 估算 TDEE ${suggestion.estimatedTDEE} kcal`}
+                  </p>
+                </div>
+              </div>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                suggestion.status === 'on_track' ? 'bg-green-100 text-green-700' :
+                suggestion.status === 'low_compliance' ? 'bg-gray-100 text-gray-600' :
+                suggestion.status === 'plateau' ? 'bg-amber-100 text-amber-700' :
+                'bg-red-100 text-red-700'
+              }`}>{suggestion.statusLabel}</span>
+            </div>
+
+            <p className="text-sm text-gray-700 mb-4">{suggestion.message}</p>
+
+            {/* 建議調整表 */}
+            {suggestion.status !== 'on_track' && suggestion.status !== 'low_compliance' && (
+              <div className="bg-white/70 rounded-xl p-4 mb-3">
+                <p className="text-xs font-semibold text-gray-600 mb-3">建議調整：</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {suggestion.suggestedCalories != null && (
+                    <div className="text-center">
+                      <p className="text-[10px] text-gray-500">🔥 熱量</p>
+                      <p className="text-lg font-bold text-gray-900">{suggestion.suggestedCalories}</p>
+                      <p className={`text-xs font-medium ${suggestion.caloriesDelta > 0 ? 'text-green-600' : suggestion.caloriesDelta < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                        {suggestion.caloriesDelta > 0 ? '+' : ''}{suggestion.caloriesDelta} kcal
+                      </p>
+                    </div>
+                  )}
+                  {suggestion.suggestedProtein != null && (
+                    <div className="text-center">
+                      <p className="text-[10px] text-gray-500">🥩 蛋白質</p>
+                      <p className="text-lg font-bold text-gray-900">{suggestion.suggestedProtein}g</p>
+                      <p className={`text-xs font-medium ${suggestion.proteinDelta > 0 ? 'text-green-600' : suggestion.proteinDelta < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                        {suggestion.proteinDelta === 0 ? '維持' : `${suggestion.proteinDelta > 0 ? '+' : ''}${suggestion.proteinDelta}g`}
+                      </p>
+                    </div>
+                  )}
+                  {suggestion.suggestedCarbs != null && (
+                    <div className="text-center">
+                      <p className="text-[10px] text-gray-500">🍚 碳水</p>
+                      <p className="text-lg font-bold text-gray-900">{suggestion.suggestedCarbs}g</p>
+                      <p className={`text-xs font-medium ${suggestion.carbsDelta > 0 ? 'text-green-600' : suggestion.carbsDelta < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                        {suggestion.carbsDelta > 0 ? '+' : ''}{suggestion.carbsDelta}g
+                      </p>
+                    </div>
+                  )}
+                  {suggestion.suggestedFat != null && (
+                    <div className="text-center">
+                      <p className="text-[10px] text-gray-500">🥑 脂肪</p>
+                      <p className="text-lg font-bold text-gray-900">{suggestion.suggestedFat}g</p>
+                      <p className={`text-xs font-medium ${suggestion.fatDelta > 0 ? 'text-green-600' : suggestion.fatDelta < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                        {suggestion.fatDelta === 0 ? '維持' : `${suggestion.fatDelta > 0 ? '+' : ''}${suggestion.fatDelta}g`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {/* 碳循環分配 */}
+                {suggestion.suggestedCarbsTrainingDay != null && suggestion.suggestedCarbsRestDay != null && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <p className="text-[10px] text-gray-500 mb-1">🔄 碳循環分配</p>
+                    <div className="flex gap-4 text-sm">
+                      <span className="text-cyan-700">訓練日：{suggestion.suggestedCarbsTrainingDay}g</span>
+                      <span className="text-gray-500">休息日：{suggestion.suggestedCarbsRestDay}g</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 警告 */}
+            {suggestion.warnings?.length > 0 && (
+              <div className="bg-white/50 rounded-lg px-3 py-2 mb-3">
+                {suggestion.warnings.map((w: string, i: number) => (
+                  <p key={i} className="text-xs text-amber-700">💡 {w}</p>
+                ))}
+              </div>
+            )}
+
+            {/* 操作按鈕 */}
+            {suggestion.status !== 'on_track' && suggestion.status !== 'low_compliance' && (
+              <div className="flex gap-2">
+                <button
+                  onClick={applySuggestion}
+                  disabled={applyingsuggestion || suggestionApplied}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    suggestionApplied
+                      ? 'bg-green-500 text-white'
+                      : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
+                  }`}
+                >
+                  {suggestionApplied ? '✓ 已套用' : applyingsuggestion ? '套用中...' : '一鍵套用'}
+                </button>
+                <Link
+                  href={`/admin/clients/${clientId}`}
+                  className="flex-1 py-2.5 bg-white text-gray-700 rounded-xl text-sm font-medium text-center hover:bg-gray-50 transition-colors border border-gray-200"
+                >
+                  手動微調
+                </Link>
+              </div>
+            )}
+
+            {/* 資料來源 */}
+            {suggestionMeta && (
+              <div className="mt-3 pt-2 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-400">
+                <span>體重：{suggestionMeta.latestWeight}kg</span>
+                <span>合規率：{suggestionMeta.nutritionCompliance}%</span>
+                {suggestionMeta.avgDailyCalories && <span>均攝取：{suggestionMeta.avgDailyCalories}kcal</span>}
+                <span>訓練：{suggestionMeta.trainingDaysPerWeek}天/週</span>
+                {suggestion.dietDurationWeeks != null && <span>已執行：{suggestion.dietDurationWeeks}週</span>}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ===== 核心指標卡片 ===== */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -55,6 +55,8 @@ interface Client {
   is_active: boolean
   carbs_training_day: number | null
   carbs_rest_day: number | null
+  goal_type: 'cut' | 'bulk' | null
+  diet_start_date: string | null
 
   lab_results: LabResult[]
   supplements: Supplement[]
@@ -116,6 +118,8 @@ export default function ClientEditor() {
         is_active: true,
         carbs_training_day: null,
         carbs_rest_day: null,
+        goal_type: null,
+        diet_start_date: null,
 
         lab_results: [],
         supplements: []
@@ -178,6 +182,8 @@ export default function ClientEditor() {
         is_active: client.is_active,
         carbs_training_day: client.carbs_training_day || null,
         carbs_rest_day: client.carbs_rest_day || null,
+        goal_type: client.goal_type || null,
+        diet_start_date: client.diet_start_date || null,
       }
 
       if (clientId === 'new') {
@@ -521,6 +527,38 @@ export default function ClientEditor() {
                       placeholder="例如：2500"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 營養建議引擎 */}
+            {client.nutrition_enabled && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="border-t border-gray-100 pt-4 mt-4">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">🧮 營養建議引擎</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">目標類型</label>
+                      <select
+                        value={client.goal_type || ''}
+                        onChange={(e) => setClient({ ...client, goal_type: e.target.value as 'cut' | 'bulk' || null })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      >
+                        <option value="">未設定</option>
+                        <option value="cut">🔻 減脂</option>
+                        <option value="bulk">🔺 增肌</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">飲食計畫開始日</label>
+                      <input
+                        type="date"
+                        value={client.diet_start_date || ''}
+                        onChange={(e) => setClient({ ...client, diet_start_date: e.target.value || null })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
