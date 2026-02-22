@@ -24,7 +24,7 @@ export default function BodyComposition({
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const [nutritionAdjusted, setNutritionAdjusted] = useState<{ message?: string; calories?: number } | null>(null)
+  const [nutritionAdjusted, setNutritionAdjusted] = useState<{ message?: string; calories?: number; adjusted?: boolean } | null>(null)
   const todayStr = new Date().toISOString().split('T')[0]
   const [form, setForm] = useState({
     date: todayStr,
@@ -167,12 +167,13 @@ export default function BodyComposition({
       onMutate()
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 2000)
-      // 檢查是否有營養素自動調整
-      if (result?.data?.nutritionAdjusted?.adjusted) {
+      // 營養素引擎結果（不管有沒有調整都顯示 debug）
+      const na = result?.data?.nutritionAdjusted
+      if (na) {
         setTimeout(() => {
-          setNutritionAdjusted(result.data.nutritionAdjusted)
-          setTimeout(() => setNutritionAdjusted(null), 5000)
-        }, 2200) // 在成功動畫後顯示
+          setNutritionAdjusted({ message: na.debug || na.message, calories: na.calories, adjusted: na.adjusted })
+          setTimeout(() => setNutritionAdjusted(null), 6000)
+        }, 2200)
       }
     } catch { alert('儲存失敗，請重試') }
   }
@@ -186,12 +187,21 @@ export default function BodyComposition({
         </div>
       )}
       {nutritionAdjusted && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-bounce">
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-bounce ${
+          nutritionAdjusted.adjusted ? 'bg-gradient-to-r from-blue-600 to-indigo-600' : 'bg-gray-700'
+        }`}>
           <div className="flex items-center gap-2">
-            <span className="text-lg">🧮</span>
+            <span className="text-lg">{nutritionAdjusted.adjusted ? '🧮' : '📊'}</span>
             <div>
-              <p className="text-sm font-medium">營養目標已自動調整</p>
-              {nutritionAdjusted.calories && (
+              <p className="text-sm font-medium">
+                {nutritionAdjusted.adjusted ? '營養目標已自動調整' : '引擎未調整'}
+              </p>
+              {nutritionAdjusted.message && (
+                <p className="text-xs text-gray-200 mt-0.5">
+                  {nutritionAdjusted.message}
+                </p>
+              )}
+              {nutritionAdjusted.adjusted && nutritionAdjusted.calories && (
                 <p className="text-xs text-blue-100 mt-0.5">
                   新目標：{nutritionAdjusted.calories} kcal
                 </p>
