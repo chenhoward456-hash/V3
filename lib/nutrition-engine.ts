@@ -121,13 +121,19 @@ export interface PeakWeekDay {
 }
 
 // ===== 常數 (基於文獻) =====
+// 主要文獻：
+//   Helms et al. 2014 (JISSN) — 備賽營養建議
+//   Iraki et al. 2019 (JOHK) — Physique athletes 營養建議
+//   Hall 2008 (IJOB) — 動態能量平衡模型
+//   Thomas et al. 2013 (IJOB) — 體重預測修正
+//   Garthe et al. 2011 — 慢速 vs 快速減重對 LBM 的影響
 
 const SAFETY = {
   MIN_CALORIES_MALE: 1500,
   MIN_CALORIES_FEMALE: 1200,
-  MIN_PROTEIN_PER_KG_CUT: 2.0,   // ISSN: ≥2.0g/kg during deficit
+  MIN_PROTEIN_PER_KG_CUT: 2.3,   // Helms 2014: 2.3-3.1g/kg LBM → 用體重近似取下限
   MIN_PROTEIN_PER_KG_BULK: 1.8,  // Off-season: 1.6-2.2, we use 1.8 floor
-  MIN_FAT_PER_KG: 0.8,           // Hormonal health minimum
+  MIN_FAT_PER_KG: 0.8,           // Hormonal health minimum (15-20% calories)
   MAX_FAT_PER_KG_BULK: 1.2,
   MAX_DEFICIT_KCAL: 500,          // Meta-analysis: ≤500kcal/day deficit
   DIET_BREAK_WEEKS: 8,            // Suggest diet break after 8 weeks continuous
@@ -139,25 +145,44 @@ const GOAL_DRIVEN = {
   MIN_CALORIES_FEMALE: 1000,
   MAX_DEFICIT_KCAL: 750,          // 允許最大赤字到 750kcal（備賽期）
   EXTREME_DEFICIT_KCAL: 1000,     // 極端赤字（最後 3 週，自動警告）
-  MIN_PROTEIN_PER_KG: 2.3,       // 大赤字時提高蛋白質保護肌肉
-  MIN_FAT_PER_KG: 0.5,           // 備賽最後階段可短期降到 0.5g/kg
-  // 每週最大安全掉重率（備賽選手可承受更高）
-  MAX_WEEKLY_LOSS_PCT: 1.5,       // 正常模式 1.0%，goal-driven 放寬到 1.5%
+  // 蛋白質依赤字深度分級 (Helms 2014: 赤字越大 → 蛋白質越高)
+  PROTEIN_PER_KG_NORMAL: 2.3,    // normal 赤字：2.3g/kg
+  PROTEIN_PER_KG_AGGRESSIVE: 2.6, // aggressive：2.6g/kg
+  PROTEIN_PER_KG_EXTREME: 3.0,   // extreme：3.0g/kg（接近 LBM 的 3.1g/kg 上限）
+  MIN_FAT_PER_KG: 0.7,           // 備賽最低 0.7g/kg (Iraki: 15-25% cal, ~15% at 1200kcal = 20g ≈ 0.7g/80kg)
+  // 每週最大安全掉重率 (Helms: 0.5-1.0%, Garthe: >1.4% 損失 LBM)
+  MAX_WEEKLY_LOSS_PCT: 1.2,       // goal-driven 放寬到 1.2%（1.0% 理想上限 + 10% 備賽彈性）
+}
+
+// 動態能量密度（取代靜態 7700 kcal/kg）
+// Hall 2008: 早期減重 ~4800 kcal/kg（含水分+glycogen），後期趨近 7700
+// 備賽選手體脂低，減掉的含較多 LBM → 實際能量密度較低
+const ENERGY_DENSITY = {
+  PURE_FAT: 7700,                 // 純脂肪 1kg = 7700 kcal
+  EARLY_PHASE: 5500,              // 減重前期（前 4-6 週）含水分+glycogen
+  LATE_PHASE: 6500,               // 減重後期（6 週+）趨近脂肪但仍含部分 LBM
+  CONTEST_LEAN: 5500,             // 備賽選手（<12% BF）：LBM 流失比例較高
 }
 
 // 有氧消耗估算常數
 const CARDIO = {
-  // 中等強度有氧（快走/橢圓機/低阻力踩車）每分鐘消耗約 6-8 kcal
-  // 保守估算用 6.5 kcal/min（適合備賽後期低能量狀態）
-  MODERATE_KCAL_PER_MIN: 6.5,
-  // 每步消耗約 0.04-0.05 kcal（體重相關，80kg 約 0.045）
-  KCAL_PER_STEP: 0.045,
+  // 中等強度有氧的基礎消耗（kcal/min/kg），體重修正用
+  // ACSM: 中等強度（快走 5-6km/h）≈ 3.5-7 METs
+  // 備賽後期代謝適應折扣 15-25%（Trexler 2014: adaptive thermogenesis）
+  BASE_KCAL_PER_MIN_PER_KG: 0.075, // ~6 kcal/min for 80kg（保守，已含適應折扣）
+  PREP_FATIGUE_DISCOUNT: 0.80,     // 備賽後期效率折扣（代謝適應 + 疲勞）
+  // 每步消耗（體重修正）
+  BASE_KCAL_PER_STEP_PER_KG: 0.0005, // 80kg × 0.0005 = 0.04 kcal/step
   // 基線步數（日常活動，不算額外有氧）
   BASELINE_STEPS: 5000,
   // 最大建議有氧時間（備賽期不應超過，避免肌肉流失）
-  MAX_CARDIO_MINUTES: 60,
+  // Helms 2014: 過量有氧 → 干擾力量訓練恢復
+  MAX_CARDIO_MINUTES: 45,          // 從 60 降到 45（文獻建議保守）
   // 最大建議步數
-  MAX_DAILY_STEPS: 15000,
+  MAX_DAILY_STEPS: 12000,          // 從 15000 降到 12000（更實際）
+  // 每日額外活動消耗的合理上限（kcal）
+  // 現實中備賽選手很難每天靠活動額外消耗超過 400-500 kcal
+  MAX_EXTRA_BURN_PER_DAY: 500,     // 有氧+步數合計上限
 }
 
 const CUT_TARGETS = {
@@ -205,6 +230,19 @@ const PEAK_WEEK = {
   WATER_LOADING: 140,     // Day 3-2：120-155 mL/kg (中間值)
   WATER_TAPER: 80,        // Day 1：80 mL/kg
   WATER_SHOW: 20,         // 比賽日：少量啜飲
+}
+
+// ===== 動態能量密度計算 =====
+// 依備賽階段和剩餘天數決定每公斤體重變化的 kcal 密度
+function getEnergyDensity(daysLeft: number, dietDurationWeeks: number | null): number {
+  // 備賽選手體脂低 + 減重後期 → 不純粹是脂肪
+  if (dietDurationWeeks != null && dietDurationWeeks < 4) {
+    return ENERGY_DENSITY.EARLY_PHASE  // 5500: 前 4 週含大量水分+glycogen
+  }
+  if (daysLeft <= 21) {
+    return ENERGY_DENSITY.CONTEST_LEAN  // 5500: 最後 3 週，體脂極低，LBM 流失比例增加
+  }
+  return ENERGY_DENSITY.LATE_PHASE  // 6500: 減重中後期
 }
 
 // ===== 空結果模板 =====
@@ -501,7 +539,8 @@ function generateCutSuggestion(
 
 // ===== Goal-Driven 反算引擎（備賽核心）=====
 // 給定目標體重 + 目標日期 + 當前 TDEE → 精確計算每日卡路里
-// 邏輯：需要減的重量 × 7700kcal/kg ÷ 剩餘天數 = 每日赤字 → TDEE - 赤字 = 目標卡路里
+// 邏輯：需要減的重量 × 動態能量密度 ÷ 剩餘天數 = 每日赤字 → TDEE - 赤字 = 目標卡路里
+// 文獻：Hall 2008 動態模型取代靜態 7700 kcal/kg
 function generateGoalDrivenCut(
   input: NutritionInput,
   estimatedTDEE: number,
@@ -516,8 +555,9 @@ function generateGoalDrivenCut(
   const daysLeft = deadlineInfo.daysLeft
   const weightToLose = deadlineInfo.weightToLose  // kg, positive = need to lose
 
-  // 1. 計算需要的每日赤字
-  const totalDeficitNeeded = weightToLose * 7700  // kcal total
+  // 1. 計算需要的每日赤字（使用動態能量密度）
+  const energyDensity = getEnergyDensity(daysLeft, dietDurationWeeks)
+  const totalDeficitNeeded = weightToLose * energyDensity  // kcal total
   const requiredDailyDeficit = Math.round(totalDeficitNeeded / daysLeft)
   const requiredWeeklyLoss = weightToLose / (daysLeft / 7)
   const weeklyLossPct = (requiredWeeklyLoss / bw) * 100
@@ -543,7 +583,9 @@ function generateGoalDrivenCut(
   let predictedCompWeight: number
   let caloriesCapped = false
 
-  // 計算有氧/步數需求
+  // 有氧/步數計算（體重修正 + 備賽疲勞折扣）
+  const kcalPerMinCardio = bw * CARDIO.BASE_KCAL_PER_MIN_PER_KG * CARDIO.PREP_FATIGUE_DISCOUNT
+  const kcalPerStep = bw * CARDIO.BASE_KCAL_PER_STEP_PER_KG
   let extraCardioNeeded = false
   let extraBurnPerDay = 0
   let suggestedCardioMinutes = 0
@@ -554,37 +596,44 @@ function generateGoalDrivenCut(
     // 被硬底線限制 → 需要靠有氧補差距
     caloriesCapped = true
     const dietOnlyDeficit = estimatedTDEE - absoluteMinCal
-    extraBurnPerDay = requiredDailyDeficit - dietOnlyDeficit  // 飲食不夠的缺口
+    const rawExtraBurn = requiredDailyDeficit - dietOnlyDeficit  // 飲食不夠的缺口
+    // 有氧+步數合計上限（現實限制：備賽選手很難每天額外消耗超過 500 kcal）
+    extraBurnPerDay = Math.min(rawExtraBurn, CARDIO.MAX_EXTRA_BURN_PER_DAY)
     targetCalories = absoluteMinCal
 
     if (extraBurnPerDay > 0) {
       extraCardioNeeded = true
-      // 換算有氧分鐘數
+      // 換算有氧分鐘數（體重修正 + 疲勞折扣）
       suggestedCardioMinutes = Math.min(
         CARDIO.MAX_CARDIO_MINUTES,
-        Math.ceil(extraBurnPerDay / CARDIO.MODERATE_KCAL_PER_MIN)
+        Math.ceil(extraBurnPerDay / kcalPerMinCardio)
       )
       // 換算步數（有氧以外的部分用步數補）
-      const cardioCanBurn = suggestedCardioMinutes * CARDIO.MODERATE_KCAL_PER_MIN
+      const cardioCanBurn = suggestedCardioMinutes * kcalPerMinCardio
       const remainingBurn = Math.max(0, extraBurnPerDay - cardioCanBurn)
-      const extraSteps = Math.ceil(remainingBurn / CARDIO.KCAL_PER_STEP)
+      const extraSteps = Math.ceil(remainingBurn / kcalPerStep)
       suggestedDailySteps = Math.min(CARDIO.MAX_DAILY_STEPS, CARDIO.BASELINE_STEPS + extraSteps)
 
-      // 重新計算有有氧加持後的預測體重
-      const totalDailyBurn = dietOnlyDeficit + cardioCanBurn + extraSteps * CARDIO.KCAL_PER_STEP
-      const totalLossWithCardio = (totalDailyBurn * daysLeft) / 7700
+      // 重新計算有氧加持後的預測體重
+      const actualExtraSteps = suggestedDailySteps - CARDIO.BASELINE_STEPS
+      const totalDailyBurn = dietOnlyDeficit + cardioCanBurn + actualExtraSteps * kcalPerStep
+      const totalLossWithCardio = (totalDailyBurn * daysLeft) / energyDensity
       predictedCompWeight = Math.round((bw - totalLossWithCardio) * 10) / 10
 
       // 判斷加了有氧後能否達標
       if (predictedCompWeight <= targetWeight + 0.3) {
         cardioNote = `飲食 + 有氧可達標！每日 ${suggestedCardioMinutes} 分鐘中等強度有氧 + ${suggestedDailySteps.toLocaleString()} 步`
       } else {
-        cardioNote = `即使加上有氧，預測 ${predictedCompWeight}kg（目標 ${targetWeight}kg）。差距 ${(predictedCompWeight - targetWeight).toFixed(1)}kg，建議與教練討論調整量級或目標`
+        cardioNote = `預測 ${predictedCompWeight}kg（目標 ${targetWeight}kg），差 ${(predictedCompWeight - targetWeight).toFixed(1)}kg。建議與教練討論調整量級或目標`
       }
 
-      warnings.push(`🏃 飲食赤字不足，需額外每日消耗 ${Math.round(extraBurnPerDay)}kcal → 建議有氧 ${suggestedCardioMinutes} 分鐘/天 + 步數 ${suggestedDailySteps.toLocaleString()} 步/天`)
+      // 如果原始缺口被 cap 了，提示實際差距
+      if (rawExtraBurn > CARDIO.MAX_EXTRA_BURN_PER_DAY) {
+        warnings.push(`🏃 理論需額外消耗 ${Math.round(rawExtraBurn)}kcal/天，但實際有氧+步數合理上限約 ${CARDIO.MAX_EXTRA_BURN_PER_DAY}kcal/天`)
+      }
+      warnings.push(`🏃 建議有氧 ${suggestedCardioMinutes} 分鐘/天 + 步數 ${suggestedDailySteps.toLocaleString()} 步/天（約消耗 ${Math.round(cardioCanBurn + actualExtraSteps * kcalPerStep)}kcal）`)
     } else {
-      const actualTotalLoss = (dietOnlyDeficit * daysLeft) / 7700
+      const actualTotalLoss = (dietOnlyDeficit * daysLeft) / energyDensity
       predictedCompWeight = Math.round((bw - actualTotalLoss) * 10) / 10
     }
   } else {
@@ -602,12 +651,21 @@ function generateGoalDrivenCut(
     warnings.push(`🔥 目標熱量 ${targetCalories}kcal 低於一般安全線 ${softMinCal}kcal，已進入備賽極限模式`)
   }
 
+  // 掉重率安全檢查（Helms 2014: 0.5-1.0%/wk, Garthe 2011: >1.4% 損失 LBM）
+  if (weeklyLossPct > GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT) {
+    warnings.push(`需要每週掉 ${weeklyLossPct.toFixed(1)}% BW，超過安全上限 ${GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT}%（${(bw * GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT / 100).toFixed(1)}kg/週）`)
+  }
+
   // 5. 計算巨量營養素分配
-  // Goal-Driven 模式：蛋白質提高（保護肌肉），脂肪降到備賽底線，剩餘給碳水
-  const minProteinPerKg = safetyLevel === 'normal' ? SAFETY.MIN_PROTEIN_PER_KG_CUT : GOAL_DRIVEN.MIN_PROTEIN_PER_KG
+  // Helms 2014: 赤字越大 → 蛋白質越高（2.3-3.1g/kg LBM）
+  // 用體重近似 LBM（備賽選手 BF% 低，差距小）
+  const proteinPerKg = safetyLevel === 'extreme' ? GOAL_DRIVEN.PROTEIN_PER_KG_EXTREME
+    : safetyLevel === 'aggressive' ? GOAL_DRIVEN.PROTEIN_PER_KG_AGGRESSIVE
+    : GOAL_DRIVEN.PROTEIN_PER_KG_NORMAL
+  // Iraki 2019: 脂肪 15-25% of calories，備賽後期可降但不低於 0.7g/kg
   const minFatPerKg = safetyLevel === 'extreme' ? GOAL_DRIVEN.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG
 
-  let suggestedPro = Math.round(bw * minProteinPerKg)
+  let suggestedPro = Math.round(bw * proteinPerKg)
   let suggestedFat = Math.round(bw * minFatPerKg)
 
   // 蛋白質和脂肪先佔的卡路里
@@ -676,7 +734,7 @@ function generateGoalDrivenCut(
     message += ` ⚠️ 注意：上週體重反而增加了 ${weeklyChangeRate.toFixed(2)}%，請確實執行計畫。`
   } else if (weeklyChangeRate < -GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT) {
     message += ` ⚠️ 上週掉太快（${weeklyChangeRate.toFixed(2)}%），注意肌肉流失。`
-    warnings.push('掉重速率超過 1.5%/週，建議增加蛋白質攝取量或微增碳水')
+    warnings.push('掉重速率超過 1.2%/週（Garthe 2011: >1% 增加 LBM 流失風險），建議增加蛋白質攝取量或微增碳水')
   }
 
   // Diet break 建議
