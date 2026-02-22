@@ -146,6 +146,7 @@ export async function GET(request: NextRequest) {
       nutritionCompliance,
       avgDailyCalories,
       trainingDaysPerWeek,
+      prepPhase: client.prep_phase || undefined,
     }
 
     // 9. 執行引擎

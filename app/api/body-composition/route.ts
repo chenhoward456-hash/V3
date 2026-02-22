@@ -103,6 +103,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     nutritionCompliance: compliance,
     avgDailyCalories: avgCal,
     trainingDaysPerWeek: trainingDays,
+    prepPhase: client.prep_phase || undefined,
   })
 
   const debugInfo = `status=${suggestion.status}, autoApply=${suggestion.autoApply}, compliance=${compliance}%, weeklyWeights=${weeklyWeights.length}, rate=${suggestion.weeklyWeightChangeRate?.toFixed(2)}%/wk`
