@@ -260,3 +260,11 @@ ALTER TABLE nutrition_logs ADD COLUMN IF NOT EXISTS sodium_mg NUMERIC;
 ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS hunger INTEGER CHECK (hunger >= 1 AND hunger <= 5);
 ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS digestion INTEGER CHECK (digestion >= 1 AND digestion <= 5);
 ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS training_drive INTEGER CHECK (training_drive >= 1 AND training_drive <= 5);
+
+-- ============================================
+-- 18. 營養素自動建議引擎 (Nutrition Engine)
+-- ============================================
+
+-- clients 表新增目標類型和飲食開始日期
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS goal_type TEXT DEFAULT 'cut' CHECK (goal_type IN ('cut', 'bulk'));
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS diet_start_date DATE;
