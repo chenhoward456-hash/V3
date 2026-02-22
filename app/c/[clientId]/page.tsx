@@ -17,6 +17,7 @@ import HealthReport from '@/components/client/HealthReport'
 import TrainingLog from '@/components/client/TrainingLog'
 import NutritionLog from '@/components/client/NutritionLog'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
+import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import PwaPrompt from '@/components/client/PwaPrompt'
 
 export default function ClientDashboard() {
@@ -396,10 +397,15 @@ export default function ClientDashboard() {
           /></div>
         )}
 
+        {/* Goal-Driven 目標體重計畫（備賽 + 有目標體重 + 非 peak_week） */}
+        {isCompetition && c.target_weight && c.prep_phase !== 'peak_week' && (
+          <GoalDrivenStatus clientId={c.id} />
+        )}
+
         {/* Peak Week 計畫（備賽階段為 peak_week 時顯示） */}
         {isCompetition && c.prep_phase === 'peak_week' && c.competition_date && latestBodyData?.weight && (
           <PeakWeekPlan
-            clientId={clientId as string}
+            clientId={c.id}
             competitionDate={c.competition_date}
             bodyWeight={latestBodyData.weight}
           />

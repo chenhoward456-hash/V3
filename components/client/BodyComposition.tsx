@@ -24,7 +24,7 @@ export default function BodyComposition({
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const [nutritionAdjusted, setNutritionAdjusted] = useState<{ message?: string; calories?: number; adjusted?: boolean } | null>(null)
+  const [nutritionAdjusted, setNutritionAdjusted] = useState<{ message?: string; calories?: number; protein?: number; carbs?: number; fat?: number; adjusted?: boolean } | null>(null)
   const todayStr = new Date().toISOString().split('T')[0]
   const [form, setForm] = useState({
     date: todayStr,
@@ -171,8 +171,8 @@ export default function BodyComposition({
       const na = result?.data?.nutritionAdjusted
       if (na?.adjusted) {
         setTimeout(() => {
-          setNutritionAdjusted({ message: na.message, calories: na.calories, adjusted: true })
-          setTimeout(() => setNutritionAdjusted(null), 4000)
+          setNutritionAdjusted({ message: na.message, calories: na.calories, protein: na.protein, carbs: na.carbs, fat: na.fat, adjusted: true })
+          setTimeout(() => setNutritionAdjusted(null), 5000)
         }, 2200)
       }
     } catch { alert('儲存失敗，請重試') }
@@ -189,12 +189,12 @@ export default function BodyComposition({
       {nutritionAdjusted && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-bounce bg-gradient-to-r from-blue-600 to-indigo-600">
           <div className="flex items-center gap-2">
-            <span className="text-lg">🧮</span>
+            <span className="text-lg">🎯</span>
             <div>
               <p className="text-sm font-medium">營養目標已自動調整</p>
               {nutritionAdjusted.calories && (
                 <p className="text-xs text-blue-100 mt-0.5">
-                  新目標：{nutritionAdjusted.calories} kcal
+                  🔥 {nutritionAdjusted.calories} kcal　P {nutritionAdjusted.protein || '--'}g　C {nutritionAdjusted.carbs || '--'}g　F {nutritionAdjusted.fat || '--'}g
                 </p>
               )}
             </div>

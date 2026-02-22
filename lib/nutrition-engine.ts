@@ -46,7 +46,7 @@ export interface NutritionInput {
 }
 
 export interface NutritionSuggestion {
-  status: 'on_track' | 'too_fast' | 'plateau' | 'wrong_direction' | 'insufficient_data' | 'low_compliance' | 'peak_week'
+  status: 'on_track' | 'too_fast' | 'plateau' | 'wrong_direction' | 'insufficient_data' | 'low_compliance' | 'peak_week' | 'goal_driven'
   statusLabel: string
   statusEmoji: string
   message: string
@@ -79,6 +79,17 @@ export interface NutritionSuggestion {
     weightToLose: number  // 可正可負
     requiredRatePerWeek: number  // kg/week
     isAggressive: boolean  // 超過安全範圍
+    // Goal-driven 額外資訊
+    requiredDailyDeficit?: number    // 需要的每日赤字 kcal
+    predictedCompWeight?: number     // 預測比賽日體重
+    isGoalDriven?: boolean           // 是否啟用 goal-driven 模式
+    safetyLevel?: 'normal' | 'aggressive' | 'extreme'  // 赤字安全等級
+    // 有氧/步數建議（飲食不夠時靠活動量補）
+    extraCardioNeeded?: boolean      // 是否需要額外有氧
+    extraBurnPerDay?: number         // 每天需要額外燃燒 kcal
+    suggestedCardioMinutes?: number  // 建議有氧分鐘數（中等強度）
+    suggestedDailySteps?: number     // 建議每日步數
+    cardioNote?: string              // 有氧建議說明
   } | null
 
   // 是否可以自動套用
@@ -120,6 +131,33 @@ const SAFETY = {
   MAX_FAT_PER_KG_BULK: 1.2,
   MAX_DEFICIT_KCAL: 500,          // Meta-analysis: ≤500kcal/day deficit
   DIET_BREAK_WEEKS: 8,            // Suggest diet break after 8 weeks continuous
+}
+
+// Goal-Driven 模式的放寬限制（用於備賽選手，允許更激進的赤字）
+const GOAL_DRIVEN = {
+  MIN_CALORIES_MALE: 1200,        // 備賽極限：1200kcal（短期可承受）
+  MIN_CALORIES_FEMALE: 1000,
+  MAX_DEFICIT_KCAL: 750,          // 允許最大赤字到 750kcal（備賽期）
+  EXTREME_DEFICIT_KCAL: 1000,     // 極端赤字（最後 3 週，自動警告）
+  MIN_PROTEIN_PER_KG: 2.3,       // 大赤字時提高蛋白質保護肌肉
+  MIN_FAT_PER_KG: 0.5,           // 備賽最後階段可短期降到 0.5g/kg
+  // 每週最大安全掉重率（備賽選手可承受更高）
+  MAX_WEEKLY_LOSS_PCT: 1.5,       // 正常模式 1.0%，goal-driven 放寬到 1.5%
+}
+
+// 有氧消耗估算常數
+const CARDIO = {
+  // 中等強度有氧（快走/橢圓機/低阻力踩車）每分鐘消耗約 6-8 kcal
+  // 保守估算用 6.5 kcal/min（適合備賽後期低能量狀態）
+  MODERATE_KCAL_PER_MIN: 6.5,
+  // 每步消耗約 0.04-0.05 kcal（體重相關，80kg 約 0.045）
+  KCAL_PER_STEP: 0.045,
+  // 基線步數（日常活動，不算額外有氧）
+  BASELINE_STEPS: 5000,
+  // 最大建議有氧時間（備賽期不應超過，避免肌肉流失）
+  MAX_CARDIO_MINUTES: 60,
+  // 最大建議步數
+  MAX_DAILY_STEPS: 15000,
 }
 
 const CUT_TARGETS = {
@@ -221,7 +259,18 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   // 4. 估算 Adaptive TDEE
   let estimatedTDEE: number | null = null
   if (input.avgDailyCalories != null) {
+    // 優先用 Adaptive TDEE（最準確，基於實際攝取 vs 體重變化）
     estimatedTDEE = Math.round(input.avgDailyCalories - (weeklyChange * 7700 / 7))
+  } else if (input.currentCalories != null) {
+    // Fallback: 用教練設定的當前目標卡路里 + 體重變化反推
+    estimatedTDEE = Math.round(input.currentCalories - (weeklyChange * 7700 / 7))
+    warnings.push('⚠️ 尚無飲食記錄，TDEE 基於目前設定的目標卡路里推算，準確度較低。建議記錄每日飲食提高精度')
+  } else {
+    // 最終 Fallback: 簡化公式估算（粗略）
+    // 無身高年齡資料，用簡化公式：男性 TDEE ≈ 體重 × 30, 女性 ≈ 體重 × 27
+    const isMale = input.gender === '男性'
+    estimatedTDEE = Math.round(input.bodyWeight * (isMale ? 30 : 27))
+    warnings.push(`⚠️ 無飲食記錄，TDEE 以體重公式粗估（${estimatedTDEE}kcal），建議記錄每日飲食讓系統自動校正`)
   }
 
   // 5. 計算飲食持續天數
@@ -271,6 +320,14 @@ function generateCutSuggestion(
 ): NutritionSuggestion {
   const bw = input.bodyWeight
   const isMale = input.gender === '男性'
+
+  // ===== Goal-Driven Mode =====
+  // 條件：有目標體重 + 目標日期 + 有 TDEE 估算 → 直接反算每日卡路里
+  if (deadlineInfo && estimatedTDEE && input.targetWeight != null && deadlineInfo.weightToLose > 0) {
+    return generateGoalDrivenCut(input, estimatedTDEE, deadlineInfo, weeklyChangeRate, dietDurationWeeks, warnings)
+  }
+
+  // ===== 以下是原本的 Reactive Mode（無目標體重或無 TDEE 時 fallback）=====
   const minCal = isMale ? SAFETY.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_FEMALE
 
   let status: NutritionSuggestion['status']
@@ -439,6 +496,232 @@ function generateCutSuggestion(
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested, warnings,
     deadlineInfo, autoApply: true, peakWeekPlan: null,
+  }
+}
+
+// ===== Goal-Driven 反算引擎（備賽核心）=====
+// 給定目標體重 + 目標日期 + 當前 TDEE → 精確計算每日卡路里
+// 邏輯：需要減的重量 × 7700kcal/kg ÷ 剩餘天數 = 每日赤字 → TDEE - 赤字 = 目標卡路里
+function generateGoalDrivenCut(
+  input: NutritionInput,
+  estimatedTDEE: number,
+  deadlineInfo: NonNullable<NutritionSuggestion['deadlineInfo']>,
+  weeklyChangeRate: number,
+  dietDurationWeeks: number | null,
+  warnings: string[]
+): NutritionSuggestion {
+  const bw = input.bodyWeight
+  const isMale = input.gender === '男性'
+  const targetWeight = input.targetWeight!
+  const daysLeft = deadlineInfo.daysLeft
+  const weightToLose = deadlineInfo.weightToLose  // kg, positive = need to lose
+
+  // 1. 計算需要的每日赤字
+  const totalDeficitNeeded = weightToLose * 7700  // kcal total
+  const requiredDailyDeficit = Math.round(totalDeficitNeeded / daysLeft)
+  const requiredWeeklyLoss = weightToLose / (daysLeft / 7)
+  const weeklyLossPct = (requiredWeeklyLoss / bw) * 100
+
+  // 2. 判斷安全等級
+  let safetyLevel: 'normal' | 'aggressive' | 'extreme'
+  if (requiredDailyDeficit <= SAFETY.MAX_DEFICIT_KCAL) {
+    safetyLevel = 'normal'
+  } else if (requiredDailyDeficit <= GOAL_DRIVEN.MAX_DEFICIT_KCAL) {
+    safetyLevel = 'aggressive'
+  } else {
+    safetyLevel = 'extreme'
+  }
+
+  // 3. 計算目標每日卡路里
+  let targetCalories = Math.round(estimatedTDEE - requiredDailyDeficit)
+
+  // 4. 安全底線（Goal-Driven 模式使用放寬的底線）
+  const absoluteMinCal = isMale ? GOAL_DRIVEN.MIN_CALORIES_MALE : GOAL_DRIVEN.MIN_CALORIES_FEMALE
+  const softMinCal = isMale ? SAFETY.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_FEMALE
+
+  // 計算如果被底線限制，實際能達到的體重
+  let predictedCompWeight: number
+  let caloriesCapped = false
+
+  // 計算有氧/步數需求
+  let extraCardioNeeded = false
+  let extraBurnPerDay = 0
+  let suggestedCardioMinutes = 0
+  let suggestedDailySteps = CARDIO.BASELINE_STEPS
+  let cardioNote = ''
+
+  if (targetCalories < absoluteMinCal) {
+    // 被硬底線限制 → 需要靠有氧補差距
+    caloriesCapped = true
+    const dietOnlyDeficit = estimatedTDEE - absoluteMinCal
+    extraBurnPerDay = requiredDailyDeficit - dietOnlyDeficit  // 飲食不夠的缺口
+    targetCalories = absoluteMinCal
+
+    if (extraBurnPerDay > 0) {
+      extraCardioNeeded = true
+      // 換算有氧分鐘數
+      suggestedCardioMinutes = Math.min(
+        CARDIO.MAX_CARDIO_MINUTES,
+        Math.ceil(extraBurnPerDay / CARDIO.MODERATE_KCAL_PER_MIN)
+      )
+      // 換算步數（有氧以外的部分用步數補）
+      const cardioCanBurn = suggestedCardioMinutes * CARDIO.MODERATE_KCAL_PER_MIN
+      const remainingBurn = Math.max(0, extraBurnPerDay - cardioCanBurn)
+      const extraSteps = Math.ceil(remainingBurn / CARDIO.KCAL_PER_STEP)
+      suggestedDailySteps = Math.min(CARDIO.MAX_DAILY_STEPS, CARDIO.BASELINE_STEPS + extraSteps)
+
+      // 重新計算有有氧加持後的預測體重
+      const totalDailyBurn = dietOnlyDeficit + cardioCanBurn + extraSteps * CARDIO.KCAL_PER_STEP
+      const totalLossWithCardio = (totalDailyBurn * daysLeft) / 7700
+      predictedCompWeight = Math.round((bw - totalLossWithCardio) * 10) / 10
+
+      // 判斷加了有氧後能否達標
+      if (predictedCompWeight <= targetWeight + 0.3) {
+        cardioNote = `飲食 + 有氧可達標！每日 ${suggestedCardioMinutes} 分鐘中等強度有氧 + ${suggestedDailySteps.toLocaleString()} 步`
+      } else {
+        cardioNote = `即使加上有氧，預測 ${predictedCompWeight}kg（目標 ${targetWeight}kg）。差距 ${(predictedCompWeight - targetWeight).toFixed(1)}kg，建議與教練討論調整量級或目標`
+      }
+
+      warnings.push(`🏃 飲食赤字不足，需額外每日消耗 ${Math.round(extraBurnPerDay)}kcal → 建議有氧 ${suggestedCardioMinutes} 分鐘/天 + 步數 ${suggestedDailySteps.toLocaleString()} 步/天`)
+    } else {
+      const actualTotalLoss = (dietOnlyDeficit * daysLeft) / 7700
+      predictedCompWeight = Math.round((bw - actualTotalLoss) * 10) / 10
+    }
+  } else {
+    predictedCompWeight = targetWeight  // 飲食面可以達到
+
+    // 即使不被底線限制，也建議一定的活動量維持代謝
+    if (safetyLevel !== 'normal') {
+      suggestedCardioMinutes = safetyLevel === 'extreme' ? 30 : 20
+      suggestedDailySteps = safetyLevel === 'extreme' ? 10000 : 8000
+      cardioNote = `建議維持每日 ${suggestedCardioMinutes} 分鐘低強度有氧 + ${suggestedDailySteps.toLocaleString()} 步，幫助赤字執行`
+    }
+  }
+
+  if (targetCalories < softMinCal) {
+    warnings.push(`🔥 目標熱量 ${targetCalories}kcal 低於一般安全線 ${softMinCal}kcal，已進入備賽極限模式`)
+  }
+
+  // 5. 計算巨量營養素分配
+  // Goal-Driven 模式：蛋白質提高（保護肌肉），脂肪降到備賽底線，剩餘給碳水
+  const minProteinPerKg = safetyLevel === 'normal' ? SAFETY.MIN_PROTEIN_PER_KG_CUT : GOAL_DRIVEN.MIN_PROTEIN_PER_KG
+  const minFatPerKg = safetyLevel === 'extreme' ? GOAL_DRIVEN.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG
+
+  let suggestedPro = Math.round(bw * minProteinPerKg)
+  let suggestedFat = Math.round(bw * minFatPerKg)
+
+  // 蛋白質和脂肪先佔的卡路里
+  const proFatCal = suggestedPro * 4 + suggestedFat * 9
+  let suggestedCarb = Math.max(30, Math.round((targetCalories - proFatCal) / 4))
+
+  // 反算實際卡路里（可能因為碳水有底線而微調）
+  const actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
+
+  // 6. 碳循環分配
+  let suggestedCarbsTD: number | null = null
+  let suggestedCarbsRD: number | null = null
+  if (input.carbsCyclingEnabled) {
+    // 訓練日多碳水(60%)、休息日少碳水(40%)
+    const avgDailyCarb = suggestedCarb
+    const trainingDays = Math.min(input.trainingDaysPerWeek, 6)
+    const ratio = trainingDays > 0 ? CARB_CYCLE_TRAINING_RATIO : 0.5
+    suggestedCarbsTD = Math.round(avgDailyCarb * (1 + (ratio - 0.5) * 2))  // 偏高
+    suggestedCarbsRD = Math.round(avgDailyCarb * (1 - (ratio - 0.5) * 2))  // 偏低
+    if (suggestedCarbsRD < 20) suggestedCarbsRD = 20
+  }
+
+  // 7. 構建狀態訊息
+  const currentCal = input.currentCalories || 0
+  const currentPro = input.currentProtein || 0
+  const currentCarb = input.currentCarbs || 0
+  const currentFat = input.currentFat || 0
+
+  let statusEmoji = '🎯'
+  let statusLabel = '目標驅動'
+  let message = ''
+
+  if (caloriesCapped) {
+    statusEmoji = '⚠️'
+    statusLabel = '底線限制'
+    message = `以目前 TDEE ${estimatedTDEE}kcal，需要每日赤字 ${requiredDailyDeficit}kcal 才能達到 ${targetWeight}kg。`
+    message += `飲食限制在 ${absoluteMinCal}kcal`
+    if (extraCardioNeeded) {
+      message += `，搭配每日有氧 ${suggestedCardioMinutes} 分鐘 + ${suggestedDailySteps.toLocaleString()} 步`
+      if (predictedCompWeight <= targetWeight + 0.3) {
+        message += `，預測可達 ${predictedCompWeight}kg ✓`
+      } else {
+        message += `，預測 ${predictedCompWeight}kg（差 ${(predictedCompWeight - targetWeight).toFixed(1)}kg）`
+      }
+    } else {
+      message += `，預測比賽日 ${predictedCompWeight}kg。`
+    }
+  } else if (safetyLevel === 'extreme') {
+    statusEmoji = '🔥'
+    message = `目標模式：每日赤字 ${requiredDailyDeficit}kcal（極限），預計每週掉 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW）。`
+    message += ` 距比賽 ${daysLeft} 天，需減 ${weightToLose.toFixed(1)}kg。目標卡路里 ${actualCalories}kcal。`
+    warnings.push(`🚨 每日赤字 ${requiredDailyDeficit}kcal 已超過 750kcal 極限，請確保足夠休息和蛋白質攝取`)
+  } else if (safetyLevel === 'aggressive') {
+    statusEmoji = '🎯'
+    message = `目標模式：每日赤字 ${requiredDailyDeficit}kcal（積極），預計每週掉 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW）。`
+    message += ` 距比賽 ${daysLeft} 天，目標卡路里 ${actualCalories}kcal。可以達標。`
+    warnings.push(`⚡ 赤字已超過一般建議的 500kcal，備賽模式已啟用放寬限制`)
+  } else {
+    statusEmoji = '✅'
+    message = `目標模式：每日赤字 ${requiredDailyDeficit}kcal，預計每週掉 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW）。`
+    message += ` 在安全範圍內，距比賽 ${daysLeft} 天，穩穩達標。`
+  }
+
+  // 如果實際體重趨勢偏離目標，追加提示
+  if (weeklyChangeRate > 0) {
+    message += ` ⚠️ 注意：上週體重反而增加了 ${weeklyChangeRate.toFixed(2)}%，請確實執行計畫。`
+  } else if (weeklyChangeRate < -GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT) {
+    message += ` ⚠️ 上週掉太快（${weeklyChangeRate.toFixed(2)}%），注意肌肉流失。`
+    warnings.push('掉重速率超過 1.5%/週，建議增加蛋白質攝取量或微增碳水')
+  }
+
+  // Diet break 建議
+  const dietBreakSuggested = dietDurationWeeks != null && dietDurationWeeks >= SAFETY.DIET_BREAK_WEEKS
+  if (dietBreakSuggested && daysLeft > 21) {
+    warnings.push(`已連續減脂 ${dietDurationWeeks} 週。距比賽還有 ${daysLeft} 天，建議安排 3-5 天 refeed 恢復代謝`)
+  }
+
+  // 更新 deadlineInfo 加入 goal-driven + 有氧資訊
+  const enrichedDeadlineInfo = {
+    ...deadlineInfo,
+    requiredDailyDeficit,
+    predictedCompWeight,
+    isGoalDriven: true,
+    safetyLevel,
+    extraCardioNeeded,
+    extraBurnPerDay: Math.round(extraBurnPerDay),
+    suggestedCardioMinutes,
+    suggestedDailySteps,
+    cardioNote,
+  }
+
+  return {
+    status: 'goal_driven',
+    statusLabel,
+    statusEmoji,
+    message,
+    suggestedCalories: actualCalories,
+    suggestedProtein: suggestedPro,
+    suggestedCarbs: suggestedCarb,
+    suggestedFat: suggestedFat,
+    suggestedCarbsTrainingDay: suggestedCarbsTD,
+    suggestedCarbsRestDay: suggestedCarbsRD,
+    caloriesDelta: actualCalories - currentCal,
+    proteinDelta: suggestedPro - currentPro,
+    carbsDelta: suggestedCarb - currentCarb,
+    fatDelta: suggestedFat - currentFat,
+    estimatedTDEE,
+    weeklyWeightChangeRate: weeklyChangeRate,
+    dietDurationWeeks,
+    dietBreakSuggested,
+    warnings,
+    deadlineInfo: enrichedDeadlineInfo,
+    autoApply: true,  // Goal-driven 永遠自動套用
+    peakWeekPlan: null,
   }
 }
 
