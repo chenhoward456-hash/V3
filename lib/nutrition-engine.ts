@@ -617,15 +617,63 @@ function generateGoalDrivenCut(
   // 計算目標每日卡路里（用放鬆後的赤字）
   let targetCalories = Math.round(estimatedTDEE - effectiveDailyDeficit)
 
-  // 4. 安全底線（Goal-Driven 模式使用放寬的底線）
+  // 4. 安全底線 + 巨量營養素（先算，因為有氧需要知道真實卡路里底線）
   const absoluteMinCal = isMale ? GOAL_DRIVEN.MIN_CALORIES_MALE : GOAL_DRIVEN.MIN_CALORIES_FEMALE
   const softMinCal = isMale ? SAFETY.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_FEMALE
 
-  // 計算如果被底線限制，實際能達到的體重
-  let predictedCompWeight: number
-  let caloriesCapped = false
+  // 巨量營養素分配（Helms 2014: 赤字越大 → 蛋白質越高）
+  const proteinPerKg = safetyLevel === 'extreme' ? GOAL_DRIVEN.PROTEIN_PER_KG_EXTREME
+    : safetyLevel === 'aggressive' ? GOAL_DRIVEN.PROTEIN_PER_KG_AGGRESSIVE
+    : GOAL_DRIVEN.PROTEIN_PER_KG_NORMAL
+  const minFatPerKg = safetyLevel === 'extreme' ? GOAL_DRIVEN.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG
 
-  // 有氧/步數計算（體重修正 + 備賽疲勞折扣）
+  let suggestedPro = Math.round(bw * proteinPerKg)
+  let suggestedFat = Math.round(bw * minFatPerKg)
+
+  // 計算蛋白質+脂肪的最低卡路里（碳水底線 30g = 120kcal）
+  let proFatCal = suggestedPro * 4 + suggestedFat * 9
+  const carbFloorCal = 30 * 4  // 120 kcal
+
+  // 如果蛋白質+脂肪+碳水底線 > targetCalories → 需要砍巨量營養素
+  // 優先級：碳水先壓底線 → 降脂肪 → 最後降蛋白質
+  if (proFatCal + carbFloorCal > targetCalories) {
+    // 先降脂肪到 0.5g/kg
+    const absoluteMinFat = Math.round(bw * 0.5)
+    suggestedFat = absoluteMinFat
+    proFatCal = suggestedPro * 4 + suggestedFat * 9
+
+    if (proFatCal + carbFloorCal > targetCalories) {
+      // 再降蛋白質（不低於 2.0g/kg）
+      const maxProCal = targetCalories - carbFloorCal - suggestedFat * 9
+      const minPro = Math.round(bw * 2.0)
+      suggestedPro = Math.max(minPro, Math.round(maxProCal / 4))
+      proFatCal = suggestedPro * 4 + suggestedFat * 9
+
+      if (suggestedPro < Math.round(bw * proteinPerKg)) {
+        warnings.push(`⚠️ 卡路里極低，蛋白質從 ${Math.round(bw * proteinPerKg)}g 降至 ${suggestedPro}g（${(suggestedPro / bw).toFixed(1)}g/kg）`)
+      }
+    }
+    if (suggestedFat < Math.round(bw * minFatPerKg)) {
+      warnings.push(`⚠️ 脂肪從 ${Math.round(bw * minFatPerKg)}g 降至 ${suggestedFat}g（${(suggestedFat / bw).toFixed(1)}g/kg）`)
+    }
+  }
+
+  // 碳水 = 剩餘卡路里
+  let suggestedCarb = Math.max(30, Math.round((targetCalories - proFatCal) / 4))
+
+  // 反算「真實卡路里底線」— 這才是選手實際能吃到的最低值
+  // 如果蛋白質+脂肪底線就超過 targetCalories，actualMinCal > absoluteMinCal
+  const actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
+
+  // 掉重率安全檢查
+  if (weeklyLossPct > GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT) {
+    warnings.push(`需要每週掉 ${weeklyLossPct.toFixed(1)}% BW，超過安全上限 ${GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT}%（${(bw * GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT / 100).toFixed(1)}kg/週）`)
+  }
+  if (actualCalories < softMinCal) {
+    warnings.push(`🔥 目標熱量 ${actualCalories}kcal 低於一般安全線 ${softMinCal}kcal，已進入備賽極限模式`)
+  }
+
+  // 5. 有氧/步數計算 — 基於 actualCalories（真實飲食底線）
   const kcalPerMinCardio = bw * CARDIO.BASE_KCAL_PER_MIN_PER_KG * CARDIO.PREP_FATIGUE_DISCOUNT
   const kcalPerStep = bw * CARDIO.BASE_KCAL_PER_STEP_PER_KG
   let extraCardioNeeded = false
@@ -633,152 +681,55 @@ function generateGoalDrivenCut(
   let suggestedCardioMinutes = 0
   let suggestedDailySteps = CARDIO.BASELINE_STEPS
   let cardioNote = ''
+  let predictedCompWeight: number
 
-  if (targetCalories < absoluteMinCal) {
-    // 被硬底線限制 → 需要靠有氧補差距
-    caloriesCapped = true
-    const dietOnlyDeficit = estimatedTDEE - absoluteMinCal
-    const rawExtraBurn = effectiveDailyDeficit - dietOnlyDeficit  // 飲食不夠的缺口
-    // 有氧+步數合計上限（現實限制：備賽選手很難每天額外消耗超過 500 kcal）
+  // 用 actualCalories 算真實飲食赤字
+  const realDietDeficit = estimatedTDEE - actualCalories
+  const shortfall = effectiveDailyDeficit - realDietDeficit  // 飲食不夠的缺口
+
+  if (shortfall > 0) {
+    // 飲食面赤字不夠 → 需要有氧補
+    const rawExtraBurn = shortfall
     extraBurnPerDay = Math.min(rawExtraBurn, CARDIO.MAX_EXTRA_BURN_PER_DAY)
-    targetCalories = absoluteMinCal
+    extraCardioNeeded = true
 
-    if (extraBurnPerDay > 0) {
-      extraCardioNeeded = true
-      // 換算有氧分鐘數（體重修正 + 疲勞折扣）
-      suggestedCardioMinutes = Math.min(
-        CARDIO.MAX_CARDIO_MINUTES,
-        Math.ceil(extraBurnPerDay / kcalPerMinCardio)
-      )
-      // 換算步數（有氧以外的部分用步數補）
-      const cardioCanBurn = suggestedCardioMinutes * kcalPerMinCardio
-      const remainingBurn = Math.max(0, extraBurnPerDay - cardioCanBurn)
-      const extraSteps = Math.ceil(remainingBurn / kcalPerStep)
-      suggestedDailySteps = Math.min(CARDIO.MAX_DAILY_STEPS, CARDIO.BASELINE_STEPS + extraSteps)
+    // 換算有氧分鐘數（體重修正 + 疲勞折扣）
+    suggestedCardioMinutes = Math.min(
+      CARDIO.MAX_CARDIO_MINUTES,
+      Math.ceil(extraBurnPerDay / kcalPerMinCardio)
+    )
+    // 換算步數（有氧以外的部分用步數補）
+    const cardioCanBurn = suggestedCardioMinutes * kcalPerMinCardio
+    const remainingBurn = Math.max(0, extraBurnPerDay - cardioCanBurn)
+    const extraSteps = Math.ceil(remainingBurn / kcalPerStep)
+    suggestedDailySteps = Math.min(CARDIO.MAX_DAILY_STEPS, CARDIO.BASELINE_STEPS + extraSteps)
 
-      // 重新計算有氧加持後的預測體重
-      const actualExtraSteps = suggestedDailySteps - CARDIO.BASELINE_STEPS
-      const totalDailyBurn = dietOnlyDeficit + cardioCanBurn + actualExtraSteps * kcalPerStep
-      const totalLossWithCardio = (totalDailyBurn * daysLeft) / energyDensity
-      predictedCompWeight = Math.round((bw - totalLossWithCardio) * 10) / 10
+    // 預測體重（飲食 + 有氧）
+    const actualExtraSteps = suggestedDailySteps - CARDIO.BASELINE_STEPS
+    const totalDailyBurn = realDietDeficit + cardioCanBurn + actualExtraSteps * kcalPerStep
+    const totalLoss = (totalDailyBurn * daysLeft) / energyDensity
+    predictedCompWeight = Math.round((bw - totalLoss) * 10) / 10
 
-      // 判斷加了有氧後能否達標
-      if (predictedCompWeight <= targetWeight + 0.3) {
-        cardioNote = `飲食 + 有氧可達標！每日 ${suggestedCardioMinutes} 分鐘中等強度有氧 + ${suggestedDailySteps.toLocaleString()} 步`
-      } else {
-        cardioNote = `預測 ${predictedCompWeight}kg（目標 ${targetWeight}kg），差 ${(predictedCompWeight - targetWeight).toFixed(1)}kg。建議與教練討論調整量級或目標`
-      }
-
-      // 如果原始缺口被 cap 了，提示實際差距
-      if (rawExtraBurn > CARDIO.MAX_EXTRA_BURN_PER_DAY) {
-        warnings.push(`🏃 理論需額外消耗 ${Math.round(rawExtraBurn)}kcal/天，但實際有氧+步數合理上限約 ${CARDIO.MAX_EXTRA_BURN_PER_DAY}kcal/天`)
-      }
-      warnings.push(`🏃 建議有氧 ${suggestedCardioMinutes} 分鐘/天 + 步數 ${suggestedDailySteps.toLocaleString()} 步/天（約消耗 ${Math.round(cardioCanBurn + actualExtraSteps * kcalPerStep)}kcal）`)
+    // 判斷能否達標
+    if (predictedCompWeight <= targetWeight + 0.3) {
+      cardioNote = `飲食 + 有氧可達標！每日 ${suggestedCardioMinutes} 分鐘中等強度有氧 + ${suggestedDailySteps.toLocaleString()} 步`
     } else {
-      const actualTotalLoss = (dietOnlyDeficit * daysLeft) / energyDensity
-      predictedCompWeight = Math.round((bw - actualTotalLoss) * 10) / 10
+      cardioNote = `預測 ${predictedCompWeight}kg（目標 ${targetWeight}kg），差 ${(predictedCompWeight - targetWeight).toFixed(1)}kg。建議與教練討論調整量級或目標`
     }
-  } else {
-    predictedCompWeight = targetWeight  // 飲食面可以達到
 
-    // 即使不被底線限制，也建議一定的活動量維持代謝
+    if (rawExtraBurn > CARDIO.MAX_EXTRA_BURN_PER_DAY) {
+      warnings.push(`🏃 理論需額外消耗 ${Math.round(rawExtraBurn)}kcal/天，但實際有氧+步數合理上限約 ${CARDIO.MAX_EXTRA_BURN_PER_DAY}kcal/天`)
+    }
+    warnings.push(`🏃 建議有氧 ${suggestedCardioMinutes} 分鐘/天 + 步數 ${suggestedDailySteps.toLocaleString()} 步/天（約消耗 ${Math.round(cardioCanBurn + actualExtraSteps * kcalPerStep)}kcal）`)
+  } else {
+    // 飲食面赤字足夠
+    predictedCompWeight = targetWeight
+
+    // 即使不需要額外有氧，也建議維持活動量
     if (safetyLevel !== 'normal') {
       suggestedCardioMinutes = safetyLevel === 'extreme' ? 30 : 20
       suggestedDailySteps = safetyLevel === 'extreme' ? 10000 : 8000
       cardioNote = `建議維持每日 ${suggestedCardioMinutes} 分鐘低強度有氧 + ${suggestedDailySteps.toLocaleString()} 步，幫助赤字執行`
-    }
-  }
-
-  if (targetCalories < softMinCal) {
-    warnings.push(`🔥 目標熱量 ${targetCalories}kcal 低於一般安全線 ${softMinCal}kcal，已進入備賽極限模式`)
-  }
-
-  // 掉重率安全檢查（Helms 2014: 0.5-1.0%/wk, Garthe 2011: >1.4% 損失 LBM）
-  if (weeklyLossPct > GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT) {
-    warnings.push(`需要每週掉 ${weeklyLossPct.toFixed(1)}% BW，超過安全上限 ${GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT}%（${(bw * GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT / 100).toFixed(1)}kg/週）`)
-  }
-
-  // 5. 計算巨量營養素分配
-  // Helms 2014: 赤字越大 → 蛋白質越高（2.3-3.1g/kg LBM）
-  // 用體重近似 LBM（備賽選手 BF% 低，差距小）
-  const proteinPerKg = safetyLevel === 'extreme' ? GOAL_DRIVEN.PROTEIN_PER_KG_EXTREME
-    : safetyLevel === 'aggressive' ? GOAL_DRIVEN.PROTEIN_PER_KG_AGGRESSIVE
-    : GOAL_DRIVEN.PROTEIN_PER_KG_NORMAL
-  // Iraki 2019: 脂肪 15-25% of calories，備賽後期可降但不低於 0.7g/kg
-  const minFatPerKg = safetyLevel === 'extreme' ? GOAL_DRIVEN.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG
-
-  let suggestedPro = Math.round(bw * proteinPerKg)
-  let suggestedFat = Math.round(bw * minFatPerKg)
-
-  // 先算蛋白質+脂肪佔的卡路里
-  let proFatCal = suggestedPro * 4 + suggestedFat * 9
-
-  // 如果蛋白質+脂肪已經 > targetCalories，碳水會被壓到底線
-  // 此時 actualCalories 會 > targetCalories → 赤字不夠 → 需要修正
-  // 優先級：蛋白質 > 脂肪 > 碳水（蛋白質最後砍）
-  if (proFatCal > targetCalories - 30 * 4) {  // 留 30g 碳水底線的空間
-    // 先嘗試降脂肪到絕對底線 0.5g/kg
-    const absoluteMinFat = Math.round(bw * 0.5)
-    suggestedFat = Math.max(absoluteMinFat, Math.round(bw * minFatPerKg))
-
-    // 如果降脂肪還不夠，降蛋白質（不低於 2.0g/kg，再低會嚴重流失肌肉）
-    proFatCal = suggestedPro * 4 + suggestedFat * 9
-    if (proFatCal > targetCalories - 30 * 4) {
-      suggestedFat = absoluteMinFat
-      proFatCal = suggestedPro * 4 + suggestedFat * 9
-
-      if (proFatCal > targetCalories - 30 * 4) {
-        // 蛋白質也需要降
-        const maxProCal = targetCalories - 30 * 4 - suggestedFat * 9
-        const minPro = Math.round(bw * 2.0)  // 絕對不低於 2.0g/kg
-        suggestedPro = Math.max(minPro, Math.round(maxProCal / 4))
-        proFatCal = suggestedPro * 4 + suggestedFat * 9
-
-        if (suggestedPro < Math.round(bw * proteinPerKg)) {
-          warnings.push(`⚠️ 卡路里極低，蛋白質從 ${Math.round(bw * proteinPerKg)}g 降至 ${suggestedPro}g（${(suggestedPro / bw).toFixed(1)}g/kg）以維持最低碳水`)
-        }
-      }
-      if (suggestedFat < Math.round(bw * minFatPerKg)) {
-        warnings.push(`⚠️ 脂肪從 ${Math.round(bw * minFatPerKg)}g 降至 ${suggestedFat}g（${(suggestedFat / bw).toFixed(1)}g/kg）`)
-      }
-    }
-  }
-
-  let suggestedCarb = Math.max(30, Math.round((targetCalories - proFatCal) / 4))
-
-  // 反算實際卡路里
-  const actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
-
-  // 如果 actualCalories 仍然 > targetCalories（蛋白質+脂肪底線就超標了）
-  // 重新計算有氧缺口：有氧要補的是 TDEE - actualCalories 和 需要的赤字之間的差
-  if (caloriesCapped && actualCalories > targetCalories) {
-    const realDietDeficit = estimatedTDEE - actualCalories
-    const shortfall = effectiveDailyDeficit - realDietDeficit
-    if (shortfall > 0 && shortfall > extraBurnPerDay) {
-      // 有氧需求比之前算的更大
-      const newRawExtraBurn = shortfall
-      extraBurnPerDay = Math.min(newRawExtraBurn, CARDIO.MAX_EXTRA_BURN_PER_DAY)
-      extraCardioNeeded = true
-      suggestedCardioMinutes = Math.min(CARDIO.MAX_CARDIO_MINUTES, Math.ceil(extraBurnPerDay / kcalPerMinCardio))
-      const newCardioCanBurn = suggestedCardioMinutes * kcalPerMinCardio
-      const newRemainingBurn = Math.max(0, extraBurnPerDay - newCardioCanBurn)
-      const newExtraSteps = Math.ceil(newRemainingBurn / kcalPerStep)
-      suggestedDailySteps = Math.min(CARDIO.MAX_DAILY_STEPS, CARDIO.BASELINE_STEPS + newExtraSteps)
-
-      // 重新計算預測體重
-      const newActualExtraSteps = suggestedDailySteps - CARDIO.BASELINE_STEPS
-      const newTotalDailyBurn = realDietDeficit + newCardioCanBurn + newActualExtraSteps * kcalPerStep
-      predictedCompWeight = Math.round((bw - (newTotalDailyBurn * daysLeft) / energyDensity) * 10) / 10
-
-      if (predictedCompWeight <= targetWeight + 0.3) {
-        cardioNote = `飲食 + 有氧可達標！每日 ${suggestedCardioMinutes} 分鐘中等強度有氧 + ${suggestedDailySteps.toLocaleString()} 步`
-      } else {
-        cardioNote = `預測 ${predictedCompWeight}kg（目標 ${targetWeight}kg），差 ${(predictedCompWeight - targetWeight).toFixed(1)}kg。建議與教練討論調整量級或目標`
-      }
-
-      if (newRawExtraBurn > CARDIO.MAX_EXTRA_BURN_PER_DAY) {
-        warnings.push(`🏃 巨量營養素底線使實際卡路里 ${actualCalories}kcal（高於目標 ${targetCalories}kcal），需額外消耗 ${Math.round(newRawExtraBurn)}kcal/天`)
-      }
     }
   }
 
@@ -819,11 +770,11 @@ function generateGoalDrivenCut(
     // safetyLevel 已在前面用 effectiveDailyDeficit 重算過
     message = `進度超前！赤字已從 ${requiredDailyDeficit} 放鬆至 ${effectiveDailyDeficit}kcal/天。增加碳水保護肌肉與代謝。`
     message += ` 距比賽 ${daysLeft} 天，目標卡路里 ${actualCalories}kcal。穩穩達標。`
-  } else if (caloriesCapped) {
+  } else if (shortfall > 0) {
     statusEmoji = '⚠️'
     statusLabel = '底線限制'
-    message = `以目前 TDEE ${estimatedTDEE}kcal，需要每日赤字 ${requiredDailyDeficit}kcal 才能達到 ${targetWeight}kg。`
-    message += `飲食限制在 ${absoluteMinCal}kcal`
+    message = `以目前 TDEE ${estimatedTDEE}kcal，需要每日赤字 ${effectiveDailyDeficit}kcal 才能達到 ${targetWeight}kg。`
+    message += `飲食底線 ${actualCalories}kcal（赤字缺口 ${Math.round(shortfall)}kcal 需靠活動補）`
     if (extraCardioNeeded) {
       message += `，搭配每日有氧 ${suggestedCardioMinutes} 分鐘 + ${suggestedDailySteps.toLocaleString()} 步`
       if (predictedCompWeight <= targetWeight + 0.3) {
