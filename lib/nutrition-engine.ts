@@ -17,6 +17,10 @@ export interface NutritionInput {
   goalType: 'cut' | 'bulk'
   dietStartDate: string | null  // 開始日期 (ISO)
 
+  // Deadline-aware（目標體重 + 目標日期）
+  targetWeight: number | null
+  targetDate: string | null  // 比賽日或目標日 (ISO)
+
   // 當前目標
   currentCalories: number | null
   currentProtein: number | null
@@ -59,6 +63,18 @@ export interface NutritionSuggestion {
   dietDurationWeeks: number | null
   dietBreakSuggested: boolean
   warnings: string[]
+
+  // Deadline-aware info
+  deadlineInfo: {
+    daysLeft: number
+    weeksLeft: number
+    weightToLose: number  // 可正可負
+    requiredRatePerWeek: number  // kg/week
+    isAggressive: boolean  // 超過安全範圍
+  } | null
+
+  // 是否可以自動套用 (非 on_track 且非 insufficient_data 才會自動套用)
+  autoApply: boolean
 }
 
 // ===== 常數 (基於文獻) =====
@@ -111,6 +127,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
       estimatedTDEE: null, weeklyWeightChangeRate: null,
       dietDurationWeeks: null, dietBreakSuggested: false, warnings: [],
+      deadlineInfo: null, autoApply: false,
     }
   }
 
@@ -126,6 +143,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
       estimatedTDEE: null, weeklyWeightChangeRate: null,
       dietDurationWeeks: null, dietBreakSuggested: false, warnings: [],
+      deadlineInfo: null, autoApply: false,
     }
   }
 
@@ -150,11 +168,31 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     dietDurationWeeks = Math.floor((now.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
   }
 
-  // 6. 根據目標類型分流
+  // 6. Deadline-aware 計算
+  let deadlineInfo: NutritionSuggestion['deadlineInfo'] = null
+  if (input.targetWeight != null && input.targetDate) {
+    const now = new Date()
+    const target = new Date(input.targetDate)
+    const daysLeft = Math.max(1, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+    const weeksLeft = Math.max(0.5, daysLeft / 7)
+    const weightToLose = thisWeekAvg - input.targetWeight  // 正=要減，負=要增
+    const requiredRatePerWeek = weightToLose / weeksLeft
+    // 安全範圍：減脂 max 1% BW/week ≈ 0.8kg for 80kg person
+    const maxSafeRate = thisWeekAvg * 0.01
+    const isAggressive = Math.abs(requiredRatePerWeek) > maxSafeRate
+
+    deadlineInfo = { daysLeft, weeksLeft: Math.round(weeksLeft * 10) / 10, weightToLose: Math.round(weightToLose * 10) / 10, requiredRatePerWeek: Math.round(requiredRatePerWeek * 100) / 100, isAggressive }
+
+    if (isAggressive) {
+      warnings.push(`需要每週 ${input.goalType === 'cut' ? '減' : '增'} ${Math.abs(requiredRatePerWeek).toFixed(2)}kg 才能達標，超過安全範圍（${maxSafeRate.toFixed(1)}kg/週）`)
+    }
+  }
+
+  // 7. 根據目標類型分流
   if (input.goalType === 'cut') {
-    return generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, warnings)
+    return generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings)
   } else {
-    return generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, warnings)
+    return generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings)
   }
 }
 
@@ -165,6 +203,7 @@ function generateCutSuggestion(
   weeklyChangeRate: number,
   estimatedTDEE: number | null,
   dietDurationWeeks: number | null,
+  deadlineInfo: NutritionSuggestion['deadlineInfo'],
   warnings: string[]
 ): NutritionSuggestion {
   const bw = input.bodyWeight
@@ -293,6 +332,25 @@ function generateCutSuggestion(
     }
   }
 
+  // Deadline-aware: 如果進度落後且有 deadline，加大調整幅度
+  if (deadlineInfo && status !== 'on_track' && status !== 'too_fast') {
+    // 進度落後時，根據剩餘時間加大幅度
+    if (deadlineInfo.daysLeft < 28 && deadlineInfo.weightToLose > 1) {
+      // 不到 4 週且還差 >1kg：加碼
+      const urgencyMultiplier = Math.min(1.5, 1 + (1 - deadlineInfo.daysLeft / 28) * 0.5)
+      calDelta = Math.round(calDelta * urgencyMultiplier)
+      carbDelta = Math.round(carbDelta * urgencyMultiplier)
+      // 重新計算建議值
+      suggestedCal = currentCal + calDelta
+      suggestedCarb = currentCarb + carbDelta
+      // 重新檢查底線
+      if (suggestedCal < minCal) suggestedCal = minCal
+      if (suggestedCarb < 50) suggestedCarb = 50
+      if (suggestedFat < minFat) suggestedFat = minFat
+      message += ` ⏰ 距離目標僅剩 ${deadlineInfo.daysLeft} 天，需加速調整。`
+    }
+  }
+
   // 如果 on_track 不需要改變
   if (status === 'on_track') {
     return {
@@ -304,6 +362,7 @@ function generateCutSuggestion(
       caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested, warnings,
+      deadlineInfo, autoApply: false,
     }
   }
 
@@ -321,6 +380,7 @@ function generateCutSuggestion(
     fatDelta: fatDelta,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested, warnings,
+    deadlineInfo, autoApply: true,
   }
 }
 
@@ -331,6 +391,7 @@ function generateBulkSuggestion(
   weeklyChangeRate: number,
   estimatedTDEE: number | null,
   dietDurationWeeks: number | null,
+  deadlineInfo: NutritionSuggestion['deadlineInfo'],
   warnings: string[]
 ): NutritionSuggestion {
   const bw = input.bodyWeight
@@ -447,6 +508,7 @@ function generateBulkSuggestion(
       caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested: false, warnings,
+      deadlineInfo, autoApply: false,
     }
   }
 
@@ -464,5 +526,6 @@ function generateBulkSuggestion(
     fatDelta: fatDelta,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested: false, warnings,
+    deadlineInfo, autoApply: true,
   }
 }

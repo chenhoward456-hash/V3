@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { validateBodyComposition, validateDate } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware'
+import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
 
 // 檢查環境變數
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -18,6 +19,115 @@ const supabase = createClient(
     }
   }
 )
+
+// 自動調整營養素目標
+async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolean; message?: string; calories?: number; protein?: number; carbs?: number; fat?: number }> {
+  // 1. 取得學員資料
+  const { data: client } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('id', clientId)
+    .single()
+
+  if (!client?.goal_type || !client?.nutrition_enabled) return { adjusted: false }
+
+  // 2. 取得近 30 天數據
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const sinceDate = thirtyDaysAgo.toISOString().split('T')[0]
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+
+  const [bodyRes, nutritionRes, trainingRes] = await Promise.all([
+    supabase.from('body_composition').select('date, weight').eq('client_id', clientId)
+      .gte('date', sinceDate).not('weight', 'is', null).order('date', { ascending: true }),
+    supabase.from('nutrition_logs').select('date, compliant, calories').eq('client_id', clientId)
+      .gte('date', sinceDate).order('date', { ascending: true }),
+    supabase.from('training_logs').select('date, training_type').eq('client_id', clientId)
+      .gte('date', sinceDate).order('date', { ascending: true }),
+  ])
+
+  const bodyData = bodyRes.data || []
+  const nutritionLogs = nutritionRes.data || []
+  const trainingLogs = trainingRes.data || []
+
+  // 3. 計算週均體重
+  const weeklyWeights: { week: number; avgWeight: number }[] = []
+  for (let w = 0; w < 4; w++) {
+    const weekEnd = new Date(today); weekEnd.setDate(today.getDate() - w * 7)
+    const weekStart = new Date(weekEnd); weekStart.setDate(weekEnd.getDate() - 6)
+    const startStr = weekStart.toISOString().split('T')[0]
+    const endStr = weekEnd.toISOString().split('T')[0]
+    const ww = bodyData.filter((b: any) => b.date >= startStr && b.date <= endStr).map((b: any) => b.weight)
+    if (ww.length > 0) {
+      weeklyWeights.push({ week: w, avgWeight: Math.round((ww.reduce((a: number, b: number) => a + b, 0) / ww.length) * 100) / 100 })
+    }
+  }
+
+  if (weeklyWeights.length < 2) return { adjusted: false }  // 不夠數據
+
+  // 4. 合規率
+  const fourteenStr = new Date(today.getTime() - 13 * 86400000).toISOString().split('T')[0]
+  const recent = nutritionLogs.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr)
+  const compliance = recent.length > 0 ? Math.round(recent.filter((l: any) => l.compliant).length / recent.length * 100) : 0
+
+  // 5. 平均攝取
+  const withCal = recent.filter((l: any) => l.calories != null)
+  const avgCal = withCal.length > 0 ? Math.round(withCal.reduce((s: number, l: any) => s + l.calories, 0) / withCal.length) : null
+
+  // 6. 訓練天數
+  const recentTraining = trainingLogs.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr && l.training_type !== 'rest')
+  const trainingDays = Math.round(recentTraining.length / 2)
+
+  const latestWeight = bodyData[bodyData.length - 1]?.weight
+  if (!latestWeight) return { adjusted: false }
+
+  // 7. 跑引擎
+  const suggestion = generateNutritionSuggestion({
+    gender: client.gender || '男性',
+    bodyWeight: latestWeight,
+    goalType: client.goal_type,
+    dietStartDate: client.diet_start_date || null,
+    targetWeight: client.target_weight || null,
+    targetDate: client.competition_date || null,
+    currentCalories: client.calories_target || null,
+    currentProtein: client.protein_target || null,
+    currentCarbs: client.carbs_target || null,
+    currentFat: client.fat_target || null,
+    currentCarbsTrainingDay: client.carbs_training_day || null,
+    currentCarbsRestDay: client.carbs_rest_day || null,
+    carbsCyclingEnabled: !!(client.carbs_training_day && client.carbs_rest_day),
+    weeklyWeights,
+    nutritionCompliance: compliance,
+    avgDailyCalories: avgCal,
+    trainingDaysPerWeek: trainingDays,
+  })
+
+  // 8. 自動套用
+  if (suggestion.autoApply) {
+    const updates: Record<string, any> = {}
+    if (suggestion.suggestedCalories != null) updates.calories_target = suggestion.suggestedCalories
+    if (suggestion.suggestedProtein != null) updates.protein_target = suggestion.suggestedProtein
+    if (suggestion.suggestedCarbs != null) updates.carbs_target = suggestion.suggestedCarbs
+    if (suggestion.suggestedFat != null) updates.fat_target = suggestion.suggestedFat
+    if (suggestion.suggestedCarbsTrainingDay != null) updates.carbs_training_day = suggestion.suggestedCarbsTrainingDay
+    if (suggestion.suggestedCarbsRestDay != null) updates.carbs_rest_day = suggestion.suggestedCarbsRestDay
+
+    if (Object.keys(updates).length > 0) {
+      await supabase.from('clients').update(updates).eq('id', clientId)
+      return {
+        adjusted: true,
+        message: suggestion.message,
+        calories: suggestion.suggestedCalories ?? undefined,
+        protein: suggestion.suggestedProtein ?? undefined,
+        carbs: suggestion.suggestedCarbs ?? undefined,
+        fat: suggestion.suggestedFat ?? undefined,
+      }
+    }
+  }
+
+  return { adjusted: false }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -168,7 +278,17 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('建立身體數據失敗', 500)
     }
 
-    return createSuccessResponse(data)
+    // 自動觸發營養建議引擎：如果有設定 goal_type 且記錄了體重
+    let nutritionAdjusted: { adjusted: boolean; message?: string; calories?: number; protein?: number; carbs?: number; fat?: number } = { adjusted: false }
+    if (weight != null) {
+      try {
+        nutritionAdjusted = await autoAdjustNutrition(client.id)
+      } catch {
+        // 引擎失敗不影響體重記錄
+      }
+    }
+
+    return createSuccessResponse({ ...data, nutritionAdjusted })
 
   } catch (error) {
     return createErrorResponse('伺服器錯誤', 500)
