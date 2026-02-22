@@ -295,6 +295,8 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   const weeklyChangeRate = (weeklyChange / lastWeekAvg) * 100  // %
 
   // 4. 估算 Adaptive TDEE
+  // 注意：這裡用 7700 kcal/kg 是正確的 — 反推「過去已發生」的 TDEE 用能量守恆定律
+  // Goal-driven 的「預測未來」才用動態能量密度（getEnergyDensity），因為要考慮組成變化
   let estimatedTDEE: number | null = null
   if (input.avgDailyCalories != null) {
     // 優先用 Adaptive TDEE（最準確，基於實際攝取 vs 體重變化）
@@ -576,7 +578,7 @@ function generateGoalDrivenCut(
   // 如果目前實際掉重速率已經超過需要的速率 → 放鬆赤字
   // 原理：已經掉太快了，不需要那麼大的赤字，把碳水加回來保護肌肉和代謝
   let aheadOfSchedule = false
-  let relaxedDailyDeficit = requiredDailyDeficit
+  let effectiveDailyDeficit = requiredDailyDeficit
 
   if (weeklyChangeRate < 0) {
     // 實際每週掉重速率（kg）
@@ -591,13 +593,22 @@ function generateGoalDrivenCut(
       // 但至少維持 0.5% BW/wk 的最低速率（Iraki: 最慢 0.5%）以免備賽反彈
       const idealWeeklyLoss = Math.max(requiredWeeklyLoss, bw * 0.005)
       const idealDailyDeficit = (idealWeeklyLoss * energyDensity) / 7
-      relaxedDailyDeficit = Math.round(idealDailyDeficit)
+      effectiveDailyDeficit = Math.round(idealDailyDeficit)
       warnings.push(`📈 進度超前！照目前速率可減 ${projectedLoss.toFixed(1)}kg（只需 ${weightToLose.toFixed(1)}kg）。已放鬆赤字，增加碳水保護肌肉`)
+
+      // 進度超前 → 用放鬆後的赤字重算 safetyLevel
+      if (effectiveDailyDeficit <= SAFETY.MAX_DEFICIT_KCAL) {
+        safetyLevel = 'normal'
+      } else if (effectiveDailyDeficit <= GOAL_DRIVEN.MAX_DEFICIT_KCAL) {
+        safetyLevel = 'aggressive'
+      } else {
+        safetyLevel = 'extreme'
+      }
     }
   }
 
   // 計算目標每日卡路里（用放鬆後的赤字）
-  let targetCalories = Math.round(estimatedTDEE - relaxedDailyDeficit)
+  let targetCalories = Math.round(estimatedTDEE - effectiveDailyDeficit)
 
   // 4. 安全底線（Goal-Driven 模式使用放寬的底線）
   const absoluteMinCal = isMale ? GOAL_DRIVEN.MIN_CALORIES_MALE : GOAL_DRIVEN.MIN_CALORIES_FEMALE
@@ -620,7 +631,7 @@ function generateGoalDrivenCut(
     // 被硬底線限制 → 需要靠有氧補差距
     caloriesCapped = true
     const dietOnlyDeficit = estimatedTDEE - absoluteMinCal
-    const rawExtraBurn = requiredDailyDeficit - dietOnlyDeficit  // 飲食不夠的缺口
+    const rawExtraBurn = effectiveDailyDeficit - dietOnlyDeficit  // 飲食不夠的缺口
     // 有氧+步數合計上限（現實限制：備賽選手很難每天額外消耗超過 500 kcal）
     extraBurnPerDay = Math.min(rawExtraBurn, CARDIO.MAX_EXTRA_BURN_PER_DAY)
     targetCalories = absoluteMinCal
@@ -733,9 +744,8 @@ function generateGoalDrivenCut(
   if (aheadOfSchedule) {
     statusEmoji = '📈'
     statusLabel = '進度超前'
-    safetyLevel = relaxedDailyDeficit <= SAFETY.MAX_DEFICIT_KCAL ? 'normal'
-      : relaxedDailyDeficit <= GOAL_DRIVEN.MAX_DEFICIT_KCAL ? 'aggressive' : 'extreme'
-    message = `進度超前！赤字已從 ${requiredDailyDeficit} 放鬆至 ${relaxedDailyDeficit}kcal/天。增加碳水保護肌肉與代謝。`
+    // safetyLevel 已在前面用 effectiveDailyDeficit 重算過
+    message = `進度超前！赤字已從 ${requiredDailyDeficit} 放鬆至 ${effectiveDailyDeficit}kcal/天。增加碳水保護肌肉與代謝。`
     message += ` 距比賽 ${daysLeft} 天，目標卡路里 ${actualCalories}kcal。穩穩達標。`
   } else if (caloriesCapped) {
     statusEmoji = '⚠️'
@@ -785,7 +795,7 @@ function generateGoalDrivenCut(
   // 更新 deadlineInfo 加入 goal-driven + 有氧資訊
   const enrichedDeadlineInfo = {
     ...deadlineInfo,
-    requiredDailyDeficit: aheadOfSchedule ? relaxedDailyDeficit : requiredDailyDeficit,
+    requiredDailyDeficit: effectiveDailyDeficit,
     predictedCompWeight,
     isGoalDriven: true,
     safetyLevel,
