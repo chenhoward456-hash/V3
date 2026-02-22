@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 
 interface GoalDrivenStatusProps {
   clientId: string
+  isTrainingDay?: boolean
+  onMutate?: () => void
 }
 
-export default function GoalDrivenStatus({ clientId }: GoalDrivenStatusProps) {
+export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: GoalDrivenStatusProps) {
   const [data, setData] = useState<any>(null)
   const [targetWeightValue, setTargetWeightValue] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -14,18 +16,23 @@ export default function GoalDrivenStatus({ clientId }: GoalDrivenStatusProps) {
   useEffect(() => {
     const fetchSuggestion = async () => {
       try {
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}`)
+        // 帶 autoApply=true 讓引擎結果寫回 DB，飲食紀錄才能同步
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}&autoApply=true`)
         if (!res.ok) return
         const json = await res.json()
         if (json.suggestion) {
           setData(json.suggestion)
           setTargetWeightValue(json.meta?.targetWeight || null)
+          // 如果有自動套用，trigger mutate 讓其他組件同步
+          if (json.applied && onMutate) {
+            onMutate()
+          }
         }
       } catch { /* ignore */ }
       finally { setLoading(false) }
     }
     fetchSuggestion()
-  }, [clientId])
+  }, [clientId, onMutate])
 
   if (loading || !data) return null
 
@@ -96,6 +103,12 @@ export default function GoalDrivenStatus({ clientId }: GoalDrivenStatusProps) {
   const colors = safetyColors[dl.safetyLevel || 'normal'] || safetyColors.normal
   const safetyLabels: Record<string, string> = { normal: '安全範圍', aggressive: '積極模式', extreme: '極限模式' }
 
+  // 碳循環：根據訓練日/休息日顯示不同碳水
+  const hasCarbCycling = data.suggestedCarbsTrainingDay != null && data.suggestedCarbsRestDay != null
+  const todayCarbs = hasCarbCycling
+    ? (isTrainingDay ? data.suggestedCarbsTrainingDay : data.suggestedCarbsRestDay)
+    : data.suggestedCarbs
+
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
       {/* 標題 */}
@@ -132,12 +145,21 @@ export default function GoalDrivenStatus({ clientId }: GoalDrivenStatusProps) {
 
       {/* 飲食目標 */}
       <div className={`${colors.bg} ${colors.border} border rounded-2xl p-4 mb-3`}>
-        <p className="text-xs font-semibold text-gray-700 mb-2">📋 今日飲食目標</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-gray-700">📋 今日飲食目標</p>
+          {hasCarbCycling && (
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              isTrainingDay ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+            }`}>
+              {isTrainingDay ? '🏋️ 訓練日' : '🛋️ 休息日'}
+            </span>
+          )}
+        </div>
         <div className="grid grid-cols-4 gap-2">
           {[
             { label: '熱量', value: data.suggestedCalories, unit: 'kcal', emoji: '🔥' },
             { label: '蛋白質', value: data.suggestedProtein, unit: 'g', emoji: '🥩' },
-            { label: '碳水', value: data.suggestedCarbs, unit: 'g', emoji: '🍚' },
+            { label: '碳水', value: todayCarbs, unit: 'g', emoji: '🍚' },
             { label: '脂肪', value: data.suggestedFat, unit: 'g', emoji: '🥑' },
           ].map(({ label, value, unit, emoji }) => (
             <div key={label} className="text-center bg-white bg-opacity-70 rounded-xl py-2 px-1">
@@ -147,6 +169,11 @@ export default function GoalDrivenStatus({ clientId }: GoalDrivenStatusProps) {
             </div>
           ))}
         </div>
+        {hasCarbCycling && (
+          <p className="text-[10px] text-gray-400 mt-2 text-center">
+            碳水循環：訓練日 {data.suggestedCarbsTrainingDay}g ／ 休息日 {data.suggestedCarbsRestDay}g
+          </p>
+        )}
       </div>
 
       {/* 有氧 / 步數建議 */}

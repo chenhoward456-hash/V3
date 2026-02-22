@@ -399,7 +399,11 @@ export default function ClientDashboard() {
 
         {/* Goal-Driven 目標體重計畫（備賽 + 有目標體重 + 非 peak_week） */}
         {isCompetition && c.target_weight && c.prep_phase !== 'peak_week' && (
-          <GoalDrivenStatus clientId={c.id} />
+          <GoalDrivenStatus
+            clientId={c.id}
+            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            onMutate={mutate}
+          />
         )}
 
         {/* Peak Week 計畫（備賽階段為 peak_week 時顯示） */}

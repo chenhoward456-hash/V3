@@ -21,12 +21,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
   }
 
-  // autoApply 需要 admin 權限，純查詢不需要（客戶端也要看 Peak Week 計畫）
+  // autoApply: goal-driven 模式允許客戶端自動套用（與 body-composition 路由一致）
+  // 其他模式仍需 admin 權限
   const isAdmin = getAdminSession(request)
   const wantsAutoApply = searchParams.get('autoApply') === 'true'
-  if (wantsAutoApply && !isAdmin) {
-    return NextResponse.json({ error: '未授權' }, { status: 401 })
-  }
 
   try {
     // 1. 取得學員資料
@@ -156,9 +154,11 @@ export async function GET(request: NextRequest) {
     const suggestion = generateNutritionSuggestion(engineInput)
 
     // 10. 自動套用：如果引擎說 autoApply 且有調整
-    const autoApply = searchParams.get('autoApply') === 'true'
+    // goal-driven 模式允許客戶端自動套用（備賽選手需即時同步）
+    // 其他模式仍需 admin 權限
     let applied = false
-    if (autoApply && suggestion.autoApply) {
+    const canAutoApply = wantsAutoApply && suggestion.autoApply && (isAdmin || suggestion.status === 'goal_driven')
+    if (canAutoApply) {
       const updates: Record<string, any> = {}
       if (suggestion.suggestedCalories != null) updates.calories_target = suggestion.suggestedCalories
       if (suggestion.suggestedProtein != null) updates.protein_target = suggestion.suggestedProtein
