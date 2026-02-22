@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const [bodyRes, nutritionRes, trainingRes] = await Promise.all([
       supabase
         .from('body_composition')
-        .select('date, weight')
+        .select('date, weight, height, body_fat')
         .eq('client_id', clientId)
         .gte('date', sinceDate)
         .not('weight', 'is', null)
@@ -113,8 +113,11 @@ export async function GET(request: NextRequest) {
     const recentTraining = trainingLogs.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr && l.training_type !== 'rest')
     const trainingDaysPerWeek = Math.round(recentTraining.length / 2)  // 14 天 ÷ 2
 
-    // 7. 當前體重 (最新紀錄)
+    // 7. 當前體重 + 身體組成 (最新紀錄)
     const latestWeight = bodyData.length > 0 ? bodyData[bodyData.length - 1].weight : null
+    // 取最新有值的身高和體脂率（不一定每筆都有）
+    const latestHeight = [...bodyData].reverse().find((b: any) => b.height != null)?.height ?? null
+    const latestBodyFat = [...bodyData].reverse().find((b: any) => b.body_fat != null)?.body_fat ?? null
 
     if (!latestWeight) {
       return NextResponse.json({
@@ -134,6 +137,8 @@ export async function GET(request: NextRequest) {
       bodyWeight: latestWeight,
       goalType: client.goal_type || 'cut',
       dietStartDate: client.diet_start_date || null,
+      height: latestHeight,
+      bodyFatPct: latestBodyFat,
       targetWeight: client.target_weight || null,
       targetDate: client.competition_date || null,
       currentCalories: client.calories_target || null,
