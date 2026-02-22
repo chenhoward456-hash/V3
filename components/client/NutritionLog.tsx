@@ -16,12 +16,20 @@ interface NutritionLogProps {
   caloriesTarget?: number | null
   carbsCyclingEnabled?: boolean
   isTrainingDay?: boolean
+  carbsTrainingDay?: number | null
+  carbsRestDay?: number | null
   onMutate: () => void
 }
 
-export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, carbsCyclingEnabled, isTrainingDay, onMutate }: NutritionLogProps) {
+export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, carbsCyclingEnabled, isTrainingDay, carbsTrainingDay, carbsRestDay, onMutate }: NutritionLogProps) {
   const [saving, setSaving] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  // 碳循環：用戶可手動切換訓練日/休息日
+  const [manualDayType, setManualDayType] = useState<'training' | 'rest' | null>(null)
+  const effectiveIsTraining = manualDayType != null ? manualDayType === 'training' : !!isTrainingDay
+  const effectiveCarbsTarget = carbsCyclingEnabled && carbsTrainingDay && carbsRestDay
+    ? (effectiveIsTraining ? carbsTrainingDay : carbsRestDay)
+    : carbsTarget
   const [note, setNote] = useState(todayNutrition?.note || '')
   const [showNote, setShowNote] = useState(false)
   const [proteinInput, setProteinInput] = useState<string>(todayNutrition?.protein_grams?.toString() || '')
@@ -207,9 +215,14 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold text-amber-700">🏆 今日巨量營養素</p>
             {carbsCyclingEnabled && (
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isTrainingDay ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-100 text-gray-600'}`}>
-                🔄 {isTrainingDay ? '訓練日' : '休息日'}
-              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-100 text-gray-600'}`}
+                >
+                  🔄 {effectiveIsTraining ? '訓練日' : '休息日'} ▾
+                </button>
+              </div>
             )}
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -228,19 +241,19 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                 <p className="text-[10px] text-gray-400 mt-0.5">/ {caloriesTarget}</p>
               </div>
             )}
-            {carbsTarget && (
+            {effectiveCarbsTarget && (
               <div className="text-center">
                 <p className="text-[10px] text-gray-500 mb-1">🍚 碳水</p>
-                <p className={`text-lg font-bold ${carbsInput && Number(carbsInput) >= carbsTarget * 0.9 && Number(carbsInput) <= carbsTarget * 1.1 ? 'text-green-600' : Number(carbsInput) ? 'text-amber-600' : 'text-gray-300'}`}>
+                <p className={`text-lg font-bold ${carbsInput && Number(carbsInput) >= effectiveCarbsTarget * 0.9 && Number(carbsInput) <= effectiveCarbsTarget * 1.1 ? 'text-green-600' : Number(carbsInput) ? 'text-amber-600' : 'text-gray-300'}`}>
                   {carbsInput ? `${Number(carbsInput)}g` : '--'}
                 </p>
                 <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
                   <div
-                    className={`h-full rounded-full transition-all ${carbsInput && Number(carbsInput) >= carbsTarget * 0.9 ? 'bg-green-500' : 'bg-amber-400'}`}
-                    style={{ width: `${Math.min(100, carbsInput ? (Number(carbsInput) / carbsTarget) * 100 : 0)}%` }}
+                    className={`h-full rounded-full transition-all ${carbsInput && Number(carbsInput) >= effectiveCarbsTarget * 0.9 ? 'bg-green-500' : 'bg-amber-400'}`}
+                    style={{ width: `${Math.min(100, carbsInput ? (Number(carbsInput) / effectiveCarbsTarget) * 100 : 0)}%` }}
                   />
                 </div>
-                <p className="text-[10px] text-gray-400 mt-0.5">/ {carbsTarget}g</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">/ {effectiveCarbsTarget}g</p>
               </div>
             )}
             {fatTarget && (
@@ -353,17 +366,20 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                 <div className="border-t border-gray-100 pt-3 mt-1 space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold text-amber-600">🏆 備賽巨量營養素</p>
-                    {carbsCyclingEnabled && (
-                      <span className={`text-[10px] font-medium ${isTrainingDay ? 'text-cyan-600' : 'text-gray-500'}`}>
-                        🔄 {isTrainingDay ? '訓練日碳水' : '休息日碳水'}
-                      </span>
+                    {carbsCyclingEnabled && carbsTrainingDay && carbsRestDay && (
+                      <button
+                        onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-200 text-gray-600'}`}
+                      >
+                        🔄 {effectiveIsTraining ? '訓練日' : '休息日'} ▾
+                      </button>
                     )}
                   </div>
                   <NutrientSlider
                     label="碳水" emoji="🍚"
                     value={carbsInput} onChange={setCarbsInput}
-                    target={carbsTarget} unit="g"
-                    max={Math.max(500, (carbsTarget || 250) * 1.5)} step={5}
+                    target={effectiveCarbsTarget} unit="g"
+                    max={Math.max(500, (effectiveCarbsTarget || 250) * 1.5)} step={5}
                     color="amber"
                   />
                   <NutrientSlider
