@@ -16,6 +16,7 @@ import WellnessTrend from '@/components/client/WellnessTrend'
 import HealthReport from '@/components/client/HealthReport'
 import TrainingLog from '@/components/client/TrainingLog'
 import NutritionLog from '@/components/client/NutritionLog'
+import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import PwaPrompt from '@/components/client/PwaPrompt'
 
 export default function ClientDashboard() {
@@ -393,6 +394,15 @@ export default function ClientDashboard() {
             competitionDate={clientData.client.competition_date}
             onMutate={mutate}
           /></div>
+        )}
+
+        {/* Peak Week 計畫（備賽階段為 peak_week 時顯示） */}
+        {isCompetition && c.prep_phase === 'peak_week' && c.competition_date && latestBodyData?.weight && (
+          <PeakWeekPlan
+            clientId={clientId as string}
+            competitionDate={c.competition_date}
+            bodyWeight={latestBodyData.weight}
+          />
         )}
 
         {/* 飲食（備賽選手排第二） */}
