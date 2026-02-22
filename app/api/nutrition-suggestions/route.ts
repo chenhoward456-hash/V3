@@ -15,14 +15,17 @@ function getAdminSession(request: NextRequest): boolean {
 }
 
 export async function GET(request: NextRequest) {
-  if (!getAdminSession(request)) {
-    return NextResponse.json({ error: '未授權' }, { status: 401 })
-  }
-
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('clientId')
   if (!clientId) {
     return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
+  }
+
+  // autoApply 需要 admin 權限，純查詢不需要（客戶端也要看 Peak Week 計畫）
+  const isAdmin = getAdminSession(request)
+  const wantsAutoApply = searchParams.get('autoApply') === 'true'
+  if (wantsAutoApply && !isAdmin) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 })
   }
 
   try {

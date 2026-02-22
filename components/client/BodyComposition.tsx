@@ -167,12 +167,12 @@ export default function BodyComposition({
       onMutate()
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 2000)
-      // 營養素引擎結果（不管有沒有調整都顯示 debug）
+      // 營養素引擎結果（只在有調整時顯示）
       const na = result?.data?.nutritionAdjusted
-      if (na) {
+      if (na?.adjusted) {
         setTimeout(() => {
-          setNutritionAdjusted({ message: na.debug || na.message, calories: na.calories, adjusted: na.adjusted })
-          setTimeout(() => setNutritionAdjusted(null), 6000)
+          setNutritionAdjusted({ message: na.message, calories: na.calories, adjusted: true })
+          setTimeout(() => setNutritionAdjusted(null), 4000)
         }, 2200)
       }
     } catch { alert('儲存失敗，請重試') }
@@ -187,21 +187,12 @@ export default function BodyComposition({
         </div>
       )}
       {nutritionAdjusted && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-bounce ${
-          nutritionAdjusted.adjusted ? 'bg-gradient-to-r from-blue-600 to-indigo-600' : 'bg-gray-700'
-        }`}>
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-bounce bg-gradient-to-r from-blue-600 to-indigo-600">
           <div className="flex items-center gap-2">
-            <span className="text-lg">{nutritionAdjusted.adjusted ? '🧮' : '📊'}</span>
+            <span className="text-lg">🧮</span>
             <div>
-              <p className="text-sm font-medium">
-                {nutritionAdjusted.adjusted ? '營養目標已自動調整' : '引擎未調整'}
-              </p>
-              {nutritionAdjusted.message && (
-                <p className="text-xs text-gray-200 mt-0.5">
-                  {nutritionAdjusted.message}
-                </p>
-              )}
-              {nutritionAdjusted.adjusted && nutritionAdjusted.calories && (
+              <p className="text-sm font-medium">營養目標已自動調整</p>
+              {nutritionAdjusted.calories && (
                 <p className="text-xs text-blue-100 mt-0.5">
                   新目標：{nutritionAdjusted.calories} kcal
                 </p>
