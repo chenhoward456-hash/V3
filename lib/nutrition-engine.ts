@@ -294,16 +294,33 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   const weeklyChange = thisWeekAvg - lastWeekAvg  // kg
   const weeklyChangeRate = (weeklyChange / lastWeekAvg) * 100  // %
 
-  // 4. 估算 Adaptive TDEE
-  // 注意：這裡用 7700 kcal/kg 是正確的 — 反推「過去已發生」的 TDEE 用能量守恆定律
-  // Goal-driven 的「預測未來」才用動態能量密度（getEnergyDensity），因為要考慮組成變化
+  // 4. 計算飲食持續天數（提前算，TDEE 和 goal-driven 都需要）
+  let dietDurationWeeks: number | null = null
+  if (input.dietStartDate) {
+    const startDate = new Date(input.dietStartDate)
+    const now = new Date()
+    dietDurationWeeks = Math.floor((now.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
+  }
+
+  // 5. 計算目標日距（提前算，TDEE 需要能量密度）
+  let daysToTarget: number | null = null
+  if (input.targetDate) {
+    const now = new Date()
+    const target = new Date(input.targetDate)
+    daysToTarget = Math.max(1, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+  }
+
+  // 6. 估算 Adaptive TDEE
+  // TDEE 和 goal-driven 用同一個能量密度，確保一致性
+  // 如果 TDEE 用 7700 反推但 goal-driven 用 5500 預測 → TDEE 高估 + 赤字低估 → 卡路里偏高
+  const tdeeDensity = daysToTarget != null ? getEnergyDensity(daysToTarget, dietDurationWeeks) : ENERGY_DENSITY.LATE_PHASE
   let estimatedTDEE: number | null = null
   if (input.avgDailyCalories != null) {
     // 優先用 Adaptive TDEE（最準確，基於實際攝取 vs 體重變化）
-    estimatedTDEE = Math.round(input.avgDailyCalories - (weeklyChange * 7700 / 7))
+    estimatedTDEE = Math.round(input.avgDailyCalories - (weeklyChange * tdeeDensity / 7))
   } else if (input.currentCalories != null) {
     // Fallback: 用教練設定的當前目標卡路里 + 體重變化反推
-    estimatedTDEE = Math.round(input.currentCalories - (weeklyChange * 7700 / 7))
+    estimatedTDEE = Math.round(input.currentCalories - (weeklyChange * tdeeDensity / 7))
     warnings.push('⚠️ 尚無飲食記錄，TDEE 基於目前設定的目標卡路里推算，準確度較低。建議記錄每日飲食提高精度')
   } else {
     // 最終 Fallback: 簡化公式估算（粗略）
@@ -313,20 +330,11 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     warnings.push(`⚠️ 無飲食記錄，TDEE 以體重公式粗估（${estimatedTDEE}kcal），建議記錄每日飲食讓系統自動校正`)
   }
 
-  // 5. 計算飲食持續天數
-  let dietDurationWeeks: number | null = null
-  if (input.dietStartDate) {
-    const startDate = new Date(input.dietStartDate)
-    const now = new Date()
-    dietDurationWeeks = Math.floor((now.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  }
-
   // 6. Deadline-aware 計算
+  // 7. Deadline-aware 計算（用前面算好的 daysToTarget）
   let deadlineInfo: NutritionSuggestion['deadlineInfo'] = null
-  if (input.targetWeight != null && input.targetDate) {
-    const now = new Date()
-    const target = new Date(input.targetDate)
-    const daysLeft = Math.max(1, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+  if (input.targetWeight != null && daysToTarget != null) {
+    const daysLeft = daysToTarget
     const weeksLeft = Math.max(0.5, daysLeft / 7)
     const weightToLose = thisWeekAvg - input.targetWeight
     const requiredRatePerWeek = weightToLose / weeksLeft
@@ -340,7 +348,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     }
   }
 
-  // 7. 根據目標類型分流
+  // 8. 根據目標類型分流
   if (input.goalType === 'cut') {
     return generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings)
   } else {
