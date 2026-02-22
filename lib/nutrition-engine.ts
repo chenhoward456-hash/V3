@@ -1,11 +1,16 @@
 /**
- * 營養素自動建議引擎
+ * 營養素自動建議引擎 v2
  * 基於 2025-2026 最新運動科學文獻：
  * - ISSN Position Stand: 減脂速率 0.5-1.0% BW/week
  * - Physique Athletes Review: 蛋白質 ≥ 2.0g/kg (減脂), 1.6-2.2g/kg (增肌)
  * - Off-Season Bodybuilding: 增肌速率 0.25-0.5% BW/week, surplus +200-300kcal
  * - Caloric Restriction Meta-Analysis: 最大赤字 ≤ 500kcal/day
  * - Fat minimum: ≥ 0.8g/kg for hormonal health
+ *
+ * Peak Week 文獻：
+ * - Escalante et al. (2021) - Peak week recommendations: evidence based approach
+ * - Barakat et al. (2022) - Peak Week Manipulations: muscle size case study
+ * - Mitchell et al. (2024) - Peak Week Carbohydrate Manipulation: narrative review
  */
 
 // ===== 類型定義 =====
@@ -35,10 +40,13 @@ export interface NutritionInput {
   nutritionCompliance: number  // 飲食合規率 %
   avgDailyCalories: number | null  // 近 2 週平均每日攝取
   trainingDaysPerWeek: number
+
+  // 備賽階段（可選）
+  prepPhase?: string  // 'peak_week' | 'cut' | 'bulk' | 'off_season' | etc.
 }
 
 export interface NutritionSuggestion {
-  status: 'on_track' | 'too_fast' | 'plateau' | 'wrong_direction' | 'insufficient_data' | 'low_compliance'
+  status: 'on_track' | 'too_fast' | 'plateau' | 'wrong_direction' | 'insufficient_data' | 'low_compliance' | 'peak_week'
   statusLabel: string
   statusEmoji: string
   message: string
@@ -73,8 +81,32 @@ export interface NutritionSuggestion {
     isAggressive: boolean  // 超過安全範圍
   } | null
 
-  // 是否可以自動套用 (非 on_track 且非 insufficient_data 才會自動套用)
+  // 是否可以自動套用
   autoApply: boolean
+
+  // Peak Week 每日計畫（僅 peak_week 狀態時有值）
+  peakWeekPlan: PeakWeekDay[] | null
+}
+
+// Peak Week 每日計畫
+export interface PeakWeekDay {
+  daysOut: number       // 距比賽天數（7=7天前, 0=比賽日）
+  date: string          // ISO date
+  label: string         // 例如 'Day 7 - 碳水耗竭 + 上半身'
+  phase: 'depletion' | 'fat_load' | 'carb_load' | 'taper' | 'show_day'
+  carbsGPerKg: number
+  proteinGPerKg: number
+  fatGPerKg: number
+  waterMlPerKg: number
+  sodiumNote: string
+  fiberNote: string
+  trainingNote: string
+  // 算好的絕對值
+  carbs: number
+  protein: number
+  fat: number
+  calories: number
+  water: number // mL
 }
 
 // ===== 常數 (基於文獻) =====
@@ -91,7 +123,6 @@ const SAFETY = {
 }
 
 const CUT_TARGETS = {
-  // ISSN: 0.5-1.0% BW/week for lean mass retention
   MIN_RATE: -1.0,  // % per week (下限，太快)
   MAX_RATE: -0.3,  // % per week (上限，太慢 → 停滯)
   IDEAL_MIN: -1.0,
@@ -99,7 +130,6 @@ const CUT_TARGETS = {
 }
 
 const BULK_TARGETS = {
-  // Off-Season Review: 0.25-0.5% BW/week
   MIN_RATE: 0.1,   // % per week (下限，停滯)
   MAX_RATE: 0.5,   // % per week (上限，太快)
   IDEAL_MIN: 0.25,
@@ -110,25 +140,71 @@ const BULK_TARGETS = {
 const CARB_CYCLE_TRAINING_RATIO = 0.6
 const CARB_CYCLE_REST_RATIO = 0.4
 
+// Peak Week 常數（基於 Escalante 2021 + Barakat 2022 + Mitchell 2024）
+const PEAK_WEEK = {
+  // 碳水耗竭期 (Day 7-4)：低碳 + 高脂補充肌內三酸甘油酯
+  DEPLETION_CARB_G_PER_KG: 1.1,    // Barakat: 1.0-1.2
+  DEPLETION_PROTEIN_G_PER_KG: 3.2,  // 高蛋白保護肌肉
+  DEPLETION_FAT_G_PER_KG: 1.5,     // 高脂補 IMT（1.2-1.8 range）
+
+  // 碳水超補期 (Day 3-2)
+  LOADING_CARB_G_PER_KG: 9.0,      // Escalante: 8-12, Barakat: 7.8-8.0
+  LOADING_PROTEIN_G_PER_KG: 2.2,   // 降低為碳水騰空間
+  LOADING_FAT_G_PER_KG: 0.65,      // 低脂最大化碳水
+
+  // Taper (Day 1)
+  TAPER_CARB_G_PER_KG: 5.5,        // Barakat: 5.46
+  TAPER_PROTEIN_G_PER_KG: 2.8,
+  TAPER_FAT_G_PER_KG: 1.1,         // 中等脂肪防止 IMT 流失
+
+  // 比賽日
+  SHOW_CARB_G_PER_KG: 2.0,         // 小餐維持
+  SHOW_PROTEIN_G_PER_KG: 3.0,
+  SHOW_FAT_G_PER_KG: 0.5,
+
+  // 水分操控（mL/kg）
+  WATER_BASELINE: 90,     // Day 7-5：90 mL/kg
+  WATER_LOADING: 140,     // Day 3-2：120-155 mL/kg (中間值)
+  WATER_TAPER: 80,        // Day 1：80 mL/kg
+  WATER_SHOW: 20,         // 比賽日：少量啜飲
+}
+
+// ===== 空結果模板 =====
+
+function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggestion {
+  return {
+    status: 'insufficient_data', statusLabel: '', statusEmoji: '', message: '',
+    suggestedCalories: null, suggestedProtein: null, suggestedCarbs: null, suggestedFat: null,
+    suggestedCarbsTrainingDay: null, suggestedCarbsRestDay: null,
+    caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
+    estimatedTDEE: null, weeklyWeightChangeRate: null,
+    dietDurationWeeks: null, dietBreakSuggested: false, warnings: [],
+    deadlineInfo: null, autoApply: false, peakWeekPlan: null,
+    ...overrides,
+  }
+}
+
 // ===== 主要引擎 =====
 
 export function generateNutritionSuggestion(input: NutritionInput): NutritionSuggestion {
   const warnings: string[] = []
 
+  // 0. Peak Week 偵測：距比賽 ≤ 7 天且 prepPhase 是 peak_week
+  if (input.targetDate && input.prepPhase === 'peak_week') {
+    const now = new Date()
+    const target = new Date(input.targetDate)
+    const daysLeft = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+    if (daysLeft <= 8) {
+      return generatePeakWeekPlan(input, daysLeft)
+    }
+  }
+
   // 1. 檢查數據是否足夠
   if (input.weeklyWeights.length < 2) {
-    return {
-      status: 'insufficient_data',
-      statusLabel: '數據不足',
-      statusEmoji: '📊',
+    return emptyResult({
+      status: 'insufficient_data', statusLabel: '數據不足', statusEmoji: '📊',
       message: '需要至少 2 週的體重數據才能開始分析。請讓學員持續記錄體重。',
-      suggestedCalories: null, suggestedProtein: null, suggestedCarbs: null, suggestedFat: null,
-      suggestedCarbsTrainingDay: null, suggestedCarbsRestDay: null,
-      caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
-      estimatedTDEE: null, weeklyWeightChangeRate: null,
-      dietDurationWeeks: null, dietBreakSuggested: false, warnings: [],
-      deadlineInfo: null, autoApply: false,
-    }
+    })
   }
 
   // 2. 合規率低時加入警告，但不阻擋引擎運作（體重是最真實的指標）
@@ -143,7 +219,6 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   const weeklyChangeRate = (weeklyChange / lastWeekAvg) * 100  // %
 
   // 4. 估算 Adaptive TDEE
-  // TDEE = 平均每日攝取 - (週體重變化kg × 7700kcal / 7天)
   let estimatedTDEE: number | null = null
   if (input.avgDailyCalories != null) {
     estimatedTDEE = Math.round(input.avgDailyCalories - (weeklyChange * 7700 / 7))
@@ -164,9 +239,8 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     const target = new Date(input.targetDate)
     const daysLeft = Math.max(1, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
     const weeksLeft = Math.max(0.5, daysLeft / 7)
-    const weightToLose = thisWeekAvg - input.targetWeight  // 正=要減，負=要增
+    const weightToLose = thisWeekAvg - input.targetWeight
     const requiredRatePerWeek = weightToLose / weeksLeft
-    // 安全範圍：減脂 max 1% BW/week ≈ 0.8kg for 80kg person
     const maxSafeRate = thisWeekAvg * 0.01
     const isAggressive = Math.abs(requiredRatePerWeek) > maxSafeRate
 
@@ -209,7 +283,6 @@ function generateCutSuggestion(
 
   // 判斷進度
   if (weeklyChangeRate <= CUT_TARGETS.MIN_RATE) {
-    // 掉太快 (< -1.0%)
     status = 'too_fast'
     statusLabel = '掉太快'
     statusEmoji = '🔴'
@@ -218,17 +291,15 @@ function generateCutSuggestion(
     fatDelta = 0
     message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，超過安全範圍（-1.0%）。建議增加熱量以保護肌肉量。`
   } else if (weeklyChangeRate >= CUT_TARGETS.MAX_RATE) {
-    // 持續 2 週看是否有上週數據佐證
     if (input.weeklyWeights.length >= 3) {
       const twoWeeksAgo = input.weeklyWeights[2].avgWeight
       const twoWeekChange = ((input.weeklyWeights[0].avgWeight - twoWeeksAgo) / twoWeeksAgo) * 100 / 2
       if (twoWeekChange >= CUT_TARGETS.MAX_RATE) {
-        // 連續 2 週停滯
         status = 'plateau'
         statusLabel = '停滯期'
         statusEmoji = '🟡'
-        calDelta = -175  // -150~200 中間值
-        carbDelta = -22  // -20~25 中間值
+        calDelta = -175
+        carbDelta = -22
         fatDelta = -5
         message = `體重已連續 2 週幾乎無變化（${weeklyChangeRate.toFixed(2)}%/週）。建議微降熱量突破停滯期。`
       } else {
@@ -238,23 +309,20 @@ function generateCutSuggestion(
         message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，處於安全範圍內。繼續維持目前計畫。`
       }
     } else {
-      // 只有 2 週數據，先觀察
       status = 'on_track'
       statusLabel = '觀察中'
       statusEmoji = '🟢'
       message = `體重變化 ${weeklyChangeRate.toFixed(2)}%/週。數據尚少，再觀察一週。`
     }
   } else if (weeklyChangeRate > 0) {
-    // 體重反而增加
     status = 'wrong_direction'
     statusLabel = '方向錯誤'
     statusEmoji = '🔴'
-    calDelta = -225  // -200~250 中間值
-    carbDelta = -27  // -25~30 中間值
-    fatDelta = -7    // -5~10 中間值
+    calDelta = -225
+    carbDelta = -27
+    fatDelta = -7
     message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週）。需要降低熱量攝取。`
   } else {
-    // 正常範圍 -0.3% ~ -1.0%
     status = 'on_track'
     statusLabel = '進度正常'
     statusEmoji = '🟢'
@@ -290,7 +358,6 @@ function generateCutSuggestion(
     warnings.push(`熱量不可低於 ${minCal}kcal（${isMale ? '男性' : '女性'}安全底線），已調整`)
   }
 
-  // 赤字檢查
   if (estimatedTDEE && (estimatedTDEE - suggestedCal) > SAFETY.MAX_DEFICIT_KCAL) {
     warnings.push(`目前赤字已達 ${estimatedTDEE - suggestedCal}kcal，超過建議上限 500kcal`)
   }
@@ -306,13 +373,12 @@ function generateCutSuggestion(
     warnings.push(`已連續減脂 ${dietDurationWeeks} 週，建議安排 1-2 週維持期（diet break）以恢復荷爾蒙和心理狀態`)
   }
 
-  // 碳循環分配
+  // 碳循環分配（訓練日多碳水、休息日少碳水）
   let suggestedCarbsTD: number | null = null
   let suggestedCarbsRD: number | null = null
   if (input.carbsCyclingEnabled && input.currentCarbsTrainingDay != null && input.currentCarbsRestDay != null) {
-    const totalCarbChange = carbDelta
-    const tdChange = Math.round(totalCarbChange * CARB_CYCLE_TRAINING_RATIO)
-    const rdChange = totalCarbChange - tdChange
+    const tdChange = Math.round(carbDelta * CARB_CYCLE_TRAINING_RATIO)
+    const rdChange = carbDelta - tdChange
     suggestedCarbsTD = input.currentCarbsTrainingDay + tdChange
     suggestedCarbsRD = input.currentCarbsRestDay + rdChange
     if (suggestedCarbsRD < 30) {
@@ -323,24 +389,27 @@ function generateCutSuggestion(
 
   // Deadline-aware: 如果進度落後且有 deadline，加大調整幅度
   if (deadlineInfo && status !== 'on_track' && status !== 'too_fast') {
-    // 進度落後時，根據剩餘時間加大幅度
     if (deadlineInfo.daysLeft < 28 && deadlineInfo.weightToLose > 1) {
-      // 不到 4 週且還差 >1kg：加碼
       const urgencyMultiplier = Math.min(1.5, 1 + (1 - deadlineInfo.daysLeft / 28) * 0.5)
       calDelta = Math.round(calDelta * urgencyMultiplier)
       carbDelta = Math.round(carbDelta * urgencyMultiplier)
-      // 重新計算建議值
       suggestedCal = currentCal + calDelta
       suggestedCarb = currentCarb + carbDelta
-      // 重新檢查底線
       if (suggestedCal < minCal) suggestedCal = minCal
       if (suggestedCarb < 50) suggestedCarb = 50
       if (suggestedFat < minFat) suggestedFat = minFat
+      // 碳循環也要重算
+      if (input.carbsCyclingEnabled && input.currentCarbsTrainingDay != null && input.currentCarbsRestDay != null) {
+        const tdChange = Math.round(carbDelta * CARB_CYCLE_TRAINING_RATIO)
+        const rdChange = carbDelta - tdChange
+        suggestedCarbsTD = input.currentCarbsTrainingDay + tdChange
+        suggestedCarbsRD = input.currentCarbsRestDay + rdChange
+        if (suggestedCarbsRD! < 30) suggestedCarbsRD = 30
+      }
       message += ` ⏰ 距離目標僅剩 ${deadlineInfo.daysLeft} 天，需加速調整。`
     }
   }
 
-  // 如果 on_track 不需要改變
   if (status === 'on_track') {
     return {
       status, statusLabel, statusEmoji, message,
@@ -351,7 +420,7 @@ function generateCutSuggestion(
       caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested, warnings,
-      deadlineInfo, autoApply: false,
+      deadlineInfo, autoApply: false, peakWeekPlan: null,
     }
   }
 
@@ -369,7 +438,7 @@ function generateCutSuggestion(
     fatDelta: fatDelta,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested, warnings,
-    deadlineInfo, autoApply: true,
+    deadlineInfo, autoApply: true, peakWeekPlan: null,
   }
 }
 
@@ -394,26 +463,23 @@ function generateBulkSuggestion(
   let fatDelta = 0
 
   if (weeklyChangeRate > BULK_TARGETS.MAX_RATE) {
-    // 增太快 (> +0.5%)
     status = 'too_fast'
     statusLabel = '增太快'
     statusEmoji = '🟡'
-    calDelta = -125  // -100~150 中間值
-    carbDelta = -17  // -15~20 中間值
+    calDelta = -125
+    carbDelta = -17
     fatDelta = 0
     message = `體重增加速率 +${weeklyChangeRate.toFixed(2)}%/週，超過理想範圍（+0.5%），有脂肪堆積風險。建議微降熱量。`
   } else if (weeklyChangeRate < BULK_TARGETS.MIN_RATE) {
     if (weeklyChangeRate < 0) {
-      // 體重下降 → 盈餘明顯不夠
       status = 'wrong_direction'
       statusLabel = '盈餘不足'
       statusEmoji = '🔴'
-      calDelta = 275  // +250~300 中間值
+      calDelta = 275
       carbDelta = 30
       fatDelta = 0
       message = `體重反而下降（${weeklyChangeRate.toFixed(2)}%/週）。熱量盈餘明顯不夠，需要增加攝取。`
     } else {
-      // 停滯 (0 ~ +0.1%)
       if (input.weeklyWeights.length >= 3) {
         const twoWeeksAgo = input.weeklyWeights[2].avgWeight
         const twoWeekRate = ((input.weeklyWeights[0].avgWeight - twoWeeksAgo) / twoWeeksAgo) * 100 / 2
@@ -421,8 +487,8 @@ function generateBulkSuggestion(
           status = 'plateau'
           statusLabel = '增長停滯'
           statusEmoji = '🟡'
-          calDelta = 175  // +150~200 中間值
-          carbDelta = 22  // +20~25 中間值
+          calDelta = 175
+          carbDelta = 22
           fatDelta = 0
           message = `體重增長連續 2 週停滯（+${weeklyChangeRate.toFixed(2)}%/週）。建議增加熱量推動增長。`
         } else {
@@ -439,7 +505,6 @@ function generateBulkSuggestion(
       }
     }
   } else {
-    // 完美範圍 +0.25% ~ +0.5%
     status = 'on_track'
     statusLabel = '進度正常'
     statusEmoji = '🟢'
@@ -479,14 +544,25 @@ function generateBulkSuggestion(
   let suggestedCarbsTD: number | null = null
   let suggestedCarbsRD: number | null = null
   if (input.carbsCyclingEnabled && input.currentCarbsTrainingDay != null && input.currentCarbsRestDay != null) {
-    const totalCarbChange = carbDelta
-    const tdChange = Math.round(totalCarbChange * CARB_CYCLE_TRAINING_RATIO)
-    const rdChange = totalCarbChange - tdChange
+    const tdChange = Math.round(carbDelta * CARB_CYCLE_TRAINING_RATIO)
+    const rdChange = carbDelta - tdChange
     suggestedCarbsTD = input.currentCarbsTrainingDay + tdChange
     suggestedCarbsRD = input.currentCarbsRestDay + rdChange
   }
 
-  // 如果 on_track 不需要改變
+  // 增肌期 Deadline-aware（目標體重 > 當前體重時）
+  if (deadlineInfo && status !== 'on_track' && status !== 'too_fast') {
+    if (deadlineInfo.daysLeft < 28 && deadlineInfo.weightToLose < -1) {
+      // 還差 >1kg 要增，加大盈餘
+      const urgencyMultiplier = Math.min(1.5, 1 + (1 - deadlineInfo.daysLeft / 28) * 0.5)
+      calDelta = Math.round(calDelta * urgencyMultiplier)
+      carbDelta = Math.round(carbDelta * urgencyMultiplier)
+      suggestedCal = currentCal + calDelta
+      suggestedCarb = currentCarb + carbDelta
+      message += ` ⏰ 距離目標僅剩 ${deadlineInfo.daysLeft} 天，需加速增量。`
+    }
+  }
+
   if (status === 'on_track') {
     return {
       status, statusLabel, statusEmoji, message,
@@ -497,7 +573,7 @@ function generateBulkSuggestion(
       caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested: false, warnings,
-      deadlineInfo, autoApply: false,
+      deadlineInfo, autoApply: false, peakWeekPlan: null,
     }
   }
 
@@ -515,6 +591,143 @@ function generateBulkSuggestion(
     fatDelta: fatDelta,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested: false, warnings,
-    deadlineInfo, autoApply: true,
+    deadlineInfo, autoApply: true, peakWeekPlan: null,
+  }
+}
+
+// ===== Peak Week 引擎 =====
+// 基於 Escalante 2021 + Barakat 2022 + Mitchell 2024
+
+function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): NutritionSuggestion {
+  const bw = input.bodyWeight
+  const compDate = new Date(input.targetDate!)
+  const plan: PeakWeekDay[] = []
+
+  // 建立 Day 7 到 Day 0（比賽日）的每日計畫
+  for (let d = Math.min(daysLeft, 7); d >= 0; d--) {
+    const dayDate = new Date(compDate)
+    dayDate.setDate(compDate.getDate() - d)
+    const dateStr = dayDate.toISOString().split('T')[0]
+
+    let day: PeakWeekDay
+
+    if (d >= 4) {
+      // Day 7-4：碳水耗竭 + 脂肪補充 IMT
+      const trainingMap: Record<number, string> = {
+        7: '耗竭訓練：上半身（高次數 >12RM，巨組）',
+        6: '耗竭訓練：下半身（高次數 >12RM，巨組）',
+        5: '耗竭訓練：全身（中等重量，每組 >15 次）',
+        4: '輕量 pump / 休息',
+      }
+      day = {
+        daysOut: d, date: dateStr,
+        label: `Day ${d} — 碳水耗竭期`,
+        phase: d >= 6 ? 'depletion' : 'fat_load',
+        carbsGPerKg: PEAK_WEEK.DEPLETION_CARB_G_PER_KG,
+        proteinGPerKg: PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG,
+        fatGPerKg: PEAK_WEEK.DEPLETION_FAT_G_PER_KG,
+        waterMlPerKg: PEAK_WEEK.WATER_BASELINE,
+        sodiumNote: '正常鈉攝取',
+        fiberNote: d <= 5 ? '開始減少纖維（目標 <15g）' : '正常',
+        trainingNote: trainingMap[d] || '休息',
+        carbs: Math.round(bw * PEAK_WEEK.DEPLETION_CARB_G_PER_KG),
+        protein: Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG),
+        fat: Math.round(bw * PEAK_WEEK.DEPLETION_FAT_G_PER_KG),
+        calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_BASELINE),
+      }
+    } else if (d >= 2) {
+      // Day 3-2：碳水超補 + 水分加載 + 鈉加載
+      day = {
+        daysOut: d, date: dateStr,
+        label: `Day ${d} — 碳水超補期 🍚`,
+        phase: 'carb_load',
+        carbsGPerKg: PEAK_WEEK.LOADING_CARB_G_PER_KG,
+        proteinGPerKg: PEAK_WEEK.LOADING_PROTEIN_G_PER_KG,
+        fatGPerKg: PEAK_WEEK.LOADING_FAT_G_PER_KG,
+        waterMlPerKg: PEAK_WEEK.WATER_LOADING,
+        sodiumNote: '鈉加載 +30%（多加鹽，幫助碳水吸收入肌肉）',
+        fiberNote: '低纖維（<12g），選白飯、白吐司等精緻碳水',
+        trainingNote: '完全休息（保存肝醣）',
+        carbs: Math.round(bw * PEAK_WEEK.LOADING_CARB_G_PER_KG),
+        protein: Math.round(bw * PEAK_WEEK.LOADING_PROTEIN_G_PER_KG),
+        fat: Math.round(bw * PEAK_WEEK.LOADING_FAT_G_PER_KG),
+        calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_LOADING),
+      }
+    } else if (d === 1) {
+      // Day 1：Taper — 碳水微降 + 水分回調 + 脂肪中等（防 IMT 流失）
+      day = {
+        daysOut: d, date: dateStr,
+        label: 'Day 1 — 微調日',
+        phase: 'taper',
+        carbsGPerKg: PEAK_WEEK.TAPER_CARB_G_PER_KG,
+        proteinGPerKg: PEAK_WEEK.TAPER_PROTEIN_G_PER_KG,
+        fatGPerKg: PEAK_WEEK.TAPER_FAT_G_PER_KG,
+        waterMlPerKg: PEAK_WEEK.WATER_TAPER,
+        sodiumNote: '恢復正常鈉',
+        fiberNote: '極低纖維（<10g），避免腹脹',
+        trainingNote: '完全休息或極輕 pump',
+        carbs: Math.round(bw * PEAK_WEEK.TAPER_CARB_G_PER_KG),
+        protein: Math.round(bw * PEAK_WEEK.TAPER_PROTEIN_G_PER_KG),
+        fat: Math.round(bw * PEAK_WEEK.TAPER_FAT_G_PER_KG),
+        calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_TAPER),
+      }
+    } else {
+      // Day 0：比賽日
+      day = {
+        daysOut: 0, date: dateStr,
+        label: '🏆 比賽日',
+        phase: 'show_day',
+        carbsGPerKg: PEAK_WEEK.SHOW_CARB_G_PER_KG,
+        proteinGPerKg: PEAK_WEEK.SHOW_PROTEIN_G_PER_KG,
+        fatGPerKg: PEAK_WEEK.SHOW_FAT_G_PER_KG,
+        waterMlPerKg: PEAK_WEEK.WATER_SHOW,
+        sodiumNote: '正常，少量啜飲',
+        fiberNote: '幾乎零纖維',
+        trainingNote: '後台 pump-up：彈力帶 + 輕啞鈴',
+        carbs: Math.round(bw * PEAK_WEEK.SHOW_CARB_G_PER_KG),
+        protein: Math.round(bw * PEAK_WEEK.SHOW_PROTEIN_G_PER_KG),
+        fat: Math.round(bw * PEAK_WEEK.SHOW_FAT_G_PER_KG),
+        calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_SHOW),
+      }
+    }
+
+    // 計算熱量
+    day.calories = Math.round(day.protein * 4 + day.carbs * 4 + day.fat * 9)
+    plan.push(day)
+  }
+
+  // 找到今天的計畫
+  const todayStr = new Date().toISOString().split('T')[0]
+  const todayPlan = plan.find(p => p.date === todayStr) || plan[0]
+
+  return {
+    status: 'peak_week',
+    statusLabel: 'Peak Week',
+    statusEmoji: '🏆',
+    message: `距比賽 ${daysLeft} 天 — ${todayPlan.label}。今日碳水 ${todayPlan.carbs}g、蛋白質 ${todayPlan.protein}g、脂肪 ${todayPlan.fat}g、水 ${(todayPlan.water / 1000).toFixed(1)}L`,
+    suggestedCalories: todayPlan.calories,
+    suggestedProtein: todayPlan.protein,
+    suggestedCarbs: todayPlan.carbs,
+    suggestedFat: todayPlan.fat,
+    suggestedCarbsTrainingDay: null,
+    suggestedCarbsRestDay: null,
+    caloriesDelta: todayPlan.calories - (input.currentCalories || 0),
+    proteinDelta: todayPlan.protein - (input.currentProtein || 0),
+    carbsDelta: todayPlan.carbs - (input.currentCarbs || 0),
+    fatDelta: todayPlan.fat - (input.currentFat || 0),
+    estimatedTDEE: null,
+    weeklyWeightChangeRate: null,
+    dietDurationWeeks: null,
+    dietBreakSuggested: false,
+    warnings: [
+      '⚠️ Peak Week 期間營養素每日不同，請嚴格按照每日計畫執行',
+      `💧 今日飲水目標：${(todayPlan.water / 1000).toFixed(1)}L（${todayPlan.waterMlPerKg} mL/kg）`,
+      `🧂 ${todayPlan.sodiumNote}`,
+      `🥬 纖維：${todayPlan.fiberNote}`,
+      `🏋️ ${todayPlan.trainingNote}`,
+    ],
+    deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
+    autoApply: true,
+    peakWeekPlan: plan,
   }
 }
