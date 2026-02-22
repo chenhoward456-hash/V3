@@ -778,11 +778,25 @@ function generateGoalDrivenCut(
     // 飲食面赤字足夠
     predictedCompWeight = targetWeight
 
-    // 即使不需要額外有氧，也建議維持活動量
+    // 高能量通量策略（High Energy Flux）
+    // 即使飲食赤字夠了，也建議基礎活動量 → 多消耗的部分加回碳水
+    // 原理：同樣赤字但吃更多 → 保護代謝、維持訓練品質、減少肌肉流失
     if (safetyLevel !== 'normal') {
       suggestedCardioMinutes = safetyLevel === 'extreme' ? 30 : 20
       suggestedDailySteps = safetyLevel === 'extreme' ? 10000 : 8000
-      cardioNote = `建議維持每日 ${suggestedCardioMinutes} 分鐘低強度有氧 + ${suggestedDailySteps.toLocaleString()} 步，幫助赤字執行`
+
+      // 計算活動量消耗 → 加回碳水（赤字不變）
+      const fluxCardioBurn = suggestedCardioMinutes * kcalPerMinCardio
+      const fluxExtraSteps = suggestedDailySteps - CARDIO.BASELINE_STEPS
+      const fluxStepsBurn = fluxExtraSteps * kcalPerStep
+      const fluxTotalBurn = Math.round(fluxCardioBurn + fluxStepsBurn)
+
+      // 多消耗的全給碳水（碳水是訓練品質的直接燃料）
+      const fluxCarbsBonus = Math.round(fluxTotalBurn / 4)
+      suggestedCarb += fluxCarbsBonus
+      actualCalories += fluxTotalBurn
+
+      cardioNote = `高能量通量：有氧 ${suggestedCardioMinutes} 分鐘 + ${suggestedDailySteps.toLocaleString()} 步（消耗 ~${fluxTotalBurn}kcal）→ 碳水 +${fluxCarbsBonus}g 吃回來，赤字不變`
     }
   }
 
