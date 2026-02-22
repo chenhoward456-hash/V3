@@ -133,6 +133,8 @@ export async function GET(request: NextRequest) {
       bodyWeight: latestWeight,
       goalType: client.goal_type || 'cut',
       dietStartDate: client.diet_start_date || null,
+      targetWeight: client.target_weight || null,
+      targetDate: client.competition_date || null,
       currentCalories: client.calories_target || null,
       currentProtein: client.protein_target || null,
       currentCarbs: client.carbs_target || null,
@@ -149,8 +151,33 @@ export async function GET(request: NextRequest) {
     // 9. 執行引擎
     const suggestion = generateNutritionSuggestion(engineInput)
 
+    // 10. 自動套用：如果引擎說 autoApply 且有調整
+    const autoApply = searchParams.get('autoApply') === 'true'
+    let applied = false
+    if (autoApply && suggestion.autoApply) {
+      const updates: Record<string, any> = {}
+      if (suggestion.suggestedCalories != null) updates.calories_target = suggestion.suggestedCalories
+      if (suggestion.suggestedProtein != null) updates.protein_target = suggestion.suggestedProtein
+      if (suggestion.suggestedCarbs != null) updates.carbs_target = suggestion.suggestedCarbs
+      if (suggestion.suggestedFat != null) updates.fat_target = suggestion.suggestedFat
+      if (suggestion.suggestedCarbsTrainingDay != null) updates.carbs_training_day = suggestion.suggestedCarbsTrainingDay
+      if (suggestion.suggestedCarbsRestDay != null) updates.carbs_rest_day = suggestion.suggestedCarbsRestDay
+
+      if (Object.keys(updates).length > 0) {
+        const { error: updateErr } = await supabase
+          .from('clients')
+          .update(updates)
+          .eq('id', clientId)
+
+        if (!updateErr) {
+          applied = true
+        }
+      }
+    }
+
     return NextResponse.json({
       suggestion,
+      applied,
       meta: {
         latestWeight,
         weeklyWeights,
@@ -159,6 +186,8 @@ export async function GET(request: NextRequest) {
         trainingDaysPerWeek,
         goalType: client.goal_type || 'cut',
         dietStartDate: client.diet_start_date || null,
+        targetWeight: client.target_weight || null,
+        targetDate: client.competition_date || null,
       }
     })
   } catch (err) {

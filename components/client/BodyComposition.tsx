@@ -24,6 +24,7 @@ export default function BodyComposition({
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [nutritionAdjusted, setNutritionAdjusted] = useState<{ message?: string; calories?: number } | null>(null)
   const todayStr = new Date().toISOString().split('T')[0]
   const [form, setForm] = useState({
     date: todayStr,
@@ -160,11 +161,19 @@ export default function BodyComposition({
         })
       })
       if (!res.ok) throw new Error('保存失敗')
+      const result = await res.json()
       setShowModal(false)
       setForm({ date: new Date().toISOString().split('T')[0], weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
       onMutate()
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 2000)
+      // 檢查是否有營養素自動調整
+      if (result?.data?.nutritionAdjusted?.adjusted) {
+        setTimeout(() => {
+          setNutritionAdjusted(result.data.nutritionAdjusted)
+          setTimeout(() => setNutritionAdjusted(null), 5000)
+        }, 2200) // 在成功動畫後顯示
+      }
     } catch { alert('儲存失敗，請重試') }
   }
 
@@ -174,6 +183,21 @@ export default function BodyComposition({
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
           <span className="text-lg">🎉</span>
           <span className="text-sm font-medium">身體數據已記錄！</span>
+        </div>
+      )}
+      {nutritionAdjusted && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-bounce">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🧮</span>
+            <div>
+              <p className="text-sm font-medium">營養目標已自動調整</p>
+              {nutritionAdjusted.calories && (
+                <p className="text-xs text-blue-100 mt-0.5">
+                  新目標：{nutritionAdjusted.calories} kcal
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
       <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
