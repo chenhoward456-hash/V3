@@ -410,6 +410,8 @@ export default function ClientDashboard() {
               : c.carbs_target}
             carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
             isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            carbsTrainingDay={c.carbs_training_day}
+            carbsRestDay={c.carbs_rest_day}
             fatTarget={c.fat_target}
             caloriesTarget={c.calories_target}
             onMutate={mutate}
@@ -469,6 +471,8 @@ export default function ClientDashboard() {
               : c.carbs_target}
             carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
             isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            carbsTrainingDay={c.carbs_training_day}
+            carbsRestDay={c.carbs_rest_day}
             fatTarget={c.fat_target}
             caloriesTarget={c.calories_target}
             onMutate={mutate}
