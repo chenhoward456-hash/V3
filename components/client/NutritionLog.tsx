@@ -21,6 +21,7 @@ interface NutritionLogProps {
 
 export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, carbsCyclingEnabled, isTrainingDay, onMutate }: NutritionLogProps) {
   const [saving, setSaving] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const [note, setNote] = useState(todayNutrition?.note || '')
   const [showNote, setShowNote] = useState(false)
   const [proteinInput, setProteinInput] = useState<string>(todayNutrition?.protein_grams?.toString() || '')
@@ -57,6 +58,8 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       })
       if (!res.ok) throw new Error('記錄失敗')
       onMutate()
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 2000)
     } catch {
       alert('記錄失敗，請重試')
     } finally {
@@ -108,6 +111,8 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       })
       if (!res.ok) throw new Error('儲存失敗')
       onMutate()
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 2000)
     } catch {
       alert('儲存失敗，請重試')
     } finally {
@@ -179,6 +184,12 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+      {showSuccess && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
+          <span className="text-lg">🎉</span>
+          <span className="text-sm font-medium">已記錄！</span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-gray-900">🍽️ 飲食紀錄</h2>
         {hasRecorded && (

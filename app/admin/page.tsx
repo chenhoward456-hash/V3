@@ -4,12 +4,6 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 interface Client {
   id: string
@@ -231,12 +225,15 @@ export default function AdminDashboard() {
     if (!feedbackClient) return
     setFeedbackSaving(true)
     try {
-      const { error } = await supabase
-        .from('clients')
-        .update({ coach_weekly_note: feedbackText || null })
-        .eq('id', feedbackClient.id)
-      if (!error) {
-        // 更新本地狀態
+      const res = await fetch('/api/admin/clients', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: feedbackClient.id,
+          clientData: { coach_weekly_note: feedbackText || null },
+        }),
+      })
+      if (res.ok) {
         setClients(prev => prev.map(c => c.id === feedbackClient.id ? { ...c, coach_weekly_note: feedbackText || null } : c))
         setFeedbackClient(null)
       }

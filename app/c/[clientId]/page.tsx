@@ -294,7 +294,15 @@ export default function ClientDashboard() {
                     </span>
                   ))
                 ) : (
-                  <span className="text-xs text-gray-400">今天還沒有記錄，開始吧！</span>
+                  <button
+                    onClick={() => {
+                      const firstSection = document.querySelector('[id^="section-"]')
+                      firstSection?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }}
+                    className="text-xs text-blue-500 font-medium hover:text-blue-700 transition-colors"
+                  >
+                    👇 今天還沒有記錄，點這裡開始！
+                  </button>
                 )}
               </div>
 
