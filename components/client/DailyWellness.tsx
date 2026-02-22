@@ -61,6 +61,7 @@ const TRAINING_DRIVE_OPTIONS = [
 export default function DailyWellness({ todayWellness, clientId, date, competitionEnabled, onMutate }: DailyWellnessProps) {
   const today = date || new Date().toISOString().split('T')[0]
   const [submitting, setSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const [form, setForm] = useState({
     sleep_quality: todayWellness?.sleep_quality ?? null as number | null,
     energy_level: todayWellness?.energy_level ?? null as number | null,
@@ -108,6 +109,8 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
       })
       if (!response.ok) throw new Error('提交失敗')
       onMutate()
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 2000)
     } catch {
       alert('提交失敗，請重試')
     } finally {
@@ -130,6 +133,12 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+      {showSuccess && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
+          <span className="text-lg">🎉</span>
+          <span className="text-sm font-medium">感受已記錄！</span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-lg font-bold text-gray-900">每日感受</h2>
         {todayWellness && (

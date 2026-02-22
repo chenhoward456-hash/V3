@@ -13,6 +13,7 @@ export default function ClientOverview() {
   const { clientId } = useParams()
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [dateRange, setDateRange] = useState<'7' | '14' | '30'>('14')
   const [client, setClient] = useState<any>(null)
   const [supplements, setSupplements] = useState<any[]>([])
   const [supplementLogs, setSupplementLogs] = useState<any[]>([])
@@ -51,8 +52,9 @@ export default function ClientOverview() {
   const keyMetrics = useMemo(() => {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
-    const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(today.getDate() - 6)
-    const weekStart = sevenDaysAgo.toISOString().split('T')[0]
+    const rangeDays = parseInt(dateRange)
+    const rangeStart = new Date(today); rangeStart.setDate(today.getDate() - (rangeDays - 1))
+    const weekStart = rangeStart.toISOString().split('T')[0]
     const thirtyDaysAgo = new Date(today); thirtyDaysAgo.setDate(today.getDate() - 29)
     const monthStart = thirtyDaysAgo.toISOString().split('T')[0]
 
@@ -60,7 +62,7 @@ export default function ClientOverview() {
     const totalSupps = supplements.length
     const weekLogs = supplementLogs.filter(l => l.date >= weekStart && l.date <= todayStr && l.completed)
     const monthLogs = supplementLogs.filter(l => l.date >= monthStart && l.date <= todayStr && l.completed)
-    const weekCompliance = totalSupps > 0 ? Math.round((weekLogs.length / (7 * totalSupps)) * 100) : 0
+    const weekCompliance = totalSupps > 0 ? Math.round((weekLogs.length / (rangeDays * totalSupps)) * 100) : 0
     const monthCompliance = totalSupps > 0 ? Math.round((monthLogs.length / (30 * totalSupps)) * 100) : 0
 
     // 本週訓練
@@ -92,15 +94,20 @@ export default function ClientOverview() {
     const monthNutritionRate = monthNutrition.length > 0 ? Math.round((monthNutritionCompliant / monthNutrition.length) * 100) : null
 
     return { weekCompliance, monthCompliance, weekTrainingDays, avgEnergy, weightChange, latestWeight: recentBody.length > 0 ? recentBody[recentBody.length - 1].weight : null, weekNutritionRate, monthNutritionRate }
-  }, [supplements, supplementLogs, wellness, trainingLogs, bodyData, nutritionLogs])
+  }, [supplements, supplementLogs, wellness, trainingLogs, bodyData, nutritionLogs, dateRange])
 
   // ===== 補品服從率趨勢（每日） =====
   const complianceTrend = useMemo(() => {
     if (!supplements.length || !supplementLogs.length) return []
     const total = supplements.length
+    const rangeDays = parseInt(dateRange)
+    const now = new Date()
+    const rangeStart = new Date(now); rangeStart.setDate(now.getDate() - (rangeDays - 1))
+    const startStr = rangeStart.toISOString().split('T')[0]
+    const todayStr = now.toISOString().split('T')[0]
     const byDate: Record<string, number> = {}
     for (const log of supplementLogs) {
-      if (log.completed) {
+      if (log.completed && log.date >= startStr && log.date <= todayStr) {
         byDate[log.date] = (byDate[log.date] || 0) + 1
       }
     }
@@ -110,20 +117,25 @@ export default function ClientOverview() {
         date: new Date(date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
         服從率: Math.round((count / total) * 100),
       }))
-  }, [supplements, supplementLogs])
+  }, [supplements, supplementLogs, dateRange])
 
   // ===== 感受趨勢 =====
   const wellnessTrend = useMemo(() => {
     if (!wellness.length) return []
+    const rangeDays = parseInt(dateRange)
+    const now = new Date()
+    const rangeStart = new Date(now); rangeStart.setDate(now.getDate() - (rangeDays - 1))
+    const startStr = rangeStart.toISOString().split('T')[0]
+    const todayStr = now.toISOString().split('T')[0]
     return wellness
-      .filter(w => w.sleep_quality != null || w.energy_level != null || w.mood != null)
+      .filter(w => w.date >= startStr && w.date <= todayStr && (w.sleep_quality != null || w.energy_level != null || w.mood != null))
       .map(w => ({
         date: new Date(w.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
         睡眠: w.sleep_quality,
         精力: w.energy_level,
         心情: w.mood,
       }))
-  }, [wellness])
+  }, [wellness, dateRange])
 
   // ===== 訓練日曆（6 週） =====
   const calendarWeeks = useMemo(() => {
@@ -240,8 +252,13 @@ export default function ClientOverview() {
   // ===== 飲食合規趨勢 =====
   const nutritionTrend = useMemo(() => {
     if (!nutritionLogs.length) return []
+    const rangeDays = parseInt(dateRange)
+    const now = new Date()
+    const rangeStart = new Date(now); rangeStart.setDate(now.getDate() - (rangeDays - 1))
+    const startStr = rangeStart.toISOString().split('T')[0]
+    const todayStr = now.toISOString().split('T')[0]
     const byWeek: Record<string, { compliant: number; total: number }> = {}
-    for (const log of nutritionLogs) {
+    for (const log of nutritionLogs.filter((l: any) => l.date >= startStr && l.date <= todayStr)) {
       const d = new Date(log.date)
       const weekStart = new Date(d)
       const day = d.getDay()
@@ -258,44 +275,55 @@ export default function ClientOverview() {
         date: new Date(date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
         飲食合規率: Math.round((stats.compliant / stats.total) * 100),
       }))
-  }, [nutritionLogs])
+  }, [nutritionLogs, dateRange])
 
   // ===== 蛋白質/水量趨勢 =====
   const proteinWaterTrend = useMemo(() => {
     if (!nutritionLogs.length) return []
+    const rangeDays = parseInt(dateRange)
+    const now = new Date()
+    const rangeStart = new Date(now); rangeStart.setDate(now.getDate() - (rangeDays - 1))
+    const startStr = rangeStart.toISOString().split('T')[0]
+    const todayStr = now.toISOString().split('T')[0]
     return nutritionLogs
-      .filter((l: any) => l.protein_grams != null || l.water_ml != null)
+      .filter((l: any) => l.date >= startStr && l.date <= todayStr && (l.protein_grams != null || l.water_ml != null))
       .sort((a: any, b: any) => a.date.localeCompare(b.date))
       .map((l: any) => ({
         date: new Date(l.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
         蛋白質: l.protein_grams ?? null,
         飲水量: l.water_ml ? Math.round(l.water_ml / 100) * 100 : null,
       }))
-  }, [nutritionLogs])
+  }, [nutritionLogs, dateRange])
 
   // ===== 備賽巨量營養素趨勢 =====
   const macroTrend = useMemo(() => {
     if (!client?.competition_enabled || !nutritionLogs.length) return { calories: [], carbs: [], fat: [] }
-    const calories = nutritionLogs
+    const rangeDays = parseInt(dateRange)
+    const now = new Date()
+    const rangeStart = new Date(now); rangeStart.setDate(now.getDate() - (rangeDays - 1))
+    const startStr = rangeStart.toISOString().split('T')[0]
+    const todayStr = now.toISOString().split('T')[0]
+    const filteredLogs = nutritionLogs.filter((l: any) => l.date >= startStr && l.date <= todayStr)
+    const calories = filteredLogs
       .filter((l: any) => l.calories != null)
       .map((l: any) => ({
         date: new Date(l.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
         熱量: l.calories,
       }))
-    const carbs = nutritionLogs
+    const carbs = filteredLogs
       .filter((l: any) => l.carbs_grams != null)
       .map((l: any) => ({
         date: new Date(l.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
         碳水: l.carbs_grams,
       }))
-    const fat = nutritionLogs
+    const fat = filteredLogs
       .filter((l: any) => l.fat_grams != null)
       .map((l: any) => ({
         date: new Date(l.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
         脂肪: l.fat_grams,
       }))
     return { calories, carbs, fat }
-  }, [nutritionLogs, client?.competition_enabled])
+  }, [nutritionLogs, client?.competition_enabled, dateRange])
 
   // ===== 巨量營養素偏差報告 =====
   const macroDeviation = useMemo(() => {
@@ -305,11 +333,12 @@ export default function ClientOverview() {
 
     if (!hasTargets) return null
 
-    // 取近 14 天的資料
+    // 取近 N 天的資料
+    const rangeDays = parseInt(dateRange)
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
-    const fourteenDaysAgo = new Date(today); fourteenDaysAgo.setDate(today.getDate() - 13)
-    const startStr = fourteenDaysAgo.toISOString().split('T')[0]
+    const rangeStart = new Date(today); rangeStart.setDate(today.getDate() - (rangeDays - 1))
+    const startStr = rangeStart.toISOString().split('T')[0]
 
     const recentLogs = nutritionLogs
       .filter((l: any) => l.date >= startStr && l.date <= todayStr)
@@ -371,18 +400,19 @@ export default function ClientOverview() {
       fatOverDays: overDays('fatDev', 10),
       totalDays: dailyData.length,
     }
-  }, [nutritionLogs, client, trainingLogs])
+  }, [nutritionLogs, client, trainingLogs, dateRange])
 
   // ===== 週報自動產出 =====
   const weeklyReport = useMemo(() => {
+    const rangeDays = parseInt(dateRange)
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
-    const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(today.getDate() - 6)
-    const weekStart = sevenDaysAgo.toISOString().split('T')[0]
-    const fourteenDaysAgo = new Date(today); fourteenDaysAgo.setDate(today.getDate() - 13)
-    const lastWeekStart = fourteenDaysAgo.toISOString().split('T')[0]
-    const lastWeekEnd = new Date(today); lastWeekEnd.setDate(today.getDate() - 7)
-    const lastWeekEndStr = lastWeekEnd.toISOString().split('T')[0]
+    const periodStart = new Date(today); periodStart.setDate(today.getDate() - (rangeDays - 1))
+    const weekStart = periodStart.toISOString().split('T')[0]
+    const prevPeriodStart = new Date(today); prevPeriodStart.setDate(today.getDate() - (rangeDays * 2 - 1))
+    const lastWeekStart = prevPeriodStart.toISOString().split('T')[0]
+    const prevPeriodEnd = new Date(today); prevPeriodEnd.setDate(today.getDate() - rangeDays)
+    const lastWeekEndStr = prevPeriodEnd.toISOString().split('T')[0]
 
     // 訓練摘要
     const weekTraining = trainingLogs.filter(l => l.date >= weekStart && l.date <= todayStr && l.training_type !== 'rest')
@@ -421,8 +451,8 @@ export default function ClientOverview() {
     const totalSupps = supplements.length
     const weekSuppLogs = supplementLogs.filter(l => l.date >= weekStart && l.date <= todayStr && l.completed)
     const lastWeekSuppLogs = supplementLogs.filter(l => l.date >= lastWeekStart && l.date <= lastWeekEndStr && l.completed)
-    const weekSuppRate = totalSupps > 0 ? Math.round((weekSuppLogs.length / (7 * totalSupps)) * 100) : null
-    const lastWeekSuppRate = totalSupps > 0 ? Math.round((lastWeekSuppLogs.length / (7 * totalSupps)) * 100) : null
+    const weekSuppRate = totalSupps > 0 ? Math.round((weekSuppLogs.length / (rangeDays * totalSupps)) * 100) : null
+    const lastWeekSuppRate = totalSupps > 0 ? Math.round((lastWeekSuppLogs.length / (rangeDays * totalSupps)) * 100) : null
 
     // 體重變化
     const recentBody = bodyData.filter(b => b.weight != null)
@@ -535,9 +565,9 @@ export default function ClientOverview() {
       avgProtein, avgWater,
       avgCalories, avgCarbs, avgFat,
       summary: lines.join('\n'),
-      weekLabel: `${sevenDaysAgo.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })} - ${today.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })}`,
+      weekLabel: `${periodStart.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })} - ${today.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })}`,
     }
-  }, [trainingLogs, wellness, supplements, supplementLogs, bodyData, nutritionLogs])
+  }, [trainingLogs, wellness, supplements, supplementLogs, bodyData, nutritionLogs, dateRange])
 
   // ===== 需注意事項 =====
   const alerts = useMemo(() => {
@@ -623,6 +653,20 @@ export default function ClientOverview() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
+        {/* 日期範圍篩選 */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">顯示範圍：</span>
+          {(['7', '14', '30'] as const).map(d => (
+            <button
+              key={d}
+              onClick={() => setDateRange(d)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${dateRange === d ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              {d} 天
+            </button>
+          ))}
+        </div>
+
         {/* ===== 頂部快速摘要：紅綠燈 ===== */}
         <div className={`rounded-2xl p-5 border ${
           alerts.length >= 2 ? 'bg-red-50 border-red-200' : alerts.length === 1 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'
@@ -703,7 +747,7 @@ export default function ClientOverview() {
         {/* ===== 本週報告 ===== */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-blue-900">📋 本週報告</h3>
+            <h3 className="text-sm font-semibold text-blue-900">📋 {dateRange === '7' ? '本週' : `近 ${dateRange} 天`}報告</h3>
             <div className="flex items-center gap-2">
               <span className="text-xs text-blue-600 font-medium">{weeklyReport.weekLabel}</span>
               <button
@@ -827,7 +871,7 @@ export default function ClientOverview() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {client.supplement_enabled && (
             <div className="bg-white rounded-2xl shadow-sm p-5">
-              <p className="text-xs text-gray-500 mb-1">週補品服從率</p>
+              <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '週' : `${dateRange}天`}補品服從率</p>
               <p className={`text-3xl font-bold ${keyMetrics.weekCompliance >= 80 ? 'text-green-600' : keyMetrics.weekCompliance >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
                 {keyMetrics.weekCompliance}%
               </p>
@@ -836,13 +880,13 @@ export default function ClientOverview() {
           )}
           {client.training_enabled && (
             <div className="bg-white rounded-2xl shadow-sm p-5">
-              <p className="text-xs text-gray-500 mb-1">本週訓練</p>
+              <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '本週' : `近${dateRange}天`}訓練</p>
               <p className="text-3xl font-bold text-blue-600">{keyMetrics.weekTrainingDays} 天</p>
             </div>
           )}
           {client.wellness_enabled && (
             <div className="bg-white rounded-2xl shadow-sm p-5">
-              <p className="text-xs text-gray-500 mb-1">近 7 天精力</p>
+              <p className="text-xs text-gray-500 mb-1">近 {dateRange} 天精力</p>
               <p className="text-3xl font-bold text-purple-600">{keyMetrics.avgEnergy}</p>
               <p className="text-xs text-gray-400 mt-1">滿分 5</p>
             </div>
@@ -869,7 +913,7 @@ export default function ClientOverview() {
           )}
           {client.nutrition_enabled && keyMetrics.weekNutritionRate != null && (
             <div className="bg-white rounded-2xl shadow-sm p-5">
-              <p className="text-xs text-gray-500 mb-1">週飲食合規</p>
+              <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '週' : `${dateRange}天`}飲食合規</p>
               <p className={`text-3xl font-bold ${keyMetrics.weekNutritionRate >= 80 ? 'text-green-600' : keyMetrics.weekNutritionRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
                 {keyMetrics.weekNutritionRate}%
               </p>

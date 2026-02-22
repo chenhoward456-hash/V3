@@ -23,6 +23,7 @@ export default function BodyComposition({
 }: BodyCompositionProps) {
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const todayStr = new Date().toISOString().split('T')[0]
   const [form, setForm] = useState({
     date: todayStr,
@@ -162,12 +163,19 @@ export default function BodyComposition({
       setShowModal(false)
       setForm({ date: new Date().toISOString().split('T')[0], weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
       onMutate()
-      alert(isUpdate ? '身體數據已更新！' : '身體數據已成功記錄！')
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 2000)
     } catch { alert('儲存失敗，請重試') }
   }
 
   return (
     <>
+      {showSuccess && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
+          <span className="text-lg">🎉</span>
+          <span className="text-sm font-medium">身體數據已記錄！</span>
+        </div>
+      )}
       <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">身體數據追蹤</h2>
 

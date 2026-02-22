@@ -69,6 +69,7 @@ export default function ClientEditor() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
   const [activeTab, setActiveTab] = useState<EditorTab>('basic')
 
   const tabs: { key: EditorTab; label: string; icon: string }[] = useMemo(() => {
@@ -225,7 +226,9 @@ export default function ClientEditor() {
           return
         }
 
-        router.push('/admin')
+        // 留在原頁，顯示成功提示
+        setSuccessMsg('已保存')
+        setTimeout(() => setSuccessMsg(''), 2500)
       }
     } catch (error) {
       setError('保存失敗，請重試')
@@ -354,6 +357,14 @@ export default function ClientEditor() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
             {error}
+          </div>
+        )}
+
+        {/* 保存成功 Toast */}
+        {successMsg && (
+          <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-[slideIn_0.3s_ease-out]">
+            <span className="text-lg">✓</span>
+            <span className="text-sm font-medium">{successMsg}</span>
           </div>
         )}
 
