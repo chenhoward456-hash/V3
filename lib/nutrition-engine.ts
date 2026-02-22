@@ -330,7 +330,6 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     warnings.push(`⚠️ 無飲食記錄，TDEE 以體重公式粗估（${estimatedTDEE}kcal），建議記錄每日飲食讓系統自動校正`)
   }
 
-  // 6. Deadline-aware 計算
   // 7. Deadline-aware 計算（用前面算好的 daysToTarget）
   let deadlineInfo: NutritionSuggestion['deadlineInfo'] = null
   if (input.targetWeight != null && daysToTarget != null) {
@@ -711,12 +710,77 @@ function generateGoalDrivenCut(
   let suggestedPro = Math.round(bw * proteinPerKg)
   let suggestedFat = Math.round(bw * minFatPerKg)
 
-  // 蛋白質和脂肪先佔的卡路里
-  const proFatCal = suggestedPro * 4 + suggestedFat * 9
+  // 先算蛋白質+脂肪佔的卡路里
+  let proFatCal = suggestedPro * 4 + suggestedFat * 9
+
+  // 如果蛋白質+脂肪已經 > targetCalories，碳水會被壓到底線
+  // 此時 actualCalories 會 > targetCalories → 赤字不夠 → 需要修正
+  // 優先級：蛋白質 > 脂肪 > 碳水（蛋白質最後砍）
+  if (proFatCal > targetCalories - 30 * 4) {  // 留 30g 碳水底線的空間
+    // 先嘗試降脂肪到絕對底線 0.5g/kg
+    const absoluteMinFat = Math.round(bw * 0.5)
+    suggestedFat = Math.max(absoluteMinFat, Math.round(bw * minFatPerKg))
+
+    // 如果降脂肪還不夠，降蛋白質（不低於 2.0g/kg，再低會嚴重流失肌肉）
+    proFatCal = suggestedPro * 4 + suggestedFat * 9
+    if (proFatCal > targetCalories - 30 * 4) {
+      suggestedFat = absoluteMinFat
+      proFatCal = suggestedPro * 4 + suggestedFat * 9
+
+      if (proFatCal > targetCalories - 30 * 4) {
+        // 蛋白質也需要降
+        const maxProCal = targetCalories - 30 * 4 - suggestedFat * 9
+        const minPro = Math.round(bw * 2.0)  // 絕對不低於 2.0g/kg
+        suggestedPro = Math.max(minPro, Math.round(maxProCal / 4))
+        proFatCal = suggestedPro * 4 + suggestedFat * 9
+
+        if (suggestedPro < Math.round(bw * proteinPerKg)) {
+          warnings.push(`⚠️ 卡路里極低，蛋白質從 ${Math.round(bw * proteinPerKg)}g 降至 ${suggestedPro}g（${(suggestedPro / bw).toFixed(1)}g/kg）以維持最低碳水`)
+        }
+      }
+      if (suggestedFat < Math.round(bw * minFatPerKg)) {
+        warnings.push(`⚠️ 脂肪從 ${Math.round(bw * minFatPerKg)}g 降至 ${suggestedFat}g（${(suggestedFat / bw).toFixed(1)}g/kg）`)
+      }
+    }
+  }
+
   let suggestedCarb = Math.max(30, Math.round((targetCalories - proFatCal) / 4))
 
-  // 反算實際卡路里（可能因為碳水有底線而微調）
+  // 反算實際卡路里
   const actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
+
+  // 如果 actualCalories 仍然 > targetCalories（蛋白質+脂肪底線就超標了）
+  // 重新計算有氧缺口：有氧要補的是 TDEE - actualCalories 和 需要的赤字之間的差
+  if (caloriesCapped && actualCalories > targetCalories) {
+    const realDietDeficit = estimatedTDEE - actualCalories
+    const shortfall = effectiveDailyDeficit - realDietDeficit
+    if (shortfall > 0 && shortfall > extraBurnPerDay) {
+      // 有氧需求比之前算的更大
+      const newRawExtraBurn = shortfall
+      extraBurnPerDay = Math.min(newRawExtraBurn, CARDIO.MAX_EXTRA_BURN_PER_DAY)
+      extraCardioNeeded = true
+      suggestedCardioMinutes = Math.min(CARDIO.MAX_CARDIO_MINUTES, Math.ceil(extraBurnPerDay / kcalPerMinCardio))
+      const newCardioCanBurn = suggestedCardioMinutes * kcalPerMinCardio
+      const newRemainingBurn = Math.max(0, extraBurnPerDay - newCardioCanBurn)
+      const newExtraSteps = Math.ceil(newRemainingBurn / kcalPerStep)
+      suggestedDailySteps = Math.min(CARDIO.MAX_DAILY_STEPS, CARDIO.BASELINE_STEPS + newExtraSteps)
+
+      // 重新計算預測體重
+      const newActualExtraSteps = suggestedDailySteps - CARDIO.BASELINE_STEPS
+      const newTotalDailyBurn = realDietDeficit + newCardioCanBurn + newActualExtraSteps * kcalPerStep
+      predictedCompWeight = Math.round((bw - (newTotalDailyBurn * daysLeft) / energyDensity) * 10) / 10
+
+      if (predictedCompWeight <= targetWeight + 0.3) {
+        cardioNote = `飲食 + 有氧可達標！每日 ${suggestedCardioMinutes} 分鐘中等強度有氧 + ${suggestedDailySteps.toLocaleString()} 步`
+      } else {
+        cardioNote = `預測 ${predictedCompWeight}kg（目標 ${targetWeight}kg），差 ${(predictedCompWeight - targetWeight).toFixed(1)}kg。建議與教練討論調整量級或目標`
+      }
+
+      if (newRawExtraBurn > CARDIO.MAX_EXTRA_BURN_PER_DAY) {
+        warnings.push(`🏃 巨量營養素底線使實際卡路里 ${actualCalories}kcal（高於目標 ${targetCalories}kcal），需額外消耗 ${Math.round(newRawExtraBurn)}kcal/天`)
+      }
+    }
+  }
 
   // 6. 碳循環分配
   let suggestedCarbsTD: number | null = null
