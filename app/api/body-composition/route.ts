@@ -21,7 +21,7 @@ const supabase = createClient(
 )
 
 // 自動調整營養素目標
-async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolean; message?: string; calories?: number; protein?: number; carbs?: number; fat?: number }> {
+async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolean; message?: string; calories?: number; protein?: number; carbs?: number; fat?: number; debug?: string }> {
   // 1. 取得學員資料
   const { data: client } = await supabase
     .from('clients')
@@ -29,7 +29,9 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     .eq('id', clientId)
     .single()
 
-  if (!client?.goal_type || !client?.nutrition_enabled) return { adjusted: false }
+  if (!client?.goal_type || !client?.nutrition_enabled) {
+    return { adjusted: false, debug: `skip: goal_type=${client?.goal_type}, nutrition_enabled=${client?.nutrition_enabled}` }
+  }
 
   // 2. 取得近 30 天數據
   const thirtyDaysAgo = new Date()
@@ -64,7 +66,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     }
   }
 
-  if (weeklyWeights.length < 2) return { adjusted: false }  // 不夠數據
+  if (weeklyWeights.length < 2) return { adjusted: false, debug: `skip: weeklyWeights=${weeklyWeights.length} (need ≥2)` }
 
   // 4. 合規率
   const fourteenStr = new Date(today.getTime() - 13 * 86400000).toISOString().split('T')[0]
@@ -80,7 +82,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
   const trainingDays = Math.round(recentTraining.length / 2)
 
   const latestWeight = bodyData[bodyData.length - 1]?.weight
-  if (!latestWeight) return { adjusted: false }
+  if (!latestWeight) return { adjusted: false, debug: 'skip: no latestWeight' }
 
   // 7. 跑引擎
   const suggestion = generateNutritionSuggestion({
@@ -103,6 +105,8 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     trainingDaysPerWeek: trainingDays,
   })
 
+  const debugInfo = `status=${suggestion.status}, autoApply=${suggestion.autoApply}, compliance=${compliance}%, weeklyWeights=${weeklyWeights.length}, rate=${suggestion.weeklyWeightChangeRate?.toFixed(2)}%/wk`
+
   // 8. 自動套用
   if (suggestion.autoApply) {
     const updates: Record<string, any> = {}
@@ -122,11 +126,12 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
         protein: suggestion.suggestedProtein ?? undefined,
         carbs: suggestion.suggestedCarbs ?? undefined,
         fat: suggestion.suggestedFat ?? undefined,
+        debug: debugInfo,
       }
     }
   }
 
-  return { adjusted: false }
+  return { adjusted: false, debug: debugInfo }
 }
 
 export async function GET(request: NextRequest) {
@@ -279,7 +284,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 自動觸發營養建議引擎：如果有設定 goal_type 且記錄了體重
-    let nutritionAdjusted: { adjusted: boolean; message?: string; calories?: number; protein?: number; carbs?: number; fat?: number } = { adjusted: false }
+    let nutritionAdjusted: { adjusted: boolean; message?: string; calories?: number; protein?: number; carbs?: number; fat?: number; debug?: string } = { adjusted: false }
     if (weight != null) {
       try {
         nutritionAdjusted = await autoAdjustNutrition(client.id)
