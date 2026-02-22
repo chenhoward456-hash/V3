@@ -572,8 +572,32 @@ function generateGoalDrivenCut(
     safetyLevel = 'extreme'
   }
 
-  // 3. 計算目標每日卡路里
-  let targetCalories = Math.round(estimatedTDEE - requiredDailyDeficit)
+  // 3. 進度超前檢測
+  // 如果目前實際掉重速率已經超過需要的速率 → 放鬆赤字
+  // 原理：已經掉太快了，不需要那麼大的赤字，把碳水加回來保護肌肉和代謝
+  let aheadOfSchedule = false
+  let relaxedDailyDeficit = requiredDailyDeficit
+
+  if (weeklyChangeRate < 0) {
+    // 實際每週掉重速率（kg）
+    const actualWeeklyLoss = Math.abs(weeklyChangeRate / 100) * bw
+    // 照目前速率到比賽日可以掉多少
+    const projectedLoss = actualWeeklyLoss * (daysLeft / 7)
+
+    if (projectedLoss > weightToLose * 1.15) {
+      // 進度超前 15% 以上 → 放鬆赤字
+      aheadOfSchedule = true
+      // 計算放鬆後的赤字：目標是讓掉重速率回到剛好達標的水平
+      // 但至少維持 0.5% BW/wk 的最低速率（Iraki: 最慢 0.5%）以免備賽反彈
+      const idealWeeklyLoss = Math.max(requiredWeeklyLoss, bw * 0.005)
+      const idealDailyDeficit = (idealWeeklyLoss * energyDensity) / 7
+      relaxedDailyDeficit = Math.round(idealDailyDeficit)
+      warnings.push(`📈 進度超前！照目前速率可減 ${projectedLoss.toFixed(1)}kg（只需 ${weightToLose.toFixed(1)}kg）。已放鬆赤字，增加碳水保護肌肉`)
+    }
+  }
+
+  // 計算目標每日卡路里（用放鬆後的赤字）
+  let targetCalories = Math.round(estimatedTDEE - relaxedDailyDeficit)
 
   // 4. 安全底線（Goal-Driven 模式使用放寬的底線）
   const absoluteMinCal = isMale ? GOAL_DRIVEN.MIN_CALORIES_MALE : GOAL_DRIVEN.MIN_CALORIES_FEMALE
@@ -679,13 +703,21 @@ function generateGoalDrivenCut(
   let suggestedCarbsTD: number | null = null
   let suggestedCarbsRD: number | null = null
   if (input.carbsCyclingEnabled) {
-    // 訓練日多碳水(60%)、休息日少碳水(40%)
-    const avgDailyCarb = suggestedCarb
-    const trainingDays = Math.min(input.trainingDaysPerWeek, 6)
-    const ratio = trainingDays > 0 ? CARB_CYCLE_TRAINING_RATIO : 0.5
-    suggestedCarbsTD = Math.round(avgDailyCarb * (1 + (ratio - 0.5) * 2))  // 偏高
-    suggestedCarbsRD = Math.round(avgDailyCarb * (1 - (ratio - 0.5) * 2))  // 偏低
-    if (suggestedCarbsRD < 20) suggestedCarbsRD = 20
+    // 碳水 < 50g 時碳循環無意義（差距太小，反而增加執行難度）
+    if (suggestedCarb < 50) {
+      // 碳水太低，直接統一值，不分訓練/休息日
+      suggestedCarbsTD = suggestedCarb
+      suggestedCarbsRD = suggestedCarb
+      warnings.push('碳水已低於 50g，暫停碳循環（訓練日/休息日統一），優先確保最低碳水攝取')
+    } else {
+      // 訓練日多碳水(60%)、休息日少碳水(40%)
+      const avgDailyCarb = suggestedCarb
+      const trainingDays = Math.min(input.trainingDaysPerWeek, 6)
+      const ratio = trainingDays > 0 ? CARB_CYCLE_TRAINING_RATIO : 0.5
+      suggestedCarbsTD = Math.round(avgDailyCarb * (1 + (ratio - 0.5) * 2))  // 偏高
+      suggestedCarbsRD = Math.round(avgDailyCarb * (1 - (ratio - 0.5) * 2))  // 偏低
+      if (suggestedCarbsRD < 20) suggestedCarbsRD = 20
+    }
   }
 
   // 7. 構建狀態訊息
@@ -698,7 +730,14 @@ function generateGoalDrivenCut(
   let statusLabel = '目標驅動'
   let message = ''
 
-  if (caloriesCapped) {
+  if (aheadOfSchedule) {
+    statusEmoji = '📈'
+    statusLabel = '進度超前'
+    safetyLevel = relaxedDailyDeficit <= SAFETY.MAX_DEFICIT_KCAL ? 'normal'
+      : relaxedDailyDeficit <= GOAL_DRIVEN.MAX_DEFICIT_KCAL ? 'aggressive' : 'extreme'
+    message = `進度超前！赤字已從 ${requiredDailyDeficit} 放鬆至 ${relaxedDailyDeficit}kcal/天。增加碳水保護肌肉與代謝。`
+    message += ` 距比賽 ${daysLeft} 天，目標卡路里 ${actualCalories}kcal。穩穩達標。`
+  } else if (caloriesCapped) {
     statusEmoji = '⚠️'
     statusLabel = '底線限制'
     message = `以目前 TDEE ${estimatedTDEE}kcal，需要每日赤字 ${requiredDailyDeficit}kcal 才能達到 ${targetWeight}kg。`
@@ -746,7 +785,7 @@ function generateGoalDrivenCut(
   // 更新 deadlineInfo 加入 goal-driven + 有氧資訊
   const enrichedDeadlineInfo = {
     ...deadlineInfo,
-    requiredDailyDeficit,
+    requiredDailyDeficit: aheadOfSchedule ? relaxedDailyDeficit : requiredDailyDeficit,
     predictedCompWeight,
     isGoalDriven: true,
     safetyLevel,

@@ -101,6 +101,7 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
     extreme: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', badge: 'bg-red-100 text-red-700' },
   }
   const colors = safetyColors[dl.safetyLevel || 'normal'] || safetyColors.normal
+  const isAheadOfSchedule = data.statusLabel === '進度超前'
   const safetyLabels: Record<string, string> = { normal: '安全範圍', aggressive: '積極模式', extreme: '極限模式' }
 
   // 碳循環：根據訓練日/休息日顯示不同碳水
@@ -117,8 +118,10 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
           <span className="text-2xl">🎯</span>
           <h2 className="text-lg font-bold text-gray-900">目標體重計畫</h2>
         </div>
-        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${colors.badge}`}>
-          {safetyLabels[dl.safetyLevel || 'normal']}
+        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+          isAheadOfSchedule ? 'bg-blue-100 text-blue-700' : colors.badge
+        }`}>
+          {isAheadOfSchedule ? '📈 進度超前' : safetyLabels[dl.safetyLevel || 'normal']}
         </span>
       </div>
 
