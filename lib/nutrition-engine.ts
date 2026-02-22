@@ -662,8 +662,17 @@ function generateGoalDrivenCut(
   let suggestedCarb = Math.max(30, Math.round((targetCalories - proFatCal) / 4))
 
   // 反算「真實卡路里底線」— 這才是選手實際能吃到的最低值
-  // 如果蛋白質+脂肪底線就超過 targetCalories，actualMinCal > absoluteMinCal
-  const actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
+  let actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
+
+  // 安全底線保護：如果 macro compression 後仍低於 absoluteMinCal → 把碳水補回來
+  // 蛋白質和脂肪已是壓縮後的最低值，多出來的空間全給碳水（碳水是最先被犧牲的）
+  if (actualCalories < absoluteMinCal) {
+    const prevCalories = actualCalories
+    const extraCal = absoluteMinCal - actualCalories
+    suggestedCarb += Math.round(extraCal / 4)
+    actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
+    warnings.push(`⚠️ 巨量營養素底線 ${prevCalories}kcal 低於安全線 ${absoluteMinCal}kcal，已增加碳水至 ${suggestedCarb}g（${actualCalories}kcal）`)
+  }
 
   // 掉重率安全檢查
   if (weeklyLossPct > GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT) {
