@@ -19,6 +19,7 @@ import NutritionLog from '@/components/client/NutritionLog'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import PwaPrompt from '@/components/client/PwaPrompt'
+import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 
 export default function ClientDashboard() {
   const { clientId } = useParams()
@@ -310,15 +311,35 @@ export default function ClientDashboard() {
 
               {/* 備賽模式：今日體重 vs 目標 */}
               {isCompetition && c.target_weight && latestBodyData?.weight && (
-                <div className="flex items-center gap-3 mt-2 pt-2 border-t border-blue-100">
-                  <span className="text-xs text-gray-500">⚖️ 最新體重</span>
-                  <span className="text-sm font-bold text-gray-800">{latestBodyData.weight} kg</span>
-                  <span className="text-xs text-gray-400">→</span>
-                  <span className="text-xs text-gray-500">🎯 目標</span>
-                  <span className="text-sm font-bold text-red-500">{c.target_weight} kg</span>
-                  <span className={`text-xs font-medium ml-auto ${Math.abs(latestBodyData.weight - c.target_weight) <= 1 ? 'text-green-600' : 'text-amber-600'}`}>
-                    差 {Math.abs(latestBodyData.weight - c.target_weight).toFixed(1)} kg
-                  </span>
+                <div className="mt-2 pt-2 border-t border-blue-100 space-y-1">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-500">⚖️ 最新體重</span>
+                    <span className="text-sm font-bold text-gray-800">{latestBodyData.weight} kg</span>
+                    <span className="text-xs text-gray-400">→</span>
+                    <span className="text-xs text-gray-500">🎯 目標</span>
+                    <span className="text-sm font-bold text-red-500">{c.target_weight} kg</span>
+                    <span className={`text-xs font-medium ml-auto ${Math.abs(latestBodyData.weight - c.target_weight) <= 1 ? 'text-green-600' : 'text-amber-600'}`}>
+                      差 {Math.abs(latestBodyData.weight - c.target_weight).toFixed(1)} kg
+                    </span>
+                  </div>
+                  {/* 體態推算建議範圍（需要體脂率才顯示） */}
+                  {latestBodyData.body_fat && (() => {
+                    const rec = calcRecommendedStageWeight(
+                      latestBodyData.weight!,
+                      latestBodyData.body_fat!,
+                      c.gender,
+                      latestBodyData.height
+                    )
+                    return (
+                      <div className="text-xs text-gray-500 flex items-center gap-1 flex-wrap">
+                        <span>🔬 FFM {rec.ffm} kg</span>
+                        <span className="text-gray-300">｜</span>
+                        <span>建議上台範圍</span>
+                        <span className="font-semibold text-blue-600">{rec.recommendedLow}–{rec.recommendedHigh} kg</span>
+                        <span className="text-gray-400">（體脂 {rec.targetBFLow}–{rec.targetBFHigh}%）</span>
+                      </div>
+                    )
+                  })()}
                 </div>
               )}
             </div>
