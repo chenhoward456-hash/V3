@@ -1,11 +1,17 @@
 /**
- * 營養素自動建議引擎 v2
+ * 營養素自動建議引擎 v3
  * 基於 2025-2026 最新運動科學文獻：
  * - ISSN Position Stand: 減脂速率 0.5-1.0% BW/week
- * - Physique Athletes Review: 蛋白質 ≥ 2.0g/kg (減脂), 1.6-2.2g/kg (增肌)
+ * - Physique Athletes Review: 蛋白質 ≥ 2.0g/kg 男性, 1.6-2.0g/kg 女性 (減脂)
+ * - Morton et al. 2018 (BJSM): 蛋白質需求無顯著性別差異，但絕對需求量較低
+ * - Stokes et al. 2018: 女性對低劑量蛋白質反應同等有效
+ * - Loucks 2004 / Mountjoy et al. 2018 RED-S: 女性脂肪最低需求更高 (1.0g/kg)
  * - Off-Season Bodybuilding: 增肌速率 0.25-0.5% BW/week, surplus +200-300kcal
  * - Caloric Restriction Meta-Analysis: 最大赤字 ≤ 500kcal/day
- * - Fat minimum: ≥ 0.8g/kg for hormonal health
+ *
+ * 活動量分型 (Activity Profile)：
+ * - sedentary（上班族）: 以飲食控制為主，步數受限，有氧時間少
+ * - high_energy_flux（高能量通量）: 主動增加活動消耗，同樣赤字下吃更多，保護代謝
  *
  * Peak Week 文獻：
  * - Escalante et al. (2021) - Peak week recommendations: evidence based approach
@@ -47,6 +53,11 @@ export interface NutritionInput {
 
   // 備賽階段（可選）
   prepPhase?: string  // 'peak_week' | 'cut' | 'bulk' | 'off_season' | etc.
+
+  // 活動量分型（影響 TDEE 估算與有氧/步數建議）
+  // sedentary = 上班族，步數受限，有氧時間少
+  // high_energy_flux = 高能量通量，主動增加活動消耗
+  activityProfile?: 'sedentary' | 'high_energy_flux'
 }
 
 export interface NutritionSuggestion {
@@ -135,9 +146,15 @@ export interface PeakWeekDay {
 const SAFETY = {
   MIN_CALORIES_MALE: 1500,
   MIN_CALORIES_FEMALE: 1200,
-  MIN_PROTEIN_PER_KG_CUT: 2.3,   // Helms 2014: 2.3-3.1g/kg LBM → 用體重近似取下限
-  MIN_PROTEIN_PER_KG_BULK: 1.8,  // Off-season: 1.6-2.2, we use 1.8 floor
-  MIN_FAT_PER_KG: 0.8,           // Hormonal health minimum (15-20% calories)
+  // 男性蛋白質下限（Helms 2014: 2.3-3.1g/kg LBM → 體重近似取下限）
+  MIN_PROTEIN_PER_KG_CUT: 2.3,
+  MIN_PROTEIN_PER_KG_BULK: 1.8,
+  // 女性蛋白質下限（Stokes 2018 / Morton 2018 meta: 1.6-2.0g/kg 即達最大合成效果）
+  MIN_PROTEIN_PER_KG_CUT_FEMALE: 1.8,
+  MIN_PROTEIN_PER_KG_BULK_FEMALE: 1.6,
+  // 脂肪下限：男性荷爾蒙需求較低，女性 (雌激素合成) 需更高
+  MIN_FAT_PER_KG: 0.8,           // 男性 (15-20% calories)
+  MIN_FAT_PER_KG_FEMALE: 1.0,    // 女性 (Loucks 2004 / RED-S: ≥20-25% calories)
   MAX_FAT_PER_KG_BULK: 1.2,
   MAX_DEFICIT_KCAL: 500,          // Meta-analysis: ≤500kcal/day deficit
   DIET_BREAK_WEEKS: 8,            // Suggest diet break after 8 weeks continuous
@@ -146,14 +163,20 @@ const SAFETY = {
 // Goal-Driven 模式的放寬限制（用於備賽選手，允許更激進的赤字）
 const GOAL_DRIVEN = {
   MIN_CALORIES_MALE: 1200,        // 備賽極限：1200kcal（短期可承受）
-  MIN_CALORIES_FEMALE: 1000,
+  MIN_CALORIES_FEMALE: 1050,      // 女性備賽極限：1050kcal（低於此荷爾蒙風險極高）
   MAX_DEFICIT_KCAL: 750,          // 允許最大赤字到 750kcal（備賽期）
   EXTREME_DEFICIT_KCAL: 1000,     // 極端赤字（最後 3 週，自動警告）
-  // 蛋白質依赤字深度分級 (Helms 2014: 赤字越大 → 蛋白質越高)
+  // ── 男性蛋白質依赤字深度分級 (Helms 2014: 赤字越大 → 蛋白質越高) ──
   PROTEIN_PER_KG_NORMAL: 2.3,    // normal 赤字：2.3g/kg
   PROTEIN_PER_KG_AGGRESSIVE: 2.6, // aggressive：2.6g/kg
   PROTEIN_PER_KG_EXTREME: 3.0,   // extreme：3.0g/kg（接近 LBM 的 3.1g/kg 上限）
-  MIN_FAT_PER_KG: 0.7,           // 備賽最低 0.7g/kg (Iraki: 15-25% cal, ~15% at 1200kcal = 20g ≈ 0.7g/80kg)
+  // ── 女性蛋白質分級 (Stokes 2018: 女性 1.6-2.2g/kg 達最大效果，備賽上調) ──
+  PROTEIN_PER_KG_NORMAL_FEMALE: 1.8,
+  PROTEIN_PER_KG_AGGRESSIVE_FEMALE: 2.0,
+  PROTEIN_PER_KG_EXTREME_FEMALE: 2.3,
+  // ── 脂肪下限：男性 0.7g/kg，女性備賽最低 0.9g/kg（荷爾蒙保護）──
+  MIN_FAT_PER_KG: 0.7,           // 男性備賽最低 0.7g/kg
+  MIN_FAT_PER_KG_FEMALE: 0.9,    // 女性備賽最低 0.9g/kg（低於此月經功能風險增加）
   // 每週最大安全掉重率 (Helms: 0.5-1.0%, Garthe: >1.4% 損失 LBM)
   MAX_WEEKLY_LOSS_PCT: 1.2,       // goal-driven 放寬到 1.2%（1.0% 理想上限 + 10% 備賽彈性）
 }
@@ -168,7 +191,7 @@ const ENERGY_DENSITY = {
   CONTEST_LEAN: 5500,             // 備賽選手（<12% BF）：LBM 流失比例較高
 }
 
-// 有氧消耗估算常數
+// 有氧消耗估算常數（不隨 activityProfile 變化的基礎值）
 const CARDIO = {
   // 中等強度有氧的基礎消耗（kcal/min/kg），體重修正用
   // ACSM: 中等強度（快走 5-6km/h）≈ 3.5-7 METs
@@ -177,16 +200,35 @@ const CARDIO = {
   PREP_FATIGUE_DISCOUNT: 0.80,     // 備賽後期效率折扣（代謝適應 + 疲勞）
   // 每步消耗（體重修正）
   BASE_KCAL_PER_STEP_PER_KG: 0.0005, // 80kg × 0.0005 = 0.04 kcal/step
-  // 基線步數（日常活動，不算額外有氧）
-  BASELINE_STEPS: 5000,
-  // 最大建議有氧時間（備賽期不應超過，避免肌肉流失）
-  // Helms 2014: 過量有氧 → 干擾力量訓練恢復
-  MAX_CARDIO_MINUTES: 45,          // 從 60 降到 45（文獻建議保守）
-  // 最大建議步數
-  MAX_DAILY_STEPS: 12000,          // 從 15000 降到 12000（更實際）
   // 每日額外活動消耗的合理上限（kcal）
-  // 現實中備賽選手很難每天靠活動額外消耗超過 400-500 kcal
   MAX_EXTRA_BURN_PER_DAY: 500,     // 有氧+步數合計上限
+}
+
+// 依活動量分型取有氧/步數參數
+// sedentary（上班族）：時間受限，現實步數目標低
+// high_energy_flux（高能量通量）：主動提高活動消耗，可達較高步數 / 有氧時間
+// 預設（moderate）：適合一般健身愛好者
+function getCardioProfile(activityProfile?: string) {
+  if (activityProfile === 'sedentary') {
+    return {
+      BASELINE_STEPS: 3000,      // 上班族基礎步數（久坐辦公）
+      MAX_DAILY_STEPS: 8000,     // 現實上限（通勤+午休散步）
+      MAX_CARDIO_MINUTES: 30,    // 時間有限
+    }
+  } else if (activityProfile === 'high_energy_flux') {
+    return {
+      BASELINE_STEPS: 8000,      // 本身已高活動
+      MAX_DAILY_STEPS: 15000,    // 積極步數目標
+      MAX_CARDIO_MINUTES: 60,    // 可支撐較長有氧
+    }
+  } else {
+    // moderate（預設）
+    return {
+      BASELINE_STEPS: 5000,
+      MAX_DAILY_STEPS: 12000,
+      MAX_CARDIO_MINUTES: 45,
+    }
+  }
 }
 
 const CUT_TARGETS = {
@@ -247,6 +289,34 @@ function getEnergyDensity(daysLeft: number, dietDurationWeeks: number | null): n
     return ENERGY_DENSITY.CONTEST_LEAN  // 5500: 最後 3 週，體脂極低，LBM 流失比例增加
   }
   return ENERGY_DENSITY.LATE_PHASE  // 6500: 減重中後期
+}
+
+// ===== 活動量分型輔助函式 =====
+
+// Katch-McArdle 活動係數
+// sedentary：主要靠飲食控制，有氧量少 → 低係數
+// high_energy_flux：刻意提高 NEAT + 有氧 → 高係數
+function getActivityMultiplier(activityProfile: string | undefined, trainingDaysPerWeek: number): number {
+  if (activityProfile === 'sedentary') {
+    return trainingDaysPerWeek >= 4 ? 1.35 : 1.25
+  } else if (activityProfile === 'high_energy_flux') {
+    return trainingDaysPerWeek >= 4 ? 1.55 : 1.45
+  } else {
+    // moderate（預設）
+    return trainingDaysPerWeek >= 4 ? 1.45 : 1.35
+  }
+}
+
+// 無體脂率時的 fallback TDEE 係數（kcal/kg）
+// 來源：Harris-Benedict / Mifflin-St Jeor 修正，依性別和活動量調整
+function getFallbackTDEEMultiplier(activityProfile: string | undefined, isMale: boolean): number {
+  if (activityProfile === 'sedentary') {
+    return isMale ? 26 : 24   // 上班族：低 NEAT，少量有氧
+  } else if (activityProfile === 'high_energy_flux') {
+    return isMale ? 35 : 31   // 高能量通量：高 NEAT + 有氧
+  } else {
+    return isMale ? 30 : 27   // 預設（中等活動量）
+  }
 }
 
 // ===== 空結果模板 =====
@@ -332,14 +402,14 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     // Katch-McArdle: BMR = 370 + 21.6 × LBM(kg)
     const lbm = input.bodyWeight * (1 - input.bodyFatPct / 100)
     const bmr = 370 + 21.6 * lbm
-    // 活動係數：備賽選手重訓 4-5 天，但有氧少、NEAT 因長期減脂而降低
+    // 活動係數依 activityProfile 決定（sedentary 低、high_energy_flux 高）
     // 備賽中後期代謝適應約 -10%（Trexler 2014: adaptive thermogenesis）
-    const activityMultiplier = input.trainingDaysPerWeek >= 4 ? 1.45 : 1.35
+    const activityMultiplier = getActivityMultiplier(input.activityProfile, input.trainingDaysPerWeek)
     const metabolicAdaptation = dietDurationWeeks != null && dietDurationWeeks >= 8 ? 0.90 : 0.95
     formulaTDEE = Math.round(bmr * activityMultiplier * metabolicAdaptation)
   } else {
-    // 無體脂率 → 簡化公式
-    formulaTDEE = Math.round(input.bodyWeight * (isMale ? 30 : 27))
+    // 無體脂率 → 依性別 + 活動量分型的簡化公式
+    formulaTDEE = Math.round(input.bodyWeight * getFallbackTDEEMultiplier(input.activityProfile, isMale))
   }
 
   // B) Adaptive TDEE（飲食記錄 + 體重變化反推）
@@ -488,17 +558,19 @@ function generateCutSuggestion(
   let suggestedCarb = currentCarb + carbDelta
   let suggestedFat = currentFat + fatDelta
 
-  // 安全底線檢查
-  const minProtein = Math.round(bw * SAFETY.MIN_PROTEIN_PER_KG_CUT)
+  // 安全底線檢查（男女分開：女性蛋白質需求較低，脂肪需求較高）
+  const proteinPerKgFloor = isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE
+  const minProtein = Math.round(bw * proteinPerKgFloor)
   if (suggestedPro < minProtein) {
     suggestedPro = minProtein
-    warnings.push(`蛋白質已提升至安全最低值 ${minProtein}g（${SAFETY.MIN_PROTEIN_PER_KG_CUT}g/kg）`)
+    warnings.push(`蛋白質已提升至安全最低值 ${minProtein}g（${proteinPerKgFloor}g/kg）`)
   }
 
-  const minFat = Math.round(bw * SAFETY.MIN_FAT_PER_KG)
+  const fatPerKgFloor = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+  const minFat = Math.round(bw * fatPerKgFloor)
   if (suggestedFat < minFat) {
     suggestedFat = minFat
-    warnings.push(`脂肪不可低於 ${minFat}g（${SAFETY.MIN_FAT_PER_KG}g/kg），已調整至安全底線`)
+    warnings.push(`脂肪不可低於 ${minFat}g（${fatPerKgFloor}g/kg${isMale ? '' : '，女性荷爾蒙保護需求'}），已調整至安全底線`)
   }
 
   if (suggestedCal < minCal) {
@@ -665,11 +737,21 @@ function generateGoalDrivenCut(
   const absoluteMinCal = isMale ? GOAL_DRIVEN.MIN_CALORIES_MALE : GOAL_DRIVEN.MIN_CALORIES_FEMALE
   const softMinCal = isMale ? SAFETY.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_FEMALE
 
-  // 巨量營養素分配（Helms 2014: 赤字越大 → 蛋白質越高）
-  const proteinPerKg = safetyLevel === 'extreme' ? GOAL_DRIVEN.PROTEIN_PER_KG_EXTREME
-    : safetyLevel === 'aggressive' ? GOAL_DRIVEN.PROTEIN_PER_KG_AGGRESSIVE
-    : GOAL_DRIVEN.PROTEIN_PER_KG_NORMAL
-  const minFatPerKg = safetyLevel === 'extreme' ? GOAL_DRIVEN.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG
+  // 巨量營養素分配（依性別 + 赤字深度）
+  // 男性：Helms 2014 赤字越大 → 蛋白質越高（2.3→2.6→3.0g/kg）
+  // 女性：Stokes 2018 備賽建議，比男性低（1.8→2.0→2.3g/kg），節省熱量給碳水和脂肪
+  const proteinPerKg = isMale
+    ? (safetyLevel === 'extreme' ? GOAL_DRIVEN.PROTEIN_PER_KG_EXTREME
+        : safetyLevel === 'aggressive' ? GOAL_DRIVEN.PROTEIN_PER_KG_AGGRESSIVE
+        : GOAL_DRIVEN.PROTEIN_PER_KG_NORMAL)
+    : (safetyLevel === 'extreme' ? GOAL_DRIVEN.PROTEIN_PER_KG_EXTREME_FEMALE
+        : safetyLevel === 'aggressive' ? GOAL_DRIVEN.PROTEIN_PER_KG_AGGRESSIVE_FEMALE
+        : GOAL_DRIVEN.PROTEIN_PER_KG_NORMAL_FEMALE)
+
+  // 女性脂肪底線比男性高（雌激素合成、月經功能保護）
+  const minFatPerKg = isMale
+    ? (safetyLevel === 'extreme' ? GOAL_DRIVEN.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG)
+    : (safetyLevel === 'extreme' ? GOAL_DRIVEN.MIN_FAT_PER_KG_FEMALE : SAFETY.MIN_FAT_PER_KG_FEMALE)
 
   let suggestedPro = Math.round(bw * proteinPerKg)
   let suggestedFat = Math.round(bw * minFatPerKg)
@@ -680,9 +762,10 @@ function generateGoalDrivenCut(
 
   // 如果蛋白質+脂肪+碳水底線 > targetCalories → 需要砍巨量營養素
   // 優先級：碳水先壓底線 → 降脂肪 → 最後降蛋白質
+  // 女性脂肪壓縮底線比男性高（0.7g/kg vs 0.5g/kg），保護荷爾蒙
   if (proFatCal + carbFloorCal > targetCalories) {
-    // 先降脂肪到 0.5g/kg
-    const absoluteMinFat = Math.round(bw * 0.5)
+    // 先降脂肪到絕對底線（男 0.5g/kg，女 0.7g/kg）
+    const absoluteMinFat = Math.round(bw * (isMale ? 0.5 : 0.7))
     suggestedFat = absoluteMinFat
     proFatCal = suggestedPro * 4 + suggestedFat * 9
 
@@ -727,12 +810,14 @@ function generateGoalDrivenCut(
   }
 
   // 5. 有氧/步數計算 — 基於 actualCalories（真實飲食底線）
+  // 依 activityProfile 取對應步數/有氧上限（上班族 vs 高能量通量）
+  const cardioProfile = getCardioProfile(input.activityProfile)
   const kcalPerMinCardio = bw * CARDIO.BASE_KCAL_PER_MIN_PER_KG * CARDIO.PREP_FATIGUE_DISCOUNT
   const kcalPerStep = bw * CARDIO.BASE_KCAL_PER_STEP_PER_KG
   let extraCardioNeeded = false
   let extraBurnPerDay = 0
   let suggestedCardioMinutes = 0
-  let suggestedDailySteps = CARDIO.BASELINE_STEPS
+  let suggestedDailySteps = cardioProfile.BASELINE_STEPS
   let cardioNote = ''
   let predictedCompWeight: number
 
@@ -746,19 +831,19 @@ function generateGoalDrivenCut(
     extraBurnPerDay = Math.min(rawExtraBurn, CARDIO.MAX_EXTRA_BURN_PER_DAY)
     extraCardioNeeded = true
 
-    // 換算有氧分鐘數（體重修正 + 疲勞折扣）
+    // 換算有氧分鐘數（體重修正 + 疲勞折扣，上限依 activityProfile）
     suggestedCardioMinutes = Math.min(
-      CARDIO.MAX_CARDIO_MINUTES,
+      cardioProfile.MAX_CARDIO_MINUTES,
       Math.ceil(extraBurnPerDay / kcalPerMinCardio)
     )
-    // 換算步數（有氧以外的部分用步數補）
+    // 換算步數（有氧以外的部分用步數補，上限依 activityProfile）
     const cardioCanBurn = suggestedCardioMinutes * kcalPerMinCardio
     const remainingBurn = Math.max(0, extraBurnPerDay - cardioCanBurn)
     const extraSteps = Math.ceil(remainingBurn / kcalPerStep)
-    suggestedDailySteps = Math.min(CARDIO.MAX_DAILY_STEPS, CARDIO.BASELINE_STEPS + extraSteps)
+    suggestedDailySteps = Math.min(cardioProfile.MAX_DAILY_STEPS, cardioProfile.BASELINE_STEPS + extraSteps)
 
     // 預測體重（飲食 + 有氧）
-    const actualExtraSteps = suggestedDailySteps - CARDIO.BASELINE_STEPS
+    const actualExtraSteps = suggestedDailySteps - cardioProfile.BASELINE_STEPS
     const totalDailyBurn = realDietDeficit + cardioCanBurn + actualExtraSteps * kcalPerStep
     const totalLoss = (totalDailyBurn * daysLeft) / energyDensity
     predictedCompWeight = Math.round((bw - totalLoss) * 10) / 10
@@ -781,13 +866,24 @@ function generateGoalDrivenCut(
     // 高能量通量策略（High Energy Flux）
     // 即使飲食赤字夠了，也建議基礎活動量 → 多消耗的部分加回碳水
     // 原理：同樣赤字但吃更多 → 保護代謝、維持訓練品質、減少肌肉流失
-    if (safetyLevel !== 'normal') {
-      suggestedCardioMinutes = safetyLevel === 'extreme' ? 30 : 20
-      suggestedDailySteps = safetyLevel === 'extreme' ? 10000 : 8000
+    // 上班族（sedentary）：目標步數較低，有氧時間較短
+    // high_energy_flux：直接套用 activityProfile 的參數
+    if (safetyLevel !== 'normal' || input.activityProfile === 'high_energy_flux') {
+      // 上班族用保守值，高能量通量用 profile 上限的 2/3
+      if (input.activityProfile === 'sedentary') {
+        suggestedCardioMinutes = safetyLevel === 'extreme' ? 20 : 15
+        suggestedDailySteps = safetyLevel === 'extreme' ? 6000 : 5000
+      } else if (input.activityProfile === 'high_energy_flux') {
+        suggestedCardioMinutes = safetyLevel === 'extreme' ? 45 : 30
+        suggestedDailySteps = safetyLevel === 'extreme' ? 12000 : 10000
+      } else {
+        suggestedCardioMinutes = safetyLevel === 'extreme' ? 30 : 20
+        suggestedDailySteps = safetyLevel === 'extreme' ? 10000 : 8000
+      }
 
       // 計算活動量消耗 → 加回碳水（赤字不變）
       const fluxCardioBurn = suggestedCardioMinutes * kcalPerMinCardio
-      const fluxExtraSteps = suggestedDailySteps - CARDIO.BASELINE_STEPS
+      const fluxExtraSteps = Math.max(0, suggestedDailySteps - cardioProfile.BASELINE_STEPS)
       const fluxStepsBurn = fluxExtraSteps * kcalPerStep
       const fluxTotalBurn = Math.round(fluxCardioBurn + fluxStepsBurn)
 
@@ -796,7 +892,8 @@ function generateGoalDrivenCut(
       suggestedCarb += fluxCarbsBonus
       actualCalories += fluxTotalBurn
 
-      cardioNote = `高能量通量：有氧 ${suggestedCardioMinutes} 分鐘 + ${suggestedDailySteps.toLocaleString()} 步（消耗 ~${fluxTotalBurn}kcal）→ 碳水 +${fluxCarbsBonus}g 吃回來，赤字不變`
+      const profileLabel = input.activityProfile === 'sedentary' ? '上班族模式' : input.activityProfile === 'high_energy_flux' ? '高能量通量' : '中等活動量'
+      cardioNote = `${profileLabel}：有氧 ${suggestedCardioMinutes} 分鐘 + ${suggestedDailySteps.toLocaleString()} 步（消耗 ~${fluxTotalBurn}kcal）→ 碳水 +${fluxCarbsBonus}g 吃回來，赤字不變`
     }
   }
 
@@ -1002,17 +1099,20 @@ function generateBulkSuggestion(
   let suggestedCarb = currentCarb + carbDelta
   let suggestedFat = currentFat + fatDelta
 
-  // 安全底線
-  const minProtein = Math.round(bw * SAFETY.MIN_PROTEIN_PER_KG_BULK)
+  // 安全底線（男女分開：女性增肌期蛋白質與脂肪需求有別）
+  const isMaleBulk = input.gender === '男性'
+  const bulkProteinFloor = isMaleBulk ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE
+  const minProtein = Math.round(bw * bulkProteinFloor)
   if (suggestedPro < minProtein) {
     suggestedPro = minProtein
-    warnings.push(`蛋白質已提升至安全最低值 ${minProtein}g（${SAFETY.MIN_PROTEIN_PER_KG_BULK}g/kg）`)
+    warnings.push(`蛋白質已提升至安全最低值 ${minProtein}g（${bulkProteinFloor}g/kg）`)
   }
 
-  const minFat = Math.round(bw * SAFETY.MIN_FAT_PER_KG)
+  const bulkFatFloor = isMaleBulk ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+  const minFat = Math.round(bw * bulkFatFloor)
   if (suggestedFat < minFat) {
     suggestedFat = minFat
-    warnings.push(`脂肪不可低於 ${minFat}g（${SAFETY.MIN_FAT_PER_KG}g/kg），已調整`)
+    warnings.push(`脂肪不可低於 ${minFat}g（${bulkFatFloor}g/kg），已調整`)
   }
   const maxFat = Math.round(bw * SAFETY.MAX_FAT_PER_KG_BULK)
   if (suggestedFat > maxFat) {

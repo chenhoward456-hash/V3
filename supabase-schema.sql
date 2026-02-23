@@ -268,3 +268,9 @@ ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS training_drive INTEGER CHECK
 -- clients 表新增目標類型和飲食開始日期
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS goal_type TEXT DEFAULT 'cut' CHECK (goal_type IN ('cut', 'bulk'));
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS diet_start_date DATE;
+
+-- 活動量分型：影響 TDEE 估算與有氧/步數建議
+-- sedentary（上班族）: 步數受限，以飲食控制為主，TDEE 係數較低
+-- high_energy_flux（高能量通量）: 主動提高活動消耗，同樣赤字下吃更多，TDEE 係數較高
+-- NULL / 未設定 = 預設中等活動量
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS activity_profile TEXT CHECK (activity_profile IN ('sedentary', 'high_energy_flux'));
