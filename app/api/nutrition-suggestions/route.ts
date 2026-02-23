@@ -153,6 +153,7 @@ export async function GET(request: NextRequest) {
       avgDailyCalories,
       trainingDaysPerWeek,
       prepPhase: client.prep_phase || undefined,
+      activityProfile: (client.activity_profile as 'sedentary' | 'high_energy_flux') || undefined,
     }
 
     // 9. 執行引擎

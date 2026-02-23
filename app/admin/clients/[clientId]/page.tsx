@@ -57,6 +57,7 @@ interface Client {
   carbs_rest_day: number | null
   goal_type: 'cut' | 'bulk' | null
   diet_start_date: string | null
+  activity_profile: 'sedentary' | 'high_energy_flux' | null
 
   lab_results: LabResult[]
   supplements: Supplement[]
@@ -120,6 +121,7 @@ export default function ClientEditor() {
         carbs_rest_day: null,
         goal_type: null,
         diet_start_date: null,
+        activity_profile: null,
 
         lab_results: [],
         supplements: []
@@ -184,6 +186,7 @@ export default function ClientEditor() {
         carbs_rest_day: client.carbs_rest_day || null,
         goal_type: client.goal_type || null,
         diet_start_date: client.diet_start_date || null,
+        activity_profile: client.activity_profile || null,
       }
 
       if (clientId === 'new') {
@@ -559,6 +562,21 @@ export default function ClientEditor() {
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                       />
                     </div>
+                  </div>
+                  <div className="mt-3">
+                    <label className="block text-xs text-gray-500 mb-1">活動量分型（影響 TDEE 估算與有氧/步數建議）</label>
+                    <select
+                      value={client.activity_profile || ''}
+                      onChange={(e) => setClient({ ...client, activity_profile: e.target.value as 'sedentary' | 'high_energy_flux' || null })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    >
+                      <option value="">預設（中等活動量）</option>
+                      <option value="sedentary">🪑 上班族 — 步數受限，以飲食控制為主</option>
+                      <option value="high_energy_flux">⚡ 高能量通量 — 主動提高活動消耗，多吃多動</option>
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">
+                      上班族：TDEE 係數低、步數目標低（3,000→8,000步）｜高能量通量：TDEE 係數高、步數目標高（8,000→15,000步）
+                    </p>
                   </div>
                 </div>
               </div>
