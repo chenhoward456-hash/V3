@@ -174,7 +174,10 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
         </div>
         {hasCarbCycling && (
           <p className="text-[10px] text-gray-400 mt-2 text-center">
-            碳水循環：訓練日 {data.suggestedCarbsTrainingDay}g ／ 休息日 {data.suggestedCarbsRestDay}g
+            {data.suggestedCarbsTrainingDay === data.suggestedCarbsRestDay
+              ? `⏸️ 碳水 ${data.suggestedCarbsTrainingDay}g（碳水偏低，暫停碳循環）`
+              : `碳水循環：訓練日 ${data.suggestedCarbsTrainingDay}g ／ 休息日 ${data.suggestedCarbsRestDay}g`
+            }
           </p>
         )}
       </div>
