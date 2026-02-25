@@ -691,12 +691,11 @@ export default function ClientEditor() {
                       client.gender,
                       latestBodyComp.height
                     )
-                    const diff = client.target_weight
-                      ? Math.round((client.target_weight - rec.recommendedLow) * 10) / 10
-                      : null
-                    const isBelow = diff !== null && client.target_weight! < rec.recommendedLow - 0.5
+                    const isBelow = client.target_weight ? client.target_weight < rec.recommendedLow - 0.5 : false
+                    const isAbove = client.target_weight ? client.target_weight > rec.recommendedHigh + 0.5 : false
+                    const isOutOfRange = isBelow || isAbove
                     return (
-                      <div className={`mt-2 p-3 rounded-lg text-xs border ${isBelow ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-100'}`}>
+                      <div className={`mt-2 p-3 rounded-lg text-xs border ${isOutOfRange ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-100'}`}>
                         <p className="font-semibold text-gray-700 mb-1">🔬 體態推算（依最新紀錄）</p>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600">
                           <span>最新體重</span><span className="font-medium text-gray-800">{rec.currentWeight} kg</span>
@@ -714,9 +713,11 @@ export default function ClientEditor() {
                             {rec.recommendedLow} – {rec.recommendedHigh} kg
                           </p>
                           {client.target_weight && (
-                            <p className={`mt-1 ${isBelow ? 'text-amber-600 font-medium' : 'text-green-600'}`}>
+                            <p className={`mt-1 ${isOutOfRange ? 'text-amber-600 font-medium' : 'text-green-600'}`}>
                               {isBelow
-                                ? `⚠️ 手動目標 ${client.target_weight} kg 低於建議下限 ${Math.abs(diff!).toFixed(1)} kg，可能壓縮 FFM`
+                                ? `⚠️ 手動目標 ${client.target_weight} kg 低於建議下限 ${(rec.recommendedLow - client.target_weight).toFixed(1)} kg，可能壓縮 FFM`
+                                : isAbove
+                                ? `⚠️ 手動目標 ${client.target_weight} kg 高於建議上限 ${(client.target_weight - rec.recommendedHigh).toFixed(1)} kg，上台體脂可能偏高`
                                 : `✅ 手動目標 ${client.target_weight} kg 在建議範圍內`}
                             </p>
                           )}
