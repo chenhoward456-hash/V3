@@ -8,8 +8,17 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // 靜態資源（有 hash 的檔名）可以永久快取
+        source: '/_next/static/(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        // HTML 頁面不快取，確保每次都拿最新內容
         source: '/(.*)',
         headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
