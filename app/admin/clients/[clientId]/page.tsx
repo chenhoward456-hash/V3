@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { calcRecommendedStageWeight, type RecommendedStageWeightResult } from '@/lib/nutrition-engine'
 
 type EditorTab = 'basic' | 'features' | 'notes' | 'lab' | 'supplements'
 
@@ -74,6 +75,7 @@ export default function ClientEditor() {
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
   const [activeTab, setActiveTab] = useState<EditorTab>('basic')
+  const [latestBodyComp, setLatestBodyComp] = useState<{ weight: number | null; body_fat: number | null; height: number | null } | null>(null)
 
   const tabs: { key: EditorTab; label: string; icon: string }[] = useMemo(() => {
     if (!client) return []
@@ -135,13 +137,28 @@ export default function ClientEditor() {
 
   const fetchClient = async () => {
     try {
-      const res = await fetch(`/api/admin/clients?id=${clientId}`)
-      if (!res.ok) {
+      const [clientRes, overviewRes] = await Promise.all([
+        fetch(`/api/admin/clients?id=${clientId}`),
+        fetch(`/api/client-overview?clientId=${clientId}`),
+      ])
+      if (!clientRes.ok) {
         setError('載入學員資料失敗')
         return
       }
-      const data = await res.json()
+      const data = await clientRes.json()
       setClient(data)
+
+      if (overviewRes.ok) {
+        const overview = await overviewRes.json()
+        const entries: any[] = overview.bodyData || []
+        const findLatest = (field: string) =>
+          [...entries].reverse().find((e: any) => e[field] != null)?.[field] ?? null
+        setLatestBodyComp({
+          weight: findLatest('weight'),
+          body_fat: findLatest('body_fat'),
+          height: findLatest('height'),
+        })
+      }
     } catch (error) {
       setError('載入學員資料失敗')
     } finally {
@@ -665,6 +682,52 @@ export default function ClientEditor() {
                     placeholder="比賽日目標體重，例如：65.0"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  {/* 體態推算：根據最新體組成自動計算建議上台體重 */}
+                  {(() => {
+                    if (!latestBodyComp?.weight || !latestBodyComp?.body_fat) return null
+                    const rec = calcRecommendedStageWeight(
+                      latestBodyComp.weight,
+                      latestBodyComp.body_fat,
+                      client.gender,
+                      latestBodyComp.height
+                    )
+                    const diff = client.target_weight
+                      ? Math.round((client.target_weight - rec.recommendedLow) * 10) / 10
+                      : null
+                    const isBelow = diff !== null && client.target_weight! < rec.recommendedLow - 0.5
+                    return (
+                      <div className={`mt-2 p-3 rounded-lg text-xs border ${isBelow ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-100'}`}>
+                        <p className="font-semibold text-gray-700 mb-1">🔬 體態推算（依最新紀錄）</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600">
+                          <span>最新體重</span><span className="font-medium text-gray-800">{rec.currentWeight} kg</span>
+                          <span>最新體脂率</span><span className="font-medium text-gray-800">{rec.currentBF}%</span>
+                          <span>去脂體重 (FFM)</span><span className="font-medium text-gray-800">{rec.ffm} kg</span>
+                          <span>脂肪量</span><span className="font-medium text-gray-800">{rec.fatMass} kg</span>
+                          {rec.ffmi !== null && <><span>FFMI</span><span className="font-medium text-gray-800">{rec.ffmi} kg/m²</span></>}
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-blue-200">
+                          <p className="text-gray-600">
+                            建議上台體重範圍
+                            <span className="ml-1 text-xs text-gray-400">（目標體脂 {rec.targetBFLow}–{rec.targetBFHigh}%）</span>
+                          </p>
+                          <p className="text-base font-bold text-blue-700 mt-0.5">
+                            {rec.recommendedLow} – {rec.recommendedHigh} kg
+                          </p>
+                          {client.target_weight && (
+                            <p className={`mt-1 ${isBelow ? 'text-amber-600 font-medium' : 'text-green-600'}`}>
+                              {isBelow
+                                ? `⚠️ 手動目標 ${client.target_weight} kg 低於建議下限 ${Math.abs(diff!).toFixed(1)} kg，可能壓縮 FFM`
+                                : `✅ 手動目標 ${client.target_weight} kg 在建議範圍內`}
+                            </p>
+                          )}
+                          {rec.fatToLose !== null && (
+                            <p className="text-gray-500 mt-0.5">預估需減脂 {rec.fatToLose} kg（以建議中點計算）</p>
+                          )}
+                        </div>
+                        <p className="text-gray-400 mt-1">* 參考：Helms 2014；Rossow 2013；Halliday 2016 | 目標值由教練手動設定，此框僅供參考</p>
+                      </div>
+                    )
+                  })()}
                 </div>
                 <h3 className="text-sm font-medium text-gray-700 mb-3">每日巨量營養素目標</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
