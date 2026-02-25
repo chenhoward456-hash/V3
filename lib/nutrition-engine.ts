@@ -810,90 +810,82 @@ function generateGoalDrivenCut(
   }
 
   // 5. 有氧/步數計算 — 基於 actualCalories（真實飲食底線）
-  // 依 activityProfile 取對應步數/有氧上限（上班族 vs 高能量通量）
+  // 依 activityProfile 取對應步數上限（上班族 vs 高能量通量）
+  // 設計原則：有氧分鐘只在飲食赤字真的不夠時才顯示（主動介入），
+  //           日常活動量全部以「步數目標」表達，簡單易追蹤
   const cardioProfile = getCardioProfile(input.activityProfile)
   const kcalPerMinCardio = bw * CARDIO.BASE_KCAL_PER_MIN_PER_KG * CARDIO.PREP_FATIGUE_DISCOUNT
   const kcalPerStep = bw * CARDIO.BASE_KCAL_PER_STEP_PER_KG
   let extraCardioNeeded = false
   let extraBurnPerDay = 0
-  let suggestedCardioMinutes = 0
+  let suggestedCardioMinutes = 0  // 預設 0，只在 shortfall 夠大時才給有氧分鐘
   let suggestedDailySteps = cardioProfile.BASELINE_STEPS
   let cardioNote = ''
   let predictedCompWeight: number
 
   // 用 actualCalories 算真實飲食赤字
   const realDietDeficit = estimatedTDEE - actualCalories
-  const shortfall = effectiveDailyDeficit - realDietDeficit  // 飲食不夠的缺口
+  // shortfall 閾值 50 kcal：避免 TDEE 取整誤差造成 1 kcal shortfall → 1 分鐘有氧的 bug
+  const shortfall = effectiveDailyDeficit - realDietDeficit
 
-  if (shortfall > 0) {
-    // 飲食面赤字不夠 → 需要有氧補
+  if (shortfall > 50) {
+    // 飲食面赤字不夠（差距 > 50 kcal）→ 需要額外活動補，全部換算成步數
     const rawExtraBurn = shortfall
     extraBurnPerDay = Math.min(rawExtraBurn, CARDIO.MAX_EXTRA_BURN_PER_DAY)
     extraCardioNeeded = true
+    suggestedCardioMinutes = 0  // 不顯示有氧分鐘，全轉步數
 
-    // 換算有氧分鐘數（體重修正 + 疲勞折扣，上限依 activityProfile）
-    suggestedCardioMinutes = Math.min(
-      cardioProfile.MAX_CARDIO_MINUTES,
-      Math.ceil(extraBurnPerDay / kcalPerMinCardio)
-    )
-    // 換算步數（有氧以外的部分用步數補，上限依 activityProfile）
-    const cardioCanBurn = suggestedCardioMinutes * kcalPerMinCardio
-    const remainingBurn = Math.max(0, extraBurnPerDay - cardioCanBurn)
-    const extraSteps = Math.ceil(remainingBurn / kcalPerStep)
+    // 全部換算成步數（不分有氧/NEAT，統一由步數追蹤）
+    const extraSteps = Math.ceil(extraBurnPerDay / kcalPerStep)
     suggestedDailySteps = Math.min(cardioProfile.MAX_DAILY_STEPS, cardioProfile.BASELINE_STEPS + extraSteps)
 
-    // 預測體重（飲食 + 有氧）
+    // 預測體重（飲食 + 步數）
     const actualExtraSteps = suggestedDailySteps - cardioProfile.BASELINE_STEPS
-    const totalDailyBurn = realDietDeficit + cardioCanBurn + actualExtraSteps * kcalPerStep
+    const totalDailyBurn = realDietDeficit + actualExtraSteps * kcalPerStep
     const totalLoss = (totalDailyBurn * daysLeft) / energyDensity
     predictedCompWeight = Math.round((bw - totalLoss) * 10) / 10
 
     // 判斷能否達標
     if (predictedCompWeight <= targetWeight + 0.3) {
-      cardioNote = `飲食 + 有氧可達標！每日 ${suggestedCardioMinutes} 分鐘中等強度有氧 + ${suggestedDailySteps.toLocaleString()} 步`
+      cardioNote = `飲食 + 步數可達標！今日目標 ${suggestedDailySteps.toLocaleString()} 步（需額外消耗 ${Math.round(extraBurnPerDay)}kcal）`
     } else {
       cardioNote = `預測 ${predictedCompWeight}kg（目標 ${targetWeight}kg），差 ${(predictedCompWeight - targetWeight).toFixed(1)}kg。建議與教練討論調整量級或目標`
     }
 
     if (rawExtraBurn > CARDIO.MAX_EXTRA_BURN_PER_DAY) {
-      warnings.push(`🏃 理論需額外消耗 ${Math.round(rawExtraBurn)}kcal/天，但實際有氧+步數合理上限約 ${CARDIO.MAX_EXTRA_BURN_PER_DAY}kcal/天`)
+      warnings.push(`🏃 理論需額外消耗 ${Math.round(rawExtraBurn)}kcal/天，但步數合理上限約 ${CARDIO.MAX_EXTRA_BURN_PER_DAY}kcal/天`)
     }
-    warnings.push(`🏃 建議有氧 ${suggestedCardioMinutes} 分鐘/天 + 步數 ${suggestedDailySteps.toLocaleString()} 步/天（約消耗 ${Math.round(cardioCanBurn + actualExtraSteps * kcalPerStep)}kcal）`)
+    warnings.push(`👟 今日步數目標 ${suggestedDailySteps.toLocaleString()} 步（需額外消耗 ${Math.round(extraBurnPerDay)}kcal 彌補飲食缺口）`)
   } else {
-    // 飲食面赤字足夠
+    // 飲食面赤字足夠（shortfall ≤ 50 kcal）
     predictedCompWeight = targetWeight
 
     // 高能量通量策略（High Energy Flux）
-    // 即使飲食赤字夠了，也建議基礎活動量 → 多消耗的部分加回碳水
+    // 即使飲食赤字夠了，也設步數目標 → 多消耗的部分加回碳水
     // 原理：同樣赤字但吃更多 → 保護代謝、維持訓練品質、減少肌肉流失
-    // 上班族（sedentary）：目標步數較低，有氧時間較短
-    // high_energy_flux：直接套用 activityProfile 的參數
+    // 有氧分鐘在此路徑完全移除，只用步數目標表達活動量（簡單、可被動追蹤）
     if (safetyLevel !== 'normal' || input.activityProfile === 'high_energy_flux') {
-      // 上班族用保守值，高能量通量用 profile 上限的 2/3
+      suggestedCardioMinutes = 0  // 此路徑不顯示有氧分鐘
+
       if (input.activityProfile === 'sedentary') {
-        suggestedCardioMinutes = safetyLevel === 'extreme' ? 20 : 15
-        suggestedDailySteps = safetyLevel === 'extreme' ? 6000 : 5000
+        suggestedDailySteps = safetyLevel === 'extreme' ? 9000 : 7000
       } else if (input.activityProfile === 'high_energy_flux') {
-        suggestedCardioMinutes = safetyLevel === 'extreme' ? 45 : 30
-        suggestedDailySteps = safetyLevel === 'extreme' ? 12000 : 10000
+        suggestedDailySteps = safetyLevel === 'extreme' ? 15000 : 12000
       } else {
-        suggestedCardioMinutes = safetyLevel === 'extreme' ? 30 : 20
-        suggestedDailySteps = safetyLevel === 'extreme' ? 10000 : 8000
+        suggestedDailySteps = safetyLevel === 'extreme' ? 12000 : 10000
       }
 
-      // 計算活動量消耗 → 加回碳水（赤字不變）
-      const fluxCardioBurn = suggestedCardioMinutes * kcalPerMinCardio
+      // 計算步數消耗 → 加回碳水（赤字不變）
       const fluxExtraSteps = Math.max(0, suggestedDailySteps - cardioProfile.BASELINE_STEPS)
-      const fluxStepsBurn = fluxExtraSteps * kcalPerStep
-      const fluxTotalBurn = Math.round(fluxCardioBurn + fluxStepsBurn)
+      const fluxStepsBurn = Math.round(fluxExtraSteps * kcalPerStep)
 
       // 多消耗的全給碳水（碳水是訓練品質的直接燃料）
-      const fluxCarbsBonus = Math.round(fluxTotalBurn / 4)
+      const fluxCarbsBonus = Math.round(fluxStepsBurn / 4)
       suggestedCarb += fluxCarbsBonus
-      actualCalories += fluxTotalBurn
+      actualCalories += fluxStepsBurn
 
       const profileLabel = input.activityProfile === 'sedentary' ? '上班族模式' : input.activityProfile === 'high_energy_flux' ? '高能量通量' : '中等活動量'
-      cardioNote = `${profileLabel}：有氧 ${suggestedCardioMinutes} 分鐘 + ${suggestedDailySteps.toLocaleString()} 步（消耗 ~${fluxTotalBurn}kcal）→ 碳水 +${fluxCarbsBonus}g 吃回來，赤字不變`
+      cardioNote = `${profileLabel}：目標 ${suggestedDailySteps.toLocaleString()} 步/天（消耗 ~${fluxStepsBurn}kcal）→ 碳水 +${fluxCarbsBonus}g 吃回來，赤字不變`
     }
   }
 
@@ -940,7 +932,7 @@ function generateGoalDrivenCut(
     message = `以目前 TDEE ${estimatedTDEE}kcal，需要每日赤字 ${effectiveDailyDeficit}kcal 才能達到 ${targetWeight}kg。`
     message += `飲食底線 ${actualCalories}kcal（赤字缺口 ${Math.round(shortfall)}kcal 需靠活動補）`
     if (extraCardioNeeded) {
-      message += `，搭配每日有氧 ${suggestedCardioMinutes} 分鐘 + ${suggestedDailySteps.toLocaleString()} 步`
+      message += `，步數目標 ${suggestedDailySteps.toLocaleString()} 步/天`
       if (predictedCompWeight <= targetWeight + 0.3) {
         message += `，預測可達 ${predictedCompWeight}kg ✓`
       } else {
