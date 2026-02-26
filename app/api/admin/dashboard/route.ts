@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0]
+    const fourteenDaysAgo = new Date()
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
+    const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().split('T')[0]
 
     // 3. 平行查詢所有資料
     const [
@@ -37,6 +40,10 @@ export async function GET(request: NextRequest) {
       todayTrainingResult,
       todayNutritionResult,
       todayBodyResult,
+      recentBodyResult,
+      recentNutritionResult,
+      recentWellnessResult,
+      recentTrainingRPEResult,
     ] = await Promise.all([
       // 所有學員，按建立時間倒序
       supabase
@@ -85,6 +92,37 @@ export async function GET(request: NextRequest) {
         .from('body_composition')
         .select('client_id')
         .eq('date', today),
+
+      // 近 14 天體重（用於停滯偵測）
+      supabase
+        .from('body_composition')
+        .select('client_id, date, weight')
+        .gte('date', fourteenDaysAgoStr)
+        .not('weight', 'is', null)
+        .order('date', { ascending: true }),
+
+      // 近 14 天飲食合規（用於合規率警告）
+      supabase
+        .from('nutrition_logs')
+        .select('client_id, date, compliant')
+        .gte('date', fourteenDaysAgoStr)
+        .order('date', { ascending: true }),
+
+      // 近 7 天 Wellness 能量（用於連續下滑偵測）
+      supabase
+        .from('daily_wellness')
+        .select('client_id, date, energy_level')
+        .gte('date', sevenDaysAgoStr)
+        .not('energy_level', 'is', null)
+        .order('date', { ascending: true }),
+
+      // 近 7 天訓練 RPE（用於過度訓練偵測）
+      supabase
+        .from('training_logs')
+        .select('client_id, date, rpe')
+        .gte('date', sevenDaysAgoStr)
+        .not('rpe', 'is', null)
+        .order('date', { ascending: true }),
     ])
 
     // 4. 檢查錯誤（僅 log，不阻擋回應）
@@ -97,6 +135,10 @@ export async function GET(request: NextRequest) {
       { name: 'todayTraining', result: todayTrainingResult },
       { name: 'todayNutrition', result: todayNutritionResult },
       { name: 'todayBody', result: todayBodyResult },
+      { name: 'recentBody', result: recentBodyResult },
+      { name: 'recentNutrition', result: recentNutritionResult },
+      { name: 'recentWellness', result: recentWellnessResult },
+      { name: 'recentTrainingRPE', result: recentTrainingRPEResult },
     ]
     for (const q of queries) {
       if (q.result.error) {
@@ -114,6 +156,10 @@ export async function GET(request: NextRequest) {
       todayTraining: todayTrainingResult.data || [],
       todayNutrition: todayNutritionResult.data || [],
       todayBody: todayBodyResult.data || [],
+      recentBody: recentBodyResult.data || [],
+      recentNutrition: recentNutritionResult.data || [],
+      recentWellness: recentWellnessResult.data || [],
+      recentTrainingRPE: recentTrainingRPEResult.data || [],
     })
   } catch (error) {
     console.error('[admin/dashboard] 伺服器錯誤:', error)
