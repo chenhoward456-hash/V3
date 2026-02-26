@@ -43,7 +43,12 @@ export async function GET(request: NextRequest) {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     const sinceDate = thirtyDaysAgo.toISOString().split('T')[0]
 
-    const [bodyRes, nutritionRes, trainingRes] = await Promise.all([
+    // 近 7 天（Refeed 監控用）
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
+
+    const [bodyRes, nutritionRes, trainingRes, wellnessRes] = await Promise.all([
       supabase
         .from('body_composition')
         .select('date, weight, height, body_fat')
@@ -59,15 +64,22 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true }),
       supabase
         .from('training_logs')
-        .select('date, training_type')
+        .select('date, training_type, rpe')
         .eq('client_id', clientId)
         .gte('date', sinceDate)
+        .order('date', { ascending: true }),
+      supabase
+        .from('daily_wellness')
+        .select('date, energy_level, training_drive')
+        .eq('client_id', clientId)
+        .gte('date', sevenDaysStr)
         .order('date', { ascending: true }),
     ])
 
     const bodyData = bodyRes.data || []
     const nutritionLogs = nutritionRes.data || []
     const trainingLogs = trainingRes.data || []
+    const wellnessLogs = wellnessRes.data || []
 
     // 3. 計算週均體重 (最多 4 週)
     const today = new Date()
@@ -154,6 +166,23 @@ export async function GET(request: NextRequest) {
       trainingDaysPerWeek,
       prepPhase: client.prep_phase || undefined,
       activityProfile: (client.activity_profile as 'sedentary' | 'high_energy_flux') || undefined,
+      recentWellness: wellnessLogs.map((w: any) => ({
+        date: w.date,
+        energy_level: w.energy_level ?? null,
+        training_drive: w.training_drive ?? null,
+      })),
+      recentTrainingLogs: trainingLogs
+        .filter((t: any) => t.date >= sevenDaysStr)
+        .map((t: any) => ({
+          date: t.date,
+          rpe: t.rpe ?? null,
+        })),
+      recentCarbsPerDay: nutritionLogs
+        .filter((n: any) => n.date >= sevenDaysStr)
+        .map((n: any) => ({
+          date: n.date,
+          carbs: n.carbs_grams ?? null,
+        })),
     }
 
     // 9. 執行引擎

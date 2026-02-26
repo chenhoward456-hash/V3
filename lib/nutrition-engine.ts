@@ -58,6 +58,11 @@ export interface NutritionInput {
   // sedentary = 上班族，步數受限，有氧時間少
   // high_energy_flux = 高能量通量，主動增加活動消耗
   activityProfile?: 'sedentary' | 'high_energy_flux'
+
+  // 近 7 天狀態監控（用於 Refeed 觸發）
+  recentWellness?: { date: string; energy_level: number | null; training_drive: number | null }[]
+  recentTrainingLogs?: { date: string; rpe: number | null }[]
+  recentCarbsPerDay?: { date: string; carbs: number | null }[]
 }
 
 export interface NutritionSuggestion {
@@ -86,6 +91,12 @@ export interface NutritionSuggestion {
   dietDurationWeeks: number | null
   dietBreakSuggested: boolean
   warnings: string[]
+
+  // 當前狀態監控
+  currentState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'
+  refeedSuggested: boolean
+  refeedReason: string | null
+  refeedDays: number | null
 
   // Deadline-aware info
   deadlineInfo: {
@@ -329,9 +340,115 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
     estimatedTDEE: null, weeklyWeightChangeRate: null,
     dietDurationWeeks: null, dietBreakSuggested: false, warnings: [],
+    currentState: 'unknown', refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo: null, autoApply: false, peakWeekPlan: null,
     ...overrides,
   }
+}
+
+// ===== 當前狀態評估 =====
+// 使用近 3 天的 energy_level、training_drive（wellness）和 RPE（training_log）
+// 判斷選手目前的生理/心理狀態，作為 Refeed 觸發的依據
+
+function assessCurrentState(
+  recentWellness: { date: string; energy_level: number | null; training_drive: number | null }[],
+  recentTrainingLogs: { date: string; rpe: number | null }[]
+): 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown' {
+  const last3Wellness = [...recentWellness]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 3)
+    .filter(w => w.energy_level != null || w.training_drive != null)
+
+  const last3Training = [...recentTrainingLogs]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 3)
+    .filter(t => t.rpe != null)
+
+  if (last3Wellness.length === 0 && last3Training.length === 0) return 'unknown'
+
+  const avgEnergy = last3Wellness.length > 0
+    ? last3Wellness.reduce((s, w) => s + (w.energy_level ?? 3), 0) / last3Wellness.length
+    : null
+
+  const avgDrive = last3Wellness.length > 0
+    ? last3Wellness.reduce((s, w) => s + (w.training_drive ?? 3), 0) / last3Wellness.length
+    : null
+
+  const avgRPE = last3Training.length > 0
+    ? last3Training.reduce((s, t) => s + (t.rpe ?? 7), 0) / last3Training.length
+    : null
+
+  // critical：RPE ≥ 9 連 2+ 天，或 energy ≤ 1.5 連 2+ 天
+  if (
+    (avgRPE != null && avgRPE >= 9 && last3Training.length >= 2) ||
+    (avgEnergy != null && avgEnergy <= 1.5 && last3Wellness.length >= 2)
+  ) return 'critical'
+
+  // struggling：RPE ≥ 8，或同時 energy ≤ 2 且 drive ≤ 2
+  if (
+    (avgRPE != null && avgRPE >= 8) ||
+    (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2)
+  ) return 'struggling'
+
+  // optimal：energy ≥ 4，RPE ≤ 7
+  if ((avgEnergy == null || avgEnergy >= 4) && (avgRPE == null || avgRPE <= 7)) return 'optimal'
+
+  return 'good'
+}
+
+// ===== 低碳連續天數 =====
+// 從最近一天往前數，連續幾天碳水 < threshold（預設 150g）
+
+function countConsecutiveLowCarbDays(
+  recentCarbsPerDay: { date: string; carbs: number | null }[],
+  threshold = 150
+): number {
+  const sorted = [...recentCarbsPerDay].sort((a, b) => b.date.localeCompare(a.date))
+  let count = 0
+  for (const day of sorted) {
+    if (day.carbs == null) continue  // 沒記錄的日子跳過
+    if (day.carbs < threshold) {
+      count++
+    } else {
+      break  // 遇到非低碳日停止
+    }
+  }
+  return count
+}
+
+// ===== Refeed 觸發判斷 =====
+// 條件 A：currentState = struggling 或 critical
+// 條件 B：連續低碳 ≥ 3 天
+// A + B 同時成立 → 觸發 Refeed 建議
+
+function checkRefeedTrigger(
+  currentState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown',
+  lowCarbDays: number
+): { suggested: boolean; reason: string | null; days: number | null } {
+  if (currentState === 'unknown' || currentState === 'optimal' || currentState === 'good') {
+    return { suggested: false, reason: null, days: null }
+  }
+
+  const reasons: string[] = []
+
+  if (currentState === 'critical') {
+    reasons.push('生理狀態已達臨界（RPE 極高或能量極低）')
+  } else if (currentState === 'struggling') {
+    reasons.push('訓練表現下滑（RPE 偏高且能量低落）')
+  }
+
+  if (lowCarbDays >= 5) {
+    reasons.push(`已連續 ${lowCarbDays} 天碳水 < 150g`)
+  } else if (lowCarbDays >= 3) {
+    reasons.push(`已連續 ${lowCarbDays} 天碳水 < 150g`)
+  } else {
+    // 狀態差但低碳天數不足，僅警告不強制 Refeed
+    return { suggested: false, reason: reasons.join('、'), days: null }
+  }
+
+  const days = (currentState === 'critical' || lowCarbDays >= 5) ? 2 : 1
+
+  return { suggested: true, reason: reasons.join('、'), days }
 }
 
 // ===== 主要引擎 =====
@@ -339,13 +456,35 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
 export function generateNutritionSuggestion(input: NutritionInput): NutritionSuggestion {
   const warnings: string[] = []
 
+  // 狀態監控：在所有分支前先計算，後面 spread 進每個 return
+  const currentState = assessCurrentState(
+    input.recentWellness ?? [],
+    input.recentTrainingLogs ?? []
+  )
+  const lowCarbDays = countConsecutiveLowCarbDays(input.recentCarbsPerDay ?? [])
+  const refeedTrigger = checkRefeedTrigger(currentState, lowCarbDays)
+  const stateFields = {
+    currentState,
+    refeedSuggested: refeedTrigger.suggested,
+    refeedReason: refeedTrigger.reason,
+    refeedDays: refeedTrigger.days,
+  }
+
+  // Refeed 警告加入 warnings（讓前端顯示）
+  if (refeedTrigger.suggested && refeedTrigger.reason) {
+    warnings.push(`🔄 建議安排 ${refeedTrigger.days} 天 Refeed：${refeedTrigger.reason}`)
+  } else if (refeedTrigger.reason && !refeedTrigger.suggested) {
+    // 狀態差但低碳天數不足（不強制 Refeed，僅提醒）
+    warnings.push(`⚠️ 注意狀態：${refeedTrigger.reason}（低碳天數未達 3 天，持續觀察）`)
+  }
+
   // 0. Peak Week 偵測：距比賽 ≤ 7 天且 prepPhase 是 peak_week
   if (input.targetDate && input.prepPhase === 'peak_week') {
     const now = new Date()
     const target = new Date(input.targetDate)
     const daysLeft = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
     if (daysLeft <= 8) {
-      return generatePeakWeekPlan(input, daysLeft)
+      return { ...generatePeakWeekPlan(input, daysLeft), ...stateFields }
     }
   }
 
@@ -354,6 +493,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     return emptyResult({
       status: 'insufficient_data', statusLabel: '數據不足', statusEmoji: '📊',
       message: '需要至少 2 週的體重數據才能開始分析。請讓學員持續記錄體重。',
+      ...stateFields,
     })
   }
 
@@ -463,9 +603,9 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
 
   // 8. 根據目標類型分流
   if (input.goalType === 'cut') {
-    return generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings)
+    return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings), ...stateFields }
   } else {
-    return generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings)
+    return { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings), ...stateFields }
   }
 }
 
@@ -640,6 +780,7 @@ function generateCutSuggestion(
       caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested, warnings,
+      currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
       deadlineInfo, autoApply: false, peakWeekPlan: null,
     }
   }
@@ -658,6 +799,7 @@ function generateCutSuggestion(
     fatDelta: fatDelta,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested, warnings,
+    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo, autoApply: true, peakWeekPlan: null,
   }
 }
@@ -1005,6 +1147,7 @@ function generateGoalDrivenCut(
     dietDurationWeeks,
     dietBreakSuggested,
     warnings,
+    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo: enrichedDeadlineInfo,
     autoApply: true,  // Goal-driven 永遠自動套用
     peakWeekPlan: null,
@@ -1145,6 +1288,7 @@ function generateBulkSuggestion(
       caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested: false, warnings,
+      currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
       deadlineInfo, autoApply: false, peakWeekPlan: null,
     }
   }
@@ -1163,6 +1307,7 @@ function generateBulkSuggestion(
     fatDelta: fatDelta,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested: false, warnings,
+    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo, autoApply: true, peakWeekPlan: null,
   }
 }
@@ -1298,6 +1443,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
       `🥬 纖維：${todayPlan.fiberNote}`,
       `🏋️ ${todayPlan.trainingNote}`,
     ],
+    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
     autoApply: true,
     peakWeekPlan: plan,
