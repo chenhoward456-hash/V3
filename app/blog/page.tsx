@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
+import { createClient } from '@supabase/supabase-js'
 import BlogFilter from '@/components/BlogFilter'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: '知識分享 - Howard | 訓練、營養、恢復優化',
@@ -10,7 +13,7 @@ export const metadata: Metadata = {
   },
 }
 
-const blogPosts = [
+const hardcodedPosts = [
   {
     id: '11',
     title: '你睡覺還在用嘴巴呼吸？這可能是你減脂卡關的原因',
@@ -103,7 +106,37 @@ const blogPosts = [
   },
 ]
 
-export default function BlogPage() {
+async function getSupabasePosts() {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('id, title, description, date, category, read_time, slug')
+      .order('date', { ascending: false })
+    return (data || []).map((p: any) => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      date: p.date,
+      category: p.category,
+      readTime: p.read_time,
+      slug: p.slug,
+    }))
+  } catch {
+    return []
+  }
+}
+
+export default async function BlogPage() {
+  const supabasePosts = await getSupabasePosts()
+
+  const allPosts = [...supabasePosts, ...hardcodedPosts].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  )
+
   return (
     <div style={{ backgroundColor: '#F9F9F7' }} className="min-h-screen">
       <div className="max-w-5xl mx-auto px-6 py-16">
@@ -117,7 +150,7 @@ export default function BlogPage() {
           </p>
         </div>
 
-        <BlogFilter posts={blogPosts} />
+        <BlogFilter posts={allPosts} />
 
         <div className="mt-16 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-10 text-center border-2 border-primary/20">
           <h3 className="text-2xl font-bold mb-4" style={{ color: '#2D2D2D' }}>
