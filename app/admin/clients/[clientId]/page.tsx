@@ -599,6 +599,77 @@ export default function ClientEditor() {
               </div>
             )}
 
+            {/* 目標體重與體態推算 — 所有學員都可看到 */}
+            {client.body_composition_enabled && (
+              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-400">
+                <h2 className="text-lg font-medium text-gray-900 mb-1">
+                  {client.competition_enabled ? '🎯 目標上台體重' : '🎯 目標體重'}
+                </h2>
+                <p className="text-xs text-gray-400 mb-4">
+                  {client.competition_enabled ? '設定比賽日目標體重，系統會自動推算建議範圍' : '設定目標體重，系統會依體組成推算健康體重範圍'}
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">目標體重 (kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={client.target_weight ?? ''}
+                    onChange={(e) => updateClient('target_weight', e.target.value ? Number(e.target.value) : null)}
+                    placeholder={client.competition_enabled ? '比賽日目標體重，例如：65.0' : '目標體重，例如：65.0'}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {/* 體態推算：根據最新體組成自動計算建議體重 */}
+                  {(() => {
+                    if (!latestBodyComp?.weight || !latestBodyComp?.body_fat) return null
+                    const rec = calcRecommendedStageWeight(
+                      latestBodyComp.weight,
+                      latestBodyComp.body_fat,
+                      client.gender,
+                      latestBodyComp.height,
+                      !!client.competition_enabled
+                    )
+                    const isBelow = client.target_weight ? client.target_weight < rec.recommendedLow - 0.5 : false
+                    const isAbove = client.target_weight ? client.target_weight > rec.recommendedHigh + 0.5 : false
+                    const isOutOfRange = isBelow || isAbove
+                    return (
+                      <div className={`mt-2 p-3 rounded-lg text-xs border ${isOutOfRange ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-100'}`}>
+                        <p className="font-semibold text-gray-700 mb-1">🔬 體態推算（依最新紀錄）</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600">
+                          <span>最新體重</span><span className="font-medium text-gray-800">{rec.currentWeight} kg</span>
+                          <span>最新體脂率</span><span className="font-medium text-gray-800">{rec.currentBF}%</span>
+                          <span>去脂體重 (FFM)</span><span className="font-medium text-gray-800">{rec.ffm} kg</span>
+                          <span>脂肪量</span><span className="font-medium text-gray-800">{rec.fatMass} kg</span>
+                          {rec.ffmi !== null && <><span>FFMI</span><span className="font-medium text-gray-800">{rec.ffmi} kg/m²</span></>}
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-blue-200">
+                          <p className="text-gray-600">
+                            {rec.mode === 'competition' ? '建議上台體重範圍' : '建議健康體重範圍'}
+                            <span className="ml-1 text-xs text-gray-400">（目標體脂 {rec.targetBFLow}–{rec.targetBFHigh}%）</span>
+                          </p>
+                          <p className="text-base font-bold text-blue-700 mt-0.5">
+                            {rec.recommendedLow} – {rec.recommendedHigh} kg
+                          </p>
+                          {client.target_weight && (
+                            <p className={`mt-1 ${isOutOfRange ? 'text-amber-600 font-medium' : 'text-green-600'}`}>
+                              {isBelow
+                                ? `⚠️ 手動目標 ${client.target_weight} kg 低於建議下限 ${(rec.recommendedLow - client.target_weight).toFixed(1)} kg，可能壓縮 FFM`
+                                : isAbove
+                                ? `⚠️ 手動目標 ${client.target_weight} kg 高於建議上限 ${(client.target_weight - rec.recommendedHigh).toFixed(1)} kg，${rec.mode === 'competition' ? '上台體脂可能偏高' : '體脂可能高於健康目標'}`
+                                : `✅ 手動目標 ${client.target_weight} kg 在建議範圍內`}
+                            </p>
+                          )}
+                          {rec.fatToLose !== null && (
+                            <p className="text-gray-500 mt-0.5">預估需減脂 {rec.fatToLose} kg（以建議中點計算）</p>
+                          )}
+                        </div>
+                        <p className="text-gray-400 mt-1">* 參考：Helms 2014；Rossow 2013；Halliday 2016；ACSM 2021 | 目標值由教練手動設定，此框僅供參考</p>
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
+            )}
+
             {/* 碳循環設定 */}
             {client.nutrition_enabled && client.competition_enabled && (
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-cyan-400">
@@ -636,100 +707,11 @@ export default function ClientEditor() {
               </div>
             )}
 
-            {/* Competition Prep Settings */}
-            {client.competition_enabled && (
-              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-400">
-                <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽設定</h2>
-                <p className="text-xs text-gray-400 mb-4">設定比賽資訊與巨量營養素目標</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">比賽日期</label>
-                    <input
-                      type="date"
-                      value={client.competition_date || ''}
-                      onChange={(e) => updateClient('competition_date', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {client.competition_date && (
-                      <p className="text-xs text-amber-600 mt-1 font-medium">
-                        距離比賽還有 {Math.max(0, Math.ceil((new Date(client.competition_date).getTime() - new Date().getTime()) / 86400000))} 天
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">備賽階段</label>
-                    <select
-                      value={client.prep_phase || 'off_season'}
-                      onChange={(e) => updateClient('prep_phase', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="off_season">休賽期</option>
-                      <option value="bulk">增肌期</option>
-                      <option value="cut">減脂期</option>
-                      <option value="peak_week">Peak Week</option>
-                      <option value="competition">比賽日</option>
-                      <option value="recovery">賽後恢復</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">目標體重 (kg)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={client.target_weight ?? ''}
-                    onChange={(e) => updateClient('target_weight', e.target.value ? Number(e.target.value) : null)}
-                    placeholder="比賽日目標體重，例如：65.0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {/* 體態推算：根據最新體組成自動計算建議上台體重 */}
-                  {(() => {
-                    if (!latestBodyComp?.weight || !latestBodyComp?.body_fat) return null
-                    const rec = calcRecommendedStageWeight(
-                      latestBodyComp.weight,
-                      latestBodyComp.body_fat,
-                      client.gender,
-                      latestBodyComp.height
-                    )
-                    const diff = client.target_weight
-                      ? Math.round((client.target_weight - rec.recommendedLow) * 10) / 10
-                      : null
-                    const isBelow = diff !== null && client.target_weight! < rec.recommendedLow - 0.5
-                    return (
-                      <div className={`mt-2 p-3 rounded-lg text-xs border ${isBelow ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-100'}`}>
-                        <p className="font-semibold text-gray-700 mb-1">🔬 體態推算（依最新紀錄）</p>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600">
-                          <span>最新體重</span><span className="font-medium text-gray-800">{rec.currentWeight} kg</span>
-                          <span>最新體脂率</span><span className="font-medium text-gray-800">{rec.currentBF}%</span>
-                          <span>去脂體重 (FFM)</span><span className="font-medium text-gray-800">{rec.ffm} kg</span>
-                          <span>脂肪量</span><span className="font-medium text-gray-800">{rec.fatMass} kg</span>
-                          {rec.ffmi !== null && <><span>FFMI</span><span className="font-medium text-gray-800">{rec.ffmi} kg/m²</span></>}
-                        </div>
-                        <div className="mt-2 pt-2 border-t border-blue-200">
-                          <p className="text-gray-600">
-                            建議上台體重範圍
-                            <span className="ml-1 text-xs text-gray-400">（目標體脂 {rec.targetBFLow}–{rec.targetBFHigh}%）</span>
-                          </p>
-                          <p className="text-base font-bold text-blue-700 mt-0.5">
-                            {rec.recommendedLow} – {rec.recommendedHigh} kg
-                          </p>
-                          {client.target_weight && (
-                            <p className={`mt-1 ${isBelow ? 'text-amber-600 font-medium' : 'text-green-600'}`}>
-                              {isBelow
-                                ? `⚠️ 手動目標 ${client.target_weight} kg 低於建議下限 ${Math.abs(diff!).toFixed(1)} kg，可能壓縮 FFM`
-                                : `✅ 手動目標 ${client.target_weight} kg 在建議範圍內`}
-                            </p>
-                          )}
-                          {rec.fatToLose !== null && (
-                            <p className="text-gray-500 mt-0.5">預估需減脂 {rec.fatToLose} kg（以建議中點計算）</p>
-                          )}
-                        </div>
-                        <p className="text-gray-400 mt-1">* 參考：Helms 2014；Rossow 2013；Halliday 2016 | 目標值由教練手動設定，此框僅供參考</p>
-                      </div>
-                    )
-                  })()}
-                </div>
-                <h3 className="text-sm font-medium text-gray-700 mb-3">每日巨量營養素目標</h3>
+            {/* 每日巨量營養素目標 — 有開飲食追蹤就顯示 */}
+            {client.nutrition_enabled && (
+              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-400">
+                <h2 className="text-lg font-medium text-gray-900 mb-1">🍽️ 每日巨量營養素目標</h2>
+                <p className="text-xs text-gray-400 mb-4">手動設定熱量與巨量營養素，引擎也會自動建議調整</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">熱量 (kcal)</label>
@@ -760,6 +742,45 @@ export default function ClientEditor() {
                       placeholder="60"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Competition Prep Settings — 備賽專屬（比賽日期、備賽階段） */}
+            {client.competition_enabled && (
+              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-400">
+                <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽設定</h2>
+                <p className="text-xs text-gray-400 mb-4">設定比賽日期與備賽階段</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">比賽日期</label>
+                    <input
+                      type="date"
+                      value={client.competition_date || ''}
+                      onChange={(e) => updateClient('competition_date', e.target.value || null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {client.competition_date && (
+                      <p className="text-xs text-amber-600 mt-1 font-medium">
+                        距離比賽還有 {Math.max(0, Math.ceil((new Date(client.competition_date).getTime() - new Date().getTime()) / 86400000))} 天
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">備賽階段</label>
+                    <select
+                      value={client.prep_phase || 'off_season'}
+                      onChange={(e) => updateClient('prep_phase', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="off_season">休賽期</option>
+                      <option value="bulk">增肌期</option>
+                      <option value="cut">減脂期</option>
+                      <option value="peak_week">Peak Week</option>
+                      <option value="competition">比賽日</option>
+                      <option value="recovery">賽後恢復</option>
+                    </select>
                   </div>
                 </div>
               </div>

@@ -283,7 +283,7 @@ const PEAK_WEEK = {
   SHOW_FAT_G_PER_KG: 0.5,
 
   // 水分操控（mL/kg）
-  WATER_BASELINE: 90,     // Day 7-5：90 mL/kg
+  WATER_BASELINE: 90,     // Day 7-4：90 mL/kg
   WATER_LOADING: 140,     // Day 3-2：120-155 mL/kg (中間值)
   WATER_TAPER: 80,        // Day 1：80 mL/kg
   WATER_SHOW: 20,         // 比賽日：少量啜飲
@@ -648,7 +648,17 @@ function generateCutSuggestion(
     carbDelta = 20
     fatDelta = 0
     message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，超過安全範圍（-1.0%）。建議增加熱量以保護肌肉量。`
+  } else if (weeklyChangeRate > 0) {
+    // 體重增加 → 方向錯誤（必須在 >= MAX_RATE 之前，否則正數被攔截）
+    status = 'wrong_direction'
+    statusLabel = '方向錯誤'
+    statusEmoji = '🔴'
+    calDelta = -225
+    carbDelta = -27
+    fatDelta = -7
+    message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週）。需要降低熱量攝取。`
   } else if (weeklyChangeRate >= CUT_TARGETS.MAX_RATE) {
+    // 體重下降不夠快（-0.3% ~ 0%），檢查是否停滯
     if (input.weeklyWeights.length >= 3) {
       const twoWeeksAgo = input.weeklyWeights[2].avgWeight
       const twoWeekChange = ((input.weeklyWeights[0].avgWeight - twoWeeksAgo) / twoWeeksAgo) * 100 / 2
@@ -672,14 +682,6 @@ function generateCutSuggestion(
       statusEmoji = '🟢'
       message = `體重變化 ${weeklyChangeRate.toFixed(2)}%/週。數據尚少，再觀察一週。`
     }
-  } else if (weeklyChangeRate > 0) {
-    status = 'wrong_direction'
-    statusLabel = '方向錯誤'
-    statusEmoji = '🔴'
-    calDelta = -225
-    carbDelta = -27
-    fatDelta = -7
-    message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週）。需要降低熱量攝取。`
   } else {
     status = 'on_track'
     statusLabel = '進度正常'
@@ -747,41 +749,38 @@ function generateCutSuggestion(
     }
   }
 
-  // Deadline-aware: 如果進度落後且有 deadline，加大調整幅度
-  if (deadlineInfo && status !== 'on_track' && status !== 'too_fast') {
-    if (deadlineInfo.daysLeft < 28 && deadlineInfo.weightToLose > 1) {
-      const urgencyMultiplier = Math.min(1.5, 1 + (1 - deadlineInfo.daysLeft / 28) * 0.5)
-      calDelta = Math.round(calDelta * urgencyMultiplier)
-      carbDelta = Math.round(carbDelta * urgencyMultiplier)
-      suggestedCal = currentCal + calDelta
-      suggestedCarb = currentCarb + carbDelta
-      if (suggestedCal < minCal) suggestedCal = minCal
-      if (suggestedCarb < 50) suggestedCarb = 50
-      if (suggestedFat < minFat) suggestedFat = minFat
-      // 碳循環也要重算
-      if (input.carbsCyclingEnabled && input.currentCarbsTrainingDay != null && input.currentCarbsRestDay != null) {
-        const tdChange = Math.round(carbDelta * CARB_CYCLE_TRAINING_RATIO)
-        const rdChange = carbDelta - tdChange
-        suggestedCarbsTD = input.currentCarbsTrainingDay + tdChange
-        suggestedCarbsRD = input.currentCarbsRestDay + rdChange
-        if (suggestedCarbsRD! < 30) suggestedCarbsRD = 30
-      }
-      message += ` ⏰ 距離目標僅剩 ${deadlineInfo.daysLeft} 天，需加速調整。`
-    }
-  }
+  // 注意：Deadline-aware 的緊急加速已由 Goal-Driven 引擎處理（weightToLose > 0 時自動進入）
+  // Reactive 模式僅處理無目標體重或已達標的情況
 
   if (status === 'on_track') {
+    // 即使進度正常，也驗證巨量營養素安全底線（防止手動設定值低於安全線）
+    let validatedPro = currentPro
+    let validatedFat = currentFat
+    const minProtein = Math.round(bw * SAFETY.MIN_PROTEIN_PER_KG_CUT)
+    const minFat = Math.round(bw * SAFETY.MIN_FAT_PER_KG)
+
+    if (currentPro > 0 && currentPro < minProtein) {
+      validatedPro = minProtein
+      warnings.push(`⚠️ 目前蛋白質 ${currentPro}g 低於安全最低值 ${minProtein}g（${SAFETY.MIN_PROTEIN_PER_KG_CUT}g/kg），建議調高`)
+    }
+    if (currentFat > 0 && currentFat < minFat) {
+      validatedFat = minFat
+      warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFat}g（${SAFETY.MIN_FAT_PER_KG}g/kg），建議調高`)
+    }
+
+    const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat
     return {
       status, statusLabel, statusEmoji, message,
-      suggestedCalories: currentCal, suggestedProtein: currentPro,
-      suggestedCarbs: currentCarb, suggestedFat: currentFat,
+      suggestedCalories: currentCal, suggestedProtein: validatedPro,
+      suggestedCarbs: currentCarb, suggestedFat: validatedFat,
       suggestedCarbsTrainingDay: input.currentCarbsTrainingDay,
       suggestedCarbsRestDay: input.currentCarbsRestDay,
-      caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
+      caloriesDelta: 0, proteinDelta: validatedPro - currentPro,
+      carbsDelta: 0, fatDelta: validatedFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested, warnings,
       currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
-      deadlineInfo, autoApply: false, peakWeekPlan: null,
+      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
     }
   }
 
@@ -1006,6 +1005,7 @@ function generateGoalDrivenCut(
     // 即使飲食赤字夠了，也設步數目標 → 多消耗的部分加回碳水
     // 原理：同樣赤字但吃更多 → 保護代謝、維持訓練品質、減少肌肉流失
     // 有氧分鐘在此路徑完全移除，只用步數目標表達活動量（簡單、可被動追蹤）
+    // 注意：不設 extraCardioNeeded = true，因為飲食赤字已足夠
     if (safetyLevel !== 'normal' || input.activityProfile === 'high_energy_flux') {
       suggestedCardioMinutes = 0  // 此路徑不顯示有氧分鐘
 
@@ -1023,11 +1023,12 @@ function generateGoalDrivenCut(
 
       // 多消耗的全給碳水（碳水是訓練品質的直接燃料）
       const fluxCarbsBonus = Math.round(fluxStepsBurn / 4)
+      const baseCalories = actualCalories  // 記錄未含步數的基礎卡路里
       suggestedCarb += fluxCarbsBonus
       actualCalories += fluxStepsBurn
 
       const profileLabel = input.activityProfile === 'sedentary' ? '上班族模式' : input.activityProfile === 'high_energy_flux' ? '高能量通量' : '中等活動量'
-      cardioNote = `${profileLabel}：目標 ${suggestedDailySteps.toLocaleString()} 步/天（消耗 ~${fluxStepsBurn}kcal）→ 碳水 +${fluxCarbsBonus}g 吃回來，赤字不變`
+      cardioNote = `${profileLabel}：目標 ${suggestedDailySteps.toLocaleString()} 步/天（消耗 ~${fluxStepsBurn}kcal）→ 碳水 +${fluxCarbsBonus}g 吃回來，赤字不變。⚠️ 若未達步數目標，碳水應減 ${fluxCarbsBonus}g（改為 ${baseCalories}kcal）`
     }
   }
 
@@ -1042,12 +1043,18 @@ function generateGoalDrivenCut(
       suggestedCarbsRD = suggestedCarb
       warnings.push('碳水已低於 50g，暫停碳循環（訓練日/休息日統一），優先確保最低碳水攝取')
     } else {
-      // 訓練日多碳水(60%)、休息日少碳水(40%)
+      // 訓練日:休息日 = 60:40 比例，根據訓練天數加權以保留週總碳水量
+      // 公式：weeklyCarb = T × TD + R × RD，TD/RD = 1.5（60:40）
       const avgDailyCarb = suggestedCarb
-      const trainingDays = Math.min(input.trainingDaysPerWeek, 6)
-      const ratio = trainingDays > 0 ? CARB_CYCLE_TRAINING_RATIO : 0.5
-      suggestedCarbsTD = Math.round(avgDailyCarb * (1 + (ratio - 0.5) * 2))  // 偏高
-      suggestedCarbsRD = Math.round(avgDailyCarb * (1 - (ratio - 0.5) * 2))  // 偏低
+      const T = Math.min(input.trainingDaysPerWeek, 6)
+      const R = 7 - T
+      if (T > 0 && R > 0) {
+        suggestedCarbsRD = Math.round((avgDailyCarb * 7) / (1.5 * T + R))
+        suggestedCarbsTD = Math.round(suggestedCarbsRD * 1.5)
+      } else {
+        suggestedCarbsTD = avgDailyCarb
+        suggestedCarbsRD = avgDailyCarb
+      }
       if (suggestedCarbsRD < 20) suggestedCarbsRD = 20
     }
   }
@@ -1279,17 +1286,34 @@ function generateBulkSuggestion(
   }
 
   if (status === 'on_track') {
+    // 即使進度正常，也驗證巨量營養素安全底線
+    let validatedPro = currentPro
+    let validatedFat = currentFat
+    const minProteinBulk = Math.round(bw * SAFETY.MIN_PROTEIN_PER_KG_BULK)
+    const minFatBulk = Math.round(bw * SAFETY.MIN_FAT_PER_KG)
+
+    if (currentPro > 0 && currentPro < minProteinBulk) {
+      validatedPro = minProteinBulk
+      warnings.push(`⚠️ 目前蛋白質 ${currentPro}g 低於安全最低值 ${minProteinBulk}g（${SAFETY.MIN_PROTEIN_PER_KG_BULK}g/kg），建議調高`)
+    }
+    if (currentFat > 0 && currentFat < minFatBulk) {
+      validatedFat = minFatBulk
+      warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFatBulk}g（${SAFETY.MIN_FAT_PER_KG}g/kg），建議調高`)
+    }
+
+    const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat
     return {
       status, statusLabel, statusEmoji, message,
-      suggestedCalories: currentCal, suggestedProtein: currentPro,
-      suggestedCarbs: currentCarb, suggestedFat: currentFat,
+      suggestedCalories: currentCal, suggestedProtein: validatedPro,
+      suggestedCarbs: currentCarb, suggestedFat: validatedFat,
       suggestedCarbsTrainingDay: input.currentCarbsTrainingDay,
       suggestedCarbsRestDay: input.currentCarbsRestDay,
-      caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
+      caloriesDelta: 0, proteinDelta: validatedPro - currentPro,
+      carbsDelta: 0, fatDelta: validatedFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested: false, warnings,
       currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
-      deadlineInfo, autoApply: false, peakWeekPlan: null,
+      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
     }
   }
 
@@ -1450,30 +1474,37 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
   }
 }
 
-// ===== 理想上台體重推算 =====
+// ===== 理想體重推算（備賽 / 一般健康）=====
 // 文獻依據：
-// - Natural male competition BF%: 4–6% (Helms et al. 2014; Rossow et al. 2013)
-// - Natural female competition BF%: 8–12% (Halliday et al. 2016; Norton & Avery 2019)
-// - FFMI ceiling (natural): ~25 kg/m² male, ~22 kg/m² female (Kouri et al. 1995)
+// 備賽模式：
+//   - Natural male competition BF%: 4–6% (Helms et al. 2014; Rossow et al. 2013)
+//   - Natural female competition BF%: 10–14% (Halliday et al. 2016; Norton & Avery 2019)
+//     ※ 原 8-12% 修正為 10-14%：Halliday 2016 實測女性自然選手比賽日約 10-15%
+//   - FFMI ceiling (natural): ~25 kg/m² male, ~22 kg/m² female (Kouri et al. 1995)
+// 一般健康模式：
+//   - Male healthy/athletic BF%: 10–18% (ACSM Guidelines, 2021)
+//   - Female healthy/athletic BF%: 18–25% (ACSM Guidelines, 2021)
 
 export interface RecommendedStageWeightResult {
   ffm: number                    // 去脂體重 (kg)
   ffmi: number | null            // Fat Free Mass Index (kg/m²)，需要身高才能算
-  recommendedLow: number         // 建議上台體重下限 (kg) — 以最高競賽體脂推算
-  recommendedHigh: number        // 建議上台體重上限 (kg) — 以最低競賽體脂推算
+  recommendedLow: number         // 建議體重下限 (kg) — 以最高目標體脂推算
+  recommendedHigh: number        // 建議體重上限 (kg) — 以最低目標體脂推算
   targetBFLow: number            // 使用的目標體脂下限 (%)
   targetBFHigh: number           // 使用的目標體脂上限 (%)
   currentBF: number              // 輸入的現況體脂 (%)
   currentWeight: number          // 輸入的現況體重 (kg)
   fatMass: number                // 現況脂肪量 (kg)
   fatToLose: number | null       // 需要減掉的脂肪量 (kg)，以建議中點計算
+  mode: 'competition' | 'health' // 模式標籤
 }
 
 export function calcRecommendedStageWeight(
   currentWeight: number,
   bodyFatPct: number,   // 0–100 的百分比，例如 15 代表 15%
   gender: string,       // '男性' | '女性'
-  heightCm?: number | null
+  heightCm?: number | null,
+  isCompetition: boolean = true
 ): RecommendedStageWeightResult {
   const isMale = gender === '男性'
 
@@ -1488,12 +1519,20 @@ export function calcRecommendedStageWeight(
     ffmi = Math.round((ffm / (heightM * heightM)) * 10) / 10
   }
 
-  // 目標競賽體脂範圍 (文獻建議)
-  // 男性自然競技: 4–6%，女性自然競技: 8–12%
-  const targetBFLow = isMale ? 4 : 8
-  const targetBFHigh = isMale ? 6 : 12
+  // 目標體脂範圍（依模式 + 性別）
+  let targetBFLow: number
+  let targetBFHigh: number
+  if (isCompetition) {
+    // 備賽：男性 4-6%，女性 10-14%（Halliday 2016 修正）
+    targetBFLow = isMale ? 4 : 10
+    targetBFHigh = isMale ? 6 : 14
+  } else {
+    // 一般健康/體態：男性 10-18%，女性 18-25%（ACSM）
+    targetBFLow = isMale ? 10 : 18
+    targetBFHigh = isMale ? 18 : 25
+  }
 
-  // 建議上台體重 = FFM ÷ (1 - 目標體脂)
+  // 建議體重 = FFM ÷ (1 - 目標體脂)
   // 體脂高上限 → 體重下限；體脂低上限 → 體重上限
   const recommendedLow = Math.round(ffm / (1 - targetBFHigh / 100) * 10) / 10
   const recommendedHigh = Math.round(ffm / (1 - targetBFLow / 100) * 10) / 10
@@ -1515,5 +1554,6 @@ export function calcRecommendedStageWeight(
     currentWeight,
     fatMass,
     fatToLose,
+    mode: isCompetition ? 'competition' : 'health',
   }
 }

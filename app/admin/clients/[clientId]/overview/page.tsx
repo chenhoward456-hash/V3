@@ -61,7 +61,9 @@ export default function ClientOverview() {
 
   // 一鍵套用建議
   const applySuggestion = async () => {
-    if (!suggestion || suggestion.status === 'on_track' || suggestion.status === 'insufficient_data' || suggestion.status === 'low_compliance') return
+    if (!suggestion || suggestion.status === 'insufficient_data' || suggestion.status === 'low_compliance') return
+    // on_track 時只有安全修正才需要套用（autoApply = true 時表示有修正）
+    if (suggestion.status === 'on_track' && !suggestion.autoApply) return
     setApplyingsuggestion(true)
     try {
       const updates: any = {}
@@ -940,7 +942,7 @@ export default function ClientOverview() {
             <p className="text-sm text-gray-700 mb-4">{suggestion.message}</p>
 
             {/* 建議調整表 */}
-            {suggestion.status !== 'on_track' && suggestion.status !== 'low_compliance' && (
+            {suggestion.status !== 'low_compliance' && !(suggestion.status === 'on_track' && !suggestion.autoApply) && (
               <div className="bg-white/70 rounded-xl p-4 mb-3">
                 <p className="text-xs font-semibold text-gray-600 mb-3">建議調整：</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1004,7 +1006,7 @@ export default function ClientOverview() {
             )}
 
             {/* 操作按鈕 */}
-            {suggestion.status !== 'on_track' && suggestion.status !== 'low_compliance' && (
+            {suggestion.status !== 'low_compliance' && !(suggestion.status === 'on_track' && !suggestion.autoApply) && (
               <div className="flex gap-2">
                 <button
                   onClick={applySuggestion}
