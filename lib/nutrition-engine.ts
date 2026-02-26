@@ -1328,30 +1328,37 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
   }
 }
 
-// ===== 理想上台體重推算 =====
+// ===== 理想體重推算（備賽 / 一般健康）=====
 // 文獻依據：
-// - Natural male competition BF%: 4–6% (Helms et al. 2014; Rossow et al. 2013)
-// - Natural female competition BF%: 8–12% (Halliday et al. 2016; Norton & Avery 2019)
-// - FFMI ceiling (natural): ~25 kg/m² male, ~22 kg/m² female (Kouri et al. 1995)
+// 備賽模式：
+//   - Natural male competition BF%: 4–6% (Helms et al. 2014; Rossow et al. 2013)
+//   - Natural female competition BF%: 10–14% (Halliday et al. 2016; Norton & Avery 2019)
+//     ※ 原 8-12% 修正為 10-14%：Halliday 2016 實測女性自然選手比賽日約 10-15%
+//   - FFMI ceiling (natural): ~25 kg/m² male, ~22 kg/m² female (Kouri et al. 1995)
+// 一般健康模式：
+//   - Male healthy/athletic BF%: 10–18% (ACSM Guidelines, 2021)
+//   - Female healthy/athletic BF%: 18–25% (ACSM Guidelines, 2021)
 
 export interface RecommendedStageWeightResult {
   ffm: number                    // 去脂體重 (kg)
   ffmi: number | null            // Fat Free Mass Index (kg/m²)，需要身高才能算
-  recommendedLow: number         // 建議上台體重下限 (kg) — 以最高競賽體脂推算
-  recommendedHigh: number        // 建議上台體重上限 (kg) — 以最低競賽體脂推算
+  recommendedLow: number         // 建議體重下限 (kg) — 以最高目標體脂推算
+  recommendedHigh: number        // 建議體重上限 (kg) — 以最低目標體脂推算
   targetBFLow: number            // 使用的目標體脂下限 (%)
   targetBFHigh: number           // 使用的目標體脂上限 (%)
   currentBF: number              // 輸入的現況體脂 (%)
   currentWeight: number          // 輸入的現況體重 (kg)
   fatMass: number                // 現況脂肪量 (kg)
   fatToLose: number | null       // 需要減掉的脂肪量 (kg)，以建議中點計算
+  mode: 'competition' | 'health' // 模式標籤
 }
 
 export function calcRecommendedStageWeight(
   currentWeight: number,
   bodyFatPct: number,   // 0–100 的百分比，例如 15 代表 15%
   gender: string,       // '男性' | '女性'
-  heightCm?: number | null
+  heightCm?: number | null,
+  isCompetition: boolean = true
 ): RecommendedStageWeightResult {
   const isMale = gender === '男性'
 
@@ -1366,12 +1373,20 @@ export function calcRecommendedStageWeight(
     ffmi = Math.round((ffm / (heightM * heightM)) * 10) / 10
   }
 
-  // 目標競賽體脂範圍 (文獻建議)
-  // 男性自然競技: 4–6%，女性自然競技: 8–12%
-  const targetBFLow = isMale ? 4 : 8
-  const targetBFHigh = isMale ? 6 : 12
+  // 目標體脂範圍（依模式 + 性別）
+  let targetBFLow: number
+  let targetBFHigh: number
+  if (isCompetition) {
+    // 備賽：男性 4-6%，女性 10-14%（Halliday 2016 修正）
+    targetBFLow = isMale ? 4 : 10
+    targetBFHigh = isMale ? 6 : 14
+  } else {
+    // 一般健康/體態：男性 10-18%，女性 18-25%（ACSM）
+    targetBFLow = isMale ? 10 : 18
+    targetBFHigh = isMale ? 18 : 25
+  }
 
-  // 建議上台體重 = FFM ÷ (1 - 目標體脂)
+  // 建議體重 = FFM ÷ (1 - 目標體脂)
   // 體脂高上限 → 體重下限；體脂低上限 → 體重上限
   const recommendedLow = Math.round(ffm / (1 - targetBFHigh / 100) * 10) / 10
   const recommendedHigh = Math.round(ffm / (1 - targetBFLow / 100) * 10) / 10
@@ -1393,5 +1408,6 @@ export function calcRecommendedStageWeight(
     currentWeight,
     fatMass,
     fatToLose,
+    mode: isCompetition ? 'competition' : 'health',
   }
 }

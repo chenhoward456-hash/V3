@@ -689,7 +689,8 @@ export default function ClientEditor() {
                       latestBodyComp.weight,
                       latestBodyComp.body_fat,
                       client.gender,
-                      latestBodyComp.height
+                      latestBodyComp.height,
+                      !!client.competition_enabled
                     )
                     const isBelow = client.target_weight ? client.target_weight < rec.recommendedLow - 0.5 : false
                     const isAbove = client.target_weight ? client.target_weight > rec.recommendedHigh + 0.5 : false
@@ -706,7 +707,7 @@ export default function ClientEditor() {
                         </div>
                         <div className="mt-2 pt-2 border-t border-blue-200">
                           <p className="text-gray-600">
-                            建議上台體重範圍
+                            {rec.mode === 'competition' ? '建議上台體重範圍' : '建議健康體重範圍'}
                             <span className="ml-1 text-xs text-gray-400">（目標體脂 {rec.targetBFLow}–{rec.targetBFHigh}%）</span>
                           </p>
                           <p className="text-base font-bold text-blue-700 mt-0.5">
@@ -717,7 +718,7 @@ export default function ClientEditor() {
                               {isBelow
                                 ? `⚠️ 手動目標 ${client.target_weight} kg 低於建議下限 ${(rec.recommendedLow - client.target_weight).toFixed(1)} kg，可能壓縮 FFM`
                                 : isAbove
-                                ? `⚠️ 手動目標 ${client.target_weight} kg 高於建議上限 ${(client.target_weight - rec.recommendedHigh).toFixed(1)} kg，上台體脂可能偏高`
+                                ? `⚠️ 手動目標 ${client.target_weight} kg 高於建議上限 ${(client.target_weight - rec.recommendedHigh).toFixed(1)} kg，${rec.mode === 'competition' ? '上台體脂可能偏高' : '體脂可能高於健康目標'}`
                                 : `✅ 手動目標 ${client.target_weight} kg 在建議範圍內`}
                             </p>
                           )}
