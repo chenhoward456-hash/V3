@@ -274,3 +274,24 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS diet_start_date DATE;
 -- high_energy_flux（高能量通量）: 主動提高活動消耗，同樣赤字下吃更多，TDEE 係數較高
 -- NULL / 未設定 = 預設中等活動量
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS activity_profile TEXT CHECK (activity_profile IN ('sedentary', 'high_energy_flux'));
+
+-- 部落格文章表（由後台管理）
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  content TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  category TEXT NOT NULL CHECK (category IN ('血檢優化', '營養策略', '訓練方法', '恢復優化', '個案追蹤')),
+  read_time TEXT NOT NULL DEFAULT '5 分鐘',
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_date ON blog_posts(date DESC);
+
+-- 允許公開讀取文章
+ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read blog_posts" ON blog_posts FOR SELECT USING (true);
