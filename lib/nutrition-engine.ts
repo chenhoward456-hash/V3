@@ -909,8 +909,8 @@ function generateGoalDrivenCut(
   // 優先級：碳水先壓底線 → 降脂肪 → 最後降蛋白質
   // 女性脂肪壓縮底線比男性高（0.7g/kg vs 0.5g/kg），保護荷爾蒙
   if (proFatCal + carbFloorCal > targetCalories) {
-    // 先降脂肪到絕對底線（男 0.5g/kg，女 0.7g/kg）
-    const absoluteMinFat = Math.round(bw * (isMale ? 0.5 : 0.7))
+    // 先降脂肪到絕對底線（使用 GOAL_DRIVEN 常數：男 0.7g/kg，女 0.9g/kg）
+    const absoluteMinFat = Math.round(bw * (isMale ? GOAL_DRIVEN.MIN_FAT_PER_KG : GOAL_DRIVEN.MIN_FAT_PER_KG_FEMALE))
     suggestedFat = absoluteMinFat
     proFatCal = suggestedPro * 4 + suggestedFat * 9
 
