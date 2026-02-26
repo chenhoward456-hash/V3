@@ -707,43 +707,11 @@ export default function ClientEditor() {
               </div>
             )}
 
-            {/* Competition Prep Settings */}
-            {client.competition_enabled && (
-              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-400">
-                <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽設定</h2>
-                <p className="text-xs text-gray-400 mb-4">設定比賽資訊與巨量營養素目標</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">比賽日期</label>
-                    <input
-                      type="date"
-                      value={client.competition_date || ''}
-                      onChange={(e) => updateClient('competition_date', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {client.competition_date && (
-                      <p className="text-xs text-amber-600 mt-1 font-medium">
-                        距離比賽還有 {Math.max(0, Math.ceil((new Date(client.competition_date).getTime() - new Date().getTime()) / 86400000))} 天
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">備賽階段</label>
-                    <select
-                      value={client.prep_phase || 'off_season'}
-                      onChange={(e) => updateClient('prep_phase', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="off_season">休賽期</option>
-                      <option value="bulk">增肌期</option>
-                      <option value="cut">減脂期</option>
-                      <option value="peak_week">Peak Week</option>
-                      <option value="competition">比賽日</option>
-                      <option value="recovery">賽後恢復</option>
-                    </select>
-                  </div>
-                </div>
-                <h3 className="text-sm font-medium text-gray-700 mb-3">每日巨量營養素目標</h3>
+            {/* 每日巨量營養素目標 — 有開飲食追蹤就顯示 */}
+            {client.nutrition_enabled && (
+              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-400">
+                <h2 className="text-lg font-medium text-gray-900 mb-1">🍽️ 每日巨量營養素目標</h2>
+                <p className="text-xs text-gray-400 mb-4">手動設定熱量與巨量營養素，引擎也會自動建議調整</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">熱量 (kcal)</label>
@@ -774,6 +742,45 @@ export default function ClientEditor() {
                       placeholder="60"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Competition Prep Settings — 備賽專屬（比賽日期、備賽階段） */}
+            {client.competition_enabled && (
+              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-400">
+                <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽設定</h2>
+                <p className="text-xs text-gray-400 mb-4">設定比賽日期與備賽階段</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">比賽日期</label>
+                    <input
+                      type="date"
+                      value={client.competition_date || ''}
+                      onChange={(e) => updateClient('competition_date', e.target.value || null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {client.competition_date && (
+                      <p className="text-xs text-amber-600 mt-1 font-medium">
+                        距離比賽還有 {Math.max(0, Math.ceil((new Date(client.competition_date).getTime() - new Date().getTime()) / 86400000))} 天
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">備賽階段</label>
+                    <select
+                      value={client.prep_phase || 'off_season'}
+                      onChange={(e) => updateClient('prep_phase', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="off_season">休賽期</option>
+                      <option value="bulk">增肌期</option>
+                      <option value="cut">減脂期</option>
+                      <option value="peak_week">Peak Week</option>
+                      <option value="competition">比賽日</option>
+                      <option value="recovery">賽後恢復</option>
+                    </select>
                   </div>
                 </div>
               </div>
