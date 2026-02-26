@@ -12,6 +12,15 @@ export const metadata: Metadata = {
 
 const blogPosts = [
   {
+    id: '11',
+    title: '你睡覺還在用嘴巴呼吸？這可能是你減脂卡關的原因',
+    description: '脂肪 84% 靠呼吸代謝排出，但張嘴呼吸會讓你的燃脂系統在睡眠時失效。分享我 1800 個晚上的鼻呼吸實踐與背後的生理機制。',
+    date: '2026-02-26',
+    category: '恢復優化',
+    readTime: '5 分鐘',
+    slug: 'mouth-breathing-fat-loss',
+  },
+  {
     id: '10',
     title: '睡眠效能協議：睡眠不能補考，但可以預先儲值',
     description: '熬夜補眠根本還不了睡眠債。分享我實測有效的睡眠環境設定、三件法寶、和完整的睡前協議，讓每分鐘睡眠發揮最大效益。',
