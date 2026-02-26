@@ -658,18 +658,18 @@ function generateCutSuggestion(
     fatDelta = -7
     message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週）。需要降低熱量攝取。`
   } else if (weeklyChangeRate >= CUT_TARGETS.MAX_RATE) {
-    // 體重下降不夠快（-0.3% ~ 0%），檢查是否停滯
-    if (input.weeklyWeights.length >= 3) {
-      const twoWeeksAgo = input.weeklyWeights[2].avgWeight
-      const twoWeekChange = ((input.weeklyWeights[0].avgWeight - twoWeeksAgo) / twoWeeksAgo) * 100 / 2
-      if (twoWeekChange >= CUT_TARGETS.MAX_RATE) {
+    // 體重下降不夠快（-0.3% ~ 0%），檢查是否停滯（只需 2 週數據）
+    if (input.weeklyWeights.length >= 2) {
+      const lastWeek = input.weeklyWeights[1].avgWeight
+      const lastWeekChange = ((input.weeklyWeights[0].avgWeight - lastWeek) / lastWeek) * 100
+      if (lastWeekChange >= CUT_TARGETS.MAX_RATE) {
         status = 'plateau'
         statusLabel = '停滯期'
         statusEmoji = '🟡'
         calDelta = -175
         carbDelta = -22
         fatDelta = -5
-        message = `體重已連續 2 週幾乎無變化（${weeklyChangeRate.toFixed(2)}%/週）。建議微降熱量突破停滯期。`
+        message = `體重近 10-14 天幾乎無變化（${weeklyChangeRate.toFixed(2)}%/週）。建議微降熱量突破停滯期。`
       } else {
         status = 'on_track'
         statusLabel = '進度正常'
@@ -1199,17 +1199,17 @@ function generateBulkSuggestion(
       fatDelta = 0
       message = `體重反而下降（${weeklyChangeRate.toFixed(2)}%/週）。熱量盈餘明顯不夠，需要增加攝取。`
     } else {
-      if (input.weeklyWeights.length >= 3) {
-        const twoWeeksAgo = input.weeklyWeights[2].avgWeight
-        const twoWeekRate = ((input.weeklyWeights[0].avgWeight - twoWeeksAgo) / twoWeeksAgo) * 100 / 2
-        if (twoWeekRate < BULK_TARGETS.MIN_RATE) {
+      if (input.weeklyWeights.length >= 2) {
+        const lastWeek = input.weeklyWeights[1].avgWeight
+        const lastWeekRate = ((input.weeklyWeights[0].avgWeight - lastWeek) / lastWeek) * 100
+        if (lastWeekRate < BULK_TARGETS.MIN_RATE) {
           status = 'plateau'
           statusLabel = '增長停滯'
           statusEmoji = '🟡'
           calDelta = 175
           carbDelta = 22
           fatDelta = 0
-          message = `體重增長連續 2 週停滯（+${weeklyChangeRate.toFixed(2)}%/週）。建議增加熱量推動增長。`
+          message = `體重近 10-14 天增長停滯（+${weeklyChangeRate.toFixed(2)}%/週）。建議增加熱量推動增長。`
         } else {
           status = 'on_track'
           statusLabel = '進度正常'
