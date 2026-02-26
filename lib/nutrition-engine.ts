@@ -875,7 +875,11 @@ function generateGoalDrivenCut(
   let targetCalories = Math.round(estimatedTDEE - effectiveDailyDeficit)
 
   // 4. 安全底線 + 巨量營養素（先算，因為有氧需要知道真實卡路里底線）
-  const absoluteMinCal = isMale ? GOAL_DRIVEN.MIN_CALORIES_MALE : GOAL_DRIVEN.MIN_CALORIES_FEMALE
+  // 備賽選手（有 prepPhase）才允許放寬到 GOAL_DRIVEN 極限，一般學員仍用 SAFETY 底線
+  const isCompetitionPrep = !!input.prepPhase
+  const absoluteMinCal = isMale
+    ? (isCompetitionPrep ? GOAL_DRIVEN.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_MALE)
+    : (isCompetitionPrep ? GOAL_DRIVEN.MIN_CALORIES_FEMALE : SAFETY.MIN_CALORIES_FEMALE)
   const softMinCal = isMale ? SAFETY.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_FEMALE
 
   // 巨量營養素分配（依性別 + 赤字深度）
