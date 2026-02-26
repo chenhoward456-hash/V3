@@ -382,11 +382,11 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ===== 原有的警報區塊（回檢逾期等） ===== */}
-        {alerts.filter(a => a.text.includes('回檢')).length > 0 && (
+        {/* ===== 警報區塊（回檢 + 體重停滯 + 飲食 + Wellness + RPE）===== */}
+        {alerts.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">需要你注意</h3>
-            <div className="space-y-2">{alerts.filter(a => a.text.includes('回檢')).map((a, i) => <Link key={`${a.clientId}-${i}`} href={`/admin/clients/${a.clientId}`} className={`flex items-center justify-between px-4 py-3 rounded-xl ${a.color.split(' ')[1]} hover:opacity-80 transition-opacity`}><span className={`text-sm font-medium ${a.color.split(' ')[0]}`}>{a.name} — {a.text}</span><ExternalLink size={14} className="text-gray-400" /></Link>)}</div>
+            <div className="space-y-2">{alerts.map((a, i) => <Link key={`${a.clientId}-${i}`} href={`/admin/clients/${a.clientId}/overview`} className={`flex items-center justify-between px-4 py-3 rounded-xl ${a.color.split(' ')[1]} hover:opacity-80 transition-opacity`}><span className={`text-sm font-medium ${a.color.split(' ')[0]}`}>{a.name} — {a.text}</span><ExternalLink size={14} className="text-gray-400" /></Link>)}</div>
           </div>
         )}
 
