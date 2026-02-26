@@ -106,7 +106,7 @@ export default function HealthOverview({
     )
   }
 
-  if (competitionEnabled && caloriesTarget) {
+  if (caloriesTarget) {
     const pct = todayCalories ? Math.round((todayCalories / caloriesTarget) * 100) : 0
     cards.push(
       <div key="calories" className="bg-amber-50 rounded-2xl p-4 text-center">

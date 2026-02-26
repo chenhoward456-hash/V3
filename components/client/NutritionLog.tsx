@@ -209,11 +209,11 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
         )}
       </div>
 
-      {/* 備賽巨量營養素進度快照 */}
-      {competitionEnabled && hasRecorded && (caloriesTarget || carbsTarget || fatTarget) && (
+      {/* 巨量營養素進度快照 */}
+      {hasRecorded && (caloriesTarget || effectiveCarbsTarget || fatTarget) && (
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-amber-700">🏆 今日巨量營養素</p>
+            <p className="text-xs font-semibold text-amber-700">{competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 今日巨量營養素'}</p>
             {carbsCyclingEnabled && (
               <div className="flex items-center gap-1">
                 <button
@@ -361,11 +361,11 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                   color="cyan"
                 />
               )}
-              {/* 備賽巨量營養素 */}
-              {competitionEnabled && (
+              {/* 巨量營養素 */}
+              {(effectiveCarbsTarget || fatTarget) && (
                 <div className="border-t border-gray-100 pt-3 mt-1 space-y-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-amber-600">🏆 備賽巨量營養素</p>
+                    <p className="text-xs font-semibold text-amber-600">{competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 巨量營養素'}</p>
                     {carbsCyclingEnabled && carbsTrainingDay && carbsRestDay && (
                       <button
                         onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}

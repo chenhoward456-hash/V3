@@ -16,6 +16,7 @@ import WellnessTrend from '@/components/client/WellnessTrend'
 import HealthReport from '@/components/client/HealthReport'
 import TrainingLog from '@/components/client/TrainingLog'
 import NutritionLog from '@/components/client/NutritionLog'
+import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import PwaPrompt from '@/components/client/PwaPrompt'
@@ -495,6 +496,20 @@ export default function ClientDashboard() {
             date={selectedDate}
             onMutate={mutate}
           /></div>
+        )}
+
+        {/* 一般學員的飲食目標卡片 */}
+        {!isCompetition && c.nutrition_enabled && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
+          <DailyNutritionTarget
+            caloriesTarget={c.calories_target}
+            proteinTarget={c.protein_target}
+            carbsTarget={c.carbs_target}
+            fatTarget={c.fat_target}
+            carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
+            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            carbsTrainingDay={c.carbs_training_day}
+            carbsRestDay={c.carbs_rest_day}
+          />
         )}
 
         {/* 一般學員的飲食（非備賽才在這裡顯示） */}
