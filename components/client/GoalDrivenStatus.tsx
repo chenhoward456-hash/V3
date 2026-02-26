@@ -89,6 +89,20 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
               </div>
             </div>
           )}
+          {data.refeedSuggested && (
+            <div className="mt-3 bg-orange-50 border border-orange-300 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">🔄</span>
+                <p className="text-sm font-bold text-orange-800">
+                  建議安排 {data.refeedDays} 天 Refeed
+                </p>
+              </div>
+              <p className="text-xs text-orange-700">{data.refeedReason}</p>
+              <p className="text-[11px] text-orange-500 mt-1">
+                今日碳水提升至維持熱量（4-6g/kg），脂肪降低，蛋白質維持。
+              </p>
+            </div>
+          )}
         </div>
       )
     }
@@ -226,6 +240,22 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
             ? `✅ 預測比賽日 ${dl.predictedCompWeight}kg — 可以達到目標！`
             : `⚠️ 預測比賽日 ${dl.predictedCompWeight}kg — 與目標還差 ${(dl.predictedCompWeight - (targetWeightValue || 0)).toFixed(1)}kg`
           }
+        </div>
+      )}
+
+      {/* Refeed 建議 */}
+      {data.refeedSuggested && (
+        <div className="mt-3 bg-orange-50 border border-orange-300 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">🔄</span>
+            <p className="text-sm font-bold text-orange-800">
+              建議安排 {data.refeedDays} 天 Refeed
+            </p>
+          </div>
+          <p className="text-xs text-orange-700">{data.refeedReason}</p>
+          <p className="text-[11px] text-orange-500 mt-1">
+            今日碳水提升至維持熱量（4-6g/kg），脂肪降低，蛋白質維持。
+          </p>
         </div>
       )}
 
