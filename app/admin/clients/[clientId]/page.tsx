@@ -59,6 +59,8 @@ interface Client {
   goal_type: 'cut' | 'bulk' | null
   diet_start_date: string | null
   activity_profile: 'sedentary' | 'high_energy_flux' | null
+  health_mode_enabled: boolean
+  quarterly_cycle_start: string | null
 
   lab_results: LabResult[]
   supplements: Supplement[]
@@ -124,6 +126,8 @@ export default function ClientEditor() {
         goal_type: null,
         diet_start_date: null,
         activity_profile: null,
+        health_mode_enabled: false,
+        quarterly_cycle_start: null,
 
         lab_results: [],
         supplements: []
@@ -204,6 +208,8 @@ export default function ClientEditor() {
         goal_type: client.goal_type || null,
         diet_start_date: client.diet_start_date || null,
         activity_profile: client.activity_profile || null,
+        health_mode_enabled: client.health_mode_enabled,
+        quarterly_cycle_start: client.quarterly_cycle_start || null,
       }
 
       if (clientId === 'new') {
@@ -498,7 +504,6 @@ export default function ClientEditor() {
                   { key: 'training_enabled', label: '訓練追蹤', desc: '每日訓練類型與強度紀錄' },
                   { key: 'supplement_enabled', label: '補品管理', desc: '補品清單與每日打卡' },
                   { key: 'lab_enabled', label: '血檢追蹤', desc: '血檢數據與健康指標' },
-                  { key: 'competition_enabled', label: '備賽模式 🏆', desc: '健美備賽倒數、完整巨量營養素、進階感受追蹤' },
                 ] as const).map(({ key, label, desc }) => (
                   <div key={key} className="flex items-center justify-between">
                     <div>
@@ -519,6 +524,55 @@ export default function ClientEditor() {
                     </button>
                   </div>
                 ))}
+
+                {/* 模式選擇：健康模式 vs 備賽模式（互斥） */}
+                <div className="border-t border-gray-100 pt-4 mt-2">
+                  <p className="text-xs text-gray-400 mb-3">進階模式（兩者互斥）</p>
+
+                  {/* 健康模式 */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">健康模式 🌿</p>
+                      <p className="text-xs text-gray-500 mt-0.5">季費制、健康分數、四柱追蹤（吃睡練補）、無截止日</p>
+                    </div>
+                    <button
+                      onClick={() => setClient(prev => prev ? ({
+                        ...prev,
+                        health_mode_enabled: !prev.health_mode_enabled,
+                        competition_enabled: false,  // 互斥
+                      }) : prev)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        client.health_mode_enabled ? 'bg-emerald-500' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        client.health_mode_enabled ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
+
+                  {/* 備賽模式 */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">備賽模式 🏆</p>
+                      <p className="text-xs text-gray-500 mt-0.5">健美備賽倒數、完整巨量營養素、進階感受追蹤</p>
+                    </div>
+                    <button
+                      onClick={() => setClient(prev => prev ? ({
+                        ...prev,
+                        competition_enabled: !prev.competition_enabled,
+                        health_mode_enabled: false,  // 互斥
+                      }) : prev)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        client.competition_enabled ? 'bg-amber-500' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        client.competition_enabled ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -743,6 +797,37 @@ export default function ClientEditor() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Health Mode Settings — 健康模式季度週期 */}
+            {client.health_mode_enabled && (
+              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-emerald-400">
+                <h2 className="text-lg font-medium text-gray-900 mb-1">🌿 健康模式設定</h2>
+                <p className="text-xs text-gray-400 mb-4">每 90 天一個季度週期，配合季度血檢追蹤健康進步</p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">本季週期起始日</label>
+                  <input
+                    type="date"
+                    value={client.quarterly_cycle_start || ''}
+                    onChange={(e) => updateClient('quarterly_cycle_start', e.target.value || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  {client.quarterly_cycle_start && (() => {
+                    const start = new Date(client.quarterly_cycle_start)
+                    const today = new Date()
+                    const elapsed = Math.floor((today.getTime() - start.getTime()) / 86400000) + 1
+                    const daysLeft = Math.max(0, 90 - elapsed)
+                    const cycleEnd = new Date(start)
+                    cycleEnd.setDate(cycleEnd.getDate() + 89)
+                    return (
+                      <div className="mt-2 bg-emerald-50 rounded-lg px-3 py-2 text-xs text-emerald-700">
+                        <p>本季第 <span className="font-bold">{Math.min(90, elapsed)}</span> 天 / 90 天</p>
+                        <p className="mt-0.5">預計血檢日：{cycleEnd.toLocaleDateString('zh-TW')}（距今 {daysLeft} 天）</p>
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )}

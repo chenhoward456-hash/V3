@@ -32,6 +32,10 @@ interface Client {
 interface TrainingLogRecord { client_id: string; training_type: string }
 interface SupplementLog { client_id: string; supplement_id: string; date: string; completed: boolean }
 interface SupplementRecord { client_id: string }
+interface BodyRecord { client_id: string; date: string; weight: number }
+interface NutritionRecord { client_id: string; date: string; compliant: boolean | null }
+interface WellnessRecord { client_id: string; date: string; energy_level: number }
+interface RPERecord { client_id: string; date: string; rpe: number }
 
 type SortKey = 'name' | 'status' | 'compliance' | 'lastActivity' | 'nextCheckup'
 type SortDir = 'asc' | 'desc'
@@ -48,6 +52,10 @@ export default function AdminDashboard() {
   const [todayBodyIds, setTodayBodyIds] = useState<Set<string>>(new Set())
   const [todayTrainingMap, setTodayTrainingMap] = useState<Record<string, string>>({})
   const [todayNutritionMap, setTodayNutritionMap] = useState<Record<string, boolean>>({})
+  const [recentBody, setRecentBody] = useState<BodyRecord[]>([])
+  const [recentNutrition, setRecentNutrition] = useState<NutritionRecord[]>([])
+  const [recentWellness, setRecentWellness] = useState<WellnessRecord[]>([])
+  const [recentRPE, setRecentRPE] = useState<RPERecord[]>([])
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('lastActivity')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -88,6 +96,10 @@ export default function AdminDashboard() {
       for (const r of (data.todayNutrition || []) as any[]) nMap[r.client_id] = r.compliant
       setTodayNutritionMap(nMap)
       setTodayBodyIds(new Set((data.todayBody || []).map((r: any) => r.client_id)))
+      setRecentBody(data.recentBody || [])
+      setRecentNutrition(data.recentNutrition || [])
+      setRecentWellness(data.recentWellness || [])
+      setRecentRPE(data.recentTrainingRPE || [])
     } catch { /* silent */ } finally { setLoading(false) }
   }
 
@@ -172,9 +184,55 @@ export default function AdminDashboard() {
         if (diff < 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `回檢已逾期 ${Math.abs(diff)}天`, color: 'text-red-600 bg-red-50', priority: 0 })
         else if (diff <= 7) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `回檢日 ${client.next_checkup_date}`, color: 'text-orange-600 bg-orange-50', priority: 1 })
       }
+
+      // ── 體重停滯偵測（近 14 天，啟用體組成的學員）──
+      if (client.body_composition_enabled) {
+        const bodyLogs = recentBody.filter(b => b.client_id === client.id)
+        if (bodyLogs.length >= 4) {
+          const weights = bodyLogs.map(b => b.weight)
+          const maxW = Math.max(...weights); const minW = Math.min(...weights)
+          if (maxW - minW < 0.5) {
+            items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: '體重近 14 天停滯（< 0.5kg 波動）', color: 'text-yellow-700 bg-yellow-50', priority: 2 })
+          }
+        }
+      }
+
+      // ── 飲食合規率 < 60%（近 14 天，啟用飲食的學員）──
+      if (client.nutrition_enabled) {
+        const nutLogs = recentNutrition.filter(n => n.client_id === client.id)
+        if (nutLogs.length >= 5) {
+          const compliantCount = nutLogs.filter(n => n.compliant).length
+          const rate = Math.round((compliantCount / nutLogs.length) * 100)
+          if (rate < 60) {
+            items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `飲食合規率僅 ${rate}%（近 14 天）`, color: 'text-red-600 bg-red-50', priority: 1 })
+          }
+        }
+      }
+
+      // ── Wellness 連續 3 天能量 ≤ 2（啟用 Wellness 的學員）──
+      if (client.wellness_enabled) {
+        const wLogs = recentWellness
+          .filter(w => w.client_id === client.id)
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .slice(0, 3)
+        if (wLogs.length >= 3 && wLogs.every(w => w.energy_level <= 2)) {
+          items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: '連續 3 天能量指數 ≤ 2，需關注', color: 'text-orange-600 bg-orange-50', priority: 1 })
+        }
+      }
+
+      // ── 訓練 RPE 連續 3 天 > 8.5（啟用訓練的學員）──
+      if (client.training_enabled) {
+        const rpeLogs = recentRPE
+          .filter(r => r.client_id === client.id)
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .slice(0, 3)
+        if (rpeLogs.length >= 3 && rpeLogs.every(r => r.rpe > 8.5)) {
+          items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `訓練 RPE 連續偏高（${rpeLogs.map(r => r.rpe).join('/')}），建議 Deload`, color: 'text-orange-600 bg-orange-50', priority: 1 })
+        }
+      }
     }
     return items.sort((a, b) => a.priority - b.priority)
-  }, [clients, clientStats])
+  }, [clients, clientStats, recentBody, recentNutrition, recentWellness, recentRPE])
 
   const handleSort = (key: SortKey) => { if (sortKey === key) setSortDir(p => p === 'asc' ? 'desc' : 'asc'); else { setSortKey(key); setSortDir(key === 'name' ? 'asc' : 'desc') } }
 
@@ -324,11 +382,11 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ===== 原有的警報區塊（回檢逾期等） ===== */}
-        {alerts.filter(a => a.text.includes('回檢')).length > 0 && (
+        {/* ===== 警報區塊（回檢 + 體重停滯 + 飲食 + Wellness + RPE）===== */}
+        {alerts.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">需要你注意</h3>
-            <div className="space-y-2">{alerts.filter(a => a.text.includes('回檢')).map((a, i) => <Link key={`${a.clientId}-${i}`} href={`/admin/clients/${a.clientId}`} className={`flex items-center justify-between px-4 py-3 rounded-xl ${a.color.split(' ')[1]} hover:opacity-80 transition-opacity`}><span className={`text-sm font-medium ${a.color.split(' ')[0]}`}>{a.name} — {a.text}</span><ExternalLink size={14} className="text-gray-400" /></Link>)}</div>
+            <div className="space-y-2">{alerts.map((a, i) => <Link key={`${a.clientId}-${i}`} href={`/admin/clients/${a.clientId}/overview`} className={`flex items-center justify-between px-4 py-3 rounded-xl ${a.color.split(' ')[1]} hover:opacity-80 transition-opacity`}><span className={`text-sm font-medium ${a.color.split(' ')[0]}`}>{a.name} — {a.text}</span><ExternalLink size={14} className="text-gray-400" /></Link>)}</div>
           </div>
         )}
 
