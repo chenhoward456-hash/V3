@@ -78,7 +78,7 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
   const allWellness = [...energyRaw, ...moodRaw, ...cogRaw, ...stressInverted]
   const wellnessScore = allWellness.length > 0 ? (avg(allWellness) / 5) * 100 : 50
   const wellnessDetail = allWellness.length > 0
-    ? `精力/情緒/認知 近7天均分 ${(avg(allWellness) / 5 * 10).toFixed(1)}/10`
+    ? `精力/情緒/認知 近7天均分 ${avg(allWellness).toFixed(1)}/5`
     : '尚無記錄'
 
   // ── 3. 飲食分數（20%）──
@@ -125,9 +125,12 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
   let daysUntilBloodTest: number | null = null
 
   if (quarterlyStart) {
-    const start = new Date(quarterlyStart)
-    const today = new Date()
-    const elapsed = Math.floor((today.getTime() - start.getTime()) / 86400000) + 1
+    // 用本地時間解析，避免 new Date('YYYY-MM-DD') 被視為 UTC 導致時區偏移
+    const [y, m, d] = quarterlyStart.split('-').map(Number)
+    const start = new Date(y, m - 1, d)
+    const todayLocal = new Date()
+    todayLocal.setHours(0, 0, 0, 0)
+    const elapsed = Math.floor((todayLocal.getTime() - start.getTime()) / 86400000) + 1
     daysInCycle = Math.min(90, Math.max(1, elapsed))
     daysUntilBloodTest = Math.max(0, 90 - daysInCycle)
   }

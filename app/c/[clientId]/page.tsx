@@ -170,10 +170,13 @@ export default function ClientDashboard() {
 
   // 健康模式：計算健康分數
   const healthScore = isHealthMode ? calculateHealthScore({
-    wellnessLast7: (clientData.wellness || []).slice(-7),
-    nutritionLast7: (clientData.nutritionLogs || []).slice(-7),
-    trainingLast7: (clientData.trainingLogs || []).slice(-7),
-    supplementComplianceRate: supplementComplianceStats.weekRate / 100,
+    wellnessLast7: (clientData.wellness || []).slice(0, 7),
+    nutritionLast7: (clientData.nutritionLogs || []).slice(0, 7),
+    trainingLast7: (clientData.trainingLogs || []).slice(0, 7),
+    // 未啟用補品或尚無補品資料 → 給中性 0.5，避免拉低分數
+    supplementComplianceRate: c.supplement_enabled && (c.supplements?.length ?? 0) > 0
+      ? supplementComplianceStats.weekRate / 100
+      : 0.5,
     labResults: c.lab_results || [],
     quarterlyStart: c.quarterly_cycle_start,
   }) : null
