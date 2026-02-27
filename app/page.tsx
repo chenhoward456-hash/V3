@@ -8,8 +8,8 @@ const personSchema = {
   '@type': 'Person',
   name: 'Howard Chen',
   alternateName: 'Howard',
-  jobTitle: 'CSCS 認證體能教練',
-  description: '台中北屯 CSCS 體能教練，專精肌力訓練、數據化追蹤、個人化方案設計',
+  jobTitle: 'CSCS 認證體能教練 / Howard Protocol 創辦人',
+  description: 'AI 驅動體態管理系統 Howard Protocol 創辦人，CSCS 認證，運動醫學背景。自適應演算法 × 教練監督。',
   url: 'https://howard456.vercel.app',
   image: 'https://howard456.vercel.app/howard-profile.jpg',
   sameAs: [
@@ -18,7 +18,7 @@ const personSchema = {
   ],
   worksFor: {
     '@type': 'Organization',
-    name: 'Coolday Fitness 北屯館',
+    name: 'Howard Protocol',
     address: {
       '@type': 'PostalAddress',
       addressLocality: '台中市',
@@ -26,19 +26,19 @@ const personSchema = {
       addressCountry: 'TW',
     },
   },
-  knowsAbout: ['肌力訓練', '體能訓練', '代謝優化', '營養優化', '運動科學', 'CSCS'],
+  knowsAbout: ['肌力訓練', '體能訓練', '代謝優化', '營養優化', '運動科學', 'CSCS', '自適應演算法', 'AI 體態管理'],
 }
 
 export const metadata: Metadata = {
-  title: 'Howard - CSCS 數據化體能教練 | 科學訓練・遠端管理',
-  description: 'CSCS 認證體能教練，運動醫學背景。數據化追蹤、個人化方案、持續調整。專注解決認真練但卡住的人。台中實體 / 全台遠端。',
-  keywords: ['CSCS教練', '體能教練', '數據化訓練', '遠端訓練', '科學化訓練', '台中教練'],
+  title: 'Howard Protocol - AI 驅動體態管理系統 | CSCS 教練監督',
+  description: '不只是教練服務，是一套 AI 驅動的體態管理系統。自適應 TDEE 自動校正、每週智能分析、Refeed 自動觸發、月經週期濾鏡。CSCS 認證教練監督，運動醫學背景。台中實體 / 全台遠端。',
+  keywords: ['AI體態管理', '自適應TDEE', '智能營養系統', 'CSCS教練', '數據化訓練', '遠端訓練', '科學化減脂', '台中教練'],
   openGraph: {
-    title: 'Howard - CSCS 數據化體能教練',
-    description: '運動醫學背景 × 數據化追蹤 × 個人化方案',
+    title: 'Howard Protocol - AI 驅動體態管理系統',
+    description: '自適應演算法 × CSCS 教練監督 × 24 小時自動分析',
     type: 'website',
     url: 'https://howard456.vercel.app',
-    images: [{ url: '/howard-profile.jpg', width: 1200, height: 630, alt: 'Howard - CSCS 數據化體能教練' }],
+    images: [{ url: '/howard-profile.jpg', width: 1200, height: 630, alt: 'Howard Protocol - AI 驅動體態管理系統' }],
   },
 }
 
@@ -55,32 +55,65 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
           <div className="flex flex-col-reverse md:flex-row items-center gap-10 md:gap-16">
             <div className="flex-1 text-center md:text-left">
+              <div className="inline-block bg-[#2563eb]/10 text-[#2563eb] text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
+                AI-Powered Coaching System
+              </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6" style={{ color: '#1e3a5f' }}>
-                練對了，<br />身體會告訴你
+                你的 AI 體態教練<br />24 小時待命
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
-                運動醫學背景 × 數據化追蹤 × 個人化方案
+                自適應演算法 × CSCS 教練監督 × 運動醫學背景
               </p>
-              <p className="text-sm text-gray-400 mb-8">
-                CSCS 認證體能教練 — 6 年經驗，專注解決認真練但卡住的人
+              <p className="text-sm text-gray-400 mb-8 leading-relaxed max-w-lg">
+                不只是教練服務 — 是一套會自動分析你的體重趨勢、自動調整飲食計畫、自動偵測停滯期的智能系統。
               </p>
               <Link
                 href="/diagnosis"
-                className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-[#1d4ed8] transition-all"
+                className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-[#1d4ed8] transition-all shadow-lg shadow-blue-500/25"
               >
-                30 秒了解你的狀況 →
+                免費體驗系統分析 →
               </Link>
             </div>
-            <div className="flex-shrink-0">
+
+            {/* 右側：Howard 照片 + 引擎 Demo 預覽 */}
+            <div className="flex-shrink-0 flex flex-col items-center gap-4">
               <Image
                 src="/howard-profile.jpg"
-                alt="Howard Chen - CSCS 認證體能教練"
-                width={280}
-                height={280}
+                alt="Howard Chen - CSCS 認證體能教練 / Howard Protocol 創辦人"
+                width={240}
+                height={240}
                 className="rounded-2xl"
                 style={{ objectFit: 'cover', boxShadow: '0 8px 30px rgba(30, 58, 95, 0.12)' }}
                 priority
               />
+              {/* 靜態 Engine Demo 卡片 */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 w-[260px]">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-base">🧠</span>
+                  <span className="text-xs font-bold text-gray-900">每週智能分析</span>
+                  <span className="ml-auto text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">進度正常</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 mb-3">
+                  <div className="bg-gray-50 rounded-lg p-2 text-center">
+                    <p className="text-[9px] text-gray-400">TDEE</p>
+                    <p className="text-sm font-bold text-gray-900">2,340</p>
+                    <p className="text-[9px] text-gray-400">kcal</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-2 text-center">
+                    <p className="text-[9px] text-gray-400">體重變化</p>
+                    <p className="text-sm font-bold text-green-600">-0.6%</p>
+                    <p className="text-[9px] text-gray-400">/週</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-2 text-center">
+                    <p className="text-[9px] text-gray-400">每日赤字</p>
+                    <p className="text-sm font-bold text-green-600">380</p>
+                    <p className="text-[9px] text-gray-400">kcal</p>
+                  </div>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                  <p className="text-[10px] text-green-700">🟢 體重穩定下降，完美符合目標範圍。維持目前計畫。</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -92,37 +125,56 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12" style={{ color: '#1e3a5f' }}>
             你是不是也這樣？
           </h2>
-          <div className="grid md:grid-cols-3 gap-6 mb-10">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             {[
               { emoji: '💪', text: '認真練了半年，體態卻沒什麼變化' },
               { emoji: '🥗', text: '飲食控制很嚴格，體脂就是不降' },
               { emoji: '😫', text: '容易疲勞、恢復慢，不知道哪裡出問題' },
+              { emoji: '📋', text: '教練給了菜單，但從不根據你的數據調整' },
             ].map(({ emoji, text }) => (
-              <div key={text} className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center">
-                <div className="text-4xl mb-4">{emoji}</div>
-                <p className="text-gray-700 font-medium leading-relaxed">{text}</p>
+              <div key={text} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
+                <div className="text-3xl mb-3">{emoji}</div>
+                <p className="text-gray-700 font-medium leading-relaxed text-sm">{text}</p>
               </div>
             ))}
           </div>
-          <p className="text-center text-gray-500 text-lg">
-            問題可能不在你不夠努力，而是<span className="font-semibold text-[#1e3a5f]">方向不對</span>。
-          </p>
+          <div className="max-w-2xl mx-auto bg-[#1e3a5f]/5 rounded-2xl p-6 text-center">
+            <p className="text-gray-600 text-sm leading-relaxed">
+              大部分教練給你一組靜態數字，然後<span className="font-bold text-[#1e3a5f]">就沒有然後了</span>。
+              <br />Howard Protocol 會根據你的體重趨勢，<span className="font-bold text-[#2563eb]">每週自動分析、自動建議調整</span>。
+            </p>
+          </div>
         </section>
       </ScrollReveal>
 
-      {/* ===== 區塊 3: 方法論 ===== */}
+      {/* ===== 區塊 3: 系統核心能力 ===== */}
       <ScrollReveal>
         <section className="bg-[#f5f7fa] py-20">
           <div className="max-w-6xl mx-auto px-6">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
-              Howard Protocol
+              不只是教練，是一套智能系統
             </h2>
-            <p className="text-center text-gray-500 mb-14 text-lg">你的身體升級系統</p>
+            <p className="text-center text-gray-500 mb-14 text-lg">Howard Protocol 背後的引擎在做什麼</p>
             <div className="grid md:grid-cols-3 gap-8">
               {[
-                { num: '01', icon: '📊', title: '全面評估', desc: '了解你的身體數據、訓練歷程、生活習慣，找出真正的瓶頸' },
-                { num: '02', icon: '📋', title: '個人化方案', desc: '根據你的狀況設計訓練、營養、恢復的完整計畫' },
-                { num: '03', icon: '📱', title: '持續追蹤', desc: '透過線上系統追蹤你的進度，隨時調整方案' },
+                {
+                  num: '01',
+                  icon: '📊',
+                  title: '自適應 TDEE 估算',
+                  desc: '不用公式猜。系統根據你的實際體重變化 + 飲食記錄，自動校正你真正的代謝率。吃越久越準。',
+                },
+                {
+                  num: '02',
+                  icon: '🧠',
+                  title: '每週智能分析',
+                  desc: '自動判斷你的進度：掉太快？停滯了？方向對嗎？不用等教練手動看，系統即時告訴你。',
+                },
+                {
+                  num: '03',
+                  icon: '🔄',
+                  title: '自動調整建議',
+                  desc: '體重停滯時自動建議降卡、Refeed 時機自動觸發、女性黃體期的體重波動也不會誤判。',
+                },
               ].map(({ num, icon, title, desc }) => (
                 <div key={num} className="bg-white rounded-2xl p-8 shadow-sm">
                   <div className="flex items-center gap-3 mb-4">
@@ -130,7 +182,7 @@ export default function HomePage() {
                     <span className="text-2xl">{icon}</span>
                   </div>
                   <h3 className="text-xl font-bold mb-3" style={{ color: '#1e3a5f' }}>{title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{desc}</p>
+                  <p className="text-gray-600 leading-relaxed text-sm">{desc}</p>
                 </div>
               ))}
             </div>
@@ -138,22 +190,24 @@ export default function HomePage() {
         </section>
       </ScrollReveal>
 
-      {/* ===== 區塊 4: 數字說話 ===== */}
+      {/* ===== 區塊 4: 系統能力指標 ===== */}
       <ScrollReveal>
         <section className="max-w-6xl mx-auto px-6 py-20">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-14" style={{ color: '#1e3a5f' }}>
-            關於 Howard
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
+            系統在背後幫你做的事
           </h2>
+          <p className="text-center text-gray-500 mb-14">每一個功能都有運動科學文獻支撐</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { number: '6+', label: '年運動科學實務經驗' },
-              { number: 'CSCS', label: '美國肌力體能認證' },
-              { number: '24hr', label: '內回覆你的問題' },
-              { number: '1 對 1', label: '完全個人化方案' },
-            ].map(({ number, label }) => (
-              <div key={label} className="text-center bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                <div className="text-4xl md:text-5xl font-bold mb-3" style={{ color: '#2563eb' }}>{number}</div>
-                <p className="text-gray-600 text-sm">{label}</p>
+              { icon: '🧠', title: '每週自動分析', desc: '體重趨勢 AI 判讀，不靠教練感覺' },
+              { icon: '📉', title: '自適應 TDEE', desc: '吃多少才會瘦？系統根據數據自動算' },
+              { icon: '🔄', title: 'Refeed 觸發', desc: 'RPE + 能量 + 低碳天數，三條件自動觸發' },
+              { icon: '🩸', title: '月經週期濾鏡', desc: '黃體期不誤判，不會叫你少吃' },
+            ].map(({ icon, title, desc }) => (
+              <div key={title} className="text-center bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="text-3xl mb-3">{icon}</div>
+                <h3 className="font-bold mb-2 text-sm" style={{ color: '#1e3a5f' }}>{title}</h3>
+                <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
@@ -169,30 +223,31 @@ export default function HomePage() {
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-green-100">
-                <h3 className="text-lg font-bold text-green-700 mb-5">✅ 適合你</h3>
+                <h3 className="text-lg font-bold text-green-700 mb-5">適合你</h3>
                 <ul className="space-y-3">
                   {[
-                    '認真想改變但卡住的人',
-                    '想用科學方法而不是土法煉鋼',
-                    '外縣市或時間不固定，需要遠端指導',
-                    '願意投資自己健康的人',
+                    '認真想改變但一直卡住的人',
+                    '想用數據和科學方法，不想土法煉鋼',
+                    '想要系統幫你追蹤，不只是教練的感覺',
+                    '外縣市或時間不固定，需要遠端管理',
+                    '願意每天花 2 分鐘記錄數據的人',
                   ].map(t => (
-                    <li key={t} className="flex items-start gap-2 text-gray-700">
-                      <span className="text-green-500 mt-0.5">✓</span>{t}
+                    <li key={t} className="flex items-start gap-2 text-gray-700 text-sm">
+                      <span className="text-green-500 mt-0.5 font-bold">+</span>{t}
                     </li>
                   ))}
                 </ul>
               </div>
               <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-red-100">
-                <h3 className="text-lg font-bold text-red-600 mb-5">❌ 不適合</h3>
+                <h3 className="text-lg font-bold text-red-600 mb-5">不適合</h3>
                 <ul className="space-y-3">
                   {[
-                    '只想要短期速效的人',
-                    '不願意配合追蹤和回報的人',
-                    '純粹找人陪練的人',
+                    '只想要速效、不願意等 2-4 週看數據的人',
+                    '不願意配合每日記錄飲食和體重的人',
+                    '純粹找人陪練、不在意數據的人',
                   ].map(t => (
-                    <li key={t} className="flex items-start gap-2 text-gray-700">
-                      <span className="text-red-400 mt-0.5">✗</span>{t}
+                    <li key={t} className="flex items-start gap-2 text-gray-700 text-sm">
+                      <span className="text-red-400 mt-0.5 font-bold">-</span>{t}
                     </li>
                   ))}
                 </ul>
@@ -205,35 +260,83 @@ export default function HomePage() {
       {/* ===== 區塊 6: 服務方案 ===== */}
       <ScrollReveal>
         <section className="max-w-6xl mx-auto px-6 py-20">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-14" style={{ color: '#1e3a5f' }}>
-            合作方式
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
+            選擇你的方案
           </h2>
+          <p className="text-center text-gray-500 mb-14">兩種方案，同一套引擎</p>
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 flex flex-col">
-              <div className="text-sm font-semibold text-[#2563eb] bg-[#2563eb]/10 px-3 py-1 rounded-full self-start mb-5">遠端方案</div>
-              <h3 className="text-2xl font-bold mb-4" style={{ color: '#1e3a5f' }}>遠端追蹤方案</h3>
-              <p className="text-gray-500 mb-5">適合外縣市或時間彈性需求</p>
-              <ul className="space-y-3 text-gray-700 mb-8 flex-1">
-                <li className="flex items-center gap-2"><span className="text-[#2563eb]">●</span>個人化訓練 + 營養方案</li>
-                <li className="flex items-center gap-2"><span className="text-[#2563eb]">●</span>線上數據追蹤系統</li>
-                <li className="flex items-center gap-2"><span className="text-[#2563eb]">●</span>每週檢視調整</li>
+            {/* 主推：智能管理方案 */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-[#2563eb]/30 flex flex-col relative">
+              <div className="absolute -top-3 left-6 bg-[#2563eb] text-white text-xs font-bold px-3 py-1 rounded-full">
+                全台適用
+              </div>
+              <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>Howard Protocol 智能管理</h3>
+              <p className="text-gray-500 mb-6 text-sm">AI 引擎 + CSCS 教練監督</p>
+              <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
+                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>AI 引擎 24 小時自動分析</li>
+                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>每週體重趨勢自動判讀</li>
+                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>自適應 TDEE 持續校正</li>
+                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>Refeed / Diet Break 自動觸發</li>
+                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>碳循環自動分配（訓練日/休息日）</li>
+                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>月經週期智能濾鏡（女性）</li>
+                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>CSCS 教練每週監督 + LINE 諮詢</li>
               </ul>
-              <Link href="/remote" className="block text-center bg-[#2563eb] text-white py-3 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors">
-                了解更多 →
+              <Link
+                href="/diagnosis"
+                className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
+              >
+                免費體驗系統分析 →
               </Link>
             </div>
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 flex flex-col">
-              <div className="text-sm font-semibold text-[#1e3a5f] bg-[#1e3a5f]/10 px-3 py-1 rounded-full self-start mb-5">實體方案</div>
-              <h3 className="text-2xl font-bold mb-4" style={{ color: '#1e3a5f' }}>實體訓練方案</h3>
-              <p className="text-gray-500 mb-5">適合台中地區</p>
-              <ul className="space-y-3 text-gray-700 mb-8 flex-1">
-                <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">●</span>一對一教練指導</li>
-                <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">●</span>完整訓練 + 營養規劃</li>
-                <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">●</span>動作矯正與技術指導</li>
+
+            {/* 實體 + 智能管理 */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
+              <div className="absolute -top-3 left-6 bg-[#1e3a5f] text-white text-xs font-bold px-3 py-1 rounded-full">
+                台中限定
+              </div>
+              <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>實體訓練 + 智能管理</h3>
+              <p className="text-gray-500 mb-6 text-sm">一對一指導 + AI 引擎全套</p>
+              <ul className="space-y-3 text-gray-700 mb-4 text-sm">
+                <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>包含上方所有智能管理功能</li>
               </ul>
-              <Link href="/action" className="block text-center bg-white text-blue-600 border-2 border-blue-600 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors">
+              <div className="border-t border-gray-100 pt-4 mb-8 flex-1">
+                <p className="text-xs text-gray-400 mb-3">額外包含：</p>
+                <ul className="space-y-3 text-gray-700 text-sm">
+                  <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>一對一動作評估與矯正</li>
+                  <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>即時訓練指導與調整</li>
+                  <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>Coolday Fitness 北屯館</li>
+                </ul>
+              </div>
+              <Link href="/action" className="block text-center bg-white text-[#1e3a5f] border-2 border-[#1e3a5f] py-3.5 rounded-xl font-semibold hover:bg-[#1e3a5f]/5 transition-colors">
                 預約諮詢 →
               </Link>
+            </div>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* ===== 區塊 7: 關於 Howard ===== */}
+      <ScrollReveal>
+        <section className="bg-[#f5f7fa] py-16">
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="bg-white rounded-2xl p-8 shadow-sm flex flex-col md:flex-row items-center gap-8">
+              <Image
+                src="/howard-profile.jpg"
+                alt="Howard Chen"
+                width={120}
+                height={120}
+                className="rounded-xl"
+                style={{ objectFit: 'cover' }}
+              />
+              <div>
+                <h3 className="text-xl font-bold mb-2" style={{ color: '#1e3a5f' }}>Howard Chen</h3>
+                <p className="text-sm text-gray-500 mb-3">CSCS 認證 / 高雄醫學大學運動醫學系 / 6+ 年實務經驗</p>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  我花了 6 年時間，從自己的身體實驗中，建立了這套數據驅動的體態管理系統。
+                  每一個功能背後都有運動科學文獻支撐，不是憑感覺教練。
+                  我相信：好的系統比好的意志力更可靠。
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -249,7 +352,7 @@ export default function HomePage() {
                 <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>
                   免費文章：三層脂肪攻克戰術
                 </h3>
-                <p className="text-gray-600 mb-5 leading-relaxed">
+                <p className="text-gray-600 mb-5 leading-relaxed text-sm">
                   內臟脂肪、皮下脂肪、頑固脂肪 — 每一層的攻克方式完全不同。用錯順序永遠瘦不下來。
                 </p>
                 <Link
@@ -264,24 +367,24 @@ export default function HomePage() {
         </section>
       </ScrollReveal>
 
-      {/* ===== 區塊 7: CTA 結尾 ===== */}
+      {/* ===== 區塊 8: CTA 結尾 ===== */}
       <section className="bg-[#1e3a5f] py-20 mt-10 rounded-t-3xl">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            不確定適不適合？先來測測看
+            讓系統幫你分析，免費的
           </h2>
           <p className="text-blue-200 text-lg mb-10">
-            30 秒快速評估，了解你目前的狀況
+            30 秒快速評估，體驗 AI 引擎如何分析你的狀況
           </p>
           <Link
             href="/diagnosis"
             className="inline-block bg-white text-[#1e3a5f] px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
           >
-            開始免費評估 →
+            免費體驗系統分析 →
           </Link>
           <p className="mt-6">
             <Link href="/line" className="text-blue-300 hover:text-white text-sm underline transition-colors">
-              或直接加 LINE 聊聊
+              或直接加 LINE 諮詢方案
             </Link>
           </p>
         </div>

@@ -5,11 +5,11 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
 const navItems = [
-  { label: '關於我', href: '/' },
-  { label: '系統診斷', href: '/diagnosis' },
+  { label: '系統介紹', href: '/' },
+  { label: '免費體驗', href: '/diagnosis' },
   { label: '知識分享', href: '/blog' },
-  { label: '個案追蹤', href: '/case' },
-  { label: '遠端訂閱', href: '/remote' },
+  { label: '成功案例', href: '/case' },
+  { label: '方案說明', href: '/remote' },
 ]
 
 export default function Navigation() {
@@ -54,7 +54,7 @@ export default function Navigation() {
               href="/" 
               className="py-6 font-semibold text-lg text-text-primary hover:text-primary transition-colors"
             >
-              Howard<span className="text-text-muted ml-2 font-normal text-base">人體效能優化</span>
+              Howard Protocol
             </Link>
 
             {/* Desktop Menu */}
