@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, date, sleep_quality, energy_level, mood, note, hunger, digestion, training_drive } = body
+    const { clientId, date, sleep_quality, energy_level, mood, note, hunger, digestion, training_drive, period_start } = body
 
     if (!clientId || !date) {
       return createErrorResponse('缺少客戶 ID 或日期', 400)
@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
         hunger: hunger ?? null,
         digestion: digestion ?? null,
         training_drive: training_drive ?? null,
+        period_start: period_start || false,
       }, {
         onConflict: 'client_id,date'
       })

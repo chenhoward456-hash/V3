@@ -103,6 +103,11 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
               </p>
             </div>
           )}
+          {data.menstrualCycleNote && (
+            <div className="mt-3 bg-pink-50 border border-pink-200 rounded-2xl p-4">
+              <p className="text-xs text-pink-700 leading-relaxed">{data.menstrualCycleNote}</p>
+            </div>
+          )}
         </div>
       )
     }
@@ -256,6 +261,13 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
           <p className="text-[11px] text-orange-500 mt-1">
             今日碳水提升至維持熱量（4-6g/kg），脂肪降低，蛋白質維持。
           </p>
+        </div>
+      )}
+
+      {/* 月經週期提示 */}
+      {data.menstrualCycleNote && (
+        <div className="mt-3 bg-pink-50 border border-pink-200 rounded-2xl p-4">
+          <p className="text-xs text-pink-700 leading-relaxed">{data.menstrualCycleNote}</p>
         </div>
       )}
 

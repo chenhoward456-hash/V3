@@ -226,6 +226,13 @@ export default function WeeklyInsight({ clientId, onMutate }: WeeklyInsightProps
         </div>
       )}
 
+      {/* 月經週期提示 */}
+      {data.menstrualCycleNote && (
+        <div className="bg-pink-50 border border-pink-200 rounded-2xl p-4 mb-4">
+          <p className="text-xs text-pink-700 leading-relaxed">{data.menstrualCycleNote}</p>
+        </div>
+      )}
+
       {/* 警告 */}
       {visibleWarnings.length > 0 && (
         <div className="space-y-1.5">

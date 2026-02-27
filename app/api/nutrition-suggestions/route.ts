@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true }),
       supabase
         .from('daily_wellness')
-        .select('date, energy_level, training_drive')
+        .select('date, energy_level, training_drive, period_start')
         .eq('client_id', clientId)
         .gte('date', sevenDaysStr)
         .order('date', { ascending: true }),
@@ -80,6 +80,24 @@ export async function GET(request: NextRequest) {
     const nutritionLogs = nutritionRes.data || []
     const trainingLogs = trainingRes.data || []
     const wellnessLogs = wellnessRes.data || []
+
+    // 2.5 查詢最近一次經期標記（60 天內，用於月經週期判斷）
+    let lastPeriodDate: string | null = null
+    if (client.gender === '女性') {
+      const sixtyDaysAgo = new Date()
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
+      const { data: periodData } = await supabase
+        .from('daily_wellness')
+        .select('date')
+        .eq('client_id', clientId)
+        .eq('period_start', true)
+        .gte('date', sixtyDaysAgo.toISOString().split('T')[0])
+        .order('date', { ascending: false })
+        .limit(1)
+      if (periodData && periodData.length > 0) {
+        lastPeriodDate = periodData[0].date
+      }
+    }
 
     // 3. 計算週均體重 (最多 4 週)
     const today = new Date()
@@ -183,6 +201,7 @@ export async function GET(request: NextRequest) {
           date: n.date,
           carbs: n.carbs_grams ?? null,
         })),
+      lastPeriodDate,
     }
 
     // 9. 執行引擎

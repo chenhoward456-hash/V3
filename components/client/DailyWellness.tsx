@@ -69,8 +69,10 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
     hunger: todayWellness?.hunger ?? null as number | null,
     digestion: todayWellness?.digestion ?? null as number | null,
     training_drive: todayWellness?.training_drive ?? null as number | null,
+    period_start: todayWellness?.period_start ?? false as boolean,
     note: todayWellness?.note || ''
   })
+  const isFemale = true // 由外部傳入更好，但目前先讓所有人都能標記（男性自然不會按）
 
   useEffect(() => {
     if (todayWellness) {
@@ -81,6 +83,7 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
         hunger: todayWellness.hunger ?? null,
         digestion: todayWellness.digestion ?? null,
         training_drive: todayWellness.training_drive ?? null,
+        period_start: todayWellness.period_start ?? false,
         note: todayWellness.note || '',
       })
     }
@@ -104,6 +107,7 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
           hunger: form.hunger ?? null,
           digestion: form.digestion ?? null,
           training_drive: form.training_drive ?? null,
+          period_start: form.period_start || false,
           note: form.note || null
         })
       })
@@ -176,6 +180,33 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
             </div>
           </div>
         ))}
+
+        {/* 月經週期標記（女性專用） */}
+        <div className="border-t border-pink-100 pt-3">
+          <button
+            onClick={() => setForm(prev => ({ ...prev, period_start: !prev.period_start }))}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+              form.period_start
+                ? 'bg-pink-100 border-2 border-pink-400'
+                : 'bg-gray-50 border-2 border-gray-200 hover:bg-pink-50'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🩸</span>
+              <span className={`text-sm font-medium ${form.period_start ? 'text-pink-700' : 'text-gray-600'}`}>
+                今天月經來了
+              </span>
+            </div>
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+              form.period_start ? 'bg-pink-200 text-pink-700' : 'text-gray-400'
+            }`}>
+              {form.period_start ? '已標記' : '點擊標記'}
+            </span>
+          </button>
+          <p className="text-[10px] text-gray-400 mt-1 px-1">
+            標記經期第一天，系統會自動排除荷爾蒙造成的體重浮動
+          </p>
+        </div>
 
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">備註 <span className="text-gray-400 font-normal">（選填）</span></p>
