@@ -312,3 +312,8 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS quarterly_cycle_start DATE;
 ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS cognitive_clarity INTEGER CHECK (cognitive_clarity >= 1 AND cognitive_clarity <= 5);
 -- stress_level：壓力指數（1=很低, 5=極高）
 ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS stress_level INTEGER CHECK (stress_level >= 1 AND stress_level <= 5);
+
+-- 健康模式 vs 備賽模式互斥約束（DB 層保護，防止直接操作繞過 UI）
+ALTER TABLE clients
+  ADD CONSTRAINT chk_mode_exclusive
+  CHECK (NOT (health_mode_enabled = TRUE AND competition_enabled = TRUE));
