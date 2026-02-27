@@ -756,16 +756,18 @@ function generateCutSuggestion(
     // 即使進度正常，也驗證巨量營養素安全底線（防止手動設定值低於安全線）
     let validatedPro = currentPro
     let validatedFat = currentFat
-    const minProtein = Math.round(bw * SAFETY.MIN_PROTEIN_PER_KG_CUT)
-    const minFat = Math.round(bw * SAFETY.MIN_FAT_PER_KG)
+    const proteinPerKgFloorOT = isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE
+    const fatPerKgFloorOT = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+    const minProtein = Math.round(bw * proteinPerKgFloorOT)
+    const minFat = Math.round(bw * fatPerKgFloorOT)
 
     if (currentPro > 0 && currentPro < minProtein) {
       validatedPro = minProtein
-      warnings.push(`⚠️ 目前蛋白質 ${currentPro}g 低於安全最低值 ${minProtein}g（${SAFETY.MIN_PROTEIN_PER_KG_CUT}g/kg），建議調高`)
+      warnings.push(`⚠️ 目前蛋白質 ${currentPro}g 低於安全最低值 ${minProtein}g（${proteinPerKgFloorOT}g/kg），建議調高`)
     }
     if (currentFat > 0 && currentFat < minFat) {
       validatedFat = minFat
-      warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFat}g（${SAFETY.MIN_FAT_PER_KG}g/kg），建議調高`)
+      warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFat}g（${fatPerKgFloorOT}g/kg），建議調高`)
     }
 
     const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat
@@ -1293,16 +1295,18 @@ function generateBulkSuggestion(
     // 即使進度正常，也驗證巨量營養素安全底線
     let validatedPro = currentPro
     let validatedFat = currentFat
-    const minProteinBulk = Math.round(bw * SAFETY.MIN_PROTEIN_PER_KG_BULK)
-    const minFatBulk = Math.round(bw * SAFETY.MIN_FAT_PER_KG)
+    const bulkProteinFloorOT = isMaleBulk ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE
+    const bulkFatFloorOT = isMaleBulk ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+    const minProteinBulk = Math.round(bw * bulkProteinFloorOT)
+    const minFatBulk = Math.round(bw * bulkFatFloorOT)
 
     if (currentPro > 0 && currentPro < minProteinBulk) {
       validatedPro = minProteinBulk
-      warnings.push(`⚠️ 目前蛋白質 ${currentPro}g 低於安全最低值 ${minProteinBulk}g（${SAFETY.MIN_PROTEIN_PER_KG_BULK}g/kg），建議調高`)
+      warnings.push(`⚠️ 目前蛋白質 ${currentPro}g 低於安全最低值 ${minProteinBulk}g（${bulkProteinFloorOT}g/kg），建議調高`)
     }
     if (currentFat > 0 && currentFat < minFatBulk) {
       validatedFat = minFatBulk
-      warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFatBulk}g（${SAFETY.MIN_FAT_PER_KG}g/kg），建議調高`)
+      warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFatBulk}g（${bulkFatFloorOT}g/kg），建議調高`)
     }
 
     const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat
@@ -1367,7 +1371,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
       day = {
         daysOut: d, date: dateStr,
         label: `Day ${d} — 碳水耗竭期`,
-        phase: d >= 6 ? 'depletion' : 'fat_load',
+        phase: 'depletion',
         carbsGPerKg: PEAK_WEEK.DEPLETION_CARB_G_PER_KG,
         proteinGPerKg: PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.DEPLETION_FAT_G_PER_KG,
