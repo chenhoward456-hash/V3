@@ -31,46 +31,46 @@ export const viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Howard - 台中北屯 CSCS 體能教練 | 數據優化訓練',
-  description: 'Howard，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。專精肌力訓練、代謝優化、營養調整。台中北屯一對一客製化訓練指導。',
+  title: 'Howard Protocol - AI 驅動體態管理系統 | CSCS 教練監督',
+  description: 'AI 驅動的體態管理系統。自適應 TDEE 自動校正、每週智能分析、Refeed 自動觸發、月經週期濾鏡。CSCS 認證教練監督，運動醫學背景。台中實體 / 全台遠端。',
   verification: {
     google: 'hSS0ZwkqpzzSA8A4RS7RW81CeoR2HOFoT-CkpEFYcf4',
   },
   keywords: [
-    '台中健身教練',
-    '北屯健身',
-    'CSCS 教練',
-    '肌力訓練',
-    '體能訓練',
-    '代謝優化',
-    '營養調整',
-    '數據追蹤',
-    '個人教練',
+    'AI體態管理',
+    '自適應TDEE',
+    '智能營養系統',
+    'CSCS教練',
+    '數據化訓練',
+    '遠端訓練',
+    '科學化減脂',
+    '台中教練',
+    '體重管理系統',
     '運動醫學',
-    '生物駭客',
-    '客製化訓練'
+    '碳循環',
+    '自動飲食調整'
   ],
-  authors: [{ name: 'Howard' }],
+  authors: [{ name: 'Howard Chen' }],
   openGraph: {
-    title: 'Howard - 台中北屯 CSCS 體能教練',
-    description: 'CSCS 認證體能教練 | 專精肌力訓練與代謝優化 | 台中北屯一對一客製化訓練指導',
+    title: 'Howard Protocol - AI 驅動體態管理系統',
+    description: '自適應演算法 × CSCS 教練監督 × 24 小時自動分析。不只是教練服務，是一套智能系統。',
     type: 'website',
     locale: 'zh_TW',
     url: 'https://howard456.vercel.app',
-    siteName: 'The Howard Protocol',
+    siteName: 'Howard Protocol',
     images: [
       {
         url: '/howard-profile.jpg',
         width: 1200,
         height: 630,
-        alt: 'Howard - CSCS 體能教練'
+        alt: 'Howard Protocol - AI 驅動體態管理系統'
       }
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Howard - 台中北屯 CSCS 體能教練',
-    description: 'CSCS 認證體能教練 | 專精肌力訓練與代謝優化',
+    title: 'Howard Protocol - AI 驅動體態管理系統',
+    description: '自適應演算法 × CSCS 教練監督 × 24 小時自動分析',
     images: ['/howard-profile.jpg'],
   },
   icons: {

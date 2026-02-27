@@ -63,6 +63,9 @@ export interface NutritionInput {
   recentWellness?: { date: string; energy_level: number | null; training_drive: number | null }[]
   recentTrainingLogs?: { date: string; rpe: number | null }[]
   recentCarbsPerDay?: { date: string; carbs: number | null }[]
+
+  // 月經週期（女性專用，用於排除黃體期體重浮動）
+  lastPeriodDate?: string | null  // 最近一次經期開始日 (ISO)
 }
 
 export interface NutritionSuggestion {
@@ -117,6 +120,9 @@ export interface NutritionSuggestion {
     suggestedDailySteps?: number     // 建議每日步數
     cardioNote?: string              // 有氧建議說明
   } | null
+
+  // 月經週期判斷（女性專用）
+  menstrualCycleNote: string | null  // 黃體期提示訊息（null = 不在黃體期或非女性）
 
   // 是否可以自動套用
   autoApply: boolean
@@ -342,8 +348,45 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     dietDurationWeeks: null, dietBreakSuggested: false, warnings: [],
     currentState: 'unknown', refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo: null, autoApply: false, peakWeekPlan: null,
+    menstrualCycleNote: null,
     ...overrides,
   }
+}
+
+// ===== 月經週期判斷 =====
+// 文獻：
+// - Stachenfeld 2008: 黃體期（排卵後 ~day 14-28）孕酮↑ → 體液滯留 1-2kg
+// - Davidsen et al. 2007: 月經週期造成的體重波動 0.5-2.5kg，不代表脂肪增加
+// - 實務：排除黃體期的假性「方向錯誤」，避免不必要的減卡
+
+interface MenstrualCycleInfo {
+  inLutealPhase: boolean    // 是否在黃體期（day 14-28）
+  daysSincePeriod: number   // 距上次經期天數
+  note: string | null       // 給前端的提示文字
+}
+
+function checkMenstrualCycle(input: NutritionInput): MenstrualCycleInfo {
+  const isFemale = input.gender === '女性'
+  if (!isFemale || !input.lastPeriodDate) {
+    return { inLutealPhase: false, daysSincePeriod: -1, note: null }
+  }
+
+  const now = new Date()
+  const periodDate = new Date(input.lastPeriodDate)
+  const daysSince = Math.floor((now.getTime() - periodDate.getTime()) / (1000 * 60 * 60 * 24))
+
+  // 標準週期 ~28 天：卵泡期 day 1-14, 黃體期 day 15-28
+  // 黃體期孕酮升高 → 水分滯留 → 體重假性上升
+  const inLutealPhase = daysSince >= 14 && daysSince <= 30
+
+  let note: string | null = null
+  if (inLutealPhase) {
+    note = `🩸 目前處於黃體期（經期後第 ${daysSince} 天），體重可能因荷爾蒙導致 0.5-2kg 的水分滯留，屬於正常波動，不代表脂肪增加。`
+  } else if (daysSince >= 0 && daysSince <= 5) {
+    note = `🩸 經期中（第 ${daysSince + 1} 天），體重可能略有波動，持續記錄即可。`
+  }
+
+  return { inLutealPhase, daysSincePeriod: daysSince, note }
 }
 
 // ===== 當前狀態評估 =====
@@ -469,6 +512,9 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     refeedReason: refeedTrigger.reason,
     refeedDays: refeedTrigger.days,
   }
+
+  // 月經週期判斷（女性專用）
+  const cycleInfo = checkMenstrualCycle(input)
 
   // Refeed 警告加入 warnings（讓前端顯示）
   if (refeedTrigger.suggested && refeedTrigger.reason) {
@@ -603,9 +649,9 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
 
   // 8. 根據目標類型分流
   if (input.goalType === 'cut') {
-    return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings), ...stateFields }
+    return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo), ...stateFields }
   } else {
-    return { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings), ...stateFields }
+    return { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo), ...stateFields }
   }
 }
 
@@ -617,7 +663,8 @@ function generateCutSuggestion(
   estimatedTDEE: number | null,
   dietDurationWeeks: number | null,
   deadlineInfo: NutritionSuggestion['deadlineInfo'],
-  warnings: string[]
+  warnings: string[],
+  cycleInfo: MenstrualCycleInfo
 ): NutritionSuggestion {
   const bw = input.bodyWeight
   const isMale = input.gender === '男性'
@@ -625,7 +672,7 @@ function generateCutSuggestion(
   // ===== Goal-Driven Mode =====
   // 條件：有目標體重 + 目標日期 + 有 TDEE 估算 → 直接反算每日卡路里
   if (deadlineInfo && estimatedTDEE && input.targetWeight != null && deadlineInfo.weightToLose > 0) {
-    return generateGoalDrivenCut(input, estimatedTDEE, deadlineInfo, weeklyChangeRate, dietDurationWeeks, warnings)
+    return generateGoalDrivenCut(input, estimatedTDEE, deadlineInfo, weeklyChangeRate, dietDurationWeeks, warnings, cycleInfo)
   }
 
   // ===== 以下是原本的 Reactive Mode（無目標體重或無 TDEE 時 fallback）=====
@@ -641,22 +688,40 @@ function generateCutSuggestion(
 
   // 判斷進度
   if (weeklyChangeRate <= CUT_TARGETS.MIN_RATE) {
-    status = 'too_fast'
-    statusLabel = '掉太快'
-    statusEmoji = '🔴'
-    calDelta = 150
-    carbDelta = 20
-    fatDelta = 0
-    message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，超過安全範圍（-1.0%）。建議增加熱量以保護肌肉量。`
+    // 黃體期 too_fast 也要緩衝：可能是卵泡期水分釋放造成的假性快速下降
+    if (cycleInfo.inLutealPhase) {
+      // 黃體期不太可能掉太快（水分滯留中），但如果數據顯示如此，
+      // 可能是經期結束水分排出，仍然建議觀察
+      status = 'on_track'
+      statusLabel = '週期波動'
+      statusEmoji = '🟡'
+      message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，但目前處於黃體期，體重波動較大，建議持續觀察一週再判斷。`
+    } else {
+      status = 'too_fast'
+      statusLabel = '掉太快'
+      statusEmoji = '🔴'
+      calDelta = 150
+      carbDelta = 20
+      fatDelta = 0
+      message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，超過安全範圍（-1.0%）。建議增加熱量以保護肌肉量。`
+    }
   } else if (weeklyChangeRate > 0) {
     // 體重增加 → 方向錯誤（必須在 >= MAX_RATE 之前，否則正數被攔截）
-    status = 'wrong_direction'
-    statusLabel = '方向錯誤'
-    statusEmoji = '🔴'
-    calDelta = -225
-    carbDelta = -27
-    fatDelta = -7
-    message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週）。需要降低熱量攝取。`
+    // 但黃體期體重增加 ≤ 2% 是正常水分滯留，不應觸發減卡
+    if (cycleInfo.inLutealPhase && weeklyChangeRate <= 2.0) {
+      status = 'on_track'
+      statusLabel = '週期波動'
+      statusEmoji = '🟡'
+      message = `體重微幅上升（+${weeklyChangeRate.toFixed(2)}%/週），但目前處於黃體期，屬荷爾蒙導致的正常水分滯留（約 0.5-2kg），維持目前計畫即可。`
+    } else {
+      status = 'wrong_direction'
+      statusLabel = '方向錯誤'
+      statusEmoji = '🔴'
+      calDelta = -225
+      carbDelta = -27
+      fatDelta = -7
+      message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週）。需要降低熱量攝取。`
+    }
   } else if (weeklyChangeRate >= CUT_TARGETS.MAX_RATE) {
     // 體重下降不夠快（-0.3% ~ 0%），檢查是否停滯（只需 2 週數據）
     if (input.weeklyWeights.length >= 2) {
@@ -783,6 +848,7 @@ function generateCutSuggestion(
       dietDurationWeeks, dietBreakSuggested, warnings,
       currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
       deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
+      menstrualCycleNote: cycleInfo.note,
     }
   }
 
@@ -802,6 +868,7 @@ function generateCutSuggestion(
     dietDurationWeeks, dietBreakSuggested, warnings,
     currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo, autoApply: true, peakWeekPlan: null,
+    menstrualCycleNote: cycleInfo.note,
   }
 }
 
@@ -815,7 +882,8 @@ function generateGoalDrivenCut(
   deadlineInfo: NonNullable<NutritionSuggestion['deadlineInfo']>,
   weeklyChangeRate: number,
   dietDurationWeeks: number | null,
-  warnings: string[]
+  warnings: string[],
+  cycleInfo: MenstrualCycleInfo
 ): NutritionSuggestion {
   const bw = input.bodyWeight
   const isMale = input.gender === '男性'
@@ -1114,7 +1182,11 @@ function generateGoalDrivenCut(
 
   // 如果實際體重趨勢偏離目標，追加提示
   if (weeklyChangeRate > 0) {
-    message += ` ⚠️ 注意：上週體重反而增加了 ${weeklyChangeRate.toFixed(2)}%，請確實執行計畫。`
+    if (cycleInfo.inLutealPhase && weeklyChangeRate <= 2.0) {
+      message += ` 🩸 上週體重微升 +${weeklyChangeRate.toFixed(2)}%，但處於黃體期，屬正常水分滯留，不影響計畫。`
+    } else {
+      message += ` ⚠️ 注意：上週體重反而增加了 ${weeklyChangeRate.toFixed(2)}%，請確實執行計畫。`
+    }
   } else if (weeklyChangeRate < -GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT) {
     message += ` ⚠️ 上週掉太快（${weeklyChangeRate.toFixed(2)}%），注意肌肉流失。`
     warnings.push('掉重速率超過 1.2%/週（Garthe 2011: >1% 增加 LBM 流失風險），建議增加蛋白質攝取量或微增碳水')
@@ -1164,6 +1236,7 @@ function generateGoalDrivenCut(
     deadlineInfo: enrichedDeadlineInfo,
     autoApply: true,  // Goal-driven 永遠自動套用
     peakWeekPlan: null,
+    menstrualCycleNote: cycleInfo.note,
   }
 }
 
@@ -1175,7 +1248,8 @@ function generateBulkSuggestion(
   estimatedTDEE: number | null,
   dietDurationWeeks: number | null,
   deadlineInfo: NutritionSuggestion['deadlineInfo'],
-  warnings: string[]
+  warnings: string[],
+  cycleInfo: MenstrualCycleInfo
 ): NutritionSuggestion {
   const bw = input.bodyWeight
 
@@ -1322,6 +1396,7 @@ function generateBulkSuggestion(
       dietDurationWeeks, dietBreakSuggested: false, warnings,
       currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
       deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
+      menstrualCycleNote: cycleInfo.note,
     }
   }
 
@@ -1341,6 +1416,7 @@ function generateBulkSuggestion(
     dietDurationWeeks, dietBreakSuggested: false, warnings,
     currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo, autoApply: true, peakWeekPlan: null,
+    menstrualCycleNote: cycleInfo.note,
   }
 }
 
@@ -1479,6 +1555,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
     autoApply: true,
     peakWeekPlan: plan,
+    menstrualCycleNote: null,  // Peak Week 不需要週期提示
   }
 }
 
