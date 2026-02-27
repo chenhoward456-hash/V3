@@ -67,10 +67,11 @@ export function generateSupplementSuggestions(
     isCompetitionPrep?: boolean
     hasHighRPE?: boolean       // 近期訓練 RPE 持續偏高
     goalType?: 'cut' | 'bulk' | null
+    isHealthMode?: boolean     // 健康模式：長壽導向補品建議
   } = {}
 ): SupplementSuggestion[] {
   const suggestions: SupplementSuggestion[] = []
-  const { gender, isCompetitionPrep, hasHighRPE, goalType } = options
+  const { gender, isCompetitionPrep, hasHighRPE, goalType, isHealthMode } = options
 
   // ── 1. 鐵蛋白（Ferritin）──
   const ferritin = findLabValue(labs, 'ferritin')
@@ -240,6 +241,90 @@ export function generateSupplementSuggestions(
       evidence: 'Abbasi et al. 2012 (J Res Med Sci)：鎂補充顯著改善睡眠品質指標',
       triggerTests: [],
       category: 'recovery',
+    })
+  }
+
+  // ── 健康模式：長壽導向補品（不依賴血檢，基於循證長壽研究）──
+  if (isHealthMode) {
+    // Omega-3（未被血檢觸發時補上基礎建議）
+    const alreadyHasOmega3 = suggestions.some(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))
+    if (!alreadyHasOmega3) {
+      suggestions.push({
+        name: 'Omega-3 魚油',
+        dosage: 'EPA+DHA 合計 1-2g',
+        timing: '隨餐服用',
+        reason: '長壽研究核心補品。降低全因死亡率、支持心血管、腦部與抗發炎。適合長期健康維護。',
+        priority: 'high',
+        evidence: 'Bhatt et al. 2019 (NEJM, REDUCE-IT)：EPA 4g/day 降低重大心血管事件 25%',
+        triggerTests: [],
+        category: 'recovery',
+      })
+    }
+
+    // 甘胺酸鎂（睡眠/壓力）
+    const alreadyHasMag = suggestions.some(s => s.name.includes('鎂'))
+    if (!alreadyHasMag) {
+      suggestions.push({
+        name: '甘胺酸鎂（Magnesium Glycinate）',
+        dosage: '300-400mg',
+        timing: '睡前 30 分鐘',
+        reason: '現代人飲食普遍缺鎂。改善睡眠深度、降低皮質醇、支持胰島素敏感性，為健康模式首選補品。',
+        priority: 'high',
+        evidence: 'Abbasi et al. 2012 (J Res Med Sci)：鎂補充顯著改善睡眠品質與主觀睡眠時間',
+        triggerTests: [],
+        category: 'recovery',
+      })
+    }
+
+    // 維生素 D3+K2（未被血檢觸發時補上）
+    const alreadyHasD3 = suggestions.some(s => s.name.includes('D3') || s.name.includes('維生素 D'))
+    if (!alreadyHasD3) {
+      suggestions.push({
+        name: '維生素 D3 + K2',
+        dosage: 'D3 2000 IU + K2 100mcg',
+        timing: '隨含脂肪的餐點服用',
+        reason: '台灣都市族群普遍維生素 D 不足。D3+K2 協同支持骨骼、免疫、情緒與心血管健康。',
+        priority: 'medium',
+        evidence: 'Holick 2011 (NEJM)；Theuwissen 2012 (Mol Nutr Food Res)：D3+K2 協同心血管保護',
+        triggerTests: [],
+        category: 'deficiency',
+      })
+    }
+
+    // 白藜蘆醇（Resveratrol）
+    suggestions.push({
+      name: '白藜蘆醇（Trans-Resveratrol）',
+      dosage: '250-500mg',
+      timing: '隨餐服用',
+      reason: '激活 Sirtuin 長壽蛋白通路，模擬熱量限制效果。改善胰島素敏感性、抗氧化、抗發炎。',
+      priority: 'medium',
+      evidence: 'Bhatt et al. 2012 (Am J Cardiol)；Lagouge et al. 2006 (Cell)：Resveratrol 激活 SIRT1',
+      triggerTests: [],
+      category: 'performance',
+    })
+
+    // 輔酶 Q10（CoQ10）
+    suggestions.push({
+      name: '輔酶 Q10（Ubiquinol 還原型）',
+      dosage: '100-200mg',
+      timing: '隨含脂肪的餐點服用',
+      reason: '粒線體能量生產的關鍵輔因子。35 歲後體內 CoQ10 逐年下降，補充有助維持細胞能量、抗氧化與心臟功能。',
+      priority: 'medium',
+      evidence: 'Mortensen et al. 2014 (JACC Heart Failure, Q-SYMBIO)：CoQ10 降低心衰竭死亡率 43%',
+      triggerTests: [],
+      category: 'performance',
+    })
+
+    // 南非醉茄（Ashwagandha）— 壓力管理
+    suggestions.push({
+      name: '南非醉茄（Ashwagandha）',
+      dosage: 'KSM-66 萃取 300-600mg',
+      timing: '晚餐後或睡前',
+      reason: '具臨床證據的適應原（Adaptogen）。降低皮質醇、改善睡眠品質、緩解焦慮，適合高壓工作族群。',
+      priority: 'medium',
+      evidence: 'Chandrasekhar et al. 2012 (Indian J Psychol Med)：KSM-66 降低皮質醇 27.9%、焦慮量表改善 44%',
+      triggerTests: [],
+      category: 'hormonal',
     })
   }
 

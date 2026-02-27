@@ -21,6 +21,7 @@ import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import PwaPrompt from '@/components/client/PwaPrompt'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
+import { calculateHealthScore } from '@/lib/health-score-engine'
 
 export default function ClientDashboard() {
   const { clientId } = useParams()
@@ -166,6 +167,17 @@ export default function ClientDashboard() {
 
   const c = clientData.client
   const isCompetition = c.competition_enabled
+  const isHealthMode = c.health_mode_enabled
+
+  // 健康模式：計算健康分數
+  const healthScore = isHealthMode ? calculateHealthScore({
+    wellnessLast7: (clientData.wellness || []).slice(-7),
+    nutritionLast7: (clientData.nutritionLogs || []).slice(-7),
+    trainingLast7: (clientData.trainingLogs || []).slice(-7),
+    supplementComplianceRate: supplementComplianceStats.weekRate / 100,
+    labResults: c.lab_results || [],
+    quarterlyStart: c.quarterly_cycle_start,
+  }) : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -241,6 +253,60 @@ export default function ClientDashboard() {
               <ChevronRight size={18} />
             </button>
           </div>
+
+          {/* 健康模式 Banner */}
+          {isHealthMode && healthScore && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-3">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🌿</span>
+                  <div>
+                    <p className="text-xs font-semibold text-emerald-700">健康優化模式</p>
+                    {healthScore.daysInCycle != null && (
+                      <p className="text-[10px] text-emerald-500">第 {healthScore.daysInCycle} 天 / 90 天季度</p>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-2xl font-black text-emerald-700">{healthScore.total}</span>
+                    <div>
+                      <span className={`inline-block text-xs font-bold px-1.5 py-0.5 rounded ${
+                        healthScore.grade === 'A' ? 'bg-emerald-600 text-white' :
+                        healthScore.grade === 'B' ? 'bg-blue-500 text-white' :
+                        healthScore.grade === 'C' ? 'bg-yellow-500 text-white' :
+                        'bg-red-500 text-white'
+                      }`}>{healthScore.grade}</span>
+                      <p className="text-[10px] text-emerald-600">健康分數</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* 四柱進度條 */}
+              <div className="grid grid-cols-5 gap-1">
+                {healthScore.pillars.map(p => (
+                  <div key={p.pillar} className="text-center">
+                    <div className="text-base leading-none mb-1">{p.emoji}</div>
+                    <div className="w-full bg-emerald-100 rounded-full h-1.5 mb-0.5">
+                      <div
+                        className="bg-emerald-500 h-1.5 rounded-full transition-all"
+                        style={{ width: `${p.score}%` }}
+                      />
+                    </div>
+                    <p className="text-[9px] text-emerald-600 font-medium">{p.score}</p>
+                    <p className="text-[8px] text-gray-400">{p.label}</p>
+                  </div>
+                ))}
+              </div>
+              {healthScore.daysUntilBloodTest != null && healthScore.daysUntilBloodTest <= 21 && (
+                <div className="mt-2 pt-2 border-t border-emerald-200">
+                  <p className="text-xs text-emerald-600 font-medium">
+                    🩸 季度血檢倒數 {healthScore.daysUntilBloodTest} 天
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 備賽倒數 Banner */}
           {isCompetition && c.competition_date && (() => {
@@ -483,6 +549,7 @@ export default function ClientDashboard() {
             clientId={clientId as string}
             date={selectedDate}
             competitionEnabled={clientData.client.competition_enabled}
+            healthModeEnabled={clientData.client.health_mode_enabled}
             onMutate={mutate}
           /></div>
         )}

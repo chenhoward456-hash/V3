@@ -295,3 +295,25 @@ CREATE INDEX IF NOT EXISTS idx_blog_posts_date ON blog_posts(date DESC);
 -- 允許公開讀取文章
 ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read blog_posts" ON blog_posts FOR SELECT USING (true);
+
+-- ============================================
+-- 19. 健康模式 (Health Mode)
+-- 目標族群：高端客戶、注重長期健康而非比賽截止日
+-- 商業模式：季費（90 天一個週期）+ 配合季度血檢
+-- ============================================
+
+-- clients 表新增健康模式欄位
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS health_mode_enabled BOOLEAN DEFAULT FALSE;
+-- quarterly_cycle_start：本季週期起始日（每 90 天更新一次）
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS quarterly_cycle_start DATE;
+
+-- daily_wellness 新增健康模式指標
+-- cognitive_clarity：認知清晰度（高端客戶最在意的指標之一）
+ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS cognitive_clarity INTEGER CHECK (cognitive_clarity >= 1 AND cognitive_clarity <= 5);
+-- stress_level：壓力指數（1=很低, 5=極高）
+ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS stress_level INTEGER CHECK (stress_level >= 1 AND stress_level <= 5);
+
+-- 健康模式 vs 備賽模式互斥約束（DB 層保護，防止直接操作繞過 UI）
+ALTER TABLE clients
+  ADD CONSTRAINT chk_mode_exclusive
+  CHECK (NOT (health_mode_enabled = TRUE AND competition_enabled = TRUE));
