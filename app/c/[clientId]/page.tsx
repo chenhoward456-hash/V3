@@ -19,6 +19,7 @@ import NutritionLog from '@/components/client/NutritionLog'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
+import WeeklyInsight from '@/components/client/WeeklyInsight'
 import PwaPrompt from '@/components/client/PwaPrompt'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 
@@ -496,6 +497,11 @@ export default function ClientDashboard() {
             date={selectedDate}
             onMutate={mutate}
           /></div>
+        )}
+
+        {/* 一般學員的每週智能分析 */}
+        {!isCompetition && c.nutrition_enabled && c.body_composition_enabled && (
+          <WeeklyInsight clientId={c.id} onMutate={mutate} />
         )}
 
         {/* 一般學員的飲食目標卡片 */}

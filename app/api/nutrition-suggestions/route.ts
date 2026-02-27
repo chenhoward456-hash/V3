@@ -103,10 +103,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 4. 計算飲食合規率 (近 14 天)
-    const fourteenDaysAgo = new Date()
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13)
-    const fourteenStr = fourteenDaysAgo.toISOString().split('T')[0]
+    // 4. 計算飲食合規率 (近 14 天，含今天)
+    const fourteenDayWindowStart = new Date()
+    fourteenDayWindowStart.setDate(fourteenDayWindowStart.getDate() - 13) // 往前推 13 天 + 今天 = 14 天
+    const fourteenStr = fourteenDayWindowStart.toISOString().split('T')[0]
     const todayStr = today.toISOString().split('T')[0]
 
     const recentNutrition = nutritionLogs.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr)

@@ -26,7 +26,7 @@ export default function DailyNutritionTarget({
   const [manualDayType, setManualDayType] = useState<'training' | 'rest' | null>(null)
   const effectiveIsTraining = manualDayType != null ? manualDayType === 'training' : !!isTrainingDay
 
-  const effectiveCarbsTarget = carbsCyclingEnabled && carbsTrainingDay && carbsRestDay
+  const effectiveCarbsTarget = carbsCyclingEnabled && carbsTrainingDay != null && carbsRestDay != null
     ? (effectiveIsTraining ? carbsTrainingDay : carbsRestDay)
     : carbsTarget
 
@@ -42,7 +42,7 @@ export default function DailyNutritionTarget({
 
   if (items.length === 0) return null
 
-  const hasCarbCycling = carbsCyclingEnabled && carbsTrainingDay && carbsRestDay
+  const hasCarbCycling = carbsCyclingEnabled && carbsTrainingDay != null && carbsRestDay != null
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
