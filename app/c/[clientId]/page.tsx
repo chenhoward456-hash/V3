@@ -561,6 +561,7 @@ export default function ClientDashboard() {
             date={selectedDate}
             competitionEnabled={clientData.client.competition_enabled}
             healthModeEnabled={clientData.client.health_mode_enabled}
+            gender={c.gender}
             onMutate={mutate}
           /></div>
         )}

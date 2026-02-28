@@ -8,6 +8,7 @@ interface DailyWellnessProps {
   date?: string
   competitionEnabled?: boolean
   healthModeEnabled?: boolean
+  gender?: string
   onMutate: () => void
 }
 
@@ -75,7 +76,7 @@ const STRESS_OPTIONS = [
   { score: 5, emoji: '🤯', label: '極高' },
 ]
 
-export default function DailyWellness({ todayWellness, clientId, date, competitionEnabled, healthModeEnabled, onMutate }: DailyWellnessProps) {
+export default function DailyWellness({ todayWellness, clientId, date, competitionEnabled, healthModeEnabled, gender, onMutate }: DailyWellnessProps) {
   const today = date || new Date().toISOString().split('T')[0]
   const [submitting, setSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -91,7 +92,7 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
     period_start: todayWellness?.period_start ?? false as boolean,
     note: todayWellness?.note || ''
   })
-  const isFemale = true // 由外部傳入更好，但目前先讓所有人都能標記（男性自然不會按）
+  const isFemale = gender === '女性' || gender === 'female'
 
   useEffect(() => {
     if (todayWellness) {
