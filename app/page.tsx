@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import ScrollReveal from '@/components/ScrollReveal'
+import LineButton from '@/components/LineButton'
 
 const personSchema = {
   '@context': 'https://schema.org',
@@ -67,12 +68,21 @@ export default function HomePage() {
               <p className="text-sm text-gray-400 mb-8 leading-relaxed max-w-lg">
                 不靠感覺、不靠公式 — 系統根據你的真實數據，每週自動分析體重趨勢、調整飲食計畫、偵測停滯期。
               </p>
-              <Link
-                href="/diagnosis"
-                className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-[#1d4ed8] transition-all shadow-lg shadow-blue-500/25"
-              >
-                免費體驗系統分析 →
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  href="/diagnosis"
+                  className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-[#1d4ed8] transition-all shadow-lg shadow-blue-500/25 text-center"
+                >
+                  免費體驗系統分析 →
+                </Link>
+                <LineButton
+                  source="homepage_hero"
+                  intent="general"
+                  className="inline-block bg-white text-[#1e3a5f] border-2 border-[#1e3a5f] px-8 py-4 rounded-xl font-semibold text-lg hover:bg-[#1e3a5f]/5 transition-all text-center"
+                >
+                  加 LINE 直接聊 💬
+                </LineButton>
+              </div>
             </div>
 
             {/* 右側：Howard 照片 + 引擎 Demo 預覽 */}
@@ -147,66 +157,55 @@ export default function HomePage() {
         </section>
       </ScrollReveal>
 
-      {/* ===== 區塊 3: 系統核心能力 ===== */}
+      {/* ===== 區塊 3: 真實數據成果 ===== */}
       <ScrollReveal>
         <section className="bg-[#f5f7fa] py-20">
           <div className="max-w-6xl mx-auto px-6">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
-              不只是教練，是一套智能系統
+              用數據說話，不用嘴巴
             </h2>
-            <p className="text-center text-gray-500 mb-14 text-lg">Howard Protocol 背後的引擎在做什麼</p>
-            <div className="grid md:grid-cols-3 gap-8">
+            <p className="text-center text-gray-500 mb-14">Howard 本人 6 年系統追蹤的真實數據</p>
+            <div className="grid md:grid-cols-4 gap-6 mb-10">
               {[
-                {
-                  num: '01',
-                  icon: '📊',
-                  title: '自適應 TDEE 估算',
-                  desc: '不用公式猜。系統根據你的實際體重變化 + 飲食記錄，自動校正你真正的代謝率。吃越久越準。',
-                },
-                {
-                  num: '02',
-                  icon: '🧠',
-                  title: '每週智能分析',
-                  desc: '自動判斷你的進度：掉太快？停滯了？方向對嗎？不用等教練手動看，系統即時告訴你。',
-                },
-                {
-                  num: '03',
-                  icon: '🔄',
-                  title: '自動調整建議',
-                  desc: '體重停滯時自動建議降卡、Refeed 時機自動觸發、女性黃體期的體重波動也不會誤判。',
-                },
-              ].map(({ num, icon, title, desc }) => (
-                <div key={num} className="bg-white rounded-2xl p-8 shadow-sm">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-xs font-bold text-[#2563eb] bg-[#2563eb]/10 px-3 py-1 rounded-full">{num}</span>
-                    <span className="text-2xl">{icon}</span>
-                  </div>
-                  <h3 className="text-xl font-bold mb-3" style={{ color: '#1e3a5f' }}>{title}</h3>
-                  <p className="text-gray-600 leading-relaxed text-sm">{desc}</p>
+                { label: 'HRV（心率變異）', before: '65 ms', after: '91 ms', change: '+40%', color: 'text-green-600' },
+                { label: '靜息心率', before: '58 bpm', after: '52 bpm', change: '-10%', color: 'text-green-600' },
+                { label: 'HOMA-IR（胰島素阻抗）', before: '偏高', after: '0.49', change: '正常', color: 'text-green-600' },
+                { label: 'Testosterone', before: '515', after: '625 ng/dL', change: '+21%', color: 'text-green-600' },
+              ].map(({ label, before, after, change, color }) => (
+                <div key={label} className="bg-white rounded-2xl p-6 shadow-sm text-center">
+                  <p className="text-xs text-gray-400 mb-2">{label}</p>
+                  <p className="text-xs text-gray-400 line-through mb-1">{before}</p>
+                  <p className="text-2xl font-bold text-gray-900 mb-1">{after}</p>
+                  <p className={`text-sm font-semibold ${color}`}>{change}</p>
                 </div>
               ))}
+            </div>
+            <div className="text-center">
+              <Link href="/case" className="text-[#2563eb] hover:underline text-sm font-medium">
+                查看完整 6 年數據紀錄 →
+              </Link>
             </div>
           </div>
         </section>
       </ScrollReveal>
 
-      {/* ===== 區塊 4: 系統能力指標 ===== */}
+      {/* ===== 區塊 4: 系統核心能力（合併） ===== */}
       <ScrollReveal>
         <section className="max-w-6xl mx-auto px-6 py-20">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
-            系統在背後幫你做的事
+            系統在背後幫你做什麼
           </h2>
-          <p className="text-center text-gray-500 mb-14">每一個功能都有運動科學文獻支撐</p>
+          <p className="text-center text-gray-500 mb-14">每個功能都有運動科學文獻支撐</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: '🧠', title: '每週自動分析', desc: '體重趨勢智能判讀，不靠教練感覺' },
-              { icon: '📉', title: '自適應 TDEE', desc: '吃多少才會瘦？系統根據數據自動算' },
-              { icon: '🔄', title: 'Refeed 觸發', desc: 'RPE + 能量 + 低碳天數，三條件自動觸發' },
-              { icon: '🩸', title: '月經週期濾鏡', desc: '黃體期不誤判，不會叫你少吃' },
+              { icon: '📊', title: '自適應 TDEE', desc: '不用公式猜 — 系統根據你的體重變化和飲食記錄，自動校正代謝率' },
+              { icon: '🧠', title: '每週智能分析', desc: '掉太快？停滯了？方向對嗎？系統即時判斷，不用等教練手動看' },
+              { icon: '🔄', title: 'Refeed 自動觸發', desc: 'RPE + 能量 + 低碳天數，三條件到位自動建議 Refeed' },
+              { icon: '🩸', title: '月經週期濾鏡', desc: '黃體期體重浮動不會被誤判，系統不會叫你少吃' },
             ].map(({ icon, title, desc }) => (
-              <div key={title} className="text-center bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="text-3xl mb-3">{icon}</div>
-                <h3 className="font-bold mb-2 text-sm" style={{ color: '#1e3a5f' }}>{title}</h3>
+              <div key={title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="text-3xl mb-3 text-center">{icon}</div>
+                <h3 className="font-bold mb-2 text-sm text-center" style={{ color: '#1e3a5f' }}>{title}</h3>
                 <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
               </div>
             ))}
@@ -281,11 +280,18 @@ export default function HomePage() {
                 <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>月經週期智能濾鏡（女性）</li>
                 <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>CSCS 教練每週監督 + LINE 諮詢</li>
               </ul>
-              <Link
-                href="/diagnosis"
+              <LineButton
+                source="homepage_plan"
+                intent="smart_plan"
                 className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
               >
-                免費體驗系統分析 →
+                加 LINE 諮詢方案 💬
+              </LineButton>
+              <Link
+                href="/diagnosis"
+                className="block text-center text-[#2563eb] text-sm mt-3 hover:underline"
+              >
+                或先免費體驗系統分析 →
               </Link>
             </div>
 
@@ -307,8 +313,18 @@ export default function HomePage() {
                   <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>Coolday Fitness 北屯館</li>
                 </ul>
               </div>
-              <Link href="/action" className="block text-center bg-white text-[#1e3a5f] border-2 border-[#1e3a5f] py-3.5 rounded-xl font-semibold hover:bg-[#1e3a5f]/5 transition-colors">
-                預約諮詢 →
+              <LineButton
+                source="homepage_plan"
+                intent="in_person"
+                className="block text-center bg-white text-[#1e3a5f] border-2 border-[#1e3a5f] py-3.5 rounded-xl font-semibold hover:bg-[#1e3a5f]/5 transition-colors"
+              >
+                加 LINE 預約諮詢 💬
+              </LineButton>
+              <Link
+                href="/action"
+                className="block text-center text-[#1e3a5f] text-sm mt-3 hover:underline"
+              >
+                查看實體訓練詳情 →
               </Link>
             </div>
           </div>
@@ -371,22 +387,26 @@ export default function HomePage() {
       <section className="bg-[#1e3a5f] py-20 mt-10 rounded-t-3xl">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            讓系統幫你分析，免費的
+            不確定適不適合？先聊聊
           </h2>
           <p className="text-blue-200 text-lg mb-10">
-            30 秒快速評估，體驗智能引擎如何分析你的狀況
+            加 LINE 跟我說你的目標，我會先幫你確認方向
           </p>
-          <Link
-            href="/diagnosis"
-            className="inline-block bg-white text-[#1e3a5f] px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
-          >
-            免費體驗系統分析 →
-          </Link>
-          <p className="mt-6">
-            <Link href="/line" className="text-blue-300 hover:text-white text-sm underline transition-colors">
-              或直接加 LINE 諮詢方案
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <LineButton
+              source="homepage_bottom"
+              intent="general"
+              className="inline-block bg-white text-[#1e3a5f] px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
+            >
+              加 LINE 聊聊 💬
+            </LineButton>
+            <Link
+              href="/diagnosis"
+              className="inline-block bg-transparent text-white border-2 border-white/50 px-10 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-colors"
+            >
+              免費體驗系統分析 →
             </Link>
-          </p>
+          </div>
         </div>
       </section>
     </>

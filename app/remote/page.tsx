@@ -18,10 +18,10 @@ export default function RemotePage() {
             Howard Protocol
           </div>
           <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-4" style={{ color: '#1e3a5f' }}>
-            你剛體驗的引擎<br />就是訂閱後每天在背後運轉的系統
+            不只是教練服務<br />是一套會持續進化的管理系統
           </h1>
           <p className="text-lg text-gray-500 mb-4 max-w-2xl mx-auto">
-            差別只有一個：訂閱後，它每週根據你的真實數據自動校正。
+            系統每週根據你的真實數據自動校正 — 不靠感覺，不靠公式。
           </p>
           <p className="text-sm text-gray-400">
             自適應 TDEE × 每週智能分析 × Refeed 自動觸發 × CSCS 教練監督
@@ -36,7 +36,7 @@ export default function RemotePage() {
             免費體驗 vs 完整訂閱
           </h2>
           <p className="text-center text-gray-500 mb-10 text-sm">
-            你剛看到的是初始估算，訂閱後是持續進化的智能系統
+            免費分析是一次性估算，訂閱後系統會持續進化
           </p>
 
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">

@@ -350,25 +350,25 @@ export default function DiagnosisPage() {
               <div className="border-t border-gray-100 pt-6 mt-6">
                 <div className="bg-[#2563eb]/5 rounded-2xl p-6 text-center border border-[#2563eb]/10">
                   <p className="text-sm text-gray-700 mb-1 leading-relaxed">
-                    你剛看到的是<span className="font-bold text-[#1e3a5f]">一次性公式估算</span>。
+                    這是<span className="font-bold text-[#1e3a5f]">一次性公式估算</span>，和你的真實代謝一定有落差。
                   </p>
                   <p className="text-sm text-gray-600 mb-5 leading-relaxed">
-                    訂閱後，系統每週根據你的真實體重數據<span className="font-bold text-[#2563eb]">自動校正 TDEE、自動調整營養素、自動偵測停滯期</span>。
+                    訂閱後系統會根據你每週的體重數據<span className="font-bold text-[#2563eb]">自動校正、自動調整</span>— 越用越準。
                   </p>
-                  <Link
-                    href="/remote"
+                  <LineButton
+                    source="diagnosis_result"
+                    intent="demo_analysis"
                     className="inline-block bg-[#2563eb] text-white px-8 py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
                   >
-                    了解完整方案 →
-                  </Link>
+                    把結果帶到 LINE 跟我討論 💬
+                  </LineButton>
                   <div className="mt-4">
-                    <LineButton
-                      source="diagnosis_result"
-                      intent="demo_analysis"
+                    <Link
+                      href="/remote"
                       className="text-sm text-[#2563eb] hover:underline font-medium"
                     >
-                      或直接加 LINE 諮詢 →
-                    </LineButton>
+                      或先了解完整方案 →
+                    </Link>
                   </div>
                 </div>
               </div>
