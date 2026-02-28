@@ -127,66 +127,59 @@ export default function LineEntryPage() {
 
         <div className="text-center mt-10">
           <Link href="/diagnosis" className="text-primary hover:underline text-sm">
-            或先做 30 秒系統診斷 →
+            或先免費體驗 AI 引擎分析 →
           </Link>
         </div>
       </div>
 
-      {/* 遠端訂閱方案推薦 */}
+      {/* 方案推薦 */}
       <div className="my-20 max-w-4xl mx-auto">
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-10 border-2 border-gray-200">
           <div className="text-center mb-8">
             <h3 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-              或直接了解遠端訂閱方案
+              或直接了解智能管理方案
             </h3>
             <p className="text-gray-600 mb-4">
-              如果你想要更系統化的追蹤與指導，可以考慮遠端訂閱服務
+              AI 引擎 24 小時自動分析 + CSCS 教練每週監督
             </p>
-            <div className="inline-block bg-primary/10 border border-primary/30 rounded-lg px-4 py-2 text-sm">
-              <p className="text-gray-700">
-                💡 <strong>台中客戶</strong>：建議先預約實體課程 • <strong>外縣市客戶</strong>：可直接選擇遠端訂閱
-              </p>
-            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">💪</span>
+                <span className="text-2xl">🧠</span>
                 <div>
-                  <h4 className="font-bold" style={{color: '#2D2D2D'}}>入門版</h4>
-                  <p className="text-primary text-sm">適合新手入門</p>
+                  <h4 className="font-bold" style={{color: '#2D2D2D'}}>Howard Protocol 智能管理</h4>
+                  <p className="text-primary text-sm">全台適用</p>
                 </div>
               </div>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li>• LINE 諮詢（48 小時內回覆）</li>
-                <li>• 每月 1 次視訊（30 分鐘）</li>
-                <li>• 訓練計畫 + 飲食策略</li>
+                <li>• AI 引擎每週自動分析體重趨勢</li>
+                <li>• 自適應 TDEE 持續校正</li>
+                <li>• Refeed / Diet Break 自動觸發</li>
+                <li>• CSCS 教練監督 + LINE 諮詢</li>
               </ul>
             </div>
 
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">🔬</span>
+                <span className="text-2xl">💪</span>
                 <div>
-                  <h4 className="font-bold" style={{color: '#2D2D2D'}}>進階版</h4>
-                  <p className="text-warning text-sm">完整優化方案</p>
+                  <h4 className="font-bold" style={{color: '#2D2D2D'}}>實體訓練 + 智能管理</h4>
+                  <p className="text-warning text-sm">台中限定</p>
                 </div>
               </div>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li>• LINE 即時諮詢（24 小時內）</li>
-                <li>• 每月 1 次視訊（60 分鐘）</li>
-                <li>• 血檢數據 + 補品使用經驗</li>
+                <li>• 包含所有智能管理功能</li>
+                <li>• 一對一動作評估與矯正</li>
+                <li>• 即時訓練指導與調整</li>
+                <li>• Coolday Fitness 北屯館</li>
               </ul>
             </div>
           </div>
 
-          <div className="text-center mb-6 text-sm text-gray-500">
-            <p>💡 價格會在諮詢時根據你的需求客製化報價</p>
-          </div>
-
           <div className="text-center">
-            <Link 
+            <Link
               href="/remote"
               className="inline-block bg-gray-900 text-white px-8 py-3 rounded-full font-bold hover:bg-gray-800 transition-colors"
             >
