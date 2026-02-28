@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy } from 'lucide-react'
+import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw } from 'lucide-react'
 
 interface Client {
   id: string
@@ -61,6 +61,11 @@ export default function AdminDashboard() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
+  // 通知系統
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [runningCron, setRunningCron] = useState(false)
+
   // 快速回饋 modal
   const [feedbackClient, setFeedbackClient] = useState<Client | null>(null)
   const [feedbackText, setFeedbackText] = useState('')
@@ -69,7 +74,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetch('/api/admin/verify')
-      .then(res => { if (!res.ok) { router.push('/admin/login'); return }; fetchData() })
+      .then(res => { if (!res.ok) { router.push('/admin/login'); return }; fetchData(); fetchNotifications() })
       .catch(() => router.push('/admin/login'))
 
     // 從編輯頁返回時重新載入
@@ -78,6 +83,39 @@ export default function AdminDashboard() {
     return () => window.removeEventListener('focus', handleFocus)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch('/api/admin/notifications')
+      if (res.ok) {
+        const data = await res.json()
+        setNotifications(data.notifications || [])
+      }
+    } catch { /* silent */ }
+  }
+
+  const markNotificationsRead = async () => {
+    await fetch('/api/admin/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notificationId: 'all' }),
+    })
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  const runWeeklyCron = async () => {
+    setRunningCron(true)
+    try {
+      const res = await fetch('/api/cron/weekly')
+      if (res.ok) {
+        const data = await res.json()
+        alert(`每週分析完成！\n• 季度重置：${data.results.quarterlyResets} 人\n• 分析生成：${data.results.analysisGenerated} 人\n• 通知：${data.results.alertsGenerated} 項`)
+        fetchNotifications()
+      } else {
+        alert('執行失敗，請檢查 console')
+      }
+    } catch { alert('執行失敗') } finally { setRunningCron(false) }
+  }
 
   const fetchData = async () => {
     try {
@@ -302,7 +340,29 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex items-center justify-between h-16"><div><h1 className="text-xl font-bold text-gray-900">教練儀表板</h1><p className="text-sm text-gray-500">Howard 健康管理系統</p></div><div className="flex items-center gap-3"><Link href="/admin/blog" className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors">文章管理</Link><Link href="/admin/clients/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">新增學員</Link><button onClick={handleLogout} className="text-gray-500 hover:text-gray-700 text-sm">登出</button></div></div></div></div>
+      <div className="bg-white shadow-sm border-b"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex items-center justify-between h-16"><div><h1 className="text-xl font-bold text-gray-900">教練儀表板</h1><p className="text-sm text-gray-500">Howard 健康管理系統</p></div><div className="flex items-center gap-3">
+                <button onClick={runWeeklyCron} disabled={runningCron} className="flex items-center gap-1 text-gray-500 hover:text-gray-700 text-sm disabled:opacity-50" title="手動執行每週分析">
+                  <RefreshCw size={15} className={runningCron ? 'animate-spin' : ''} /> {runningCron ? '分析中...' : '每週分析'}
+                </button>
+                <div className="relative">
+                  <button onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications) markNotificationsRead() }} className="p-2 text-gray-500 hover:text-gray-700 relative">
+                    <Bell size={18} />
+                    {notifications.filter(n => !n.read).length > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{notifications.filter(n => !n.read).length}</span>}
+                  </button>
+                  {showNotifications && (
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto">
+                      <div className="p-3 border-b border-gray-100 flex items-center justify-between"><span className="text-sm font-semibold text-gray-900">通知</span><button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button></div>
+                      {notifications.length === 0 ? <p className="p-4 text-sm text-gray-400 text-center">暫無通知</p> : notifications.map((n: any) => (
+                        <div key={n.id} className={`p-3 border-b border-gray-50 ${n.read ? '' : 'bg-blue-50/50'}`}>
+                          <div className="text-xs text-gray-400 mb-1">{n.date}</div>
+                          <div className="text-sm font-medium text-gray-900 mb-1">{n.title}</div>
+                          {n.content && (() => { try { const items = JSON.parse(n.content); return Array.isArray(items) ? <ul className="text-xs text-gray-600 space-y-0.5">{items.slice(0, 5).map((item: string, i: number) => <li key={i}>• {item}</li>)}{items.length > 5 && <li className="text-gray-400">...還有 {items.length - 5} 項</li>}</ul> : null } catch { return <p className="text-xs text-gray-600">{n.content}</p> } })()}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Link href="/admin/blog" className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors">文章管理</Link><Link href="/admin/clients/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">新增學員</Link><button onClick={handleLogout} className="text-gray-500 hover:text-gray-700 text-sm">登出</button></div></div></div></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         {/* ===== 頂部：一眼看重點 ===== */}

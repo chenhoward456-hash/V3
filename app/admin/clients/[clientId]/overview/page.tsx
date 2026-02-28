@@ -7,6 +7,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, BarChart, Bar, ReferenceLine, Cell
 } from 'recharts'
+import { Download } from 'lucide-react'
 import { TRAINING_TYPES } from '@/components/client/types'
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 
@@ -699,12 +700,26 @@ export default function ClientOverview() {
                 <p className="text-xs text-gray-500">{client.age}歲 · {client.gender}{client.competition_enabled ? ` · ${({ off_season: '非賽季', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' } as Record<string, string>)[client.prep_phase || ''] || ''}` : ''}</p>
               </div>
             </div>
-            <Link
-              href={`/admin/clients/${clientId}`}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors"
-            >
-              編輯資料
-            </Link>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const a = document.createElement('a')
+                  a.href = `/api/admin/export?clientId=${clientId}&type=all&days=90`
+                  a.download = ''
+                  a.click()
+                }}
+                className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+                title="匯出 CSV"
+              >
+                <Download size={15} /> 匯出
+              </button>
+              <Link
+                href={`/admin/clients/${clientId}`}
+                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+              >
+                編輯資料
+              </Link>
+            </div>
           </div>
         </div>
       </div>
