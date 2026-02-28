@@ -370,3 +370,9 @@ CREATE INDEX IF NOT EXISTS idx_nutrition_logs_client_date ON nutrition_logs(clie
 CREATE INDEX IF NOT EXISTS idx_training_logs_client_date ON training_logs(client_id, date DESC);
 CREATE INDEX IF NOT EXISTS idx_daily_wellness_client_date ON daily_wellness(client_id, date DESC);
 CREATE INDEX IF NOT EXISTS idx_supplement_logs_client_date ON supplement_logs(client_id, date DESC);
+
+-- ============================================
+-- 23. 教練查看時間戳
+-- 客戶端顯示「教練已查看 ✓」
+-- ============================================
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS coach_last_viewed_at TIMESTAMPTZ;

@@ -36,7 +36,8 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   const [waterInput, setWaterInput] = useState<string>(todayNutrition?.water_ml?.toString() || '')
   const [carbsInput, setCarbsInput] = useState<string>(todayNutrition?.carbs_grams?.toString() || '')
   const [fatInput, setFatInput] = useState<string>(todayNutrition?.fat_grams?.toString() || '')
-  const [savingNutrients, setSavingNutrients] = useState(false)
+  // 合規性也作為本地 state，一次提交
+  const [compliant, setCompliant] = useState<boolean | null>(todayNutrition?.compliant ?? null)
 
   const today = date || new Date().toISOString().split('T')[0]
 
@@ -49,7 +50,12 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     return Math.round(p * 4 + c * 4 + f * 9)
   }, [proteinInput, carbsInput, fatInput])
 
-  const handleSubmit = async (compliant: boolean) => {
+  // 統一提交：一次送出所有數據
+  const handleSaveAll = async () => {
+    if (compliant === null) {
+      alert('請先選擇今天有沒有照計畫吃')
+      return
+    }
     setSaving(true)
     try {
       const res = await fetch('/api/nutrition-logs', {
@@ -67,64 +73,11 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       if (!res.ok) throw new Error('記錄失敗')
       onMutate()
       setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 2000)
+      setTimeout(() => setShowSuccess(false), 2500)
     } catch {
       alert('記錄失敗，請重試')
     } finally {
       setSaving(false)
-    }
-  }
-
-  const handleSaveNote = async () => {
-    if (todayNutrition?.compliant == null) return
-    setSaving(true)
-    try {
-      const res = await fetch('/api/nutrition-logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId, date: today, compliant: todayNutrition.compliant, note: note || null,
-          protein_grams: proteinInput ? Number(proteinInput) : null,
-          water_ml: waterInput ? Number(waterInput) : null,
-          carbs_grams: carbsInput ? Number(carbsInput) : null,
-          fat_grams: fatInput ? Number(fatInput) : null,
-          calories: computedCalories,
-        })
-      })
-      if (!res.ok) throw new Error('儲存失敗')
-      onMutate()
-      setShowNote(false)
-    } catch {
-      alert('儲存失敗，請重試')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleSaveNutrients = async () => {
-    if (todayNutrition?.compliant == null) return
-    setSavingNutrients(true)
-    try {
-      const res = await fetch('/api/nutrition-logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId, date: today, compliant: todayNutrition.compliant, note: todayNutrition.note || null,
-          protein_grams: proteinInput ? Number(proteinInput) : null,
-          water_ml: waterInput ? Number(waterInput) : null,
-          carbs_grams: carbsInput ? Number(carbsInput) : null,
-          fat_grams: fatInput ? Number(fatInput) : null,
-          calories: computedCalories,
-        })
-      })
-      if (!res.ok) throw new Error('儲存失敗')
-      onMutate()
-      setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 2000)
-    } catch {
-      alert('儲存失敗，請重試')
-    } finally {
-      setSavingNutrients(false)
     }
   }
 
@@ -154,16 +107,16 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   // 本週合規率
   const weekStats = useMemo(() => {
     const weekLogs = weekDays.filter(d => d.log != null)
-    const compliant = weekLogs.filter(d => d.log?.compliant).length
+    const compliantCount = weekLogs.filter(d => d.log?.compliant).length
     const total = weekLogs.length
-    return { compliant, total, rate: total > 0 ? Math.round((compliant / total) * 100) : 0 }
+    return { compliant: compliantCount, total, rate: total > 0 ? Math.round((compliantCount / total) * 100) : 0 }
   }, [weekDays])
 
   // 近 30 天合規趨勢
   const monthStats = useMemo(() => {
     if (!nutritionLogs.length) return { compliant: 0, total: 0, rate: 0 }
-    const compliant = nutritionLogs.filter((l: any) => l.compliant).length
-    return { compliant, total: nutritionLogs.length, rate: Math.round((compliant / nutritionLogs.length) * 100) }
+    const compliantCount = nutritionLogs.filter((l: any) => l.compliant).length
+    return { compliant: compliantCount, total: nutritionLogs.length, rate: Math.round((compliantCount / nutritionLogs.length) * 100) }
   }, [nutritionLogs])
 
   // 近 7 天蛋白質/水量趨勢
@@ -189,13 +142,24 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   }, [nutritionLogs, proteinTarget, waterTarget])
 
   const hasRecorded = todayNutrition?.compliant != null
+  const hasTargets = proteinTarget || waterTarget || effectiveCarbsTarget || fatTarget
+
+  // 自動判斷合規（如果有目標的話）
+  const autoComplianceHint = useMemo(() => {
+    if (!caloriesTarget || !computedCalories) return null
+    const pct = computedCalories / caloriesTarget
+    if (pct >= 0.9 && pct <= 1.1) return { text: '營養素接近目標 👍', positive: true }
+    if (pct < 0.8) return { text: `熱量偏低 ${Math.round(pct * 100)}%`, positive: false }
+    if (pct > 1.15) return { text: `熱量偏高 ${Math.round(pct * 100)}%`, positive: false }
+    return null
+  }, [caloriesTarget, computedCalories])
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
       {showSuccess && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
           <span className="text-lg">🎉</span>
-          <span className="text-sm font-medium">已記錄！</span>
+          <span className="text-sm font-medium">飲食已記錄！</span>
         </div>
       )}
       <div className="flex items-center justify-between mb-4">
@@ -209,253 +173,219 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
         )}
       </div>
 
-      {/* 巨量營養素進度快照 */}
-      {hasRecorded && (caloriesTarget || effectiveCarbsTarget || fatTarget) && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-amber-700">{competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 今日巨量營養素'}</p>
-            {carbsCyclingEnabled && (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-100 text-gray-600'}`}
-                >
-                  🔄 {effectiveIsTraining ? '訓練日' : '休息日'} ▾
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {caloriesTarget && (
-              <div className="text-center">
-                <p className="text-[10px] text-gray-500 mb-1">🔥 熱量</p>
-                <p className={`text-lg font-bold ${computedCalories && computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1 ? 'text-green-600' : computedCalories ? 'text-orange-600' : 'text-gray-300'}`}>
-                  {computedCalories ?? '--'}
-                </p>
-                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
-                  <div
-                    className={`h-full rounded-full transition-all ${computedCalories && computedCalories >= caloriesTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
-                    style={{ width: `${Math.min(100, computedCalories ? (computedCalories / caloriesTarget) * 100 : 0)}%` }}
-                  />
-                </div>
-                <p className="text-[10px] text-gray-400 mt-0.5">/ {caloriesTarget}</p>
-              </div>
-            )}
-            {effectiveCarbsTarget && (
-              <div className="text-center">
-                <p className="text-[10px] text-gray-500 mb-1">🍚 碳水</p>
-                <p className={`text-lg font-bold ${carbsInput && Number(carbsInput) >= effectiveCarbsTarget * 0.9 && Number(carbsInput) <= effectiveCarbsTarget * 1.1 ? 'text-green-600' : Number(carbsInput) ? 'text-amber-600' : 'text-gray-300'}`}>
-                  {carbsInput ? `${Number(carbsInput)}g` : '--'}
-                </p>
-                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
-                  <div
-                    className={`h-full rounded-full transition-all ${carbsInput && Number(carbsInput) >= effectiveCarbsTarget * 0.9 ? 'bg-green-500' : 'bg-amber-400'}`}
-                    style={{ width: `${Math.min(100, carbsInput ? (Number(carbsInput) / effectiveCarbsTarget) * 100 : 0)}%` }}
-                  />
-                </div>
-                <p className="text-[10px] text-gray-400 mt-0.5">/ {effectiveCarbsTarget}g</p>
-              </div>
-            )}
-            {fatTarget && (
-              <div className="text-center">
-                <p className="text-[10px] text-gray-500 mb-1">🥑 脂肪</p>
-                <p className={`text-lg font-bold ${fatInput && Number(fatInput) >= fatTarget * 0.9 && Number(fatInput) <= fatTarget * 1.1 ? 'text-green-600' : Number(fatInput) ? 'text-yellow-600' : 'text-gray-300'}`}>
-                  {fatInput ? `${Number(fatInput)}g` : '--'}
-                </p>
-                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
-                  <div
-                    className={`h-full rounded-full transition-all ${fatInput && Number(fatInput) >= fatTarget * 0.9 ? 'bg-green-500' : 'bg-yellow-400'}`}
-                    style={{ width: `${Math.min(100, fatInput ? (Number(fatInput) / fatTarget) * 100 : 0)}%` }}
-                  />
-                </div>
-                <p className="text-[10px] text-gray-400 mt-0.5">/ {fatTarget}g</p>
-              </div>
-            )}
-          </div>
+      {/* Step 1: 合規性選擇 */}
+      <div className="mb-4">
+        <p className="text-sm text-gray-500 mb-3">今天有照計畫吃嗎？</p>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setCompliant(true)}
+            className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold transition-all ${
+              compliant === true
+                ? 'bg-green-100 border-2 border-green-400 text-green-700 scale-[1.02]'
+                : 'bg-green-50 border-2 border-green-200 text-green-700 hover:bg-green-100'
+            }`}
+          >
+            <span className="text-xl">✅</span>
+            <span>照計畫吃</span>
+          </button>
+          <button
+            onClick={() => setCompliant(false)}
+            className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold transition-all ${
+              compliant === false
+                ? 'bg-red-100 border-2 border-red-400 text-red-700 scale-[1.02]'
+                : 'bg-red-50 border-2 border-red-200 text-red-700 hover:bg-red-100'
+            }`}
+          >
+            <span className="text-xl">❌</span>
+            <span>沒照計畫</span>
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* 今日狀態按鈕 */}
-      {!hasRecorded ? (
-        <div className="mb-4">
-          <p className="text-sm text-gray-500 mb-3">今天有照計畫吃嗎？</p>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => handleSubmit(true)}
-              disabled={saving}
-              className="flex items-center justify-center gap-2 py-4 bg-green-50 border-2 border-green-200 rounded-2xl text-green-700 font-semibold hover:bg-green-100 transition-colors disabled:opacity-50"
-            >
-              <span className="text-2xl">✅</span>
-              <span>照計畫吃</span>
-            </button>
-            <button
-              onClick={() => handleSubmit(false)}
-              disabled={saving}
-              className="flex items-center justify-center gap-2 py-4 bg-red-50 border-2 border-red-200 rounded-2xl text-red-700 font-semibold hover:bg-red-100 transition-colors disabled:opacity-50"
-            >
-              <span className="text-2xl">❌</span>
-              <span>沒照計畫</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="mb-4">
-          <div className="flex items-center gap-3 mb-3">
-            <button
-              onClick={() => handleSubmit(true)}
-              disabled={saving}
-              className={`flex-1 py-3 rounded-2xl font-medium text-sm transition-colors ${
-                todayNutrition.compliant
-                  ? 'bg-green-100 border-2 border-green-400 text-green-700'
-                  : 'bg-gray-50 border-2 border-gray-200 text-gray-400 hover:bg-green-50'
-              }`}
-            >
-              ✅ 照計畫吃
-            </button>
-            <button
-              onClick={() => handleSubmit(false)}
-              disabled={saving}
-              className={`flex-1 py-3 rounded-2xl font-medium text-sm transition-colors ${
-                !todayNutrition.compliant
-                  ? 'bg-red-100 border-2 border-red-400 text-red-700'
-                  : 'bg-gray-50 border-2 border-gray-200 text-gray-400 hover:bg-red-50'
-              }`}
-            >
-              ❌ 沒照計畫
-            </button>
-          </div>
-
-          {/* 備註 */}
-          {todayNutrition.note && !showNote && (
-            <div className="bg-gray-50 rounded-xl p-3 mb-2">
-              <p className="text-sm text-gray-600">{todayNutrition.note}</p>
-              <button onClick={() => { setNote(todayNutrition.note || ''); setShowNote(true) }} className="text-xs text-blue-600 mt-1">
-                編輯備註
-              </button>
-            </div>
-          )}
-          {!todayNutrition.note && !showNote && (
-            <button onClick={() => setShowNote(true)} className="text-sm text-blue-600">
-              + 新增備註
-            </button>
-          )}
-
-          {/* 蛋白質 & 水量（滑桿模式） */}
-          {(proteinTarget || waterTarget) && (
-            <div className="mt-4 space-y-4">
-              {proteinTarget && (
-                <NutrientSlider
-                  label="蛋白質" emoji="🥩"
-                  value={proteinInput} onChange={setProteinInput}
-                  target={proteinTarget} unit="g"
-                  max={Math.max(300, (proteinTarget || 150) * 1.5)} step={5}
-                  color="blue"
-                />
-              )}
-              {waterTarget && (
-                <NutrientSlider
-                  label="飲水量" emoji="💧"
-                  value={waterInput} onChange={setWaterInput}
-                  target={waterTarget} unit="ml"
-                  max={Math.max(5000, (waterTarget || 2500) * 1.5)} step={100}
-                  color="cyan"
-                />
-              )}
-              {/* 巨量營養素 */}
-              {(effectiveCarbsTarget || fatTarget) && (
-                <div className="border-t border-gray-100 pt-3 mt-1 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-amber-600">{competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 巨量營養素'}</p>
-                    {carbsCyclingEnabled && carbsTrainingDay && carbsRestDay && (
-                      <button
-                        onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-200 text-gray-600'}`}
-                      >
-                        🔄 {effectiveIsTraining ? '訓練日' : '休息日'} ▾
-                      </button>
-                    )}
-                  </div>
-                  <NutrientSlider
-                    label="碳水" emoji="🍚"
-                    value={carbsInput} onChange={setCarbsInput}
-                    target={effectiveCarbsTarget} unit="g"
-                    max={Math.max(500, (effectiveCarbsTarget || 250) * 1.5)} step={5}
-                    color="amber"
-                  />
-                  <NutrientSlider
-                    label="脂肪" emoji="🥑"
-                    value={fatInput} onChange={setFatInput}
-                    target={fatTarget} unit="g"
-                    max={Math.max(200, (fatTarget || 80) * 2)} step={5}
-                    color="yellow"
-                  />
-                  {/* 自動計算熱量顯示 */}
-                  <div className="bg-orange-50 rounded-xl px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">🔥 熱量（自動計算）</span>
-                      <span className={`text-lg font-bold ${
-                        computedCalories && caloriesTarget && computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1
-                          ? 'text-green-600'
-                          : computedCalories ? 'text-orange-600' : 'text-gray-300'
-                      }`}>
-                        {computedCalories ?? '--'} <span className="text-xs font-normal text-gray-400">kcal</span>
-                      </span>
+      {/* Step 2: 營養素數據（選了合規性後展開） */}
+      {compliant !== null && hasTargets && (
+        <div className="space-y-4 mb-4">
+          {/* 巨量營養素進度快照 */}
+          {(caloriesTarget || effectiveCarbsTarget || fatTarget) && (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-amber-700">{competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 今日巨量營養素'}</p>
+                {carbsCyclingEnabled && (
+                  <button
+                    onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-100 text-gray-600'}`}
+                  >
+                    🔄 {effectiveIsTraining ? '訓練日' : '休息日'} ▾
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {caloriesTarget && (
+                  <div className="text-center">
+                    <p className="text-[10px] text-gray-500 mb-1">🔥 熱量</p>
+                    <p className={`text-lg font-bold ${computedCalories && computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1 ? 'text-green-600' : computedCalories ? 'text-orange-600' : 'text-gray-300'}`}>
+                      {computedCalories ?? '--'}
+                    </p>
+                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
+                      <div
+                        className={`h-full rounded-full transition-all ${computedCalories && computedCalories >= caloriesTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
+                        style={{ width: `${Math.min(100, computedCalories ? (computedCalories / caloriesTarget) * 100 : 0)}%` }}
+                      />
                     </div>
-                    {caloriesTarget && computedCalories && (
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all ${computedCalories >= caloriesTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
-                            style={{ width: `${Math.min(100, (computedCalories / caloriesTarget) * 100)}%` }}
-                          />
-                        </div>
-                        <span className={`text-xs font-medium ${computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1 ? 'text-green-600' : 'text-orange-600'}`}>
-                          {Math.round((computedCalories / caloriesTarget) * 100)}%
-                        </span>
-                      </div>
-                    )}
-                    <p className="text-[10px] text-gray-400 mt-1">= 蛋白質×4 + 碳水×4 + 脂肪×9{caloriesTarget ? ` ｜ 目標 ${caloriesTarget} kcal` : ''}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">/ {caloriesTarget}</p>
                   </div>
+                )}
+                {effectiveCarbsTarget && (
+                  <div className="text-center">
+                    <p className="text-[10px] text-gray-500 mb-1">🍚 碳水</p>
+                    <p className={`text-lg font-bold ${carbsInput && Number(carbsInput) >= effectiveCarbsTarget * 0.9 && Number(carbsInput) <= effectiveCarbsTarget * 1.1 ? 'text-green-600' : Number(carbsInput) ? 'text-amber-600' : 'text-gray-300'}`}>
+                      {carbsInput ? `${Number(carbsInput)}g` : '--'}
+                    </p>
+                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
+                      <div
+                        className={`h-full rounded-full transition-all ${carbsInput && Number(carbsInput) >= effectiveCarbsTarget * 0.9 ? 'bg-green-500' : 'bg-amber-400'}`}
+                        style={{ width: `${Math.min(100, carbsInput ? (Number(carbsInput) / effectiveCarbsTarget) * 100 : 0)}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-0.5">/ {effectiveCarbsTarget}g</p>
+                  </div>
+                )}
+                {fatTarget && (
+                  <div className="text-center">
+                    <p className="text-[10px] text-gray-500 mb-1">🥑 脂肪</p>
+                    <p className={`text-lg font-bold ${fatInput && Number(fatInput) >= fatTarget * 0.9 && Number(fatInput) <= fatTarget * 1.1 ? 'text-green-600' : Number(fatInput) ? 'text-yellow-600' : 'text-gray-300'}`}>
+                      {fatInput ? `${Number(fatInput)}g` : '--'}
+                    </p>
+                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
+                      <div
+                        className={`h-full rounded-full transition-all ${fatInput && Number(fatInput) >= fatTarget * 0.9 ? 'bg-green-500' : 'bg-yellow-400'}`}
+                        style={{ width: `${Math.min(100, fatInput ? (Number(fatInput) / fatTarget) * 100 : 0)}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-0.5">/ {fatTarget}g</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {proteinTarget && (
+            <NutrientSlider
+              label="蛋白質" emoji="🥩"
+              value={proteinInput} onChange={setProteinInput}
+              target={proteinTarget} unit="g"
+              max={Math.max(300, (proteinTarget || 150) * 1.5)} step={5}
+              color="blue"
+            />
+          )}
+          {waterTarget && (
+            <NutrientSlider
+              label="飲水量" emoji="💧"
+              value={waterInput} onChange={setWaterInput}
+              target={waterTarget} unit="ml"
+              max={Math.max(5000, (waterTarget || 2500) * 1.5)} step={100}
+              color="cyan"
+            />
+          )}
+          {(effectiveCarbsTarget || fatTarget) && (
+            <div className="border-t border-gray-100 pt-3 mt-1 space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-amber-600">{competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 巨量營養素'}</p>
+                {carbsCyclingEnabled && carbsTrainingDay && carbsRestDay && (
+                  <button
+                    onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-200 text-gray-600'}`}
+                  >
+                    🔄 {effectiveIsTraining ? '訓練日' : '休息日'} ▾
+                  </button>
+                )}
+              </div>
+              <NutrientSlider
+                label="碳水" emoji="🍚"
+                value={carbsInput} onChange={setCarbsInput}
+                target={effectiveCarbsTarget} unit="g"
+                max={Math.max(500, (effectiveCarbsTarget || 250) * 1.5)} step={5}
+                color="amber"
+              />
+              <NutrientSlider
+                label="脂肪" emoji="🥑"
+                value={fatInput} onChange={setFatInput}
+                target={fatTarget} unit="g"
+                max={Math.max(200, (fatTarget || 80) * 2)} step={5}
+                color="yellow"
+              />
+              {/* 自動計算熱量顯示 */}
+              <div className="bg-orange-50 rounded-xl px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">🔥 熱量（自動計算）</span>
+                  <span className={`text-lg font-bold ${
+                    computedCalories && caloriesTarget && computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1
+                      ? 'text-green-600'
+                      : computedCalories ? 'text-orange-600' : 'text-gray-300'
+                  }`}>
+                    {computedCalories ?? '--'} <span className="text-xs font-normal text-gray-400">kcal</span>
+                  </span>
                 </div>
-              )}
-              <button
-                onClick={handleSaveNutrients}
-                disabled={savingNutrients}
-                className="w-full py-2.5 bg-blue-50 text-blue-600 text-sm font-medium rounded-xl hover:bg-blue-100 transition-colors disabled:opacity-50"
-              >
-                {savingNutrients ? '儲存中...' : '儲存飲食數據'}
-              </button>
+                {caloriesTarget && computedCalories && (
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${computedCalories >= caloriesTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
+                        style={{ width: `${Math.min(100, (computedCalories / caloriesTarget) * 100)}%` }}
+                      />
+                    </div>
+                    <span className={`text-xs font-medium ${computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1 ? 'text-green-600' : 'text-orange-600'}`}>
+                      {Math.round((computedCalories / caloriesTarget) * 100)}%
+                    </span>
+                  </div>
+                )}
+                <p className="text-[10px] text-gray-400 mt-1">= 蛋白質×4 + 碳水×4 + 脂肪×9{caloriesTarget ? ` ｜ 目標 ${caloriesTarget} kcal` : ''}</p>
+              </div>
+            </div>
+          )}
+
+          {/* 自動合規提示 */}
+          {autoComplianceHint && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+              autoComplianceHint.positive ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+            }`}>
+              <span>{autoComplianceHint.positive ? '✅' : '⚠️'}</span>
+              <span>{autoComplianceHint.text}</span>
             </div>
           )}
         </div>
       )}
 
-      {/* 備註輸入 */}
-      {showNote && (
+      {/* 備註 */}
+      {compliant !== null && (
         <div className="mb-4">
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="今天吃了什麼？有什麼特別情況？"
-            rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          />
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={handleSaveNote}
-              disabled={saving}
-              className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              儲存
+          {!showNote && !note ? (
+            <button onClick={() => setShowNote(true)} className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
+              + 新增備註 <span className="text-gray-400 text-xs">（選填）</span>
             </button>
-            <button
-              onClick={() => setShowNote(false)}
-              className="px-4 py-1.5 text-gray-500 text-sm"
-            >
-              取消
-            </button>
-          </div>
+          ) : (
+            <div>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="今天吃了什麼？有什麼特別情況？"
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+            </div>
+          )}
         </div>
+      )}
+
+      {/* 統一儲存按鈕 */}
+      {compliant !== null && (
+        <button
+          onClick={handleSaveAll}
+          disabled={saving}
+          className="w-full py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-colors disabled:opacity-50 mb-4"
+        >
+          {saving ? '儲存中...' : hasRecorded ? '更新飲食紀錄' : '💾 儲存飲食紀錄'}
+        </button>
       )}
 
       {/* 本週一覽 */}

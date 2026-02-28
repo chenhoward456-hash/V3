@@ -35,6 +35,9 @@ export async function GET(request: NextRequest) {
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
     const sinceDate = sixtyDaysAgo.toISOString().split('T')[0]
 
+    // 教練查看時，更新 last viewed 時間戳（fire-and-forget）
+    supabase.from('clients').update({ coach_last_viewed_at: new Date().toISOString() }).eq('id', realId).then(() => {})
+
     const [suppRes, logsRes, wellRes, trainRes, bodyRes, labRes, nutritionRes] = await Promise.all([
       supabase.from('supplements').select('*').eq('client_id', realId),
       supabase.from('supplement_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
