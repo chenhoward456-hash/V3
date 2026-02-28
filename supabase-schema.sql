@@ -317,3 +317,45 @@ ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS stress_level INTEGER CHECK (
 ALTER TABLE clients
   ADD CONSTRAINT chk_mode_exclusive
   CHECK (NOT (health_mode_enabled = TRUE AND competition_enabled = TRUE));
+
+-- ============================================
+-- 20. 每週分析摘要 (Weekly Summaries)
+-- Cron Job 每週日自動生成，紀錄歷史分析結果
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS weekly_summaries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  week_of DATE NOT NULL,
+  status TEXT NOT NULL,
+  summary TEXT,
+  suggested_calories INTEGER,
+  suggested_protein INTEGER,
+  suggested_carbs INTEGER,
+  suggested_fat INTEGER,
+  weekly_weight_change_rate NUMERIC(5,3),
+  refeed_suggested BOOLEAN DEFAULT FALSE,
+  warnings JSONB DEFAULT '[]',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(client_id, week_of)
+);
+
+CREATE INDEX IF NOT EXISTS idx_weekly_summaries_client ON weekly_summaries(client_id, week_of DESC);
+
+-- ============================================
+-- 21. 教練通知系統 (Coach Notifications)
+-- Cron Job 自動產生 + 系統即時通知
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS coach_notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  type TEXT NOT NULL DEFAULT 'weekly_digest',
+  title TEXT NOT NULL,
+  content TEXT,
+  read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_coach_notifications_date ON coach_notifications(date DESC);
+CREATE INDEX IF NOT EXISTS idx_coach_notifications_read ON coach_notifications(read) WHERE read = FALSE;
