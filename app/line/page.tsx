@@ -127,7 +127,7 @@ export default function LineEntryPage() {
 
         <div className="text-center mt-10">
           <Link href="/diagnosis" className="text-primary hover:underline text-sm">
-            或先免費體驗 AI 引擎分析 →
+            或先免費體驗系統分析 →
           </Link>
         </div>
       </div>
@@ -140,7 +140,7 @@ export default function LineEntryPage() {
               或直接了解智能管理方案
             </h3>
             <p className="text-gray-600 mb-4">
-              AI 引擎 24 小時自動分析 + CSCS 教練每週監督
+              智能引擎 24 小時自動分析 + CSCS 教練每週監督
             </p>
           </div>
 
@@ -154,7 +154,7 @@ export default function LineEntryPage() {
                 </div>
               </div>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li>• AI 引擎每週自動分析體重趨勢</li>
+                <li>• 智能引擎每週自動分析體重趨勢</li>
                 <li>• 自適應 TDEE 持續校正</li>
                 <li>• Refeed / Diet Break 自動觸發</li>
                 <li>• CSCS 教練監督 + LINE 諮詢</li>

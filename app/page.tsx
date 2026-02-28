@@ -9,7 +9,7 @@ const personSchema = {
   name: 'Howard Chen',
   alternateName: 'Howard',
   jobTitle: 'CSCS 認證體能教練 / Howard Protocol 創辦人',
-  description: 'AI 驅動體態管理系統 Howard Protocol 創辦人，CSCS 認證，運動醫學背景。自適應演算法 × 教練監督。',
+  description: '數據驅動體態與健康管理系統 Howard Protocol 創辦人，CSCS 認證，運動醫學背景。智能系統 × 教練監督。',
   url: 'https://howard456.vercel.app',
   image: 'https://howard456.vercel.app/howard-profile.jpg',
   sameAs: [
@@ -26,19 +26,19 @@ const personSchema = {
       addressCountry: 'TW',
     },
   },
-  knowsAbout: ['肌力訓練', '體能訓練', '代謝優化', '營養優化', '運動科學', 'CSCS', '自適應演算法', 'AI 體態管理'],
+  knowsAbout: ['肌力訓練', '體能訓練', '代謝優化', '營養優化', '運動科學', 'CSCS', '數據化健康管理', '體態管理'],
 }
 
 export const metadata: Metadata = {
-  title: 'Howard Protocol - AI 驅動體態管理系統 | CSCS 教練監督',
-  description: '不只是教練服務，是一套 AI 驅動的體態管理系統。自適應 TDEE 自動校正、每週智能分析、Refeed 自動觸發、月經週期濾鏡。CSCS 認證教練監督，運動醫學背景。台中實體 / 全台遠端。',
-  keywords: ['AI體態管理', '自適應TDEE', '智能營養系統', 'CSCS教練', '數據化訓練', '遠端訓練', '科學化減脂', '台中教練'],
+  title: 'Howard Protocol - 數據驅動的體態與健康管理 | CSCS 教練監督',
+  description: '不只是教練服務，是一套數據驅動的體態與健康管理系統。自適應 TDEE 校正、每週智能分析、Refeed 自動觸發、月經週期濾鏡。CSCS 認證教練監督，運動醫學背景。台中實體 / 全台遠端。',
+  keywords: ['數據化體態管理', '自適應TDEE', '智能營養系統', 'CSCS教練', '數據化訓練', '遠端訓練', '科學化減脂', '台中教練', '健康管理'],
   openGraph: {
-    title: 'Howard Protocol - AI 驅動體態管理系統',
-    description: '自適應演算法 × CSCS 教練監督 × 24 小時自動分析',
+    title: 'Howard Protocol - 數據驅動的體態與健康管理',
+    description: '智能系統 24 小時分析 × CSCS 教練即時監督',
     type: 'website',
     url: 'https://howard456.vercel.app',
-    images: [{ url: '/howard-profile.jpg', width: 1200, height: 630, alt: 'Howard Protocol - AI 驅動體態管理系統' }],
+    images: [{ url: '/howard-profile.jpg', width: 1200, height: 630, alt: 'Howard Protocol - 數據驅動的體態與健康管理' }],
   },
 }
 
@@ -56,16 +56,16 @@ export default function HomePage() {
           <div className="flex flex-col-reverse md:flex-row items-center gap-10 md:gap-16">
             <div className="flex-1 text-center md:text-left">
               <div className="inline-block bg-[#2563eb]/10 text-[#2563eb] text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
-                AI-Powered Coaching System
+                CSCS 認證 × 數據驅動
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6" style={{ color: '#1e3a5f' }}>
-                你的 AI 體態教練<br />24 小時待命
+                練了半年沒變化？<br />問題不在你的努力
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
-                自適應演算法 × CSCS 教練監督 × 運動醫學背景
+                智能系統 24 小時分析 × CSCS 教練即時監督
               </p>
               <p className="text-sm text-gray-400 mb-8 leading-relaxed max-w-lg">
-                不只是教練服務 — 是一套會自動分析你的體重趨勢、自動調整飲食計畫、自動偵測停滯期的智能系統。
+                不靠感覺、不靠公式 — 系統根據你的真實數據，每週自動分析體重趨勢、調整飲食計畫、偵測停滯期。
               </p>
               <Link
                 href="/diagnosis"
@@ -199,7 +199,7 @@ export default function HomePage() {
           <p className="text-center text-gray-500 mb-14">每一個功能都有運動科學文獻支撐</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: '🧠', title: '每週自動分析', desc: '體重趨勢 AI 判讀，不靠教練感覺' },
+              { icon: '🧠', title: '每週自動分析', desc: '體重趨勢智能判讀，不靠教練感覺' },
               { icon: '📉', title: '自適應 TDEE', desc: '吃多少才會瘦？系統根據數據自動算' },
               { icon: '🔄', title: 'Refeed 觸發', desc: 'RPE + 能量 + 低碳天數，三條件自動觸發' },
               { icon: '🩸', title: '月經週期濾鏡', desc: '黃體期不誤判，不會叫你少吃' },
@@ -271,9 +271,9 @@ export default function HomePage() {
                 全台適用
               </div>
               <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>Howard Protocol 智能管理</h3>
-              <p className="text-gray-500 mb-6 text-sm">AI 引擎 + CSCS 教練監督</p>
+              <p className="text-gray-500 mb-6 text-sm">智能引擎 + CSCS 教練監督</p>
               <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
-                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>AI 引擎 24 小時自動分析</li>
+                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>智能引擎 24 小時自動分析</li>
                 <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>每週體重趨勢自動判讀</li>
                 <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>自適應 TDEE 持續校正</li>
                 <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>Refeed / Diet Break 自動觸發</li>
@@ -295,7 +295,7 @@ export default function HomePage() {
                 台中限定
               </div>
               <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>實體訓練 + 智能管理</h3>
-              <p className="text-gray-500 mb-6 text-sm">一對一指導 + AI 引擎全套</p>
+              <p className="text-gray-500 mb-6 text-sm">一對一指導 + 智能引擎全套</p>
               <ul className="space-y-3 text-gray-700 mb-4 text-sm">
                 <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>包含上方所有智能管理功能</li>
               </ul>
@@ -332,7 +332,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-bold mb-2" style={{ color: '#1e3a5f' }}>Howard Chen</h3>
                 <p className="text-sm text-gray-500 mb-3">CSCS 認證 / 高雄醫學大學運動醫學系 / 6+ 年實務經驗</p>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  我花了 6 年時間，從自己的身體實驗中，建立了這套數據驅動的體態管理系統。
+                  我花了 6 年時間，從自己的身體實驗中，建立了這套數據驅動的體態與健康管理系統。
                   每一個功能背後都有運動科學文獻支撐，不是憑感覺教練。
                   我相信：好的系統比好的意志力更可靠。
                 </p>
@@ -374,7 +374,7 @@ export default function HomePage() {
             讓系統幫你分析，免費的
           </h2>
           <p className="text-blue-200 text-lg mb-10">
-            30 秒快速評估，體驗 AI 引擎如何分析你的狀況
+            30 秒快速評估，體驗智能引擎如何分析你的狀況
           </p>
           <Link
             href="/diagnosis"
