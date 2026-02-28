@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { sanitizeTextField, validateNumericField } from '@/lib/auth-middleware'
+import { sanitizeTextField, validateNumericField, rateLimit, getClientIP } from '@/lib/auth-middleware'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,6 +68,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIP(request)
+  const { allowed } = rateLimit(`nutrition:${ip}`, 30, 60_000)
+  if (!allowed) return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
+
   try {
     const body = await request.json()
     const { clientId, date, compliant, note, protein_grams, water_ml, carbs_grams, fat_grams, calories } = body

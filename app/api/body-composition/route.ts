@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { validateBodyComposition, validateDate } from '@/utils/validation'
-import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware'
+import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
 
 // 檢查環境變數
@@ -178,6 +178,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIP(request)
+  const { allowed } = rateLimit(`body:${ip}`, 20, 60_000)
+  if (!allowed) return createErrorResponse('請求過於頻繁，請稍後再試', 429)
+
   try {
     // 1. 獲取請求內容
     const body = await request.json()

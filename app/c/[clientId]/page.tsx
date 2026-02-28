@@ -39,9 +39,6 @@ export default function ClientDashboard() {
     d.setDate(d.getDate() + offset)
     const newDate = d.toISOString().split('T')[0]
     if (newDate > today) return
-    const thirtyAgo = new Date()
-    thirtyAgo.setDate(thirtyAgo.getDate() - 30)
-    if (newDate < thirtyAgo.toISOString().split('T')[0]) return
     setSelectedDate(newDate)
   }
 
@@ -235,15 +232,28 @@ export default function ClientDashboard() {
             <button onClick={() => changeDate(-1)} className="p-1.5 rounded-full hover:bg-gray-200 transition-colors text-gray-500">
               <ChevronLeft size={18} />
             </button>
-            <div className="text-center">
+            <div className="text-center relative">
               <button
-                onClick={() => setSelectedDate(today)}
+                onClick={() => {
+                  const picker = document.getElementById('date-picker') as HTMLInputElement
+                  if (picker) { picker.showPicker?.(); picker.focus() }
+                }}
                 className={`text-sm font-semibold px-3 py-1 rounded-full transition-colors ${isToday ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
               >
                 {formatSelectedDate(selectedDate)}
               </button>
+              <input
+                id="date-picker"
+                type="date"
+                value={selectedDate}
+                max={today}
+                onChange={(e) => {
+                  if (e.target.value && e.target.value <= today) setSelectedDate(e.target.value)
+                }}
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+              />
               {!isToday && (
-                <p className="text-xs text-gray-400">{new Date(selectedDate).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}</p>
+                <p className="text-xs text-gray-400 pointer-events-none">{new Date(selectedDate).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}</p>
               )}
             </div>
             <button
