@@ -142,10 +142,21 @@ export default function AdminDashboard() {
   }
 
   const clientStats = useMemo(() => {
+    // 預先建立索引，避免 O(n²) 的 filter
+    const logsByClient: Record<string, SupplementLog[]> = {}
+    for (const log of allLogs) {
+      if (!logsByClient[log.client_id]) logsByClient[log.client_id] = []
+      logsByClient[log.client_id].push(log)
+    }
+    const supCountByClient: Record<string, number> = {}
+    for (const s of allSupplements) {
+      supCountByClient[s.client_id] = (supCountByClient[s.client_id] || 0) + 1
+    }
+
     const stats: Record<string, { weekRate: number; lastActivity: string | null; supplementCount: number }> = {}
     for (const client of clients) {
-      const clientLogs = allLogs.filter(l => l.client_id === client.id)
-      const supplementCount = allSupplements.filter(s => s.client_id === client.id).length
+      const clientLogs = logsByClient[client.id] || []
+      const supplementCount = supCountByClient[client.id] || 0
       let weekRate = 0
       if (supplementCount > 0) { weekRate = Math.round((clientLogs.filter(l => l.completed).length / (supplementCount * 7)) * 100) }
       const completedLogs = clientLogs.filter(l => l.completed)

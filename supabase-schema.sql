@@ -359,3 +359,14 @@ CREATE TABLE IF NOT EXISTS coach_notifications (
 
 CREATE INDEX IF NOT EXISTS idx_coach_notifications_date ON coach_notifications(date DESC);
 CREATE INDEX IF NOT EXISTS idx_coach_notifications_read ON coach_notifications(read) WHERE read = FALSE;
+
+-- ============================================
+-- 22. 效能優化：複合索引
+-- 所有以 client_id + date 查詢的表都需要複合索引
+-- ============================================
+
+CREATE INDEX IF NOT EXISTS idx_body_composition_client_date ON body_composition(client_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_nutrition_logs_client_date ON nutrition_logs(client_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_training_logs_client_date ON training_logs(client_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_daily_wellness_client_date ON daily_wellness(client_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_supplement_logs_client_date ON supplement_logs(client_id, date DESC);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { sanitizeTextField } from '@/lib/auth-middleware'
+import { sanitizeTextField, rateLimit, getClientIP } from '@/lib/auth-middleware'
 
 // 建立管理員客戶端（使用 Service Role Key）
 const supabaseAdmin = createClient(
@@ -74,6 +74,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIP(request)
+  const { allowed } = rateLimit(`wellness:${ip}`, 30, 60_000)
+  if (!allowed) return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
+
   try {
     const body = await request.json()
     const { clientId, date, sleep_quality, energy_level, mood, note, hunger, digestion, training_drive, cognitive_clarity, stress_level, period_start } = body
