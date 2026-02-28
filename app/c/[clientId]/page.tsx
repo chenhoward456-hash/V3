@@ -116,6 +116,34 @@ export default function ClientDashboard() {
     }
   }
 
+  const handleMarkAllSupplementsComplete = async () => {
+    const supplements = clientData?.client?.supplements || []
+    const uncompleted = supplements.filter((s: any) => {
+      const log = selectedDateLogs?.find((l: any) => l.supplement_id === s.id)
+      return !log?.completed
+    })
+    if (uncompleted.length === 0) return
+    // 把所有未完成的 supplement 加入 toggling 狀態
+    setTogglingSupplements(prev => {
+      const next = new Set(prev)
+      uncompleted.forEach((s: any) => next.add(s.id))
+      return next
+    })
+    try {
+      await Promise.all(uncompleted.map((s: any) =>
+        fetch('/api/supplement-logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId, supplementId: s.id, date: selectedDate, completed: true })
+        })
+      ))
+      mutate()
+    } catch { alert('打卡失敗，請重試') }
+    finally {
+      setTogglingSupplements(new Set())
+    }
+  }
+
   // 所有統計數據從 hook 取得
   const {
     todayWellness, todayTraining, todayNutrition,
@@ -293,22 +321,56 @@ export default function ClientDashboard() {
                   </div>
                 </div>
               </div>
-              {/* 四柱進度條 */}
+              {/* 五柱進度條（附解釋） */}
               <div className="grid grid-cols-5 gap-1">
-                {healthScore.pillars.map(p => (
-                  <div key={p.pillar} className="text-center">
-                    <div className="text-base leading-none mb-1">{p.emoji}</div>
-                    <div className="w-full bg-emerald-100 rounded-full h-1.5 mb-0.5">
-                      <div
-                        className="bg-emerald-500 h-1.5 rounded-full transition-all"
-                        style={{ width: `${p.score}%` }}
-                      />
+                {healthScore.pillars.map(p => {
+                  const pillarsExplain: Record<string, string> = {
+                    wellness: '身心狀態 25%',
+                    nutrition: '營養合規 20%',
+                    training: '訓練規律 20%',
+                    supplement: '補品服從 15%',
+                    lab: '血檢結果 20%',
+                  }
+                  return (
+                    <div key={p.pillar} className="text-center">
+                      <div className="text-base leading-none mb-1">{p.emoji}</div>
+                      <div className="w-full bg-emerald-100 rounded-full h-1.5 mb-0.5">
+                        <div
+                          className={`h-1.5 rounded-full transition-all ${
+                            p.score >= 80 ? 'bg-emerald-500' : p.score >= 50 ? 'bg-yellow-400' : 'bg-red-400'
+                          }`}
+                          style={{ width: `${p.score}%` }}
+                        />
+                      </div>
+                      <p className={`text-[9px] font-medium ${
+                        p.score >= 80 ? 'text-emerald-600' : p.score >= 50 ? 'text-yellow-600' : 'text-red-500'
+                      }`}>{p.score}</p>
+                      <p className="text-[8px] text-gray-400">{p.label}</p>
                     </div>
-                    <p className="text-[9px] text-emerald-600 font-medium">{p.score}</p>
-                    <p className="text-[8px] text-gray-400">{p.label}</p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
+              {/* 最低分柱提示 */}
+              {(() => {
+                const lowest = [...healthScore.pillars].sort((a, b) => a.score - b.score)[0]
+                if (lowest && lowest.score < 70) {
+                  const tips: Record<string, string> = {
+                    wellness: '多休息、保持正面心態',
+                    nutrition: '注意飲食計畫的執行',
+                    training: '保持規律的訓練頻率',
+                    supplement: '別忘了每天的補品打卡',
+                    lab: '建議安排血檢追蹤',
+                  }
+                  return (
+                    <div className="mt-2 pt-2 border-t border-emerald-200">
+                      <p className="text-xs text-amber-600 font-medium">
+                        💡 {lowest.label}分數偏低（{lowest.score}分）— {tips[lowest.pillar] || '持續改善中'}
+                      </p>
+                    </div>
+                  )
+                }
+                return null
+              })()}
               {healthScore.daysUntilBloodTest != null && healthScore.daysUntilBloodTest <= 21 && (
                 <div className="mt-2 pt-2 border-t border-emerald-200">
                   <p className="text-xs text-emerald-600 font-medium">
@@ -375,15 +437,23 @@ export default function ClientDashboard() {
                     </span>
                   ))
                 ) : (
-                  <button
-                    onClick={() => {
-                      const firstSection = document.querySelector('[id^="section-"]')
-                      firstSection?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                    }}
-                    className="text-xs text-blue-500 font-medium hover:text-blue-700 transition-colors"
-                  >
-                    👇 今天還沒有記錄，點這裡開始！
-                  </button>
+                  <div className="w-full">
+                    <p className="text-xs text-gray-500 mb-2">👋 今天還沒有紀錄，從這裡開始：</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {c.supplement_enabled && !todaySupplementStats.completed && (
+                        <button onClick={() => document.getElementById('section-supplements')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">💊 補品打卡</button>
+                      )}
+                      {c.wellness_enabled && !todayWellness && (
+                        <button onClick={() => document.getElementById('section-wellness')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full hover:bg-purple-100 transition-colors">😊 記錄感受</button>
+                      )}
+                      {c.nutrition_enabled && !todayNutrition && (
+                        <button onClick={() => document.getElementById('section-nutrition')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors">🍽️ 飲食紀錄</button>
+                      )}
+                      {c.training_enabled && !todayTraining && (
+                        <button onClick={() => document.getElementById('section-training')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-green-50 text-green-600 px-2.5 py-1 rounded-full hover:bg-green-100 transition-colors">🏋️ 訓練紀錄</button>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -420,6 +490,26 @@ export default function ClientDashboard() {
                   })()}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* 教練已查看標記 */}
+          {c.coach_last_viewed_at && (
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-green-500 text-xs">✓</span>
+              <span className="text-xs text-gray-400">
+                教練上次查看：{(() => {
+                  const viewed = new Date(c.coach_last_viewed_at)
+                  const now = new Date()
+                  const diffH = Math.floor((now.getTime() - viewed.getTime()) / 3600000)
+                  if (diffH < 1) return '剛剛'
+                  if (diffH < 24) return `${diffH} 小時前`
+                  const diffD = Math.floor(diffH / 24)
+                  if (diffD === 1) return '昨天'
+                  if (diffD < 7) return `${diffD} 天前`
+                  return viewed.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' })
+                })()}
+              </span>
             </div>
           )}
 
@@ -550,6 +640,7 @@ export default function ClientDashboard() {
             togglingSupplements={togglingSupplements}
             recentLogs={clientData.recentLogs || []}
             onToggleSupplement={handleToggleSupplement}
+            onMarkAllComplete={handleMarkAllSupplementsComplete}
             onManageSupplements={() => setShowSupplementModal(true)}
           /></div>
         )}

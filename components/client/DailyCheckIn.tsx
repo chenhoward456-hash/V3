@@ -14,6 +14,7 @@ interface DailyCheckInProps {
   togglingSupplements: Set<string>
   recentLogs: any[]
   onToggleSupplement: (id: string, completed: boolean) => void
+  onMarkAllComplete?: () => void
   onManageSupplements: () => void
 }
 
@@ -23,7 +24,7 @@ export default function DailyCheckIn({
   supplements, todayLogs, todayStats,
   streakDays, streakMessage,
   isCoachMode, togglingSupplements, recentLogs,
-  onToggleSupplement, onManageSupplements
+  onToggleSupplement, onMarkAllComplete, onManageSupplements
 }: DailyCheckInProps) {
   const trendData = useMemo(() => {
     const total = supplements.length
@@ -95,6 +96,18 @@ export default function DailyCheckIn({
               style={{ width: `${todayStats.rate}%` }}
             />
           </div>
+        </div>
+      )}
+
+      {/* 全部完成按鈕 */}
+      {supplements.length > 0 && todayStats.completed < todayStats.total && onMarkAllComplete && (
+        <div className="mb-4">
+          <button
+            onClick={onMarkAllComplete}
+            className="w-full py-2.5 bg-green-50 border-2 border-green-200 text-green-700 text-sm font-semibold rounded-2xl hover:bg-green-100 transition-all active:scale-[0.98]"
+          >
+            ✅ 全部完成
+          </button>
         </div>
       )}
 
