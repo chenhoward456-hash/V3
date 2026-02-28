@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import LineButton from '@/components/LineButton'
 
 const navItems = [
   { label: '系統介紹', href: '/' },
@@ -75,12 +76,13 @@ export default function Navigation() {
             </div>
 
             <div className="flex items-center gap-4">
-              <Link
-                href="/action"
+              <LineButton
+                source="nav_cta"
+                intent="general"
                 className="hidden lg:inline-block bg-primary text-white px-5 py-2.5 rounded-full font-medium text-sm hover:bg-primary-dark transition-colors"
               >
-                預約諮詢
-              </Link>
+                加 LINE 諮詢
+              </LineButton>
 
               {/* Mobile Menu Button */}
               <button
