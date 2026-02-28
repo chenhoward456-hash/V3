@@ -66,7 +66,7 @@ export default function StickyCTA({ articleTitle, slug, intent = 'performance', 
       }
     } else if (scrollDepth < 50) {
       return {
-        title: resource ? '看到這裡了？拿免費計畫表更快' : '看到這裡了？要不要體驗 AI 引擎？',
+        title: resource ? '看到這裡了？拿免費計畫表更快' : '看到這裡了？要不要體驗系統分析？',
         subtitle: resource ? '立即下載開始執行' : '30 秒算出你的 TDEE 和營養素'
       }
     } else if (scrollDepth < 75) {

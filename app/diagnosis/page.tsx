@@ -57,13 +57,13 @@ export default function DiagnosisPage() {
       {/* Header */}
       <div className="text-center mb-10">
         <div className="inline-block bg-[#2563eb]/10 text-[#2563eb] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
-          AI Engine Demo
+          Smart Engine Demo
         </div>
         <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: '#1e3a5f' }}>
           免費體驗系統分析
         </h1>
         <p className="text-gray-500 text-sm md:text-base">
-          輸入基本資料，AI 引擎即時計算你的 TDEE、每日建議熱量、巨量營養素
+          輸入基本資料，系統即時計算你的 TDEE、每日建議熱量、巨量營養素
         </p>
       </div>
 
@@ -389,7 +389,7 @@ export default function DiagnosisPage() {
 
         {/* 底部免責 */}
         <p className="text-center text-xs text-gray-400 mt-6 leading-relaxed">
-          此為 AI 引擎初始估算，僅供參考。實際數值會因個人代謝、活動量、飲食記錄完整度而有差異。
+          此為智能引擎初始估算，僅供參考。實際數值會因個人代謝、活動量、飲食記錄完整度而有差異。
           <br />訂閱後系統會根據你的真實數據持續校正。如有健康疑慮，請諮詢合格醫師。
         </p>
       </div>

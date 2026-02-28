@@ -9,9 +9,9 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-1">
             <h4 className="text-white font-bold text-lg mb-4">Howard Protocol</h4>
             <p className="text-sm leading-relaxed text-gray-400">
-              AI 驅動的體態管理系統<br />
+              數據驅動的體態與健康管理系統<br />
               CSCS 教練監督 × 運動醫學背景<br />
-              自適應演算法 × 數據驅動
+              智能系統 × 持續進化
             </p>
           </div>
 

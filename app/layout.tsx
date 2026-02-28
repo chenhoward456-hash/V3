@@ -31,13 +31,13 @@ export const viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Howard Protocol - AI 驅動體態管理系統 | CSCS 教練監督',
-  description: 'AI 驅動的體態管理系統。自適應 TDEE 自動校正、每週智能分析、Refeed 自動觸發、月經週期濾鏡。CSCS 認證教練監督，運動醫學背景。台中實體 / 全台遠端。',
+  title: 'Howard Protocol - 數據驅動的體態與健康管理 | CSCS 教練監督',
+  description: '數據驅動的體態與健康管理系統。自適應 TDEE 自動校正、每週智能分析、Refeed 自動觸發、月經週期濾鏡。CSCS 認證教練監督，運動醫學背景。台中實體 / 全台遠端。',
   verification: {
     google: 'hSS0ZwkqpzzSA8A4RS7RW81CeoR2HOFoT-CkpEFYcf4',
   },
   keywords: [
-    'AI體態管理',
+    '數據化體態管理',
     '自適應TDEE',
     '智能營養系統',
     'CSCS教練',
@@ -52,8 +52,8 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'Howard Chen' }],
   openGraph: {
-    title: 'Howard Protocol - AI 驅動體態管理系統',
-    description: '自適應演算法 × CSCS 教練監督 × 24 小時自動分析。不只是教練服務，是一套智能系統。',
+    title: 'Howard Protocol - 數據驅動的體態與健康管理',
+    description: '智能系統 24 小時分析 × CSCS 教練即時監督。不只是教練服務，是一套會持續進化的系統。',
     type: 'website',
     locale: 'zh_TW',
     url: 'https://howard456.vercel.app',
@@ -63,14 +63,14 @@ export const metadata: Metadata = {
         url: '/howard-profile.jpg',
         width: 1200,
         height: 630,
-        alt: 'Howard Protocol - AI 驅動體態管理系統'
+        alt: 'Howard Protocol - 數據驅動的體態與健康管理'
       }
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Howard Protocol - AI 驅動體態管理系統',
-    description: '自適應演算法 × CSCS 教練監督 × 24 小時自動分析',
+    title: 'Howard Protocol - 數據驅動的體態與健康管理',
+    description: '智能系統 24 小時分析 × CSCS 教練即時監督',
     images: ['/howard-profile.jpg'],
   },
   icons: {

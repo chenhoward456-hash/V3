@@ -5,7 +5,7 @@ import ScrollReveal from '@/components/ScrollReveal'
 
 export const metadata: Metadata = {
   title: '方案說明 - Howard Protocol 智能管理系統 | 全台遠端 / 台中實體',
-  description: 'AI 引擎 × CSCS 教練監督。自適應 TDEE 每週校正、體重趨勢自動判讀、Refeed 自動觸發、月經週期濾鏡。全台遠端訂閱 / 台中實體訓練。',
+  description: '智能引擎 × CSCS 教練監督。自適應 TDEE 每週校正、體重趨勢自動判讀、Refeed 自動觸發、月經週期濾鏡。全台遠端訂閱 / 台中實體訓練。',
 }
 
 export default function RemotePage() {
@@ -83,7 +83,7 @@ export default function RemotePage() {
             <h2 className="text-2xl md:text-3xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
               選擇你的方案
             </h2>
-            <p className="text-center text-gray-500 mb-12 text-sm">兩種方案，同一套 AI 引擎</p>
+            <p className="text-center text-gray-500 mb-12 text-sm">兩種方案，同一套智能引擎</p>
 
             <div className="grid md:grid-cols-2 gap-8">
               {/* 主推：智能管理方案 */}
@@ -92,9 +92,9 @@ export default function RemotePage() {
                   全台適用
                 </div>
                 <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>Howard Protocol 智能管理</h3>
-                <p className="text-gray-500 mb-6 text-sm">AI 引擎 + CSCS 教練監督</p>
+                <p className="text-gray-500 mb-6 text-sm">智能引擎 + CSCS 教練監督</p>
                 <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
-                  <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>AI 引擎 24 小時自動分析</li>
+                  <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>智能引擎 24 小時自動分析</li>
                   <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>每週體重趨勢自動判讀</li>
                   <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>自適應 TDEE 持續校正</li>
                   <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>Refeed / Diet Break 自動觸發</li>
@@ -117,7 +117,7 @@ export default function RemotePage() {
                   台中限定
                 </div>
                 <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>實體訓練 + 智能管理</h3>
-                <p className="text-gray-500 mb-6 text-sm">一對一指導 + AI 引擎全套</p>
+                <p className="text-gray-500 mb-6 text-sm">一對一指導 + 智能引擎全套</p>
                 <ul className="space-y-3 text-gray-700 mb-4 text-sm">
                   <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>包含上方所有智能管理功能</li>
                 </ul>
@@ -237,7 +237,7 @@ export default function RemotePage() {
           <h3 className="text-sm font-bold mb-3 text-amber-700">⚠️ 重要聲明</h3>
           <div className="space-y-2 text-gray-600 text-xs leading-relaxed">
             <p>
-              <strong>1. 非醫療服務：</strong>此服務提供的是 AI 輔助的營養管理建議與教練指導，<strong>不構成醫療建議、診斷或治療</strong>。如有健康疑慮，請務必諮詢合格醫師。
+              <strong>1. 非醫療服務：</strong>此服務提供的是系統輔助的營養管理建議與教練指導，<strong>不構成醫療建議、診斷或治療</strong>。如有健康疑慮，請務必諮詢合格醫師。
             </p>
             <p>
               <strong>2. 效果因人而異：</strong>訓練與營養管理的效果因個人體質、配合度、生活習慣而異，<strong>不保證特定成效</strong>。需配合每日記錄才能讓系統發揮最大效果。
@@ -267,7 +267,7 @@ export default function RemotePage() {
           </LineButton>
           <p className="mt-6">
             <Link href="/diagnosis" className="text-blue-300 hover:text-white text-sm underline transition-colors">
-              還沒體驗過？先免費試試 AI 引擎 →
+              還沒體驗過？先免費體驗系統分析 →
             </Link>
           </p>
         </div>
