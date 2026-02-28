@@ -66,8 +66,8 @@ export default function StickyCTA({ articleTitle, slug, intent = 'performance', 
       }
     } else if (scrollDepth < 50) {
       return {
-        title: resource ? '看到這裡了？拿免費計畫表更快' : '看到這裡了？要不要先做診斷？',
-        subtitle: resource ? '立即下載開始執行' : '我會幫你判斷目前狀態'
+        title: resource ? '看到這裡了？拿免費計畫表更快' : '看到這裡了？要不要體驗 AI 引擎？',
+        subtitle: resource ? '立即下載開始執行' : '30 秒算出你的 TDEE 和營養素'
       }
     } else if (scrollDepth < 75) {
       return {
@@ -125,7 +125,7 @@ export default function StickyCTA({ articleTitle, slug, intent = 'performance', 
               href="/diagnosis"
               className="inline-block bg-primary text-white px-5 py-3 rounded-xl font-bold text-center hover:opacity-90 transition-all"
             >
-              開始 30 秒診斷
+              免費體驗系統分析
             </Link>
           )}
 
