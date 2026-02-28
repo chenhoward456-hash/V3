@@ -1642,3 +1642,124 @@ export function calcRecommendedStageWeight(
     mode: isCompetition ? 'competition' : 'health',
   }
 }
+
+
+// ===== Demo 引擎分析（前台訪客體驗用）=====
+// 不需要學員資料庫、不需要歷史數據
+// 純粹根據基本資料估算 TDEE、巨量營養素、預估時程
+
+export interface DemoAnalysisInput {
+  gender: '男性' | '女性'
+  bodyWeight: number            // kg
+  height?: number | null        // cm
+  bodyFatPct?: number | null    // % (15 = 15%)
+  goalType: 'cut' | 'bulk'
+  targetWeight?: number | null  // kg
+  trainingDaysPerWeek: number   // 1-7
+}
+
+export interface DemoAnalysisResult {
+  estimatedTDEE: number
+  tdeeMethod: 'katch_mcardle' | 'weight_formula'
+  suggestedCalories: number
+  dailyDeficit: number          // 正值=赤字, 負值=盈餘
+  suggestedProtein: number
+  suggestedCarbs: number
+  suggestedFat: number
+  weeklyChangeKg: number        // 預估每週變化 kg（負=減重）
+  weeklyChangeRate: number      // 預估每週變化 %BW
+  projectedWeeks: number | null // 達標所需週數
+  safetyNotes: string[]
+}
+
+export function generateDemoAnalysis(input: DemoAnalysisInput): DemoAnalysisResult {
+  const isMale = input.gender === '男性'
+  const bw = input.bodyWeight
+  const safetyNotes: string[] = []
+
+  // 1. 估算 TDEE
+  let estimatedTDEE: number
+  let tdeeMethod: 'katch_mcardle' | 'weight_formula'
+
+  if (input.bodyFatPct != null && input.bodyFatPct > 0) {
+    // Katch-McArdle: BMR = 370 + 21.6 × LBM
+    const lbm = bw * (1 - input.bodyFatPct / 100)
+    const bmr = 370 + 21.6 * lbm
+    const activityMultiplier = getActivityMultiplier(undefined, input.trainingDaysPerWeek)
+    estimatedTDEE = Math.round(bmr * activityMultiplier)
+    tdeeMethod = 'katch_mcardle'
+  } else {
+    // 無體脂 → 體重公式
+    estimatedTDEE = Math.round(bw * getFallbackTDEEMultiplier(undefined, isMale))
+    tdeeMethod = 'weight_formula'
+    safetyNotes.push('未填體脂率，TDEE 以體重公式估算。填入體脂率可提高準確度。')
+  }
+
+  // 2. 計算赤字/盈餘
+  let dailyDeficit: number
+  if (input.goalType === 'cut') {
+    // 赤字 = TDEE 的 20%，最大 500kcal
+    dailyDeficit = Math.min(Math.round(estimatedTDEE * 0.20), SAFETY.MAX_DEFICIT_KCAL)
+  } else {
+    // 增肌盈餘 +250kcal（ISSN off-season recommendation）
+    dailyDeficit = -250
+  }
+
+  // 3. 建議熱量
+  let suggestedCalories = estimatedTDEE - dailyDeficit
+  const minCal = isMale ? SAFETY.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_FEMALE
+  if (suggestedCalories < minCal) {
+    suggestedCalories = minCal
+    dailyDeficit = estimatedTDEE - minCal
+    safetyNotes.push(`已套用安全底線 ${minCal} kcal，避免代謝過度下降。`)
+  }
+
+  // 4. 巨量營養素
+  const proteinPerKg = input.goalType === 'cut'
+    ? (isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE)
+    : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
+  const fatPerKg = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+
+  const suggestedProtein = Math.round(bw * proteinPerKg)
+  const suggestedFat = Math.round(bw * fatPerKg)
+  const remainingCals = suggestedCalories - (suggestedProtein * 4) - (suggestedFat * 9)
+  const suggestedCarbs = Math.max(30, Math.round(remainingCals / 4))
+
+  // 5. 預估每週變化
+  const weeklyChangeKg = input.goalType === 'cut'
+    ? -(dailyDeficit * 7 / ENERGY_DENSITY.LATE_PHASE)
+    : (Math.abs(dailyDeficit) * 7 / ENERGY_DENSITY.LATE_PHASE)
+  const weeklyChangeRate = (weeklyChangeKg / bw) * 100
+
+  // 6. 預估達標週數
+  let projectedWeeks: number | null = null
+  if (input.targetWeight != null && input.targetWeight !== bw) {
+    const weightDelta = Math.abs(bw - input.targetWeight)
+    const weeklyAbs = Math.abs(weeklyChangeKg)
+    if (weeklyAbs > 0) {
+      projectedWeeks = Math.round(weightDelta / weeklyAbs)
+    }
+  }
+
+  // 7. 安全性檢查
+  if (input.goalType === 'cut' && Math.abs(weeklyChangeRate) > 1.0) {
+    safetyNotes.push('每週減重速率超過 1% BW，建議延長時程或降低赤字。')
+  }
+  if (input.goalType === 'bulk' && weeklyChangeRate > 0.5) {
+    safetyNotes.push('增重速率偏快，可能增加脂肪堆積。')
+  }
+
+  return {
+    estimatedTDEE,
+    tdeeMethod,
+    suggestedCalories,
+    dailyDeficit,
+    suggestedProtein,
+    suggestedCarbs,
+    suggestedFat,
+    weeklyChangeKg: Math.round(weeklyChangeKg * 100) / 100,
+    weeklyChangeRate: Math.round(weeklyChangeRate * 100) / 100,
+    projectedWeeks,
+    safetyNotes,
+  }
+}

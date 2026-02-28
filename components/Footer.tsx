@@ -21,7 +21,7 @@ export default function Footer() {
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/remote" className="hover:text-white transition-colors">遠端追蹤方案</Link></li>
               <li><Link href="/action" className="hover:text-white transition-colors">實體訓練方案</Link></li>
-              <li><Link href="/diagnosis" className="hover:text-white transition-colors">系統診斷</Link></li>
+              <li><Link href="/diagnosis" className="hover:text-white transition-colors">免費系統分析</Link></li>
               <li><Link href="/case" className="hover:text-white transition-colors">個案追蹤</Link></li>
             </ul>
           </div>
