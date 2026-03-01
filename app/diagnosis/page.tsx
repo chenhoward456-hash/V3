@@ -94,8 +94,11 @@ export default function DiagnosisPage() {
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '結帳失敗')
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl
+      if (data.htmlForm) {
+        // ECPay 回傳 HTML 表單，寫入頁面後自動 submit 到綠界付款頁
+        document.open()
+        document.write(data.htmlForm)
+        document.close()
       }
     } catch (err: any) {
       setCheckoutError(err.message || '結帳失敗，請稍後再試')
@@ -583,7 +586,7 @@ export default function DiagnosisPage() {
                         </button>
                         <p className="text-white/40 text-[11px] text-center leading-relaxed">
                           一次付費，永久取用。付款後立即下載。<br />
-                          💳 支援 Visa / Mastercard / Apple Pay
+                          💳 支援信用卡 / ATM / 超商代碼
                         </p>
                       </div>
                     </div>
