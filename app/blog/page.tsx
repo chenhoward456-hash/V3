@@ -108,14 +108,18 @@ const hardcodedPosts = [
 
 async function getSupabasePosts() {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-    const { data } = await supabase
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) return []
+    const supabase = createClient(url, key)
+    const { data, error } = await supabase
       .from('blog_posts')
       .select('id, title, description, date, category, read_time, slug')
       .order('date', { ascending: false })
+    if (error) {
+      console.error('[blog] Supabase query error:', error.message)
+      return []
+    }
     return (data || []).map((p: any) => ({
       id: p.id,
       title: p.title,
@@ -125,7 +129,8 @@ async function getSupabasePosts() {
       readTime: p.read_time,
       slug: p.slug,
     }))
-  } catch {
+  } catch (e) {
+    console.error('[blog] getSupabasePosts error:', e)
     return []
   }
 }
