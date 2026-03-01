@@ -167,7 +167,7 @@ function SuccessContent() {
             購買成功！
           </h1>
           {purchaseEmail && (
-            <p className="text-gray-500 text-sm">收據已發送至 {purchaseEmail}</p>
+            <p className="text-gray-500 text-sm">下載連結已寄送至 {purchaseEmail}</p>
           )}
         </div>
 

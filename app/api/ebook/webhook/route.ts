@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyCheckMacValue } from '@/lib/ecpay'
+import { sendPurchaseEmail } from '@/lib/email'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
@@ -56,6 +57,28 @@ export async function POST(request: NextRequest) {
         console.error('[webhook] DB update error:', error)
       } else {
         console.log(`[webhook] Purchase completed: ${merchantTradeNo} → token: ${downloadToken}`)
+
+        // 取得 email：優先從 ECPay CustomField1，fallback 從 DB 查
+        let email = params.CustomField1
+        if (!email) {
+          const { data: purchase } = await supabase
+            .from('ebook_purchases')
+            .select('email')
+            .eq('merchant_trade_no', merchantTradeNo)
+            .single()
+          email = purchase?.email || ''
+        }
+
+        if (email) {
+          // 非同步寄信，不阻塞 webhook 回應
+          sendPurchaseEmail({
+            to: email,
+            downloadToken,
+            merchantTradeNo,
+          }).catch((emailErr) => {
+            console.error('[webhook] Email send error (non-blocking):', emailErr)
+          })
+        }
       }
     } else {
       // 付款失敗
