@@ -1,0 +1,76 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { rateLimit, getClientIP, createErrorResponse } from '@/lib/auth-middleware'
+import { readFile } from 'fs/promises'
+import path from 'path'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+// PDF 檔案對照表
+const EBOOK_FILES: Record<string, string> = {
+  'system-reboot-v1': 'system-reboot-v1.pdf',
+}
+
+export async function GET(request: NextRequest) {
+  const ip = getClientIP(request)
+  const { allowed } = rateLimit(`ebook_download_${ip}`, 10, 60_000)
+  if (!allowed) {
+    return createErrorResponse('下載過於頻繁，請稍後再試', 429)
+  }
+
+  const token = request.nextUrl.searchParams.get('token')
+  if (!token) {
+    return createErrorResponse('缺少下載憑證', 400)
+  }
+
+  try {
+    // 查詢購買紀錄
+    const { data: purchase, error } = await supabase
+      .from('ebook_purchases')
+      .select('id, product_key, download_count, status')
+      .eq('download_token', token)
+      .eq('status', 'completed')
+      .single()
+
+    if (error || !purchase) {
+      return createErrorResponse('無效的下載連結，請確認已完成付款', 404)
+    }
+
+    // 防濫用：最多 20 次下載
+    if (purchase.download_count >= 20) {
+      return createErrorResponse('下載次數已達上限，如需協助請聯繫我們', 403)
+    }
+
+    // 更新下載次數
+    await supabase
+      .from('ebook_purchases')
+      .update({ download_count: purchase.download_count + 1 })
+      .eq('id', purchase.id)
+
+    // 讀取 PDF 檔案
+    const filename = EBOOK_FILES[purchase.product_key]
+    if (!filename) {
+      return createErrorResponse('電子書檔案不存在', 404)
+    }
+
+    const filePath = path.join(process.cwd(), 'data', 'ebooks', filename)
+    const fileBuffer = await readFile(filePath)
+
+    // 回傳 PDF
+    return new NextResponse(fileBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="Howard-Protocol-System-Reboot.pdf"`,
+        'Content-Length': fileBuffer.length.toString(),
+        'Cache-Control': 'no-store',
+      },
+    })
+  } catch (err: any) {
+    console.error('[download] Error:', err?.message)
+    return createErrorResponse('下載失敗，請稍後再試', 500)
+  }
+}

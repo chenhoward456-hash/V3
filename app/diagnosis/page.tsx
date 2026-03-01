@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { generateDemoAnalysis, type DemoAnalysisInput, type DemoAnalysisResult } from '@/lib/nutrition-engine'
 import LineButton from '@/components/LineButton'
+import { trackEvent } from '@/lib/analytics'
 
 export default function DiagnosisPage() {
   const [step, setStep] = useLocalStorage('demo_step', 1)
@@ -18,8 +19,38 @@ export default function DiagnosisPage() {
   const [, , isClient] = useLocalStorage('_client_check', true)
   const [result, setResult] = useState<DemoAnalysisResult | null>(null)
 
+  // 電子書購買狀態
+  const [downloadToken, setDownloadToken] = useLocalStorage<string>('ebook_download_token', '')
+  const [isPurchased, setIsPurchased] = useState(false)
+  const [email, setEmail] = useState('')
+  const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const [checkoutError, setCheckoutError] = useState('')
+
   const canProceedStep1 = gender && bodyWeight && parseFloat(bodyWeight) > 0 && goalType
   const canProceedStep2 = trainingDays >= 1 && trainingDays <= 7
+
+  // 頁面載入時，如果有 download_token，驗證購買狀態
+  useEffect(() => {
+    if (downloadToken && !isPurchased) {
+      setIsPurchased(true)
+    }
+  }, [downloadToken, isPurchased])
+
+  // 如果 step=3 但沒有 result，嘗試重新計算
+  useEffect(() => {
+    if (step === 3 && !result && gender && bodyWeight && goalType) {
+      const input: DemoAnalysisInput = {
+        gender: gender as '男性' | '女性',
+        bodyWeight: parseFloat(bodyWeight),
+        height: height ? parseFloat(height) : null,
+        bodyFatPct: bodyFatPct ? parseFloat(bodyFatPct) : null,
+        goalType: goalType as 'cut' | 'bulk',
+        targetWeight: targetWeight ? parseFloat(targetWeight) : null,
+        trainingDaysPerWeek: trainingDays,
+      }
+      setResult(generateDemoAnalysis(input))
+    }
+  }, [step, result, gender, bodyWeight, goalType, height, bodyFatPct, targetWeight, trainingDays])
 
   const handleRunAnalysis = () => {
     const input: DemoAnalysisInput = {
@@ -36,6 +67,42 @@ export default function DiagnosisPage() {
     setStep(3)
   }
 
+  const handleCheckout = async () => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setCheckoutError('請輸入有效的 Email')
+      return
+    }
+    setCheckoutError('')
+    setIsCheckingOut(true)
+
+    trackEvent('ebook_checkout_initiated', { email, source: 'diagnosis_step3' })
+
+    try {
+      const quizData = {
+        gender, bodyWeight: parseFloat(bodyWeight),
+        height: height ? parseFloat(height) : null,
+        bodyFatPct: bodyFatPct ? parseFloat(bodyFatPct) : null,
+        goalType, targetWeight: targetWeight ? parseFloat(targetWeight) : null,
+        trainingDaysPerWeek: trainingDays,
+      }
+
+      const res = await fetch('/api/ebook/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, quizData }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || '結帳失敗')
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl
+      }
+    } catch (err: any) {
+      setCheckoutError(err.message || '結帳失敗，請稍後再試')
+      setIsCheckingOut(false)
+    }
+  }
+
   const handleReset = () => {
     if (isClient) {
       const keys = ['demo_step', 'demo_gender', 'demo_weight', 'demo_height', 'demo_bodyfat', 'demo_goal', 'demo_target_weight', 'demo_training_days']
@@ -50,6 +117,79 @@ export default function DiagnosisPage() {
     setTargetWeight('')
     setTrainingDays(4)
     setResult(null)
+  }
+
+  // ========== 子元件：模糊化 wrapper ==========
+  const BlurredSection = ({ children }: { children: React.ReactNode }) => (
+    <div className="relative">
+      <div className="filter blur-[6px] pointer-events-none select-none" aria-hidden="true">
+        {children}
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center bg-white/20">
+        <span className="bg-white/95 px-5 py-2 rounded-full text-sm font-semibold text-gray-500 shadow-sm border border-gray-100">
+          🔒 付費解鎖
+        </span>
+      </div>
+    </div>
+  )
+
+  // ========== 子元件：完整結果數據 ==========
+  const FullResults = () => {
+    if (!result) return null
+    return (
+      <>
+        {/* 核心指標 3 欄 */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <p className="text-[10px] text-gray-400 mb-1">估算 TDEE</p>
+            <p className="text-xl font-bold text-gray-900">{result.estimatedTDEE.toLocaleString()}</p>
+            <p className="text-[10px] text-gray-400">kcal/天</p>
+          </div>
+          <div className="bg-[#2563eb]/5 rounded-xl p-3 text-center border border-[#2563eb]/20">
+            <p className="text-[10px] text-[#2563eb] mb-1">目標熱量</p>
+            <p className="text-xl font-bold text-[#2563eb]">{result.suggestedCalories.toLocaleString()}</p>
+            <p className="text-[10px] text-[#2563eb]">kcal/天</p>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <p className="text-[10px] text-gray-400 mb-1">每日{goalType === 'cut' ? '赤字' : '盈餘'}</p>
+            <p className={`text-xl font-bold ${goalType === 'cut' ? 'text-green-600' : 'text-blue-600'}`}>
+              {Math.abs(result.dailyDeficit)}
+            </p>
+            <p className="text-[10px] text-gray-400">kcal</p>
+          </div>
+        </div>
+
+        {/* 巨量營養素 3 欄 */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-red-50 rounded-xl p-3 text-center border border-red-100">
+            <p className="text-[10px] text-red-400 mb-1">🥩 蛋白質</p>
+            <p className="text-lg font-bold text-red-700">{result.suggestedProtein}g</p>
+            <p className="text-[10px] text-red-400">{(result.suggestedProtein * 4)} kcal</p>
+          </div>
+          <div className="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
+            <p className="text-[10px] text-amber-500 mb-1">🍚 碳水</p>
+            <p className="text-lg font-bold text-amber-700">{result.suggestedCarbs}g</p>
+            <p className="text-[10px] text-amber-500">{(result.suggestedCarbs * 4)} kcal</p>
+          </div>
+          <div className="bg-yellow-50 rounded-xl p-3 text-center border border-yellow-200">
+            <p className="text-[10px] text-yellow-600 mb-1">🥑 脂肪</p>
+            <p className="text-lg font-bold text-yellow-700">{result.suggestedFat}g</p>
+            <p className="text-[10px] text-yellow-600">{(result.suggestedFat * 9)} kcal</p>
+          </div>
+        </div>
+
+        {/* 安全性提醒 */}
+        {result.safetyNotes.length > 0 && (
+          <div className="space-y-2">
+            {result.safetyNotes.map((note, i) => (
+              <div key={i} className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <p className="text-xs text-amber-700">⚠️ {note}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    )
   }
 
   return (
@@ -258,7 +398,7 @@ export default function DiagnosisPage() {
                 <h2 className="text-2xl font-bold" style={{ color: '#1e3a5f' }}>系統分析結果</h2>
               </div>
 
-              {/* 狀態卡片 */}
+              {/* 狀態卡片 — FREE */}
               <div className={`rounded-xl p-4 border ${
                 result.safetyNotes.length > 0
                   ? 'bg-amber-50 border-amber-200'
@@ -268,7 +408,7 @@ export default function DiagnosisPage() {
                   result.safetyNotes.length > 0 ? 'text-amber-700' : 'text-green-700'
                 }`}>
                   {result.safetyNotes.length > 0
-                    ? '🟡 目標可行，但有安全建議'
+                    ? '🟡 目標可行，但有安全提醒'
                     : goalType === 'cut'
                     ? '🟢 目標可行，預估進度在安全範圍內'
                     : '🟢 增肌計畫已生成'
@@ -276,102 +416,191 @@ export default function DiagnosisPage() {
                 </p>
               </div>
 
-              {/* TDEE 計算方法 */}
+              {/* TDEE 計算方法 — FREE */}
               <div className="bg-gray-50 rounded-xl px-4 py-2.5">
                 <p className="text-xs text-gray-500">
                   TDEE 估算方式：{result.tdeeMethod === 'katch_mcardle' ? 'Katch-McArdle 公式（基於體脂率）' : '體重公式（未填體脂率）'}
                 </p>
               </div>
 
-              {/* 核心指標 3 欄 */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-gray-50 rounded-xl p-3 text-center">
-                  <p className="text-[10px] text-gray-400 mb-1">估算 TDEE</p>
-                  <p className="text-xl font-bold text-gray-900">{result.estimatedTDEE.toLocaleString()}</p>
-                  <p className="text-[10px] text-gray-400">kcal/天</p>
-                </div>
-                <div className="bg-[#2563eb]/5 rounded-xl p-3 text-center border border-[#2563eb]/20">
-                  <p className="text-[10px] text-[#2563eb] mb-1">目標熱量</p>
-                  <p className="text-xl font-bold text-[#2563eb]">{result.suggestedCalories.toLocaleString()}</p>
-                  <p className="text-[10px] text-[#2563eb]">kcal/天</p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-3 text-center">
-                  <p className="text-[10px] text-gray-400 mb-1">每日{goalType === 'cut' ? '赤字' : '盈餘'}</p>
-                  <p className={`text-xl font-bold ${goalType === 'cut' ? 'text-green-600' : 'text-blue-600'}`}>
-                    {Math.abs(result.dailyDeficit)}
-                  </p>
-                  <p className="text-[10px] text-gray-400">kcal</p>
-                </div>
-              </div>
+              {isPurchased ? (
+                <>
+                  {/* ===== 已購買：顯示完整結果 ===== */}
+                  <FullResults />
 
-              {/* 巨量營養素 3 欄 */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-red-50 rounded-xl p-3 text-center border border-red-100">
-                  <p className="text-[10px] text-red-400 mb-1">🥩 蛋白質</p>
-                  <p className="text-lg font-bold text-red-700">{result.suggestedProtein}g</p>
-                  <p className="text-[10px] text-red-400">{(result.suggestedProtein * 4)} kcal</p>
-                </div>
-                <div className="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
-                  <p className="text-[10px] text-amber-500 mb-1">🍚 碳水</p>
-                  <p className="text-lg font-bold text-amber-700">{result.suggestedCarbs}g</p>
-                  <p className="text-[10px] text-amber-500">{(result.suggestedCarbs * 4)} kcal</p>
-                </div>
-                <div className="bg-yellow-50 rounded-xl p-3 text-center border border-yellow-200">
-                  <p className="text-[10px] text-yellow-600 mb-1">🥑 脂肪</p>
-                  <p className="text-lg font-bold text-yellow-700">{result.suggestedFat}g</p>
-                  <p className="text-[10px] text-yellow-600">{(result.suggestedFat * 9)} kcal</p>
-                </div>
-              </div>
-
-              {/* 預估時程 */}
-              {result.projectedWeeks != null && (
-                <div className="bg-[#1e3a5f]/5 rounded-xl p-4 text-center">
-                  <p className="text-sm font-semibold" style={{ color: '#1e3a5f' }}>
-                    🕐 預估 {result.projectedWeeks} 週達標
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    每週 {goalType === 'cut' ? '-' : '+'}{Math.abs(result.weeklyChangeKg).toFixed(2)} kg（{Math.abs(result.weeklyChangeRate).toFixed(1)}% BW/週）
-                  </p>
-                </div>
-              )}
-
-              {/* 安全性提醒 */}
-              {result.safetyNotes.length > 0 && (
-                <div className="space-y-2">
-                  {result.safetyNotes.map((note, i) => (
-                    <div key={i} className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      <p className="text-xs text-amber-700">⚠️ {note}</p>
+                  {/* 預估時程 */}
+                  {result.projectedWeeks != null && (
+                    <div className="bg-[#1e3a5f]/5 rounded-xl p-4 text-center">
+                      <p className="text-sm font-semibold" style={{ color: '#1e3a5f' }}>
+                        🕐 預估 {result.projectedWeeks} 週達標
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        每週 {goalType === 'cut' ? '-' : '+'}{Math.abs(result.weeklyChangeKg).toFixed(2)} kg（{Math.abs(result.weeklyChangeRate).toFixed(1)}% BW/週）
+                      </p>
                     </div>
-                  ))}
-                </div>
-              )}
+                  )}
 
-              {/* 分隔線 + 升級提示 */}
-              <div className="border-t border-gray-100 pt-6 mt-6">
-                <div className="bg-[#2563eb]/5 rounded-2xl p-6 text-center border border-[#2563eb]/10">
-                  <p className="text-sm text-gray-700 mb-1 leading-relaxed">
-                    這是<span className="font-bold text-[#1e3a5f]">一次性公式估算</span>，和你的真實代謝一定有落差。
-                  </p>
-                  <p className="text-sm text-gray-600 mb-5 leading-relaxed">
-                    訂閱後系統會根據你每週的體重數據<span className="font-bold text-[#2563eb]">自動校正、自動調整</span>— 越用越準。
-                  </p>
-                  <LineButton
-                    source="diagnosis_result"
-                    intent="demo_analysis"
-                    className="inline-block bg-[#2563eb] text-white px-8 py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
-                  >
-                    把結果帶到 LINE 跟我討論 💬
-                  </LineButton>
-                  <div className="mt-4">
-                    <Link
-                      href="/remote"
+                  {/* 下載電子書 */}
+                  <div className="border-t border-gray-100 pt-6 mt-6">
+                    <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb] rounded-2xl p-6 text-center">
+                      <p className="text-white/80 text-sm mb-2">你的電子書已解鎖</p>
+                      <a
+                        href={`/api/ebook/download?token=${downloadToken}`}
+                        onClick={() => trackEvent('ebook_downloaded', { source: 'diagnosis_result' })}
+                        className="inline-block bg-white text-[#1e3a5f] px-8 py-3.5 rounded-xl font-bold text-base hover:bg-gray-50 transition-colors shadow-lg"
+                      >
+                        📥 下載 System Reboot 電子書
+                      </a>
+                      <p className="text-white/50 text-xs mt-3">PDF · 11 頁 · 睡眠與神經系統優化實戰手冊</p>
+                    </div>
+                  </div>
+
+                  {/* LINE CTA */}
+                  <div className="text-center">
+                    <LineButton
+                      source="diagnosis_purchased"
+                      intent="coaching_upsell"
                       className="text-sm text-[#2563eb] hover:underline font-medium"
                     >
-                      或先了解完整方案 →
-                    </Link>
+                      把結果帶到 LINE，讓教練幫你優化計畫 →
+                    </LineButton>
                   </div>
-                </div>
-              </div>
+                </>
+              ) : (
+                <>
+                  {/* ===== 未購買：Teaser 模式 ===== */}
+
+                  {/* TDEE 顯示 + 其餘模糊 */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* TDEE — FREE */}
+                    <div className="bg-gray-50 rounded-xl p-3 text-center">
+                      <p className="text-[10px] text-gray-400 mb-1">估算 TDEE</p>
+                      <p className="text-xl font-bold text-gray-900">{result.estimatedTDEE.toLocaleString()}</p>
+                      <p className="text-[10px] text-gray-400">kcal/天</p>
+                    </div>
+                    {/* 目標熱量 — BLURRED */}
+                    <div className="relative rounded-xl overflow-hidden">
+                      <div className="bg-[#2563eb]/5 p-3 text-center border border-[#2563eb]/20 filter blur-[5px] pointer-events-none select-none">
+                        <p className="text-[10px] text-[#2563eb] mb-1">目標熱量</p>
+                        <p className="text-xl font-bold text-[#2563eb]">{result.suggestedCalories.toLocaleString()}</p>
+                        <p className="text-[10px] text-[#2563eb]">kcal/天</p>
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-gray-400 text-lg">🔒</span>
+                      </div>
+                    </div>
+                    {/* 赤字/盈餘 — BLURRED */}
+                    <div className="relative rounded-xl overflow-hidden">
+                      <div className="bg-gray-50 p-3 text-center filter blur-[5px] pointer-events-none select-none">
+                        <p className="text-[10px] text-gray-400 mb-1">每日{goalType === 'cut' ? '赤字' : '盈餘'}</p>
+                        <p className="text-xl font-bold text-green-600">{Math.abs(result.dailyDeficit)}</p>
+                        <p className="text-[10px] text-gray-400">kcal</p>
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-gray-400 text-lg">🔒</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 巨量營養素 — 全部 BLURRED */}
+                  <BlurredSection>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-red-50 rounded-xl p-3 text-center border border-red-100">
+                        <p className="text-[10px] text-red-400 mb-1">🥩 蛋白質</p>
+                        <p className="text-lg font-bold text-red-700">{result.suggestedProtein}g</p>
+                        <p className="text-[10px] text-red-400">{(result.suggestedProtein * 4)} kcal</p>
+                      </div>
+                      <div className="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
+                        <p className="text-[10px] text-amber-500 mb-1">🍚 碳水</p>
+                        <p className="text-lg font-bold text-amber-700">{result.suggestedCarbs}g</p>
+                        <p className="text-[10px] text-amber-500">{(result.suggestedCarbs * 4)} kcal</p>
+                      </div>
+                      <div className="bg-yellow-50 rounded-xl p-3 text-center border border-yellow-200">
+                        <p className="text-[10px] text-yellow-600 mb-1">🥑 脂肪</p>
+                        <p className="text-lg font-bold text-yellow-700">{result.suggestedFat}g</p>
+                        <p className="text-[10px] text-yellow-600">{(result.suggestedFat * 9)} kcal</p>
+                      </div>
+                    </div>
+                  </BlurredSection>
+
+                  {/* 預估時程 — FREE（勾慾望） */}
+                  {result.projectedWeeks != null && (
+                    <div className="bg-[#1e3a5f]/5 rounded-xl p-4 text-center">
+                      <p className="text-sm font-semibold" style={{ color: '#1e3a5f' }}>
+                        🕐 預估 {result.projectedWeeks} 週達標
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        每週 {goalType === 'cut' ? '-' : '+'}{Math.abs(result.weeklyChangeKg).toFixed(2)} kg（{Math.abs(result.weeklyChangeRate).toFixed(1)}% BW/週）
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 安全提醒數量 — 模糊 */}
+                  {result.safetyNotes.length > 0 && (
+                    <BlurredSection>
+                      <div className="space-y-2">
+                        {result.safetyNotes.map((note, i) => (
+                          <div key={i} className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            <p className="text-xs text-amber-700">⚠️ {note}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </BlurredSection>
+                  )}
+
+                  {/* ===== 購買 CTA ===== */}
+                  <div className="border-t border-gray-100 pt-6 mt-2">
+                    <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb] rounded-2xl p-6 md:p-8">
+                      <div className="text-center mb-5">
+                        <p className="text-white text-lg font-bold mb-2">
+                          解鎖完整報告 + 獲得電子書
+                        </p>
+                        <div className="space-y-1.5 text-white/80 text-sm">
+                          <p>✓ 完整 TDEE、巨量營養素、安全性分析</p>
+                          <p>✓《System Reboot》睡眠與神經系統優化手冊</p>
+                          <p className="text-white/50 text-xs mt-2">4 章節 · HRV 動態矩陣 · 精準補劑協定 · 睡前降落 SOP</p>
+                        </div>
+                      </div>
+
+                      {/* Email input */}
+                      <div className="max-w-sm mx-auto space-y-3">
+                        <input
+                          type="email"
+                          placeholder="輸入你的 Email"
+                          value={email}
+                          onChange={(e) => { setEmail(e.target.value); setCheckoutError('') }}
+                          className="w-full px-4 py-3 rounded-xl text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50"
+                        />
+                        {checkoutError && (
+                          <p className="text-red-300 text-xs text-center">{checkoutError}</p>
+                        )}
+                        <button
+                          onClick={handleCheckout}
+                          disabled={isCheckingOut}
+                          className="w-full bg-white text-[#1e3a5f] py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-colors disabled:opacity-70 shadow-lg"
+                        >
+                          {isCheckingOut ? '跳轉中...' : '立即解鎖 — NT$299'}
+                        </button>
+                        <p className="text-white/40 text-[11px] text-center leading-relaxed">
+                          一次付費，永久取用。付款後立即下載。<br />
+                          💳 支援 Visa / Mastercard / Apple Pay
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* LINE 次要 CTA */}
+                    <div className="text-center mt-4">
+                      <LineButton
+                        source="diagnosis_teaser"
+                        intent="pre_purchase_inquiry"
+                        className="text-sm text-gray-400 hover:text-[#2563eb] transition-colors"
+                      >
+                        或加 LINE 免費討論你的結果 →
+                      </LineButton>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* 重新開始 */}
               <div className="text-center">
