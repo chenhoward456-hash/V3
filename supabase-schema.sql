@@ -282,7 +282,7 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   description TEXT NOT NULL,
   content TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
-  category TEXT NOT NULL CHECK (category IN ('血檢優化', '營養策略', '訓練方法', '恢復優化', '個案追蹤')),
+  category TEXT NOT NULL CHECK (category IN ('血檢優化', '營養科學', '訓練方法', '恢復優化', '個案追蹤')),
   read_time TEXT NOT NULL DEFAULT '5 分鐘',
   date DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
