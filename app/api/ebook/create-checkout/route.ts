@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe, EBOOK_PRODUCTS } from '@/lib/stripe'
+import {
+  ECPAY_CONFIG,
+  EBOOK_PRODUCTS,
+  generateMerchantTradeNo,
+  formatTradeDate,
+  buildCheckoutFormHTML,
+} from '@/lib/ecpay'
 import { rateLimit, getClientIP, createErrorResponse } from '@/lib/auth-middleware'
 import { createClient } from '@supabase/supabase-js'
 
@@ -26,36 +32,34 @@ export async function POST(request: NextRequest) {
 
     const product = EBOOK_PRODUCTS['system-reboot-v1']
     const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+    const merchantTradeNo = generateMerchantTradeNo()
 
-    // 建立 Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      customer_email: email,
-      line_items: [
-        {
-          price_data: {
-            currency: product.currency,
-            product_data: {
-              name: product.name,
-              description: product.description,
-            },
-            unit_amount: product.amount, // TWD 是零位小數幣別
-          },
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        product_key: 'system-reboot-v1',
-        email,
-      },
-      success_url: `${origin}/diagnosis/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/diagnosis?step=3&cancelled=1`,
-    })
+    // ECPay 付款參數
+    const params: Record<string, string | number> = {
+      MerchantID: ECPAY_CONFIG.MerchantID,
+      MerchantTradeNo: merchantTradeNo,
+      MerchantTradeDate: formatTradeDate(),
+      PaymentType: 'aio',
+      TotalAmount: product.amount,
+      TradeDesc: encodeURIComponent(product.description),
+      ItemName: product.name,
+      ReturnURL: `${origin}/api/ebook/webhook`,
+      OrderResultURL: `${origin}/diagnosis/success?order_id=${merchantTradeNo}`,
+      ClientBackURL: `${origin}/diagnosis?step=3&cancelled=1`,
+      ChoosePayment: 'ALL',
+      EncryptType: 1,
+      NeedExtraPaidInfo: 'Y',
+      CustomField1: email,
+      CustomField2: 'system-reboot-v1',
+    }
+
+    // 生成含 CheckMacValue 的完整 HTML 表單
+    const htmlForm = buildCheckoutFormHTML(params)
 
     // 寫入 DB（pending 狀態）
     await supabase.from('ebook_purchases').insert({
       email,
-      stripe_session_id: session.id,
+      merchant_trade_no: merchantTradeNo,
       product_key: 'system-reboot-v1',
       amount: product.amount,
       currency: product.currency,
@@ -63,7 +67,7 @@ export async function POST(request: NextRequest) {
       quiz_data: quizData || null,
     })
 
-    return NextResponse.json({ checkoutUrl: session.url })
+    return NextResponse.json({ htmlForm })
   } catch (err: any) {
     console.error('[create-checkout] Error:', err?.message || err)
     return createErrorResponse('建立結帳失敗，請稍後再試', 500)

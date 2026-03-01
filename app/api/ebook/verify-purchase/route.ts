@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
 import { rateLimit, getClientIP, createErrorResponse } from '@/lib/auth-middleware'
-import crypto from 'crypto'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,17 +14,17 @@ export async function GET(request: NextRequest) {
     return createErrorResponse('請求過於頻繁', 429)
   }
 
-  const sessionId = request.nextUrl.searchParams.get('session_id')
-  if (!sessionId) {
-    return createErrorResponse('缺少 session_id', 400)
+  const orderId = request.nextUrl.searchParams.get('order_id')
+  if (!orderId) {
+    return createErrorResponse('缺少 order_id', 400)
   }
 
   try {
-    // 先查 DB
+    // 查 DB by merchant_trade_no
     const { data: purchase } = await supabase
       .from('ebook_purchases')
       .select('status, download_token, email')
-      .eq('stripe_session_id', sessionId)
+      .eq('merchant_trade_no', orderId)
       .single()
 
     if (!purchase) {
@@ -41,34 +39,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // status 還是 pending → 可能 webhook 延遲，直接問 Stripe
-    if (purchase.status === 'pending') {
-      try {
-        const session = await stripe.checkout.sessions.retrieve(sessionId)
-        if (session.payment_status === 'paid') {
-          // Webhook 還沒到，我們自己更新
-          const downloadToken = crypto.randomUUID()
-          await supabase
-            .from('ebook_purchases')
-            .update({
-              status: 'completed',
-              stripe_payment_intent_id: session.payment_intent as string,
-              download_token: downloadToken,
-              completed_at: new Date().toISOString(),
-            })
-            .eq('stripe_session_id', sessionId)
-
-          return NextResponse.json({
-            purchased: true,
-            downloadToken,
-            email: purchase.email,
-          })
-        }
-      } catch {
-        // Stripe API 錯誤，回傳 pending
-      }
-    }
-
+    // status 還是 pending → ECPay webhook 可能還沒到
+    // ECPay 不像 Stripe 有 API 可以直接查，只能等 webhook
+    // 前端會持續輪詢
     return NextResponse.json({ purchased: false, status: purchase.status })
   } catch (err: any) {
     console.error('[verify-purchase] Error:', err?.message)

@@ -10,7 +10,7 @@ import { trackEvent } from '@/lib/analytics'
 
 export default function SuccessPage() {
   const searchParams = useSearchParams()
-  const sessionId = searchParams.get('session_id')
+  const orderId = searchParams.get('order_id')
 
   const [status, setStatus] = useState<'loading' | 'success' | 'pending' | 'error'>('loading')
   const [downloadToken, setDownloadToken] = useLocalStorage<string>('ebook_download_token', '')
@@ -45,13 +45,13 @@ export default function SuccessPage() {
   }, [gender, bodyWeight, goalType, height, bodyFatPct, targetWeight, trainingDays, result])
 
   const verifyPurchase = useCallback(async () => {
-    if (!sessionId) {
+    if (!orderId) {
       setStatus('error')
       return
     }
 
     try {
-      const res = await fetch(`/api/ebook/verify-purchase?session_id=${sessionId}`)
+      const res = await fetch(`/api/ebook/verify-purchase?order_id=${orderId}`)
       const data = await res.json()
 
       if (data.purchased && data.downloadToken) {
@@ -74,7 +74,7 @@ export default function SuccessPage() {
         setStatus('error')
       }
     }
-  }, [sessionId, retryCount, setDownloadToken])
+  }, [orderId, retryCount, setDownloadToken])
 
   useEffect(() => {
     verifyPurchase()

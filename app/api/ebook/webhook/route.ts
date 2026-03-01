@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { verifyCheckMacValue } from '@/lib/ecpay'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
@@ -8,59 +8,71 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// ECPay ReturnURL — 付款結果通知
+// ECPay 以 POST application/x-www-form-urlencoded 回傳付款結果
 export async function POST(request: NextRequest) {
-  const body = await request.text()
-  const sig = request.headers.get('stripe-signature')
-
-  if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
-  }
-
-  let event
   try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET)
-  } catch (err: any) {
-    console.error('[webhook] Signature verification failed:', err?.message)
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
-  }
+    const formData = await request.formData()
 
-  // 處理事件
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object
+    // 轉換為 Record<string, string>
+    const params: Record<string, string> = {}
+    formData.forEach((value, key) => {
+      params[key] = value.toString()
+    })
+
+    console.log('[webhook] ECPay callback received:', {
+      MerchantTradeNo: params.MerchantTradeNo,
+      RtnCode: params.RtnCode,
+      RtnMsg: params.RtnMsg,
+      TradeNo: params.TradeNo,
+      TradeAmt: params.TradeAmt,
+      SimulatePaid: params.SimulatePaid,
+    })
+
+    // 驗證 CheckMacValue
+    if (!verifyCheckMacValue(params)) {
+      console.error('[webhook] CheckMacValue verification failed')
+      return new NextResponse('0|ErrorMessage', { status: 200 })
+    }
+
+    const merchantTradeNo = params.MerchantTradeNo
+    const rtnCode = parseInt(params.RtnCode, 10)
+
+    if (rtnCode === 1) {
+      // 付款成功
       const downloadToken = crypto.randomUUID()
 
       const { error } = await supabase
         .from('ebook_purchases')
         .update({
           status: 'completed',
-          stripe_payment_intent_id: session.payment_intent as string,
+          ecpay_trade_no: params.TradeNo || null,
           download_token: downloadToken,
           completed_at: new Date().toISOString(),
         })
-        .eq('stripe_session_id', session.id)
+        .eq('merchant_trade_no', merchantTradeNo)
 
       if (error) {
         console.error('[webhook] DB update error:', error)
       } else {
-        console.log(`[webhook] Purchase completed: ${session.id} → token: ${downloadToken}`)
+        console.log(`[webhook] Purchase completed: ${merchantTradeNo} → token: ${downloadToken}`)
       }
-      break
-    }
-
-    case 'checkout.session.expired': {
-      const session = event.data.object
+    } else {
+      // 付款失敗
+      console.log(`[webhook] Payment failed: ${merchantTradeNo}, RtnMsg: ${params.RtnMsg}`)
       await supabase
         .from('ebook_purchases')
         .update({ status: 'failed' })
-        .eq('stripe_session_id', session.id)
-      break
+        .eq('merchant_trade_no', merchantTradeNo)
     }
 
-    default:
-      // 忽略其他事件
-      break
+    // ECPay 要求回傳 "1|OK" 表示收到通知
+    return new NextResponse('1|OK', {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' },
+    })
+  } catch (err: any) {
+    console.error('[webhook] Error:', err?.message || err)
+    return new NextResponse('0|ErrorMessage', { status: 200 })
   }
-
-  return NextResponse.json({ received: true })
 }
