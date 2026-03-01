@@ -8,7 +8,8 @@ import ArticleCTA from '@/components/ArticleCTA'
 import StickyCTA from '@/components/StickyCTA'
 import { blogContent } from '@/data/blog-content'
 
-// 允許 Supabase 文章動態渲染（不在 generateStaticParams 內的 slug）
+// 所有文章頁面都動態渲染，不快取
+export const dynamic = 'force-dynamic'
 export const dynamicParams = true
 
 async function getSupabasePost(slug: string) {
@@ -16,9 +17,7 @@ async function getSupabasePost(slug: string) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     if (!url || !key) return null
-    const supabase = createClient(url, key, {
-      global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }) }
-    })
+    const supabase = createClient(url, key)
     const { data } = await supabase
       .from('blog_posts')
       .select('*')
@@ -98,9 +97,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-export async function generateStaticParams() {
-  return Object.keys(blogContent).map((slug) => ({ slug }))
-}
 
 function renderMarkdown(content: string) {
   return content
