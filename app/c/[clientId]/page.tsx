@@ -356,10 +356,10 @@ export default function ClientDashboard() {
                 if (lowest && lowest.score < 70) {
                   const tips: Record<string, string> = {
                     wellness: '多休息、保持正面心態',
-                    nutrition: '注意飲食計畫的執行',
+                    nutrition: '注意營養目標的執行',
                     training: '保持規律的訓練頻率',
                     supplement: '別忘了每天的補品打卡',
-                    lab: '建議安排血檢追蹤',
+                    lab: '可考慮安排血檢追蹤',
                   }
                   return (
                     <div className="mt-2 pt-2 border-t border-emerald-200">
@@ -470,7 +470,7 @@ export default function ClientDashboard() {
                       差 {Math.abs(latestBodyData.weight - c.target_weight).toFixed(1)} kg
                     </span>
                   </div>
-                  {/* 體態推算建議範圍（需要體脂率才顯示） */}
+                  {/* 體態推算參考範圍（需要體脂率才顯示） */}
                   {latestBodyData.body_fat && (() => {
                     const rec = calcRecommendedStageWeight(
                       latestBodyData.weight!,
@@ -482,7 +482,7 @@ export default function ClientDashboard() {
                       <div className="text-xs text-gray-500 flex items-center gap-1 flex-wrap">
                         <span>🔬 FFM {rec.ffm} kg</span>
                         <span className="text-gray-300">｜</span>
-                        <span>建議上台範圍</span>
+                        <span>參考上台範圍</span>
                         <span className="font-semibold text-blue-600">{rec.recommendedLow}–{rec.recommendedHigh} kg</span>
                         <span className="text-gray-400">（體脂 {rec.targetBFLow}–{rec.targetBFHigh}%）</span>
                       </div>

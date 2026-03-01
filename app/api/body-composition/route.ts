@@ -289,7 +289,7 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('建立身體數據失敗', 500)
     }
 
-    // 自動觸發營養建議引擎：如果有設定 goal_type 且記錄了體重
+    // 自動觸發營養分析引擎：如果有設定 goal_type 且記錄了體重
     let nutritionAdjusted: { adjusted: boolean; message?: string; calories?: number; protein?: number; carbs?: number; fat?: number; debug?: string } = { adjusted: false, debug: 'not triggered (weight is null)' }
     if (weight != null) {
       try {

@@ -59,7 +59,7 @@ export default function ActionPage() {
               num: '02',
               title: '客製化計畫',
               desc: '根據評估結果，量身打造你的訓練與營養計畫。',
-              details: ['週期化訓練編排 + RPE 管理', '動作技術指導與矯正', '增肌 / 減脂營養策略'],
+              details: ['週期化訓練編排 + RPE 管理', '動作技術指導與矯正', '增肌 / 減脂營養目標設定'],
             },
             {
               num: '03',

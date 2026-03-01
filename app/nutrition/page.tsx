@@ -50,9 +50,9 @@ export default function NutritionPage() {
         </div>
       </div>
 
-      {/* 三大營養策略 */}
+      {/* 三大營養觀點 */}
       <div className="my-24 max-w-5xl mx-auto">
-        <h3 className="text-3xl font-semibold mb-16 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>三大營養策略</h3>
+        <h3 className="text-3xl font-semibold mb-16 text-center" style={{color: '#2D2D2D', letterSpacing: '0.03em'}}>三大營養觀點</h3>
         <div className="space-y-12">
           
           {/* 策略 1 */}
@@ -153,11 +153,11 @@ export default function NutritionPage() {
             className="inline-block px-8 py-3 rounded-full font-medium border-2 transition-all hover:bg-gray-50"
             style={{borderColor: '#2D2D2D', color: '#2D2D2D', letterSpacing: '0.05em'}}
           >
-            預約營養諮詢
+            預約免費諮詢
           </a>
         </div>
         <p className="text-gray-400 text-sm">
-          個人經驗分享 • 不構成醫療建議
+          個人經驗分享 • 不構成醫療或營養指導
         </p>
       </div>
     </section>

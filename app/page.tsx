@@ -66,7 +66,7 @@ export default function HomePage() {
                 智能系統 24 小時分析 × CSCS 教練即時監督
               </p>
               <p className="text-sm text-gray-400 mb-8 leading-relaxed max-w-lg">
-                不靠感覺、不靠公式 — 系統根據你的真實數據，每週自動分析體重趨勢、調整飲食計畫、偵測停滯期。
+                不靠感覺、不靠公式 — 系統根據你的真實數據，每週自動分析體重趨勢、校正營養目標、偵測停滯期。
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link

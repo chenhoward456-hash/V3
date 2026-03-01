@@ -47,7 +47,7 @@ export default function ClientOverview() {
       setBodyData(data.bodyData || [])
       setLabResults(data.labResults || [])
       setNutritionLogs(data.nutritionLogs || [])
-      // 同時抓取營養建議
+      // 同時抓取營養分析
       if (data.client?.goal_type && data.client?.nutrition_enabled) {
         fetch(`/api/nutrition-suggestions?clientId=${data.client.id}`)
           .then(r => r.ok ? r.json() : null)
@@ -940,7 +940,7 @@ export default function ClientOverview() {
           </div>
         </div>
 
-        {/* ===== 營養建議引擎 ===== */}
+        {/* ===== 營養分析引擎 ===== */}
         {suggestion && suggestion.status !== 'insufficient_data' && (
           <div className={`rounded-2xl p-5 border ${
             suggestion.status === 'on_track' ? 'bg-green-50 border-green-200' :
@@ -952,7 +952,7 @@ export default function ClientOverview() {
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{suggestion.statusEmoji}</span>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900">🧮 營養建議引擎</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">🧮 營養分析引擎</h3>
                   <p className="text-xs text-gray-500">
                     {suggestionMeta?.goalType === 'cut' ? '🔻 減脂模式' : '🔺 增肌模式'}
                     {suggestion.weeklyWeightChangeRate != null && ` · 週變化 ${suggestion.weeklyWeightChangeRate > 0 ? '+' : ''}${suggestion.weeklyWeightChangeRate.toFixed(2)}%`}
@@ -970,10 +970,10 @@ export default function ClientOverview() {
 
             <p className="text-sm text-gray-700 mb-4">{suggestion.message}</p>
 
-            {/* 建議調整表 */}
+            {/* 參考調整表 */}
             {suggestion.status !== 'low_compliance' && !(suggestion.status === 'on_track' && !suggestion.autoApply) && (
               <div className="bg-white/70 rounded-xl p-4 mb-3">
-                <p className="text-xs font-semibold text-gray-600 mb-3">建議調整：</p>
+                <p className="text-xs font-semibold text-gray-600 mb-3">參考調整：</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {suggestion.suggestedCalories != null && (
                     <div className="text-center">
@@ -1067,6 +1067,7 @@ export default function ClientOverview() {
                 {suggestion.dietDurationWeeks != null && <span>已執行：{suggestion.dietDurationWeeks}週</span>}
               </div>
             )}
+            <p className="text-[10px] text-gray-400 mt-2">⚠️ 以上數據由系統根據體重趨勢自動運算，僅供教練參考，不構成營養指導。最終調整請依教練專業判斷。</p>
           </div>
         )}
 

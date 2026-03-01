@@ -14,7 +14,7 @@ interface Post {
   slug: string
 }
 
-const CATEGORIES = ['血檢優化', '營養策略', '訓練方法', '恢復優化', '個案追蹤'] as const
+const CATEGORIES = ['血檢優化', '營養科學', '訓練方法', '恢復優化', '個案追蹤'] as const
 
 const INITIAL_FORM = {
   title: '',

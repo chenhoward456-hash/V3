@@ -63,7 +63,7 @@ export default function DiagnosisPage() {
           免費體驗系統分析
         </h1>
         <p className="text-gray-500 text-sm md:text-base">
-          輸入基本資料，系統即時計算你的 TDEE、每日建議熱量、巨量營養素
+          輸入基本資料，系統即時估算你的 TDEE、每日參考熱量、巨量營養素
         </p>
       </div>
 
@@ -291,7 +291,7 @@ export default function DiagnosisPage() {
                   <p className="text-[10px] text-gray-400">kcal/天</p>
                 </div>
                 <div className="bg-[#2563eb]/5 rounded-xl p-3 text-center border border-[#2563eb]/20">
-                  <p className="text-[10px] text-[#2563eb] mb-1">建議熱量</p>
+                  <p className="text-[10px] text-[#2563eb] mb-1">目標熱量</p>
                   <p className="text-xl font-bold text-[#2563eb]">{result.suggestedCalories.toLocaleString()}</p>
                   <p className="text-[10px] text-[#2563eb]">kcal/天</p>
                 </div>
@@ -389,8 +389,8 @@ export default function DiagnosisPage() {
 
         {/* 底部免責 */}
         <p className="text-center text-xs text-gray-400 mt-6 leading-relaxed">
-          此為智能引擎初始估算，僅供參考。實際數值會因個人代謝、活動量、飲食記錄完整度而有差異。
-          <br />訂閱後系統會根據你的真實數據持續校正。如有健康疑慮，請諮詢合格醫師。
+          此為系統根據公開研究文獻與公式自動估算之參考數據，不構成個人化營養指導或醫療建議。
+          <br />實際數值會因個人代謝、活動量、飲食記錄完整度而有差異。如有健康疑慮，請諮詢合格醫師或營養師。
         </p>
       </div>
     </section>
