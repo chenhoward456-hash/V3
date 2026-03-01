@@ -111,7 +111,9 @@ async function getSupabasePosts() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     if (!url || !key) return []
-    const supabase = createClient(url, key)
+    const supabase = createClient(url, key, {
+      global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }) }
+    })
     const { data, error } = await supabase
       .from('blog_posts')
       .select('id, title, description, date, category, read_time, slug')
