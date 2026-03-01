@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       PaymentType: 'aio',
       TotalAmount: product.amount,
       TradeDesc: 'Howard Protocol Ebook',
-      ItemName: product.name,
+      ItemName: 'System Reboot Sleep Optimization Ebook',
       ReturnURL: `${origin}/api/ebook/webhook`,
       OrderResultURL: `${origin}/diagnosis/success?order_id=${merchantTradeNo}`,
       ClientBackURL: `${origin}/diagnosis?step=3&cancelled=1`,
