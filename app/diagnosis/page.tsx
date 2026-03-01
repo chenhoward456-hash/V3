@@ -130,7 +130,7 @@ export default function DiagnosisPage() {
       </div>
       <div className="absolute inset-0 flex items-center justify-center bg-white/20">
         <span className="bg-white/95 px-5 py-2 rounded-full text-sm font-semibold text-gray-500 shadow-sm border border-gray-100">
-          🔒 付費解鎖
+          🔒 加 LINE 解鎖
         </span>
       </div>
     </div>
@@ -551,55 +551,27 @@ export default function DiagnosisPage() {
                     </BlurredSection>
                   )}
 
-                  {/* ===== 購買 CTA ===== */}
+                  {/* ===== LINE 諮詢 CTA ===== */}
                   <div className="border-t border-gray-100 pt-6 mt-2">
-                    <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb] rounded-2xl p-6 md:p-8">
-                      <div className="text-center mb-5">
-                        <p className="text-white text-lg font-bold mb-2">
-                          解鎖完整報告 + 獲得電子書
-                        </p>
-                        <div className="space-y-1.5 text-white/80 text-sm">
-                          <p>✓ 完整 TDEE、巨量營養素、安全性分析</p>
-                          <p>✓《System Reboot》睡眠與神經系統優化手冊</p>
-                          <p className="text-white/50 text-xs mt-2">4 章節 · HRV 動態矩陣 · 精準補劑協定 · 睡前降落 SOP</p>
-                        </div>
+                    <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb] rounded-2xl p-6 md:p-8 text-center">
+                      <p className="text-white text-lg font-bold mb-2">
+                        想看完整報告？
+                      </p>
+                      <div className="space-y-1.5 text-white/80 text-sm mb-6">
+                        <p>✓ 完整 TDEE、巨量營養素、安全性分析</p>
+                        <p>✓ CSCS 教練一對一飲食規劃建議</p>
+                        <p>✓ 免費諮詢，零壓力</p>
                       </div>
-
-                      {/* Email input */}
-                      <div className="max-w-sm mx-auto space-y-3">
-                        <input
-                          type="email"
-                          placeholder="輸入你的 Email"
-                          value={email}
-                          onChange={(e) => { setEmail(e.target.value); setCheckoutError('') }}
-                          className="w-full px-4 py-3 rounded-xl text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50"
-                        />
-                        {checkoutError && (
-                          <p className="text-red-300 text-xs text-center">{checkoutError}</p>
-                        )}
-                        <button
-                          onClick={handleCheckout}
-                          disabled={isCheckingOut}
-                          className="w-full bg-white text-[#1e3a5f] py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-colors disabled:opacity-70 shadow-lg"
-                        >
-                          {isCheckingOut ? '跳轉中...' : '立即解鎖 — NT$299'}
-                        </button>
-                        <p className="text-white/40 text-[11px] text-center leading-relaxed">
-                          一次付費，永久取用。付款後立即下載。<br />
-                          💳 支援信用卡 / ATM / 超商代碼
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* LINE 次要 CTA */}
-                    <div className="text-center mt-4">
                       <LineButton
                         source="diagnosis_teaser"
-                        intent="pre_purchase_inquiry"
-                        className="text-sm text-gray-400 hover:text-[#2563eb] transition-colors"
+                        intent="unlock_full_report"
+                        className="inline-block bg-[#06C755] text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-[#05b34d] transition-colors shadow-lg"
                       >
-                        或加 LINE 免費討論你的結果 →
+                        加 LINE 免費諮詢 💬
                       </LineButton>
+                      <p className="text-white/40 text-[11px] mt-4">
+                        加入後傳送「分析報告」即可開始
+                      </p>
                     </div>
                   </div>
                 </>
