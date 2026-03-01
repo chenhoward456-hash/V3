@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       TradeDesc: 'Howard Protocol Ebook',
       ItemName: 'System Reboot 睡眠與神經系統優化實戰手冊',
       ReturnURL: `${origin}/api/ebook/webhook`,
-      OrderResultURL: `${origin}/diagnosis/success?order_id=${merchantTradeNo}`,
+      OrderResultURL: `${origin}/api/ebook/return`,
       ClientBackURL: `${origin}/diagnosis?step=3&cancelled=1`,
       ChoosePayment: 'ALL',
       EncryptType: 1,
