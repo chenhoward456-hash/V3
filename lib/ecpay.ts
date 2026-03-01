@@ -6,9 +6,9 @@ import crypto from 'crypto'
 const isEcpayProduction = process.env.ECPAY_PRODUCTION === 'true'
 
 export const ECPAY_CONFIG = {
-  MerchantID: process.env.ECPAY_MERCHANT_ID || '3002607',
-  HashKey: process.env.ECPAY_HASH_KEY || 'pwFHCqoQZGmho4w6',
-  HashIV: process.env.ECPAY_HASH_IV || 'EkRm7iFT261dpevs',
+  MerchantID: (process.env.ECPAY_MERCHANT_ID || '3002607').trim(),
+  HashKey: (process.env.ECPAY_HASH_KEY || 'pwFHCqoQZGmho4w6').trim(),
+  HashIV: (process.env.ECPAY_HASH_IV || 'EkRm7iFT261dpevs').trim(),
   PaymentURL: isEcpayProduction
     ? 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5'
     : 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5',
