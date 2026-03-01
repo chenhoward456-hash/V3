@@ -606,11 +606,11 @@ export default function ClientEditor() {
               </div>
             )}
 
-            {/* 營養建議引擎 */}
+            {/* 營養分析引擎 */}
             {client.nutrition_enabled && (
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="border-t border-gray-100 pt-4 mt-4">
-                  <p className="text-sm font-semibold text-gray-700 mb-3">🧮 營養建議引擎</p>
+                  <p className="text-sm font-semibold text-gray-700 mb-3">🧮 營養分析引擎</p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">目標類型</label>
@@ -625,7 +625,7 @@ export default function ClientEditor() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">飲食計畫開始日</label>
+                      <label className="block text-xs text-gray-500 mb-1">營養目標開始日</label>
                       <input
                         type="date"
                         value={client.diet_start_date || ''}
@@ -635,7 +635,7 @@ export default function ClientEditor() {
                     </div>
                   </div>
                   <div className="mt-3">
-                    <label className="block text-xs text-gray-500 mb-1">活動量分型（影響 TDEE 估算與有氧/步數建議）</label>
+                    <label className="block text-xs text-gray-500 mb-1">活動量分型（影響 TDEE 估算與有氧/步數參考）</label>
                     <select
                       value={client.activity_profile || ''}
                       onChange={(e) => setClient({ ...client, activity_profile: e.target.value as 'sedentary' | 'high_energy_flux' || null })}

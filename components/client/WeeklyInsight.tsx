@@ -70,7 +70,7 @@ export default function WeeklyInsight({ clientId, onMutate }: WeeklyInsightProps
   }
   const config = statusConfig[data.status] || statusConfig.on_track
 
-  // 計算目標赤字（如果有 TDEE 和建議熱量）
+  // 計算目標赤字（如果有 TDEE 和目標熱量）
   const dailyDeficit = data.estimatedTDEE && data.suggestedCalories
     ? data.estimatedTDEE - data.suggestedCalories
     : null
@@ -153,10 +153,10 @@ export default function WeeklyInsight({ clientId, onMutate }: WeeklyInsightProps
         )}
       </div>
 
-      {/* 調整建議（如果有 delta） */}
+      {/* 調整參考（如果有 delta） */}
       {(data.caloriesDelta !== 0 || data.proteinDelta !== 0 || data.carbsDelta !== 0 || data.fatDelta !== 0) && (
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
-          <p className="text-xs font-semibold text-blue-700 mb-2">📋 系統建議調整</p>
+          <p className="text-xs font-semibold text-blue-700 mb-2">📋 系統分析 — 目標校正</p>
           <div className="grid grid-cols-2 gap-2">
             {data.caloriesDelta !== 0 && (
               <div className="flex items-center justify-between bg-white bg-opacity-70 rounded-lg px-3 py-2">
@@ -192,18 +192,18 @@ export default function WeeklyInsight({ clientId, onMutate }: WeeklyInsightProps
             )}
           </div>
           <p className="text-[10px] text-blue-500 mt-2">
-            以上為系統根據體重趨勢自動分析的建議，教練會根據你的情況微調
+            以上為系統根據體重趨勢自動分析的參考數據，僅供教練與你討論時參考
           </p>
         </div>
       )}
 
-      {/* Refeed 建議 */}
+      {/* Refeed 提示 */}
       {data.refeedSuggested && (
         <div className="bg-orange-50 border border-orange-300 rounded-2xl p-4 mb-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg">🔄</span>
             <p className="text-sm font-bold text-orange-800">
-              建議安排 {data.refeedDays} 天 Refeed
+              系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
             </p>
           </div>
           <p className="text-xs text-orange-700">{data.refeedReason}</p>
@@ -213,15 +213,15 @@ export default function WeeklyInsight({ clientId, onMutate }: WeeklyInsightProps
         </div>
       )}
 
-      {/* Diet Break 建議 */}
+      {/* Diet Break 提示 */}
       {data.dietBreakSuggested && (
         <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 mb-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg">⏸️</span>
-            <p className="text-sm font-bold text-purple-800">建議安排 Diet Break</p>
+            <p className="text-sm font-bold text-purple-800">系統偵測：可考慮安排 Diet Break</p>
           </div>
           <p className="text-xs text-purple-700">
-            已持續減脂 {data.dietDurationWeeks} 週以上。建議安排 1-2 週維持熱量，讓代謝和荷爾蒙恢復。
+            已持續減脂 {data.dietDurationWeeks} 週以上。可考慮安排 1-2 週維持熱量，讓代謝和荷爾蒙恢復。
           </p>
         </div>
       )}

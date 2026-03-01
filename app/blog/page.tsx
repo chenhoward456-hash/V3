@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: '知識分享 - Howard | 訓練、營養、恢復優化',
-  description: '個人實驗紀錄、研究心得與學習筆記。涵蓋訓練方法、營養策略、睡眠恢復、血檢優化等主題。',
+  description: '個人實驗紀錄、研究心得與學習筆記。涵蓋訓練方法、營養科學、睡眠恢復、血檢優化等主題。',
   openGraph: {
     title: '知識分享 - Howard',
     description: '訓練、營養、恢復優化的實戰經驗分享',
@@ -37,7 +37,7 @@ const hardcodedPosts = [
     title: '早上別只喝白開水 — 一杯不到 1 塊的電解質水配方',
     description: '喝了半小時就跑廁所，然後還是口渴、腦袋昏昏的？問題不是你喝太少，是白開水「留不住」。分享我每天早上的電解質水配方。',
     date: '2026-02-11',
-    category: '營養策略',
+    category: '營養科學',
     readTime: '4 分鐘',
     slug: 'morning-electrolyte-water',
   },

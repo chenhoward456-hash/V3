@@ -94,7 +94,7 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">🔄</span>
                 <p className="text-sm font-bold text-orange-800">
-                  建議安排 {data.refeedDays} 天 Refeed
+                  系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
                 </p>
               </div>
               <p className="text-xs text-orange-700">{data.refeedReason}</p>
@@ -201,10 +201,10 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
         )}
       </div>
 
-      {/* 有氧 / 步數建議 */}
+      {/* 有氧 / 步數參考 */}
       {(dl.suggestedCardioMinutes > 0 || dl.suggestedDailySteps > 0) && (
         <div className="bg-cyan-50 border border-cyan-200 rounded-2xl p-4 mb-3">
-          <p className="text-xs font-semibold text-cyan-700 mb-2">🏃 活動量建議</p>
+          <p className="text-xs font-semibold text-cyan-700 mb-2">🏃 活動量參考</p>
           <div className="grid grid-cols-2 gap-3">
             {dl.suggestedCardioMinutes > 0 && (
               <div className="bg-white bg-opacity-70 rounded-xl p-3 text-center">
@@ -254,7 +254,7 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg">🔄</span>
             <p className="text-sm font-bold text-orange-800">
-              建議安排 {data.refeedDays} 天 Refeed
+              系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
             </p>
           </div>
           <p className="text-xs text-orange-700">{data.refeedReason}</p>
