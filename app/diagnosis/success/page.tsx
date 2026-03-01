@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
@@ -9,6 +9,25 @@ import LineButton from '@/components/LineButton'
 import { trackEvent } from '@/lib/analytics'
 
 export default function SuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <section className="max-w-2xl mx-auto px-6 py-20 text-center">
+          <div className="bg-white border border-gray-200 rounded-2xl p-10 shadow-sm">
+            <div className="animate-spin w-12 h-12 border-4 border-[#2563eb] border-t-transparent rounded-full mx-auto mb-6" />
+            <h1 className="text-xl font-bold mb-2" style={{ color: '#1e3a5f' }}>
+              載入中...
+            </h1>
+          </div>
+        </section>
+      }
+    >
+      <SuccessContent />
+    </Suspense>
+  )
+}
+
+function SuccessContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order_id')
 
