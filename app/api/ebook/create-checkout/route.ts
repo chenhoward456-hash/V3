@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       MerchantTradeDate: formatTradeDate(),
       PaymentType: 'aio',
       TotalAmount: product.amount,
-      TradeDesc: encodeURIComponent(product.description),
+      TradeDesc: 'Howard Protocol Ebook',
       ItemName: product.name,
       ReturnURL: `${origin}/api/ebook/webhook`,
       OrderResultURL: `${origin}/diagnosis/success?order_id=${merchantTradeNo}`,
