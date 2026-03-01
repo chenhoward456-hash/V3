@@ -13,10 +13,10 @@ export const dynamicParams = true
 
 async function getSupabasePost(slug: string) {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) return null
+    const supabase = createClient(url, key)
     const { data } = await supabase
       .from('blog_posts')
       .select('*')
@@ -26,6 +26,11 @@ async function getSupabasePost(slug: string) {
   } catch {
     return null
   }
+}
+
+function stripFrontmatter(content: string): string {
+  // 移除開頭的 YAML-like metadata（title:, date:, category:, readTime: 等）
+  return content.replace(/^(title:\s*.*\n|date:\s*.*\n|category:\s*.*\n|readTime:\s*.*\n|read_time:\s*.*\n|description:\s*.*\n|slug:\s*.*\n)+/i, '').trim()
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
@@ -148,7 +153,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         date: supabasePost.date,
         category: supabasePost.category,
         readTime: supabasePost.read_time,
-        content: supabasePost.content,
+        content: stripFrontmatter(supabasePost.content),
         fromSupabase: true,
       }
     }
