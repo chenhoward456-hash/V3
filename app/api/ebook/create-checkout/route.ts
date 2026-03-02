@@ -7,12 +7,9 @@ import {
   buildCheckoutFormHTML,
 } from '@/lib/ecpay'
 import { rateLimit, getClientIP, createErrorResponse } from '@/lib/auth-middleware'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceSupabase } from '@/lib/supabase'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabase = createServiceSupabase()
 
 export async function POST(request: NextRequest) {
   // Rate limit: 5 次 / 分鐘 / IP
