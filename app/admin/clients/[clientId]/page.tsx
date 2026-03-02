@@ -178,6 +178,13 @@ export default function ClientEditor() {
     setSaving(true)
     setError('')
 
+    // 基本驗證
+    if (!client.name.trim()) {
+      setError('請輸入學員姓名')
+      setSaving(false)
+      return
+    }
+
     try {
       // 組裝 client 欄位（不含 lab_results / supplements）
       const clientFields = {
@@ -236,8 +243,15 @@ export default function ClientEditor() {
         })
 
         if (!res.ok) {
+          if (res.status === 401) {
+            setError('登入已過期，請重新登入')
+            setTimeout(() => router.push('/admin/login'), 1500)
+            return
+          }
           const data = await res.json().catch(() => ({}))
-          setError(data.error || '新增學員失敗')
+          const detail = data.detail ? `（${data.detail}）` : ''
+          setError(`${data.error || '新增學員失敗'}${detail}`)
+          console.error('新增學員失敗:', res.status, data)
           return
         }
 
@@ -256,8 +270,15 @@ export default function ClientEditor() {
         })
 
         if (!res.ok) {
+          if (res.status === 401) {
+            setError('登入已過期，請重新登入')
+            setTimeout(() => router.push('/admin/login'), 1500)
+            return
+          }
           const data = await res.json().catch(() => ({}))
-          setError(data.error || '更新學員資料失敗')
+          const detail = data.detail ? `（${data.detail}）` : ''
+          setError(`${data.error || '更新學員資料失敗'}${detail}`)
+          console.error('更新學員失敗:', res.status, data)
           return
         }
 
