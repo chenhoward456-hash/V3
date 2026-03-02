@@ -376,3 +376,25 @@ CREATE INDEX IF NOT EXISTS idx_supplement_logs_client_date ON supplement_logs(cl
 -- 客戶端顯示「教練已查看 ✓」
 -- ============================================
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS coach_last_viewed_at TIMESTAMPTZ;
+
+-- ============================================
+-- 24. 穿戴裝置生理指標（Wearable Biomarkers）
+-- 支援 Apple Watch / Garmin / Whoop 等裝置的客觀恢復數據
+-- 用途：取代純主觀 RPE 判斷，提供更精準的 Readiness 評估
+-- ============================================
+
+-- 靜息心率 (bpm)：基線偏移 >5bpm 持續 2+ 天 = 恢復不足
+ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS resting_hr NUMERIC CHECK (resting_hr >= 30 AND resting_hr <= 150);
+
+-- HRV (ms)：低於個人基線 15%+ 持續 2+ 天 = 交感神經過度激活
+ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS hrv NUMERIC CHECK (hrv >= 0 AND hrv <= 300);
+
+-- 穿戴裝置睡眠分數 (0-100)：整合深睡/淺睡/REM/清醒比例
+ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS wearable_sleep_score INTEGER CHECK (wearable_sleep_score >= 0 AND wearable_sleep_score <= 100);
+
+-- 呼吸速率 (次/分)：靜息呼吸率升高 = 交感神經活躍的早期信號
+ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS respiratory_rate NUMERIC CHECK (respiratory_rate >= 5 AND respiratory_rate <= 40);
+
+-- 裝置恢復分數 (0-100)：WHOOP Recovery / Oura Readiness / Garmin Body Battery
+-- 使用者只需填這一個數字，引擎直接用作 Readiness Score
+ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS device_recovery_score INTEGER CHECK (device_recovery_score >= 0 AND device_recovery_score <= 100);

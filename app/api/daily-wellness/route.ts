@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { clientId, date, sleep_quality, energy_level, mood, note, hunger, digestion, training_drive, cognitive_clarity, stress_level, period_start } = body
+    const { clientId, date, sleep_quality, energy_level, mood, note, hunger, digestion, training_drive, cognitive_clarity, stress_level, period_start, resting_hr, hrv, wearable_sleep_score, respiratory_rate, device_recovery_score } = body
 
     if (!clientId || !date) {
       return createErrorResponse('缺少客戶 ID 或日期', 400)
@@ -116,6 +116,23 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('壓力指數分數必須在 1-5 之間', 400)
     }
 
+    // 驗證穿戴裝置生理指標
+    if (resting_hr != null && (resting_hr < 30 || resting_hr > 150)) {
+      return createErrorResponse('靜息心率必須在 30-150 bpm 之間', 400)
+    }
+    if (hrv != null && (hrv < 0 || hrv > 300)) {
+      return createErrorResponse('HRV 必須在 0-300 ms 之間', 400)
+    }
+    if (wearable_sleep_score != null && (wearable_sleep_score < 0 || wearable_sleep_score > 100)) {
+      return createErrorResponse('睡眠分數必須在 0-100 之間', 400)
+    }
+    if (respiratory_rate != null && (respiratory_rate < 5 || respiratory_rate > 40)) {
+      return createErrorResponse('呼吸速率必須在 5-40 次/分之間', 400)
+    }
+    if (device_recovery_score != null && (device_recovery_score < 0 || device_recovery_score > 100)) {
+      return createErrorResponse('裝置恢復分數必須在 0-100 之間', 400)
+    }
+
     // 清理 note 欄位
     const sanitizedNote = sanitizeTextField(note)
 
@@ -146,6 +163,11 @@ export async function POST(request: NextRequest) {
         cognitive_clarity: cognitive_clarity ?? null,
         stress_level: stress_level ?? null,
         period_start: period_start || false,
+        resting_hr: resting_hr ?? null,
+        hrv: hrv ?? null,
+        wearable_sleep_score: wearable_sleep_score ?? null,
+        respiratory_rate: respiratory_rate ?? null,
+        device_recovery_score: device_recovery_score ?? null,
       }, {
         onConflict: 'client_id,date'
       })

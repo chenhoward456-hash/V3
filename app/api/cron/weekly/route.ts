@@ -110,8 +110,8 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true }),
       supabase
         .from('daily_wellness')
-        .select('client_id, date, energy_level, training_drive, period_start')
-        .gte('date', sevenDaysStr)
+        .select('client_id, date, energy_level, training_drive, period_start, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate')
+        .gte('date', sinceDate)
         .order('date', { ascending: true }),
     ])
 
@@ -228,6 +228,11 @@ export async function GET(request: NextRequest) {
             date: w.date,
             energy_level: w.energy_level ?? null,
             training_drive: w.training_drive ?? null,
+            device_recovery_score: w.device_recovery_score ?? null,
+            resting_hr: w.resting_hr ?? null,
+            hrv: w.hrv ?? null,
+            wearable_sleep_score: w.wearable_sleep_score ?? null,
+            respiratory_rate: w.respiratory_rate ?? null,
           })),
           recentTrainingLogs: clientTraining
             .filter((t: any) => t.date >= sevenDaysStr)

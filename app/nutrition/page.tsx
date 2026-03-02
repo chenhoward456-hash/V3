@@ -3,9 +3,11 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: '營養與恢復 - The Howard Protocol',
   description: '代謝靈活性優化、MTHFR 甲基化修復、睡眠優化指南。訓練只是刺激，真正的成長發生在休息與營養補充階段。',
+  alternates: { canonical: 'https://howard456.vercel.app/nutrition' },
   openGraph: {
     title: '營養與恢復 - The Howard Protocol',
     description: '代謝優化、基因修復、睡眠協議',
+    url: 'https://howard456.vercel.app/nutrition',
   },
 }
 

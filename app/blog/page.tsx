@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { createClient } from '@supabase/supabase-js'
+import { createServerSupabase } from '@/lib/supabase'
 import BlogFilter from '@/components/BlogFilter'
 
 export const dynamic = 'force-dynamic'
@@ -7,9 +7,11 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: '知識分享 - Howard | 訓練、營養、恢復優化',
   description: '個人實驗紀錄、研究心得與學習筆記。涵蓋訓練方法、營養科學、睡眠恢復、血檢優化等主題。',
+  alternates: { canonical: 'https://howard456.vercel.app/blog' },
   openGraph: {
     title: '知識分享 - Howard',
     description: '訓練、營養、恢復優化的實戰經驗分享',
+    url: 'https://howard456.vercel.app/blog',
   },
 }
 
@@ -108,12 +110,8 @@ const hardcodedPosts = [
 
 async function getSupabasePosts() {
   try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    if (!url || !key) return []
-    const supabase = createClient(url, key, {
-      global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }) }
-    })
+    const supabase = createServerSupabase()
+    if (!supabase) return []
     const { data, error } = await supabase
       .from('blog_posts')
       .select('id, title, description, date, category, read_time, slug')

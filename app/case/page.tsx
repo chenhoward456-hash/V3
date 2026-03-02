@@ -5,9 +5,11 @@ import Image from 'next/image'
 export const metadata: Metadata = {
   title: '個案追蹤 - The Howard Protocol',
   description: '6年系統修復的完整數據紀錄。從2020年系統崩潰到2026年完全重生，透過系統化訓練與營養介入達到菁英等級。',
+  alternates: { canonical: 'https://howard456.vercel.app/case' },
   openGraph: {
     title: '個案追蹤 - The Howard Protocol',
     description: '6年系統修復的完整數據紀錄 - 從系統崩潰到完全重生',
+    url: 'https://howard456.vercel.app/case',
   },
 }
 

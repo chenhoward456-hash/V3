@@ -81,6 +81,7 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
   const [submitting, setSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [showMore, setShowMore] = useState(false) // 展開更多指標
+  const [showWearable, setShowWearable] = useState(false) // 展開穿戴裝置數據
   const [form, setForm] = useState({
     sleep_quality: todayWellness?.sleep_quality ?? null as number | null,
     energy_level: todayWellness?.energy_level ?? null as number | null,
@@ -91,7 +92,13 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
     cognitive_clarity: todayWellness?.cognitive_clarity ?? null as number | null,
     stress_level: todayWellness?.stress_level ?? null as number | null,
     period_start: todayWellness?.period_start ?? false as boolean,
-    note: todayWellness?.note || ''
+    note: todayWellness?.note || '',
+    // 穿戴裝置
+    device_recovery_score: todayWellness?.device_recovery_score ?? null as number | null,
+    resting_hr: todayWellness?.resting_hr ?? null as number | null,
+    hrv: todayWellness?.hrv ?? null as number | null,
+    wearable_sleep_score: todayWellness?.wearable_sleep_score ?? null as number | null,
+    respiratory_rate: todayWellness?.respiratory_rate ?? null as number | null,
   })
   const isFemale = gender === '女性' || gender === 'female'
 
@@ -108,10 +115,19 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
         stress_level: todayWellness.stress_level ?? null,
         period_start: todayWellness.period_start ?? false,
         note: todayWellness.note || '',
+        device_recovery_score: todayWellness.device_recovery_score ?? null,
+        resting_hr: todayWellness.resting_hr ?? null,
+        hrv: todayWellness.hrv ?? null,
+        wearable_sleep_score: todayWellness.wearable_sleep_score ?? null,
+        respiratory_rate: todayWellness.respiratory_rate ?? null,
       })
       // 如果已經有填寫過額外指標，預設展開
       if (todayWellness.hunger || todayWellness.digestion || todayWellness.training_drive || todayWellness.cognitive_clarity || todayWellness.stress_level) {
         setShowMore(true)
+      }
+      // 如果已經有穿戴裝置數據，預設展開
+      if (todayWellness.device_recovery_score || todayWellness.resting_hr || todayWellness.hrv || todayWellness.wearable_sleep_score || todayWellness.respiratory_rate) {
+        setShowWearable(true)
       }
     }
   }, [todayWellness])
@@ -137,7 +153,12 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
           cognitive_clarity: form.cognitive_clarity ?? null,
           stress_level: form.stress_level ?? null,
           period_start: form.period_start || false,
-          note: form.note || null
+          note: form.note || null,
+          device_recovery_score: form.device_recovery_score ?? null,
+          resting_hr: form.resting_hr ?? null,
+          hrv: form.hrv ?? null,
+          wearable_sleep_score: form.wearable_sleep_score ?? null,
+          respiratory_rate: form.respiratory_rate ?? null,
         })
       })
       if (!response.ok) throw new Error('提交失敗')
@@ -293,6 +314,115 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
               </>
             )}
           </>
+        )}
+
+        {/* 穿戴裝置數據 */}
+        {!showWearable ? (
+          <button
+            onClick={() => setShowWearable(true)}
+            className="w-full py-2.5 text-sm text-emerald-600 font-medium bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors"
+          >
+            ⌚ 填寫手錶恢復分數 <span className="text-gray-400 text-xs">（只要 1 個數字）</span>
+          </button>
+        ) : (
+          <div className="border-t border-emerald-100 pt-3 space-y-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs font-semibold text-emerald-700">⌚ 穿戴裝置恢復分數</p>
+              <button
+                onClick={() => setShowWearable(false)}
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                收起 ▲
+              </button>
+            </div>
+
+            {/* 主要輸入：裝置恢復分數 */}
+            <div className="relative">
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={100}
+                  value={form.device_recovery_score ?? ''}
+                  onChange={(e) => setForm(prev => ({ ...prev, device_recovery_score: e.target.value ? Math.min(100, Math.max(0, Number(e.target.value))) : null }))}
+                  className="w-24 px-3 py-3 border-2 border-emerald-200 rounded-xl bg-emerald-50/50 text-2xl font-bold text-center text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="--"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-700">恢復分數 <span className="text-gray-400 font-normal">(0-100)</span></p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    WHOOP Recovery / Oura Readiness / Garmin Body Battery
+                  </p>
+                </div>
+                {form.device_recovery_score != null && (
+                  <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                    form.device_recovery_score >= 67 ? 'bg-green-100 text-green-700' :
+                    form.device_recovery_score >= 34 ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {form.device_recovery_score >= 67 ? '恢復良好' :
+                     form.device_recovery_score >= 34 ? '中等' : '需要休息'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* 進階：個別生理指標（可展開） */}
+            <details className="group">
+              <summary className="text-[11px] text-gray-400 cursor-pointer hover:text-gray-600 transition-colors list-none flex items-center gap-1">
+                <span className="group-open:rotate-90 transition-transform text-[10px]">▶</span>
+                進階：填寫個別生理數據（選填）
+              </summary>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">靜息心率 (bpm)</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={form.resting_hr ?? ''}
+                    onChange={(e) => setForm(prev => ({ ...prev, resting_hr: e.target.value ? Number(e.target.value) : null }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="如 52"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">HRV (ms)</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={form.hrv ?? ''}
+                    onChange={(e) => setForm(prev => ({ ...prev, hrv: e.target.value ? Number(e.target.value) : null }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="如 85"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">睡眠分數 (0-100)</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={form.wearable_sleep_score ?? ''}
+                    onChange={(e) => setForm(prev => ({ ...prev, wearable_sleep_score: e.target.value ? Number(e.target.value) : null }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="如 82"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">呼吸速率 (次/分)</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    value={form.respiratory_rate ?? ''}
+                    onChange={(e) => setForm(prev => ({ ...prev, respiratory_rate: e.target.value ? Number(e.target.value) : null }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="如 14.5"
+                  />
+                </div>
+              </div>
+            </details>
+          </div>
         )}
 
         {/* 月經週期標記（女性專用） */}

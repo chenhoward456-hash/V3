@@ -59,8 +59,18 @@ export interface NutritionInput {
   // high_energy_flux = 高能量通量，主動增加活動消耗
   activityProfile?: 'sedentary' | 'high_energy_flux'
 
-  // 近 7 天狀態監控（用於 Refeed 觸發）
-  recentWellness?: { date: string; energy_level: number | null; training_drive: number | null }[]
+  // 近 30 天狀態監控（近 3 天 = 當前狀態, 第 4-30 天 = 個人基線）
+  recentWellness?: {
+    date: string
+    energy_level: number | null
+    training_drive: number | null
+    // 穿戴裝置生理指標（Apple Watch / Garmin / Whoop）
+    device_recovery_score?: number | null  // 裝置恢復分數 0-100（WHOOP Recovery / Oura Readiness / Garmin Body Battery）
+    resting_hr?: number | null       // 靜息心率 bpm
+    hrv?: number | null              // 心率變異度 ms
+    wearable_sleep_score?: number | null  // 睡眠分數 0-100
+    respiratory_rate?: number | null // 呼吸速率 次/分
+  }[]
   recentTrainingLogs?: { date: string; rpe: number | null }[]
   recentCarbsPerDay?: { date: string; carbs: number | null }[]
 
@@ -389,18 +399,63 @@ function checkMenstrualCycle(input: NutritionInput): MenstrualCycleInfo {
   return { inLutealPhase, daysSincePeriod: daysSince, note }
 }
 
-// ===== 當前狀態評估 =====
-// 使用近 3 天的 energy_level、training_drive（wellness）和 RPE（training_log）
-// 判斷選手目前的生理/心理狀態，作為 Refeed 觸發的依據
+// ===== 當前狀態評估（Readiness Score v2）=====
+//
+// 核心改動：高 RPE 是備賽/增肌訓練的正常現象（接近力竭 = 有效刺激）
+// 不應因為 RPE 8-9 就判定為 struggling，而是以客觀生理指標判斷真正的疲勞
+//
+// 文獻依據：
+// 1. HRV (RMSSD) — 最強證據的非侵入式恢復指標
+//    - Plews et al. 2013: HRV-guided training 避免過度訓練
+//    - Buchheit 2014: 強調 RMSSD 趨勢分析（週均值 + CV）
+//    - PMC 2024 Narrative Review (J Funct Morphol Kinesiol): RMSSD 是力量訓練中最穩定的 HRV 指標
+//    - Sensors 2025 Review: 7 天滾動 RMSSD 均值 + CV 為最佳實踐
+//    - 注意：文獻強調個人基線比絕對值重要（SWC = mean ± 0.5×SD）
+//      但因目前僅有 3 天數據，使用族群級別範圍作為初步評估
+//
+// 2. RHR (靜息心率) — 升高表示疲勞/過度訓練
+//    - Nature 2025 (Scientific Reports): vmHRV + RHR + WB 多指標指導訓練
+//    - PMC 2024: Nocturnal HR 對過度訓練的 PPV ≥ 85%
+//
+// 3. 睡眠分數 — 恢復基礎
+//    - JCM 2025 Multidimensional Review: 睡眠不足 → cortisol 升高、testosterone/GH 降低
+//    - Current Sports Medicine Reports 2025: 穿戴裝置睡眠分數具方向性參考價值
+//      但各品牌演算法不透明，臨床精確度有限
+//
+// 4. 呼吸速率 — 輔助指標（證據力最弱）
+//    - Nicolò et al. 2020: 呼吸速率對強度變化的反應比心率更快
+//    - 穿戴裝置多從 HRV 間接推導，非獨立測量
+//    - 升高的夜間呼吸速率可提示疾病、壓力或過度訓練
+//
+// 權重分配（基於證據強度）：
+//   HRV 35% > 睡眠 30% > RHR 25% > 呼吸速率 10%
+
+type WellnessWithWearable = {
+  date: string
+  energy_level: number | null
+  training_drive: number | null
+  device_recovery_score?: number | null
+  resting_hr?: number | null
+  hrv?: number | null
+  wearable_sleep_score?: number | null
+  respiratory_rate?: number | null
+}
 
 function assessCurrentState(
-  recentWellness: { date: string; energy_level: number | null; training_drive: number | null }[],
+  recentWellness: WellnessWithWearable[],
   recentTrainingLogs: { date: string; rpe: number | null }[]
 ): 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown' {
-  const last3Wellness = [...recentWellness]
-    .sort((a, b) => b.date.localeCompare(a.date))
+  // 排序：最新在前
+  const sorted = [...recentWellness].sort((a, b) => b.date.localeCompare(a.date))
+
+  // 近 3 天 = 當前狀態
+  const last3Wellness = sorted
     .slice(0, 3)
-    .filter(w => w.energy_level != null || w.training_drive != null)
+    .filter(w => w.energy_level != null || w.training_drive != null ||
+      w.device_recovery_score != null || w.resting_hr != null || w.hrv != null || w.wearable_sleep_score != null)
+
+  // 第 4-30 天 = 個人基線（用於計算 SWC）
+  const baselineWellness = sorted.slice(3)
 
   const last3Training = [...recentTrainingLogs]
     .sort((a, b) => b.date.localeCompare(a.date))
@@ -409,6 +464,7 @@ function assessCurrentState(
 
   if (last3Wellness.length === 0 && last3Training.length === 0) return 'unknown'
 
+  // ── 主觀指標 ──
   const avgEnergy = last3Wellness.length > 0
     ? last3Wellness.reduce((s, w) => s + (w.energy_level ?? 3), 0) / last3Wellness.length
     : null
@@ -417,24 +473,175 @@ function assessCurrentState(
     ? last3Wellness.reduce((s, w) => s + (w.training_drive ?? 3), 0) / last3Wellness.length
     : null
 
-  const avgRPE = last3Training.length > 0
-    ? last3Training.reduce((s, t) => s + (t.rpe ?? 7), 0) / last3Training.length
-    : null
+  // ── 穿戴裝置客觀指標 → Readiness Score ──
+  // 路徑 1: device_recovery_score（使用者只填 1 個數字，裝置已做個人比較）
+  // 路徑 2: 個別指標 + 個人基線 SWC 比較
+  // 路徑 3: 個別指標 + 族群範圍（基線不足時的 fallback）
 
-  // critical：RPE ≥ 9 連 2+ 天，或 energy ≤ 1.5 連 2+ 天
-  if (
-    (avgRPE != null && avgRPE >= 9 && last3Training.length >= 2) ||
-    (avgEnergy != null && avgEnergy <= 1.5 && last3Wellness.length >= 2)
-  ) return 'critical'
+  const recoveryScores = last3Wellness
+    .filter(w => w.device_recovery_score != null)
+    .map(w => w.device_recovery_score!)
 
-  // struggling：RPE ≥ 8，或同時 energy ≤ 2 且 drive ≤ 2
-  if (
-    (avgRPE != null && avgRPE >= 8) ||
-    (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2)
-  ) return 'struggling'
+  let readinessScore: number | null = null
 
-  // optimal：energy ≥ 4，RPE ≤ 7
-  if ((avgEnergy == null || avgEnergy >= 4) && (avgRPE == null || avgRPE <= 7)) return 'optimal'
+  if (recoveryScores.length >= 1) {
+    // 路徑 1: 裝置恢復分數直接使用
+    readinessScore = recoveryScores.reduce((s, v) => s + v, 0) / recoveryScores.length
+  }
+
+  if (readinessScore == null) {
+    // 路徑 2 或 3: 從個別指標計算
+    const currentEntries = last3Wellness.filter(w =>
+      w.resting_hr != null || w.hrv != null || w.wearable_sleep_score != null
+    )
+
+    if (currentEntries.length >= 2) {
+      const scores: { value: number; weight: number }[] = []
+
+      // 工具函數：計算基線 mean + SD
+      const calcBaseline = (vals: number[]) => {
+        if (vals.length < 5) return null // 基線至少需要 5 天數據
+        const mean = vals.reduce((s, v) => s + v, 0) / vals.length
+        const sd = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length)
+        return { mean, sd, swc: 0.5 * sd }
+      }
+
+      // 工具函數：基於個人基線的偏移量 → 0-100 分
+      // zScore = (current - baseline.mean) / baseline.sd
+      // 正向指標（HRV、睡眠）：z=0 → 50 分, z≥+2 → 100, z≤-2 → 0
+      // 反向指標（RHR、呼吸）：z=0 → 50 分, z≤-2 → 100, z≥+2 → 0
+      const zToScore = (z: number) => Math.min(100, Math.max(0, 50 + z * 25))
+
+      // ── HRV ── 權重 35%（正向：越高越好）
+      // Sensors 2025: RMSSD 7 天滾動均值 + CV，偏離個人基線 >SWC 有臨床意義
+      const currentHRV = currentEntries.filter(w => w.hrv != null).map(w => w.hrv!)
+      if (currentHRV.length > 0) {
+        const avgHRV = currentHRV.reduce((s, v) => s + v, 0) / currentHRV.length
+        const baselineHRV = calcBaseline(
+          baselineWellness.filter(w => w.hrv != null).map(w => w.hrv!)
+        )
+
+        if (baselineHRV && baselineHRV.sd > 0) {
+          // 路徑 2: 個人基線比較
+          const z = (avgHRV - baselineHRV.mean) / baselineHRV.sd
+          scores.push({ value: zToScore(z), weight: 35 })
+        } else {
+          // 路徑 3 fallback: 族群範圍 (20-100ms)
+          scores.push({
+            value: Math.min(100, Math.max(0, (avgHRV - 20) * (100 / 80))),
+            weight: 35
+          })
+        }
+      }
+
+      // ── RHR ── 權重 25%（反向：越低越好）
+      // PMC 2024: Nocturnal HR 升高 >5bpm 持續 2+ 天 = overreaching 信號
+      const currentRHR = currentEntries.filter(w => w.resting_hr != null).map(w => w.resting_hr!)
+      if (currentRHR.length > 0) {
+        const avgRHR = currentRHR.reduce((s, v) => s + v, 0) / currentRHR.length
+        const baselineRHR = calcBaseline(
+          baselineWellness.filter(w => w.resting_hr != null).map(w => w.resting_hr!)
+        )
+
+        if (baselineRHR && baselineRHR.sd > 0) {
+          // 路徑 2: RHR 升高 = 差，取反
+          const z = -(avgRHR - baselineRHR.mean) / baselineRHR.sd
+          scores.push({ value: zToScore(z), weight: 25 })
+        } else {
+          // 路徑 3 fallback: 族群範圍 (50-90bpm, 反向)
+          scores.push({
+            value: Math.min(100, Math.max(0, (90 - avgRHR) * (100 / 40))),
+            weight: 25
+          })
+        }
+      }
+
+      // ── 睡眠分數 ── 權重 30%（正向：越高越好）
+      // 已經是 0-100，可直接用；有基線時用 z-score 更精準
+      const currentSleep = currentEntries.filter(w => w.wearable_sleep_score != null).map(w => w.wearable_sleep_score!)
+      if (currentSleep.length > 0) {
+        const avgSleep = currentSleep.reduce((s, v) => s + v, 0) / currentSleep.length
+        const baselineSleep = calcBaseline(
+          baselineWellness.filter(w => w.wearable_sleep_score != null).map(w => w.wearable_sleep_score!)
+        )
+
+        if (baselineSleep && baselineSleep.sd > 0) {
+          // 路徑 2: 相對於個人睡眠品質水平
+          const z = (avgSleep - baselineSleep.mean) / baselineSleep.sd
+          scores.push({ value: zToScore(z), weight: 30 })
+        } else {
+          // 路徑 3 fallback: 直接用 0-100
+          scores.push({ value: avgSleep, weight: 30 })
+        }
+      }
+
+      // ── 呼吸速率 ── 權重 10%（反向：越低越好）
+      const currentRR = currentEntries.filter(w => w.respiratory_rate != null).map(w => w.respiratory_rate!)
+      if (currentRR.length > 0) {
+        const avgRR = currentRR.reduce((s, v) => s + v, 0) / currentRR.length
+        const baselineRR = calcBaseline(
+          baselineWellness.filter(w => w.respiratory_rate != null).map(w => w.respiratory_rate!)
+        )
+
+        if (baselineRR && baselineRR.sd > 0) {
+          const z = -(avgRR - baselineRR.mean) / baselineRR.sd
+          scores.push({ value: zToScore(z), weight: 10 })
+        } else {
+          // 路徑 3 fallback: 族群範圍 (12-24 次/分, 反向)
+          scores.push({
+            value: Math.min(100, Math.max(0, (24 - avgRR) * (100 / 12))),
+            weight: 10
+          })
+        }
+      }
+
+      if (scores.length > 0) {
+        const totalWeight = scores.reduce((s, sc) => s + sc.weight, 0)
+        readinessScore = scores.reduce((s, sc) => s + sc.value * sc.weight, 0) / totalWeight
+      }
+    }
+  }
+
+  // ── 判定邏輯 ──
+  // 有穿戴裝置 → 以 Readiness Score 為主（客觀優先）
+  // 無穿戴裝置 → 使用主觀 energy + drive（不再單獨依賴 RPE）
+  //
+  // 關鍵原則（Nature 2025 Scientific Reports）：
+  //   主觀 + 客觀整合效果 > 任一單獨使用
+  //   RPE 高 + Readiness 好 = 有效訓練（不觸發 Refeed）
+  //   RPE 高 + Readiness 差 = 真正過度疲勞（觸發 Refeed）
+
+  if (readinessScore != null) {
+    if (readinessScore < 25) {
+      return 'critical'
+    }
+    if (readinessScore < 40) {
+      if (avgEnergy != null && avgEnergy <= 2) return 'critical'
+      return 'struggling'
+    }
+    if (readinessScore < 55) {
+      if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) return 'struggling'
+      return 'good'
+    }
+    if (readinessScore >= 70) {
+      return 'optimal'
+    }
+    return 'good'
+  }
+
+  // ── 無穿戴裝置：改良的主觀判定 ──
+  // 核心修正：RPE 高≠疲勞（接近力竭是肌肥大訓練的目標）
+  // 只用 energy_level + training_drive 作為主觀疲勞信號
+
+  if (avgEnergy != null && avgEnergy <= 1.5 && last3Wellness.length >= 2) {
+    return 'critical'
+  }
+  if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) {
+    return 'struggling'
+  }
+  if (avgEnergy != null && avgEnergy >= 4 && (avgDrive == null || avgDrive >= 3)) {
+    return 'optimal'
+  }
 
   return 'good'
 }
@@ -475,9 +682,9 @@ function checkRefeedTrigger(
   const reasons: string[] = []
 
   if (currentState === 'critical') {
-    reasons.push('生理狀態已達臨界（RPE 極高或能量極低）')
+    reasons.push('生理狀態已達臨界（恢復指標低落或能量極低）')
   } else if (currentState === 'struggling') {
-    reasons.push('訓練表現下滑（RPE 偏高且能量低落）')
+    reasons.push('恢復不足（生理指標下滑且主觀能量低落）')
   }
 
   if (lowCarbDays >= 5) {
