@@ -107,6 +107,8 @@ export interface NutritionSuggestion {
 
   // 當前狀態監控
   currentState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'
+  readinessScore: number | null       // 0-100，穿戴裝置恢復分數
+  wearableInsight: string | null      // 根據恢復狀態的即時回饋文字
   refeedSuggested: boolean
   refeedReason: string | null
   refeedDays: number | null
@@ -356,7 +358,8 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
     estimatedTDEE: null, weeklyWeightChangeRate: null,
     dietDurationWeeks: null, dietBreakSuggested: false, warnings: [],
-    currentState: 'unknown', refeedSuggested: false, refeedReason: null, refeedDays: null,
+    currentState: 'unknown', readinessScore: null, wearableInsight: null,
+    refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo: null, autoApply: false, peakWeekPlan: null,
     menstrualCycleNote: null,
     ...overrides,
@@ -444,7 +447,7 @@ type WellnessWithWearable = {
 function assessCurrentState(
   recentWellness: WellnessWithWearable[],
   recentTrainingLogs: { date: string; rpe: number | null }[]
-): 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown' {
+): { state: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'; readinessScore: number | null } {
   // 排序：最新在前
   const sorted = [...recentWellness].sort((a, b) => b.date.localeCompare(a.date))
 
@@ -462,7 +465,7 @@ function assessCurrentState(
     .slice(0, 3)
     .filter(t => t.rpe != null)
 
-  if (last3Wellness.length === 0 && last3Training.length === 0) return 'unknown'
+  if (last3Wellness.length === 0 && last3Training.length === 0) return { state: 'unknown', readinessScore: null }
 
   // ── 主觀指標 ──
   const avgEnergy = last3Wellness.length > 0
@@ -612,21 +615,22 @@ function assessCurrentState(
   //   RPE 高 + Readiness 差 = 真正過度疲勞（觸發 Refeed）
 
   if (readinessScore != null) {
+    const rs = Math.round(readinessScore)
     if (readinessScore < 25) {
-      return 'critical'
+      return { state: 'critical', readinessScore: rs }
     }
     if (readinessScore < 40) {
-      if (avgEnergy != null && avgEnergy <= 2) return 'critical'
-      return 'struggling'
+      if (avgEnergy != null && avgEnergy <= 2) return { state: 'critical', readinessScore: rs }
+      return { state: 'struggling', readinessScore: rs }
     }
     if (readinessScore < 55) {
-      if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) return 'struggling'
-      return 'good'
+      if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) return { state: 'struggling', readinessScore: rs }
+      return { state: 'good', readinessScore: rs }
     }
     if (readinessScore >= 70) {
-      return 'optimal'
+      return { state: 'optimal', readinessScore: rs }
     }
-    return 'good'
+    return { state: 'good', readinessScore: rs }
   }
 
   // ── 無穿戴裝置：改良的主觀判定 ──
@@ -634,16 +638,16 @@ function assessCurrentState(
   // 只用 energy_level + training_drive 作為主觀疲勞信號
 
   if (avgEnergy != null && avgEnergy <= 1.5 && last3Wellness.length >= 2) {
-    return 'critical'
+    return { state: 'critical', readinessScore: null }
   }
   if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) {
-    return 'struggling'
+    return { state: 'struggling', readinessScore: null }
   }
   if (avgEnergy != null && avgEnergy >= 4 && (avgDrive == null || avgDrive >= 3)) {
-    return 'optimal'
+    return { state: 'optimal', readinessScore: null }
   }
 
-  return 'good'
+  return { state: 'good', readinessScore: null }
 }
 
 // ===== 低碳連續天數 =====
@@ -701,20 +705,54 @@ function checkRefeedTrigger(
   return { suggested: true, reason: reasons.join('、'), days }
 }
 
+// ===== 穿戴裝置恢復回饋 =====
+// 根據 currentState + readinessScore 產生使用者可見的即時回饋文字
+// 確保「恢復好」時也有正向回饋，而非只在差的時候才提醒
+
+function generateWearableInsight(
+  state: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown',
+  readinessScore: number | null
+): string | null {
+  if (state === 'unknown') return null
+
+  const scoreText = readinessScore != null ? `（恢復分數 ${readinessScore}）` : ''
+
+  switch (state) {
+    case 'optimal':
+      return `恢復狀態極佳${scoreText}。身體適應良好，系統已根據恢復狀態微調營養分配，可放心維持訓練強度。`
+    case 'good':
+      return `恢復狀態正常${scoreText}。營養計畫按原定方案執行，繼續保持！`
+    case 'struggling':
+      return `恢復狀態偏低${scoreText}。系統已自動增加碳水攝取支持恢復，建議同時改善睡眠與壓力管理。`
+    case 'critical':
+      return `恢復狀態不佳${scoreText}。系統已自動增加碳水並縮小赤字，優先保護恢復能力。請檢視睡眠、訓練量和壓力。`
+    default:
+      return null
+  }
+}
+
 // ===== 主要引擎 =====
 
 export function generateNutritionSuggestion(input: NutritionInput): NutritionSuggestion {
   const warnings: string[] = []
 
   // 狀態監控：在所有分支前先計算，後面 spread 進每個 return
-  const currentState = assessCurrentState(
+  const stateResult = assessCurrentState(
     input.recentWellness ?? [],
     input.recentTrainingLogs ?? []
   )
+  const currentState = stateResult.state
+  const readinessScore = stateResult.readinessScore
   const lowCarbDays = countConsecutiveLowCarbDays(input.recentCarbsPerDay ?? [])
   const refeedTrigger = checkRefeedTrigger(currentState, lowCarbDays)
+
+  // 根據穿戴裝置恢復狀態生成即時回饋
+  const wearableInsight = generateWearableInsight(currentState, readinessScore)
+
   const stateFields = {
     currentState,
+    readinessScore,
+    wearableInsight,
     refeedSuggested: refeedTrigger.suggested,
     refeedReason: refeedTrigger.reason,
     refeedDays: refeedTrigger.days,
@@ -856,9 +894,9 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
 
   // 8. 根據目標類型分流
   if (input.goalType === 'cut') {
-    return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo), ...stateFields }
+    return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields }
   } else {
-    return { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo), ...stateFields }
+    return { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields }
   }
 }
 
@@ -871,7 +909,8 @@ function generateCutSuggestion(
   dietDurationWeeks: number | null,
   deadlineInfo: NutritionSuggestion['deadlineInfo'],
   warnings: string[],
-  cycleInfo: MenstrualCycleInfo
+  cycleInfo: MenstrualCycleInfo,
+  recoveryState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'
 ): NutritionSuggestion {
   const bw = input.bodyWeight
   const isMale = input.gender === '男性'
@@ -879,7 +918,7 @@ function generateCutSuggestion(
   // ===== Goal-Driven Mode =====
   // 條件：有目標體重 + 目標日期 + 有 TDEE 估算 → 直接反算每日卡路里
   if (deadlineInfo && estimatedTDEE && input.targetWeight != null && deadlineInfo.weightToLose > 0) {
-    return generateGoalDrivenCut(input, estimatedTDEE, deadlineInfo, weeklyChangeRate, dietDurationWeeks, warnings, cycleInfo)
+    return generateGoalDrivenCut(input, estimatedTDEE, deadlineInfo, weeklyChangeRate, dietDurationWeeks, warnings, cycleInfo, recoveryState)
   }
 
   // ===== 以下是原本的 Reactive Mode（無目標體重或無 TDEE 時 fallback）=====
@@ -893,12 +932,20 @@ function generateCutSuggestion(
   let carbDelta = 0
   let fatDelta = 0
 
+  // ===== 體重進度 × 恢復狀態 整合判斷 =====
+  // 核心原則：
+  //   體重趨勢決定「方向」（加熱量或減熱量）
+  //   恢復狀態決定「力道」（調多少）
+  //   恢復好 → 身體撐得住，可以更積極
+  //   恢復差 → 保護優先，減少壓力源（碳水是最直接的恢復燃料）
+  const hasRecoveryData = recoveryState !== 'unknown'
+  const recoveryGood = recoveryState === 'optimal' || recoveryState === 'good'
+  const recoveryBad = recoveryState === 'struggling' || recoveryState === 'critical'
+
   // 判斷進度
   if (weeklyChangeRate <= CUT_TARGETS.MIN_RATE) {
     // 黃體期 too_fast 也要緩衝：可能是卵泡期水分釋放造成的假性快速下降
     if (cycleInfo.inLutealPhase) {
-      // 黃體期不太可能掉太快（水分滯留中），但如果數據顯示如此，
-      // 可能是經期結束水分排出，仍需持續觀察
       status = 'on_track'
       statusLabel = '週期波動'
       statusEmoji = '🟡'
@@ -907,14 +954,21 @@ function generateCutSuggestion(
       status = 'too_fast'
       statusLabel = '掉太快'
       statusEmoji = '🔴'
-      calDelta = 150
-      carbDelta = 20
-      fatDelta = 0
-      message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，超過安全範圍（-1.0%）。系統偵測：可考慮增加熱量以保護肌肉量。`
+      // 恢復差 + 掉太快 → 加更多碳水保護（身體雙重壓力）
+      // 恢復好 + 掉太快 → 標準補回
+      if (recoveryState === 'critical') {
+        calDelta = 250; carbDelta = 35; fatDelta = 0
+        message = `體重掉太快（${weeklyChangeRate.toFixed(2)}%/週）且恢復狀態不佳。系統已加大熱量補回幅度（+250kcal），優先碳水保護恢復與肌肉。`
+      } else if (recoveryState === 'struggling') {
+        calDelta = 200; carbDelta = 28; fatDelta = 0
+        message = `體重掉太快（${weeklyChangeRate.toFixed(2)}%/週）且恢復偏低。系統已增加碳水補回（+200kcal），兼顧恢復與肌肉保護。`
+      } else {
+        calDelta = 150; carbDelta = 20; fatDelta = 0
+        message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，超過安全範圍（-1.0%）。系統偵測：可考慮增加熱量以保護肌肉量。`
+      }
     }
   } else if (weeklyChangeRate > 0) {
-    // 體重增加 → 方向錯誤（必須在 >= MAX_RATE 之前，否則正數被攔截）
-    // 但黃體期體重增加 ≤ 2% 是正常水分滯留，不應觸發減卡
+    // 體重增加 → 方向錯誤
     if (cycleInfo.inLutealPhase && weeklyChangeRate <= 2.0) {
       status = 'on_track'
       statusLabel = '週期波動'
@@ -924,24 +978,56 @@ function generateCutSuggestion(
       status = 'wrong_direction'
       statusLabel = '方向錯誤'
       statusEmoji = '🔴'
-      calDelta = -225
-      carbDelta = -27
-      fatDelta = -7
-      message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週）。需要降低熱量攝取。`
+      // 恢復差 + 方向錯誤 → 減少減幅或不減卡（壓力已經很大，再砍熱量會更差）
+      // 恢復好 + 方向錯誤 → 正常減卡
+      if (recoveryState === 'critical') {
+        calDelta = 0; carbDelta = 0; fatDelta = 0
+        message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週），但恢復狀態極差。系統暫不減卡，優先恢復身體狀態，避免雪上加霜。`
+        warnings.push('⚠️ 體重方向錯誤但恢復狀態不佳，暫緩減卡。建議先改善睡眠、壓力管理，待恢復好轉再調整熱量。')
+      } else if (recoveryState === 'struggling') {
+        calDelta = -125; carbDelta = -15; fatDelta = -3
+        message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週），但恢復偏低。系統僅微降熱量（-125kcal），避免過度壓迫恢復。`
+      } else {
+        calDelta = -225; carbDelta = -27; fatDelta = -7
+        message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週）。需要降低熱量攝取。`
+      }
     }
   } else if (weeklyChangeRate >= CUT_TARGETS.MAX_RATE) {
-    // 體重下降不夠快（-0.3% ~ 0%），檢查是否停滯（只需 2 週數據）
+    // 體重下降不夠快（-0.3% ~ 0%），檢查是否停滯
     if (input.weeklyWeights.length >= 2) {
       const lastWeek = input.weeklyWeights[1].avgWeight
       const lastWeekChange = ((input.weeklyWeights[0].avgWeight - lastWeek) / lastWeek) * 100
       if (lastWeekChange >= CUT_TARGETS.MAX_RATE) {
-        status = 'plateau'
-        statusLabel = '停滯期'
-        statusEmoji = '🟡'
-        calDelta = -175
-        carbDelta = -22
-        fatDelta = -5
-        message = `體重近 10-14 天幾乎無變化（${weeklyChangeRate.toFixed(2)}%/週）。系統偵測：可考慮微降熱量突破停滯期。`
+        // 體重卡關
+        // 恢復好 + 卡關 → 身體撐得住，可以更積極減卡
+        // 恢復差 + 卡關 → 身體已經很累，不應再減卡，改 Refeed 策略
+        if (recoveryState === 'critical') {
+          status = 'plateau'
+          statusLabel = '停滯期'
+          statusEmoji = '🟡'
+          calDelta = 75; carbDelta = 19; fatDelta = 0
+          message = `體重停滯（${weeklyChangeRate.toFixed(2)}%/週），但恢復狀態極差。系統反向操作：先增加碳水 Refeed（+75kcal），讓身體恢復後再突破停滯。`
+          warnings.push('💡 停滯 + 恢復不足 = 代謝壓力過大。短期增加碳水有助恢復代謝率，比繼續減卡更有效突破停滯。')
+        } else if (recoveryState === 'struggling') {
+          status = 'plateau'
+          statusLabel = '停滯期'
+          statusEmoji = '🟡'
+          calDelta = 0; carbDelta = 0; fatDelta = 0
+          message = `體重停滯（${weeklyChangeRate.toFixed(2)}%/週），恢復偏低。系統暫維持熱量不動，優先觀察恢復趨勢。`
+          warnings.push('💡 停滯 + 恢復偏低：目前不宜再減卡。建議改善睡眠品質，若恢復改善後體重仍停滯再微降熱量。')
+        } else if (recoveryState === 'optimal') {
+          status = 'plateau'
+          statusLabel = '停滯期'
+          statusEmoji = '🟡'
+          calDelta = -225; carbDelta = -28; fatDelta = -7
+          message = `體重停滯（${weeklyChangeRate.toFixed(2)}%/週），但恢復狀態極佳！身體撐得住，系統已加大減幅（-225kcal）突破停滯。`
+        } else {
+          status = 'plateau'
+          statusLabel = '停滯期'
+          statusEmoji = '🟡'
+          calDelta = -175; carbDelta = -22; fatDelta = -5
+          message = `體重近 10-14 天幾乎無變化（${weeklyChangeRate.toFixed(2)}%/週）。系統偵測：可考慮微降熱量突破停滯期。`
+        }
       } else {
         status = 'on_track'
         statusLabel = '進度正常'
@@ -955,10 +1041,26 @@ function generateCutSuggestion(
       message = `體重變化 ${weeklyChangeRate.toFixed(2)}%/週。數據尚少，再觀察一週。`
     }
   } else {
-    status = 'on_track'
-    statusLabel = '進度正常'
-    statusEmoji = '🟢'
-    message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，完美符合目標範圍（-0.5% ~ -1.0%）。`
+    // on_track（-0.5% ~ -1.0%）
+    // 恢復差 + 體重正常掉 → 碳水補回保護恢復，不改變赤字方向
+    if (recoveryState === 'critical') {
+      status = 'on_track'
+      statusLabel = '進度正常'
+      statusEmoji = '🟢'
+      calDelta = 75; carbDelta = 19; fatDelta = 0
+      message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，進度正常，但恢復狀態不佳。系統已微增碳水（+75kcal）保護恢復能力，避免掉重代價過高。`
+    } else if (recoveryState === 'struggling') {
+      status = 'on_track'
+      statusLabel = '進度正常'
+      statusEmoji = '🟢'
+      calDelta = 50; carbDelta = 13; fatDelta = 0
+      message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，進度正常，但恢復偏低。系統已微增碳水（+50kcal）支持恢復。`
+    } else {
+      status = 'on_track'
+      statusLabel = '進度正常'
+      statusEmoji = '🟢'
+      message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，完美符合目標範圍（-0.5% ~ -1.0%）。`
+    }
   }
 
   // 計算參考值
@@ -1024,22 +1126,22 @@ function generateCutSuggestion(
   // 注意：Deadline-aware 的緊急加速已由 Goal-Driven 引擎處理（weightToLose > 0 時自動進入）
   // Reactive 模式僅處理無目標體重或已達標的情況
 
-  if (status === 'on_track') {
-    // 即使進度正常，也驗證巨量營養素安全底線（防止手動設定值低於安全線）
+  if (status === 'on_track' && calDelta === 0 && carbDelta === 0) {
+    // 進度正常且無恢復狀態調整 → 驗證巨量營養素安全底線即可
     let validatedPro = currentPro
     let validatedFat = currentFat
     const proteinPerKgFloorOT = isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE
     const fatPerKgFloorOT = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
-    const minProtein = Math.round(bw * proteinPerKgFloorOT)
-    const minFat = Math.round(bw * fatPerKgFloorOT)
+    const minProteinOT = Math.round(bw * proteinPerKgFloorOT)
+    const minFatOT = Math.round(bw * fatPerKgFloorOT)
 
-    if (currentPro > 0 && currentPro < minProtein) {
-      validatedPro = minProtein
-      warnings.push(`⚠️ 目前蛋白質 ${currentPro}g 低於安全最低值 ${minProtein}g（${proteinPerKgFloorOT}g/kg），系統已自動調高`)
+    if (currentPro > 0 && currentPro < minProteinOT) {
+      validatedPro = minProteinOT
+      warnings.push(`⚠️ 目前蛋白質 ${currentPro}g 低於安全最低值 ${minProteinOT}g（${proteinPerKgFloorOT}g/kg），系統已自動調高`)
     }
-    if (currentFat > 0 && currentFat < minFat) {
-      validatedFat = minFat
-      warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFat}g（${fatPerKgFloorOT}g/kg），系統已自動調高`)
+    if (currentFat > 0 && currentFat < minFatOT) {
+      validatedFat = minFatOT
+      warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFatOT}g（${fatPerKgFloorOT}g/kg），系統已自動調高`)
     }
 
     const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat
@@ -1053,7 +1155,7 @@ function generateCutSuggestion(
       carbsDelta: 0, fatDelta: validatedFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested, warnings,
-      currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+      currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
       menstrualCycleNote: cycleInfo.note,
     }
@@ -1073,7 +1175,7 @@ function generateCutSuggestion(
     fatDelta: fatDelta,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested, warnings,
-    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo, autoApply: true, peakWeekPlan: null,
     menstrualCycleNote: cycleInfo.note,
   }
@@ -1090,7 +1192,8 @@ function generateGoalDrivenCut(
   weeklyChangeRate: number,
   dietDurationWeeks: number | null,
   warnings: string[],
-  cycleInfo: MenstrualCycleInfo
+  cycleInfo: MenstrualCycleInfo,
+  recoveryState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'
 ): NutritionSuggestion {
   const bw = input.bodyWeight
   const isMale = input.gender === '男性'
@@ -1116,28 +1219,20 @@ function generateGoalDrivenCut(
   }
 
   // 3. 進度超前檢測
-  // 如果目前實際掉重速率已經超過需要的速率 → 放鬆赤字
-  // 原理：已經掉太快了，不需要那麼大的赤字，把碳水加回來保護肌肉和代謝
   let aheadOfSchedule = false
   let effectiveDailyDeficit = requiredDailyDeficit
 
   if (weeklyChangeRate < 0) {
-    // 實際每週掉重速率（kg）
     const actualWeeklyLoss = Math.abs(weeklyChangeRate / 100) * bw
-    // 照目前速率到比賽日可以掉多少
     const projectedLoss = actualWeeklyLoss * (daysLeft / 7)
 
     if (projectedLoss > weightToLose * 1.15) {
-      // 進度超前 15% 以上 → 放鬆赤字
       aheadOfSchedule = true
-      // 計算放鬆後的赤字：目標是讓掉重速率回到剛好達標的水平
-      // 但至少維持 0.5% BW/wk 的最低速率（Iraki: 最慢 0.5%）以免備賽反彈
       const idealWeeklyLoss = Math.max(requiredWeeklyLoss, bw * 0.005)
       const idealDailyDeficit = (idealWeeklyLoss * energyDensity) / 7
       effectiveDailyDeficit = Math.round(idealDailyDeficit)
       warnings.push(`📈 進度超前！照目前速率可減 ${projectedLoss.toFixed(1)}kg（只需 ${weightToLose.toFixed(1)}kg）。已放鬆赤字，增加碳水保護肌肉`)
 
-      // 進度超前 → 用放鬆後的赤字重算 safetyLevel
       if (effectiveDailyDeficit <= SAFETY.MAX_DEFICIT_KCAL) {
         safetyLevel = 'normal'
       } else if (effectiveDailyDeficit <= GOAL_DRIVEN.MAX_DEFICIT_KCAL) {
@@ -1147,6 +1242,28 @@ function generateGoalDrivenCut(
       }
     }
   }
+
+  // 3.5 恢復狀態 → 調整赤字力道
+  // 核心原則：恢復差 → 縮小赤字（碳水補回）；恢復好 → 可維持或微加赤字
+  // 只在非進度超前時生效（進度超前已經放鬆了，不需再調）
+  let recoveryDeficitAdjust = 0
+  if (!aheadOfSchedule && recoveryState !== 'unknown') {
+    if (recoveryState === 'critical') {
+      // 恢復極差 → 赤字縮小 150kcal（全補碳水）
+      recoveryDeficitAdjust = -150
+      warnings.push('⚠️ 恢復狀態不佳，系統已縮小赤字 150kcal（碳水補回），優先保護恢復能力。')
+    } else if (recoveryState === 'struggling') {
+      // 恢復偏低 → 赤字縮小 75kcal
+      recoveryDeficitAdjust = -75
+      warnings.push('⚠️ 恢復偏低，系統已微縮赤字 75kcal（碳水補回），支持身體恢復。')
+    } else if (recoveryState === 'optimal' && safetyLevel === 'normal') {
+      // 恢復極佳 + 安全赤字 → 可微加赤字 50kcal 加速進度
+      recoveryDeficitAdjust = 50
+      warnings.push('💪 恢復極佳，系統微增赤字 50kcal 加速進度。')
+    }
+    // good → 不調整（0）
+  }
+  effectiveDailyDeficit = Math.max(0, effectiveDailyDeficit + recoveryDeficitAdjust)
 
   // 計算目標每日卡路里（用放鬆後的赤字）
   let targetCalories = Math.round(estimatedTDEE - effectiveDailyDeficit)
@@ -1439,7 +1556,7 @@ function generateGoalDrivenCut(
     dietDurationWeeks,
     dietBreakSuggested,
     warnings,
-    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo: enrichedDeadlineInfo,
     autoApply: true,  // Goal-driven 永遠自動套用
     peakWeekPlan: null,
@@ -1456,7 +1573,8 @@ function generateBulkSuggestion(
   dietDurationWeeks: number | null,
   deadlineInfo: NutritionSuggestion['deadlineInfo'],
   warnings: string[],
-  cycleInfo: MenstrualCycleInfo
+  cycleInfo: MenstrualCycleInfo,
+  recoveryState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'
 ): NutritionSuggestion {
   const bw = input.bodyWeight
 
@@ -1515,6 +1633,20 @@ function generateBulkSuggestion(
     statusLabel = '進度正常'
     statusEmoji = '🟢'
     message = `體重增加速率 +${weeklyChangeRate.toFixed(2)}%/週，完美符合增肌目標（+0.25% ~ +0.5%）。`
+  }
+
+  // ===== 增肌 × 恢復狀態整合 =====
+  // 增肌期恢復差 → 需要更多碳水支持恢復與合成
+  // 增肌期恢復好 → 身體適應良好，不需額外調整
+  if (recoveryState !== 'unknown') {
+    if (recoveryState === 'critical') {
+      carbDelta += 25; calDelta += 100
+      message += ` 恢復狀態不佳，系統已額外增加碳水（+100kcal）支持恢復與肌肉合成。`
+      warnings.push('⚠️ 增肌期恢復不足：已增加碳水支持恢復。建議檢視訓練量和睡眠品質。')
+    } else if (recoveryState === 'struggling') {
+      carbDelta += 13; calDelta += 50
+      message += ` 恢復偏低，系統已微增碳水（+50kcal）輔助恢復。`
+    }
   }
 
   // 計算參考值
@@ -1601,7 +1733,7 @@ function generateBulkSuggestion(
       carbsDelta: 0, fatDelta: validatedFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested: false, warnings,
-      currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+      currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
       menstrualCycleNote: cycleInfo.note,
     }
@@ -1621,7 +1753,7 @@ function generateBulkSuggestion(
     fatDelta: fatDelta,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested: false, warnings,
-    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo, autoApply: true, peakWeekPlan: null,
     menstrualCycleNote: cycleInfo.note,
   }
@@ -1758,7 +1890,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
       `🥬 纖維：${todayPlan.fiberNote}`,
       `🏋️ ${todayPlan.trainingNote}`,
     ],
-    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
     autoApply: true,
     peakWeekPlan: plan,
