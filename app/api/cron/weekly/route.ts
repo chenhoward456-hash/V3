@@ -228,6 +228,10 @@ export async function GET(request: NextRequest) {
             date: w.date,
             energy_level: w.energy_level ?? null,
             training_drive: w.training_drive ?? null,
+            resting_hr: w.resting_hr ?? null,
+            hrv: w.hrv ?? null,
+            wearable_sleep_score: w.wearable_sleep_score ?? null,
+            respiratory_rate: w.respiratory_rate ?? null,
           })),
           recentTrainingLogs: clientTraining
             .filter((t: any) => t.date >= sevenDaysStr)
