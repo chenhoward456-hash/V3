@@ -34,6 +34,7 @@ export interface NutritionInput {
 
   // Deadline-aware（目標體重 + 目標日期）
   targetWeight: number | null
+  targetBodyFatPct?: number | null  // 目標體脂率 %（例如 15 = 15%）
   targetDate: string | null  // 比賽日或目標日 (ISO)
 
   // 當前目標
