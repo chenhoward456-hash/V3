@@ -255,7 +255,8 @@ export default function ClientEditor() {
           return
         }
 
-        router.push('/admin')
+        // 強制完整重載，避免 Next.js Router Cache 顯示舊資料
+        window.location.href = '/admin'
       } else {
         // 更新現有學員
         const res = await fetch('/api/admin/clients', {
