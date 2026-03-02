@@ -255,7 +255,8 @@ export default function ClientEditor() {
           return
         }
 
-        // 強制完整重載，避免 Next.js Router Cache 顯示舊資料
+        const result = await res.json().catch(() => ({}))
+        alert(`✅ 學員「${client.name}」新增成功！\n代碼：${uniqueCode}`)
         window.location.href = '/admin'
       } else {
         // 更新現有學員
