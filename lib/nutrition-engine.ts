@@ -107,6 +107,8 @@ export interface NutritionSuggestion {
 
   // 當前狀態監控
   currentState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'
+  readinessScore: number | null       // 0-100，穿戴裝置恢復分數
+  wearableInsight: string | null      // 根據恢復狀態的即時回饋文字
   refeedSuggested: boolean
   refeedReason: string | null
   refeedDays: number | null
@@ -356,7 +358,8 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
     estimatedTDEE: null, weeklyWeightChangeRate: null,
     dietDurationWeeks: null, dietBreakSuggested: false, warnings: [],
-    currentState: 'unknown', refeedSuggested: false, refeedReason: null, refeedDays: null,
+    currentState: 'unknown', readinessScore: null, wearableInsight: null,
+    refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo: null, autoApply: false, peakWeekPlan: null,
     menstrualCycleNote: null,
     ...overrides,
@@ -444,7 +447,7 @@ type WellnessWithWearable = {
 function assessCurrentState(
   recentWellness: WellnessWithWearable[],
   recentTrainingLogs: { date: string; rpe: number | null }[]
-): 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown' {
+): { state: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'; readinessScore: number | null } {
   // 排序：最新在前
   const sorted = [...recentWellness].sort((a, b) => b.date.localeCompare(a.date))
 
@@ -462,7 +465,7 @@ function assessCurrentState(
     .slice(0, 3)
     .filter(t => t.rpe != null)
 
-  if (last3Wellness.length === 0 && last3Training.length === 0) return 'unknown'
+  if (last3Wellness.length === 0 && last3Training.length === 0) return { state: 'unknown', readinessScore: null }
 
   // ── 主觀指標 ──
   const avgEnergy = last3Wellness.length > 0
@@ -612,21 +615,22 @@ function assessCurrentState(
   //   RPE 高 + Readiness 差 = 真正過度疲勞（觸發 Refeed）
 
   if (readinessScore != null) {
+    const rs = Math.round(readinessScore)
     if (readinessScore < 25) {
-      return 'critical'
+      return { state: 'critical', readinessScore: rs }
     }
     if (readinessScore < 40) {
-      if (avgEnergy != null && avgEnergy <= 2) return 'critical'
-      return 'struggling'
+      if (avgEnergy != null && avgEnergy <= 2) return { state: 'critical', readinessScore: rs }
+      return { state: 'struggling', readinessScore: rs }
     }
     if (readinessScore < 55) {
-      if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) return 'struggling'
-      return 'good'
+      if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) return { state: 'struggling', readinessScore: rs }
+      return { state: 'good', readinessScore: rs }
     }
     if (readinessScore >= 70) {
-      return 'optimal'
+      return { state: 'optimal', readinessScore: rs }
     }
-    return 'good'
+    return { state: 'good', readinessScore: rs }
   }
 
   // ── 無穿戴裝置：改良的主觀判定 ──
@@ -634,16 +638,16 @@ function assessCurrentState(
   // 只用 energy_level + training_drive 作為主觀疲勞信號
 
   if (avgEnergy != null && avgEnergy <= 1.5 && last3Wellness.length >= 2) {
-    return 'critical'
+    return { state: 'critical', readinessScore: null }
   }
   if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) {
-    return 'struggling'
+    return { state: 'struggling', readinessScore: null }
   }
   if (avgEnergy != null && avgEnergy >= 4 && (avgDrive == null || avgDrive >= 3)) {
-    return 'optimal'
+    return { state: 'optimal', readinessScore: null }
   }
 
-  return 'good'
+  return { state: 'good', readinessScore: null }
 }
 
 // ===== 低碳連續天數 =====
@@ -701,20 +705,54 @@ function checkRefeedTrigger(
   return { suggested: true, reason: reasons.join('、'), days }
 }
 
+// ===== 穿戴裝置恢復回饋 =====
+// 根據 currentState + readinessScore 產生使用者可見的即時回饋文字
+// 確保「恢復好」時也有正向回饋，而非只在差的時候才提醒
+
+function generateWearableInsight(
+  state: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown',
+  readinessScore: number | null
+): string | null {
+  if (state === 'unknown') return null
+
+  const scoreText = readinessScore != null ? `（恢復分數 ${readinessScore}）` : ''
+
+  switch (state) {
+    case 'optimal':
+      return `恢復狀態極佳${scoreText}，身體適應良好，維持當前飲食計畫，可放心維持訓練強度。`
+    case 'good':
+      return `恢復狀態正常${scoreText}，目前計畫無需調整，繼續保持！`
+    case 'struggling':
+      return `恢復狀態偏低${scoreText}，建議留意睡眠與壓力管理，系統正在評估是否需要調整碳水攝取。`
+    case 'critical':
+      return `恢復狀態不佳${scoreText}，身體可能處於過度疲勞，系統已啟動保護機制評估 Refeed 需求。`
+    default:
+      return null
+  }
+}
+
 // ===== 主要引擎 =====
 
 export function generateNutritionSuggestion(input: NutritionInput): NutritionSuggestion {
   const warnings: string[] = []
 
   // 狀態監控：在所有分支前先計算，後面 spread 進每個 return
-  const currentState = assessCurrentState(
+  const stateResult = assessCurrentState(
     input.recentWellness ?? [],
     input.recentTrainingLogs ?? []
   )
+  const currentState = stateResult.state
+  const readinessScore = stateResult.readinessScore
   const lowCarbDays = countConsecutiveLowCarbDays(input.recentCarbsPerDay ?? [])
   const refeedTrigger = checkRefeedTrigger(currentState, lowCarbDays)
+
+  // 根據穿戴裝置恢復狀態生成即時回饋
+  const wearableInsight = generateWearableInsight(currentState, readinessScore)
+
   const stateFields = {
     currentState,
+    readinessScore,
+    wearableInsight,
     refeedSuggested: refeedTrigger.suggested,
     refeedReason: refeedTrigger.reason,
     refeedDays: refeedTrigger.days,
@@ -1053,7 +1091,7 @@ function generateCutSuggestion(
       carbsDelta: 0, fatDelta: validatedFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested, warnings,
-      currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+      currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
       menstrualCycleNote: cycleInfo.note,
     }
@@ -1073,7 +1111,7 @@ function generateCutSuggestion(
     fatDelta: fatDelta,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested, warnings,
-    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo, autoApply: true, peakWeekPlan: null,
     menstrualCycleNote: cycleInfo.note,
   }
@@ -1439,7 +1477,7 @@ function generateGoalDrivenCut(
     dietDurationWeeks,
     dietBreakSuggested,
     warnings,
-    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo: enrichedDeadlineInfo,
     autoApply: true,  // Goal-driven 永遠自動套用
     peakWeekPlan: null,
@@ -1601,7 +1639,7 @@ function generateBulkSuggestion(
       carbsDelta: 0, fatDelta: validatedFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested: false, warnings,
-      currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+      currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
       menstrualCycleNote: cycleInfo.note,
     }
@@ -1621,7 +1659,7 @@ function generateBulkSuggestion(
     fatDelta: fatDelta,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested: false, warnings,
-    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo, autoApply: true, peakWeekPlan: null,
     menstrualCycleNote: cycleInfo.note,
   }
@@ -1758,7 +1796,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
       `🥬 纖維：${todayPlan.fiberNote}`,
       `🏋️ ${todayPlan.trainingNote}`,
     ],
-    currentState: 'unknown' as const, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
     autoApply: true,
     peakWeekPlan: plan,

@@ -39,6 +39,36 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
   const dl = data.deadlineInfo
   const isGoalDriven = dl?.isGoalDriven
 
+  // 穿戴裝置恢復狀態回饋卡片（所有狀態都顯示）
+  const WearableInsightCard = () => {
+    if (!data.wearableInsight) return null
+
+    const stateConfig: Record<string, { bg: string; border: string; text: string; emoji: string; label: string }> = {
+      optimal: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', emoji: '💪', label: '恢復極佳' },
+      good: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', emoji: '👍', label: '恢復正常' },
+      struggling: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', emoji: '⚠️', label: '恢復偏低' },
+      critical: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', emoji: '🚨', label: '恢復不足' },
+    }
+    const config = stateConfig[data.currentState] || stateConfig.good
+
+    return (
+      <div className={`mt-3 ${config.bg} border ${config.border} rounded-2xl p-4`}>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <span className="text-base">⌚</span>
+            <p className={`text-xs font-bold ${config.text}`}>{config.emoji} {config.label}</p>
+          </div>
+          {data.readinessScore != null && (
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${config.bg} ${config.text}`}>
+              {data.readinessScore}/100
+            </span>
+          )}
+        </div>
+        <p className={`text-xs ${config.text} leading-relaxed`}>{data.wearableInsight}</p>
+      </div>
+    )
+  }
+
   // 非 goal-driven 時顯示基本引擎狀態
   if (!isGoalDriven) {
     // 如果有 deadlineInfo 但沒進入 goal-driven（例如已達標、數據不足等），顯示簡易卡片
@@ -103,6 +133,7 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
               </p>
             </div>
           )}
+          <WearableInsightCard />
           {data.menstrualCycleNote && (
             <div className="mt-3 bg-pink-50 border border-pink-200 rounded-2xl p-4">
               <p className="text-xs text-pink-700 leading-relaxed">{data.menstrualCycleNote}</p>
@@ -263,6 +294,9 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
           </p>
         </div>
       )}
+
+      {/* 穿戴裝置恢復回饋 */}
+      <WearableInsightCard />
 
       {/* 月經週期提示 */}
       {data.menstrualCycleNote && (
