@@ -394,3 +394,7 @@ ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS wearable_sleep_score INTEGER
 
 -- 呼吸速率 (次/分)：靜息呼吸率升高 = 交感神經活躍的早期信號
 ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS respiratory_rate NUMERIC CHECK (respiratory_rate >= 5 AND respiratory_rate <= 40);
+
+-- 裝置恢復分數 (0-100)：WHOOP Recovery / Oura Readiness / Garmin Body Battery
+-- 使用者只需填這一個數字，引擎直接用作 Readiness Score
+ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS device_recovery_score INTEGER CHECK (device_recovery_score >= 0 AND device_recovery_score <= 100);

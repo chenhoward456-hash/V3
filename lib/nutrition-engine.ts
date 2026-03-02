@@ -65,6 +65,7 @@ export interface NutritionInput {
     energy_level: number | null
     training_drive: number | null
     // 穿戴裝置生理指標（Apple Watch / Garmin / Whoop）
+    device_recovery_score?: number | null  // 裝置恢復分數 0-100（WHOOP Recovery / Oura Readiness / Garmin Body Battery）
     resting_hr?: number | null       // 靜息心率 bpm
     hrv?: number | null              // 心率變異度 ms
     wearable_sleep_score?: number | null  // 睡眠分數 0-100
@@ -433,6 +434,7 @@ type WellnessWithWearable = {
   date: string
   energy_level: number | null
   training_drive: number | null
+  device_recovery_score?: number | null
   resting_hr?: number | null
   hrv?: number | null
   wearable_sleep_score?: number | null
@@ -466,14 +468,27 @@ function assessCurrentState(
     : null
 
   // ── 穿戴裝置客觀指標 → Readiness Score ──
-  const wearableEntries = last3Wellness.filter(w =>
-    w.resting_hr != null || w.hrv != null || w.wearable_sleep_score != null
-  )
-  const hasWearableData = wearableEntries.length >= 2
+  // 優先使用 device_recovery_score（使用者只填 1 個數字，最簡單）
+  // 沒有 device_recovery_score 才從 HRV/RHR/睡眠/呼吸 計算
+  const recoveryScores = last3Wellness
+    .filter(w => w.device_recovery_score != null)
+    .map(w => w.device_recovery_score!)
 
   let readinessScore: number | null = null // 0-100 composite
 
-  if (hasWearableData) {
+  if (recoveryScores.length >= 1) {
+    // 裝置恢復分數直接使用（WHOOP/Oura/Garmin 已經做了多指標加權）
+    readinessScore = recoveryScores.reduce((s, v) => s + v, 0) / recoveryScores.length
+  }
+
+  // 沒有 device_recovery_score → 嘗試從個別指標計算
+  if (readinessScore == null) {
+    const wearableEntries = last3Wellness.filter(w =>
+      w.resting_hr != null || w.hrv != null || w.wearable_sleep_score != null
+    )
+    const hasWearableData = wearableEntries.length >= 2
+
+    if (hasWearableData) {
     const scores: { value: number; weight: number }[] = []
 
     // ── HRV (RMSSD) ── 權重 35%
@@ -528,7 +543,8 @@ function assessCurrentState(
       const totalWeight = scores.reduce((s, sc) => s + sc.weight, 0)
       readinessScore = scores.reduce((s, sc) => s + sc.value * sc.weight, 0) / totalWeight
     }
-  }
+    } // hasWearableData
+  } // readinessScore == null
 
   // ── 判定邏輯 ──
   // 有穿戴裝置 → 以 Readiness Score 為主（客觀優先）

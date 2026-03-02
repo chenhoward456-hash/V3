@@ -188,6 +188,7 @@ export async function GET(request: NextRequest) {
         date: w.date,
         energy_level: w.energy_level ?? null,
         training_drive: w.training_drive ?? null,
+        device_recovery_score: w.device_recovery_score ?? null,
         resting_hr: w.resting_hr ?? null,
         hrv: w.hrv ?? null,
         wearable_sleep_score: w.wearable_sleep_score ?? null,
