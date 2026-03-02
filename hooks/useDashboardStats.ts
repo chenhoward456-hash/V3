@@ -105,7 +105,7 @@ export function useDashboardStats(clientData: any, selectedDate: string, today: 
     const todayStr = now.toISOString().split('T')[0]
     const daysAgo = (n: number) => { const d = new Date(now); d.setDate(d.getDate() - n); return d.toISOString().split('T')[0] }
     const logs = clientData.recentLogs as any[]
-    const weekStart = daysAgo(6)
+    const weekStart = daysAgo(7)
     const weekCompleted = logs.filter((l: any) => l.date >= weekStart && l.date <= todayStr && l.completed).length
     const weekRate = Math.round((weekCompleted / (7 * totalSupplements)) * 100)
     const monthStart = daysAgo(29)
@@ -239,6 +239,18 @@ export function useDashboardStats(clientData: any, selectedDate: string, today: 
     return clientData?.client?.supplements?.slice().sort((a: any, b: any) => (a.sort_order ?? Infinity) - (b.sort_order ?? Infinity)).slice(0, 3)
   }, [clientData?.client?.supplements])
 
+  // 穿戴裝置數據（從 wellness 紀錄提取最新 HRV / RHR / 恢復分數）
+  const latestWearableData = useMemo(() => {
+    if (!clientData?.wellness?.length) return null
+    const sorted = [...clientData.wellness].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const findLatest = (field: string) => sorted.find((w: any) => w[field] != null)?.[field] ?? null
+    return {
+      hrv: findLatest('hrv'),
+      resting_hr: findLatest('resting_hr'),
+      device_recovery_score: findLatest('device_recovery_score'),
+    }
+  }, [clientData?.wellness])
+
   return {
     todayWellness, todayTraining, todayNutrition,
     selectedDateLogs,
@@ -246,6 +258,6 @@ export function useDashboardStats(clientData: any, selectedDate: string, today: 
     labStats, todaySupplementStats, supplementComplianceStats,
     bodyFatTrend, streakDays, streakMessage,
     overallStreak, todayCompletedItems,
-    trendData, topSupplements,
+    trendData, topSupplements, latestWearableData,
   }
 }

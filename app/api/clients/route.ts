@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 import { validateDate } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware'
 
@@ -63,8 +64,8 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('此帳號已暫停，請聯繫教練', 403)
     }
 
-    // 檢查是否過期
-    if (new Date(client.expires_at) < new Date()) {
+    // 檢查是否過期（expires_at 為 NULL 代表永不過期）
+    if (client.expires_at && new Date(client.expires_at) < new Date()) {
       return createErrorResponse('客戶資料已過期', 403)
     }
     
@@ -178,8 +179,8 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('無效的性別', 400)
     }
     
-    // 生成唯一代碼
-    const uniqueCode = Math.random().toString(36).substring(2, 9)
+    // 生成唯一代碼（密碼學安全隨機）
+    const uniqueCode = crypto.randomBytes(5).toString('hex').substring(0, 9)
     
     const { data, error } = await supabase
       .from('clients')

@@ -447,7 +447,7 @@ export default function ClientDashboard() {
                         <button onClick={() => document.getElementById('section-wellness')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full hover:bg-purple-100 transition-colors">😊 記錄感受</button>
                       )}
                       {c.nutrition_enabled && !todayNutrition && (
-                        <button onClick={() => document.getElementById('section-nutrition')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors">🍽️ 飲食紀錄</button>
+                        <button onClick={() => (document.getElementById('section-nutrition') || document.getElementById('section-nutrition-general'))?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors">🍽️ 飲食紀錄</button>
                       )}
                       {c.training_enabled && !todayTraining && (
                         <button onClick={() => document.getElementById('section-training')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-green-50 text-green-600 px-2.5 py-1 rounded-full hover:bg-green-100 transition-colors">🏋️ 訓練紀錄</button>
@@ -689,7 +689,7 @@ export default function ClientDashboard() {
 
         {/* 一般學員的飲食（非備賽才在這裡顯示） */}
         {!isCompetition && c.nutrition_enabled && (
-          <div id="section-nutrition" className="scroll-mt-4"><NutritionLog
+          <div id="section-nutrition-general" className="scroll-mt-4"><NutritionLog
             todayNutrition={todayNutrition}
             nutritionLogs={clientData.nutritionLogs || []}
             clientId={clientId as string}
@@ -796,7 +796,7 @@ export default function ClientDashboard() {
       {(() => {
         const tabs: { id: string; icon: string; label: string }[] = []
         if (isCompetition && c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
-        if (c.nutrition_enabled) tabs.push({ id: 'section-nutrition', icon: '🥗', label: '飲食' })
+        if (c.nutrition_enabled) tabs.push({ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: '🥗', label: '飲食' })
         if (c.supplement_enabled) tabs.push({ id: 'section-supplements', icon: '💊', label: '補品' })
         if (c.wellness_enabled) tabs.push({ id: 'section-wellness', icon: '😊', label: '感受' })
         if (c.training_enabled) tabs.push({ id: 'section-training', icon: '🏋️', label: '訓練' })

@@ -162,7 +162,7 @@ export default function LabResultEditor({
 
   // 常見檢測項目模板
   const commonTests = [
-    { name: 'HOMA-IR', unit: '', reference: '<1.4' },
+    { name: 'HOMA-IR', unit: '', reference: '<2.0' },
     { name: '同半胱胺酸', unit: 'μmol/L', reference: '<8.0' },
     { name: '空腹胰島素', unit: 'μIU/mL', reference: '<5.0' },
     { name: '空腹血糖', unit: 'mg/dL', reference: '<90' },
@@ -172,7 +172,7 @@ export default function LabResultEditor({
     { name: 'Lp(a)', unit: 'mg/dL', reference: '<30' },
     { name: 'ApoB', unit: 'mg/dL', reference: '<80' },
     { name: '鎂', unit: 'mg/dL', reference: '2.0-2.4' },
-    { name: '鋅', unit: 'μg/dL', reference: '700-1200' }
+    { name: '鋅', unit: 'μg/dL', reference: '70-120' }
   ]
 
   return (

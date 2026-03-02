@@ -118,9 +118,28 @@ export async function PUT(request: NextRequest) {
     }
 
     // 最後更新 client（教練設的 status 不會被 trigger 覆蓋）
+    // 白名單過濾：只允許教練可修改的欄位，防止注入 id/unique_code 等不可變欄位
+    const ALLOWED_CLIENT_FIELDS = [
+      'name', 'age', 'gender', 'status', 'expires_at', 'is_active', 'subscription_tier',
+      'nutrition_enabled', 'supplement_enabled', 'wellness_enabled', 'training_enabled',
+      'body_composition_enabled', 'lab_enabled', 'competition_enabled', 'health_mode_enabled',
+      'target_weight', 'competition_date', 'prep_phase',
+      'calories_target', 'protein_target', 'carbs_target', 'fat_target', 'water_target',
+      'carbs_training_day', 'carbs_rest_day',
+      'next_checkup_date', 'coach_weekly_note',
+    ]
+    const sanitizedClientData: Record<string, any> = {}
+    if (clientData && typeof clientData === 'object') {
+      for (const key of Object.keys(clientData)) {
+        if (ALLOWED_CLIENT_FIELDS.includes(key)) {
+          sanitizedClientData[key] = clientData[key]
+        }
+      }
+    }
+
     const { error: clientError } = await supabase
       .from('clients')
-      .update(clientData)
+      .update(sanitizedClientData)
       .eq('id', clientId)
 
     if (clientError) {
