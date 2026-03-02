@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { clientId, date, sleep_quality, energy_level, mood, note, hunger, digestion, training_drive, cognitive_clarity, stress_level, period_start, resting_hr, hrv, wearable_sleep_score, respiratory_rate, device_recovery_score } = body
+    const { clientId, date, sleep_quality, energy_level, mood, note, training_drive, cognitive_clarity, stress_level, period_start, resting_hr, hrv, wearable_sleep_score, respiratory_rate, device_recovery_score } = body
 
     if (!clientId || !date) {
       return createErrorResponse('缺少客戶 ID 或日期', 400)
@@ -99,13 +99,6 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('心情分數必須在 1-5 之間', 400)
     }
 
-    // 驗證備賽感受欄位
-    if (hunger != null && (hunger < 1 || hunger > 5)) {
-      return createErrorResponse('飢餓感分數必須在 1-5 之間', 400)
-    }
-    if (digestion != null && (digestion < 1 || digestion > 5)) {
-      return createErrorResponse('消化狀況分數必須在 1-5 之間', 400)
-    }
     if (training_drive != null && (training_drive < 1 || training_drive > 5)) {
       return createErrorResponse('訓練慾望分數必須在 1-5 之間', 400)
     }
@@ -157,8 +150,8 @@ export async function POST(request: NextRequest) {
         energy_level,
         mood,
         note: sanitizedNote,
-        hunger: hunger ?? null,
-        digestion: digestion ?? null,
+        hunger: null,
+        digestion: null,
         training_drive: training_drive ?? null,
         cognitive_clarity: cognitive_clarity ?? null,
         stress_level: stress_level ?? null,
