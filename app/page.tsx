@@ -30,10 +30,41 @@ const personSchema = {
   knowsAbout: ['肌力訓練', '體能訓練', '代謝優化', '營養優化', '運動科學', 'CSCS', '數據化健康管理', '體態管理'],
 }
 
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: 'Howard Protocol',
+  description: '數據驅動的體態與健康管理系統。CSCS 認證教練監督 × 智能系統 24 小時分析。',
+  url: 'https://howard456.vercel.app',
+  image: 'https://howard456.vercel.app/howard-profile.jpg',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: '台中市',
+    addressRegion: '北屯區',
+    addressCountry: 'TW',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: 24.1827,
+    longitude: 120.6866,
+  },
+  areaServed: [
+    { '@type': 'City', name: '台中市' },
+    { '@type': 'Country', name: '台灣' },
+  ],
+  serviceType: ['個人教練', '遠端訓練管理', '營養諮詢'],
+  priceRange: '$$',
+  sameAs: [
+    'https://www.instagram.com/chenhoward/',
+    'https://lin.ee/dnbucVw',
+  ],
+}
+
 export const metadata: Metadata = {
   title: 'Howard Protocol - 數據驅動的體態與健康管理 | CSCS 教練監督',
   description: '不只是教練服務，是一套數據驅動的體態與健康管理系統。自適應 TDEE 校正、每週智能分析、Refeed 自動觸發、月經週期濾鏡。CSCS 認證教練監督，運動醫學背景。台中實體 / 全台遠端。',
   keywords: ['數據化體態管理', '自適應TDEE', '智能營養系統', 'CSCS教練', '數據化訓練', '遠端訓練', '科學化減脂', '台中教練', '健康管理'],
+  alternates: { canonical: 'https://howard456.vercel.app' },
   openGraph: {
     title: 'Howard Protocol - 數據驅動的體態與健康管理',
     description: '智能系統 24 小時分析 × CSCS 教練即時監督',
@@ -50,16 +81,20 @@ export default function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+      />
 
       {/* ===== 區塊 1: Hero ===== */}
-      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%)' }}>
+      <section className="relative overflow-hidden bg-gradient-to-b from-white to-[#f5f7fa]">
         <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
           <div className="flex flex-col-reverse md:flex-row items-center gap-10 md:gap-16">
             <div className="flex-1 text-center md:text-left">
-              <div className="inline-block bg-[#2563eb]/10 text-[#2563eb] text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
+              <div className="inline-block bg-primary/10 text-primary text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
                 CSCS 認證 × 數據驅動
               </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6" style={{ color: '#1e3a5f' }}>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-navy">
                 練了半年沒變化？<br />問題不在你的努力
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
@@ -71,14 +106,14 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/diagnosis"
-                  className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-[#1d4ed8] transition-all shadow-lg shadow-blue-500/25 text-center"
+                  className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition-all shadow-lg shadow-blue-500/25 text-center"
                 >
                   免費體驗系統分析 →
                 </Link>
                 <LineButton
                   source="homepage_hero"
                   intent="general"
-                  className="inline-block bg-white text-[#1e3a5f] border-2 border-[#1e3a5f] px-8 py-4 rounded-xl font-semibold text-lg hover:bg-[#1e3a5f]/5 transition-all text-center"
+                  className="inline-block bg-white text-navy border-2 border-navy px-8 py-4 rounded-xl font-semibold text-lg hover:bg-navy/5 transition-all text-center"
                 >
                   加 LINE 直接聊 💬
                 </LineButton>
@@ -92,8 +127,7 @@ export default function HomePage() {
                 alt="Howard Chen - CSCS 認證體能教練 / Howard Protocol 創辦人"
                 width={240}
                 height={240}
-                className="rounded-2xl"
-                style={{ objectFit: 'cover', boxShadow: '0 8px 30px rgba(30, 58, 95, 0.12)' }}
+                className="rounded-2xl object-cover shadow-[0_8px_30px_rgba(30,58,95,0.12)]"
                 priority
               />
               {/* 靜態 Engine Demo 卡片 */}
@@ -132,7 +166,7 @@ export default function HomePage() {
       {/* ===== 區塊 2: 痛點共鳴 ===== */}
       <ScrollReveal>
         <section className="max-w-6xl mx-auto px-6 py-20">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12" style={{ color: '#1e3a5f' }}>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-navy">
             你是不是也這樣？
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
@@ -148,10 +182,10 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <div className="max-w-2xl mx-auto bg-[#1e3a5f]/5 rounded-2xl p-6 text-center">
+          <div className="max-w-2xl mx-auto bg-navy/5 rounded-2xl p-6 text-center">
             <p className="text-gray-600 text-sm leading-relaxed">
-              大部分教練給你一組靜態數字，然後<span className="font-bold text-[#1e3a5f]">就沒有然後了</span>。
-              <br />Howard Protocol 會根據你的體重趨勢，<span className="font-bold text-[#2563eb]">每週自動分析、自動建議調整</span>。
+              大部分教練給你一組靜態數字，然後<span className="font-bold text-navy">就沒有然後了</span>。
+              <br />Howard Protocol 會根據你的體重趨勢，<span className="font-bold text-primary">每週自動分析、自動建議調整</span>。
             </p>
           </div>
         </section>
@@ -161,7 +195,7 @@ export default function HomePage() {
       <ScrollReveal>
         <section className="bg-[#f5f7fa] py-20">
           <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
               用數據說話，不用嘴巴
             </h2>
             <p className="text-center text-gray-500 mb-14">Howard 本人 6 年系統追蹤的真實數據</p>
@@ -181,7 +215,7 @@ export default function HomePage() {
               ))}
             </div>
             <div className="text-center">
-              <Link href="/case" className="text-[#2563eb] hover:underline text-sm font-medium">
+              <Link href="/case" className="text-primary hover:underline text-sm font-medium">
                 查看完整 6 年數據紀錄 →
               </Link>
             </div>
@@ -192,7 +226,7 @@ export default function HomePage() {
       {/* ===== 區塊 4: 系統核心能力（合併） ===== */}
       <ScrollReveal>
         <section className="max-w-6xl mx-auto px-6 py-20">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
             系統在背後幫你做什麼
           </h2>
           <p className="text-center text-gray-500 mb-14">每個功能都有運動科學文獻支撐</p>
@@ -205,7 +239,7 @@ export default function HomePage() {
             ].map(({ icon, title, desc }) => (
               <div key={title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="text-3xl mb-3 text-center">{icon}</div>
-                <h3 className="font-bold mb-2 text-sm text-center" style={{ color: '#1e3a5f' }}>{title}</h3>
+                <h3 className="font-bold mb-2 text-sm text-center text-navy">{title}</h3>
                 <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
               </div>
             ))}
@@ -217,7 +251,7 @@ export default function HomePage() {
       <ScrollReveal>
         <section className="bg-[#f5f7fa] py-20">
           <div className="max-w-4xl mx-auto px-6">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-14" style={{ color: '#1e3a5f' }}>
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-navy">
               這套系統適合你嗎？
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
@@ -259,37 +293,37 @@ export default function HomePage() {
       {/* ===== 區塊 6: 服務方案 ===== */}
       <ScrollReveal>
         <section className="max-w-6xl mx-auto px-6 py-20">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
             選擇你的方案
           </h2>
           <p className="text-center text-gray-500 mb-14">兩種方案，同一套引擎</p>
           <div className="grid md:grid-cols-2 gap-8">
             {/* 主推：智能管理方案 */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-[#2563eb]/30 flex flex-col relative">
-              <div className="absolute -top-3 left-6 bg-[#2563eb] text-white text-xs font-bold px-3 py-1 rounded-full">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-primary/30 flex flex-col relative">
+              <div className="absolute -top-3 left-6 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">
                 全台適用
               </div>
-              <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>Howard Protocol 智能管理</h3>
+              <h3 className="text-2xl font-bold mb-2 text-navy">Howard Protocol 智能管理</h3>
               <p className="text-gray-500 mb-6 text-sm">智能引擎 + CSCS 教練監督</p>
               <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
-                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>智能引擎 24 小時自動分析</li>
-                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>每週體重趨勢自動判讀</li>
-                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>自適應 TDEE 持續校正</li>
-                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>Refeed / Diet Break 自動觸發</li>
-                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>碳循環自動分配（訓練日/休息日）</li>
-                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>月經週期智能濾鏡（女性）</li>
-                <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>CSCS 教練每週監督 + LINE 諮詢</li>
+                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>智能引擎 24 小時自動分析</li>
+                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>每週體重趨勢自動判讀</li>
+                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>自適應 TDEE 持續校正</li>
+                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>Refeed / Diet Break 自動觸發</li>
+                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>碳循環自動分配（訓練日/休息日）</li>
+                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>月經週期智能濾鏡（女性）</li>
+                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>CSCS 教練每週監督 + LINE 諮詢</li>
               </ul>
               <LineButton
                 source="homepage_plan"
                 intent="smart_plan"
-                className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
+                className="block text-center bg-primary text-white py-3.5 rounded-xl font-semibold hover:bg-primary-dark transition-colors shadow-lg shadow-blue-500/25"
               >
                 加 LINE 諮詢方案 💬
               </LineButton>
               <Link
                 href="/diagnosis"
-                className="block text-center text-[#2563eb] text-sm mt-3 hover:underline"
+                className="block text-center text-primary text-sm mt-3 hover:underline"
               >
                 或先免費體驗系統分析 →
               </Link>
@@ -297,32 +331,32 @@ export default function HomePage() {
 
             {/* 實體 + 智能管理 */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
-              <div className="absolute -top-3 left-6 bg-[#1e3a5f] text-white text-xs font-bold px-3 py-1 rounded-full">
+              <div className="absolute -top-3 left-6 bg-navy text-white text-xs font-bold px-3 py-1 rounded-full">
                 台中限定
               </div>
-              <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>實體訓練 + 智能管理</h3>
+              <h3 className="text-2xl font-bold mb-2 text-navy">實體訓練 + 智能管理</h3>
               <p className="text-gray-500 mb-6 text-sm">一對一指導 + 智能引擎全套</p>
               <ul className="space-y-3 text-gray-700 mb-4 text-sm">
-                <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>包含上方所有智能管理功能</li>
+                <li className="flex items-center gap-2"><span className="text-navy">&#10003;</span>包含上方所有智能管理功能</li>
               </ul>
               <div className="border-t border-gray-100 pt-4 mb-8 flex-1">
                 <p className="text-xs text-gray-400 mb-3">額外包含：</p>
                 <ul className="space-y-3 text-gray-700 text-sm">
-                  <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>一對一動作評估與矯正</li>
-                  <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>即時訓練指導與調整</li>
-                  <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>Coolday Fitness 北屯館</li>
+                  <li className="flex items-center gap-2"><span className="text-navy">&#10003;</span>一對一動作評估與矯正</li>
+                  <li className="flex items-center gap-2"><span className="text-navy">&#10003;</span>即時訓練指導與調整</li>
+                  <li className="flex items-center gap-2"><span className="text-navy">&#10003;</span>Coolday Fitness 北屯館</li>
                 </ul>
               </div>
               <LineButton
                 source="homepage_plan"
                 intent="in_person"
-                className="block text-center bg-white text-[#1e3a5f] border-2 border-[#1e3a5f] py-3.5 rounded-xl font-semibold hover:bg-[#1e3a5f]/5 transition-colors"
+                className="block text-center bg-white text-navy border-2 border-navy py-3.5 rounded-xl font-semibold hover:bg-navy/5 transition-colors"
               >
                 加 LINE 預約諮詢 💬
               </LineButton>
               <Link
                 href="/action"
-                className="block text-center text-[#1e3a5f] text-sm mt-3 hover:underline"
+                className="block text-center text-navy text-sm mt-3 hover:underline"
               >
                 查看實體訓練詳情 →
               </Link>
@@ -341,11 +375,10 @@ export default function HomePage() {
                 alt="Howard Chen"
                 width={120}
                 height={120}
-                className="rounded-xl"
-                style={{ objectFit: 'cover' }}
+                className="rounded-xl object-cover"
               />
               <div>
-                <h3 className="text-xl font-bold mb-2" style={{ color: '#1e3a5f' }}>Howard Chen</h3>
+                <h3 className="text-xl font-bold mb-2 text-navy">Howard Chen</h3>
                 <p className="text-sm text-gray-500 mb-3">CSCS 認證 / 高雄醫學大學運動醫學系 / 6+ 年實務經驗</p>
                 <p className="text-gray-600 text-sm leading-relaxed">
                   我花了 6 年時間，從自己的身體實驗中，建立了這套數據驅動的體態與健康管理系統。
@@ -365,7 +398,7 @@ export default function HomePage() {
             <div className="flex flex-col md:flex-row items-start gap-6">
               <div className="text-5xl">📥</div>
               <div className="flex-1">
-                <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>
+                <h3 className="text-2xl font-bold mb-2 text-navy">
                   免費文章：三層脂肪攻克戰術
                 </h3>
                 <p className="text-gray-600 mb-5 leading-relaxed text-sm">
@@ -384,7 +417,7 @@ export default function HomePage() {
       </ScrollReveal>
 
       {/* ===== 區塊 8: CTA 結尾 ===== */}
-      <section className="bg-[#1e3a5f] py-20 mt-10 rounded-t-3xl">
+      <section className="bg-navy py-20 mt-10 rounded-t-3xl">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             不確定適不適合？先聊聊
@@ -396,7 +429,7 @@ export default function HomePage() {
             <LineButton
               source="homepage_bottom"
               intent="general"
-              className="inline-block bg-white text-[#1e3a5f] px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
+              className="inline-block bg-white text-navy px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
             >
               加 LINE 聊聊 💬
             </LineButton>

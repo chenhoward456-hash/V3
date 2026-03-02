@@ -3,9 +3,11 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: '實體訓練方案 - Howard Protocol | 台中北屯一對一指導',
   description: '一對一動作評估 × 客製化訓練計畫 × 智能管理系統全套。CSCS 認證教練即時指導，台中北屯 Coolday Fitness。',
+  alternates: { canonical: 'https://howard456.vercel.app/action' },
   openGraph: {
     title: '實體訓練 + 智能管理 - Howard Protocol',
     description: '一對一指導 × CSCS 認證 × 系統追蹤 · 台中北屯',
+    url: 'https://howard456.vercel.app/action',
   },
 }
 

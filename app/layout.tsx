@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, Noto_Sans_TC, Playfair_Display } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 import LayoutShell from '@/components/LayoutShell'
 import ManifestLink from '@/components/ManifestLink'
@@ -94,21 +95,27 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Howard" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
-        {/* Google Analytics */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-8GMW6GH1QB"></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-8GMW6GH1QB');
-            `,
-          }}
-        />
+        {/* DNS Prefetch & Preconnect 加速外部資源載入 */}
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
         <LayoutShell>{children}</LayoutShell>
+        {/* Google Analytics - 延遲載入不阻塞頁面渲染 */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-8GMW6GH1QB"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-8GMW6GH1QB');
+          `}
+        </Script>
       </body>
     </html>
   )

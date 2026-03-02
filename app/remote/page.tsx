@@ -6,6 +6,12 @@ import ScrollReveal from '@/components/ScrollReveal'
 export const metadata: Metadata = {
   title: '方案說明 - Howard Protocol 智能管理系統 | 全台遠端 / 台中實體',
   description: '智能引擎 × CSCS 教練監督。自適應 TDEE 每週校正、體重趨勢自動判讀、Refeed 自動觸發、月經週期濾鏡。全台遠端訂閱 / 台中實體訓練。',
+  alternates: { canonical: 'https://howard456.vercel.app/remote' },
+  openGraph: {
+    title: '方案說明 - Howard Protocol 智能管理系統',
+    description: '智能引擎 × CSCS 教練監督。全台遠端訂閱 / 台中實體訓練。',
+    url: 'https://howard456.vercel.app/remote',
+  },
 }
 
 export default function RemotePage() {

@@ -17,6 +17,7 @@ const config: Config = {
         success: '#10B981',
         warning: '#F59E0B',
         danger: '#EF4444',
+        navy: '#1e3a5f',
         bg: {
           primary: '#FEFDFB',
           secondary: '#F9F7F4',

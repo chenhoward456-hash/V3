@@ -3,9 +3,11 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: '訓練工程 - The Howard Protocol',
   description: '肌力訓練三大原則：機械張力、神經適應、結構優化。CSCS 系統化訓練設計，從動作力學到週期化編排。',
+  alternates: { canonical: 'https://howard456.vercel.app/training' },
   openGraph: {
     title: '訓練工程 - The Howard Protocol',
     description: '機械張力、神經適應、結構優化三大訓練原則',
+    url: 'https://howard456.vercel.app/training',
   },
 }
 

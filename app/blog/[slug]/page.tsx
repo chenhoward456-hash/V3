@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
+import { createServerSupabase } from '@/lib/supabase'
 import { generateArticleSchema } from './schema'
 import Breadcrumb from '@/components/Breadcrumb'
 import ArticleTracker from './ArticleTracker'
@@ -14,10 +14,8 @@ export const dynamicParams = true
 
 async function getSupabasePost(slug: string) {
   try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    if (!url || !key) return null
-    const supabase = createClient(url, key)
+    const supabase = createServerSupabase()
+    if (!supabase) return null
     const { data } = await supabase
       .from('blog_posts')
       .select('*')

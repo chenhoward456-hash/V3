@@ -3,10 +3,30 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: '常見問題 FAQ - The Howard Protocol',
   description: 'Howard Chen，CSCS 認證體能教練，高雄醫學大學運動醫學系畢業。整合肌力訓練與營養優化，提供系統化的訓練指導。',
+  alternates: { canonical: 'https://howard456.vercel.app/faq' },
   openGraph: {
     title: '常見問題 FAQ - The Howard Protocol',
     description: '訓練與健康優化的常見問題',
+    url: 'https://howard456.vercel.app/faq',
   },
+}
+
+// FAQ 結構化資料（Google 搜尋結果豐富摘要）
+function generateFAQSchema(faqs: { category: string; questions: { q: string; a: string }[] }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.flatMap(cat =>
+      cat.questions.map(item => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: item.a,
+        },
+      }))
+    ),
+  }
 }
 
 export default function FAQPage() {
@@ -72,8 +92,14 @@ export default function FAQPage() {
     }
   ]
 
+  const faqSchema = generateFAQSchema(faqs)
+
   return (
     <section className="section-container">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <h2 className="doc-title">常見問題 FAQ</h2>
       <p className="doc-subtitle">關於訓練、營養的常見疑問，這裡都有解答。</p>
 
