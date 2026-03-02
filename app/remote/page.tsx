@@ -4,12 +4,12 @@ import LineButton from '@/components/LineButton'
 import ScrollReveal from '@/components/ScrollReveal'
 
 export const metadata: Metadata = {
-  title: '方案說明 - Howard Protocol 智能管理系統 | 全台遠端 / 台中實體',
-  description: '智能引擎 × CSCS 教練監督。自適應 TDEE 每週校正、體重趨勢自動判讀、Refeed 自動觸發、月經週期濾鏡。全台遠端訂閱 / 台中實體訓練。',
+  title: '方案與定價 - Howard Protocol 智能管理系統 | 全台遠端 / 台中實體',
+  description: 'NT$499 起，自適應 TDEE 每週校正、體重趨勢自動判讀、Refeed 自動觸發、月經週期濾鏡。全台遠端訂閱 / 台中實體訓練。',
   alternates: { canonical: 'https://howard456.vercel.app/remote' },
   openGraph: {
-    title: '方案說明 - Howard Protocol 智能管理系統',
-    description: '智能引擎 × CSCS 教練監督。全台遠端訂閱 / 台中實體訓練。',
+    title: '方案與定價 - Howard Protocol 智能管理系統',
+    description: 'NT$499/月起。智能引擎自動分析，不賣教練時間，賣系統能力。',
     url: 'https://howard456.vercel.app/remote',
   },
 }
@@ -30,7 +30,7 @@ export default function RemotePage() {
             系統每週根據你的真實數據自動校正 — 不靠感覺，不靠公式。
           </p>
           <p className="text-sm text-gray-400">
-            自適應 TDEE × 每週智能分析 × Refeed 自動觸發 × CSCS 教練監督
+            自適應 TDEE × 每週智能分析 × Refeed 自動觸發 × 恢復狀態自動調整
           </p>
         </div>
       </section>
@@ -39,7 +39,7 @@ export default function RemotePage() {
       <ScrollReveal>
         <section className="max-w-4xl mx-auto px-6 py-16">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
-            免費體驗 vs 完整訂閱
+            免費體驗 vs 訂閱後
           </h2>
           <p className="text-center text-gray-500 mb-10 text-sm">
             免費分析是一次性估算，訂閱後系統會持續進化
@@ -63,7 +63,7 @@ export default function RemotePage() {
                 { label: '停滯期偵測', free: '—', paid: '自動偵測 + 提示' },
                 { label: 'Refeed', free: '—', paid: '三條件自動觸發' },
                 { label: '月經週期', free: '—', paid: '黃體期智能濾鏡' },
-                { label: '教練監督', free: '—', paid: 'CSCS 教練每週 review' },
+                { label: '恢復狀態調整', free: '—', paid: 'HRV 個人基線 + 營養自動調整' },
               ].map(({ label, free, paid }, i) => (
                 <div key={label} className="contents">
                   <div className={`p-3 border-r border-gray-200 ${i < 5 ? 'border-b border-gray-100' : ''}`}>
@@ -82,108 +82,201 @@ export default function RemotePage() {
         </section>
       </ScrollReveal>
 
-      {/* ===== 方案選擇（2 欄，與首頁一致） ===== */}
+      {/* ===== 三層方案定價 ===== */}
       <ScrollReveal>
         <section className="bg-[#f5f7fa] py-20">
-          <div className="max-w-5xl mx-auto px-6">
+          <div className="max-w-6xl mx-auto px-6">
             <h2 className="text-2xl md:text-3xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
               選擇你的方案
             </h2>
-            <p className="text-center text-gray-500 mb-12 text-sm">兩種方案，同一套智能引擎</p>
+            <p className="text-center text-gray-500 mb-12 text-sm">同一套智能引擎，三種使用方式</p>
 
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* 主推：智能管理方案 */}
+            <div className="grid md:grid-cols-3 gap-6">
+
+              {/* 方案 1：自主管理 NT$499 */}
               <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-[#2563eb]/30 flex flex-col relative">
                 <div className="absolute -top-3 left-6 bg-[#2563eb] text-white text-xs font-bold px-3 py-1 rounded-full">
-                  全台適用
+                  最多人選
                 </div>
-                <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>Howard Protocol 智能管理</h3>
-                <p className="text-gray-500 mb-6 text-sm">智能引擎 + CSCS 教練監督</p>
+                <h3 className="text-xl font-bold mb-1" style={{ color: '#1e3a5f' }}>自主管理版</h3>
+                <p className="text-gray-400 text-sm mb-4">系統幫你管，不需要教練</p>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold" style={{ color: '#1e3a5f' }}>NT$499</span>
+                  <span className="text-gray-400 text-sm"> /月</span>
+                </div>
                 <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
-                  <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>智能引擎 24 小時自動分析</li>
-                  <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>每週體重趨勢自動判讀</li>
-                  <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>自適應 TDEE 持續校正</li>
-                  <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>Refeed / Diet Break 自動觸發</li>
-                  <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>碳循環自動分配（訓練日/休息日）</li>
-                  <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>月經週期智能濾鏡（女性）</li>
-                  <li className="flex items-center gap-2"><span className="text-[#2563eb]">&#10003;</span>CSCS 教練每週監督 + LINE 諮詢</li>
+                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>智能引擎 24 小時自動分析</li>
+                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>每週體重趨勢自動判讀</li>
+                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>自適應 TDEE 持續校正</li>
+                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>Refeed / Diet Break 自動觸發</li>
+                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>碳循環自動分配（訓練/休息日）</li>
+                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>月經週期智能濾鏡（女性）</li>
+                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>HRV 個人基線 + 恢復狀態調整</li>
+                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>減脂速度動態控制</li>
                 </ul>
-                <LineButton
-                  source="remote_page"
-                  intent="smart_plan"
+                <Link
+                  href="/diagnosis"
                   className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
                 >
-                  加 LINE 諮詢方案
-                </LineButton>
+                  免費體驗系統分析 →
+                </Link>
+                <p className="text-center text-xs text-gray-400 mt-3">
+                  體驗後直接開通，不需教練介入
+                </p>
               </div>
 
-              {/* 實體 + 智能管理 */}
+              {/* 方案 2：教練指導 NT$2,999 */}
               <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
                 <div className="absolute -top-3 left-6 bg-[#1e3a5f] text-white text-xs font-bold px-3 py-1 rounded-full">
-                  台中限定
+                  全台適用
                 </div>
-                <h3 className="text-2xl font-bold mb-2" style={{ color: '#1e3a5f' }}>實體訓練 + 智能管理</h3>
-                <p className="text-gray-500 mb-6 text-sm">一對一指導 + 智能引擎全套</p>
+                <h3 className="text-xl font-bold mb-1" style={{ color: '#1e3a5f' }}>教練指導版</h3>
+                <p className="text-gray-400 text-sm mb-4">系統 + CSCS 教練監督</p>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold" style={{ color: '#1e3a5f' }}>NT$2,999</span>
+                  <span className="text-gray-400 text-sm"> /月</span>
+                </div>
                 <ul className="space-y-3 text-gray-700 mb-4 text-sm">
-                  <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>包含上方所有智能管理功能</li>
+                  <li className="flex items-start gap-2"><span className="text-[#1e3a5f] mt-0.5">&#10003;</span>包含自主管理版所有功能</li>
                 </ul>
                 <div className="border-t border-gray-100 pt-4 mb-8 flex-1">
                   <p className="text-xs text-gray-400 mb-3">額外包含：</p>
                   <ul className="space-y-3 text-gray-700 text-sm">
-                    <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>一對一動作評估與矯正</li>
-                    <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>即時訓練指導與調整</li>
-                    <li className="flex items-center gap-2"><span className="text-[#1e3a5f]">&#10003;</span>Coolday Fitness 北屯館</li>
+                    <li className="flex items-start gap-2"><span className="text-[#1e3a5f] mt-0.5">&#10003;</span>CSCS 教練每週 review 數據</li>
+                    <li className="flex items-start gap-2"><span className="text-[#1e3a5f] mt-0.5">&#10003;</span>LINE 即時諮詢（24hr 內回覆）</li>
+                    <li className="flex items-start gap-2"><span className="text-[#1e3a5f] mt-0.5">&#10003;</span>每月 1 次視訊（30 分鐘）</li>
+                    <li className="flex items-start gap-2"><span className="text-[#1e3a5f] mt-0.5">&#10003;</span>訓練計畫客製化建議</li>
                   </ul>
                 </div>
-                <Link href="/action" className="block text-center bg-white text-[#1e3a5f] border-2 border-[#1e3a5f] py-3.5 rounded-xl font-semibold hover:bg-[#1e3a5f]/5 transition-colors">
-                  預約諮詢 →
-                </Link>
+                <LineButton
+                  source="remote_page"
+                  intent="coach_plan"
+                  className="block text-center bg-[#1e3a5f] text-white py-3.5 rounded-xl font-semibold hover:bg-[#162d4a] transition-colors"
+                >
+                  加 LINE 諮詢
+                </LineButton>
+                <p className="text-center text-xs text-gray-400 mt-3">
+                  適合想要教練把關的人
+                </p>
+              </div>
+
+              {/* 方案 3：實體 + 遠端 NT$5,000 */}
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
+                <div className="absolute -top-3 left-6 bg-amber-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  台中限定
+                </div>
+                <h3 className="text-xl font-bold mb-1" style={{ color: '#1e3a5f' }}>實體 + 智能管理</h3>
+                <p className="text-gray-400 text-sm mb-4">一對一指導 + 系統全套</p>
+                <div className="mb-6">
+                  <span className="text-4xl font-bold" style={{ color: '#1e3a5f' }}>NT$5,000</span>
+                  <span className="text-gray-400 text-sm"> /月</span>
+                </div>
+                <ul className="space-y-3 text-gray-700 mb-4 text-sm">
+                  <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>包含教練指導版所有功能</li>
+                </ul>
+                <div className="border-t border-gray-100 pt-4 mb-8 flex-1">
+                  <p className="text-xs text-gray-400 mb-3">額外包含：</p>
+                  <ul className="space-y-3 text-gray-700 text-sm">
+                    <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>一對一動作評估與矯正</li>
+                    <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>即時訓練指導與調整</li>
+                    <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>Coolday Fitness 北屯館</li>
+                  </ul>
+                </div>
+                <LineButton
+                  source="remote_page"
+                  intent="in_person"
+                  className="block text-center bg-white text-[#1e3a5f] border-2 border-[#1e3a5f] py-3.5 rounded-xl font-semibold hover:bg-[#1e3a5f]/5 transition-colors"
+                >
+                  加 LINE 預約
+                </LineButton>
+                <p className="text-center text-xs text-gray-400 mt-3">
+                  台中地區，實體課另計
+                </p>
               </div>
             </div>
 
             <p className="text-center text-xs text-gray-400 mt-8">
-              價格會在 LINE 諮詢時根據你的需求與目標客製化報價
+              月繳制，隨時可取消。自主管理版可隨時升級教練指導版，補差額即可。
             </p>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* ===== 為什麼 499 就夠了 ===== */}
+      <ScrollReveal>
+        <section className="max-w-4xl mx-auto px-6 py-20">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
+            為什麼 NT$499 就能做到？
+          </h2>
+          <p className="text-center text-gray-500 mb-12 text-sm">
+            因為系統在做事，不是教練在花時間
+          </p>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: '🤖',
+                title: '系統 24 小時運作',
+                desc: '你每天輸入數據，系統自動計算趨勢、校正 TDEE、偵測停滯期。不需要等教練分析，也不需要約時間。',
+              },
+              {
+                icon: '📊',
+                title: '演算法取代人工判斷',
+                desc: '傳統教練靠經驗判斷「該不該調」，我們用 7 天加權移動平均 + 能量平衡方程式自動判斷。更準、更快。',
+              },
+              {
+                icon: '🔄',
+                title: '自動觸發機制',
+                desc: 'Refeed、Diet Break、碳循環、恢復調整 — 全部根據條件自動觸發，不需要教練手動下指令。',
+              },
+            ].map(({ icon, title, desc }) => (
+              <div key={title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
+                <div className="text-3xl mb-3">{icon}</div>
+                <h3 className="font-bold mb-2 text-sm" style={{ color: '#1e3a5f' }}>{title}</h3>
+                <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
+              </div>
+            ))}
           </div>
         </section>
       </ScrollReveal>
 
       {/* ===== 適合誰 ===== */}
       <ScrollReveal>
-        <section className="max-w-4xl mx-auto px-6 py-20">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12" style={{ color: '#1e3a5f' }}>
-            這套系統適合你嗎？
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-green-100">
-              <h3 className="text-lg font-bold text-green-700 mb-5">適合你</h3>
-              <ul className="space-y-3">
-                {[
-                  '認真想改變但一直卡住的人',
-                  '想用數據和系統方法，不想土法煉鋼',
-                  '想讓系統自動追蹤，不只靠教練感覺',
-                  '外縣市或時間不固定，需要遠端管理',
-                  '願意每天花 2 分鐘記錄體重和飲食',
-                ].map(t => (
-                  <li key={t} className="flex items-start gap-2 text-gray-700 text-sm">
-                    <span className="text-green-500 mt-0.5 font-bold">+</span>{t}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-red-100">
-              <h3 className="text-lg font-bold text-red-600 mb-5">不適合</h3>
-              <ul className="space-y-3">
-                {[
-                  '只想要速效、不願意等 2-4 週看數據的人',
-                  '不願意配合每日記錄飲食和體重的人',
-                  '純粹找人陪練、不在意數據的人',
-                ].map(t => (
-                  <li key={t} className="flex items-start gap-2 text-gray-700 text-sm">
-                    <span className="text-red-400 mt-0.5 font-bold">-</span>{t}
-                  </li>
-                ))}
-              </ul>
+        <section className="bg-[#f5f7fa] py-20">
+          <div className="max-w-4xl mx-auto px-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-center mb-12" style={{ color: '#1e3a5f' }}>
+              這套系統適合你嗎？
+            </h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-green-100">
+                <h3 className="text-lg font-bold text-green-700 mb-5">適合你</h3>
+                <ul className="space-y-3">
+                  {[
+                    '有訓練基礎，但一直卡住不知道怎麼調整',
+                    '想用數據和系統方法，不想土法煉鋼',
+                    '想要 24 小時自動追蹤，不想等教練回覆',
+                    '外縣市或時間不固定，需要自主管理',
+                    '願意每天花 2 分鐘記錄體重和飲食',
+                  ].map(t => (
+                    <li key={t} className="flex items-start gap-2 text-gray-700 text-sm">
+                      <span className="text-green-500 mt-0.5 font-bold">+</span>{t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-red-100">
+                <h3 className="text-lg font-bold text-red-600 mb-5">不適合</h3>
+                <ul className="space-y-3">
+                  {[
+                    '只想要速效、不願意等 2-4 週看數據的人',
+                    '不願意配合每日記錄飲食和體重的人',
+                    '純粹找人陪練、不在意數據的人',
+                  ].map(t => (
+                    <li key={t} className="flex items-start gap-2 text-gray-700 text-sm">
+                      <span className="text-red-400 mt-0.5 font-bold">-</span>{t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </section>
@@ -191,48 +284,46 @@ export default function RemotePage() {
 
       {/* ===== FAQ ===== */}
       <ScrollReveal>
-        <section className="bg-[#f5f7fa] py-20">
-          <div className="max-w-4xl mx-auto px-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-12" style={{ color: '#1e3a5f' }}>
-              常見問題
-            </h2>
-            <div className="space-y-4">
-              {[
-                {
-                  q: '免費分析和訂閱後有什麼差別？',
-                  a: '免費分析是一次性公式估算，給你 TDEE 和巨量營養素的初始數字。訂閱後，系統每天追蹤你的實際體重和飲食記錄，每週自動校正 TDEE、自動偵測停滯期、自動觸發 Refeed，持續進化。',
-                },
-                {
-                  q: '系統怎麼自動校正營養目標？',
-                  a: '系統根據你每週的體重趨勢（不是單日浮動），對比你的飲食記錄，自動反推你真實的 TDEE。如果掉太快，會提示增加熱量保護肌肉；如果停滯了，會提示調整赤字或觸發 Refeed。全部自動判斷，不需等教練手動分析。',
-                },
-                {
-                  q: '我需要記錄什麼？怎麼記？',
-                  a: '每天花 2 分鐘：記錄體重（早晨空腹）+ 飲食（拍照或文字記錄都可以）。透過 LINE 傳送即可，不需下載特殊 App。系統會自動分析你傳的數據。',
-                },
-                {
-                  q: '可以先試一個月嗎？',
-                  a: '可以。月繳制，隨時可以取消。但建議至少連續使用 4 週，系統需要 2-3 週的數據才能精準校正你的 TDEE，第 4 週開始你會感受到系統的自適應能力。',
-                },
-                {
-                  q: '女性月經週期真的不會被誤判嗎？',
-                  a: '對。系統內建月經週期濾鏡：當你標記經期開始後，黃體期（排卵後 14-28 天）如果體重上升 0.5-2kg，系統會自動判定為荷爾蒙導致的水分滯留，不會誤判為「方向錯誤」，也不會叫你少吃。',
-                },
-                {
-                  q: '完全沒有訓練經驗可以嗎？',
-                  a: '建議先有 3-6 個月的訓練基礎。如果是完全新手，建議先從實體一對一教練開始學會基本動作，再轉遠端智能管理。台中地區可以選「實體訓練 + 智能管理」方案。',
-                },
-                {
-                  q: '可以退費嗎？',
-                  a: '月繳制，當月不退費，下個月可取消不續約。詳細退費規則會在 LINE 諮詢時說明。',
-                },
-              ].map(({ q, a }) => (
-                <div key={q} className="bg-white rounded-xl p-6 border border-gray-200">
-                  <h3 className="text-base font-bold mb-2" style={{ color: '#1e3a5f' }}>Q: {q}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{a}</p>
-                </div>
-              ))}
-            </div>
+        <section className="max-w-4xl mx-auto px-6 py-20">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12" style={{ color: '#1e3a5f' }}>
+            常見問題
+          </h2>
+          <div className="space-y-4">
+            {[
+              {
+                q: '自主管理版跟教練指導版差在哪？',
+                a: '系統功能完全一樣。差別在於教練指導版有 Howard 本人每週 review 你的數據、LINE 即時諮詢、每月視訊。如果你有訓練基礎、能自己看懂系統建議，自主管理版就夠了。如果你想要教練額外把關，再升級。',
+              },
+              {
+                q: '系統怎麼自動校正營養目標？',
+                a: '系統根據你每週的體重趨勢（不是單日浮動），對比你的飲食記錄，自動反推你真實的 TDEE。如果掉太快，會提示增加熱量保護肌肉；如果停滯了，會提示調整赤字或觸發 Refeed。全部自動判斷。',
+              },
+              {
+                q: '我需要記錄什麼？怎麼記？',
+                a: '每天花 2 分鐘：記錄體重（早晨空腹）+ 飲食（拍照或文字記錄都可以）。透過 LINE 傳送即可，不需下載特殊 App。系統會自動分析你傳的數據。',
+              },
+              {
+                q: '自主管理版可以隨時升級嗎？',
+                a: '可以。隨時在 LINE 跟 Howard 說要升級，補差額就好。很多人先用自主管理版 1-2 個月，確認系統有用之後，再考慮要不要加教練指導。',
+              },
+              {
+                q: '可以先試一個月嗎？',
+                a: '可以。月繳制，隨時可以取消。但建議至少連續使用 4 週，系統需要 2-3 週的數據才能精準校正你的 TDEE，第 4 週開始你會感受到系統的自適應能力。',
+              },
+              {
+                q: '女性月經週期真的不會被誤判嗎？',
+                a: '對。系統內建月經週期濾鏡：當你標記經期開始後，黃體期（排卵後 14-28 天）如果體重上升 0.5-2kg，系統會自動判定為荷爾蒙導致的水分滯留，不會誤判為「方向錯誤」，也不會叫你少吃。',
+              },
+              {
+                q: '可以退費嗎？',
+                a: '月繳制，當月不退費，下個月可取消不續約。',
+              },
+            ].map(({ q, a }) => (
+              <div key={q} className="bg-white rounded-xl p-6 border border-gray-200">
+                <h3 className="text-base font-bold mb-2" style={{ color: '#1e3a5f' }}>Q: {q}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{a}</p>
+              </div>
+            ))}
           </div>
         </section>
       </ScrollReveal>
@@ -240,7 +331,7 @@ export default function RemotePage() {
       {/* ===== 免責聲明 ===== */}
       <section className="max-w-4xl mx-auto px-6 py-12">
         <div className="bg-amber-50/50 border border-amber-200/50 rounded-xl p-6">
-          <h3 className="text-sm font-bold mb-3 text-amber-700">⚠️ 重要聲明</h3>
+          <h3 className="text-sm font-bold mb-3 text-amber-700">重要聲明</h3>
           <div className="space-y-2 text-gray-600 text-xs leading-relaxed">
             <p>
               <strong>1. 非醫療服務：</strong>此服務提供的是系統輔助的營養管理建議與教練指導，<strong>不構成醫療建議、診斷或治療</strong>。如有健康疑慮，請務必諮詢合格醫師。
@@ -259,23 +350,26 @@ export default function RemotePage() {
       <section className="bg-[#1e3a5f] py-20 rounded-t-3xl">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            讓系統幫你管理，從第一天開始
+            NT$499/月，讓系統幫你管理
           </h2>
           <p className="text-blue-200 text-lg mb-10">
-            加 LINE 跟我聊聊你的目標，我會先幫你確認系統適不適合你
+            先免費體驗系統分析，覺得有用再訂閱
           </p>
-          <LineButton
-            source="remote_page"
-            intent="bottom_cta"
-            className="inline-block bg-white text-[#1e3a5f] px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
-          >
-            加 LINE 諮詢方案
-          </LineButton>
-          <p className="mt-6">
-            <Link href="/diagnosis" className="text-blue-300 hover:text-white text-sm underline transition-colors">
-              還沒體驗過？先免費體驗系統分析 →
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/diagnosis"
+              className="inline-block bg-white text-[#1e3a5f] px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
+            >
+              免費體驗系統分析 →
             </Link>
-          </p>
+            <LineButton
+              source="remote_page"
+              intent="bottom_cta"
+              className="inline-block bg-transparent text-white border-2 border-white/50 px-10 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-colors"
+            >
+              加 LINE 問問題
+            </LineButton>
+          </div>
         </div>
       </section>
     </>
