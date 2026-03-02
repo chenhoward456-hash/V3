@@ -70,9 +70,9 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true }),
       supabase
         .from('daily_wellness')
-        .select('date, sleep_quality, energy_level, mood, cognitive_clarity, stress_level, training_drive, period_start')
+        .select('date, sleep_quality, energy_level, mood, cognitive_clarity, stress_level, training_drive, period_start, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate')
         .eq('client_id', clientId)
-        .gte('date', sevenDaysStr)
+        .gte('date', sinceDate)
         .order('date', { ascending: true }),
     ])
 

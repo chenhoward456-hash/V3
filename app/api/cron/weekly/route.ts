@@ -110,8 +110,8 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true }),
       supabase
         .from('daily_wellness')
-        .select('client_id, date, energy_level, training_drive, period_start')
-        .gte('date', sevenDaysStr)
+        .select('client_id, date, energy_level, training_drive, period_start, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate')
+        .gte('date', sinceDate)
         .order('date', { ascending: true }),
     ])
 

@@ -59,7 +59,7 @@ export interface NutritionInput {
   // high_energy_flux = 高能量通量，主動增加活動消耗
   activityProfile?: 'sedentary' | 'high_energy_flux'
 
-  // 近 7 天狀態監控（用於 Refeed 觸發）
+  // 近 30 天狀態監控（近 3 天 = 當前狀態, 第 4-30 天 = 個人基線）
   recentWellness?: {
     date: string
     energy_level: number | null
@@ -445,11 +445,17 @@ function assessCurrentState(
   recentWellness: WellnessWithWearable[],
   recentTrainingLogs: { date: string; rpe: number | null }[]
 ): 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown' {
-  const last3Wellness = [...recentWellness]
-    .sort((a, b) => b.date.localeCompare(a.date))
+  // 排序：最新在前
+  const sorted = [...recentWellness].sort((a, b) => b.date.localeCompare(a.date))
+
+  // 近 3 天 = 當前狀態
+  const last3Wellness = sorted
     .slice(0, 3)
     .filter(w => w.energy_level != null || w.training_drive != null ||
-      w.resting_hr != null || w.hrv != null || w.wearable_sleep_score != null)
+      w.device_recovery_score != null || w.resting_hr != null || w.hrv != null || w.wearable_sleep_score != null)
+
+  // 第 4-30 天 = 個人基線（用於計算 SWC）
+  const baselineWellness = sorted.slice(3)
 
   const last3Training = [...recentTrainingLogs]
     .sort((a, b) => b.date.localeCompare(a.date))
@@ -468,83 +474,133 @@ function assessCurrentState(
     : null
 
   // ── 穿戴裝置客觀指標 → Readiness Score ──
-  // 優先使用 device_recovery_score（使用者只填 1 個數字，最簡單）
-  // 沒有 device_recovery_score 才從 HRV/RHR/睡眠/呼吸 計算
+  // 路徑 1: device_recovery_score（使用者只填 1 個數字，裝置已做個人比較）
+  // 路徑 2: 個別指標 + 個人基線 SWC 比較
+  // 路徑 3: 個別指標 + 族群範圍（基線不足時的 fallback）
+
   const recoveryScores = last3Wellness
     .filter(w => w.device_recovery_score != null)
     .map(w => w.device_recovery_score!)
 
-  let readinessScore: number | null = null // 0-100 composite
+  let readinessScore: number | null = null
 
   if (recoveryScores.length >= 1) {
-    // 裝置恢復分數直接使用（WHOOP/Oura/Garmin 已經做了多指標加權）
+    // 路徑 1: 裝置恢復分數直接使用
     readinessScore = recoveryScores.reduce((s, v) => s + v, 0) / recoveryScores.length
   }
 
-  // 沒有 device_recovery_score → 嘗試從個別指標計算
   if (readinessScore == null) {
-    const wearableEntries = last3Wellness.filter(w =>
+    // 路徑 2 或 3: 從個別指標計算
+    const currentEntries = last3Wellness.filter(w =>
       w.resting_hr != null || w.hrv != null || w.wearable_sleep_score != null
     )
-    const hasWearableData = wearableEntries.length >= 2
 
-    if (hasWearableData) {
-    const scores: { value: number; weight: number }[] = []
+    if (currentEntries.length >= 2) {
+      const scores: { value: number; weight: number }[] = []
 
-    // ── HRV (RMSSD) ── 權重 35%
-    // Sensors 2025: RMSSD 與副交感活性高度相關，穩定且易於計算
-    // 族群範圍：19-107ms (Welltory 2023 meta, n=296,000+)
-    // 力量運動員: 無顯著差異於耐力運動員 (Kubios 2024)
-    // 理想做法：個人 30 天滾動均值 ± SWC，但 3 天數據只能用族群級別
-    // 映射：20ms (floor) → 0 分, 100ms → 100 分（線性，涵蓋大部分運動員範圍）
-    const hrvValues = wearableEntries.filter(w => w.hrv != null).map(w => w.hrv!)
-    if (hrvValues.length > 0) {
-      const avgHRV = hrvValues.reduce((s, v) => s + v, 0) / hrvValues.length
-      const hrvScore = Math.min(100, Math.max(0, (avgHRV - 20) * (100 / 80)))
-      scores.push({ value: hrvScore, weight: 35 })
+      // 工具函數：計算基線 mean + SD
+      const calcBaseline = (vals: number[]) => {
+        if (vals.length < 5) return null // 基線至少需要 5 天數據
+        const mean = vals.reduce((s, v) => s + v, 0) / vals.length
+        const sd = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length)
+        return { mean, sd, swc: 0.5 * sd }
+      }
+
+      // 工具函數：基於個人基線的偏移量 → 0-100 分
+      // zScore = (current - baseline.mean) / baseline.sd
+      // 正向指標（HRV、睡眠）：z=0 → 50 分, z≥+2 → 100, z≤-2 → 0
+      // 反向指標（RHR、呼吸）：z=0 → 50 分, z≤-2 → 100, z≥+2 → 0
+      const zToScore = (z: number) => Math.min(100, Math.max(0, 50 + z * 25))
+
+      // ── HRV ── 權重 35%（正向：越高越好）
+      // Sensors 2025: RMSSD 7 天滾動均值 + CV，偏離個人基線 >SWC 有臨床意義
+      const currentHRV = currentEntries.filter(w => w.hrv != null).map(w => w.hrv!)
+      if (currentHRV.length > 0) {
+        const avgHRV = currentHRV.reduce((s, v) => s + v, 0) / currentHRV.length
+        const baselineHRV = calcBaseline(
+          baselineWellness.filter(w => w.hrv != null).map(w => w.hrv!)
+        )
+
+        if (baselineHRV && baselineHRV.sd > 0) {
+          // 路徑 2: 個人基線比較
+          const z = (avgHRV - baselineHRV.mean) / baselineHRV.sd
+          scores.push({ value: zToScore(z), weight: 35 })
+        } else {
+          // 路徑 3 fallback: 族群範圍 (20-100ms)
+          scores.push({
+            value: Math.min(100, Math.max(0, (avgHRV - 20) * (100 / 80))),
+            weight: 35
+          })
+        }
+      }
+
+      // ── RHR ── 權重 25%（反向：越低越好）
+      // PMC 2024: Nocturnal HR 升高 >5bpm 持續 2+ 天 = overreaching 信號
+      const currentRHR = currentEntries.filter(w => w.resting_hr != null).map(w => w.resting_hr!)
+      if (currentRHR.length > 0) {
+        const avgRHR = currentRHR.reduce((s, v) => s + v, 0) / currentRHR.length
+        const baselineRHR = calcBaseline(
+          baselineWellness.filter(w => w.resting_hr != null).map(w => w.resting_hr!)
+        )
+
+        if (baselineRHR && baselineRHR.sd > 0) {
+          // 路徑 2: RHR 升高 = 差，取反
+          const z = -(avgRHR - baselineRHR.mean) / baselineRHR.sd
+          scores.push({ value: zToScore(z), weight: 25 })
+        } else {
+          // 路徑 3 fallback: 族群範圍 (50-90bpm, 反向)
+          scores.push({
+            value: Math.min(100, Math.max(0, (90 - avgRHR) * (100 / 40))),
+            weight: 25
+          })
+        }
+      }
+
+      // ── 睡眠分數 ── 權重 30%（正向：越高越好）
+      // 已經是 0-100，可直接用；有基線時用 z-score 更精準
+      const currentSleep = currentEntries.filter(w => w.wearable_sleep_score != null).map(w => w.wearable_sleep_score!)
+      if (currentSleep.length > 0) {
+        const avgSleep = currentSleep.reduce((s, v) => s + v, 0) / currentSleep.length
+        const baselineSleep = calcBaseline(
+          baselineWellness.filter(w => w.wearable_sleep_score != null).map(w => w.wearable_sleep_score!)
+        )
+
+        if (baselineSleep && baselineSleep.sd > 0) {
+          // 路徑 2: 相對於個人睡眠品質水平
+          const z = (avgSleep - baselineSleep.mean) / baselineSleep.sd
+          scores.push({ value: zToScore(z), weight: 30 })
+        } else {
+          // 路徑 3 fallback: 直接用 0-100
+          scores.push({ value: avgSleep, weight: 30 })
+        }
+      }
+
+      // ── 呼吸速率 ── 權重 10%（反向：越低越好）
+      const currentRR = currentEntries.filter(w => w.respiratory_rate != null).map(w => w.respiratory_rate!)
+      if (currentRR.length > 0) {
+        const avgRR = currentRR.reduce((s, v) => s + v, 0) / currentRR.length
+        const baselineRR = calcBaseline(
+          baselineWellness.filter(w => w.respiratory_rate != null).map(w => w.respiratory_rate!)
+        )
+
+        if (baselineRR && baselineRR.sd > 0) {
+          const z = -(avgRR - baselineRR.mean) / baselineRR.sd
+          scores.push({ value: zToScore(z), weight: 10 })
+        } else {
+          // 路徑 3 fallback: 族群範圍 (12-24 次/分, 反向)
+          scores.push({
+            value: Math.min(100, Math.max(0, (24 - avgRR) * (100 / 12))),
+            weight: 10
+          })
+        }
+      }
+
+      if (scores.length > 0) {
+        const totalWeight = scores.reduce((s, sc) => s + sc.weight, 0)
+        readinessScore = scores.reduce((s, sc) => s + sc.value * sc.weight, 0) / totalWeight
+      }
     }
-
-    // ── RHR (靜息心率) ── 權重 25%
-    // PMC 2024: Nocturnal HR 判別過度訓練的 PPV ≥ 85%
-    // 運動員正常範圍：40-65 bpm，久坐者 60-80 bpm
-    // 升高 5-10+ bpm（相對於個人基線）提示疲勞/overreaching
-    // 映射：50 bpm → 100 分, 90 bpm → 0 分（反向線性）
-    const rhrValues = wearableEntries.filter(w => w.resting_hr != null).map(w => w.resting_hr!)
-    if (rhrValues.length > 0) {
-      const avgRHR = rhrValues.reduce((s, v) => s + v, 0) / rhrValues.length
-      const rhrScore = Math.min(100, Math.max(0, (90 - avgRHR) * (100 / 40)))
-      scores.push({ value: rhrScore, weight: 25 })
-    }
-
-    // ── 睡眠分數 ── 權重 30%
-    // JCM 2025: 睡眠不足 → cortisol ↑, testosterone/GH ↓, 肌力/耐力下降
-    // 穿戴裝置睡眠分數已 0-100，直接使用
-    // 注意：各品牌演算法不同（Current Sports Medicine Reports 2025）
-    //   Oura/WHOOP 相對可靠，但分數仍為「方向性參考」非臨床診斷
-    const sleepValues = wearableEntries.filter(w => w.wearable_sleep_score != null).map(w => w.wearable_sleep_score!)
-    if (sleepValues.length > 0) {
-      const avgSleep = sleepValues.reduce((s, v) => s + v, 0) / sleepValues.length
-      scores.push({ value: avgSleep, weight: 30 })
-    }
-
-    // ── 呼吸速率 ── 權重 10%（證據力最弱，作為輔助信號）
-    // 正常範圍 12-20 次/分（運動員偏低端）
-    // 升高 > 20 次/分可能提示疾病、壓力、overtraining
-    // 多數穿戴裝置從 HRV 間接推導，非獨立訊號
-    // 映射：12 次/分 → 100 分, 24 次/分 → 0 分
-    const rrValues = wearableEntries.filter(w => w.respiratory_rate != null).map(w => w.respiratory_rate!)
-    if (rrValues.length > 0) {
-      const avgRR = rrValues.reduce((s, v) => s + v, 0) / rrValues.length
-      const rrScore = Math.min(100, Math.max(0, (24 - avgRR) * (100 / 12)))
-      scores.push({ value: rrScore, weight: 10 })
-    }
-
-    if (scores.length > 0) {
-      const totalWeight = scores.reduce((s, sc) => s + sc.weight, 0)
-      readinessScore = scores.reduce((s, sc) => s + sc.value * sc.weight, 0) / totalWeight
-    }
-    } // hasWearableData
-  } // readinessScore == null
+  }
 
   // ── 判定邏輯 ──
   // 有穿戴裝置 → 以 Readiness Score 為主（客觀優先）
@@ -557,28 +613,19 @@ function assessCurrentState(
 
   if (readinessScore != null) {
     if (readinessScore < 25) {
-      // 客觀指標極差：不論 RPE 或主觀感受，身體需要恢復
       return 'critical'
     }
-
     if (readinessScore < 40) {
-      // 客觀指標差：搭配主觀確認嚴重程度
       if (avgEnergy != null && avgEnergy <= 2) return 'critical'
       return 'struggling'
     }
-
     if (readinessScore < 55) {
-      // 中低：可能正在累積疲勞，主觀雙確認
       if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) return 'struggling'
       return 'good'
     }
-
     if (readinessScore >= 70) {
-      // 客觀指標良好：即使 RPE 9-10 也是有效訓練刺激
       return 'optimal'
     }
-
-    // 55-70：狀態良好
     return 'good'
   }
 
@@ -586,29 +633,18 @@ function assessCurrentState(
   // 核心修正：RPE 高≠疲勞（接近力竭是肌肥大訓練的目標）
   // 只用 energy_level + training_drive 作為主觀疲勞信號
 
-  // critical：能量極低連續 2+ 天
   if (avgEnergy != null && avgEnergy <= 1.5 && last3Wellness.length >= 2) {
     return 'critical'
   }
-
-  // struggling：能量低 + 訓練慾望低（主觀雙重確認）
   if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) {
     return 'struggling'
   }
-
-  // optimal：energy 高且 drive 正常以上
   if (avgEnergy != null && avgEnergy >= 4 && (avgDrive == null || avgDrive >= 3)) {
     return 'optimal'
   }
 
   return 'good'
 }
-
-// TODO（未來優化）：
-// 1. 建立個人 HRV 基線：累積 30 天以上數據後，改用 SWC (mean ± 0.5×SD) 取代族群範圍
-//    參考：Sensors 2025 — 7 天滾動均值 + CV 是最佳實踐
-// 2. HRV CV（變異係數）追蹤：低 CV = 穩定適應，高 CV = 急性擾動
-// 3. RHR 趨勢比較：相對於個人基線升高 5-10+ bpm 才判定疲勞
 
 // ===== 低碳連續天數 =====
 // 從最近一天往前數，連續幾天碳水 < threshold（預設 150g）
