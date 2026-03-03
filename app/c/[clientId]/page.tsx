@@ -22,6 +22,7 @@ import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 import SelfManagedNutrition from '@/components/client/SelfManagedNutrition'
 import PwaPrompt from '@/components/client/PwaPrompt'
+import HealthModeAdvanced from '@/components/client/HealthModeAdvanced'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
 
@@ -381,6 +382,11 @@ export default function ClientDashboard() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* 健康模式進階功能：血檢飲食建議 + 季度對比 + 微營養素 */}
+          {isHealthMode && (
+            <HealthModeAdvanced clientId={c.id} />
           )}
 
           {/* 備賽倒數 Banner */}
