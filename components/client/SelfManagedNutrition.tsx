@@ -591,6 +591,24 @@ export default function SelfManagedNutrition({
         </div>
       )}
 
+      {/* 體脂區間 */}
+      {data.bodyFatZoneInfo && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 mb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-indigo-700">體脂區間</p>
+              <p className="text-sm font-bold text-indigo-900 mt-0.5">{data.bodyFatZoneInfo.zoneLabel}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-indigo-400">蛋白質 {data.bodyFatZoneInfo.proteinPerKg}g/kg ・ 脂肪 {data.bodyFatZoneInfo.fatPerKg}g/kg</p>
+              {data.bodyFatZoneInfo.refeedFrequency && (
+                <p className="text-[10px] text-indigo-400 mt-0.5">Refeed：{data.bodyFatZoneInfo.refeedFrequency}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 關鍵數據 */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         {data.estimatedTDEE && (
