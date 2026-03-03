@@ -19,6 +19,14 @@
  * - Mitchell et al. (2024) - Peak Week Carbohydrate Manipulation: narrative review
  */
 
+import {
+  getBodyFatZone,
+  getZoneMacros,
+  type Gender as BFZGender,
+  type BodyFatZoneId,
+  type RecoveryIndicators as ZoneRecoveryIndicators,
+} from './body-fat-zone-table'
+
 // ===== 類型定義 =====
 
 export interface NutritionInput {
@@ -136,6 +144,15 @@ export interface NutritionSuggestion {
 
   // 月經週期判斷（女性專用）
   menstrualCycleNote: string | null  // 黃體期提示訊息（null = 不在黃體期或非女性）
+
+  // 體脂區間資訊（有體脂率時才有值）
+  bodyFatZoneInfo: {
+    zoneId: BodyFatZoneId
+    zoneLabel: string
+    proteinPerKg: number   // 區間建議 g/kg
+    fatPerKg: number       // 區間建議 g/kg
+    refeedFrequency: string | null  // 建議 refeed 頻率
+  } | null
 
   // 是否可以自動套用
   autoApply: boolean
@@ -361,9 +378,35 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     dietDurationWeeks: null, dietBreakSuggested: false, warnings: [],
     currentState: 'unknown', readinessScore: null, wearableInsight: null,
     refeedSuggested: false, refeedReason: null, refeedDays: null,
+    bodyFatZoneInfo: null,
     deadlineInfo: null, autoApply: false, peakWeekPlan: null,
     menstrualCycleNote: null,
     ...overrides,
+  }
+}
+
+// ===== 體脂區間查詢 helper =====
+// 將 NutritionInput 的性別轉換為 body-fat-zone-table 的 Gender，查出區間
+
+function toZoneGender(gender: string): BFZGender {
+  return gender === '男性' ? 'male' : 'female'
+}
+
+function buildBodyFatZoneInfo(
+  gender: string,
+  bodyFatPct: number | null | undefined,
+  goalType: 'cut' | 'bulk'
+): NutritionSuggestion['bodyFatZoneInfo'] {
+  if (bodyFatPct == null || bodyFatPct <= 0) return null
+  const zone = getBodyFatZone(toZoneGender(gender), bodyFatPct)
+  if (!zone) return null
+  const spec = goalType === 'cut' ? zone.cut : zone.bulk
+  return {
+    zoneId: zone.id,
+    zoneLabel: zone.label,
+    proteinPerKg: spec.proteinGPerKg,
+    fatPerKg: spec.fatGPerKg,
+    refeedFrequency: goalType === 'cut' ? zone.cut.refeedFrequency : null,
   }
 }
 
@@ -915,6 +958,7 @@ function generateCutSuggestion(
 ): NutritionSuggestion {
   const bw = input.bodyWeight
   const isMale = input.gender === '男性'
+  const zoneInfo = buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)
 
   // ===== Goal-Driven Mode =====
   // 條件：有目標體重 + 目標日期 + 有 TDEE 估算 → 直接反算每日卡路里
@@ -1075,15 +1119,19 @@ function generateCutSuggestion(
   let suggestedCarb = currentCarb + carbDelta
   let suggestedFat = currentFat + fatDelta
 
-  // 安全底線檢查（男女分開：女性蛋白質需求較低，脂肪需求較高）
-  const proteinPerKgFloor = isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE
+  // 安全底線檢查（有體脂區間時用 zone 值，否則 fallback 原本男女固定值）
+  const proteinPerKgFloor = zoneInfo
+    ? zoneInfo.proteinPerKg
+    : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE)
   const minProtein = Math.round(bw * proteinPerKgFloor)
   if (suggestedPro < minProtein) {
     suggestedPro = minProtein
-    warnings.push(`蛋白質已提升至安全最低值 ${minProtein}g（${proteinPerKgFloor}g/kg）`)
+    warnings.push(`蛋白質已提升至安全最低值 ${minProtein}g（${proteinPerKgFloor}g/kg${zoneInfo ? `，${zoneInfo.zoneLabel}區間` : ''}）`)
   }
 
-  const fatPerKgFloor = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+  const fatPerKgFloor = zoneInfo
+    ? zoneInfo.fatPerKg
+    : (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)
   const minFat = Math.round(bw * fatPerKgFloor)
   if (suggestedFat < minFat) {
     suggestedFat = minFat
@@ -1131,8 +1179,12 @@ function generateCutSuggestion(
     // 進度正常且無恢復狀態調整 → 驗證巨量營養素安全底線即可
     let validatedPro = currentPro
     let validatedFat = currentFat
-    const proteinPerKgFloorOT = isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE
-    const fatPerKgFloorOT = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+    const proteinPerKgFloorOT = zoneInfo
+      ? zoneInfo.proteinPerKg
+      : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE)
+    const fatPerKgFloorOT = zoneInfo
+      ? zoneInfo.fatPerKg
+      : (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)
     const minProteinOT = Math.round(bw * proteinPerKgFloorOT)
     const minFatOT = Math.round(bw * fatPerKgFloorOT)
 
@@ -1157,6 +1209,7 @@ function generateCutSuggestion(
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
+      bodyFatZoneInfo: zoneInfo,
       deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
       menstrualCycleNote: cycleInfo.note,
     }
@@ -1177,6 +1230,7 @@ function generateCutSuggestion(
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    bodyFatZoneInfo: zoneInfo,
     deadlineInfo, autoApply: true, peakWeekPlan: null,
     menstrualCycleNote: cycleInfo.note,
   }
@@ -1198,6 +1252,7 @@ function generateGoalDrivenCut(
 ): NutritionSuggestion {
   const bw = input.bodyWeight
   const isMale = input.gender === '男性'
+  const zoneInfo = buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)
   const targetWeight = input.targetWeight!
   const daysLeft = deadlineInfo.daysLeft
   const weightToLose = deadlineInfo.weightToLose  // kg, positive = need to lose
@@ -1277,21 +1332,28 @@ function generateGoalDrivenCut(
     : (isCompetitionPrep ? GOAL_DRIVEN.MIN_CALORIES_FEMALE : SAFETY.MIN_CALORIES_FEMALE)
   const softMinCal = isMale ? SAFETY.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_FEMALE
 
-  // 巨量營養素分配（依性別 + 赤字深度）
-  // 男性：Helms 2014 赤字越大 → 蛋白質越高（2.3→2.6→3.0g/kg）
-  // 女性：Stokes 2018 備賽建議，比男性低（1.8→2.0→2.3g/kg），節省熱量給碳水和脂肪
-  const proteinPerKg = isMale
+  // 巨量營養素分配
+  // 有體脂區間 → 用 zone table 的蛋白質值作為 baseline（取 zone 與 safety level 較高者）
+  // 無體脂區間 → fallback 到原本的 性別 + 赤字深度 分級
+  const fallbackProteinPerKg = isMale
     ? (safetyLevel === 'extreme' ? GOAL_DRIVEN.PROTEIN_PER_KG_EXTREME
         : safetyLevel === 'aggressive' ? GOAL_DRIVEN.PROTEIN_PER_KG_AGGRESSIVE
         : GOAL_DRIVEN.PROTEIN_PER_KG_NORMAL)
     : (safetyLevel === 'extreme' ? GOAL_DRIVEN.PROTEIN_PER_KG_EXTREME_FEMALE
         : safetyLevel === 'aggressive' ? GOAL_DRIVEN.PROTEIN_PER_KG_AGGRESSIVE_FEMALE
         : GOAL_DRIVEN.PROTEIN_PER_KG_NORMAL_FEMALE)
+  // 有體脂區間時：取 zone 建議和 safety-level fallback 的較高者
+  const proteinPerKg = zoneInfo
+    ? Math.max(zoneInfo.proteinPerKg, fallbackProteinPerKg)
+    : fallbackProteinPerKg
 
-  // 女性脂肪底線比男性高（雌激素合成、月經功能保護）
-  const minFatPerKg = isMale
+  // 脂肪：有體脂區間 → zone 值，否則 fallback
+  const fallbackFatPerKg = isMale
     ? (safetyLevel === 'extreme' ? GOAL_DRIVEN.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG)
     : (safetyLevel === 'extreme' ? GOAL_DRIVEN.MIN_FAT_PER_KG_FEMALE : SAFETY.MIN_FAT_PER_KG_FEMALE)
+  const minFatPerKg = zoneInfo
+    ? Math.max(zoneInfo.fatPerKg, fallbackFatPerKg)
+    : fallbackFatPerKg
 
   let suggestedPro = Math.round(bw * proteinPerKg)
   let suggestedFat = Math.round(bw * minFatPerKg)
@@ -1565,6 +1627,7 @@ function generateGoalDrivenCut(
     dietBreakSuggested,
     warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    bodyFatZoneInfo: zoneInfo,
     deadlineInfo: enrichedDeadlineInfo,
     autoApply: true,  // Goal-driven 永遠自動套用
     peakWeekPlan: null,
@@ -1585,6 +1648,8 @@ function generateBulkSuggestion(
   recoveryState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'
 ): NutritionSuggestion {
   const bw = input.bodyWeight
+  const isMale = input.gender === '男性'
+  const zoneInfo = buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)
 
   let status: NutritionSuggestion['status']
   let statusLabel: string
@@ -1668,16 +1733,19 @@ function generateBulkSuggestion(
   let suggestedCarb = currentCarb + carbDelta
   let suggestedFat = currentFat + fatDelta
 
-  // 安全底線（男女分開：女性增肌期蛋白質與脂肪需求有別）
-  const isMaleBulk = input.gender === '男性'
-  const bulkProteinFloor = isMaleBulk ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE
+  // 安全底線（有體脂區間用 zone 值，否則 fallback 男女固定值）
+  const bulkProteinFloor = zoneInfo
+    ? zoneInfo.proteinPerKg
+    : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
   const minProtein = Math.round(bw * bulkProteinFloor)
   if (suggestedPro < minProtein) {
     suggestedPro = minProtein
     warnings.push(`蛋白質已提升至安全最低值 ${minProtein}g（${bulkProteinFloor}g/kg）`)
   }
 
-  const bulkFatFloor = isMaleBulk ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+  const bulkFatFloor = zoneInfo
+    ? zoneInfo.fatPerKg
+    : (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)
   const minFat = Math.round(bw * bulkFatFloor)
   if (suggestedFat < minFat) {
     suggestedFat = minFat
@@ -1716,8 +1784,12 @@ function generateBulkSuggestion(
     // 即使進度正常，也驗證巨量營養素安全底線
     let validatedPro = currentPro
     let validatedFat = currentFat
-    const bulkProteinFloorOT = isMaleBulk ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE
-    const bulkFatFloorOT = isMaleBulk ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+    const bulkProteinFloorOT = zoneInfo
+      ? zoneInfo.proteinPerKg
+      : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
+    const bulkFatFloorOT = zoneInfo
+      ? zoneInfo.fatPerKg
+      : (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)
     const minProteinBulk = Math.round(bw * bulkProteinFloorOT)
     const minFatBulk = Math.round(bw * bulkFatFloorOT)
 
@@ -1742,6 +1814,7 @@ function generateBulkSuggestion(
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested: false, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
+      bodyFatZoneInfo: zoneInfo,
       deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
       menstrualCycleNote: cycleInfo.note,
     }
@@ -1762,6 +1835,7 @@ function generateBulkSuggestion(
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested: false, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    bodyFatZoneInfo: zoneInfo,
     deadlineInfo, autoApply: true, peakWeekPlan: null,
     menstrualCycleNote: cycleInfo.note,
   }
@@ -1899,6 +1973,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
       `🏋️ ${todayPlan.trainingNote}`,
     ],
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
+    bodyFatZoneInfo: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType),
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
     autoApply: true,
     peakWeekPlan: plan,
@@ -1928,6 +2003,7 @@ export interface InitialTargetResult {
   fat: number
   deficit: number  // 正=赤字, 負=盈餘
   method: 'katch_mcardle' | 'fallback'  // TDEE 計算方式
+  bodyFatZoneInfo: NutritionSuggestion['bodyFatZoneInfo']
 }
 
 export function calculateInitialTargets(input: InitialTargetInput): InitialTargetResult {
@@ -1971,19 +2047,39 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
   const finalCalories = Math.max(targetCalories, minCal)
 
   // 4. 巨量營養素分配
-  // 蛋白質
-  const proteinPerKg = input.goalType === 'cut'
-    ? (isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE)
-    : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
-  const protein = Math.round(bw * proteinPerKg)
+  // 有體脂區間 → 用 getZoneMacros() 取得基於文獻的精確建議
+  // 無體脂區間 → fallback 男女固定值
+  const zoneInfo = buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)
 
-  // 脂肪
-  const fatPerKg = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
-  const fat = Math.round(bw * fatPerKg)
+  let protein: number
+  let fat: number
+  let carbs: number
 
-  // 碳水 = 剩餘熱量
-  const remainingCal = finalCalories - (protein * 4) - (fat * 9)
-  const carbs = Math.max(50, Math.round(remainingCal / 4))  // 碳水最低 50g
+  if (input.bodyFatPct != null && input.bodyFatPct > 0 && zoneInfo) {
+    // 用 zone table 的完整建議
+    const zoneMacros = getZoneMacros({
+      gender: toZoneGender(input.gender),
+      bodyWeight: bw,
+      bodyFatPct: input.bodyFatPct,
+      goalType: input.goalType,
+      estimatedTDEE: estimatedTDEE,
+    })
+    protein = zoneMacros.protein
+    fat = zoneMacros.fat
+    carbs = zoneMacros.carbs
+  } else {
+    // Fallback: 固定 g/kg
+    const proteinPerKg = input.goalType === 'cut'
+      ? (isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE)
+      : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
+    protein = Math.round(bw * proteinPerKg)
+
+    const fatPerKg = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+    fat = Math.round(bw * fatPerKg)
+
+    const remainingCal = finalCalories - (protein * 4) - (fat * 9)
+    carbs = Math.max(50, Math.round(remainingCal / 4))
+  }
 
   return {
     estimatedTDEE,
@@ -1993,6 +2089,7 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
     fat,
     deficit: estimatedTDEE - finalCalories,
     method,
+    bodyFatZoneInfo: zoneInfo,
   }
 }
 
@@ -2107,6 +2204,7 @@ export interface DemoAnalysisResult {
   weeklyChangeRate: number      // 預估每週變化 %BW
   projectedWeeks: number | null // 達標所需週數
   safetyNotes: string[]
+  bodyFatZoneInfo: NutritionSuggestion['bodyFatZoneInfo']
 }
 
 export function generateDemoAnalysis(input: DemoAnalysisInput): DemoAnalysisResult {
@@ -2151,16 +2249,33 @@ export function generateDemoAnalysis(input: DemoAnalysisInput): DemoAnalysisResu
     safetyNotes.push(`已套用安全底線 ${minCal} kcal，避免代謝過度下降。`)
   }
 
-  // 4. 巨量營養素
-  const proteinPerKg = input.goalType === 'cut'
-    ? (isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE)
-    : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
-  const fatPerKg = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+  // 4. 巨量營養素（有體脂區間用 zone macros，否則 fallback）
+  const zoneInfo = buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)
+  let suggestedProtein: number
+  let suggestedFat: number
+  let suggestedCarbs: number
 
-  const suggestedProtein = Math.round(bw * proteinPerKg)
-  const suggestedFat = Math.round(bw * fatPerKg)
-  const remainingCals = suggestedCalories - (suggestedProtein * 4) - (suggestedFat * 9)
-  const suggestedCarbs = Math.max(30, Math.round(remainingCals / 4))
+  if (input.bodyFatPct != null && input.bodyFatPct > 0 && zoneInfo) {
+    const zoneMacros = getZoneMacros({
+      gender: toZoneGender(input.gender),
+      bodyWeight: bw,
+      bodyFatPct: input.bodyFatPct,
+      goalType: input.goalType,
+      estimatedTDEE: estimatedTDEE,
+    })
+    suggestedProtein = zoneMacros.protein
+    suggestedFat = zoneMacros.fat
+    suggestedCarbs = zoneMacros.carbs
+  } else {
+    const proteinPerKg = input.goalType === 'cut'
+      ? (isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE)
+      : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
+    const fatPerKg = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+    suggestedProtein = Math.round(bw * proteinPerKg)
+    suggestedFat = Math.round(bw * fatPerKg)
+    const remainingCals = suggestedCalories - (suggestedProtein * 4) - (suggestedFat * 9)
+    suggestedCarbs = Math.max(30, Math.round(remainingCals / 4))
+  }
 
   // 5. 預估每週變化
   const weeklyChangeKg = input.goalType === 'cut'
@@ -2198,5 +2313,6 @@ export function generateDemoAnalysis(input: DemoAnalysisInput): DemoAnalysisResu
     weeklyChangeRate: Math.round(weeklyChangeRate * 100) / 100,
     projectedWeeks,
     safetyNotes,
+    bodyFatZoneInfo: zoneInfo,
   }
 }
