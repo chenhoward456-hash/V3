@@ -23,6 +23,7 @@ import WeeklyInsight from '@/components/client/WeeklyInsight'
 import SelfManagedNutrition from '@/components/client/SelfManagedNutrition'
 import PwaPrompt from '@/components/client/PwaPrompt'
 import HealthModeAdvanced from '@/components/client/HealthModeAdvanced'
+import LabNutritionAdviceCard from '@/components/client/LabNutritionAdviceCard'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
 
@@ -763,6 +764,15 @@ export default function ClientDashboard() {
             coachHeaders={coachHeaders}
             onMutate={mutate}
           /></div>
+        )}
+
+        {/* 血檢飲食建議 — 所有模式通用，有血檢資料就顯示 */}
+        {c.lab_enabled && c.lab_results && c.lab_results.length > 0 && (
+          <LabNutritionAdviceCard
+            labResults={c.lab_results}
+            gender={c.gender}
+            goalType={c.goal_type}
+          />
         )}
 
         <ActionPlan
