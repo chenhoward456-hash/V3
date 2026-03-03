@@ -124,6 +124,7 @@ export async function PUT(request: NextRequest) {
       'nutrition_enabled', 'supplement_enabled', 'wellness_enabled', 'training_enabled',
       'body_composition_enabled', 'lab_enabled', 'competition_enabled', 'health_mode_enabled',
       'target_weight', 'competition_date', 'prep_phase',
+      'goal_type', 'activity_profile', 'diet_start_date',
       'calories_target', 'protein_target', 'carbs_target', 'fat_target', 'water_target',
       'carbs_training_day', 'carbs_rest_day',
       'next_checkup_date', 'coach_weekly_note',

@@ -205,3 +205,65 @@ export async function POST(request: NextRequest) {
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
+
+// PATCH: 自主管理用戶更新自己的 profile（goal_type, activity_profile 等）
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { clientId, goal_type, activity_profile } = body
+
+    if (!clientId || typeof clientId !== 'string') {
+      return createErrorResponse('缺少客戶 ID', 400)
+    }
+
+    // 驗證 unique_code 存在且為 self_managed
+    const { data: client, error: clientError } = await supabase
+      .from('clients')
+      .select('id, subscription_tier, is_active')
+      .eq('unique_code', clientId)
+      .single()
+
+    if (clientError || !client) {
+      return createErrorResponse('找不到客戶', 404)
+    }
+
+    if (client.is_active === false) {
+      return createErrorResponse('帳號已暫停', 403)
+    }
+
+    if (client.subscription_tier !== 'self_managed') {
+      return createErrorResponse('此功能僅限自主管理方案', 403)
+    }
+
+    // 白名單：只允許更新這些欄位
+    const updates: Record<string, any> = {}
+
+    if (goal_type && ['cut', 'bulk'].includes(goal_type)) {
+      updates.goal_type = goal_type
+      // 設定目標時順便記錄開始日期
+      updates.diet_start_date = new Date().toISOString().split('T')[0]
+    }
+
+    if (activity_profile && ['sedentary', 'high_energy_flux'].includes(activity_profile)) {
+      updates.activity_profile = activity_profile
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return createErrorResponse('沒有有效的更新欄位', 400)
+    }
+
+    const { error: updateError } = await supabase
+      .from('clients')
+      .update(updates)
+      .eq('id', client.id)
+
+    if (updateError) {
+      return createErrorResponse('更新失敗', 500)
+    }
+
+    return createSuccessResponse({ updated: true })
+  } catch (error) {
+    console.error('PATCH 錯誤:', error)
+    return createErrorResponse('伺服器錯誤', 500)
+  }
+}

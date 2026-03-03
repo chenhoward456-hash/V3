@@ -20,6 +20,7 @@ import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
+import SelfManagedNutrition from '@/components/client/SelfManagedNutrition'
 import PwaPrompt from '@/components/client/PwaPrompt'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
@@ -194,6 +195,7 @@ export default function ClientDashboard() {
   const c = clientData.client
   const isCompetition = c.competition_enabled
   const isHealthMode = c.health_mode_enabled
+  const isSelfManaged = c.subscription_tier === 'self_managed'
 
   // 健康模式：計算健康分數
   const healthScore = isHealthMode ? calculateHealthScore({
@@ -668,13 +670,25 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {/* 一般學員的每週智能分析 */}
-        {!isCompetition && c.nutrition_enabled && c.body_composition_enabled && (
+        {/* 自主管理學員的智能營養計算（取代 WeeklyInsight + DailyNutritionTarget） */}
+        {!isCompetition && isSelfManaged && c.body_composition_enabled && (
+          <SelfManagedNutrition
+            clientId={c.id}
+            uniqueCode={c.unique_code}
+            goalType={c.goal_type || null}
+            activityProfile={c.activity_profile || null}
+            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            onMutate={mutate}
+          />
+        )}
+
+        {/* 一般學員（非自主管理）的每週智能分析 */}
+        {!isCompetition && !isSelfManaged && c.nutrition_enabled && c.body_composition_enabled && (
           <WeeklyInsight clientId={c.id} onMutate={mutate} />
         )}
 
-        {/* 一般學員的飲食目標卡片 */}
-        {!isCompetition && c.nutrition_enabled && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
+        {/* 一般學員（非自主管理）的飲食目標卡片 */}
+        {!isCompetition && !isSelfManaged && c.nutrition_enabled && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
           <DailyNutritionTarget
             caloriesTarget={c.calories_target}
             proteinTarget={c.protein_target}
