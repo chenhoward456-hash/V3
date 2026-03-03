@@ -296,55 +296,87 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
             選擇你的方案
           </h2>
-          <p className="text-center text-gray-500 mb-14">兩種方案，同一套引擎</p>
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* 主推：智能管理方案 */}
+          <p className="text-center text-gray-500 mb-14">同一套引擎，三種使用方式</p>
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* 自主管理 NT$499 */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-primary/30 flex flex-col relative">
               <div className="absolute -top-3 left-6 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">
-                全台適用
+                最多人選
               </div>
-              <h3 className="text-2xl font-bold mb-2 text-navy">Howard Protocol 智能管理</h3>
-              <p className="text-gray-500 mb-6 text-sm">智能引擎 + CSCS 教練監督</p>
+              <h3 className="text-xl font-bold mb-1 text-navy">自主管理版</h3>
+              <p className="text-gray-400 text-sm mb-4">系統幫你管，不需要教練</p>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-navy">NT$499</span>
+                <span className="text-gray-400 text-sm"> /月</span>
+              </div>
               <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
-                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>智能引擎 24 小時自動分析</li>
-                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>每週體重趨勢自動判讀</li>
-                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>自適應 TDEE 持續校正</li>
-                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>Refeed / Diet Break 自動觸發</li>
-                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>碳循環自動分配（訓練日/休息日）</li>
-                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>月經週期智能濾鏡（女性）</li>
-                <li className="flex items-center gap-2"><span className="text-primary">&#10003;</span>CSCS 教練每週監督 + LINE 諮詢</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>智能引擎 24 小時自動分析</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>每週體重趨勢自動判讀</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>自適應 TDEE 持續校正</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>Refeed / Diet Break 自動觸發</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>碳循環自動分配</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>月經週期智能濾鏡</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>HRV 恢復狀態自動調整</li>
               </ul>
-              <LineButton
-                source="homepage_plan"
-                intent="smart_plan"
-                className="block text-center bg-primary text-white py-3.5 rounded-xl font-semibold hover:bg-primary-dark transition-colors shadow-lg shadow-blue-500/25"
-              >
-                加 LINE 諮詢方案 💬
-              </LineButton>
               <Link
                 href="/diagnosis"
-                className="block text-center text-primary text-sm mt-3 hover:underline"
+                className="block text-center bg-primary text-white py-3.5 rounded-xl font-semibold hover:bg-primary-dark transition-colors shadow-lg shadow-blue-500/25"
               >
-                或先免費體驗系統分析 →
+                免費體驗系統分析 →
               </Link>
             </div>
 
-            {/* 實體 + 智能管理 */}
+            {/* 教練指導 NT$2,999 */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
               <div className="absolute -top-3 left-6 bg-navy text-white text-xs font-bold px-3 py-1 rounded-full">
-                台中限定
+                全台適用
               </div>
-              <h3 className="text-2xl font-bold mb-2 text-navy">實體訓練 + 智能管理</h3>
-              <p className="text-gray-500 mb-6 text-sm">一對一指導 + 智能引擎全套</p>
+              <h3 className="text-xl font-bold mb-1 text-navy">教練指導版</h3>
+              <p className="text-gray-400 text-sm mb-4">系統 + CSCS 教練監督</p>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-navy">NT$2,999</span>
+                <span className="text-gray-400 text-sm"> /月</span>
+              </div>
               <ul className="space-y-3 text-gray-700 mb-4 text-sm">
-                <li className="flex items-center gap-2"><span className="text-navy">&#10003;</span>包含上方所有智能管理功能</li>
+                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>包含自主管理版所有功能</li>
               </ul>
               <div className="border-t border-gray-100 pt-4 mb-8 flex-1">
                 <p className="text-xs text-gray-400 mb-3">額外包含：</p>
                 <ul className="space-y-3 text-gray-700 text-sm">
-                  <li className="flex items-center gap-2"><span className="text-navy">&#10003;</span>一對一動作評估與矯正</li>
-                  <li className="flex items-center gap-2"><span className="text-navy">&#10003;</span>即時訓練指導與調整</li>
-                  <li className="flex items-center gap-2"><span className="text-navy">&#10003;</span>Coolday Fitness 北屯館</li>
+                  <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>CSCS 教練每週 review</li>
+                  <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>LINE 即時諮詢</li>
+                  <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>每月 1 次視訊</li>
+                </ul>
+              </div>
+              <LineButton
+                source="homepage_plan"
+                intent="coach_plan"
+                className="block text-center bg-navy text-white py-3.5 rounded-xl font-semibold hover:bg-navy/90 transition-colors"
+              >
+                加 LINE 諮詢
+              </LineButton>
+            </div>
+
+            {/* 實體 + 遠端 NT$5,000 */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
+              <div className="absolute -top-3 left-6 bg-amber-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                台中限定
+              </div>
+              <h3 className="text-xl font-bold mb-1 text-navy">實體 + 智能管理</h3>
+              <p className="text-gray-400 text-sm mb-4">一對一指導 + 系統全套</p>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-navy">NT$5,000</span>
+                <span className="text-gray-400 text-sm"> /月</span>
+              </div>
+              <ul className="space-y-3 text-gray-700 mb-4 text-sm">
+                <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>包含教練指導版所有功能</li>
+              </ul>
+              <div className="border-t border-gray-100 pt-4 mb-8 flex-1">
+                <p className="text-xs text-gray-400 mb-3">額外包含：</p>
+                <ul className="space-y-3 text-gray-700 text-sm">
+                  <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>一對一動作評估與矯正</li>
+                  <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>即時訓練指導</li>
+                  <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>Coolday 北屯館</li>
                 </ul>
               </div>
               <LineButton
@@ -352,16 +384,13 @@ export default function HomePage() {
                 intent="in_person"
                 className="block text-center bg-white text-navy border-2 border-navy py-3.5 rounded-xl font-semibold hover:bg-navy/5 transition-colors"
               >
-                加 LINE 預約諮詢 💬
+                加 LINE 預約
               </LineButton>
-              <Link
-                href="/action"
-                className="block text-center text-navy text-sm mt-3 hover:underline"
-              >
-                查看實體訓練詳情 →
-              </Link>
             </div>
           </div>
+          <p className="text-center text-xs text-gray-400 mt-8">
+            月繳制，隨時可取消。自主管理版可隨時升級，補差額即可。
+          </p>
         </section>
       </ScrollReveal>
 

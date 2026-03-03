@@ -20,6 +20,7 @@ import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
+import SelfManagedNutrition from '@/components/client/SelfManagedNutrition'
 import PwaPrompt from '@/components/client/PwaPrompt'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
@@ -194,6 +195,7 @@ export default function ClientDashboard() {
   const c = clientData.client
   const isCompetition = c.competition_enabled
   const isHealthMode = c.health_mode_enabled
+  const isSelfManaged = c.subscription_tier === 'self_managed'
 
   // 健康模式：計算健康分數
   const healthScore = isHealthMode ? calculateHealthScore({
@@ -447,7 +449,7 @@ export default function ClientDashboard() {
                         <button onClick={() => document.getElementById('section-wellness')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full hover:bg-purple-100 transition-colors">😊 記錄感受</button>
                       )}
                       {c.nutrition_enabled && !todayNutrition && (
-                        <button onClick={() => document.getElementById('section-nutrition')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors">🍽️ 飲食紀錄</button>
+                        <button onClick={() => (document.getElementById('section-nutrition') || document.getElementById('section-nutrition-general'))?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors">🍽️ 飲食紀錄</button>
                       )}
                       {c.training_enabled && !todayTraining && (
                         <button onClick={() => document.getElementById('section-training')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-green-50 text-green-600 px-2.5 py-1 rounded-full hover:bg-green-100 transition-colors">🏋️ 訓練紀錄</button>
@@ -668,13 +670,30 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {/* 一般學員的每週智能分析 */}
-        {!isCompetition && c.nutrition_enabled && c.body_composition_enabled && (
+        {/* 自主管理學員的智能營養計算（取代 WeeklyInsight + DailyNutritionTarget） */}
+        {!isCompetition && isSelfManaged && c.body_composition_enabled && (
+          <SelfManagedNutrition
+            clientId={c.id}
+            uniqueCode={c.unique_code}
+            goalType={c.goal_type || null}
+            activityProfile={c.activity_profile || null}
+            gender={c.gender || null}
+            caloriesTarget={c.calories_target}
+            proteinTarget={c.protein_target}
+            carbsTarget={c.carbs_target}
+            fatTarget={c.fat_target}
+            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            onMutate={mutate}
+          />
+        )}
+
+        {/* 一般學員（非自主管理）的每週智能分析 */}
+        {!isCompetition && !isSelfManaged && c.nutrition_enabled && c.body_composition_enabled && (
           <WeeklyInsight clientId={c.id} onMutate={mutate} />
         )}
 
-        {/* 一般學員的飲食目標卡片 */}
-        {!isCompetition && c.nutrition_enabled && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
+        {/* 一般學員（非自主管理）的飲食目標卡片 */}
+        {!isCompetition && !isSelfManaged && c.nutrition_enabled && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
           <DailyNutritionTarget
             caloriesTarget={c.calories_target}
             proteinTarget={c.protein_target}
@@ -689,7 +708,7 @@ export default function ClientDashboard() {
 
         {/* 一般學員的飲食（非備賽才在這裡顯示） */}
         {!isCompetition && c.nutrition_enabled && (
-          <div id="section-nutrition" className="scroll-mt-4"><NutritionLog
+          <div id="section-nutrition-general" className="scroll-mt-4"><NutritionLog
             todayNutrition={todayNutrition}
             nutritionLogs={clientData.nutritionLogs || []}
             clientId={clientId as string}
@@ -796,7 +815,7 @@ export default function ClientDashboard() {
       {(() => {
         const tabs: { id: string; icon: string; label: string }[] = []
         if (isCompetition && c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
-        if (c.nutrition_enabled) tabs.push({ id: 'section-nutrition', icon: '🥗', label: '飲食' })
+        if (c.nutrition_enabled) tabs.push({ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: '🥗', label: '飲食' })
         if (c.supplement_enabled) tabs.push({ id: 'section-supplements', icon: '💊', label: '補品' })
         if (c.wellness_enabled) tabs.push({ id: 'section-wellness', icon: '😊', label: '感受' })
         if (c.training_enabled) tabs.push({ id: 'section-training', icon: '🏋️', label: '訓練' })

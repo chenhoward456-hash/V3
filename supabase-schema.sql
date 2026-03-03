@@ -9,7 +9,8 @@ CREATE TABLE clients (
   gender TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '3 months'),
-  status TEXT DEFAULT 'normal' CHECK (status IN ('normal', 'attention', 'alert'))
+  status TEXT DEFAULT 'normal' CHECK (status IN ('normal', 'attention', 'alert')),
+  subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'self_managed', 'coached', 'combo'))
 );
 
 -- 2. 血檢結果表
@@ -399,3 +400,6 @@ ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS respiratory_rate NUMERIC CHE
 -- 裝置恢復分數 (0-100)：WHOOP Recovery / Oura Readiness / Garmin Body Battery
 -- 使用者只需填這一個數字，引擎直接用作 Readiness Score
 ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS device_recovery_score INTEGER CHECK (device_recovery_score >= 0 AND device_recovery_score <= 100);
+
+-- 訂閱方案層級：free（免費/驗證期）、self_managed（499自主管理）、coached（2999教練指導）、combo（5000實體+遠端）
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'self_managed', 'coached', 'combo'));

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
+import crypto from 'crypto'
 import { validateDate } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware'
+import { calculateInitialTargets } from '@/lib/nutrition-engine'
 
 const supabase = createServiceSupabase()
 
@@ -49,8 +51,8 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('此帳號已暫停，請聯繫教練', 403)
     }
 
-    // 檢查是否過期
-    if (new Date(client.expires_at) < new Date()) {
+    // 檢查是否過期（expires_at 為 NULL 代表永不過期）
+    if (client.expires_at && new Date(client.expires_at) < new Date()) {
       return createErrorResponse('客戶資料已過期', 403)
     }
     
@@ -164,8 +166,8 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('無效的性別', 400)
     }
     
-    // 生成唯一代碼
-    const uniqueCode = Math.random().toString(36).substring(2, 9)
+    // 生成唯一代碼（密碼學安全隨機）
+    const uniqueCode = crypto.randomBytes(5).toString('hex').substring(0, 9)
     
     const { data, error } = await supabase
       .from('clients')
@@ -187,6 +189,116 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('API 錯誤:', error)
+    return createErrorResponse('伺服器錯誤', 500)
+  }
+}
+
+// PATCH: 自主管理用戶 Onboarding — 設定目標 + InBody 數據 → 即時算出初始營養目標
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { clientId, goal_type, activity_profile, gender, height, body_weight, body_fat_pct, training_days_per_week } = body
+
+    if (!clientId || typeof clientId !== 'string') {
+      return createErrorResponse('缺少客戶 ID', 400)
+    }
+
+    // 驗證 unique_code 存在且為 self_managed
+    const { data: client, error: clientError } = await supabase
+      .from('clients')
+      .select('id, gender, subscription_tier, is_active')
+      .eq('unique_code', clientId)
+      .single()
+
+    if (clientError || !client) {
+      return createErrorResponse('找不到客戶', 404)
+    }
+
+    if (client.is_active === false) {
+      return createErrorResponse('帳號已暫停', 403)
+    }
+
+    if (client.subscription_tier !== 'self_managed') {
+      return createErrorResponse('此功能僅限自主管理方案', 403)
+    }
+
+    // 白名單：只允許更新這些欄位
+    const updates: Record<string, any> = {}
+
+    if (goal_type && ['cut', 'bulk'].includes(goal_type)) {
+      updates.goal_type = goal_type
+      updates.diet_start_date = new Date().toISOString().split('T')[0]
+    }
+
+    if (activity_profile && ['sedentary', 'high_energy_flux'].includes(activity_profile)) {
+      updates.activity_profile = activity_profile
+    }
+
+    if (height && typeof height === 'number' && height > 100 && height < 250) {
+      updates.height = height
+    }
+
+    // InBody 數據 → 建立 body_composition 紀錄 + 計算初始營養目標
+    const hasBodyData = body_weight && typeof body_weight === 'number' && body_weight > 30 && body_weight < 300
+    const validGoalType = goal_type && ['cut', 'bulk'].includes(goal_type) ? goal_type : null
+    const resolvedGender = gender || client.gender || '男性'
+
+    if (hasBodyData) {
+      // 寫入 body_composition 紀錄
+      const today = new Date().toISOString().split('T')[0]
+      const bodyCompRecord: Record<string, any> = {
+        client_id: client.id,
+        date: today,
+        weight: body_weight,
+      }
+      if (body_fat_pct && typeof body_fat_pct === 'number' && body_fat_pct > 3 && body_fat_pct < 60) {
+        bodyCompRecord.body_fat = body_fat_pct
+      }
+
+      // upsert by client_id + date
+      await supabase
+        .from('body_composition')
+        .upsert(bodyCompRecord, { onConflict: 'client_id,date' })
+
+      // 有體重 + 目標類型 → 計算初始營養目標
+      if (validGoalType) {
+        const targets = calculateInitialTargets({
+          gender: resolvedGender,
+          bodyWeight: body_weight,
+          height: updates.height || null,
+          bodyFatPct: bodyCompRecord.body_fat || null,
+          goalType: validGoalType as 'cut' | 'bulk',
+          activityProfile: (activity_profile as 'sedentary' | 'high_energy_flux') || 'sedentary',
+          trainingDaysPerWeek: training_days_per_week || 3,
+        })
+
+        // 寫入 client 的營養目標
+        updates.calories_target = targets.calories
+        updates.protein_target = targets.protein
+        updates.carbs_target = targets.carbs
+        updates.fat_target = targets.fat
+        // 同時啟用 nutrition 和 body_composition 功能
+        updates.nutrition_enabled = true
+        updates.body_composition_enabled = true
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return createErrorResponse('沒有有效的更新欄位', 400)
+    }
+
+    const { error: updateError } = await supabase
+      .from('clients')
+      .update(updates)
+      .eq('id', client.id)
+
+    if (updateError) {
+      return createErrorResponse('更新失敗', 500)
+    }
+
+    return createSuccessResponse({ updated: true })
+  } catch (error) {
+    console.error('PATCH 錯誤:', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }

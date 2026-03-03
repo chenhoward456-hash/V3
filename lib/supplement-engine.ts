@@ -200,7 +200,7 @@ export function generateSupplementSuggestions(
 
   // ── 8. 發炎指數（CRP 偏高 + 高 RPE）──
   const crp = findLabValue(labs, 'crp')
-  if (crp?.value != null && crp.value > 3) {
+  if (crp?.value != null && crp.value > 5) {
     suggestions.push({
       name: 'Omega-3 魚油',
       dosage: 'EPA+DHA 合計 2-3g',

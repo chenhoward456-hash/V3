@@ -36,22 +36,6 @@ const MOOD_OPTIONS = [
   { score: 5, emoji: '😄', label: '很好' },
 ]
 
-const HUNGER_OPTIONS = [
-  { score: 1, emoji: '🤤', label: '很餓' },
-  { score: 2, emoji: '😋', label: '有點餓' },
-  { score: 3, emoji: '😐', label: '普通' },
-  { score: 4, emoji: '😌', label: '剛好' },
-  { score: 5, emoji: '🫃', label: '很飽' },
-]
-
-const DIGESTION_OPTIONS = [
-  { score: 1, emoji: '🤢', label: '很差' },
-  { score: 2, emoji: '😣', label: '不好' },
-  { score: 3, emoji: '😐', label: '普通' },
-  { score: 4, emoji: '😊', label: '不錯' },
-  { score: 5, emoji: '💪', label: '很好' },
-]
-
 const TRAINING_DRIVE_OPTIONS = [
   { score: 1, emoji: '😩', label: '不想' },
   { score: 2, emoji: '😔', label: '勉強' },
@@ -76,7 +60,7 @@ const STRESS_OPTIONS = [
   { score: 5, emoji: '🤯', label: '極高' },
 ]
 
-export default function DailyWellness({ todayWellness, clientId, date, competitionEnabled, healthModeEnabled, gender, onMutate }: DailyWellnessProps) {
+export default function DailyWellness({ todayWellness, clientId, date, healthModeEnabled, gender, onMutate }: DailyWellnessProps) {
   const today = date || new Date().toISOString().split('T')[0]
   const [submitting, setSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -86,8 +70,6 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
     sleep_quality: todayWellness?.sleep_quality ?? null as number | null,
     energy_level: todayWellness?.energy_level ?? null as number | null,
     mood: todayWellness?.mood ?? null as number | null,
-    hunger: todayWellness?.hunger ?? null as number | null,
-    digestion: todayWellness?.digestion ?? null as number | null,
     training_drive: todayWellness?.training_drive ?? null as number | null,
     cognitive_clarity: todayWellness?.cognitive_clarity ?? null as number | null,
     stress_level: todayWellness?.stress_level ?? null as number | null,
@@ -108,8 +90,6 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
         sleep_quality: todayWellness.sleep_quality ?? null,
         energy_level: todayWellness.energy_level ?? null,
         mood: todayWellness.mood ?? null,
-        hunger: todayWellness.hunger ?? null,
-        digestion: todayWellness.digestion ?? null,
         training_drive: todayWellness.training_drive ?? null,
         cognitive_clarity: todayWellness.cognitive_clarity ?? null,
         stress_level: todayWellness.stress_level ?? null,
@@ -122,7 +102,7 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
         respiratory_rate: todayWellness.respiratory_rate ?? null,
       })
       // 如果已經有填寫過額外指標，預設展開
-      if (todayWellness.hunger || todayWellness.digestion || todayWellness.training_drive || todayWellness.cognitive_clarity || todayWellness.stress_level) {
+      if (todayWellness.training_drive || todayWellness.cognitive_clarity || todayWellness.stress_level) {
         setShowMore(true)
       }
       // 如果已經有穿戴裝置數據，預設展開
@@ -147,8 +127,6 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
           sleep_quality: form.sleep_quality,
           energy_level: form.energy_level,
           mood: form.mood,
-          hunger: form.hunger ?? null,
-          digestion: form.digestion ?? null,
           training_drive: form.training_drive ?? null,
           cognitive_clarity: form.cognitive_clarity ?? null,
           stress_level: form.stress_level ?? null,
@@ -179,20 +157,15 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
     { key: 'mood',             label: '😊 今日心情',   options: MOOD_OPTIONS },
   ]
 
-  // 進階指標（根據模式顯示）
-  const extraFields: { key: 'hunger' | 'digestion' | 'training_drive' | 'cognitive_clarity' | 'stress_level'; label: string; options: { score: number; emoji: string; label: string }[]; groupLabel?: string }[] = []
+  // 進階指標（訓練慾望一般選填，健康模式額外指標）
+  const extraFields: { key: 'training_drive' | 'cognitive_clarity' | 'stress_level'; label: string; options: { score: number; emoji: string; label: string }[]; groupLabel?: string }[] = [
+    { key: 'training_drive', label: '💪 訓練慾望', options: TRAINING_DRIVE_OPTIONS },
+  ]
 
   if (healthModeEnabled) {
     extraFields.push(
       { key: 'cognitive_clarity', label: '🧠 認知清晰度', options: COGNITIVE_OPTIONS, groupLabel: '🌿 健康模式指標' },
       { key: 'stress_level',     label: '😰 壓力指數',   options: STRESS_OPTIONS },
-    )
-  }
-  if (competitionEnabled) {
-    extraFields.push(
-      { key: 'hunger',          label: '🍽️ 飢餓感',    options: HUNGER_OPTIONS, groupLabel: '🏆 備賽指標' },
-      { key: 'digestion',       label: '🫃 消化狀況',   options: DIGESTION_OPTIONS },
-      { key: 'training_drive',  label: '💪 訓練慾望',   options: TRAINING_DRIVE_OPTIONS },
     )
   }
 
@@ -374,6 +347,11 @@ export default function DailyWellness({ todayWellness, clientId, date, competiti
                 <span className="group-open:rotate-90 transition-transform text-[10px]">▶</span>
                 進階：填寫個別生理數據（選填）
               </summary>
+              {form.device_recovery_score != null && (
+                <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5 mt-2">
+                  已填恢復分數，以下指標不會影響營養建議計算
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-3 mt-2">
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">靜息心率 (bpm)</label>

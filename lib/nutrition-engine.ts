@@ -1325,11 +1325,18 @@ function generateGoalDrivenCut(
     }
   }
 
-  // 碳水 = 剩餘卡路里
-  let suggestedCarb = Math.max(30, Math.round((targetCalories - proFatCal) / 4))
+  // 碳水 = 剩餘卡路里（若 proFatCal > targetCalories，剩餘為負，碳水壓底線 30g）
+  const remainingCalForCarb = targetCalories - proFatCal
+  let suggestedCarb = Math.max(30, Math.round(remainingCalForCarb / 4))
 
   // 反算「真實卡路里底線」— 這才是選手實際能吃到的最低值
   let actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
+
+  // 安全上限保護：如果蛋白質+脂肪底線強制最低值導致 actualCalories > targetCalories
+  // 代表 targetCalories 極低，此時尊重營養底線但發出警告
+  if (actualCalories > targetCalories && proFatCal + carbFloorCal > targetCalories) {
+    warnings.push(`⚠️ 蛋白質+脂肪底線（${proFatCal}kcal）+ 碳水底線（${carbFloorCal}kcal）= ${proFatCal + carbFloorCal}kcal 已超過目標 ${targetCalories}kcal，實際最低攝取 ${actualCalories}kcal`)
+  }
 
   // 安全底線保護：如果 macro compression 後仍低於 absoluteMinCal → 把碳水補回來
   // 蛋白質和脂肪已是壓縮後的最低值，多出來的空間全給碳水（碳水是最先被犧牲的）
@@ -1896,6 +1903,96 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
     autoApply: true,
     peakWeekPlan: plan,
     menstrualCycleNote: null,  // Peak Week 不需要週期提示
+  }
+}
+
+// ===== 自主管理初始目標計算 =====
+// 用於 Onboarding 時直接從 InBody 數據算出初始 TDEE + 營養目標
+// 不需要 2 週體重數據，有體脂率用 Katch-McArdle，無體脂率用簡化公式
+
+export interface InitialTargetInput {
+  gender: string          // '男性' | '女性'
+  bodyWeight: number      // kg
+  height?: number | null  // cm
+  bodyFatPct?: number | null  // % (e.g. 20 = 20%)
+  goalType: 'cut' | 'bulk'
+  activityProfile?: 'sedentary' | 'high_energy_flux'
+  trainingDaysPerWeek?: number
+}
+
+export interface InitialTargetResult {
+  estimatedTDEE: number
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  deficit: number  // 正=赤字, 負=盈餘
+  method: 'katch_mcardle' | 'fallback'  // TDEE 計算方式
+}
+
+export function calculateInitialTargets(input: InitialTargetInput): InitialTargetResult {
+  const isMale = input.gender === '男性'
+  const bw = input.bodyWeight
+  const trainingDays = input.trainingDaysPerWeek ?? 3
+
+  // 1. 計算 TDEE
+  let estimatedTDEE: number
+  let method: 'katch_mcardle' | 'fallback'
+
+  if (input.bodyFatPct != null && input.bodyFatPct > 0) {
+    // Katch-McArdle: BMR = 370 + 21.6 × LBM(kg)
+    const lbm = bw * (1 - input.bodyFatPct / 100)
+    const bmr = 370 + 21.6 * lbm
+    const multiplier = getActivityMultiplier(input.activityProfile, trainingDays)
+    estimatedTDEE = Math.round(bmr * multiplier)
+    method = 'katch_mcardle'
+  } else {
+    const multiplier = getFallbackTDEEMultiplier(input.activityProfile, isMale)
+    estimatedTDEE = Math.round(bw * multiplier)
+    method = 'fallback'
+  }
+
+  // 2. 根據目標計算赤字/盈餘
+  let deficit: number
+  if (input.goalType === 'cut') {
+    // 保守赤字 300-400kcal（非備賽不需激進）
+    deficit = Math.min(400, Math.round(estimatedTDEE * 0.18))
+    deficit = Math.max(200, deficit)  // 至少 200
+  } else {
+    // 增肌盈餘 200-300kcal
+    deficit = -Math.min(300, Math.round(estimatedTDEE * 0.12))
+    deficit = Math.max(-300, deficit)
+  }
+
+  const targetCalories = estimatedTDEE - deficit
+
+  // 3. 安全下限
+  const minCal = isMale ? SAFETY.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_FEMALE
+  const finalCalories = Math.max(targetCalories, minCal)
+
+  // 4. 巨量營養素分配
+  // 蛋白質
+  const proteinPerKg = input.goalType === 'cut'
+    ? (isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE)
+    : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
+  const protein = Math.round(bw * proteinPerKg)
+
+  // 脂肪
+  const fatPerKg = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
+  const fat = Math.round(bw * fatPerKg)
+
+  // 碳水 = 剩餘熱量
+  const remainingCal = finalCalories - (protein * 4) - (fat * 9)
+  const carbs = Math.max(50, Math.round(remainingCal / 4))  // 碳水最低 50g
+
+  return {
+    estimatedTDEE,
+    calories: finalCalories,
+    protein,
+    carbs,
+    fat,
+    deficit: estimatedTDEE - finalCalories,
+    method,
   }
 }
 

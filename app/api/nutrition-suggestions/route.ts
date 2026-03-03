@@ -211,9 +211,11 @@ export async function GET(request: NextRequest) {
 
     // 10. 自動套用：如果引擎說 autoApply 且有調整
     // goal-driven 模式允許客戶端自動套用（備賽選手需即時同步）
+    // self_managed 訂閱用戶也允許自動套用（499 自主管理）
     // 其他模式仍需 admin 權限
     let applied = false
-    const canAutoApply = wantsAutoApply && suggestion.autoApply && (isAdmin || suggestion.status === 'goal_driven')
+    const isSelfManaged = client.subscription_tier === 'self_managed'
+    const canAutoApply = wantsAutoApply && suggestion.autoApply && (isAdmin || suggestion.status === 'goal_driven' || isSelfManaged)
     if (canAutoApply) {
       const updates: Record<string, any> = {}
       if (suggestion.suggestedCalories != null) updates.calories_target = suggestion.suggestedCalories
