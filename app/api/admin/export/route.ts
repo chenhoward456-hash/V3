@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('clientId')
   const type = searchParams.get('type') || 'all'
-  const days = Math.min(365, Math.max(7, parseInt(searchParams.get('days') || '90')))
+  const parsedDays = parseInt(searchParams.get('days') || '90')
+  const days = isNaN(parsedDays) ? 90 : Math.min(365, Math.max(7, parsedDays))
 
   if (!clientId) {
     return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })

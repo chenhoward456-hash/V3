@@ -10,6 +10,7 @@
  * 驗證：CRON_SECRET header 或 admin session
  */
 
+import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
@@ -20,7 +21,11 @@ const supabase = createServiceSupabase()
 function verifyCronAuth(request: NextRequest): boolean {
   // Vercel Cron 會帶 CRON_SECRET header
   const cronSecret = request.headers.get('authorization')
-  if (cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true
+  const expected = `Bearer ${process.env.CRON_SECRET}`
+  if (cronSecret && expected && cronSecret.length === expected.length &&
+    crypto.timingSafeEqual(Buffer.from(cronSecret), Buffer.from(expected))) {
+    return true
+  }
 
   // 也允許 admin session 手動觸發
   const token = request.cookies.get('admin_session')?.value
