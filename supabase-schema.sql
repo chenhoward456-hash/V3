@@ -403,3 +403,10 @@ ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS device_recovery_score INTEGE
 
 -- 訂閱方案層級：free（免費/驗證期）、self_managed（499自主管理）、coached（2999教練指導）、combo（5000實體+遠端）
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'self_managed', 'coached', 'combo'));
+
+-- ============================================
+-- 25. 自主管理用戶目標期限 (Self-Managed Goal Deadline)
+-- 讓 499 用戶設定「目標體重 + 預計達成日期」
+-- 引擎自動倒推每週減幅、動態調整熱量
+-- ============================================
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS target_date DATE;

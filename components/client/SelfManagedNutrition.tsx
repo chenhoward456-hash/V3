@@ -12,6 +12,8 @@ interface SelfManagedNutritionProps {
   proteinTarget: number | null
   carbsTarget: number | null
   fatTarget: number | null
+  targetWeight: number | null
+  targetDate: string | null
   isTrainingDay?: boolean
   onMutate?: () => void
 }
@@ -26,6 +28,8 @@ export default function SelfManagedNutrition({
   proteinTarget,
   carbsTarget,
   fatTarget,
+  targetWeight: existingTargetWeight,
+  targetDate: existingTargetDate,
   isTrainingDay,
   onMutate,
 }: SelfManagedNutritionProps) {
@@ -39,6 +43,9 @@ export default function SelfManagedNutrition({
   const [bodyFatPct, setBodyFatPct] = useState('')
   const [height, setHeight] = useState('')
   const [trainingDays, setTrainingDays] = useState('3')
+  const [targetWeightInput, setTargetWeightInput] = useState('')
+  const [targetDateOption, setTargetDateOption] = useState<'3' | '6' | 'custom'>('3')
+  const [customTargetDate, setCustomTargetDate] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   // 需要 Onboarding：沒有 goalType 或沒有營養目標
@@ -68,23 +75,38 @@ export default function SelfManagedNutrition({
     fetchSuggestion()
   }, [clientId, needsOnboarding, onMutate])
 
+  // 計算目標日期
+  const getTargetDate = () => {
+    if (!targetWeightInput) return undefined
+    if (targetDateOption === 'custom' && customTargetDate) return customTargetDate
+    const months = targetDateOption === '3' ? 3 : 6
+    const d = new Date()
+    d.setMonth(d.getMonth() + months)
+    return d.toISOString().split('T')[0]
+  }
+
   const handleSetup = async () => {
     if (!selectedGoal || !bodyWeight) return
     setSubmitting(true)
     try {
+      const payload: Record<string, any> = {
+        clientId: uniqueCode,
+        gender: gender || '男性',
+        goal_type: selectedGoal,
+        activity_profile: selectedActivity,
+        body_weight: parseFloat(bodyWeight),
+        body_fat_pct: bodyFatPct ? parseFloat(bodyFatPct) : undefined,
+        height: height ? parseFloat(height) : undefined,
+        training_days_per_week: parseInt(trainingDays) || 3,
+      }
+      if (targetWeightInput) {
+        payload.target_weight = parseFloat(targetWeightInput)
+        payload.target_date = getTargetDate()
+      }
       const res = await fetch('/api/clients', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId: uniqueCode,
-          gender: gender || '男性',
-          goal_type: selectedGoal,
-          activity_profile: selectedActivity,
-          body_weight: parseFloat(bodyWeight),
-          body_fat_pct: bodyFatPct ? parseFloat(bodyFatPct) : undefined,
-          height: height ? parseFloat(height) : undefined,
-          training_days_per_week: parseInt(trainingDays) || 3,
-        }),
+        body: JSON.stringify(payload),
       })
       if (res.ok) {
         if (onMutate) onMutate()
@@ -231,6 +253,81 @@ export default function SelfManagedNutrition({
               </div>
             </div>
 
+            {/* 目標體重 + 期限 */}
+            {selectedGoal === 'cut' && (
+              <div className="mb-5">
+                <p className="text-xs font-semibold text-gray-700 mb-2">目標體重（選填）</p>
+                <p className="text-[10px] text-gray-400 mb-2">設定後系統會根據期限自動倒推每週減幅</p>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="text-[10px] text-gray-500 block mb-1">想減到幾公斤？</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={targetWeightInput}
+                      onChange={(e) => setTargetWeightInput(e.target.value)}
+                      placeholder={bodyWeight ? String(Math.round((parseFloat(bodyWeight) * 0.9) * 10) / 10) : '65'}
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 block mb-1">預計花多久？</label>
+                    <div className="flex gap-1.5">
+                      {(['3', '6'] as const).map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => setTargetDateOption(m as '3' | '6')}
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                            targetDateOption === m
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          {m}個月
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setTargetDateOption('custom')}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                          targetDateOption === 'custom'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        自訂
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {targetDateOption === 'custom' && (
+                  <input
+                    type="date"
+                    value={customTargetDate}
+                    onChange={(e) => setCustomTargetDate(e.target.value)}
+                    min={new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]}
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                  />
+                )}
+                {targetWeightInput && bodyWeight && parseFloat(targetWeightInput) < parseFloat(bodyWeight) && (
+                  <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
+                    <p className="text-[11px] text-blue-700">
+                      {(() => {
+                        const tw = parseFloat(targetWeightInput)
+                        const bw = parseFloat(bodyWeight)
+                        const diff = bw - tw
+                        const months = targetDateOption === 'custom'
+                          ? Math.max(0.5, (new Date(customTargetDate).getTime() - Date.now()) / (30 * 86400000))
+                          : parseInt(targetDateOption)
+                        const weeklyRate = diff / (months * 4.33)
+                        const pct = (weeklyRate / bw * 100)
+                        return `需減 ${diff.toFixed(1)} kg，約每週 ${weeklyRate.toFixed(2)} kg（${pct.toFixed(1)}% BW/週）${pct > 1 ? ' ⚠️ 偏激進' : pct > 0.5 ? '' : ' — 很穩健'}`
+                      })()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 送出 */}
             <button
               onClick={handleSetup}
@@ -248,6 +345,76 @@ export default function SelfManagedNutrition({
   if (loading) return null
   if (!data) return null
 
+  // 目標倒數卡片
+  const GoalCountdownCard = () => {
+    // 使用引擎回傳的 deadlineInfo 或從 props 算
+    const dl = data?.deadlineInfo
+    if (dl) {
+      return (
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-4 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-indigo-700">🎯 目標倒數</p>
+            {dl.isGoalDriven && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Goal-Driven</span>
+            )}
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="text-center bg-white bg-opacity-70 rounded-xl py-2">
+              <p className="text-[10px] text-gray-400">剩餘</p>
+              <p className="text-lg font-bold text-indigo-700">{dl.daysLeft}</p>
+              <p className="text-[10px] text-gray-400">天</p>
+            </div>
+            <div className="text-center bg-white bg-opacity-70 rounded-xl py-2">
+              <p className="text-[10px] text-gray-400">還需{goalType === 'cut' ? '減' : '增'}</p>
+              <p className="text-lg font-bold text-indigo-700">{Math.abs(dl.weightToLose).toFixed(1)}</p>
+              <p className="text-[10px] text-gray-400">kg</p>
+            </div>
+            <div className="text-center bg-white bg-opacity-70 rounded-xl py-2">
+              <p className="text-[10px] text-gray-400">每週速率</p>
+              <p className={`text-lg font-bold ${dl.isAggressive ? 'text-red-600' : 'text-indigo-700'}`}>
+                {Math.abs(dl.requiredRatePerWeek).toFixed(2)}
+              </p>
+              <p className="text-[10px] text-gray-400">kg/週</p>
+            </div>
+          </div>
+          {dl.isAggressive && (
+            <p className="text-[10px] text-red-600 mt-2 text-center">
+              ⚠️ 目前速率偏激進，超過體重的 1%/週，可能流失肌肉
+            </p>
+          )}
+          {dl.extraCardioNeeded && dl.cardioNote && (
+            <p className="text-[10px] text-indigo-600 mt-2 text-center">{dl.cardioNote}</p>
+          )}
+        </div>
+      )
+    }
+
+    // Fallback: 用 props 算簡易倒數
+    if (!existingTargetWeight || !existingTargetDate) return null
+    const now = new Date()
+    const target = new Date(existingTargetDate)
+    const daysLeft = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / 86400000))
+    if (daysLeft <= 0) return null
+
+    return (
+      <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-4 mb-4">
+        <p className="text-xs font-semibold text-indigo-700 mb-2">🎯 目標倒數</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="text-center bg-white bg-opacity-70 rounded-xl py-2">
+            <p className="text-[10px] text-gray-400">目標體重</p>
+            <p className="text-lg font-bold text-indigo-700">{existingTargetWeight}</p>
+            <p className="text-[10px] text-gray-400">kg</p>
+          </div>
+          <div className="text-center bg-white bg-opacity-70 rounded-xl py-2">
+            <p className="text-[10px] text-gray-400">剩餘</p>
+            <p className="text-lg font-bold text-indigo-700">{daysLeft}</p>
+            <p className="text-[10px] text-gray-400">天</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // ===== 數據不足但有初始目標 =====
   if (data.status === 'insufficient_data' && caloriesTarget) {
     return (
@@ -263,6 +430,9 @@ export default function SelfManagedNutrition({
             {goalType === 'cut' ? '🔥 減脂中' : '💪 增肌中'}
           </span>
         </div>
+
+        {/* 目標倒數 */}
+        <GoalCountdownCard />
 
         {/* 初始目標（從 InBody 計算） */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 mb-4">
@@ -382,6 +552,9 @@ export default function SelfManagedNutrition({
           {data.message}
         </p>
       </div>
+
+      {/* 目標倒數 */}
+      <GoalCountdownCard />
 
       {/* 今日飲食目標 */}
       {data.suggestedCalories && (

@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
       bodyFatPct: latestBodyFat,
       targetWeight: client.target_weight || null,
       targetBodyFatPct: client.body_fat_target || null,
-      targetDate: client.competition_date || null,
+      targetDate: client.competition_date || client.target_date || null,
       currentCalories: client.calories_target || null,
       currentProtein: client.protein_target || null,
       currentCarbs: client.carbs_target || null,
@@ -249,7 +249,7 @@ export async function GET(request: NextRequest) {
         goalType: client.goal_type || 'cut',
         dietStartDate: client.diet_start_date || null,
         targetWeight: client.target_weight || null,
-        targetDate: client.competition_date || null,
+        targetDate: client.competition_date || client.target_date || null,
       }
     })
   } catch (err) {

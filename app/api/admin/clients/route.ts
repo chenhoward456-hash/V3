@@ -119,7 +119,7 @@ export async function PUT(request: NextRequest) {
       'name', 'age', 'gender', 'status', 'expires_at', 'is_active', 'subscription_tier',
       'nutrition_enabled', 'supplement_enabled', 'wellness_enabled', 'training_enabled',
       'body_composition_enabled', 'lab_enabled', 'competition_enabled', 'health_mode_enabled',
-      'target_weight', 'competition_date', 'prep_phase',
+      'target_weight', 'body_fat_target', 'target_date', 'competition_date', 'prep_phase',
       'goal_type', 'activity_profile', 'diet_start_date',
       'calories_target', 'protein_target', 'carbs_target', 'fat_target', 'water_target',
       'carbs_training_day', 'carbs_rest_day',

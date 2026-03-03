@@ -54,6 +54,7 @@ interface Client {
   calories_target: number | null
   target_weight: number | null
   body_fat_target: number | null
+  target_date: string | null
   is_active: boolean
   carbs_training_day: number | null
   carbs_rest_day: number | null
@@ -122,6 +123,7 @@ export default function ClientEditor() {
         calories_target: null,
         target_weight: null,
         body_fat_target: null,
+        target_date: null,
         is_active: true,
         carbs_training_day: null,
         carbs_rest_day: null,
@@ -212,6 +214,7 @@ export default function ClientEditor() {
         calories_target: client.calories_target || null,
         target_weight: client.target_weight || null,
         body_fat_target: client.body_fat_target || null,
+        target_date: client.target_date || null,
         is_active: client.is_active,
         carbs_training_day: client.carbs_training_day || null,
         carbs_rest_day: client.carbs_rest_day || null,
@@ -688,7 +691,7 @@ export default function ClientEditor() {
                 <p className="text-xs text-gray-400 mb-4">
                   {client.competition_enabled ? '設定比賽日目標體重，系統會自動推算建議範圍' : '設定目標體重，系統會依體組成推算健康體重範圍'}
                 </p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">目標體重 (kg)</label>
                     <input
@@ -711,6 +714,17 @@ export default function ClientEditor() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  {!client.competition_enabled && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">目標日期</label>
+                      <input
+                        type="date"
+                        value={client.target_date || ''}
+                        onChange={(e) => setClient({ ...client, target_date: e.target.value || null })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div>
                   {/* 體態推算：根據最新體組成自動計算建議體重 */}

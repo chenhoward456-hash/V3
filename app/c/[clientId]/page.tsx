@@ -22,6 +22,8 @@ import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 import SelfManagedNutrition from '@/components/client/SelfManagedNutrition'
 import PwaPrompt from '@/components/client/PwaPrompt'
+import HealthModeAdvanced from '@/components/client/HealthModeAdvanced'
+import LabNutritionAdviceCard from '@/components/client/LabNutritionAdviceCard'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
 
@@ -383,6 +385,11 @@ export default function ClientDashboard() {
             </div>
           )}
 
+          {/* 健康模式進階功能：血檢飲食建議 + 季度對比 + 微營養素 */}
+          {isHealthMode && (
+            <HealthModeAdvanced clientId={c.id} />
+          )}
+
           {/* 備賽倒數 Banner */}
           {isCompetition && c.competition_date && (() => {
             const daysLeft = Math.ceil((new Date(c.competition_date).getTime() - new Date().getTime()) / 86400000)
@@ -682,6 +689,8 @@ export default function ClientDashboard() {
             proteinTarget={c.protein_target}
             carbsTarget={c.carbs_target}
             fatTarget={c.fat_target}
+            targetWeight={c.target_weight || null}
+            targetDate={c.target_date || null}
             isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
             onMutate={mutate}
           />
@@ -755,6 +764,15 @@ export default function ClientDashboard() {
             coachHeaders={coachHeaders}
             onMutate={mutate}
           /></div>
+        )}
+
+        {/* 血檢飲食建議 — 所有模式通用，有血檢資料就顯示 */}
+        {c.lab_enabled && c.lab_results && c.lab_results.length > 0 && (
+          <LabNutritionAdviceCard
+            labResults={c.lab_results}
+            gender={c.gender}
+            goalType={c.goal_type}
+          />
         )}
 
         <ActionPlan
