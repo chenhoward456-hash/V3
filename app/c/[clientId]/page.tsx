@@ -684,6 +684,7 @@ export default function ClientDashboard() {
             uniqueCode={c.unique_code}
             goalType={c.goal_type || null}
             activityProfile={c.activity_profile || null}
+            manualTdee={c.manual_tdee || null}
             gender={c.gender || null}
             caloriesTarget={c.calories_target}
             proteinTarget={c.protein_target}

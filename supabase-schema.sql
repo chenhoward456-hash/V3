@@ -277,6 +277,11 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS diet_start_date DATE;
 -- NULL / 未設定 = 預設中等活動量
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS activity_profile TEXT CHECK (activity_profile IN ('sedentary', 'high_energy_flux'));
 
+-- 手動 TDEE 覆寫（InBody 機器數據）
+-- 當教練或用戶有 InBody 報告時，可直接輸入機器估算的 TDEE
+-- 系統優先使用此值，NULL = 自動計算
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS manual_tdee NUMERIC;
+
 -- 部落格文章表（由後台管理）
 CREATE TABLE IF NOT EXISTS blog_posts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

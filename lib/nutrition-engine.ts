@@ -67,6 +67,10 @@ export interface NutritionInput {
   // high_energy_flux = 高能量通量，主動增加活動消耗
   activityProfile?: 'sedentary' | 'high_energy_flux'
 
+  // 手動 TDEE 覆寫（InBody 機器數據）
+  // 有值時優先使用，取代公式計算的 TDEE
+  manualTdee?: number | null
+
   // 近 30 天狀態監控（近 3 天 = 當前狀態, 第 4-30 天 = 個人基線）
   recentWellness?: {
     date: string
@@ -339,17 +343,20 @@ function getEnergyDensity(daysLeft: number, dietDurationWeeks: number | null): n
 
 // ===== 活動量分型輔助函式 =====
 
-// Katch-McArdle 活動係數
-// sedentary：主要靠飲食控制，有氧量少 → 低係數
-// high_energy_flux：刻意提高 NEAT + 有氧 → 高係數
+// Katch-McArdle 活動係數（Harris-Benedict 標準值修正）
+// 原始值偏保守（sedentary 1.25），導致有訓練習慣的上班族 TDEE 嚴重低估
+// 修正後更貼近標準 Harris-Benedict 活動係數：
+//   sedentary + 少量訓練 ≈ 1.375, sedentary + 規律訓練 ≈ 1.55
+//   moderate ≈ 1.55, high_energy_flux ≈ 1.725
+// 此處仍略保守（偏向低估以免增加赤字計算誤差）
 function getActivityMultiplier(activityProfile: string | undefined, trainingDaysPerWeek: number): number {
   if (activityProfile === 'sedentary') {
-    return trainingDaysPerWeek >= 4 ? 1.35 : 1.25
+    return trainingDaysPerWeek >= 4 ? 1.45 : 1.35
   } else if (activityProfile === 'high_energy_flux') {
-    return trainingDaysPerWeek >= 4 ? 1.55 : 1.45
+    return trainingDaysPerWeek >= 4 ? 1.65 : 1.55
   } else {
     // moderate（預設）
-    return trainingDaysPerWeek >= 4 ? 1.45 : 1.35
+    return trainingDaysPerWeek >= 4 ? 1.55 : 1.45
   }
 }
 
@@ -357,11 +364,11 @@ function getActivityMultiplier(activityProfile: string | undefined, trainingDays
 // 來源：Harris-Benedict / Mifflin-St Jeor 修正，依性別和活動量調整
 function getFallbackTDEEMultiplier(activityProfile: string | undefined, isMale: boolean): number {
   if (activityProfile === 'sedentary') {
-    return isMale ? 26 : 24   // 上班族：低 NEAT，少量有氧
+    return isMale ? 28 : 26   // 上班族：低 NEAT，少量有氧
   } else if (activityProfile === 'high_energy_flux') {
-    return isMale ? 35 : 31   // 高能量通量：高 NEAT + 有氧
+    return isMale ? 37 : 33   // 高能量通量：高 NEAT + 有氧
   } else {
-    return isMale ? 30 : 27   // 預設（中等活動量）
+    return isMale ? 32 : 29   // 預設（中等活動量）
   }
 }
 
@@ -859,16 +866,21 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   }
 
   // 6. 估算 TDEE
-  // 策略：
+  // 策略優先順序：
+  //   0) 手動 TDEE（InBody 機器數據）→ 最精確，直接使用
   //   A) Katch-McArdle 公式 TDEE（有體脂率時，最穩定的基準）
   //   B) Adaptive TDEE（有飲食記錄+體重變化，最準但依賴數據品質）
   //   C) 簡化公式（體重 × 係數，最粗略的 fallback）
   //
   // 選擇邏輯：
+  //   - 有手動 TDEE → 直接用（信任 InBody / 教練判斷）
   //   - 合規率 ≥ 70% + 有飲食記錄 → 用 Adaptive，但不低於公式值的 80%（sanity check）
   //   - 合規率 < 70% 或無飲食記錄 → 直接用公式值（飲食數據不可信）
   const tdeeDensity = daysToTarget != null ? getEnergyDensity(daysToTarget, dietDurationWeeks) : ENERGY_DENSITY.LATE_PHASE
   const isMale = input.gender === '男性'
+
+  // 0) 手動 TDEE 覆寫（InBody 機器數據）
+  const hasManualTdee = input.manualTdee != null && input.manualTdee > 0
 
   // A) 公式 TDEE（Katch-McArdle 或簡化）
   let formulaTDEE: number | null = null
@@ -898,7 +910,10 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   let estimatedTDEE: number | null = null
   const complianceThreshold = 70  // 合規率門檻
 
-  if (input.nutritionCompliance >= complianceThreshold && adaptiveTDEE != null) {
+  if (hasManualTdee) {
+    // 手動 TDEE（InBody 機器 / 教練設定）→ 直接信任
+    estimatedTDEE = Math.round(input.manualTdee!)
+  } else if (input.nutritionCompliance >= complianceThreshold && adaptiveTDEE != null) {
     // 飲食數據可信 → 用 Adaptive TDEE
     // 但做 sanity check：不低於公式值的 80%（避免飲食記錄嚴重低報）
     const minTDEE = Math.round(formulaTDEE * 0.80)
@@ -1992,6 +2007,7 @@ export interface InitialTargetInput {
   goalType: 'cut' | 'bulk'
   activityProfile?: 'sedentary' | 'high_energy_flux'
   trainingDaysPerWeek?: number
+  manualTdee?: number | null  // InBody 機器 TDEE 覆寫
 }
 
 export interface InitialTargetResult {
@@ -2001,7 +2017,7 @@ export interface InitialTargetResult {
   carbs: number
   fat: number
   deficit: number  // 正=赤字, 負=盈餘
-  method: 'katch_mcardle' | 'fallback'  // TDEE 計算方式
+  method: 'katch_mcardle' | 'fallback' | 'manual'  // TDEE 計算方式
   bodyFatZoneInfo: NutritionSuggestion['bodyFatZoneInfo']
 }
 
@@ -2010,11 +2026,15 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
   const bw = input.bodyWeight
   const trainingDays = input.trainingDaysPerWeek ?? 3
 
-  // 1. 計算 TDEE
+  // 1. 計算 TDEE（手動覆寫 > Katch-McArdle > 簡化公式）
   let estimatedTDEE: number
-  let method: 'katch_mcardle' | 'fallback'
+  let method: 'katch_mcardle' | 'fallback' | 'manual'
 
-  if (input.bodyFatPct != null && input.bodyFatPct > 0) {
+  if (input.manualTdee != null && input.manualTdee > 0) {
+    // 手動 TDEE（InBody 機器數據）
+    estimatedTDEE = Math.round(input.manualTdee)
+    method = 'manual'
+  } else if (input.bodyFatPct != null && input.bodyFatPct > 0) {
     // Katch-McArdle: BMR = 370 + 21.6 × LBM(kg)
     const lbm = bw * (1 - input.bodyFatPct / 100)
     const bmr = 370 + 21.6 * lbm

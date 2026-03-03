@@ -61,6 +61,7 @@ interface Client {
   goal_type: 'cut' | 'bulk' | null
   diet_start_date: string | null
   activity_profile: 'sedentary' | 'high_energy_flux' | null
+  manual_tdee: number | null
   health_mode_enabled: boolean
   quarterly_cycle_start: string | null
 
@@ -130,6 +131,7 @@ export default function ClientEditor() {
         goal_type: null,
         diet_start_date: null,
         activity_profile: null,
+        manual_tdee: null,
         health_mode_enabled: false,
         quarterly_cycle_start: null,
 
@@ -221,6 +223,7 @@ export default function ClientEditor() {
         goal_type: client.goal_type || null,
         diet_start_date: client.diet_start_date || null,
         activity_profile: client.activity_profile || null,
+        manual_tdee: client.manual_tdee || null,
         health_mode_enabled: client.health_mode_enabled,
         quarterly_cycle_start: client.quarterly_cycle_start || null,
       }
@@ -676,6 +679,22 @@ export default function ClientEditor() {
                     </select>
                     <p className="text-xs text-gray-400 mt-1">
                       上班族：TDEE 係數低、步數目標低（3,000→8,000步）｜高能量通量：TDEE 係數高、步數目標高（8,000→15,000步）
+                    </p>
+                  </div>
+                  <div className="mt-3">
+                    <label className="block text-xs text-gray-500 mb-1">手動 TDEE 覆寫（InBody 機器數據，填入後優先使用）</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={client.manual_tdee || ''}
+                        onChange={(e) => setClient({ ...client, manual_tdee: e.target.value ? parseFloat(e.target.value) : null })}
+                        placeholder="留空 = 自動計算"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      />
+                      <span className="text-xs text-gray-400 whitespace-nowrap">kcal</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      有 InBody 報告時填入機器估算的 TDEE，系統將優先使用此數值。清空後回歸公式自動計算。
                     </p>
                   </div>
                 </div>

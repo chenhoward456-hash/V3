@@ -7,6 +7,7 @@ interface SelfManagedNutritionProps {
   uniqueCode: string  // unique_code (for PATCH API)
   goalType: string | null
   activityProfile: string | null
+  manualTdee: number | null
   gender: string | null
   caloriesTarget: number | null
   proteinTarget: number | null
@@ -23,6 +24,7 @@ export default function SelfManagedNutrition({
   uniqueCode,
   goalType,
   activityProfile,
+  manualTdee,
   gender,
   caloriesTarget,
   proteinTarget,
@@ -46,6 +48,7 @@ export default function SelfManagedNutrition({
   const [targetWeightInput, setTargetWeightInput] = useState('')
   const [targetDateOption, setTargetDateOption] = useState<'3' | '6' | 'custom'>('3')
   const [customTargetDate, setCustomTargetDate] = useState('')
+  const [manualTdeeInput, setManualTdeeInput] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   // 需要 Onboarding：沒有 goalType 或沒有營養目標
@@ -98,6 +101,7 @@ export default function SelfManagedNutrition({
         body_fat_pct: bodyFatPct ? parseFloat(bodyFatPct) : undefined,
         height: height ? parseFloat(height) : undefined,
         training_days_per_week: parseInt(trainingDays) || 3,
+        manual_tdee: manualTdeeInput ? parseFloat(manualTdeeInput) : undefined,
       }
       if (targetWeightInput) {
         payload.target_weight = parseFloat(targetWeightInput)
@@ -203,6 +207,24 @@ export default function SelfManagedNutrition({
               <p className="text-[10px] text-gray-400 mt-1.5">
                 有體脂率數據（InBody）可以更精準計算 TDEE
               </p>
+              {/* 手動 TDEE（InBody 機器數據） */}
+              <div className="mt-3">
+                <label className="text-[10px] text-gray-500 block mb-1">InBody TDEE（選填）</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={manualTdeeInput}
+                    onChange={(e) => setManualTdeeInput(e.target.value)}
+                    placeholder="例：2500"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                  />
+                  <span className="text-[10px] text-gray-400 whitespace-nowrap">kcal</span>
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  有 InBody 報告的話填入機器上的 TDEE，計算會更準
+                </p>
+              </div>
             </div>
 
             {/* 活動量 + 訓練頻率 */}
@@ -613,7 +635,7 @@ export default function SelfManagedNutrition({
       <div className="grid grid-cols-3 gap-2 mb-4">
         {data.estimatedTDEE && (
           <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="text-[10px] text-gray-400">預估 TDEE</p>
+            <p className="text-[10px] text-gray-400">{manualTdee ? 'TDEE（InBody）' : '預估 TDEE'}</p>
             <p className="text-lg font-bold text-gray-900">{data.estimatedTDEE}</p>
             <p className="text-[10px] text-gray-400">kcal</p>
           </div>

@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, goal_type, activity_profile, gender, height, body_weight, body_fat_pct, training_days_per_week, target_weight, target_date } = body
+    const { clientId, goal_type, activity_profile, gender, height, body_weight, body_fat_pct, training_days_per_week, target_weight, target_date, manual_tdee } = body
 
     if (!clientId || typeof clientId !== 'string') {
       return createErrorResponse('缺少客戶 ID', 400)
@@ -236,6 +236,15 @@ export async function PATCH(request: NextRequest) {
 
     if (height && typeof height === 'number' && height > 100 && height < 250) {
       updates.height = height
+    }
+
+    // 手動 TDEE 覆寫（InBody 機器數據）
+    if (manual_tdee != null) {
+      if (typeof manual_tdee === 'number' && manual_tdee > 800 && manual_tdee < 8000) {
+        updates.manual_tdee = manual_tdee
+      } else if (manual_tdee === 0 || manual_tdee === null) {
+        updates.manual_tdee = null  // 清除覆寫，回歸公式計算
+      }
     }
 
     // 目標體重 + 目標日期（自主管理用戶設定期限）
@@ -281,6 +290,7 @@ export async function PATCH(request: NextRequest) {
           goalType: validGoalType as 'cut' | 'bulk',
           activityProfile: (activity_profile as 'sedentary' | 'high_energy_flux') || 'sedentary',
           trainingDaysPerWeek: training_days_per_week || 3,
+          manualTdee: updates.manual_tdee || null,
         })
 
         // 寫入 client 的營養目標

@@ -220,6 +220,7 @@ export async function GET(request: NextRequest) {
           trainingDaysPerWeek,
           prepPhase: client.prep_phase || undefined,
           activityProfile: client.activity_profile || undefined,
+          manualTdee: client.manual_tdee || null,
           recentWellness: clientWellness.map((w: any) => ({
             date: w.date,
             energy_level: w.energy_level ?? null,
