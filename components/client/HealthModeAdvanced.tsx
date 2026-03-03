@@ -28,6 +28,8 @@ interface LabAdvice {
   currentValue: number
   unit: string
   targetRange: string
+  references?: string[]
+  caveat?: string
 }
 
 interface ComparisonItem {
@@ -314,6 +316,24 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
                 🔧 {advice.macroAdjustment.nutrient}調整
               </p>
               <p className="text-[10px] text-blue-600">{advice.macroAdjustment.detail}</p>
+            </div>
+          )}
+
+          {advice.caveat && (
+            <div className="bg-gray-100 rounded-xl p-2.5">
+              <p className="text-[10px] font-bold text-gray-600 mb-0.5">⚠️ 判讀提醒</p>
+              <p className="text-[10px] text-gray-500">{advice.caveat}</p>
+            </div>
+          )}
+
+          {advice.references && advice.references.length > 0 && (
+            <div className="border-t border-gray-200 pt-2">
+              <p className="text-[10px] font-bold text-gray-400 mb-1">📚 文獻依據</p>
+              <ul className="space-y-0.5">
+                {advice.references.map((ref, i) => (
+                  <li key={i} className="text-[9px] text-gray-400">{ref}</li>
+                ))}
+              </ul>
             </div>
           )}
         </div>

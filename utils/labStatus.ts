@@ -18,6 +18,10 @@ export const LAB_THRESHOLDS = {
   'ApoB': { normal: 80, attention: 100 },
   '鎂': { normal: { min: 2.0, max: 2.4 }, attention: { min: 1.8, max: 2.6 } },
   '鋅': { normal: { min: 70, max: 120 }, attention: { min: 60, max: 140 } },
+  '睪固酮': { normal: { min: 300, max: 1000 }, attention: { min: 200, max: 1200 } },
+  '睪固酮_female': { normal: { min: 15, max: 70 }, attention: { min: 10, max: 90 } },
+  '游離睪固酮': { normal: { min: 9, max: 30 }, attention: { min: 5, max: 35 } },
+  '游離睪固酮_female': { normal: { min: 0.3, max: 1.9 }, attention: { min: 0.2, max: 2.5 } },
 } as const;
 
 // 血檢狀態類型
@@ -43,10 +47,12 @@ type LabThresholds = Record<string, ThresholdConfig>;
  * @returns 狀態 (normal | attention | alert)
  */
 export function calculateLabStatus(testName: string, value: number, gender?: '男性' | '女性'): LabStatus {
-  // 鐵蛋白依性別選擇閾值
+  // 性別差異閾值
   let lookupName = testName;
-  if (testName === '鐵蛋白' && gender === '女性') {
-    lookupName = '鐵蛋白_female';
+  if (gender === '女性') {
+    if (testName === '鐵蛋白') lookupName = '鐵蛋白_female';
+    if (testName === '睪固酮') lookupName = '睪固酮_female';
+    if (testName === '游離睪固酮') lookupName = '游離睪固酮_female';
   }
 
   const threshold = (LAB_THRESHOLDS as LabThresholds)[lookupName];

@@ -4,32 +4,28 @@
  *
  * 核心邏輯：根據血檢異常指標，產出具體的飲食調整建議
  * 不只是「吃什麼補品」，而是「每天的食物怎麼調」
- *
- * 文獻依據：
- *   - ISSN Position Stand on Diets and Body Composition (2017)
- *   - Calder 2017 (J Nutr): Omega-3 與系統性發炎
- *   - Holick 2011 (NEJM): 維生素 D 飲食來源
- *   - WHO Iron Deficiency Anemia Guidelines (2021)
- *   - AHA Diet & Lifestyle Recommendations (2021)
+ * 每條建議皆附文獻出處，血清侷限性以 caveat 標示
  */
 
 export interface LabNutritionAdvice {
-  category: 'iron' | 'inflammation' | 'lipid' | 'glucose' | 'vitamin' | 'mineral'
-  title: string                    // 簡短標題
-  icon: string                     // emoji
-  severity: 'high' | 'medium'     // 根據血檢嚴重度
-  dietaryChanges: string[]         // 具體飲食調整
-  foodsToIncrease: string[]        // 建議多吃的食物
-  foodsToReduce: string[]          // 建議減少的食物
-  macroAdjustment?: {              // 巨量營養素調整建議
+  category: 'iron' | 'inflammation' | 'lipid' | 'glucose' | 'vitamin' | 'mineral' | 'hormone'
+  title: string
+  icon: string
+  severity: 'high' | 'medium'
+  dietaryChanges: string[]
+  foodsToIncrease: string[]
+  foodsToReduce: string[]
+  macroAdjustment?: {
     nutrient: string
     direction: 'increase' | 'decrease'
     detail: string
   }
-  labMarker: string                // 觸發的血檢指標
-  currentValue: number             // 當前值
+  labMarker: string
+  currentValue: number
   unit: string
-  targetRange: string              // 目標範圍
+  targetRange: string
+  references: string[]       // 文獻佐證
+  caveat?: string            // 指標侷限性提醒
 }
 
 interface LabInput {
@@ -55,7 +51,7 @@ export function generateLabNutritionAdvice(
   for (const lab of labs) {
     if (lab.value == null || lab.status === 'normal') continue
 
-    // ── 鐵蛋白 / 血紅素 → 鐵質飲食建議（區分偏高 vs 偏低）──
+    // ── 鐵蛋白（區分偏高 vs 偏低）──
     if (matchName(lab.test_name, ['鐵蛋白', 'ferritin'])) {
       const ferritinMax = gender === '女性' ? 200 : 150
       const ferritinMin = gender === '女性' ? 12 : 50
@@ -63,7 +59,6 @@ export function generateLabNutritionAdvice(
       const isLow = lab.value < ferritinMin
 
       if (isHigh) {
-        // 鐵蛋白偏高 → 減少鐵質攝取、排查發炎
         advice.push({
           category: 'iron',
           title: '鐵蛋白偏高',
@@ -86,9 +81,14 @@ export function generateLabNutritionAdvice(
           currentValue: lab.value,
           unit: lab.unit,
           targetRange: gender === '女性' ? '12-200 ng/mL' : '50-150 ng/mL',
+          references: [
+            'Koperdanova & Bhatt 2015 (BMJ): Approach to the patient with hyperferritinaemia',
+            'Adams et al. 2005 (NEJM): Hemochromatosis and iron-overload screening',
+            'Hurrell & Egli 2010 (Am J Clin Nutr): Iron bioavailability and dietary reference values',
+          ],
+          caveat: '鐵蛋白為急性期蛋白，發炎時會假性升高。建議同時參考 CRP；若 CRP 正常但鐵蛋白仍高，才確定為鐵過載。',
         })
       } else if (isLow) {
-        // 鐵蛋白偏低 → 增加鐵質攝取
         advice.push({
           category: 'iron',
           title: '鐵質攝取不足',
@@ -110,10 +110,17 @@ export function generateLabNutritionAdvice(
           currentValue: lab.value,
           unit: lab.unit,
           targetRange: gender === '女性' ? '12-200 ng/mL' : '50-150 ng/mL',
+          references: [
+            'WHO 2021: Iron Deficiency Anemia — Assessment, Prevention and Control',
+            'Hurrell & Egli 2010 (Am J Clin Nutr): Iron bioavailability and dietary reference values',
+            'Hallberg et al. 2003 (Am J Clin Nutr): Inhibitory effect of tea & coffee on iron absorption',
+          ],
+          caveat: '鐵蛋白為急性期蛋白，發炎時會假性升高。若同時有 CRP 偏高，真實鐵蛋白可能更低。',
         })
       }
     }
 
+    // ── 血紅素 ──
     if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hgb', 'hb'])) {
       const threshold = gender === '女性' ? 12.0 : 13.5
       if (lab.value < threshold) {
@@ -133,6 +140,10 @@ export function generateLabNutritionAdvice(
           currentValue: lab.value,
           unit: lab.unit,
           targetRange: `>${threshold} g/dL`,
+          references: [
+            'WHO 2011: Haemoglobin concentrations for the diagnosis of anaemia',
+            'Sim et al. 2019 (Nutrients): Iron considerations for the athlete',
+          ],
         })
       }
     }
@@ -161,6 +172,11 @@ export function generateLabNutritionAdvice(
         currentValue: lab.value,
         unit: lab.unit,
         targetRange: '<1.0 mg/L（理想）',
+        references: [
+          'Calder 2017 (J Nutr): Omega-3 fatty acids and inflammatory processes',
+          'Galland 2010 (Nutr Clin Pract): Diet and inflammation',
+          'Ridker 2003 (Circulation): Clinical application of CRP for cardiovascular disease',
+        ],
       })
     }
 
@@ -188,6 +204,11 @@ export function generateLabNutritionAdvice(
         currentValue: lab.value,
         unit: lab.unit,
         targetRange: '<100 mg/dL（最佳）',
+        references: [
+          'Miller et al. 2011 (J Am Coll Cardiol): Triglycerides and cardiovascular disease',
+          'Skulas-Ray et al. 2019 (Circulation): AHA advisory — Omega-3 for hypertriglyceridemia',
+          'Parks 2001 (J Nutr): Dietary carbohydrate effects on lipogenesis and TG',
+        ],
       })
     }
 
@@ -214,10 +235,15 @@ export function generateLabNutritionAdvice(
         currentValue: lab.value,
         unit: lab.unit,
         targetRange: '<80 mg/dL（最佳）',
+        references: [
+          'Sniderman et al. 2019 (JAMA Cardiol): ApoB vs LDL-C as primary measure of atherogenic risk',
+          'Ference et al. 2017 (Eur Heart J): Low-density lipoproteins cause atherosclerosis',
+          'AHA 2021: Diet and Lifestyle Recommendations',
+        ],
       })
     }
 
-    // ── HOMA-IR / 空腹血糖 / 空腹胰島素 → 胰島素敏感性 ──
+    // ── HOMA-IR → 胰島素敏感性 ──
     if (matchName(lab.test_name, ['homa-ir', 'homair'])) {
       advice.push({
         category: 'glucose',
@@ -241,9 +267,15 @@ export function generateLabNutritionAdvice(
         currentValue: lab.value,
         unit: '',
         targetRange: '<2.0（理想）',
+        references: [
+          'Wallace et al. 2004 (Diabetes Care): Use and abuse of HOMA modeling',
+          'Richter & Hargreaves 2013 (Physiol Rev): Exercise, GLUT4, and skeletal muscle glucose uptake',
+          'Johnston et al. 2004 (Diabetes Care): Vinegar improves insulin sensitivity in insulin-resistant subjects',
+        ],
       })
     }
 
+    // ── 空腹血糖 ──
     if (matchName(lab.test_name, ['空腹血糖', 'fasting glucose'])) {
       if (lab.value > 90) {
         advice.push({
@@ -262,6 +294,11 @@ export function generateLabNutritionAdvice(
           currentValue: lab.value,
           unit: lab.unit,
           targetRange: '<90 mg/dL（最佳）',
+          references: [
+            'ADA 2024: Standards of Care in Diabetes — classification and diagnosis',
+            'Colberg et al. 2016 (Diabetes Care): Physical activity/exercise and diabetes',
+            'Khan et al. 2003 (Diabetes Care): Cinnamon improves glucose and lipids in type 2 diabetes',
+          ],
         })
       }
     }
@@ -285,6 +322,11 @@ export function generateLabNutritionAdvice(
         currentValue: lab.value,
         unit: lab.unit,
         targetRange: '40-60 ng/mL（運動員理想）',
+        references: [
+          'Holick 2007 (NEJM): Vitamin D deficiency',
+          'Owens et al. 2018 (Eur J Sport Sci): Vitamin D and the athlete',
+          'Dawson-Hughes et al. 2005 (Am J Clin Nutr): Dietary fat increases vitamin D-3 absorption',
+        ],
       })
     }
 
@@ -306,12 +348,18 @@ export function generateLabNutritionAdvice(
         currentValue: lab.value,
         unit: lab.unit,
         targetRange: '<8 µmol/L（最佳）',
+        references: [
+          'Selhub 1999 (Annu Rev Nutr): Homocysteine metabolism',
+          'Clarke et al. 2014 (BMJ): B-vitamins and homocysteine reduction',
+          'Refsum et al. 2004 (Clin Chem): Facts and recommendations about total homocysteine',
+        ],
       })
     }
 
     // ── 鎂（區分偏高 vs 偏低）──
     if (matchName(lab.test_name, ['鎂', 'magnesium'])) {
       const mgHigh = lab.value > 2.4
+      const mgCaveat = '血清鎂僅反映全身鎂的 0.3%（99% 存在於骨骼和細胞內）。血清鎂正常不代表身體不缺鎂，RBC 鎂或 24hr 尿鎂更能反映真實狀態。運動員因流汗損耗，實際缺乏風險更高。'
       if (mgHigh) {
         advice.push({
           category: 'mineral',
@@ -329,6 +377,11 @@ export function generateLabNutritionAdvice(
           currentValue: lab.value,
           unit: lab.unit,
           targetRange: '2.0-2.4 mg/dL',
+          references: [
+            'Swaminathan 2003 (Clin Biochem Rev): Magnesium metabolism and its disorders',
+            'Musso 2009 (Int Urol Nephrol): Magnesium metabolism in health and disease',
+          ],
+          caveat: mgCaveat,
         })
       } else {
         advice.push({
@@ -347,6 +400,12 @@ export function generateLabNutritionAdvice(
           currentValue: lab.value,
           unit: lab.unit,
           targetRange: '2.0-2.4 mg/dL',
+          references: [
+            'DiNicolantonio et al. 2018 (Open Heart): Subclinical magnesium deficiency — a principal driver of cardiovascular disease',
+            'Nielsen & Lukaski 2006 (Magnes Res): Update on magnesium and exercise',
+            'Zhang et al. 2017 (Nutrients): Effects of magnesium supplementation on blood pressure',
+          ],
+          caveat: mgCaveat,
         })
       }
     }
@@ -354,6 +413,7 @@ export function generateLabNutritionAdvice(
     // ── 鋅（區分偏高 vs 偏低）──
     if (matchName(lab.test_name, ['鋅', 'zinc'])) {
       const znHigh = lab.value > 120
+      const znCaveat = '血清鋅受餐後狀態、發炎反應、時間點影響極大（需空腹抽血）。發炎時鋅會從血液轉移至肝臟，導致血清鋅假性偏低。建議同時參考 CRP 判讀。'
       if (znHigh) {
         advice.push({
           category: 'mineral',
@@ -371,6 +431,11 @@ export function generateLabNutritionAdvice(
           currentValue: lab.value,
           unit: lab.unit,
           targetRange: '70-120 µg/dL',
+          references: [
+            'Plum et al. 2010 (Int J Environ Res Public Health): The essential toxin — impact of zinc on human health',
+            'Fosmire 1990 (Am J Clin Nutr): Zinc toxicity',
+          ],
+          caveat: znCaveat,
         })
       } else {
         advice.push({
@@ -389,6 +454,119 @@ export function generateLabNutritionAdvice(
           currentValue: lab.value,
           unit: lab.unit,
           targetRange: '70-120 µg/dL',
+          references: [
+            'King et al. 2016 (J Nutr): Biomarkers of Nutrition for Development (BOND) — Zinc review',
+            'Kilic 2007 (Neuro Endocrinol Lett): Effect of zinc supplementation on free testosterone in male athletes',
+            'Prasad 2008 (Mol Med): Zinc in human health — effect on immune cells',
+          ],
+          caveat: znCaveat,
+        })
+      }
+    }
+
+    // ── 睪固酮（區分男性偏低 vs 女性偏高）──
+    if (matchName(lab.test_name, ['睪固酮', 'testosterone', '總睪固酮', 'total testosterone'])) {
+      const isMale = gender !== '女性'
+      if (isMale && lab.value < 300) {
+        // 男性睪固酮偏低
+        advice.push({
+          category: 'hormone',
+          title: '睪固酮偏低',
+          icon: '💪',
+          severity: lab.value < 200 ? 'high' : 'medium',
+          dietaryChanges: [
+            '確保脂肪攝取充足（佔總熱量 25-35%），過低脂肪飲食會抑制睪固酮合成',
+            '鋅和維生素 D 是睪固酮合成必需輔因子，確認這兩項血檢是否正常',
+            '避免過度熱量赤字（>500 kcal/day 持續超過 12 週會顯著壓低 T）',
+            '減少酒精攝取（乙醇直接抑制睪丸 Leydig 細胞合成 T）',
+            '確保每日膽固醇攝取足夠（蛋黃、海鮮），膽固醇是 T 的直接前驅物',
+          ],
+          foodsToIncrease: ['全蛋', '酪梨', '橄欖油', '牡蠣（鋅）', '巴西堅果（硒）', '十字花科蔬菜（DIM 降低雌激素）', '大蒜（促進 LH）'],
+          foodsToReduce: ['酒精', '大豆異黃酮（過量）', '薄荷茶（抗雄性素效果）', '過度加工食品'],
+          macroAdjustment: {
+            nutrient: '脂肪',
+            direction: 'increase',
+            detail: '脂肪佔總熱量至少 25%，飽和脂肪 ≥10%（膽固醇是睪固酮前驅物）。減脂期不要低脂飲食。',
+          },
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          targetRange: '450-800 ng/dL（運動員理想）',
+          references: [
+            'Volek et al. 1997 (J Appl Physiol): Testosterone and cortisol in relationship to dietary nutrients and resistance exercise',
+            'Prasad et al. 1996 (Nutrition): Zinc status and serum testosterone levels in healthy adults',
+            'Pilz et al. 2011 (Horm Metab Res): Effect of vitamin D supplementation on testosterone levels',
+            'Whittaker & Wu 2021 (Nutrients): Low-fat diets and testosterone in men — systematic review and meta-analysis',
+            'Kilic 2007 (Neuro Endocrinol Lett): Zinc supplementation and free testosterone in male athletes',
+          ],
+          caveat: '總睪固酮受 SHBG 影響大，SHBG 高時游離睪固酮可能偏低但總 T 正常。建議同時檢驗游離睪固酮或計算游離 T。另外，抽血時間影響結果（早上 T 最高），需早晨空腹抽血。',
+        })
+      } else if (isMale && lab.value > 300) {
+        // 男性 T 在 attention/alert 但 > 300 可能是邊界值
+        // 只有當 status 是非 normal 且 > 300 → 可能是偏高（例如外源使用）
+        // 這裡不給飲食建議，因為高 T 通常不是飲食問題
+      }
+      if (!isMale && lab.value > 70) {
+        // 女性睪固酮偏高
+        advice.push({
+          category: 'hormone',
+          title: '睪固酮偏高',
+          icon: '⚖️',
+          severity: lab.status === 'alert' ? 'high' : 'medium',
+          dietaryChanges: [
+            '減少精製碳水和高 GI 食物（胰島素阻抗會刺激卵巢產生更多雄性素）',
+            '增加抗發炎食物（Omega-3、莓果、薑黃）',
+            '增加纖維攝取（25-30g/day，幫助排除多餘雌激素和雄性素代謝物）',
+            '考慮薄荷茶（研究顯示有輕微降低雄性素效果）',
+          ],
+          foodsToIncrease: ['深海魚', '亞麻籽', '薄荷茶', '綠茶', '高纖蔬菜', '肉桂'],
+          foodsToReduce: ['精製碳水', '含糖食物', '乳製品（可能刺激 IGF-1）'],
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          targetRange: '15-70 ng/dL',
+          references: [
+            'Grant 2010 (J Clin Endocrinol Metab): Spearmint herbal tea and androgen levels in PCOS',
+            'Escobar-Morreale et al. 2005 (Eur J Endocrinol): Dietary composition and PCOS',
+            'Barrea et al. 2019 (Nutrients): Nutrition and PCOS — from bench to bedside',
+          ],
+          caveat: '女性睪固酮偏高常與 PCOS 相關，建議配合婦產科/內分泌科評估。飲食調整可輔助但不能替代醫療。',
+        })
+      }
+    }
+
+    // ── 游離睪固酮 ──
+    if (matchName(lab.test_name, ['游離睪固酮', 'free testosterone', 'freetestosterone'])) {
+      const isMale = gender !== '女性'
+      if (isMale && lab.value < 9) {
+        advice.push({
+          category: 'hormone',
+          title: '游離睪固酮偏低',
+          icon: '💪',
+          severity: lab.value < 5 ? 'high' : 'medium',
+          dietaryChanges: [
+            '確保脂肪攝取充足（佔總熱量 25-35%）',
+            '硼（Boron）可降低 SHBG 從而提高游離 T — 每日 3-6mg（酪梨、葡萄乾、杏仁）',
+            '維生素 D + 鋅 + 鎂 三位一體確保充足',
+            '避免長期大幅熱量赤字',
+          ],
+          foodsToIncrease: ['全蛋', '酪梨', '杏仁', '葡萄乾（硼）', '牡蠣', '橄欖油'],
+          foodsToReduce: ['酒精', '過量咖啡因（>400mg/day）'],
+          macroAdjustment: {
+            nutrient: '脂肪',
+            direction: 'increase',
+            detail: '脂肪至少佔總熱量 25%，確保飽和脂肪和單元不飽和脂肪均有攝取',
+          },
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          targetRange: '9-30 pg/mL（男性）',
+          references: [
+            'Naghii et al. 2011 (J Trace Elem Med Biol): Comparative effects of boron and calcium-fructoborate on serum free testosterone',
+            'Volek et al. 1997 (J Appl Physiol): Testosterone responses to dietary fat and resistance exercise',
+            'Cinar et al. 2011 (Biol Trace Elem Res): Effects of magnesium supplementation on testosterone levels in athletes',
+          ],
+          caveat: '游離睪固酮比總 T 更能反映實際活性水平，但需注意：計算值（Vermeulen 公式）vs 直接測量（平衡透析法）差異可達 20-30%。',
         })
       }
     }
