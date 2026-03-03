@@ -997,6 +997,20 @@ function generateCutSuggestion(
   //   恢復狀態決定「力道」（調多少）
   //   恢復好 → 身體撐得住，可以更積極
   //   恢復差 → 保護優先，減少壓力源（碳水是最直接的恢復燃料）
+  //
+  // ── 調整幅度設計基礎 ──
+  // 基準：每日 ±150-225 kcal 對應約 ±0.15-0.22 kg/week（以 7700 kcal/kg 計）
+  // 此為教練實務中單週可觀察到體重變化的最小有意義調幅
+  //
+  // 恢復狀態修正倍率（教練經驗值 + Trexler 2014 JISSN 代謝適應研究）：
+  //   critical: ×1.5-2.0（雙重壓力，需更大碳水補回）
+  //   struggling: ×1.0-1.3（適度保護）
+  //   good/unknown: ×1.0（標準調幅）
+  //   optimal: ×1.0-1.5（身體撐得住，可更積極）
+  //
+  // 碳水/脂肪分配原則：
+  //   增加方向 → 全加碳水（恢復燃料，Glycogen replenishment）
+  //   減少方向 → 碳水:脂肪 ≈ 4:1 kcal 比（保護最低脂肪攝取）
   const hasRecoveryData = recoveryState !== 'unknown'
   const recoveryGood = recoveryState === 'optimal' || recoveryState === 'good'
   const recoveryBad = recoveryState === 'struggling' || recoveryState === 'critical'
@@ -1016,12 +1030,15 @@ function generateCutSuggestion(
       // 恢復差 + 掉太快 → 加更多碳水保護（身體雙重壓力）
       // 恢復好 + 掉太快 → 標準補回
       if (recoveryState === 'critical') {
+        // +250kcal = 基準 150 × 1.67（critical 修正），全碳水（35g×4=140kcal 碳水 + 剩餘蛋白質重分配）
         calDelta = 250; carbDelta = 35; fatDelta = 0
         message = `體重掉太快（${weeklyChangeRate.toFixed(2)}%/週）且恢復狀態不佳。系統已加大熱量補回幅度（+250kcal），優先碳水保護恢復與肌肉。`
       } else if (recoveryState === 'struggling') {
+        // +200kcal = 基準 150 × 1.33（struggling 修正）
         calDelta = 200; carbDelta = 28; fatDelta = 0
         message = `體重掉太快（${weeklyChangeRate.toFixed(2)}%/週）且恢復偏低。系統已增加碳水補回（+200kcal），兼顧恢復與肌肉保護。`
       } else {
+        // +150kcal = 基準值（對應約 +0.14 kg/week 的減速效果）
         calDelta = 150; carbDelta = 20; fatDelta = 0
         message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，超過安全範圍（-1.0%）。系統偵測：可考慮增加熱量以保護肌肉量。`
       }
@@ -1040,13 +1057,18 @@ function generateCutSuggestion(
       // 恢復差 + 方向錯誤 → 減少減幅或不減卡（壓力已經很大，再砍熱量會更差）
       // 恢復好 + 方向錯誤 → 正常減卡
       if (recoveryState === 'critical') {
+        // 0 = 暫緩所有調整（cortisol 過高時再砍卡路里會加劇肌肉流失 — Trexler 2014）
         calDelta = 0; carbDelta = 0; fatDelta = 0
         message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週），但恢復狀態極差。系統暫不減卡，優先恢復身體狀態，避免雪上加霜。`
         warnings.push('⚠️ 體重方向錯誤但恢復狀態不佳，暫緩減卡。建議先改善睡眠、壓力管理，待恢復好轉再調整熱量。')
       } else if (recoveryState === 'struggling') {
+        // -125kcal = 基準 225 × 0.56（struggling 保護，僅約一半力道）
+        // 碳水:脂肪 ≈ 60:27 kcal = 2.2:1（保護脂肪底線，略偏保守）
         calDelta = -125; carbDelta = -15; fatDelta = -3
         message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週），但恢復偏低。系統僅微降熱量（-125kcal），避免過度壓迫恢復。`
       } else {
+        // -225kcal = 基準值（對應約 -0.21 kg/week 的加速效果）
+        // 碳水 -27g（108kcal）+ 脂肪 -7g（63kcal）≈ 171kcal 直接削減 + 蛋白質重分配
         calDelta = -225; carbDelta = -27; fatDelta = -7
         message = `體重反而增加（+${weeklyChangeRate.toFixed(2)}%/週）。需要降低熱量攝取。`
       }
@@ -1064,6 +1086,7 @@ function generateCutSuggestion(
           status = 'plateau'
           statusLabel = '停滯期'
           statusEmoji = '🟡'
+          // +75kcal 反向 Refeed（Trexler 2014: 代謝適應逆轉策略，碳水 19g×4=76kcal ≈ 全碳水）
           calDelta = 75; carbDelta = 19; fatDelta = 0
           message = `體重停滯（${weeklyChangeRate.toFixed(2)}%/週），但恢復狀態極差。系統反向操作：先增加碳水 Refeed（+75kcal），讓身體恢復後再突破停滯。`
           warnings.push('💡 停滯 + 恢復不足 = 代謝壓力過大。短期增加碳水有助恢復代謝率，比繼續減卡更有效突破停滯。')
@@ -1071,6 +1094,7 @@ function generateCutSuggestion(
           status = 'plateau'
           statusLabel = '停滯期'
           statusEmoji = '🟡'
+          // 0 = 觀望（struggling 時加碼不必要，減碼又傷恢復）
           calDelta = 0; carbDelta = 0; fatDelta = 0
           message = `體重停滯（${weeklyChangeRate.toFixed(2)}%/週），恢復偏低。系統暫維持熱量不動，優先觀察恢復趨勢。`
           warnings.push('💡 停滯 + 恢復偏低：目前不宜再減卡。建議改善睡眠品質，若恢復改善後體重仍停滯再微降熱量。')
@@ -1078,12 +1102,14 @@ function generateCutSuggestion(
           status = 'plateau'
           statusLabel = '停滯期'
           statusEmoji = '🟡'
+          // -225kcal = 基準 175 × 1.29（optimal 允許更積極突破）
           calDelta = -225; carbDelta = -28; fatDelta = -7
           message = `體重停滯（${weeklyChangeRate.toFixed(2)}%/週），但恢復狀態極佳！身體撐得住，系統已加大減幅（-225kcal）突破停滯。`
         } else {
           status = 'plateau'
           statusLabel = '停滯期'
           statusEmoji = '🟡'
+          // -175kcal = 標準停滯期調幅（good/unknown 狀態）
           calDelta = -175; carbDelta = -22; fatDelta = -5
           message = `體重近 10-14 天幾乎無變化（${weeklyChangeRate.toFixed(2)}%/週）。系統偵測：可考慮微降熱量突破停滯期。`
         }
@@ -1106,12 +1132,14 @@ function generateCutSuggestion(
       status = 'on_track'
       statusLabel = '進度正常'
       statusEmoji = '🟢'
+      // +75kcal = 保護性碳水補回（進度正常但恢復極差，避免掉重全是肌肉）
       calDelta = 75; carbDelta = 19; fatDelta = 0
       message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，進度正常，但恢復狀態不佳。系統已微增碳水（+75kcal）保護恢復能力，避免掉重代價過高。`
     } else if (recoveryState === 'struggling') {
       status = 'on_track'
       statusLabel = '進度正常'
       statusEmoji = '🟢'
+      // +50kcal = 最小有意義的碳水補回（13g×4=52kcal），方向對但輕推恢復
       calDelta = 50; carbDelta = 13; fatDelta = 0
       message = `體重下降速率 ${weeklyChangeRate.toFixed(2)}%/週，進度正常，但恢復偏低。系統已微增碳水（+50kcal）支持恢復。`
     } else {

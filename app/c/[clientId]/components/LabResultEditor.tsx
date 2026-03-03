@@ -9,7 +9,7 @@ interface LabResult {
   value: number
   unit: string
   reference_range: string
-  status: 'normal' | 'attention' | 'alert'
+  status: 'normal' | 'attention' | 'alert' | 'unknown'
   date: string
 }
 

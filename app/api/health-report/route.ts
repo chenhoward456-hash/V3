@@ -218,7 +218,7 @@ function buildComparisonReport(
     current: current.healthScore?.total ?? null,
     previous: previous.healthScore?.total ?? null,
     unit: '分',
-    improved: current.healthScore && previous.healthScore
+    improved: current.healthScore?.total != null && previous.healthScore?.total != null
       ? current.healthScore.total > previous.healthScore.total
       : null,
   })
@@ -235,7 +235,7 @@ function buildComparisonReport(
           current: cp.score,
           previous: pp.score,
           unit: '分',
-          improved: cp.score > pp.score,
+          improved: cp.score != null && pp.score != null ? cp.score > pp.score : null,
         })
       }
     }

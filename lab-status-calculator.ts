@@ -6,7 +6,7 @@ import { calculateLabStatus as _calculateLabStatus, LAB_THRESHOLDS } from './uti
 
 export { LAB_THRESHOLDS }
 
-function calculateLabStatus(testName: string, value: number, gender?: '男性' | '女性'): 'normal' | 'attention' | 'alert' {
+function calculateLabStatus(testName: string, value: number, gender?: '男性' | '女性'): 'normal' | 'attention' | 'alert' | 'unknown' {
   return _calculateLabStatus(testName, value, gender)
 }
 

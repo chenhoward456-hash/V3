@@ -85,8 +85,8 @@ const HIGHER_IS_BETTER = new Set([
   '維生素D', '維生素B12', '葉酸', 'HDL-C', 'HDL-C_female', '白蛋白', 'eGFR',
 ]);
 
-// 血檢狀態類型
-export type LabStatus = 'normal' | 'attention' | 'alert';
+// 血檢狀態類型（新增 'unknown' 表示系統不認識的指標）
+export type LabStatus = 'normal' | 'attention' | 'alert' | 'unknown';
 
 // 閾值類型定義
 type ThresholdValue = number | { min: number; max: number };
@@ -118,7 +118,7 @@ export function calculateLabStatus(testName: string, value: number, gender?: '�
   }
 
   const threshold = (LAB_THRESHOLDS as LabThresholds)[lookupName];
-  if (!threshold) return 'normal';
+  if (!threshold) return 'unknown';  // 未知指標不應靜默視為 normal
 
   // 處理範圍型閾值（如鐵蛋白、鋅、鎂、TSH 等）
   if (typeof threshold.normal === 'object' && 'min' in threshold.normal) {
@@ -161,6 +161,7 @@ export function getStatusColor(status: LabStatus): string {
     case 'normal': return 'bg-green-100 text-green-800';
     case 'attention': return 'bg-yellow-100 text-yellow-800';
     case 'alert': return 'bg-red-100 text-red-800';
+    case 'unknown': return 'bg-gray-100 text-gray-600';
     default: return 'bg-gray-100 text-gray-800';
   }
 }
@@ -175,6 +176,7 @@ export function getStatusIcon(status: LabStatus): string {
     case 'normal': return '🟢';
     case 'attention': return '🟡';
     case 'alert': return '🔴';
+    case 'unknown': return '⚪';
     default: return '⚪';
   }
 }
@@ -189,6 +191,16 @@ export function getStatusText(status: LabStatus): string {
     case 'normal': return '正常';
     case 'attention': return '注意';
     case 'alert': return '警示';
+    case 'unknown': return '未收錄';
     default: return '未知';
   }
+}
+
+/**
+ * 檢查指標名稱是否在系統閾值表中
+ * @param testName 檢測項目名稱
+ * @returns 是否為已知指標
+ */
+export function isKnownLabTest(testName: string): boolean {
+  return testName in LAB_THRESHOLDS;
 }

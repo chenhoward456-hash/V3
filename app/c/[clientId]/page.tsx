@@ -341,14 +341,14 @@ export default function ClientDashboard() {
                       <div className="w-full bg-emerald-100 rounded-full h-1.5 mb-0.5">
                         <div
                           className={`h-1.5 rounded-full transition-all ${
-                            p.score >= 80 ? 'bg-emerald-500' : p.score >= 50 ? 'bg-yellow-400' : 'bg-red-400'
+                            (p.score ?? 0) >= 80 ? 'bg-emerald-500' : (p.score ?? 0) >= 50 ? 'bg-yellow-400' : p.score == null ? 'bg-gray-300' : 'bg-red-400'
                           }`}
-                          style={{ width: `${p.score}%` }}
+                          style={{ width: `${p.score ?? 0}%` }}
                         />
                       </div>
                       <p className={`text-[9px] font-medium ${
-                        p.score >= 80 ? 'text-emerald-600' : p.score >= 50 ? 'text-yellow-600' : 'text-red-500'
-                      }`}>{p.score}</p>
+                        p.score == null ? 'text-gray-400' : (p.score >= 80 ? 'text-emerald-600' : p.score >= 50 ? 'text-yellow-600' : 'text-red-500')
+                      }`}>{p.score ?? '—'}</p>
                       <p className="text-[8px] text-gray-400">{p.label}</p>
                     </div>
                   )
@@ -356,8 +356,9 @@ export default function ClientDashboard() {
               </div>
               {/* 最低分柱提示 */}
               {(() => {
-                const lowest = [...healthScore.pillars].sort((a, b) => a.score - b.score)[0]
-                if (lowest && lowest.score < 70) {
+                const scored = healthScore.pillars.filter(p => p.score != null)
+                const lowest = scored.sort((a, b) => (a.score ?? 0) - (b.score ?? 0))[0]
+                if (lowest && lowest.score != null && lowest.score < 70) {
                   const tips: Record<string, string> = {
                     wellness: '多休息、保持正面心態',
                     nutrition: '注意營養目標的執行',
