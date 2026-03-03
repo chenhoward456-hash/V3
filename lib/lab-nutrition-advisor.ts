@@ -55,30 +55,63 @@ export function generateLabNutritionAdvice(
   for (const lab of labs) {
     if (lab.value == null || lab.status === 'normal') continue
 
-    // ── 鐵蛋白 / 血紅素 → 鐵質飲食建議 ──
+    // ── 鐵蛋白 / 血紅素 → 鐵質飲食建議（區分偏高 vs 偏低）──
     if (matchName(lab.test_name, ['鐵蛋白', 'ferritin'])) {
-      advice.push({
-        category: 'iron',
-        title: '鐵質攝取不足',
-        icon: '🥩',
-        severity: lab.status === 'alert' ? 'high' : 'medium',
-        dietaryChanges: [
-          '每週安排 3-4 次紅肉（牛肉、羊肉），每次 100-150g',
-          '搭配維生素 C 食物（柑橘、甜椒）提高鐵吸收率 3-6 倍',
-          '避免餐中喝茶或咖啡（單寧酸抑制鐵吸收）',
-        ],
-        foodsToIncrease: ['牛肉', '羊肉', '鴨血', '豬肝', '菠菜', '紅莧菜', '黑芝麻'],
-        foodsToReduce: ['餐中茶/咖啡（改為餐後 1 小時）'],
-        macroAdjustment: goalType === 'cut' ? {
-          nutrient: '蛋白質來源',
-          direction: 'increase',
-          detail: '蛋白質優先選擇紅肉（血基質鐵吸收率 15-35%，植物鐵僅 2-20%）',
-        } : undefined,
-        labMarker: lab.test_name,
-        currentValue: lab.value,
-        unit: lab.unit,
-        targetRange: gender === '女性' ? '12-200 ng/mL' : '50-150 ng/mL',
-      })
+      const ferritinMax = gender === '女性' ? 200 : 150
+      const ferritinMin = gender === '女性' ? 12 : 50
+      const isHigh = lab.value > ferritinMax
+      const isLow = lab.value < ferritinMin
+
+      if (isHigh) {
+        // 鐵蛋白偏高 → 減少鐵質攝取、排查發炎
+        advice.push({
+          category: 'iron',
+          title: '鐵蛋白偏高',
+          icon: '⚠️',
+          severity: lab.status === 'alert' ? 'high' : 'medium',
+          dietaryChanges: [
+            '減少紅肉頻率（每週最多 1-2 次，每次 ≤100g）',
+            '避免鐵強化食品和含鐵補充劑',
+            '餐中搭配茶或咖啡（單寧酸可抑制鐵吸收）',
+            '增加抗氧化食物以對抗鐵引起的氧化壓力',
+          ],
+          foodsToIncrease: ['綠茶', '蔬菜', '全穀類', '豆腐', '雞胸肉', '魚類'],
+          foodsToReduce: ['紅肉', '內臟', '鐵強化穀片', '高劑量維生素 C 補充劑（促進鐵吸收）'],
+          macroAdjustment: {
+            nutrient: '蛋白質來源',
+            direction: 'decrease',
+            detail: '蛋白質改以白肉（雞、魚）和植物性蛋白為主，減少血基質鐵攝入',
+          },
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          targetRange: gender === '女性' ? '12-200 ng/mL' : '50-150 ng/mL',
+        })
+      } else if (isLow) {
+        // 鐵蛋白偏低 → 增加鐵質攝取
+        advice.push({
+          category: 'iron',
+          title: '鐵質攝取不足',
+          icon: '🥩',
+          severity: lab.status === 'alert' ? 'high' : 'medium',
+          dietaryChanges: [
+            '每週安排 3-4 次紅肉（牛肉、羊肉），每次 100-150g',
+            '搭配維生素 C 食物（柑橘、甜椒）提高鐵吸收率 3-6 倍',
+            '避免餐中喝茶或咖啡（單寧酸抑制鐵吸收）',
+          ],
+          foodsToIncrease: ['牛肉', '羊肉', '鴨血', '豬肝', '菠菜', '紅莧菜', '黑芝麻'],
+          foodsToReduce: ['餐中茶/咖啡（改為餐後 1 小時）'],
+          macroAdjustment: goalType === 'cut' ? {
+            nutrient: '蛋白質來源',
+            direction: 'increase',
+            detail: '蛋白質優先選擇紅肉（血基質鐵吸收率 15-35%，植物鐵僅 2-20%）',
+          } : undefined,
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          targetRange: gender === '女性' ? '12-200 ng/mL' : '50-150 ng/mL',
+        })
+      }
     }
 
     if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hgb', 'hb'])) {
@@ -276,46 +309,88 @@ export function generateLabNutritionAdvice(
       })
     }
 
-    // ── 鎂 ──
+    // ── 鎂（區分偏高 vs 偏低）──
     if (matchName(lab.test_name, ['鎂', 'magnesium'])) {
-      advice.push({
-        category: 'mineral',
-        title: '鎂偏低',
-        icon: '🥬',
-        severity: lab.status === 'alert' ? 'high' : 'medium',
-        dietaryChanges: [
-          '每日攝取深綠色蔬菜至少 2 份（菠菜、甘藍）',
-          '每日一份堅果（南瓜子含鎂最高，30g = 150mg 鎂）',
-          '選擇全穀類而非精製碳水',
-        ],
-        foodsToIncrease: ['南瓜子', '杏仁', '菠菜', '黑巧克力', '酪梨', '糙米'],
-        foodsToReduce: ['精製碳水（加工過程流失鎂）', '酒精（促進鎂排出）'],
-        labMarker: lab.test_name,
-        currentValue: lab.value,
-        unit: lab.unit,
-        targetRange: '2.0-2.4 mg/dL',
-      })
+      const mgHigh = lab.value > 2.4
+      if (mgHigh) {
+        advice.push({
+          category: 'mineral',
+          title: '鎂偏高',
+          icon: '🥬',
+          severity: lab.status === 'alert' ? 'high' : 'medium',
+          dietaryChanges: [
+            '暫停鎂補充劑',
+            '減少高鎂食物攝取量（堅果、黑巧克力）',
+            '確認腎功能是否正常（腎功能下降會導致鎂滯留）',
+          ],
+          foodsToIncrease: [],
+          foodsToReduce: ['鎂補充劑', '大量堅果', '黑巧克力'],
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          targetRange: '2.0-2.4 mg/dL',
+        })
+      } else {
+        advice.push({
+          category: 'mineral',
+          title: '鎂偏低',
+          icon: '🥬',
+          severity: lab.status === 'alert' ? 'high' : 'medium',
+          dietaryChanges: [
+            '每日攝取深綠色蔬菜至少 2 份（菠菜、甘藍）',
+            '每日一份堅果（南瓜子含鎂最高，30g = 150mg 鎂）',
+            '選擇全穀類而非精製碳水',
+          ],
+          foodsToIncrease: ['南瓜子', '杏仁', '菠菜', '黑巧克力', '酪梨', '糙米'],
+          foodsToReduce: ['精製碳水（加工過程流失鎂）', '酒精（促進鎂排出）'],
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          targetRange: '2.0-2.4 mg/dL',
+        })
+      }
     }
 
-    // ── 鋅 ──
+    // ── 鋅（區分偏高 vs 偏低）──
     if (matchName(lab.test_name, ['鋅', 'zinc'])) {
-      advice.push({
-        category: 'mineral',
-        title: '鋅偏低',
-        icon: '🦪',
-        severity: lab.status === 'alert' ? 'high' : 'medium',
-        dietaryChanges: [
-          '每週 2-3 次貝類（牡蠣是鋅含量最高食物，6 顆 = 32mg）',
-          '紅肉是次佳來源（100g 牛肉 = 4-5mg 鋅）',
-          '避免與高植酸食物同餐（未發酵豆類、全穀類會抑制鋅吸收）',
-        ],
-        foodsToIncrease: ['牡蠣', '蛤蜊', '牛肉', '南瓜子', '雞腿肉'],
-        foodsToReduce: ['植酸食物（與鋅分開餐次）'],
-        labMarker: lab.test_name,
-        currentValue: lab.value,
-        unit: lab.unit,
-        targetRange: '70-120 µg/dL',
-      })
+      const znHigh = lab.value > 120
+      if (znHigh) {
+        advice.push({
+          category: 'mineral',
+          title: '鋅偏高',
+          icon: '🦪',
+          severity: lab.status === 'alert' ? 'high' : 'medium',
+          dietaryChanges: [
+            '暫停鋅補充劑',
+            '減少貝類和紅肉頻率',
+            '注意：長期鋅過高會抑制銅吸收，留意相關症狀',
+          ],
+          foodsToIncrease: [],
+          foodsToReduce: ['鋅補充劑', '牡蠣（暫時減少）', '過量紅肉'],
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          targetRange: '70-120 µg/dL',
+        })
+      } else {
+        advice.push({
+          category: 'mineral',
+          title: '鋅偏低',
+          icon: '🦪',
+          severity: lab.status === 'alert' ? 'high' : 'medium',
+          dietaryChanges: [
+            '每週 2-3 次貝類（牡蠣是鋅含量最高食物，6 顆 = 32mg）',
+            '紅肉是次佳來源（100g 牛肉 = 4-5mg 鋅）',
+            '避免與高植酸食物同餐（未發酵豆類、全穀類會抑制鋅吸收）',
+          ],
+          foodsToIncrease: ['牡蠣', '蛤蜊', '牛肉', '南瓜子', '雞腿肉'],
+          foodsToReduce: ['植酸食物（與鋅分開餐次）'],
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          targetRange: '70-120 µg/dL',
+        })
+      }
     }
   }
 
