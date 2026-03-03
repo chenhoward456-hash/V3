@@ -682,6 +682,8 @@ export default function ClientDashboard() {
             proteinTarget={c.protein_target}
             carbsTarget={c.carbs_target}
             fatTarget={c.fat_target}
+            targetWeight={c.target_weight || null}
+            targetDate={c.target_date || null}
             isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
             onMutate={mutate}
           />

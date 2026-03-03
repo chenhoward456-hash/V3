@@ -77,7 +77,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     goalType: client.goal_type,
     dietStartDate: client.diet_start_date || null,
     targetWeight: client.target_weight || null,
-    targetDate: client.competition_date || null,
+    targetDate: client.competition_date || client.target_date || null,
     currentCalories: client.calories_target || null,
     currentProtein: client.protein_target || null,
     currentCarbs: client.carbs_target || null,

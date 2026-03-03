@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, goal_type, activity_profile, gender, height, body_weight, body_fat_pct, training_days_per_week } = body
+    const { clientId, goal_type, activity_profile, gender, height, body_weight, body_fat_pct, training_days_per_week, target_weight, target_date } = body
 
     if (!clientId || typeof clientId !== 'string') {
       return createErrorResponse('缺少客戶 ID', 400)
@@ -236,6 +236,17 @@ export async function PATCH(request: NextRequest) {
 
     if (height && typeof height === 'number' && height > 100 && height < 250) {
       updates.height = height
+    }
+
+    // 目標體重 + 目標日期（自主管理用戶設定期限）
+    if (target_weight && typeof target_weight === 'number' && target_weight > 30 && target_weight < 300) {
+      updates.target_weight = target_weight
+    }
+    if (target_date && typeof target_date === 'string') {
+      const parsedDate = new Date(target_date)
+      if (!isNaN(parsedDate.getTime()) && parsedDate > new Date()) {
+        updates.target_date = target_date
+      }
     }
 
     // InBody 數據 → 建立 body_composition 紀錄 + 計算初始營養目標
