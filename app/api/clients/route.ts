@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 import { validateDate } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware'
+import { calculateInitialTargets } from '@/lib/nutrition-engine'
 
 // 檢查環境變數
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -206,11 +207,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH: 自主管理用戶更新自己的 profile（goal_type, activity_profile 等）
+// PATCH: 自主管理用戶 Onboarding — 設定目標 + InBody 數據 → 即時算出初始營養目標
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, goal_type, activity_profile } = body
+    const { clientId, goal_type, activity_profile, gender, height, body_weight, body_fat_pct, training_days_per_week } = body
 
     if (!clientId || typeof clientId !== 'string') {
       return createErrorResponse('缺少客戶 ID', 400)
@@ -219,7 +220,7 @@ export async function PATCH(request: NextRequest) {
     // 驗證 unique_code 存在且為 self_managed
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('id, subscription_tier, is_active')
+      .select('id, gender, subscription_tier, is_active')
       .eq('unique_code', clientId)
       .single()
 
@@ -240,12 +241,60 @@ export async function PATCH(request: NextRequest) {
 
     if (goal_type && ['cut', 'bulk'].includes(goal_type)) {
       updates.goal_type = goal_type
-      // 設定目標時順便記錄開始日期
       updates.diet_start_date = new Date().toISOString().split('T')[0]
     }
 
     if (activity_profile && ['sedentary', 'high_energy_flux'].includes(activity_profile)) {
       updates.activity_profile = activity_profile
+    }
+
+    if (height && typeof height === 'number' && height > 100 && height < 250) {
+      updates.height = height
+    }
+
+    // InBody 數據 → 建立 body_composition 紀錄 + 計算初始營養目標
+    const hasBodyData = body_weight && typeof body_weight === 'number' && body_weight > 30 && body_weight < 300
+    const validGoalType = goal_type && ['cut', 'bulk'].includes(goal_type) ? goal_type : null
+    const resolvedGender = gender || client.gender || '男性'
+
+    if (hasBodyData) {
+      // 寫入 body_composition 紀錄
+      const today = new Date().toISOString().split('T')[0]
+      const bodyCompRecord: Record<string, any> = {
+        client_id: client.id,
+        date: today,
+        weight: body_weight,
+      }
+      if (body_fat_pct && typeof body_fat_pct === 'number' && body_fat_pct > 3 && body_fat_pct < 60) {
+        bodyCompRecord.body_fat = body_fat_pct
+      }
+
+      // upsert by client_id + date
+      await supabase
+        .from('body_composition')
+        .upsert(bodyCompRecord, { onConflict: 'client_id,date' })
+
+      // 有體重 + 目標類型 → 計算初始營養目標
+      if (validGoalType) {
+        const targets = calculateInitialTargets({
+          gender: resolvedGender,
+          bodyWeight: body_weight,
+          height: updates.height || null,
+          bodyFatPct: bodyCompRecord.body_fat || null,
+          goalType: validGoalType as 'cut' | 'bulk',
+          activityProfile: (activity_profile as 'sedentary' | 'high_energy_flux') || 'sedentary',
+          trainingDaysPerWeek: training_days_per_week || 3,
+        })
+
+        // 寫入 client 的營養目標
+        updates.calories_target = targets.calories
+        updates.protein_target = targets.protein
+        updates.carbs_target = targets.carbs
+        updates.fat_target = targets.fat
+        // 同時啟用 nutrition 和 body_composition 功能
+        updates.nutrition_enabled = true
+        updates.body_composition_enabled = true
+      }
     }
 
     if (Object.keys(updates).length === 0) {

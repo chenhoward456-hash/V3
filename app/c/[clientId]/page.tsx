@@ -677,6 +677,11 @@ export default function ClientDashboard() {
             uniqueCode={c.unique_code}
             goalType={c.goal_type || null}
             activityProfile={c.activity_profile || null}
+            gender={c.gender || null}
+            caloriesTarget={c.calories_target}
+            proteinTarget={c.protein_target}
+            carbsTarget={c.carbs_target}
+            fatTarget={c.fat_target}
             isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
             onMutate={mutate}
           />

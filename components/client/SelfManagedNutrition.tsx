@@ -7,6 +7,11 @@ interface SelfManagedNutritionProps {
   uniqueCode: string  // unique_code (for PATCH API)
   goalType: string | null
   activityProfile: string | null
+  gender: string | null
+  caloriesTarget: number | null
+  proteinTarget: number | null
+  carbsTarget: number | null
+  fatTarget: number | null
   isTrainingDay?: boolean
   onMutate?: () => void
 }
@@ -16,23 +21,31 @@ export default function SelfManagedNutrition({
   uniqueCode,
   goalType,
   activityProfile,
+  gender,
+  caloriesTarget,
+  proteinTarget,
+  carbsTarget,
+  fatTarget,
   isTrainingDay,
   onMutate,
 }: SelfManagedNutritionProps) {
   const [data, setData] = useState<any>(null)
   const [meta, setMeta] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [setupStep, setSetupStep] = useState<'goal' | 'activity' | null>(null)
+  // Onboarding form state
   const [selectedGoal, setSelectedGoal] = useState<'cut' | 'bulk' | null>(null)
   const [selectedActivity, setSelectedActivity] = useState<'sedentary' | 'high_energy_flux'>('sedentary')
+  const [bodyWeight, setBodyWeight] = useState('')
+  const [bodyFatPct, setBodyFatPct] = useState('')
+  const [height, setHeight] = useState('')
+  const [trainingDays, setTrainingDays] = useState('3')
   const [submitting, setSubmitting] = useState(false)
 
-  // 需要設定 goal_type 才能開始
-  const needsOnboarding = !goalType
+  // 需要 Onboarding：沒有 goalType 或沒有營養目標
+  const needsOnboarding = !goalType || !caloriesTarget
 
   useEffect(() => {
     if (needsOnboarding) {
-      setSetupStep('goal')
       setLoading(false)
       return
     }
@@ -56,7 +69,7 @@ export default function SelfManagedNutrition({
   }, [clientId, needsOnboarding, onMutate])
 
   const handleSetup = async () => {
-    if (!selectedGoal) return
+    if (!selectedGoal || !bodyWeight) return
     setSubmitting(true)
     try {
       const res = await fetch('/api/clients', {
@@ -64,12 +77,16 @@ export default function SelfManagedNutrition({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId: uniqueCode,
+          gender: gender || '男性',
           goal_type: selectedGoal,
           activity_profile: selectedActivity,
+          body_weight: parseFloat(bodyWeight),
+          body_fat_pct: bodyFatPct ? parseFloat(bodyFatPct) : undefined,
+          height: height ? parseFloat(height) : undefined,
+          training_days_per_week: parseInt(trainingDays) || 3,
         }),
       })
       if (res.ok) {
-        // Refresh the page to load with new settings
         if (onMutate) onMutate()
         window.location.reload()
       }
@@ -77,22 +94,22 @@ export default function SelfManagedNutrition({
     finally { setSubmitting(false) }
   }
 
-  // Onboarding 畫面
-  if (needsOnboarding || setupStep) {
+  // ===== Onboarding 畫面 =====
+  if (needsOnboarding) {
+    const canSubmit = selectedGoal && bodyWeight && parseFloat(bodyWeight) > 30
     return (
       <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-2">
           <span className="text-2xl">🎯</span>
           <h2 className="text-lg font-bold text-gray-900">設定你的營養目標</h2>
         </div>
-
         <p className="text-sm text-gray-500 mb-5">
-          告訴系統你的目標，我們會根據你的體重數據自動計算每日該吃多少。
+          輸入 InBody 數據，系統馬上幫你算出每日該吃多少。
         </p>
 
-        {/* Step 1: 目標選擇 */}
-        <div className="mb-5">
-          <p className="text-xs font-semibold text-gray-700 mb-3">你的目標是？</p>
+        {/* 目標選擇 */}
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-gray-700 mb-2">你的目標是？</p>
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setSelectedGoal('cut')}
@@ -121,48 +138,108 @@ export default function SelfManagedNutrition({
           </div>
         </div>
 
-        {/* Step 2: 活動量 */}
+        {/* InBody 數據 */}
         {selectedGoal && (
-          <div className="mb-5">
-            <p className="text-xs font-semibold text-gray-700 mb-3">你的日常活動量？</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setSelectedActivity('sedentary')}
-                className={`p-4 rounded-2xl border-2 transition-all text-left ${
-                  selectedActivity === 'sedentary'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
-                }`}
-              >
-                <span className="text-2xl block mb-1">🖥️</span>
-                <p className="text-sm font-bold text-gray-900">上班族</p>
-                <p className="text-[11px] text-gray-500 mt-1">久坐為主、步數偏少</p>
-              </button>
-              <button
-                onClick={() => setSelectedActivity('high_energy_flux')}
-                className={`p-4 rounded-2xl border-2 transition-all text-left ${
-                  selectedActivity === 'high_energy_flux'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
-                }`}
-              >
-                <span className="text-2xl block mb-1">🚶</span>
-                <p className="text-sm font-bold text-gray-900">高活動量</p>
-                <p className="text-[11px] text-gray-500 mt-1">日常步數多、體力勞動</p>
-              </button>
+          <>
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-gray-700 mb-2">InBody / 身體數據</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] text-gray-500 block mb-1">體重 (kg) *</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={bodyWeight}
+                    onChange={(e) => setBodyWeight(e.target.value)}
+                    placeholder="70"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 block mb-1">體脂率 (%)</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={bodyFatPct}
+                    onChange={(e) => setBodyFatPct(e.target.value)}
+                    placeholder="20"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 block mb-1">身高 (cm)</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={height}
+                    onChange={(e) => setHeight(e.target.value)}
+                    placeholder="170"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1.5">
+                有體脂率數據（InBody）可以更精準計算 TDEE
+              </p>
             </div>
-          </div>
-        )}
 
-        {/* 送出 */}
-        {selectedGoal && (
-          <button
-            onClick={handleSetup}
-            disabled={submitting}
-            className="w-full py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            {submitting ? '設定中...' : '開始計算我的營養目標'}
-          </button>
+            {/* 活動量 + 訓練頻率 */}
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-gray-700 mb-2">日常活動量</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setSelectedActivity('sedentary')}
+                  className={`p-3 rounded-2xl border-2 transition-all text-left ${
+                    selectedActivity === 'sedentary'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                  }`}
+                >
+                  <p className="text-sm font-bold text-gray-900">🖥️ 上班族</p>
+                  <p className="text-[11px] text-gray-500">久坐為主</p>
+                </button>
+                <button
+                  onClick={() => setSelectedActivity('high_energy_flux')}
+                  className={`p-3 rounded-2xl border-2 transition-all text-left ${
+                    selectedActivity === 'high_energy_flux'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                  }`}
+                >
+                  <p className="text-sm font-bold text-gray-900">🚶 高活動量</p>
+                  <p className="text-[11px] text-gray-500">步數多、體力勞動</p>
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-gray-700 mb-2">每週訓練幾天？</p>
+              <div className="flex gap-2">
+                {['2', '3', '4', '5', '6'].map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setTrainingDays(d)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                      trainingDays === d
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {d}天
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 送出 */}
+            <button
+              onClick={handleSetup}
+              disabled={!canSubmit || submitting}
+              className="w-full py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {submitting ? '計算中...' : '計算我的營養目標'}
+            </button>
+          </>
         )}
       </div>
     )
@@ -171,7 +248,50 @@ export default function SelfManagedNutrition({
   if (loading) return null
   if (!data) return null
 
-  // 數據不足
+  // ===== 數據不足但有初始目標 =====
+  if (data.status === 'insufficient_data' && caloriesTarget) {
+    return (
+      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🤖</span>
+            <h2 className="text-lg font-bold text-gray-900">智能營養計算</h2>
+          </div>
+          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+            goalType === 'cut' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
+          }`}>
+            {goalType === 'cut' ? '🔥 減脂中' : '💪 增肌中'}
+          </span>
+        </div>
+
+        {/* 初始目標（從 InBody 計算） */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 mb-4">
+          <p className="text-xs font-semibold text-gray-700 mb-2">📋 今日飲食目標（InBody 初始計算）</p>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label: '熱量', value: caloriesTarget, unit: 'kcal', emoji: '🔥' },
+              { label: '蛋白質', value: proteinTarget, unit: 'g', emoji: '🥩' },
+              { label: '碳水', value: carbsTarget, unit: 'g', emoji: '🍚' },
+              { label: '脂肪', value: fatTarget, unit: 'g', emoji: '🥑' },
+            ].map(({ label, value, unit, emoji }) => (
+              <div key={label} className="text-center bg-white bg-opacity-70 rounded-xl py-2 px-1">
+                <p className="text-[10px] text-gray-500">{emoji} {label}</p>
+                <p className="text-lg font-bold text-gray-900">{value || '--'}</p>
+                <p className="text-[10px] text-gray-400">{unit}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 提示持續記錄 */}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
+          📊 持續記錄每天體重，2 週後系統會根據真實體重變化自動校正目標
+        </div>
+      </div>
+    )
+  }
+
+  // ===== 數據不足且無初始目標（不太應該發生） =====
   if (data.status === 'insufficient_data') {
     return (
       <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
@@ -182,20 +302,11 @@ export default function SelfManagedNutrition({
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
           需要至少 2 週的體重數據，系統才能開始自動計算你的營養目標。請每天記錄體重！
         </div>
-        <div className="mt-3 bg-gray-50 rounded-xl p-4">
-          <p className="text-xs text-gray-500">目前設定</p>
-          <div className="flex gap-3 mt-2">
-            <span className="text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-medium">
-              {goalType === 'cut' ? '🔥 減脂' : '💪 增肌'}
-            </span>
-            <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium">
-              {activityProfile === 'high_energy_flux' ? '🚶 高活動量' : '🖥️ 上班族'}
-            </span>
-          </div>
-        </div>
       </div>
     )
   }
+
+  // ===== 正常顯示（有足夠數據） =====
 
   // 碳循環
   const hasCarbCycling = data.suggestedCarbsTrainingDay != null && data.suggestedCarbsRestDay != null
