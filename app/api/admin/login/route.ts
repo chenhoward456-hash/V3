@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { createAdminSession, rateLimit, getClientIP } from '@/lib/auth-middleware'
 
 export async function POST(request: NextRequest) {
@@ -18,7 +19,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '伺服器設定錯誤' }, { status: 500 })
     }
 
-    if (password === correctPassword) {
+    // Timing-safe comparison to prevent timing attacks
+    const inputBuf = Buffer.from(password)
+    const correctBuf = Buffer.from(correctPassword)
+    const isMatch = inputBuf.length === correctBuf.length &&
+      crypto.timingSafeEqual(inputBuf, correctBuf)
+
+    if (isMatch) {
       const sessionToken = createAdminSession()
 
       const response = NextResponse.json({ success: true })

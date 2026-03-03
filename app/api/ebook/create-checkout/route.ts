@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // 確認 ECPay 金鑰已設定
+    if (!ECPAY_CONFIG.MerchantID || !ECPAY_CONFIG.HashKey || !ECPAY_CONFIG.HashIV) {
+      return createErrorResponse('金流設定未完成，請聯繫管理員', 500)
+    }
+
     const { email, quizData } = await request.json()
 
     // 驗證 email
