@@ -24,7 +24,6 @@ import {
   getZoneMacros,
   type Gender as BFZGender,
   type BodyFatZoneId,
-  type RecoveryIndicators as ZoneRecoveryIndicators,
 } from './body-fat-zone-table'
 
 // ===== 類型定義 =====
@@ -2056,7 +2055,8 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
   let carbs: number
 
   if (input.bodyFatPct != null && input.bodyFatPct > 0 && zoneInfo) {
-    // 用 zone table 的完整建議
+    // 用 getZoneMacros() 取得 protein/fat（含 overweight 體重校正）
+    // 但不用它的 calories/carbs → 改用 finalCalories 算碳水，避免 zone 赤字 ≠ 函數赤字
     const zoneMacros = getZoneMacros({
       gender: toZoneGender(input.gender),
       bodyWeight: bw,
@@ -2066,7 +2066,9 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
     })
     protein = zoneMacros.protein
     fat = zoneMacros.fat
-    carbs = zoneMacros.carbs
+    // 碳水 = finalCalories 扣掉蛋白質+脂肪的剩餘
+    const remainingCal = finalCalories - (protein * 4) - (fat * 9)
+    carbs = Math.max(50, Math.round(remainingCal / 4))
   } else {
     // Fallback: 固定 g/kg
     const proteinPerKg = input.goalType === 'cut'
@@ -2256,6 +2258,8 @@ export function generateDemoAnalysis(input: DemoAnalysisInput): DemoAnalysisResu
   let suggestedCarbs: number
 
   if (input.bodyFatPct != null && input.bodyFatPct > 0 && zoneInfo) {
+    // 用 getZoneMacros() 取得 protein/fat（含 overweight 體重校正）
+    // 碳水用 suggestedCalories 反算，避免 zone 赤字 ≠ 函數赤字造成 macro-calorie 不一致
     const zoneMacros = getZoneMacros({
       gender: toZoneGender(input.gender),
       bodyWeight: bw,
@@ -2265,7 +2269,8 @@ export function generateDemoAnalysis(input: DemoAnalysisInput): DemoAnalysisResu
     })
     suggestedProtein = zoneMacros.protein
     suggestedFat = zoneMacros.fat
-    suggestedCarbs = zoneMacros.carbs
+    const remainingCals = suggestedCalories - (suggestedProtein * 4) - (suggestedFat * 9)
+    suggestedCarbs = Math.max(30, Math.round(remainingCals / 4))
   } else {
     const proteinPerKg = input.goalType === 'cut'
       ? (isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE)
