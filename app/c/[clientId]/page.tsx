@@ -20,8 +20,10 @@ import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
+import AiCoachCard from '@/components/client/AiCoachCard'
 import SelfManagedNutrition from '@/components/client/SelfManagedNutrition'
 import PwaPrompt from '@/components/client/PwaPrompt'
+import PushNotificationToggle from '@/components/client/PushNotificationToggle'
 import HealthModeAdvanced from '@/components/client/HealthModeAdvanced'
 import LabNutritionAdviceCard from '@/components/client/LabNutritionAdviceCard'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
@@ -701,6 +703,9 @@ export default function ClientDashboard() {
           <WeeklyInsight clientId={c.id} onMutate={mutate} />
         )}
 
+        {/* AI 教練建議 */}
+        <AiCoachCard clientId={c.id} />
+
         {/* 一般學員（非自主管理）的飲食目標卡片 */}
         {!isCompetition && !isSelfManaged && c.nutrition_enabled && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
           <DailyNutritionTarget
@@ -816,6 +821,7 @@ export default function ClientDashboard() {
           />
         )}
 
+        <PushNotificationToggle clientId={c.id} />
         <PwaPrompt />
       </div>
 
