@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceSupabase } from '@/lib/supabase'
 import { rateLimit, getClientIP, createErrorResponse } from '@/lib/auth-middleware'
 import { readFile } from 'fs/promises'
 import path from 'path'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabase = createServiceSupabase()
 
 // PDF 檔案對照表
 const EBOOK_FILES: Record<string, string> = {

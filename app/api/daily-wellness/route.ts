@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceSupabase } from '@/lib/supabase'
 import { sanitizeTextField, rateLimit, getClientIP } from '@/lib/auth-middleware'
 
 // 建立管理員客戶端（使用 Service Role Key）
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+const supabaseAdmin = createServiceSupabase()
 
 // 建立回應函數
 function createErrorResponse(message: string, status: number) {

@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyCheckMacValue } from '@/lib/ecpay'
 import { sendPurchaseEmail } from '@/lib/email'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceSupabase } from '@/lib/supabase'
 import crypto from 'crypto'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabase = createServiceSupabase()
 
 // ECPay ReturnURL — 付款結果通知
 // ECPay 以 POST application/x-www-form-urlencoded 回傳付款結果

@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceSupabase } from '@/lib/supabase'
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+const supabase = createServiceSupabase()
 
 function getAdminSession(request: NextRequest): boolean {
   const token = request.cookies.get('admin_session')?.value
@@ -170,6 +166,7 @@ export async function GET(request: NextRequest) {
       height: latestHeight,
       bodyFatPct: latestBodyFat,
       targetWeight: client.target_weight || null,
+      targetBodyFatPct: client.body_fat_target || null,
       targetDate: client.competition_date || null,
       currentCalories: client.calories_target || null,
       currentProtein: client.protein_target || null,

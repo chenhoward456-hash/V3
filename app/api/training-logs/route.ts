@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceSupabase } from '@/lib/supabase'
 import { sanitizeTextField, validateNumericField, rateLimit, getClientIP } from '@/lib/auth-middleware'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+const supabaseAdmin = createServiceSupabase()
 
 function createErrorResponse(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })

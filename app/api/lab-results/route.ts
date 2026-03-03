@@ -1,23 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceSupabase } from '@/lib/supabase'
 import { validateLabValue, validateDate, sanitizeInput } from '@/utils/validation'
 import { verifyCoachAuth, createErrorResponse, createSuccessResponse, sanitizeTextField } from '@/lib/auth-middleware'
 
-// 檢查環境變數
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('Missing required environment variables for Supabase')
-}
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-)
+const supabase = createServiceSupabase()
 
 export async function GET(request: NextRequest) {
   try {

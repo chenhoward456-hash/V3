@@ -119,7 +119,7 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch('/api/admin/dashboard')
+      const res = await fetch('/api/admin/dashboard?_t=' + Date.now(), { cache: 'no-store' })
       if (!res.ok) { if (res.status === 401) { router.push('/admin/login'); return }; throw new Error('載入失敗') }
       const data = await res.json()
       setClients(data.clients || [])
