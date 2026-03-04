@@ -3,8 +3,6 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { sendPushNotification } from '@/lib/web-push'
 
-const supabase = createServiceSupabase()
-
 /**
  * POST /api/push/send
  * 發送推播通知（僅限 Admin）
@@ -30,6 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 查詢訂閱者
+    const supabase = createServiceSupabase()
     let query = supabase
       .from('push_subscriptions')
       .select('endpoint, p256dh, auth')

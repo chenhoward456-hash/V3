@@ -6,9 +6,16 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-})
+let _anthropic: Anthropic | null = null
+
+function getClient(): Anthropic {
+  if (!_anthropic) {
+    _anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+    })
+  }
+  return _anthropic
+}
 
 // Howard Protocol 系統提示詞
 const SYSTEM_PROMPT = `你是 Howard Protocol 的 AI 健康顧問助手。你的角色是：
@@ -33,7 +40,7 @@ export async function askClaude(
   messages: ChatMessage[],
   systemPrompt?: string
 ): Promise<string> {
-  const response = await anthropic.messages.create({
+  const response = await getClient().messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
     system: systemPrompt || SYSTEM_PROMPT,

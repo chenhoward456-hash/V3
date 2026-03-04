@@ -5,11 +5,18 @@
 
 import webPush from 'web-push'
 
-webPush.setVapidDetails(
-  process.env.VAPID_EMAIL || 'mailto:admin@howardprotocol.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
+let _initialized = false
+
+function ensureVapid() {
+  if (!_initialized) {
+    webPush.setVapidDetails(
+      process.env.VAPID_EMAIL || 'mailto:admin@howardprotocol.com',
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+      process.env.VAPID_PRIVATE_KEY!
+    )
+    _initialized = true
+  }
+}
 
 export interface PushSubscription {
   endpoint: string
@@ -34,6 +41,7 @@ export async function sendPushNotification(
   payload: PushPayload
 ): Promise<boolean> {
   try {
+    ensureVapid()
     await webPush.sendNotification(
       subscription,
       JSON.stringify(payload)

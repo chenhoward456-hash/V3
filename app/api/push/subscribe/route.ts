@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 
-const supabase = createServiceSupabase()
-
 /**
  * POST /api/push/subscribe
  * 儲存用戶的推播訂閱資訊
@@ -14,6 +12,8 @@ export async function POST(request: NextRequest) {
     if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
       return NextResponse.json({ error: '無效的訂閱資料' }, { status: 400 })
     }
+
+    const supabase = createServiceSupabase()
 
     // upsert：同一個 endpoint 只保留一筆
     const { error } = await supabase
@@ -51,6 +51,8 @@ export async function DELETE(request: NextRequest) {
     if (!endpoint) {
       return NextResponse.json({ error: '缺少 endpoint' }, { status: 400 })
     }
+
+    const supabase = createServiceSupabase()
 
     await supabase
       .from('push_subscriptions')
