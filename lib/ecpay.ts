@@ -11,14 +11,29 @@ function requireEnv(name: string): string {
   return value.trim()
 }
 
-export const ECPAY_CONFIG = {
-  MerchantID: requireEnv('ECPAY_MERCHANT_ID'),
-  HashKey: requireEnv('ECPAY_HASH_KEY'),
-  HashIV: requireEnv('ECPAY_HASH_IV'),
-  PaymentURL: isEcpayProduction
-    ? 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5'
-    : 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5',
+// Lazy getter：只在 runtime 真正呼叫時才讀取 env var，避免 build 階段 throw
+let _ecpayConfig: { MerchantID: string; HashKey: string; HashIV: string; PaymentURL: string } | null = null
+
+export function getEcpayConfig() {
+  if (!_ecpayConfig) {
+    _ecpayConfig = {
+      MerchantID: requireEnv('ECPAY_MERCHANT_ID'),
+      HashKey: requireEnv('ECPAY_HASH_KEY'),
+      HashIV: requireEnv('ECPAY_HASH_IV'),
+      PaymentURL: isEcpayProduction
+        ? 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5'
+        : 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5',
+    }
+  }
+  return _ecpayConfig
 }
+
+// 向後相容：保留 ECPAY_CONFIG 作為 lazy proxy
+export const ECPAY_CONFIG = new Proxy({} as { MerchantID: string; HashKey: string; HashIV: string; PaymentURL: string }, {
+  get(_, prop: string) {
+    return getEcpayConfig()[prop as keyof ReturnType<typeof getEcpayConfig>]
+  },
+})
 
 // ========== 產品設定 ==========
 export const EBOOK_PRODUCTS = {
