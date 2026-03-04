@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 interface Message {
@@ -9,6 +9,14 @@ interface Message {
 }
 
 export default function AIAdvisorPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-20 text-gray-400">載入中...</div>}>
+      <AIAdvisorContent />
+    </Suspense>
+  )
+}
+
+function AIAdvisorContent() {
   const searchParams = useSearchParams()
   const clientId = searchParams.get('clientId')
   const [messages, setMessages] = useState<Message[]>([])
