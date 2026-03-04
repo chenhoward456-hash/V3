@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { trackEvent } from '@/lib/analytics'
 
 const TIER_NAMES: Record<string, string> = {
+  free: '14 天免費體驗',
   self_managed: '自主管理方案',
   coached: '教練指導方案',
   combo: '全方位方案',
@@ -14,14 +15,26 @@ const TIER_NAMES: Record<string, string> = {
 export default function JoinSuccessPage() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order_id')
+  // 免費體驗：直接從 query params 取得
+  const directCode = searchParams.get('code')
+  const directName = searchParams.get('name')
+  const directTier = searchParams.get('tier')
 
   const [status, setStatus] = useState<'loading' | 'success' | 'failed' | 'timeout'>('loading')
-  const [uniqueCode, setUniqueCode] = useState<string | null>(null)
-  const [tier, setTier] = useState<string | null>(null)
-  const [name, setName] = useState<string | null>(null)
+  const [uniqueCode, setUniqueCode] = useState<string | null>(directCode)
+  const [tier, setTier] = useState<string | null>(directTier)
+  const [name, setName] = useState<string | null>(directName)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
+    // 免費體驗：已有 code，直接顯示成功
+    if (directCode) {
+      setStatus('success')
+      trackEvent('free_trial_success', { tier: 'free' })
+      return
+    }
+
+    // 付費方案：polling 等待 webhook 處理
     if (!orderId) {
       setStatus('failed')
       return
@@ -67,7 +80,7 @@ export default function JoinSuccessPage() {
     }
 
     poll()
-  }, [orderId])
+  }, [orderId, directCode])
 
   const handleCopy = () => {
     if (uniqueCode) {
@@ -76,6 +89,8 @@ export default function JoinSuccessPage() {
       setTimeout(() => setCopied(false), 2000)
     }
   }
+
+  const isFree = tier === 'free'
 
   return (
     <section className="max-w-2xl mx-auto px-6 py-16 md:py-24">
@@ -104,6 +119,7 @@ export default function JoinSuccessPage() {
           </h1>
           <p className="text-gray-500 text-sm mb-8">
             你的 {TIER_NAMES[tier || ''] || '方案'} 已啟用
+            {isFree && '，14 天內可免費使用所有功能'}
           </p>
 
           {/* Unique Code Card */}
@@ -143,6 +159,21 @@ export default function JoinSuccessPage() {
               howardprotocol.com/c/{uniqueCode}
             </code>
           </div>
+
+          {/* 免費體驗升級提示 */}
+          {isFree && (
+            <div className="mt-8 bg-[#2563eb]/5 border border-[#2563eb]/20 rounded-xl p-4">
+              <p className="text-sm text-[#2563eb] font-medium">
+                體驗期結束後，可隨時升級付費方案繼續使用
+              </p>
+              <Link
+                href="/join"
+                className="text-xs text-[#2563eb] hover:underline mt-1 inline-block"
+              >
+                查看付費方案 →
+              </Link>
+            </div>
+          )}
         </div>
       )}
 

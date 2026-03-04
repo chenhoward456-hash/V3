@@ -438,7 +438,7 @@ CREATE TABLE IF NOT EXISTS subscription_purchases (
   name TEXT NOT NULL,
   phone TEXT,
   merchant_trade_no TEXT UNIQUE NOT NULL,
-  subscription_tier TEXT NOT NULL CHECK (subscription_tier IN ('self_managed', 'coached', 'combo')),
+  subscription_tier TEXT NOT NULL CHECK (subscription_tier IN ('free', 'self_managed', 'coached', 'combo')),
   amount INTEGER NOT NULL,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed')),
   ecpay_trade_no TEXT,

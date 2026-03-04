@@ -74,6 +74,7 @@ export async function sendWelcomeEmail({
   const dashboardUrl = `${siteUrl}/c/${uniqueCode}`
 
   const tierNames: Record<string, string> = {
+    free: '14 天免費體驗',
     self_managed: '自主管理方案',
     coached: '教練指導方案',
     combo: '全方位方案',
