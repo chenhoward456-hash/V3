@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Calendar, X, Plus, Scale, Activity, Dumbbell, Ruler, Heart } from 'lucide-react'
 import LazyChart from '@/components/charts/LazyChart'
+import { getLocalDateStr } from '@/lib/date-utils'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 
 interface BodyCompositionProps {
@@ -25,7 +26,7 @@ export default function BodyComposition({
   const [showModal, setShowModal] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [nutritionAdjusted, setNutritionAdjusted] = useState<{ message?: string; calories?: number; protein?: number; carbs?: number; fat?: number; adjusted?: boolean } | null>(null)
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = getLocalDateStr()
   const [form, setForm] = useState({
     date: todayStr,
     weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: ''
@@ -163,7 +164,7 @@ export default function BodyComposition({
       if (!res.ok) throw new Error('保存失敗')
       const result = await res.json()
       setShowModal(false)
-      setForm({ date: new Date().toISOString().split('T')[0], weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
+      setForm({ date: getLocalDateStr(), weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
       onMutate()
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 2000)
@@ -383,7 +384,7 @@ export default function BodyComposition({
 
         <button
           onClick={() => {
-            const today = new Date().toISOString().split('T')[0]
+            const today = getLocalDateStr()
             const todayRecord = bodyData?.find((r: any) => r.date === today)
             if (todayRecord) {
               setForm({

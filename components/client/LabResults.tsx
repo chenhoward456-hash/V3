@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { getLocalDateStr } from '@/lib/date-utils'
 import { getLabAdvice } from './types'
 
 interface LabResultsProps {
@@ -23,7 +24,7 @@ interface GroupedLab {
 export default function LabResults({ labResults, isCoachMode, clientId, coachHeaders, onMutate }: LabResultsProps) {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<any>(null)
-  const [form, setForm] = useState({ test_name: '', value: '', unit: '', reference_range: '', date: new Date().toISOString().split('T')[0], custom_advice: '', custom_target: '' })
+  const [form, setForm] = useState({ test_name: '', value: '', unit: '', reference_range: '', date: getLocalDateStr(), custom_advice: '', custom_target: '' })
 
   // 按 test_name 分組，每組按 date 排序
   const grouped = useMemo<GroupedLab[]>(() => {
@@ -53,13 +54,13 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
     if (addFor) {
       // 對已有指標新增一筆歷史紀錄
       setEditing(null)
-      setForm({ test_name: addFor.test_name, value: '', unit: addFor.unit || '', reference_range: addFor.reference_range || '', date: new Date().toISOString().split('T')[0], custom_advice: addFor.custom_advice || '', custom_target: addFor.custom_target || '' })
+      setForm({ test_name: addFor.test_name, value: '', unit: addFor.unit || '', reference_range: addFor.reference_range || '', date: getLocalDateStr(), custom_advice: addFor.custom_advice || '', custom_target: addFor.custom_target || '' })
     } else if (lab) {
       setEditing(lab)
       setForm({ test_name: lab.test_name, value: String(lab.value), unit: lab.unit || '', reference_range: lab.reference_range || '', date: lab.date, custom_advice: lab.custom_advice || '', custom_target: lab.custom_target || '' })
     } else {
       setEditing(null)
-      setForm({ test_name: '', value: '', unit: '', reference_range: '', date: new Date().toISOString().split('T')[0], custom_advice: '', custom_target: '' })
+      setForm({ test_name: '', value: '', unit: '', reference_range: '', date: getLocalDateStr(), custom_advice: '', custom_target: '' })
     }
     setShowModal(true)
   }

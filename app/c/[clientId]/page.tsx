@@ -26,30 +26,32 @@ import HealthModeAdvanced from '@/components/client/HealthModeAdvanced'
 import LabNutritionAdviceCard from '@/components/client/LabNutritionAdviceCard'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 export default function ClientDashboard() {
   const { clientId } = useParams()
   const { data: clientData, error, isLoading, mutate } = useClientData(clientId as string)
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalDateStr()
 
   // 日期導航
   const [selectedDate, setSelectedDate] = useState(today)
   const isToday = selectedDate === today
 
   const changeDate = (offset: number) => {
-    const d = new Date(selectedDate)
+    const d = new Date(selectedDate + 'T12:00:00')
     d.setDate(d.getDate() + offset)
-    const newDate = d.toISOString().split('T')[0]
+    const newDate = getLocalDateStr(d)
     if (newDate > today) return
     setSelectedDate(newDate)
   }
 
   const formatSelectedDate = (dateStr: string) => {
-    const d = new Date(dateStr)
     if (dateStr === today) return '今天'
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1)
-    if (dateStr === yesterday.toISOString().split('T')[0]) return '昨天'
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    if (dateStr === getLocalDateStr(yesterday)) return '昨天'
+    const d = new Date(dateStr + 'T12:00:00')
     return d.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })
   }
 

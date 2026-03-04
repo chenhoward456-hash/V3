@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 /**
  * 從 clientData 計算儀表板所需的各種統計數據
@@ -102,10 +103,10 @@ export function useDashboardStats(clientData: any, selectedDate: string, today: 
     const totalSupplements = clientData?.client?.supplements?.length || 0
     if (!totalSupplements || !clientData?.recentLogs) return { weekRate: 0, monthRate: 0, weekDelta: null as number | null }
     const now = new Date()
-    const todayStr = now.toISOString().split('T')[0]
-    const daysAgo = (n: number) => { const d = new Date(now); d.setDate(d.getDate() - n); return d.toISOString().split('T')[0] }
+    const todayStr = getLocalDateStr(now)
+    const daysAgo = (n: number) => { const d = new Date(now); d.setDate(d.getDate() - n); return getLocalDateStr(d) }
     const logs = clientData.recentLogs as any[]
-    const weekStart = daysAgo(7)
+    const weekStart = daysAgo(6)
     const weekCompleted = logs.filter((l: any) => l.date >= weekStart && l.date <= todayStr && l.completed).length
     const weekRate = Math.round((weekCompleted / (7 * totalSupplements)) * 100)
     const monthStart = daysAgo(29)

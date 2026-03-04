@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TRAINING_TYPES } from './types'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 interface TrainingLogProps {
   todayTraining: any
@@ -14,7 +15,7 @@ interface TrainingLogProps {
 }
 
 export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate }: TrainingLogProps) {
-  const today = date || new Date().toISOString().split('T')[0]
+  const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [form, setForm] = useState({
@@ -96,7 +97,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
     const monday = new Date(now)
     monday.setDate(now.getDate() - mondayOffset)
-    const mondayStr = monday.toISOString().split('T')[0]
+    const mondayStr = getLocalDateStr(monday)
 
     const weekLogs = (trainingLogs || []).filter((l: any) => l.date >= mondayStr && l.date <= today)
 
@@ -104,7 +105,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday)
       d.setDate(monday.getDate() + i)
-      const dateStr = d.toISOString().split('T')[0]
+      const dateStr = getLocalDateStr(d)
       const dayLabels = ['一', '二', '三', '四', '五', '六', '日']
       days.push({
         date: dateStr,
@@ -139,7 +140,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
       for (let d = 0; d < 7; d++) {
         const date = new Date(thisMonday)
         date.setDate(thisMonday.getDate() - w * 7 + d)
-        const dateStr = date.toISOString().split('T')[0]
+        const dateStr = getLocalDateStr(date)
         week.push({
           date: dateStr,
           label: date.getDate().toString(),
@@ -202,7 +203,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     const nextDay = (dateStr: string) => {
       const d = new Date(dateStr)
       d.setDate(d.getDate() + 1)
-      return d.toISOString().split('T')[0]
+      return getLocalDateStr(d)
     }
 
     // 每種訓練類型 → 隔天恢復數據
