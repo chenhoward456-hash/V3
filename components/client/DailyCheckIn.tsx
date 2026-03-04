@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { Supplement } from './types'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 interface DailyCheckInProps {
   supplements: Supplement[]
@@ -34,7 +35,7 @@ export default function DailyCheckIn({
     for (let i = 13; i >= 0; i--) {
       const d = new Date(now)
       d.setDate(d.getDate() - i)
-      const dateStr = d.toISOString().split('T')[0]
+      const dateStr = getLocalDateStr(d)
       const completed = recentLogs.filter((l: any) => l.date === dateStr && l.completed).length
       result.push({
         date: d.toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),

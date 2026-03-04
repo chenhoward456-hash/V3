@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import NutrientSlider from './NutrientSlider'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 interface NutritionLogProps {
   todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null; carbs_grams?: number | null; fat_grams?: number | null; calories?: number | null } | null
@@ -39,7 +40,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   // 合規性也作為本地 state，一次提交
   const [compliant, setCompliant] = useState<boolean | null>(todayNutrition?.compliant ?? null)
 
-  const today = date || new Date().toISOString().split('T')[0]
+  const today = date || getLocalDateStr()
 
   // 自動計算熱量：蛋白質×4 + 碳水×4 + 脂肪×9
   const computedCalories = useMemo(() => {
@@ -93,7 +94,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday)
       d.setDate(monday.getDate() + i)
-      const dateStr = d.toISOString().split('T')[0]
+      const dateStr = getLocalDateStr(d)
       days.push({
         date: dateStr,
         label: ['一', '二', '三', '四', '五', '六', '日'][i],
@@ -127,7 +128,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now)
       d.setDate(now.getDate() - i)
-      const dateStr = d.toISOString().split('T')[0]
+      const dateStr = getLocalDateStr(d)
       const log = nutritionLogs.find((l: any) => l.date === dateStr)
       days.push({
         label: d.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }),

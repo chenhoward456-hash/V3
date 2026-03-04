@@ -123,7 +123,7 @@ export async function PUT(request: NextRequest) {
       'goal_type', 'activity_profile', 'diet_start_date',
       'calories_target', 'protein_target', 'carbs_target', 'fat_target', 'water_target',
       'carbs_training_day', 'carbs_rest_day',
-      'next_checkup_date', 'coach_weekly_note',
+      'next_checkup_date', 'coach_weekly_note', 'coach_summary',
     ]
     const sanitizedClientData: Record<string, any> = {}
     if (clientData && typeof clientData === 'object') {

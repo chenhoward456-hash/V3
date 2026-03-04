@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 interface PeakWeekDay {
   daysOut: number
@@ -44,7 +45,7 @@ export default function PeakWeekPlan({ clientId, competitionDate, bodyWeight }: 
   const [loading, setLoading] = useState(true)
   const [expandedDay, setExpandedDay] = useState<number | null>(null)
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = getLocalDateStr()
 
   useEffect(() => {
     const fetchPlan = async () => {

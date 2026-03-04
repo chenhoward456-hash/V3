@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 interface SelfManagedNutritionProps {
   clientId: string  // UUID (internal ID)
@@ -82,7 +83,7 @@ export default function SelfManagedNutrition({
     const months = targetDateOption === '3' ? 3 : 6
     const d = new Date()
     d.setMonth(d.getMonth() + months)
-    return d.toISOString().split('T')[0]
+    return getLocalDateStr(d)
   }
 
   const handleSetup = async () => {
@@ -304,7 +305,7 @@ export default function SelfManagedNutrition({
                     type="date"
                     value={customTargetDate}
                     onChange={(e) => setCustomTargetDate(e.target.value)}
-                    min={new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]}
+                    min={getLocalDateStr(new Date(Date.now() + 14 * 86400000))}
                     className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
                   />
                 )}

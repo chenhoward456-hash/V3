@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import React from 'react'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 interface BodyComposition {
   id: string
@@ -26,7 +27,7 @@ function BodyCompositionTracker({
   const [records, setRecords] = useState<BodyComposition[]>(initialData)
   const [isAdding, setIsAdding] = useState(false)
   const [newRecord, setNewRecord] = useState<Partial<BodyComposition>>({
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDateStr(),
     height: undefined,
     weight: undefined,
     body_fat: undefined,
@@ -75,7 +76,7 @@ function BodyCompositionTracker({
       const data = await response.json()
       setRecords(prev => [...prev, data.data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
       setNewRecord({
-        date: new Date().toISOString().split('T')[0],
+        date: getLocalDateStr(),
         height: undefined,
         weight: undefined,
         body_fat: undefined,

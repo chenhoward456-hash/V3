@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { calculateLabStatus } from '@/utils/labStatus'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 interface LabResult {
   id: string
@@ -31,7 +32,7 @@ export default function LabResultEditor({
     value: 0,
     unit: '',
     reference_range: '',
-    date: new Date().toISOString().split('T')[0]
+    date: getLocalDateStr()
   })
 
   const getStatusColor = (status: string) => {
@@ -125,7 +126,7 @@ export default function LabResultEditor({
         value: 0,
         unit: '',
         reference_range: '',
-        date: new Date().toISOString().split('T')[0]
+        date: getLocalDateStr()
       })
     } catch (error) {
       console.error('新增失敗:', error)
@@ -302,7 +303,7 @@ export default function LabResultEditor({
                   value: 0,
                   unit: test.unit,
                   reference_range: test.reference,
-                  date: new Date().toISOString().split('T')[0]
+                  date: getLocalDateStr()
                 })}
                 className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 transition-colors"
               >

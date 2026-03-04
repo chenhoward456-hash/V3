@@ -249,9 +249,10 @@ export default function AdminDashboard() {
       // ── 飲食合規率 < 60%（近 14 天，啟用飲食的學員）──
       if (client.nutrition_enabled) {
         const nutLogs = recentNutrition.filter(n => n.client_id === client.id)
-        if (nutLogs.length >= 5) {
-          const compliantCount = nutLogs.filter(n => n.compliant).length
-          const rate = Math.round((compliantCount / nutLogs.length) * 100)
+        const validNutLogs = nutLogs.filter(n => n.compliant !== null)
+        if (validNutLogs.length >= 5) {
+          const compliantCount = validNutLogs.filter(n => n.compliant).length
+          const rate = Math.round((compliantCount / validNutLogs.length) * 100)
           if (rate < 60) {
             items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `飲食合規率僅 ${rate}%（近 14 天）`, color: 'text-red-600 bg-red-50', priority: 1 })
           }

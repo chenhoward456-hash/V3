@@ -2,6 +2,7 @@
 
 import { useState, useOptimistic } from 'react'
 import React from 'react'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 interface Supplement {
   id: string
@@ -29,7 +30,7 @@ function SupplementChecklist({
   supplements,
   initialLogs = []
 }: SupplementChecklistProps) {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalDateStr()
   
   // 樂觀更新狀態
   const [optimisticLogs, addOptimisticLog] = useOptimistic(

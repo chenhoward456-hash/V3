@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 interface DailyWellnessProps {
   todayWellness: any
@@ -61,7 +62,7 @@ const STRESS_OPTIONS = [
 ]
 
 export default function DailyWellness({ todayWellness, clientId, date, healthModeEnabled, gender, onMutate }: DailyWellnessProps) {
-  const today = date || new Date().toISOString().split('T')[0]
+  const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [showMore, setShowMore] = useState(false) // 展開更多指標

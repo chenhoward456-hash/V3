@@ -268,8 +268,8 @@ export async function GET(request: NextRequest) {
         .upsert(summaries, { onConflict: 'client_id,week_of' })
 
       if (insertErr) {
-        // 表可能不存在，不影響其他功能
-        console.warn('[cron/weekly] weekly_summaries 寫入失敗（表可能不存在）:', insertErr.message)
+        console.warn('[cron/weekly] weekly_summaries 寫入失敗:', insertErr.message)
+        results.errors.push(`weekly_summaries 寫入失敗: ${insertErr.message}`)
       }
     }
 
@@ -288,8 +288,9 @@ export async function GET(request: NextRequest) {
 
       // 飲食合規率低
       const nutLogs = allNutrition.filter((n: any) => n.client_id === client.id && n.date >= fourteenStr)
-      if (nutLogs.length >= 5) {
-        const rate = Math.round((nutLogs.filter((n: any) => n.compliant).length / nutLogs.length) * 100)
+      const validNutLogs = nutLogs.filter((n: any) => n.compliant !== null)
+      if (validNutLogs.length >= 5) {
+        const rate = Math.round((validNutLogs.filter((n: any) => n.compliant).length / validNutLogs.length) * 100)
         if (rate < 60) alertItems.push(`${client.name}：飲食合規率僅 ${rate}%`)
       }
 
@@ -332,12 +333,13 @@ export async function GET(request: NextRequest) {
         })
 
       if (notifErr) {
-        console.warn('[cron/weekly] coach_notifications 寫入失敗（表可能不存在）:', notifErr.message)
+        console.warn('[cron/weekly] coach_notifications 寫入失敗:', notifErr.message)
+        results.errors.push(`coach_notifications 寫入失敗: ${notifErr.message}`)
       }
     }
 
     return NextResponse.json({
-      success: true,
+      success: results.errors.length === 0,
       timestamp: today.toISOString(),
       results,
       alerts: alertItems,
