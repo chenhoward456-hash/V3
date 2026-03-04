@@ -158,12 +158,33 @@ function JoinSuccessContent() {
             </p>
           </div>
 
+          {/* Quick Guide */}
+          {isFree && (
+            <div className="bg-gray-50 rounded-2xl p-5 mb-8 text-left">
+              <p className="text-sm font-semibold text-gray-700 mb-3">進去之後可以做什麼？</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600 shrink-0">1</span>
+                  <p className="text-sm text-gray-600">記錄你的<strong>體重 / 體態</strong>，追蹤變化趨勢</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-xs font-bold text-amber-600 shrink-0">2</span>
+                  <p className="text-sm text-gray-600">記錄<strong>每日飲食</strong>，AI 自動計算營養素</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-600 shrink-0">3</span>
+                  <p className="text-sm text-gray-600">持續記錄，系統會產生<strong>趨勢分析</strong></p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* CTA */}
           <Link
             href={`/c/${uniqueCode}`}
             className="inline-block bg-[#2563eb] text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-[#1d4ed8] transition-colors shadow-lg mb-6"
           >
-            進入我的儀表板
+            進入我的儀表板 →
           </Link>
 
           <div className="space-y-2 mt-6">
@@ -179,10 +200,10 @@ function JoinSuccessContent() {
           {isFree && (
             <div className="mt-8 bg-[#2563eb]/5 border border-[#2563eb]/20 rounded-xl p-4">
               <p className="text-sm text-[#2563eb] font-medium">
-                體驗期結束後，可隨時升級付費方案繼續使用
+                想要訓練追蹤、感受紀錄等完整功能？隨時可升級
               </p>
               <Link
-                href="/join"
+                href="/remote"
                 className="text-xs text-[#2563eb] hover:underline mt-1 inline-block"
               >
                 查看付費方案 →
