@@ -150,3 +150,33 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }
+
+// DELETE: 刪除學員
+export async function DELETE(request: NextRequest) {
+  if (!getAdminSession(request)) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 })
+  }
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const clientId = searchParams.get('id')
+    if (!clientId) {
+      return NextResponse.json({ error: '缺少 id' }, { status: 400 })
+    }
+
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', clientId)
+
+    if (error) {
+      console.error('Delete client error:', error)
+      return NextResponse.json({ error: '刪除失敗', detail: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('DELETE error:', err)
+    return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
+  }
+}
