@@ -217,6 +217,9 @@ export default function BodyComposition({
               <p className="text-xl font-bold text-gray-900">
                 {value != null ? `${value}${unit ? ` ${unit}` : ''}` : '--'}
               </p>
+              {value == null && (label === 'BMI' || label === '肌肉量') && (
+                <p className="text-[10px] text-gray-400 mt-0.5">輸入 InBody 數據後自動計算</p>
+              )}
               {prev != null && value != null && prev !== value && (
                 <p className={`text-xs mt-1 ${(lowerBetter ? value < prev : value > prev) ? 'text-green-600' : 'text-red-500'}`}>
                   {(lowerBetter ? value < prev : value > prev) ? (lowerBetter ? '↓' : '↑') : (lowerBetter ? '↑' : '↓')}
@@ -226,6 +229,18 @@ export default function BodyComposition({
             </div>
           ))}
         </div>
+
+        {/* 空白狀態引導 */}
+        {bodyData.length < 7 && (
+          <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-4 flex items-center gap-2">
+            <span className="text-blue-500 text-sm">📈</span>
+            <p className="text-xs text-blue-700">
+              {bodyData.length === 0
+                ? '記錄你的第一筆身體數據，開始追蹤變化'
+                : `再記錄 ${7 - bodyData.length} 天就能看到完整的趨勢線`}
+            </p>
+          </div>
+        )}
 
         <div className="flex space-x-2 mb-4">
           {(['weight', 'body_fat'] as const).map(type => (
