@@ -533,6 +533,7 @@ export default function ClientEditor() {
                   { key: 'training_enabled', label: '訓練追蹤', desc: '每日訓練類型與強度紀錄' },
                   { key: 'supplement_enabled', label: '補品管理', desc: '補品清單與每日打卡' },
                   { key: 'lab_enabled', label: '血檢追蹤', desc: '血檢數據與健康指標' },
+                  { key: 'ai_chat_enabled', label: 'AI 飲食顧問', desc: '開放無限次 AI 聊天（關閉＝每月 1 次免費）' },
                 ] as const).map(({ key, label, desc }) => (
                   <div key={key} className="flex items-center justify-between">
                     <div>

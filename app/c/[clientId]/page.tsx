@@ -961,8 +961,11 @@ export default function ClientDashboard() {
       {c.nutrition_enabled && (
         <button
           onClick={() => {
-            if (isFree) {
-              // 免費用戶：每月 1 次免費 AI 問答
+            if (c.ai_chat_enabled) {
+              // 教練已開放：無限使用
+              setShowAiChat(true)
+            } else {
+              // 未開放：每月 1 次免費體驗
               const now = new Date()
               const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
               const used = localStorage.getItem(monthKey)
@@ -971,8 +974,6 @@ export default function ClientDashboard() {
               } else {
                 setShowAiUpgrade(true)
               }
-            } else {
-              setShowAiChat(true)
             }
           }}
           className="fixed z-40 bg-[#2563eb] text-white rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 px-4 py-3"
@@ -982,7 +983,7 @@ export default function ClientDashboard() {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           <span className="text-sm font-medium">AI 顧問</span>
-          {isFree && (() => {
+          {!c.ai_chat_enabled && (() => {
             const now = new Date()
             const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
             const used = typeof window !== 'undefined' && localStorage.getItem(monthKey)
@@ -1061,7 +1062,7 @@ export default function ClientDashboard() {
             resting_hr: todayWellness?.resting_hr ?? null,
             device_recovery_score: todayWellness?.device_recovery_score ?? null,
           }}
-          onFirstMessage={isFree ? () => {
+          onFirstMessage={!c.ai_chat_enabled ? () => {
             const now = new Date()
             const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
             localStorage.setItem(monthKey, '1')
