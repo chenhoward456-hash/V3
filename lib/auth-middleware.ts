@@ -51,8 +51,9 @@ export function rateLimit(key: string, maxRequests: number = 10, windowMs: numbe
 const ADMIN_SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
 function getSessionSecret(): string {
-  // 用 ADMIN_PASSWORD 當 HMAC secret（一定存在，否則登入也不會過）
-  return process.env.ADMIN_PASSWORD || 'fallback-secret-key'
+  const secret = process.env.ADMIN_PASSWORD
+  if (!secret) throw new Error('ADMIN_PASSWORD 環境變數未設定')
+  return secret
 }
 
 /**

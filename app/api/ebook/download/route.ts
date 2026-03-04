@@ -67,7 +67,6 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (err: any) {
-    console.error('[download] Error:', err?.message)
     return createErrorResponse('下載失敗，請稍後再試', 500)
   }
 }

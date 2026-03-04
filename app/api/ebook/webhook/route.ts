@@ -2,34 +2,30 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyCheckMacValue } from '@/lib/ecpay'
 import { sendPurchaseEmail } from '@/lib/email'
 import { createServiceSupabase } from '@/lib/supabase'
+import { createLogger } from '@/lib/logger'
 import crypto from 'crypto'
 
 const supabase = createServiceSupabase()
+const log = createLogger('ebook/webhook')
 
 // ECPay ReturnURL — 付款結果通知
-// ECPay 以 POST application/x-www-form-urlencoded 回傳付款結果
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
 
-    // 轉換為 Record<string, string>
     const params: Record<string, string> = {}
     formData.forEach((value, key) => {
       params[key] = value.toString()
     })
 
-    console.log('[webhook] ECPay callback received:', {
+    log.info('ECPay callback received', {
       MerchantTradeNo: params.MerchantTradeNo,
       RtnCode: params.RtnCode,
-      RtnMsg: params.RtnMsg,
       TradeNo: params.TradeNo,
-      TradeAmt: params.TradeAmt,
-      SimulatePaid: params.SimulatePaid,
     })
 
-    // 驗證 CheckMacValue
     if (!verifyCheckMacValue(params)) {
-      console.error('[webhook] CheckMacValue verification failed')
+      log.error('CheckMacValue verification failed')
       return new NextResponse('0|ErrorMessage', { status: 200 })
     }
 
@@ -37,7 +33,18 @@ export async function POST(request: NextRequest) {
     const rtnCode = parseInt(params.RtnCode, 10)
 
     if (rtnCode === 1) {
-      // 付款成功
+      // 冪等性檢查：先查詢是否已處理
+      const { data: existing } = await supabase
+        .from('ebook_purchases')
+        .select('status, download_token')
+        .eq('merchant_trade_no', merchantTradeNo)
+        .single()
+
+      if (existing?.status === 'completed') {
+        log.info('Already completed, skipping', { merchantTradeNo })
+        return new NextResponse('1|OK', { status: 200, headers: { 'Content-Type': 'text/plain' } })
+      }
+
       const downloadToken = crypto.randomUUID()
 
       const { error } = await supabase
@@ -51,11 +58,10 @@ export async function POST(request: NextRequest) {
         .eq('merchant_trade_no', merchantTradeNo)
 
       if (error) {
-        console.error('[webhook] DB update error:', error)
+        log.error('DB update error', error)
       } else {
-        console.log(`[webhook] Purchase completed: ${merchantTradeNo} → token: ${downloadToken}`)
+        log.info('Purchase completed', { merchantTradeNo })
 
-        // 取得 email：優先從 ECPay CustomField1，fallback 從 DB 查
         let email = params.CustomField1
         if (!email) {
           const { data: purchase } = await supabase
@@ -67,32 +73,29 @@ export async function POST(request: NextRequest) {
         }
 
         if (email) {
-          // 非同步寄信，不阻塞 webhook 回應
           sendPurchaseEmail({
             to: email,
             downloadToken,
             merchantTradeNo,
           }).catch((emailErr) => {
-            console.error('[webhook] Email send error (non-blocking):', emailErr)
+            log.error('Email send error (non-blocking)', emailErr)
           })
         }
       }
     } else {
-      // 付款失敗
-      console.log(`[webhook] Payment failed: ${merchantTradeNo}, RtnMsg: ${params.RtnMsg}`)
+      log.info('Payment failed', { merchantTradeNo, RtnMsg: params.RtnMsg })
       await supabase
         .from('ebook_purchases')
         .update({ status: 'failed' })
         .eq('merchant_trade_no', merchantTradeNo)
     }
 
-    // ECPay 要求回傳 "1|OK" 表示收到通知
     return new NextResponse('1|OK', {
       status: 200,
       headers: { 'Content-Type': 'text/plain' },
     })
-  } catch (err: any) {
-    console.error('[webhook] Error:', err?.message || err)
+  } catch (err: unknown) {
+    log.error('Webhook error', err)
     return new NextResponse('0|ErrorMessage', { status: 200 })
   }
 }

@@ -151,7 +151,7 @@ export default function HealthOverview({
 
   if (cards.length === 0) return null
 
-  const gridCols = cards.length === 1 ? 'grid-cols-1' : cards.length === 2 ? 'grid-cols-2' : cards.length === 3 ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-4'
+  const gridCols = cards.length === 1 ? 'grid-cols-1' : cards.length === 2 ? 'grid-cols-2' : cards.length === 3 ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2 md:grid-cols-4'
 
   return (
     <div className={`grid ${gridCols} gap-3`}>

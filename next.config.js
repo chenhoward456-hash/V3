@@ -1,3 +1,5 @@
+const { withSentryConfig } = require('@sentry/nextjs')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -33,7 +35,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: https:",
-              "connect-src 'self' https://*.supabase.co https://www.google-analytics.com",
+              "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://*.sentry.io",
               "frame-src 'self'",
               "form-action 'self' https://payment.ecpay.com.tw https://payment-stage.ecpay.com.tw",
               "frame-ancestors 'none'",
@@ -45,4 +47,9 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = process.env.NEXT_PUBLIC_SENTRY_DSN
+  ? withSentryConfig(nextConfig, {
+      silent: true,
+      hideSourceMaps: true,
+    })
+  : nextConfig

@@ -117,7 +117,6 @@ async function getSupabasePosts() {
       .select('id, title, description, date, category, read_time, slug')
       .order('date', { ascending: false })
     if (error) {
-      console.error('[blog] Supabase query error:', error.message)
       return []
     }
     return (data || []).map((p: any) => ({
@@ -129,8 +128,7 @@ async function getSupabasePosts() {
       readTime: p.read_time,
       slug: p.slug,
     }))
-  } catch (e) {
-    console.error('[blog] getSupabasePosts error:', e)
+  } catch {
     return []
   }
 }

@@ -155,7 +155,6 @@ export async function GET(request: NextRequest) {
       recentTrainingRPE: recentTrainingRPEResult.data || [],
     })
   } catch (error) {
-    console.error('[admin/dashboard] 伺服器錯誤:', error)
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }

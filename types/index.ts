@@ -50,3 +50,162 @@ export interface AnalyticsEvent {
   parameters?: Record<string, any>
   timestamp: number
 }
+
+// === Client & Database Types ===
+
+export type SubscriptionTier = 'free' | 'self_managed' | 'coached' | 'combo'
+export type GoalType = 'cut' | 'bulk'
+export type ActivityProfile = 'sedentary' | 'high_energy_flux'
+export type LabStatus = 'normal' | 'attention' | 'alert'
+export type Gender = '男性' | '女性' | '其他'
+
+export interface Client {
+  id: string
+  unique_code: string
+  name: string
+  age: number | null
+  gender: Gender | null
+  status: string | null
+  is_active: boolean
+  subscription_tier: SubscriptionTier
+  expires_at: string | null
+  goal_type: GoalType | null
+  activity_profile: ActivityProfile | null
+  diet_start_date: string | null
+  calories_target: number | null
+  protein_target: number | null
+  carbs_target: number | null
+  fat_target: number | null
+  water_target: number | null
+  carbs_training_day: number | null
+  carbs_rest_day: number | null
+  target_weight: number | null
+  body_fat_target: number | null
+  target_date: string | null
+  competition_date: string | null
+  prep_phase: string | null
+  nutrition_enabled: boolean
+  supplement_enabled: boolean
+  wellness_enabled: boolean
+  training_enabled: boolean
+  body_composition_enabled: boolean
+  lab_enabled: boolean
+  ai_chat_enabled: boolean
+  competition_enabled: boolean
+  health_mode_enabled: boolean
+  coach_weekly_note: string | null
+  coach_summary: string | null
+  next_checkup_date: string | null
+  quarterly_cycle_start: string | null
+  created_at: string
+  lab_results?: LabResult[]
+  supplements?: Supplement[]
+}
+
+export interface LabResult {
+  id: string
+  client_id: string
+  test_name: string
+  value: number
+  unit: string
+  status: LabStatus
+  reference_range: string | null
+  custom_target: string | null
+  custom_advice: string | null
+  date: string
+}
+
+export interface Supplement {
+  id: string
+  client_id: string
+  name: string
+  dosage: string | null
+  timing: string | null
+  why: string | null
+  sort_order: number
+}
+
+export interface SupplementLog {
+  id: string
+  supplement_id: string
+  client_id: string
+  date: string
+  completed: boolean
+}
+
+export interface BodyComposition {
+  id: string
+  client_id: string
+  date: string
+  weight: number | null
+  height: number | null
+  body_fat: number | null
+}
+
+export interface NutritionLog {
+  id: string
+  client_id: string
+  date: string
+  compliant: boolean | null
+  note: string | null
+  calories: number | null
+  protein_grams: number | null
+  carbs_grams: number | null
+  fat_grams: number | null
+  water_ml: number | null
+}
+
+export interface DailyWellness {
+  id: string
+  client_id: string
+  date: string
+  sleep_quality: number | null
+  energy_level: number | null
+  mood: number | null
+  cognitive_clarity: number | null
+  stress_level: number | null
+  training_drive: number | null
+  period_start: boolean | null
+  device_recovery_score: number | null
+  resting_hr: number | null
+  hrv: number | null
+  wearable_sleep_score: number | null
+  respiratory_rate: number | null
+}
+
+export interface TrainingLog {
+  id: string
+  client_id: string
+  date: string
+  training_type: string
+  rpe: number | null
+}
+
+// === API Response Types ===
+
+export interface ApiSuccessResponse<T = unknown> {
+  success: true
+  data: T
+  timestamp: string
+}
+
+export interface ApiErrorResponse {
+  error: string
+  code: number
+  timestamp: string
+}
+
+export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse
+
+// === Audit Types ===
+
+export interface AuditLog {
+  id: string
+  action: string
+  actor: string
+  target_type: string | null
+  target_id: string | null
+  details: Record<string, unknown>
+  ip: string | null
+  created_at: string
+}

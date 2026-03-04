@@ -5,14 +5,35 @@ import crypto from 'crypto'
 // 因為 Vercel 的 NODE_ENV 永遠是 production，但我們可能還在用測試帳號
 const isEcpayProduction = process.env.ECPAY_PRODUCTION === 'true'
 
-export const ECPAY_CONFIG = {
-  MerchantID: (process.env.ECPAY_MERCHANT_ID || '3002607').trim(),
-  HashKey: (process.env.ECPAY_HASH_KEY || 'pwFHCqoQZGmho4w6').trim(),
-  HashIV: (process.env.ECPAY_HASH_IV || 'EkRm7iFT261dpevs').trim(),
-  PaymentURL: isEcpayProduction
-    ? 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5'
-    : 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5',
+function requireEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) throw new Error(`環境變數 ${name} 未設定，請檢查 .env.local`)
+  return value.trim()
 }
+
+// Lazy getter：只在 runtime 真正呼叫時才讀取 env var，避免 build 階段 throw
+let _ecpayConfig: { MerchantID: string; HashKey: string; HashIV: string; PaymentURL: string } | null = null
+
+export function getEcpayConfig() {
+  if (!_ecpayConfig) {
+    _ecpayConfig = {
+      MerchantID: requireEnv('ECPAY_MERCHANT_ID'),
+      HashKey: requireEnv('ECPAY_HASH_KEY'),
+      HashIV: requireEnv('ECPAY_HASH_IV'),
+      PaymentURL: isEcpayProduction
+        ? 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5'
+        : 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5',
+    }
+  }
+  return _ecpayConfig
+}
+
+// 向後相容：保留 ECPAY_CONFIG 作為 lazy proxy
+export const ECPAY_CONFIG = new Proxy({} as { MerchantID: string; HashKey: string; HashIV: string; PaymentURL: string }, {
+  get(_, prop: string) {
+    return getEcpayConfig()[prop as keyof ReturnType<typeof getEcpayConfig>]
+  },
+})
 
 // ========== 產品設定 ==========
 export const EBOOK_PRODUCTS = {

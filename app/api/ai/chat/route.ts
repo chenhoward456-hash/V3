@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { askClaude, ChatMessage } from '@/lib/claude'
-import { rateLimit } from '@/lib/auth-middleware'
+import { rateLimit, getClientIP } from '@/lib/auth-middleware'
+import { createServiceSupabase } from '@/lib/supabase'
+
+const supabase = createServiceSupabase()
 
 export async function POST(request: NextRequest) {
-  // Rate limit: 每分鐘 10 次
-  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  const ip = getClientIP(request)
   const { allowed } = rateLimit(`ai-chat:${ip}`, 10, 60_000)
   if (!allowed) {
     return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
@@ -12,9 +14,37 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { messages, systemPrompt } = body as {
+    const { messages, systemPrompt, clientId } = body as {
       messages: ChatMessage[]
       systemPrompt?: string
+      clientId?: string
+    }
+
+    // 驗證身份：必須提供有效的 clientId（unique_code）
+    if (!clientId || typeof clientId !== 'string') {
+      return NextResponse.json({ error: '缺少客戶身份驗證' }, { status: 401 })
+    }
+
+    const { data: client, error: clientError } = await supabase
+      .from('clients')
+      .select('id, is_active, expires_at, ai_chat_enabled')
+      .eq('unique_code', clientId)
+      .single()
+
+    if (clientError || !client) {
+      return NextResponse.json({ error: '無效的客戶 ID' }, { status: 401 })
+    }
+
+    if (!client.is_active) {
+      return NextResponse.json({ error: '帳號已暫停' }, { status: 403 })
+    }
+
+    if (client.expires_at && new Date(client.expires_at) < new Date()) {
+      return NextResponse.json({ error: '帳號已過期' }, { status: 403 })
+    }
+
+    if (client.ai_chat_enabled === false) {
+      return NextResponse.json({ error: 'AI 聊天功能未啟用' }, { status: 403 })
     }
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -28,8 +58,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ reply })
   } catch (err: any) {
-    console.error('AI chat error:', err)
-
     if (err?.status === 401) {
       return NextResponse.json({ error: 'API Key 無效' }, { status: 500 })
     }

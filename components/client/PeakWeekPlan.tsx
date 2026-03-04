@@ -20,6 +20,7 @@ interface PeakWeekDay {
 
 interface PeakWeekPlanProps {
   clientId: string
+  code?: string
   competitionDate: string
   bodyWeight: number
 }
@@ -40,7 +41,7 @@ const phaseLabels: Record<string, string> = {
   show_day: '比賽日',
 }
 
-export default function PeakWeekPlan({ clientId, competitionDate, bodyWeight }: PeakWeekPlanProps) {
+export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeight }: PeakWeekPlanProps) {
   const [plan, setPlan] = useState<PeakWeekDay[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [expandedDay, setExpandedDay] = useState<number | null>(null)
@@ -50,7 +51,7 @@ export default function PeakWeekPlan({ clientId, competitionDate, bodyWeight }: 
   useEffect(() => {
     const fetchPlan = async () => {
       try {
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}`)
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}${code ? `&code=${code}` : ''}`)
         if (!res.ok) return
         const data = await res.json()
         if (data.suggestion?.peakWeekPlan) {

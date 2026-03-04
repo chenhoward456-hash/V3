@@ -41,7 +41,6 @@ export async function GET(request: NextRequest) {
     // 前端會持續輪詢
     return NextResponse.json({ purchased: false, status: purchase.status })
   } catch (err: any) {
-    console.error('[verify-purchase] Error:', err?.message)
     return createErrorResponse('驗證失敗', 500)
   }
 }

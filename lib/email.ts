@@ -1,4 +1,7 @@
 import { Resend } from 'resend'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('email')
 
 // Lazy init：避免 build time 沒有 API key 導致 constructor 拋錯
 let _resend: Resend | null = null
@@ -43,14 +46,14 @@ export async function sendPurchaseEmail({
     })
 
     if (error) {
-      console.error('[email] Resend error:', error)
+      log.error('Resend error', error)
       return { success: false, error: error.message }
     }
 
-    console.log(`[email] Purchase email sent to ${to}`)
+    log.info('Purchase email sent', { to })
     return { success: true }
   } catch (err: any) {
-    console.error('[email] Send failed:', err?.message || err)
+    log.error('Send failed', err)
     return { success: false, error: err?.message || 'Unknown error' }
   }
 }
@@ -97,14 +100,14 @@ export async function sendWelcomeEmail({
     })
 
     if (error) {
-      console.error('[email] Resend error:', error)
+      log.error('Resend error', error)
       return { success: false, error: error.message }
     }
 
-    console.log(`[email] Welcome email sent to ${to}`)
+    log.info('Welcome email sent', { to })
     return { success: true }
   } catch (err: any) {
-    console.error('[email] Welcome send failed:', err?.message || err)
+    log.error('Welcome send failed', err)
     return { success: false, error: err?.message || 'Unknown error' }
   }
 }

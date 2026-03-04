@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
     // still pending
     return NextResponse.json({ completed: false, status: 'pending' })
   } catch (err: any) {
-    console.error('[subscribe/verify] Error:', err?.message || err)
     return createErrorResponse('驗證失敗', 500)
   }
 }

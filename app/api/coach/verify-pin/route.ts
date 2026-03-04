@@ -20,7 +20,6 @@ export async function POST(request: NextRequest) {
 
     const serverPin = process.env.COACH_PIN
     if (!serverPin) {
-      console.error('COACH_PIN environment variable is not set')
       return createErrorResponse('伺服器設定錯誤', 500)
     }
 

@@ -393,7 +393,7 @@ export default function ClientDashboard() {
 
           {/* 健康模式進階功能：血檢飲食建議 + 季度對比 + 微營養素 */}
           {isHealthMode && (
-            <HealthModeAdvanced clientId={c.id} />
+            <HealthModeAdvanced clientId={c.id} code={c.unique_code} />
           )}
 
           {/* 備賽倒數 Banner */}
@@ -673,6 +673,7 @@ export default function ClientDashboard() {
         {isCompetition && c.target_weight && c.prep_phase !== 'peak_week' && (
           <GoalDrivenStatus
             clientId={c.id}
+            code={c.unique_code}
             isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
             onMutate={mutate}
           />
@@ -682,6 +683,7 @@ export default function ClientDashboard() {
         {isCompetition && c.prep_phase === 'peak_week' && c.competition_date && latestBodyData?.weight && (
           <PeakWeekPlan
             clientId={c.id}
+            code={c.unique_code}
             competitionDate={c.competition_date}
             bodyWeight={latestBodyData.weight}
           />
@@ -820,7 +822,7 @@ export default function ClientDashboard() {
 
         {/* 一般學員（非自主管理、非免費）的每週智能分析 */}
         {!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && c.body_composition_enabled && (
-          <WeeklyInsight clientId={c.id} onMutate={mutate} />
+          <WeeklyInsight clientId={c.id} code={c.unique_code} onMutate={mutate} />
         )}
 
         {/* 一般學員（非自主管理、非免費）的飲食目標卡片 */}
@@ -1036,6 +1038,7 @@ export default function ClientDashboard() {
         <AiChatDrawer
           open={showAiChat}
           onClose={() => setShowAiChat(false)}
+          clientId={c.unique_code}
           clientName={c.name}
           gender={c.gender}
           goalType={c.goal_type}
