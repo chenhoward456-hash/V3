@@ -8,6 +8,26 @@ interface Message {
   content: string
 }
 
+interface NutritionEntry {
+  date: string
+  protein_grams?: number | null
+  carbs_grams?: number | null
+  fat_grams?: number | null
+  calories?: number | null
+  water_ml?: number | null
+  compliant?: boolean | null
+}
+
+interface WellnessEntry {
+  date: string
+  mood?: number | null
+  energy_level?: number | null
+  sleep_quality?: number | null
+  hunger?: number | null
+  digestion?: number | null
+  stress?: number | null
+}
+
 interface AiChatDrawerProps {
   open: boolean
   onClose: () => void
@@ -16,13 +36,7 @@ interface AiChatDrawerProps {
   gender: string | null
   goalType: string | null
   // Today's nutrition
-  todayNutrition: {
-    protein_grams?: number | null
-    carbs_grams?: number | null
-    fat_grams?: number | null
-    calories?: number | null
-    water_ml?: number | null
-  } | null
+  todayNutrition: NutritionEntry | null
   // Targets
   caloriesTarget: number | null
   proteinTarget: number | null
@@ -34,6 +48,14 @@ interface AiChatDrawerProps {
   competitionEnabled: boolean
   latestWeight?: number | null
   latestBodyFat?: number | null
+  // Extended context
+  nutritionLogs?: NutritionEntry[]
+  wellnessLogs?: WellnessEntry[]
+  trainingLogs?: { date: string; training_type?: string; note?: string }[]
+  supplements?: { name: string; dosage?: string; timing?: string }[]
+  supplementComplianceRate?: number
+  todayWellness?: WellnessEntry | null
+  wearableData?: { hrv?: number | null; resting_hr?: number | null; device_recovery_score?: number | null } | null
 }
 
 export default function AiChatDrawer({
@@ -43,6 +65,9 @@ export default function AiChatDrawer({
   caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget,
   isTrainingDay, competitionEnabled,
   latestWeight, latestBodyFat,
+  nutritionLogs, wellnessLogs, trainingLogs,
+  supplements, supplementComplianceRate,
+  todayWellness, wearableData,
 }: AiChatDrawerProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -81,7 +106,61 @@ export default function AiChatDrawer({
     const calLeft = caloriesTarget ? Math.max(0, caloriesTarget - calEaten) : null
     const wLeft = waterTarget ? Math.max(0, waterTarget - wEaten) : null
 
-    return `你是 Howard Protocol 的 AI 健康顧問助手。你正在協助一位學員規劃今天的飲食。
+    // Build 7-day nutrition summary
+    const last7Nutrition = (nutritionLogs || [])
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 7)
+      .map(n => `${n.date}: ${n.calories ?? 0}kcal P${n.protein_grams ?? 0}g C${n.carbs_grams ?? 0}g F${n.fat_grams ?? 0}g ${n.compliant ? '✓合規' : n.compliant === false ? '✗未合規' : ''}`)
+      .join('\n')
+
+    // Build 7-day wellness summary
+    const last7Wellness = (wellnessLogs || [])
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 7)
+      .map(w => {
+        const parts = [w.date]
+        if (w.mood != null) parts.push(`心情${w.mood}/5`)
+        if (w.energy_level != null) parts.push(`精力${w.energy_level}/5`)
+        if (w.sleep_quality != null) parts.push(`睡眠${w.sleep_quality}/5`)
+        if (w.hunger != null) parts.push(`飢餓${w.hunger}/5`)
+        if (w.stress != null) parts.push(`壓力${w.stress}/5`)
+        return parts.join(' ')
+      })
+      .join('\n')
+
+    // Build 7-day training summary
+    const last7Training = (trainingLogs || [])
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 7)
+      .map(t => `${t.date}: ${t.training_type || '訓練'}${t.note ? ` (${t.note.slice(0, 30)})` : ''}`)
+      .join('\n')
+
+    // Supplement list
+    const suppList = (supplements || [])
+      .map(s => `${s.name}${s.dosage ? ` ${s.dosage}` : ''}${s.timing ? ` (${s.timing})` : ''}`)
+      .join('、')
+
+    // Today's wellness
+    const wellnessStr = todayWellness
+      ? [
+          todayWellness.mood != null ? `心情${todayWellness.mood}/5` : '',
+          todayWellness.energy_level != null ? `精力${todayWellness.energy_level}/5` : '',
+          todayWellness.sleep_quality != null ? `睡眠${todayWellness.sleep_quality}/5` : '',
+          todayWellness.hunger != null ? `飢餓感${todayWellness.hunger}/5` : '',
+          todayWellness.stress != null ? `壓力${todayWellness.stress}/5` : '',
+        ].filter(Boolean).join('、')
+      : ''
+
+    // Wearable data
+    const wearableStr = wearableData
+      ? [
+          wearableData.hrv != null ? `HRV ${wearableData.hrv}` : '',
+          wearableData.resting_hr != null ? `靜息心率 ${wearableData.resting_hr}` : '',
+          wearableData.device_recovery_score != null ? `恢復分數 ${wearableData.device_recovery_score}/100` : '',
+        ].filter(Boolean).join('、')
+      : ''
+
+    return `你是 Howard Protocol 的 AI 健康顧問助手。你正在協助一位學員規劃飲食和健康管理。
 
 ## 學員資料
 - 姓名：${clientName}
@@ -112,6 +191,12 @@ ${pLeft != null ? `- 蛋白質：還需 ${pLeft}g` : ''}
 ${cLeft != null ? `- 碳水：還需 ${cLeft}g` : ''}
 ${fLeft != null ? `- 脂肪：還需 ${fLeft}g` : ''}
 ${wLeft != null ? `- 水分：還需 ${wLeft} ml` : ''}
+${wellnessStr ? `\n## 今日身心狀態\n${wellnessStr}` : ''}
+${wearableStr ? `\n## 穿戴裝置數據\n${wearableStr}` : ''}
+${last7Nutrition ? `\n## 過去 7 天營養紀錄\n${last7Nutrition}` : ''}
+${last7Wellness ? `\n## 過去 7 天身心狀態\n${last7Wellness}` : ''}
+${last7Training ? `\n## 過去 7 天訓練紀錄\n${last7Training}` : ''}
+${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != null ? `\n- 近 7 天服從率：${supplementComplianceRate}%` : ''}` : ''}
 
 ## 回答原則
 1. 根據「剩餘需求」給出具體的外食建議（711、全家、超商、自助餐、外送等）
@@ -119,9 +204,12 @@ ${wLeft != null ? `- 水分：還需 ${wLeft} ml` : ''}
 3. 回答以繁體中文為主，語氣親切實用
 4. 建議要具體到品項名稱，不要只說「高蛋白食物」
 5. 如果學員已經吃超標，提醒但不責備，給出調整方案
-6. 不做醫療診斷，建議以科學為基礎
-7. 回答簡潔，不超過 300 字`
-  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat])
+6. 根據過去 7 天的趨勢給出更精準的建議（例如連續幾天蛋白質不足、睡眠差影響恢復等）
+7. 如果身心狀態不佳（精力低、壓力高、睡眠差），適當調整飲食建議（例如建議含鎂食物助眠、抗氧化食物抗壓）
+8. 可以根據補劑清單給出搭配飲食的建議
+9. 不做醫療診斷，建議以科學為基礎
+10. 回答簡潔，不超過 400 字`
+  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData])
 
   async function handleSend() {
     const text = input.trim()
