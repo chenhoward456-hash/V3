@@ -45,14 +45,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { clientData, labResults, supplements } = body
 
+    // 白名單過濾：只允許合法欄位，防止注入 id 等內部欄位
+    const ALLOWED_CREATE_FIELDS = [
+      'unique_code', 'name', 'age', 'gender', 'status', 'expires_at', 'is_active', 'subscription_tier',
+      'nutrition_enabled', 'supplement_enabled', 'wellness_enabled', 'training_enabled',
+      'body_composition_enabled', 'lab_enabled', 'ai_chat_enabled', 'competition_enabled', 'health_mode_enabled',
+      'target_weight', 'body_fat_target', 'target_date', 'competition_date', 'prep_phase',
+      'goal_type', 'activity_profile', 'diet_start_date',
+      'calories_target', 'protein_target', 'carbs_target', 'fat_target', 'water_target',
+      'carbs_training_day', 'carbs_rest_day',
+      'next_checkup_date', 'coach_weekly_note', 'coach_summary',
+    ]
+    const sanitizedClientData: Record<string, any> = {}
+    if (clientData && typeof clientData === 'object') {
+      for (const key of Object.keys(clientData)) {
+        if (ALLOWED_CREATE_FIELDS.includes(key)) {
+          sanitizedClientData[key] = clientData[key]
+        }
+      }
+    }
+
     const { data: newClient, error: clientError } = await supabase
       .from('clients')
-      .insert(clientData)
+      .insert(sanitizedClientData)
       .select()
       .single()
 
     if (clientError) {
-      return NextResponse.json({ error: '新增學員失敗', detail: clientError.message }, { status: 500 })
+      return NextResponse.json({ error: '新增學員失敗' }, { status: 500 })
     }
 
     // 新增血檢
@@ -138,7 +158,7 @@ export async function PUT(request: NextRequest) {
       .eq('id', clientId)
 
     if (clientError) {
-      return NextResponse.json({ error: `更新學員失敗: ${clientError.message}`, detail: clientError.message, code: clientError.code }, { status: 500 })
+      return NextResponse.json({ error: '更新學員失敗' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
@@ -172,7 +192,7 @@ export async function DELETE(request: NextRequest) {
       .eq('id', clientId)
 
     if (error) {
-      return NextResponse.json({ error: '刪除失敗', detail: error.message }, { status: 500 })
+      return NextResponse.json({ error: '刪除失敗' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

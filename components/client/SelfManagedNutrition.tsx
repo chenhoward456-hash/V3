@@ -70,7 +70,7 @@ export default function SelfManagedNutrition({
 
     const fetchSuggestion = async () => {
       try {
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}&autoApply=true`)
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}&autoApply=true&code=${uniqueCode}`)
         if (!res.ok) return
         const json = await res.json()
         if (json.suggestion) {

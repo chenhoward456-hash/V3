@@ -4,18 +4,15 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { sendWelcomeEmail } from '@/lib/email'
 import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { createLogger } from '@/lib/logger'
+import crypto from 'crypto'
 
 const log = createLogger('free-trial')
 
 const supabase = createServiceSupabase()
 
+// 密碼學安全隨機 unique_code
 function generateUniqueCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let result = ''
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
+  return crypto.randomBytes(6).toString('base64url').slice(0, 8)
 }
 
 export async function POST(request: NextRequest) {

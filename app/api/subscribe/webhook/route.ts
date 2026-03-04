@@ -9,14 +9,9 @@ import crypto from 'crypto'
 const supabase = createServiceSupabase()
 const log = createLogger('subscribe/webhook')
 
-// 生成 8 碼 unique_code（與 admin 建立學員一致）
+// 生成 8 碼 unique_code（密碼學安全隨機）
 function generateUniqueCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let result = ''
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
+  return crypto.randomBytes(6).toString('base64url').slice(0, 8)
 }
 
 // getDefaultFeatures 已移至 @/lib/tier-defaults

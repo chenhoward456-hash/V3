@@ -13,6 +13,7 @@ function getAdminSession(request: NextRequest): boolean {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('clientId')
+  const code = searchParams.get('code')
   if (!clientId) {
     return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
   }
@@ -21,6 +22,11 @@ export async function GET(request: NextRequest) {
   // 其他模式仍需 admin 權限
   const isAdmin = getAdminSession(request)
   const wantsAutoApply = searchParams.get('autoApply') === 'true'
+
+  // 驗證權限：admin session 或提供正確的 unique_code
+  if (!isAdmin && !code) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 })
+  }
 
   try {
     // 1. 取得學員資料
@@ -32,6 +38,11 @@ export async function GET(request: NextRequest) {
 
     if (clientErr || !client) {
       return NextResponse.json({ error: '找不到學員' }, { status: 404 })
+    }
+
+    // 非 admin 需驗證 unique_code 匹配
+    if (!isAdmin && client.unique_code !== code) {
+      return NextResponse.json({ error: '未授權' }, { status: 401 })
     }
 
     // 2. 取得近 30 天體組成數據

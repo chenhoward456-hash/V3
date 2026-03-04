@@ -5,10 +5,16 @@ import crypto from 'crypto'
 // 因為 Vercel 的 NODE_ENV 永遠是 production，但我們可能還在用測試帳號
 const isEcpayProduction = process.env.ECPAY_PRODUCTION === 'true'
 
+function requireEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) throw new Error(`環境變數 ${name} 未設定，請檢查 .env.local`)
+  return value.trim()
+}
+
 export const ECPAY_CONFIG = {
-  MerchantID: (process.env.ECPAY_MERCHANT_ID || '3002607').trim(),
-  HashKey: (process.env.ECPAY_HASH_KEY || 'pwFHCqoQZGmho4w6').trim(),
-  HashIV: (process.env.ECPAY_HASH_IV || 'EkRm7iFT261dpevs').trim(),
+  MerchantID: requireEnv('ECPAY_MERCHANT_ID'),
+  HashKey: requireEnv('ECPAY_HASH_KEY'),
+  HashIV: requireEnv('ECPAY_HASH_IV'),
   PaymentURL: isEcpayProduction
     ? 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5'
     : 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5',

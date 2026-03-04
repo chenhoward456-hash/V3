@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { calculateHealthScore, type HealthScoreInput } from '@/lib/health-score-engine'
 import { generateLabNutritionAdvice, type LabNutritionAdvice } from '@/lib/lab-nutrition-advisor'
+import { verifyAdminSession } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,9 +35,18 @@ interface QuarterData {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('clientId')
+  const code = searchParams.get('code')
 
   if (!clientId) {
     return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
+  }
+
+  // 驗證權限：admin session 或提供正確的 unique_code
+  const adminToken = request.cookies.get('admin_session')?.value
+  const isAdmin = !!adminToken && verifyAdminSession(adminToken)
+
+  if (!isAdmin && !code) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 })
   }
 
   const supabase = createServiceSupabase()
@@ -45,12 +55,17 @@ export async function GET(request: NextRequest) {
     // 1. 取得客戶資料
     const { data: client, error: clientErr } = await supabase
       .from('clients')
-      .select('id, gender, health_mode_enabled, quarterly_cycle_start')
+      .select('id, gender, health_mode_enabled, quarterly_cycle_start, unique_code')
       .eq('id', clientId)
       .single()
 
     if (clientErr || !client) {
       return NextResponse.json({ error: '找不到學員' }, { status: 404 })
+    }
+
+    // 非 admin 需驗證 unique_code 匹配
+    if (!isAdmin && client.unique_code !== code) {
+      return NextResponse.json({ error: '未授權' }, { status: 401 })
     }
 
     if (!client.health_mode_enabled) {

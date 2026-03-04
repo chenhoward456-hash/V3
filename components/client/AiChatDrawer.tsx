@@ -31,6 +31,8 @@ interface WellnessEntry {
 interface AiChatDrawerProps {
   open: boolean
   onClose: () => void
+  // Auth
+  clientId: string
   // Client context
   clientName: string
   gender: string | null
@@ -61,6 +63,7 @@ interface AiChatDrawerProps {
 
 export default function AiChatDrawer({
   open, onClose,
+  clientId,
   clientName, gender, goalType,
   todayNutrition,
   caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget,
@@ -232,7 +235,7 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, systemPrompt }),
+        body: JSON.stringify({ messages: newMessages, systemPrompt, clientId }),
       })
 
       if (!res.ok) {

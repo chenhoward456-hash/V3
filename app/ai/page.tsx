@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -8,6 +9,8 @@ interface Message {
 }
 
 export default function AIAdvisorPage() {
+  const searchParams = useSearchParams()
+  const clientId = searchParams.get('clientId')
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -40,7 +43,7 @@ export default function AIAdvisorPage() {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: newMessages, clientId }),
       })
 
       if (!res.ok) {

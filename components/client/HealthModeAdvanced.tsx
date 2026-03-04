@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 
 interface HealthModeAdvancedProps {
   clientId: string
+  code?: string
 }
 
 // 微營養素每日建議量
@@ -60,7 +61,7 @@ interface ReportData {
   labNutritionAdvice: LabAdvice[]
 }
 
-export default function HealthModeAdvanced({ clientId }: HealthModeAdvancedProps) {
+export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvancedProps) {
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'advice' | 'report' | 'micro'>('advice')
@@ -68,7 +69,7 @@ export default function HealthModeAdvanced({ clientId }: HealthModeAdvancedProps
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const res = await fetch(`/api/health-report?clientId=${clientId}`)
+        const res = await fetch(`/api/health-report?clientId=${clientId}${code ? `&code=${code}` : ''}`)
         if (res.ok) {
           const json = await res.json()
           setData(json)

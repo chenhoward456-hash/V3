@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 
 interface WeeklyInsightProps {
   clientId: string
+  code?: string
   onMutate?: () => void
 }
 
-export default function WeeklyInsight({ clientId, onMutate }: WeeklyInsightProps) {
+export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsightProps) {
   const [data, setData] = useState<any>(null)
   const [meta, setMeta] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -15,7 +16,7 @@ export default function WeeklyInsight({ clientId, onMutate }: WeeklyInsightProps
   useEffect(() => {
     const fetchInsight = async () => {
       try {
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}`)
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}${code ? `&code=${code}` : ''}`)
         if (!res.ok) return
         const json = await res.json()
         if (json.suggestion) {

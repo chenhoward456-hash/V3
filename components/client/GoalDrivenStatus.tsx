@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react'
 
 interface GoalDrivenStatusProps {
   clientId: string
+  code?: string
   isTrainingDay?: boolean
   onMutate?: () => void
 }
 
-export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: GoalDrivenStatusProps) {
+export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMutate }: GoalDrivenStatusProps) {
   const [data, setData] = useState<any>(null)
   const [targetWeightValue, setTargetWeightValue] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -17,7 +18,7 @@ export default function GoalDrivenStatus({ clientId, isTrainingDay, onMutate }: 
     const fetchSuggestion = async () => {
       try {
         // 帶 autoApply=true 讓引擎結果寫回 DB，飲食紀錄才能同步
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}&autoApply=true`)
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}&autoApply=true${code ? `&code=${code}` : ''}`)
         if (!res.ok) return
         const json = await res.json()
         if (json.suggestion) {

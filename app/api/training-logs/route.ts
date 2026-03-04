@@ -104,12 +104,19 @@ export async function POST(request: NextRequest) {
 
     const { data: client, error: clientError } = await supabaseAdmin
       .from('clients')
-      .select('id')
+      .select('id, is_active, expires_at')
       .eq('unique_code', clientId)
       .single()
 
     if (clientError || !client) {
       return createErrorResponse('找不到客戶', 404)
+    }
+
+    if (client.is_active === false) {
+      return createErrorResponse('帳號已暫停', 403)
+    }
+    if (client.expires_at && new Date(client.expires_at) < new Date()) {
+      return createErrorResponse('帳號已過期', 403)
     }
 
     const upsertData: any = {
