@@ -68,6 +68,7 @@ export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState('')
   const [showCoachSummary, setShowCoachSummary] = useState(false)
   const [showAiChat, setShowAiChat] = useState(false)
+  const [showAiUpgrade, setShowAiUpgrade] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -914,7 +915,13 @@ export default function ClientDashboard() {
       {/* AI 飲食顧問浮動按鈕 */}
       {c.nutrition_enabled && (
         <button
-          onClick={() => setShowAiChat(true)}
+          onClick={() => {
+            if (isFree) {
+              setShowAiUpgrade(true)
+            } else {
+              setShowAiChat(true)
+            }
+          }}
           className="fixed z-40 bg-[#2563eb] text-white rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 px-4 py-3"
           style={{ bottom: 'calc(70px + env(safe-area-inset-bottom))', right: '16px' }}
         >
@@ -922,11 +929,51 @@ export default function ClientDashboard() {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           <span className="text-sm font-medium">AI 顧問</span>
+          {isFree && <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">PRO</span>}
         </button>
       )}
 
-      {/* AI 聊天抽屜 */}
-      {c.nutrition_enabled && (
+      {/* 免費用戶 AI 升級提示 */}
+      {showAiUpgrade && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6" onClick={() => setShowAiUpgrade(false)}>
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-3">🤖</div>
+              <h3 className="text-lg font-bold text-gray-900">AI 飲食顧問</h3>
+              <p className="text-sm text-gray-500 mt-1">升級自主管理方案，解鎖 AI 個人化飲食建議</p>
+            </div>
+            <div className="space-y-2 mb-5">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span className="text-green-500">✓</span>
+                <span>根據你的數據即時回答飲食問題</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span className="text-green-500">✓</span>
+                <span>個人化食物推薦與熱量分配建議</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span className="text-green-500">✓</span>
+                <span>分析你的飲食紀錄，給出改善方向</span>
+              </div>
+            </div>
+            <a
+              href="/remote"
+              className="block w-full text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3 rounded-2xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+            >
+              升級方案
+            </a>
+            <button
+              onClick={() => setShowAiUpgrade(false)}
+              className="block w-full text-center text-sm text-gray-400 mt-3 py-1"
+            >
+              稍後再說
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* AI 聊天抽屜（付費用戶才載入） */}
+      {c.nutrition_enabled && !isFree && (
         <AiChatDrawer
           open={showAiChat}
           onClose={() => setShowAiChat(false)}
