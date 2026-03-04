@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit, getClientIP, createErrorResponse } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 import { sendWelcomeEmail } from '@/lib/email'
+import { getDefaultFeatures } from '@/lib/tier-defaults'
 
 const supabase = createServiceSupabase()
 
@@ -56,11 +57,7 @@ export async function POST(request: NextRequest) {
         gender: gender || null,
         goal_type: goalType || 'cut',
         subscription_tier: 'free',
-        body_composition_enabled: true,
-        training_enabled: false,
-        nutrition_enabled: true,
-        wellness_enabled: false,
-        is_active: true,
+        ...getDefaultFeatures('free'),
       })
       .select('id')
       .single()

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyCheckMacValue, SUBSCRIPTION_PLANS, type SubscriptionTier } from '@/lib/ecpay'
 import { createServiceSupabase } from '@/lib/supabase'
 import { sendWelcomeEmail } from '@/lib/email'
+import { getDefaultFeatures } from '@/lib/tier-defaults'
 import crypto from 'crypto'
 
 const supabase = createServiceSupabase()
@@ -16,26 +17,7 @@ function generateUniqueCode(): string {
   return result
 }
 
-// 根據方案決定預設開啟的功能
-function getDefaultFeatures(tier: SubscriptionTier) {
-  const base = {
-    body_composition_enabled: true,
-    training_enabled: true,
-    nutrition_enabled: true,
-    wellness_enabled: true,
-    is_active: true,
-  }
-
-  if (tier === 'coached' || tier === 'combo') {
-    return {
-      ...base,
-      supplement_enabled: true,
-      lab_enabled: true,
-    }
-  }
-
-  return base
-}
+// getDefaultFeatures 已移至 @/lib/tier-defaults
 
 export async function POST(request: NextRequest) {
   try {
