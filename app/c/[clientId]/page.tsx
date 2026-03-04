@@ -24,6 +24,7 @@ import SelfManagedNutrition from '@/components/client/SelfManagedNutrition'
 import PwaPrompt from '@/components/client/PwaPrompt'
 import HealthModeAdvanced from '@/components/client/HealthModeAdvanced'
 import LabNutritionAdviceCard from '@/components/client/LabNutritionAdviceCard'
+import AiChatDrawer from '@/components/client/AiChatDrawer'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
 import { getLocalDateStr } from '@/lib/date-utils'
@@ -66,6 +67,7 @@ export default function ClientDashboard() {
   const [togglingSupplements, setTogglingSupplements] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState('')
   const [showCoachSummary, setShowCoachSummary] = useState(false)
+  const [showAiChat, setShowAiChat] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -828,6 +830,43 @@ export default function ClientDashboard() {
           coachHeaders={coachHeaders}
           onClose={() => setShowSupplementModal(false)}
           onMutate={mutate}
+        />
+      )}
+
+      {/* AI 飲食顧問浮動按鈕 */}
+      {c.nutrition_enabled && (
+        <button
+          onClick={() => setShowAiChat(true)}
+          className="fixed z-40 bg-[#2563eb] text-white rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 px-4 py-3"
+          style={{ bottom: 'calc(70px + env(safe-area-inset-bottom))', right: '16px' }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          <span className="text-sm font-medium">AI 顧問</span>
+        </button>
+      )}
+
+      {/* AI 聊天抽屜 */}
+      {c.nutrition_enabled && (
+        <AiChatDrawer
+          open={showAiChat}
+          onClose={() => setShowAiChat(false)}
+          clientName={c.name}
+          gender={c.gender}
+          goalType={c.goal_type}
+          todayNutrition={todayNutrition}
+          caloriesTarget={c.calories_target}
+          proteinTarget={c.protein_target}
+          carbsTarget={c.carbs_training_day && c.carbs_rest_day
+            ? (todayTraining && todayTraining.training_type !== 'rest' ? c.carbs_training_day : c.carbs_rest_day)
+            : c.carbs_target}
+          fatTarget={c.fat_target}
+          waterTarget={c.water_target}
+          isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+          competitionEnabled={isCompetition}
+          latestWeight={latestBodyData?.weight}
+          latestBodyFat={latestBodyData?.body_fat}
         />
       )}
 
