@@ -234,9 +234,8 @@ export async function PATCH(request: NextRequest) {
       updates.activity_profile = activity_profile
     }
 
-    if (height && typeof height === 'number' && height > 100 && height < 250) {
-      updates.height = height
-    }
+    // height 存在 body_composition 表，不在 clients 表
+    const validHeight = (height && typeof height === 'number' && height > 100 && height < 250) ? height : null
 
     // 目標體重 + 目標日期（自主管理用戶設定期限）
     if (target_weight && typeof target_weight === 'number' && target_weight > 30 && target_weight < 300) {
@@ -265,6 +264,9 @@ export async function PATCH(request: NextRequest) {
       if (body_fat_pct && typeof body_fat_pct === 'number' && body_fat_pct > 3 && body_fat_pct < 60) {
         bodyCompRecord.body_fat = body_fat_pct
       }
+      if (validHeight) {
+        bodyCompRecord.height = validHeight
+      }
 
       // upsert by client_id + date
       await supabase
@@ -276,7 +278,7 @@ export async function PATCH(request: NextRequest) {
         const targets = calculateInitialTargets({
           gender: resolvedGender,
           bodyWeight: body_weight,
-          height: updates.height || null,
+          height: validHeight,
           bodyFatPct: bodyCompRecord.body_fat || null,
           goalType: validGoalType as 'cut' | 'bulk',
           activityProfile: (activity_profile as 'sedentary' | 'high_energy_flux') || 'sedentary',
