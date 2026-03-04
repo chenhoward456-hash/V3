@@ -16,6 +16,9 @@ interface SelfManagedNutritionProps {
   targetWeight: number | null
   targetDate: string | null
   isTrainingDay?: boolean
+  latestWeight?: number | null
+  latestBodyFat?: number | null
+  clientHeight?: number | null
   onMutate?: () => void
 }
 
@@ -32,17 +35,24 @@ export default function SelfManagedNutrition({
   targetWeight: existingTargetWeight,
   targetDate: existingTargetDate,
   isTrainingDay,
+  latestWeight,
+  latestBodyFat,
+  clientHeight,
   onMutate,
 }: SelfManagedNutritionProps) {
   const [data, setData] = useState<any>(null)
   const [meta, setMeta] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  // Onboarding form state
-  const [selectedGoal, setSelectedGoal] = useState<'cut' | 'bulk' | null>(null)
-  const [selectedActivity, setSelectedActivity] = useState<'sedentary' | 'high_energy_flux'>('sedentary')
-  const [bodyWeight, setBodyWeight] = useState('')
-  const [bodyFatPct, setBodyFatPct] = useState('')
-  const [height, setHeight] = useState('')
+  // Onboarding form state — pre-populate from existing data
+  const [selectedGoal, setSelectedGoal] = useState<'cut' | 'bulk' | null>(
+    goalType === 'cut' || goalType === 'bulk' ? goalType : null
+  )
+  const [selectedActivity, setSelectedActivity] = useState<'sedentary' | 'high_energy_flux'>(
+    activityProfile === 'high_energy_flux' ? 'high_energy_flux' : 'sedentary'
+  )
+  const [bodyWeight, setBodyWeight] = useState(latestWeight ? String(latestWeight) : '')
+  const [bodyFatPct, setBodyFatPct] = useState(latestBodyFat ? String(latestBodyFat) : '')
+  const [height, setHeight] = useState(clientHeight ? String(clientHeight) : '')
   const [trainingDays, setTrainingDays] = useState('3')
   const [targetWeightInput, setTargetWeightInput] = useState('')
   const [targetDateOption, setTargetDateOption] = useState<'3' | '6' | 'custom'>('3')

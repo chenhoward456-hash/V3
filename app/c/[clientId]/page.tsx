@@ -746,6 +746,9 @@ export default function ClientDashboard() {
             targetWeight={c.target_weight || null}
             targetDate={c.target_date || null}
             isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            latestWeight={latestBodyData?.weight || null}
+            latestBodyFat={latestBodyData?.body_fat || null}
+            clientHeight={c.height || null}
             onMutate={mutate}
           />
         )}
