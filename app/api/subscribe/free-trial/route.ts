@@ -57,9 +57,9 @@ export async function POST(request: NextRequest) {
         goal_type: goalType || 'cut',
         subscription_tier: 'free',
         body_composition_enabled: true,
-        training_enabled: true,
+        training_enabled: false,
         nutrition_enabled: true,
-        wellness_enabled: true,
+        wellness_enabled: false,
         is_active: true,
       })
       .select('id')

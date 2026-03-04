@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw } from 'lucide-react'
+import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2 } from 'lucide-react'
 
 interface Client {
   id: string
@@ -348,6 +348,19 @@ export default function AdminDashboard() {
     } catch { /* silent */ } finally { setFeedbackSaving(false) }
   }
 
+  const deleteClient = async (client: Client) => {
+    if (!confirm(`確定要刪除「${client.name}」嗎？此操作無法復原，所有相關資料都會被刪除。`)) return
+    try {
+      const res = await fetch(`/api/admin/clients?id=${client.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setClients(prev => prev.filter(c => c.id !== client.id))
+      } else {
+        const data = await res.json()
+        alert(`刪除失敗：${data.error || '未知錯誤'}`)
+      }
+    } catch { alert('刪除失敗，請稍後再試') }
+  }
+
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" /><p className="text-gray-600">載入中...</p></div></div>
 
   return (
@@ -505,6 +518,9 @@ export default function AdminDashboard() {
                       <MessageSquare size={12} /> {client.coach_weekly_note ? '修改回饋' : '寫回饋'}
                     </button>
                     {client.coach_weekly_note && <span className="text-xs text-gray-400 truncate flex-1">{client.coach_weekly_note}</span>}
+                    <button onClick={() => deleteClient(client)} className="ml-auto flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                      <Trash2 size={12} /> 刪除
+                    </button>
                   </div>
                 </div>
               ) })}
@@ -519,7 +535,7 @@ export default function AdminDashboard() {
                 <td className="px-5 py-4"><div className="flex flex-wrap gap-1">{client.body_composition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayBodyIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="體重">⚖️</span>}{client.wellness_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayWellnessIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="感受">😊</span>}{client.nutrition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayNutritionMap[client.id]!==undefined?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="飲食">🥗</span>}{client.training_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayTrainingMap[client.id]?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="訓練">🏋️</span>}{client.supplement_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayLogIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="補品">💊</span>}</div></td>
                 <td className="px-5 py-4"><span className={`text-sm ${act.color}`}>{act.text}</span></td>
                 <td className="px-5 py-4"><span className={`text-sm ${ckup.color}`}>{ckup.text}</span></td>
-                <td className="px-5 py-4"><div className="flex items-center gap-1.5"><button onClick={() => openFeedback(client)} className="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors" title="快速回饋"><MessageSquare size={15} /></button><button onClick={(e) => { e.preventDefault(); copyClientUrl(client.unique_code) }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="複製學員連結"><Copy size={15} /></button><Link href={`/admin/clients/${client.id}`} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="編輯"><ExternalLink size={15} /></Link></div></td>
+                <td className="px-5 py-4"><div className="flex items-center gap-1.5"><button onClick={() => openFeedback(client)} className="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors" title="快速回饋"><MessageSquare size={15} /></button><button onClick={(e) => { e.preventDefault(); copyClientUrl(client.unique_code) }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="複製學員連結"><Copy size={15} /></button><Link href={`/admin/clients/${client.id}`} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="編輯"><ExternalLink size={15} /></Link><button onClick={() => deleteClient(client)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="刪除學員"><Trash2 size={15} /></button></div></td>
               </tr>) })}</tbody></table></div>
             </>
           )}
