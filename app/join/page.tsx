@@ -70,6 +70,7 @@ const PLANS: Record<Tier, {
       '動作矯正與課表設計',
       '優先預約與緊急諮詢',
     ],
+    badge: '台中限定',
   },
 }
 
@@ -186,20 +187,22 @@ export default function JoinPage() {
 
       {/* Plan Cards */}
       <div className="grid md:grid-cols-4 gap-5 mb-12">
-        {(Object.entries(PLANS) as [Tier, typeof PLANS[Tier]][]).map(([tier, plan]) => (
+        {(Object.entries(PLANS) as [Tier, typeof PLANS[Tier]][]).map(([tier, plan]) => {
+          const isCombo = tier === 'combo'
+          return (
           <div
             key={tier}
-            className={`relative bg-white rounded-2xl border-2 p-5 transition-all cursor-pointer hover:shadow-lg ${
+            className={`relative bg-white rounded-2xl border-2 p-5 transition-all ${isCombo ? '' : 'cursor-pointer'} hover:shadow-lg ${
               selectedTier === tier
                 ? 'border-[#2563eb] shadow-md'
                 : plan.highlight
                 ? 'border-[#2563eb]/50 shadow-sm'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
-            onClick={() => handleSelectPlan(tier)}
+            onClick={() => !isCombo && handleSelectPlan(tier)}
           >
             {plan.badge && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap">
+              <div className={`absolute -top-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap ${isCombo ? 'bg-amber-600' : 'bg-green-500'}`}>
                 {plan.badge}
               </div>
             )}
@@ -232,22 +235,35 @@ export default function JoinPage() {
               ))}
             </ul>
 
-            <button
-              onClick={(e) => { e.stopPropagation(); handleSelectPlan(tier) }}
-              className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors ${
-                selectedTier === tier
-                  ? 'bg-[#2563eb] text-white'
-                  : plan.price === 0
-                  ? 'bg-green-500 text-white hover:bg-green-600'
-                  : plan.highlight
-                  ? 'bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {selectedTier === tier ? '已選擇 ✓' : plan.price === 0 ? '免費開始' : '選擇方案'}
-            </button>
+            {isCombo ? (
+              <a
+                href="https://lin.ee/dnbucVw"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="block w-full py-2.5 rounded-xl font-semibold text-sm text-center bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+              >
+                加 LINE 諮詢
+              </a>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSelectPlan(tier) }}
+                className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+                  selectedTier === tier
+                    ? 'bg-[#2563eb] text-white'
+                    : plan.price === 0
+                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    : plan.highlight
+                    ? 'bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {selectedTier === tier ? '已選擇 ✓' : plan.price === 0 ? '免費開始' : '選擇方案'}
+              </button>
+            )}
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Registration Form */}
