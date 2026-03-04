@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { trackEvent } from '@/lib/analytics'
@@ -13,6 +13,21 @@ const TIER_NAMES: Record<string, string> = {
 }
 
 export default function JoinSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <section className="max-w-2xl mx-auto px-6 py-16 md:py-24 text-center">
+          <div className="inline-block w-12 h-12 border-4 border-[#2563eb]/20 border-t-[#2563eb] rounded-full animate-spin mb-6" />
+          <p className="text-gray-500">載入中...</p>
+        </section>
+      }
+    >
+      <JoinSuccessContent />
+    </Suspense>
+  )
+}
+
+function JoinSuccessContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order_id')
   // 免費體驗：直接從 query params 取得
