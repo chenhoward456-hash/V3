@@ -564,8 +564,27 @@ export default function ClientDashboard() {
             </div>
           )}
 
-          {/* 新手引導 — 沒有任何資料時取代 HealthOverview */}
-          {!latestBodyData && (!clientData.nutritionLogs || clientData.nutritionLogs.length === 0) ? (
+          {/* 新手引導 — 免費用戶未設定營養目標時，直接顯示營養計算器 */}
+          {(isFree || isSelfManaged) && !c.calories_target && c.body_composition_enabled ? (
+            <SelfManagedNutrition
+              clientId={c.id}
+              uniqueCode={c.unique_code}
+              goalType={c.goal_type || null}
+              activityProfile={c.activity_profile || null}
+              gender={c.gender || null}
+              caloriesTarget={c.calories_target}
+              proteinTarget={c.protein_target}
+              carbsTarget={c.carbs_target}
+              fatTarget={c.fat_target}
+              targetWeight={c.target_weight || null}
+              targetDate={c.target_date || null}
+              isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+              latestWeight={latestBodyData?.weight || null}
+              latestBodyFat={latestBodyData?.body_fat || null}
+              clientHeight={null}
+              onMutate={mutate}
+            />
+          ) : !latestBodyData && (!clientData.nutritionLogs || clientData.nutritionLogs.length === 0) ? (
             <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-5 border border-blue-100">
               <div className="text-center mb-4">
                 <div className="text-3xl mb-2">👋</div>
@@ -731,8 +750,8 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {/* 自主管理 / 免費學員的智能營養計算（取代 WeeklyInsight + DailyNutritionTarget） */}
-        {!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && (
+        {/* 自主管理 / 免費學員的智能營養計算（已完成 onboarding 才顯示，避免跟頂部重複） */}
+        {!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target && (
           <SelfManagedNutrition
             clientId={c.id}
             uniqueCode={c.unique_code}
@@ -863,8 +882,8 @@ export default function ClientDashboard() {
                 ))}
               </div>
               {c.subscription_tier === 'free' ? (
-                <a href="/remote" className="block text-xs text-blue-500 mt-3 text-center hover:text-blue-700 transition-colors font-medium">
-                  升級方案，解鎖完整功能 →
+                <a href="/remote" className="block mt-4 text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all">
+                  升級自主管理方案，解鎖全部功能
                 </a>
               ) : (
                 <p className="text-xs text-gray-400 mt-3 text-center">和教練討論開啟更多追蹤功能</p>
