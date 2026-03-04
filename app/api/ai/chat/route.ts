@@ -58,10 +58,18 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ reply })
   } catch (err: any) {
+    console.error('[AI Chat Error]', err?.status, err?.message || err)
+
     if (err?.status === 401) {
       return NextResponse.json({ error: 'API Key 無效' }, { status: 500 })
     }
+    if (err?.status === 429) {
+      return NextResponse.json({ error: 'AI 服務額度已滿，請稍後再試' }, { status: 429 })
+    }
+    if (err?.status === 400) {
+      return NextResponse.json({ error: 'AI 請求格式錯誤' }, { status: 400 })
+    }
 
-    return NextResponse.json({ error: 'AI 回覆失敗' }, { status: 500 })
+    return NextResponse.json({ error: 'AI 回覆失敗，請稍後再試' }, { status: 500 })
   }
 }
