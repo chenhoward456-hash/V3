@@ -86,9 +86,12 @@ export default function SelfManagedNutrition({
     return getLocalDateStr(d)
   }
 
+  const [setupError, setSetupError] = useState<string | null>(null)
+
   const handleSetup = async () => {
     if (!selectedGoal || !bodyWeight) return
     setSubmitting(true)
+    setSetupError(null)
     try {
       const payload: Record<string, any> = {
         clientId: uniqueCode,
@@ -112,8 +115,13 @@ export default function SelfManagedNutrition({
       if (res.ok) {
         if (onMutate) onMutate()
         window.location.reload()
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        setSetupError(errData.error || `計算失敗 (${res.status})`)
       }
-    } catch { /* ignore */ }
+    } catch (err: any) {
+      setSetupError(err?.message || '網路錯誤，請稍後再試')
+    }
     finally { setSubmitting(false) }
   }
 
@@ -326,6 +334,13 @@ export default function SelfManagedNutrition({
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* 錯誤提示 */}
+            {setupError && (
+              <div className="mb-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+                {setupError}
               </div>
             )}
 
