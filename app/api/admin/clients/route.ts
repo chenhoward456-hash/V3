@@ -164,6 +164,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: '缺少 id' }, { status: 400 })
     }
 
+    // 先刪除 subscription_purchases（沒有 ON DELETE CASCADE）
+    await supabase
+      .from('subscription_purchases')
+      .delete()
+      .eq('client_id', clientId)
+
     const { error } = await supabase
       .from('clients')
       .delete()

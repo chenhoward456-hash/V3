@@ -583,6 +583,55 @@ export default function ClientDashboard() {
           />
         </div>
 
+        {/* 新手引導 — 沒有任何資料時顯示 */}
+        {!latestBodyData && (!clientData.nutritionLogs || clientData.nutritionLogs.length === 0) && (
+          <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-3xl shadow-sm p-6 mb-6 border border-blue-100">
+            <div className="text-center mb-5">
+              <div className="text-4xl mb-3">👋</div>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">歡迎使用 Howard Protocol！</h2>
+              <p className="text-sm text-gray-500">跟著以下步驟，開始你的健康追蹤旅程</p>
+            </div>
+
+            <div className="space-y-3">
+              {c.body_composition_enabled && (
+                <button
+                  onClick={() => document.getElementById('section-body')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow text-left"
+                >
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl shrink-0">⚖️</div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">步驟 1：記錄你的體重</p>
+                    <p className="text-xs text-gray-500 mt-0.5">點擊下方「身體數據」區塊，輸入今天的體重</p>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-300" />
+                </button>
+              )}
+
+              {c.nutrition_enabled && (
+                <button
+                  onClick={() => (document.getElementById('section-nutrition') || document.getElementById('section-nutrition-general'))?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow text-left"
+                >
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl shrink-0">🍽️</div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">步驟 2：記錄你的飲食</p>
+                    <p className="text-xs text-gray-500 mt-0.5">拍照或手動輸入，追蹤每天的營養攝取</p>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-300" />
+                </button>
+              )}
+
+              <div className="bg-white/60 rounded-2xl p-4 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-xl shrink-0">📊</div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-900">持續追蹤，看見改變</p>
+                  <p className="text-xs text-gray-500 mt-0.5">每天記錄，系統會自動分析你的趨勢和進步</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* === 備賽選手：體重軌跡優先 === */}
         {isCompetition && c.body_composition_enabled && (
           <div id="section-body" className="scroll-mt-4"><BodyComposition
@@ -809,7 +858,13 @@ export default function ClientDashboard() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-400 mt-3 text-center">和教練討論開啟更多追蹤功能</p>
+              {c.subscription_tier === 'free' ? (
+                <a href="/remote" className="block text-xs text-blue-500 mt-3 text-center hover:text-blue-700 transition-colors font-medium">
+                  升級方案，解鎖完整功能 →
+                </a>
+              ) : (
+                <p className="text-xs text-gray-400 mt-3 text-center">和教練討論開啟更多追蹤功能</p>
+              )}
             </div>
           )
         })()}
