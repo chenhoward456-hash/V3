@@ -218,8 +218,8 @@ export async function PATCH(request: NextRequest) {
       return createErrorResponse('帳號已暫停', 403)
     }
 
-    if (client.subscription_tier !== 'self_managed') {
-      return createErrorResponse('此功能僅限自主管理方案', 403)
+    if (client.subscription_tier !== 'self_managed' && client.subscription_tier !== 'free') {
+      return createErrorResponse('此功能僅限自主管理 / 免費方案', 403)
     }
 
     // 白名單：只允許更新這些欄位
