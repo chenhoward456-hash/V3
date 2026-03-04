@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { trackEvent } from '@/lib/analytics'
 
 const TIER_NAMES: Record<string, string> = {
-  free: '14 天免費體驗',
+  free: '免費體驗',
   self_managed: '自主管理方案',
   coached: '教練指導方案',
   combo: '全方位方案',
@@ -134,7 +134,7 @@ function JoinSuccessContent() {
           </h1>
           <p className="text-gray-500 text-sm mb-8">
             你的 {TIER_NAMES[tier || ''] || '方案'} 已啟用
-            {isFree && '，14 天內可免費使用所有功能'}
+            {isFree && '，可免費使用所有功能'}
           </p>
 
           {/* Unique Code Card */}

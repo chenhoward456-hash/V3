@@ -118,10 +118,10 @@ export default function RemotePage() {
                   href="/join"
                   className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
                 >
-                  14 天免費體驗 →
+                  免費體驗 →
                 </Link>
                 <p className="text-center text-xs text-gray-400 mt-3">
-                  免費試用 14 天，不需綁卡
+                  免費試用，不需綁卡
                 </p>
               </div>
 
@@ -360,7 +360,7 @@ export default function RemotePage() {
               href="/join"
               className="inline-block bg-white text-[#1e3a5f] px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
             >
-              14 天免費體驗 →
+              免費體驗 →
             </Link>
             <LineButton
               source="remote_page"

@@ -5,8 +5,6 @@ import { sendWelcomeEmail } from '@/lib/email'
 
 const supabase = createServiceSupabase()
 
-const FREE_TRIAL_DAYS = 14
-
 function generateUniqueCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   let result = ''
@@ -48,8 +46,6 @@ export async function POST(request: NextRequest) {
 
     // 建立學員帳號
     const uniqueCode = generateUniqueCode()
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + FREE_TRIAL_DAYS)
 
     const { data: newClient, error: clientError } = await supabase
       .from('clients')
@@ -60,7 +56,6 @@ export async function POST(request: NextRequest) {
         gender: gender || null,
         goal_type: goalType || 'cut',
         subscription_tier: 'free',
-        expires_at: expiresAt.toISOString(),
         body_composition_enabled: true,
         training_enabled: true,
         nutrition_enabled: true,
@@ -107,7 +102,6 @@ export async function POST(request: NextRequest) {
       uniqueCode,
       name: name.trim(),
       tier: 'free',
-      expiresAt: expiresAt.toISOString(),
     })
   } catch (err: any) {
     console.error('[free-trial] Error:', err?.message || err)

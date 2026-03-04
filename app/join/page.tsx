@@ -21,7 +21,7 @@ const PLANS: Record<Tier, {
     name: '免費體驗',
     price: 0,
     priceLabel: '0',
-    unit: '/14天',
+    unit: '',
     description: '先體驗系統，滿意再升級',
     features: [
       'TDEE + 巨量營養素自動計算',
@@ -180,7 +180,7 @@ export default function JoinPage() {
           選擇你的方案
         </h1>
         <p className="text-gray-500 text-sm md:text-base max-w-xl mx-auto">
-          免費體驗 14 天，不需信用卡。滿意再升級付費方案。
+          免費體驗系統功能，不需信用卡。滿意再升級付費方案。
         </p>
       </div>
 
@@ -260,7 +260,7 @@ export default function JoinPage() {
             <p className="text-sm text-gray-500 mb-6">
               已選：{PLANS[selectedTier].name}
               {PLANS[selectedTier].price > 0 && `（NT$${PLANS[selectedTier].priceLabel}/月）`}
-              {isFree && '（14 天免費）'}
+              {isFree && '（免費）'}
               <button
                 onClick={() => { setFormStep('plans'); setSelectedTier(null) }}
                 className="text-[#2563eb] hover:underline ml-2"
@@ -395,7 +395,7 @@ export default function JoinPage() {
 
               <p className="text-center text-xs text-gray-400 mt-2">
                 {isFree
-                  ? '不需信用卡，14 天後自動到期。隨時可升級付費方案。'
+                  ? '不需信用卡，隨時可升級付費方案。'
                   : '付款由綠界科技（ECPay）安全處理，支援信用卡、ATM、超商付款'
                 }
               </p>

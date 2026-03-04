@@ -108,7 +108,7 @@ export default function HomePage() {
                   href="/join"
                   className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition-all shadow-lg shadow-blue-500/25 text-center"
                 >
-                  14 天免費體驗 →
+                  免費體驗 →
                 </Link>
                 <Link
                   href="/diagnosis"
@@ -321,7 +321,7 @@ export default function HomePage() {
                 href="/join"
                 className="block text-center bg-primary text-white py-3.5 rounded-xl font-semibold hover:bg-primary-dark transition-colors shadow-lg shadow-blue-500/25"
               >
-                14 天免費體驗 →
+                免費體驗 →
               </Link>
             </div>
 
@@ -458,7 +458,7 @@ export default function HomePage() {
               href="/join"
               className="inline-block bg-white text-navy px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
             >
-              14 天免費體驗 →
+              免費體驗 →
             </Link>
             <LineButton
               source="homepage_bottom"
