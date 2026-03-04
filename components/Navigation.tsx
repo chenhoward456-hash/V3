@@ -8,6 +8,7 @@ import LineButton from '@/components/LineButton'
 const navItems = [
   { label: '系統介紹', href: '/' },
   { label: '免費體驗', href: '/diagnosis' },
+  { label: 'AI 顧問', href: '/ai' },
   { label: '知識分享', href: '/blog' },
   { label: '成功案例', href: '/case' },
   { label: '方案說明', href: '/remote' },
