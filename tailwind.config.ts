@@ -48,6 +48,21 @@ const config: Config = {
         'relaxed': '1.8',
         'loose': '2',
       },
+      keyframes: {
+        'slide-in-down': {
+          '0%': { opacity: '0', transform: 'translateY(-12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'check-pop': {
+          '0%': { transform: 'scale(0)' },
+          '50%': { transform: 'scale(1.2)' },
+          '100%': { transform: 'scale(1)' },
+        },
+      },
+      animation: {
+        'slide-in-down': 'slide-in-down 0.3s ease-out',
+        'check-pop': 'check-pop 0.3s ease-out',
+      },
     },
   },
   plugins: [],

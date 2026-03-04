@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { useClientData } from '@/hooks/useClientData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
@@ -28,6 +28,7 @@ import AiChatDrawer from '@/components/client/AiChatDrawer'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
 import { getLocalDateStr } from '@/lib/date-utils'
+import { useToast } from '@/components/ui/Toast'
 
 export default function ClientDashboard() {
   const { clientId } = useParams()
@@ -69,6 +70,29 @@ export default function ClientDashboard() {
   const [showCoachSummary, setShowCoachSummary] = useState(false)
   const [showAiChat, setShowAiChat] = useState(false)
   const [showAiUpgrade, setShowAiUpgrade] = useState(false)
+  const { showToast } = useToast()
+
+  // Scroll-based bottom nav highlighting
+  const sectionIds = useRef<string[]>([])
+  useEffect(() => {
+    const ids = [
+      'section-body', 'section-nutrition', 'section-nutrition-general',
+      'section-supplements', 'section-wellness', 'section-training', 'section-lab'
+    ]
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveTab(entry.target.id)
+          }
+        }
+      },
+      { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
+    )
+    const elements = ids.map(id => document.getElementById(id)).filter(Boolean) as HTMLElement[]
+    elements.forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [clientData])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -118,7 +142,7 @@ export default function ClientDashboard() {
       })
       if (!res.ok) throw new Error('打卡失敗')
       mutate()
-    } catch { alert('打卡失敗，請重試') }
+    } catch { showToast('打卡失敗，請重試', 'error') }
     finally {
       setTogglingSupplements(prev => { const next = new Set(prev); next.delete(supplementId); return next })
     }
@@ -146,7 +170,7 @@ export default function ClientDashboard() {
         })
       ))
       mutate()
-    } catch { alert('打卡失敗，請重試') }
+    } catch { showToast('打卡失敗，請重試', 'error') }
     finally {
       setTogglingSupplements(new Set())
     }

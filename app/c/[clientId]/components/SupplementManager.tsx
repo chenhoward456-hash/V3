@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useToast } from '@/components/ui/Toast'
 
 interface Supplement {
   id: string
@@ -21,6 +22,7 @@ export default function SupplementManager({
   initialSupplements, 
   onUpdate 
 }: SupplementManagerProps) {
+  const { showToast } = useToast()
   const [supplements, setSupplements] = useState<Supplement[]>(initialSupplements)
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -48,7 +50,7 @@ export default function SupplementManager({
 
   const handleAdd = async () => {
     if (!newSupplement.name || !newSupplement.dosage) {
-      alert('請填寫補品名稱和劑量')
+      showToast('請填寫補品名稱和劑量', 'error')
       return
     }
 
@@ -79,7 +81,7 @@ export default function SupplementManager({
       setIsAdding(false)
     } catch (error) {
       console.error('新增補品失敗:', error)
-      alert('新增失敗，請重試')
+      showToast('新增失敗，請重試', 'error')
     } finally {
       setLoading(false)
     }
@@ -110,7 +112,7 @@ export default function SupplementManager({
       setEditingId(null)
     } catch (error) {
       console.error('更新補品失敗:', error)
-      alert('更新失敗，請重試')
+      showToast('更新失敗，請重試', 'error')
     } finally {
       setLoading(false)
     }
@@ -136,7 +138,7 @@ export default function SupplementManager({
       onUpdate(updatedSupplements)
     } catch (error) {
       console.error('刪除補品失敗:', error)
-      alert('刪除失敗，請重試')
+      showToast('刪除失敗，請重試', 'error')
     } finally {
       setLoading(false)
     }

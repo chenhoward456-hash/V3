@@ -5,6 +5,7 @@ import { Calendar, X, Plus, Scale, Activity, Dumbbell, Ruler, Heart } from 'luci
 import LazyChart from '@/components/charts/LazyChart'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { useToast } from '@/components/ui/Toast'
 
 interface BodyCompositionProps {
   latestBodyData: any
@@ -24,7 +25,7 @@ export default function BodyComposition({
 }: BodyCompositionProps) {
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const { showToast } = useToast()
   const [nutritionAdjusted, setNutritionAdjusted] = useState<{ message?: string; calories?: number; protein?: number; carbs?: number; fat?: number; adjusted?: boolean } | null>(null)
   const todayStr = getLocalDateStr()
   const [form, setForm] = useState({
@@ -146,9 +147,9 @@ export default function BodyComposition({
   }, [competitionEnabled, targetWeight, competitionDate, weightMAData])
 
   const handleSubmit = async () => {
-    if (!form.weight || form.weight.trim() === '') { alert('請輸入體重'); return }
+    if (!form.weight || form.weight.trim() === '') { showToast('請輸入體重', 'error'); return }
     const weight = parseFloat(form.weight)
-    if (isNaN(weight) || weight < 20 || weight > 300) { alert('體重請輸入 20-300kg 之間的數值'); return }
+    if (isNaN(weight) || weight < 20 || weight > 300) { showToast('體重請輸入 20-300kg 之間的數值', 'error'); return }
     try {
       const res = await fetch('/api/body-composition', {
         method: 'POST',
@@ -166,8 +167,7 @@ export default function BodyComposition({
       setShowModal(false)
       setForm({ date: getLocalDateStr(), weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
       onMutate()
-      setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 2000)
+      showToast('身體數據已記錄！', 'success', '🎉')
       // 營養素引擎結果（只在有調整時顯示）
       const na = result?.data?.nutritionAdjusted
       if (na?.adjusted) {
@@ -176,19 +176,13 @@ export default function BodyComposition({
           setTimeout(() => setNutritionAdjusted(null), 5000)
         }, 2200)
       }
-    } catch { alert('儲存失敗，請重試') }
+    } catch { showToast('儲存失敗，請重試', 'error') }
   }
 
   return (
     <>
-      {showSuccess && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
-          <span className="text-lg">🎉</span>
-          <span className="text-sm font-medium">身體數據已記錄！</span>
-        </div>
-      )}
       {nutritionAdjusted && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-bounce bg-gradient-to-r from-blue-600 to-indigo-600">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-slide-in-down bg-gradient-to-r from-blue-600 to-indigo-600">
           <div className="flex items-center gap-2">
             <span className="text-lg">🎯</span>
             <div>

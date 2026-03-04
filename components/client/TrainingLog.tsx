@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TRAINING_TYPES } from './types'
 import { getLocalDateStr } from '@/lib/date-utils'
+import { useToast } from '@/components/ui/Toast'
 
 interface TrainingLogProps {
   todayTraining: any
@@ -17,7 +18,7 @@ interface TrainingLogProps {
 export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate }: TrainingLogProps) {
   const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const { showToast } = useToast()
   const [form, setForm] = useState({
     training_type: todayTraining?.training_type ?? null as string | null,
     duration: todayTraining?.duration ?? null as number | null,
@@ -54,15 +55,15 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
   const handleSubmit = async () => {
     if (!form.training_type) {
-      alert('請選擇訓練類型')
+      showToast('請選擇訓練類型', 'error')
       return
     }
     if (!isRest && (!form.duration || form.duration <= 0)) {
-      alert('請填寫訓練時長')
+      showToast('請填寫訓練時長', 'error')
       return
     }
     if (!isRest && !form.rpe) {
-      alert('請選擇 RPE')
+      showToast('請選擇 RPE', 'error')
       return
     }
     setSubmitting(true)
@@ -81,10 +82,9 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
       })
       if (!response.ok) throw new Error('提交失敗')
       onMutate()
-      setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 2000)
+      showToast('訓練已記錄！', 'success', '🎉')
     } catch {
-      alert('提交失敗，請重試')
+      showToast('提交失敗，請重試', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -320,12 +320,6 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-      {showSuccess && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
-          <span className="text-lg">🎉</span>
-          <span className="text-sm font-medium">訓練已記錄！</span>
-        </div>
-      )}
       <h2 className="text-xl font-semibold text-gray-900 mb-4">訓練紀錄</h2>
       <div className="space-y-4">
         {/* 訓練類型 */}

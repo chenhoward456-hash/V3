@@ -104,7 +104,10 @@ export default function DailyCheckIn({
       {supplements.length > 0 && todayStats.completed < todayStats.total && onMarkAllComplete && (
         <div className="mb-4">
           <button
-            onClick={onMarkAllComplete}
+            onClick={() => {
+              if (navigator.vibrate) navigator.vibrate([30, 50, 30])
+              onMarkAllComplete()
+            }}
             className="w-full py-2.5 bg-green-50 border-2 border-green-200 text-green-700 text-sm font-semibold rounded-2xl hover:bg-green-100 transition-all active:scale-[0.98]"
           >
             ✅ 全部完成
@@ -147,16 +150,21 @@ export default function DailyCheckIn({
             return (
               <button
                 key={supplement.id}
-                onClick={() => onToggleSupplement(supplement.id, isCompleted)}
+                onClick={() => {
+                  if (!isCompleted && navigator.vibrate) {
+                    navigator.vibrate(30)
+                  }
+                  onToggleSupplement(supplement.id, isCompleted)
+                }}
                 disabled={isToggling}
                 className={`flex items-center p-4 rounded-xl border-2 transition-all text-left ${
                   isCompleted
                     ? 'border-green-300 bg-green-50'
-                    : 'border-gray-200 bg-white hover:border-blue-300'
+                    : 'border-gray-200 bg-white hover:border-blue-300 active:scale-[0.97]'
                 } ${isToggling ? 'opacity-50' : ''}`}
               >
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 flex-shrink-0 ${
-                  isCompleted ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 flex-shrink-0 transition-all ${
+                  isCompleted ? 'border-green-500 bg-green-500 animate-check-pop' : 'border-gray-300'
                 }`}>
                   {isCompleted && <span className="text-white text-xs font-bold">✓</span>}
                 </div>
