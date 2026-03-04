@@ -104,7 +104,6 @@ export async function GET(request: NextRequest) {
       previousQuarter,
     })
   } catch (err) {
-    console.error('Health report error:', err)
     return NextResponse.json({ error: '報告產生失敗' }, { status: 500 })
   }
 }

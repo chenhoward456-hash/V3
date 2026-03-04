@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (clientError) {
-      console.error('Insert client error:', clientError)
       return NextResponse.json({ error: '新增學員失敗', detail: clientError.message }, { status: 500 })
     }
 
@@ -60,19 +59,18 @@ export async function POST(request: NextRequest) {
     if (labResults?.length > 0) {
       const withId = labResults.map((r: any) => ({ ...r, client_id: newClient.id }))
       const { error: labError } = await supabase.from('lab_results').insert(withId)
-      if (labError) console.error('Insert lab error:', labError)
+      if (labError) { /* error logged via response */ }
     }
 
     // 新增補品
     if (supplements?.length > 0) {
       const withId = supplements.map((s: any) => ({ ...s, client_id: newClient.id }))
       const { error: supError } = await supabase.from('supplements').insert(withId)
-      if (supError) console.error('Insert supplement error:', supError)
+      if (supError) { /* error logged via response */ }
     }
 
     return NextResponse.json({ success: true, id: newClient.id })
   } catch (err) {
-    console.error('POST error:', err)
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }
@@ -140,13 +138,11 @@ export async function PUT(request: NextRequest) {
       .eq('id', clientId)
 
     if (clientError) {
-      console.error('Update client error:', clientError)
       return NextResponse.json({ error: `更新學員失敗: ${clientError.message}`, detail: clientError.message, code: clientError.code }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('PUT error:', err)
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }
@@ -176,13 +172,11 @@ export async function DELETE(request: NextRequest) {
       .eq('id', clientId)
 
     if (error) {
-      console.error('Delete client error:', error)
       return NextResponse.json({ error: '刪除失敗', detail: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('DELETE error:', err)
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }

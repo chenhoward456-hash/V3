@@ -72,13 +72,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (dbError) {
-      console.error('[subscribe/create-checkout] DB error:', dbError)
       return createErrorResponse('建立訂單失敗，請稍後再試', 500)
     }
 
     return NextResponse.json({ htmlForm })
   } catch (err: any) {
-    console.error('[subscribe/create-checkout] Error:', err?.message || err)
     return createErrorResponse('建立結帳失敗，請稍後再試', 500)
   }
 }

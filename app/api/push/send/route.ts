@@ -79,8 +79,7 @@ export async function POST(request: NextRequest) {
       expired: expired.length,
       total: subscriptions.length,
     })
-  } catch (err) {
-    console.error('Push send error:', err)
+  } catch {
     return NextResponse.json({ error: '發送失敗' }, { status: 500 })
   }
 }

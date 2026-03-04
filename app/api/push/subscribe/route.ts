@@ -29,13 +29,11 @@ export async function POST(request: NextRequest) {
       )
 
     if (error) {
-      console.error('Push subscribe error:', error)
       return NextResponse.json({ error: '訂閱儲存失敗' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
-  } catch (err) {
-    console.error('Push subscribe error:', err)
+  } catch {
     return NextResponse.json({ error: '訂閱失敗' }, { status: 500 })
   }
 }
@@ -60,8 +58,7 @@ export async function DELETE(request: NextRequest) {
       .eq('endpoint', endpoint)
 
     return NextResponse.json({ success: true })
-  } catch (err) {
-    console.error('Push unsubscribe error:', err)
+  } catch {
     return NextResponse.json({ error: '取消訂閱失敗' }, { status: 500 })
   }
 }

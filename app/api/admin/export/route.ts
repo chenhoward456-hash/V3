@@ -159,7 +159,6 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (err: any) {
-    console.error('[admin/export] 錯誤:', err)
     return NextResponse.json({ error: '匯出失敗', detail: err.message }, { status: 500 })
   }
 }

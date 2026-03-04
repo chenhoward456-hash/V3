@@ -3,6 +3,9 @@ import { rateLimit, getClientIP, createErrorResponse } from '@/lib/auth-middlewa
 import { createServiceSupabase } from '@/lib/supabase'
 import { sendWelcomeEmail } from '@/lib/email'
 import { getDefaultFeatures } from '@/lib/tier-defaults'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('free-trial')
 
 const supabase = createServiceSupabase()
 
@@ -63,7 +66,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (clientError) {
-      console.error('[free-trial] Client creation error:', clientError)
+      log.error('Client creation error', clientError)
       return createErrorResponse('建立帳號失敗，請稍後再試', 500)
     }
 
@@ -80,7 +83,7 @@ export async function POST(request: NextRequest) {
       completed_at: new Date().toISOString(),
     })
 
-    console.log(`[free-trial] Account created: ${uniqueCode} for ${email}`)
+    log.info('Account created', { uniqueCode, email })
 
     // 寄歡迎信
     if (email) {
@@ -90,7 +93,7 @@ export async function POST(request: NextRequest) {
         uniqueCode,
         tier: 'free',
       }).catch((err) => {
-        console.error('[free-trial] Email error (non-blocking):', err)
+        log.error('Email error (non-blocking)', err)
       })
     }
 
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
       tier: 'free',
     })
   } catch (err: any) {
-    console.error('[free-trial] Error:', err?.message || err)
+    log.error('Unexpected error', err)
     return createErrorResponse('建立帳號失敗，請稍後再試', 500)
   }
 }

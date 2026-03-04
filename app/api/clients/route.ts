@@ -2,28 +2,33 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import crypto from 'crypto'
 import { validateDate } from '@/utils/validation'
-import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware'
+import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { calculateInitialTargets } from '@/lib/nutrition-engine'
 
 const supabase = createServiceSupabase()
 
 export async function GET(request: NextRequest) {
   try {
-    // GET 方法允許公開存取，學員可以用連結查看自己的資料
-    
+    // Rate limit: 每分鐘 30 次（公開端點）
+    const ip = getClientIP(request)
+    const { allowed } = rateLimit(`clients-get:${ip}`, 30, 60_000)
+    if (!allowed) {
+      return createErrorResponse('請求過於頻繁，請稍後再試', 429)
+    }
+
     // 獲取請求參數
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('clientId')
-    
-    console.log('🔍 API GET /api/clients - clientId:', clientId)
-    
+
     if (!clientId) {
-      console.log('❌ 缺少客戶 ID')
       return createErrorResponse('缺少客戶 ID', 400)
     }
-    
-    // 獲取客戶資料
-    console.log('🔍 開始查詢客戶資料...')
+
+    // 驗證 clientId 格式（只允許英數字，最長 20 字）
+    if (!/^[a-zA-Z0-9]{1,20}$/.test(clientId)) {
+      return createErrorResponse('無效的客戶 ID 格式', 400)
+    }
+
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select(`
@@ -34,15 +39,11 @@ export async function GET(request: NextRequest) {
       .eq('unique_code', clientId)
       .single()
     
-    console.log('📊 查詢結果:', { client, clientError })
-    
     if (clientError) {
-      console.log('❌ 客戶查詢錯誤:', clientError)
       return createErrorResponse('找不到客戶資料', 404)
     }
-    
+
     if (!client) {
-      console.log('❌ 客戶資料為空')
       return createErrorResponse('客戶資料不存在', 404)
     }
     
@@ -130,8 +131,7 @@ export async function GET(request: NextRequest) {
       nutritionLogs: resolved.nutritionLogs || [],
     })
     
-  } catch (error) {
-    console.error('API 錯誤:', error)
+  } catch {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }
@@ -187,8 +187,7 @@ export async function POST(request: NextRequest) {
     
     return createSuccessResponse(data)
     
-  } catch (error) {
-    console.error('API 錯誤:', error)
+  } catch {
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
@@ -310,8 +309,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     return createSuccessResponse({ updated: true })
-  } catch (error) {
-    console.error('PATCH 錯誤:', error)
+  } catch {
     return createErrorResponse('伺服器錯誤', 500)
   }
 }

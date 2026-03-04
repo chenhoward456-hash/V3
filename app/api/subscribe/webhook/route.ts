@@ -3,9 +3,11 @@ import { verifyCheckMacValue, SUBSCRIPTION_PLANS, type SubscriptionTier } from '
 import { createServiceSupabase } from '@/lib/supabase'
 import { sendWelcomeEmail } from '@/lib/email'
 import { getDefaultFeatures } from '@/lib/tier-defaults'
+import { createLogger } from '@/lib/logger'
 import crypto from 'crypto'
 
 const supabase = createServiceSupabase()
+const log = createLogger('subscribe/webhook')
 
 // 生成 8 碼 unique_code（與 admin 建立學員一致）
 function generateUniqueCode(): string {
@@ -27,16 +29,14 @@ export async function POST(request: NextRequest) {
       params[key] = value.toString()
     })
 
-    console.log('[subscribe/webhook] ECPay callback:', {
+    log.info('ECPay callback', {
       MerchantTradeNo: params.MerchantTradeNo,
       RtnCode: params.RtnCode,
-      RtnMsg: params.RtnMsg,
       TradeNo: params.TradeNo,
-      TradeAmt: params.TradeAmt,
     })
 
     if (!verifyCheckMacValue(params)) {
-      console.error('[subscribe/webhook] CheckMacValue verification failed')
+      log.error('CheckMacValue verification failed')
       return new NextResponse('0|ErrorMessage', { status: 200 })
     }
 
@@ -52,13 +52,13 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (fetchError || !purchase) {
-        console.error('[subscribe/webhook] Purchase not found:', merchantTradeNo)
+        log.error('Purchase not found', null, { merchantTradeNo })
         return new NextResponse('0|ErrorMessage', { status: 200 })
       }
 
       // 防止重複處理
       if (purchase.status === 'completed') {
-        console.log('[subscribe/webhook] Already completed:', merchantTradeNo)
+        log.info('Already completed', { merchantTradeNo })
         return new NextResponse('1|OK', { status: 200, headers: { 'Content-Type': 'text/plain' } })
       }
 
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (clientError) {
-        console.error('[subscribe/webhook] Client creation error:', clientError)
+        log.error('Client creation error', clientError)
         // 仍然標記付款成功，後台手動補建
         await supabase.from('subscription_purchases').update({
           status: 'completed',
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         completed_at: new Date().toISOString(),
       }).eq('merchant_trade_no', merchantTradeNo)
 
-      console.log(`[subscribe/webhook] Client created: ${uniqueCode} (${tier}) for ${purchase.email}`)
+      log.info('Client created', { uniqueCode, tier, email: purchase.email })
 
       // 非同步寄送歡迎信
       if (purchase.email) {
@@ -117,12 +117,12 @@ export async function POST(request: NextRequest) {
           uniqueCode,
           tier,
         }).catch((err) => {
-          console.error('[subscribe/webhook] Welcome email error (non-blocking):', err)
+          log.error('Welcome email error (non-blocking)', err)
         })
       }
     } else {
       // 付款失敗
-      console.log(`[subscribe/webhook] Payment failed: ${merchantTradeNo}, RtnMsg: ${params.RtnMsg}`)
+      log.info('Payment failed', { merchantTradeNo, RtnMsg: params.RtnMsg })
       await supabase.from('subscription_purchases').update({
         status: 'failed',
       }).eq('merchant_trade_no', merchantTradeNo)
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       headers: { 'Content-Type': 'text/plain' },
     })
   } catch (err: any) {
-    console.error('[subscribe/webhook] Error:', err?.message || err)
+    log.error('Webhook error', err)
     return new NextResponse('0|ErrorMessage', { status: 200 })
   }
 }

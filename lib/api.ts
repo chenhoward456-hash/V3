@@ -24,7 +24,6 @@ async function apiRequest<T>(
     
     return await response.json()
   } catch (error) {
-    console.error('API Request Error:', error)
     throw error
   }
 }

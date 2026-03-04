@@ -28,8 +28,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ reply })
   } catch (err: any) {
-    console.error('AI chat error:', err)
-
     if (err?.status === 401) {
       return NextResponse.json({ error: 'API Key 無效' }, { status: 500 })
     }

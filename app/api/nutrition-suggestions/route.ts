@@ -252,8 +252,7 @@ export async function GET(request: NextRequest) {
         targetDate: client.competition_date || client.target_date || null,
       }
     })
-  } catch (err) {
-    console.error('Nutrition suggestion error:', err)
+  } catch {
     return NextResponse.json({ error: '分析失敗' }, { status: 500 })
   }
 }

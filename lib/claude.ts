@@ -36,15 +36,44 @@ export interface ChatMessage {
   content: string
 }
 
+/**
+ * 估算 token 數量（粗略：中文 ~1.5 tokens/字，英文 ~0.4 tokens/char）
+ */
+function estimateTokens(text: string): number {
+  const cjkChars = (text.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g) || []).length
+  const otherChars = text.length - cjkChars
+  return Math.ceil(cjkChars * 1.5 + otherChars * 0.4)
+}
+
+/**
+ * 裁剪對話歷史，確保不超過 token 上限
+ * 保留最新的訊息，從舊的開始裁剪
+ */
+function trimMessagesToFit(messages: ChatMessage[], maxTokens: number = 6000): ChatMessage[] {
+  let totalTokens = 0
+  const result: ChatMessage[] = []
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msgTokens = estimateTokens(messages[i].content)
+    if (totalTokens + msgTokens > maxTokens && result.length > 0) break
+    totalTokens += msgTokens
+    result.unshift(messages[i])
+  }
+
+  return result
+}
+
 export async function askClaude(
   messages: ChatMessage[],
   systemPrompt?: string
 ): Promise<string> {
+  const trimmedMessages = trimMessagesToFit(messages, 6000)
+
   const response = await getClient().messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
     system: systemPrompt || SYSTEM_PROMPT,
-    messages,
+    messages: trimmedMessages,
   })
 
   const textBlock = response.content.find((block) => block.type === 'text')

@@ -4,6 +4,9 @@
  */
 
 import webPush from 'web-push'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('web-push')
 
 let _initialized = false
 
@@ -50,10 +53,10 @@ export async function sendPushNotification(
   } catch (err: any) {
     // 410 = 訂閱已過期，應從資料庫移除
     if (err.statusCode === 410 || err.statusCode === 404) {
-      console.log('Push subscription expired:', subscription.endpoint)
+      log.info('Push subscription expired', { endpoint: subscription.endpoint })
       return false
     }
-    console.error('Push notification error:', err)
+    log.error('Push notification error', err)
     return false
   }
 }

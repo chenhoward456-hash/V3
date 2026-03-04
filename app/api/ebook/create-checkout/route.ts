@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ htmlForm })
   } catch (err: any) {
-    console.error('[create-checkout] Error:', err?.message || err)
     return createErrorResponse('建立結帳失敗，請稍後再試', 500)
   }
 }

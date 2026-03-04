@@ -265,7 +265,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {caloriesTarget && (
                   <div className="text-center">
                     <p className="text-[10px] text-gray-500 mb-1">🔥 熱量</p>

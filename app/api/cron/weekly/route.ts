@@ -345,7 +345,6 @@ export async function GET(request: NextRequest) {
       alerts: alertItems,
     })
   } catch (err: any) {
-    console.error('[cron/weekly] 錯誤:', err)
     return NextResponse.json({ error: '執行失敗', detail: err.message }, { status: 500 })
   }
 }
