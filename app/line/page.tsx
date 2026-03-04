@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { trackLineClick } from '@/lib/analytics'
 
-const LINE_URL = 'https://lin.ee/dnbucVw'
+const LINE_URL = 'https://line.me/ti/p/~0078185268'
 
 type Intent = 'fat_loss' | 'recovery' | 'muscle_gain'
 

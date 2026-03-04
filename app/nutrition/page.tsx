@@ -149,7 +149,7 @@ export default function NutritionPage() {
             閱讀數據優化文章
           </a>
           <a
-            href="https://lin.ee/dnbucVw"
+            href="https://line.me/ti/p/~0078185268"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block px-8 py-3 rounded-full font-medium border-2 transition-all hover:bg-gray-50"

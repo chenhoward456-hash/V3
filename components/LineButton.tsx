@@ -24,7 +24,7 @@ export default function LineButton({ source, intent, slug, articleTitle, variant
 
   return (
     <a
-      href="https://lin.ee/dnbucVw"
+      href="https://line.me/ti/p/~0078185268"
       target="_blank"
       rel="noopener noreferrer"
       className={className}

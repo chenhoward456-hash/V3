@@ -186,8 +186,8 @@ export default function JoinPage() {
       </div>
 
       {/* Plan Cards */}
-      <div className="grid md:grid-cols-4 gap-5 mb-12">
-        {(Object.entries(PLANS) as [Tier, typeof PLANS[Tier]][]).map(([tier, plan]) => {
+      <div className="grid md:grid-cols-2 gap-5 mb-12 max-w-2xl mx-auto">
+        {(Object.entries(PLANS) as [Tier, typeof PLANS[Tier]][]).filter(([tier]) => tier === 'free' || tier === 'combo').map(([tier, plan]) => {
           const isCombo = tier === 'combo'
           return (
           <div
@@ -237,7 +237,7 @@ export default function JoinPage() {
 
             {isCombo ? (
               <a
-                href="https://lin.ee/dnbucVw"
+                href="https://line.me/ti/p/~0078185268"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
