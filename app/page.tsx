@@ -105,18 +105,17 @@ export default function HomePage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
-                  href="/diagnosis"
+                  href="/join"
                   className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition-all shadow-lg shadow-blue-500/25 text-center"
                 >
-                  免費體驗系統分析 →
+                  14 天免費體驗 →
                 </Link>
-                <LineButton
-                  source="homepage_hero"
-                  intent="general"
+                <Link
+                  href="/diagnosis"
                   className="inline-block bg-white text-navy border-2 border-navy px-8 py-4 rounded-xl font-semibold text-lg hover:bg-navy/5 transition-all text-center"
                 >
-                  加 LINE 直接聊 💬
-                </LineButton>
+                  免費系統分析
+                </Link>
               </div>
             </div>
 
@@ -319,10 +318,10 @@ export default function HomePage() {
                 <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>HRV 恢復狀態自動調整</li>
               </ul>
               <Link
-                href="/diagnosis"
+                href="/join"
                 className="block text-center bg-primary text-white py-3.5 rounded-xl font-semibold hover:bg-primary-dark transition-colors shadow-lg shadow-blue-500/25"
               >
-                免費體驗系統分析 →
+                14 天免費體驗 →
               </Link>
             </div>
 
@@ -455,19 +454,19 @@ export default function HomePage() {
             加 LINE 跟我說你的目標，我會先幫你確認方向
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/join"
+              className="inline-block bg-white text-navy px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
+            >
+              14 天免費體驗 →
+            </Link>
             <LineButton
               source="homepage_bottom"
               intent="general"
-              className="inline-block bg-white text-navy px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
+              className="inline-block bg-transparent text-white border-2 border-white/50 px-10 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-colors"
             >
               加 LINE 聊聊 💬
             </LineButton>
-            <Link
-              href="/diagnosis"
-              className="inline-block bg-transparent text-white border-2 border-white/50 px-10 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-colors"
-            >
-              免費體驗系統分析 →
-            </Link>
           </div>
         </div>
       </section>

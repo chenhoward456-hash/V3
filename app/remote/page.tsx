@@ -115,13 +115,13 @@ export default function RemotePage() {
                   <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>減脂速度動態控制</li>
                 </ul>
                 <Link
-                  href="/diagnosis"
+                  href="/join"
                   className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
                 >
-                  免費體驗系統分析 →
+                  14 天免費體驗 →
                 </Link>
                 <p className="text-center text-xs text-gray-400 mt-3">
-                  體驗後直接開通，不需教練介入
+                  免費試用 14 天，不需綁卡
                 </p>
               </div>
 
@@ -357,10 +357,10 @@ export default function RemotePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/diagnosis"
+              href="/join"
               className="inline-block bg-white text-[#1e3a5f] px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
             >
-              免費體驗系統分析 →
+              14 天免費體驗 →
             </Link>
             <LineButton
               source="remote_page"
