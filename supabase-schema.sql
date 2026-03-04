@@ -209,6 +209,7 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS body_composition_enabled BOOLEAN DE
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS wellness_enabled BOOLEAN DEFAULT FALSE;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS supplement_enabled BOOLEAN DEFAULT FALSE;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS lab_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS ai_chat_enabled BOOLEAN DEFAULT FALSE;
 
 -- 為承鈞添加血檢數據
 INSERT INTO lab_results (client_id, test_name, value, unit, reference_range, date, status) VALUES

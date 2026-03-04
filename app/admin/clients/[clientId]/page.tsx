@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { calcRecommendedStageWeight, type RecommendedStageWeightResult } from '@/lib/nutrition-engine'
+import { getDefaultFeatures, type SubscriptionTier } from '@/lib/tier-defaults'
 
 type EditorTab = 'basic' | 'features' | 'notes' | 'lab' | 'supplements'
 
@@ -56,6 +57,8 @@ interface Client {
   body_fat_target: number | null
   target_date: string | null
   is_active: boolean
+  subscription_tier: 'free' | 'self_managed' | 'coached' | 'combo'
+  ai_chat_enabled: boolean
   carbs_training_day: number | null
   carbs_rest_day: number | null
   goal_type: 'cut' | 'bulk' | null
@@ -113,6 +116,8 @@ export default function ClientEditor() {
         wellness_enabled: false,
         supplement_enabled: false,
         lab_enabled: false,
+        ai_chat_enabled: false,
+        subscription_tier: 'free',
         competition_enabled: false,
         competition_date: null,
         prep_phase: 'off_season',
@@ -223,6 +228,8 @@ export default function ClientEditor() {
         activity_profile: client.activity_profile || null,
         health_mode_enabled: client.health_mode_enabled,
         quarterly_cycle_start: client.quarterly_cycle_start || null,
+        subscription_tier: client.subscription_tier,
+        ai_chat_enabled: client.ai_chat_enabled,
       }
 
       if (clientId === 'new') {
@@ -495,6 +502,24 @@ export default function ClientEditor() {
                     <option value="alert">警示</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">訂閱方案</label>
+                  <select
+                    value={client.subscription_tier}
+                    onChange={(e) => {
+                      const tier = e.target.value as SubscriptionTier
+                      const defaults = getDefaultFeatures(tier)
+                      setClient(prev => prev ? ({ ...prev, subscription_tier: tier, ...defaults }) : prev)
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="free">免費體驗 (0)</option>
+                    <option value="self_managed">自主管理 (499)</option>
+                    <option value="coached">教練指導 (2999)</option>
+                    <option value="combo">實體+遠端 (5000)</option>
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">切換方案會自動調整功能開關（仍可手動 override）</p>
+                </div>
               </div>
             </div>
 
@@ -533,6 +558,7 @@ export default function ClientEditor() {
                   { key: 'training_enabled', label: '訓練追蹤', desc: '每日訓練類型與強度紀錄' },
                   { key: 'supplement_enabled', label: '補品管理', desc: '補品清單與每日打卡' },
                   { key: 'lab_enabled', label: '血檢追蹤', desc: '血檢數據與健康指標' },
+                  { key: 'ai_chat_enabled', label: 'AI 飲食顧問', desc: '開放無限次 AI 聊天（關閉＝每月 1 次免費）' },
                 ] as const).map(({ key, label, desc }) => (
                   <div key={key} className="flex items-center justify-between">
                     <div>
