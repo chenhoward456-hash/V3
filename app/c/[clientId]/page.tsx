@@ -773,43 +773,49 @@ export default function ClientDashboard() {
           />
         )}
 
-        {/* 免費用戶 14 天數據觸發升級提示 */}
+        {/* 免費用戶動態升級提示（根據累積天數） */}
         {isFree && c.calories_target && (() => {
-          const bodyDays = (clientData.bodyData || []).length
-          const dismissed = typeof window !== 'undefined' && localStorage.getItem(`upgrade_14d_${c.unique_code}`)
-          if (bodyDays >= 14 && !dismissed) {
-            return (
-              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5 mb-6">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🎉</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-indigo-900">你已累積 {bodyDays} 天數據！</p>
-                    <p className="text-xs text-indigo-700 mt-1">
-                      你的數據已經夠豐富，AI 可以分析你的訓練日 vs 休息日熱量表現、給你個人化飲食建議。
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                      <a
-                        href="/remote"
-                        className="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
-                      >
-                        解鎖 AI 分析
-                      </a>
-                      <button
-                        onClick={() => {
-                          localStorage.setItem(`upgrade_14d_${c.unique_code}`, '1')
-                          mutate()
-                        }}
-                        className="text-xs text-indigo-400 px-3 py-2"
-                      >
-                        暫時不用
-                      </button>
-                    </div>
+          const totalDays = (clientData.nutritionLogs || []).length
+          const dismissed = typeof window !== 'undefined' && localStorage.getItem(`upgrade_stage_${c.unique_code}`)
+          // 多階段文案：14 > 7 > 3
+          let stage: { emoji: string; title: string; desc: string } | null = null
+          if (totalDays >= 14 && dismissed !== '14') {
+            stage = { emoji: '🎯', title: `你已累積 ${totalDays} 天紀錄！`, desc: '你的營養目標剛自動校正完畢。想每天問 AI 怎麼吃最有效？' }
+          } else if (totalDays >= 7 && totalDays < 14 && dismissed !== '7' && dismissed !== '14') {
+            stage = { emoji: '📊', title: `7 天數據在手`, desc: '想知道你的碳水怎麼分配最有效？升級解鎖 AI 分析。' }
+          } else if (totalDays >= 3 && totalDays < 7 && !dismissed) {
+            stage = { emoji: '✨', title: `你已累積 ${totalDays} 天數據`, desc: 'AI 顧問現在能根據你的紀錄回答問題了。' }
+          }
+          if (!stage) return null
+          const currentStage = totalDays >= 14 ? '14' : totalDays >= 7 ? '7' : '3'
+          return (
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5 mb-6">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">{stage.emoji}</span>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-indigo-900">{stage.title}</p>
+                  <p className="text-xs text-indigo-700 mt-1">{stage.desc}</p>
+                  <div className="flex gap-2 mt-3">
+                    <a
+                      href="/remote"
+                      className="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+                    >
+                      解鎖 AI 分析
+                    </a>
+                    <button
+                      onClick={() => {
+                        localStorage.setItem(`upgrade_stage_${c.unique_code}`, currentStage)
+                        mutate()
+                      }}
+                      className="text-xs text-indigo-400 px-3 py-2"
+                    >
+                      暫時不用
+                    </button>
                   </div>
                 </div>
               </div>
-            )
-          }
-          return null
+            </div>
+          )
         })()}
 
         {/* 一般學員（非自主管理、非免費）的每週智能分析 */}

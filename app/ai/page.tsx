@@ -96,10 +96,10 @@ export default function AIAdvisorPage() {
               <p className="text-gray-500 text-sm mb-6">有任何健康、營養、訓練相關問題都可以問我</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full max-w-md">
                 {[
-                  '增肌期一天要吃多少蛋白質？',
-                  '減脂期碳水該怎麼分配？',
-                  '訓練後的恢復飲食建議？',
-                  '睡眠品質差該怎麼改善？',
+                  '根據我這週的數據，今天該怎麼吃？',
+                  '我的 TDEE 校正完了，接下來要怎麼調整？',
+                  '分析我最近的飲食紀錄，有哪裡可以改善？',
+                  '我的訓練日跟休息日，碳水該怎麼分配？',
                 ].map((q) => (
                   <button
                     key={q}
