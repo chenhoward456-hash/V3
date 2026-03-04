@@ -867,6 +867,17 @@ export default function ClientDashboard() {
           competitionEnabled={isCompetition}
           latestWeight={latestBodyData?.weight}
           latestBodyFat={latestBodyData?.body_fat}
+          nutritionLogs={clientData.nutritionLogs || []}
+          wellnessLogs={clientData.wellness || []}
+          trainingLogs={clientData.trainingLogs || []}
+          supplements={c.supplements || []}
+          supplementComplianceRate={supplementComplianceStats.weekRate}
+          todayWellness={todayWellness}
+          wearableData={{
+            hrv: todayWellness?.hrv ?? null,
+            resting_hr: todayWellness?.resting_hr ?? null,
+            device_recovery_score: todayWellness?.device_recovery_score ?? null,
+          }}
         />
       )}
 

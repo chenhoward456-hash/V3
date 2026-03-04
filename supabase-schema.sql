@@ -426,3 +426,34 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_push_subscriptions_client ON push_subscriptions(client_id);
+
+-- ============================================
+-- 27. 訂閱付款紀錄 (Subscription Purchases)
+-- 自助註冊 + 訂閱金流
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS subscription_purchases (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL,
+  name TEXT NOT NULL,
+  phone TEXT,
+  merchant_trade_no TEXT UNIQUE NOT NULL,
+  subscription_tier TEXT NOT NULL CHECK (subscription_tier IN ('free', 'self_managed', 'coached', 'combo')),
+  amount INTEGER NOT NULL,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed')),
+  ecpay_trade_no TEXT,
+  client_id UUID REFERENCES clients(id),
+  -- 註冊時填寫的基本資料，付款成功後用來建立 client
+  registration_data JSONB NOT NULL DEFAULT '{}',
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscription_purchases_email ON subscription_purchases(email);
+CREATE INDEX IF NOT EXISTS idx_subscription_purchases_status ON subscription_purchases(status);
+CREATE INDEX IF NOT EXISTS idx_subscription_purchases_trade_no ON subscription_purchases(merchant_trade_no);
+
+-- RLS
+ALTER TABLE subscription_purchases ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role full access on subscription_purchases" ON subscription_purchases
+  FOR ALL USING (true) WITH CHECK (true);
