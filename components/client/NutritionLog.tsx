@@ -57,10 +57,8 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       alert('請先選擇今天有沒有照計畫吃')
       return
     }
-    // 合規值：有自動判斷時以自動為準，否則用手動
-    const finalCompliant = autoComplianceStatus
-      ? autoComplianceStatus.status === 'compliant'
-      : compliant
+    // 存手動回報值（教練看行為意圖）
+    const finalCompliant = compliant
     setSaving(true)
     try {
       const res = await fetch('/api/nutrition-logs', {
@@ -201,14 +199,23 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       )}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-gray-900">🍽️ 飲食紀錄</h2>
-        {hasRecorded && autoComplianceStatus && (
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            autoComplianceStatus.color === 'green' ? 'bg-green-100 text-green-700' :
-            autoComplianceStatus.color === 'amber' ? 'bg-amber-100 text-amber-700' :
-            'bg-red-100 text-red-700'
-          }`} title={autoComplianceStatus.hint}>
-            {autoComplianceStatus.label}
-          </span>
+        {hasRecorded && (
+          <div className="flex items-center gap-1.5">
+            {/* 手動回報：用戶主觀感受 */}
+            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+              todayNutrition.compliant ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            }`}>
+              {todayNutrition.compliant ? '照計畫' : '沒照計畫'}
+            </span>
+            {/* 自動判斷：數據實際狀態 */}
+            {autoComplianceStatus && autoComplianceStatus.status !== 'compliant' && (
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                autoComplianceStatus.color === 'amber' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+              }`} title={autoComplianceStatus.hint}>
+                {autoComplianceStatus.hint}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
