@@ -57,13 +57,17 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       alert('請先選擇今天有沒有照計畫吃')
       return
     }
+    // 合規值：有自動判斷時以自動為準，否則用手動
+    const finalCompliant = autoComplianceStatus
+      ? autoComplianceStatus.status === 'compliant'
+      : compliant
     setSaving(true)
     try {
       const res = await fetch('/api/nutrition-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clientId, date: today, compliant, note: note || null,
+          clientId, date: today, compliant: finalCompliant, note: note || null,
           protein_grams: proteinInput ? Number(proteinInput) : null,
           water_ml: waterInput ? Number(waterInput) : null,
           carbs_grams: carbsInput ? Number(carbsInput) : null,
@@ -145,15 +149,47 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   const hasRecorded = todayNutrition?.compliant != null
   const hasTargets = proteinTarget || waterTarget || effectiveCarbsTarget || fatTarget
 
-  // 自動判斷合規（如果有目標的話）
-  const autoComplianceHint = useMemo(() => {
-    if (!caloriesTarget || !computedCalories) return null
-    const pct = computedCalories / caloriesTarget
-    if (pct >= 0.9 && pct <= 1.1) return { text: '營養素接近目標 👍', positive: true }
-    if (pct < 0.8) return { text: `熱量偏低 ${Math.round(pct * 100)}%`, positive: false }
-    if (pct > 1.15) return { text: `熱量偏高 ${Math.round(pct * 100)}%`, positive: false }
-    return null
-  }, [caloriesTarget, computedCalories])
+  // 自動合規判斷：基於實際巨量營養素 vs 目標
+  const autoComplianceStatus = useMemo(() => {
+    if (!computedCalories || !caloriesTarget) return null
+    const calPct = computedCalories / caloriesTarget
+    const pGrams = proteinInput ? Number(proteinInput) : 0
+    const proteinPct = proteinTarget ? pGrams / proteinTarget : 1
+    const cGrams = carbsInput ? Number(carbsInput) : 0
+    const carbsPct = effectiveCarbsTarget ? cGrams / effectiveCarbsTarget : 1
+    const fGrams = fatInput ? Number(fatInput) : 0
+    const fatPct = fatTarget ? fGrams / fatTarget : 1
+
+    // 合規 = 熱量 ±10% 且蛋白質 ≥ 80%
+    const calOk = calPct >= 0.9 && calPct <= 1.1
+    const proteinOk = proteinPct >= 0.8
+    // 某巨量營養素偏差 >20%
+    const macroIssues: string[] = []
+    if (proteinTarget && proteinPct < 0.8) macroIssues.push('蛋白質不足')
+    if (proteinTarget && proteinPct > 1.2) macroIssues.push('蛋白質偏高')
+    if (effectiveCarbsTarget && carbsPct > 1.2) macroIssues.push('碳水偏高')
+    if (effectiveCarbsTarget && carbsPct < 0.8) macroIssues.push('碳水不足')
+    if (fatTarget && fatPct > 1.2) macroIssues.push('脂肪偏高')
+    if (fatTarget && fatPct < 0.8) macroIssues.push('脂肪不足')
+
+    if (calOk && proteinOk && macroIssues.length === 0) {
+      return { status: 'compliant' as const, label: '已合規', hint: '營養素接近目標 👍', color: 'green' }
+    }
+    if (calOk && macroIssues.length > 0) {
+      return { status: 'partial' as const, label: '部分達標', hint: macroIssues.join('、'), color: 'amber' }
+    }
+    if (calPct < 0.8 || proteinPct < 0.6) {
+      return { status: 'miss' as const, label: '未達標', hint: calPct < 0.8 ? `熱量偏低 ${Math.round(calPct * 100)}%` : '蛋白質嚴重不足', color: 'red' }
+    }
+    if (calPct > 1.1) {
+      return { status: 'miss' as const, label: '未達標', hint: `熱量偏高 ${Math.round(calPct * 100)}%`, color: 'red' }
+    }
+    // 蛋白質不足但熱量在範圍內
+    if (!proteinOk) {
+      return { status: 'partial' as const, label: '部分達標', hint: '蛋白質待補', color: 'amber' }
+    }
+    return { status: 'compliant' as const, label: '已合規', hint: '營養素接近目標 👍', color: 'green' }
+  }, [caloriesTarget, computedCalories, proteinInput, proteinTarget, carbsInput, effectiveCarbsTarget, fatInput, fatTarget])
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
@@ -165,11 +201,13 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       )}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-gray-900">🍽️ 飲食紀錄</h2>
-        {hasRecorded && (
+        {hasRecorded && autoComplianceStatus && (
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            todayNutrition.compliant ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-          }`}>
-            {todayNutrition.compliant ? '已合規' : '未合規'}
+            autoComplianceStatus.color === 'green' ? 'bg-green-100 text-green-700' :
+            autoComplianceStatus.color === 'amber' ? 'bg-amber-100 text-amber-700' :
+            'bg-red-100 text-red-700'
+          }`} title={autoComplianceStatus.hint}>
+            {autoComplianceStatus.label}
           </span>
         )}
       </div>
@@ -346,12 +384,14 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           )}
 
           {/* 自動合規提示 */}
-          {autoComplianceHint && (
+          {autoComplianceStatus && (
             <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
-              autoComplianceHint.positive ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+              autoComplianceStatus.color === 'green' ? 'bg-green-50 text-green-700' :
+              autoComplianceStatus.color === 'amber' ? 'bg-amber-50 text-amber-700' :
+              'bg-red-50 text-red-700'
             }`}>
-              <span>{autoComplianceHint.positive ? '✅' : '⚠️'}</span>
-              <span>{autoComplianceHint.text}</span>
+              <span>{autoComplianceStatus.color === 'green' ? '✅' : autoComplianceStatus.color === 'amber' ? '⚠️' : '❌'}</span>
+              <span>{autoComplianceStatus.hint}</span>
             </div>
           )}
         </div>

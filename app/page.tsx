@@ -295,8 +295,32 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
             選擇你的方案
           </h2>
-          <p className="text-center text-gray-500 mb-14">同一套引擎，三種使用方式</p>
-          <div className="grid md:grid-cols-3 gap-6">
+          <p className="text-center text-gray-500 mb-14">同一套引擎，從免費開始</p>
+          <div className="grid md:grid-cols-4 gap-5">
+            {/* 免費體驗 $0 */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
+              <div className="absolute -top-3 left-6 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                推薦先試
+              </div>
+              <h3 className="text-xl font-bold mb-1 text-navy">免費體驗</h3>
+              <p className="text-gray-400 text-sm mb-4">先用再決定</p>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-green-600">免費</span>
+              </div>
+              <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>體重 / 體態追蹤</li>
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>每日飲食紀錄</li>
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>TDEE + 巨量營養素計算</li>
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>每月 1 次 AI 問答</li>
+              </ul>
+              <Link
+                href="/join"
+                className="block text-center bg-green-500 text-white py-3.5 rounded-xl font-semibold hover:bg-green-600 transition-colors"
+              >
+                免費開始 →
+              </Link>
+            </div>
+
             {/* 自主管理 NT$499 */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-primary/30 flex flex-col relative">
               <div className="absolute -top-3 left-6 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">

@@ -187,7 +187,36 @@ export default function JoinPage() {
 
       {/* Plan Cards */}
       <div className="grid md:grid-cols-2 gap-5 mb-12 max-w-2xl mx-auto">
-        {(Object.entries(PLANS) as [Tier, typeof PLANS[Tier]][]).filter(([tier]) => tier === 'free' || tier === 'combo').map(([tier, plan]) => {
+        {(Object.entries(PLANS) as [Tier, typeof PLANS[Tier]][]).filter(([tier]) => tier === 'free' || tier === 'self_managed' || tier === 'combo').map(([tier, plan]) => {
+          // 自主管理版：金流未上線，顯示候補卡片
+          if (tier === 'self_managed') {
+            return (
+              <div key={tier} className="relative bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300 p-5 md:col-span-2">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap">
+                  即將開放
+                </div>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <h3 className="text-base font-bold text-gray-700 mb-1">自主管理版 — NT$499/月</h3>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                      <span>✓ AI 飲食顧問</span>
+                      <span>✓ 訓練記錄</span>
+                      <span>✓ 碳水循環</span>
+                      <span>✓ Refeed 智能提醒</span>
+                    </div>
+                  </div>
+                  <a
+                    href="https://line.me/ti/p/~0078185268"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-center bg-indigo-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-indigo-600 transition-colors whitespace-nowrap"
+                  >
+                    加入候補名單
+                  </a>
+                </div>
+              </div>
+            )
+          }
           const isCombo = tier === 'combo'
           return (
           <div

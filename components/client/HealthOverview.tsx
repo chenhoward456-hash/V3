@@ -108,10 +108,22 @@ export default function HealthOverview({
 
   if (caloriesTarget) {
     const pct = todayCalories ? Math.round((todayCalories / caloriesTarget) * 100) : 0
+    const calStatus = todayCalories
+      ? pct >= 90 && pct <= 110
+        ? { label: '熱量合規', color: 'text-green-600', bg: 'bg-green-50' }
+        : pct < 80
+        ? { label: '熱量偏低', color: 'text-red-500', bg: 'bg-red-50' }
+        : pct > 110
+        ? { label: '熱量偏高', color: 'text-red-500', bg: 'bg-red-50' }
+        : { label: '接近目標', color: 'text-amber-600', bg: 'bg-amber-50' }
+      : null
     cards.push(
-      <div key="calories" className="bg-amber-50 rounded-2xl p-4 text-center">
-        <p className="text-xs text-gray-500 mb-1">今日熱量</p>
-        <p className="text-2xl font-bold text-amber-600">
+      <div key="calories" className={`${calStatus?.bg || 'bg-amber-50'} rounded-2xl p-4 text-center`}>
+        <div className="flex items-center justify-center gap-1.5 mb-1">
+          <p className="text-xs text-gray-500">今日熱量</p>
+          {calStatus && <span className={`text-[10px] font-medium ${calStatus.color}`}>{calStatus.label}</span>}
+        </div>
+        <p className={`text-2xl font-bold ${calStatus?.color || 'text-amber-600'}`}>
           {todayCalories ? `${todayCalories}` : '--'}
         </p>
         <p className="text-xs text-gray-400">

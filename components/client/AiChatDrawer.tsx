@@ -56,6 +56,7 @@ interface AiChatDrawerProps {
   supplementComplianceRate?: number
   todayWellness?: WellnessEntry | null
   wearableData?: { hrv?: number | null; resting_hr?: number | null; device_recovery_score?: number | null } | null
+  onFirstMessage?: () => void
 }
 
 export default function AiChatDrawer({
@@ -68,6 +69,7 @@ export default function AiChatDrawer({
   nutritionLogs, wellnessLogs, trainingLogs,
   supplements, supplementComplianceRate,
   todayWellness, wearableData,
+  onFirstMessage,
 }: AiChatDrawerProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -220,6 +222,11 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
     setMessages(newMessages)
     setInput('')
     setLoading(true)
+
+    // 標記免費用戶的首次使用
+    if (messages.length === 0 && onFirstMessage) {
+      onFirstMessage()
+    }
 
     try {
       const res = await fetch('/api/ai/chat', {

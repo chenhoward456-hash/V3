@@ -68,6 +68,7 @@ export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState('')
   const [showCoachSummary, setShowCoachSummary] = useState(false)
   const [showAiChat, setShowAiChat] = useState(false)
+  const [showAiUpgrade, setShowAiUpgrade] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -772,6 +773,51 @@ export default function ClientDashboard() {
           />
         )}
 
+        {/* 免費用戶動態升級提示（根據累積天數） */}
+        {isFree && c.calories_target && (() => {
+          const totalDays = (clientData.nutritionLogs || []).length
+          const dismissed = typeof window !== 'undefined' && localStorage.getItem(`upgrade_stage_${c.unique_code}`)
+          // 多階段文案：14 > 7 > 3
+          let stage: { emoji: string; title: string; desc: string } | null = null
+          if (totalDays >= 14 && dismissed !== '14') {
+            stage = { emoji: '🎯', title: `你已累積 ${totalDays} 天紀錄！`, desc: '你的營養目標剛自動校正完畢。想每天問 AI 怎麼吃最有效？' }
+          } else if (totalDays >= 7 && totalDays < 14 && dismissed !== '7' && dismissed !== '14') {
+            stage = { emoji: '📊', title: `7 天數據在手`, desc: '想知道你的碳水怎麼分配最有效？升級解鎖 AI 分析。' }
+          } else if (totalDays >= 3 && totalDays < 7 && !dismissed) {
+            stage = { emoji: '✨', title: `你已累積 ${totalDays} 天數據`, desc: 'AI 顧問現在能根據你的紀錄回答問題了。' }
+          }
+          if (!stage) return null
+          const currentStage = totalDays >= 14 ? '14' : totalDays >= 7 ? '7' : '3'
+          return (
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5 mb-6">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">{stage.emoji}</span>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-indigo-900">{stage.title}</p>
+                  <p className="text-xs text-indigo-700 mt-1">{stage.desc}</p>
+                  <div className="flex gap-2 mt-3">
+                    <a
+                      href="/remote"
+                      className="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+                    >
+                      解鎖 AI 分析
+                    </a>
+                    <button
+                      onClick={() => {
+                        localStorage.setItem(`upgrade_stage_${c.unique_code}`, currentStage)
+                        mutate()
+                      }}
+                      className="text-xs text-indigo-400 px-3 py-2"
+                    >
+                      暫時不用
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* 一般學員（非自主管理、非免費）的每週智能分析 */}
         {!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && c.body_composition_enabled && (
           <WeeklyInsight clientId={c.id} onMutate={mutate} />
@@ -914,7 +960,21 @@ export default function ClientDashboard() {
       {/* AI 飲食顧問浮動按鈕 */}
       {c.nutrition_enabled && (
         <button
-          onClick={() => setShowAiChat(true)}
+          onClick={() => {
+            if (isFree) {
+              // 免費用戶：每月 1 次免費 AI 問答
+              const now = new Date()
+              const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
+              const used = localStorage.getItem(monthKey)
+              if (!used) {
+                setShowAiChat(true)
+              } else {
+                setShowAiUpgrade(true)
+              }
+            } else {
+              setShowAiChat(true)
+            }
+          }}
           className="fixed z-40 bg-[#2563eb] text-white rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 px-4 py-3"
           style={{ bottom: 'calc(70px + env(safe-area-inset-bottom))', right: '16px' }}
         >
@@ -922,10 +982,55 @@ export default function ClientDashboard() {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           <span className="text-sm font-medium">AI 顧問</span>
+          {isFree && (() => {
+            const now = new Date()
+            const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
+            const used = typeof window !== 'undefined' && localStorage.getItem(monthKey)
+            return <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{used ? 'PRO' : '1次免費'}</span>
+          })()}
         </button>
       )}
 
-      {/* AI 聊天抽屜 */}
+      {/* 免費用戶 AI 升級提示 */}
+      {showAiUpgrade && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6" onClick={() => setShowAiUpgrade(false)}>
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-3">🤖</div>
+              <h3 className="text-lg font-bold text-gray-900">本月免費次數已用完</h3>
+              <p className="text-sm text-gray-500 mt-1">升級自主管理方案，無限使用 AI 飲食顧問</p>
+            </div>
+            <div className="space-y-2 mb-5">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span className="text-green-500">✓</span>
+                <span>根據你的數據即時回答飲食問題</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span className="text-green-500">✓</span>
+                <span>個人化食物推薦與熱量分配建議</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span className="text-green-500">✓</span>
+                <span>訓練記錄 + 每日感受追蹤</span>
+              </div>
+            </div>
+            <a
+              href="/remote"
+              className="block w-full text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3 rounded-2xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+            >
+              升級方案
+            </a>
+            <button
+              onClick={() => setShowAiUpgrade(false)}
+              className="block w-full text-center text-sm text-gray-400 mt-3 py-1"
+            >
+              稍後再說
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* AI 聊天抽屜（付費用戶 + 免費用戶月度免費額度） */}
       {c.nutrition_enabled && (
         <AiChatDrawer
           open={showAiChat}
@@ -956,6 +1061,11 @@ export default function ClientDashboard() {
             resting_hr: todayWellness?.resting_hr ?? null,
             device_recovery_score: todayWellness?.device_recovery_score ?? null,
           }}
+          onFirstMessage={isFree ? () => {
+            const now = new Date()
+            const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
+            localStorage.setItem(monthKey, '1')
+          } : undefined}
         />
       )}
 
