@@ -410,3 +410,19 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'fre
 -- 引擎自動倒推每週減幅、動態調整熱量
 -- ============================================
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS target_date DATE;
+
+-- ============================================
+-- 26. Web Push 訂閱（瀏覽器推播通知）
+-- 儲存用戶的推播訂閱資訊
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_client ON push_subscriptions(client_id);
