@@ -773,6 +773,45 @@ export default function ClientDashboard() {
           />
         )}
 
+        {/* 免費用戶 14 天數據觸發升級提示 */}
+        {isFree && c.calories_target && (() => {
+          const bodyDays = (clientData.bodyData || []).length
+          const dismissed = typeof window !== 'undefined' && localStorage.getItem(`upgrade_14d_${c.unique_code}`)
+          if (bodyDays >= 14 && !dismissed) {
+            return (
+              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5 mb-6">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🎉</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-indigo-900">你已累積 {bodyDays} 天數據！</p>
+                    <p className="text-xs text-indigo-700 mt-1">
+                      你的數據已經夠豐富，AI 可以分析你的訓練日 vs 休息日熱量表現、給你個人化飲食建議。
+                    </p>
+                    <div className="flex gap-2 mt-3">
+                      <a
+                        href="/remote"
+                        className="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+                      >
+                        解鎖 AI 分析
+                      </a>
+                      <button
+                        onClick={() => {
+                          localStorage.setItem(`upgrade_14d_${c.unique_code}`, '1')
+                          mutate()
+                        }}
+                        className="text-xs text-indigo-400 px-3 py-2"
+                      >
+                        暫時不用
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+          return null
+        })()}
+
         {/* 一般學員（非自主管理、非免費）的每週智能分析 */}
         {!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && c.body_composition_enabled && (
           <WeeklyInsight clientId={c.id} onMutate={mutate} />
@@ -917,7 +956,15 @@ export default function ClientDashboard() {
         <button
           onClick={() => {
             if (isFree) {
-              setShowAiUpgrade(true)
+              // 免費用戶：每月 1 次免費 AI 問答
+              const now = new Date()
+              const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
+              const used = localStorage.getItem(monthKey)
+              if (!used) {
+                setShowAiChat(true)
+              } else {
+                setShowAiUpgrade(true)
+              }
             } else {
               setShowAiChat(true)
             }
@@ -929,7 +976,12 @@ export default function ClientDashboard() {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           <span className="text-sm font-medium">AI 顧問</span>
-          {isFree && <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">PRO</span>}
+          {isFree && (() => {
+            const now = new Date()
+            const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
+            const used = typeof window !== 'undefined' && localStorage.getItem(monthKey)
+            return <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{used ? 'PRO' : '1次免費'}</span>
+          })()}
         </button>
       )}
 
@@ -939,8 +991,8 @@ export default function ClientDashboard() {
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="text-center mb-4">
               <div className="text-4xl mb-3">🤖</div>
-              <h3 className="text-lg font-bold text-gray-900">AI 飲食顧問</h3>
-              <p className="text-sm text-gray-500 mt-1">升級自主管理方案，解鎖 AI 個人化飲食建議</p>
+              <h3 className="text-lg font-bold text-gray-900">本月免費次數已用完</h3>
+              <p className="text-sm text-gray-500 mt-1">升級自主管理方案，無限使用 AI 飲食顧問</p>
             </div>
             <div className="space-y-2 mb-5">
               <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -953,7 +1005,7 @@ export default function ClientDashboard() {
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span className="text-green-500">✓</span>
-                <span>分析你的飲食紀錄，給出改善方向</span>
+                <span>訓練記錄 + 每日感受追蹤</span>
               </div>
             </div>
             <a
@@ -972,8 +1024,8 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      {/* AI 聊天抽屜（付費用戶才載入） */}
-      {c.nutrition_enabled && !isFree && (
+      {/* AI 聊天抽屜（付費用戶 + 免費用戶月度免費額度） */}
+      {c.nutrition_enabled && (
         <AiChatDrawer
           open={showAiChat}
           onClose={() => setShowAiChat(false)}
@@ -1003,6 +1055,11 @@ export default function ClientDashboard() {
             resting_hr: todayWellness?.resting_hr ?? null,
             device_recovery_score: todayWellness?.device_recovery_score ?? null,
           }}
+          onFirstMessage={isFree ? () => {
+            const now = new Date()
+            const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
+            localStorage.setItem(monthKey, '1')
+          } : undefined}
         />
       )}
 
