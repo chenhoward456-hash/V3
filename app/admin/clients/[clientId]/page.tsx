@@ -228,6 +228,8 @@ export default function ClientEditor() {
         activity_profile: client.activity_profile || null,
         health_mode_enabled: client.health_mode_enabled,
         quarterly_cycle_start: client.quarterly_cycle_start || null,
+        subscription_tier: client.subscription_tier,
+        ai_chat_enabled: client.ai_chat_enabled,
       }
 
       if (clientId === 'new') {
