@@ -551,27 +551,37 @@ export default function DiagnosisPage() {
                     </BlurredSection>
                   )}
 
-                  {/* ===== LINE 諮詢 CTA ===== */}
+                  {/* ===== 訂閱方案 CTA ===== */}
                   <div className="border-t border-gray-100 pt-6 mt-2">
                     <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb] rounded-2xl p-6 md:p-8 text-center">
                       <p className="text-white text-lg font-bold mb-2">
-                        想看完整報告？
+                        想讓系統每天幫你追蹤？
                       </p>
                       <div className="space-y-1.5 text-white/80 text-sm mb-6">
                         <p>✓ 完整 TDEE、巨量營養素、安全性分析</p>
-                        <p>✓ CSCS 教練一對一飲食規劃建議</p>
-                        <p>✓ 免費諮詢，零壓力</p>
+                        <p>✓ 每日飲食 / 訓練 / 體態自動追蹤</p>
+                        <p>✓ AI 智慧回饋，最低 NT$499/月</p>
                       </div>
+                      <Link
+                        href="/join"
+                        className="inline-block bg-white text-[#1e3a5f] px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-colors shadow-lg"
+                      >
+                        查看方案 & 立即加入
+                      </Link>
+                      <p className="text-white/60 text-[11px] mt-4">
+                        付款後立即開通，不需等待
+                      </p>
+                    </div>
+
+                    {/* LINE 替代 CTA */}
+                    <div className="text-center mt-4">
                       <LineButton
                         source="diagnosis_teaser"
                         intent="unlock_full_report"
-                        className="inline-block bg-[#06C755] text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-[#05b34d] transition-colors shadow-lg"
+                        className="text-sm text-gray-500 hover:text-[#06C755] transition-colors"
                       >
-                        加 LINE 免費諮詢 💬
+                        或加 LINE 免費諮詢 →
                       </LineButton>
-                      <p className="text-white/40 text-[11px] mt-4">
-                        加入後傳送「分析報告」即可開始
-                      </p>
                     </div>
                   </div>
                 </>

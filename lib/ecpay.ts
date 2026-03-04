@@ -26,6 +26,48 @@ export const EBOOK_PRODUCTS = {
 
 export type EbookProductKey = keyof typeof EBOOK_PRODUCTS
 
+// ========== 訂閱方案設定 ==========
+export const SUBSCRIPTION_PLANS = {
+  self_managed: {
+    name: '自主管理方案',
+    description: 'AI 系統完整存取，自動營養分析與追蹤',
+    amount: 499,
+    duration_months: 1,
+    features: [
+      'TDEE + 巨量營養素自動計算',
+      '每日飲食 / 訓練 / 體態追蹤',
+      'AI 智慧回饋與建議',
+      '體組成趨勢圖表',
+    ],
+  },
+  coached: {
+    name: '教練指導方案',
+    description: 'AI 系統 + CSCS 教練每週審閱與 LINE 指導',
+    amount: 2999,
+    duration_months: 1,
+    features: [
+      '包含自主管理方案所有功能',
+      'CSCS 教練每週數據審閱',
+      'LINE 一對一營養 / 訓練諮詢',
+      '個人化補劑與血檢建議',
+    ],
+  },
+  combo: {
+    name: '全方位方案',
+    description: '線上教練指導 + 台中實體一對一訓練',
+    amount: 5000,
+    duration_months: 1,
+    features: [
+      '包含教練指導方案所有功能',
+      '台中 Coolday 實體一對一訓練',
+      '動作矯正與訓練課表設計',
+      '優先預約與緊急諮詢通道',
+    ],
+  },
+} as const
+
+export type SubscriptionTier = keyof typeof SUBSCRIPTION_PLANS
+
 // ========== ECPay .NET 風格 URL Encode ==========
 // ECPay 使用 .NET 的 UrlEncode 規則，需要特殊轉換
 function ecpayUrlEncode(str: string): string {
