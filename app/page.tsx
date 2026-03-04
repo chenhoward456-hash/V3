@@ -15,7 +15,7 @@ const personSchema = {
   image: 'https://howard456.vercel.app/howard-profile.jpg',
   sameAs: [
     'https://www.instagram.com/chenhoward/',
-    'https://lin.ee/dnbucVw',
+    'https://line.me/ti/p/~0078185268',
   ],
   worksFor: {
     '@type': 'Organization',
@@ -56,7 +56,7 @@ const localBusinessSchema = {
   priceRange: '$$',
   sameAs: [
     'https://www.instagram.com/chenhoward/',
-    'https://lin.ee/dnbucVw',
+    'https://line.me/ti/p/~0078185268',
   ],
 }
 

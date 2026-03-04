@@ -104,7 +104,7 @@ export default function ActionPage() {
           </div>
 
           <a
-            href="https://lin.ee/dnbucVw"
+            href="https://line.me/ti/p/~0078185268"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-[#1e3a5f] text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-[#1e3a5f]/90 transition-colors shadow-lg"
@@ -162,7 +162,7 @@ export default function ActionPage() {
           </div>
           <div>
             <strong className="block mb-2 text-sm" style={{ color: '#1e3a5f' }}>LINE 官方帳號</strong>
-            <a href="https://lin.ee/dnbucVw" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#2563eb] transition-colors text-sm">
+            <a href="https://line.me/ti/p/~0078185268" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#2563eb] transition-colors text-sm">
               加入好友 →
             </a>
           </div>
