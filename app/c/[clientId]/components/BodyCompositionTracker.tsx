@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import React from 'react'
 import { getLocalDateStr } from '@/lib/date-utils'
+import { useToast } from '@/components/ui/Toast'
 
 interface BodyComposition {
   id: string
@@ -24,6 +25,7 @@ function BodyCompositionTracker({
   clientId, 
   initialData = []
 }: BodyCompositionTrackerProps) {
+  const { showToast } = useToast()
   const [records, setRecords] = useState<BodyComposition[]>(initialData)
   const [isAdding, setIsAdding] = useState(false)
   const [newRecord, setNewRecord] = useState<Partial<BodyComposition>>({
@@ -46,7 +48,7 @@ function BodyCompositionTracker({
   // 新增記錄
   const handleAdd = async () => {
     if (!newRecord.date || !newRecord.weight || !newRecord.height) {
-      alert('請填寫日期、身高和體重')
+      showToast('請填寫日期、身高和體重', 'error')
       return
     }
 
@@ -86,7 +88,7 @@ function BodyCompositionTracker({
       setIsAdding(false)
     } catch (error) {
       console.error('新增失敗:', error)
-      alert('新增失敗，請重試')
+      showToast('新增失敗，請重試', 'error')
     } finally {
       setLoading(false)
     }
@@ -110,7 +112,7 @@ function BodyCompositionTracker({
       setRecords(prev => prev.filter(record => record.id !== id))
     } catch (error) {
       console.error('刪除失敗:', error)
-      alert('刪除失敗，請重試')
+      showToast('刪除失敗，請重試', 'error')
     }
   }
 

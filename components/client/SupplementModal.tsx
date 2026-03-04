@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 interface SupplementModalProps {
   supplements: any[]
@@ -12,6 +13,7 @@ interface SupplementModalProps {
 }
 
 export default function SupplementModal({ supplements, clientId, coachHeaders, onClose, onMutate }: SupplementModalProps) {
+  const { showToast } = useToast()
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<any>(null)
   const [form, setForm] = useState({ name: '', dosage: '', timing: '早餐', why: '', sort_order: '0' })
@@ -28,7 +30,7 @@ export default function SupplementModal({ supplements, clientId, coachHeaders, o
   }
 
   const handleSave = async () => {
-    if (!form.name || !form.dosage || !form.timing) { alert('請填寫必要欄位'); return }
+    if (!form.name || !form.dosage || !form.timing) { showToast('請填寫必要欄位', 'error'); return }
     try {
       const url = '/api/supplements'
       const body = editing
@@ -39,7 +41,7 @@ export default function SupplementModal({ supplements, clientId, coachHeaders, o
       setShowForm(false)
       setEditing(null)
       onMutate()
-    } catch { alert('操作失敗，請重試') }
+    } catch { showToast('操作失敗，請重試', 'error') }
   }
 
   const handleDelete = async (id: string) => {
@@ -48,7 +50,7 @@ export default function SupplementModal({ supplements, clientId, coachHeaders, o
       const res = await fetch(`/api/supplements?id=${id}`, { method: 'DELETE', headers: coachHeaders })
       if (!res.ok) throw new Error('刪除失敗')
       onMutate()
-    } catch { alert('刪除失敗') }
+    } catch { showToast('刪除失敗', 'error') }
   }
 
   return (

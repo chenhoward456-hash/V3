@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { getLabAdvice } from './types'
+import { useToast } from '@/components/ui/Toast'
 
 interface LabResultsProps {
   labResults: any[]
@@ -22,6 +23,7 @@ interface GroupedLab {
 }
 
 export default function LabResults({ labResults, isCoachMode, clientId, coachHeaders, onMutate }: LabResultsProps) {
+  const { showToast } = useToast()
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<any>(null)
   const [form, setForm] = useState({ test_name: '', value: '', unit: '', reference_range: '', date: getLocalDateStr(), custom_advice: '', custom_target: '' })
@@ -72,7 +74,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
   }, [labResults])
 
   const handleSave = async () => {
-    if (!form.test_name || !form.value || !form.date) { alert('請填寫必要欄位'); return }
+    if (!form.test_name || !form.value || !form.date) { showToast('請填寫必要欄位', 'error'); return }
     try {
       const url = '/api/lab-results'
       const body = editing
@@ -83,7 +85,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
       setShowModal(false)
       setEditing(null)
       onMutate()
-    } catch { alert('操作失敗，請重試') }
+    } catch { showToast('操作失敗，請重試', 'error') }
   }
 
   const handleDelete = async (id: string) => {
@@ -92,7 +94,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
       const res = await fetch(`/api/lab-results?id=${id}`, { method: 'DELETE', headers: coachHeaders })
       if (!res.ok) throw new Error('刪除失敗')
       onMutate()
-    } catch { alert('刪除失敗') }
+    } catch { showToast('刪除失敗', 'error') }
   }
 
   return (

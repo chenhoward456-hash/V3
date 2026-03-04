@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getLocalDateStr } from '@/lib/date-utils'
+import { useToast } from '@/components/ui/Toast'
 
 interface DailyWellnessProps {
   todayWellness: any
@@ -64,7 +65,7 @@ const STRESS_OPTIONS = [
 export default function DailyWellness({ todayWellness, clientId, date, healthModeEnabled, gender, onMutate }: DailyWellnessProps) {
   const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const { showToast } = useToast()
   const [showMore, setShowMore] = useState(false) // 展開更多指標
   const [showWearable, setShowWearable] = useState(false) // 展開穿戴裝置數據
   const [form, setForm] = useState({
@@ -115,7 +116,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
 
   const handleSubmit = async () => {
     if (!form.sleep_quality || !form.energy_level || !form.mood) {
-      alert('請填寫睡眠、精力、心情三項必填指標')
+      showToast('請填寫睡眠、精力、心情三項必填指標', 'error')
       return
     }
     setSubmitting(true)
@@ -142,10 +143,9 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
       })
       if (!response.ok) throw new Error('提交失敗')
       onMutate()
-      setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 2000)
+      showToast('感受已記錄！', 'success', '🎉')
     } catch {
-      alert('提交失敗，請重試')
+      showToast('提交失敗，請重試', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -185,12 +185,6 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-      {showSuccess && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
-          <span className="text-lg">🎉</span>
-          <span className="text-sm font-medium">感受已記錄！</span>
-        </div>
-      )}
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-lg font-bold text-gray-900">每日感受</h2>
         {todayWellness && filledSummary && (

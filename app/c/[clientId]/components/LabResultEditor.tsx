@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { calculateLabStatus } from '@/utils/labStatus'
 import { getLocalDateStr } from '@/lib/date-utils'
+import { useToast } from '@/components/ui/Toast'
 
 interface LabResult {
   id: string
@@ -25,6 +26,7 @@ export default function LabResultEditor({
   labResults, 
   onUpdate 
 }: LabResultEditorProps) {
+  const { showToast } = useToast()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [newResult, setNewResult] = useState<Partial<LabResult>>({
@@ -83,7 +85,7 @@ export default function LabResultEditor({
       onUpdate(updatedResults)
     } catch (error) {
       console.error('更新失敗:', error)
-      alert('更新失敗，請重試')
+      showToast('更新失敗，請重試', 'error')
     } finally {
       setLoading(false)
     }
@@ -91,7 +93,7 @@ export default function LabResultEditor({
 
   const handleAdd = async () => {
     if (!newResult.test_name || !newResult.value) {
-      alert('請填寫檢測項目和數值')
+      showToast('請填寫檢測項目和數值', 'error')
       return
     }
 
@@ -130,7 +132,7 @@ export default function LabResultEditor({
       })
     } catch (error) {
       console.error('新增失敗:', error)
-      alert('新增失敗，請重試')
+      showToast('新增失敗，請重試', 'error')
     } finally {
       setLoading(false)
     }
@@ -155,7 +157,7 @@ export default function LabResultEditor({
       onUpdate(updatedResults)
     } catch (error) {
       console.error('刪除失敗:', error)
-      alert('刪除失敗，請重試')
+      showToast('刪除失敗，請重試', 'error')
     } finally {
       setLoading(false)
     }

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import NutrientSlider from './NutrientSlider'
 import { getLocalDateStr } from '@/lib/date-utils'
+import { useToast } from '@/components/ui/Toast'
 
 interface NutritionLogProps {
   todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null; carbs_grams?: number | null; fat_grams?: number | null; calories?: number | null } | null
@@ -24,7 +25,7 @@ interface NutritionLogProps {
 
 export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, carbsCyclingEnabled, isTrainingDay, carbsTrainingDay, carbsRestDay, onMutate }: NutritionLogProps) {
   const [saving, setSaving] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const { showToast } = useToast()
   // 碳循環：用戶可手動切換訓練日/休息日
   const [manualDayType, setManualDayType] = useState<'training' | 'rest' | null>(null)
   const effectiveIsTraining = manualDayType != null ? manualDayType === 'training' : !!isTrainingDay
@@ -54,7 +55,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   // 統一提交：一次送出所有數據
   const handleSaveAll = async () => {
     if (compliant === null) {
-      alert('請先選擇今天有沒有照計畫吃')
+      showToast('請先選擇今天有沒有照計畫吃', 'error')
       return
     }
     // 存手動回報值（教練看行為意圖）
@@ -75,10 +76,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       })
       if (!res.ok) throw new Error('記錄失敗')
       onMutate()
-      setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 2500)
+      showToast('飲食已記錄！', 'success', '🎉')
     } catch {
-      alert('記錄失敗，請重試')
+      showToast('記錄失敗，請重試', 'error')
     } finally {
       setSaving(false)
     }
@@ -191,12 +191,6 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-      {showSuccess && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
-          <span className="text-lg">🎉</span>
-          <span className="text-sm font-medium">飲食已記錄！</span>
-        </div>
-      )}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-gray-900">🍽️ 飲食紀錄</h2>
         {hasRecorded && (
