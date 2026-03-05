@@ -737,6 +737,44 @@ export default function ClientDashboard() {
         )}
 
         {/* === 一般學員區塊順序 / 備賽學員剩餘區塊 === */}
+        {/* 飲食目標 + 飲食紀錄優先（每日最常用） */}
+
+        {/* 一般學員（非自主管理、非免費）的飲食目標卡片 */}
+        {!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
+          <DailyNutritionTarget
+            caloriesTarget={c.calories_target}
+            proteinTarget={c.protein_target}
+            carbsTarget={c.carbs_target}
+            fatTarget={c.fat_target}
+            carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
+            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            carbsTrainingDay={c.carbs_training_day}
+            carbsRestDay={c.carbs_rest_day}
+          />
+        )}
+
+        {/* 一般學員的飲食紀錄（非備賽） */}
+        {!isCompetition && c.nutrition_enabled && (
+          <div id="section-nutrition-general" className="scroll-mt-4"><NutritionLog
+            todayNutrition={todayNutrition}
+            nutritionLogs={clientData.nutritionLogs || []}
+            clientId={clientId as string}
+            date={selectedDate}
+            proteinTarget={c.protein_target}
+            waterTarget={c.water_target}
+            competitionEnabled={c.competition_enabled}
+            carbsTarget={c.carbs_training_day && c.carbs_rest_day
+              ? (todayTraining && todayTraining.training_type !== 'rest' ? c.carbs_training_day : c.carbs_rest_day)
+              : c.carbs_target}
+            carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
+            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            carbsTrainingDay={c.carbs_training_day}
+            carbsRestDay={c.carbs_rest_day}
+            fatTarget={c.fat_target}
+            caloriesTarget={c.calories_target}
+            onMutate={mutate}
+          /></div>
+        )}
 
         {c.supplement_enabled && (
           <div id="section-supplements" className="scroll-mt-4"><DailyCheckIn
@@ -847,43 +885,6 @@ export default function ClientDashboard() {
         {/* 一般學員（非自主管理、非免費）的每週智能分析 */}
         {!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && c.body_composition_enabled && (
           <WeeklyInsight clientId={c.id} code={c.unique_code} onMutate={mutate} />
-        )}
-
-        {/* 一般學員（非自主管理、非免費）的飲食目標卡片 */}
-        {!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
-          <DailyNutritionTarget
-            caloriesTarget={c.calories_target}
-            proteinTarget={c.protein_target}
-            carbsTarget={c.carbs_target}
-            fatTarget={c.fat_target}
-            carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
-            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
-            carbsTrainingDay={c.carbs_training_day}
-            carbsRestDay={c.carbs_rest_day}
-          />
-        )}
-
-        {/* 一般學員的飲食（非備賽才在這裡顯示） */}
-        {!isCompetition && c.nutrition_enabled && (
-          <div id="section-nutrition-general" className="scroll-mt-4"><NutritionLog
-            todayNutrition={todayNutrition}
-            nutritionLogs={clientData.nutritionLogs || []}
-            clientId={clientId as string}
-            date={selectedDate}
-            proteinTarget={c.protein_target}
-            waterTarget={c.water_target}
-            competitionEnabled={c.competition_enabled}
-            carbsTarget={c.carbs_training_day && c.carbs_rest_day
-              ? (todayTraining && todayTraining.training_type !== 'rest' ? c.carbs_training_day : c.carbs_rest_day)
-              : c.carbs_target}
-            carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
-            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
-            carbsTrainingDay={c.carbs_training_day}
-            carbsRestDay={c.carbs_rest_day}
-            fatTarget={c.fat_target}
-            caloriesTarget={c.calories_target}
-            onMutate={mutate}
-          /></div>
         )}
 
         {c.wellness_enabled && <WellnessTrend wellness={clientData.wellness || []} />}
@@ -1108,22 +1109,38 @@ export default function ClientDashboard() {
         if (!isCompetition && c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
         if (c.lab_enabled) tabs.push({ id: 'section-lab', icon: '🩸', label: '血檢' })
         if (tabs.length <= 1) return null
+
+        // 每日任務完成狀態對應
+        const completedMap: Record<string, boolean> = {
+          'section-nutrition': !!todayNutrition,
+          'section-nutrition-general': !!todayNutrition,
+          'section-supplements': !!todaySupplementStats.completed,
+          'section-wellness': !!todayWellness,
+          'section-training': !!todayTraining,
+        }
+
         return (
           <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
             <div className="max-w-4xl mx-auto flex">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id)
-                    document.getElementById(tab.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  }}
-                  className={`flex-1 flex flex-col items-center py-2 transition-colors ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`}
-                >
-                  <span className="text-lg leading-none">{tab.icon}</span>
-                  <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
-                </button>
-              ))}
+              {tabs.map(tab => {
+                const isDailyCompleted = isToday && completedMap[tab.id]
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id)
+                      document.getElementById(tab.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }}
+                    className={`flex-1 flex flex-col items-center py-2 transition-colors relative ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`}
+                  >
+                    <span className="text-lg leading-none">{tab.icon}</span>
+                    <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
+                    {isDailyCompleted && (
+                      <span className="absolute top-1 right-1/2 translate-x-4 w-1.5 h-1.5 bg-green-400 rounded-full" />
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </nav>
         )
