@@ -57,6 +57,7 @@ const PLANS: Record<Tier, {
       '個人化補劑與血檢建議',
     ],
     highlight: true,
+    badge: '全台適用',
   },
   combo: {
     name: '全方位',
@@ -89,6 +90,11 @@ export default function JoinPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  // 候補名單
+  const [waitlistEmail, setWaitlistEmail] = useState('')
+  const [waitlistSubmitting, setWaitlistSubmitting] = useState(false)
+  const [waitlistDone, setWaitlistDone] = useState(false)
 
   const handleSelectPlan = (tier: Tier) => {
     setSelectedTier(tier)
@@ -187,15 +193,29 @@ export default function JoinPage() {
 
       {/* Plan Cards */}
       <div className="grid md:grid-cols-2 gap-5 mb-12 max-w-2xl mx-auto">
-        {(Object.entries(PLANS) as [Tier, typeof PLANS[Tier]][]).filter(([tier]) => tier === 'free' || tier === 'self_managed' || tier === 'combo').map(([tier, plan]) => {
-          // 自主管理版：金流未上線，顯示候補卡片
+        {(Object.entries(PLANS) as [Tier, typeof PLANS[Tier]][]).map(([tier, plan]) => {
+          // 自主管理版：金流未上線，顯示候補卡片 + email 收集
           if (tier === 'self_managed') {
+            const handleWaitlist = async () => {
+              if (!waitlistEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(waitlistEmail)) return
+              setWaitlistSubmitting(true)
+              try {
+                await fetch('/api/subscribe/waitlist', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: waitlistEmail, tier: 'self_managed' }),
+                })
+                setWaitlistDone(true)
+                trackEvent('waitlist_joined', { tier: 'self_managed', email: waitlistEmail })
+              } catch { /* ignore */ }
+              finally { setWaitlistSubmitting(false) }
+            }
             return (
               <div key={tier} className="relative bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300 p-5 md:col-span-2">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap">
                   即將開放
                 </div>
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex flex-col gap-4">
                   <div>
                     <h3 className="text-base font-bold text-gray-700 mb-1">自主管理版 — NT$499/月</h3>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
@@ -205,39 +225,53 @@ export default function JoinPage() {
                       <span>✓ Refeed 智能提醒</span>
                     </div>
                   </div>
-                  <a
-                    href="https://line.me/ti/p/~0078185268"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block text-center bg-indigo-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-indigo-600 transition-colors whitespace-nowrap"
-                  >
-                    加入候補名單
-                  </a>
+                  {waitlistDone ? (
+                    <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                      <p className="text-sm text-green-700 font-semibold">已加入候補名單！開放時會第一時間通知你。</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="email"
+                        placeholder="輸入 Email，開放時通知你"
+                        value={waitlistEmail}
+                        onChange={(e) => setWaitlistEmail(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleWaitlist()}
+                        className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-400 transition-colors"
+                      />
+                      <button
+                        onClick={handleWaitlist}
+                        disabled={waitlistSubmitting || !waitlistEmail}
+                        className="bg-indigo-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-indigo-600 transition-colors whitespace-nowrap disabled:opacity-50"
+                      >
+                        {waitlistSubmitting ? '送出中...' : '加入候補'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )
           }
-          const isCombo = tier === 'combo'
+          const isLineOnly = tier === 'combo' || tier === 'coached'
           return (
           <div
             key={tier}
-            className={`relative bg-white rounded-2xl border-2 p-5 transition-all ${isCombo ? '' : 'cursor-pointer'} hover:shadow-lg ${
+            className={`relative bg-white rounded-2xl border-2 p-5 transition-all ${isLineOnly ? '' : 'cursor-pointer'} hover:shadow-lg ${
               selectedTier === tier
                 ? 'border-[#2563eb] shadow-md'
                 : plan.highlight
                 ? 'border-[#2563eb]/50 shadow-sm'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
-            onClick={() => !isCombo && handleSelectPlan(tier)}
+            onClick={() => !isLineOnly && handleSelectPlan(tier)}
           >
-            {plan.badge && (
-              <div className={`absolute -top-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap ${isCombo ? 'bg-amber-600' : 'bg-green-500'}`}>
-                {plan.badge}
-              </div>
-            )}
-            {plan.highlight && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#2563eb] text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap">
-                最多人選
+            {(plan.badge || plan.highlight) && (
+              <div className={`absolute -top-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap ${
+                tier === 'combo' ? 'bg-amber-600'
+                : plan.highlight ? 'bg-[#1e3a5f]'
+                : 'bg-green-500'
+              }`}>
+                {plan.badge || '全台適用'}
               </div>
             )}
 
@@ -264,13 +298,17 @@ export default function JoinPage() {
               ))}
             </ul>
 
-            {isCombo ? (
+            {isLineOnly ? (
               <a
                 href="https://line.me/ti/p/~0078185268"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="block w-full py-2.5 rounded-xl font-semibold text-sm text-center bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+                className={`block w-full py-2.5 rounded-xl font-semibold text-sm text-center transition-colors ${
+                  tier === 'combo'
+                    ? 'bg-amber-600 text-white hover:bg-amber-700'
+                    : 'bg-[#1e3a5f] text-white hover:bg-[#162d4a]'
+                }`}
               >
                 加 LINE 諮詢
               </a>

@@ -162,13 +162,14 @@ export default function ClientDashboard() {
       return next
     })
     try {
-      await Promise.all(uncompleted.map((s: any) =>
+      const results = await Promise.all(uncompleted.map((s: any) =>
         fetch('/api/supplement-logs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ clientId, supplementId: s.id, date: selectedDate, completed: true })
         })
       ))
+      if (results.some(r => !r.ok)) throw new Error('部分打卡失敗')
       mutate()
     } catch { showToast('打卡失敗，請重試', 'error') }
     finally {
@@ -515,6 +516,63 @@ export default function ClientDashboard() {
               )}
             </div>
           )}
+
+          {/* Day-based 導流提示（免費 / 自主管理用戶） */}
+          {(isFree || isSelfManaged) && c.created_at && (() => {
+            const daysSinceSignup = Math.floor((Date.now() - new Date(c.created_at).getTime()) / 86400000)
+
+            // P2: Day 1-3 — 系統正在學習
+            if (daysSinceSignup <= 3) {
+              return (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 mb-3">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl flex-shrink-0">🧠</span>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900 mb-1">系統正在學習你的代謝特性</p>
+                      <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                        你剛開始使用 Howard Protocol，系統需要約 14 天的數據才能精準計算你的實際 TDEE。
+                      </p>
+                      <div className="text-xs text-gray-500 leading-relaxed space-y-1">
+                        <p>現階段請：</p>
+                        <p>• 每天記錄體重（越準確越好）</p>
+                        <p>• 正常飲食，不用刻意改變</p>
+                      </div>
+                      <p className="text-[10px] text-blue-500 mt-2">系統會在背景持續分析你的數據趨勢</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            // P1: Day 7 — AI 顧問預覽
+            if (daysSinceSignup >= 5 && daysSinceSignup <= 10 && c.nutrition_enabled) {
+              return (
+                <div className="bg-gradient-to-br from-violet-50 to-blue-50 border border-violet-200 rounded-2xl p-4 mb-3">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl flex-shrink-0">🤖</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-gray-900 mb-1">試試 AI 飲食顧問</p>
+                      <p className="text-xs text-gray-600 leading-relaxed mb-3">
+                        系統已經收集了一週的數據。你可以問 AI 顧問「今天剩下的量要怎麼吃？」，它會根據你的目標和已攝取量推薦具體的外食組合。
+                      </p>
+                      <button
+                        onClick={() => setShowAiChat(true)}
+                        className="inline-flex items-center gap-1.5 bg-[#2563eb] text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-[#1d4ed8] transition-colors"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                        試試看
+                        {!c.ai_chat_enabled && <span className="text-[10px] opacity-80">（每月 1 次免費）</span>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            return null
+          })()}
 
           {/* 教練資訊（合併：查看時間 + 週回饋 + 健康分析） */}
           {(c.coach_last_viewed_at || c.coach_weekly_note || c.coach_summary) && (
@@ -890,9 +948,14 @@ export default function ClientDashboard() {
                 ))}
               </div>
               {c.subscription_tier === 'free' ? (
-                <a href="/remote" className="block mt-4 text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all">
-                  升級自主管理方案，解鎖全部功能
-                </a>
+                <div className="mt-4 space-y-2">
+                  <a href="/join?waitlist=self_managed" className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all">
+                    升級自主管理版（即將開放）
+                  </a>
+                  <a href="https://line.me/ti/p/~0078185268" target="_blank" rel="noopener noreferrer" className="block text-center bg-[#06C755] text-white text-sm font-bold py-2.5 rounded-xl hover:bg-[#05b04d] transition-all">
+                    💬 加 LINE 找 Howard
+                  </a>
+                </div>
               ) : (
                 <p className="text-xs text-gray-400 mt-3 text-center">和教練討論開啟更多追蹤功能</p>
               )}
@@ -936,38 +999,36 @@ export default function ClientDashboard() {
         </button>
       )}
 
-      {/* 免費用戶 AI 升級提示 */}
+      {/* 免費用戶 AI 升級提示（雙出口：候補 + LINE） */}
       {showAiUpgrade && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6" onClick={() => setShowAiUpgrade(false)}>
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="text-center mb-4">
               <div className="text-4xl mb-3">🤖</div>
               <h3 className="text-lg font-bold text-gray-900">本月免費次數已用完</h3>
-              <p className="text-sm text-gray-500 mt-1">升級自主管理方案，無限使用 AI 飲食顧問</p>
+              <p className="text-sm text-gray-500 mt-1">你可以選擇：</p>
             </div>
-            <div className="space-y-2 mb-5">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span className="text-green-500">✓</span>
-                <span>根據你的數據即時回答飲食問題</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span className="text-green-500">✓</span>
-                <span>個人化食物推薦與熱量分配建議</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span className="text-green-500">✓</span>
-                <span>訓練記錄 + 每日感受追蹤</span>
-              </div>
+            <div className="space-y-3 mb-4">
+              <a
+                href="/join?waitlist=self_managed"
+                className="block w-full text-center bg-blue-600 text-white font-bold py-3 rounded-2xl hover:bg-blue-700 transition-colors"
+              >
+                升級自主管理版 NT$499/月
+                <span className="block text-xs font-normal opacity-80 mt-0.5">即將開放，先加入候補名單</span>
+              </a>
+              <a
+                href="https://line.me/ti/p/~0078185268"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center bg-[#06C755] text-white font-bold py-3 rounded-2xl hover:bg-[#05b04d] transition-colors"
+              >
+                💬 加 LINE 讓 Howard 直接幫你分析
+                <span className="block text-xs font-normal opacity-80 mt-0.5">現在就可以，真人回覆</span>
+              </a>
             </div>
-            <a
-              href="/remote"
-              className="block w-full text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3 rounded-2xl hover:from-blue-700 hover:to-indigo-700 transition-all"
-            >
-              升級方案
-            </a>
             <button
               onClick={() => setShowAiUpgrade(false)}
-              className="block w-full text-center text-sm text-gray-400 mt-3 py-1"
+              className="block w-full text-center text-sm text-gray-400 mt-1 py-1"
             >
               稍後再說
             </button>
