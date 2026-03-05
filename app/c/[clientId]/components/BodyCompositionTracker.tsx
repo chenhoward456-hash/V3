@@ -138,6 +138,7 @@ function BodyCompositionTracker({
               <input
                 type="date"
                 value={newRecord.date}
+                max={new Date().toISOString().split('T')[0]}
                 onChange={(e) => setNewRecord(prev => ({ ...prev, date: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required

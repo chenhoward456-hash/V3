@@ -240,6 +240,14 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
+        if (err.quota_exceeded) {
+          setMessages([
+            ...newMessages,
+            { role: 'assistant', content: '本月免費次數已用完。升級自主管理方案即可無限使用 AI 飲食顧問！\n\n👉 [升級方案](/remote)' },
+          ])
+          setLoading(false)
+          return
+        }
         throw new Error(err.error || '回覆失敗')
       }
 

@@ -434,7 +434,7 @@ export default function BodyComposition({
 
             <div className="space-y-4">
               {[
-                { key: 'date', label: '日期', icon: Calendar, type: 'date', required: false, unit: '', min: '', max: '', step: '' },
+                { key: 'date', label: '日期', icon: Calendar, type: 'date', required: false, unit: '', min: '', max: new Date().toISOString().split('T')[0], step: '' },
                 { key: 'weight', label: '體重 (kg)', icon: Scale, type: 'number', required: true, unit: 'kg', min: '20', max: '300', step: '0.1' },
                 { key: 'body_fat', label: '體脂 (%)', icon: Activity, type: 'number', required: false, unit: '%', min: '1', max: '60', step: '0.1' },
                 { key: 'muscle_mass', label: '肌肉量 (kg)', icon: Dumbbell, type: 'number', required: false, unit: 'kg', min: '10', max: '100', step: '0.1' },

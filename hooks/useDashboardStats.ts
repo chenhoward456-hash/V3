@@ -135,13 +135,13 @@ export function useDashboardStats(clientData: any, selectedDate: string, today: 
     if (!completedLogs.length) return 0
     const datesWithCompleted = [...new Set(completedLogs.map((l: any) => l.date))].sort().reverse()
     const now = new Date()
-    const todayStr = now.toISOString().split('T')[0]
+    const todayStr = getLocalDateStr(now)
     const startOffset = datesWithCompleted[0] === todayStr ? 0 : 1
     let streak = 0
     for (let i = 0; i < datesWithCompleted.length; i++) {
       const expected = new Date(now)
       expected.setDate(expected.getDate() - (i + startOffset))
-      if (datesWithCompleted[i] === expected.toISOString().split('T')[0]) { streak++ } else { break }
+      if (datesWithCompleted[i] === getLocalDateStr(expected)) { streak++ } else { break }
     }
     return streak
   }, [clientData?.recentLogs])
@@ -194,13 +194,13 @@ export function useDashboardStats(clientData: any, selectedDate: string, today: 
 
     const sortedDates = [...activeDates].sort().reverse()
     const now = new Date()
-    const todayStr = now.toISOString().split('T')[0]
+    const todayStr = getLocalDateStr(now)
     const startOffset = sortedDates[0] === todayStr ? 0 : 1
     let streak = 0
     for (let i = 0; i < sortedDates.length; i++) {
       const expected = new Date(now)
       expected.setDate(expected.getDate() - (i + startOffset))
-      if (sortedDates[i] === expected.toISOString().split('T')[0]) { streak++ } else { break }
+      if (sortedDates[i] === getLocalDateStr(expected)) { streak++ } else { break }
     }
     return streak
   }, [clientData?.recentLogs, clientData?.nutritionLogs, clientData?.wellness, clientData?.bodyData, clientData?.trainingLogs])

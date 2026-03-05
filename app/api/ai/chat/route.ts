@@ -48,8 +48,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '帳號已過期' }, { status: 403 })
     }
 
-    if (client.ai_chat_enabled === false) {
-      return NextResponse.json({ error: 'AI 聊天功能未啟用' }, { status: 403 })
+    // AI 未開放的用戶：每月允許 1 次免費體驗，由後端計數
+    if (!client.ai_chat_enabled) {
+      const now = new Date()
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+      const { count } = await supabase
+        .from('ai_chat_usage')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', client.id)
+        .gte('created_at', monthStart)
+
+      if ((count ?? 0) >= 1) {
+        return NextResponse.json({ error: '本月免費次數已用完，請升級方案', quota_exceeded: true }, { status: 403 })
+      }
+
+      // 記錄本次使用
+      await supabase.from('ai_chat_usage').insert({ client_id: client.id })
     }
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {

@@ -458,3 +458,21 @@ CREATE INDEX IF NOT EXISTS idx_subscription_purchases_trade_no ON subscription_p
 ALTER TABLE subscription_purchases ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Service role full access on subscription_purchases" ON subscription_purchases
   FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================
+-- 28. AI 聊天使用量追蹤 (AI Chat Usage)
+-- 免費用戶每月 1 次免費體驗，由後端計數
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS ai_chat_usage (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_chat_usage_client_month ON ai_chat_usage(client_id, created_at);
+
+-- RLS
+ALTER TABLE ai_chat_usage ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role full access on ai_chat_usage" ON ai_chat_usage
+  FOR ALL USING (true) WITH CHECK (true);

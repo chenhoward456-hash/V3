@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import NutrientSlider from './NutrientSlider'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
@@ -43,6 +43,17 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
 
   const today = date || getLocalDateStr()
 
+  // 當 todayNutrition 變動時同步表單狀態（切換日期）
+  useEffect(() => {
+    setNote(todayNutrition?.note || '')
+    setShowNote(false)
+    setProteinInput(todayNutrition?.protein_grams?.toString() || '')
+    setWaterInput(todayNutrition?.water_ml?.toString() || '')
+    setCarbsInput(todayNutrition?.carbs_grams?.toString() || '')
+    setFatInput(todayNutrition?.fat_grams?.toString() || '')
+    setCompliant(todayNutrition?.compliant ?? null)
+  }, [todayNutrition])
+
   // 自動計算熱量：蛋白質×4 + 碳水×4 + 脂肪×9
   const computedCalories = useMemo(() => {
     const p = proteinInput ? Number(proteinInput) : 0
@@ -84,9 +95,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     }
   }
 
-  // 本週 7 天一覽
+  // 本週 7 天一覽（根據 selectedDate 所在週）
   const weekDays = useMemo(() => {
-    const now = new Date()
+    const now = new Date(today + 'T12:00:00')
     const dayOfWeek = now.getDay()
     const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
     const monday = new Date(now)
