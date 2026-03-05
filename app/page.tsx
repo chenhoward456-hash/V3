@@ -289,130 +289,59 @@ export default function HomePage() {
         </section>
       </ScrollReveal>
 
-      {/* ===== 區塊 6: 服務方案 ===== */}
+      {/* ===== 區塊 6: 簡化 CTA ===== */}
       <ScrollReveal>
-        <section className="max-w-6xl mx-auto px-6 py-20">
+        <section className="max-w-4xl mx-auto px-6 py-20">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
-            選擇你的方案
+            免費開始，用了再決定
           </h2>
-          <p className="text-center text-gray-500 mb-14">同一套引擎，從免費開始</p>
-          <div className="grid md:grid-cols-4 gap-5">
-            {/* 免費體驗 $0 */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
-              <div className="absolute -top-3 left-6 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                推薦先試
-              </div>
-              <h3 className="text-xl font-bold mb-1 text-navy">免費體驗</h3>
-              <p className="text-gray-400 text-sm mb-4">先用再決定</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-green-600">免費</span>
-              </div>
-              <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
-                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>體重 / 體態追蹤</li>
-                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>每日飲食紀錄</li>
+          <p className="text-center text-gray-500 mb-14">不需信用卡，30 秒建立帳號</p>
+          <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            {/* 免費體驗 */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-green-200 flex flex-col text-center">
+              <div className="text-4xl mb-4">📊</div>
+              <h3 className="text-xl font-bold mb-2 text-navy">免費體驗系統</h3>
+              <p className="text-gray-500 text-sm mb-4 leading-relaxed">
+                體重追蹤、飲食紀錄、TDEE 自動計算。先感受系統怎麼運作。
+              </p>
+              <ul className="space-y-2 text-gray-600 mb-6 flex-1 text-sm text-left">
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>體重趨勢 + 飲食紀錄</li>
                 <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>TDEE + 巨量營養素計算</li>
-                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>每月 1 次 AI 問答</li>
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>14 天後自動校正目標</li>
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>每月 1 次 AI 飲食顧問</li>
               </ul>
               <Link
                 href="/join"
-                className="block text-center bg-green-500 text-white py-3.5 rounded-xl font-semibold hover:bg-green-600 transition-colors"
+                className="block bg-green-500 text-white py-3.5 rounded-xl font-semibold hover:bg-green-600 transition-colors text-lg"
               >
                 免費開始 →
               </Link>
             </div>
 
-            {/* 自主管理 NT$499 */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-primary/30 flex flex-col relative">
-              <div className="absolute -top-3 left-6 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">
-                最多人選
-              </div>
-              <h3 className="text-xl font-bold mb-1 text-navy">自主管理版</h3>
-              <p className="text-gray-400 text-sm mb-4">系統幫你管，不需要教練</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-navy">NT$499</span>
-                <span className="text-gray-400 text-sm"> /月</span>
-              </div>
-              <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>智能引擎 24 小時自動分析</li>
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>每週體重趨勢自動判讀</li>
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>自適應 TDEE 持續校正</li>
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>Refeed / Diet Break 自動觸發</li>
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>碳循環自動分配</li>
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>月經週期智能濾鏡</li>
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>HRV 恢復狀態自動調整</li>
+            {/* 加 LINE 諮詢 */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-navy/20 flex flex-col text-center">
+              <div className="text-4xl mb-4">💬</div>
+              <h3 className="text-xl font-bold mb-2 text-navy">不確定？先聊聊</h3>
+              <p className="text-gray-500 text-sm mb-4 leading-relaxed">
+                告訴 Howard 你的目標和困擾，他會幫你確認方向。教練指導、實體訓練等進階方案都從這裡開始。
+              </p>
+              <ul className="space-y-2 text-gray-600 mb-6 flex-1 text-sm text-left">
+                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>教練指導版 NT$2,999/月</li>
+                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>台中實體 NT$5,000/月</li>
+                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>CSCS 教練每週 review</li>
+                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>LINE 即時諮詢</li>
               </ul>
-              <Link
-                href="/join"
-                className="block text-center bg-primary text-white py-3.5 rounded-xl font-semibold hover:bg-primary-dark transition-colors shadow-lg shadow-blue-500/25"
-              >
-                免費體驗 →
-              </Link>
-            </div>
-
-            {/* 教練指導 NT$2,999 */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
-              <div className="absolute -top-3 left-6 bg-navy text-white text-xs font-bold px-3 py-1 rounded-full">
-                全台適用
-              </div>
-              <h3 className="text-xl font-bold mb-1 text-navy">教練指導版</h3>
-              <p className="text-gray-400 text-sm mb-4">系統 + CSCS 教練監督</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-navy">NT$2,999</span>
-                <span className="text-gray-400 text-sm"> /月</span>
-              </div>
-              <ul className="space-y-3 text-gray-700 mb-4 text-sm">
-                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>包含自主管理版所有功能</li>
-              </ul>
-              <div className="border-t border-gray-100 pt-4 mb-8 flex-1">
-                <p className="text-xs text-gray-400 mb-3">額外包含：</p>
-                <ul className="space-y-3 text-gray-700 text-sm">
-                  <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>CSCS 教練每週 review</li>
-                  <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>LINE 即時諮詢</li>
-                  <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>每月 1 次視訊</li>
-                </ul>
-              </div>
               <LineButton
                 source="homepage_plan"
-                intent="coach_plan"
-                className="block text-center bg-navy text-white py-3.5 rounded-xl font-semibold hover:bg-navy/90 transition-colors"
+                intent="general"
+                className="block bg-navy text-white py-3.5 rounded-xl font-semibold hover:bg-navy/90 transition-colors text-lg"
               >
-                加 LINE 諮詢
-              </LineButton>
-            </div>
-
-            {/* 實體 + 遠端 NT$5,000 */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
-              <div className="absolute -top-3 left-6 bg-amber-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                台中限定
-              </div>
-              <h3 className="text-xl font-bold mb-1 text-navy">實體 + 智能管理</h3>
-              <p className="text-gray-400 text-sm mb-4">一對一指導 + 系統全套</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-navy">NT$5,000</span>
-                <span className="text-gray-400 text-sm"> /月</span>
-              </div>
-              <ul className="space-y-3 text-gray-700 mb-4 text-sm">
-                <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>包含教練指導版所有功能</li>
-              </ul>
-              <div className="border-t border-gray-100 pt-4 mb-8 flex-1">
-                <p className="text-xs text-gray-400 mb-3">額外包含：</p>
-                <ul className="space-y-3 text-gray-700 text-sm">
-                  <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>一對一動作評估與矯正</li>
-                  <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>即時訓練指導</li>
-                  <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>Coolday 北屯館</li>
-                </ul>
-              </div>
-              <LineButton
-                source="homepage_plan"
-                intent="in_person"
-                className="block text-center bg-white text-navy border-2 border-navy py-3.5 rounded-xl font-semibold hover:bg-navy/5 transition-colors"
-              >
-                加 LINE 預約
+                加 LINE 聊聊
               </LineButton>
             </div>
           </div>
           <p className="text-center text-xs text-gray-400 mt-8">
-            月繳制，隨時可取消。自主管理版可隨時升級，補差額即可。
+            全部月繳制，隨時可取消。免費版隨時可升級，補差額即可。
           </p>
         </section>
       </ScrollReveal>
