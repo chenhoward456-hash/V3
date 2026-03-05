@@ -476,23 +476,7 @@ export default function ClientDashboard() {
                     </span>
                   ))
                 ) : (
-                  <div className="w-full">
-                    <p className="text-xs text-gray-500 mb-2">👋 今天還沒有紀錄，從這裡開始：</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {c.supplement_enabled && !todaySupplementStats.completed && (
-                        <button onClick={() => document.getElementById('section-supplements')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">💊 補品打卡</button>
-                      )}
-                      {c.wellness_enabled && !todayWellness && (
-                        <button onClick={() => document.getElementById('section-wellness')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full hover:bg-purple-100 transition-colors">😊 記錄感受</button>
-                      )}
-                      {c.nutrition_enabled && !todayNutrition && (
-                        <button onClick={() => (document.getElementById('section-nutrition') || document.getElementById('section-nutrition-general'))?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors">🍽️ 飲食紀錄</button>
-                      )}
-                      {c.training_enabled && !todayTraining && (
-                        <button onClick={() => document.getElementById('section-training')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="text-xs bg-green-50 text-green-600 px-2.5 py-1 rounded-full hover:bg-green-100 transition-colors">🏋️ 訓練紀錄</button>
-                      )}
-                    </div>
-                  </div>
+                  <p className="text-xs text-gray-500">👋 今天還沒有紀錄，往下滑開始吧</p>
                 )}
               </div>
 
@@ -532,59 +516,54 @@ export default function ClientDashboard() {
             </div>
           )}
 
-          {/* 教練已查看標記 */}
-          {c.coach_last_viewed_at && (
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-green-500 text-xs">✓</span>
-              <span className="text-xs text-gray-400">
-                教練上次查看：{(() => {
-                  const viewed = new Date(c.coach_last_viewed_at)
-                  const now = new Date()
-                  const diffH = Math.floor((now.getTime() - viewed.getTime()) / 3600000)
-                  if (diffH < 1) return '剛剛'
-                  if (diffH < 24) return `${diffH} 小時前`
-                  const diffD = Math.floor(diffH / 24)
-                  if (diffD === 1) return '昨天'
-                  if (diffD < 7) return `${diffD} 天前`
-                  return viewed.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' })
-                })()}
-              </span>
-            </div>
-          )}
-
-          {/* 教練本週回饋 */}
-          {c.coach_weekly_note && (
+          {/* 教練資訊（合併：查看時間 + 週回饋 + 健康分析） */}
+          {(c.coach_last_viewed_at || c.coach_weekly_note || c.coach_summary) && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
-              <div className="flex items-start gap-2">
-                <span className="text-lg shrink-0">💬</span>
-                <div>
-                  <p className="text-xs font-semibold text-amber-700 mb-1">教練本週回饋</p>
-                  <p className="text-sm text-gray-700 leading-relaxed">{c.coach_weekly_note}</p>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">💬</span>
+                  <span className="text-xs font-semibold text-amber-700">教練回饋</span>
                 </div>
+                {c.coach_last_viewed_at && (
+                  <span className="text-[10px] text-gray-400">
+                    ✓ {(() => {
+                      const viewed = new Date(c.coach_last_viewed_at)
+                      const now = new Date()
+                      const diffH = Math.floor((now.getTime() - viewed.getTime()) / 3600000)
+                      if (diffH < 1) return '剛剛查看'
+                      if (diffH < 24) return `${diffH}小時前查看`
+                      const diffD = Math.floor(diffH / 24)
+                      if (diffD === 1) return '昨天查看'
+                      if (diffD < 7) return `${diffD}天前查看`
+                      return viewed.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' }) + '查看'
+                    })()}
+                  </span>
+                )}
               </div>
-            </div>
-          )}
-
-          {/* 教練健康摘要（可展開） */}
-          {c.coach_summary && (
-            <div className="mb-3">
-              <button
-                onClick={() => setShowCoachSummary(!showCoachSummary)}
-                className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 transition-colors"
-              >
-                <ChevronDown size={14} className={`transition-transform ${showCoachSummary ? 'rotate-180' : ''}`} />
-                {showCoachSummary ? '收起健康分析' : '查看教練健康分析'}
-              </button>
-              {showCoachSummary && (
-                <div className="bg-blue-50 rounded-2xl p-4 mt-2">
-                  <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{c.coach_summary}</p>
-                  {(c.next_checkup_date || c.health_goals) && (
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 pt-2.5 border-t border-blue-100">
-                      {c.next_checkup_date && <span className="text-xs text-blue-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
-                      {c.health_goals && <span className="text-xs text-blue-600">🎯 {c.health_goals}</span>}
+              {c.coach_weekly_note && (
+                <p className="text-sm text-gray-700 leading-relaxed mb-2">{c.coach_weekly_note}</p>
+              )}
+              {c.coach_summary && (
+                <>
+                  <button
+                    onClick={() => setShowCoachSummary(!showCoachSummary)}
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    <ChevronDown size={12} className={`transition-transform ${showCoachSummary ? 'rotate-180' : ''}`} />
+                    {showCoachSummary ? '收起健康分析' : '查看健康分析'}
+                  </button>
+                  {showCoachSummary && (
+                    <div className="bg-white/60 rounded-xl p-3 mt-2">
+                      <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{c.coach_summary}</p>
+                      {(c.next_checkup_date || c.health_goals) && (
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 pt-2 border-t border-amber-200/50">
+                          {c.next_checkup_date && <span className="text-xs text-blue-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
+                          {c.health_goals && <span className="text-xs text-blue-600">🎯 {c.health_goals}</span>}
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
+                </>
               )}
             </div>
           )}
@@ -836,51 +815,6 @@ export default function ClientDashboard() {
             onMutate={mutate}
           />
         )}
-
-        {/* 免費用戶動態升級提示（根據累積天數） */}
-        {isFree && c.calories_target && (() => {
-          const totalDays = (clientData.nutritionLogs || []).length
-          const dismissed = typeof window !== 'undefined' && localStorage.getItem(`upgrade_stage_${c.unique_code}`)
-          // 多階段文案：14 > 7 > 3
-          let stage: { emoji: string; title: string; desc: string } | null = null
-          if (totalDays >= 14 && dismissed !== '14') {
-            stage = { emoji: '🎯', title: `你已累積 ${totalDays} 天紀錄！`, desc: '你的營養目標剛自動校正完畢。想每天問 AI 怎麼吃最有效？' }
-          } else if (totalDays >= 7 && totalDays < 14 && dismissed !== '7' && dismissed !== '14') {
-            stage = { emoji: '📊', title: `7 天數據在手`, desc: '想知道你的碳水怎麼分配最有效？升級解鎖 AI 分析。' }
-          } else if (totalDays >= 3 && totalDays < 7 && !dismissed) {
-            stage = { emoji: '✨', title: `你已累積 ${totalDays} 天數據`, desc: 'AI 顧問現在能根據你的紀錄回答問題了。' }
-          }
-          if (!stage) return null
-          const currentStage = totalDays >= 14 ? '14' : totalDays >= 7 ? '7' : '3'
-          return (
-            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5 mb-6">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">{stage.emoji}</span>
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-indigo-900">{stage.title}</p>
-                  <p className="text-xs text-indigo-700 mt-1">{stage.desc}</p>
-                  <div className="flex gap-2 mt-3">
-                    <a
-                      href="/remote"
-                      className="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
-                    >
-                      解鎖 AI 分析
-                    </a>
-                    <button
-                      onClick={() => {
-                        localStorage.setItem(`upgrade_stage_${c.unique_code}`, currentStage)
-                        mutate()
-                      }}
-                      className="text-xs text-indigo-400 px-3 py-2"
-                    >
-                      暫時不用
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )
-        })()}
 
         {/* 一般學員（非自主管理、非免費）的每週智能分析 */}
         {!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && c.body_composition_enabled && (
