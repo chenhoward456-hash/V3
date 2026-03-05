@@ -12,6 +12,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
   }
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('[AI Chat Error] ANTHROPIC_API_KEY not set')
+    return NextResponse.json({ error: 'AI 服務未設定，請聯繫管理員' }, { status: 500 })
+  }
+
   try {
     const body = await request.json()
     const { messages, systemPrompt, clientId } = body as {
@@ -58,10 +63,42 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ reply })
   } catch (err: any) {
-    if (err?.status === 401) {
-      return NextResponse.json({ error: 'API Key 無效' }, { status: 500 })
+    const status = err?.status || err?.statusCode
+    const errorMessage = err?.error?.error?.message || err?.error?.message || err?.message || String(err)
+    const errorType = err?.error?.error?.type || err?.error?.type || err?.type || 'unknown'
+    console.error('[AI Chat Error]', JSON.stringify({
+      status,
+      type: errorType,
+      message: errorMessage,
+      raw: err?.error || err?.message || String(err),
+    }))
+
+    if (status === 401) {
+      return NextResponse.json({ error: 'API Key 無效，請檢查 ANTHROPIC_API_KEY 設定' }, { status: 500 })
+    }
+    if (status === 429) {
+      return NextResponse.json({ error: 'AI 服務額度已滿，請稍後再試' }, { status: 429 })
+    }
+    if (status === 400) {
+      // Anthropic 在餘額不足時回傳 400，特別處理
+      if (errorMessage.includes('credit balance is too low')) {
+        return NextResponse.json({ error: 'AI 服務餘額不足，請聯繫管理員充值' }, { status: 503 })
+      }
+      return NextResponse.json({ error: `AI 請求錯誤：${errorMessage}` }, { status: 400 })
+    }
+    if (status === 403) {
+      return NextResponse.json({ error: 'API 權限不足，請確認帳戶已啟用且有餘額' }, { status: 500 })
+    }
+    if (status === 404) {
+      return NextResponse.json({ error: '模型不存在，請確認 API 方案支援此模型' }, { status: 500 })
+    }
+    if (status === 529) {
+      return NextResponse.json({ error: 'Anthropic API 過載中，請稍後再試' }, { status: 503 })
     }
 
-    return NextResponse.json({ error: 'AI 回覆失敗' }, { status: 500 })
+    return NextResponse.json(
+      { error: `AI 回覆失敗（${errorType}: ${errorMessage}）` },
+      { status: 500 }
+    )
   }
 }

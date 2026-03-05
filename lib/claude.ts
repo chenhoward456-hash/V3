@@ -69,8 +69,10 @@ export async function askClaude(
 ): Promise<string> {
   const trimmedMessages = trimMessagesToFit(messages, 6000)
 
+  const model = process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001'
+
   const response = await getClient().messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model,
     max_tokens: 1024,
     system: systemPrompt || SYSTEM_PROMPT,
     messages: trimmedMessages,
