@@ -77,6 +77,7 @@ export default function AiChatDrawer({
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [quotaExceeded, setQuotaExceeded] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -243,8 +244,9 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
         if (err.quota_exceeded) {
           setMessages([
             ...newMessages,
-            { role: 'assistant', content: '本月免費次數已用完。升級自主管理方案即可無限使用 AI 飲食顧問！\n\n👉 [升級方案](/remote)' },
+            { role: 'assistant', content: '本月免費體驗次數已用完 🙏\n\n你可以選擇：' },
           ])
+          setQuotaExceeded(true)
           setLoading(false)
           return
         }
@@ -364,6 +366,27 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
               </div>
             </div>
           ))}
+
+          {quotaExceeded && (
+            <div className="space-y-2 ml-1 max-w-[85%]">
+              <a
+                href="/join?waitlist=self_managed"
+                className="block w-full text-center bg-blue-600 text-white font-semibold py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors text-sm"
+              >
+                升級自主管理版 NT$499/月
+                <span className="block text-[10px] font-normal opacity-80 mt-0.5">即將開放，先加入候補名單</span>
+              </a>
+              <a
+                href="https://line.me/ti/p/~0078185268"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center bg-[#06C755] text-white font-semibold py-3 px-4 rounded-xl hover:bg-[#05b04d] transition-colors text-sm"
+              >
+                💬 加 LINE 讓 Howard 直接幫你分析
+                <span className="block text-[10px] font-normal opacity-80 mt-0.5">現在就可以，真人回覆</span>
+              </a>
+            </div>
+          )}
 
           {loading && (
             <div className="flex justify-start">

@@ -43,6 +43,7 @@ export default function SelfManagedNutrition({
   const [data, setData] = useState<any>(null)
   const [meta, setMeta] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [calibrationApplied, setCalibrationApplied] = useState(false)
   // Onboarding form state — pre-populate from existing data
   const [selectedGoal, setSelectedGoal] = useState<'cut' | 'bulk' | null>(
     goalType === 'cut' || goalType === 'bulk' ? goalType : null
@@ -76,8 +77,9 @@ export default function SelfManagedNutrition({
         if (json.suggestion) {
           setData(json.suggestion)
           setMeta(json.meta || null)
-          if (json.applied && onMutate) {
-            onMutate()
+          if (json.applied) {
+            setCalibrationApplied(true)
+            if (onMutate) onMutate()
           }
         }
       } catch { /* ignore */ }
@@ -548,6 +550,47 @@ export default function SelfManagedNutrition({
     )
   }
 
+  // 自動校正 LINE 導流卡片
+  const CalibrationLineCard = () => {
+    if (!calibrationApplied) return null
+    // 只在有實際調整時顯示
+    const hasAdjustment = data.caloriesDelta !== 0 || data.proteinDelta !== 0 || data.carbsDelta !== 0 || data.fatDelta !== 0
+    if (!hasAdjustment) return null
+
+    const tdeeDiff = data.estimatedTDEE && caloriesTarget
+      ? data.estimatedTDEE - caloriesTarget
+      : null
+    const diffDirection = tdeeDiff != null ? (tdeeDiff > 0 ? '高' : '低') : null
+    const diffAbs = tdeeDiff != null ? Math.abs(tdeeDiff) : null
+
+    return (
+      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mb-4">
+        <div className="flex items-start gap-3 mb-3">
+          <span className="text-2xl flex-shrink-0">📊</span>
+          <div>
+            <p className="text-sm font-bold text-gray-900 mb-1">你的營養目標剛剛自動校正完畢</p>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              根據你過去 14 天的體重趨勢，你的實際 TDEE 比初始計算
+              {diffDirection && diffAbs ? ` ${diffDirection}了 ${diffAbs} 大卡` : '有所差異'}。
+              新目標已自動更新。
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+          想知道接下來怎麼調整策略？Howard 教練可以根據你的數據給你個人建議。
+        </p>
+        <a
+          href="https://line.me/ti/p/~0078185268"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full text-center bg-[#06C755] text-white font-bold py-3 rounded-xl hover:bg-[#05b04d] transition-colors text-sm"
+        >
+          💬 加 LINE 找 Howard 教練
+        </a>
+      </div>
+    )
+  }
+
   // 體重變化率
   const changeRate = data.weeklyWeightChangeRate
   const changeRateText = changeRate != null
@@ -578,6 +621,9 @@ export default function SelfManagedNutrition({
           {data.message}
         </p>
       </div>
+
+      {/* 自動校正 → LINE 導流 */}
+      <CalibrationLineCard />
 
       {/* 目標倒數 */}
       <GoalCountdownCard />
