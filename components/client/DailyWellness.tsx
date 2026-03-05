@@ -111,6 +111,16 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
       if (todayWellness.device_recovery_score || todayWellness.resting_hr || todayWellness.hrv || todayWellness.wearable_sleep_score || todayWellness.respiratory_rate) {
         setShowWearable(true)
       }
+    } else {
+      setForm({
+        sleep_quality: null, energy_level: null, mood: null,
+        training_drive: null, cognitive_clarity: null, stress_level: null,
+        period_start: false, note: '',
+        device_recovery_score: null, resting_hr: null, hrv: null,
+        wearable_sleep_score: null, respiratory_rate: null,
+      })
+      setShowMore(false)
+      setShowWearable(false)
     }
   }, [todayWellness])
 

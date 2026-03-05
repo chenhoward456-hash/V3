@@ -1048,7 +1048,7 @@ export default function ClientDashboard() {
         const completedMap: Record<string, boolean> = {
           'section-nutrition': !!todayNutrition,
           'section-nutrition-general': !!todayNutrition,
-          'section-supplements': !!todaySupplementStats.completed,
+          'section-supplements': todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total,
           'section-wellness': !!todayWellness,
           'section-training': !!todayTraining,
         }

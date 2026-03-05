@@ -36,6 +36,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         rpe: todayTraining.rpe ?? null,
         note: todayTraining.note || '',
       })
+    } else {
+      setForm({ training_type: null, duration: null, sets: null, rpe: null, note: '' })
     }
   }, [todayTraining])
 
