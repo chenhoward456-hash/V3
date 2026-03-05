@@ -162,13 +162,14 @@ export default function ClientDashboard() {
       return next
     })
     try {
-      await Promise.all(uncompleted.map((s: any) =>
+      const results = await Promise.all(uncompleted.map((s: any) =>
         fetch('/api/supplement-logs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ clientId, supplementId: s.id, date: selectedDate, completed: true })
         })
       ))
+      if (results.some(r => !r.ok)) throw new Error('部分打卡失敗')
       mutate()
     } catch { showToast('打卡失敗，請重試', 'error') }
     finally {
