@@ -57,6 +57,7 @@ const PLANS: Record<Tier, {
       '個人化補劑與血檢建議',
     ],
     highlight: true,
+    badge: '全台適用',
   },
   combo: {
     name: '全方位',
@@ -187,7 +188,7 @@ export default function JoinPage() {
 
       {/* Plan Cards */}
       <div className="grid md:grid-cols-2 gap-5 mb-12 max-w-2xl mx-auto">
-        {(Object.entries(PLANS) as [Tier, typeof PLANS[Tier]][]).filter(([tier]) => tier === 'free' || tier === 'self_managed' || tier === 'combo').map(([tier, plan]) => {
+        {(Object.entries(PLANS) as [Tier, typeof PLANS[Tier]][]).map(([tier, plan]) => {
           // 自主管理版：金流未上線，顯示候補卡片
           if (tier === 'self_managed') {
             return (
@@ -217,27 +218,26 @@ export default function JoinPage() {
               </div>
             )
           }
-          const isCombo = tier === 'combo'
+          const isLineOnly = tier === 'combo' || tier === 'coached'
           return (
           <div
             key={tier}
-            className={`relative bg-white rounded-2xl border-2 p-5 transition-all ${isCombo ? '' : 'cursor-pointer'} hover:shadow-lg ${
+            className={`relative bg-white rounded-2xl border-2 p-5 transition-all ${isLineOnly ? '' : 'cursor-pointer'} hover:shadow-lg ${
               selectedTier === tier
                 ? 'border-[#2563eb] shadow-md'
                 : plan.highlight
                 ? 'border-[#2563eb]/50 shadow-sm'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
-            onClick={() => !isCombo && handleSelectPlan(tier)}
+            onClick={() => !isLineOnly && handleSelectPlan(tier)}
           >
-            {plan.badge && (
-              <div className={`absolute -top-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap ${isCombo ? 'bg-amber-600' : 'bg-green-500'}`}>
-                {plan.badge}
-              </div>
-            )}
-            {plan.highlight && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#2563eb] text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap">
-                最多人選
+            {(plan.badge || plan.highlight) && (
+              <div className={`absolute -top-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap ${
+                tier === 'combo' ? 'bg-amber-600'
+                : plan.highlight ? 'bg-[#1e3a5f]'
+                : 'bg-green-500'
+              }`}>
+                {plan.badge || '全台適用'}
               </div>
             )}
 
@@ -264,13 +264,17 @@ export default function JoinPage() {
               ))}
             </ul>
 
-            {isCombo ? (
+            {isLineOnly ? (
               <a
                 href="https://line.me/ti/p/~0078185268"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="block w-full py-2.5 rounded-xl font-semibold text-sm text-center bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+                className={`block w-full py-2.5 rounded-xl font-semibold text-sm text-center transition-colors ${
+                  tier === 'combo'
+                    ? 'bg-amber-600 text-white hover:bg-amber-700'
+                    : 'bg-[#1e3a5f] text-white hover:bg-[#162d4a]'
+                }`}
               >
                 加 LINE 諮詢
               </a>
