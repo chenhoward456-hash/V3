@@ -95,9 +95,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     }
   }
 
-  // 本週 7 天一覽
+  // 本週 7 天一覽（根據 selectedDate 所在週）
   const weekDays = useMemo(() => {
-    const now = new Date()
+    const now = new Date(today + 'T12:00:00')
     const dayOfWeek = now.getDay()
     const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
     const monday = new Date(now)

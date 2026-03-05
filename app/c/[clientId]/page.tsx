@@ -765,6 +765,7 @@ export default function ClientDashboard() {
             isCoachMode={isCoachMode}
             togglingSupplements={togglingSupplements}
             recentLogs={clientData.recentLogs || []}
+            selectedDate={selectedDate}
             onToggleSupplement={handleToggleSupplement}
             onMarkAllComplete={handleMarkAllSupplementsComplete}
             onManageSupplements={() => setShowSupplementModal(true)}
@@ -921,22 +922,7 @@ export default function ClientDashboard() {
       {/* AI 飲食顧問浮動按鈕 */}
       {c.nutrition_enabled && (
         <button
-          onClick={() => {
-            if (c.ai_chat_enabled) {
-              // 教練已開放：無限使用
-              setShowAiChat(true)
-            } else {
-              // 未開放：每月 1 次免費體驗
-              const now = new Date()
-              const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
-              const used = localStorage.getItem(monthKey)
-              if (!used) {
-                setShowAiChat(true)
-              } else {
-                setShowAiUpgrade(true)
-              }
-            }
-          }}
+          onClick={() => setShowAiChat(true)}
           className="fixed z-40 bg-[#2563eb] text-white rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 px-4 py-3"
           style={{ bottom: 'calc(70px + env(safe-area-inset-bottom))', right: '16px' }}
         >
@@ -944,12 +930,9 @@ export default function ClientDashboard() {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           <span className="text-sm font-medium">AI 顧問</span>
-          {!c.ai_chat_enabled && (() => {
-            const now = new Date()
-            const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
-            const used = typeof window !== 'undefined' && localStorage.getItem(monthKey)
-            return <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{used ? 'PRO' : '1次免費'}</span>
-          })()}
+          {!c.ai_chat_enabled && (
+            <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">1次免費</span>
+          )}
         </button>
       )}
 
@@ -1024,11 +1007,7 @@ export default function ClientDashboard() {
             resting_hr: todayWellness?.resting_hr ?? null,
             device_recovery_score: todayWellness?.device_recovery_score ?? null,
           }}
-          onFirstMessage={!c.ai_chat_enabled ? () => {
-            const now = new Date()
-            const monthKey = `ai_free_${c.unique_code}_${now.getFullYear()}_${now.getMonth()}`
-            localStorage.setItem(monthKey, '1')
-          } : undefined}
+          onFirstMessage={undefined}
         />
       )}
 

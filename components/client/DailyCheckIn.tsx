@@ -14,6 +14,7 @@ interface DailyCheckInProps {
   isCoachMode: boolean
   togglingSupplements: Set<string>
   recentLogs: any[]
+  selectedDate?: string
   onToggleSupplement: (id: string, completed: boolean) => void
   onMarkAllComplete?: () => void
   onManageSupplements: () => void
@@ -25,6 +26,7 @@ export default function DailyCheckIn({
   supplements, todayLogs, todayStats,
   streakDays, streakMessage,
   isCoachMode, togglingSupplements, recentLogs,
+  selectedDate,
   onToggleSupplement, onMarkAllComplete, onManageSupplements
 }: DailyCheckInProps) {
   const trendData = useMemo(() => {
@@ -60,7 +62,9 @@ export default function DailyCheckIn({
             <span className="ml-2 text-sm font-normal text-gray-500">{streakMessage}</span>
           </h2>
           <p className="text-sm text-gray-500">
-            {new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}
+            {selectedDate
+              ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })
+              : new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}
           </p>
         </div>
         <div className="flex items-center gap-2">
