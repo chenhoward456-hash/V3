@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ reply })
   } catch (err: any) {
     const status = err?.status || err?.statusCode
-    const errorMessage = err?.error?.message || err?.message || String(err)
-    const errorType = err?.error?.type || err?.type || 'unknown'
+    const errorMessage = err?.error?.error?.message || err?.error?.message || err?.message || String(err)
+    const errorType = err?.error?.error?.type || err?.error?.type || err?.type || 'unknown'
     console.error('[AI Chat Error]', JSON.stringify({
       status,
       type: errorType,
@@ -80,6 +80,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'AI 服務額度已滿，請稍後再試' }, { status: 429 })
     }
     if (status === 400) {
+      // Anthropic 在餘額不足時回傳 400，特別處理
+      if (errorMessage.includes('credit balance is too low')) {
+        return NextResponse.json({ error: 'AI 服務餘額不足，請聯繫管理員充值' }, { status: 503 })
+      }
       return NextResponse.json({ error: `AI 請求錯誤：${errorMessage}` }, { status: 400 })
     }
     if (status === 403) {
