@@ -1,22 +1,112 @@
 /**
  * 營養素自動分析引擎 v3
- * 基於 2025-2026 最新運動科學文獻：
- * - ISSN Position Stand: 減脂速率 0.5-1.0% BW/week
- * - Physique Athletes Review: 蛋白質 ≥ 2.0g/kg 男性, 1.6-2.0g/kg 女性 (減脂)
- * - Morton et al. 2018 (BJSM): 蛋白質需求無顯著性別差異，但絕對需求量較低
- * - Stokes et al. 2018: 女性對低劑量蛋白質反應同等有效
- * - Loucks 2004 / Mountjoy et al. 2018 RED-S: 女性脂肪最低需求更高 (1.0g/kg)
- * - Off-Season Bodybuilding: 增肌速率 0.25-0.5% BW/week, surplus +200-300kcal
- * - Caloric Restriction Meta-Analysis: 最大赤字 ≤ 500kcal/day
+ *
+ * ═══════════════════════════════════════════════════════════════
+ * 文獻參考 (Literature References)
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * ── 減脂速率與身體組成 ──
+ * [1] Helms ER, Aragon AA, Fitschen PJ (2014). Evidence-based recommendations
+ *     for natural bodybuilding contest preparation: nutrition and supplementation.
+ *     J Int Soc Sports Nutr, 11:20. doi:10.1186/1550-2783-11-20
+ *     → 減脂速率 0.5-1.0% BW/week；蛋白質 2.3-3.1 g/kg LBM；脂肪 15-30% calories
+ *
+ * [2] Garthe I, Raastad T, Refsnes PE, et al. (2011). Effect of two different
+ *     weight-loss rates on body composition and strength and power-related
+ *     performance in elite athletes. Int J Sport Nutr Exerc Metab, 21(2):97-104.
+ *     doi:10.1123/ijsnem.21.2.97
+ *     → 0.7% BW/week (slow) 保留更多 LBM；>1.4% BW/week 顯著損失肌肉量和力量
+ *
+ * [3] Roberts BM, Helms ER, Trexler ET, Fitschen PJ (2020). Nutritional
+ *     recommendations for physique athletes. J Hum Kinet, 71:79-108.
+ *     doi:10.2478/hukin-2019-0096
+ *     → 蛋白質 1.8-2.7 g/kg；備賽與恢復期的綜合營養建議
+ *
+ * [4] Iraki J, Fitschen P, Espinar S, Helms E (2019). Nutrition recommendations
+ *     for bodybuilders in the off-season: a narrative review. Sports, 7(7):154.
+ *     doi:10.3390/sports7070154
+ *     → 增肌期 surplus +10-20%、增重 0.25-0.5% BW/week；蛋白質 1.6-2.2 g/kg
+ *
+ * ── 蛋白質需求 ──
+ * [5] Morton RW, Murphy KT, McKellar SR, et al. (2018). A systematic review,
+ *     meta-analysis and meta-regression of the effect of protein supplementation
+ *     on resistance training-induced gains in muscle mass and strength in healthy
+ *     adults. Br J Sports Med, 52(6):376-384. doi:10.1136/bjsports-2017-097608
+ *     → 蛋白質 1.6 g/kg 達飽和點；性別差異不顯著
+ *
+ * [6] Stokes T, Hector AJ, Morton RW, et al. (2018). Recent perspectives
+ *     regarding the role of dietary protein for the promotion of muscle
+ *     hypertrophy with resistance exercise training. Nutrients, 10(2):180.
+ *     → 女性對低劑量蛋白質的肌肉合成反應同等有效
+ *
+ * ── 代謝適應與 Diet Break / Refeed ──
+ * [7] Trexler ET, Smith-Ryan AE, Norton LE (2014). Metabolic adaptation to
+ *     weight loss: implications for the athlete. J Int Soc Sports Nutr, 11:7.
+ *     doi:10.1186/1550-2783-11-7
+ *     → 代謝適應 (adaptive thermogenesis) 使 TDEE 降幅超過體重預測值；
+ *       持續限制 vs 間歇限制的比較；reverse dieting 概念
+ *
+ * [8] Byrne NM, Sainsbury A, King NA, et al. (2018). Intermittent energy
+ *     restriction improves weight loss efficiency in obese men: the MATADOR
+ *     study. Int J Obes, 42:129-138. doi:10.1038/ijo.2017.206
+ *     → 2 週限制 + 2 週維持 (intermittent) vs 連續限制；
+ *       IER 組減脂更多 (12.9% vs 8.4%)、保留更多 FFM、代謝適應更小
+ *
+ * ── 能量可用性與 RED-S ──
+ * [9] Loucks AB, Thuma JR (2003). Luteinizing hormone pulsatility is disrupted
+ *     at a threshold of energy availability in regularly menstruating women.
+ *     J Clin Endocrinol Metab, 88(1):297-311.
+ *     → EA < 30 kcal/kg FFM/day 為荷爾蒙功能臨界閾值
+ *
+ * [10] Mountjoy M, Sundgot-Borgen JK, Burke LM, et al. (2018). IOC consensus
+ *      statement on relative energy deficiency in sport (RED-S): 2018 update.
+ *      Br J Sports Med, 52(11):687-697. doi:10.1136/bjsports-2018-099193
+ *      → 低能量可用性對多系統的影響；RED-S 臨床評估工具
+ *
+ * ── 最大脂肪氧化率 ──
+ * [11] Alpert SS (2005). A limit on the energy transfer rate from the human fat
+ *      store in hypophagia. J Theor Biol, 233(1):1-13.
+ *      doi:10.1016/j.jtbi.2004.08.029
+ *      → 最大脂肪動員率 ~31 kcal/lb fat/day (290±25 kJ/kg/day)；
+ *        超過此速率 FFM 流失指數級增加
+ *
+ * ── Peak Week 操控 ──
+ * [12] Escalante G, Stevenson SW, Barakat C, Aragon AA, Schoenfeld BJ (2021).
+ *      Peak week recommendations for bodybuilders: an evidence based approach.
+ *      BMC Sports Sci Med Rehabil, 13:68. doi:10.1186/s13102-021-00296-y
+ *      → 碳水超補 8-12 g/kg、水分操控、鈉操控的系統性建議；
+ *        建議操控最少變量並預先實驗
+ *
+ * [13] Barakat C, Escalante G, Stevenson SW, et al. (2022). Can bodybuilding
+ *      peak week manipulations favorably affect muscle size, subcutaneous
+ *      thickness, and related body composition variables? A case study.
+ *      Sports, 10(7):106. doi:10.3390/sports10070106
+ *      → 詳細記錄碳水耗竭→超補對肌肉厚度、皮下厚度、體內外水分的影響
+ *
+ * [14] Homer KA, Cross MR, Helms ER (2024). Peak week carbohydrate manipulation
+ *      practices in physique athletes: a narrative review. Sports Med Open,
+ *      10(1):8. doi:10.1186/s40798-024-00674-z
+ *      → 碳水操控 3-12 g/kg；水分切割 ~1.5-3% BW
+ *
+ * ── 動態能量密度 ──
+ * [15] Hall KD (2008). What is the required energy deficit per unit weight loss?
+ *      Int J Obes, 32(3):573-576. doi:10.1038/sj.ijo.0803720
+ *      → 減重初期 ~3500 kcal/kg（含水分），後期趨近 7700 kcal/kg（純脂肪）
+ *
+ * ── ISSN Position Stands ──
+ * [16] Jäger R, Kerksick CM, Campbell BI, et al. (2017). International Society
+ *      of Sports Nutrition position stand: protein and exercise. J Int Soc
+ *      Sports Nutr, 14:20. doi:10.1186/s12970-017-0177-8
+ *
+ * [17] Aragon AA, Schoenfeld BJ, Wildman R, et al. (2017). International
+ *      Society of Sports Nutrition position stand: diets and body composition.
+ *      J Int Soc Sports Nutr, 14:16. doi:10.1186/s12970-017-0174-y
+ *
+ * ═══════════════════════════════════════════════════════════════
  *
  * 活動量分型 (Activity Profile)：
  * - sedentary（上班族）: 以飲食控制為主，步數受限，有氧時間少
  * - high_energy_flux（高能量通量）: 主動增加活動消耗，同樣赤字下吃更多，保護代謝
- *
- * Peak Week 文獻：
- * - Escalante et al. (2021) - Peak week recommendations: evidence based approach
- * - Barakat et al. (2022) - Peak Week Manipulations: muscle size case study
- * - Mitchell et al. (2024) - Peak Week Carbohydrate Manipulation: narrative review
  */
 
 import {
@@ -189,54 +279,49 @@ export interface PeakWeekDay {
   water: number // mL
 }
 
-// ===== 常數 (基於文獻) =====
-// 主要文獻：
-//   Helms et al. 2014 (JISSN) — 備賽營養建議
-//   Iraki et al. 2019 (JOHK) — Physique athletes 營養建議
-//   Hall 2008 (IJOB) — 動態能量平衡模型
-//   Thomas et al. 2013 (IJOB) — 體重預測修正
-//   Garthe et al. 2011 — 慢速 vs 快速減重對 LBM 的影響
+// ===== 常數 (基於文獻，編號對應檔案頂部 References) =====
 
 const SAFETY = {
   MIN_CALORIES_MALE: 1500,
   MIN_CALORIES_FEMALE: 1200,
-  // 男性蛋白質下限（Helms 2014: 2.3-3.1g/kg LBM → 體重近似取下限）
+  // 男性蛋白質下限 [1] Helms 2014: 2.3-3.1 g/kg LBM → 體重近似取下限
   MIN_PROTEIN_PER_KG_CUT: 2.3,
   MIN_PROTEIN_PER_KG_BULK: 1.8,
-  // 女性蛋白質下限（Stokes 2018 / Morton 2018 meta: 1.6-2.0g/kg 即達最大合成效果）
+  // 女性蛋白質下限 [5] Morton 2018 / [6] Stokes 2018: 1.6-2.0 g/kg 即達最大合成效果
   MIN_PROTEIN_PER_KG_CUT_FEMALE: 1.8,
   MIN_PROTEIN_PER_KG_BULK_FEMALE: 1.6,
   // 脂肪下限：男性荷爾蒙需求較低，女性 (雌激素合成) 需更高
   MIN_FAT_PER_KG: 0.8,           // 男性 (15-20% calories)
-  MIN_FAT_PER_KG_FEMALE: 1.0,    // 女性 (Loucks 2004 / RED-S: ≥20-25% calories)
+  MIN_FAT_PER_KG_FEMALE: 1.0,    // 女性 [9] Loucks 2003 / [10] RED-S: ≥20-25% calories
   MAX_FAT_PER_KG_BULK: 1.2,
-  MAX_DEFICIT_KCAL: 500,          // Meta-analysis: ≤500kcal/day deficit
-  DIET_BREAK_WEEKS: 8,            // Suggest diet break after 8 weeks continuous
+  MAX_DEFICIT_KCAL: 500,          // [17] ISSN Position Stand: ≤500 kcal/day deficit
+  DIET_BREAK_WEEKS: 8,            // [8] MATADOR: intermittent 2wk on/off 優於連續；8 週為保守閾值
 }
 
 // Goal-Driven 模式的放寬限制（用於備賽選手，允許更激進的赤字）
 const GOAL_DRIVEN = {
   MIN_CALORIES_MALE: 1200,        // 備賽極限：1200kcal（短期可承受）
-  MIN_CALORIES_FEMALE: 1050,      // 女性備賽極限：1050kcal（低於此荷爾蒙風險極高）
+  MIN_CALORIES_FEMALE: 1050,      // 女性備賽極限：1050kcal [9][10] 低於此荷爾蒙風險極高
   MAX_DEFICIT_KCAL: 750,          // 允許最大赤字到 750kcal（備賽期）
   EXTREME_DEFICIT_KCAL: 1000,     // 極端赤字（最後 3 週，自動警告）
-  // ── 男性蛋白質依赤字深度分級 (Helms 2014: 赤字越大 → 蛋白質越高) ──
-  PROTEIN_PER_KG_NORMAL: 2.3,    // normal 赤字：2.3g/kg
-  PROTEIN_PER_KG_AGGRESSIVE: 2.6, // aggressive：2.6g/kg
-  PROTEIN_PER_KG_EXTREME: 3.0,   // extreme：3.0g/kg（接近 LBM 的 3.1g/kg 上限）
-  // ── 女性蛋白質分級 (Stokes 2018: 女性 1.6-2.2g/kg 達最大效果，備賽上調) ──
+  // ── 男性蛋白質依赤字深度分級 [1] Helms 2014: 赤字越大 → 蛋白質越高 ──
+  PROTEIN_PER_KG_NORMAL: 2.3,    // normal 赤字：2.3 g/kg
+  PROTEIN_PER_KG_AGGRESSIVE: 2.6, // aggressive：2.6 g/kg
+  PROTEIN_PER_KG_EXTREME: 3.0,   // extreme：3.0 g/kg（接近 LBM 的 3.1 g/kg 上限）
+  // ── 女性蛋白質分級 [6] Stokes 2018: 女性 1.6-2.2 g/kg 達最大效果，備賽上調 ──
   PROTEIN_PER_KG_NORMAL_FEMALE: 1.8,
   PROTEIN_PER_KG_AGGRESSIVE_FEMALE: 2.0,
   PROTEIN_PER_KG_EXTREME_FEMALE: 2.3,
-  // ── 脂肪下限：男性 0.7g/kg，女性備賽最低 0.9g/kg（荷爾蒙保護）──
-  MIN_FAT_PER_KG: 0.7,           // 男性備賽最低 0.7g/kg
-  MIN_FAT_PER_KG_FEMALE: 0.9,    // 女性備賽最低 0.9g/kg（低於此月經功能風險增加）
-  // 每週最大安全掉重率 (Helms: 0.5-1.0%, Garthe: >1.4% 損失 LBM)
-  MAX_WEEKLY_LOSS_PCT: 1.2,       // goal-driven 放寬到 1.2%（1.0% 理想上限 + 10% 備賽彈性）
+  // ── 脂肪下限：[1] Helms 2014 + [9] Loucks 2003 ──
+  MIN_FAT_PER_KG: 0.7,           // 男性備賽最低 0.7 g/kg
+  MIN_FAT_PER_KG_FEMALE: 0.9,    // 女性備賽最低 0.9 g/kg（低於此月經功能風險增加）
+  // [2] Garthe 2011: >1.4% → LBM 顯著損失；[1] Helms 2014: 建議 0.5-1.0%
+  MAX_WEEKLY_LOSS_PCT: 1.2,       // goal-driven 放寬到 1.2%（1.0% 理想上限 + 備賽彈性）
 }
 
 // 動態能量密度（取代靜態 7700 kcal/kg）
-// Hall 2008: 早期減重 ~4800 kcal/kg（含水分+glycogen），後期趨近 7700
+// [15] Hall 2008: 早期減重 ~3500 kcal/kg（含水分+glycogen），後期趨近 7700
+// [11] Alpert 2005: 最大脂肪動員率 ~31 kcal/lb fat/day
 // 備賽選手體脂低，減掉的含較多 LBM → 實際能量密度較低
 const ENERGY_DENSITY = {
   PURE_FAT: 7700,                 // 純脂肪 1kg = 7700 kcal
@@ -249,7 +334,7 @@ const ENERGY_DENSITY = {
 const CARDIO = {
   // 中等強度有氧的基礎消耗（kcal/min/kg），體重修正用
   // ACSM: 中等強度（快走 5-6km/h）≈ 3.5-7 METs
-  // 備賽後期代謝適應折扣 15-25%（Trexler 2014: adaptive thermogenesis）
+  // 備賽後期代謝適應折扣 15-25% [7] Trexler 2014: adaptive thermogenesis
   BASE_KCAL_PER_MIN_PER_KG: 0.075, // ~6 kcal/min for 80kg（保守，已含適應折扣）
   PREP_FATIGUE_DISCOUNT: 0.80,     // 備賽後期效率折扣（代謝適應 + 疲勞）
   // 每步消耗（體重修正）
@@ -303,7 +388,7 @@ const BULK_TARGETS = {
 const CARB_CYCLE_TRAINING_RATIO = 0.6
 const CARB_CYCLE_REST_RATIO = 0.4
 
-// Peak Week 常數（基於 Escalante 2021 + Barakat 2022 + Mitchell 2024）
+// Peak Week 常數 [12] Escalante 2021 + [13] Barakat 2022 + [14] Homer/Helms 2024
 const PEAK_WEEK = {
   // 碳水耗竭期 (Day 7-4)：低碳 + 高脂補充肌內三酸甘油酯
   DEPLETION_CARB_G_PER_KG: 1.1,    // Barakat: 1.0-1.2
@@ -742,6 +827,19 @@ export interface MetabolicStressResult {
   reasons: string[]
 }
 
+/**
+ * 代謝壓力綜合評分 (Metabolic Stress Score)
+ *
+ * 五維度加權評估，自動判斷 refeed / diet break 時機：
+ *   1. 飲食持續時間 (0-25) — [7] Trexler 2014: 持續限制加劇代謝適應
+ *   2. 恢復狀態 (0-30)     — [10] RED-S: 低 EA 影響多系統恢復
+ *   3. 體重停滯 (0-20)     — [8] MATADOR: 停滯是代謝適應的外顯指標
+ *   4. 連續低碳天數 (0-15) — [7] Trexler 2014: 碳水不足 → T3/leptin 下降
+ *   5. 主觀趨勢下滑 (0-10) — wellness tracking (能量、訓練動力)
+ *
+ * 建議閾值：≥60 diet break/2-day refeed, ≥45 1-day refeed, ≥30 monitor
+ * Refeed 碳水量 4-5 g/kg — [12] Escalante 2021, [3] Roberts 2020
+ */
 export function calculateMetabolicStressScore(params: {
   dietDurationWeeks: number | null
   recoveryState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'
@@ -1079,8 +1177,10 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     deadlineInfo = { daysLeft, weeksLeft: Math.round(weeksLeft * 10) / 10, weightToLose: Math.round(weightToLose * 10) / 10, requiredRatePerWeek: Math.round(requiredRatePerWeek * 100) / 100, isAggressive }
 
     // Peak Week 體重三層拆分（備賽 + 減脂模式）
+    // [14] Homer/Helms 2024: 水分操控可減 ~1.5-3% BW；取 2% 為保守估計
+    // [12] Escalante 2021: depletion → loading → taper → show day
     if (input.prepPhase && input.goalType === 'cut' && daysLeft > 7) {
-      const waterCutPct = 0.02  // 預設 2%，保守估計
+      const waterCutPct = 0.02  // 預設 2%，保守估計 [14]
       const peakWeekExpectedLoss = Math.round(thisWeekAvg * waterCutPct * 10) / 10
       const prePeakEntryWeight = Math.round((input.targetWeight! + peakWeekExpectedLoss) * 10) / 10
       const dietWeightToLose = Math.round((thisWeekAvg - prePeakEntryWeight) * 10) / 10
@@ -1796,10 +1896,12 @@ function generateGoalDrivenCut(
     }
   } else if (weeklyChangeRate < -GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT) {
     message += ` ⚠️ 上週掉太快（${weeklyChangeRate.toFixed(2)}%），注意肌肉流失。`
-    warnings.push('掉重速率超過 1.2%/週（Garthe 2011: >1% 增加 LBM 流失風險），可考慮增加蛋白質攝取量或微增碳水')
+    warnings.push('掉重速率超過 1.2%/週（[2] Garthe 2011: >1.4% 顯著增加 LBM 流失風險），可考慮增加蛋白質攝取量或微增碳水')
   }
 
   // Diet break / Strategic Refeed 偵測（使用代謝壓力分數）
+  // [8] MATADOR: 間歇限制優於連續限制（2wk on/off → 減脂 +50%、代謝適應更小）
+  // [7] Trexler 2014: 持續限制 → T3/leptin/TDEE 持續下降
   // 舊邏輯：固定 8 週門檻。新邏輯：綜合多維度數據自動評估
   const dietBreakSuggested = dietDurationWeeks != null && dietDurationWeeks >= SAFETY.DIET_BREAK_WEEKS
 
