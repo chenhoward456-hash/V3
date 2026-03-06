@@ -1,22 +1,112 @@
 /**
  * 營養素自動分析引擎 v3
- * 基於 2025-2026 最新運動科學文獻：
- * - ISSN Position Stand: 減脂速率 0.5-1.0% BW/week
- * - Physique Athletes Review: 蛋白質 ≥ 2.0g/kg 男性, 1.6-2.0g/kg 女性 (減脂)
- * - Morton et al. 2018 (BJSM): 蛋白質需求無顯著性別差異，但絕對需求量較低
- * - Stokes et al. 2018: 女性對低劑量蛋白質反應同等有效
- * - Loucks 2004 / Mountjoy et al. 2018 RED-S: 女性脂肪最低需求更高 (1.0g/kg)
- * - Off-Season Bodybuilding: 增肌速率 0.25-0.5% BW/week, surplus +200-300kcal
- * - Caloric Restriction Meta-Analysis: 最大赤字 ≤ 500kcal/day
+ *
+ * ═══════════════════════════════════════════════════════════════
+ * 文獻參考 (Literature References)
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * ── 減脂速率與身體組成 ──
+ * [1] Helms ER, Aragon AA, Fitschen PJ (2014). Evidence-based recommendations
+ *     for natural bodybuilding contest preparation: nutrition and supplementation.
+ *     J Int Soc Sports Nutr, 11:20. doi:10.1186/1550-2783-11-20
+ *     → 減脂速率 0.5-1.0% BW/week；蛋白質 2.3-3.1 g/kg LBM；脂肪 15-30% calories
+ *
+ * [2] Garthe I, Raastad T, Refsnes PE, et al. (2011). Effect of two different
+ *     weight-loss rates on body composition and strength and power-related
+ *     performance in elite athletes. Int J Sport Nutr Exerc Metab, 21(2):97-104.
+ *     doi:10.1123/ijsnem.21.2.97
+ *     → 0.7% BW/week (slow) 保留更多 LBM；>1.4% BW/week 顯著損失肌肉量和力量
+ *
+ * [3] Roberts BM, Helms ER, Trexler ET, Fitschen PJ (2020). Nutritional
+ *     recommendations for physique athletes. J Hum Kinet, 71:79-108.
+ *     doi:10.2478/hukin-2019-0096
+ *     → 蛋白質 1.8-2.7 g/kg；備賽與恢復期的綜合營養建議
+ *
+ * [4] Iraki J, Fitschen P, Espinar S, Helms E (2019). Nutrition recommendations
+ *     for bodybuilders in the off-season: a narrative review. Sports, 7(7):154.
+ *     doi:10.3390/sports7070154
+ *     → 增肌期 surplus +10-20%、增重 0.25-0.5% BW/week；蛋白質 1.6-2.2 g/kg
+ *
+ * ── 蛋白質需求 ──
+ * [5] Morton RW, Murphy KT, McKellar SR, et al. (2018). A systematic review,
+ *     meta-analysis and meta-regression of the effect of protein supplementation
+ *     on resistance training-induced gains in muscle mass and strength in healthy
+ *     adults. Br J Sports Med, 52(6):376-384. doi:10.1136/bjsports-2017-097608
+ *     → 蛋白質 1.6 g/kg 達飽和點；性別差異不顯著
+ *
+ * [6] Stokes T, Hector AJ, Morton RW, et al. (2018). Recent perspectives
+ *     regarding the role of dietary protein for the promotion of muscle
+ *     hypertrophy with resistance exercise training. Nutrients, 10(2):180.
+ *     → 女性對低劑量蛋白質的肌肉合成反應同等有效
+ *
+ * ── 代謝適應與 Diet Break / Refeed ──
+ * [7] Trexler ET, Smith-Ryan AE, Norton LE (2014). Metabolic adaptation to
+ *     weight loss: implications for the athlete. J Int Soc Sports Nutr, 11:7.
+ *     doi:10.1186/1550-2783-11-7
+ *     → 代謝適應 (adaptive thermogenesis) 使 TDEE 降幅超過體重預測值；
+ *       持續限制 vs 間歇限制的比較；reverse dieting 概念
+ *
+ * [8] Byrne NM, Sainsbury A, King NA, et al. (2018). Intermittent energy
+ *     restriction improves weight loss efficiency in obese men: the MATADOR
+ *     study. Int J Obes, 42:129-138. doi:10.1038/ijo.2017.206
+ *     → 2 週限制 + 2 週維持 (intermittent) vs 連續限制；
+ *       IER 組減脂更多 (12.9% vs 8.4%)、保留更多 FFM、代謝適應更小
+ *
+ * ── 能量可用性與 RED-S ──
+ * [9] Loucks AB, Thuma JR (2003). Luteinizing hormone pulsatility is disrupted
+ *     at a threshold of energy availability in regularly menstruating women.
+ *     J Clin Endocrinol Metab, 88(1):297-311.
+ *     → EA < 30 kcal/kg FFM/day 為荷爾蒙功能臨界閾值
+ *
+ * [10] Mountjoy M, Sundgot-Borgen JK, Burke LM, et al. (2018). IOC consensus
+ *      statement on relative energy deficiency in sport (RED-S): 2018 update.
+ *      Br J Sports Med, 52(11):687-697. doi:10.1136/bjsports-2018-099193
+ *      → 低能量可用性對多系統的影響；RED-S 臨床評估工具
+ *
+ * ── 最大脂肪氧化率 ──
+ * [11] Alpert SS (2005). A limit on the energy transfer rate from the human fat
+ *      store in hypophagia. J Theor Biol, 233(1):1-13.
+ *      doi:10.1016/j.jtbi.2004.08.029
+ *      → 最大脂肪動員率 ~31 kcal/lb fat/day (290±25 kJ/kg/day)；
+ *        超過此速率 FFM 流失指數級增加
+ *
+ * ── Peak Week 操控 ──
+ * [12] Escalante G, Stevenson SW, Barakat C, Aragon AA, Schoenfeld BJ (2021).
+ *      Peak week recommendations for bodybuilders: an evidence based approach.
+ *      BMC Sports Sci Med Rehabil, 13:68. doi:10.1186/s13102-021-00296-y
+ *      → 碳水超補 8-12 g/kg、水分操控、鈉操控的系統性建議；
+ *        建議操控最少變量並預先實驗
+ *
+ * [13] Barakat C, Escalante G, Stevenson SW, et al. (2022). Can bodybuilding
+ *      peak week manipulations favorably affect muscle size, subcutaneous
+ *      thickness, and related body composition variables? A case study.
+ *      Sports, 10(7):106. doi:10.3390/sports10070106
+ *      → 詳細記錄碳水耗竭→超補對肌肉厚度、皮下厚度、體內外水分的影響
+ *
+ * [14] Homer KA, Cross MR, Helms ER (2024). Peak week carbohydrate manipulation
+ *      practices in physique athletes: a narrative review. Sports Med Open,
+ *      10(1):8. doi:10.1186/s40798-024-00674-z
+ *      → 碳水操控 3-12 g/kg；水分切割 ~1.5-3% BW
+ *
+ * ── 動態能量密度 ──
+ * [15] Hall KD (2008). What is the required energy deficit per unit weight loss?
+ *      Int J Obes, 32(3):573-576. doi:10.1038/sj.ijo.0803720
+ *      → 減重初期 ~3500 kcal/kg（含水分），後期趨近 7700 kcal/kg（純脂肪）
+ *
+ * ── ISSN Position Stands ──
+ * [16] Jäger R, Kerksick CM, Campbell BI, et al. (2017). International Society
+ *      of Sports Nutrition position stand: protein and exercise. J Int Soc
+ *      Sports Nutr, 14:20. doi:10.1186/s12970-017-0177-8
+ *
+ * [17] Aragon AA, Schoenfeld BJ, Wildman R, et al. (2017). International
+ *      Society of Sports Nutrition position stand: diets and body composition.
+ *      J Int Soc Sports Nutr, 14:16. doi:10.1186/s12970-017-0174-y
+ *
+ * ═══════════════════════════════════════════════════════════════
  *
  * 活動量分型 (Activity Profile)：
  * - sedentary（上班族）: 以飲食控制為主，步數受限，有氧時間少
  * - high_energy_flux（高能量通量）: 主動增加活動消耗，同樣赤字下吃更多，保護代謝
- *
- * Peak Week 文獻：
- * - Escalante et al. (2021) - Peak week recommendations: evidence based approach
- * - Barakat et al. (2022) - Peak Week Manipulations: muscle size case study
- * - Mitchell et al. (2024) - Peak Week Carbohydrate Manipulation: narrative review
  */
 
 import {
@@ -139,7 +229,15 @@ export interface NutritionSuggestion {
     suggestedCardioMinutes?: number  // 建議有氧分鐘數（中等強度）
     suggestedDailySteps?: number     // 建議每日步數
     cardioNote?: string              // 有氧建議說明
+    // Peak Week 體重三層拆分（備賽專用）
+    peakWeekWaterCutPct?: number     // 預估 Peak Week 淨脫重百分比（預設 2%）
+    prePeakEntryWeight?: number      // Peak Week 入場目標體重
+    dietWeightToLose?: number        // 需要靠飲食減掉的量 (kg)
+    peakWeekExpectedLoss?: number    // Peak Week 預估可處理的量 (kg)
   } | null
+
+  // 代謝壓力分數
+  metabolicStress: MetabolicStressResult | null
 
   // 月經週期判斷（女性專用）
   menstrualCycleNote: string | null  // 黃體期提示訊息（null = 不在黃體期或非女性）
@@ -181,54 +279,49 @@ export interface PeakWeekDay {
   water: number // mL
 }
 
-// ===== 常數 (基於文獻) =====
-// 主要文獻：
-//   Helms et al. 2014 (JISSN) — 備賽營養建議
-//   Iraki et al. 2019 (JOHK) — Physique athletes 營養建議
-//   Hall 2008 (IJOB) — 動態能量平衡模型
-//   Thomas et al. 2013 (IJOB) — 體重預測修正
-//   Garthe et al. 2011 — 慢速 vs 快速減重對 LBM 的影響
+// ===== 常數 (基於文獻，編號對應檔案頂部 References) =====
 
 const SAFETY = {
   MIN_CALORIES_MALE: 1500,
   MIN_CALORIES_FEMALE: 1200,
-  // 男性蛋白質下限（Helms 2014: 2.3-3.1g/kg LBM → 體重近似取下限）
+  // 男性蛋白質下限 [1] Helms 2014: 2.3-3.1 g/kg LBM → 體重近似取下限
   MIN_PROTEIN_PER_KG_CUT: 2.3,
   MIN_PROTEIN_PER_KG_BULK: 1.8,
-  // 女性蛋白質下限（Stokes 2018 / Morton 2018 meta: 1.6-2.0g/kg 即達最大合成效果）
+  // 女性蛋白質下限 [5] Morton 2018 / [6] Stokes 2018: 1.6-2.0 g/kg 即達最大合成效果
   MIN_PROTEIN_PER_KG_CUT_FEMALE: 1.8,
   MIN_PROTEIN_PER_KG_BULK_FEMALE: 1.6,
   // 脂肪下限：男性荷爾蒙需求較低，女性 (雌激素合成) 需更高
   MIN_FAT_PER_KG: 0.8,           // 男性 (15-20% calories)
-  MIN_FAT_PER_KG_FEMALE: 1.0,    // 女性 (Loucks 2004 / RED-S: ≥20-25% calories)
+  MIN_FAT_PER_KG_FEMALE: 1.0,    // 女性 [9] Loucks 2003 / [10] RED-S: ≥20-25% calories
   MAX_FAT_PER_KG_BULK: 1.2,
-  MAX_DEFICIT_KCAL: 500,          // Meta-analysis: ≤500kcal/day deficit
-  DIET_BREAK_WEEKS: 8,            // Suggest diet break after 8 weeks continuous
+  MAX_DEFICIT_KCAL: 500,          // [17] ISSN Position Stand: ≤500 kcal/day deficit
+  DIET_BREAK_WEEKS: 8,            // [8] MATADOR: intermittent 2wk on/off 優於連續；8 週為保守閾值
 }
 
 // Goal-Driven 模式的放寬限制（用於備賽選手，允許更激進的赤字）
 const GOAL_DRIVEN = {
   MIN_CALORIES_MALE: 1200,        // 備賽極限：1200kcal（短期可承受）
-  MIN_CALORIES_FEMALE: 1050,      // 女性備賽極限：1050kcal（低於此荷爾蒙風險極高）
+  MIN_CALORIES_FEMALE: 1050,      // 女性備賽極限：1050kcal [9][10] 低於此荷爾蒙風險極高
   MAX_DEFICIT_KCAL: 750,          // 允許最大赤字到 750kcal（備賽期）
   EXTREME_DEFICIT_KCAL: 1000,     // 極端赤字（最後 3 週，自動警告）
-  // ── 男性蛋白質依赤字深度分級 (Helms 2014: 赤字越大 → 蛋白質越高) ──
-  PROTEIN_PER_KG_NORMAL: 2.3,    // normal 赤字：2.3g/kg
-  PROTEIN_PER_KG_AGGRESSIVE: 2.6, // aggressive：2.6g/kg
-  PROTEIN_PER_KG_EXTREME: 3.0,   // extreme：3.0g/kg（接近 LBM 的 3.1g/kg 上限）
-  // ── 女性蛋白質分級 (Stokes 2018: 女性 1.6-2.2g/kg 達最大效果，備賽上調) ──
+  // ── 男性蛋白質依赤字深度分級 [1] Helms 2014: 赤字越大 → 蛋白質越高 ──
+  PROTEIN_PER_KG_NORMAL: 2.3,    // normal 赤字：2.3 g/kg
+  PROTEIN_PER_KG_AGGRESSIVE: 2.6, // aggressive：2.6 g/kg
+  PROTEIN_PER_KG_EXTREME: 3.0,   // extreme：3.0 g/kg（接近 LBM 的 3.1 g/kg 上限）
+  // ── 女性蛋白質分級 [6] Stokes 2018: 女性 1.6-2.2 g/kg 達最大效果，備賽上調 ──
   PROTEIN_PER_KG_NORMAL_FEMALE: 1.8,
   PROTEIN_PER_KG_AGGRESSIVE_FEMALE: 2.0,
   PROTEIN_PER_KG_EXTREME_FEMALE: 2.3,
-  // ── 脂肪下限：男性 0.7g/kg，女性備賽最低 0.9g/kg（荷爾蒙保護）──
-  MIN_FAT_PER_KG: 0.7,           // 男性備賽最低 0.7g/kg
-  MIN_FAT_PER_KG_FEMALE: 0.9,    // 女性備賽最低 0.9g/kg（低於此月經功能風險增加）
-  // 每週最大安全掉重率 (Helms: 0.5-1.0%, Garthe: >1.4% 損失 LBM)
-  MAX_WEEKLY_LOSS_PCT: 1.2,       // goal-driven 放寬到 1.2%（1.0% 理想上限 + 10% 備賽彈性）
+  // ── 脂肪下限：[1] Helms 2014 + [9] Loucks 2003 ──
+  MIN_FAT_PER_KG: 0.7,           // 男性備賽最低 0.7 g/kg
+  MIN_FAT_PER_KG_FEMALE: 0.9,    // 女性備賽最低 0.9 g/kg（低於此月經功能風險增加）
+  // [2] Garthe 2011: >1.4% → LBM 顯著損失；[1] Helms 2014: 建議 0.5-1.0%
+  MAX_WEEKLY_LOSS_PCT: 1.2,       // goal-driven 放寬到 1.2%（1.0% 理想上限 + 備賽彈性）
 }
 
 // 動態能量密度（取代靜態 7700 kcal/kg）
-// Hall 2008: 早期減重 ~4800 kcal/kg（含水分+glycogen），後期趨近 7700
+// [15] Hall 2008: 早期減重 ~3500 kcal/kg（含水分+glycogen），後期趨近 7700
+// [11] Alpert 2005: 最大脂肪動員率 ~31 kcal/lb fat/day
 // 備賽選手體脂低，減掉的含較多 LBM → 實際能量密度較低
 const ENERGY_DENSITY = {
   PURE_FAT: 7700,                 // 純脂肪 1kg = 7700 kcal
@@ -241,7 +334,7 @@ const ENERGY_DENSITY = {
 const CARDIO = {
   // 中等強度有氧的基礎消耗（kcal/min/kg），體重修正用
   // ACSM: 中等強度（快走 5-6km/h）≈ 3.5-7 METs
-  // 備賽後期代謝適應折扣 15-25%（Trexler 2014: adaptive thermogenesis）
+  // 備賽後期代謝適應折扣 15-25% [7] Trexler 2014: adaptive thermogenesis
   BASE_KCAL_PER_MIN_PER_KG: 0.075, // ~6 kcal/min for 80kg（保守，已含適應折扣）
   PREP_FATIGUE_DISCOUNT: 0.80,     // 備賽後期效率折扣（代謝適應 + 疲勞）
   // 每步消耗（體重修正）
@@ -295,7 +388,7 @@ const BULK_TARGETS = {
 const CARB_CYCLE_TRAINING_RATIO = 0.6
 const CARB_CYCLE_REST_RATIO = 0.4
 
-// Peak Week 常數（基於 Escalante 2021 + Barakat 2022 + Mitchell 2024）
+// Peak Week 常數 [12] Escalante 2021 + [13] Barakat 2022 + [14] Homer/Helms 2024
 const PEAK_WEEK = {
   // 碳水耗竭期 (Day 7-4)：低碳 + 高脂補充肌內三酸甘油酯
   DEPLETION_CARB_G_PER_KG: 1.1,    // Barakat: 1.0-1.2
@@ -380,6 +473,7 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     bodyFatZoneInfo: null,
     deadlineInfo: null, autoApply: false, peakWeekPlan: null,
     menstrualCycleNote: null,
+    metabolicStress: null,
     ...overrides,
   }
 }
@@ -713,10 +807,163 @@ function countConsecutiveLowCarbDays(
   return count
 }
 
+// ===== 代謝壓力分數（Metabolic Stress Score）=====
+// 綜合多維度數據自動評估是否需要 refeed / diet break
+// 分數 0-100：越高代表代謝壓力越大
+// 文獻基礎：Trexler 2014 (intermittent dieting), Peos 2019 (diet break), Dirlewanger 2000 (leptin)
+
+export interface MetabolicStressResult {
+  score: number                    // 0-100 總分
+  level: 'low' | 'moderate' | 'elevated' | 'high'  // 壓力等級
+  recommendation: 'continue' | 'monitor' | 'refeed_1day' | 'refeed_2day' | 'diet_break'
+  refeedCarbGPerKg: number | null  // 建議 refeed 碳水 g/kg（null = 不需要）
+  breakdown: {
+    dietDuration: number           // 0-25
+    recovery: number               // 0-30
+    plateau: number                // 0-20
+    lowCarb: number                // 0-15
+    wellnessTrend: number          // 0-10
+  }
+  reasons: string[]
+}
+
+/**
+ * 代謝壓力綜合評分 (Metabolic Stress Score)
+ *
+ * 五維度加權評估，自動判斷 refeed / diet break 時機：
+ *   1. 飲食持續時間 (0-25) — [7] Trexler 2014: 持續限制加劇代謝適應
+ *   2. 恢復狀態 (0-30)     — [10] RED-S: 低 EA 影響多系統恢復
+ *   3. 體重停滯 (0-20)     — [8] MATADOR: 停滯是代謝適應的外顯指標
+ *   4. 連續低碳天數 (0-15) — [7] Trexler 2014: 碳水不足 → T3/leptin 下降
+ *   5. 主觀趨勢下滑 (0-10) — wellness tracking (能量、訓練動力)
+ *
+ * 建議閾值：≥60 diet break/2-day refeed, ≥45 1-day refeed, ≥30 monitor
+ * Refeed 碳水量 4-5 g/kg — [12] Escalante 2021, [3] Roberts 2020
+ */
+export function calculateMetabolicStressScore(params: {
+  dietDurationWeeks: number | null
+  recoveryState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'
+  readinessScore: number | null
+  weeklyChangeRate: number           // % per week
+  consecutivePlateauWeeks: number    // 連續停滯週數
+  lowCarbDays: number                // 連續低碳天數
+  recentWellness?: { energy_level: number | null; training_drive: number | null }[]  // 最近 7 天
+  daysUntilCompetition?: number | null
+  bodyFatZoneRefeedFreq?: string | null  // 來自 body-fat-zone-table
+}): MetabolicStressResult {
+  const reasons: string[] = []
+
+  // 1. 飲食持續時間 (0-25)
+  // 4 週以下 = 0, 4-6 週 = 5-10, 6-8 週 = 10-15, 8-12 週 = 15-20, 12+ 週 = 25
+  const weeks = params.dietDurationWeeks ?? 0
+  let dietDuration = 0
+  if (weeks >= 12) { dietDuration = 25; reasons.push(`已連續減脂 ${weeks} 週（代謝適應風險高）`) }
+  else if (weeks >= 8) { dietDuration = 15 + Math.round((weeks - 8) / 4 * 5); reasons.push(`已連續減脂 ${weeks} 週`) }
+  else if (weeks >= 6) { dietDuration = 10 + Math.round((weeks - 6) / 2 * 5) }
+  else if (weeks >= 4) { dietDuration = 5 + Math.round((weeks - 4) / 2 * 5) }
+
+  // 2. 恢復狀態 (0-30)
+  let recovery = 0
+  if (params.recoveryState === 'critical') { recovery = 30; reasons.push('恢復狀態極差（critical）') }
+  else if (params.recoveryState === 'struggling') { recovery = 20; reasons.push('恢復狀態偏低（struggling）') }
+  else if (params.recoveryState === 'good') { recovery = 5 }
+  else if (params.recoveryState === 'optimal') { recovery = 0 }
+  else {
+    // unknown → 用 readinessScore fallback
+    if (params.readinessScore != null) {
+      if (params.readinessScore < 30) { recovery = 25; reasons.push(`恢復分數偏低（${params.readinessScore}）`) }
+      else if (params.readinessScore < 50) { recovery = 15 }
+      else { recovery = 5 }
+    } else {
+      recovery = 10  // 沒有任何恢復數據 → 給中等分數（保守）
+    }
+  }
+
+  // 3. 體重停滯 (0-20)
+  let plateau = 0
+  if (params.consecutivePlateauWeeks >= 3) { plateau = 20; reasons.push(`連續 ${params.consecutivePlateauWeeks} 週停滯`) }
+  else if (params.consecutivePlateauWeeks >= 2) { plateau = 14; reasons.push(`連續 2 週停滯`) }
+  else if (params.consecutivePlateauWeeks >= 1) { plateau = 7 }
+
+  // 4. 連續低碳天數 (0-15)
+  let lowCarb = 0
+  if (params.lowCarbDays >= 7) { lowCarb = 15; reasons.push(`已連續 ${params.lowCarbDays} 天低碳（<150g）`) }
+  else if (params.lowCarbDays >= 5) { lowCarb = 10; reasons.push(`已連續 ${params.lowCarbDays} 天低碳`) }
+  else if (params.lowCarbDays >= 3) { lowCarb = 5 }
+
+  // 5. 主觀趨勢下滑 (0-10)
+  let wellnessTrend = 0
+  if (params.recentWellness && params.recentWellness.length >= 4) {
+    const recent = params.recentWellness.slice(0, 7)
+    const energies = recent.map(w => w.energy_level).filter((e): e is number => e != null)
+    const drives = recent.map(w => w.training_drive).filter((d): d is number => d != null)
+    if (energies.length >= 3) {
+      const avgEnergy = energies.reduce((a, b) => a + b, 0) / energies.length
+      if (avgEnergy <= 2.0) { wellnessTrend += 5; reasons.push(`近期能量偏低（平均 ${avgEnergy.toFixed(1)}/5）`) }
+      else if (avgEnergy <= 2.5) { wellnessTrend += 3 }
+    }
+    if (drives.length >= 3) {
+      const avgDrive = drives.reduce((a, b) => a + b, 0) / drives.length
+      if (avgDrive <= 2.0) { wellnessTrend += 5; reasons.push(`訓練動力偏低（平均 ${avgDrive.toFixed(1)}/5）`) }
+      else if (avgDrive <= 2.5) { wellnessTrend += 2 }
+    }
+  }
+
+  const score = dietDuration + recovery + plateau + lowCarb + wellnessTrend
+
+  // 判斷等級和建議
+  let level: MetabolicStressResult['level']
+  let recommendation: MetabolicStressResult['recommendation']
+  let refeedCarbGPerKg: number | null = null
+
+  // 備賽模式：≤7 天不建議 refeed（交給 Peak Week），但仍回報分數
+  const nearCompetition = params.daysUntilCompetition != null && params.daysUntilCompetition <= 7
+
+  if (score >= 60) {
+    level = 'high'
+    if (nearCompetition) {
+      recommendation = 'monitor'  // Peak Week 接管
+      reasons.push('代謝壓力高，但已進入 Peak Week 範圍，由 Peak Week 計畫接管')
+    } else if (weeks >= 12) {
+      recommendation = 'diet_break'
+      refeedCarbGPerKg = 5.0
+      reasons.push('建議安排 3-5 天 diet break（維持熱量 + 高碳水）')
+    } else {
+      recommendation = 'refeed_2day'
+      refeedCarbGPerKg = 5.0  // Full refeed: 5 g/kg
+      reasons.push('建議 2 天 full refeed（碳水 5g/kg，脂肪壓低）')
+    }
+  } else if (score >= 45) {
+    level = 'elevated'
+    if (nearCompetition) {
+      recommendation = 'monitor'
+    } else {
+      recommendation = 'refeed_1day'
+      refeedCarbGPerKg = 4.0  // Strategic refeed: 4 g/kg
+      reasons.push('建議 1 天 strategic refeed（碳水 4g/kg）')
+    }
+  } else if (score >= 30) {
+    level = 'moderate'
+    recommendation = 'monitor'
+    if (reasons.length === 0) reasons.push('代謝壓力中等，持續監控')
+  } else {
+    level = 'low'
+    recommendation = 'continue'
+  }
+
+  return {
+    score,
+    level,
+    recommendation,
+    refeedCarbGPerKg,
+    breakdown: { dietDuration, recovery, plateau, lowCarb, wellnessTrend },
+    reasons,
+  }
+}
+
 // ===== Refeed 觸發判斷 =====
-// 條件 A：currentState = struggling 或 critical
-// 條件 B：連續低碳 ≥ 3 天
-// A + B 同時成立 → 觸發 Refeed 建議
+// 向後相容：原有 refeed 判斷（仍用於 reactive 模式）
+// Goal-Driven 模式改用 calculateMetabolicStressScore()
 
 function checkRefeedTrigger(
   currentState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown',
@@ -739,7 +986,6 @@ function checkRefeedTrigger(
   } else if (lowCarbDays >= 3) {
     reasons.push(`已連續 ${lowCarbDays} 天碳水 < 150g`)
   } else {
-    // 狀態差但低碳天數不足，僅警告不強制 Refeed
     return { suggested: false, reason: reasons.join('、'), days: null }
   }
 
@@ -930,16 +1176,80 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
 
     deadlineInfo = { daysLeft, weeksLeft: Math.round(weeksLeft * 10) / 10, weightToLose: Math.round(weightToLose * 10) / 10, requiredRatePerWeek: Math.round(requiredRatePerWeek * 100) / 100, isAggressive }
 
-    if (isAggressive) {
-      warnings.push(`需要每週 ${input.goalType === 'cut' ? '減' : '增'} ${Math.abs(requiredRatePerWeek).toFixed(2)}kg 才能達標，超過安全範圍（${maxSafeRate.toFixed(1)}kg/週）`)
+    // Peak Week 體重三層拆分（備賽 + 減脂模式）
+    // [14] Homer/Helms 2024: 水分操控可減 ~1.5-3% BW；取 2% 為保守估計
+    // [12] Escalante 2021: depletion → loading → taper → show day
+    if (input.prepPhase && input.goalType === 'cut' && daysLeft > 7) {
+      const waterCutPct = 0.02  // 預設 2%，保守估計 [14]
+      const peakWeekExpectedLoss = Math.round(thisWeekAvg * waterCutPct * 10) / 10
+      const prePeakEntryWeight = Math.round((input.targetWeight! + peakWeekExpectedLoss) * 10) / 10
+      const dietWeightToLose = Math.round((thisWeekAvg - prePeakEntryWeight) * 10) / 10
+
+      deadlineInfo.peakWeekWaterCutPct = waterCutPct
+      deadlineInfo.prePeakEntryWeight = prePeakEntryWeight
+      deadlineInfo.dietWeightToLose = Math.max(0, dietWeightToLose)
+      deadlineInfo.peakWeekExpectedLoss = peakWeekExpectedLoss
+
+      // 用飲食目標重算 requiredRate（排除 Peak Week 可處理的部分）
+      if (dietWeightToLose > 0 && dietWeightToLose < weightToLose) {
+        const prePeakDays = Math.max(1, daysLeft - 7)  // 扣掉 Peak Week 7 天
+        const adjustedWeeksLeft = Math.max(0.5, prePeakDays / 7)
+        deadlineInfo.weightToLose = Math.round(dietWeightToLose * 10) / 10
+        deadlineInfo.requiredRatePerWeek = Math.round((dietWeightToLose / adjustedWeeksLeft) * 100) / 100
+        deadlineInfo.isAggressive = Math.abs(dietWeightToLose / adjustedWeeksLeft) > maxSafeRate
+      }
+    }
+
+    if (deadlineInfo.isAggressive) {
+      warnings.push(`需要每週 ${input.goalType === 'cut' ? '減' : '增'} ${Math.abs(deadlineInfo.requiredRatePerWeek).toFixed(2)}kg 才能達標，超過安全範圍（${maxSafeRate.toFixed(1)}kg/週）`)
     }
   }
 
-  // 8. 根據目標類型分流
+  // 8. 計算代謝壓力分數
+  // 計算連續停滯週數
+  let consecutivePlateauWeeks = 0
+  if (input.weeklyWeights.length >= 2) {
+    for (let i = 0; i < input.weeklyWeights.length - 1; i++) {
+      const wAvg = input.weeklyWeights[i].avgWeight
+      const wPrev = input.weeklyWeights[i + 1].avgWeight
+      const rate = ((wAvg - wPrev) / wPrev) * 100
+      if (input.goalType === 'cut' && rate >= CUT_TARGETS.MAX_RATE) {
+        consecutivePlateauWeeks++
+      } else if (input.goalType === 'bulk' && rate <= BULK_TARGETS.MIN_RATE) {
+        consecutivePlateauWeeks++
+      } else {
+        break
+      }
+    }
+  }
+
+  const metabolicStress = calculateMetabolicStressScore({
+    dietDurationWeeks,
+    recoveryState: currentState,
+    readinessScore,
+    weeklyChangeRate,
+    consecutivePlateauWeeks,
+    lowCarbDays,
+    recentWellness: input.recentWellness,
+    daysUntilCompetition: daysToTarget,
+    bodyFatZoneRefeedFreq: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)?.refeedFrequency ?? null,
+  })
+
+  // 代謝壓力警告
+  if (metabolicStress.level === 'high' || metabolicStress.level === 'elevated') {
+    for (const reason of metabolicStress.reasons) {
+      if (!warnings.some(w => w.includes(reason))) {
+        warnings.push(`🔥 代謝壓力${metabolicStress.level === 'high' ? '高' : '偏高'}（${metabolicStress.score}/100）：${reason}`)
+      }
+    }
+  }
+
+  // 9. 根據目標類型分流
+  const extraFields = { metabolicStress }
   if (input.goalType === 'cut') {
-    return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields }
+    return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
   } else {
-    return { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields }
+    return { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
   }
 }
 
@@ -1209,7 +1519,7 @@ function generateCutSuggestion(
       dietDurationWeeks, dietBreakSuggested, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
-      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
+      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
     }
   }
@@ -1230,7 +1540,7 @@ function generateCutSuggestion(
     dietDurationWeeks, dietBreakSuggested, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
-    deadlineInfo, autoApply: true, peakWeekPlan: null,
+    deadlineInfo, autoApply: true, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
   }
 }
@@ -1254,7 +1564,9 @@ function generateGoalDrivenCut(
   const zoneInfo = buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)
   const targetWeight = input.targetWeight!
   const daysLeft = deadlineInfo.daysLeft
-  const weightToLose = deadlineInfo.weightToLose  // kg, positive = need to lose
+  const weightToLose = deadlineInfo.weightToLose  // kg, positive = need to lose (已含 Peak Week 拆分)
+  // Peak Week 拆分時，達標比較對象是 PW 入場體重（而非上台體重）
+  const effectiveTarget = deadlineInfo.prePeakEntryWeight ?? targetWeight
 
   // 1. 計算需要的每日赤字（使用動態能量密度）
   const energyDensity = getEnergyDensity(daysLeft, dietDurationWeeks)
@@ -1453,11 +1765,12 @@ function generateGoalDrivenCut(
     const totalLoss = (totalDailyBurn * daysLeft) / energyDensity
     predictedCompWeight = Math.round((bw - totalLoss) * 10) / 10
 
-    // 判斷能否達標
-    if (predictedCompWeight <= targetWeight + 0.3) {
+    // 判斷能否達標（Peak Week 拆分時比較 PW 入場目標）
+    if (predictedCompWeight <= effectiveTarget + 0.3) {
       cardioNote = `飲食 + 步數可達標！今日目標 ${suggestedDailySteps.toLocaleString()} 步（需額外消耗 ${Math.round(extraBurnPerDay)}kcal）`
     } else {
-      cardioNote = `預測 ${predictedCompWeight}kg（目標 ${targetWeight}kg），差 ${(predictedCompWeight - targetWeight).toFixed(1)}kg。可與教練討論調整量級或目標`
+      const targetLabel = deadlineInfo.prePeakEntryWeight ? `PW 入場 ${effectiveTarget}kg` : `目標 ${targetWeight}kg`
+      cardioNote = `預測 ${predictedCompWeight}kg（${targetLabel}），差 ${(predictedCompWeight - effectiveTarget).toFixed(1)}kg。可與教練討論調整量級或目標`
     }
 
     if (rawExtraBurn > CARDIO.MAX_EXTRA_BURN_PER_DAY) {
@@ -1466,7 +1779,7 @@ function generateGoalDrivenCut(
     warnings.push(`👟 今日步數目標 ${suggestedDailySteps.toLocaleString()} 步（需額外消耗 ${Math.round(extraBurnPerDay)}kcal 彌補飲食缺口）`)
   } else {
     // 飲食面赤字足夠（shortfall ≤ 50 kcal）
-    predictedCompWeight = targetWeight
+    predictedCompWeight = effectiveTarget  // Peak Week 拆分時 = PW 入場體重
 
     // 高能量通量策略（High Energy Flux）
     // 即使飲食赤字夠了，也設步數目標 → 多消耗的部分加回碳水
@@ -1545,17 +1858,18 @@ function generateGoalDrivenCut(
   } else if (shortfall > 0) {
     statusEmoji = '⚠️'
     statusLabel = '底線限制'
-    message = `以目前 TDEE ${estimatedTDEE}kcal，需要每日赤字 ${effectiveDailyDeficit}kcal 才能達到 ${targetWeight}kg。`
+    const targetLabel = deadlineInfo.prePeakEntryWeight ? `PW 入場 ${effectiveTarget}kg` : `${targetWeight}kg`
+    message = `以目前 TDEE ${estimatedTDEE}kcal，需要每日赤字 ${effectiveDailyDeficit}kcal 才能達到 ${targetLabel}。`
     message += `飲食底線 ${actualCalories}kcal（赤字缺口 ${Math.round(shortfall)}kcal 需靠活動補）`
     if (extraCardioNeeded) {
       message += `，步數目標 ${suggestedDailySteps.toLocaleString()} 步/天`
-      if (predictedCompWeight <= targetWeight + 0.3) {
+      if (predictedCompWeight <= effectiveTarget + 0.3) {
         message += `，預測可達 ${predictedCompWeight}kg ✓`
       } else {
-        message += `，預測 ${predictedCompWeight}kg（差 ${(predictedCompWeight - targetWeight).toFixed(1)}kg）`
+        message += `，預測 ${predictedCompWeight}kg（差 ${(predictedCompWeight - effectiveTarget).toFixed(1)}kg）`
       }
     } else {
-      message += `，預測比賽日 ${predictedCompWeight}kg。`
+      message += `，預測 PW 入場 ${predictedCompWeight}kg。`
     }
   } else if (safetyLevel === 'extreme') {
     statusEmoji = '🔥'
@@ -1582,13 +1896,29 @@ function generateGoalDrivenCut(
     }
   } else if (weeklyChangeRate < -GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT) {
     message += ` ⚠️ 上週掉太快（${weeklyChangeRate.toFixed(2)}%），注意肌肉流失。`
-    warnings.push('掉重速率超過 1.2%/週（Garthe 2011: >1% 增加 LBM 流失風險），可考慮增加蛋白質攝取量或微增碳水')
+    warnings.push('掉重速率超過 1.2%/週（[2] Garthe 2011: >1.4% 顯著增加 LBM 流失風險），可考慮增加蛋白質攝取量或微增碳水')
   }
 
-  // Diet break 偵測
+  // Diet break / Strategic Refeed 偵測（使用代謝壓力分數）
+  // [8] MATADOR: 間歇限制優於連續限制（2wk on/off → 減脂 +50%、代謝適應更小）
+  // [7] Trexler 2014: 持續限制 → T3/leptin/TDEE 持續下降
+  // 舊邏輯：固定 8 週門檻。新邏輯：綜合多維度數據自動評估
   const dietBreakSuggested = dietDurationWeeks != null && dietDurationWeeks >= SAFETY.DIET_BREAK_WEEKS
-  if (dietBreakSuggested && daysLeft > 21) {
-    warnings.push(`已連續減脂 ${dietDurationWeeks} 週。距比賽還有 ${daysLeft} 天，可考慮安排 3-5 天 refeed 恢復代謝`)
+
+  // 備賽 strategic refeed：距比賽 ≤ 28 天 + 代謝壓力偏高
+  // 注意：metabolicStress 由主引擎計算並 spread 進去，這裡用 deadlineInfo 的 weightToLose 做補充判斷
+  if (daysLeft > 7 && daysLeft <= 28) {
+    // 最後 4 週：即使未達 8 週門檻，也根據體重 gap 和恢復狀態給策略性 refeed 建議
+    const hasBuffer = deadlineInfo.prePeakEntryWeight != null
+      ? (bw - deadlineInfo.prePeakEntryWeight) <= (bw * 0.015)  // 差距 ≤ 1.5% BW → 有空間 refeed
+      : weightToLose <= bw * 0.02
+    if (hasBuffer && (recoveryState === 'critical' || recoveryState === 'struggling')) {
+      warnings.push(`🔄 距比賽 ${daysLeft} 天，體重接近目標且恢復偏低。建議安排 1 天策略性 refeed（碳水 4-5 g/kg），恢復代謝和訓練品質`)
+    } else if (dietBreakSuggested && daysLeft > 14) {
+      warnings.push(`已連續減脂 ${dietDurationWeeks} 週。距比賽還有 ${daysLeft} 天，可考慮安排 1-2 天 refeed 恢復代謝（碳水 4-5 g/kg，蛋白質維持，脂肪壓低）`)
+    }
+  } else if (dietBreakSuggested && daysLeft > 28) {
+    warnings.push(`已連續減脂 ${dietDurationWeeks} 週。距比賽還有 ${daysLeft} 天，可考慮安排 3-5 天 diet break 恢復代謝`)
   }
 
   // 更新 deadlineInfo 加入 goal-driven + 有氧資訊
@@ -1629,7 +1959,7 @@ function generateGoalDrivenCut(
     bodyFatZoneInfo: zoneInfo,
     deadlineInfo: enrichedDeadlineInfo,
     autoApply: true,  // Goal-driven 永遠自動套用
-    peakWeekPlan: null,
+    peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
   }
 }
@@ -1814,7 +2144,7 @@ function generateBulkSuggestion(
       dietDurationWeeks, dietBreakSuggested: false, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
-      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
+      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
     }
   }
@@ -1835,7 +2165,7 @@ function generateBulkSuggestion(
     dietDurationWeeks, dietBreakSuggested: false, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
-    deadlineInfo, autoApply: true, peakWeekPlan: null,
+    deadlineInfo, autoApply: true, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
   }
 }
@@ -1975,7 +2305,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
     bodyFatZoneInfo: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType),
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
     autoApply: true,
-    peakWeekPlan: plan,
+    peakWeekPlan: plan, metabolicStress: null,
     menstrualCycleNote: null,  // Peak Week 不需要週期提示
   }
 }

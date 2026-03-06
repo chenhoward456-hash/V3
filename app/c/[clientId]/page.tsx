@@ -484,16 +484,38 @@ export default function ClientDashboard() {
               {/* 備賽模式：今日體重 vs 目標 */}
               {isCompetition && c.target_weight && latestBodyData?.weight && (
                 <div className="mt-2 pt-2 border-t border-blue-100 space-y-1">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500">⚖️ 最新體重</span>
-                    <span className="text-sm font-bold text-gray-800">{latestBodyData.weight} kg</span>
-                    <span className="text-xs text-gray-400">→</span>
-                    <span className="text-xs text-gray-500">🎯 目標</span>
-                    <span className="text-sm font-bold text-red-500">{c.target_weight} kg</span>
-                    <span className={`text-xs font-medium ml-auto ${Math.abs(latestBodyData.weight - c.target_weight) <= 1 ? 'text-green-600' : 'text-amber-600'}`}>
-                      差 {Math.abs(latestBodyData.weight - c.target_weight).toFixed(1)} kg
-                    </span>
-                  </div>
+                  {/* Peak Week 體重拆分 */}
+                  {(() => {
+                    const totalGap = Math.abs(latestBodyData.weight - c.target_weight)
+                    const waterCutPct = 0.02  // 2% BW
+                    const peakWeekLoss = Math.round(latestBodyData.weight * waterCutPct * 10) / 10
+                    const prePeakTarget = Math.round((c.target_weight + peakWeekLoss) * 10) / 10
+                    const dietGap = Math.max(0, Math.round((latestBodyData.weight - prePeakTarget) * 10) / 10)
+                    const daysLeft = c.competition_date ? Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000) : null
+                    const showSplit = daysLeft != null && daysLeft > 7 && c.prep_phase !== 'peak_week'
+
+                    return (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-gray-500">⚖️ 最新</span>
+                          <span className="text-sm font-bold text-gray-800">{latestBodyData.weight} kg</span>
+                          <span className="text-xs text-gray-400">→</span>
+                          <span className="text-xs text-gray-500">🎯 上台</span>
+                          <span className="text-sm font-bold text-red-500">{c.target_weight} kg</span>
+                          <span className={`text-xs font-medium ml-auto ${totalGap <= 1 ? 'text-green-600' : 'text-amber-600'}`}>
+                            差 {totalGap.toFixed(1)} kg
+                          </span>
+                        </div>
+                        {showSplit && totalGap > peakWeekLoss && (
+                          <div className="flex items-center gap-2 text-[10px] text-indigo-500 bg-indigo-50 rounded-lg px-2 py-1">
+                            <span>💧 飲食目標 {dietGap} kg</span>
+                            <span className="text-gray-300">+</span>
+                            <span>Peak Week 約 {peakWeekLoss} kg</span>
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
                   {/* 體態推算參考範圍（需要體脂率才顯示） */}
                   {latestBodyData.body_fat && (() => {
                     const rec = calcRecommendedStageWeight(
@@ -713,6 +735,36 @@ export default function ClientDashboard() {
             />
           )}
         </div>
+
+        {/* 性別未設定提示 — 僅 free/self_managed 可自行設定，coached 由教練處理 */}
+        {!c.gender && (isFree || isSelfManaged) && (
+          <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 mb-4">
+            <p className="text-sm font-medium text-purple-800 mb-2">請設定你的生理性別</p>
+            <p className="text-xs text-purple-600 mb-3">性別會影響蛋白質、脂肪建議量及荷爾蒙安全底線的計算。未設定時系統預設為男性參數。</p>
+            <div className="grid grid-cols-2 gap-2">
+              {(['男性', '女性'] as const).map(g => (
+                <button
+                  key={g}
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/clients', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ clientId: c.unique_code, gender: g })
+                      })
+                      if (!res.ok) throw new Error()
+                      mutate()
+                      showToast(`已設定為${g}`, 'success')
+                    } catch { showToast('設定失敗，請重試', 'error') }
+                  }}
+                  className="py-2.5 rounded-xl text-sm font-semibold border-2 border-purple-200 bg-white text-purple-700 hover:bg-purple-100 transition-colors"
+                >
+                  {g === '男性' ? '♂' : '♀'} {g}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* === 備賽選手：體重軌跡優先 === */}
         {isCompetition && c.body_composition_enabled && (

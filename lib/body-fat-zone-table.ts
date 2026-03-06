@@ -3,22 +3,21 @@
  * ======================================
  * Evidence-based macronutrient & deficit recommendations by body fat zone and gender.
  *
- * Literature basis:
- *   - Helms, Aragon & Fitschen (2014) JISSN: Contest prep nutrition review
- *   - Helms et al. (2014) systematic review: Protein during caloric restriction in lean athletes
- *   - ISSN Position Stand on Protein & Exercise (Jager et al. 2017)
- *   - ISSN Position Stand on Diets & Body Composition (Aragon et al. 2017)
- *   - Iraki et al. (2019) JOHK: Nutrition recommendations for physique athletes
- *   - Schoenfeld & Aragon (2018) BJSM meta-analysis: Protein supplementation & lean mass
- *   - Stokes et al. (2018): Female protein dose-response
- *   - Morton et al. (2018) BJSM: Protein dose-response meta-analysis (1.6g/kg saturation)
- *   - Trexler et al. (2014) JISSN: Metabolic adaptation to weight loss
- *   - Alpert (2005) J Theor Biol: Max fat oxidation rate ~31 kcal/lb fat/day
- *   - Garthe et al. (2011): Slow vs fast weight loss and LBM
- *   - Mountjoy et al. (2018) IOC consensus: RED-S / relative energy deficiency
- *   - Loucks (2004): Energy availability thresholds for female hormonal function
- *   - Trexler et al. (2014) JISSN: Intermittent dieting — refeeds & diet breaks
- *   - Campbell et al. (2020): Off-season bodybuilding nutrition
+ * Literature basis (完整引用見 nutrition-engine.ts 頂部 References):
+ *   [1]  Helms, Aragon & Fitschen (2014) JISSN — 備賽營養建議, 蛋白質 2.3-3.1 g/kg LBM
+ *   [2]  Garthe et al. (2011) IJSNEM — 慢速 vs 快速減重: 0.7% BW/wk 保留更多 LBM
+ *   [3]  Roberts, Helms, Trexler, Fitschen (2020) J Hum Kinet — 蛋白質 1.8-2.7 g/kg
+ *   [4]  Iraki et al. (2019) Sports — 增肌期 surplus +10-20%, 蛋白質 1.6-2.2 g/kg
+ *   [5]  Morton et al. (2018) BJSM — 蛋白質 1.6 g/kg 飽和點 meta-analysis
+ *   [6]  Stokes et al. (2018) Nutrients — 女性低劑量蛋白質同等有效
+ *   [7]  Trexler et al. (2014) JISSN — 代謝適應, refeed, reverse dieting
+ *   [8]  Byrne et al. (2018) Int J Obes — MATADOR: intermittent restriction 優於連續
+ *   [9]  Loucks & Thuma (2003) JCEM — EA < 30 kcal/kg FFM/day 閾值
+ *   [10] Mountjoy et al. (2018) BJSM — IOC RED-S consensus
+ *   [11] Alpert (2005) J Theor Biol — 最大脂肪動員率 ~31 kcal/lb fat/day
+ *   [16] Jäger et al. (2017) JISSN — ISSN protein position stand
+ *   [17] Aragon et al. (2017) JISSN — ISSN diets & body composition
+ *   -    Campbell et al. (2020) — Off-season bodybuilding nutrition
  *
  * Recovery Modifier System:
  *   Recovery indicators (sleep quality, energy, mood, training RPE) are scored 1-5.
