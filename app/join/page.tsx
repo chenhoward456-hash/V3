@@ -300,7 +300,7 @@ export default function JoinPage() {
 
             {isLineOnly ? (
               <a
-                href="https://line.me/ti/p/~0078185268"
+                href="https://lin.ee/LP65rCc"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
@@ -483,7 +483,7 @@ export default function JoinPage() {
                 }
               </p>
               <p className="text-center text-[10px] text-gray-300 mt-3">
-                服務提供：Howard Protocol ｜ howard@howard456.com ｜ 0978-185-268
+                服務提供：Howard Protocol ｜ chenhoward456@gmail.com ｜ 0978-185-268
               </p>
             </div>
           </div>

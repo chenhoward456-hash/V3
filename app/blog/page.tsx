@@ -163,7 +163,7 @@ export default async function BlogPage() {
             透過 LINE 預約免費諮詢，了解個人化的健康優化方案。
           </p>
           <a
-            href="https://line.me/ti/p/~0078185268"
+            href="https://lin.ee/LP65rCc"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-success text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"

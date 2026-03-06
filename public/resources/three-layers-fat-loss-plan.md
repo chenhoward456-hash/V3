@@ -303,7 +303,7 @@
 **歡迎透過 LINE 預約免費諮詢**
 
 掃描下方 QR Code 或搜尋 LINE ID：
-👉 https://line.me/ti/p/~0078185268
+👉 https://lin.ee/LP65rCc
 
 ---
 

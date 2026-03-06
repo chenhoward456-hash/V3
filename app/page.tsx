@@ -15,7 +15,7 @@ const personSchema = {
   image: 'https://howard456.vercel.app/howard-profile.jpg',
   sameAs: [
     'https://www.instagram.com/chenhoward/',
-    'https://line.me/ti/p/~0078185268',
+    'https://lin.ee/LP65rCc',
   ],
   worksFor: {
     '@type': 'Organization',
@@ -56,7 +56,7 @@ const localBusinessSchema = {
   priceRange: '$$',
   sameAs: [
     'https://www.instagram.com/chenhoward/',
-    'https://line.me/ti/p/~0078185268',
+    'https://lin.ee/LP65rCc',
   ],
 }
 
@@ -424,7 +424,7 @@ export default function HomePage() {
             全部月繳制，隨時可取消。免費版隨時可升級，補差額即可。
           </p>
           <p className="text-center text-[10px] text-gray-300 mt-3">
-            服務提供：Howard Protocol ｜ howard@howard456.com ｜ 0978-185-268
+            服務提供：Howard Protocol ｜ chenhoward456@gmail.com ｜ 0978-185-268
           </p>
         </section>
       </ScrollReveal>
