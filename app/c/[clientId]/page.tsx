@@ -15,6 +15,7 @@ import ActionPlan from '@/components/client/ActionPlan'
 import WellnessTrend from '@/components/client/WellnessTrend'
 import HealthReport from '@/components/client/HealthReport'
 import TrainingLog from '@/components/client/TrainingLog'
+import { isWeightTraining } from '@/components/client/types'
 import NutritionLog from '@/components/client/NutritionLog'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
@@ -662,7 +663,7 @@ export default function ClientDashboard() {
               fatTarget={c.fat_target}
               targetWeight={c.target_weight || null}
               targetDate={c.target_date || null}
-              isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+              isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
               latestWeight={latestBodyData?.weight || null}
               latestBodyFat={latestBodyData?.body_fat || null}
               clientHeight={null}
@@ -787,7 +788,7 @@ export default function ClientDashboard() {
           <GoalDrivenStatus
             clientId={c.id}
             code={c.unique_code}
-            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
             onMutate={mutate}
           />
         )}
@@ -813,10 +814,10 @@ export default function ClientDashboard() {
             waterTarget={c.water_target}
             competitionEnabled={c.competition_enabled}
             carbsTarget={c.carbs_training_day && c.carbs_rest_day
-              ? (todayTraining && todayTraining.training_type !== 'rest' ? c.carbs_training_day : c.carbs_rest_day)
+              ? (todayTraining && isWeightTraining(todayTraining.training_type) ? c.carbs_training_day : c.carbs_rest_day)
               : c.carbs_target}
             carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
-            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
             carbsTrainingDay={c.carbs_training_day}
             carbsRestDay={c.carbs_rest_day}
             fatTarget={c.fat_target}
@@ -836,7 +837,7 @@ export default function ClientDashboard() {
             carbsTarget={c.carbs_target}
             fatTarget={c.fat_target}
             carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
-            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
             carbsTrainingDay={c.carbs_training_day}
             carbsRestDay={c.carbs_rest_day}
           />
@@ -853,10 +854,10 @@ export default function ClientDashboard() {
             waterTarget={c.water_target}
             competitionEnabled={c.competition_enabled}
             carbsTarget={c.carbs_training_day && c.carbs_rest_day
-              ? (todayTraining && todayTraining.training_type !== 'rest' ? c.carbs_training_day : c.carbs_rest_day)
+              ? (todayTraining && isWeightTraining(todayTraining.training_type) ? c.carbs_training_day : c.carbs_rest_day)
               : c.carbs_target}
             carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
-            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
             carbsTrainingDay={c.carbs_training_day}
             carbsRestDay={c.carbs_rest_day}
             fatTarget={c.fat_target}
@@ -919,7 +920,7 @@ export default function ClientDashboard() {
             fatTarget={c.fat_target}
             targetWeight={c.target_weight || null}
             targetDate={c.target_date || null}
-            isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
             latestWeight={latestBodyData?.weight || null}
             latestBodyFat={latestBodyData?.body_fat || null}
             clientHeight={c.height || null}
@@ -1101,11 +1102,11 @@ export default function ClientDashboard() {
           caloriesTarget={c.calories_target}
           proteinTarget={c.protein_target}
           carbsTarget={c.carbs_training_day && c.carbs_rest_day
-            ? (todayTraining && todayTraining.training_type !== 'rest' ? c.carbs_training_day : c.carbs_rest_day)
+            ? (todayTraining && isWeightTraining(todayTraining.training_type) ? c.carbs_training_day : c.carbs_rest_day)
             : c.carbs_target}
           fatTarget={c.fat_target}
           waterTarget={c.water_target}
-          isTrainingDay={!!(todayTraining && todayTraining.training_type !== 'rest')}
+          isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
           competitionEnabled={isCompetition}
           latestWeight={latestBodyData?.weight}
           latestBodyFat={latestBodyData?.body_fat}

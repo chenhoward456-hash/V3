@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
+import { isWeightTraining } from '@/components/client/types'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 
 const supabase = createServiceSupabase()
@@ -147,7 +148,7 @@ export async function GET(request: NextRequest) {
       : null
 
     // 6. 計算每週訓練天數 (近 14 天)
-    const recentTraining = trainingLogs.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr && l.training_type !== 'rest')
+    const recentTraining = trainingLogs.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr && isWeightTraining(l.training_type))
     const trainingDaysPerWeek = Math.round(recentTraining.length / 2)  // 14 天 ÷ 2
 
     // 7. 當前體重 + 身體組成 (最新紀錄)

@@ -8,7 +8,7 @@ import {
   ResponsiveContainer, BarChart, Bar, ReferenceLine, Cell
 } from 'recharts'
 import { Download } from 'lucide-react'
-import { TRAINING_TYPES } from '@/components/client/types'
+import { TRAINING_TYPES, isWeightTraining } from '@/components/client/types'
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 
 export default function ClientOverview() {
@@ -421,13 +421,13 @@ export default function ClientOverview() {
       }
       // 碳水：碳循環模式下根據當天有無訓練動態選擇目標
       const dailyCarbTarget = hasCarbCycling
-        ? (trainingLogs.some((t: any) => t.date === l.date && t.training_type !== 'rest') ? client.carbs_training_day : client.carbs_rest_day)
+        ? (trainingLogs.some((t: any) => t.date === l.date && isWeightTraining(t.training_type)) ? client.carbs_training_day : client.carbs_rest_day)
         : client.carbs_target
       if (dailyCarbTarget && l.carbs_grams != null) {
         day.carbDev = Math.round(((l.carbs_grams - dailyCarbTarget) / dailyCarbTarget) * 100)
         day.carbs = l.carbs_grams
         day.carbTarget = dailyCarbTarget
-        day.isTrainingDay = trainingLogs.some((t: any) => t.date === l.date && t.training_type !== 'rest')
+        day.isTrainingDay = trainingLogs.some((t: any) => t.date === l.date && isWeightTraining(t.training_type))
       }
       if (client.fat_target && l.fat_grams != null) {
         day.fatDev = Math.round(((l.fat_grams - client.fat_target) / client.fat_target) * 100)

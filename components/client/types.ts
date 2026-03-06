@@ -60,6 +60,12 @@ export const TRAINING_TYPES = [
   { value: 'rest', label: '休息', emoji: '😴' },
 ] as const
 
+// 重訓類型 — 只有這些算「訓練日」影響碳循環
+export const WEIGHT_TRAINING_TYPES = ['push', 'pull', 'legs', 'full_body', 'chest', 'shoulder', 'arms'] as const
+export function isWeightTraining(type: string | null | undefined): boolean {
+  return WEIGHT_TRAINING_TYPES.includes(type as any)
+}
+
 export interface NutritionLog {
   id: string
   date: string
