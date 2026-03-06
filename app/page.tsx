@@ -95,27 +95,29 @@ export default function HomePage() {
                 CSCS 認證 × 數據驅動
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-navy">
-                練了半年沒變化？<br />問題不在你的努力
+                你不是不夠努力<br />你只是每天都在<br className="md:hidden" />用感覺做決定
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
-                智能系統 24 小時分析 × CSCS 教練即時監督
+                每天 2 分鐘記錄，系統告訴你今天做對了沒有
               </p>
               <p className="text-sm text-gray-400 mb-8 leading-relaxed max-w-lg">
-                不靠感覺、不靠公式 — 系統根據你的真實數據，每週自動分析體重趨勢、校正營養目標、偵測停滯期。
+                系統追蹤你的體重趨勢，每週自動校正目標。<br />
+                不是給你數字就消失 — 是每天告訴你：對，繼續。
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/join"
                   className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition-all shadow-lg shadow-blue-500/25 text-center"
                 >
-                  免費體驗 →
+                  免費開始記錄 →
                 </Link>
-                <Link
-                  href="/diagnosis"
+                <LineButton
+                  source="homepage_hero"
+                  intent="general"
                   className="inline-block bg-white text-navy border-2 border-navy px-8 py-4 rounded-xl font-semibold text-lg hover:bg-navy/5 transition-all text-center"
                 >
-                  免費系統分析
-                </Link>
+                  加 LINE 了解更多
+                </LineButton>
               </div>
             </div>
 
@@ -162,7 +164,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== 區塊 2: 痛點共鳴 ===== */}
+      {/* ===== 區塊 2: 痛點共鳴（過程型 → 結果型收尾） ===== */}
       <ScrollReveal>
         <section className="max-w-6xl mx-auto px-6 py-20">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-navy">
@@ -170,10 +172,10 @@ export default function HomePage() {
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             {[
-              { emoji: '💪', text: '認真練了半年，體態卻沒什麼變化' },
-              { emoji: '🥗', text: '飲食控制很嚴格，體脂就是不降' },
-              { emoji: '😫', text: '容易疲勞、恢復慢，不知道哪裡出問題' },
-              { emoji: '📋', text: '教練給了菜單，但從不根據你的數據調整' },
+              { emoji: '🍽️', text: '每天吃完飯不知道今天算不算合格' },
+              { emoji: '🏋️', text: '訓練完不確定今天的強度是對的還是太過' },
+              { emoji: '📉', text: '停滯了不知道是該繼續撐還是調整計畫' },
+              { emoji: '😶‍🌫️', text: '靠感覺過了三個月，回頭看根本不知道哪裡出了問題' },
             ].map(({ emoji, text }) => (
               <div key={text} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
                 <div className="text-3xl mb-3">{emoji}</div>
@@ -183,8 +185,8 @@ export default function HomePage() {
           </div>
           <div className="max-w-2xl mx-auto bg-navy/5 rounded-2xl p-6 text-center">
             <p className="text-gray-600 text-sm leading-relaxed">
-              大部分教練給你一組靜態數字，然後<span className="font-bold text-navy">就沒有然後了</span>。
-              <br />Howard Protocol 會根據你的體重趨勢，<span className="font-bold text-primary">每週自動分析、自動建議調整</span>。
+              問題不是你不夠努力，是<span className="font-bold text-navy">沒有東西告訴你方向對不對</span>。
+              <br />Howard Protocol 每天幫你確認：<span className="font-bold text-primary">方向對，繼續。方向偏，這樣調。</span>
             </p>
           </div>
         </section>
@@ -222,7 +224,7 @@ export default function HomePage() {
         </section>
       </ScrollReveal>
 
-      {/* ===== 區塊 4: 系統核心能力（合併） ===== */}
+      {/* ===== 區塊 4: 系統核心能力（用戶語言 + 數字錨點） ===== */}
       <ScrollReveal>
         <section className="max-w-6xl mx-auto px-6 py-20">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
@@ -231,17 +233,51 @@ export default function HomePage() {
           <p className="text-center text-gray-500 mb-14">每個功能都有運動科學文獻支撐</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: '📊', title: '自適應 TDEE', desc: '不用公式猜 — 系統根據你的體重變化和飲食記錄，自動校正代謝率' },
-              { icon: '🧠', title: '每週智能分析', desc: '掉太快？停滯了？方向對嗎？系統即時判斷，不用等教練手動看' },
-              { icon: '🔄', title: 'Refeed 自動觸發', desc: 'RPE + 能量 + 低碳天數，三條件到位自動建議 Refeed' },
-              { icon: '🩸', title: '月經週期濾鏡', desc: '黃體期體重浮動不會被誤判，系統不會叫你少吃' },
-            ].map(({ icon, title, desc }) => (
+              { icon: '📊', title: '系統學你的身體', anchor: '追蹤 14 天後自動校正', desc: '每個人代謝不一樣。系統追蹤你的體重趨勢，自動算出你實際燃燒多少 — 比任何公式都準，因為用的是你自己的數據。' },
+              { icon: '🧠', title: '系統幫你看方向', anchor: '每週一早上推送', desc: '掉太快？停滯了？方向對嗎？系統每週自動判斷，直接告訴你該怎麼調 — 不用等、不用猜。' },
+              { icon: '🔄', title: '系統告訴你該放鬆', anchor: '3 個信號同時亮才觸發', desc: '節食太久身體會反抗。系統監測你的疲勞和低碳天數，時機到了主動提醒你 Refeed — 你不需要懂原理。' },
+              { icon: '🩸', title: '系統不會誤判你', anchor: '自動排除黃體期波動', desc: '經期前體重浮動是正常的。系統知道這件事，不會因為體重上升就叫你少吃。' },
+            ].map(({ icon, title, anchor, desc }) => (
               <div key={title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="text-3xl mb-3 text-center">{icon}</div>
-                <h3 className="font-bold mb-2 text-sm text-center text-navy">{title}</h3>
+                <h3 className="font-bold mb-1 text-sm text-center text-navy">{title}</h3>
+                <p className="text-[10px] text-primary font-semibold text-center mb-2">{anchor}</p>
                 <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
               </div>
             ))}
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* ===== 區塊 4.5: 時間軸 — 用了之後會發生什麼 ===== */}
+      <ScrollReveal>
+        <section className="bg-[#f5f7fa] py-20">
+          <div className="max-w-3xl mx-auto px-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
+              用了之後會發生什麼
+            </h2>
+            <p className="text-center text-gray-500 mb-14">不靠意志力，靠系統幫你累積</p>
+            <div className="space-y-0">
+              {[
+                { day: '第 1 天', text: '填入基本資料，系統算出你的起點和每日目標', color: 'bg-blue-500' },
+                { day: '第 14 天', text: '系統根據你的真實體重趨勢，自動校正 TDEE', color: 'bg-indigo-500' },
+                { day: '第 30 天', text: '第一份月報出爐，看到趨勢線的方向', color: 'bg-purple-500' },
+                { day: '第 90 天', text: '回頭看三個月的數據，你會知道每一步是怎麼走過來的', color: 'bg-green-500' },
+              ].map(({ day, text, color }, i) => (
+                <div key={day} className="flex gap-4 items-start">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-10 h-10 rounded-full ${color} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
+                      {day.replace('第 ', '').replace(' 天', '')}
+                    </div>
+                    {i < 3 && <div className="w-0.5 h-12 bg-gray-200" />}
+                  </div>
+                  <div className="pt-2 pb-8">
+                    <p className="text-xs font-bold text-gray-400 mb-1">{day}</p>
+                    <p className="text-sm text-gray-700 font-medium">{text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       </ScrollReveal>
@@ -289,54 +325,84 @@ export default function HomePage() {
         </section>
       </ScrollReveal>
 
-      {/* ===== 區塊 6: 簡化 CTA ===== */}
+      {/* ===== 區塊 6: 三欄定價 ===== */}
       <ScrollReveal>
-        <section className="max-w-4xl mx-auto px-6 py-20">
+        <section className="max-w-5xl mx-auto px-6 py-20">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
             免費開始，用了再決定
           </h2>
           <p className="text-center text-gray-500 mb-14">不需信用卡，30 秒建立帳號</p>
-          <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            {/* 免費體驗 */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-green-200 flex flex-col text-center">
-              <div className="text-4xl mb-4">📊</div>
-              <h3 className="text-xl font-bold mb-2 text-navy">免費體驗系統</h3>
-              <p className="text-gray-500 text-sm mb-4 leading-relaxed">
-                體重追蹤、飲食紀錄、TDEE 自動計算。先感受系統怎麼運作。
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* 免費 */}
+            <div className="bg-white rounded-2xl p-7 shadow-sm border-2 border-gray-200 flex flex-col">
+              <h3 className="text-lg font-bold text-navy mb-1">免費版</h3>
+              <p className="text-3xl font-bold text-navy mb-1">$0</p>
+              <p className="text-xs text-gray-400 mb-5">永久免費</p>
+              <p className="text-gray-500 text-sm mb-5 leading-relaxed">
+                自己記錄、系統分析。先感受系統怎麼運作。
               </p>
-              <ul className="space-y-2 text-gray-600 mb-6 flex-1 text-sm text-left">
-                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>體重趨勢 + 飲食紀錄</li>
-                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>TDEE + 巨量營養素計算</li>
+              <ul className="space-y-2 text-gray-600 mb-6 flex-1 text-sm">
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>體重趨勢追蹤</li>
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>飲食紀錄 + 合規追蹤</li>
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>TDEE 自動計算</li>
                 <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>14 天後自動校正目標</li>
-                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>每月 1 次 AI 飲食顧問</li>
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>每月 1 次 AI 顧問</li>
               </ul>
               <Link
                 href="/join"
-                className="block bg-green-500 text-white py-3.5 rounded-xl font-semibold hover:bg-green-600 transition-colors text-lg"
+                className="block bg-gray-800 text-white py-3.5 rounded-xl font-semibold hover:bg-gray-900 transition-colors text-center"
               >
-                免費開始 →
+                免費開始記錄 →
               </Link>
             </div>
 
-            {/* 加 LINE 諮詢 */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-navy/20 flex flex-col text-center">
-              <div className="text-4xl mb-4">💬</div>
-              <h3 className="text-xl font-bold mb-2 text-navy">不確定？先聊聊</h3>
-              <p className="text-gray-500 text-sm mb-4 leading-relaxed">
-                告訴 Howard 你的目標和困擾，他會幫你確認方向。教練指導、實體訓練等進階方案都從這裡開始。
+            {/* 教練指導 — 推薦 */}
+            <div className="bg-white rounded-2xl p-7 shadow-sm border-2 border-primary flex flex-col relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1 rounded-full">
+                最多人選
+              </div>
+              <h3 className="text-lg font-bold text-navy mb-1">教練指導</h3>
+              <p className="text-3xl font-bold text-navy mb-1">$2,999<span className="text-sm font-normal text-gray-400">/月</span></p>
+              <p className="text-xs text-gray-400 mb-5">CSCS 教練每週 review</p>
+              <p className="text-gray-500 text-sm mb-5 leading-relaxed">
+                系統分析 + 教練判斷，雙重保障。全台遠端。
               </p>
-              <ul className="space-y-2 text-gray-600 mb-6 flex-1 text-sm text-left">
-                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>教練指導版 NT$2,999/月</li>
-                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>台中實體 NT$5,000/月</li>
-                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>CSCS 教練每週 review</li>
-                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>LINE 即時諮詢</li>
+              <ul className="space-y-2 text-gray-600 mb-6 flex-1 text-sm">
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>免費版全部功能</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>教練每週營養 review</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>訓練 / 補劑 / 血檢追蹤</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>LINE 即時問答</li>
+                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>AI 顧問無限使用</li>
               </ul>
               <LineButton
-                source="homepage_plan"
-                intent="general"
-                className="block bg-navy text-white py-3.5 rounded-xl font-semibold hover:bg-navy/90 transition-colors text-lg"
+                source="homepage_plan_coached"
+                intent="coached"
+                className="block bg-primary text-white py-3.5 rounded-xl font-semibold hover:bg-primary-dark transition-colors text-center text-lg"
               >
-                加 LINE 聊聊
+                加 LINE 開始 →
+              </LineButton>
+            </div>
+
+            {/* 實體教練 */}
+            <div className="bg-white rounded-2xl p-7 shadow-sm border-2 border-navy/20 flex flex-col">
+              <h3 className="text-lg font-bold text-navy mb-1">實體教練</h3>
+              <p className="text-3xl font-bold text-navy mb-1">$5,000<span className="text-sm font-normal text-gray-400">/月</span></p>
+              <p className="text-xs text-gray-400 mb-5">台中北屯 · 每月 1 對 1</p>
+              <p className="text-gray-500 text-sm mb-5 leading-relaxed">
+                面對面指導 + 系統追蹤。適合想要完整服務的人。
+              </p>
+              <ul className="space-y-2 text-gray-600 mb-6 flex-1 text-sm">
+                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>教練指導版全部功能</li>
+                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>每月實體 1 對 1 訓練</li>
+                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>動作矯正 + 課表設計</li>
+                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>備賽 / Peak Week 支援</li>
+              </ul>
+              <LineButton
+                source="homepage_plan_combo"
+                intent="combo"
+                className="block bg-navy text-white py-3.5 rounded-xl font-semibold hover:bg-navy/90 transition-colors text-center"
+              >
+                加 LINE 了解 →
               </LineButton>
             </div>
           </div>
@@ -401,17 +467,17 @@ export default function HomePage() {
       <section className="bg-navy py-20 mt-10 rounded-t-3xl">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            不確定適不適合？先聊聊
+            每天 2 分鐘，讓系統幫你確認方向
           </h2>
           <p className="text-blue-200 text-lg mb-10">
-            加 LINE 跟我說你的目標，我會先幫你確認方向
+            免費開始記錄，14 天後系統會自動告訴你接下來怎麼做
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/join"
               className="inline-block bg-white text-navy px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
             >
-              免費體驗 →
+              免費開始記錄 →
             </Link>
             <LineButton
               source="homepage_bottom"
