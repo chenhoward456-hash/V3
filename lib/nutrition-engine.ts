@@ -1100,8 +1100,8 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       }
     }
 
-    if (isAggressive) {
-      warnings.push(`需要每週 ${input.goalType === 'cut' ? '減' : '增'} ${Math.abs(requiredRatePerWeek).toFixed(2)}kg 才能達標，超過安全範圍（${maxSafeRate.toFixed(1)}kg/週）`)
+    if (deadlineInfo.isAggressive) {
+      warnings.push(`需要每週 ${input.goalType === 'cut' ? '減' : '增'} ${Math.abs(deadlineInfo.requiredRatePerWeek).toFixed(2)}kg 才能達標，超過安全範圍（${maxSafeRate.toFixed(1)}kg/週）`)
     }
   }
 
@@ -1464,7 +1464,9 @@ function generateGoalDrivenCut(
   const zoneInfo = buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)
   const targetWeight = input.targetWeight!
   const daysLeft = deadlineInfo.daysLeft
-  const weightToLose = deadlineInfo.weightToLose  // kg, positive = need to lose
+  const weightToLose = deadlineInfo.weightToLose  // kg, positive = need to lose (已含 Peak Week 拆分)
+  // Peak Week 拆分時，達標比較對象是 PW 入場體重（而非上台體重）
+  const effectiveTarget = deadlineInfo.prePeakEntryWeight ?? targetWeight
 
   // 1. 計算需要的每日赤字（使用動態能量密度）
   const energyDensity = getEnergyDensity(daysLeft, dietDurationWeeks)
@@ -1663,11 +1665,12 @@ function generateGoalDrivenCut(
     const totalLoss = (totalDailyBurn * daysLeft) / energyDensity
     predictedCompWeight = Math.round((bw - totalLoss) * 10) / 10
 
-    // 判斷能否達標
-    if (predictedCompWeight <= targetWeight + 0.3) {
+    // 判斷能否達標（Peak Week 拆分時比較 PW 入場目標）
+    if (predictedCompWeight <= effectiveTarget + 0.3) {
       cardioNote = `飲食 + 步數可達標！今日目標 ${suggestedDailySteps.toLocaleString()} 步（需額外消耗 ${Math.round(extraBurnPerDay)}kcal）`
     } else {
-      cardioNote = `預測 ${predictedCompWeight}kg（目標 ${targetWeight}kg），差 ${(predictedCompWeight - targetWeight).toFixed(1)}kg。可與教練討論調整量級或目標`
+      const targetLabel = deadlineInfo.prePeakEntryWeight ? `PW 入場 ${effectiveTarget}kg` : `目標 ${targetWeight}kg`
+      cardioNote = `預測 ${predictedCompWeight}kg（${targetLabel}），差 ${(predictedCompWeight - effectiveTarget).toFixed(1)}kg。可與教練討論調整量級或目標`
     }
 
     if (rawExtraBurn > CARDIO.MAX_EXTRA_BURN_PER_DAY) {
@@ -1676,7 +1679,7 @@ function generateGoalDrivenCut(
     warnings.push(`👟 今日步數目標 ${suggestedDailySteps.toLocaleString()} 步（需額外消耗 ${Math.round(extraBurnPerDay)}kcal 彌補飲食缺口）`)
   } else {
     // 飲食面赤字足夠（shortfall ≤ 50 kcal）
-    predictedCompWeight = targetWeight
+    predictedCompWeight = effectiveTarget  // Peak Week 拆分時 = PW 入場體重
 
     // 高能量通量策略（High Energy Flux）
     // 即使飲食赤字夠了，也設步數目標 → 多消耗的部分加回碳水
@@ -1755,17 +1758,18 @@ function generateGoalDrivenCut(
   } else if (shortfall > 0) {
     statusEmoji = '⚠️'
     statusLabel = '底線限制'
-    message = `以目前 TDEE ${estimatedTDEE}kcal，需要每日赤字 ${effectiveDailyDeficit}kcal 才能達到 ${targetWeight}kg。`
+    const targetLabel = deadlineInfo.prePeakEntryWeight ? `PW 入場 ${effectiveTarget}kg` : `${targetWeight}kg`
+    message = `以目前 TDEE ${estimatedTDEE}kcal，需要每日赤字 ${effectiveDailyDeficit}kcal 才能達到 ${targetLabel}。`
     message += `飲食底線 ${actualCalories}kcal（赤字缺口 ${Math.round(shortfall)}kcal 需靠活動補）`
     if (extraCardioNeeded) {
       message += `，步數目標 ${suggestedDailySteps.toLocaleString()} 步/天`
-      if (predictedCompWeight <= targetWeight + 0.3) {
+      if (predictedCompWeight <= effectiveTarget + 0.3) {
         message += `，預測可達 ${predictedCompWeight}kg ✓`
       } else {
-        message += `，預測 ${predictedCompWeight}kg（差 ${(predictedCompWeight - targetWeight).toFixed(1)}kg）`
+        message += `，預測 ${predictedCompWeight}kg（差 ${(predictedCompWeight - effectiveTarget).toFixed(1)}kg）`
       }
     } else {
-      message += `，預測比賽日 ${predictedCompWeight}kg。`
+      message += `，預測 PW 入場 ${predictedCompWeight}kg。`
     }
   } else if (safetyLevel === 'extreme') {
     statusEmoji = '🔥'

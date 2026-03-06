@@ -343,18 +343,21 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       )}
 
       {/* 預測結果 */}
-      {dl.predictedCompWeight && (
-        <div className={`rounded-xl px-4 py-3 text-sm font-medium ${
-          dl.predictedCompWeight <= (targetWeightValue || 0) + 0.5
-            ? 'bg-green-50 text-green-700 border border-green-200'
-            : 'bg-amber-50 text-amber-700 border border-amber-200'
-        }`}>
-          {dl.predictedCompWeight <= (targetWeightValue || 0) + 0.5
-            ? `✅ 預測比賽日 ${dl.predictedCompWeight}kg — 可以達到目標！`
-            : `⚠️ 預測比賽日 ${dl.predictedCompWeight}kg — 與目標還差 ${(dl.predictedCompWeight - (targetWeightValue || 0)).toFixed(1)}kg`
-          }
-        </div>
-      )}
+      {dl.predictedCompWeight && (() => {
+        const compareTarget = dl.prePeakEntryWeight || targetWeightValue || 0
+        const canReach = dl.predictedCompWeight <= compareTarget + 0.5
+        const hasPeakSplit = !!dl.prePeakEntryWeight
+        return (
+          <div className={`rounded-xl px-4 py-3 text-sm font-medium ${
+            canReach ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+          }`}>
+            {canReach
+              ? `✅ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg${hasPeakSplit ? `（PW 後 → ${targetWeightValue}kg）` : ''} — 可以達標！`
+              : `⚠️ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg — 與${hasPeakSplit ? '入場目標' : '目標'}還差 ${(dl.predictedCompWeight - compareTarget).toFixed(1)}kg`
+            }
+          </div>
+        )
+      })()}
 
       {/* Refeed 建議 */}
       {data.refeedSuggested && (
