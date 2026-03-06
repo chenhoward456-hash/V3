@@ -903,6 +903,8 @@ export default function ClientDashboard() {
             clientId={clientId as string}
             date={selectedDate}
             onMutate={mutate}
+            carbsTrainingDay={c.carbs_training_day}
+            carbsRestDay={c.carbs_rest_day}
           /></div>
         )}
 

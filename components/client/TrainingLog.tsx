@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { TRAINING_TYPES } from './types'
+import { TRAINING_TYPES, isWeightTraining } from './types'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 
@@ -13,9 +13,11 @@ interface TrainingLogProps {
   clientId: string
   date?: string
   onMutate: () => void
+  carbsTrainingDay?: number | null
+  carbsRestDay?: number | null
 }
 
-export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate }: TrainingLogProps) {
+export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay }: TrainingLogProps) {
   const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
   const { showToast } = useToast()
@@ -42,6 +44,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   }, [todayTraining])
 
   const isRest = form.training_type === 'rest'
+  const isCardio = form.training_type === 'cardio'
+  const hasCarbCycling = !!(carbsTrainingDay && carbsRestDay)
 
   // ===== 上次同類型訓練 =====
   const lastSameType = useMemo(() => {
@@ -64,7 +68,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
       showToast('請填寫訓練時長', 'error')
       return
     }
-    if (!isRest && !form.rpe) {
+    if (!isRest && !isCardio && !form.rpe) {
       showToast('請選擇 RPE', 'error')
       return
     }
@@ -78,7 +82,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           training_type: form.training_type,
           duration: isRest ? null : form.duration,
           sets: isRest ? null : form.sets,
-          rpe: isRest ? null : form.rpe,
+          rpe: isRest ? null : (form.rpe || null),
           note: form.note || null
         })
       })
@@ -117,14 +121,19 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     }
 
     const activeLogs = weekLogs.filter((l: any) => l.training_type !== 'rest')
+    const weightLogs = weekLogs.filter((l: any) => isWeightTraining(l.training_type))
+    const cardioLogs = weekLogs.filter((l: any) => l.training_type === 'cardio')
     const trainingDays = activeLogs.length
+    const weightDays = weightLogs.length
+    const cardioDays = cardioLogs.length
     const totalDuration = activeLogs.reduce((sum: number, l: any) => sum + (l.duration || 0), 0)
-    const totalSets = activeLogs.reduce((sum: number, l: any) => sum + (l.sets || 0), 0)
-    const avgRpe = activeLogs.length > 0
-      ? (activeLogs.reduce((sum: number, l: any) => sum + (l.rpe || 0), 0) / activeLogs.length).toFixed(1)
+    const totalSets = weightLogs.reduce((sum: number, l: any) => sum + (l.sets || 0), 0)
+    const weightLogsWithRpe = weightLogs.filter((l: any) => l.rpe != null)
+    const avgRpe = weightLogsWithRpe.length > 0
+      ? (weightLogsWithRpe.reduce((sum: number, l: any) => sum + l.rpe, 0) / weightLogsWithRpe.length).toFixed(1)
       : '--'
 
-    return { days, trainingDays, totalDuration, totalSets, avgRpe }
+    return { days, trainingDays, weightDays, cardioDays, totalDuration, totalSets, avgRpe }
   }, [trainingLogs, today])
 
   // ===== 訓練歷史日曆（近 5 週） =====
@@ -326,9 +335,9 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
       <div className="space-y-4">
         {/* 訓練類型 */}
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">訓練類型</p>
-          <div className="grid grid-cols-3 gap-2">
-            {TRAINING_TYPES.map(({ value, label, emoji }) => (
+          <p className="text-sm font-medium text-gray-700 mb-2">重訓</p>
+          <div className="grid grid-cols-4 gap-2">
+            {TRAINING_TYPES.filter(t => isWeightTraining(t.value)).map(({ value, label, emoji }) => (
               <button
                 key={value}
                 onClick={() => setForm(prev => ({ ...prev, training_type: value }))}
@@ -342,7 +351,33 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
               </button>
             ))}
           </div>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            {TRAINING_TYPES.filter(t => !isWeightTraining(t.value)).map(({ value, label, emoji }) => (
+              <button
+                key={value}
+                onClick={() => setForm(prev => ({ ...prev, training_type: value }))}
+                className={`min-h-[44px] py-2 rounded-lg text-sm font-medium transition-all ${
+                  form.training_type === value
+                    ? value === 'rest' ? 'bg-gray-600 text-white' : 'bg-orange-500 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {emoji} {label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* 碳循環提示 */}
+        {hasCarbCycling && form.training_type && (
+          <div className={`rounded-xl px-4 py-2.5 text-sm font-medium ${
+            isWeightTraining(form.training_type)
+              ? 'bg-cyan-50 text-cyan-700'
+              : 'bg-gray-50 text-gray-600'
+          }`}>
+            🔄 今日碳水：{isWeightTraining(form.training_type) ? `${carbsTrainingDay}g（訓練日）` : `${carbsRestDay}g（休息日）`}
+          </div>
+        )}
 
         {/* 上次同類型提示 */}
         {lastSameType && (
@@ -387,7 +422,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         {/* RPE（休息時隱藏） */}
         {!isRest && (
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">💥 RPE（自覺強度 1-10）</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">💥 RPE（自覺強度 1-10）{isCardio && <span className="text-gray-400 font-normal">（選填）</span>}</p>
             <div className="space-y-2">
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map(score => (
@@ -466,7 +501,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
             ))}
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
-            <span>🏋️ {weeklySummary.trainingDays} 天</span>
+            <span>🏋️ {weeklySummary.weightDays} 天</span>
+            {weeklySummary.cardioDays > 0 && <span>🏃 {weeklySummary.cardioDays} 天</span>}
             <span>⏱️ {weeklySummary.totalDuration} 分鐘</span>
             {weeklySummary.totalSets > 0 && <span>📊 {weeklySummary.totalSets} 組</span>}
             <span>💥 RPE {weeklySummary.avgRpe}</span>
