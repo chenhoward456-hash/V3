@@ -430,6 +430,32 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
         </div>
       )}
 
+      {/* 巨量營養素填寫鼓勵 */}
+      {compliant !== null && hasTargets && !computedCalories && (
+        <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 mb-3 flex items-start gap-2">
+          <span className="text-sm mt-0.5">📝</span>
+          <div>
+            <p className="text-xs text-indigo-700 font-medium">填入今天的營養素數據，系統能更準確追蹤你的進度</p>
+            <p className="text-[10px] text-indigo-500 mt-0.5">只需輸入蛋白質和碳水，熱量會自動計算</p>
+          </div>
+        </div>
+      )}
+
+      {/* 連續多天沒填巨量營養素的提醒 */}
+      {compliant !== null && hasTargets && (() => {
+        const recentWithoutMacros = nutritionLogs
+          .slice(-5)
+          .filter((l: any) => l.compliant != null && l.calories == null)
+        return recentWithoutMacros.length >= 3 && !computedCalories ? (
+          <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-3 flex items-start gap-2">
+            <span className="text-sm mt-0.5">💡</span>
+            <p className="text-xs text-amber-700">
+              你已連續 {recentWithoutMacros.length} 天沒有填寫營養素數據。填入實際攝取量可以幫助系統判斷是否需要調整你的目標。
+            </p>
+          </div>
+        ) : null
+      })()}
+
       {/* 統一儲存按鈕 */}
       {compliant !== null && (
         <button

@@ -179,6 +179,30 @@ export default function BodyComposition({
     } catch { showToast('儲存失敗，請重試', 'error') }
   }
 
+  // 體重波動解釋：當日與前次差距在 0.3-1.5kg 時顯示科學解釋
+  const weightFluctuationNote = useMemo(() => {
+    const curr = latestBodyData?.weight
+    const prev = prevBodyData?.weight
+    if (curr == null || prev == null) return null
+    const diff = curr - prev
+    const absDiff = Math.abs(diff)
+    if (absDiff < 0.3 || absDiff > 2.0) return null
+
+    if (diff > 0) {
+      // 體重上升
+      if (absDiff <= 1.0) {
+        return { text: `體重上升 ${absDiff.toFixed(1)}kg 屬正常日間波動，可能來自鈉攝取、碳水儲存、或水分滯留。建議觀察 7 日移動平均趨勢。`, color: 'blue' }
+      }
+      return { text: `體重上升 ${absDiff.toFixed(1)}kg，可能因高碳水餐後糖原+水分儲存（每 1g 糖原攜帶 3g 水）。若非持續上升趨勢，無需擔心。`, color: 'amber' }
+    } else {
+      // 體重下降
+      if (absDiff <= 1.0) {
+        return { text: `體重下降 ${absDiff.toFixed(1)}kg，可能包含水分流失。持續觀察週均趨勢更準確。`, color: 'green' }
+      }
+      return { text: `體重下降 ${absDiff.toFixed(1)}kg，短期快速下降通常以水分為主。確保飲水充足、蛋白質達標。`, color: 'amber' }
+    }
+  }, [latestBodyData, prevBodyData])
+
   return (
     <>
       {nutritionAdjusted && (
@@ -223,6 +247,24 @@ export default function BodyComposition({
             </div>
           ))}
         </div>
+
+        {/* 體重波動科學解釋 */}
+        {weightFluctuationNote && (
+          <div className={`rounded-xl px-4 py-3 mb-4 flex items-start gap-2 ${
+            weightFluctuationNote.color === 'blue' ? 'bg-blue-50 border border-blue-100' :
+            weightFluctuationNote.color === 'green' ? 'bg-green-50 border border-green-100' :
+            'bg-amber-50 border border-amber-100'
+          }`}>
+            <span className="text-sm mt-0.5">{weightFluctuationNote.color === 'green' ? '💡' : weightFluctuationNote.color === 'blue' ? '💧' : '⚖️'}</span>
+            <p className={`text-xs leading-relaxed ${
+              weightFluctuationNote.color === 'blue' ? 'text-blue-700' :
+              weightFluctuationNote.color === 'green' ? 'text-green-700' :
+              'text-amber-700'
+            }`}>
+              {weightFluctuationNote.text}
+            </p>
+          </div>
+        )}
 
         {/* 空白狀態引導 */}
         {bodyData.length < 7 && (

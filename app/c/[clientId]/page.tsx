@@ -736,6 +736,36 @@ export default function ClientDashboard() {
           )}
         </div>
 
+        {/* 性別未設定提示 — 影響營養計算精準度 */}
+        {!c.gender && (
+          <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 mb-4">
+            <p className="text-sm font-medium text-purple-800 mb-2">請設定你的生理性別</p>
+            <p className="text-xs text-purple-600 mb-3">性別會影響蛋白質、脂肪建議量及荷爾蒙安全底線的計算。未設定時系統預設為男性參數。</p>
+            <div className="grid grid-cols-2 gap-2">
+              {(['男性', '女性'] as const).map(g => (
+                <button
+                  key={g}
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/clients', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ clientId: c.unique_code, gender: g })
+                      })
+                      if (!res.ok) throw new Error()
+                      mutate()
+                      showToast(`已設定為${g}`, 'success')
+                    } catch { showToast('設定失敗，請重試', 'error') }
+                  }}
+                  className="py-2.5 rounded-xl text-sm font-semibold border-2 border-purple-200 bg-white text-purple-700 hover:bg-purple-100 transition-colors"
+                >
+                  {g === '男性' ? '♂' : '♀'} {g}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* === 備賽選手：體重軌跡優先 === */}
         {isCompetition && c.body_composition_enabled && (
           <div id="section-body" className="scroll-mt-4"><BodyComposition

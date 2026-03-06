@@ -7,7 +7,7 @@ const TIER_FEATURES: Record<SubscriptionTier, Record<string, boolean>> = {
   free: {
     body_composition_enabled: true,
     wellness_enabled: false,
-    nutrition_enabled: false,
+    nutrition_enabled: true,   // 免費用戶也能使用基本營養追蹤，體驗核心功能
     training_enabled: false,
     supplement_enabled: false,
     lab_enabled: false,

@@ -233,6 +233,10 @@ export async function PATCH(request: NextRequest) {
       updates.activity_profile = activity_profile
     }
 
+    if (gender && ['男性', '女性'].includes(gender)) {
+      updates.gender = gender
+    }
+
     // height 存在 body_composition 表，不在 clients 表
     const validHeight = (height && typeof height === 'number' && height > 100 && height < 250) ? height : null
 

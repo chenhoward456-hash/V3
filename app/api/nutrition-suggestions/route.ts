@@ -160,13 +160,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         suggestion: {
           status: 'insufficient_data',
-          statusLabel: '數據不足',
-          statusEmoji: '📊',
-          message: '找不到體重紀錄，請讓學員先記錄體重。',
+          statusLabel: '開始記錄',
+          statusEmoji: '👋',
+          message: '記錄第一筆體重後，系統就能立即為你計算個人化營養目標。只需 30 秒！',
           warnings: [],
         }
       })
     }
+
+    // 新用戶友善提示：有體重但營養記錄不足 14 天
+    const isNewUser = recentNutrition.length < 7
 
     // 8. 組裝引擎輸入
     const engineInput: NutritionInput = {
@@ -248,9 +251,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 新用戶附加鼓勵訊息
+    if (isNewUser && suggestion.status !== 'insufficient_data') {
+      suggestion.message = `${suggestion.message}\n\n💡 你目前有 ${recentNutrition.length} 天的飲食紀錄。持續記錄 7 天以上，系統會給出更精準的調整建議。`
+    }
+
     return NextResponse.json({
       suggestion,
       applied,
+      isNewUser,
       meta: {
         latestWeight,
         weeklyWeights,
