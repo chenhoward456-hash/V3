@@ -484,16 +484,38 @@ export default function ClientDashboard() {
               {/* 備賽模式：今日體重 vs 目標 */}
               {isCompetition && c.target_weight && latestBodyData?.weight && (
                 <div className="mt-2 pt-2 border-t border-blue-100 space-y-1">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500">⚖️ 最新體重</span>
-                    <span className="text-sm font-bold text-gray-800">{latestBodyData.weight} kg</span>
-                    <span className="text-xs text-gray-400">→</span>
-                    <span className="text-xs text-gray-500">🎯 目標</span>
-                    <span className="text-sm font-bold text-red-500">{c.target_weight} kg</span>
-                    <span className={`text-xs font-medium ml-auto ${Math.abs(latestBodyData.weight - c.target_weight) <= 1 ? 'text-green-600' : 'text-amber-600'}`}>
-                      差 {Math.abs(latestBodyData.weight - c.target_weight).toFixed(1)} kg
-                    </span>
-                  </div>
+                  {/* Peak Week 體重拆分 */}
+                  {(() => {
+                    const totalGap = Math.abs(latestBodyData.weight - c.target_weight)
+                    const waterCutPct = 0.02  // 2% BW
+                    const peakWeekLoss = Math.round(latestBodyData.weight * waterCutPct * 10) / 10
+                    const prePeakTarget = Math.round((c.target_weight + peakWeekLoss) * 10) / 10
+                    const dietGap = Math.max(0, Math.round((latestBodyData.weight - prePeakTarget) * 10) / 10)
+                    const daysLeft = c.competition_date ? Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000) : null
+                    const showSplit = daysLeft != null && daysLeft > 7 && c.prep_phase !== 'peak_week'
+
+                    return (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-gray-500">⚖️ 最新</span>
+                          <span className="text-sm font-bold text-gray-800">{latestBodyData.weight} kg</span>
+                          <span className="text-xs text-gray-400">→</span>
+                          <span className="text-xs text-gray-500">🎯 上台</span>
+                          <span className="text-sm font-bold text-red-500">{c.target_weight} kg</span>
+                          <span className={`text-xs font-medium ml-auto ${totalGap <= 1 ? 'text-green-600' : 'text-amber-600'}`}>
+                            差 {totalGap.toFixed(1)} kg
+                          </span>
+                        </div>
+                        {showSplit && totalGap > peakWeekLoss && (
+                          <div className="flex items-center gap-2 text-[10px] text-indigo-500 bg-indigo-50 rounded-lg px-2 py-1">
+                            <span>💧 飲食目標 {dietGap} kg</span>
+                            <span className="text-gray-300">+</span>
+                            <span>Peak Week 約 {peakWeekLoss} kg</span>
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
                   {/* 體態推算參考範圍（需要體脂率才顯示） */}
                   {latestBodyData.body_fat && (() => {
                     const rec = calcRecommendedStageWeight(

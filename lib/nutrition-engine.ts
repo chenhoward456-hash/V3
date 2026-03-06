@@ -139,7 +139,15 @@ export interface NutritionSuggestion {
     suggestedCardioMinutes?: number  // 建議有氧分鐘數（中等強度）
     suggestedDailySteps?: number     // 建議每日步數
     cardioNote?: string              // 有氧建議說明
+    // Peak Week 體重三層拆分（備賽專用）
+    peakWeekWaterCutPct?: number     // 預估 Peak Week 淨脫重百分比（預設 2%）
+    prePeakEntryWeight?: number      // Peak Week 入場目標體重
+    dietWeightToLose?: number        // 需要靠飲食減掉的量 (kg)
+    peakWeekExpectedLoss?: number    // Peak Week 預估可處理的量 (kg)
   } | null
+
+  // 代謝壓力分數
+  metabolicStress: MetabolicStressResult | null
 
   // 月經週期判斷（女性專用）
   menstrualCycleNote: string | null  // 黃體期提示訊息（null = 不在黃體期或非女性）
@@ -380,6 +388,7 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     bodyFatZoneInfo: null,
     deadlineInfo: null, autoApply: false, peakWeekPlan: null,
     menstrualCycleNote: null,
+    metabolicStress: null,
     ...overrides,
   }
 }
@@ -713,10 +722,150 @@ function countConsecutiveLowCarbDays(
   return count
 }
 
+// ===== 代謝壓力分數（Metabolic Stress Score）=====
+// 綜合多維度數據自動評估是否需要 refeed / diet break
+// 分數 0-100：越高代表代謝壓力越大
+// 文獻基礎：Trexler 2014 (intermittent dieting), Peos 2019 (diet break), Dirlewanger 2000 (leptin)
+
+export interface MetabolicStressResult {
+  score: number                    // 0-100 總分
+  level: 'low' | 'moderate' | 'elevated' | 'high'  // 壓力等級
+  recommendation: 'continue' | 'monitor' | 'refeed_1day' | 'refeed_2day' | 'diet_break'
+  refeedCarbGPerKg: number | null  // 建議 refeed 碳水 g/kg（null = 不需要）
+  breakdown: {
+    dietDuration: number           // 0-25
+    recovery: number               // 0-30
+    plateau: number                // 0-20
+    lowCarb: number                // 0-15
+    wellnessTrend: number          // 0-10
+  }
+  reasons: string[]
+}
+
+export function calculateMetabolicStressScore(params: {
+  dietDurationWeeks: number | null
+  recoveryState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'
+  readinessScore: number | null
+  weeklyChangeRate: number           // % per week
+  consecutivePlateauWeeks: number    // 連續停滯週數
+  lowCarbDays: number                // 連續低碳天數
+  recentWellness?: { energy_level: number | null; training_drive: number | null }[]  // 最近 7 天
+  daysUntilCompetition?: number | null
+  bodyFatZoneRefeedFreq?: string | null  // 來自 body-fat-zone-table
+}): MetabolicStressResult {
+  const reasons: string[] = []
+
+  // 1. 飲食持續時間 (0-25)
+  // 4 週以下 = 0, 4-6 週 = 5-10, 6-8 週 = 10-15, 8-12 週 = 15-20, 12+ 週 = 25
+  const weeks = params.dietDurationWeeks ?? 0
+  let dietDuration = 0
+  if (weeks >= 12) { dietDuration = 25; reasons.push(`已連續減脂 ${weeks} 週（代謝適應風險高）`) }
+  else if (weeks >= 8) { dietDuration = 15 + Math.round((weeks - 8) / 4 * 5); reasons.push(`已連續減脂 ${weeks} 週`) }
+  else if (weeks >= 6) { dietDuration = 10 + Math.round((weeks - 6) / 2 * 5) }
+  else if (weeks >= 4) { dietDuration = 5 + Math.round((weeks - 4) / 2 * 5) }
+
+  // 2. 恢復狀態 (0-30)
+  let recovery = 0
+  if (params.recoveryState === 'critical') { recovery = 30; reasons.push('恢復狀態極差（critical）') }
+  else if (params.recoveryState === 'struggling') { recovery = 20; reasons.push('恢復狀態偏低（struggling）') }
+  else if (params.recoveryState === 'good') { recovery = 5 }
+  else if (params.recoveryState === 'optimal') { recovery = 0 }
+  else {
+    // unknown → 用 readinessScore fallback
+    if (params.readinessScore != null) {
+      if (params.readinessScore < 30) { recovery = 25; reasons.push(`恢復分數偏低（${params.readinessScore}）`) }
+      else if (params.readinessScore < 50) { recovery = 15 }
+      else { recovery = 5 }
+    } else {
+      recovery = 10  // 沒有任何恢復數據 → 給中等分數（保守）
+    }
+  }
+
+  // 3. 體重停滯 (0-20)
+  let plateau = 0
+  if (params.consecutivePlateauWeeks >= 3) { plateau = 20; reasons.push(`連續 ${params.consecutivePlateauWeeks} 週停滯`) }
+  else if (params.consecutivePlateauWeeks >= 2) { plateau = 14; reasons.push(`連續 2 週停滯`) }
+  else if (params.consecutivePlateauWeeks >= 1) { plateau = 7 }
+
+  // 4. 連續低碳天數 (0-15)
+  let lowCarb = 0
+  if (params.lowCarbDays >= 7) { lowCarb = 15; reasons.push(`已連續 ${params.lowCarbDays} 天低碳（<150g）`) }
+  else if (params.lowCarbDays >= 5) { lowCarb = 10; reasons.push(`已連續 ${params.lowCarbDays} 天低碳`) }
+  else if (params.lowCarbDays >= 3) { lowCarb = 5 }
+
+  // 5. 主觀趨勢下滑 (0-10)
+  let wellnessTrend = 0
+  if (params.recentWellness && params.recentWellness.length >= 4) {
+    const recent = params.recentWellness.slice(0, 7)
+    const energies = recent.map(w => w.energy_level).filter((e): e is number => e != null)
+    const drives = recent.map(w => w.training_drive).filter((d): d is number => d != null)
+    if (energies.length >= 3) {
+      const avgEnergy = energies.reduce((a, b) => a + b, 0) / energies.length
+      if (avgEnergy <= 2.0) { wellnessTrend += 5; reasons.push(`近期能量偏低（平均 ${avgEnergy.toFixed(1)}/5）`) }
+      else if (avgEnergy <= 2.5) { wellnessTrend += 3 }
+    }
+    if (drives.length >= 3) {
+      const avgDrive = drives.reduce((a, b) => a + b, 0) / drives.length
+      if (avgDrive <= 2.0) { wellnessTrend += 5; reasons.push(`訓練動力偏低（平均 ${avgDrive.toFixed(1)}/5）`) }
+      else if (avgDrive <= 2.5) { wellnessTrend += 2 }
+    }
+  }
+
+  const score = dietDuration + recovery + plateau + lowCarb + wellnessTrend
+
+  // 判斷等級和建議
+  let level: MetabolicStressResult['level']
+  let recommendation: MetabolicStressResult['recommendation']
+  let refeedCarbGPerKg: number | null = null
+
+  // 備賽模式：≤7 天不建議 refeed（交給 Peak Week），但仍回報分數
+  const nearCompetition = params.daysUntilCompetition != null && params.daysUntilCompetition <= 7
+
+  if (score >= 60) {
+    level = 'high'
+    if (nearCompetition) {
+      recommendation = 'monitor'  // Peak Week 接管
+      reasons.push('代謝壓力高，但已進入 Peak Week 範圍，由 Peak Week 計畫接管')
+    } else if (weeks >= 12) {
+      recommendation = 'diet_break'
+      refeedCarbGPerKg = 5.0
+      reasons.push('建議安排 3-5 天 diet break（維持熱量 + 高碳水）')
+    } else {
+      recommendation = 'refeed_2day'
+      refeedCarbGPerKg = 5.0  // Full refeed: 5 g/kg
+      reasons.push('建議 2 天 full refeed（碳水 5g/kg，脂肪壓低）')
+    }
+  } else if (score >= 45) {
+    level = 'elevated'
+    if (nearCompetition) {
+      recommendation = 'monitor'
+    } else {
+      recommendation = 'refeed_1day'
+      refeedCarbGPerKg = 4.0  // Strategic refeed: 4 g/kg
+      reasons.push('建議 1 天 strategic refeed（碳水 4g/kg）')
+    }
+  } else if (score >= 30) {
+    level = 'moderate'
+    recommendation = 'monitor'
+    if (reasons.length === 0) reasons.push('代謝壓力中等，持續監控')
+  } else {
+    level = 'low'
+    recommendation = 'continue'
+  }
+
+  return {
+    score,
+    level,
+    recommendation,
+    refeedCarbGPerKg,
+    breakdown: { dietDuration, recovery, plateau, lowCarb, wellnessTrend },
+    reasons,
+  }
+}
+
 // ===== Refeed 觸發判斷 =====
-// 條件 A：currentState = struggling 或 critical
-// 條件 B：連續低碳 ≥ 3 天
-// A + B 同時成立 → 觸發 Refeed 建議
+// 向後相容：原有 refeed 判斷（仍用於 reactive 模式）
+// Goal-Driven 模式改用 calculateMetabolicStressScore()
 
 function checkRefeedTrigger(
   currentState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown',
@@ -739,7 +888,6 @@ function checkRefeedTrigger(
   } else if (lowCarbDays >= 3) {
     reasons.push(`已連續 ${lowCarbDays} 天碳水 < 150g`)
   } else {
-    // 狀態差但低碳天數不足，僅警告不強制 Refeed
     return { suggested: false, reason: reasons.join('、'), days: null }
   }
 
@@ -930,16 +1078,78 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
 
     deadlineInfo = { daysLeft, weeksLeft: Math.round(weeksLeft * 10) / 10, weightToLose: Math.round(weightToLose * 10) / 10, requiredRatePerWeek: Math.round(requiredRatePerWeek * 100) / 100, isAggressive }
 
+    // Peak Week 體重三層拆分（備賽 + 減脂模式）
+    if (input.prepPhase && input.goalType === 'cut' && daysLeft > 7) {
+      const waterCutPct = 0.02  // 預設 2%，保守估計
+      const peakWeekExpectedLoss = Math.round(thisWeekAvg * waterCutPct * 10) / 10
+      const prePeakEntryWeight = Math.round((input.targetWeight! + peakWeekExpectedLoss) * 10) / 10
+      const dietWeightToLose = Math.round((thisWeekAvg - prePeakEntryWeight) * 10) / 10
+
+      deadlineInfo.peakWeekWaterCutPct = waterCutPct
+      deadlineInfo.prePeakEntryWeight = prePeakEntryWeight
+      deadlineInfo.dietWeightToLose = Math.max(0, dietWeightToLose)
+      deadlineInfo.peakWeekExpectedLoss = peakWeekExpectedLoss
+
+      // 用飲食目標重算 requiredRate（排除 Peak Week 可處理的部分）
+      if (dietWeightToLose > 0 && dietWeightToLose < weightToLose) {
+        const prePeakDays = Math.max(1, daysLeft - 7)  // 扣掉 Peak Week 7 天
+        const adjustedWeeksLeft = Math.max(0.5, prePeakDays / 7)
+        deadlineInfo.weightToLose = Math.round(dietWeightToLose * 10) / 10
+        deadlineInfo.requiredRatePerWeek = Math.round((dietWeightToLose / adjustedWeeksLeft) * 100) / 100
+        deadlineInfo.isAggressive = Math.abs(dietWeightToLose / adjustedWeeksLeft) > maxSafeRate
+      }
+    }
+
     if (isAggressive) {
       warnings.push(`需要每週 ${input.goalType === 'cut' ? '減' : '增'} ${Math.abs(requiredRatePerWeek).toFixed(2)}kg 才能達標，超過安全範圍（${maxSafeRate.toFixed(1)}kg/週）`)
     }
   }
 
-  // 8. 根據目標類型分流
+  // 8. 計算代謝壓力分數
+  // 計算連續停滯週數
+  let consecutivePlateauWeeks = 0
+  if (input.weeklyWeights.length >= 2) {
+    for (let i = 0; i < input.weeklyWeights.length - 1; i++) {
+      const wAvg = input.weeklyWeights[i].avgWeight
+      const wPrev = input.weeklyWeights[i + 1].avgWeight
+      const rate = ((wAvg - wPrev) / wPrev) * 100
+      if (input.goalType === 'cut' && rate >= CUT_TARGETS.MAX_RATE) {
+        consecutivePlateauWeeks++
+      } else if (input.goalType === 'bulk' && rate <= BULK_TARGETS.MIN_RATE) {
+        consecutivePlateauWeeks++
+      } else {
+        break
+      }
+    }
+  }
+
+  const metabolicStress = calculateMetabolicStressScore({
+    dietDurationWeeks,
+    recoveryState: currentState,
+    readinessScore,
+    weeklyChangeRate,
+    consecutivePlateauWeeks,
+    lowCarbDays,
+    recentWellness: input.recentWellness,
+    daysUntilCompetition: daysToTarget,
+    bodyFatZoneRefeedFreq: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)?.refeedFrequency ?? null,
+  })
+
+  // 代謝壓力警告
+  if (metabolicStress.level === 'high' || metabolicStress.level === 'elevated') {
+    for (const reason of metabolicStress.reasons) {
+      if (!warnings.some(w => w.includes(reason))) {
+        warnings.push(`🔥 代謝壓力${metabolicStress.level === 'high' ? '高' : '偏高'}（${metabolicStress.score}/100）：${reason}`)
+      }
+    }
+  }
+
+  // 9. 根據目標類型分流
+  const extraFields = { metabolicStress }
   if (input.goalType === 'cut') {
-    return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields }
+    return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
   } else {
-    return { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields }
+    return { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
   }
 }
 
@@ -1209,7 +1419,7 @@ function generateCutSuggestion(
       dietDurationWeeks, dietBreakSuggested, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
-      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
+      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
     }
   }
@@ -1230,7 +1440,7 @@ function generateCutSuggestion(
     dietDurationWeeks, dietBreakSuggested, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
-    deadlineInfo, autoApply: true, peakWeekPlan: null,
+    deadlineInfo, autoApply: true, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
   }
 }
@@ -1585,10 +1795,24 @@ function generateGoalDrivenCut(
     warnings.push('掉重速率超過 1.2%/週（Garthe 2011: >1% 增加 LBM 流失風險），可考慮增加蛋白質攝取量或微增碳水')
   }
 
-  // Diet break 偵測
+  // Diet break / Strategic Refeed 偵測（使用代謝壓力分數）
+  // 舊邏輯：固定 8 週門檻。新邏輯：綜合多維度數據自動評估
   const dietBreakSuggested = dietDurationWeeks != null && dietDurationWeeks >= SAFETY.DIET_BREAK_WEEKS
-  if (dietBreakSuggested && daysLeft > 21) {
-    warnings.push(`已連續減脂 ${dietDurationWeeks} 週。距比賽還有 ${daysLeft} 天，可考慮安排 3-5 天 refeed 恢復代謝`)
+
+  // 備賽 strategic refeed：距比賽 ≤ 28 天 + 代謝壓力偏高
+  // 注意：metabolicStress 由主引擎計算並 spread 進去，這裡用 deadlineInfo 的 weightToLose 做補充判斷
+  if (daysLeft > 7 && daysLeft <= 28) {
+    // 最後 4 週：即使未達 8 週門檻，也根據體重 gap 和恢復狀態給策略性 refeed 建議
+    const hasBuffer = deadlineInfo.prePeakEntryWeight != null
+      ? (bw - deadlineInfo.prePeakEntryWeight) <= (bw * 0.015)  // 差距 ≤ 1.5% BW → 有空間 refeed
+      : weightToLose <= bw * 0.02
+    if (hasBuffer && (recoveryState === 'critical' || recoveryState === 'struggling')) {
+      warnings.push(`🔄 距比賽 ${daysLeft} 天，體重接近目標且恢復偏低。建議安排 1 天策略性 refeed（碳水 4-5 g/kg），恢復代謝和訓練品質`)
+    } else if (dietBreakSuggested && daysLeft > 14) {
+      warnings.push(`已連續減脂 ${dietDurationWeeks} 週。距比賽還有 ${daysLeft} 天，可考慮安排 1-2 天 refeed 恢復代謝（碳水 4-5 g/kg，蛋白質維持，脂肪壓低）`)
+    }
+  } else if (dietBreakSuggested && daysLeft > 28) {
+    warnings.push(`已連續減脂 ${dietDurationWeeks} 週。距比賽還有 ${daysLeft} 天，可考慮安排 3-5 天 diet break 恢復代謝`)
   }
 
   // 更新 deadlineInfo 加入 goal-driven + 有氧資訊
@@ -1629,7 +1853,7 @@ function generateGoalDrivenCut(
     bodyFatZoneInfo: zoneInfo,
     deadlineInfo: enrichedDeadlineInfo,
     autoApply: true,  // Goal-driven 永遠自動套用
-    peakWeekPlan: null,
+    peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
   }
 }
@@ -1814,7 +2038,7 @@ function generateBulkSuggestion(
       dietDurationWeeks, dietBreakSuggested: false, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
-      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null,
+      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
     }
   }
@@ -1835,7 +2059,7 @@ function generateBulkSuggestion(
     dietDurationWeeks, dietBreakSuggested: false, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
-    deadlineInfo, autoApply: true, peakWeekPlan: null,
+    deadlineInfo, autoApply: true, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
   }
 }
@@ -1975,7 +2199,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
     bodyFatZoneInfo: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType),
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
     autoApply: true,
-    peakWeekPlan: plan,
+    peakWeekPlan: plan, metabolicStress: null,
     menstrualCycleNote: null,  // Peak Week 不需要週期提示
   }
 }

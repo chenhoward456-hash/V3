@@ -177,10 +177,10 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       </div>
 
       {/* 核心數據 */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-3">
         <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <p className="text-[10px] text-gray-400">還需減</p>
-          <p className="text-xl font-bold text-gray-900">{dl.weightToLose}</p>
+          <p className="text-[10px] text-gray-400">{dl.prePeakEntryWeight ? '飲食需減' : '還需減'}</p>
+          <p className="text-xl font-bold text-gray-900">{dl.dietWeightToLose ?? dl.weightToLose}</p>
           <p className="text-[10px] text-gray-400">kg</p>
         </div>
         <div className="bg-gray-50 rounded-xl p-3 text-center">
@@ -196,6 +196,82 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           <p className="text-[10px] text-gray-400">kcal</p>
         </div>
       </div>
+
+      {/* Peak Week 體重拆分（備賽專用） */}
+      {dl.prePeakEntryWeight && dl.peakWeekExpectedLoss && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 mb-4">
+          <p className="text-[10px] font-semibold text-indigo-700 mb-1.5">💧 Peak Week 體重拆分</p>
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div>
+              <p className="text-[10px] text-gray-400">PW 入場目標</p>
+              <p className="font-bold text-indigo-700">{dl.prePeakEntryWeight} kg</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400">PW 預估可脫</p>
+              <p className="font-bold text-blue-600">-{dl.peakWeekExpectedLoss} kg</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400">上台目標</p>
+              <p className="font-bold text-gray-900">{targetWeightValue} kg</p>
+            </div>
+          </div>
+          <p className="text-[9px] text-indigo-400 mt-1.5 text-center">
+            水分操作預估（{Math.round((dl.peakWeekWaterCutPct || 0.02) * 100)}% BW），實際依個人反應調整
+          </p>
+        </div>
+      )}
+
+      {/* 代謝壓力分數 */}
+      {data.metabolicStress && data.metabolicStress.score >= 30 && (
+        <div className={`rounded-xl p-3 mb-3 ${
+          data.metabolicStress.level === 'high' ? 'bg-red-50 border border-red-200' :
+          data.metabolicStress.level === 'elevated' ? 'bg-orange-50 border border-orange-200' :
+          'bg-yellow-50 border border-yellow-200'
+        }`}>
+          <div className="flex items-center justify-between mb-1">
+            <p className={`text-xs font-bold ${
+              data.metabolicStress.level === 'high' ? 'text-red-700' :
+              data.metabolicStress.level === 'elevated' ? 'text-orange-700' :
+              'text-yellow-700'
+            }`}>
+              🔥 代謝壓力：{data.metabolicStress.score}/100
+            </p>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              data.metabolicStress.level === 'high' ? 'bg-red-100 text-red-700' :
+              data.metabolicStress.level === 'elevated' ? 'bg-orange-100 text-orange-700' :
+              'bg-yellow-100 text-yellow-700'
+            }`}>
+              {data.metabolicStress.level === 'high' ? '偏高' :
+               data.metabolicStress.level === 'elevated' ? '中高' : '監控中'}
+            </span>
+          </div>
+          {/* 五維度 bar */}
+          <div className="grid grid-cols-5 gap-1 mb-2">
+            {[
+              { label: '飲食', value: data.metabolicStress.breakdown.dietDuration, max: 25 },
+              { label: '恢復', value: data.metabolicStress.breakdown.recovery, max: 30 },
+              { label: '停滯', value: data.metabolicStress.breakdown.plateau, max: 20 },
+              { label: '低碳', value: data.metabolicStress.breakdown.lowCarb, max: 15 },
+              { label: '狀態', value: data.metabolicStress.breakdown.wellnessTrend, max: 10 },
+            ].map(({ label, value, max }) => (
+              <div key={label} className="text-center">
+                <div className="w-full bg-gray-100 rounded-full h-1 mb-0.5">
+                  <div className={`h-1 rounded-full ${value / max >= 0.7 ? 'bg-red-400' : value / max >= 0.4 ? 'bg-amber-400' : 'bg-green-400'}`}
+                    style={{ width: `${Math.round(value / max * 100)}%` }} />
+                </div>
+                <p className="text-[8px] text-gray-400">{label}</p>
+              </div>
+            ))}
+          </div>
+          {data.metabolicStress.recommendation !== 'continue' && data.metabolicStress.recommendation !== 'monitor' && (
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              {data.metabolicStress.recommendation === 'refeed_1day' && `💡 建議安排 1 天 strategic refeed（碳水 ${data.metabolicStress.refeedCarbGPerKg}g/kg，脂肪壓低，蛋白質維持）`}
+              {data.metabolicStress.recommendation === 'refeed_2day' && `💡 建議安排 2 天 full refeed（碳水 ${data.metabolicStress.refeedCarbGPerKg}g/kg，恢復 leptin 與甲狀腺）`}
+              {data.metabolicStress.recommendation === 'diet_break' && '💡 建議安排 3-5 天 diet break（維持熱量，高碳水，恢復荷爾蒙和代謝率）'}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 飲食目標 */}
       <div className={`${colors.bg} ${colors.border} border rounded-2xl p-4 mb-3`}>
