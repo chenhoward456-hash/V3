@@ -233,7 +233,7 @@ function JoinSuccessContent() {
               重新選擇方案
             </Link>
             <a
-              href="https://line.me/ti/p/~0078185268"
+              href="https://lin.ee/LP65rCc"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-[#06C755] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#05b34d] transition-colors"
@@ -267,7 +267,7 @@ function JoinSuccessContent() {
               重新整理
             </button>
             <a
-              href="https://line.me/ti/p/~0078185268"
+              href="https://lin.ee/LP65rCc"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-[#06C755] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#05b34d] transition-colors"

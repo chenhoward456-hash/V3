@@ -138,7 +138,7 @@ export default function FAQPage() {
         </p>
         <div className="flex justify-center gap-4">
           <a
-            href="https://line.me/ti/p/~0078185268"
+            href="https://lin.ee/LP65rCc"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-success text-white px-8 py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"

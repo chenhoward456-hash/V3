@@ -137,6 +137,6 @@ npm run build
 ## 聯絡資訊
 
 - **Instagram**: [@chenhoward](https://www.instagram.com/chenhoward/)
-- **LINE**: [加入好友](https://line.me/ti/p/~0078185268)
+- **LINE**: [加入好友](https://lin.ee/LP65rCc)
 - **地點**: 台中市北屯區
 - **認證**: CSCS • 運動醫學背景

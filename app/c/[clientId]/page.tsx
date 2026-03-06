@@ -1007,7 +1007,7 @@ export default function ClientDashboard() {
                   <a href="/join?waitlist=self_managed" className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all">
                     升級自主管理版（即將開放）
                   </a>
-                  <a href="https://line.me/ti/p/~0078185268" target="_blank" rel="noopener noreferrer" className="block text-center bg-[#06C755] text-white text-sm font-bold py-2.5 rounded-xl hover:bg-[#05b04d] transition-all">
+                  <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="block text-center bg-[#06C755] text-white text-sm font-bold py-2.5 rounded-xl hover:bg-[#05b04d] transition-all">
                     💬 加 LINE 找 Howard
                   </a>
                 </div>
@@ -1072,7 +1072,7 @@ export default function ClientDashboard() {
                 <span className="block text-xs font-normal opacity-80 mt-0.5">即將開放，先加入候補名單</span>
               </a>
               <a
-                href="https://line.me/ti/p/~0078185268"
+                href="https://lin.ee/LP65rCc"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full text-center bg-[#06C755] text-white font-bold py-3 rounded-2xl hover:bg-[#05b04d] transition-colors"

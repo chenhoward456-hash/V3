@@ -162,7 +162,7 @@ export default function TrainingPage() {
             閱讀部落格文章
           </a>
           <a
-            href="https://line.me/ti/p/~0078185268"
+            href="https://lin.ee/LP65rCc"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block px-8 py-3 rounded-full font-medium border-2 transition-all hover:bg-gray-50"

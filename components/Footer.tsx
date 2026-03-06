@@ -52,6 +52,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li className="text-gray-400">📍 Coolday Fitness 北屯館</li>
+              <li className="text-gray-400">📧 chenhoward456@gmail.com</li>
+              <li className="text-gray-400">📞 0978-185-268</li>
             </ul>
           </div>
         </div>

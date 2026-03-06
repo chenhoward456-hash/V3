@@ -377,7 +377,7 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
                 <span className="block text-[10px] font-normal opacity-80 mt-0.5">即將開放，先加入候補名單</span>
               </a>
               <a
-                href="https://line.me/ti/p/~0078185268"
+                href="https://lin.ee/LP65rCc"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full text-center bg-[#06C755] text-white font-semibold py-3 px-4 rounded-xl hover:bg-[#05b04d] transition-colors text-sm"

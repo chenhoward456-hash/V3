@@ -51,7 +51,7 @@ export function generatePersonSchema() {
     image: 'https://howard456.vercel.app/howard-profile.jpg',
     sameAs: [
       'https://www.instagram.com/chenhoward/',
-      'https://line.me/ti/p/~0078185268',
+      'https://lin.ee/LP65rCc',
     ],
     worksFor: {
       '@type': 'Organization',

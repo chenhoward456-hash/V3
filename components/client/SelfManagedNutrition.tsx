@@ -580,7 +580,7 @@ export default function SelfManagedNutrition({
           想知道接下來怎麼調整策略？Howard 教練可以根據你的數據給你個人建議。
         </p>
         <a
-          href="https://line.me/ti/p/~0078185268"
+          href="https://lin.ee/LP65rCc"
           target="_blank"
           rel="noopener noreferrer"
           className="block w-full text-center bg-[#06C755] text-white font-bold py-3 rounded-xl hover:bg-[#05b04d] transition-colors text-sm"

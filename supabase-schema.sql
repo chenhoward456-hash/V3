@@ -476,3 +476,13 @@ CREATE INDEX IF NOT EXISTS idx_ai_chat_usage_client_month ON ai_chat_usage(clien
 ALTER TABLE ai_chat_usage ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Service role full access on ai_chat_usage" ON ai_chat_usage
   FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================
+-- 29. LINE Messaging API 整合
+-- 儲存客戶的 LINE 用戶 ID，用於查看在線狀態和推播通知
+-- ============================================
+
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS line_user_id TEXT UNIQUE;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS last_line_activity TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_clients_line_user_id ON clients(line_user_id) WHERE line_user_id IS NOT NULL;
