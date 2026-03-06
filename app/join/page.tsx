@@ -482,6 +482,9 @@ export default function JoinPage() {
                   : '付款由綠界科技（ECPay）安全處理，支援信用卡、ATM、超商付款'
                 }
               </p>
+              <p className="text-center text-[10px] text-gray-300 mt-3">
+                服務提供：Howard Protocol ｜ howard@howard456.com ｜ 0978-185-268
+              </p>
             </div>
           </div>
         </div>

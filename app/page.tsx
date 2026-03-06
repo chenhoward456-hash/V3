@@ -423,6 +423,9 @@ export default function HomePage() {
           <p className="text-center text-xs text-gray-400 mt-8">
             全部月繳制，隨時可取消。免費版隨時可升級，補差額即可。
           </p>
+          <p className="text-center text-[10px] text-gray-300 mt-3">
+            服務提供：Howard Protocol ｜ howard@howard456.com ｜ 0978-185-268
+          </p>
         </section>
       </ScrollReveal>
 
