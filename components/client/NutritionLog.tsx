@@ -443,8 +443,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
 
       {/* 連續多天沒填巨量營養素的提醒 */}
       {compliant !== null && hasTargets && (() => {
+        // nutritionLogs 按日期降序排列（最新在前），取最近 5 筆
         const recentWithoutMacros = nutritionLogs
-          .slice(-5)
+          .slice(0, 5)
           .filter((l: any) => l.compliant != null && l.calories == null)
         return recentWithoutMacros.length >= 3 && !computedCalories ? (
           <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-3 flex items-start gap-2">

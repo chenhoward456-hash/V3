@@ -736,8 +736,8 @@ export default function ClientDashboard() {
           )}
         </div>
 
-        {/* 性別未設定提示 — 影響營養計算精準度 */}
-        {!c.gender && (
+        {/* 性別未設定提示 — 僅 free/self_managed 可自行設定，coached 由教練處理 */}
+        {!c.gender && (isFree || isSelfManaged) && (
           <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 mb-4">
             <p className="text-sm font-medium text-purple-800 mb-2">請設定你的生理性別</p>
             <p className="text-xs text-purple-600 mb-3">性別會影響蛋白質、脂肪建議量及荷爾蒙安全底線的計算。未設定時系統預設為男性參數。</p>
