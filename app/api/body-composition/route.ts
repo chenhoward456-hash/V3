@@ -3,6 +3,7 @@ import { validateBodyComposition, validateDate } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
 import { createServiceSupabase } from '@/lib/supabase'
+import { isWeightTraining } from '@/components/client/types'
 
 const supabase = createServiceSupabase()
 
@@ -64,7 +65,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
   const avgCal = withCal.length > 0 ? Math.round(withCal.reduce((s: number, l: any) => s + l.calories, 0) / withCal.length) : null
 
   // 6. 訓練天數
-  const recentTraining = trainingLogs.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr && l.training_type !== 'rest')
+  const recentTraining = trainingLogs.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr && isWeightTraining(l.training_type))
   const trainingDays = Math.round(recentTraining.length / 2)
 
   const latestWeight = bodyData[bodyData.length - 1]?.weight

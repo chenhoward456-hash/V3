@@ -88,7 +88,11 @@ export async function POST(request: NextRequest) {
       if (duration == null || duration <= 0) {
         return createErrorResponse('訓練時長必須大於 0', 400)
       }
-      if (rpe == null || rpe < 1 || rpe > 10) {
+      // 有氧 RPE 選填，重訓 RPE 必填
+      if (training_type !== 'cardio' && (rpe == null || rpe < 1 || rpe > 10)) {
+        return createErrorResponse('RPE 必須在 1-10 之間', 400)
+      }
+      if (rpe != null && (rpe < 1 || rpe > 10)) {
         return createErrorResponse('RPE 必須在 1-10 之間', 400)
       }
     }

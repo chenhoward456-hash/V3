@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
 import { verifyAdminSession } from '@/lib/auth-middleware'
+import { isWeightTraining } from '@/components/client/types'
 
 const supabase = createServiceSupabase()
 
@@ -194,7 +195,7 @@ export async function GET(request: NextRequest) {
         ? Math.round(recentWithCalories.reduce((s: number, l: any) => s + l.calories, 0) / recentWithCalories.length)
         : null
 
-      const recentTraining = clientTraining.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr && l.training_type !== 'rest')
+      const recentTraining = clientTraining.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr && isWeightTraining(l.training_type))
       const trainingDaysPerWeek = Math.round(recentTraining.length / 2)
 
       try {
