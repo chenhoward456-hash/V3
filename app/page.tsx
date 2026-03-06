@@ -325,82 +325,104 @@ export default function HomePage() {
         </section>
       </ScrollReveal>
 
-      {/* ===== 區塊 6: 三欄定價 ===== */}
+      {/* ===== 區塊 6: 四欄定價 ===== */}
       <ScrollReveal>
-        <section className="max-w-5xl mx-auto px-6 py-20">
+        <section className="max-w-6xl mx-auto px-6 py-20">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
             免費開始，用了再決定
           </h2>
           <p className="text-center text-gray-500 mb-14">不需信用卡，30 秒建立帳號</p>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
             {/* 免費 */}
-            <div className="bg-white rounded-2xl p-7 shadow-sm border-2 border-gray-200 flex flex-col">
-              <h3 className="text-lg font-bold text-navy mb-1">免費版</h3>
-              <p className="text-3xl font-bold text-navy mb-1">$0</p>
-              <p className="text-xs text-gray-400 mb-5">永久免費</p>
-              <p className="text-gray-500 text-sm mb-5 leading-relaxed">
-                自己記錄、系統分析。先感受系統怎麼運作。
+            <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-gray-200 flex flex-col">
+              <h3 className="text-base font-bold text-navy mb-1">免費版</h3>
+              <p className="text-2xl font-bold text-navy mb-0.5">$0</p>
+              <p className="text-[10px] text-gray-400 mb-4">永久免費</p>
+              <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+                先感受系統怎麼運作
               </p>
-              <ul className="space-y-2 text-gray-600 mb-6 flex-1 text-sm">
-                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>體重趨勢追蹤</li>
-                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>飲食紀錄 + 合規追蹤</li>
-                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>TDEE 自動計算</li>
-                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>14 天後自動校正目標</li>
-                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">&#10003;</span>每月 1 次 AI 顧問</li>
+              <ul className="space-y-1.5 text-gray-600 mb-5 flex-1 text-xs">
+                <li className="flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span>體重趨勢追蹤</li>
+                <li className="flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span>飲食紀錄 + TDEE 計算</li>
+                <li className="flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span>14 天自動校正目標</li>
+                <li className="flex items-start gap-1.5 text-gray-300"><span className="mt-0.5">&#10007;</span>身心狀態追蹤</li>
+                <li className="flex items-start gap-1.5 text-gray-300"><span className="mt-0.5">&#10007;</span>AI 顧問</li>
               </ul>
               <Link
                 href="/join"
-                className="block bg-gray-800 text-white py-3.5 rounded-xl font-semibold hover:bg-gray-900 transition-colors text-center"
+                className="block bg-gray-800 text-white py-3 rounded-xl font-semibold hover:bg-gray-900 transition-colors text-center text-sm"
               >
                 免費開始記錄 →
               </Link>
             </div>
 
-            {/* 教練指導 — 推薦 */}
-            <div className="bg-white rounded-2xl p-7 shadow-sm border-2 border-primary flex flex-col relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1 rounded-full">
+            {/* 自主管理 $499 */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-green-200 flex flex-col">
+              <h3 className="text-base font-bold text-navy mb-1">自主管理</h3>
+              <p className="text-2xl font-bold text-navy mb-0.5">$499<span className="text-xs font-normal text-gray-400">/月</span></p>
+              <p className="text-[10px] text-gray-400 mb-4">系統全功能，自己掌控</p>
+              <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+                適合有基礎、想自己管理的人
+              </p>
+              <ul className="space-y-1.5 text-gray-600 mb-5 flex-1 text-xs">
+                <li className="flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span>免費版全部功能</li>
+                <li className="flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span>身心狀態追蹤</li>
+                <li className="flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span>AI 飲食顧問無限用</li>
+                <li className="flex items-start gap-1.5 text-gray-300"><span className="mt-0.5">&#10007;</span>教練 review</li>
+                <li className="flex items-start gap-1.5 text-gray-300"><span className="mt-0.5">&#10007;</span>訓練 / 補劑 / 血檢</li>
+              </ul>
+              <Link
+                href="/join"
+                className="block bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition-colors text-center text-sm"
+              >
+                開始使用 →
+              </Link>
+            </div>
+
+            {/* 教練指導 $2,999 — 推薦 */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-primary flex flex-col relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-bold px-3 py-0.5 rounded-full">
                 最多人選
               </div>
-              <h3 className="text-lg font-bold text-navy mb-1">教練指導</h3>
-              <p className="text-3xl font-bold text-navy mb-1">$2,999<span className="text-sm font-normal text-gray-400">/月</span></p>
-              <p className="text-xs text-gray-400 mb-5">CSCS 教練每週 review</p>
-              <p className="text-gray-500 text-sm mb-5 leading-relaxed">
-                系統分析 + 教練判斷，雙重保障。全台遠端。
+              <h3 className="text-base font-bold text-navy mb-1">教練指導</h3>
+              <p className="text-2xl font-bold text-navy mb-0.5">$2,999<span className="text-xs font-normal text-gray-400">/月</span></p>
+              <p className="text-[10px] text-gray-400 mb-4">CSCS 教練每週 review</p>
+              <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+                系統 + 教練，雙重保障。全台遠端。
               </p>
-              <ul className="space-y-2 text-gray-600 mb-6 flex-1 text-sm">
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>免費版全部功能</li>
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>教練每週營養 review</li>
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>訓練 / 補劑 / 血檢追蹤</li>
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>LINE 即時問答</li>
-                <li className="flex items-start gap-2"><span className="text-primary mt-0.5">&#10003;</span>AI 顧問無限使用</li>
+              <ul className="space-y-1.5 text-gray-600 mb-5 flex-1 text-xs">
+                <li className="flex items-start gap-1.5"><span className="text-primary mt-0.5">&#10003;</span>自主管理全部功能</li>
+                <li className="flex items-start gap-1.5"><span className="text-primary mt-0.5">&#10003;</span>教練每週營養 review</li>
+                <li className="flex items-start gap-1.5"><span className="text-primary mt-0.5">&#10003;</span>訓練 / 補劑 / 血檢追蹤</li>
+                <li className="flex items-start gap-1.5"><span className="text-primary mt-0.5">&#10003;</span>LINE 即時問答</li>
               </ul>
               <LineButton
                 source="homepage_plan_coached"
                 intent="coached"
-                className="block bg-primary text-white py-3.5 rounded-xl font-semibold hover:bg-primary-dark transition-colors text-center text-lg"
+                className="block bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors text-center text-sm"
               >
                 加 LINE 開始 →
               </LineButton>
             </div>
 
-            {/* 實體教練 */}
-            <div className="bg-white rounded-2xl p-7 shadow-sm border-2 border-navy/20 flex flex-col">
-              <h3 className="text-lg font-bold text-navy mb-1">實體教練</h3>
-              <p className="text-3xl font-bold text-navy mb-1">$5,000<span className="text-sm font-normal text-gray-400">/月</span></p>
-              <p className="text-xs text-gray-400 mb-5">台中北屯 · 每月 1 對 1</p>
-              <p className="text-gray-500 text-sm mb-5 leading-relaxed">
-                面對面指導 + 系統追蹤。適合想要完整服務的人。
+            {/* 實體教練 $5,000 */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-navy/20 flex flex-col">
+              <h3 className="text-base font-bold text-navy mb-1">實體教練</h3>
+              <p className="text-2xl font-bold text-navy mb-0.5">$5,000<span className="text-xs font-normal text-gray-400">/月</span></p>
+              <p className="text-[10px] text-gray-400 mb-4">台中北屯 · 每月 1 對 1</p>
+              <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+                面對面指導 + 系統追蹤。完整服務。
               </p>
-              <ul className="space-y-2 text-gray-600 mb-6 flex-1 text-sm">
-                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>教練指導版全部功能</li>
-                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>每月實體 1 對 1 訓練</li>
-                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>動作矯正 + 課表設計</li>
-                <li className="flex items-start gap-2"><span className="text-navy mt-0.5">&#10003;</span>備賽 / Peak Week 支援</li>
+              <ul className="space-y-1.5 text-gray-600 mb-5 flex-1 text-xs">
+                <li className="flex items-start gap-1.5"><span className="text-navy mt-0.5">&#10003;</span>教練指導全部功能</li>
+                <li className="flex items-start gap-1.5"><span className="text-navy mt-0.5">&#10003;</span>每月實體 1 對 1 訓練</li>
+                <li className="flex items-start gap-1.5"><span className="text-navy mt-0.5">&#10003;</span>動作矯正 + 課表設計</li>
+                <li className="flex items-start gap-1.5"><span className="text-navy mt-0.5">&#10003;</span>備賽 / Peak Week 支援</li>
               </ul>
               <LineButton
                 source="homepage_plan_combo"
                 intent="combo"
-                className="block bg-navy text-white py-3.5 rounded-xl font-semibold hover:bg-navy/90 transition-colors text-center"
+                className="block bg-navy text-white py-3 rounded-xl font-semibold hover:bg-navy/90 transition-colors text-center text-sm"
               >
                 加 LINE 了解 →
               </LineButton>
