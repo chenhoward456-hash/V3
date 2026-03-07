@@ -63,6 +63,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '帳號已暫停' }, { status: 403 })
   }
 
+  if (client.expires_at && new Date(client.expires_at) < new Date()) {
+    return NextResponse.json({ error: '帳號已過期' }, { status: 403 })
+  }
+
   try {
     // 取得數據（最近 30 天）
     const thirtyDaysAgo = new Date()

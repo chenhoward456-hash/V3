@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  TrendingUp, TrendingDown, Activity, Utensils, AlertTriangle, Droplets,
+  TrendingUp, TrendingDown, Activity, Utensils, AlertTriangle,
   Brain, Dumbbell, ChevronRight, Loader2, Sparkles, FlaskConical, Target
 } from 'lucide-react'
 
@@ -107,8 +107,13 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
     }
   }
 
+  const aiContentRef = useRef(aiContent)
+  const aiLoadingRef = useRef(aiLoading)
+  aiContentRef.current = aiContent
+  aiLoadingRef.current = aiLoading
+
   const fetchAiContent = useCallback(async (type: string, extraParams = '') => {
-    if (aiContent[type] || aiLoading[type]) return
+    if (aiContentRef.current[type] || aiLoadingRef.current[type]) return
     setAiLoading(prev => ({ ...prev, [type]: true }))
     try {
       const res = await fetch(`/api/ai/insights?clientId=${clientId}&type=${type}${extraParams}`)
@@ -121,7 +126,7 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
     } finally {
       setAiLoading(prev => ({ ...prev, [type]: false }))
     }
-  }, [clientId, aiContent, aiLoading])
+  }, [clientId])
 
   if (loading) {
     return (

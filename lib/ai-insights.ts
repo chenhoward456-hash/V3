@@ -349,11 +349,15 @@ export function predictTrend(
     } else if (weeklyRate === 0) {
       message = '體重目前處於平原期，建議調整飲食或訓練策略'
       confidence = 'medium'
-    } else {
+    } else if (goalType === 'cut' || goalType === 'bulk') {
       message = goalType === 'cut'
         ? `體重目前呈上升趨勢（+${weeklyRate.toFixed(2)}kg/週），與減脂目標方向相反，建議檢視飲食合規`
         : `體重目前呈下降趨勢（${weeklyRate.toFixed(2)}kg/週），與增肌目標方向相反，建議增加攝取`
       confidence = 'high'
+    } else {
+      // goalType 為 null 或其他（如 maintain）
+      message = `目前每週變化 ${weeklyRate > 0 ? '+' : ''}${weeklyRate.toFixed(2)}kg`
+      confidence = 'medium'
     }
   } else if (targetWeight == null) {
     message = `目前每週變化 ${weeklyRate > 0 ? '+' : ''}${weeklyRate.toFixed(2)}kg（尚未設定目標體重）`
@@ -576,11 +580,8 @@ export function compareLabResults(labResults: LabEntry[]): LabComparison[] {
     const changePercent = prev.value! !== 0 ? (change / prev.value!) * 100 : null
 
     const statusRank: Record<string, number> = { normal: 2, attention: 1, alert: 0 }
-    const improved = (statusRank[curr.status] ?? 0) > (statusRank[prev.status] ?? 0)
-      || (curr.status === prev.status && curr.status !== 'normal' && Math.abs(change) > 0 && (
-        // 更接近正常值方向的改善
-        curr.status === 'alert' ? false : true
-      ))
+    const currRank = statusRank[curr.status] ?? 0
+    const prevRank = statusRank[prev.status] ?? 0
 
     comparisons.push({
       testName,
@@ -588,7 +589,7 @@ export function compareLabResults(labResults: LabEntry[]): LabComparison[] {
       previous: { value: prev.value!, status: prev.status, date: prev.date },
       change: Math.round(change * 100) / 100,
       changePercent: changePercent ? Math.round(changePercent * 10) / 10 : null,
-      improved: (statusRank[curr.status] ?? 0) >= (statusRank[prev.status] ?? 0),
+      improved: currRank > prevRank ? true : currRank < prevRank ? false : null,
       unit: curr.unit,
     })
   }
@@ -650,7 +651,6 @@ export function generateSmartAlerts(data: InsightData): SmartAlert[] {
   const { nutritionLogs, wellnessLogs, trainingLogs, bodyLogs } = data
 
   // 1. 連續未記錄
-  const last3Nutrition = nutritionLogs.slice(-3)
   const today = new Date().toISOString().split('T')[0]
   const threeDaysAgo = new Date()
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
