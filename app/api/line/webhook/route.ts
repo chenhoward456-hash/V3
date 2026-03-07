@@ -810,9 +810,9 @@ async function handleContactSupport(replyToken: string) {
               style: 'primary',
               color: '#2196F3',
               action: {
-                type: 'uri',
-                label: '💬 LINE 聯繫教練',
-                uri: 'https://lin.ee/AVAjZ2n',
+                type: 'message',
+                label: '✏️ 直接留言給教練',
+                text: '我想詢問問題',
               },
             },
             {
@@ -821,7 +821,7 @@ async function handleContactSupport(replyToken: string) {
               action: {
                 type: 'uri',
                 label: '🌐 查看方案說明',
-                uri: `${SITE_URL}/remote`,
+                uri: `${SITE_URL}/join`,
               },
             },
           ],
