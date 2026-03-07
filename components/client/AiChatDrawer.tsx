@@ -227,30 +227,67 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
     - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫`
   }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData])
 
-  // 壓縮圖片到 ~800px 寬、JPEG 品質 0.7，控制 token 成本
-  // 使用 FileReader 取代 URL.createObjectURL，避免手機瀏覽器（LINE 內建等）載入失敗
+  // 壓縮圖片：FileReader → Image → Canvas → base64 JPEG
+  // 每一步都有 fallback，即使 Canvas 失敗也會回傳原圖 base64
   const compressImage = useCallback((file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
+      // 10 秒超時保護
+      const timeout = setTimeout(() => reject(new Error('圖片處理超時')), 10000)
+
       const reader = new FileReader()
       reader.onload = () => {
+        const dataUrl = reader.result as string
+        if (!dataUrl || !dataUrl.includes(',')) {
+          clearTimeout(timeout)
+          reject(new Error('FileReader 回傳無效資料'))
+          return
+        }
+
         const img = new Image()
         img.onload = () => {
-          const maxW = 800
-          const scale = img.width > maxW ? maxW / img.width : 1
-          const canvas = document.createElement('canvas')
-          canvas.width = Math.round(img.width * scale)
-          canvas.height = Math.round(img.height * scale)
-          const ctx = canvas.getContext('2d')
-          if (!ctx) { reject(new Error('Canvas not supported')); return }
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
-          // Strip "data:image/jpeg;base64," prefix
-          resolve(dataUrl.split(',')[1])
+          clearTimeout(timeout)
+          try {
+            const maxW = 800
+            const scale = img.width > maxW ? maxW / img.width : 1
+            const canvas = document.createElement('canvas')
+            canvas.width = Math.round(img.width * scale)
+            canvas.height = Math.round(img.height * scale)
+            const ctx = canvas.getContext('2d')
+            if (!ctx) {
+              // Canvas 不支援，直接回傳原圖
+              resolve(dataUrl.split(',')[1])
+              return
+            }
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+            const jpegUrl = canvas.toDataURL('image/jpeg', 0.7)
+            const base64 = jpegUrl.split(',')[1]
+            // 確認 toDataURL 有產出有效資料，否則 fallback
+            if (base64 && base64.length > 100) {
+              resolve(base64)
+            } else {
+              resolve(dataUrl.split(',')[1])
+            }
+          } catch {
+            // Canvas 操作失敗，回傳原圖
+            resolve(dataUrl.split(',')[1])
+          }
         }
-        img.onerror = () => reject(new Error('圖片載入失敗'))
-        img.src = reader.result as string
+        img.onerror = () => {
+          clearTimeout(timeout)
+          // Image 載入失敗，嘗試直接用原始 data URL
+          const base64 = dataUrl.split(',')[1]
+          if (base64 && base64.length > 100) {
+            resolve(base64)
+          } else {
+            reject(new Error('圖片載入失敗'))
+          }
+        }
+        img.src = dataUrl
       }
-      reader.onerror = () => reject(new Error('檔案讀取失敗'))
+      reader.onerror = () => {
+        clearTimeout(timeout)
+        reject(new Error('檔案讀取失敗'))
+      }
       reader.readAsDataURL(file)
     })
   }, [])
@@ -258,31 +295,26 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
   const handleImageSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
-    // Some mobile browsers (LINE in-app, Samsung Internet) don't set file.type
-    // for camera captures. Since <input accept="image/*"> already filters,
-    // we only reject if type is explicitly set to a non-image type.
-    if (file.type && !file.type.startsWith('image/')) return
-
-    // Clone file data immediately via Blob to prevent mobile browsers from
-    // invalidating the File reference when the input is reused
-    const blob = new Blob([await file.arrayBuffer()], { type: file.type || 'image/jpeg' })
-    // Reset file input right after cloning so same file can be re-selected
-    e.target.value = ''
+    // 不檢查 file.type — 某些手機瀏覽器拍照不設 MIME type，
+    // 且 <input accept="image/*"> 已經在前端過濾了
 
     try {
-      const base64 = await compressImage(new File([blob], file.name || 'photo.jpg', { type: blob.type }))
+      const base64 = await compressImage(file)
       setPendingImage(base64)
       setPendingImagePreview(`data:image/jpeg;base64,${base64}`)
-      // Auto-fill a prompt if empty
       if (!input.trim()) {
         setInput('幫我算這餐的營養素')
       }
       inputRef.current?.focus()
     } catch (err) {
       console.error('[AiChat] Image compression failed:', err)
-      setMessages(prev => [...prev, { role: 'assistant', content: '圖片處理失敗，請重新拍照或選擇其他圖片試試 🙏' }])
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `圖片處理失敗：${err instanceof Error ? err.message : '未知錯誤'}，請重新拍照或選擇其他圖片試試 🙏`,
+      }])
     }
+    // 最後才重置 file input，用 ref 比 event target 更可靠
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }, [compressImage, input])
 
   const clearPendingImage = useCallback(() => {
