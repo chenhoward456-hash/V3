@@ -296,6 +296,12 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
           </p>
         </div>
       </div>
+
+      <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-3">
+        <p className="text-[10px] text-gray-500 leading-relaxed">
+          此計畫由系統根據文獻公式自動產生，僅供教練與選手參考，不構成醫療建議。Peak Week 涉及水分與鈉操作，請務必在教練監督下執行。如有任何身體不適，應立即停止並諮詢醫師。
+        </p>
+      </div>
     </div>
   )
 }

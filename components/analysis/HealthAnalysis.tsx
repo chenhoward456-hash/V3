@@ -227,14 +227,20 @@ const HealthAnalysis = ({ bodyData, labResults, supplements }: HealthAnalysisPro
         <div className="flex items-start">
           <Target size={20} className="text-blue-600 mr-3 mt-1" />
           <div>
-            <div className="font-medium text-blue-900 mb-1">健康建議</div>
+            <div className="font-medium text-blue-900 mb-1">趨勢觀察</div>
             <div className="text-sm text-blue-800">
-              {healthScore >= 80 ? '健康狀況良好，請繼續保持！' :
-               healthScore >= 60 ? '健康狀況尚可，建議加強運動和飲食控制。' :
-               '健康狀況需要改善，建議諮詢專業醫療人員。'}
+              {healthScore >= 80 ? '近期數據趨勢良好，請繼續保持！' :
+               healthScore >= 60 ? '近期數據趨勢尚可，可加強運動和飲食控制。' :
+               '近期數據波動較大，建議諮詢專業醫療人員進一步評估。'}
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-3">
+        <p className="text-[10px] text-gray-500 leading-relaxed">
+          以上分析僅基於已記錄的數據趨勢，不構成健康評估或醫療診斷。如有健康疑慮，請諮詢專業醫療人員。
+        </p>
       </div>
     </div>
   )
