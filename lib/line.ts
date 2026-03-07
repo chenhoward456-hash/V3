@@ -41,6 +41,16 @@ export async function getUserProfile(userId: string): Promise<{ displayName: str
   return res.json()
 }
 
+export type QuickReplyItem = {
+  type: 'action'
+  action: { type: 'message'; label: string; text: string }
+}
+
 export type LineMessage =
-  | { type: 'text'; text: string }
-  | { type: 'flex'; altText: string; contents: object }
+  | { type: 'text'; text: string; quickReply?: { items: QuickReplyItem[] } }
+  | { type: 'flex'; altText: string; contents: object; quickReply?: { items: QuickReplyItem[] } }
+
+/** 建立 Quick Reply 按鈕 */
+export function qr(label: string, text: string): QuickReplyItem {
+  return { type: 'action', action: { type: 'message', label, text } }
+}

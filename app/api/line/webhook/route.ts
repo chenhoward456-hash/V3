@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyLineSignature, replyMessage } from '@/lib/line'
+import { verifyLineSignature, replyMessage, qr } from '@/lib/line'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
 
@@ -8,6 +8,50 @@ const log = createLogger('LINE-Webhook')
 // 台灣時區 helper
 function getTaiwanDate(): string {
   return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' })
+}
+
+// 常用 Quick Reply 組合
+const QR_MAIN = {
+  items: [
+    qr('📊 今日狀態', '狀態'),
+    qr('📈 7天趨勢', '趨勢'),
+    qr('⚖️ 記體重', '記體重'),
+    qr('🍽️ 記飲食', '記飲食'),
+  ],
+}
+
+const QR_AFTER_RECORD = {
+  items: [
+    qr('💧 記水量', '記水量'),
+    qr('🍽️ 記飲食', '記飲食'),
+    qr('🏋️ 記訓練', '記訓練'),
+    qr('📊 今日狀態', '狀態'),
+  ],
+}
+
+const QR_TRAINING_TYPES = {
+  items: [
+    qr('推', '訓練 推'),
+    qr('拉', '訓練 拉'),
+    qr('腿', '訓練 腿'),
+    qr('胸', '訓練 胸'),
+  ],
+}
+
+const QR_COMPLIANCE = {
+  items: [
+    qr('✅ 達標', '達標'),
+    qr('❌ 未達標', '未達標'),
+  ],
+}
+
+const QR_WELLNESS = {
+  items: [
+    qr('😊 好 (4 4 4)', '身心 4 4 4'),
+    qr('😐 普通 (3 3 3)', '身心 3 3 3'),
+    qr('😩 差 (2 2 2)', '身心 2 2 2'),
+    qr('🔥 超好 (5 5 5)', '身心 5 5 5'),
+  ],
 }
 
 export async function POST(request: NextRequest) {
@@ -48,7 +92,6 @@ async function handleEvent(event: any) {
 
   switch (event.type) {
     case 'follow':
-      // 用戶加入好友
       log.info(`New follower: ${userId}`)
       await replyMessage(event.replyToken, [
         {
@@ -66,7 +109,6 @@ async function handleEvent(event: any) {
 
     case 'unfollow':
       log.info(`Unfollowed: ${userId}`)
-      // 清除 LINE 綁定
       await supabase
         .from('clients')
         .update({ line_user_id: null, last_line_activity: null })
@@ -78,17 +120,54 @@ async function handleEvent(event: any) {
 async function handleTextMessage(event: any, userId: string, supabase: any) {
   const text = (event.message.text || '').trim()
 
-  // 綁定指令：「綁定 xxxxx」
+  // 綁定指令
   const bindMatch = text.match(/^綁定\s+([a-zA-Z0-9]+)$/i)
   if (bindMatch) {
-    const code = bindMatch[1]
-    await handleBind(event.replyToken, userId, code, supabase)
+    await handleBind(event.replyToken, userId, bindMatch[1], supabase)
     return
   }
 
   // 查詢狀態
   if (text === '狀態' || text === '今天狀態') {
     await handleStatusQuery(event.replyToken, userId, supabase)
+    return
+  }
+
+  // 趨勢查詢
+  if (text === '趨勢' || text === '週報') {
+    await handleTrendQuery(event.replyToken, userId, supabase)
+    return
+  }
+
+  // ── 互動式入口：點按鈕進入流程 ──
+  if (text === '記體重') {
+    await replyMessage(event.replyToken, [
+      { type: 'text', text: '請輸入體重（kg），例如：\n體重 72.5', quickReply: QR_MAIN },
+    ])
+    return
+  }
+  if (text === '記水量') {
+    await replyMessage(event.replyToken, [
+      { type: 'text', text: '請輸入水量（ml），例如：\n水 500\n\n水量會自動累加', quickReply: QR_MAIN },
+    ])
+    return
+  }
+  if (text === '記飲食') {
+    await replyMessage(event.replyToken, [
+      { type: 'text', text: '今天飲食達標嗎？', quickReply: QR_COMPLIANCE },
+    ])
+    return
+  }
+  if (text === '記訓練') {
+    await replyMessage(event.replyToken, [
+      { type: 'text', text: '今天練什麼？', quickReply: QR_TRAINING_TYPES },
+    ])
+    return
+  }
+  if (text === '記身心') {
+    await replyMessage(event.replyToken, [
+      { type: 'text', text: '今天整體感覺如何？\n（睡眠/精力/心情 各 1-5 分）', quickReply: QR_WELLNESS },
+    ])
     return
   }
 
@@ -148,35 +227,12 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     return
   }
 
-  // ── 趨勢查詢 ──
-  if (text === '趨勢' || text === '週報') {
-    await handleTrendQuery(event.replyToken, userId, supabase)
-    return
-  }
-
-  // 預設回覆 — 顯示所有指令
+  // 預設回覆 — 顯示主選單按鈕
   await replyMessage(event.replyToken, [
     {
       type: 'text',
-      text: [
-        '📋 指令列表：',
-        '',
-        '【查詢】',
-        '• 狀態 — 查看今天的數據',
-        '• 趨勢 — 查看 7 天趨勢分析',
-        '',
-        '【快速記錄】',
-        '• 體重 72.5 — 記錄體重',
-        '• 水 2000 — 記錄水量(ml)',
-        '• 蛋白 150 — 記錄蛋白質(g)',
-        '• 達標 / 未達標 — 記錄飲食合規',
-        '• 訓練 推 60分鐘 RPE8',
-        '  (推/拉/腿/胸/肩/手臂/有氧/休息)',
-        '• 身心 4 3 4 — 睡眠/精力/心情(1-5)',
-        '',
-        '【帳號】',
-        '• 綁定 [學員代碼]',
-      ].join('\n'),
+      text: '請點選下方按鈕，或直接輸入指令 👇',
+      quickReply: QR_MAIN,
     },
   ])
 }
@@ -217,7 +273,6 @@ async function handleQuickWeight(replyToken: string, lineUserId: string, weight:
     return
   }
 
-  // 查前一筆比較
   const { data: prev } = await supabase
     .from('body_composition')
     .select('weight, date')
@@ -234,7 +289,7 @@ async function handleQuickWeight(replyToken: string, lineUserId: string, weight:
     msg += `\n${diff === 0 ? '➡️' : diff > 0 ? '📈' : '📉'} 比上次 ${sign}${diff.toFixed(1)} kg（${prev.date}）`
   }
 
-  await replyMessage(replyToken, [{ type: 'text', text: msg }])
+  await replyMessage(replyToken, [{ type: 'text', text: msg, quickReply: QR_AFTER_RECORD }])
 }
 
 async function handleQuickWater(replyToken: string, lineUserId: string, waterMl: number, supabase: any) {
@@ -250,8 +305,6 @@ async function handleQuickWater(replyToken: string, lineUserId: string, waterMl:
   }
 
   const today = getTaiwanDate()
-
-  // 先查是否有今日紀錄，累加水量
   const { data: existing } = await supabase
     .from('nutrition_logs')
     .select('water_ml')
@@ -279,7 +332,18 @@ async function handleQuickWater(replyToken: string, lineUserId: string, waterMl:
   const bar = pct >= 100 ? '🎉' : pct >= 70 ? '💧' : '🥤'
 
   await replyMessage(replyToken, [
-    { type: 'text', text: `${bar} +${waterMl}ml → 今日累計 ${newWater}ml（目標 ${target}ml 的 ${pct}%）` },
+    {
+      type: 'text',
+      text: `${bar} +${waterMl}ml → 今日累計 ${newWater}ml（目標 ${target}ml 的 ${pct}%）`,
+      quickReply: {
+        items: [
+          qr('💧 再喝 300ml', '水 300'),
+          qr('💧 再喝 500ml', '水 500'),
+          qr('🍽️ 記飲食', '記飲食'),
+          qr('📊 今日狀態', '狀態'),
+        ],
+      },
+    },
   ])
 }
 
@@ -313,7 +377,7 @@ async function handleQuickProtein(replyToken: string, lineUserId: string, protei
     msg += `（目標 ${target}g 的 ${pct}%）`
   }
 
-  await replyMessage(replyToken, [{ type: 'text', text: msg }])
+  await replyMessage(replyToken, [{ type: 'text', text: msg, quickReply: QR_AFTER_RECORD }])
 }
 
 async function handleQuickCompliance(replyToken: string, lineUserId: string, compliant: boolean, supabase: any) {
@@ -334,8 +398,21 @@ async function handleQuickCompliance(replyToken: string, lineUserId: string, com
     return
   }
 
+  const afterCompliance = {
+    items: [
+      qr('🏋️ 記訓練', '記訓練'),
+      qr('😊 記身心', '記身心'),
+      qr('💧 記水量', '記水量'),
+      qr('📊 今日狀態', '狀態'),
+    ],
+  }
+
   await replyMessage(replyToken, [
-    { type: 'text', text: compliant ? '✅ 今日飲食已標記「達標」' : '❌ 今日飲食已標記「未達標」' },
+    {
+      type: 'text',
+      text: compliant ? '✅ 今日飲食已標記「達標」' : '❌ 今日飲食已標記「未達標」',
+      quickReply: afterCompliance,
+    },
   ])
 }
 
@@ -379,7 +456,16 @@ async function handleQuickTraining(
   if (duration) msg += ` ${duration}分鐘`
   if (rpe) msg += ` RPE${rpe}`
 
-  await replyMessage(replyToken, [{ type: 'text', text: msg }])
+  const afterTraining = {
+    items: [
+      qr('😊 記身心', '記身心'),
+      qr('🍽️ 記飲食', '記飲食'),
+      qr('📊 今日狀態', '狀態'),
+      qr('📈 7天趨勢', '趨勢'),
+    ],
+  }
+
+  await replyMessage(replyToken, [{ type: 'text', text: msg, quickReply: afterTraining }])
 }
 
 async function handleQuickWellness(
@@ -394,7 +480,7 @@ async function handleQuickWellness(
   }
 
   if ([sleep, energy, mood].some(v => v < 1 || v > 5)) {
-    await replyMessage(replyToken, [{ type: 'text', text: '分數必須在 1-5 之間，格式：身心 睡眠 精力 心情' }])
+    await replyMessage(replyToken, [{ type: 'text', text: '分數必須在 1-5 之間', quickReply: QR_WELLNESS }])
     return
   }
 
@@ -412,8 +498,21 @@ async function handleQuickWellness(
     return
   }
 
+  const afterWellness = {
+    items: [
+      qr('📊 今日狀態', '狀態'),
+      qr('📈 7天趨勢', '趨勢'),
+      qr('🏋️ 記訓練', '記訓練'),
+      qr('🍽️ 記飲食', '記飲食'),
+    ],
+  }
+
   await replyMessage(replyToken, [
-    { type: 'text', text: `✅ 已記錄身心狀態\n😴 睡眠：${sleep}/5\n⚡ 精力：${energy}/5\n😊 心情：${mood}/5` },
+    {
+      type: 'text',
+      text: `✅ 已記錄身心狀態\n😴 睡眠：${sleep}/5\n⚡ 精力：${energy}/5\n😊 心情：${mood}/5`,
+      quickReply: afterWellness,
+    },
   ])
 }
 
@@ -455,7 +554,6 @@ async function handleTrendQuery(replyToken: string, lineUserId: string, supabase
 
   const lines: string[] = [`📊 ${client.name} 近 7 天趨勢\n`]
 
-  // 體重趨勢
   if (body.length >= 2) {
     const first = body[0].weight
     const last = body[body.length - 1].weight
@@ -469,7 +567,6 @@ async function handleTrendQuery(replyToken: string, lineUserId: string, supabase
     lines.push('⚖️ 體重：無紀錄')
   }
 
-  // 飲食合規率
   if (nutrition.length > 0) {
     const compliantDays = nutrition.filter((n: any) => n.compliant).length
     const rate = Math.round((compliantDays / nutrition.length) * 100)
@@ -490,12 +587,10 @@ async function handleTrendQuery(replyToken: string, lineUserId: string, supabase
     lines.push('\n🍽️ 飲食：無紀錄')
   }
 
-  // 訓練
   if (training.length > 0) {
     const typeCount: Record<string, number> = {}
     for (const t of training) {
-      const type = t.training_type
-      typeCount[type] = (typeCount[type] || 0) + 1
+      typeCount[t.training_type] = (typeCount[t.training_type] || 0) + 1
     }
     const typeLabel: Record<string, string> = {
       push: '推', pull: '拉', legs: '腿', chest: '胸', shoulder: '肩',
@@ -513,7 +608,6 @@ async function handleTrendQuery(replyToken: string, lineUserId: string, supabase
     lines.push('\n🏋️ 訓練：無紀錄')
   }
 
-  // 身心狀態
   if (wellness.length > 0) {
     const avgSleep = (wellness.reduce((s: number, w: any) => s + (w.sleep_quality || 0), 0) / wellness.length).toFixed(1)
     const avgEnergy = (wellness.reduce((s: number, w: any) => s + (w.energy_level || 0), 0) / wellness.length).toFixed(1)
@@ -523,7 +617,6 @@ async function handleTrendQuery(replyToken: string, lineUserId: string, supabase
     lines.push(`😊 平均心情：${avgMood}/5`)
   }
 
-  // 最新週報摘要
   if (summaryRes.data) {
     const s = summaryRes.data
     lines.push(`\n📝 最新週報：`)
@@ -532,7 +625,7 @@ async function handleTrendQuery(replyToken: string, lineUserId: string, supabase
     if (s.warnings?.length > 0) lines.push(`⚠️ ${s.warnings.join('、')}`)
   }
 
-  await replyMessage(replyToken, [{ type: 'text', text: lines.join('\n') }])
+  await replyMessage(replyToken, [{ type: 'text', text: lines.join('\n'), quickReply: QR_MAIN }])
 }
 
 // ═══════════════════════════════════════
@@ -540,7 +633,6 @@ async function handleTrendQuery(replyToken: string, lineUserId: string, supabase
 // ═══════════════════════════════════════
 
 async function handleBind(replyToken: string, lineUserId: string, code: string, supabase: any) {
-  // 檢查是否已經綁定
   const { data: existing } = await supabase
     .from('clients')
     .select('id, name')
@@ -549,12 +641,11 @@ async function handleBind(replyToken: string, lineUserId: string, code: string, 
 
   if (existing) {
     await replyMessage(replyToken, [
-      { type: 'text', text: `你已經綁定帳號「${existing.name}」了！` },
+      { type: 'text', text: `你已經綁定帳號「${existing.name}」了！`, quickReply: QR_MAIN },
     ])
     return
   }
 
-  // 查詢學員代碼
   const { data: client } = await supabase
     .from('clients')
     .select('id, name, line_user_id')
@@ -575,7 +666,6 @@ async function handleBind(replyToken: string, lineUserId: string, code: string, 
     return
   }
 
-  // 綁定
   await supabase
     .from('clients')
     .update({
@@ -587,17 +677,8 @@ async function handleBind(replyToken: string, lineUserId: string, code: string, 
   await replyMessage(replyToken, [
     {
       type: 'text',
-      text: [
-        `綁定成功！歡迎 ${client.name} 🎉`,
-        '',
-        '你現在可以用以下指令快速操作：',
-        '• 體重 72.5 — 記錄體重',
-        '• 水 500 — 記錄喝水',
-        '• 達標 — 標記飲食達標',
-        '• 身心 4 3 4 — 記錄身心',
-        '• 狀態 — 查看今天數據',
-        '• 趨勢 — 查看 7 天分析',
-      ].join('\n'),
+      text: `綁定成功！歡迎 ${client.name} 🎉\n\n點下方按鈕開始使用 👇`,
+      quickReply: QR_MAIN,
     },
   ])
 }
@@ -618,7 +699,6 @@ async function handleStatusQuery(replyToken: string, lineUserId: string, supabas
 
   const today = getTaiwanDate()
 
-  // 並行查詢今日資料
   const [wellness, nutrition, training] = await Promise.all([
     supabase.from('daily_wellness').select('*').eq('client_id', client.id).eq('date', today).single(),
     supabase.from('nutrition_logs').select('*').eq('client_id', client.id).eq('date', today).single(),
@@ -627,6 +707,9 @@ async function handleStatusQuery(replyToken: string, lineUserId: string, supabas
 
   const lines: string[] = [`📊 ${client.name} 今日狀態\n`]
 
+  // 收集缺漏項目的 quick reply 按鈕
+  const missingButtons = []
+
   if (wellness.data) {
     const w = wellness.data
     lines.push(`😴 睡眠：${w.sleep_quality || '-'}/5`)
@@ -634,8 +717,8 @@ async function handleStatusQuery(replyToken: string, lineUserId: string, supabas
     lines.push(`😊 心情：${w.mood || '-'}/5`)
     if (w.hrv) lines.push(`💓 HRV：${w.hrv}ms`)
   } else {
-    lines.push('⚠️ 今天還沒填寫身心狀態')
-    lines.push('💡 輸入「身心 4 3 4」快速記錄')
+    lines.push('⚠️ 身心狀態未記錄')
+    missingButtons.push(qr('😊 記身心', '記身心'))
   }
 
   lines.push('')
@@ -646,8 +729,8 @@ async function handleStatusQuery(replyToken: string, lineUserId: string, supabas
     if (n.protein_grams) lines.push(`🥩 蛋白質：${n.protein_grams}g`)
     if (n.water_ml) lines.push(`💧 水量：${n.water_ml}ml`)
   } else {
-    lines.push('⚠️ 今天還沒記錄飲食')
-    lines.push('💡 輸入「達標」或「水 500」快速記錄')
+    lines.push('⚠️ 飲食未記錄')
+    missingButtons.push(qr('🍽️ 記飲食', '記飲食'))
   }
 
   lines.push('')
@@ -655,9 +738,17 @@ async function handleStatusQuery(replyToken: string, lineUserId: string, supabas
   if (training.data) {
     lines.push(`🏋️ 訓練：${training.data.training_type} (RPE ${training.data.rpe || '-'})`)
   } else {
-    lines.push('⚠️ 今天還沒記錄訓練')
-    lines.push('💡 輸入「訓練 推 60分鐘 RPE8」')
+    lines.push('⚠️ 訓練未記錄')
+    missingButtons.push(qr('🏋️ 記訓練', '記訓練'))
   }
 
-  await replyMessage(replyToken, [{ type: 'text', text: lines.join('\n') }])
+  // 動態按鈕：缺什麼就顯示什麼，最後加趨勢
+  const statusQR = {
+    items: [
+      ...missingButtons.slice(0, 3),
+      qr('📈 7天趨勢', '趨勢'),
+    ],
+  }
+
+  await replyMessage(replyToken, [{ type: 'text', text: lines.join('\n'), quickReply: statusQR }])
 }
