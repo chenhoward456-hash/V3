@@ -71,6 +71,8 @@ export default function ClientDashboard() {
   const [showCoachSummary, setShowCoachSummary] = useState(false)
   const [showAiChat, setShowAiChat] = useState(false)
   const [showAiUpgrade, setShowAiUpgrade] = useState(false)
+  const [showPhaseSelector, setShowPhaseSelector] = useState(false)
+  const [updatingPhase, setUpdatingPhase] = useState(false)
   const { showToast } = useToast()
 
   // Scroll-based bottom nav highlighting
@@ -175,6 +177,25 @@ export default function ClientDashboard() {
     } catch { showToast('打卡失敗，請重試', 'error') }
     finally {
       setTogglingSupplements(new Set())
+    }
+  }
+
+  const handlePrepPhaseChange = async (newPhase: string) => {
+    setUpdatingPhase(true)
+    try {
+      const res = await fetch('/api/prep-phase', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, prepPhase: newPhase })
+      })
+      if (!res.ok) throw new Error('更新失敗')
+      mutate()
+      setShowPhaseSelector(false)
+      showToast('備賽階段已更新', 'success')
+    } catch {
+      showToast('更新失敗，請重試', 'error')
+    } finally {
+      setUpdatingPhase(false)
     }
   }
 
@@ -426,6 +447,14 @@ export default function ClientDashboard() {
           {isCompetition && c.competition_date && (() => {
             const daysLeft = Math.ceil((new Date(c.competition_date).getTime() - new Date().getTime()) / 86400000)
             const phaseLabels: Record<string, string> = { off_season: '休賽期', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' }
+            const phaseOptions = [
+              { value: 'off_season', label: '休賽期', icon: '🌙' },
+              { value: 'bulk', label: '增肌期', icon: '💪' },
+              { value: 'cut', label: '減脂期', icon: '🔥' },
+              { value: 'peak_week', label: 'Peak Week', icon: '⚡' },
+              { value: 'competition', label: '比賽日', icon: '🏆' },
+              { value: 'recovery', label: '賽後恢復', icon: '🧘' },
+            ]
             const phase = c.prep_phase || 'off_season'
             const urgencyColor = daysLeft <= 7 ? 'from-red-500 to-red-600' : daysLeft <= 14 ? 'from-amber-500 to-orange-500' : daysLeft <= 30 ? 'from-amber-400 to-yellow-500' : 'from-blue-500 to-blue-600'
             const urgencyBg = daysLeft <= 7 ? 'bg-red-50 border-red-200' : daysLeft <= 14 ? 'bg-amber-50 border-amber-200' : daysLeft <= 30 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
@@ -435,9 +464,13 @@ export default function ClientDashboard() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-lg">🏆</span>
-                      <span className={`px-2 py-0.5 text-xs font-bold rounded-full text-white bg-gradient-to-r ${urgencyColor}`}>
+                      <button
+                        onClick={() => setShowPhaseSelector(!showPhaseSelector)}
+                        className={`px-2 py-0.5 text-xs font-bold rounded-full text-white bg-gradient-to-r ${urgencyColor} flex items-center gap-1 transition-all active:scale-95`}
+                      >
                         {phaseLabels[phase] || phase}
-                      </span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${showPhaseSelector ? 'rotate-180' : ''}`} />
+                      </button>
                     </div>
                     <p className="text-xs text-gray-500">
                       {new Date(c.competition_date).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -448,6 +481,29 @@ export default function ClientDashboard() {
                     <p className="text-xs text-gray-500 font-medium">{daysLeft > 0 ? '天後比賽' : daysLeft === 0 ? '今天比賽！' : '已結束'}</p>
                   </div>
                 </div>
+                {/* 階段選擇器 */}
+                {showPhaseSelector && (
+                  <div className="mt-3 pt-3 border-t border-gray-200/60">
+                    <p className="text-xs text-gray-500 mb-2 font-medium">切換備賽階段</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {phaseOptions.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => handlePrepPhaseChange(opt.value)}
+                          disabled={updatingPhase || opt.value === phase}
+                          className={`px-2 py-2 rounded-lg text-xs font-medium transition-all ${
+                            opt.value === phase
+                              ? 'bg-gray-900 text-white shadow-sm'
+                              : 'bg-white/80 text-gray-700 hover:bg-white hover:shadow-sm active:scale-95'
+                          } ${updatingPhase ? 'opacity-50' : ''}`}
+                        >
+                          <span className="block text-sm mb-0.5">{opt.icon}</span>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })()}
