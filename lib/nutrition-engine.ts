@@ -277,6 +277,12 @@ export interface PeakWeekDay {
   fat: number
   calories: number
   water: number // mL
+  // 進階指引
+  potassiumNote?: string    // 鉀離子建議
+  foodNote?: string         // 食物選擇建議
+  creatineNote?: string     // 肌酸建議
+  posingNote?: string       // Posing 練習排程
+  pumpUpNote?: string       // 後台 pump-up 指引（比賽日）
 }
 
 // ===== 常數 (基於文獻，編號對應檔案頂部 References) =====
@@ -390,31 +396,35 @@ const CARB_CYCLE_REST_RATIO = 0.4
 
 // Peak Week 常數 [12] Escalante 2021 + [13] Barakat 2022 + [14] Homer/Helms 2024
 const PEAK_WEEK = {
-  // 碳水耗竭期 (Day 7-4)：低碳 + 高脂補充肌內三酸甘油酯
-  DEPLETION_CARB_G_PER_KG: 1.1,    // Barakat: 1.0-1.2
-  DEPLETION_PROTEIN_G_PER_KG: 3.2,  // 高蛋白保護肌肉
-  DEPLETION_FAT_G_PER_KG: 1.5,     // 高脂補 IMT（1.2-1.8 range）
+  // 碳水耗竭期 (Day 7-4)：低碳 + 高脂補充肌內三酸甘油酯 (IMT)
+  DEPLETION_CARB_G_PER_KG: 1.1,    // Barakat 2022: 1.0-1.2 g/kg
+  DEPLETION_PROTEIN_G_PER_KG: 3.2,  // Barakat 2022: ~3.16 g/kg；高蛋白保護 LBM
+  DEPLETION_FAT_G_PER_KG: 1.5,     // Barakat 2022: ~1.56 g/kg；高脂補 IMT（1.2-1.8 range）
 
   // 碳水超補期 (Day 3-2)
-  LOADING_CARB_G_PER_KG: 9.0,      // Escalante: 8-12, Barakat: 7.8-8.0
-  LOADING_PROTEIN_G_PER_KG: 2.2,   // 降低為碳水騰空間
-  LOADING_FAT_G_PER_KG: 0.65,      // 低脂最大化碳水
+  LOADING_CARB_G_PER_KG: 9.0,      // Homer 2024 實驗: 9.0 g/kg；Escalante: 8-12, Barakat: 7.8-8.0
+  LOADING_PROTEIN_G_PER_KG: 1.6,   // Escalante 2021: ~1.6 g/kg；降低蛋白為碳水騰空間，最大化肝醣超補
+  LOADING_FAT_G_PER_KG: 0.65,      // 低脂最大化碳水吸收
 
   // Taper (Day 1)
-  TAPER_CARB_G_PER_KG: 5.5,        // Barakat: 5.46
+  TAPER_CARB_G_PER_KG: 5.5,        // Barakat 2022: 5.46 g/kg
   TAPER_PROTEIN_G_PER_KG: 2.8,
   TAPER_FAT_G_PER_KG: 1.1,         // 中等脂肪防止 IMT 流失
 
   // 比賽日
-  SHOW_CARB_G_PER_KG: 2.0,         // 小餐維持
+  SHOW_CARB_G_PER_KG: 2.0,         // 小餐維持；依視覺評估彈性調整
   SHOW_PROTEIN_G_PER_KG: 3.0,
   SHOW_FAT_G_PER_KG: 0.5,
 
-  // 水分操控（mL/kg）
-  WATER_BASELINE: 90,     // Day 7-4：90 mL/kg
-  WATER_LOADING: 140,     // Day 3-2：120-155 mL/kg (中間值)
-  WATER_TAPER: 80,        // Day 1：80 mL/kg
-  WATER_SHOW: 20,         // 比賽日：少量啜飲
+  // 水分操控（mL/kg）— 保守策略，避免醛固酮反彈
+  WATER_BASELINE: 90,     // Day 7-4：90 mL/kg (Barakat 2022: 93.4)
+  WATER_LOADING: 100,     // Day 3-2：100 mL/kg (文獻最高實測值；原 140 無證據且有低血鈉風險)
+  WATER_TAPER: 70,        // Day 1：70 mL/kg (適度減少，避免醛固酮反彈)
+  WATER_SHOW: 40,         // 比賽日：40 mL/kg (原 20 過於激進；脫水反而使肌肉扁平、損害 pump)
+
+  // 鉀離子目標（mg/天）— Barakat 2022: ~6246 mg/day during loading
+  POTASSIUM_BASELINE: 3500,  // 正常飲食鉀攝取
+  POTASSIUM_LOADING: 6000,   // 超補期加鉀促進水分進入肌肉細胞
 }
 
 // ===== 動態能量密度計算 =====
@@ -2171,7 +2181,8 @@ function generateBulkSuggestion(
 }
 
 // ===== Peak Week 引擎 =====
-// 基於 Escalante 2021 + Barakat 2022 + Mitchell 2024
+// 基於 Escalante 2021 [12] + Barakat 2022 [13] + Homer/Helms 2024 [14]
+// 每日協議含：巨量營養素、水分、鈉、鉀、纖維、訓練、食物選擇、肌酸、Posing、Pump-up
 
 function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): NutritionSuggestion {
   const bw = input.bodyWeight
@@ -2187,12 +2198,18 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
     let day: PeakWeekDay
 
     if (d >= 4) {
-      // Day 7-4：碳水耗竭 + 脂肪補充 IMT
+      // Day 7-4：碳水耗竭 + 高脂補充肌內三酸甘油酯 (IMT)
       const trainingMap: Record<number, string> = {
-        7: '耗竭訓練：上半身（高次數 >12RM，巨組）',
-        6: '耗竭訓練：下半身（高次數 >12RM，巨組）',
-        5: '耗竭訓練：全身（中等重量，每組 >15 次）',
-        4: '輕量 pump / 休息',
+        7: '耗竭訓練：上半身（高次數 >12RM，巨組），每肌群 3-4 組',
+        6: '耗竭訓練：下半身（高次數 >12RM，巨組），每肌群 3-4 組',
+        5: '耗竭訓練：全身（中等重量，每組 >15 次），確保全身肝醣耗盡',
+        4: '輕量 pump / 完全休息（從今天起不再做重訓）',
+      }
+      const posingMap: Record<number, string> = {
+        7: 'Posing 練習 15 分鐘（正常強度，同時消耗肝醣）',
+        6: 'Posing 練習 15 分鐘（正常強度）',
+        5: 'Posing 練習 10 分鐘（中等強度）',
+        4: 'Posing 練習 10 分鐘（輕度，避免過度消耗）',
       }
       day = {
         daysOut: d, date: dateStr,
@@ -2202,34 +2219,42 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
         proteinGPerKg: PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.DEPLETION_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_BASELINE,
-        sodiumNote: '正常鈉攝取',
-        fiberNote: d <= 5 ? '開始減少纖維（目標 <15g）' : '正常',
+        sodiumNote: '正常鈉攝取（~2300mg）',
+        fiberNote: d <= 5 ? '開始減少纖維（目標 <15g），碳水來源用纖維蔬菜（花椰菜、蘆筍）' : '正常纖維攝取',
         trainingNote: trainingMap[d] || '休息',
         carbs: Math.round(bw * PEAK_WEEK.DEPLETION_CARB_G_PER_KG),
         protein: Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG),
         fat: Math.round(bw * PEAK_WEEK.DEPLETION_FAT_G_PER_KG),
         calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_BASELINE),
+        potassiumNote: `正常鉀攝取（~${PEAK_WEEK.POTASSIUM_BASELINE}mg）`,
+        foodNote: '碳水來源：纖維蔬菜為主（花椰菜、蘆筍、菠菜）；脂肪來源：酪梨、堅果、橄欖油（補充 IMT）',
+        creatineNote: '維持肌酸 5g/天（不要停！停肌酸會流失細胞內水分和肌肉飽滿度）',
+        posingNote: posingMap[d] || '輕度 Posing',
       }
     } else if (d >= 2) {
-      // Day 3-2：碳水超補 + 水分加載 + 鈉加載
+      // Day 3-2：碳水超補 + 鈉加載 + 鉀加載
       day = {
         daysOut: d, date: dateStr,
-        label: `Day ${d} — 碳水超補期 🍚`,
+        label: `Day ${d} — 碳水超補期`,
         phase: 'carb_load',
         carbsGPerKg: PEAK_WEEK.LOADING_CARB_G_PER_KG,
         proteinGPerKg: PEAK_WEEK.LOADING_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.LOADING_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_LOADING,
-        sodiumNote: '鈉加載 +30%（多加鹽，幫助碳水吸收入肌肉）',
-        fiberNote: '低纖維（<12g），選白飯、白吐司等精緻碳水',
-        trainingNote: '完全休息（保存肝醣）',
+        sodiumNote: '鈉加載 +30%（~3000mg）— 鈉經 SGLT-1 幫助葡萄糖進入肌肉細胞',
+        fiberNote: '極低纖維（<10g），避免腹脹影響比賽日外觀',
+        trainingNote: '完全休息（任何訓練都會重新消耗肝醣，破壞超補效果）',
         carbs: Math.round(bw * PEAK_WEEK.LOADING_CARB_G_PER_KG),
         protein: Math.round(bw * PEAK_WEEK.LOADING_PROTEIN_G_PER_KG),
         fat: Math.round(bw * PEAK_WEEK.LOADING_FAT_G_PER_KG),
         calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_LOADING),
+        potassiumNote: `鉀加載 ~${PEAK_WEEK.POTASSIUM_LOADING}mg（香蕉、馬鈴薯、椰子水）— 鉀幫助水分進入肌肉細胞`,
+        foodNote: '精緻高 GI 碳水為主：白飯、白吐司、年糕、麻糬、蜂蜜、果醬。分 5-6 餐進食，避免單餐過量導致腸胃不適',
+        creatineNote: '維持肌酸 5g/天（搭配碳水一起吃，肌酸+碳水超補可增強肝醣儲存）',
+        posingNote: '僅輕度 Posing 排練 5 分鐘（避免消耗超補的肝醣）',
       }
     } else if (d === 1) {
-      // Day 1：Taper — 碳水微降 + 水分回調 + 脂肪中等（防 IMT 流失）
+      // Day 1：Taper — 碳水微降 + 水分適度減少 + 脂肪中等（防 IMT 流失）
       day = {
         daysOut: d, date: dateStr,
         label: 'Day 1 — 微調日',
@@ -2238,31 +2263,40 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
         proteinGPerKg: PEAK_WEEK.TAPER_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.TAPER_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_TAPER,
-        sodiumNote: '恢復正常鈉',
-        fiberNote: '極低纖維（<10g），避免腹脹',
-        trainingNote: '完全休息或極輕 pump',
+        sodiumNote: '恢復正常鈉（~2300mg）— 不要突然斷鈉，避免醛固酮反彈導致皮下積水',
+        fiberNote: '極低纖維（<8g），避免腹脹',
+        trainingNote: '完全休息（不要做任何訓練）',
         carbs: Math.round(bw * PEAK_WEEK.TAPER_CARB_G_PER_KG),
         protein: Math.round(bw * PEAK_WEEK.TAPER_PROTEIN_G_PER_KG),
         fat: Math.round(bw * PEAK_WEEK.TAPER_FAT_G_PER_KG),
         calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_TAPER),
+        potassiumNote: `維持高鉀 ~${PEAK_WEEK.POTASSIUM_LOADING}mg（延續超補期策略）`,
+        foodNote: '延續精緻碳水但量減半；少量多餐；晚餐前最後一餐加少許鹹食',
+        creatineNote: '維持肌酸 5g/天',
+        posingNote: 'Posing 排練 5 分鐘（僅走流程，不做長時間持續收縮）',
       }
     } else {
       // Day 0：比賽日
       day = {
         daysOut: 0, date: dateStr,
-        label: '🏆 比賽日',
+        label: '比賽日',
         phase: 'show_day',
         carbsGPerKg: PEAK_WEEK.SHOW_CARB_G_PER_KG,
         proteinGPerKg: PEAK_WEEK.SHOW_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.SHOW_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_SHOW,
-        sodiumNote: '正常，少量啜飲',
+        sodiumNote: '少量鹹食（上台前 2 小時吃鹹零食可增強 pump 效果）',
         fiberNote: '幾乎零纖維',
-        trainingNote: '後台 pump-up：彈力帶 + 輕啞鈴',
+        trainingNote: '後台 pump-up（詳見下方指引）',
         carbs: Math.round(bw * PEAK_WEEK.SHOW_CARB_G_PER_KG),
         protein: Math.round(bw * PEAK_WEEK.SHOW_PROTEIN_G_PER_KG),
         fat: Math.round(bw * PEAK_WEEK.SHOW_FAT_G_PER_KG),
         calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_SHOW),
+        potassiumNote: '正常鉀攝取',
+        foodNote: '小份量碳水持續補充：飯糰、年糕、米餅、糖果。依視覺評估彈性調整 — 看起來扁就多吃碳水，看起來水就減少',
+        creatineNote: '比賽日可省略肌酸（非必要）',
+        posingNote: '上台前反覆練習指定動作',
+        pumpUpNote: '上台前 30-45 分鐘開始 pump-up：彈力帶 + 輕啞鈴。專注三角肌、手臂、胸、上背。每部位 2-3 組 x 12-20 下，不到力竭。避免腿部 pump。上台前 5-10 分鐘停止。注意：3 組彎舉就能消耗 24% 肱二頭肌肝醣，保持輕量！',
       }
     }
 
@@ -2300,13 +2334,19 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
       `🧂 ${todayPlan.sodiumNote}`,
       `🥬 纖維：${todayPlan.fiberNote}`,
       `🏋️ ${todayPlan.trainingNote}`,
+      ...(todayPlan.potassiumNote ? [`🍌 ${todayPlan.potassiumNote}`] : []),
+      ...(todayPlan.foodNote ? [`🍽️ ${todayPlan.foodNote}`] : []),
+      ...(todayPlan.creatineNote ? [`💊 ${todayPlan.creatineNote}`] : []),
+      ...(todayPlan.posingNote ? [`🪞 ${todayPlan.posingNote}`] : []),
+      ...(todayPlan.pumpUpNote ? [`💪 ${todayPlan.pumpUpNote}`] : []),
+      '⚠️ 重要：不要突然斷水或斷鈉！醛固酮反彈會導致皮下水分滯留，效果適得其反',
     ],
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType),
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
     autoApply: true,
     peakWeekPlan: plan, metabolicStress: null,
-    menstrualCycleNote: null,  // Peak Week 不需要週期提示
+    menstrualCycleNote: null,
   }
 }
 
