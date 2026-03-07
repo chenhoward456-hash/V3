@@ -15,6 +15,7 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isWeightTraining } from '@/components/client/types'
+import { pushMessage } from '@/lib/line'
 
 const supabase = createServiceSupabase()
 
@@ -339,10 +340,67 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── 5. 透過 LINE 推播週報給已綁定的學員 ──
+    let linePushCount = 0
+    for (const client of clients) {
+      if (!client.line_user_id) continue
+
+      const summary = summaries.find(s => s.client_id === client.id)
+      const clientBody = allBody.filter((b: any) => b.client_id === client.id)
+
+      const msgLines: string[] = [`📋 ${client.name} 本週報告\n`]
+
+      // 體重變化
+      const weekWeights = clientBody.filter((b: any) => b.date >= sevenDaysStr)
+      if (weekWeights.length >= 2) {
+        const first = weekWeights[0].weight
+        const last = weekWeights[weekWeights.length - 1].weight
+        const diff = last - first
+        const sign = diff > 0 ? '+' : ''
+        msgLines.push(`⚖️ 體重：${last}kg（${sign}${diff.toFixed(1)}kg）`)
+      }
+
+      // 飲食合規率
+      const weekNutrition = allNutrition.filter((n: any) => n.client_id === client.id && n.date >= sevenDaysStr)
+      if (weekNutrition.length > 0) {
+        const comp = weekNutrition.filter((n: any) => n.compliant).length
+        msgLines.push(`🍽️ 飲食合規：${comp}/${weekNutrition.length} 天`)
+      }
+
+      // 訓練天數
+      const weekTraining = allTraining.filter((t: any) => t.client_id === client.id && t.date >= sevenDaysStr)
+      msgLines.push(`🏋️ 訓練：${weekTraining.length} 天`)
+
+      // 營養引擎建議
+      if (summary) {
+        if (summary.suggested_calories) {
+          msgLines.push(`\n💡 建議熱量：${summary.suggested_calories} kcal`)
+        }
+        if (summary.suggested_protein) {
+          msgLines.push(`🥩 建議蛋白質：${summary.suggested_protein}g`)
+        }
+        if (summary.warnings.length > 0) {
+          msgLines.push(`\n⚠️ 注意事項：`)
+          for (const w of summary.warnings) {
+            msgLines.push(`• ${w}`)
+          }
+        }
+      }
+
+      msgLines.push('\n輸入「趨勢」查看詳細分析')
+
+      try {
+        await pushMessage(client.line_user_id, [{ type: 'text', text: msgLines.join('\n') }])
+        linePushCount++
+      } catch (err: any) {
+        results.errors.push(`LINE 推播失敗 [${client.name}]: ${err.message}`)
+      }
+    }
+
     return NextResponse.json({
       success: results.errors.length === 0,
       timestamp: today.toISOString(),
-      results,
+      results: { ...results, linePushCount },
       alerts: alertItems,
     })
   } catch (err: any) {
