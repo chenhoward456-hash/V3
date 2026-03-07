@@ -71,6 +71,8 @@ export default function ClientDashboard() {
   const [showCoachSummary, setShowCoachSummary] = useState(false)
   const [showAiChat, setShowAiChat] = useState(false)
   const [showAiUpgrade, setShowAiUpgrade] = useState(false)
+  const [showPhaseSelector, setShowPhaseSelector] = useState(false)
+  const [updatingPhase, setUpdatingPhase] = useState(false)
   const { showToast } = useToast()
 
   // Scroll-based bottom nav highlighting
@@ -178,6 +180,25 @@ export default function ClientDashboard() {
     }
   }
 
+  const handlePrepPhaseChange = async (newPhase: string) => {
+    setUpdatingPhase(true)
+    try {
+      const res = await fetch('/api/prep-phase', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, prepPhase: newPhase })
+      })
+      if (!res.ok) throw new Error('更新失敗')
+      mutate()
+      setShowPhaseSelector(false)
+      showToast('備賽階段已更新', 'success')
+    } catch {
+      showToast('更新失敗，請重試', 'error')
+    } finally {
+      setUpdatingPhase(false)
+    }
+  }
+
   // 所有統計數據從 hook 取得
   const {
     todayWellness, todayTraining, todayNutrition,
@@ -244,6 +265,33 @@ export default function ClientDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
+
+        {/* 到期提醒 Banner */}
+        {c.expires_at && (() => {
+          const daysLeft = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+          if (daysLeft > 7 || c.subscription_tier === 'free') return null
+          const renewUrl = `/pay?tier=${c.subscription_tier}&name=${encodeURIComponent(c.name)}`
+          if (daysLeft <= 0) {
+            return (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
+                <p className="text-sm font-semibold text-red-700">你的方案已到期</p>
+                <p className="text-xs text-red-600 mt-1">續費後所有數據完整保留，不需重新設定。</p>
+                <a href={renewUrl} className="inline-block mt-2 bg-red-600 text-white text-sm font-semibold px-6 py-2 rounded-xl hover:bg-red-700 transition-colors">
+                  立即續費
+                </a>
+              </div>
+            )
+          }
+          return (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
+              <p className="text-sm font-semibold text-amber-700">你的方案將在 {daysLeft} 天後到期</p>
+              <p className="text-xs text-amber-600 mt-1">到期前續費，資料完整保留。</p>
+              <a href={renewUrl} className="inline-block mt-2 bg-amber-600 text-white text-sm font-semibold px-5 py-2 rounded-xl hover:bg-amber-700 transition-colors">
+                續費
+              </a>
+            </div>
+          )
+        })()}
 
         {/* 標題區 */}
         <div className="bg-white rounded-3xl shadow-sm p-5 mb-6">
@@ -426,6 +474,14 @@ export default function ClientDashboard() {
           {isCompetition && c.competition_date && (() => {
             const daysLeft = Math.ceil((new Date(c.competition_date).getTime() - new Date().getTime()) / 86400000)
             const phaseLabels: Record<string, string> = { off_season: '休賽期', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' }
+            const phaseOptions = [
+              { value: 'off_season', label: '休賽期', icon: '🌙' },
+              { value: 'bulk', label: '增肌期', icon: '💪' },
+              { value: 'cut', label: '減脂期', icon: '🔥' },
+              { value: 'peak_week', label: 'Peak Week', icon: '⚡' },
+              { value: 'competition', label: '比賽日', icon: '🏆' },
+              { value: 'recovery', label: '賽後恢復', icon: '🧘' },
+            ]
             const phase = c.prep_phase || 'off_season'
             const urgencyColor = daysLeft <= 7 ? 'from-red-500 to-red-600' : daysLeft <= 14 ? 'from-amber-500 to-orange-500' : daysLeft <= 30 ? 'from-amber-400 to-yellow-500' : 'from-blue-500 to-blue-600'
             const urgencyBg = daysLeft <= 7 ? 'bg-red-50 border-red-200' : daysLeft <= 14 ? 'bg-amber-50 border-amber-200' : daysLeft <= 30 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
@@ -435,9 +491,13 @@ export default function ClientDashboard() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-lg">🏆</span>
-                      <span className={`px-2 py-0.5 text-xs font-bold rounded-full text-white bg-gradient-to-r ${urgencyColor}`}>
+                      <button
+                        onClick={() => setShowPhaseSelector(!showPhaseSelector)}
+                        className={`px-2 py-0.5 text-xs font-bold rounded-full text-white bg-gradient-to-r ${urgencyColor} flex items-center gap-1 transition-all active:scale-95`}
+                      >
                         {phaseLabels[phase] || phase}
-                      </span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${showPhaseSelector ? 'rotate-180' : ''}`} />
+                      </button>
                     </div>
                     <p className="text-xs text-gray-500">
                       {new Date(c.competition_date).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -448,6 +508,29 @@ export default function ClientDashboard() {
                     <p className="text-xs text-gray-500 font-medium">{daysLeft > 0 ? '天後比賽' : daysLeft === 0 ? '今天比賽！' : '已結束'}</p>
                   </div>
                 </div>
+                {/* 階段選擇器 */}
+                {showPhaseSelector && (
+                  <div className="mt-3 pt-3 border-t border-gray-200/60">
+                    <p className="text-xs text-gray-500 mb-2 font-medium">切換備賽階段</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {phaseOptions.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => handlePrepPhaseChange(opt.value)}
+                          disabled={updatingPhase || opt.value === phase}
+                          className={`px-2 py-2 rounded-lg text-xs font-medium transition-all ${
+                            opt.value === phase
+                              ? 'bg-gray-900 text-white shadow-sm'
+                              : 'bg-white/80 text-gray-700 hover:bg-white hover:shadow-sm active:scale-95'
+                          } ${updatingPhase ? 'opacity-50' : ''}`}
+                        >
+                          <span className="block text-sm mb-0.5">{opt.icon}</span>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })()}
@@ -706,6 +789,20 @@ export default function ClientDashboard() {
                   </button>
                 )}
 
+                {c.ai_chat_enabled && (
+                  <button
+                    onClick={() => setShowAiChat(true)}
+                    className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow text-left"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-xl shrink-0">🤖</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">步驟 3：問 AI 顧問怎麼吃</p>
+                      <p className="text-xs text-gray-500 mt-0.5">不知道吃什麼？告訴 AI 你剛吃了什麼，它幫你估算營養素</p>
+                    </div>
+                    <ChevronRight size={18} className="text-gray-300" />
+                  </button>
+                )}
+
                 <div className="bg-white/60 rounded-2xl p-4 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-xl shrink-0">📊</div>
                   <div className="flex-1">
@@ -794,14 +891,31 @@ export default function ClientDashboard() {
         )}
 
         {/* Peak Week 計畫（備賽階段為 peak_week 時顯示） */}
-        {isCompetition && c.prep_phase === 'peak_week' && c.competition_date && latestBodyData?.weight && (
-          <PeakWeekPlan
-            clientId={c.id}
-            code={c.unique_code}
-            competitionDate={c.competition_date}
-            bodyWeight={latestBodyData.weight}
-          />
-        )}
+        {isCompetition && c.prep_phase === 'peak_week' && c.competition_date && latestBodyData?.weight && (() => {
+          const peakDaysLeft = Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
+          if (peakDaysLeft > 8) {
+            return (
+              <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">⚡</span>
+                  <span className="text-sm font-bold text-purple-700">Peak Week 模式已啟用</span>
+                </div>
+                <p className="text-xs text-purple-600">
+                  距比賽還有 <strong>{peakDaysLeft}</strong> 天，Peak Week 每日計畫將在 <strong>比賽前 8 天</strong> 自動生成。
+                  建議先在賽前 2-4 週做一次模擬 Peak Week，測試身體對碳水耗竭→超補的反應。
+                </p>
+              </div>
+            )
+          }
+          return (
+            <PeakWeekPlan
+              clientId={c.id}
+              code={c.unique_code}
+              competitionDate={c.competition_date}
+              bodyWeight={latestBodyData.weight}
+            />
+          )
+        })()}
 
         {/* 飲食（備賽選手排第二） */}
         {isCompetition && c.nutrition_enabled && (
@@ -908,6 +1022,38 @@ export default function ClientDashboard() {
           /></div>
         )}
 
+        {/* Combo 方案專屬區塊 */}
+        {c.subscription_tier === 'combo' && (
+          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-3xl shadow-sm p-6 mb-6 border border-amber-200">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">🏆</span>
+              <h2 className="text-lg font-bold text-gray-900">全方位方案</h2>
+            </div>
+            <div className="space-y-3">
+              <div className="bg-white rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-lg shrink-0">🏋️</div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-900">一對一訓練</p>
+                  <p className="text-xs text-gray-500 mt-0.5">台中 Coolday · 動作矯正與課表設計</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-lg shrink-0">💬</div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-900">優先諮詢</p>
+                  <p className="text-xs text-gray-500 mt-0.5">LINE 優先回覆 + 緊急諮詢通道</p>
+                </div>
+              </div>
+              {c.coach_weekly_note && (
+                <div className="bg-white rounded-2xl p-4">
+                  <p className="text-xs font-semibold text-amber-700 mb-1">教練本週筆記</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{c.coach_weekly_note}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 自主管理 / 免費學員的智能營養計算（已完成 onboarding 才顯示，避免跟頂部重複） */}
         {!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target && (
           <SelfManagedNutrition
@@ -1004,8 +1150,8 @@ export default function ClientDashboard() {
               </div>
               {c.subscription_tier === 'free' ? (
                 <div className="mt-4 space-y-2">
-                  <a href="/join?waitlist=self_managed" className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all">
-                    升級自主管理版（即將開放）
+                  <a href="/pay?tier=self_managed" className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all">
+                    升級自主管理版 NT$499/月
                   </a>
                   <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="block text-center bg-[#06C755] text-white text-sm font-bold py-2.5 rounded-xl hover:bg-[#05b04d] transition-all">
                     💬 加 LINE 找 Howard
@@ -1065,11 +1211,11 @@ export default function ClientDashboard() {
             </div>
             <div className="space-y-3 mb-4">
               <a
-                href="/join?waitlist=self_managed"
+                href="/pay?tier=self_managed"
                 className="block w-full text-center bg-blue-600 text-white font-bold py-3 rounded-2xl hover:bg-blue-700 transition-colors"
               >
                 升級自主管理版 NT$499/月
-                <span className="block text-xs font-normal opacity-80 mt-0.5">即將開放，先加入候補名單</span>
+                <span className="block text-xs font-normal opacity-80 mt-0.5">解鎖無限 AI 顧問 + 訓練追蹤</span>
               </a>
               <a
                 href="https://lin.ee/LP65rCc"

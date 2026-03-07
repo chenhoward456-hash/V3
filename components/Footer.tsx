@@ -60,6 +60,11 @@ export default function Footer() {
 
         {/* 版權 */}
         <div className="border-t border-gray-700 mt-10 pt-6 text-center text-xs text-gray-500">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Link href="/privacy" className="hover:text-gray-300 transition-colors">隱私政策</Link>
+            <span className="text-gray-600">|</span>
+            <Link href="/terms" className="hover:text-gray-300 transition-colors">服務條款</Link>
+          </div>
           <p>&copy; 2026 The Howard Protocol. All rights reserved.</p>
         </div>
       </div>

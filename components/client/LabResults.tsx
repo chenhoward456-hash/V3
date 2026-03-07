@@ -100,13 +100,19 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
   return (
     <>
       <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900">血檢指標</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-semibold text-gray-900">血檢數據紀錄</h2>
           {isCoachMode && (
             <button onClick={() => openModal()} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700 flex items-center">
               <Plus size={16} className="mr-1" /> 新增血檢
             </button>
           )}
+        </div>
+
+        <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-4">
+          <p className="text-[10px] text-gray-500 leading-relaxed">
+            此頁面僅供數據紀錄與趨勢追蹤，不構成醫療診斷或健康評估。數值判讀請以你的醫師意見為準。
+          </p>
         </div>
 
         {grouped.length > 0 ? (
@@ -192,7 +198,10 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
             })}
           </div>
         ) : (
-          <p className="text-gray-400 text-center py-4">尚無血檢資料</p>
+          <div className="text-center py-4">
+            <p className="text-gray-400">尚無血檢資料</p>
+            <p className="text-xs text-gray-300 mt-1">完成血檢後，教練會幫你上傳並分析結果</p>
+          </div>
         )}
       </div>
 

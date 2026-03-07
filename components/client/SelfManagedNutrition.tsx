@@ -681,6 +681,18 @@ export default function SelfManagedNutrition({
         </div>
       )}
 
+      {/* 分餐蛋白質指引 */}
+      {data.perMealProteinGuide && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
+          <p className="text-xs font-semibold text-amber-700">🥩 分餐蛋白質指引</p>
+          <p className="text-sm text-amber-900 mt-1">
+            每餐 {data.perMealProteinGuide.perMealGrams.min}-{data.perMealProteinGuide.perMealGrams.max}g，
+            分 {data.perMealProteinGuide.mealsPerDay.min}-{data.perMealProteinGuide.mealsPerDay.max} 餐
+          </p>
+          <p className="text-[10px] text-amber-600 mt-1">{data.perMealProteinGuide.periWorkoutNote}</p>
+        </div>
+      )}
+
       {/* 關鍵數據 */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         {data.estimatedTDEE && (

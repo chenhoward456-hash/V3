@@ -34,6 +34,8 @@ const SYSTEM_PROMPT = `你是 Howard Protocol 的 AI 健康顧問助手。你的
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+  /** Base64-encoded image (JPEG), sent as vision input */
+  image?: string
 }
 
 /**
@@ -71,11 +73,33 @@ export async function askClaude(
 
   const model = process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001'
 
+  // Convert ChatMessage[] to Anthropic API format (support images)
+  const apiMessages = trimmedMessages.map((msg) => {
+    if (msg.image && msg.role === 'user') {
+      // Multimodal: image + text
+      const content: Anthropic.MessageCreateParams['messages'][0]['content'] = [
+        {
+          type: 'image' as const,
+          source: {
+            type: 'base64' as const,
+            media_type: 'image/jpeg' as const,
+            data: msg.image,
+          },
+        },
+      ]
+      if (msg.content) {
+        content.push({ type: 'text' as const, text: msg.content })
+      }
+      return { role: msg.role as 'user', content }
+    }
+    return { role: msg.role as 'user' | 'assistant', content: msg.content }
+  })
+
   const response = await getClient().messages.create({
     model,
     max_tokens: 1024,
     system: systemPrompt || SYSTEM_PROMPT,
-    messages: trimmedMessages,
+    messages: apiMessages,
   })
 
   const textBlock = response.content.find((block) => block.type === 'text')

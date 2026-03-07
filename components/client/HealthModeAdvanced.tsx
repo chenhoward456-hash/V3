@@ -234,6 +234,12 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
           </div>
         </div>
       )}
+
+      <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-3">
+        <p className="text-[10px] text-gray-500 leading-relaxed">
+          以上建議攝取量僅為一般運動營養參考值，不構成個人化營養處方或醫療建議。實際需求因人而異，請以專業醫師或營養師意見為準。
+        </p>
+      </div>
     </div>
   )
 }

@@ -63,14 +63,18 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     return Math.round(p * 4 + c * 4 + f * 9)
   }, [proteinInput, carbsInput, fatInput])
 
+  // 新用戶沒有營養目標時，合規問題沒有意義
+  const isNewUser = !proteinTarget && !waterTarget && !effectiveCarbsTarget && !fatTarget && !caloriesTarget
+
   // 統一提交：一次送出所有數據
   const handleSaveAll = async () => {
-    if (compliant === null) {
+    // 新用戶沒目標時跳過合規檢查
+    if (!isNewUser && compliant === null) {
       showToast('請先選擇今天有沒有照計畫吃', 'error')
       return
     }
-    // 存手動回報值（教練看行為意圖）
-    const finalCompliant = compliant
+    // 存手動回報值（教練看行為意圖）；新用戶預設 null
+    const finalCompliant = isNewUser ? null : compliant
     setSaving(true)
     try {
       const res = await fetch('/api/nutrition-logs', {
@@ -224,37 +228,47 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
         )}
       </div>
 
-      {/* Step 1: 合規性選擇 */}
-      <div className="mb-4">
-        <p className="text-sm text-gray-500 mb-3">今天有照計畫吃嗎？</p>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setCompliant(true)}
-            className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold transition-all ${
-              compliant === true
-                ? 'bg-green-100 border-2 border-green-400 text-green-700 scale-[1.02]'
-                : 'bg-green-50 border-2 border-green-200 text-green-700 hover:bg-green-100'
-            }`}
-          >
-            <span className="text-xl">✅</span>
-            <span>照計畫吃</span>
-          </button>
-          <button
-            onClick={() => setCompliant(false)}
-            className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold transition-all ${
-              compliant === false
-                ? 'bg-red-100 border-2 border-red-400 text-red-700 scale-[1.02]'
-                : 'bg-red-50 border-2 border-red-200 text-red-700 hover:bg-red-100'
-            }`}
-          >
-            <span className="text-xl">❌</span>
-            <span>沒照計畫</span>
-          </button>
+      {/* Step 1: 合規性選擇（新用戶沒目標時跳過） */}
+      {!isNewUser && (
+        <div className="mb-4">
+          <p className="text-sm text-gray-500 mb-3">今天有照計畫吃嗎？</p>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setCompliant(true)}
+              className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold transition-all ${
+                compliant === true
+                  ? 'bg-green-100 border-2 border-green-400 text-green-700 scale-[1.02]'
+                  : 'bg-green-50 border-2 border-green-200 text-green-700 hover:bg-green-100'
+              }`}
+            >
+              <span className="text-xl">✅</span>
+              <span>照計畫吃</span>
+            </button>
+            <button
+              onClick={() => setCompliant(false)}
+              className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold transition-all ${
+                compliant === false
+                  ? 'bg-red-100 border-2 border-red-400 text-red-700 scale-[1.02]'
+                  : 'bg-red-50 border-2 border-red-200 text-red-700 hover:bg-red-100'
+              }`}
+            >
+              <span className="text-xl">❌</span>
+              <span>沒照計畫</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Step 2: 營養素數據（選了合規性後展開） */}
-      {compliant !== null && hasTargets && (
+      {/* 新用戶引導：直接記錄吃了什麼 */}
+      {isNewUser && (
+        <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-4">
+          <p className="text-sm font-medium text-blue-800">先記錄今天吃了什麼就好</p>
+          <p className="text-xs text-blue-600 mt-0.5">系統會根據你的數據自動計算營養目標</p>
+        </div>
+      )}
+
+      {/* Step 2: 營養素數據（有目標需選合規性才展開；新用戶直接展開） */}
+      {(isNewUser || (compliant !== null && hasTargets)) && (
         <div className="space-y-4 mb-4">
           {/* 巨量營養素進度快照 */}
           {(caloriesTarget || effectiveCarbsTarget || fatTarget) && (
@@ -410,7 +424,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       )}
 
       {/* 備註 */}
-      {compliant !== null && (
+      {(isNewUser || compliant !== null) && (
         <div className="mb-4">
           {!showNote && !note ? (
             <button onClick={() => setShowNote(true)} className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
@@ -431,7 +445,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       )}
 
       {/* 巨量營養素填寫鼓勵 */}
-      {compliant !== null && hasTargets && !computedCalories && (
+      {(isNewUser || compliant !== null) && hasTargets && !computedCalories && (
         <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 mb-3 flex items-start gap-2">
           <span className="text-sm mt-0.5">📝</span>
           <div>
@@ -442,7 +456,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       )}
 
       {/* 連續多天沒填巨量營養素的提醒 */}
-      {compliant !== null && hasTargets && (() => {
+      {(isNewUser || compliant !== null) && hasTargets && (() => {
         // nutritionLogs 按日期降序排列（最新在前），取最近 5 筆
         const recentWithoutMacros = nutritionLogs
           .slice(0, 5)
@@ -458,7 +472,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       })()}
 
       {/* 統一儲存按鈕 */}
-      {compliant !== null && (
+      {(isNewUser || compliant !== null) && (
         <button
           onClick={handleSaveAll}
           disabled={saving}
