@@ -227,14 +227,7 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     return
   }
 
-  // 預設回覆 — 顯示主選單按鈕
-  await replyMessage(event.replyToken, [
-    {
-      type: 'text',
-      text: '請點選下方按鈕，或直接輸入指令 👇',
-      quickReply: QR_MAIN,
-    },
-  ])
+  // 非指令訊息 → 不自動回覆，讓教練在 LINE OA 後台手動回覆
 }
 
 // ═══════════════════════════════════════
