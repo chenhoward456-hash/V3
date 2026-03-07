@@ -10,7 +10,7 @@ CREATE TABLE clients (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '3 months'),
   status TEXT DEFAULT 'normal' CHECK (status IN ('normal', 'attention', 'alert')),
-  subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'self_managed', 'coached', 'combo'))
+  subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'self_managed', 'coached'))
 );
 
 -- 2. 血檢結果表
@@ -402,8 +402,8 @@ ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS respiratory_rate NUMERIC CHE
 -- 使用者只需填這一個數字，引擎直接用作 Readiness Score
 ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS device_recovery_score INTEGER CHECK (device_recovery_score >= 0 AND device_recovery_score <= 100);
 
--- 訂閱方案層級：free（免費/驗證期）、self_managed（499自主管理）、coached（2999教練指導）、combo（5000實體+遠端）
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'self_managed', 'coached', 'combo'));
+-- 訂閱方案層級：free（免費/驗證期）、self_managed（499自主管理）、coached（2999教練指導）
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'self_managed', 'coached'));
 
 -- ============================================
 -- 25. 自主管理用戶目標期限 (Self-Managed Goal Deadline)
@@ -439,7 +439,7 @@ CREATE TABLE IF NOT EXISTS subscription_purchases (
   name TEXT NOT NULL,
   phone TEXT,
   merchant_trade_no TEXT UNIQUE NOT NULL,
-  subscription_tier TEXT NOT NULL CHECK (subscription_tier IN ('free', 'self_managed', 'coached', 'combo')),
+  subscription_tier TEXT NOT NULL CHECK (subscription_tier IN ('free', 'self_managed', 'coached')),
   amount INTEGER NOT NULL,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed')),
   ecpay_trade_no TEXT,

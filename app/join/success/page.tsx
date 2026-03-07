@@ -9,7 +9,6 @@ const TIER_NAMES: Record<string, string> = {
   free: '免費體驗',
   self_managed: '自主管理方案',
   coached: '教練指導方案',
-  combo: '全方位方案',
 }
 
 export default function JoinSuccessPage() {

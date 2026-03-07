@@ -80,7 +80,6 @@ export async function sendWelcomeEmail({
     free: '免費體驗',
     self_managed: '自主管理方案',
     coached: '教練指導方案',
-    combo: '全方位方案',
   }
 
   try {

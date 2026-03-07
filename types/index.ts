@@ -53,7 +53,7 @@ export interface AnalyticsEvent {
 
 // === Client & Database Types ===
 
-export type SubscriptionTier = 'free' | 'self_managed' | 'coached' | 'combo'
+export type SubscriptionTier = 'free' | 'self_managed' | 'coached'
 export type GoalType = 'cut' | 'bulk'
 export type ActivityProfile = 'sedentary' | 'high_energy_flux'
 export type LabStatus = 'normal' | 'attention' | 'alert'

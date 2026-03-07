@@ -5,7 +5,6 @@ import { useState } from 'react'
 const TIERS = [
   { key: 'self_managed', label: '自主管理', price: 499 },
   { key: 'coached', label: '教練指導', price: 2999 },
-  { key: 'combo', label: '全方位', price: 5000 },
 ] as const
 
 export default function PaymentLinkPage() {

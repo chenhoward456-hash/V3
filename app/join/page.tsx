@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { trackEvent } from '@/lib/analytics'
 
-type Tier = 'free' | 'self_managed' | 'coached' | 'combo'
+type Tier = 'free' | 'self_managed' | 'coached'
 
 const PLANS: Record<Tier, {
   name: string
@@ -58,20 +58,6 @@ const PLANS: Record<Tier, {
     ],
     highlight: true,
     badge: '全台適用',
-  },
-  combo: {
-    name: '全方位',
-    price: 5000,
-    priceLabel: '5,000',
-    unit: '/月',
-    description: '線上教練 + 台中實體訓練',
-    features: [
-      '包含教練指導所有功能',
-      '台中 Coolday 一對一訓練',
-      '動作矯正與課表設計',
-      '優先預約與緊急諮詢',
-    ],
-    badge: '台中限定',
   },
 }
 
@@ -208,7 +194,7 @@ export default function JoinPage() {
       {/* Plan Cards */}
       <div className="grid md:grid-cols-2 gap-5 mb-12 max-w-2xl mx-auto">
         {(Object.entries(PLANS) as [Tier, typeof PLANS[Tier]][]).map(([tier, plan]) => {
-          const isLineOnly = tier === 'combo' || tier === 'coached'
+          const isLineOnly = tier === 'coached'
           return (
           <div
             key={tier}
@@ -223,8 +209,7 @@ export default function JoinPage() {
           >
             {(plan.badge || plan.highlight) && (
               <div className={`absolute -top-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap ${
-                tier === 'combo' ? 'bg-amber-600'
-                : plan.highlight ? 'bg-[#1e3a5f]'
+                plan.highlight ? 'bg-[#1e3a5f]'
                 : 'bg-green-500'
               }`}>
                 {plan.badge || '全台適用'}
@@ -260,11 +245,7 @@ export default function JoinPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className={`block w-full py-2.5 rounded-xl font-semibold text-sm text-center transition-colors ${
-                  tier === 'combo'
-                    ? 'bg-amber-600 text-white hover:bg-amber-700'
-                    : 'bg-[#1e3a5f] text-white hover:bg-[#162d4a]'
-                }`}
+                className="block w-full py-2.5 rounded-xl font-semibold text-sm text-center transition-colors bg-[#1e3a5f] text-white hover:bg-[#162d4a]"
               >
                 加 LINE 諮詢
               </a>

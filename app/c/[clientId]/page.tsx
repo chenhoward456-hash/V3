@@ -1050,37 +1050,6 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {/* Combo 方案專屬區塊 */}
-        {c.subscription_tier === 'combo' && (
-          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-3xl shadow-sm p-6 mb-6 border border-amber-200">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-lg">🏆</span>
-              <h2 className="text-lg font-bold text-gray-900">全方位方案</h2>
-            </div>
-            <div className="space-y-3">
-              <div className="bg-white rounded-2xl p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-lg shrink-0">🏋️</div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900">一對一訓練</p>
-                  <p className="text-xs text-gray-500 mt-0.5">台中 Coolday · 動作矯正與課表設計</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-2xl p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-lg shrink-0">💬</div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900">優先諮詢</p>
-                  <p className="text-xs text-gray-500 mt-0.5">LINE 優先回覆 + 緊急諮詢通道</p>
-                </div>
-              </div>
-              {c.coach_weekly_note && (
-                <div className="bg-white rounded-2xl p-4">
-                  <p className="text-xs font-semibold text-amber-700 mb-1">教練本週筆記</p>
-                  <p className="text-sm text-gray-700 leading-relaxed">{c.coach_weekly_note}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* 自主管理 / 免費學員的智能營養計算（已完成 onboarding 才顯示，避免跟頂部重複） */}
         {!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target && (

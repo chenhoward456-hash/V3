@@ -57,7 +57,7 @@ interface Client {
   body_fat_target: number | null
   target_date: string | null
   is_active: boolean
-  subscription_tier: 'free' | 'self_managed' | 'coached' | 'combo'
+  subscription_tier: 'free' | 'self_managed' | 'coached'
   ai_chat_enabled: boolean
   carbs_training_day: number | null
   carbs_rest_day: number | null
@@ -516,7 +516,6 @@ export default function ClientEditor() {
                     <option value="free">免費體驗 (0)</option>
                     <option value="self_managed">自主管理 (499)</option>
                     <option value="coached">教練指導 (2999)</option>
-                    <option value="combo">實體+遠端 (5000)</option>
                   </select>
                   <p className="text-xs text-gray-400 mt-1">切換方案會自動調整功能開關（仍可手動 override）</p>
                 </div>
