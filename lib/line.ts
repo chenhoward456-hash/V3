@@ -111,15 +111,20 @@ export async function createRichMenu(menuObject: object): Promise<string | null>
   return data.richMenuId
 }
 
-/** 上傳 Rich Menu 圖片 */
-export async function uploadRichMenuImage(richMenuId: string, imageBuffer: Blob, contentType: string = 'image/png'): Promise<boolean> {
+/** 上傳 Rich Menu 圖片，成功回傳 true，失敗回傳錯誤訊息 */
+export async function uploadRichMenuImage(richMenuId: string, imageBuffer: Blob, contentType: string = 'image/png'): Promise<true | string> {
   // LINE API 需要 raw binary，將 Blob 轉成 ArrayBuffer
   const arrayBuffer = await imageBuffer.arrayBuffer()
+
+  // LINE 只接受 image/jpeg 或 image/png
+  const safeContentType = contentType.includes('jpeg') || contentType.includes('jpg')
+    ? 'image/jpeg'
+    : 'image/png'
 
   const res = await fetch(`https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content`, {
     method: 'POST',
     headers: {
-      'Content-Type': contentType,
+      'Content-Type': safeContentType,
       'Content-Length': String(arrayBuffer.byteLength),
       Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
     },
@@ -128,7 +133,7 @@ export async function uploadRichMenuImage(richMenuId: string, imageBuffer: Blob,
   if (!res.ok) {
     const errorText = await res.text()
     console.error('Upload rich menu image failed:', res.status, errorText)
-    return false
+    return `HTTP ${res.status}: ${errorText}`
   }
   return true
 }
