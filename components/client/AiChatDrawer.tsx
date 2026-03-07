@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from 'react'
-import { X, Send } from 'lucide-react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { X, Send, Camera } from 'lucide-react'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
+  /** Data URL for image preview in chat bubble */
+  image?: string
 }
 
 interface NutritionEntry {
@@ -78,8 +80,11 @@ export default function AiChatDrawer({
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [quotaExceeded, setQuotaExceeded] = useState(false)
+  const [pendingImage, setPendingImage] = useState<string | null>(null) // base64 JPEG
+  const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null) // object URL for preview
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -222,14 +227,68 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
     - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫`
   }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData])
 
+  // 壓縮圖片到 ~800px 寬、JPEG 品質 0.7，控制 token 成本
+  const compressImage = useCallback((file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const maxW = 800
+        const scale = img.width > maxW ? maxW / img.width : 1
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { reject(new Error('Canvas not supported')); return }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+        // Strip "data:image/jpeg;base64," prefix
+        resolve(dataUrl.split(',')[1])
+      }
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('圖片載入失敗')) }
+      img.src = url
+    })
+  }, [])
+
+  const handleImageSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Reset file input so same file can be re-selected
+    e.target.value = ''
+
+    if (!file.type.startsWith('image/')) return
+
+    try {
+      const base64 = await compressImage(file)
+      setPendingImage(base64)
+      setPendingImagePreview(`data:image/jpeg;base64,${base64}`)
+      // Auto-fill a prompt if empty
+      if (!input.trim()) {
+        setInput('幫我算這餐的營養素')
+      }
+      inputRef.current?.focus()
+    } catch {
+      // silently fail
+    }
+  }, [compressImage, input])
+
+  const clearPendingImage = useCallback(() => {
+    setPendingImage(null)
+    setPendingImagePreview(null)
+  }, [])
+
   async function handleSend() {
     const text = input.trim()
-    if (!text || loading) return
+    if ((!text && !pendingImage) || loading) return
 
-    const userMsg: Message = { role: 'user', content: text }
+    const msgText = text || (pendingImage ? '幫我算這餐的營養素' : '')
+    const userMsg: Message = { role: 'user', content: msgText, image: pendingImagePreview || undefined }
     const newMessages = [...messages, userMsg]
+    const imageToSend = pendingImage // capture before clearing
     setMessages(newMessages)
     setInput('')
+    clearPendingImage()
     setLoading(true)
 
     // 標記免費用戶的首次使用
@@ -241,7 +300,12 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, systemPrompt, clientId }),
+        body: JSON.stringify({
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+          systemPrompt,
+          clientId,
+          ...(imageToSend ? { image: imageToSend } : {}),
+        }),
       })
 
       if (!res.ok) {
@@ -367,6 +431,9 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
                     : 'bg-gray-100 text-gray-800 rounded-bl-md'
                 }`}
               >
+                {msg.image && (
+                  <img src={msg.image} alt="食物照片" className="rounded-xl mb-2 max-h-40 w-auto" />
+                )}
                 {msg.content}
               </div>
             </div>
@@ -410,26 +477,56 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
 
         {/* Input */}
         <div className="border-t border-gray-100 px-3 py-2.5 shrink-0">
+          {/* Image preview */}
+          {pendingImagePreview && (
+            <div className="relative inline-block mb-2">
+              <img src={pendingImagePreview} alt="預覽" className="h-20 rounded-xl border border-gray-200" />
+              <button
+                onClick={clearPendingImage}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs shadow-sm"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
           <div className="flex items-end gap-2">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+            {/* Camera button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              className="p-2.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-[#2563eb] transition-colors disabled:opacity-40 flex-shrink-0"
+              title="拍照或選擇圖片"
+            >
+              <Camera size={16} />
+            </button>
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="問我今天怎麼吃..."
+              placeholder={pendingImage ? '描述這餐吃了什麼（選填）...' : '問我今天怎麼吃...'}
               rows={1}
               className="flex-1 resize-none px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#2563eb] transition-colors"
             />
             <button
               onClick={handleSend}
-              disabled={!input.trim() || loading}
+              disabled={(!input.trim() && !pendingImage) || loading}
               className="bg-[#2563eb] text-white p-2.5 rounded-xl hover:bg-[#1d4ed8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
             >
               <Send size={16} />
             </button>
           </div>
           <p className="text-[10px] text-gray-400 mt-1.5 text-center">
-            AI 建議僅供參考，不構成醫療診斷
+            拍照或打字描述食物，AI 幫你估算營養素
           </p>
         </div>
       </div>

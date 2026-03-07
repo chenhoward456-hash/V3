@@ -19,10 +19,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { messages, systemPrompt, clientId } = body as {
+    const { messages, systemPrompt, clientId, image } = body as {
       messages: ChatMessage[]
       systemPrompt?: string
       clientId?: string
+      /** Base64 JPEG image to attach to the latest user message */
+      image?: string
+    }
+
+    // Attach image to the last user message if provided
+    if (image && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1]
+      if (lastMsg.role === 'user') {
+        lastMsg.image = image
+      }
     }
 
     // 驗證身份：必須提供有效的 clientId（unique_code）
