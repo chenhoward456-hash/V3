@@ -138,13 +138,21 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
       {
         type: 'text',
         text: '📋 常見問題\n\n' +
-          '❓ 免費體驗包含什麼？\n→ 體重/體態追蹤、每日飲食紀錄、TDEE 與巨量素估算\n\n' +
+          '❓ 免費方案包含什麼？\n→ 體重/體態追蹤、每日飲食紀錄、TDEE 與巨量素估算\n\n' +
           '❓ 499 方案跟免費差在哪？\n→ 24h AI 自動分析、自適應 TDEE、自動 Refeed 觸發、經期濾波\n\n' +
           '❓ 2999 方案多了什麼？\n→ CSCS 教練每週審閱 + LINE 諮詢 + 每月視訊\n\n' +
           '❓ 可以隨時取消嗎？\n→ 可以，無綁約，隨時取消下期不續扣\n\n' +
           '❓ 需要每天記錄嗎？\n→ 建議至少記體重和飲食達標，系統才能準確分析\n\n' +
           '👇 還有其他問題？直接打字問我！',
       },
+    ])
+    return
+  }
+
+  // 留言詢問
+  if (text === '我想詢問問題') {
+    await replyMessage(event.replyToken, [
+      { type: 'text', text: '請直接打字描述你的問題，教練會親自回覆你！' },
     ])
     return
   }
@@ -717,50 +725,12 @@ async function handlePostback(event: any, userId: string, supabase: any) {
   const action = params.get('action')
 
   switch (action) {
-    case 'free_tutorial':
-      await handleFreeTutorial(event.replyToken)
-      break
-    case 'body_assessment':
-      await handleBodyAssessment(event.replyToken)
-      break
     case 'contact_support':
       await handleContactSupport(event.replyToken)
       break
     default:
       log.warn(`Unknown postback action: ${action}`)
   }
-}
-
-async function handleFreeTutorial(replyToken: string) {
-  await replyMessage(replyToken, [
-    {
-      type: 'text',
-      text: '歡迎來到免費健身教學！💪\n\n請選擇你想了解的部位：',
-      quickReply: {
-        items: [
-          qr('🏋️ 胸肌訓練', '教學 胸'),
-          qr('💪 背部訓練', '教學 背'),
-          qr('🦵 腿部訓練', '教學 腿'),
-          qr('🫁 肩膀訓練', '教學 肩'),
-        ],
-      },
-    },
-  ])
-}
-
-async function handleBodyAssessment(replyToken: string) {
-  await replyMessage(replyToken, [
-    {
-      type: 'text',
-      text: '免費體態評估開始！📋\n\n我會問你幾個簡單的問題，幫你分析目前的體態狀況，並給你專屬建議。\n\n請問你的性別是？',
-      quickReply: {
-        items: [
-          qr('👨 男性', '評估 性別 男'),
-          qr('👩 女性', '評估 性別 女'),
-        ],
-      },
-    },
-  ])
 }
 
 async function handleContactSupport(replyToken: string) {
