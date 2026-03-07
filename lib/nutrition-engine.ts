@@ -2110,9 +2110,12 @@ function generateBulkSuggestion(
       message += ` ⚠️ 體脂率從 ${input.previousBodyFatPct}% 上升至 ${input.bodyFatPct}%（+${bfIncrease.toFixed(1)}%），脂肪增長過快。建議降低盈餘或安排 2-4 週迷你減脂。`
       warnings.push(`🔴 髒增肌警告：體脂增幅 +${bfIncrease.toFixed(1)}%，系統已自動降低盈餘 200kcal。建議考慮迷你減脂期。`)
     } else if (bfIncrease > 2) {
-      // 輕度髒增肌風險：微降盈餘
+      // 輕度髒增肌風險：微降盈餘，改 status 確保 calDelta 被套用（避免 on_track early return 丟棄）
       calDelta -= 100
       carbDelta -= 13
+      status = 'too_fast'
+      statusLabel = '脂肪偏快'
+      statusEmoji = '🟡'
       message += ` ⚠️ 體脂率從 ${input.previousBodyFatPct}% 上升至 ${input.bodyFatPct}%（+${bfIncrease.toFixed(1)}%），脂肪增長偏快。已微調盈餘。`
       warnings.push(`🟡 體脂上升偏快（+${bfIncrease.toFixed(1)}%），系統已微降盈餘 100kcal，持續監控中。`)
     }
