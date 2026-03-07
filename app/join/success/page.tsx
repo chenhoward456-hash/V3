@@ -158,6 +158,31 @@ function JoinSuccessContent() {
             </p>
           </div>
 
+          {/* LINE 綁定引導 */}
+          <div className="bg-[#06C755]/10 border border-[#06C755]/30 rounded-2xl p-5 mb-8 text-left">
+            <p className="text-sm font-semibold text-gray-800 mb-3">💬 綁定 LINE，用訊息就能記錄</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#06C755]/20 flex items-center justify-center text-xs font-bold text-[#06C755] shrink-0">1</span>
+                <p className="text-sm text-gray-600">
+                  <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="text-[#06C755] font-semibold hover:underline">
+                    點此加入 LINE 好友
+                  </a>
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#06C755]/20 flex items-center justify-center text-xs font-bold text-[#06C755] shrink-0">2</span>
+                <p className="text-sm text-gray-600">
+                  傳送「<span className="font-mono bg-white px-1.5 py-0.5 rounded border text-gray-700">綁定 {uniqueCode}</span>」
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#06C755]/20 flex items-center justify-center text-xs font-bold text-[#06C755] shrink-0">3</span>
+                <p className="text-sm text-gray-600">完成！之後傳訊息就能快速記錄，還會收到提醒</p>
+              </div>
+            </div>
+          </div>
+
           {/* Quick Guide */}
           {isFree && (
             <div className="bg-gray-50 rounded-2xl p-5 mb-8 text-left">

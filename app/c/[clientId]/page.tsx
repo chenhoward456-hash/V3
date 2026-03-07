@@ -294,6 +294,32 @@ export default function ClientDashboard() {
           )
         })()}
 
+        {/* LINE 綁定提示 Banner */}
+        {!c.line_user_id && (
+          <div className="bg-[#06C755]/10 border border-[#06C755]/30 rounded-2xl p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl shrink-0">💬</span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-800">用 LINE 記錄更快！</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  綁定 LINE 後，傳訊息就能記體重、飲食、訓練，還會收到每日提醒和週報。
+                </p>
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-gray-500">
+                    <span className="font-medium">Step 1</span>
+                    <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="text-[#06C755] font-semibold hover:underline">
+                      加入 LINE 好友
+                    </a>
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    <span className="font-medium">Step 2</span>　傳送「<span className="font-mono bg-white px-1.5 py-0.5 rounded border text-gray-700">綁定 {c.unique_code}</span>」即完成
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 標題區 */}
         <div className="bg-white rounded-3xl shadow-sm p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
