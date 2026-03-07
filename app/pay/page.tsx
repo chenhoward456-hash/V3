@@ -17,12 +17,6 @@ const PLAN_INFO: Record<string, { name: string; price: number; priceLabel: strin
     priceLabel: '2,999',
     features: ['包含自主管理所有功能', 'CSCS 教練每週數據審閱', 'LINE 一對一營養 / 訓練諮詢', '個人化補劑與血檢建議'],
   },
-  combo: {
-    name: '全方位方案',
-    price: 5000,
-    priceLabel: '5,000',
-    features: ['包含教練指導所有功能', '台中 Coolday 一對一訓練', '動作矯正與課表設計', '優先預約與緊急諮詢'],
-  },
 }
 
 export default function PayPage() {

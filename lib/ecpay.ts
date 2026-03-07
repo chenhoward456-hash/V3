@@ -73,18 +73,6 @@ export const SUBSCRIPTION_PLANS = {
       '個人化補劑與血檢建議',
     ],
   },
-  combo: {
-    name: '全方位方案',
-    description: '線上教練指導 + 台中實體一對一訓練',
-    amount: 5000,
-    duration_months: 1,
-    features: [
-      '包含教練指導方案所有功能',
-      '台中 Coolday 實體一對一訓練',
-      '動作矯正與訓練課表設計',
-      '優先預約與緊急諮詢通道',
-    ],
-  },
 } as const
 
 export type SubscriptionTier = keyof typeof SUBSCRIPTION_PLANS
