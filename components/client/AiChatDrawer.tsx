@@ -258,8 +258,6 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
   const handleImageSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    // Reset file input so same file can be re-selected
-    e.target.value = ''
 
     if (!file.type.startsWith('image/')) return
 
@@ -275,6 +273,10 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
     } catch (err) {
       console.error('[AiChat] Image compression failed:', err)
       setMessages(prev => [...prev, { role: 'assistant', content: '圖片處理失敗，請重新拍照或選擇其他圖片試試 🙏' }])
+    } finally {
+      // Reset file input AFTER reading is complete so same file can be re-selected
+      // Must be after FileReader finishes — resetting early invalidates file on some mobile browsers
+      e.target.value = ''
     }
   }, [compressImage, input])
 
