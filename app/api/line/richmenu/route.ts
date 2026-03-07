@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       const memFile = formData.get('memberImage') as File | null
 
       if (mktFile) marketingImage = mktFile
-      if (memFile) memberImage = mktFile ? memFile : null
+      if (memFile) memberImage = memFile
 
       // 單張上傳模式
       if (singleFile && !mktFile && !memFile) {
@@ -56,11 +56,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Step 1: 刪除舊的 Rich Menu（可選）
+    // Step 1: 只刪除即將被替換的 Rich Menu（避免誤刪另一套）
     if (deleteOld) {
       const existingMenus = await listRichMenus()
       for (const menu of existingMenus) {
-        await deleteRichMenu(menu.richMenuId)
+        const isMarketing = menu.name?.includes('行銷版')
+        const isMember = menu.name?.includes('學員版')
+        if ((marketingImage && isMarketing) || (memberImage && isMember)) {
+          await deleteRichMenu(menu.richMenuId)
+        }
+        // 如果兩張都上傳，或名稱不匹配任一版本，也刪除
+        if (marketingImage && memberImage && !isMarketing && !isMember) {
+          await deleteRichMenu(menu.richMenuId)
+        }
       }
     }
 
