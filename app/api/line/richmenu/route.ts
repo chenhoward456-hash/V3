@@ -89,6 +89,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Rich menu setup error:', error)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    return NextResponse.json({ error: `Internal error: ${error}` }, { status: 500 })
   }
 }
