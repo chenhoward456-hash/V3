@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sharp from 'sharp'
 import {
-  getRichMenuObject,
+  getMarketingRichMenuObject,
+  getMemberRichMenuObject,
   createRichMenu,
   uploadRichMenuImage,
   setDefaultRichMenu,
@@ -26,18 +27,32 @@ export async function POST(request: NextRequest) {
   try {
     const contentType = request.headers.get('content-type') || ''
 
-    let imageBuffer: Blob | null = null
-    let imageContentType = 'image/png'
+    // 支援 menuType 參數：'marketing'（預設）或 'member'
+    let marketingImage: Blob | null = null
+    let memberImage: Blob | null = null
+    let menuType = 'marketing' // 單張上傳時的類型
     let deleteOld = true
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData()
-      const file = formData.get('image') as File | null
       deleteOld = formData.get('deleteOld') !== 'false'
+      menuType = (formData.get('menuType') as string) || 'marketing'
 
-      if (file) {
-        imageBuffer = file
-        imageContentType = file.type || 'image/png'
+      // 支援兩種模式：單張上傳 or 雙張上傳
+      const singleFile = formData.get('image') as File | null
+      const mktFile = formData.get('marketingImage') as File | null
+      const memFile = formData.get('memberImage') as File | null
+
+      if (mktFile) marketingImage = mktFile
+      if (memFile) memberImage = mktFile ? memFile : null
+
+      // 單張上傳模式
+      if (singleFile && !mktFile && !memFile) {
+        if (menuType === 'member') {
+          memberImage = singleFile
+        } else {
+          marketingImage = singleFile
+        }
       }
     }
 
@@ -49,18 +64,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Step 2: 建立 Rich Menu
-    const menuObject = getRichMenuObject()
-    const richMenuId = await createRichMenu(menuObject)
-    if (!richMenuId) {
-      return NextResponse.json({ error: 'Failed to create rich menu' }, { status: 500 })
-    }
+    const results: any = { success: true }
 
-    // Step 3: 壓縮並上傳圖片
-    let imageUploaded = false
-    if (imageBuffer) {
-      // 用 sharp 壓縮為 JPEG < 1MB（LINE API 限制）
-      const rawBuffer = Buffer.from(await imageBuffer.arrayBuffer())
+    // Helper: 壓縮、建立、上傳一套 Rich Menu
+    async function setupMenu(menuObject: object, image: Blob, setAsDefault: boolean) {
+      const richMenuId = await createRichMenu(menuObject)
+      if (!richMenuId) throw new Error('Failed to create rich menu')
+
+      const rawBuffer = Buffer.from(await image.arrayBuffer())
       let quality = 85
       let compressedBuffer: Buffer = rawBuffer
       while (quality >= 30) {
@@ -75,35 +86,51 @@ export async function POST(request: NextRequest) {
       const compressedBlob = new Blob([new Uint8Array(compressedBuffer)], { type: 'image/jpeg' })
       const uploadResult = await uploadRichMenuImage(richMenuId, compressedBlob, 'image/jpeg')
       if (typeof uploadResult === 'string') {
-        return NextResponse.json({
-          error: `Image upload failed: ${uploadResult}`,
-          richMenuId,
-          originalSize: imageBuffer.size,
-          compressedSize: compressedBuffer.length,
-          jpegQuality: quality,
-        }, { status: 500 })
+        throw new Error(`Image upload failed: ${uploadResult}`)
       }
-      imageUploaded = uploadResult
 
-      // Step 4: 設定為預設
-      const defaultSet = await setDefaultRichMenu(richMenuId)
-      if (!defaultSet) {
-        return NextResponse.json({
-          error: 'Rich menu created and image uploaded, but failed to set as default',
-          richMenuId,
-        }, { status: 500 })
+      if (setAsDefault) {
+        const ok = await setDefaultRichMenu(richMenuId)
+        if (!ok) throw new Error('Failed to set as default')
+      }
+
+      return richMenuId
+    }
+
+    // 建立行銷版（設為預設 → 所有未綁定用戶看到）
+    if (marketingImage) {
+      try {
+        const id = await setupMenu(getMarketingRichMenuObject(), marketingImage, true)
+        results.marketingMenuId = id
+        results.marketingStatus = 'ok'
+      } catch (err: any) {
+        results.marketingStatus = `error: ${err.message}`
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      richMenuId,
-      imageUploaded,
-      isDefault: imageUploaded,
-      message: imageUploaded
-        ? 'Rich Menu 建立完成並已設為預設！'
-        : 'Rich Menu 結構已建立，請上傳圖片後才能設為預設。',
-    })
+    // 建立學員版（不設為預設 → 透過 linkRichMenuToUser 指派）
+    if (memberImage) {
+      try {
+        const id = await setupMenu(getMemberRichMenuObject(), memberImage, false)
+        results.memberMenuId = id
+        results.memberStatus = 'ok'
+      } catch (err: any) {
+        results.memberStatus = `error: ${err.message}`
+      }
+    }
+
+    if (!marketingImage && !memberImage) {
+      // 沒圖片 → 只建結構
+      const mktId = await createRichMenu(getMarketingRichMenuObject())
+      const memId = await createRichMenu(getMemberRichMenuObject())
+      results.marketingMenuId = mktId
+      results.memberMenuId = memId
+      results.message = 'Rich Menu 結構已建立，請上傳圖片後才能啟用。'
+    } else {
+      results.message = 'Rich Menu 設定完成！'
+    }
+
+    return NextResponse.json(results)
 
   } catch (error) {
     console.error('Rich menu setup error:', error)
