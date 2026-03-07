@@ -151,18 +151,57 @@ export async function GET(request: NextRequest) {
         const expiresAt = new Date(c.expires_at)
         const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
-        if (daysLeft === 3 || daysLeft === 1 || daysLeft === 0) {
+        if (daysLeft === 7 || daysLeft === 3 || daysLeft === 1 || daysLeft === 0) {
           const renewUrl = `${siteUrl}/pay?tier=${c.subscription_tier}&email=&name=${encodeURIComponent(c.name)}`
           try {
-            await pushMessage(c.line_user_id, [{
-              type: 'text',
-              text: daysLeft === 0
-                ? `⚠️ ${c.name}，你的方案今天到期！\n\n續費後資料會完整保留，不用重新設定。\n\n👉 續費連結：${renewUrl}\n\n有問題直接在這裡問我 💬`
-                : `📢 ${c.name}，你的方案將在 ${daysLeft} 天後到期。\n\n續費連結：${renewUrl}\n到期前續費，資料完整保留。`,
-            }])
+            const expiryMsg = daysLeft === 0
+              ? `⚠️ ${c.name}，你的方案今天到期！\n\n續費後資料會完整保留，不用重新設定。\n\n👉 續費連結：${renewUrl}\n\n有問題直接在這裡問我 💬`
+              : daysLeft === 7
+              ? `📢 ${c.name}，你的方案將在 7 天後到期。\n\n提早續費，資料完整保留，不用重新設定 👍\n\n👉 續費連結：${renewUrl}`
+              : `📢 ${c.name}，你的方案將在 ${daysLeft} 天後到期。\n\n續費連結：${renewUrl}\n到期前續費，資料完整保留。`
+            await pushMessage(c.line_user_id, [{ type: 'text', text: expiryMsg }])
             expiryReminders++
           } catch (err: any) {
             errors.push(`expiry_${c.name}: ${err.message}`)
+          }
+        }
+      }
+    }
+  }
+
+  // ===== 免費用戶里程碑推播（第 3/7/14 天）=====
+  let milestonesSent = 0
+  if (isMorning) {
+    const { data: freeClients } = await supabase
+      .from('clients')
+      .select('id, name, line_user_id, created_at, subscription_tier')
+      .eq('is_active', true)
+      .eq('subscription_tier', 'free')
+      .not('line_user_id', 'is', null)
+
+    if (freeClients) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+      const now = new Date()
+
+      for (const c of freeClients) {
+        const daysSinceJoin = Math.floor((now.getTime() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24))
+
+        let milestoneMsg: string | null = null
+
+        if (daysSinceJoin === 3) {
+          milestoneMsg = `👋 ${c.name}，加入 3 天了！\n\n你知道嗎？持續記錄體重的人，減脂成功率提高 2 倍。\n\n💡 每天花 10 秒量體重，輸入「體重 XX」就能記錄。\n\n想要更完整的追蹤？\n👉 ${siteUrl}/join`
+        } else if (daysSinceJoin === 7) {
+          milestoneMsg = `🎯 ${c.name}，已經一週了！\n\n免費版可以追蹤體重和基本營養，但付費方案還能解鎖：\n• AI 飲食顧問（無限次）\n• 訓練紀錄追蹤\n• 身心狀態分析\n• 每週自動報告\n\n🔥 現在升級：${siteUrl}/join`
+        } else if (daysSinceJoin === 14) {
+          milestoneMsg = `📊 ${c.name}，兩週了！\n\n如果你覺得記錄有幫助，升級方案可以讓教練幫你看數據、調整計畫。\n\n很多學員在這個階段升級後，進步速度明顯加快 💪\n\n👉 了解方案：${siteUrl}/join\n\n有任何問題都可以直接問我！`
+        }
+
+        if (milestoneMsg) {
+          try {
+            await pushMessage(c.line_user_id, [{ type: 'text', text: milestoneMsg }])
+            milestonesSent++
+          } catch (err: any) {
+            errors.push(`milestone_${c.name}: ${err.message}`)
           }
         }
       }
@@ -174,6 +213,7 @@ export async function GET(request: NextRequest) {
     type: isMorning ? 'morning' : 'evening',
     sent,
     expiryReminders,
+    milestonesSent,
     errors,
   })
 }
