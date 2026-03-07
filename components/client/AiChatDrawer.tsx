@@ -228,26 +228,30 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
   }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData])
 
   // 壓縮圖片到 ~800px 寬、JPEG 品質 0.7，控制 token 成本
+  // 使用 FileReader 取代 URL.createObjectURL，避免手機瀏覽器（LINE 內建等）載入失敗
   const compressImage = useCallback((file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const img = new Image()
-      const url = URL.createObjectURL(file)
-      img.onload = () => {
-        URL.revokeObjectURL(url)
-        const maxW = 800
-        const scale = img.width > maxW ? maxW / img.width : 1
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.round(img.width * scale)
-        canvas.height = Math.round(img.height * scale)
-        const ctx = canvas.getContext('2d')
-        if (!ctx) { reject(new Error('Canvas not supported')); return }
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
-        // Strip "data:image/jpeg;base64," prefix
-        resolve(dataUrl.split(',')[1])
+      const reader = new FileReader()
+      reader.onload = () => {
+        const img = new Image()
+        img.onload = () => {
+          const maxW = 800
+          const scale = img.width > maxW ? maxW / img.width : 1
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.round(img.width * scale)
+          canvas.height = Math.round(img.height * scale)
+          const ctx = canvas.getContext('2d')
+          if (!ctx) { reject(new Error('Canvas not supported')); return }
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+          // Strip "data:image/jpeg;base64," prefix
+          resolve(dataUrl.split(',')[1])
+        }
+        img.onerror = () => reject(new Error('圖片載入失敗'))
+        img.src = reader.result as string
       }
-      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('圖片載入失敗')) }
-      img.src = url
+      reader.onerror = () => reject(new Error('檔案讀取失敗'))
+      reader.readAsDataURL(file)
     })
   }, [])
 
@@ -268,8 +272,9 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
         setInput('幫我算這餐的營養素')
       }
       inputRef.current?.focus()
-    } catch {
-      // silently fail
+    } catch (err) {
+      console.error('[AiChat] Image compression failed:', err)
+      setMessages(prev => [...prev, { role: 'assistant', content: '圖片處理失敗，請重新拍照或選擇其他圖片試試 🙏' }])
     }
   }, [compressImage, input])
 
