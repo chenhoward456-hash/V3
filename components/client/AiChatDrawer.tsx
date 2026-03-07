@@ -259,10 +259,19 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (!file.type.startsWith('image/')) return
+    // Some mobile browsers (LINE in-app, Samsung Internet) don't set file.type
+    // for camera captures. Since <input accept="image/*"> already filters,
+    // we only reject if type is explicitly set to a non-image type.
+    if (file.type && !file.type.startsWith('image/')) return
+
+    // Clone file data immediately via Blob to prevent mobile browsers from
+    // invalidating the File reference when the input is reused
+    const blob = new Blob([await file.arrayBuffer()], { type: file.type || 'image/jpeg' })
+    // Reset file input right after cloning so same file can be re-selected
+    e.target.value = ''
 
     try {
-      const base64 = await compressImage(file)
+      const base64 = await compressImage(new File([blob], file.name || 'photo.jpg', { type: blob.type }))
       setPendingImage(base64)
       setPendingImagePreview(`data:image/jpeg;base64,${base64}`)
       // Auto-fill a prompt if empty
@@ -273,10 +282,6 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
     } catch (err) {
       console.error('[AiChat] Image compression failed:', err)
       setMessages(prev => [...prev, { role: 'assistant', content: '圖片處理失敗，請重新拍照或選擇其他圖片試試 🙏' }])
-    } finally {
-      // Reset file input AFTER reading is complete so same file can be re-selected
-      // Must be after FileReader finishes — resetting early invalidates file on some mobile browsers
-      e.target.value = ''
     }
   }, [compressImage, input])
 
