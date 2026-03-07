@@ -128,6 +128,7 @@ export interface NutritionInput {
   // 身體組成（用於 Katch-McArdle BMR 估算 TDEE）
   height?: number | null        // 身高 cm
   bodyFatPct?: number | null    // 體脂率 %（例如 10 = 10%）
+  previousBodyFatPct?: number | null  // 上次體脂率 %（用於增肌期髒增肌偵測）
 
   // Deadline-aware（目標體重 + 目標日期）
   targetWeight: number | null
@@ -249,6 +250,13 @@ export interface NutritionSuggestion {
     proteinPerKg: number   // 區間建議 g/kg
     fatPerKg: number       // 區間建議 g/kg
     refeedFrequency: string | null  // 建議 refeed 頻率
+  } | null
+
+  // 分餐蛋白質指引（Iraki 2019: 每餐 0.40-0.55 g/kg，3-6 餐，訓練前後 1-2 小時進食）
+  perMealProteinGuide: {
+    perMealGrams: { min: number; max: number }  // 每餐蛋白質克數
+    mealsPerDay: { min: number; max: number }    // 建議餐數
+    periWorkoutNote: string                       // 訓練前後進食指引
   } | null
 
   // 是否可以自動套用
@@ -484,7 +492,29 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     deadlineInfo: null, autoApply: false, peakWeekPlan: null,
     menstrualCycleNote: null,
     metabolicStress: null,
+    perMealProteinGuide: null,
     ...overrides,
+  }
+}
+
+// ===== 分餐蛋白質指引 helper =====
+// Iraki et al. (2019): 每餐 0.40-0.55 g/kg，均勻分佈 3-6 餐，訓練前後 1-2 小時內進食
+function buildPerMealProteinGuide(
+  bodyWeight: number,
+  totalProtein: number | null
+): NutritionSuggestion['perMealProteinGuide'] {
+  if (!totalProtein || totalProtein <= 0) return null
+  const perMealMin = Math.round(bodyWeight * 0.40)
+  const perMealMax = Math.round(bodyWeight * 0.55)
+  // 從總蛋白質推算合理餐數：meals = totalProtein / perMealMid
+  const perMealMid = (perMealMin + perMealMax) / 2
+  const idealMeals = Math.round(totalProtein / perMealMid)
+  const mealsMin = Math.max(3, Math.min(idealMeals - 1, 4))
+  const mealsMax = Math.min(6, Math.max(idealMeals + 1, 4))
+  return {
+    perMealGrams: { min: perMealMin, max: perMealMax },
+    mealsPerDay: { min: mealsMin, max: mealsMax },
+    periWorkoutNote: '訓練前後 1-2 小時各安排一餐（含 0.40-0.55 g/kg 蛋白質），最大化肌肉蛋白合成。',
   }
 }
 
@@ -1531,6 +1561,7 @@ function generateCutSuggestion(
       bodyFatZoneInfo: zoneInfo,
       deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
+      perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
     }
   }
 
@@ -1552,6 +1583,7 @@ function generateCutSuggestion(
     bodyFatZoneInfo: zoneInfo,
     deadlineInfo, autoApply: true, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
+    perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
   }
 }
 
@@ -1971,6 +2003,7 @@ function generateGoalDrivenCut(
     autoApply: true,  // Goal-driven 永遠自動套用
     peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
+    perMealProteinGuide: buildPerMealProteinGuide(bw, suggestedPro),
   }
 }
 
@@ -2058,6 +2091,30 @@ function generateBulkSuggestion(
     } else if (recoveryState === 'struggling') {
       carbDelta += 13; calDelta += 50
       message += ` 恢復偏低，系統已微增碳水（+50kcal）輔助恢復。`
+    }
+  }
+
+  // ===== 體脂率追蹤：防止髒增肌 =====
+  // 若有前次體脂率，偵測體脂上升速度。增肌期體脂增幅 > 2% 視為髒增肌風險
+  // 體脂增幅 > 4% 視為嚴重髒增肌，應降低盈餘或考慮迷你減脂
+  if (input.previousBodyFatPct != null && input.bodyFatPct != null
+      && input.previousBodyFatPct > 0 && input.bodyFatPct > 0) {
+    const bfIncrease = input.bodyFatPct - input.previousBodyFatPct
+    if (bfIncrease > 4) {
+      // 嚴重髒增肌：強制降低盈餘
+      calDelta -= 200
+      carbDelta -= 25
+      status = 'too_fast'
+      statusLabel = '脂肪堆積'
+      statusEmoji = '🔴'
+      message += ` ⚠️ 體脂率從 ${input.previousBodyFatPct}% 上升至 ${input.bodyFatPct}%（+${bfIncrease.toFixed(1)}%），脂肪增長過快。建議降低盈餘或安排 2-4 週迷你減脂。`
+      warnings.push(`🔴 髒增肌警告：體脂增幅 +${bfIncrease.toFixed(1)}%，系統已自動降低盈餘 200kcal。建議考慮迷你減脂期。`)
+    } else if (bfIncrease > 2) {
+      // 輕度髒增肌風險：微降盈餘
+      calDelta -= 100
+      carbDelta -= 13
+      message += ` ⚠️ 體脂率從 ${input.previousBodyFatPct}% 上升至 ${input.bodyFatPct}%（+${bfIncrease.toFixed(1)}%），脂肪增長偏快。已微調盈餘。`
+      warnings.push(`🟡 體脂上升偏快（+${bfIncrease.toFixed(1)}%），系統已微降盈餘 100kcal，持續監控中。`)
     }
   }
 
@@ -2156,6 +2213,7 @@ function generateBulkSuggestion(
       bodyFatZoneInfo: zoneInfo,
       deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
+      perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
     }
   }
 
@@ -2177,6 +2235,7 @@ function generateBulkSuggestion(
     bodyFatZoneInfo: zoneInfo,
     deadlineInfo, autoApply: true, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
+    perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
   }
 }
 
@@ -2347,6 +2406,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
     autoApply: true,
     peakWeekPlan: plan, metabolicStress: null,
     menstrualCycleNote: null,
+    perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG)),
   }
 }
 
@@ -2404,9 +2464,21 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
     deficit = Math.min(400, Math.round(estimatedTDEE * 0.18))
     deficit = Math.max(200, deficit)  // 至少 200
   } else {
-    // 增肌盈餘 200-300kcal
-    deficit = -Math.min(300, Math.round(estimatedTDEE * 0.12))
-    deficit = Math.max(-300, deficit)
+    // 增肌：優先使用 zone table 的 surplusKcal（依體脂區間文獻校準）
+    // Iraki 2019 [4]: surplus +10-20%；各 zone 有更精確的 surplusKcal 範圍
+    if (input.bodyFatPct != null && input.bodyFatPct > 0) {
+      const zone = getBodyFatZone(toZoneGender(input.gender), input.bodyFatPct)
+      if (zone) {
+        const midSurplus = (zone.bulk.surplusKcal.min + zone.bulk.surplusKcal.max) / 2
+        deficit = -Math.round(midSurplus)
+      } else {
+        deficit = -Math.min(300, Math.round(estimatedTDEE * 0.12))
+      }
+    } else {
+      // 無體脂率 → fallback 保守盈餘 200-300kcal
+      deficit = -Math.min(300, Math.round(estimatedTDEE * 0.12))
+      deficit = Math.max(-300, deficit)
+    }
   }
 
   const targetCalories = estimatedTDEE - deficit
@@ -2608,8 +2680,19 @@ export function generateDemoAnalysis(input: DemoAnalysisInput): DemoAnalysisResu
     // 赤字 = TDEE 的 20%，最大 500kcal
     dailyDeficit = Math.min(Math.round(estimatedTDEE * 0.20), SAFETY.MAX_DEFICIT_KCAL)
   } else {
-    // 增肌盈餘 +250kcal（ISSN off-season recommendation）
-    dailyDeficit = -250
+    // 增肌：優先使用 zone table 的 surplusKcal（依體脂區間文獻校準）
+    if (input.bodyFatPct != null && input.bodyFatPct > 0) {
+      const zone = getBodyFatZone(toZoneGender(input.gender), input.bodyFatPct)
+      if (zone) {
+        const midSurplus = (zone.bulk.surplusKcal.min + zone.bulk.surplusKcal.max) / 2
+        dailyDeficit = -Math.round(midSurplus)
+      } else {
+        dailyDeficit = -250
+      }
+    } else {
+      // 無體脂率 → fallback +250kcal（ISSN off-season recommendation）
+      dailyDeficit = -250
+    }
   }
 
   // 3. 參考熱量
