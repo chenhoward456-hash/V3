@@ -20,7 +20,6 @@ export async function GET() {
  * POST /api/line/richmenu — 建立 Rich Menu 並上傳圖片
  *
  * Body: multipart/form-data with 'image' file
- * 或 JSON { deleteOld?: boolean } (不含圖片時僅建立 menu 結構)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -61,9 +60,8 @@ export async function POST(request: NextRequest) {
     if (imageBuffer) {
       const uploadResult = await uploadRichMenuImage(richMenuId, imageBuffer, imageContentType)
       if (typeof uploadResult === 'string') {
-        // 回傳錯誤訊息
         return NextResponse.json({
-          error: `Rich menu created but image upload failed: ${uploadResult}`,
+          error: `Image upload failed: ${uploadResult}`,
           richMenuId,
           imageSize: imageBuffer.size,
           imageType: imageContentType,
@@ -71,7 +69,7 @@ export async function POST(request: NextRequest) {
       }
       imageUploaded = uploadResult
 
-      // Step 4: 設定為預設（只有在圖片上傳成功後才設定）
+      // Step 4: 設定為預設
       const defaultSet = await setDefaultRichMenu(richMenuId)
       if (!defaultSet) {
         return NextResponse.json({

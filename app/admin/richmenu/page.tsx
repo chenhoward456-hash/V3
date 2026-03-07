@@ -2,17 +2,55 @@
 
 import { useState } from 'react'
 
+/** 用 Canvas 壓縮圖片為 JPEG，確保 < 1MB (LINE API 限制) */
+async function compressImage(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = 2500
+      canvas.height = 1686
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, 2500, 1686)
+
+      // 從 quality 0.85 開始，逐步降低直到 < 1MB
+      let quality = 0.85
+      const tryCompress = () => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error('壓縮失敗'))
+            if (blob.size <= 1024 * 1024 || quality <= 0.3) {
+              const compressed = new File([blob], 'richmenu.jpg', { type: 'image/jpeg' })
+              resolve(compressed)
+            } else {
+              quality -= 0.1
+              tryCompress()
+            }
+          },
+          'image/jpeg',
+          quality,
+        )
+      }
+      tryCompress()
+    }
+    img.onerror = () => reject(new Error('圖片載入失敗'))
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 export default function RichMenuUpload() {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
+  const [compressedSize, setCompressedSize] = useState<number | null>(null)
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (!f) return
     setFile(f)
     setPreview(URL.createObjectURL(f))
+    setCompressedSize(null)
     setStatus('idle')
     setMessage('')
   }
@@ -20,11 +58,16 @@ export default function RichMenuUpload() {
   async function handleUpload() {
     if (!file) return
     setStatus('uploading')
-    setMessage('上傳中，請稍候...')
+    setMessage('壓縮圖片中...')
 
     try {
+      // 先壓縮圖片到 < 1MB
+      const compressed = await compressImage(file)
+      setCompressedSize(compressed.size)
+      setMessage(`已壓縮至 ${(compressed.size / 1024).toFixed(0)} KB，上傳中...`)
+
       const formData = new FormData()
-      formData.append('image', file)
+      formData.append('image', compressed)
 
       const res = await fetch('/api/line/richmenu', {
         method: 'POST',
@@ -35,14 +78,14 @@ export default function RichMenuUpload() {
 
       if (res.ok && data.success) {
         setStatus('success')
-        setMessage(`Rich Menu 設定完成！\nID: ${data.richMenuId}`)
+        setMessage(`Rich Menu 設定完成！\nID: ${data.richMenuId}\n壓縮後大小: ${(compressed.size / 1024).toFixed(0)} KB`)
       } else {
         setStatus('error')
         setMessage(`失敗：${data.error || '未知錯誤'}`)
       }
     } catch (err) {
       setStatus('error')
-      setMessage(`網路錯誤：${err}`)
+      setMessage(`錯誤：${err}`)
     }
   }
 
@@ -89,6 +132,7 @@ export default function RichMenuUpload() {
       {file && (
         <p style={{ color: '#888', fontSize: '12px', marginBottom: '16px' }}>
           {file.name} ({(file.size / 1024).toFixed(0)} KB)
+          {compressedSize && ` → 壓縮後 ${(compressedSize / 1024).toFixed(0)} KB`}
         </p>
       )}
 
