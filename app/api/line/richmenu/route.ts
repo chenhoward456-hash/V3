@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import sharp from 'sharp'
 import {
   getRichMenuObject,
   createRichMenu,
@@ -55,16 +56,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create rich menu' }, { status: 500 })
     }
 
-    // Step 3: 上傳圖片（如果有提供）
+    // Step 3: 壓縮並上傳圖片
     let imageUploaded = false
     if (imageBuffer) {
-      const uploadResult = await uploadRichMenuImage(richMenuId, imageBuffer, imageContentType)
+      // 用 sharp 壓縮為 JPEG < 1MB（LINE API 限制）
+      const rawBuffer = Buffer.from(await imageBuffer.arrayBuffer())
+      let quality = 85
+      let compressedBuffer: Buffer = rawBuffer
+      while (quality >= 30) {
+        compressedBuffer = await sharp(rawBuffer)
+          .resize(2500, 1686, { fit: 'fill' })
+          .jpeg({ quality })
+          .toBuffer()
+        if (compressedBuffer.length <= 1024 * 1024) break
+        quality -= 10
+      }
+
+      const compressedBlob = new Blob([new Uint8Array(compressedBuffer)], { type: 'image/jpeg' })
+      const uploadResult = await uploadRichMenuImage(richMenuId, compressedBlob, 'image/jpeg')
       if (typeof uploadResult === 'string') {
         return NextResponse.json({
           error: `Image upload failed: ${uploadResult}`,
           richMenuId,
-          imageSize: imageBuffer.size,
-          imageType: imageContentType,
+          originalSize: imageBuffer.size,
+          compressedSize: compressedBuffer.length,
+          jpegQuality: quality,
         }, { status: 500 })
       }
       imageUploaded = uploadResult
