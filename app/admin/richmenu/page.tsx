@@ -2,40 +2,44 @@
 
 import { useState } from 'react'
 
-/** 用 Canvas 壓縮圖片為 JPEG，確保 < 1MB (LINE API 限制) */
+/** 用 FileReader + Canvas 壓縮圖片為 JPEG，確保 < 1MB (LINE API 限制) */
 async function compressImage(file: File): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = 2500
-      canvas.height = 1686
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, 0, 0, 2500, 1686)
-
-      // 從 quality 0.85 開始，逐步降低直到 < 1MB
-      let quality = 0.85
-      const tryCompress = () => {
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) return reject(new Error('壓縮失敗'))
-            if (blob.size <= 1024 * 1024 || quality <= 0.3) {
-              const compressed = new File([blob], 'richmenu.jpg', { type: 'image/jpeg' })
-              resolve(compressed)
-            } else {
-              quality -= 0.1
-              tryCompress()
-            }
-          },
-          'image/jpeg',
-          quality,
-        )
-      }
-      tryCompress()
-    }
-    img.onerror = () => reject(new Error('圖片載入失敗'))
-    img.src = URL.createObjectURL(file)
+  // 先用 FileReader 讀成 data URL（比 Object URL 在手機上更穩定）
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('FileReader 讀取失敗'))
+    reader.readAsDataURL(file)
   })
+
+  // 載入圖片
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('圖片載入失敗'))
+    image.src = dataUrl
+  })
+
+  // 畫到 Canvas 上
+  const canvas = document.createElement('canvas')
+  canvas.width = 2500
+  canvas.height = 1686
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(img, 0, 0, 2500, 1686)
+
+  // 從 quality 0.85 開始，逐步降低直到 < 1MB
+  let quality = 0.85
+  let blob: Blob | null = null
+  while (quality >= 0.3) {
+    blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((b) => resolve(b), 'image/jpeg', quality)
+    })
+    if (blob && blob.size <= 1024 * 1024) break
+    quality -= 0.1
+  }
+
+  if (!blob) throw new Error('壓縮失敗')
+  return new File([blob], 'richmenu.jpg', { type: 'image/jpeg' })
 }
 
 export default function RichMenuUpload() {
