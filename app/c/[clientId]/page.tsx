@@ -850,14 +850,31 @@ export default function ClientDashboard() {
         )}
 
         {/* Peak Week 計畫（備賽階段為 peak_week 時顯示） */}
-        {isCompetition && c.prep_phase === 'peak_week' && c.competition_date && latestBodyData?.weight && (
-          <PeakWeekPlan
-            clientId={c.id}
-            code={c.unique_code}
-            competitionDate={c.competition_date}
-            bodyWeight={latestBodyData.weight}
-          />
-        )}
+        {isCompetition && c.prep_phase === 'peak_week' && c.competition_date && latestBodyData?.weight && (() => {
+          const peakDaysLeft = Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
+          if (peakDaysLeft > 8) {
+            return (
+              <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">⚡</span>
+                  <span className="text-sm font-bold text-purple-700">Peak Week 模式已啟用</span>
+                </div>
+                <p className="text-xs text-purple-600">
+                  距比賽還有 <strong>{peakDaysLeft}</strong> 天，Peak Week 每日計畫將在 <strong>比賽前 8 天</strong> 自動生成。
+                  建議先在賽前 2-4 週做一次模擬 Peak Week，測試身體對碳水耗竭→超補的反應。
+                </p>
+              </div>
+            )
+          }
+          return (
+            <PeakWeekPlan
+              clientId={c.id}
+              code={c.unique_code}
+              competitionDate={c.competition_date}
+              bodyWeight={latestBodyData.weight}
+            />
+          )
+        })()}
 
         {/* 飲食（備賽選手排第二） */}
         {isCompetition && c.nutrition_enabled && (
