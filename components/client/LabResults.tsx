@@ -192,7 +192,10 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
             })}
           </div>
         ) : (
-          <p className="text-gray-400 text-center py-4">尚無血檢資料</p>
+          <div className="text-center py-4">
+            <p className="text-gray-400">尚無血檢資料</p>
+            <p className="text-xs text-gray-300 mt-1">完成血檢後，教練會幫你上傳並分析結果</p>
+          </div>
         )}
       </div>
 

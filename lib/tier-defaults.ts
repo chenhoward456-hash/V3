@@ -17,7 +17,7 @@ const TIER_FEATURES: Record<SubscriptionTier, Record<string, boolean>> = {
     body_composition_enabled: true,
     wellness_enabled: true,
     nutrition_enabled: true,
-    training_enabled: false,
+    training_enabled: true,   // $499 也能記錄訓練，差別在教練不看
     supplement_enabled: false,
     lab_enabled: false,
     ai_chat_enabled: true,

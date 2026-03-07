@@ -789,6 +789,20 @@ export default function ClientDashboard() {
                   </button>
                 )}
 
+                {c.ai_chat_enabled && (
+                  <button
+                    onClick={() => setShowAiChat(true)}
+                    className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow text-left"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-xl shrink-0">🤖</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">步驟 3：問 AI 顧問怎麼吃</p>
+                      <p className="text-xs text-gray-500 mt-0.5">不知道吃什麼？告訴 AI 你剛吃了什麼，它幫你估算營養素</p>
+                    </div>
+                    <ChevronRight size={18} className="text-gray-300" />
+                  </button>
+                )}
+
                 <div className="bg-white/60 rounded-2xl p-4 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-xl shrink-0">📊</div>
                   <div className="flex-1">
@@ -1008,6 +1022,38 @@ export default function ClientDashboard() {
           /></div>
         )}
 
+        {/* Combo 方案專屬區塊 */}
+        {c.subscription_tier === 'combo' && (
+          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-3xl shadow-sm p-6 mb-6 border border-amber-200">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">🏆</span>
+              <h2 className="text-lg font-bold text-gray-900">全方位方案</h2>
+            </div>
+            <div className="space-y-3">
+              <div className="bg-white rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-lg shrink-0">🏋️</div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-900">一對一訓練</p>
+                  <p className="text-xs text-gray-500 mt-0.5">台中 Coolday · 動作矯正與課表設計</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-lg shrink-0">💬</div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-900">優先諮詢</p>
+                  <p className="text-xs text-gray-500 mt-0.5">LINE 優先回覆 + 緊急諮詢通道</p>
+                </div>
+              </div>
+              {c.coach_weekly_note && (
+                <div className="bg-white rounded-2xl p-4">
+                  <p className="text-xs font-semibold text-amber-700 mb-1">教練本週筆記</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{c.coach_weekly_note}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 自主管理 / 免費學員的智能營養計算（已完成 onboarding 才顯示，避免跟頂部重複） */}
         {!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target && (
           <SelfManagedNutrition
@@ -1104,8 +1150,8 @@ export default function ClientDashboard() {
               </div>
               {c.subscription_tier === 'free' ? (
                 <div className="mt-4 space-y-2">
-                  <a href="/join" className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all">
-                    升級自主管理版（即將開放）
+                  <a href="/pay?tier=self_managed" className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all">
+                    升級自主管理版 NT$499/月
                   </a>
                   <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="block text-center bg-[#06C755] text-white text-sm font-bold py-2.5 rounded-xl hover:bg-[#05b04d] transition-all">
                     💬 加 LINE 找 Howard
@@ -1165,11 +1211,11 @@ export default function ClientDashboard() {
             </div>
             <div className="space-y-3 mb-4">
               <a
-                href="/join"
+                href="/pay?tier=self_managed"
                 className="block w-full text-center bg-blue-600 text-white font-bold py-3 rounded-2xl hover:bg-blue-700 transition-colors"
               >
                 升級自主管理版 NT$499/月
-                <span className="block text-xs font-normal opacity-80 mt-0.5">即將開放，先加入候補名單</span>
+                <span className="block text-xs font-normal opacity-80 mt-0.5">解鎖無限 AI 顧問 + 訓練追蹤</span>
               </a>
               <a
                 href="https://lin.ee/LP65rCc"

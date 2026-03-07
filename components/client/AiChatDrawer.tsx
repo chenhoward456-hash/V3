@@ -214,7 +214,12 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
 7. 如果身心狀態不佳（精力低、壓力高、睡眠差），適當調整飲食建議（例如建議含鎂食物助眠、抗氧化食物抗壓）
 8. 可以根據補劑清單給出搭配飲食的建議
 9. 不做醫療診斷，建議以科學為基礎
-10. 回答簡潔，不超過 400 字`
+10. 回答簡潔，不超過 400 字
+11. **食物估算功能**：當學員描述他吃了什麼（如「一個雞腿便當」、「超商鮭魚飯糰+茶葉蛋」），你要：
+    - 估算該餐的蛋白質(g)、碳水(g)、脂肪(g)、總熱量(kcal)
+    - 用清楚的格式列出，例如：「蛋白質 35g ｜ 碳水 75g ｜ 脂肪 18g ｜ 熱量 602 kcal」
+    - 對比今日剩餘目標，告訴學員吃完這餐後還剩多少
+    - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫`
   }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData])
 
   async function handleSend() {
@@ -294,9 +299,9 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
   if (!open) return null
 
   const quickQuestions = [
+    '幫我算這餐：一個雞腿便當加一杯豆漿',
     '我今天剩餘的量，去 711 要怎麼買？',
     '幫我配一餐自助餐的組合',
-    '推薦適合的宵夜選擇',
     '外食怎麼搭才能補齊蛋白質？',
   ]
 
@@ -370,11 +375,11 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
           {quotaExceeded && (
             <div className="space-y-2 ml-1 max-w-[85%]">
               <a
-                href="/join?waitlist=self_managed"
+                href="/pay?tier=self_managed"
                 className="block w-full text-center bg-blue-600 text-white font-semibold py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors text-sm"
               >
                 升級自主管理版 NT$499/月
-                <span className="block text-[10px] font-normal opacity-80 mt-0.5">即將開放，先加入候補名單</span>
+                <span className="block text-[10px] font-normal opacity-80 mt-0.5">解鎖無限 AI 顧問 + 訓練追蹤</span>
               </a>
               <a
                 href="https://lin.ee/LP65rCc"

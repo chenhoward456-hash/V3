@@ -185,7 +185,10 @@ export default function DailyCheckIn({
           })}
         </div>
       ) : (
-        <p className="text-gray-400 text-center py-4">尚未設定補品清單</p>
+        <div className="text-center py-4">
+          <p className="text-gray-400">尚未設定補品清單</p>
+          <p className="text-xs text-gray-300 mt-1">教練會根據你的數據和目標設定個人化補品方案</p>
+        </div>
       )}
     </div>
   )
