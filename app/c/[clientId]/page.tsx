@@ -23,6 +23,7 @@ import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 import SelfManagedNutrition from '@/components/client/SelfManagedNutrition'
 import PwaPrompt from '@/components/client/PwaPrompt'
+import OnboardingGuide from '@/components/client/OnboardingGuide'
 import HealthModeAdvanced from '@/components/client/HealthModeAdvanced'
 import LabNutritionAdviceCard from '@/components/client/LabNutritionAdviceCard'
 import AiChatDrawer from '@/components/client/AiChatDrawer'
@@ -1172,6 +1173,21 @@ export default function ClientDashboard() {
 
         <PwaPrompt />
       </div>
+
+      <OnboardingGuide
+        clientId={clientId as string}
+        clientName={c.name}
+        tier={c.subscription_tier}
+        features={{
+          body_composition_enabled: c.body_composition_enabled,
+          nutrition_enabled: c.nutrition_enabled,
+          training_enabled: c.training_enabled,
+          wellness_enabled: c.wellness_enabled,
+          supplement_enabled: c.supplement_enabled,
+          lab_enabled: c.lab_enabled,
+          ai_chat_enabled: c.ai_chat_enabled,
+        }}
+      />
 
       {showSupplementModal && c.supplement_enabled && (
         <SupplementModal
