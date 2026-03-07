@@ -131,10 +131,49 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ===== 到期提醒（每日檢查，早上執行一次就好）=====
+  // 到期前 3 天 + 到期當天 → LINE 提醒續費
+  let expiryReminders = 0
+  if (isMorning) {
+    const { data: allClients } = await supabase
+      .from('clients')
+      .select('id, name, line_user_id, unique_code, expires_at, subscription_tier')
+      .eq('is_active', true)
+      .not('line_user_id', 'is', null)
+      .not('expires_at', 'is', null)
+
+    if (allClients) {
+      const now = new Date()
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+
+      for (const c of allClients) {
+        if (!c.expires_at || c.subscription_tier === 'free') continue
+        const expiresAt = new Date(c.expires_at)
+        const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+        if (daysLeft === 3 || daysLeft === 1 || daysLeft === 0) {
+          const renewUrl = `${siteUrl}/pay?tier=${c.subscription_tier}&email=&name=${encodeURIComponent(c.name)}`
+          try {
+            await pushMessage(c.line_user_id, [{
+              type: 'text',
+              text: daysLeft === 0
+                ? `⚠️ ${c.name}，你的方案今天到期！\n\n續費後資料會完整保留，不用重新設定。\n\n👉 續費連結：${renewUrl}\n\n有問題直接在這裡問我 💬`
+                : `📢 ${c.name}，你的方案將在 ${daysLeft} 天後到期。\n\n續費連結：${renewUrl}\n到期前續費，資料完整保留。`,
+            }])
+            expiryReminders++
+          } catch (err: any) {
+            errors.push(`expiry_${c.name}: ${err.message}`)
+          }
+        }
+      }
+    }
+  }
+
   return NextResponse.json({
     success: errors.length === 0,
     type: isMorning ? 'morning' : 'evening',
     sent,
+    expiryReminders,
     errors,
   })
 }
