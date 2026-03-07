@@ -62,12 +62,12 @@ export function qr(label: string, text: string): QuickReplyItem {
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
 const COOLDAY_LINE_URL = 'https://lin.ee/AVAjZ2n'
 
-/** Rich Menu 定義 (2x3, 2500x1686) */
-export function getRichMenuObject() {
+/** Rich Menu — 行銷版 (未綁定/免費用戶) */
+export function getMarketingRichMenuObject() {
   return {
     size: { width: 2500, height: 1686 },
     selected: true,
-    name: 'Howard Protocol Main Menu',
+    name: 'Howard Protocol — 行銷版',
     chatBarText: '點我開啟選單',
     areas: [
       // Row 1
@@ -99,6 +99,47 @@ export function getRichMenuObject() {
     ],
   }
 }
+
+/** Rich Menu — 日常操作版 (已綁定付費用戶) */
+export function getMemberRichMenuObject() {
+  return {
+    size: { width: 2500, height: 1686 },
+    selected: true,
+    name: 'Howard Protocol — 學員版',
+    chatBarText: '📋 快速記錄',
+    areas: [
+      // Row 1: 記錄動作
+      {
+        bounds: { x: 0, y: 0, width: 833, height: 843 },
+        action: { type: 'message', label: '記體重', text: '記體重' },
+      },
+      {
+        bounds: { x: 833, y: 0, width: 834, height: 843 },
+        action: { type: 'message', label: '記飲食', text: '記飲食' },
+      },
+      {
+        bounds: { x: 1667, y: 0, width: 833, height: 843 },
+        action: { type: 'message', label: '記訓練', text: '記訓練' },
+      },
+      // Row 2: 狀態 + 趨勢 + 客服
+      {
+        bounds: { x: 0, y: 843, width: 833, height: 843 },
+        action: { type: 'message', label: '今日狀態', text: '狀態' },
+      },
+      {
+        bounds: { x: 833, y: 843, width: 834, height: 843 },
+        action: { type: 'message', label: '7天趨勢', text: '趨勢' },
+      },
+      {
+        bounds: { x: 1667, y: 843, width: 833, height: 843 },
+        action: { type: 'postback', label: '聯繫客服', data: 'action=contact_support', displayText: '聯繫客服' },
+      },
+    ],
+  }
+}
+
+// 向下相容：舊的 getRichMenuObject 指向行銷版
+export const getRichMenuObject = getMarketingRichMenuObject
 
 /** 建立 Rich Menu */
 export async function createRichMenu(menuObject: object): Promise<string | null> {
@@ -170,4 +211,34 @@ export async function listRichMenus(): Promise<any[]> {
   if (!res.ok) return []
   const data = await res.json()
   return data.richmenus || []
+}
+
+/** 綁定特定 Rich Menu 給某用戶 */
+export async function linkRichMenuToUser(userId: string, richMenuId: string): Promise<boolean> {
+  const res = await fetch(`https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+    },
+  })
+  if (!res.ok) {
+    console.error('Link rich menu to user failed:', await res.text())
+    return false
+  }
+  return true
+}
+
+/** 解除用戶的個人 Rich Menu（會回到預設 Rich Menu） */
+export async function unlinkRichMenuFromUser(userId: string): Promise<boolean> {
+  const res = await fetch(`https://api.line.me/v2/bot/user/${userId}/richmenu`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+    },
+  })
+  if (!res.ok) {
+    console.error('Unlink rich menu from user failed:', await res.text())
+    return false
+  }
+  return true
 }

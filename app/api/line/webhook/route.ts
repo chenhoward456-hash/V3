@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyLineSignature, replyMessage, qr } from '@/lib/line'
+import { verifyLineSignature, replyMessage, qr, linkRichMenuToUser, unlinkRichMenuFromUser, listRichMenus } from '@/lib/line'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
 
@@ -124,6 +124,7 @@ async function handleEvent(event: any) {
 
     case 'unfollow':
       log.info(`Unfollowed: ${userId}`)
+      await unlinkRichMenuFromUser(userId)
       await supabase
         .from('clients')
         .update({ line_user_id: null, last_line_activity: null })
@@ -259,6 +260,35 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     return
   }
 
+  // ── 需要綁定帳號的功能（未綁定 → 升級提示）──
+  const MEMBER_COMMANDS = ['狀態', '今天狀態', '趨勢', '週報', '記體重', '記水量', '記飲食', '記訓練', '記身心']
+  if (MEMBER_COMMANDS.includes(text)) {
+    // 先檢查是否已綁定
+    const client = await getClientByLineId(userId, supabase)
+    if (!client) {
+      await replyMessage(event.replyToken, [
+        {
+          type: 'text',
+          text: '這個功能需要綁定帳號才能使用 🔒\n\n' +
+            '加入方案後即可解鎖：\n' +
+            '✅ 每日體重/飲食/訓練記錄\n' +
+            '✅ 7 天趨勢分析\n' +
+            '✅ AI 自動調整建議\n\n' +
+            '先做免費評估，了解自己的狀態 👇',
+          quickReply: {
+            items: [
+              qr('🧪 免費評估', '免費評估'),
+              qr('💰 查看方案', '查看方案'),
+              qr('🔗 我有代碼', '我要綁定'),
+              qr('❓ FAQ', 'FAQ'),
+            ],
+          },
+        },
+      ])
+      return
+    }
+  }
+
   // 查詢狀態
   if (text === '狀態' || text === '今天狀態') {
     await handleStatusQuery(event.replyToken, userId, supabase)
@@ -273,8 +303,45 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
 
   // ── 互動式入口：點按鈕進入流程 ──
   if (text === '記體重') {
+    // 嘗試取上次體重，提供快捷按鈕
+    const client = await getClientByLineId(userId, supabase)
+    if (client) {
+      const { data: lastWeight } = await supabase
+        .from('body_composition')
+        .select('weight')
+        .eq('client_id', client.id)
+        .not('weight', 'is', null)
+        .order('date', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (lastWeight?.weight) {
+        const w = lastWeight.weight
+        await replyMessage(event.replyToken, [
+          {
+            type: 'text',
+            text: `上次體重 ${w} kg，今天呢？`,
+            quickReply: {
+              items: [
+                qr(`${(w - 0.5).toFixed(1)}`, `體重 ${(w - 0.5).toFixed(1)}`),
+                qr(`${w.toFixed(1)}（不變）`, `體重 ${w.toFixed(1)}`),
+                qr(`${(w + 0.5).toFixed(1)}`, `體重 ${(w + 0.5).toFixed(1)}`),
+                qr('自己輸入', '輸入體重'),
+              ],
+            },
+          },
+        ])
+        return
+      }
+    }
     await replyMessage(event.replyToken, [
       { type: 'text', text: '請輸入體重（kg），例如：\n體重 72.5', quickReply: QR_MAIN },
+    ])
+    return
+  }
+  if (text === '輸入體重') {
+    await replyMessage(event.replyToken, [
+      { type: 'text', text: '請輸入體重（kg），例如：\n體重 72.5' },
     ])
     return
   }
@@ -292,13 +359,35 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
   }
   if (text === '記訓練') {
     await replyMessage(event.replyToken, [
-      { type: 'text', text: '今天練什麼？', quickReply: QR_TRAINING_TYPES },
+      {
+        type: 'text',
+        text: '今天練什麼部位？',
+        quickReply: {
+          items: [
+            qr('推（胸/肩/三頭）', '訓練 推'),
+            qr('拉（背/二頭）', '訓練 拉'),
+            qr('腿', '訓練 腿'),
+            qr('有氧', '訓練 有氧'),
+          ],
+        },
+      },
     ])
     return
   }
   if (text === '記身心') {
     await replyMessage(event.replyToken, [
-      { type: 'text', text: '今天整體感覺如何？\n（睡眠/精力/心情 各 1-5 分）', quickReply: QR_WELLNESS },
+      {
+        type: 'text',
+        text: '昨晚睡得如何？',
+        quickReply: {
+          items: [
+            qr('😴 很差', '睡眠 1'),
+            qr('😐 不太好', '睡眠 2'),
+            qr('🙂 普通', '睡眠 3'),
+            qr('😊 不錯', '睡眠 4'),
+          ],
+        },
+      },
     ])
     return
   }
@@ -334,8 +423,8 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     return
   }
 
-  // ── 快速記錄：訓練 ──
-  const trainingMatch = text.match(/^訓練\s+(push|pull|legs|chest|shoulder|arms|cardio|rest|推|拉|腿|胸|肩|手臂|有氧|休息)(?:\s+([\d]+)分鐘?)?(?:\s+RPE\s*([\d]+))?$/i)
+  // ── 快速記錄：訓練（選部位後 → 問時長） ──
+  const trainingMatch = text.match(/^訓練\s+(push|pull|legs|chest|shoulder|arms|cardio|rest|推|拉|腿|胸|肩|手臂|有氧|休息)$/i)
   if (trainingMatch) {
     const typeMap: Record<string, string> = {
       '推': 'push', '拉': 'pull', '腿': 'legs', '胸': 'chest',
@@ -343,19 +432,135 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     }
     const rawType = trainingMatch[1].toLowerCase()
     const trainingType = typeMap[rawType] || rawType
-    const duration = trainingMatch[2] ? parseInt(trainingMatch[2]) : null
-    const rpe = trainingMatch[3] ? parseInt(trainingMatch[3]) : null
+    const typeLabel: Record<string, string> = {
+      push: '推', pull: '拉', legs: '腿', chest: '胸', shoulder: '肩',
+      arms: '手臂', cardio: '有氧', rest: '休息',
+    }
+    const label = typeLabel[trainingType] || trainingType
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: `${label} 👍 練了多久？`,
+        quickReply: {
+          items: [
+            qr('30 分鐘', `訓練完成 ${trainingType} 30`),
+            qr('45 分鐘', `訓練完成 ${trainingType} 45`),
+            qr('60 分鐘', `訓練完成 ${trainingType} 60`),
+            qr('90 分鐘', `訓練完成 ${trainingType} 90`),
+          ],
+        },
+      },
+    ])
+    return
+  }
+
+  // ── 訓練第二步：選完時長 → 問強度 ──
+  const trainingDurationMatch = text.match(/^訓練完成\s+(\w+)\s+(\d+)$/i)
+  if (trainingDurationMatch) {
+    const trainingType = trainingDurationMatch[1]
+    const duration = trainingDurationMatch[2]
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '強度感受如何？',
+        quickReply: {
+          items: [
+            qr('輕鬆 RPE 5', `訓練儲存 ${trainingType} ${duration} 5`),
+            qr('適中 RPE 7', `訓練儲存 ${trainingType} ${duration} 7`),
+            qr('很硬 RPE 8', `訓練儲存 ${trainingType} ${duration} 8`),
+            qr('快死了 RPE 10', `訓練儲存 ${trainingType} ${duration} 10`),
+          ],
+        },
+      },
+    ])
+    return
+  }
+
+  // ── 訓練第三步：儲存 ──
+  const trainingSaveMatch = text.match(/^訓練儲存\s+(\w+)\s+(\d+)\s+(\d+)$/i)
+  if (trainingSaveMatch) {
+    const trainingType = trainingSaveMatch[1]
+    const duration = parseInt(trainingSaveMatch[2])
+    const rpe = parseInt(trainingSaveMatch[3])
     await handleQuickTraining(event.replyToken, userId, trainingType, duration, rpe, supabase)
     return
   }
 
-  // ── 快速記錄：身心狀態 ──
+  // ── 身心分步記錄：步驟 1 — 睡眠 ──
+  const sleepMatch = text.match(/^睡眠\s+(\d)$/i)
+  if (sleepMatch) {
+    const sleep = sleepMatch[1]
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '今天精力如何？',
+        quickReply: {
+          items: [
+            qr('🪫 沒電', `精力 ${sleep} 1`),
+            qr('🔋 普通', `精力 ${sleep} 3`),
+            qr('⚡ 充沛', `精力 ${sleep} 4`),
+            qr('🔥 爆棚', `精力 ${sleep} 5`),
+          ],
+        },
+      },
+    ])
+    return
+  }
+
+  // ── 身心分步記錄：步驟 2 — 精力 ──
+  const energyMatch = text.match(/^精力\s+(\d)\s+(\d)$/i)
+  if (energyMatch) {
+    const sleep = energyMatch[1]
+    const energy = energyMatch[2]
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '心情怎麼樣？',
+        quickReply: {
+          items: [
+            qr('😩 很差', `心情 ${sleep} ${energy} 1`),
+            qr('😐 普通', `心情 ${sleep} ${energy} 3`),
+            qr('😊 不錯', `心情 ${sleep} ${energy} 4`),
+            qr('🤩 超好', `心情 ${sleep} ${energy} 5`),
+          ],
+        },
+      },
+    ])
+    return
+  }
+
+  // ── 身心分步記錄：步驟 3 — 心情 → 儲存 ──
+  const moodMatch = text.match(/^心情\s+(\d)\s+(\d)\s+(\d)$/i)
+  if (moodMatch) {
+    const sleep = parseInt(moodMatch[1])
+    const energy = parseInt(moodMatch[2])
+    const mood = parseInt(moodMatch[3])
+    await handleQuickWellness(event.replyToken, userId, sleep, energy, mood, supabase)
+    return
+  }
+
+  // ── 舊格式相容：身心 X X X ──
   const wellnessMatch = text.match(/^身心\s+(\d)\s+(\d)\s+(\d)$/i)
   if (wellnessMatch) {
     const sleep = parseInt(wellnessMatch[1])
     const energy = parseInt(wellnessMatch[2])
     const mood = parseInt(wellnessMatch[3])
     await handleQuickWellness(event.replyToken, userId, sleep, energy, mood, supabase)
+    return
+  }
+
+  // ── 舊格式相容：訓練 推 60 RPE 8 ──
+  const trainingFullMatch = text.match(/^訓練\s+(push|pull|legs|chest|shoulder|arms|cardio|rest|推|拉|腿|胸|肩|手臂|有氧|休息)\s+([\d]+)(?:分鐘?)?\s+RPE\s*([\d]+)$/i)
+  if (trainingFullMatch) {
+    const typeMap: Record<string, string> = {
+      '推': 'push', '拉': 'pull', '腿': 'legs', '胸': 'chest',
+      '肩': 'shoulder', '手臂': 'arms', '有氧': 'cardio', '休息': 'rest',
+    }
+    const rawType = trainingFullMatch[1].toLowerCase()
+    const trainingType = typeMap[rawType] || rawType
+    const duration = parseInt(trainingFullMatch[2])
+    const rpe = parseInt(trainingFullMatch[3])
+    await handleQuickTraining(event.replyToken, userId, trainingType, duration, rpe, supabase)
     return
   }
 
@@ -378,7 +583,13 @@ async function getClientByLineId(lineUserId: string, supabase: any) {
 async function handleQuickWeight(replyToken: string, lineUserId: string, weight: number, supabase: any) {
   const client = await getClientByLineId(lineUserId, supabase)
   if (!client) {
-    await replyMessage(replyToken, [{ type: 'text', text: '請先綁定帳號：綁定 [學員代碼]' }])
+    await replyMessage(replyToken, [
+      {
+        type: 'text',
+        text: '此功能需綁定帳號 🔒\n輸入「綁定 [學員代碼]」或查看方案加入 👇',
+        quickReply: { items: [qr('💰 查看方案', '查看方案'), qr('🔗 我有代碼', '我要綁定')] },
+      },
+    ])
     return
   }
 
@@ -420,7 +631,13 @@ async function handleQuickWeight(replyToken: string, lineUserId: string, weight:
 async function handleQuickWater(replyToken: string, lineUserId: string, waterMl: number, supabase: any) {
   const client = await getClientByLineId(lineUserId, supabase)
   if (!client) {
-    await replyMessage(replyToken, [{ type: 'text', text: '請先綁定帳號：綁定 [學員代碼]' }])
+    await replyMessage(replyToken, [
+      {
+        type: 'text',
+        text: '此功能需綁定帳號 🔒\n輸入「綁定 [學員代碼]」或查看方案加入 👇',
+        quickReply: { items: [qr('💰 查看方案', '查看方案'), qr('🔗 我有代碼', '我要綁定')] },
+      },
+    ])
     return
   }
 
@@ -475,7 +692,13 @@ async function handleQuickWater(replyToken: string, lineUserId: string, waterMl:
 async function handleQuickProtein(replyToken: string, lineUserId: string, protein: number, supabase: any) {
   const client = await getClientByLineId(lineUserId, supabase)
   if (!client) {
-    await replyMessage(replyToken, [{ type: 'text', text: '請先綁定帳號：綁定 [學員代碼]' }])
+    await replyMessage(replyToken, [
+      {
+        type: 'text',
+        text: '此功能需綁定帳號 🔒\n輸入「綁定 [學員代碼]」或查看方案加入 👇',
+        quickReply: { items: [qr('💰 查看方案', '查看方案'), qr('🔗 我有代碼', '我要綁定')] },
+      },
+    ])
     return
   }
 
@@ -508,7 +731,13 @@ async function handleQuickProtein(replyToken: string, lineUserId: string, protei
 async function handleQuickCompliance(replyToken: string, lineUserId: string, compliant: boolean, supabase: any) {
   const client = await getClientByLineId(lineUserId, supabase)
   if (!client) {
-    await replyMessage(replyToken, [{ type: 'text', text: '請先綁定帳號：綁定 [學員代碼]' }])
+    await replyMessage(replyToken, [
+      {
+        type: 'text',
+        text: '此功能需綁定帳號 🔒\n輸入「綁定 [學員代碼]」或查看方案加入 👇',
+        quickReply: { items: [qr('💰 查看方案', '查看方案'), qr('🔗 我有代碼', '我要綁定')] },
+      },
+    ])
     return
   }
 
@@ -548,7 +777,13 @@ async function handleQuickTraining(
 ) {
   const client = await getClientByLineId(lineUserId, supabase)
   if (!client) {
-    await replyMessage(replyToken, [{ type: 'text', text: '請先綁定帳號：綁定 [學員代碼]' }])
+    await replyMessage(replyToken, [
+      {
+        type: 'text',
+        text: '此功能需綁定帳號 🔒\n輸入「綁定 [學員代碼]」或查看方案加入 👇',
+        quickReply: { items: [qr('💰 查看方案', '查看方案'), qr('🔗 我有代碼', '我要綁定')] },
+      },
+    ])
     return
   }
 
@@ -600,7 +835,13 @@ async function handleQuickWellness(
 ) {
   const client = await getClientByLineId(lineUserId, supabase)
   if (!client) {
-    await replyMessage(replyToken, [{ type: 'text', text: '請先綁定帳號：綁定 [學員代碼]' }])
+    await replyMessage(replyToken, [
+      {
+        type: 'text',
+        text: '此功能需綁定帳號 🔒\n輸入「綁定 [學員代碼]」或查看方案加入 👇',
+        quickReply: { items: [qr('💰 查看方案', '查看方案'), qr('🔗 我有代碼', '我要綁定')] },
+      },
+    ])
     return
   }
 
@@ -648,7 +889,13 @@ async function handleQuickWellness(
 async function handleTrendQuery(replyToken: string, lineUserId: string, supabase: any) {
   const client = await getClientByLineId(lineUserId, supabase)
   if (!client) {
-    await replyMessage(replyToken, [{ type: 'text', text: '請先綁定帳號：綁定 [學員代碼]' }])
+    await replyMessage(replyToken, [
+      {
+        type: 'text',
+        text: '此功能需綁定帳號 🔒\n輸入「綁定 [學員代碼]」或查看方案加入 👇',
+        quickReply: { items: [qr('💰 查看方案', '查看方案'), qr('🔗 我有代碼', '我要綁定')] },
+      },
+    ])
     return
   }
 
@@ -799,13 +1046,36 @@ async function handleBind(replyToken: string, lineUserId: string, code: string, 
     })
     .eq('id', client.id)
 
+  // 切換到學員版 Rich Menu
+  await switchToMemberRichMenu(lineUserId)
+
   await replyMessage(replyToken, [
     {
       type: 'text',
-      text: `綁定成功！歡迎 ${client.name} 🎉\n\n點下方按鈕開始使用 👇`,
+      text: `綁定成功！歡迎 ${client.name} 🎉\n\n下方選單已切換為快速記錄模式，點按鈕開始使用 👇`,
       quickReply: QR_MAIN,
     },
   ])
+}
+
+// ═══════════════════════════════════════
+// Rich Menu 切換
+// ═══════════════════════════════════════
+
+/** 找到學員版 Rich Menu 並綁定給用戶 */
+async function switchToMemberRichMenu(lineUserId: string) {
+  try {
+    const menus = await listRichMenus()
+    const memberMenu = menus.find((m: any) => m.name?.includes('學員版'))
+    if (memberMenu) {
+      await linkRichMenuToUser(lineUserId, memberMenu.richMenuId)
+      log.info(`Switched to member rich menu for ${lineUserId}`)
+    } else {
+      log.warn('Member rich menu not found — user will see default (marketing) menu')
+    }
+  } catch (err) {
+    log.error('Failed to switch rich menu:', err)
+  }
 }
 
 // ═══════════════════════════════════════
@@ -905,7 +1175,11 @@ async function handleStatusQuery(replyToken: string, lineUserId: string, supabas
 
   if (!client) {
     await replyMessage(replyToken, [
-      { type: 'text', text: '你還沒綁定帳號，請先輸入「綁定 [學員代碼]」。' },
+      {
+        type: 'text',
+        text: '此功能需綁定帳號 🔒\n輸入「綁定 [學員代碼]」或查看方案加入 👇',
+        quickReply: { items: [qr('💰 查看方案', '查看方案'), qr('🔗 我有代碼', '我要綁定')] },
+      },
     ])
     return
   }
