@@ -59,7 +59,7 @@ export function qr(label: string, text: string): QuickReplyItem {
 // Rich Menu API
 // ═══════════════════════════════════════
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
 const COOLDAY_LINE_URL = 'https://lin.ee/AVAjZ2n'
 
 /** Rich Menu 定義 (2x3, 2500x1686) */

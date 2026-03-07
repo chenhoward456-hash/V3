@@ -709,7 +709,7 @@ async function handleBind(replyToken: string, lineUserId: string, code: string, 
 // Rich Menu Postback 處理
 // ═══════════════════════════════════════
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
 
 async function handlePostback(event: any, userId: string, supabase: any) {
   const data = event.postback?.data || ''
