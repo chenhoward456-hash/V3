@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { pushMessage } from '@/lib/line'
 import { verifyAdminSession } from '@/lib/auth-middleware'
+import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 
 function verifyCronAuth(request: NextRequest): boolean {
   const cronSecret = request.headers.get('authorization')
@@ -208,12 +209,88 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ===== 智能警示推播（晚上執行）=====
+  let smartAlertsSent = 0
+  if (!isMorning) {
+    // 取得過去 7 天數據做智能分析
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
+
+    const [nutRes, wellRes, trainRes, bodyRes] = await Promise.all([
+      supabase.from('nutrition_logs').select('client_id, date, calories, protein_grams, carbs_grams, fat_grams, compliant')
+        .gte('date', sevenDaysStr).order('date'),
+      supabase.from('daily_wellness').select('client_id, date, mood, energy_level, sleep_quality, hunger, stress')
+        .gte('date', sevenDaysStr).order('date'),
+      supabase.from('training_logs').select('client_id, date, training_type, duration_minutes, rpe')
+        .gte('date', sevenDaysStr).order('date'),
+      supabase.from('body_composition').select('client_id, date, weight, body_fat')
+        .gte('date', sevenDaysStr).not('weight', 'is', null).order('date'),
+    ])
+
+    const allNut = nutRes.data || []
+    const allWell = wellRes.data || []
+    const allTrain = trainRes.data || []
+    const allBody = bodyRes.data || []
+
+    // 取得學員的目標設定
+    const { data: allClientsFull } = await supabase
+      .from('clients')
+      .select('id, name, line_user_id, calories_target, protein_target, carbs_target, fat_target, goal_type, target_weight, gender')
+      .eq('is_active', true)
+      .not('line_user_id', 'is', null)
+
+    if (allClientsFull) {
+      for (const c of allClientsFull) {
+        const clientProfile: ClientProfile = {
+          name: c.name,
+          gender: c.gender,
+          goalType: c.goal_type,
+          currentWeight: null,
+          currentBodyFat: null,
+          targetWeight: c.target_weight,
+          caloriesTarget: c.calories_target,
+          proteinTarget: c.protein_target,
+          carbsTarget: c.carbs_target,
+          fatTarget: c.fat_target,
+        }
+
+        const insightData: InsightData = {
+          client: clientProfile,
+          nutritionLogs: allNut.filter((n: any) => n.client_id === c.id),
+          wellnessLogs: allWell.filter((w: any) => w.client_id === c.id),
+          trainingLogs: allTrain.filter((t: any) => t.client_id === c.id),
+          bodyLogs: allBody.filter((b: any) => b.client_id === c.id),
+        }
+
+        const alerts = generateSmartAlerts(insightData)
+        // 只推送 warning 級別的警示，避免打擾
+        const warnings = alerts.filter(a => a.severity === 'warning')
+
+        if (warnings.length > 0) {
+          const alertMsg = [
+            `${c.name}，系統偵測到以下需注意事項：\n`,
+            ...warnings.map(a => `${a.icon} ${a.title}\n${a.message}`),
+          ].join('\n\n')
+
+          try {
+            await pushMessage(c.line_user_id, [{ type: 'text', text: alertMsg }])
+            smartAlertsSent++
+          } catch (err: any) {
+            errors.push(`alert_${c.name}: ${err.message}`)
+          }
+        }
+      }
+    }
+  }
+
   return NextResponse.json({
     success: errors.length === 0,
     type: isMorning ? 'morning' : 'evening',
     sent,
     expiryReminders,
     milestonesSent,
+    smartAlertsSent,
     errors,
   })
 }

@@ -27,6 +27,7 @@ import OnboardingGuide from '@/components/client/OnboardingGuide'
 import HealthModeAdvanced from '@/components/client/HealthModeAdvanced'
 import LabNutritionAdviceCard from '@/components/client/LabNutritionAdviceCard'
 import AiChatDrawer from '@/components/client/AiChatDrawer'
+import AiInsightsPanel from '@/components/client/AiInsightsPanel'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
 import { getLocalDateStr } from '@/lib/date-utils'
@@ -1143,6 +1144,16 @@ export default function ClientDashboard() {
             gender={c.gender}
             goalType={c.goal_type}
           />
+        )}
+
+        {/* AI 智能分析面板 */}
+        {c.ai_chat_enabled && (
+          <div id="section-ai" className="scroll-mt-4">
+            <AiInsightsPanel
+              clientId={c.unique_code}
+              isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+            />
+          </div>
         )}
 
         <ActionPlan

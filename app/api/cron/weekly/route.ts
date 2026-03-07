@@ -16,6 +16,7 @@ import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-eng
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isWeightTraining } from '@/components/client/types'
 import { pushMessage } from '@/lib/line'
+import { generateWeeklyAIReport, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 
 const supabase = createServiceSupabase()
 
@@ -397,10 +398,59 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── 6. AI 每週週報（用 Claude 生成個人化摘要）──
+    let aiReportCount = 0
+    if (process.env.ANTHROPIC_API_KEY) {
+      for (const client of clients) {
+        if (!client.line_user_id || !client.ai_chat_enabled) continue
+
+        const clientBody = allBody.filter((b: any) => b.client_id === client.id)
+        const clientNutrition = allNutrition.filter((n: any) => n.client_id === client.id && n.date >= sevenDaysStr)
+        const clientTraining = allTraining.filter((t: any) => t.client_id === client.id && t.date >= sevenDaysStr)
+        const clientWellness = allWellness.filter((w: any) => w.client_id === client.id && w.date >= sevenDaysStr)
+
+        const latestBodyEntry = clientBody.length > 0 ? clientBody[clientBody.length - 1] : null
+        const bodyFatEntry = [...clientBody].reverse().find((b: any) => b.body_fat != null)
+
+        const clientProfile: ClientProfile = {
+          name: client.name,
+          gender: client.gender || null,
+          goalType: client.goal_type || null,
+          currentWeight: latestBodyEntry?.weight ?? null,
+          currentBodyFat: bodyFatEntry?.body_fat ?? null,
+          targetWeight: client.target_weight ?? null,
+          caloriesTarget: client.calories_target ?? null,
+          proteinTarget: client.protein_target ?? null,
+          carbsTarget: client.carbs_target ?? null,
+          fatTarget: client.fat_target ?? null,
+        }
+
+        const insightData: InsightData = {
+          client: clientProfile,
+          nutritionLogs: clientNutrition,
+          wellnessLogs: clientWellness,
+          trainingLogs: clientTraining,
+          bodyLogs: clientBody.filter((b: any) => b.date >= sevenDaysStr),
+        }
+
+        try {
+          const aiReport = await generateWeeklyAIReport(insightData)
+          if (aiReport) {
+            await pushMessage(client.line_user_id, [
+              { type: 'text', text: `🤖 ${client.name} AI 週報\n\n${aiReport}` },
+            ])
+            aiReportCount++
+          }
+        } catch (err: any) {
+          results.errors.push(`AI 週報失敗 [${client.name}]: ${err.message}`)
+        }
+      }
+    }
+
     return NextResponse.json({
       success: results.errors.length === 0,
       timestamp: today.toISOString(),
-      results: { ...results, linePushCount },
+      results: { ...results, linePushCount, aiReportCount },
       alerts: alertItems,
     })
   } catch (err: any) {
