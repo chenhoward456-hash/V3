@@ -130,6 +130,16 @@ async function handleEvent(event: any) {
     case 'message':
       if (event.message?.type === 'text') {
         await handleTextMessage(event, userId, supabase)
+      } else if (event.message?.type === 'image') {
+        await replyMessage(event.replyToken, [
+          {
+            type: 'text',
+            text: '目前 LINE 不支援圖片分析 📷\n\n' +
+              '如需 AI 分析食物營養素，請到儀表板使用 AI 聊天功能拍照分析。\n\n' +
+              '在 LINE 可以用文字快速記錄 👇',
+            quickReply: QR_MAIN,
+          },
+        ])
       }
       break
 
@@ -593,7 +603,17 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     }
   }
 
-  // 非指令訊息 → 不自動回覆，讓教練在 LINE OA 後台手動回覆
+  // 非指令訊息 → 給提示，避免已讀不回
+  if (client) {
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '我不太確定你的意思 😅\n點下方按鈕快速記錄 👇',
+        quickReply: QR_MAIN,
+      },
+    ])
+  }
+  // 未綁定的非指令訊息 → 不回覆，讓教練在 LINE OA 後台手動回覆
 }
 
 // ═══════════════════════════════════════
