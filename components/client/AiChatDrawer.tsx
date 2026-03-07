@@ -495,7 +495,6 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handleImageSelect}
               className="hidden"
             />
