@@ -237,7 +237,9 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
             {trendPrediction.weeklyRate != null && (
               <>
                 <div className="flex items-center text-gray-300">
-                  {trendPrediction.weeklyRate < 0 ? <TrendingDown size={16} className="text-green-500" /> : <TrendingUp size={16} className="text-red-500" />}
+                  {trendPrediction.weeklyRate < 0
+                    ? <TrendingDown size={16} className={trendPrediction.targetWeight != null && trendPrediction.currentWeight > trendPrediction.targetWeight ? 'text-green-500' : 'text-red-500'} />
+                    : <TrendingUp size={16} className={trendPrediction.targetWeight != null && trendPrediction.currentWeight < trendPrediction.targetWeight ? 'text-green-500' : 'text-red-500'} />}
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-semibold text-gray-700">
