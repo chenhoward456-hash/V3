@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, ChevronRight } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 
 interface OnboardingGuideProps {
   clientId: string
@@ -55,6 +55,31 @@ const STEPS = [
   },
 ]
 
+// 免費用戶專用步驟：展示可做的 + 預覽付費功能
+const FREE_STEPS = [
+  {
+    icon: '👋',
+    title: '歡迎體驗！',
+    desc: '系統已經根據你的資料算好了 TDEE 和營養目標，直接開始記錄吧！',
+  },
+  {
+    icon: '⚖️',
+    title: '第一步：記錄體重',
+    desc: '每天量體重是最重要的習慣。在下方「體組成」區塊輸入，或綁定 LINE 後直接傳數字。',
+  },
+  {
+    icon: '🍽️',
+    title: '第二步：追蹤飲食',
+    desc: '每天記錄飲食是否達標。AI 會根據你的營養目標判斷，持續記錄才能看到趨勢。',
+  },
+  {
+    icon: '🔓',
+    title: '升級解鎖更多',
+    desc: '訓練追蹤、身心狀態分析、無限次 AI 飲食顧問、每週自動報告 — 升級後全部解鎖。',
+    isUpgrade: true,
+  },
+]
+
 export default function OnboardingGuide({ clientId, clientName, tier, features }: OnboardingGuideProps) {
   const [show, setShow] = useState(false)
   const [step, setStep] = useState(0)
@@ -63,26 +88,30 @@ export default function OnboardingGuide({ clientId, clientName, tier, features }
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (tier === 'free') return // 免費用戶不顯示
     const done = localStorage.getItem(storageKey)
     if (!done) setShow(true)
-  }, [storageKey, tier])
+  }, [storageKey])
 
   const dismiss = () => {
     setShow(false)
     localStorage.setItem(storageKey, '1')
   }
 
-  // 根據用戶功能過濾步驟
-  const activeSteps = STEPS.filter(s => {
-    if (!s.feature) return true
-    return features[s.feature as keyof typeof features]
-  })
+  const isFree = tier === 'free'
+
+  // 根據方案選擇步驟
+  const activeSteps = isFree
+    ? FREE_STEPS
+    : STEPS.filter(s => {
+        if (!('feature' in s) || !s.feature) return true
+        return features[s.feature as keyof typeof features]
+      })
 
   if (!show) return null
 
   const current = activeSteps[step]
   const isLast = step === activeSteps.length - 1
+  const isUpgradeStep = 'isUpgrade' in current && current.isUpgrade
 
   return (
     <>
@@ -118,16 +147,25 @@ export default function OnboardingGuide({ clientId, clientName, tier, features }
             >
               跳過
             </button>
-            <button
-              onClick={() => {
-                if (isLast) dismiss()
-                else setStep(step + 1)
-              }}
-              className="flex-1 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
-            >
-              {isLast ? '開始使用' : '下一步'}
-              {!isLast && <ChevronRight size={16} />}
-            </button>
+            {isUpgradeStep ? (
+              <a
+                href="/join"
+                className="flex-1 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+              >
+                查看方案
+              </a>
+            ) : (
+              <button
+                onClick={() => {
+                  if (isLast) dismiss()
+                  else setStep(step + 1)
+                }}
+                className="flex-1 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+              >
+                {isLast ? '開始使用' : '下一步'}
+                {!isLast && <ChevronRight size={16} />}
+              </button>
+            )}
           </div>
         </div>
       </div>

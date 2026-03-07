@@ -83,7 +83,29 @@ export async function POST(request: NextRequest) {
     // 限制對話長度避免 token 爆炸
     const trimmedMessages = messages.slice(-20)
 
-    const reply = await askClaude(trimmedMessages, systemPrompt)
+    let reply: string | null = null
+    let lastErr: any = null
+    const MAX_RETRIES = 5
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        reply = await askClaude(trimmedMessages, systemPrompt)
+        break
+      } catch (e: any) {
+        lastErr = e
+        const code = e?.status || e?.statusCode
+        // Retry on 529 (overloaded), 500 (internal server error), or 429 (rate limited)
+        if ((code === 529 || code === 500 || code === 429) && attempt < MAX_RETRIES - 1) {
+          const delay = Math.min(2000 * Math.pow(2, attempt), 16000) // 2s, 4s, 8s, 16s
+          console.log(`[AI Chat] Retry attempt ${attempt + 1}/${MAX_RETRIES - 1} after ${delay}ms (status: ${code})`)
+          await new Promise(r => setTimeout(r, delay))
+          continue
+        }
+        throw e
+      }
+    }
+
+    if (reply === null) throw lastErr
 
     return NextResponse.json({ reply })
   } catch (err: any) {

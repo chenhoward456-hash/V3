@@ -296,34 +296,54 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
       onFirstMessage()
     }
 
-    try {
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-          systemPrompt,
-          clientId,
-          ...(imageToSend ? { image: imageToSend } : {}),
-        }),
-      })
+    const MAX_CLIENT_RETRIES = 3
 
-      if (!res.ok) {
+    try {
+      let lastError: string | null = null
+
+      for (let attempt = 0; attempt < MAX_CLIENT_RETRIES; attempt++) {
+        const res = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+            systemPrompt,
+            clientId,
+            ...(imageToSend ? { image: imageToSend } : {}),
+          }),
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          setMessages([...newMessages, { role: 'assistant', content: data.reply }])
+          return
+        }
+
         const err = await res.json().catch(() => ({}))
+
         if (err.quota_exceeded) {
           setMessages([
             ...newMessages,
             { role: 'assistant', content: '本月免費體驗次數已用完 🙏\n\n你可以選擇：' },
           ])
           setQuotaExceeded(true)
-          setLoading(false)
           return
         }
-        throw new Error(err.error || '回覆失敗')
+
+        lastError = err.error || '回覆失敗'
+
+        // Retry on 503 (overloaded) or 429 (rate limited)
+        if ((res.status === 503 || res.status === 429) && attempt < MAX_CLIENT_RETRIES - 1) {
+          const delay = (attempt + 1) * 3000 // 3s, 6s
+          setMessages([...newMessages, { role: 'assistant', content: `⏳ AI 伺服器忙碌中，自動重試第 ${attempt + 1} 次...` }])
+          await new Promise(r => setTimeout(r, delay))
+          continue
+        }
+
+        throw new Error(lastError || '回覆失敗')
       }
 
-      const data = await res.json()
-      setMessages([...newMessages, { role: 'assistant', content: data.reply }])
+      throw new Error(lastError || '回覆失敗')
     } catch (err: any) {
       setMessages([
         ...newMessages,

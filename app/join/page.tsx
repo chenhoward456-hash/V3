@@ -111,6 +111,24 @@ export default function JoinPage() {
     // 免費體驗：直接建帳號，不經 ECPay
     if (selectedTier === 'free') {
       trackEvent('free_trial_initiated', { email })
+
+      // 讀取 diagnosis 頁面的 localStorage 數據（如果有的話）
+      let diagnosisData: Record<string, any> | undefined
+      try {
+        const dWeight = localStorage.getItem('demo_weight')
+        const dHeight = localStorage.getItem('demo_height')
+        const dBodyfat = localStorage.getItem('demo_bodyfat')
+        const dTrainingDays = localStorage.getItem('demo_training_days')
+        if (dWeight) {
+          diagnosisData = {
+            weight: parseFloat(dWeight),
+            height: dHeight ? parseFloat(dHeight) : null,
+            bodyFatPct: dBodyfat ? parseFloat(dBodyfat) : null,
+            trainingDaysPerWeek: dTrainingDays ? parseInt(dTrainingDays) : null,
+          }
+        }
+      } catch {}
+
       try {
         const res = await fetch('/api/subscribe/free-trial', {
           method: 'POST',
@@ -121,6 +139,7 @@ export default function JoinPage() {
             gender: gender || null,
             age: age ? parseInt(age) : null,
             goalType,
+            diagnosisData,
           }),
         })
 
