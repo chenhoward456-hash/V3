@@ -340,7 +340,7 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
           continue
         }
 
-        throw new Error(lastError)
+        throw new Error(lastError || '回覆失敗')
       }
 
       throw new Error(lastError || '回覆失敗')
