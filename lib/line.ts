@@ -73,11 +73,11 @@ export function getRichMenuObject() {
       // Row 1
       {
         bounds: { x: 0, y: 0, width: 833, height: 843 },
-        action: { type: 'postback', label: '免費健身教學', data: 'action=free_tutorial', displayText: '免費健身教學' },
+        action: { type: 'uri', label: '免費健身教學', uri: `${SITE_URL}/blog` },
       },
       {
         bounds: { x: 833, y: 0, width: 834, height: 843 },
-        action: { type: 'postback', label: '免費體態評估', data: 'action=body_assessment', displayText: '免費體態評估' },
+        action: { type: 'uri', label: '免費評估', uri: `${SITE_URL}/diagnosis` },
       },
       {
         bounds: { x: 1667, y: 0, width: 833, height: 843 },
