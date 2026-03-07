@@ -83,7 +83,26 @@ export async function POST(request: NextRequest) {
     // 限制對話長度避免 token 爆炸
     const trimmedMessages = messages.slice(-20)
 
-    const reply = await askClaude(trimmedMessages, systemPrompt)
+    let reply: string | null = null
+    let lastErr: any = null
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        reply = await askClaude(trimmedMessages, systemPrompt)
+        break
+      } catch (e: any) {
+        lastErr = e
+        const code = e?.status || e?.statusCode
+        // Only retry on 529 (overloaded) or 500 (internal server error)
+        if ((code === 529 || code === 500) && attempt < 2) {
+          await new Promise(r => setTimeout(r, (attempt + 1) * 2000)) // 2s, 4s
+          continue
+        }
+        throw e
+      }
+    }
+
+    if (reply === null) throw lastErr
 
     return NextResponse.json({ reply })
   } catch (err: any) {
