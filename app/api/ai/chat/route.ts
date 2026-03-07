@@ -85,17 +85,20 @@ export async function POST(request: NextRequest) {
 
     let reply: string | null = null
     let lastErr: any = null
+    const MAX_RETRIES = 5
 
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
         reply = await askClaude(trimmedMessages, systemPrompt)
         break
       } catch (e: any) {
         lastErr = e
         const code = e?.status || e?.statusCode
-        // Only retry on 529 (overloaded) or 500 (internal server error)
-        if ((code === 529 || code === 500) && attempt < 2) {
-          await new Promise(r => setTimeout(r, (attempt + 1) * 2000)) // 2s, 4s
+        // Retry on 529 (overloaded), 500 (internal server error), or 429 (rate limited)
+        if ((code === 529 || code === 500 || code === 429) && attempt < MAX_RETRIES - 1) {
+          const delay = Math.min(2000 * Math.pow(2, attempt), 16000) // 2s, 4s, 8s, 16s
+          console.log(`[AI Chat] Retry attempt ${attempt + 1}/${MAX_RETRIES - 1} after ${delay}ms (status: ${code})`)
+          await new Promise(r => setTimeout(r, delay))
           continue
         }
         throw e
