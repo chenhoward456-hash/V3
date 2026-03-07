@@ -96,7 +96,18 @@ async function handleEvent(event: any) {
       await replyMessage(event.replyToken, [
         {
           type: 'text',
-          text: '歡迎加入 Howard Protocol！\n\n請輸入你的學員代碼（8碼）來綁定帳號，例如：\n綁定 k8f3m2n5\n\n綁定後輸入「選單」可查看所有功能',
+          text: '歡迎來到 Howard Protocol！💪\n\n' +
+            '我是 Howard，CSCS 認證教練。\n' +
+            '這裡提供科學化的線上體態管理，幫你用數據達成目標。\n\n' +
+            '👇 你可以先：',
+          quickReply: {
+            items: [
+              qr('🧪 免費體態評估', '免費評估'),
+              qr('📖 健身知識文章', '免費教學'),
+              qr('💰 查看方案', '查看方案'),
+              qr('🔗 我有學員代碼', '我要綁定'),
+            ],
+          },
         },
       ])
       break
@@ -153,6 +164,90 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
   if (text === '我想詢問問題') {
     await replyMessage(event.replyToken, [
       { type: 'text', text: '請直接打字描述你的問題，教練會親自回覆你！' },
+    ])
+    return
+  }
+
+  // 新用戶導流：免費評估
+  if (text === '免費評估') {
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '🧪 免費體態評估\n\n' +
+          '輸入基本資料，系統會即時算出你的 TDEE、建議熱量和巨量營養素。\n\n' +
+          `👉 ${SITE_URL}/diagnosis\n\n` +
+          '做完後回來告訴我「評估結果」，我幫你解讀！',
+      },
+    ])
+    return
+  }
+
+  // 新用戶導流：免費教學
+  if (text === '免費教學') {
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '📖 免費健身知識\n\n' +
+          '這裡有教練整理的訓練、營養、恢復等實用文章。\n\n' +
+          `👉 ${SITE_URL}/blog`,
+      },
+    ])
+    return
+  }
+
+  // 新用戶導流：查看方案
+  if (text === '查看方案') {
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '💰 線上方案介紹\n\n' +
+          '🆓 免費：體重追蹤 + 飲食紀錄\n' +
+          '💎 NT$499/月：AI 自動分析 + 自適應 TDEE\n' +
+          '👑 NT$2,999/月：CSCS 教練每週審閱 + LINE 諮詢\n\n' +
+          `👉 ${SITE_URL}/join\n\n` +
+          '所有方案無綁約，隨時取消！',
+      },
+    ])
+    return
+  }
+
+  // 新用戶導流：我要綁定
+  if (text === '我要綁定') {
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '請輸入你的學員代碼（8碼）來綁定帳號，例如：\n綁定 k8f3m2n5\n\n' +
+          '還沒有代碼？先到方案頁面加入 👇',
+        quickReply: {
+          items: [
+            qr('💰 查看方案', '查看方案'),
+            qr('❓ 常見問題', 'FAQ'),
+          ],
+        },
+      },
+    ])
+    return
+  }
+
+  // 評估結果跟進（做完 diagnosis 後回來）
+  if (text === '評估結果' || text === '評估報告') {
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '看到你的評估結果了嗎？🧪\n\n' +
+          '系統給出的是基於公式的估算值，實際執行時會因個人差異需要調整。\n\n' +
+          '如果你想要：\n' +
+          '✅ 每天自動追蹤體重變化\n' +
+          '✅ AI 根據真實數據校正你的 TDEE\n' +
+          '✅ 教練幫你解讀報告、調整策略\n\n' +
+          '可以考慮加入我們的線上方案 👇',
+        quickReply: {
+          items: [
+            qr('💰 查看方案', '查看方案'),
+            qr('❓ 有問題想問', '我想詢問問題'),
+          ],
+        },
+      },
     ])
     return
   }
