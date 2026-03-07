@@ -107,6 +107,10 @@ async function handleEvent(event: any) {
       }
       break
 
+    case 'postback':
+      await handlePostback(event, userId, supabase)
+      break
+
     case 'unfollow':
       log.info(`Unfollowed: ${userId}`)
       await supabase
@@ -124,6 +128,23 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
   if (text === '選單' || text === '功能' || text === '指令' || text === 'help' || text === '?') {
     await replyMessage(event.replyToken, [
       { type: 'text', text: '請點選下方按鈕 👇', quickReply: QR_MAIN },
+    ])
+    return
+  }
+
+  // FAQ
+  if (text === 'FAQ' || text === 'faq' || text === '常見問題') {
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '📋 常見問題\n\n' +
+          '❓ 免費體驗包含什麼？\n→ 體重/體態追蹤、每日飲食紀錄、TDEE 與巨量素估算\n\n' +
+          '❓ 499 方案跟免費差在哪？\n→ 24h AI 自動分析、自適應 TDEE、自動 Refeed 觸發、經期濾波\n\n' +
+          '❓ 2999 方案多了什麼？\n→ CSCS 教練每週審閱 + LINE 諮詢 + 每月視訊\n\n' +
+          '❓ 可以隨時取消嗎？\n→ 可以，無綁約，隨時取消下期不續扣\n\n' +
+          '❓ 需要每天記錄嗎？\n→ 建議至少記體重和飲食達標，系統才能準確分析\n\n' +
+          '👇 還有其他問題？直接打字問我！',
+      },
     ])
     return
   }
@@ -680,6 +701,132 @@ async function handleBind(replyToken: string, lineUserId: string, code: string, 
       type: 'text',
       text: `綁定成功！歡迎 ${client.name} 🎉\n\n點下方按鈕開始使用 👇`,
       quickReply: QR_MAIN,
+    },
+  ])
+}
+
+// ═══════════════════════════════════════
+// Rich Menu Postback 處理
+// ═══════════════════════════════════════
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+
+async function handlePostback(event: any, userId: string, supabase: any) {
+  const data = event.postback?.data || ''
+  const params = new URLSearchParams(data)
+  const action = params.get('action')
+
+  switch (action) {
+    case 'free_tutorial':
+      await handleFreeTutorial(event.replyToken)
+      break
+    case 'body_assessment':
+      await handleBodyAssessment(event.replyToken)
+      break
+    case 'contact_support':
+      await handleContactSupport(event.replyToken)
+      break
+    default:
+      log.warn(`Unknown postback action: ${action}`)
+  }
+}
+
+async function handleFreeTutorial(replyToken: string) {
+  await replyMessage(replyToken, [
+    {
+      type: 'text',
+      text: '歡迎來到免費健身教學！💪\n\n請選擇你想了解的部位：',
+      quickReply: {
+        items: [
+          qr('🏋️ 胸肌訓練', '教學 胸'),
+          qr('💪 背部訓練', '教學 背'),
+          qr('🦵 腿部訓練', '教學 腿'),
+          qr('🫁 肩膀訓練', '教學 肩'),
+        ],
+      },
+    },
+  ])
+}
+
+async function handleBodyAssessment(replyToken: string) {
+  await replyMessage(replyToken, [
+    {
+      type: 'text',
+      text: '免費體態評估開始！📋\n\n我會問你幾個簡單的問題，幫你分析目前的體態狀況，並給你專屬建議。\n\n請問你的性別是？',
+      quickReply: {
+        items: [
+          qr('👨 男性', '評估 性別 男'),
+          qr('👩 女性', '評估 性別 女'),
+        ],
+      },
+    },
+  ])
+}
+
+async function handleContactSupport(replyToken: string) {
+  await replyMessage(replyToken, [
+    {
+      type: 'flex',
+      altText: '聯繫客服',
+      contents: {
+        type: 'bubble',
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            {
+              type: 'text',
+              text: '需要幫助嗎？',
+              weight: 'bold',
+              size: 'lg',
+            },
+            {
+              type: 'text',
+              text: '選擇下方選項，或直接打字描述你的問題！',
+              size: 'sm',
+              color: '#888888',
+              margin: 'md',
+              wrap: true,
+            },
+          ],
+        },
+        footer: {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'sm',
+          contents: [
+            {
+              type: 'button',
+              style: 'primary',
+              color: '#4CAF50',
+              action: {
+                type: 'message',
+                label: '📋 常見問題 FAQ',
+                text: 'FAQ',
+              },
+            },
+            {
+              type: 'button',
+              style: 'primary',
+              color: '#2196F3',
+              action: {
+                type: 'uri',
+                label: '💬 LINE 聯繫教練',
+                uri: 'https://lin.ee/AVAjZ2n',
+              },
+            },
+            {
+              type: 'button',
+              style: 'secondary',
+              action: {
+                type: 'uri',
+                label: '🌐 查看方案說明',
+                uri: `${SITE_URL}/remote`,
+              },
+            },
+          ],
+        },
+      },
     },
   ])
 }
