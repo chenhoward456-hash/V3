@@ -5,6 +5,9 @@ import { createLogger } from '@/lib/logger'
 
 const log = createLogger('LINE-Webhook')
 
+// 已確認過 Rich Menu 的用戶（避免每次訊息都呼叫 API）
+const richMenuCheckedUsers = new Set<string>()
+
 // 台灣時區 helper
 function getTaiwanDate(): string {
   return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' })
@@ -91,26 +94,41 @@ async function handleEvent(event: any) {
     .eq('line_user_id', userId)
 
   switch (event.type) {
-    case 'follow':
+    case 'follow': {
       log.info(`New follower: ${userId}`)
-      await replyMessage(event.replyToken, [
-        {
-          type: 'text',
-          text: '歡迎來到 Howard Protocol！💪\n\n' +
-            '我是 Howard，CSCS 認證教練。\n' +
-            '這裡提供科學化的線上體態管理，幫你用數據達成目標。\n\n' +
-            '👇 你可以先：',
-          quickReply: {
-            items: [
-              qr('🧪 免費體態評估', '免費評估'),
-              qr('📖 健身知識文章', '免費教學'),
-              qr('💰 查看方案', '查看方案'),
-              qr('🔗 我有學員代碼', '我要綁定'),
-            ],
+      // 檢查是否是已綁定的回歸用戶 → 自動切到學員版 Rich Menu
+      const existingClient = await getClientByLineId(userId, supabase)
+      if (existingClient) {
+        richMenuCheckedUsers.add(userId)
+        await switchToMemberRichMenu(userId)
+        await replyMessage(event.replyToken, [
+          {
+            type: 'text',
+            text: '歡迎回來！你的學員帳號還在 ✅\n\n直接使用下方功能吧 👇',
+            quickReply: QR_MAIN,
           },
-        },
-      ])
+        ])
+      } else {
+        await replyMessage(event.replyToken, [
+          {
+            type: 'text',
+            text: '歡迎來到 Howard Protocol！💪\n\n' +
+              '我是 Howard，CSCS 認證教練。\n' +
+              '這裡提供科學化的線上體態管理，幫你用數據達成目標。\n\n' +
+              '👇 你可以先：',
+            quickReply: {
+              items: [
+                qr('🧪 免費體態評估', '免費評估'),
+                qr('📖 健身知識文章', '免費教學'),
+                qr('💰 查看方案', '查看方案'),
+                qr('🔗 我有學員代碼', '我要綁定'),
+              ],
+            },
+          },
+        ])
+      }
       break
+    }
 
     case 'message':
       if (event.message?.type === 'text') {
@@ -135,6 +153,16 @@ async function handleEvent(event: any) {
 
 async function handleTextMessage(event: any, userId: string, supabase: any) {
   const text = (event.message.text || '').trim()
+
+  // 自動切換 Rich Menu：已綁定用戶如果還在用行銷版，自動切到學員版
+  if (!richMenuCheckedUsers.has(userId)) {
+    richMenuCheckedUsers.add(userId)
+    const client = await getClientByLineId(userId, supabase)
+    if (client) {
+      // 已綁定用戶 → 確保使用學員版 Rich Menu（背景執行，不阻塞回覆）
+      switchToMemberRichMenu(userId).catch(() => {})
+    }
+  }
 
   // 選單指令 — 叫出所有功能按鈕
   if (text === '選單' || text === '功能' || text === '指令' || text === 'help' || text === '?') {
