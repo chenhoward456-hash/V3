@@ -6,8 +6,8 @@
  * 2. 晚上提醒填寫今日紀錄（僅推送還沒填的項目）
  *
  * 排程：Vercel Cron
- * - 早上提醒：每日 00:00 UTC (台灣 08:00) → type=morning
- * - 晚上提醒：每日 12:00 UTC (台灣 20:00) → type=evening
+ * - 早上提醒：每日 22:00 UTC (台灣 06:00) → type=morning
+ * - 晚上提醒：每日 14:00 UTC (台灣 22:00) → type=evening
  *
  * 驗證：CRON_SECRET header 或 admin session
  */
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
   const errors: string[] = []
 
   // 判斷早上或晚上
-  const isMorning = hour >= 7 && hour < 12
+  const isMorning = hour >= 5 && hour < 12
 
   if (isMorning) {
     // ── 早上提醒：量體重 ──
