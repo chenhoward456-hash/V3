@@ -96,7 +96,7 @@ async function handleEvent(event: any) {
       await replyMessage(event.replyToken, [
         {
           type: 'text',
-          text: '歡迎加入 Howard Protocol！\n\n請輸入你的學員代碼（8碼）來綁定帳號，例如：\n綁定 k8f3m2n5',
+          text: '歡迎加入 Howard Protocol！\n\n請輸入你的學員代碼（8碼）來綁定帳號，例如：\n綁定 k8f3m2n5\n\n綁定後輸入「選單」可查看所有功能',
         },
       ])
       break
@@ -119,6 +119,14 @@ async function handleEvent(event: any) {
 
 async function handleTextMessage(event: any, userId: string, supabase: any) {
   const text = (event.message.text || '').trim()
+
+  // 選單指令 — 叫出所有功能按鈕
+  if (text === '選單' || text === '功能' || text === '指令' || text === 'help' || text === '?') {
+    await replyMessage(event.replyToken, [
+      { type: 'text', text: '請點選下方按鈕 👇', quickReply: QR_MAIN },
+    ])
+    return
+  }
 
   // 綁定指令
   const bindMatch = text.match(/^綁定\s+([a-zA-Z0-9]+)$/i)
