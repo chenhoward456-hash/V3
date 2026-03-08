@@ -12,6 +12,7 @@ const TIER_FEATURES: Record<SubscriptionTier, Record<string, boolean>> = {
     supplement_enabled: false,
     lab_enabled: false,
     ai_chat_enabled: false,
+    simple_mode: true,         // 免費用戶預設簡單模式，降低上手門檻
   },
   self_managed: {
     body_composition_enabled: true,
@@ -21,6 +22,7 @@ const TIER_FEATURES: Record<SubscriptionTier, Record<string, boolean>> = {
     supplement_enabled: false,
     lab_enabled: false,
     ai_chat_enabled: true,
+    simple_mode: false,
   },
   coached: {
     body_composition_enabled: true,
@@ -30,6 +32,7 @@ const TIER_FEATURES: Record<SubscriptionTier, Record<string, boolean>> = {
     supplement_enabled: true,
     lab_enabled: true,
     ai_chat_enabled: true,
+    simple_mode: false,
   },
 }
 

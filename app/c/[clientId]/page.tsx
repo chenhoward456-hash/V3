@@ -1050,6 +1050,7 @@ export default function ClientDashboard() {
             competitionEnabled={clientData.client.competition_enabled}
             targetWeight={clientData.client.target_weight}
             competitionDate={clientData.client.competition_date}
+            simpleMode={clientData.client.simple_mode}
             onMutate={mutate}
           /></div>
         )}
@@ -1110,6 +1111,7 @@ export default function ClientDashboard() {
             carbsRestDay={c.carbs_rest_day}
             fatTarget={c.fat_target}
             caloriesTarget={c.calories_target}
+            simpleMode={c.simple_mode}
             onMutate={mutate}
           /></div>
         )}
@@ -1150,6 +1152,7 @@ export default function ClientDashboard() {
             carbsRestDay={c.carbs_rest_day}
             fatTarget={c.fat_target}
             caloriesTarget={c.calories_target}
+            simpleMode={c.simple_mode}
             onMutate={mutate}
           /></div>
         )}
@@ -1192,6 +1195,7 @@ export default function ClientDashboard() {
             onMutate={mutate}
             carbsTrainingDay={c.carbs_training_day}
             carbsRestDay={c.carbs_rest_day}
+            simpleMode={c.simple_mode}
           /></div>
         )}
 
@@ -1237,6 +1241,7 @@ export default function ClientDashboard() {
             competitionEnabled={clientData.client.competition_enabled}
             targetWeight={clientData.client.target_weight}
             competitionDate={clientData.client.competition_date}
+            simpleMode={clientData.client.simple_mode}
             onMutate={mutate}
           /></div>
         )}

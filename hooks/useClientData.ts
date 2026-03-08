@@ -21,6 +21,7 @@ export interface Client {
   supplement_enabled: boolean
   lab_enabled: boolean
   ai_chat_enabled: boolean
+  simple_mode: boolean
   calories_target: number | null
   protein_target: number | null
   carbs_target: number | null

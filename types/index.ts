@@ -93,6 +93,7 @@ export interface Client {
   ai_chat_enabled: boolean
   competition_enabled: boolean
   health_mode_enabled: boolean
+  simple_mode: boolean
   coach_weekly_note: string | null
   coach_summary: string | null
   next_checkup_date: string | null
