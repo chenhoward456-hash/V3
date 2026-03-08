@@ -262,6 +262,9 @@ export interface NutritionSuggestion {
   // 是否可以自動套用
   autoApply: boolean
 
+  // TDEE 校正幅度異常標記（超過 15% 時為 true，建議人工確認）
+  tdeeAnomalyDetected: boolean
+
   // Peak Week 每日計畫（僅 peak_week 狀態時有值）
   peakWeekPlan: PeakWeekDay[] | null
 }
@@ -489,7 +492,7 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     currentState: 'unknown', readinessScore: null, wearableInsight: null,
     refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: null,
-    deadlineInfo: null, autoApply: false, peakWeekPlan: null,
+    deadlineInfo: null, autoApply: false, tdeeAnomalyDetected: false, peakWeekPlan: null,
     menstrualCycleNote: null,
     metabolicStress: null,
     perMealProteinGuide: null,
@@ -1204,6 +1207,19 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     warnings.push(`⚠️ 無飲食記錄，TDEE 以${input.bodyFatPct != null ? 'Katch-McArdle 公式' : '體重公式'}估算（${estimatedTDEE}kcal），記錄每日飲食可讓系統自動校正`)
   }
 
+  // 6b. 異常值安全檢查：校正幅度超過 15% 時標記需人工確認
+  const TDEE_ADJUSTMENT_THRESHOLD = 0.15
+  let tdeeAnomalyDetected = false
+  if (formulaTDEE && adaptiveTDEE != null && estimatedTDEE != null) {
+    const adjustmentRatio = (estimatedTDEE - formulaTDEE) / formulaTDEE
+    if (Math.abs(adjustmentRatio) > TDEE_ADJUSTMENT_THRESHOLD) {
+      tdeeAnomalyDetected = true
+      const direction = adjustmentRatio > 0 ? '高' : '低'
+      const diffPct = Math.round(Math.abs(adjustmentRatio) * 100)
+      warnings.push(`🔍 系統偵測到 TDEE 校正幅度異常（比公式估算${direction} ${diffPct}%），建議諮詢教練確認`)
+    }
+  }
+
   // 7. Deadline-aware 計算（用前面算好的 daysToTarget）
   let deadlineInfo: NutritionSuggestion['deadlineInfo'] = null
   if (input.targetWeight != null && daysToTarget != null) {
@@ -1285,7 +1301,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   }
 
   // 9. 根據目標類型分流
-  const extraFields = { metabolicStress }
+  const extraFields = { metabolicStress, tdeeAnomalyDetected }
   if (input.goalType === 'cut') {
     return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
   } else {
@@ -1559,7 +1575,7 @@ function generateCutSuggestion(
       dietDurationWeeks, dietBreakSuggested, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
-      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null, metabolicStress: null,
+      deadlineInfo, autoApply: hasCorrections, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
     }
@@ -1581,7 +1597,7 @@ function generateCutSuggestion(
     dietDurationWeeks, dietBreakSuggested, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
-    deadlineInfo, autoApply: true, peakWeekPlan: null, metabolicStress: null,
+    deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
   }
@@ -2000,7 +2016,7 @@ function generateGoalDrivenCut(
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
     deadlineInfo: enrichedDeadlineInfo,
-    autoApply: true,  // Goal-driven 永遠自動套用
+    autoApply: true, tdeeAnomalyDetected: false,  // Goal-driven 永遠自動套用
     peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, suggestedPro),
@@ -2214,7 +2230,7 @@ function generateBulkSuggestion(
       dietDurationWeeks, dietBreakSuggested: false, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
-      deadlineInfo, autoApply: hasCorrections, peakWeekPlan: null, metabolicStress: null,
+      deadlineInfo, autoApply: hasCorrections, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
     }
@@ -2236,7 +2252,7 @@ function generateBulkSuggestion(
     dietDurationWeeks, dietBreakSuggested: false, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
-    deadlineInfo, autoApply: true, peakWeekPlan: null, metabolicStress: null,
+    deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
   }
@@ -2406,7 +2422,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType),
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
-    autoApply: true,
+    autoApply: true, tdeeAnomalyDetected: false,
     peakWeekPlan: plan, metabolicStress: null,
     menstrualCycleNote: null,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG)),

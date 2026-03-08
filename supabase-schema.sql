@@ -485,4 +485,20 @@ CREATE POLICY "Service role full access on ai_chat_usage" ON ai_chat_usage
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS line_user_id TEXT UNIQUE;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS last_line_activity TIMESTAMPTZ;
 
+-- 30. 來源追蹤（電子書→免費版→付費轉換率）
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS ref_source TEXT;
+
+-- 31. 候補名單
+CREATE TABLE IF NOT EXISTS waitlist (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL UNIQUE,
+  tier TEXT DEFAULT 'self_managed',
+  ref_source TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role full access on waitlist" ON waitlist
+  FOR ALL USING (true) WITH CHECK (true);
+
 CREATE INDEX IF NOT EXISTS idx_clients_line_user_id ON clients(line_user_id) WHERE line_user_id IS NOT NULL;

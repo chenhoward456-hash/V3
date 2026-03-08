@@ -508,23 +508,31 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
           ))}
 
           {quotaExceeded && (
-            <div className="space-y-2 ml-1 max-w-[85%]">
-              <a
-                href="/pay?tier=self_managed"
-                className="block w-full text-center bg-blue-600 text-white font-semibold py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors text-sm"
-              >
-                升級自主管理版 NT$499/月
-                <span className="block text-[10px] font-normal opacity-80 mt-0.5">解鎖無限 AI 顧問 + 訓練追蹤</span>
-              </a>
-              <a
-                href="https://lin.ee/LP65rCc"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full text-center bg-[#06C755] text-white font-semibold py-3 px-4 rounded-xl hover:bg-[#05b04d] transition-colors text-sm"
-              >
-                💬 加 LINE 讓 Howard 直接幫你分析
-                <span className="block text-[10px] font-normal opacity-80 mt-0.5">現在就可以，真人回覆</span>
-              </a>
+            <div className="max-w-[90%] ml-1">
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-2">
+                <p className="text-sm font-semibold text-gray-800 mb-1">你的本月免費額度已使用</p>
+                <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                  AI 根據你的個人數據回答問題，不是通用建議。想無限制使用？
+                </p>
+                <div className="space-y-2">
+                  <a
+                    href="/pay?tier=self_managed"
+                    className="block w-full text-center bg-blue-600 text-white font-semibold py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    升級自主管理版 NT$499/月
+                    <span className="block text-[10px] font-normal opacity-80 mt-0.5">解鎖無限 AI 顧問 + 訓練追蹤</span>
+                  </a>
+                  <a
+                    href="https://lin.ee/LP65rCc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-center bg-[#06C755] text-white font-semibold py-3 px-4 rounded-xl hover:bg-[#05b04d] transition-colors text-sm"
+                  >
+                    💬 加 LINE 讓 Howard 直接幫你分析
+                    <span className="block text-[10px] font-normal opacity-80 mt-0.5">現在就可以，真人回覆</span>
+                  </a>
+                </div>
+              </div>
             </div>
           )}
 

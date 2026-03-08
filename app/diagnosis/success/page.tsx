@@ -258,6 +258,23 @@ function SuccessContent() {
           </div>
         )}
 
+        {/* 免費版導入 CTA */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 text-center mb-4">
+          <p className="text-sm font-semibold text-gray-800 mb-1 leading-relaxed">
+            你已經知道原理了，現在用系統來執行。
+          </p>
+          <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+            Howard Protocol 免費版可以幫你把書裡的概念落地到你的每日數據——完全免費，不需要信用卡。
+          </p>
+          <a
+            href="/join?ref=ebook"
+            onClick={() => trackEvent('ebook_to_free_trial_click')}
+            className="inline-block bg-green-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-600 transition-colors shadow-sm"
+          >
+            立即建立免費帳號
+          </a>
+        </div>
+
         {/* LINE 教練 upsell */}
         <div className="bg-gray-50 rounded-2xl p-6 text-center">
           <p className="text-sm text-gray-700 mb-1 leading-relaxed">
