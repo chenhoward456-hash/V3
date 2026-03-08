@@ -83,6 +83,7 @@ function JoinPageInner() {
   const [gender, setGender] = useState<'男性' | '女性' | ''>('')
   const [age, setAge] = useState('')
   const [goalType, setGoalType] = useState<'cut' | 'bulk'>('cut')
+  const [weight, setWeight] = useState('')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -102,6 +103,8 @@ function JoinPageInner() {
     if (!name.trim()) { setError('請輸入姓名'); return }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('請輸入有效的 Email'); return }
     if (!selectedTier) { setError('請選擇方案'); return }
+    const weightNum = weight ? parseFloat(weight) : null
+    if (!weightNum || weightNum < 30 || weightNum > 300) { setError('請輸入體重（30-300 kg）'); return }
 
     setError('')
     setIsSubmitting(true)
@@ -110,8 +113,8 @@ function JoinPageInner() {
     if (selectedTier === 'free') {
       trackEvent('free_trial_initiated', { email })
 
-      // 讀取 diagnosis 頁面的 localStorage 數據（如果有的話）
-      let diagnosisData: Record<string, any> | undefined
+      // 讀取 diagnosis 頁面的 localStorage 數據（如果有的話），否則用表單體重
+      let diagnosisData: Record<string, any> = { weight: weightNum }
       try {
         const dWeight = localStorage.getItem('demo_weight')
         const dHeight = localStorage.getItem('demo_height')
@@ -169,6 +172,7 @@ function JoinPageInner() {
             gender: gender || null,
             age: age ? parseInt(age) : null,
             goalType,
+            weight: weightNum,
           },
         }),
       })
@@ -449,6 +453,23 @@ function JoinPageInner() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* 體重 */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">目前體重 (kg) *</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="例如 65"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  min="30"
+                  max="300"
+                  step="0.1"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                />
+                <p className="text-xs text-gray-400 mt-1">系統會立刻幫你算出每天該吃多少</p>
               </div>
 
               {/* Error */}

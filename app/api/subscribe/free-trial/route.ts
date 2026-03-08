@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { name, email, gender, age, goalType, diagnosisData, ref } = await request.json()
+    const { name, email, gender, age, goalType, diagnosisData, ref, weight: formWeight } = await request.json()
 
     if (!name || typeof name !== 'string' || name.trim().length < 1) {
       return createErrorResponse('請輸入姓名', 400)
@@ -69,18 +69,25 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('建立帳號失敗，請稍後再試', 500)
     }
 
-    // 如果有 diagnosis 數據 → 建立初始體重紀錄 + 計算營養目標
-    if (diagnosisData?.weight && typeof diagnosisData.weight === 'number' && diagnosisData.weight >= 30 && diagnosisData.weight <= 300) {
+    // 確保有體重數據：優先用 diagnosis，否則用表單填的體重
+    const effectiveWeight = (diagnosisData?.weight && typeof diagnosisData.weight === 'number' && diagnosisData.weight >= 30 && diagnosisData.weight <= 300)
+      ? diagnosisData.weight
+      : (formWeight && typeof formWeight === 'number' && formWeight >= 30 && formWeight <= 300)
+        ? formWeight
+        : null
+
+    // 有體重 → 建立初始體重紀錄 + 計算營養目標
+    if (effectiveWeight) {
       const today = new Date().toISOString().split('T')[0]
       const bodyRecord: Record<string, any> = {
         client_id: newClient.id,
         date: today,
-        weight: diagnosisData.weight,
+        weight: effectiveWeight,
       }
-      if (diagnosisData.height && diagnosisData.height > 100 && diagnosisData.height < 250) {
+      if (diagnosisData?.height && diagnosisData.height > 100 && diagnosisData.height < 250) {
         bodyRecord.height = diagnosisData.height
       }
-      if (diagnosisData.bodyFatPct && diagnosisData.bodyFatPct > 3 && diagnosisData.bodyFatPct < 60) {
+      if (diagnosisData?.bodyFatPct && diagnosisData.bodyFatPct > 3 && diagnosisData.bodyFatPct < 60) {
         bodyRecord.body_fat = diagnosisData.bodyFatPct
       }
 
@@ -90,12 +97,12 @@ export async function POST(request: NextRequest) {
       try {
         const targets = calculateInitialTargets({
           gender: gender || '男性',
-          bodyWeight: diagnosisData.weight,
-          height: diagnosisData.height || null,
-          bodyFatPct: diagnosisData.bodyFatPct || null,
+          bodyWeight: effectiveWeight,
+          height: diagnosisData?.height || null,
+          bodyFatPct: diagnosisData?.bodyFatPct || null,
           goalType: (goalType || 'cut') as 'cut' | 'bulk',
           activityProfile: 'sedentary',
-          trainingDaysPerWeek: diagnosisData.trainingDaysPerWeek || 3,
+          trainingDaysPerWeek: diagnosisData?.trainingDaysPerWeek || 3,
         })
 
         await supabase.from('clients').update({
