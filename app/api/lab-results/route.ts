@@ -48,14 +48,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // 驗證教練權限（JWT 或 PIN）
-    const { authorized, error: authError } = await verifyCoachAuth(request)
-    if (!authorized) {
-      return createErrorResponse(authError || '權限不足', 403)
-    }
-
     const body = await request.json()
-    const { clientId, testName, value, unit, referenceRange, date, customAdvice, customTarget } = body
+    const { clientId, testName, value, unit, referenceRange, date, customAdvice, customTarget, selfEntry } = body
+
+    // 學員自行新增模式：不需要教練權限，但限制不能填寫 customAdvice / customTarget
+    if (!selfEntry) {
+      const { authorized, error: authError } = await verifyCoachAuth(request)
+      if (!authorized) {
+        return createErrorResponse(authError || '權限不足', 403)
+      }
+    }
 
     // 驗證輸入
     if (!clientId || !testName || value === undefined || !date) {
@@ -94,7 +96,7 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('找不到客戶', 404)
     }
 
-    // 創建血檢結果
+    // 創建血檢結果（學員自行新增時不允許填寫自訂建議/目標）
     const { data, error } = await supabase
       .from('lab_results')
       .insert({
@@ -105,8 +107,8 @@ export async function POST(request: NextRequest) {
         reference_range: sanitizedReference,
         date,
         status: 'normal',
-        custom_advice: sanitizedAdvice,
-        custom_target: sanitizedTarget
+        custom_advice: selfEntry ? null : sanitizedAdvice,
+        custom_target: selfEntry ? null : sanitizedTarget
       })
       .select()
       .single()

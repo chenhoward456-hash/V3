@@ -185,6 +185,7 @@ export default function ClientDashboard() {
   const [showAiUpgrade, setShowAiUpgrade] = useState(false)
   const [showPhaseSelector, setShowPhaseSelector] = useState(false)
   const [updatingPhase, setUpdatingPhase] = useState(false)
+  const [showMoreAnalysis, setShowMoreAnalysis] = useState(false)
   const { showToast } = useToast()
 
   // Scroll-based bottom nav highlighting
@@ -1236,40 +1237,58 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {/* 血檢飲食建議 — 所有模式通用，有血檢資料就顯示 */}
-        {c.lab_enabled && c.lab_results && c.lab_results.length > 0 && (
-          <LabNutritionAdviceCard
-            labResults={c.lab_results}
-            gender={(c.gender as '男性' | '女性') ?? undefined}
-            goalType={c.goal_type as 'cut' | 'bulk' | null | undefined}
-          />
-        )}
-
-        {/* 血檢深度分析 — 交叉分析 + 變化追蹤 + 複檢提醒 */}
-        {c.lab_enabled && c.lab_results && c.lab_results.length > 0 && (
-          <LabInsightsCard
-            labResults={c.lab_results}
-            gender={(c.gender as '男性' | '女性') ?? undefined}
-            bodyFatPct={latestBodyData?.body_fat ?? null}
-          />
-        )}
-
-        {/* AI 智能分析面板 */}
-        {c.ai_chat_enabled && (
-          <div id="section-ai" className="scroll-mt-4">
-            <AiInsightsPanel
-              clientId={c.unique_code}
-              isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
-            />
-          </div>
-        )}
-
-        <ActionPlan
-          healthGoals={c.health_goals ?? undefined}
-          nextCheckupDate={c.next_checkup_date ?? undefined}
-          coachSummary={c.coach_summary ?? undefined}
-          topSupplements={c.supplement_enabled ? topSupplements : []}
-        />
+        {/* 更多分析 — 預設收合以減少滑動長度 */}
+        {(() => {
+          const hasLabAnalysis = c.lab_enabled && c.lab_results && c.lab_results.length > 0
+          const hasAi = c.ai_chat_enabled
+          const hasActionPlan = !!(c.health_goals || c.next_checkup_date || c.coach_summary || (c.supplement_enabled && topSupplements.length > 0))
+          if (!hasLabAnalysis && !hasAi && !hasActionPlan) return null
+          return (
+            <>
+              <button
+                onClick={() => setShowMoreAnalysis(prev => !prev)}
+                className="w-full flex items-center justify-center gap-2 py-3 mb-3 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-colors border border-gray-100"
+              >
+                <span className="text-sm font-medium text-gray-500">
+                  {showMoreAnalysis ? '收合進階分析' : '展開進階分析'}
+                </span>
+                <ChevronDown size={16} className={`text-gray-400 transition-transform ${showMoreAnalysis ? 'rotate-180' : ''}`} />
+              </button>
+              {showMoreAnalysis && (
+                <>
+                  {hasLabAnalysis && (
+                    <LabNutritionAdviceCard
+                      labResults={c.lab_results}
+                      gender={(c.gender as '男性' | '女性') ?? undefined}
+                      goalType={c.goal_type as 'cut' | 'bulk' | null | undefined}
+                    />
+                  )}
+                  {hasLabAnalysis && (
+                    <LabInsightsCard
+                      labResults={c.lab_results}
+                      gender={(c.gender as '男性' | '女性') ?? undefined}
+                      bodyFatPct={latestBodyData?.body_fat ?? null}
+                    />
+                  )}
+                  {hasAi && (
+                    <div id="section-ai" className="scroll-mt-4">
+                      <AiInsightsPanel
+                        clientId={c.unique_code}
+                        isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+                      />
+                    </div>
+                  )}
+                  <ActionPlan
+                    healthGoals={c.health_goals ?? undefined}
+                    nextCheckupDate={c.next_checkup_date ?? undefined}
+                    coachSummary={c.coach_summary ?? undefined}
+                    topSupplements={c.supplement_enabled ? topSupplements : []}
+                  />
+                </>
+              )}
+            </>
+          )
+        })()}
 
         {/* 未開放功能提示 */}
         {(() => {
