@@ -177,9 +177,15 @@ function JoinPageInner() {
       if (!res.ok) throw new Error(data.error || '結帳失敗')
 
       if (data.htmlForm) {
-        document.open()
-        document.write(data.htmlForm)
-        document.close()
+        // 用隱藏 div + form submit 替代 document.write，避免清掉 React DOM
+        const container = document.createElement('div')
+        container.style.display = 'none'
+        container.innerHTML = data.htmlForm
+        document.body.appendChild(container)
+        const form = container.querySelector('form')
+        if (form) {
+          form.submit()
+        }
       }
     } catch (err: any) {
       setError(err.message || '結帳失敗，請稍後再試')

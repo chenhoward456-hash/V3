@@ -80,7 +80,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
       .sort((a: any, b: any) => b.date.localeCompare(a.date))
     if (!sorted.length) return null
     const last = sorted[0]
-    const daysAgo = Math.floor((Date.now() - new Date(last.date).getTime()) / (1000 * 60 * 60 * 24))
+    const [yr, mo, dy] = last.date.split('-').map(Number)
+    const daysAgo = Math.floor((Date.now() - new Date(yr, mo - 1, dy).getTime()) / (1000 * 60 * 60 * 24))
     return { ...last, daysAgo }
   }, [form.training_type, trainingLogs, today])
 

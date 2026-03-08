@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const { data: client, error: clientErr } = await supabase
       .from('clients')
       .select('*')
-      .eq('id', clientId)
+      .eq('unique_code', clientId)
       .single()
 
     if (clientErr || !client) {
@@ -60,32 +60,32 @@ export async function GET(request: NextRequest) {
       supabase
         .from('body_composition')
         .select('date, weight, height, body_fat')
-        .eq('client_id', clientId)
+        .eq('client_id', client.id)
         .gte('date', sinceDate)
         .not('weight', 'is', null)
         .order('date', { ascending: true }),
       supabase
         .from('nutrition_logs')
         .select('date, compliant, calories, protein_grams, carbs_grams, fat_grams')
-        .eq('client_id', clientId)
+        .eq('client_id', client.id)
         .gte('date', sinceDate)
         .order('date', { ascending: true }),
       supabase
         .from('training_logs')
         .select('date, training_type, rpe, duration')
-        .eq('client_id', clientId)
+        .eq('client_id', client.id)
         .gte('date', sinceDate)
         .order('date', { ascending: true }),
       supabase
         .from('daily_wellness')
         .select('date, sleep_quality, energy_level, mood, cognitive_clarity, stress_level, training_drive, period_start, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate')
-        .eq('client_id', clientId)
+        .eq('client_id', client.id)
         .gte('date', sinceDate)
         .order('date', { ascending: true }),
       supabase
         .from('lab_results')
         .select('test_name, value, unit, status')
-        .eq('client_id', clientId)
+        .eq('client_id', client.id)
         .order('date', { ascending: false })
         .limit(30),
     ])
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       const { data: periodData } = await supabase
         .from('daily_wellness')
         .select('date')
-        .eq('client_id', clientId)
+        .eq('client_id', client.id)
         .eq('period_start', true)
         .gte('date', sixtyDaysAgo.toISOString().split('T')[0])
         .order('date', { ascending: false })
@@ -123,12 +123,12 @@ export async function GET(request: NextRequest) {
       supabase
         .from('supplement_logs')
         .select('date, completed')
-        .eq('client_id', clientId)
+        .eq('client_id', client.id)
         .gte('date', eightWeeksStr),
       supabase
         .from('supplements')
         .select('name')
-        .eq('client_id', clientId),
+        .eq('client_id', client.id),
     ])
 
     const suppLogs = suppLogsRes.data || []
@@ -272,7 +272,7 @@ export async function GET(request: NextRequest) {
       recentTrainingVolume: recentTrainingWithRPE.length > 0 ? {
         avgRPE,
         avgDurationMin,
-        sessionsPerWeek: Math.round(recentTrainingWithRPE.length * 7 / 7),
+        sessionsPerWeek: recentTrainingWithRPE.length,
       } : undefined,
       supplementCompliance: suppLogs.length > 0 ? {
         rate: suppComplianceRate,
@@ -304,7 +304,7 @@ export async function GET(request: NextRequest) {
         const { error: updateErr } = await supabase
           .from('clients')
           .update(updates)
-          .eq('id', clientId)
+          .eq('id', client.id)
 
         if (!updateErr) {
           applied = true

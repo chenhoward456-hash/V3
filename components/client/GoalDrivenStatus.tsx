@@ -33,15 +33,15 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       finally { setLoading(false) }
     }
     fetchSuggestion()
-  }, [clientId, onMutate])
+  }, [clientId, code, onMutate])
 
   if (loading || !data) return null
 
   const dl = data.deadlineInfo
   const isGoalDriven = dl?.isGoalDriven
 
-  // 穿戴裝置恢復狀態回饋卡片（所有狀態都顯示）
-  const WearableInsightCard = () => {
+  // 穿戴裝置恢復狀態回饋（所有狀態都顯示）
+  const wearableInsightCard = (() => {
     if (!data.wearableInsight) return null
 
     const stateConfig: Record<string, { bg: string; border: string; text: string; emoji: string; label: string }> = {
@@ -68,7 +68,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         <p className={`text-xs ${config.text} leading-relaxed`}>{data.wearableInsight}</p>
       </div>
     )
-  }
+  })()
 
   // 非 goal-driven 時顯示基本引擎狀態
   if (!isGoalDriven) {
@@ -134,7 +134,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
               </p>
             </div>
           )}
-          <WearableInsightCard />
+          {wearableInsightCard}
           {data.menstrualCycleNote && (
             <div className="mt-3 bg-pink-50 border border-pink-200 rounded-2xl p-4">
               <p className="text-xs text-pink-700 leading-relaxed">{data.menstrualCycleNote}</p>
@@ -388,7 +388,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       )}
 
       {/* 穿戴裝置恢復回饋 */}
-      <WearableInsightCard />
+      {wearableInsightCard}
 
       {/* Energy Availability (RED-S) 警告 */}
       {data.energyAvailability && data.energyAvailability.level !== 'adequate' && (

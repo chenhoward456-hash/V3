@@ -301,20 +301,16 @@ export async function fetchGarminDailies(
       resting_hr: d.restingHeartRate != null
         ? (d.restingHeartRate >= 30 && d.restingHeartRate <= 150 ? d.restingHeartRate : null)
         : null,
-      // HRV (from daily or stress data)
-      hrv: d.averageStressLevel != null
-        ? null // Stress is not HRV; check if HRV is available separately
-        : null,
+      // HRV — populated from hrvSummary or averageHrv below
+      hrv: null,
       // Sleep Score from sleep data
       wearable_sleep_score: sleepMap.get(date) ?? null,
       // Respiratory Rate
-      respiratory_rate: d.averageSpo2 != null
-        ? null // SPO2 is not respiratory rate
-        : (d.respirationAvgBreathingRate != null
-          ? (d.respirationAvgBreathingRate >= 5 && d.respirationAvgBreathingRate <= 40
-            ? Math.round(d.respirationAvgBreathingRate * 10) / 10
-            : null)
-          : null),
+      respiratory_rate: d.respirationAvgBreathingRate != null
+        ? (d.respirationAvgBreathingRate >= 5 && d.respirationAvgBreathingRate <= 40
+          ? Math.round(d.respirationAvgBreathingRate * 10) / 10
+          : null)
+        : null,
     }
 
     // Try to get HRV from the daily data if available

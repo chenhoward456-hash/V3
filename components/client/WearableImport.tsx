@@ -76,12 +76,14 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
     const garminMessage = params.get('garmin_message')
 
     if (garminStatusParam && garminMessage) {
+      // 過濾 HTML 標籤防止 XSS
+      const safeMessage = garminMessage.replace(/<[^>]*>/g, '').slice(0, 200)
       if (garminStatusParam === 'success') {
-        showToast(garminMessage, 'success')
+        showToast(safeMessage, 'success')
         setOpen(true)
         checkGarminStatus()
       } else {
-        showToast(garminMessage, 'error')
+        showToast(safeMessage, 'error')
       }
       // 清除 URL 參數
       const url = new URL(window.location.href)

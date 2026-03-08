@@ -27,7 +27,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
       finally { setLoading(false) }
     }
     fetchInsight()
-  }, [clientId])
+  }, [clientId, code])
 
   if (loading) return null
   if (!data) return null

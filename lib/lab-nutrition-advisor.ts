@@ -695,8 +695,8 @@ export function generateLabNutritionAdvice(
     // ════════════════════════════════════════
 
     if (matchName(lab.test_name, ['鐵蛋白', 'ferritin'])) {
-      const ferritinMax = gender === '女性' ? 200 : 150
-      const ferritinMin = gender === '女性' ? 12 : 50
+      const ferritinMax = gender === '女性' ? 150 : 300
+      const ferritinMin = gender === '女性' ? 12 : 30
       const isHigh = lab.value > ferritinMax
       const isLow = lab.value < ferritinMin
 
