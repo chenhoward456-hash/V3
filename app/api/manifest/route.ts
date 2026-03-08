@@ -7,8 +7,8 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   const clientId = request.nextUrl.searchParams.get('clientId')
 
-  // Validate clientId format
-  if (!clientId || !/^[a-zA-Z0-9]{1,20}$/.test(clientId)) {
+  // Validate clientId format (allow alphanumeric, hyphens, underscores)
+  if (!clientId || !/^[a-zA-Z0-9_-]{1,20}$/.test(clientId)) {
     return NextResponse.json(
       { error: 'Invalid clientId' },
       { status: 400 }

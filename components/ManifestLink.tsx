@@ -6,7 +6,7 @@ export default function ManifestLink() {
   const pathname = usePathname()
 
   // Dashboard pages: dynamic manifest with start_url = /c/{clientId}
-  const match = pathname.match(/^\/c\/([a-zA-Z0-9]+)/)
+  const match = pathname.match(/^\/c\/([a-zA-Z0-9_-]+)/)
   if (match) {
     return <link rel="manifest" href={`/api/manifest?clientId=${match[1]}`} />
   }
