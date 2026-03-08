@@ -39,6 +39,26 @@ function JoinSuccessContent() {
   const [tier, setTier] = useState<string | null>(directTier)
   const [name, setName] = useState<string | null>(directName)
   const [copied, setCopied] = useState(false)
+  const [targets, setTargets] = useState<{ calories: number; protein: number; carbs: number; fat: number; targetWeight?: number } | null>(null)
+  const [goalInfo, setGoalInfo] = useState<{ currentWeight?: number; targetWeight?: number; goalType?: string } | null>(null)
+
+  // 讀取 sessionStorage 中的營養目標
+  useEffect(() => {
+    try {
+      const t = sessionStorage.getItem('signup_targets')
+      if (t) setTargets(JSON.parse(t))
+      const tw = sessionStorage.getItem('signup_target_weight')
+      const cw = sessionStorage.getItem('signup_weight')
+      const gt = sessionStorage.getItem('signup_goal_type')
+      if (tw || cw) {
+        setGoalInfo({
+          currentWeight: cw ? parseFloat(cw) : undefined,
+          targetWeight: tw ? parseFloat(tw) : undefined,
+          goalType: gt || undefined,
+        })
+      }
+    } catch {}
+  }, [])
 
   useEffect(() => {
     // 免費體驗：已有 code，直接顯示成功
@@ -182,22 +202,71 @@ function JoinSuccessContent() {
             </div>
           </div>
 
+          {/* Nutrition Targets Summary */}
+          {isFree && targets && (
+            <div className="bg-gradient-to-br from-blue-50 to-amber-50 border border-blue-200 rounded-2xl p-5 mb-6 text-left">
+              <p className="text-sm font-semibold text-gray-800 mb-3">
+                系統已幫你算好每日營養目標
+              </p>
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                  <p className="text-[10px] text-gray-500">熱量</p>
+                  <p className="text-lg font-bold text-amber-600">{targets.calories}</p>
+                  <p className="text-[10px] text-gray-400">kcal</p>
+                </div>
+                <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                  <p className="text-[10px] text-gray-500">蛋白質</p>
+                  <p className="text-lg font-bold text-red-500">{targets.protein}</p>
+                  <p className="text-[10px] text-gray-400">g</p>
+                </div>
+                <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                  <p className="text-[10px] text-gray-500">碳水</p>
+                  <p className="text-lg font-bold text-blue-500">{targets.carbs}</p>
+                  <p className="text-[10px] text-gray-400">g</p>
+                </div>
+                <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                  <p className="text-[10px] text-gray-500">脂肪</p>
+                  <p className="text-lg font-bold text-green-600">{targets.fat}</p>
+                  <p className="text-[10px] text-gray-400">g</p>
+                </div>
+              </div>
+              {goalInfo?.targetWeight && goalInfo?.currentWeight && (
+                <div className="bg-white/80 rounded-xl p-3 text-center">
+                  <p className="text-xs text-gray-600">
+                    {goalInfo.goalType === 'cut' ? '減脂' : '增肌'}目標：
+                    <strong>{goalInfo.currentWeight} kg → {goalInfo.targetWeight} kg</strong>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    預估約 <strong>
+                    {(() => {
+                      const diff = Math.abs(goalInfo.currentWeight - goalInfo.targetWeight)
+                      const rate = goalInfo.goalType === 'cut' ? 0.5 : 0.25
+                      const weeks = Math.ceil(diff / rate)
+                      return weeks <= 4 ? `${weeks} 週` : `${Math.round(weeks / 4.3)} 個月`
+                    })()}
+                    </strong> 達成（依執行一致性調整）
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Quick Guide */}
           {isFree && (
             <div className="bg-gray-50 rounded-2xl p-5 mb-8 text-left">
-              <p className="text-sm font-semibold text-gray-700 mb-3">進去之後可以做什麼？</p>
+              <p className="text-sm font-semibold text-gray-700 mb-3">接下來要做什麼？</p>
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600 shrink-0">1</span>
-                  <p className="text-sm text-gray-600">記錄你的<strong>體重 / 體態</strong>，追蹤變化趨勢</p>
+                  <p className="text-sm text-gray-600"><strong>每天量體重</strong>，在儀表板輸入或用 LINE 傳數字</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-xs font-bold text-amber-600 shrink-0">2</span>
-                  <p className="text-sm text-gray-600">記錄<strong>每日飲食</strong>，AI 自動計算營養素</p>
+                  <p className="text-sm text-gray-600"><strong>每天記錄飲食</strong>是否達標，照著上面的營養目標吃</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-600 shrink-0">3</span>
-                  <p className="text-sm text-gray-600">持續記錄，系統會產生<strong>趨勢分析</strong></p>
+                  <p className="text-sm text-gray-600">持續 2 週，系統會自動<strong>校正你的 TDEE</strong> 讓目標更準</p>
                 </div>
               </div>
             </div>

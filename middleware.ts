@@ -121,7 +121,8 @@ export async function middleware(request: NextRequest) {
       }
 
       // 使用 Web Crypto API 驗證 HMAC 簽名（Edge Runtime 相容）
-      const secret = process.env.SESSION_SECRET
+      // 與 auth-middleware.ts getSessionSecret() 保持一致的 fallback 邏輯
+      const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD
       if (!secret || !signature) {
         const res = NextResponse.redirect(new URL('/admin/login', request.url))
         res.cookies.delete('admin_session')
