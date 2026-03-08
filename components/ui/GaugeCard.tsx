@@ -15,6 +15,7 @@ interface GaugeCardProps {
   color: string         // SVG stroke color (hex)
   bgColor: string       // tailwind bg class for card
   icon?: string
+  dark?: boolean        // 深色模式（文字改為白色系）
 }
 
 export default function GaugeCard({
@@ -27,6 +28,7 @@ export default function GaugeCard({
   color,
   bgColor,
   icon,
+  dark = false,
 }: GaugeCardProps) {
   const size = 80
   const strokeWidth = 6
@@ -39,6 +41,12 @@ export default function GaugeCard({
   const endAngle = 0           // 0°
   const pct = value !== null ? Math.min(Math.max(value / max, 0), 1) : 0
   const sweepAngle = startAngle - (startAngle - endAngle) * pct
+
+  // 顏色配置
+  const trackColor = dark ? '#374151' : '#e5e7eb'  // 背景弧顏色
+  const textFill = dark ? '#f3f4f6' : '#1f2937'     // 數值文字
+  const unitFill = dark ? '#6b7280' : '#9ca3af'      // 單位文字
+  const labelClass = dark ? 'text-gray-400' : 'text-gray-600'
 
   // 背景弧
   const bgArcStart = { x: centerX + radius * Math.cos(startAngle), y: centerY - radius * Math.sin(startAngle) }
@@ -57,7 +65,7 @@ export default function GaugeCard({
       {/* 標題 */}
       <div className="flex items-center gap-1 mb-1 self-start">
         {icon && <span className="text-xs">{icon}</span>}
-        <p className="text-[11px] font-medium text-gray-600">{label}</p>
+        <p className={`text-[11px] font-medium ${labelClass}`}>{label}</p>
       </div>
 
       {/* Gauge */}
@@ -66,7 +74,7 @@ export default function GaugeCard({
         <path
           d={bgPath}
           fill="none"
-          stroke="#e5e7eb"
+          stroke={trackColor}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
         />
@@ -95,7 +103,7 @@ export default function GaugeCard({
           y={centerY - 2}
           textAnchor="middle"
           className="font-bold"
-          style={{ fontSize: value !== null ? '18px' : '16px', fill: '#1f2937' }}
+          style={{ fontSize: value !== null ? '18px' : '16px', fill: textFill }}
         >
           {value !== null ? value : '--'}
         </text>
@@ -104,7 +112,7 @@ export default function GaugeCard({
             x={centerX}
             y={centerY + 12}
             textAnchor="middle"
-            style={{ fontSize: '9px', fill: '#9ca3af' }}
+            style={{ fontSize: '9px', fill: unitFill }}
           >
             {unit}
           </text>

@@ -230,6 +230,7 @@ export default function HealthOverview({
               max={100}
               color="#10b981"
               bgColor="bg-gray-800"
+              dark
               statusLabel={recoveryStatus?.label}
               statusColor={recoveryStatus?.color}
             />
@@ -242,19 +243,21 @@ export default function HealthOverview({
               max={100}
               color="#8b5cf6"
               bgColor="bg-gray-800"
+              dark
               statusLabel={sleepStatus?.label}
               statusColor={sleepStatus?.color}
             />
 
-            {/* 靜息心率 */}
+            {/* 靜息心率 — max 設為 120 讓視覺比例合理 */}
             <GaugeCard
               icon="❤️"
               label="靜息心率"
               value={wearable?.resting_hr ?? null}
-              max={100}
+              max={120}
               unit="bpm"
               color="#ef4444"
               bgColor="bg-gray-800"
+              dark
               statusLabel={hrStatus?.label}
               statusColor={hrStatus?.color}
             />
@@ -268,6 +271,7 @@ export default function HealthOverview({
               unit="ms"
               color="#3b82f6"
               bgColor="bg-gray-800"
+              dark
               statusLabel={hrvStatus?.label}
               statusColor={hrvStatus?.color}
             />
