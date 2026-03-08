@@ -63,7 +63,9 @@ export default function DailyNutritionTarget({
         )}
       </div>
       <div className={`bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-4`}>
-        <div className={`grid grid-cols-${items.length} gap-2`}>
+        <div className={`grid gap-2 ${
+          { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4' }[items.length] || 'grid-cols-4'
+        }`}>
           {items.map(({ label, value, unit, emoji }) => (
             <div key={label} className="text-center bg-white bg-opacity-70 rounded-xl py-2 px-1">
               <p className="text-[10px] text-gray-500">{emoji} {label}</p>

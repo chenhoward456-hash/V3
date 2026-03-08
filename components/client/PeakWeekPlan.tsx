@@ -66,11 +66,13 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
           const todayIdx = data.suggestion.peakWeekPlan.findIndex((d: PeakWeekDay) => d.date === todayStr)
           if (todayIdx >= 0) setExpandedDay(todayIdx)
         }
-      } catch { /* ignore */ }
+      } catch {
+        console.warn('[PeakWeekPlan] 載入失敗')
+      }
       finally { setLoading(false) }
     }
     fetchPlan()
-  }, [clientId, todayStr])
+  }, [clientId, code, todayStr])
 
   if (loading) {
     return (

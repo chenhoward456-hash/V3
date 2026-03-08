@@ -135,7 +135,11 @@ export function verifyCheckMacValue(params: Record<string, string>): boolean {
   }
 
   const expectedMac = generateCheckMacValue(paramsWithoutMac)
-  return receivedMac === expectedMac
+  // 使用 timing-safe 比較防止計時攻擊
+  if (receivedMac.length !== expectedMac.length) return false
+  const a = Buffer.from(receivedMac)
+  const b = Buffer.from(expectedMac)
+  return crypto.timingSafeEqual(a, b)
 }
 
 // ========== 生成訂單編號 ==========
@@ -160,7 +164,11 @@ export function buildCheckoutFormHTML(params: Record<string, string | number>): 
   const allParams = { ...params, CheckMacValue: checkMacValue }
 
   const hiddenInputs = Object.entries(allParams)
-    .map(([key, value]) => `<input type="hidden" name="${key}" value="${String(value).replace(/"/g, '&quot;')}" />`)
+    .map(([key, value]) => {
+      const safeKey = String(key).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c)
+      const safeValue = String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c)
+      return `<input type="hidden" name="${safeKey}" value="${safeValue}" />`
+    })
     .join('\n')
 
   return `<!DOCTYPE html>

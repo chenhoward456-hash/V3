@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2)
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16)
+  }
+  return bytes
+}
+
 // ===== Edge-compatible rate limiter =====
 // 使用全域 Map（Edge Runtime 在 Vercel 上比 serverless 更持久，同 region 共享）
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -113,7 +121,7 @@ export async function middleware(request: NextRequest) {
       }
 
       // 使用 Web Crypto API 驗證 HMAC 簽名（Edge Runtime 相容）
-      const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD
+      const secret = process.env.SESSION_SECRET
       if (!secret || !signature) {
         const res = NextResponse.redirect(new URL('/admin/login', request.url))
         res.cookies.delete('admin_session')
@@ -125,15 +133,19 @@ export async function middleware(request: NextRequest) {
         encoder.encode(secret),
         { name: 'HMAC', hash: 'SHA-256' },
         false,
-        ['sign']
+        ['sign', 'verify']
       )
       const payload = `admin:${expiresAtStr}`
-      const sigBytes = await crypto.subtle.sign('HMAC', key, encoder.encode(payload))
-      const expectedSig = Array.from(new Uint8Array(sigBytes))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('')
 
-      if (signature !== expectedSig) {
+      // timing-safe 比較：使用 Web Crypto verify 而非字串比較
+      const signatureBytes = hexToBytes(signature)
+      const sigValid = await crypto.subtle.verify(
+        'HMAC',
+        key,
+        signatureBytes as unknown as ArrayBuffer,
+        encoder.encode(payload)
+      )
+      if (!sigValid) {
         const res = NextResponse.redirect(new URL('/admin/login', request.url))
         res.cookies.delete('admin_session')
         return res

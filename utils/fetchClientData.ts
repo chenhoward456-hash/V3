@@ -3,14 +3,8 @@ import { createLogger } from '@/lib/logger'
 
 const logger = createLogger('fetchClientData')
 
-// 補品介面定義
-export interface Supplement {
-  id: string
-  name: string
-  dosage: string
-  timing: string
-  why?: string
-}
+// 重新導出 types 保持向後相容
+export type { LabResult, Supplement } from '@/types'
 
 // 補品打卡記錄介面定義
 export interface SupplementLog {
@@ -32,27 +26,18 @@ export interface BodyComposition {
   bmi?: number | null
 }
 
-// 血檢結果介面定義
-export interface LabResult {
-  id: string
-  test_name: string
-  value: number
-  unit: string
-  reference_range: string
-  status: 'normal' | 'attention' | 'alert'
-  date: string
-}
-
-// 客戶介面定義
+// 客戶介面定義（使用寬鬆型別以相容資料庫回傳）
 export interface Client {
   id: string
   unique_code: string
   name: string
-  age: number
-  gender: string
+  age: number | null
+  gender: string | null
   status: 'normal' | 'attention' | 'alert'
-  lab_results: LabResult[]
-  supplements: Supplement[]
+  expires_at: string | null
+  lab_results: any[]
+  supplements: any[]
+  [key: string]: any
 }
 
 // 完整的客戶資料介面定義
@@ -93,13 +78,14 @@ export async function fetchClientData(clientId: string): Promise<ClientData> {
       throw new Error('學員資料不存在')
     }
 
-    // 檢查是否過期
-    if (new Date(client.expires_at) < new Date()) {
+    // 檢查是否過期（expires_at 為 null 表示無到期限制）
+    if (client.expires_at && new Date(client.expires_at) < new Date()) {
       throw new Error('此學員資料已過期，請聯繫 Howard 教練')
     }
 
-    // 獲取今日補品打卡記錄
-    const today = new Date().toISOString().split('T')[0]
+    // 獲取今日補品打卡記錄（使用 UTC+8 避免時區問題）
+    const now = new Date()
+    const today = new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString().split('T')[0]
     const { data: logs, error: logsError } = await supabase
       .from('supplement_logs')
       .select('*')
@@ -110,12 +96,13 @@ export async function fetchClientData(clientId: string): Promise<ClientData> {
       logger.warn('獲取補品打卡記錄失敗', { error: logsError })
     }
 
-    // 獲取身體數據記錄
+    // 獲取身體數據記錄（限制最近 100 筆避免效能問題）
     const { data: bodyRecords, error: bodyError } = await supabase
       .from('body_composition')
       .select('*')
       .eq('client_id', client.id)
       .order('date', { ascending: false })
+      .limit(100)
 
     if (bodyError) {
       logger.warn('獲取身體數據記錄失敗', { error: bodyError })

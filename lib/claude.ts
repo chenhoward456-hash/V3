@@ -10,9 +10,11 @@ let _anthropic: Anthropic | null = null
 
 function getClient(): Anthropic {
   if (!_anthropic) {
-    _anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY!,
-    })
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY 環境變數未設定')
+    }
+    _anthropic = new Anthropic({ apiKey })
   }
   return _anthropic
 }

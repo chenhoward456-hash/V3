@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 }
 
 function redirectWithMessage(request: NextRequest, status: string, message: string) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
   const url = new URL(siteUrl)
   url.searchParams.set('garmin_status', status)
   url.searchParams.set('garmin_message', message)

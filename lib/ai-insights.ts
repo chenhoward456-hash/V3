@@ -98,11 +98,12 @@ export interface InsightData {
 export async function generateWeeklyAIReport(data: InsightData): Promise<string> {
   const { client, nutritionLogs, wellnessLogs, trainingLogs, bodyLogs } = data
 
-  // 取最近 7 天資料
-  const last7Nutrition = nutritionLogs.slice(-7)
-  const last7Wellness = wellnessLogs.slice(-7)
-  const last7Training = trainingLogs.slice(-7)
-  const last7Body = bodyLogs.slice(-7)
+  // 取最近 7 天資料（先按日期排序確保正確）
+  const sortByDate = <T extends { date: string }>(arr: T[]) => [...arr].sort((a, b) => a.date.localeCompare(b.date))
+  const last7Nutrition = sortByDate(nutritionLogs).slice(-7)
+  const last7Wellness = sortByDate(wellnessLogs).slice(-7)
+  const last7Training = sortByDate(trainingLogs).slice(-7)
+  const last7Body = sortByDate(bodyLogs).slice(-7)
 
   // 計算統計
   const avgCalories = calcAvg(last7Nutrition.map(n => n.calories))

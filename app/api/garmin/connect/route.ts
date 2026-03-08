@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 建立 callback URL
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
     const callbackUrl = `${siteUrl}/api/garmin/callback`
 
     // 取得 Garmin Request Token

@@ -65,6 +65,8 @@ export async function POST(request: NextRequest) {
     if (!client.ai_chat_enabled) {
       const now = new Date()
       const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+
+      // 先檢查本月是否已有使用記錄
       const { count } = await supabase
         .from('ai_chat_usage')
         .select('*', { count: 'exact', head: true })
@@ -75,8 +77,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: '本月免費次數已用完，請升級方案', quota_exceeded: true }, { status: 403 })
       }
 
-      // 記錄本次使用
-      await supabase.from('ai_chat_usage').insert({ client_id: client.id })
+      // 尚未使用，插入使用記錄
+      const { error: insertError } = await supabase.from('ai_chat_usage').insert({ client_id: client.id })
+      if (insertError) {
+        console.error('[ai/chat] 插入使用記錄失敗', insertError)
+        return NextResponse.json({ error: '系統錯誤，請稍後再試' }, { status: 500 })
+      }
     }
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {

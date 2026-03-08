@@ -233,12 +233,19 @@ export function createSuccessResponse(data: any): NextResponse {
  */
 export function sanitizeTextField(input: string | null | undefined, maxLength: number = 500): string | null {
   if (!input || typeof input !== 'string') return null
-  return input
-    .trim()
-    .slice(0, maxLength)
-    .replace(/[<>]/g, '')
-    .replace(/javascript:/gi, '')
-    .replace(/on\w+=/gi, '')
+  let result = input.trim().slice(0, maxLength)
+  // 遞迴移除危險模式
+  let prev = ''
+  while (prev !== result) {
+    prev = result
+    result = result
+      .replace(/[<>]/g, '')
+      .replace(/javascript\s*:/gi, '')
+      .replace(/vbscript\s*:/gi, '')
+      .replace(/data\s*:\s*text\/html/gi, '')
+      .replace(/on[a-z]{2,15}\s*=/gi, '')
+  }
+  return result
 }
 
 /**
