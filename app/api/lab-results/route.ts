@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { validateLabValue, validateDate, sanitizeInput } from '@/utils/validation'
-import { verifyCoachAuth, createErrorResponse, createSuccessResponse, sanitizeTextField } from '@/lib/auth-middleware'
+import { verifyCoachAuth, createErrorResponse, createSuccessResponse, sanitizeTextField, rateLimit, getClientIP } from '@/lib/auth-middleware'
 
 const supabase = createServiceSupabase()
 
@@ -51,17 +51,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { clientId, testName, value, unit, referenceRange, date, customAdvice, customTarget, selfEntry } = body
 
-    // 學員自行新增模式：不需要教練權限，但限制不能填寫 customAdvice / customTarget
-    if (!selfEntry) {
+    // 驗證輸入
+    if (!clientId || !testName || value === undefined || !date) {
+      return createErrorResponse('缺少必要欄位', 400)
+    }
+
+    // 學員自行新增模式：不需要教練權限，但需額外驗證
+    if (selfEntry) {
+      // selfEntry 需要速率限制，防止濫用
+      const ip = getClientIP(request)
+      const { allowed } = rateLimit(`lab-self:${ip}`, 10, 60_000)
+      if (!allowed) {
+        return createErrorResponse('請求過於頻繁，請稍後再試', 429)
+      }
+    } else {
       const { authorized, error: authError } = await verifyCoachAuth(request)
       if (!authorized) {
         return createErrorResponse(authError || '權限不足', 403)
       }
-    }
-
-    // 驗證輸入
-    if (!clientId || !testName || value === undefined || !date) {
-      return createErrorResponse('缺少必要欄位', 400)
     }
 
     // 驗證並清理輸入
@@ -85,15 +92,28 @@ export async function POST(request: NextRequest) {
       return createErrorResponse(dateValidation.error, 400)
     }
 
-    // 獲取客戶 ID
+    // 獲取客戶資料
     const { data: client } = await supabase
       .from('clients')
-      .select('id')
+      .select('id, is_active, expires_at, lab_enabled')
       .eq('unique_code', clientId)
       .single()
 
     if (!client) {
       return createErrorResponse('找不到客戶', 404)
+    }
+
+    // selfEntry 模式需額外驗證客戶狀態
+    if (selfEntry) {
+      if (client.is_active === false) {
+        return createErrorResponse('帳號已停用', 403)
+      }
+      if (client.expires_at && new Date(client.expires_at) < new Date()) {
+        return createErrorResponse('帳號已過期', 403)
+      }
+      if (client.lab_enabled === false) {
+        return createErrorResponse('血檢功能未啟用', 403)
+      }
     }
 
     // 創建血檢結果（學員自行新增時不允許填寫自訂建議/目標）

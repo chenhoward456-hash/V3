@@ -32,7 +32,7 @@ function getIP(request: NextRequest): string {
     || 'unknown'
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const ip = getIP(request)
 
@@ -63,6 +63,19 @@ export function middleware(request: NextRequest) {
           { status: 429, headers: { 'Retry-After': '60' } }
         )
       }
+
+      // 針對 clientId 參數的速率限制，防止暴力枚舉 unique_code
+      const clientId = request.nextUrl.searchParams.get('clientId')
+      if (clientId) {
+        // 同一 IP 對不同 clientId 的請求限制（防止枚舉）
+        const enumAllowed = edgeRateLimit(`enum:${ip}`, 30, 60_000)
+        if (!enumAllowed) {
+          return NextResponse.json(
+            { error: '請求過於頻繁，請稍後再試' },
+            { status: 429, headers: { 'Retry-After': '60' } }
+          )
+        }
+      }
     }
 
     // 所有 API：寬鬆限制（每 IP 每分鐘 100 次）
@@ -91,9 +104,36 @@ export function middleware(request: NextRequest) {
         res.cookies.delete('admin_session')
         return res
       }
-      const [expiresAtStr] = parts
+      const [expiresAtStr, signature] = parts
       const expiresAt = parseInt(expiresAtStr, 10)
       if (isNaN(expiresAt) || expiresAt < Date.now()) {
+        const res = NextResponse.redirect(new URL('/admin/login', request.url))
+        res.cookies.delete('admin_session')
+        return res
+      }
+
+      // 使用 Web Crypto API 驗證 HMAC 簽名（Edge Runtime 相容）
+      const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD
+      if (!secret || !signature) {
+        const res = NextResponse.redirect(new URL('/admin/login', request.url))
+        res.cookies.delete('admin_session')
+        return res
+      }
+      const encoder = new TextEncoder()
+      const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      )
+      const payload = `admin:${expiresAtStr}`
+      const sigBytes = await crypto.subtle.sign('HMAC', key, encoder.encode(payload))
+      const expectedSig = Array.from(new Uint8Array(sigBytes))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+
+      if (signature !== expectedSig) {
         const res = NextResponse.redirect(new URL('/admin/login', request.url))
         res.cookies.delete('admin_session')
         return res

@@ -89,45 +89,43 @@ ALTER TABLE supplements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE supplement_logs ENABLE ROW LEVEL SECURITY;
 
 -- 8. RLS 政策
--- 客戶只能透過 unique_code 訪問自己的資料
-CREATE POLICY "Clients can view own data via unique_code" ON clients
-  FOR SELECT USING (true);
+-- ⚠️ 注意：本系統所有 API 路由皆透過 Service Role Key 存取 Supabase，
+-- Service Role Key 會繞過 RLS。以下政策是「最後防線」，防止意外使用 anon key 洩漏資料。
+-- 主要存取控制在 API 路由的 middleware 層（auth-middleware.ts）。
 
--- 所有人都可以透過 unique_code 查看客戶資料（用於學員儀表板）
-CREATE POLICY "Public can view clients via unique_code" ON clients
-  FOR SELECT USING (true);
+-- 客戶表：只有認證用戶可存取
+CREATE POLICY "Authenticated can view clients" ON clients
+  FOR SELECT USING (auth.role() = 'authenticated');
 
--- 只有教練可以修改客戶資料
 CREATE POLICY "Only authenticated can update clients" ON clients
   FOR UPDATE USING (auth.role() = 'authenticated');
 
--- 只有教練可以新增客戶
 CREATE POLICY "Only authenticated can insert clients" ON clients
   FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
--- 血檢結果政策
-CREATE POLICY "Public can view lab_results via client" ON lab_results
-  FOR SELECT USING (true);
+-- 血檢結果政策：只有認證用戶可存取
+CREATE POLICY "Authenticated can view lab_results" ON lab_results
+  FOR SELECT USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Only authenticated can modify lab_results" ON lab_results
   FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
 
--- 補品政策
-CREATE POLICY "Public can view supplements via client" ON supplements
-  FOR SELECT USING (true);
+-- 補品政策：只有認證用戶可存取
+CREATE POLICY "Authenticated can view supplements" ON supplements
+  FOR SELECT USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Only authenticated can modify supplements" ON supplements
   FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
 
--- 補品打卡政策
-CREATE POLICY "Public can view supplement_logs via client" ON supplement_logs
-  FOR SELECT USING (true);
+-- 補品打卡政策：只有認證用戶可存取
+CREATE POLICY "Authenticated can view supplement_logs" ON supplement_logs
+  FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Public can insert supplement_logs" ON supplement_logs
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "Authenticated can insert supplement_logs" ON supplement_logs
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
-CREATE POLICY "Public can update supplement_logs" ON supplement_logs
-  FOR UPDATE USING (true);
+CREATE POLICY "Authenticated can update supplement_logs" ON supplement_logs
+  FOR UPDATE USING (auth.role() = 'authenticated');
 
 -- 9. 客戶表新增 training_enabled 欄位
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS training_enabled BOOLEAN DEFAULT FALSE;
@@ -154,14 +152,14 @@ CREATE INDEX idx_training_logs_client_date ON training_logs(client_id, date);
 -- 訓練紀錄 RLS
 ALTER TABLE training_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Public can view training_logs via client" ON training_logs
-  FOR SELECT USING (true);
+CREATE POLICY "Authenticated can view training_logs" ON training_logs
+  FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Public can insert training_logs" ON training_logs
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "Authenticated can insert training_logs" ON training_logs
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
-CREATE POLICY "Public can update training_logs" ON training_logs
-  FOR UPDATE USING (true);
+CREATE POLICY "Authenticated can update training_logs" ON training_logs
+  FOR UPDATE USING (auth.role() = 'authenticated');
 
 -- 11. 建立範例資料（可選）
 INSERT INTO clients (unique_code, name, age, gender, status) VALUES
@@ -187,14 +185,14 @@ CREATE INDEX idx_nutrition_logs_client_date ON nutrition_logs(client_id, date);
 -- 飲食紀錄 RLS
 ALTER TABLE nutrition_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Public can view nutrition_logs via client" ON nutrition_logs
-  FOR SELECT USING (true);
+CREATE POLICY "Authenticated can view nutrition_logs" ON nutrition_logs
+  FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Public can insert nutrition_logs" ON nutrition_logs
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "Authenticated can insert nutrition_logs" ON nutrition_logs
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
-CREATE POLICY "Public can update nutrition_logs" ON nutrition_logs
-  FOR UPDATE USING (true);
+CREATE POLICY "Authenticated can update nutrition_logs" ON nutrition_logs
+  FOR UPDATE USING (auth.role() = 'authenticated');
 
 -- 14. 飲食紀錄新增蛋白質與水量欄位
 ALTER TABLE nutrition_logs ADD COLUMN IF NOT EXISTS protein_grams NUMERIC;
