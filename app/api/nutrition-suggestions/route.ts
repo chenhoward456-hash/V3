@@ -114,6 +114,34 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 2.6 查詢補品依從率（近 8 週）
+    const eightWeeksAgo = new Date()
+    eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
+    const eightWeeksStr = eightWeeksAgo.toISOString().split('T')[0]
+
+    const [suppLogsRes, suppListRes] = await Promise.all([
+      supabase
+        .from('supplement_logs')
+        .select('date, completed')
+        .eq('client_id', clientId)
+        .gte('date', eightWeeksStr),
+      supabase
+        .from('supplements')
+        .select('name')
+        .eq('client_id', clientId),
+    ])
+
+    const suppLogs = suppLogsRes.data || []
+    const suppList = suppListRes.data || []
+    const suppComplianceRate = suppLogs.length > 0
+      ? suppLogs.filter((s: any) => s.completed).length / suppLogs.length
+      : 0
+    // 計算持續使用週數：從最早有打卡記錄的日期算起
+    const suppDates = suppLogs.map((s: any) => s.date).sort()
+    const suppWeeksDuration = suppDates.length > 0
+      ? Math.floor((new Date().getTime() - new Date(suppDates[0]).getTime()) / (7 * 24 * 60 * 60 * 1000))
+      : 0
+
     // 3. 計算週均體重 (最多 4 週)
     const today = new Date()
     const weeklyWeights: { week: number; avgWeight: number }[] = []
@@ -245,6 +273,11 @@ export async function GET(request: NextRequest) {
         avgRPE,
         avgDurationMin,
         sessionsPerWeek: Math.round(recentTrainingWithRPE.length * 7 / 7),
+      } : undefined,
+      supplementCompliance: suppLogs.length > 0 ? {
+        rate: suppComplianceRate,
+        weeksDuration: suppWeeksDuration,
+        supplements: suppList.map((s: any) => s.name),
       } : undefined,
     }
 

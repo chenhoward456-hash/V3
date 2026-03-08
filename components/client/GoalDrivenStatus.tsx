@@ -390,6 +390,38 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       {/* 穿戴裝置恢復回饋 */}
       <WearableInsightCard />
 
+      {/* Energy Availability (RED-S) 警告 */}
+      {data.energyAvailability && data.energyAvailability.level !== 'adequate' && (
+        <div className={`mt-3 rounded-2xl p-4 ${
+          data.energyAvailability.level === 'critical'
+            ? 'bg-red-50 border border-red-300'
+            : 'bg-amber-50 border border-amber-200'
+        }`}>
+          <p className={`text-xs font-medium mb-1 ${
+            data.energyAvailability.level === 'critical' ? 'text-red-700' : 'text-amber-700'
+          }`}>
+            能量可用性：{data.energyAvailability.eaKcalPerKgFFM} kcal/kg FFM/day
+          </p>
+          <p className={`text-[11px] leading-relaxed ${
+            data.energyAvailability.level === 'critical' ? 'text-red-600' : 'text-amber-600'
+          }`}>{data.energyAvailability.warning}</p>
+        </div>
+      )}
+
+      {/* 血檢驅動的營養調整 */}
+      {data.labMacroModifiers && data.labMacroModifiers.length > 0 && (
+        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-2xl p-4">
+          <p className="text-xs font-medium text-blue-700 mb-2">🩸 血檢指標建議</p>
+          <div className="space-y-1">
+            {data.labMacroModifiers.map((mod: any, i: number) => (
+              <p key={i} className="text-[11px] text-blue-600 leading-relaxed">
+                {mod.reason}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 月經週期提示 */}
       {data.menstrualCycleNote && (
         <div className="mt-3 bg-pink-50 border border-pink-200 rounded-2xl p-4">
@@ -400,7 +432,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       {/* 警告 */}
       {data.warnings && data.warnings.length > 0 && (
         <div className="mt-3 space-y-1">
-          {data.warnings.slice(0, 3).map((w: string, i: number) => (
+          {data.warnings.slice(0, 5).map((w: string, i: number) => (
             <p key={i} className="text-[11px] text-gray-500">{w}</p>
           ))}
         </div>
