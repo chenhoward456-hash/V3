@@ -36,6 +36,16 @@ export interface WellnessData {
   energy_level: number | null
   mood: number | null
   note: string | null
+  // 穿戴裝置數據
+  device_recovery_score?: number | null
+  resting_hr?: number | null
+  hrv?: number | null
+  wearable_sleep_score?: number | null
+  respiratory_rate?: number | null
+  // 進階主觀指標
+  training_drive?: number | null
+  cognitive_clarity?: number | null
+  stress_level?: number | null
 }
 
 export interface TrainingLog {

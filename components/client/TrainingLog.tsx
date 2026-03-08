@@ -6,6 +6,13 @@ import { TRAINING_TYPES, isWeightTraining } from './types'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 
+interface TrainingReadiness {
+  recommendedIntensity: 'high' | 'moderate' | 'low' | 'rest'
+  recoveryScore: number
+  reasons: string[]
+  suggestion: string
+}
+
 interface TrainingLogProps {
   todayTraining: any
   trainingLogs: any[]
@@ -21,6 +28,24 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
   const { showToast } = useToast()
+  const [readiness, setReadiness] = useState<TrainingReadiness | null>(null)
+
+  // 載入今日訓練準備度
+  useEffect(() => {
+    async function fetchReadiness() {
+      try {
+        const res = await fetch(`/api/training-readiness?clientId=${clientId}`)
+        if (res.ok) {
+          const data = await res.json()
+          setReadiness(data)
+        }
+      } catch {
+        // 靜默失敗
+      }
+    }
+    fetchReadiness()
+  }, [clientId])
+
   const [form, setForm] = useState({
     training_type: todayTraining?.training_type ?? null as string | null,
     duration: todayTraining?.duration ?? null as number | null,
@@ -87,8 +112,13 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         })
       })
       if (!response.ok) throw new Error('提交失敗')
+      const result = await response.json()
       onMutate()
       showToast('訓練已記錄！', 'success', '🎉')
+      // 顯示恢復警告（如果有）
+      if (result.recoveryWarning) {
+        setTimeout(() => showToast(result.recoveryWarning, 'error'), 500)
+      }
     } catch {
       showToast('提交失敗，請重試', 'error')
     } finally {
@@ -333,6 +363,39 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">訓練紀錄</h2>
       <div className="space-y-4">
+        {/* 今日訓練準備度 */}
+        {readiness && readiness.recoveryScore != null && (
+          <div className={`rounded-xl px-4 py-3 text-sm ${
+            readiness.recommendedIntensity === 'high'
+              ? 'bg-green-50 text-green-700'
+              : readiness.recommendedIntensity === 'moderate'
+                ? 'bg-blue-50 text-blue-700'
+                : readiness.recommendedIntensity === 'low'
+                  ? 'bg-amber-50 text-amber-700'
+                  : 'bg-red-50 text-red-700'
+          }`}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-medium">
+                {readiness.recommendedIntensity === 'high' ? '🟢 狀態良好' :
+                 readiness.recommendedIntensity === 'moderate' ? '🔵 狀態一般' :
+                 readiness.recommendedIntensity === 'low' ? '🟡 恢復偏差' :
+                 '🔴 建議休息'}
+              </span>
+              <span className="text-xs opacity-70">
+                恢復分數 {readiness.recoveryScore}/100
+              </span>
+            </div>
+            <p className="text-xs opacity-80">{readiness.suggestion}</p>
+            {readiness.reasons.length > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {readiness.reasons.map((r, i) => (
+                  <span key={i} className="text-[10px] bg-white/50 rounded px-1.5 py-0.5">{r}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 訓練類型 */}
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">重訓</p>
