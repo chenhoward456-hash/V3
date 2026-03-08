@@ -289,9 +289,19 @@ export async function GET(request: NextRequest) {
     // self_managed 訂閱用戶也允許自動套用（499 自主管理）
     // 其他模式仍需 admin 權限
     let applied = false
+    let coachLocked = false
     const isSelfManaged = client.subscription_tier === 'self_managed'
     const canAutoApply = wantsAutoApply && suggestion.autoApply && (isAdmin || suggestion.status === 'goal_driven' || isSelfManaged)
-    if (canAutoApply) {
+
+    // 教練覆寫鎖定：教練手動調整過營養目標 → 跳過 auto-apply（admin 操作不受限）
+    const coachOverride = client.coach_macro_override as { locked_at: string; locked_fields: string[] } | null
+    if (coachOverride && !isAdmin) {
+      coachLocked = true
+      // 附加提示到 suggestion message
+      suggestion.message += '\n\n🔒 教練已手動設定你的營養目標，系統建議僅供參考，不會自動調整。'
+    }
+
+    if (canAutoApply && !coachLocked) {
       const updates: Record<string, any> = {}
       if (suggestion.suggestedCalories != null) updates.calories_target = suggestion.suggestedCalories
       if (suggestion.suggestedProtein != null) updates.protein_target = suggestion.suggestedProtein
@@ -320,6 +330,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       suggestion,
       applied,
+      coachLocked,
       isNewUser,
       meta: {
         latestWeight,

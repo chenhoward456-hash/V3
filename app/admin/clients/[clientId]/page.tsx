@@ -66,6 +66,7 @@ interface Client {
   activity_profile: 'sedentary' | 'high_energy_flux' | null
   health_mode_enabled: boolean
   quarterly_cycle_start: string | null
+  coach_macro_override: { locked_at: string; locked_fields: string[]; previous_values?: Record<string, number | null> } | null
 
   lab_results: LabResult[]
   supplements: Supplement[]
@@ -137,6 +138,7 @@ export default function ClientEditor() {
         activity_profile: null,
         health_mode_enabled: false,
         quarterly_cycle_start: null,
+        coach_macro_override: null,
 
         lab_results: [],
         supplements: []
@@ -230,6 +232,7 @@ export default function ClientEditor() {
         quarterly_cycle_start: client.quarterly_cycle_start || null,
         subscription_tier: client.subscription_tier,
         ai_chat_enabled: client.ai_chat_enabled,
+        coach_macro_override: client.coach_macro_override ?? null,
       }
 
       if (clientId === 'new') {
@@ -631,8 +634,36 @@ export default function ClientEditor() {
             {/* Nutrition Targets */}
             {client.nutrition_enabled && (
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">飲食目標設定</h2>
-                <p className="text-xs text-gray-400 mb-4">設定後學員記錄飲食時會看到目標對比</p>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-medium text-gray-900">飲食目標設定</h2>
+                    <p className="text-xs text-gray-400">設定後學員記錄飲食時會看到目標對比</p>
+                  </div>
+                </div>
+                {/* 教練覆寫鎖定狀態 */}
+                {client.coach_macro_override && (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🔒</span>
+                      <div>
+                        <p className="text-sm font-medium text-amber-800">教練覆寫模式啟動中</p>
+                        <p className="text-xs text-amber-600">
+                          系統自動調整已暫停。上次鎖定：{new Date(client.coach_macro_override.locked_at).toLocaleDateString('zh-TW')}
+                          {client.coach_macro_override.locked_fields && (
+                            <span>（{client.coach_macro_override.locked_fields.join('、').replace(/calories_target/g, '熱量').replace(/protein_target/g, '蛋白質').replace(/carbs_target/g, '碳水').replace(/fat_target/g, '脂肪').replace(/carbs_training_day/g, '訓練日碳水').replace(/carbs_rest_day/g, '休息日碳水')}）</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setClient({ ...client, coach_macro_override: null })}
+                      className="px-3 py-1.5 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg transition-colors"
+                    >
+                      解除鎖定
+                    </button>
+                  </div>
+                )}
+                <p className="text-[10px] text-gray-400 mb-3">修改營養目標後會自動鎖定，防止系統覆蓋你的設定。可隨時解除鎖定恢復自動調整。</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">每日蛋白質目標（g）</label>

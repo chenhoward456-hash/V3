@@ -537,3 +537,13 @@ CREATE TABLE IF NOT EXISTS garmin_oauth_states (
 ALTER TABLE garmin_oauth_states ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Service role full access on garmin_oauth_states" ON garmin_oauth_states
   FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================
+-- 教練巨量覆寫鎖定
+-- 教練手動調整營養目標後，系統自動鎖定，
+-- 防止 auto-apply 覆蓋教練的決定。
+-- 教練可手動解鎖，讓系統恢復自動調整。
+-- ============================================
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS coach_macro_override JSONB DEFAULT NULL;
+-- 格式：{ "locked_at": "ISO date", "locked_fields": ["calories_target","protein_target",...], "reason": "教練備註" }
+-- NULL = 未鎖定（系統可自動調整）

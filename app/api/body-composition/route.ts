@@ -20,6 +20,11 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     return { adjusted: false, debug: `skip: goal_type=${client?.goal_type}, nutrition_enabled=${client?.nutrition_enabled}` }
   }
 
+  // 教練覆寫鎖定：教練手動調整過營養目標 → 跳過自動調整
+  if (client.coach_macro_override) {
+    return { adjusted: false, debug: 'skip: coach_macro_override locked' }
+  }
+
   // 2. 取得近 30 天數據
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
