@@ -64,6 +64,11 @@ const STEPS = [
     title: '加 LINE 更方便',
     desc: '綁定 LINE 後可以用訊息快速記錄，還會收到每日提醒和每週報告。',
   },
+  {
+    icon: '📱',
+    title: '加到主畫面',
+    desc: '把這個頁面加到手機主畫面，像 App 一樣一鍵開啟，不用每次開瀏覽器找。',
+  },
 ]
 
 // 免費用戶步驟工廠：根據營養目標和 goalInfo 動態產生
@@ -98,6 +103,7 @@ function buildFreeSteps(
   steps.push(
     { icon: '⚖️', title: '第一步：記錄體重', desc: '每天量體重是最重要的習慣。在下方「體組成」區塊輸入，或綁定 LINE 後直接傳數字。' },
     { icon: '🍽️', title: '第二步：追蹤飲食', desc: '每天記錄飲食是否達標，照著你的營養目標吃。持續記錄 2 週，系統會自動校正 TDEE。' },
+    { icon: '📱', title: '加到主畫面', desc: '把這個頁面加到手機主畫面，像 App 一樣一鍵開啟，不用每次開瀏覽器找。' },
     { icon: '🔓', title: '升級解鎖更多', desc: '訓練追蹤、身心狀態分析、無限次 AI 飲食顧問、每週自動報告 — 升級後全部解鎖。', isUpgrade: true },
   )
   return steps
