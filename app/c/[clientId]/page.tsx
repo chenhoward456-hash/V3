@@ -222,7 +222,7 @@ export default function ClientDashboard() {
       }
     }
     if (daysSinceSignup >= 3 && daysSinceSignup <= 4) track('user_day_3_active')
-    if (daysSinceSignup >= 5 && daysSinceSignup <= 10) track('user_day_7_active')
+    if (daysSinceSignup >= 7 && daysSinceSignup <= 10) track('user_day_7_active')
     if (daysSinceSignup >= 14 && daysSinceSignup <= 21) {
       track('user_day_14_active')
       track('tdee_calibration_complete')
@@ -813,7 +813,7 @@ export default function ClientDashboard() {
             }
 
             // P1: Day 7 — AI 顧問預覽
-            if (daysSinceSignup >= 5 && daysSinceSignup <= 10 && c.nutrition_enabled) {
+            if (daysSinceSignup >= 7 && daysSinceSignup <= 10 && c.nutrition_enabled) {
               return (
                 <div className="bg-gradient-to-br from-violet-50 to-blue-50 border border-violet-200 rounded-2xl p-4 mb-3">
                   <div className="flex items-start gap-3">

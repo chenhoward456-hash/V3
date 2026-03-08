@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 
 interface ErrorBoundaryProps {
   children: React.ReactNode
@@ -60,13 +60,24 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
 // 表單錯誤處理 Hook
 export function useFormError() {
   const [error, setError] = useState('')
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const showError = (message: string) => {
+  const clearError = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+    setError('')
+  }, [])
+
+  const showError = useCallback((message: string) => {
+    if (timerRef.current) clearTimeout(timerRef.current)
     setError(message)
-    setTimeout(() => setError(''), 5000) // 5秒後自動清除
-  }
-
-  const clearError = () => setError('')
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null
+      setError('')
+    }, 5000)
+  }, [])
 
   return { error, showError, clearError }
 }

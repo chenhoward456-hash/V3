@@ -42,13 +42,14 @@ export async function GET(request: NextRequest) {
     }
 
     // 使用條件更新防止併發請求繞過限制
-    const { error: updateError } = await supabase
+    const { data: updated, error: updateError } = await supabase
       .from('ebook_purchases')
       .update({ download_count: purchase.download_count + 1 })
       .eq('id', purchase.id)
       .lt('download_count', 20)
+      .select('id')
 
-    if (updateError) {
+    if (updateError || !updated || updated.length === 0) {
       return createErrorResponse('下載次數已達上限，如需協助請聯繫我們', 403)
     }
 

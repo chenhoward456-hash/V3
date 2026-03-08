@@ -62,34 +62,26 @@ export async function POST(request: NextRequest) {
     }
 
     // AI 未開放的用戶：每月允許 1 次免費體驗，由後端計數
-    // 使用 insert + on conflict 確保原子性，防止併發請求繞過限制
     if (!client.ai_chat_enabled) {
       const now = new Date()
       const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 
-      // 先嘗試插入，再檢查計數（原子操作）
-      await supabase.from('ai_chat_usage').insert({ client_id: client.id })
-
+      // 先檢查本月是否已有使用記錄
       const { count } = await supabase
         .from('ai_chat_usage')
         .select('*', { count: 'exact', head: true })
         .eq('client_id', client.id)
         .gte('created_at', monthStart)
 
-      if ((count ?? 0) > 1) {
-        // 超過限制，刪除剛插入的記錄
-        const { data: latest } = await supabase
-          .from('ai_chat_usage')
-          .select('id')
-          .eq('client_id', client.id)
-          .gte('created_at', monthStart)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-        if (latest) {
-          await supabase.from('ai_chat_usage').delete().eq('id', latest.id)
-        }
+      if ((count ?? 0) >= 1) {
         return NextResponse.json({ error: '本月免費次數已用完，請升級方案', quota_exceeded: true }, { status: 403 })
+      }
+
+      // 尚未使用，插入使用記錄
+      const { error: insertError } = await supabase.from('ai_chat_usage').insert({ client_id: client.id })
+      if (insertError) {
+        console.error('[ai/chat] 插入使用記錄失敗', insertError)
+        return NextResponse.json({ error: '系統錯誤，請稍後再試' }, { status: 500 })
       }
     }
 

@@ -30,7 +30,7 @@ function edgeRateLimit(key: string, maxRequests: number, windowMs: number): bool
   }
 
   entry.count++
-  return entry.count < maxRequests
+  return entry.count <= maxRequests
 }
 
 function getIP(request: NextRequest): string {
