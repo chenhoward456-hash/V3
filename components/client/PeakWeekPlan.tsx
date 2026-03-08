@@ -13,6 +13,7 @@ interface PeakWeekDay {
   fat: number
   calories: number
   water: number
+  sodiumMg?: number
   sodiumNote: string
   fiberNote: string
   trainingNote: string
@@ -137,7 +138,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
             </div>
             <div className="flex items-start gap-2 text-xs">
               <span className="shrink-0">🧂</span>
-              <span className="text-gray-600">{todayPlan.sodiumNote}</span>
+              <span className="text-gray-600">鈉：{todayPlan.sodiumMg ? <><strong>{todayPlan.sodiumMg}mg</strong> — </> : ''}{todayPlan.sodiumNote}</span>
             </div>
             {todayPlan.potassiumNote && (
               <div className="flex items-start gap-2 text-xs">
@@ -249,6 +250,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                     <div><span className="text-gray-500">脂肪：</span><strong>{day.fat}g</strong></div>
                     <div><span className="text-gray-500">熱量：</span><strong>{day.calories} kcal</strong></div>
                     <div><span className="text-gray-500">飲水：</span><strong>{(day.water / 1000).toFixed(1)}L</strong></div>
+                    {day.sodiumMg && <div><span className="text-gray-500">鈉：</span><strong>{day.sodiumMg}mg</strong></div>}
                   </div>
                   {/* 詳細指引 */}
                   <div className="space-y-1.5 text-[11px] text-gray-600 border-t border-gray-200 pt-2">

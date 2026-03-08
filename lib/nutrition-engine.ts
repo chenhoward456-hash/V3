@@ -309,6 +309,7 @@ export interface PeakWeekDay {
   proteinGPerKg: number
   fatGPerKg: number
   waterMlPerKg: number
+  sodiumMg: number          // 鈉目標 mg（可追蹤數值）
   sodiumNote: string
   fiberNote: string
   trainingNote: string
@@ -462,6 +463,11 @@ const PEAK_WEEK = {
   WATER_LOADING: 100,     // Day 3-2：100 mL/kg (文獻最高實測值；原 140 無證據且有低血鈉風險)
   WATER_TAPER: 70,        // Day 1：70 mL/kg (適度減少，避免醛固酮反彈)
   WATER_SHOW: 40,         // 比賽日：40 mL/kg (原 20 過於激進；脫水反而使肌肉扁平、損害 pump)
+
+  // 鈉目標（mg/天）— Escalante 2021: 避免突然斷鈉；Barakat 2022: 超補期微增鈉促 SGLT-1
+  SODIUM_BASELINE: 2300,     // 正常飲食鈉攝取（衛福部建議上限）
+  SODIUM_LOADING: 3000,      // 超補期 +30%（SGLT-1 幫助葡萄糖進入肌肉細胞）
+  SODIUM_SHOW: 1500,         // 比賽日少量鹹食即可（上台前 2 小時吃鹹零食增強 pump）
 
   // 鉀離子目標（mg/天）— Barakat 2022: ~6246 mg/day during loading
   POTASSIUM_BASELINE: 3500,  // 正常飲食鉀攝取
@@ -1146,8 +1152,9 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     warnings.push(`⚠️ 注意狀態：${refeedTrigger.reason}（低碳天數未達 3 天，持續觀察）`)
   }
 
-  // 0. Peak Week 偵測：距比賽 ≤ 7 天且 prepPhase 是 peak_week
-  if (input.targetDate && input.prepPhase === 'peak_week') {
+  // 0. Peak Week 偵測：距比賽 ≤ 7 天且 prepPhase 是 peak_week 或 competition
+  // competition 階段也要觸發，確保比賽日當天仍顯示 Day 0 的完整計畫（pump-up、鈉策略等）
+  if (input.targetDate && (input.prepPhase === 'peak_week' || input.prepPhase === 'competition')) {
     const now = new Date()
     const target = new Date(input.targetDate)
     const daysLeft = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
@@ -2470,8 +2477,9 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
         proteinGPerKg: PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.DEPLETION_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_BASELINE,
-        sodiumNote: '正常鈉攝取（~2300mg）',
-        fiberNote: d <= 5 ? '開始減少纖維（目標 <15g），碳水來源用纖維蔬菜（花椰菜、蘆筍）' : '正常纖維攝取',
+        sodiumMg: PEAK_WEEK.SODIUM_BASELINE,
+        sodiumNote: `正常鈉攝取（${PEAK_WEEK.SODIUM_BASELINE}mg）`,
+        fiberNote: d <= 5 ? '開始減少纖維（目標 <15g）— 碳水來源選低纖維蔬菜（去莖花椰菜、櫛瓜、蘆筍尖）' : '正常纖維攝取',
         trainingNote: trainingMap[d] || '休息',
         carbs: Math.round(bw * PEAK_WEEK.DEPLETION_CARB_G_PER_KG),
         protein: Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG),
@@ -2492,7 +2500,8 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
         proteinGPerKg: PEAK_WEEK.LOADING_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.LOADING_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_LOADING,
-        sodiumNote: '鈉加載 +30%（~3000mg）— 鈉經 SGLT-1 幫助葡萄糖進入肌肉細胞',
+        sodiumMg: PEAK_WEEK.SODIUM_LOADING,
+        sodiumNote: `鈉加載 +30%（${PEAK_WEEK.SODIUM_LOADING}mg）— 鈉經 SGLT-1 幫助葡萄糖進入肌肉細胞`,
         fiberNote: '極低纖維（<10g），避免腹脹影響比賽日外觀',
         trainingNote: '完全休息（任何訓練都會重新消耗肝醣，破壞超補效果）',
         carbs: Math.round(bw * PEAK_WEEK.LOADING_CARB_G_PER_KG),
@@ -2514,7 +2523,8 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
         proteinGPerKg: PEAK_WEEK.TAPER_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.TAPER_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_TAPER,
-        sodiumNote: '恢復正常鈉（~2300mg）— 不要突然斷鈉，避免醛固酮反彈導致皮下積水',
+        sodiumMg: PEAK_WEEK.SODIUM_BASELINE,
+        sodiumNote: `恢復正常鈉（${PEAK_WEEK.SODIUM_BASELINE}mg）— 不要突然斷鈉，避免醛固酮反彈導致皮下積水`,
         fiberNote: '極低纖維（<8g），避免腹脹',
         trainingNote: '完全休息（不要做任何訓練）',
         carbs: Math.round(bw * PEAK_WEEK.TAPER_CARB_G_PER_KG),
@@ -2536,7 +2546,8 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
         proteinGPerKg: PEAK_WEEK.SHOW_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.SHOW_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_SHOW,
-        sodiumNote: '少量鹹食（上台前 2 小時吃鹹零食可增強 pump 效果）',
+        sodiumMg: PEAK_WEEK.SODIUM_SHOW,
+        sodiumNote: `少量鹹食（~${PEAK_WEEK.SODIUM_SHOW}mg）— 上台前 2 小時吃鹹零食可增強血管充盈和 pump 效果`,
         fiberNote: '幾乎零纖維',
         trainingNote: '後台 pump-up（詳見下方指引）',
         carbs: Math.round(bw * PEAK_WEEK.SHOW_CARB_G_PER_KG),
