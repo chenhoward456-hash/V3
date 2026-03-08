@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sharp from 'sharp'
+import { createLogger } from '@/lib/logger'
 import {
   getMarketingRichMenuObject,
   getMemberRichMenuObject,
@@ -9,6 +10,8 @@ import {
   listRichMenus,
   deleteRichMenu,
 } from '@/lib/line'
+
+const logger = createLogger('line-richmenu')
 
 /**
  * GET /api/line/richmenu — 查看目前所有 Rich Menu
@@ -141,7 +144,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(results)
 
   } catch (error) {
-    console.error('Rich menu setup error:', error)
+    logger.error('Rich menu setup error', error as Error)
     return NextResponse.json({ error: `Internal error: ${error}` }, { status: 500 })
   }
 }

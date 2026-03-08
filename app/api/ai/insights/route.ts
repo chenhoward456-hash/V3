@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { rateLimit, getClientIP } from '@/lib/auth-middleware'
+import { createLogger } from '@/lib/logger'
 import {
   generateWeeklyAIReport,
   analyzeDietaryPatterns,
@@ -28,6 +29,8 @@ import {
   type InsightData,
   type ClientProfile,
 } from '@/lib/ai-insights'
+
+const logger = createLogger('ai-insights')
 
 export const dynamic = 'force-dynamic'
 
@@ -190,7 +193,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result)
   } catch (err: any) {
-    console.error('[AI Insights Error]', err.message || err)
+    logger.error('AI Insights Error', err)
     return NextResponse.json({ error: 'AI 分析失敗' }, { status: 500 })
   }
 }

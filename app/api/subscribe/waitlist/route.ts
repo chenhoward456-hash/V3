@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('waitlist')
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +25,7 @@ export async function POST(request: Request) {
 
     if (error) {
       // waitlist 表可能不存在，fallback: 不阻擋用戶體驗
-      console.error('Waitlist insert error:', error.message)
+      logger.warn('Waitlist insert failed', { message: error.message })
       // 即使儲存失敗也回傳成功，不影響用戶體驗
     }
 

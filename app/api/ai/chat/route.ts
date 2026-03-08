@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { askClaude, ChatMessage } from '@/lib/claude'
 import { rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('ai-chat')
 
 const supabase = createServiceSupabase()
 
@@ -13,7 +16,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('[AI Chat Error] ANTHROPIC_API_KEY not set')
+    logger.error('ANTHROPIC_API_KEY not set')
     return NextResponse.json({ error: 'AI 服務未設定，請聯繫管理員' }, { status: 500 })
   }
 
@@ -97,7 +100,7 @@ export async function POST(request: NextRequest) {
         // Retry on 529 (overloaded), 500 (internal server error), or 429 (rate limited)
         if ((code === 529 || code === 500 || code === 429) && attempt < MAX_RETRIES - 1) {
           const delay = Math.min(2000 * Math.pow(2, attempt), 16000) // 2s, 4s, 8s, 16s
-          console.log(`[AI Chat] Retry attempt ${attempt + 1}/${MAX_RETRIES - 1} after ${delay}ms (status: ${code})`)
+          logger.info(`Retry attempt ${attempt + 1}/${MAX_RETRIES - 1} after ${delay}ms`, { status: code })
           await new Promise(r => setTimeout(r, delay))
           continue
         }
@@ -112,12 +115,11 @@ export async function POST(request: NextRequest) {
     const status = err?.status || err?.statusCode
     const errorMessage = err?.error?.error?.message || err?.error?.message || err?.message || String(err)
     const errorType = err?.error?.error?.type || err?.error?.type || err?.type || 'unknown'
-    console.error('[AI Chat Error]', JSON.stringify({
+    logger.error('AI Chat Error', err, {
       status,
       type: errorType,
       message: errorMessage,
-      raw: err?.error || err?.message || String(err),
-    }))
+    })
 
     if (status === 401) {
       return NextResponse.json({ error: 'API Key 無效，請檢查 ANTHROPIC_API_KEY 設定' }, { status: 500 })

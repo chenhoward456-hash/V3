@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
+import WearableImport from './WearableImport'
 
 interface DailyWellnessProps {
   todayWellness: any
@@ -407,6 +408,9 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
             </details>
           </div>
         )}
+
+        {/* 穿戴裝置數據匯入 */}
+        <WearableImport clientId={clientId} onImported={onMutate} />
 
         {/* 月經週期標記（女性專用） */}
         {isFemale && (

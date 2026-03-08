@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { useClientData } from '@/hooks/useClientData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
+import { useCoachMode } from '@/hooks/useCoachMode'
 import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
+import BottomNav from '@/components/client/BottomNav'
 import HealthOverview from '@/components/client/HealthOverview'
 import DailyCheckIn from '@/components/client/DailyCheckIn'
 import DailyWellness from '@/components/client/DailyWellness'
@@ -61,12 +63,10 @@ export default function ClientDashboard() {
   }
 
   // 教練模式
-  const [isCoachMode, setIsCoachMode] = useState(false)
-  const [showPinPopover, setShowPinPopover] = useState(false)
-  const [pinInput, setPinInput] = useState('')
-  const [pinError, setPinError] = useState(false)
-  const [pinLoading, setPinLoading] = useState(false)
-  const [savedPin, setSavedPin] = useState('')
+  const {
+    isCoachMode, showPinPopover, pinInput, pinError, pinLoading,
+    coachHeaders, setShowPinPopover, setPinInput, handlePinSubmit, toggleCoachMode,
+  } = useCoachMode()
   const [showSupplementModal, setShowSupplementModal] = useState(false)
   const [togglingSupplements, setTogglingSupplements] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState('')
@@ -98,44 +98,6 @@ export default function ClientDashboard() {
     elements.forEach(el => observer.observe(el))
     return () => observer.disconnect()
   }, [clientData])
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = sessionStorage.getItem('coachMode')
-      const pin = sessionStorage.getItem('coachPin')
-      if (saved === 'true' && pin) {
-        setIsCoachMode(true)
-        setSavedPin(pin)
-      }
-    }
-  }, [])
-
-  const handlePinSubmit = async () => {
-    if (!pinInput || pinLoading) return
-    setPinLoading(true)
-    setPinError(false)
-    try {
-      const res = await fetch('/api/coach/verify-pin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pinInput })
-      })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.valid) {
-          setIsCoachMode(true)
-          setSavedPin(pinInput)
-          sessionStorage.setItem('coachMode', 'true')
-          sessionStorage.setItem('coachPin', pinInput)
-          setShowPinPopover(false)
-          setPinInput('')
-        } else { setPinError(true) }
-      } else { setPinError(true) }
-    } catch { setPinError(true) }
-    finally { setPinLoading(false) }
-  }
-
-  const coachHeaders = { 'Content-Type': 'application/json', 'x-coach-pin': savedPin }
 
   const handleToggleSupplement = async (supplementId: string, currentCompleted: boolean) => {
     setTogglingSupplements(prev => new Set(prev).add(supplementId))
@@ -341,10 +303,7 @@ export default function ClientDashboard() {
             </div>
             <div className="relative">
               <button
-                onClick={() => {
-                  if (isCoachMode) { setIsCoachMode(false); setSavedPin(''); sessionStorage.removeItem('coachMode'); sessionStorage.removeItem('coachPin') }
-                  else { setShowPinPopover(!showPinPopover) }
-                }}
+                onClick={toggleCoachMode}
                 className={`p-2 rounded-full transition-colors ${isCoachMode ? 'bg-green-100 text-green-700' : 'text-gray-400 hover:bg-gray-100'}`}
               >
                 {isCoachMode ? <Unlock size={18} /> : <Lock size={18} />}
@@ -354,7 +313,7 @@ export default function ClientDashboard() {
                   <input
                     type="password"
                     value={pinInput}
-                    onChange={(e) => { setPinInput(e.target.value); setPinError(false) }}
+                    onChange={(e) => setPinInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
                     placeholder="輸入教練密碼"
                     className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${pinError ? 'border-red-400' : 'border-gray-300'}`}
@@ -633,7 +592,7 @@ export default function ClientDashboard() {
                     const rec = calcRecommendedStageWeight(
                       latestBodyData.weight!,
                       latestBodyData.body_fat!,
-                      c.gender,
+                      c.gender ?? '男性',
                       latestBodyData.height
                     )
                     return (
@@ -858,6 +817,13 @@ export default function ClientDashboard() {
               competitionEnabled={isCompetition}
               todayCalories={todayNutrition?.calories}
               caloriesTarget={c.calories_target}
+              wearable={todayWellness ? {
+                device_recovery_score: todayWellness.device_recovery_score,
+                resting_hr: todayWellness.resting_hr,
+                hrv: todayWellness.hrv,
+                wearable_sleep_score: todayWellness.wearable_sleep_score,
+                respiratory_rate: todayWellness.respiratory_rate,
+              } : null}
             />
           )}
         </div>
@@ -1032,7 +998,7 @@ export default function ClientDashboard() {
             date={selectedDate}
             competitionEnabled={clientData.client.competition_enabled}
             healthModeEnabled={clientData.client.health_mode_enabled}
-            gender={c.gender}
+            gender={c.gender ?? undefined}
             onMutate={mutate}
           /></div>
         )}
@@ -1110,8 +1076,8 @@ export default function ClientDashboard() {
         {c.lab_enabled && c.lab_results && c.lab_results.length > 0 && (
           <LabNutritionAdviceCard
             labResults={c.lab_results}
-            gender={c.gender}
-            goalType={c.goal_type}
+            gender={(c.gender as '男性' | '女性') ?? undefined}
+            goalType={c.goal_type as 'cut' | 'bulk' | null | undefined}
           />
         )}
 
@@ -1126,9 +1092,9 @@ export default function ClientDashboard() {
         )}
 
         <ActionPlan
-          healthGoals={c.health_goals}
-          nextCheckupDate={c.next_checkup_date}
-          coachSummary={c.coach_summary}
+          healthGoals={c.health_goals ?? undefined}
+          nextCheckupDate={c.next_checkup_date ?? undefined}
+          coachSummary={c.coach_summary ?? undefined}
           topSupplements={c.supplement_enabled ? topSupplements : []}
         />
 
@@ -1172,7 +1138,7 @@ export default function ClientDashboard() {
         })()}
 
         {isCoachMode && (
-          <HealthReport client={c} latestBodyData={latestBodyData} bmi={bmi}
+          <HealthReport client={c as any} latestBodyData={latestBodyData} bmi={bmi}
             weekRate={supplementComplianceStats.weekRate} monthRate={supplementComplianceStats.monthRate}
           />
         )}
@@ -1183,7 +1149,7 @@ export default function ClientDashboard() {
       <OnboardingGuide
         clientId={clientId as string}
         clientName={c.name}
-        tier={c.subscription_tier}
+        tier={c.subscription_tier!}
         features={{
           body_composition_enabled: c.body_composition_enabled,
           nutrition_enabled: c.nutrition_enabled,
@@ -1282,7 +1248,7 @@ export default function ClientDashboard() {
           latestBodyFat={latestBodyData?.body_fat}
           nutritionLogs={clientData.nutritionLogs || []}
           wellnessLogs={clientData.wellness || []}
-          trainingLogs={clientData.trainingLogs || []}
+          trainingLogs={(clientData.trainingLogs || []) as any[]}
           supplements={c.supplements || []}
           supplementComplianceRate={supplementComplianceStats.weekRate}
           todayWellness={todayWellness}
@@ -1305,9 +1271,7 @@ export default function ClientDashboard() {
         if (c.training_enabled) tabs.push({ id: 'section-training', icon: '🏋️', label: '訓練' })
         if (!isCompetition && c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
         if (c.lab_enabled) tabs.push({ id: 'section-lab', icon: '🩸', label: '血檢' })
-        if (tabs.length <= 1) return null
 
-        // 每日任務完成狀態對應
         const completedMap: Record<string, boolean> = {
           'section-nutrition': !!todayNutrition,
           'section-nutrition-general': !!todayNutrition,
@@ -1317,29 +1281,16 @@ export default function ClientDashboard() {
         }
 
         return (
-          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-            <div className="max-w-4xl mx-auto flex">
-              {tabs.map(tab => {
-                const isDailyCompleted = isToday && completedMap[tab.id]
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id)
-                      document.getElementById(tab.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                    }}
-                    className={`flex-1 flex flex-col items-center py-2 transition-colors relative ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`}
-                  >
-                    <span className="text-lg leading-none">{tab.icon}</span>
-                    <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
-                    {isDailyCompleted && (
-                      <span className="absolute top-1 right-1/2 translate-x-4 w-1.5 h-1.5 bg-green-400 rounded-full" />
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </nav>
+          <BottomNav
+            tabs={tabs}
+            activeTab={activeTab}
+            completedMap={completedMap}
+            isToday={isToday}
+            onTabClick={(id) => {
+              setActiveTab(id)
+              document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}
+          />
         )
       })()}
     </div>

@@ -1,4 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('fetchClientData')
 
 // 補品介面定義
 export interface Supplement {
@@ -104,7 +107,7 @@ export async function fetchClientData(clientId: string): Promise<ClientData> {
       .eq('date', today)
 
     if (logsError) {
-      console.warn('獲取補品打卡記錄失敗:', logsError)
+      logger.warn('獲取補品打卡記錄失敗', { error: logsError })
     }
 
     // 獲取身體數據記錄
@@ -115,7 +118,7 @@ export async function fetchClientData(clientId: string): Promise<ClientData> {
       .order('date', { ascending: false })
 
     if (bodyError) {
-      console.warn('獲取身體數據記錄失敗:', bodyError)
+      logger.warn('獲取身體數據記錄失敗', { error: bodyError })
     }
 
     return {
@@ -124,7 +127,7 @@ export async function fetchClientData(clientId: string): Promise<ClientData> {
       bodyData: bodyRecords || []
     }
   } catch (error) {
-    console.error('載入客戶資料時發生錯誤:', error)
+    logger.error('載入客戶資料時發生錯誤', error)
     throw error
   }
 }
