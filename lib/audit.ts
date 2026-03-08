@@ -48,7 +48,7 @@ interface AuditEntry {
 export async function writeAuditLog(entry: AuditEntry): Promise<void> {
   try {
     const supabase = createServiceSupabase()
-    await supabase.from('audit_logs').insert({
+    const { error } = await supabase.from('audit_logs').insert({
       action: entry.action,
       actor: entry.actor,
       target_type: entry.targetType || null,
@@ -56,10 +56,11 @@ export async function writeAuditLog(entry: AuditEntry): Promise<void> {
       details: entry.details || {},
       ip: entry.ip || null,
     })
-  } catch {
-    // 審計日誌寫入失敗不應中斷主流程
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[audit] Failed to write audit log:', entry.action)
+    if (error) {
+      console.error('[audit] Failed to write audit log:', entry.action, error.message)
     }
+  } catch (err) {
+    // 審計日誌寫入失敗不應中斷主流程
+    console.error('[audit] Failed to write audit log:', entry.action, err instanceof Error ? err.message : err)
   }
 }

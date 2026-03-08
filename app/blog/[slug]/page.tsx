@@ -96,25 +96,35 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function sanitizeHref(url: string): string {
+  const trimmed = url.trim()
+  if (/^javascript:/i.test(trimmed) || /^data:/i.test(trimmed)) return '#'
+  return trimmed
+}
+
 function renderMarkdown(content: string) {
   return content
     .split('\n')
     .map(line => {
       if (line.startsWith('## ')) {
-        return `<h2 style="font-size: 1.8rem; font-weight: bold; margin-top: 2rem; margin-bottom: 1rem; color: #2D2D2D;">${line.replace('## ', '')}</h2>`
+        return `<h2 style="font-size: 1.8rem; font-weight: bold; margin-top: 2rem; margin-bottom: 1rem; color: #2D2D2D;">${escapeHtml(line.replace('## ', ''))}</h2>`
       }
       if (line.startsWith('### ')) {
-        return `<h3 style="font-size: 1.4rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #2D2D2D;">${line.replace('### ', '')}</h3>`
+        return `<h3 style="font-size: 1.4rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #2D2D2D;">${escapeHtml(line.replace('### ', ''))}</h3>`
       }
       if (line.includes('**')) {
-        line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        line = line.replace(/\*\*(.*?)\*\*/g, (_, p1) => `<strong>${escapeHtml(p1)}</strong>`)
       }
       if (line.includes('[') && line.includes('](')) {
-        line = line.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">$1</a>')
+        line = line.replace(/\[(.*?)\]\((.*?)\)/g, (_, text, url) => `<a href="${sanitizeHref(url)}" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`)
       }
       if (line === '---') return '<hr style="margin: 2rem 0; border-color: #E5E5E5;" />'
-      if (line.startsWith('- ')) return `<li style="margin-bottom: 0.5rem;">${line.replace('- ', '')}</li>`
-      if (line.startsWith('|')) return line
+      if (line.startsWith('- ')) return `<li style="margin-bottom: 0.5rem;">${escapeHtml(line.replace('- ', ''))}</li>`
+      if (line.startsWith('|')) return escapeHtml(line)
       if (line.trim()) return `<p style="margin-bottom: 1rem;">${line}</p>`
       return ''
     })
