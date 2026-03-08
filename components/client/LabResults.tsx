@@ -41,7 +41,17 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
     for (const [testName, items] of map) {
       const sorted = [...items].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       const latest = sorted[sorted.length - 1]
-      const prev = sorted.length >= 2 ? sorted[sorted.length - 2] : null
+      // 找到距離最新日期至少 14 天的前一筆（避免同期檢測互相比較）
+      let prev: any = null
+      const latestTime = new Date(latest.date).getTime()
+      for (let i = sorted.length - 2; i >= 0; i--) {
+        const daysDiff = (latestTime - new Date(sorted[i].date).getTime()) / (1000 * 60 * 60 * 24)
+        if (daysDiff >= 14) {
+          prev = sorted[i]
+          break
+        }
+      }
+      if (!prev && sorted.length >= 2) prev = sorted[sorted.length - 2]
       const history = sorted.map(r => ({
         date: new Date(r.date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
         value: r.value,
@@ -72,6 +82,66 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
     if (!labResults?.length) return []
     return [...new Set(labResults.map((r: any) => r.test_name))]
   }, [labResults])
+
+  // 完整的預設指標模板（涵蓋系統支援的所有檢測項目）
+  const presetTests = [
+    // 代謝 / 血糖
+    { name: 'HOMA-IR', unit: '', reference: '<2.0' },
+    { name: '空腹血糖', unit: 'mg/dL', reference: '<90' },
+    { name: '空腹胰島素', unit: 'μIU/mL', reference: '<5.0' },
+    { name: 'HbA1c', unit: '%', reference: '<5.5' },
+    { name: '尿酸', unit: 'mg/dL', reference: '<7.0' },
+    // 血脂
+    { name: '三酸甘油酯', unit: 'mg/dL', reference: '<100' },
+    { name: 'ApoB', unit: 'mg/dL', reference: '<80' },
+    { name: 'Lp(a)', unit: 'mg/dL', reference: '<30' },
+    { name: 'LDL-C', unit: 'mg/dL', reference: '<100' },
+    { name: 'HDL-C', unit: 'mg/dL', reference: '>40' },
+    { name: '總膽固醇', unit: 'mg/dL', reference: '<200' },
+    // 肝功能
+    { name: 'AST', unit: 'U/L', reference: '<40' },
+    { name: 'ALT', unit: 'U/L', reference: '<40' },
+    { name: 'GGT', unit: 'U/L', reference: '<60' },
+    { name: '白蛋白', unit: 'g/dL', reference: '>3.5' },
+    // 腎功能
+    { name: '肌酸酐', unit: 'mg/dL', reference: '0.7-1.3' },
+    { name: 'BUN', unit: 'mg/dL', reference: '7-20' },
+    { name: 'eGFR', unit: 'mL/min', reference: '>90' },
+    // 甲狀腺
+    { name: 'TSH', unit: 'mIU/L', reference: '0.4-4.0' },
+    { name: 'Free T4', unit: 'ng/dL', reference: '0.8-1.8' },
+    { name: 'Free T3', unit: 'pg/mL', reference: '2.3-4.2' },
+    // 鐵代謝
+    { name: '鐵蛋白', unit: 'ng/mL', reference: '50-150' },
+    { name: '血紅素', unit: 'g/dL', reference: '13.5-17.5' },
+    { name: 'MCV', unit: 'fL', reference: '80-100' },
+    // 發炎
+    { name: 'CRP', unit: 'mg/L', reference: '<1.0' },
+    { name: '同半胱胺酸', unit: 'μmol/L', reference: '<8.0' },
+    // 維生素
+    { name: '維生素D', unit: 'ng/mL', reference: '>50' },
+    { name: '維生素B12', unit: 'pg/mL', reference: '>400' },
+    { name: '葉酸', unit: 'ng/mL', reference: '>5.4' },
+    // 礦物質
+    { name: '鎂', unit: 'mg/dL', reference: '2.0-2.4' },
+    { name: '鋅', unit: 'μg/dL', reference: '70-120' },
+    { name: '鈣', unit: 'mg/dL', reference: '8.5-10.5' },
+    // 荷爾蒙
+    { name: '睪固酮', unit: 'ng/dL', reference: '300-1000' },
+    { name: '游離睪固酮', unit: 'pg/mL', reference: '9-30' },
+    { name: '皮質醇', unit: 'μg/dL', reference: '6-18' },
+    { name: 'DHEA-S', unit: 'μg/dL', reference: '100-500' },
+    { name: '雌二醇', unit: 'pg/mL', reference: '10-40' },
+    { name: 'SHBG', unit: 'nmol/L', reference: '10-57' },
+    // 血球
+    { name: '白血球', unit: '/μL', reference: '4000-10000' },
+    { name: '血小板', unit: '/μL', reference: '150000-400000' },
+  ]
+
+  // 過濾掉使用者已有的指標，只顯示尚未新增的
+  const availablePresets = useMemo(() => {
+    return presetTests.filter(t => !existingTestNames.includes(t.name))
+  }, [existingTestNames])
 
   const handleSave = async () => {
     if (!form.test_name || !form.value || !form.date) { showToast('請填寫必要欄位', 'error'); return }
@@ -214,32 +284,48 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">指標名稱 *</label>
-                {!editing && existingTestNames.length > 0 ? (
+                {!editing ? (
                   <>
                     <select
-                      value={existingTestNames.includes(form.test_name) ? form.test_name : '__new__'}
+                      value={
+                        existingTestNames.includes(form.test_name) ? form.test_name
+                        : presetTests.some(t => t.name === form.test_name) ? form.test_name
+                        : '__new__'
+                      }
                       onChange={(e) => {
                         if (e.target.value === '__new__') {
-                          setForm(p => ({ ...p, test_name: '' }))
+                          setForm(p => ({ ...p, test_name: '', unit: '', reference_range: '' }))
                         } else {
-                          // 選擇已有指標時，自動帶入單位和參考範圍
+                          // 從已有資料或預設模板帶入單位和參考範圍
                           const existing = labResults.find((r: any) => r.test_name === e.target.value)
+                          const preset = presetTests.find(t => t.name === e.target.value)
                           setForm(p => ({
                             ...p,
                             test_name: e.target.value,
-                            unit: existing?.unit || p.unit,
-                            reference_range: existing?.reference_range || p.reference_range,
+                            unit: existing?.unit || preset?.unit || p.unit,
+                            reference_range: existing?.reference_range || preset?.reference || p.reference_range,
                           }))
                         }
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
                     >
-                      {existingTestNames.map(name => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
-                      <option value="__new__">+ 新增指標...</option>
+                      {existingTestNames.length > 0 && (
+                        <optgroup label="已有指標">
+                          {existingTestNames.map(name => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {availablePresets.length > 0 && (
+                        <optgroup label="新增指標">
+                          {availablePresets.map(t => (
+                            <option key={t.name} value={t.name}>{t.name}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <option value="__new__">✏️ 自行輸入...</option>
                     </select>
-                    {!existingTestNames.includes(form.test_name) && (
+                    {!existingTestNames.includes(form.test_name) && !presetTests.some(t => t.name === form.test_name) && (
                       <input type="text" value={form.test_name} onChange={(e) => setForm(p => ({ ...p, test_name: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="輸入新指標名稱" />
                     )}
                   </>

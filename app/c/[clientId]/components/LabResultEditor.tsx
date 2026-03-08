@@ -163,19 +163,59 @@ export default function LabResultEditor({
     }
   }
 
-  // 常見檢測項目模板
+  // 常見檢測項目模板（涵蓋系統支援的所有檢測項目）
   const commonTests = [
+    // 代謝 / 血糖
     { name: 'HOMA-IR', unit: '', reference: '<2.0' },
-    { name: '同半胱胺酸', unit: 'μmol/L', reference: '<8.0' },
-    { name: '空腹胰島素', unit: 'μIU/mL', reference: '<5.0' },
     { name: '空腹血糖', unit: 'mg/dL', reference: '<90' },
-    { name: '維生素D', unit: 'ng/mL', reference: '>50' },
-    { name: '鐵蛋白', unit: 'ng/mL', reference: '50-150' },
+    { name: '空腹胰島素', unit: 'μIU/mL', reference: '<5.0' },
+    { name: 'HbA1c', unit: '%', reference: '<5.5' },
+    { name: '尿酸', unit: 'mg/dL', reference: '<7.0' },
+    // 血脂
     { name: '三酸甘油酯', unit: 'mg/dL', reference: '<100' },
-    { name: 'Lp(a)', unit: 'mg/dL', reference: '<30' },
     { name: 'ApoB', unit: 'mg/dL', reference: '<80' },
+    { name: 'Lp(a)', unit: 'mg/dL', reference: '<30' },
+    { name: 'LDL-C', unit: 'mg/dL', reference: '<100' },
+    { name: 'HDL-C', unit: 'mg/dL', reference: '>40' },
+    { name: '總膽固醇', unit: 'mg/dL', reference: '<200' },
+    // 肝功能
+    { name: 'AST', unit: 'U/L', reference: '<40' },
+    { name: 'ALT', unit: 'U/L', reference: '<40' },
+    { name: 'GGT', unit: 'U/L', reference: '<60' },
+    { name: '白蛋白', unit: 'g/dL', reference: '>3.5' },
+    // 腎功能
+    { name: '肌酸酐', unit: 'mg/dL', reference: '0.7-1.3' },
+    { name: 'BUN', unit: 'mg/dL', reference: '7-20' },
+    { name: 'eGFR', unit: 'mL/min', reference: '>90' },
+    // 甲狀腺
+    { name: 'TSH', unit: 'mIU/L', reference: '0.4-4.0' },
+    { name: 'Free T4', unit: 'ng/dL', reference: '0.8-1.8' },
+    { name: 'Free T3', unit: 'pg/mL', reference: '2.3-4.2' },
+    // 鐵代謝
+    { name: '鐵蛋白', unit: 'ng/mL', reference: '50-150' },
+    { name: '血紅素', unit: 'g/dL', reference: '13.5-17.5' },
+    { name: 'MCV', unit: 'fL', reference: '80-100' },
+    // 發炎
+    { name: 'CRP', unit: 'mg/L', reference: '<1.0' },
+    { name: '同半胱胺酸', unit: 'μmol/L', reference: '<8.0' },
+    // 維生素
+    { name: '維生素D', unit: 'ng/mL', reference: '>50' },
+    { name: '維生素B12', unit: 'pg/mL', reference: '>400' },
+    { name: '葉酸', unit: 'ng/mL', reference: '>5.4' },
+    // 礦物質
     { name: '鎂', unit: 'mg/dL', reference: '2.0-2.4' },
-    { name: '鋅', unit: 'μg/dL', reference: '70-120' }
+    { name: '鋅', unit: 'μg/dL', reference: '70-120' },
+    { name: '鈣', unit: 'mg/dL', reference: '8.5-10.5' },
+    // 荷爾蒙
+    { name: '睪固酮', unit: 'ng/dL', reference: '300-1000' },
+    { name: '游離睪固酮', unit: 'pg/mL', reference: '9-30' },
+    { name: '皮質醇', unit: 'μg/dL', reference: '6-18' },
+    { name: 'DHEA-S', unit: 'μg/dL', reference: '100-500' },
+    { name: '雌二醇', unit: 'pg/mL', reference: '10-40' },
+    { name: 'SHBG', unit: 'nmol/L', reference: '10-57' },
+    // 血球
+    { name: '白血球', unit: '/μL', reference: '4000-10000' },
+    { name: '血小板', unit: '/μL', reference: '150000-400000' },
   ]
 
   return (

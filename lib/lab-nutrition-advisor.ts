@@ -1891,10 +1891,21 @@ export function generateRetestReminders(
     { keywords: ['睪固酮', 'testosterone'], weeks: 12, reason: '生活方式調整後 3 個月追蹤睪固酮變化', severity: 'medium' },
     // 發炎 — 4-8 週
     { keywords: ['crp', 'hscrp', 'c反應蛋白'], weeks: 8, reason: '抗發炎飲食調整後 8 週追蹤 CRP 變化', severity: 'medium' },
+    // 同半胱胺酸 — B 群補充後 8-12 週（Clarke 2014）
+    { keywords: ['同半胱胺酸', 'homocysteine'], weeks: 12, reason: 'B6 + B12 + 葉酸補充後 8-12 週追蹤同半胱胺酸變化', severity: 'high' },
     // B12 — 補充後 3 個月
     { keywords: ['維生素b12', 'b12', '鈷胺素'], weeks: 12, reason: 'B12 補充後 3 個月追蹤血清濃度', severity: 'medium' },
+    // 葉酸 — 補充後 3 個月
+    { keywords: ['葉酸', 'folate', 'folicacid'], weeks: 12, reason: '葉酸補充後 3 個月追蹤血清濃度', severity: 'medium' },
     // 尿酸 — 飲食調整後 4-8 週
     { keywords: ['尿酸', 'uricacid'], weeks: 8, reason: '飲食調整後 8 週追蹤尿酸變化', severity: 'medium' },
+    // 肝功能 — 飲食調整後 8-12 週
+    { keywords: ['alt', 'gpt', 'sgpt'], weeks: 12, reason: '飲食調整後 3 個月追蹤肝指數改善', severity: 'medium' },
+    { keywords: ['ast', 'got', 'sgot'], weeks: 12, reason: '飲食調整後 3 個月追蹤肝指數改善', severity: 'medium' },
+    { keywords: ['ggt', 'γ-gt'], weeks: 12, reason: '減少酒精與調整飲食後 3 個月追蹤 GGT 變化', severity: 'medium' },
+    // 腎功能 — 3 個月
+    { keywords: ['肌酸酐', 'creatinine'], weeks: 12, reason: '飲食調整後 3 個月追蹤腎功能變化', severity: 'medium' },
+    { keywords: ['egfr', '腎絲球過濾率'], weeks: 12, reason: '3 個月追蹤腎絲球過濾率變化', severity: 'medium' },
   ]
 
   for (const [, lab] of latestByTest) {
@@ -1979,7 +1990,7 @@ export function generateLabChangeReport(
     '三酸甘油酯': true, 'triglycerides': true,
     'apob': true, 'ldl': true, '低密度脂蛋白': true,
     '總膽固醇': true,
-    'ast': true, 'alt': true, 'ggt': true,
+    'ast': true, 'alt': true, 'ggt': true, '丙麩氨酸轉肽酶': true,
     '肌酸酐': true, 'creatinine': true,
     'bun': true, '血尿素氮': true,
     'tsh': true, '促甲狀腺': true,
@@ -1991,20 +2002,27 @@ export function generateLabChangeReport(
 
   const higherIsGood: Record<string, boolean> = {
     'hdl': true, '高密度脂蛋白': true,
-    '鐵蛋白': true, 'ferritin': true,
     '血紅素': true, 'hemoglobin': true,
     '維生素d': true, 'vitamind': true, '25oh': true,
     '維生素b12': true, 'b12': true,
     '葉酸': true, 'folate': true,
-    '鎂': true, 'magnesium': true,
-    '鋅': true, 'zinc': true,
-    '鈣': true, 'calcium': true,
     '白蛋白': true, 'albumin': true,
     'egfr': true, '腎絲球過濾率': true,
     '睪固酮': true, 'testosterone': true,  // 通常升高是好的
     '游離睪固酮': true, 'freetestosterone': true,
     'dheas': true, 'dhea-s': true,
     'freet4': true, '游離t4': true, '游離甲狀腺素': true,
+  }
+
+  // 雙向指標：可以偏高也可以偏低，需依 status 判斷方向
+  // 這些指標不應放在 higherIsBad 或 higherIsGood，而是根據當前狀態動態判斷
+  const bidirectionalMarkers: Record<string, boolean> = {
+    '鐵蛋白': true, 'ferritin': true,       // 偏低=缺鐵, 偏高=鐵過載/發炎
+    '鎂': true, 'magnesium': true,           // 偏低=缺乏, 偏高=腎功能異常
+    '鋅': true, 'zinc': true,               // 偏低=缺乏, 偏高=中毒
+    '鈣': true, 'calcium': true,             // 偏低=低血鈣, 偏高=高血鈣
+    'mcv': true, '平均紅血球體積': true,       // 偏低=小球性, 偏高=巨球性
+    'shbg': true, '性荷爾蒙結合球蛋白': true,  // 偏低偏高都不好
   }
 
   for (const [testName, results] of byTest) {
@@ -2034,10 +2052,25 @@ export function generateLabChangeReport(
     if (Math.abs(changePct) < 3) {
       direction = 'stable'
     } else {
+      const isBidirectional = Object.keys(bidirectionalMarkers).some(k => norm.includes(k.toLowerCase().replace(/[\s_\-()（）]/g, '')))
       const isHigherBad = Object.keys(higherIsBad).some(k => norm.includes(k.toLowerCase().replace(/[\s_\-()（）]/g, '')))
       const isHigherGood = Object.keys(higherIsGood).some(k => norm.includes(k.toLowerCase().replace(/[\s_\-()（）]/g, '')))
 
-      if (isHigherBad) {
+      if (isBidirectional) {
+        // 雙向指標：用 status 判斷改善或惡化
+        if (current.status === 'normal' && previous.status !== 'normal') direction = 'improved'
+        else if (current.status !== 'normal' && previous.status === 'normal') direction = 'worsened'
+        else if (current.status === 'normal' && previous.status === 'normal') direction = 'stable'
+        else {
+          // 兩次都異常：往 normal 靠近就是改善（這裡用 status 嚴重度判斷）
+          const severityOrder = { 'normal': 0, 'attention': 1, 'alert': 2 }
+          const currentSev = severityOrder[current.status] ?? 1
+          const prevSev = severityOrder[previous.status] ?? 1
+          if (currentSev < prevSev) direction = 'improved'
+          else if (currentSev > prevSev) direction = 'worsened'
+          else direction = 'stable'
+        }
+      } else if (isHigherBad) {
         direction = changeAbs > 0 ? 'worsened' : 'improved'
       } else if (isHigherGood) {
         direction = changeAbs > 0 ? 'improved' : 'worsened'
