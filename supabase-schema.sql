@@ -502,3 +502,38 @@ CREATE POLICY "Service role full access on waitlist" ON waitlist
   FOR ALL USING (true) WITH CHECK (true);
 
 CREATE INDEX IF NOT EXISTS idx_clients_line_user_id ON clients(line_user_id) WHERE line_user_id IS NOT NULL;
+
+-- ============================================
+-- 32. Garmin Connect API 直接同步
+-- 儲存 OAuth 1.0a token，支援一鍵同步穿戴裝置數據
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS garmin_connections (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  access_token TEXT NOT NULL,
+  access_token_secret TEXT NOT NULL,
+  garmin_user_id TEXT,
+  last_sync_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(client_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_garmin_connections_client ON garmin_connections(client_id);
+
+ALTER TABLE garmin_connections ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role full access on garmin_connections" ON garmin_connections
+  FOR ALL USING (true) WITH CHECK (true);
+
+-- OAuth 流程中暫存 request token（授權完成後刪除）
+CREATE TABLE IF NOT EXISTS garmin_oauth_states (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  oauth_token TEXT NOT NULL UNIQUE,
+  oauth_token_secret TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE garmin_oauth_states ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role full access on garmin_oauth_states" ON garmin_oauth_states
+  FOR ALL USING (true) WITH CHECK (true);
