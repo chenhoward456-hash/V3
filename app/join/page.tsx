@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { trackEvent } from '@/lib/analytics'
@@ -62,6 +62,14 @@ const PLANS: Record<Tier, {
 }
 
 export default function JoinPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <JoinPageInner />
+    </Suspense>
+  )
+}
+
+function JoinPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const refSource = searchParams.get('ref')
