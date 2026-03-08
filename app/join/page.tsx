@@ -88,6 +88,7 @@ function JoinPageInner() {
   const [activityLevel, setActivityLevel] = useState<'sedentary' | 'moderate' | 'high_energy_flux'>('moderate')
   const [trainingDays, setTrainingDays] = useState('3')
   const [targetWeight, setTargetWeight] = useState('')
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -527,53 +528,68 @@ function JoinPageInner() {
                 />
               </div>
 
-              {/* 活動量 */}
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">日常活動量</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {([
-                    { key: 'sedentary' as const, label: '久坐', desc: '辦公室為主' },
-                    { key: 'moderate' as const, label: '中等', desc: '偶爾走動' },
-                    { key: 'high_energy_flux' as const, label: '活躍', desc: '常走動/體力活' },
-                  ]).map(({ key, label, desc }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setActivityLevel(key)}
-                      className={`py-2.5 rounded-xl text-sm transition-all border-2 ${
-                        activityLevel === key
-                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb] font-semibold'
-                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="font-medium">{label}</div>
-                      <div className="text-[10px] opacity-70">{desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* 進階選填（折疊） */}
+              {!showAdvanced ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(true)}
+                  className="w-full py-2 text-xs text-gray-400 hover:text-[#2563eb] transition-colors"
+                >
+                  填寫更多資料，讓計算更精準 ▼
+                </button>
+              ) : (
+                <div className="space-y-4 pt-2 border-t border-gray-100">
+                  <p className="text-xs text-gray-400">選填，幫助系統更精準計算你的 TDEE</p>
 
-              {/* 每週訓練天數 */}
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">每週訓練幾天</label>
-                <div className="flex gap-2">
-                  {[0, 1, 2, 3, 4, 5, 6, 7].map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => setTrainingDays(String(d))}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all border-2 ${
-                        parseInt(trainingDays) === d
-                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
-                          : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
-                      }`}
-                    >
-                      {d}
-                    </button>
-                  ))}
+                  {/* 活動量 */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1.5">日常活動量</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { key: 'sedentary' as const, label: '久坐', desc: '辦公室為主' },
+                        { key: 'moderate' as const, label: '中等', desc: '偶爾走動' },
+                        { key: 'high_energy_flux' as const, label: '活躍', desc: '常走動/體力活' },
+                      ]).map(({ key, label, desc }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setActivityLevel(key)}
+                          className={`py-2.5 rounded-xl text-sm transition-all border-2 ${
+                            activityLevel === key
+                              ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb] font-semibold'
+                              : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="font-medium">{label}</div>
+                          <div className="text-[10px] opacity-70">{desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 每週訓練天數 */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1.5">每週訓練幾天</label>
+                    <div className="flex gap-2">
+                      {[0, 1, 2, 3, 4, 5, 6, 7].map((d) => (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => setTrainingDays(String(d))}
+                          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all border-2 ${
+                            parseInt(trainingDays) === d
+                              ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                              : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
+                          }`}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">包含重訓和有氧</p>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">包含重訓和有氧</p>
-              </div>
+              )}
 
               {/* Error */}
               {error && (
