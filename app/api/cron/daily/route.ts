@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
         .gte('date', sevenDaysStr).order('date'),
       supabase.from('daily_wellness').select('client_id, date, mood, energy_level, sleep_quality, hunger, stress')
         .gte('date', sevenDaysStr).order('date'),
-      supabase.from('training_logs').select('client_id, date, training_type, duration_minutes, rpe')
+      supabase.from('training_logs').select('client_id, date, training_type, duration, rpe')
         .gte('date', sevenDaysStr).order('date'),
       supabase.from('body_composition').select('client_id, date, weight, body_fat')
         .gte('date', sevenDaysStr).not('weight', 'is', null).order('date'),

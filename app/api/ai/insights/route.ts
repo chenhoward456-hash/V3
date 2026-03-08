@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         .eq('client_id', client.id).gte('date', sinceDate).order('date'),
       supabase.from('daily_wellness').select('date, mood, energy_level, sleep_quality, hunger, stress, digestion')
         .eq('client_id', client.id).gte('date', sinceDate).order('date'),
-      supabase.from('training_logs').select('date, training_type, duration_minutes, rpe, note')
+      supabase.from('training_logs').select('date, training_type, duration, rpe, note')
         .eq('client_id', client.id).gte('date', sinceDate).order('date'),
       supabase.from('body_composition').select('date, weight, body_fat')
         .eq('client_id', client.id).gte('date', sinceDate).not('weight', 'is', null).order('date'),

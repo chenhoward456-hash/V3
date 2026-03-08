@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('缺少客戶 ID 或日期', 400)
     }
 
-    if (typeof compliant !== 'boolean') {
-      return createErrorResponse('compliant 必須為布林值', 400)
+    if (compliant !== null && typeof compliant !== 'boolean') {
+      return createErrorResponse('compliant 必須為布林值或 null', 400)
     }
 
     // 驗證 protein_grams

@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       .lte('date', monthEnd),
     supabase
       .from('training_logs')
-      .select('client_id, date, training_type, duration_minutes')
+      .select('client_id, date, training_type, duration')
       .gte('date', monthStart)
       .lte('date', monthEnd),
     supabase
@@ -139,9 +139,9 @@ export async function GET(request: NextRequest) {
       const totalDays = new Set(clientTraining.map((t: any) => t.date)).size
       lines.push(`🏋️ 訓練天數：${totalDays} 天（重訓 ${weightDays} 天）`)
 
-      const withDuration = clientTraining.filter((t: any) => t.duration_minutes != null)
+      const withDuration = clientTraining.filter((t: any) => t.duration != null)
       if (withDuration.length > 0) {
-        const totalMin = withDuration.reduce((s: number, t: any) => s + t.duration_minutes, 0)
+        const totalMin = withDuration.reduce((s: number, t: any) => s + t.duration, 0)
         lines.push(`⏱️ 總訓練時間：${Math.round(totalMin / 60)} 小時 ${totalMin % 60} 分鐘`)
       }
     }
