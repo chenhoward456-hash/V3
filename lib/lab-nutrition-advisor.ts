@@ -1871,9 +1871,9 @@ export function generateRetestReminders(
 
   // 複檢週期對照表（僅異常指標需要複檢提醒）
   // 文獻：各指標 clinical guidelines 的建議追蹤間隔
-  const retestSchedule: { keywords: string[]; weeks: number; reason: string; severity: 'high' | 'medium' }[] = [
-    // 鐵 — 補充後 8-12 週可見效果（Peeling 2008）
-    { keywords: ['鐵蛋白', 'ferritin'], weeks: 12, reason: '鐵劑補充後約 8-12 週可見鐵蛋白回升，建議追蹤效果', severity: 'high' },
+  const retestSchedule: { keywords: string[]; weeks: number; reason: string; reasonHigh?: string; severity: 'high' | 'medium' }[] = [
+    // 鐵 — 依偏高/偏低給不同原因（Peeling 2008）
+    { keywords: ['鐵蛋白', 'ferritin'], weeks: 12, reason: '鐵劑補充後約 8-12 週可見鐵蛋白回升，建議追蹤效果', reasonHigh: '鐵蛋白偏高需定期追蹤，確認是否有改善或需進一步檢查', severity: 'high' },
     { keywords: ['血紅素', 'hemoglobin', 'hb'], weeks: 12, reason: '貧血治療後 8-12 週追蹤血紅素恢復情況', severity: 'high' },
     // 維生素 D — 補充 3 個月後複檢（Holick 2011）
     { keywords: ['維生素d', 'vitamind', '25oh'], weeks: 12, reason: '維生素 D 補充後 3 個月達穩態，建議複檢確認是否達標', severity: 'medium' },
@@ -1916,7 +1916,7 @@ export function generateRetestReminders(
         severity: schedule.severity,
         suggestedRetestDate: retestDate.toISOString().split('T')[0],
         suggestedRetestWeeks: schedule.weeks,
-        reason: schedule.reason,
+        reason: (lab.status === 'alert' && schedule.reasonHigh) ? schedule.reasonHigh : schedule.reason,
         isOverdue,
       })
       break // 每個指標只匹配一次
@@ -2010,10 +2010,19 @@ export function generateLabChangeReport(
   for (const [testName, results] of byTest) {
     if (results.length < 2) continue
 
-    // 按日期排序，取最近兩筆
+    // 按日期排序，取最近一筆與前一次有足夠時間間距的紀錄
     const sorted = results.sort((a, b) => b.date.localeCompare(a.date))
     const current = sorted[0]
-    const previous = sorted[1]
+    // 找到距離最近日期至少 14 天以上的前一筆（避免同次檢測的重複紀錄互相比較）
+    const currentDate = new Date(current.date)
+    let previous = sorted[1]
+    for (let i = 1; i < sorted.length; i++) {
+      const daysDiff = (currentDate.getTime() - new Date(sorted[i].date).getTime()) / (1000 * 60 * 60 * 24)
+      if (daysDiff >= 14) {
+        previous = sorted[i]
+        break
+      }
+    }
 
     const changeAbs = current.value! - previous.value!
     const changePct = previous.value! !== 0 ? (changeAbs / previous.value!) * 100 : 0
