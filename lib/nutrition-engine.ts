@@ -1216,8 +1216,17 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   }
 
   // 3. 計算週均體重變化率
-  const thisWeekAvg = input.weeklyWeights[0].avgWeight
+  let thisWeekAvg = input.weeklyWeights[0].avgWeight
   const lastWeekAvg = input.weeklyWeights[1].avgWeight
+
+  // 黃體期體重修正：黃體期水分滯留 0.5-2kg 會汙染週均值
+  // 修正策略：如果本週處於黃體期，將本週均值向下修正 1kg（保守估計）
+  // 這樣可以避免：(1) 假性停滯 (2) 假性反彈 (3) 觸發不必要的赤字加深
+  // 文獻：Matton et al. 2005, White et al. 2011 — 黃體期水分滯留中位數 ~1kg
+  if (cycleInfo.inLutealPhase && input.gender === '女性') {
+    thisWeekAvg = Math.round((thisWeekAvg - 1.0) * 100) / 100  // 向下修正 1kg
+  }
+
   const weeklyChange = thisWeekAvg - lastWeekAvg  // kg
   const weeklyChangeRate = (weeklyChange / lastWeekAvg) * 100  // %
 
@@ -1353,9 +1362,15 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
 
   // 8. 計算代謝壓力分數
   // 計算連續停滯週數
+  // 連續停滯週數計算
+  // 黃體期修正：如果 week 0（本週）在黃體期，不計入停滯判定
+  // 原因：黃體期水分滯留會讓體重看起來沒掉，但實際脂肪仍在流失
   let consecutivePlateauWeeks = 0
   if (input.weeklyWeights.length >= 2) {
-    for (let i = 0; i < input.weeklyWeights.length - 1; i++) {
+    const skipWeek0 = cycleInfo.inLutealPhase && input.gender === '女性'
+    const startIdx = skipWeek0 ? 1 : 0
+
+    for (let i = startIdx; i < input.weeklyWeights.length - 1; i++) {
       const wAvg = input.weeklyWeights[i].avgWeight
       const wPrev = input.weeklyWeights[i + 1].avgWeight
       const rate = ((wAvg - wPrev) / wPrev) * 100
@@ -1675,11 +1690,19 @@ function generateCutSuggestion(
   const currentCarb = input.currentCarbs || 0
   const currentFat = input.currentFat || 0
 
-  // 黃體期碳水增量（女性專用）
+  // 黃體期調整（女性專用）
+  // [Hackney 2012] 黃體期碳水氧化率 +15-20%，BMR 升高 5-10% (Webb 1986)
+  // 1. 碳水增量 +0.5g/kg 支持代謝需求
+  // 2. 赤字縮小 ~100kcal 避免黃體期被放在過深的赤字裡
   if (cycleInfo.carbBoostGPerKg > 0) {
     const lutealCarbBoost = Math.round(bw * cycleInfo.carbBoostGPerKg)
     carbDelta += lutealCarbBoost
     calDelta += lutealCarbBoost * 4 // 碳水 4 kcal/g
+    // 黃體期 BMR 升高約 5-10%（Webb 1986），若不補回會造成實際赤字過深
+    // 額外補回 100kcal（全碳水），與碳水增量合計約 250kcal 的緩衝
+    const lutealDeficitBuffer = 100
+    calDelta += lutealDeficitBuffer
+    carbDelta += Math.round(lutealDeficitBuffer / 4)
   }
 
   let suggestedCal = currentCal + calDelta
@@ -1904,7 +1927,17 @@ function generateGoalDrivenCut(
     }
     // good → 不調整（0）
   }
-  effectiveDailyDeficit = Math.max(0, effectiveDailyDeficit + recoveryDeficitAdjust)
+
+  // 3.6 黃體期赤字緩衝（女性專用）
+  // Webb 1986: 黃體期 BMR +5-10%，不補回等於實際赤字更深
+  // Hackney 2012: 碳水氧化率 +15-20%，碳水需求增加
+  let lutealDeficitAdjust = 0
+  if (cycleInfo.inLutealPhase) {
+    lutealDeficitAdjust = -100  // 縮小赤字 100kcal（碳水補回）
+    warnings.push('🩸 黃體期 BMR 升高約 5-10%，系統已自動縮小赤字 100kcal（碳水補回），避免實際赤字過深。')
+  }
+
+  effectiveDailyDeficit = Math.max(0, effectiveDailyDeficit + recoveryDeficitAdjust + lutealDeficitAdjust)
 
   // 計算目標每日卡路里（用放鬆後的赤字）
   let targetCalories = Math.round(estimatedTDEE - effectiveDailyDeficit)
@@ -2325,6 +2358,15 @@ function generateBulkSuggestion(
       carbDelta += 13; calDelta += 50
       message += ` 恢復偏低，系統已微增碳水（+50kcal）輔助恢復。`
     }
+  }
+
+  // ===== 黃體期碳水增量（女性增肌專用）=====
+  // Hackney 2012: 黃體期碳水氧化率 +15-20%，增肌期同樣需要補回
+  // 增肌期不縮赤字（沒有赤字），但增加碳水支持合成效率
+  if (cycleInfo.carbBoostGPerKg > 0) {
+    const lutealCarbBoost = Math.round(bw * cycleInfo.carbBoostGPerKg)
+    carbDelta += lutealCarbBoost
+    calDelta += lutealCarbBoost * 4
   }
 
   // ===== 體脂率追蹤：防止髒增肌 =====
