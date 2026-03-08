@@ -445,11 +445,14 @@ const PEAK_WEEK = {
 
   // 碳水超補期 (Day 3-2)
   LOADING_CARB_G_PER_KG: 9.0,      // Homer 2024 實驗: 9.0 g/kg；Escalante: 8-12, Barakat: 7.8-8.0
+  LOADING_CARB_G_PER_KG_FEMALE: 6.5, // Tarnopolsky 1995, James 2001: 女性肌肉肝醣超補反應約為男性 50-70%
   LOADING_PROTEIN_G_PER_KG: 1.6,   // Escalante 2021: ~1.6 g/kg；降低蛋白為碳水騰空間，最大化肝醣超補
   LOADING_FAT_G_PER_KG: 0.65,      // 低脂最大化碳水吸收
+  LOADING_FAT_G_PER_KG_FEMALE: 1.0, // 女性超補期脂肪不低於 1.0 g/kg（Loucks 2003: 雌激素合成需求）
 
   // Taper (Day 1)
   TAPER_CARB_G_PER_KG: 5.5,        // Barakat 2022: 5.46 g/kg
+  TAPER_CARB_G_PER_KG_FEMALE: 4.0, // 女性按超補比例等比縮減（6.5/9.0 × 5.5 ≈ 4.0）
   TAPER_PROTEIN_G_PER_KG: 2.8,
   TAPER_FAT_G_PER_KG: 1.1,         // 中等脂肪防止 IMT 流失
 
@@ -594,17 +597,37 @@ interface MenstrualCycleInfo {
   daysSincePeriod: number   // 距上次經期天數
   note: string | null       // 給前端的提示文字
   carbBoostGPerKg: number   // 黃體期碳水增量 g/kg（0 = 非黃體期）
+  amenorrheaWarning: string | null  // 閉經警告（>45 天未標記經期）
 }
 
 function checkMenstrualCycle(input: NutritionInput): MenstrualCycleInfo {
   const isFemale = input.gender === '女性'
-  if (!isFemale || !input.lastPeriodDate) {
-    return { inLutealPhase: false, daysSincePeriod: -1, note: null, carbBoostGPerKg: 0 }
+  if (!isFemale) {
+    return { inLutealPhase: false, daysSincePeriod: -1, note: null, carbBoostGPerKg: 0, amenorrheaWarning: null }
+  }
+
+  // 閉經偵測：女性但無經期紀錄
+  // [10] Mountjoy 2018 (IOC RED-S): 閉經是 RED-S 最重要的臨床徵兆之一
+  if (!input.lastPeriodDate) {
+    return {
+      inLutealPhase: false, daysSincePeriod: -1, note: null, carbBoostGPerKg: 0,
+      amenorrheaWarning: '🩸 ⚠️ 尚未記錄任何經期資訊。如果月經已超過 45 天未來，可能是 RED-S（相對能量不足）的警訊，建議諮詢醫師並評估能量可用性。',
+    }
   }
 
   const now = new Date()
   const periodDate = new Date(input.lastPeriodDate)
   const daysSince = Math.floor((now.getTime() - periodDate.getTime()) / (1000 * 60 * 60 * 24))
+
+  // 閉經偵測：>45 天未標記經期 = 功能性下丘腦性閉經風險
+  // [9] Loucks & Thuma 2003: EA < 30 kcal/kg FFM → LH 脈衝頻率下降 → 閉經
+  // [10] Mountjoy 2018: 連續 3 個月無月經 = 閉經診斷標準；45 天為早期預警
+  let amenorrheaWarning: string | null = null
+  if (daysSince > 90) {
+    amenorrheaWarning = `🩸 🚨 已超過 ${daysSince} 天未標記經期（>90 天）！這符合閉經診斷標準，是 RED-S 的嚴重警訊。建議立即增加熱量攝取、減少訓練量，並諮詢婦產科/內分泌科。`
+  } else if (daysSince > 45) {
+    amenorrheaWarning = `🩸 ⚠️ 已超過 ${daysSince} 天未標記經期。月經延遲可能是能量不足的早期信號（RED-S），請留意並考慮諮詢醫師。`
+  }
 
   // 標準週期 ~28 天：卵泡期 day 1-14, 黃體期 day 15-28
   // 黃體期孕酮升高 → 水分滯留 → 體重假性上升
@@ -622,7 +645,7 @@ function checkMenstrualCycle(input: NutritionInput): MenstrualCycleInfo {
     note = `🩸 經期中（第 ${daysSince + 1} 天），體重可能略有波動，持續記錄即可。`
   }
 
-  return { inLutealPhase, daysSincePeriod: daysSince, note, carbBoostGPerKg }
+  return { inLutealPhase, daysSincePeriod: daysSince, note, carbBoostGPerKg, amenorrheaWarning }
 }
 
 // ===== 當前狀態評估（Readiness Score v2）=====
@@ -937,6 +960,7 @@ export function calculateMetabolicStressScore(params: {
   daysUntilCompetition?: number | null
   bodyFatZoneRefeedFreq?: string | null  // 來自 body-fat-zone-table
   bodyWeight?: number                // 用於 refeed 碳水體重區間調整
+  inLutealPhase?: boolean            // 女性黃體期：碳水氧化率 +15-20%，更適合安排 refeed
 }): MetabolicStressResult {
   const reasons: string[] = []
 
@@ -996,7 +1020,16 @@ export function calculateMetabolicStressScore(params: {
     }
   }
 
-  const score = dietDuration + recovery + plateau + lowCarb + wellnessTrend
+  // 6. 黃體期加分 (0-10)
+  // Hackney 2012: 黃體期碳水氧化率增加 15-20%，是安排 refeed 的最佳時機
+  // 黃體期 refeed 可同時緩解 PMS 症狀和代謝壓力
+  let lutealBoost = 0
+  if (params.inLutealPhase) {
+    lutealBoost = 10
+    reasons.push('黃體期碳水需求增加（孕酮升高 → 碳水氧化率 +15-20%），適合安排 Refeed')
+  }
+
+  const score = dietDuration + recovery + plateau + lowCarb + wellnessTrend + lutealBoost
 
   // 判斷等級和建議
   let level: MetabolicStressResult['level']
@@ -1144,6 +1177,11 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   // 月經週期判斷（女性專用）
   const cycleInfo = checkMenstrualCycle(input)
 
+  // 閉經警告加入 warnings（RED-S 早期預警）
+  if (cycleInfo.amenorrheaWarning) {
+    warnings.push(cycleInfo.amenorrheaWarning)
+  }
+
   // Refeed 警告加入 warnings（讓前端顯示）
   if (refeedTrigger.suggested && refeedTrigger.reason) {
     warnings.push(`🔄 系統偵測：可考慮安排 ${refeedTrigger.days} 天 Refeed：${refeedTrigger.reason}`)
@@ -1159,7 +1197,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     const target = new Date(input.targetDate)
     const daysLeft = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
     if (daysLeft <= 8) {
-      return { ...generatePeakWeekPlan(input, daysLeft), ...stateFields }
+      return { ...generatePeakWeekPlan(input, daysLeft, cycleInfo), ...stateFields }
     }
   }
 
@@ -1342,6 +1380,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     daysUntilCompetition: daysToTarget,
     bodyFatZoneRefeedFreq: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)?.refeedFrequency ?? null,
     bodyWeight: input.bodyWeight,
+    inLutealPhase: cycleInfo.inLutealPhase,
   })
 
   // 代謝壓力警告
@@ -2442,10 +2481,16 @@ function generateBulkSuggestion(
 // 基於 Escalante 2021 [12] + Barakat 2022 [13] + Homer/Helms 2024 [14]
 // 每日協議含：巨量營養素、水分、鈉、鉀、纖維、訓練、食物選擇、肌酸、Posing、Pump-up
 
-function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): NutritionSuggestion {
+function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo?: MenstrualCycleInfo): NutritionSuggestion {
   const bw = input.bodyWeight
+  const isFemale = input.gender === '女性'
   const compDate = new Date(input.targetDate!)
   const plan: PeakWeekDay[] = []
+
+  // 女性專用常數：碳水超補量較低（Tarnopolsky 1995, James 2001）、脂肪地板較高（Loucks 2003）
+  const loadingCarb = isFemale ? PEAK_WEEK.LOADING_CARB_G_PER_KG_FEMALE : PEAK_WEEK.LOADING_CARB_G_PER_KG
+  const loadingFat = isFemale ? PEAK_WEEK.LOADING_FAT_G_PER_KG_FEMALE : PEAK_WEEK.LOADING_FAT_G_PER_KG
+  const taperCarb = isFemale ? PEAK_WEEK.TAPER_CARB_G_PER_KG_FEMALE : PEAK_WEEK.TAPER_CARB_G_PER_KG
 
   // 建立 Day 7 到 Day 0（比賽日）的每日計畫
   for (let d = Math.min(daysLeft, 7); d >= 0; d--) {
@@ -2496,20 +2541,22 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
         daysOut: d, date: dateStr,
         label: `Day ${d} — 碳水超補期`,
         phase: 'carb_load',
-        carbsGPerKg: PEAK_WEEK.LOADING_CARB_G_PER_KG,
+        carbsGPerKg: loadingCarb,
         proteinGPerKg: PEAK_WEEK.LOADING_PROTEIN_G_PER_KG,
-        fatGPerKg: PEAK_WEEK.LOADING_FAT_G_PER_KG,
+        fatGPerKg: loadingFat,
         waterMlPerKg: PEAK_WEEK.WATER_LOADING,
         sodiumMg: PEAK_WEEK.SODIUM_LOADING,
         sodiumNote: `鈉加載 +30%（${PEAK_WEEK.SODIUM_LOADING}mg）— 鈉經 SGLT-1 幫助葡萄糖進入肌肉細胞`,
         fiberNote: '極低纖維（<10g），避免腹脹影響比賽日外觀',
         trainingNote: '完全休息（任何訓練都會重新消耗肝醣，破壞超補效果）',
-        carbs: Math.round(bw * PEAK_WEEK.LOADING_CARB_G_PER_KG),
+        carbs: Math.round(bw * loadingCarb),
         protein: Math.round(bw * PEAK_WEEK.LOADING_PROTEIN_G_PER_KG),
-        fat: Math.round(bw * PEAK_WEEK.LOADING_FAT_G_PER_KG),
+        fat: Math.round(bw * loadingFat),
         calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_LOADING),
         potassiumNote: `鉀加載 ~${PEAK_WEEK.POTASSIUM_LOADING}mg（香蕉、馬鈴薯、椰子水）— 鉀幫助水分進入肌肉細胞`,
-        foodNote: '精緻高 GI 碳水為主：白飯、白吐司、年糕、麻糬、蜂蜜、果醬。分 5-6 餐進食，避免單餐過量導致腸胃不適',
+        foodNote: isFemale
+          ? `精緻高 GI 碳水為主：白飯、白吐司、年糕、蜂蜜、果醬。分 6-7 餐進食（女性超補量 ${loadingCarb}g/kg，少量多餐更易執行）`
+          : '精緻高 GI 碳水為主：白飯、白吐司、年糕、麻糬、蜂蜜、果醬。分 5-6 餐進食，避免單餐過量導致腸胃不適',
         creatineNote: '維持肌酸 5g/天（搭配碳水一起吃，肌酸+碳水超補可增強肝醣儲存）',
         posingNote: '僅輕度 Posing 排練 5 分鐘（避免消耗超補的肝醣）',
       }
@@ -2519,7 +2566,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
         daysOut: d, date: dateStr,
         label: 'Day 1 — 微調日',
         phase: 'taper',
-        carbsGPerKg: PEAK_WEEK.TAPER_CARB_G_PER_KG,
+        carbsGPerKg: taperCarb,
         proteinGPerKg: PEAK_WEEK.TAPER_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.TAPER_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_TAPER,
@@ -2527,7 +2574,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
         sodiumNote: `恢復正常鈉（${PEAK_WEEK.SODIUM_BASELINE}mg）— 不要突然斷鈉，避免醛固酮反彈導致皮下積水`,
         fiberNote: '極低纖維（<8g），避免腹脹',
         trainingNote: '完全休息（不要做任何訓練）',
-        carbs: Math.round(bw * PEAK_WEEK.TAPER_CARB_G_PER_KG),
+        carbs: Math.round(bw * taperCarb),
         protein: Math.round(bw * PEAK_WEEK.TAPER_PROTEIN_G_PER_KG),
         fat: Math.round(bw * PEAK_WEEK.TAPER_FAT_G_PER_KG),
         calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_TAPER),
@@ -2602,6 +2649,14 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
       ...(todayPlan.posingNote ? [`🪞 ${todayPlan.posingNote}`] : []),
       ...(todayPlan.pumpUpNote ? [`💪 ${todayPlan.pumpUpNote}`] : []),
       '⚠️ 重要：不要突然斷水或斷鈉！醛固酮反彈會導致皮下水分滯留，效果適得其反',
+      // 女性黃體期警告：水分操控效果不穩定
+      ...(isFemale && cycleInfo?.inLutealPhase ? [
+        '🩸 ⚠️ 目前處於黃體期 — 孕酮升高會導致額外水分滯留，Peak Week 水分操控效果可能不如預期。視覺評估時需考慮荷爾蒙因素，不要過度反應體重數字。',
+      ] : []),
+      // 女性碳水超補量說明
+      ...(isFemale ? [
+        `📋 女性碳水超補量已調整為 ${PEAK_WEEK.LOADING_CARB_G_PER_KG_FEMALE}g/kg（男性 ${PEAK_WEEK.LOADING_CARB_G_PER_KG}g/kg）— 女性肌肉肝醣超補反應約為男性 50-70%（Tarnopolsky 1995, James 2001），過量碳水只會增加腸胃不適而非更多肝醣儲存。`,
+      ] : []),
     ],
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType),
@@ -2609,7 +2664,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
     autoApply: true, tdeeAnomalyDetected: false,
     labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
     peakWeekPlan: plan, metabolicStress: null,
-    menstrualCycleNote: null,
+    menstrualCycleNote: cycleInfo?.note ?? null,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG)),
   }
 }
