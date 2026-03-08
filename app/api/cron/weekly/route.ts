@@ -17,6 +17,9 @@ import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isWeightTraining } from '@/components/client/types'
 import { pushMessage } from '@/lib/line'
 import { generateWeeklyAIReport, type InsightData, type ClientProfile } from '@/lib/ai-insights'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('cron-weekly')
 
 const supabase = createServiceSupabase()
 
@@ -271,7 +274,7 @@ export async function GET(request: NextRequest) {
         .upsert(summaries, { onConflict: 'client_id,week_of' })
 
       if (insertErr) {
-        console.warn('[cron/weekly] weekly_summaries 寫入失敗:', insertErr.message)
+        logger.warn('weekly_summaries 寫入失敗', { error: insertErr.message })
         results.errors.push(`weekly_summaries 寫入失敗: ${insertErr.message}`)
       }
     }
@@ -336,7 +339,7 @@ export async function GET(request: NextRequest) {
         })
 
       if (notifErr) {
-        console.warn('[cron/weekly] coach_notifications 寫入失敗:', notifErr.message)
+        logger.warn('coach_notifications 寫入失敗', { error: notifErr.message })
         results.errors.push(`coach_notifications 寫入失敗: ${notifErr.message}`)
       }
     }

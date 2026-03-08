@@ -47,7 +47,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     const weekStart = new Date(weekEnd); weekStart.setDate(weekEnd.getDate() - 6)
     const startStr = weekStart.toISOString().split('T')[0]
     const endStr = weekEnd.toISOString().split('T')[0]
-    const ww = bodyData.filter((b: any) => b.date >= startStr && b.date <= endStr).map((b: any) => b.weight)
+    const ww = bodyData.filter((b) => b.date >= startStr && b.date <= endStr).map((b) => b.weight as number)
     if (ww.length > 0) {
       weeklyWeights.push({ week: w, avgWeight: Math.round((ww.reduce((a: number, b: number) => a + b, 0) / ww.length) * 100) / 100 })
     }
@@ -57,15 +57,15 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
 
   // 4. 合規率
   const fourteenStr = new Date(today.getTime() - 13 * 86400000).toISOString().split('T')[0]
-  const recent = nutritionLogs.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr)
-  const compliance = recent.length > 0 ? Math.round(recent.filter((l: any) => l.compliant).length / recent.length * 100) : 0
+  const recent = nutritionLogs.filter((l) => l.date >= fourteenStr && l.date <= todayStr)
+  const compliance = recent.length > 0 ? Math.round(recent.filter((l) => l.compliant).length / recent.length * 100) : 0
 
   // 5. 平均攝取
-  const withCal = recent.filter((l: any) => l.calories != null)
-  const avgCal = withCal.length > 0 ? Math.round(withCal.reduce((s: number, l: any) => s + l.calories, 0) / withCal.length) : null
+  const withCal = recent.filter((l) => l.calories != null)
+  const avgCal = withCal.length > 0 ? Math.round(withCal.reduce((s: number, l) => s + (l.calories as number), 0) / withCal.length) : null
 
   // 6. 訓練天數
-  const recentTraining = trainingLogs.filter((l: any) => l.date >= fourteenStr && l.date <= todayStr && isWeightTraining(l.training_type))
+  const recentTraining = trainingLogs.filter((l) => l.date >= fourteenStr && l.date <= todayStr && isWeightTraining(l.training_type as string))
   const trainingDays = Math.round(recentTraining.length / 2)
 
   const latestWeight = bodyData[bodyData.length - 1]?.weight
@@ -98,7 +98,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
 
   // 8. 自動套用
   if (suggestion.autoApply) {
-    const updates: Record<string, any> = {}
+    const updates: Record<string, number> = {}
     if (suggestion.suggestedCalories != null) updates.calories_target = suggestion.suggestedCalories
     if (suggestion.suggestedProtein != null) updates.protein_target = suggestion.suggestedProtein
     if (suggestion.suggestedCarbs != null) updates.carbs_target = suggestion.suggestedCarbs
@@ -281,8 +281,9 @@ export async function POST(request: NextRequest) {
     if (weight != null) {
       try {
         nutritionAdjusted = await autoAdjustNutrition(client.id)
-      } catch (engineErr: any) {
-        nutritionAdjusted = { adjusted: false, debug: `engine error: ${engineErr?.message || String(engineErr)}` }
+      } catch (engineErr: unknown) {
+        const errMsg = engineErr instanceof Error ? engineErr.message : String(engineErr)
+        nutritionAdjusted = { adjusted: false, debug: `engine error: ${errMsg}` }
       }
     }
 
@@ -325,7 +326,7 @@ export async function PUT(request: NextRequest) {
 
     // 驗證身體數據
     const validations = []
-    const updateData: any = { date }
+    const updateData: Record<string, string | number | null> = { date }
 
     if (height !== undefined) {
       validations.push(validateBodyComposition('height', height))

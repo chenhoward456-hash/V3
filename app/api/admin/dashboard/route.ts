@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('admin-dashboard')
 
 export const dynamic = 'force-dynamic'
 
@@ -135,7 +138,7 @@ export async function GET(request: NextRequest) {
     ]
     for (const q of queries) {
       if (q.result.error) {
-        console.warn(`[admin/dashboard] 查詢 ${q.name} 失敗:`, q.result.error)
+        logger.warn(`查詢 ${q.name} 失敗`, { error: q.result.error })
       }
     }
 

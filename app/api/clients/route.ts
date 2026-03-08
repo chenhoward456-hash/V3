@@ -4,6 +4,9 @@ import crypto from 'crypto'
 import { validateDate } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { calculateInitialTargets } from '@/lib/nutrition-engine'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('api-clients')
 
 const supabase = createServiceSupabase()
 
@@ -64,9 +67,14 @@ export async function GET(request: NextRequest) {
     const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0]
 
     // 建立需要執行的查詢（用 async 包裝確保回傳 Promise）
-    const queryEntries: { key: string; query: Promise<{ data: any; error: any }> }[] = []
+    interface SupabaseQueryResult {
+      data: Record<string, unknown>[] | null
+      error: { message: string; code?: string } | null
+    }
 
-    const wrap = (q: PromiseLike<any>) => new Promise<{ data: any; error: any }>((resolve) => q.then(resolve))
+    const queryEntries: { key: string; query: Promise<SupabaseQueryResult> }[] = []
+
+    const wrap = (q: PromiseLike<SupabaseQueryResult>) => new Promise<SupabaseQueryResult>((resolve) => q.then(resolve))
 
     // 補品相關（supplement_enabled）
     if (client.supplement_enabled) {
@@ -84,7 +92,7 @@ export async function GET(request: NextRequest) {
     if (client.body_composition_enabled) {
       queryEntries.push({
         key: 'bodyData',
-        query: wrap(supabase.from('body_composition').select('*').eq('client_id', client.id).order('date', { ascending: false })),
+        query: wrap(supabase.from('body_composition').select('*').eq('client_id', client.id).order('date', { ascending: false }).limit(90)),
       })
     }
 
@@ -114,10 +122,10 @@ export async function GET(request: NextRequest) {
 
     // 平行執行所有查詢
     const results = await Promise.all(queryEntries.map(e => e.query))
-    const resolved: Record<string, any[]> = {}
+    const resolved: Record<string, Record<string, unknown>[]> = {}
     for (let i = 0; i < queryEntries.length; i++) {
       const { data, error } = results[i]
-      if (error) console.warn(`查詢 ${queryEntries[i].key} 失敗:`, error)
+      if (error) logger.warn(`查詢 ${queryEntries[i].key} 失敗`, { error })
       resolved[queryEntries[i].key] = data || []
     }
 
@@ -222,7 +230,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 白名單：只允許更新這些欄位
-    const updates: Record<string, any> = {}
+    const updates: Record<string, string | number | boolean | null> = {}
 
     if (goal_type && ['cut', 'bulk'].includes(goal_type)) {
       updates.goal_type = goal_type
@@ -259,7 +267,7 @@ export async function PATCH(request: NextRequest) {
     if (hasBodyData) {
       // 寫入 body_composition 紀錄
       const today = new Date().toISOString().split('T')[0]
-      const bodyCompRecord: Record<string, any> = {
+      const bodyCompRecord: Record<string, string | number | null> = {
         client_id: client.id,
         date: today,
         weight: body_weight,
@@ -282,7 +290,7 @@ export async function PATCH(request: NextRequest) {
           gender: resolvedGender,
           bodyWeight: body_weight,
           height: validHeight,
-          bodyFatPct: bodyCompRecord.body_fat || null,
+          bodyFatPct: (bodyCompRecord.body_fat as number) || null,
           goalType: validGoalType as 'cut' | 'bulk',
           activityProfile: (activity_profile as 'sedentary' | 'high_energy_flux') || 'sedentary',
           trainingDaysPerWeek: training_days_per_week || 3,

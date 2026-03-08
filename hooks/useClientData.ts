@@ -1,4 +1,72 @@
-import useSWR from 'swr'
+import useSWR, { KeyedMutator } from 'swr'
+import type { LabResult, Supplement, BodyData, WellnessData, TrainingLog, NutritionLog } from '@/components/client/types'
+
+/** Client data from Supabase. Nullable fields use `| null` (DB convention). */
+export interface Client {
+  id: string
+  unique_code: string
+  name: string
+  age: number | null
+  gender: string | null
+  status: string | null
+  is_active: boolean
+  expires_at: string | null
+  subscription_tier: string | null
+  competition_enabled: boolean
+  health_mode_enabled: boolean
+  body_composition_enabled: boolean
+  nutrition_enabled: boolean
+  wellness_enabled: boolean
+  training_enabled: boolean
+  supplement_enabled: boolean
+  lab_enabled: boolean
+  ai_chat_enabled: boolean
+  calories_target: number | null
+  protein_target: number | null
+  carbs_target: number | null
+  fat_target: number | null
+  carbs_training_day: number | null
+  carbs_rest_day: number | null
+  water_target: number | null
+  target_weight: number | null
+  target_date: string | null
+  goal_type: string | null
+  activity_profile: string | null
+  competition_date: string | null
+  prep_phase: string | null
+  coach_last_viewed_at: string | null
+  coach_weekly_note: string | null
+  coach_summary: string | null
+  next_checkup_date: string | null
+  health_goals: string | null
+  quarterly_cycle_start: string | null
+  line_user_id: string | null
+  created_at: string
+  height: number | null
+  lab_results: LabResult[]
+  supplements: Supplement[]
+  /** Allow extra fields from DB without breaking type safety */
+  [key: string]: unknown
+}
+
+export interface SupplementLog {
+  id: string
+  client_id: string
+  date: string
+  supplement_id: string
+  taken: boolean
+  [key: string]: string | boolean | number | null
+}
+
+export interface ClientDataPayload {
+  client: Client
+  todayLogs: SupplementLog[]
+  bodyData: BodyData[]
+  wellness: WellnessData[]
+  recentLogs: SupplementLog[]
+  trainingLogs: TrainingLog[]
+  nutritionLogs: NutritionLog[]
+}
 
 interface UseClientDataOptions {
   revalidateOnFocus?: boolean
@@ -6,18 +74,10 @@ interface UseClientDataOptions {
 }
 
 interface UseClientDataResult {
-  data?: {
-    client: any
-    todayLogs: any[]
-    bodyData: any[]
-    wellness: any[]
-    recentLogs: any[]
-    trainingLogs: any[]
-    nutritionLogs: any[]
-  }
+  data?: ClientDataPayload
   error?: Error
   isLoading: boolean
-  mutate: any
+  mutate: KeyedMutator<ClientDataPayload>
 }
 
 /**

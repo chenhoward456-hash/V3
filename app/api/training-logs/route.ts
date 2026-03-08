@@ -8,7 +8,7 @@ function createErrorResponse(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
 }
 
-function createSuccessResponse(data: any, message?: string) {
+function createSuccessResponse(data: Record<string, unknown> | null, message?: string) {
   return NextResponse.json({
     success: true,
     data,
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('帳號已過期', 403)
     }
 
-    const upsertData: any = {
+    const upsertData: Record<string, string | number | null> = {
       client_id: client.id,
       date,
       training_type,
