@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: '載入失敗' }, { status: 500 })
+    console.error('[admin/clients GET] 載入失敗:', error)
+    return NextResponse.json({ error: '載入失敗', detail: error.message }, { status: 500 })
   }
 
   return NextResponse.json(data)
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
       'calories_target', 'protein_target', 'carbs_target', 'fat_target', 'water_target',
       'carbs_training_day', 'carbs_rest_day',
       'next_checkup_date', 'coach_weekly_note', 'coach_summary',
+      'health_goals', 'quarterly_cycle_start',
     ]
     const sanitizedClientData: Record<string, any> = {}
     if (clientData && typeof clientData === 'object') {
@@ -72,7 +74,8 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (clientError) {
-      return NextResponse.json({ error: '新增學員失敗' }, { status: 500 })
+      console.error('[admin/clients POST] 新增失敗:', clientError)
+      return NextResponse.json({ error: '新增學員失敗', detail: clientError.message }, { status: 500 })
     }
 
     // 新增血檢（白名單過濾）
@@ -140,9 +143,11 @@ export async function PUT(request: NextRequest) {
       for (const result of labResults) {
         const sanitized = sanitizeFields(result, ALLOWED_LAB_FIELDS)
         if (result.id) {
-          await supabase.from('lab_results').update(sanitized).eq('id', result.id).eq('client_id', clientId)
+          const { error } = await supabase.from('lab_results').update(sanitized).eq('id', result.id).eq('client_id', clientId)
+          if (error) console.error('[admin/clients PUT] 血檢更新失敗:', error)
         } else {
-          await supabase.from('lab_results').insert({ ...sanitized, client_id: clientId })
+          const { error } = await supabase.from('lab_results').insert({ ...sanitized, client_id: clientId })
+          if (error) console.error('[admin/clients PUT] 血檢新增失敗:', error)
         }
       }
     }
@@ -152,9 +157,11 @@ export async function PUT(request: NextRequest) {
       for (const supplement of supplements) {
         const sanitized = sanitizeFields(supplement, ALLOWED_SUPP_FIELDS)
         if (supplement.id) {
-          await supabase.from('supplements').update(sanitized).eq('id', supplement.id).eq('client_id', clientId)
+          const { error } = await supabase.from('supplements').update(sanitized).eq('id', supplement.id).eq('client_id', clientId)
+          if (error) console.error('[admin/clients PUT] 補品更新失敗:', error)
         } else {
-          await supabase.from('supplements').insert({ ...sanitized, client_id: clientId })
+          const { error } = await supabase.from('supplements').insert({ ...sanitized, client_id: clientId })
+          if (error) console.error('[admin/clients PUT] 補品新增失敗:', error)
         }
       }
     }
@@ -171,6 +178,7 @@ export async function PUT(request: NextRequest) {
       'carbs_training_day', 'carbs_rest_day',
       'next_checkup_date', 'coach_weekly_note', 'coach_summary',
       'coach_macro_override',
+      'health_goals', 'quarterly_cycle_start',
     ]
     const sanitizedClientData: Record<string, any> = {}
     if (clientData && typeof clientData === 'object') {
@@ -221,12 +229,14 @@ export async function PUT(request: NextRequest) {
       .eq('id', clientId)
 
     if (clientError) {
-      return NextResponse.json({ error: '更新學員失敗' }, { status: 500 })
+      console.error('[admin/clients PUT] 更新失敗:', clientError)
+      return NextResponse.json({ error: '更新學員失敗', detail: clientError.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
+    console.error('[admin/clients PUT] 伺服器錯誤:', err)
+    return NextResponse.json({ error: '伺服器錯誤', detail: err instanceof Error ? err.message : String(err) }, { status: 500 })
   }
 }
 
