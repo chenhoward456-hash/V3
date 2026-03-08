@@ -1597,3 +1597,489 @@ export function getLabMacroModifiers(
 
   return { macroModifiers, trainingModifiers, warnings }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 交叉分析：多指標群組風險偵測
+// 單一指標異常可能是偶發，多指標同時異常 = 系統性問題
+// ═══════════════════════════════════════════════════════════════
+
+export interface LabCrossAnalysis {
+  pattern: string           // 風險模式 ID
+  title: string
+  icon: string
+  severity: 'critical' | 'high' | 'medium'
+  description: string
+  triggeredMarkers: { name: string; value: number; unit: string }[]
+  actionItems: string[]
+  references: string[]
+}
+
+export function detectLabCrossPatterns(
+  labs: LabInput[],
+  options: { gender?: '男性' | '女性'; bodyFatPct?: number | null; hasAmenorrhea?: boolean } = {}
+): LabCrossAnalysis[] {
+  const patterns: LabCrossAnalysis[] = []
+  const { gender, bodyFatPct, hasAmenorrhea } = options
+
+  // 輔助：取得指標值
+  const getValue = (keywords: string[]): { name: string; value: number; unit: string } | null => {
+    for (const lab of labs) {
+      if (lab.value != null && matchName(lab.test_name, keywords)) {
+        return { name: lab.test_name, value: lab.value, unit: lab.unit }
+      }
+    }
+    return null
+  }
+
+  // ── Pattern 1: RED-S 風險群組（女性為主，男性也可能）──
+  // Mountjoy 2018 IOC: 低鐵蛋白 + 低維生素 D + 閉經 + 低體脂 = RED-S 高風險
+  const ferritin = getValue(['鐵蛋白', 'ferritin'])
+  const vitD = getValue(['維生素d', 'vitamind', '25oh', '25-oh'])
+  const tsh = getValue(['tsh', '促甲狀腺'])
+  const cortisol = getValue(['皮質醇', 'cortisol'])
+  const testosterone = getValue(['睪固酮', 'testosterone', 'totaltestosterone'])
+  const freeT = getValue(['游離睪固酮', 'freetestosterone', 'freet'])
+
+  {
+    const redSMarkers: { name: string; value: number; unit: string }[] = []
+    let redSScore = 0
+
+    if (ferritin && ferritin.value < 30) { redSMarkers.push(ferritin); redSScore++ }
+    if (vitD && vitD.value < 30) { redSMarkers.push(vitD); redSScore++ }
+    if (tsh && tsh.value > 4.0) { redSMarkers.push(tsh); redSScore++ }
+    if (gender === '女性' && hasAmenorrhea) { redSScore += 2 } // 閉經是最強信號
+    if (bodyFatPct != null && gender === '女性' && bodyFatPct < 15) { redSScore++ }
+    if (bodyFatPct != null && gender === '男性' && bodyFatPct < 6) { redSScore++ }
+    // 男性也看睪固酮
+    if (gender === '男性' && testosterone && testosterone.value < 300) { redSMarkers.push(testosterone); redSScore++ }
+
+    if (redSScore >= 3) {
+      patterns.push({
+        pattern: 'red_s_risk',
+        title: 'RED-S（相對能量不足）風險',
+        icon: '🚨',
+        severity: redSScore >= 4 ? 'critical' : 'high',
+        description: `偵測到 ${redSMarkers.length} 項相關指標異常${hasAmenorrhea ? ' + 閉經' : ''}${bodyFatPct != null && bodyFatPct < 15 ? ` + 低體脂（${bodyFatPct}%）` : ''}。這些指標同時異常高度暗示能量攝取長期不足，影響荷爾蒙、骨密度、免疫力。`,
+        triggeredMarkers: redSMarkers,
+        actionItems: [
+          '立即增加每日熱量攝取 300-500kcal',
+          '確保能量可用性 > 30 kcal/kg FFM/day',
+          '減少有氧訓練量，優先恢復',
+          '建議諮詢運動醫學科或內分泌科',
+          ...(hasAmenorrhea ? ['閉經是 RED-S 最嚴重的警訊，需優先處理'] : []),
+        ],
+        references: [
+          'Mountjoy et al. 2018 (Br J Sports Med): IOC consensus statement on RED-S',
+          'Loucks & Thuma 2003 (J Clin Endocrinol Metab): LH pulsatility disrupted at EA < 30 kcal/kg FFM/day',
+        ],
+      })
+    }
+  }
+
+  // ── Pattern 2: 代謝症候群風險 ──
+  // IDF 2006: 空腹血糖 + 三酸甘油酯 + HDL + 血壓（我們沒有血壓）
+  const glucose = getValue(['空腹血糖', 'fastingglucose', 'fbs', 'ac'])
+  const insulin = getValue(['空腹胰島素', 'fastinginsulin'])
+  const homaIR = getValue(['homair', 'homa-ir', '胰島素阻抗'])
+  const triglycerides = getValue(['三酸甘油酯', 'triglycerides', 'tg'])
+  const hdl = getValue(['hdl', '高密度脂蛋白'])
+  const uricAcid = getValue(['尿酸', 'uricacid'])
+
+  {
+    const metSynMarkers: { name: string; value: number; unit: string }[] = []
+    let metSynScore = 0
+
+    if (glucose && glucose.value >= 100) { metSynMarkers.push(glucose); metSynScore++ }
+    if (triglycerides && triglycerides.value >= 150) { metSynMarkers.push(triglycerides); metSynScore++ }
+    if (hdl) {
+      const hdlThreshold = gender === '女性' ? 50 : 40
+      if (hdl.value < hdlThreshold) { metSynMarkers.push(hdl); metSynScore++ }
+    }
+    if (homaIR && homaIR.value > 2.5) { metSynMarkers.push(homaIR); metSynScore++ }
+    if (insulin && insulin.value > 12) { metSynMarkers.push(insulin); metSynScore++ }
+    if (uricAcid) {
+      const uaMax = gender === '女性' ? 6.0 : 7.0
+      if (uricAcid.value > uaMax) { metSynMarkers.push(uricAcid); metSynScore++ }
+    }
+
+    if (metSynScore >= 3) {
+      patterns.push({
+        pattern: 'metabolic_syndrome',
+        title: '代謝症候群風險',
+        icon: '⚠️',
+        severity: metSynScore >= 4 ? 'high' : 'medium',
+        description: `${metSynMarkers.length} 項代謝指標同時異常，符合代謝症候群模式。胰島素阻抗可能是核心問題，需要從飲食結構整體調整。`,
+        triggeredMarkers: metSynMarkers,
+        actionItems: [
+          '碳水總量減少 20-30%，優先移除精緻碳水（白飯白麵可保留，糖飲甜食先砍）',
+          '碳循環策略：訓練日碳水正常，休息日碳水減半',
+          '增加 Omega-3 攝取（每日 2g EPA+DHA）— 改善胰島素敏感度 + 降低三酸甘油酯',
+          '增加膳食纖維至 30g/天（蔬菜、豆類、燕麥）',
+          '每餐先吃蛋白質和蔬菜，最後吃碳水（降低餐後血糖峰值）',
+          ...(uricAcid && uricAcid.value > 7.0 ? ['尿酸偏高：減少果糖（含糖飲料、蜂蜜）和內臟類'] : []),
+        ],
+        references: [
+          'Alberti et al. 2009 (Circulation): IDF/AHA Joint Interim Statement on metabolic syndrome',
+          'Richter & Hargreaves 2013 (Physiol Rev): Exercise, GLUT4, and skeletal muscle glucose uptake',
+        ],
+      })
+    }
+  }
+
+  // ── Pattern 3: 過度訓練 / 恢復不足 ──
+  // Meeusen et al. 2013: cortisol + testosterone ratio + ferritin + CRP
+  const crp = getValue(['crp', 'hscrp', 'c反應蛋白', 'c-reactiveprotein'])
+
+  {
+    const otMarkers: { name: string; value: number; unit: string }[] = []
+    let otScore = 0
+
+    if (cortisol && cortisol.value > 25) { otMarkers.push(cortisol); otScore++ }
+    if (gender === '男性' && testosterone && testosterone.value < 400) { otMarkers.push(testosterone); otScore++ }
+    if (gender === '男性' && freeT && freeT.value < 9) { otMarkers.push(freeT); otScore++ }
+    if (ferritin && ferritin.value < 30) { otMarkers.push(ferritin); otScore++ }
+    if (crp && crp.value > 3.0) { otMarkers.push(crp); otScore++ }
+    if (tsh && tsh.value > 4.0) { otMarkers.push(tsh); otScore++ }
+
+    if (otScore >= 3) {
+      patterns.push({
+        pattern: 'overtraining_risk',
+        title: '過度訓練 / 恢復不足',
+        icon: '🔥',
+        severity: otScore >= 4 ? 'high' : 'medium',
+        description: `${otMarkers.length} 項恢復相關指標異常。高皮質醇 + 低睪固酮 + 發炎指標升高的組合暗示身體處於長期壓力狀態。`,
+        triggeredMarkers: otMarkers,
+        actionItems: [
+          '減少訓練量 20-30%，為期 1-2 週',
+          '增加碳水攝取 +1g/kg（碳水是降低皮質醇最快的營養素）',
+          '睡眠優先：目標 7-9 小時，避免訓練後 2 小時內就寢',
+          '增加抗發炎食物：魚油、薑黃、藍莓、深色蔬菜',
+          ...(crp && crp.value > 5.0 ? ['CRP > 5：排除感染或受傷因素，考慮諮詢醫師'] : []),
+        ],
+        references: [
+          'Meeusen et al. 2013 (Med Sci Sports Exerc): European College of Sport Science — Prevention, diagnosis, and treatment of overtraining syndrome',
+          'Cadegiani & Kater 2017 (BMC Sports Sci Med Rehabil): Hormonal aspects of overtraining syndrome',
+        ],
+      })
+    }
+  }
+
+  // ── Pattern 4: 甲狀腺代謝低下 + 減脂停滯 ──
+  const freeT4 = getValue(['freet4', '游離t4', 'ft4', '游離甲狀腺素'])
+
+  if (tsh && tsh.value > 3.5 && freeT4 && freeT4.value < 1.0) {
+    patterns.push({
+      pattern: 'thyroid_metabolic',
+      title: '甲狀腺功能偏低 — 代謝減速',
+      icon: '🦋',
+      severity: tsh.value > 5.0 ? 'high' : 'medium',
+      description: `TSH 偏高（${tsh.value}）+ Free T4 偏低（${freeT4.value}）的組合暗示甲狀腺功能不足。這會降低基礎代謝率，使減脂更加困難。`,
+      triggeredMarkers: [tsh, freeT4],
+      actionItems: [
+        '不要再加深赤字（代謝已經在減速，再砍熱量只會更差）',
+        '增加每日碳水攝取 50-100g（T3 轉換需要碳水，極低碳會惡化）',
+        '確保碘攝取（海帶、紫菜、碘鹽）— 碘是甲狀腺激素的原料',
+        '確保硒攝取（巴西堅果 2-3 顆/天）— 硒是 T4 → T3 轉換酶的輔因子',
+        '建議諮詢內分泌科評估是否需要藥物介入',
+      ],
+      references: [
+        'Mullur et al. 2014 (Physiol Rev): Thyroid hormone regulation of metabolism',
+        'Reinehr 2010 (Obes Rev): Thyroid and body weight — the interplay',
+      ],
+    })
+  }
+
+  // ── Pattern 5: 慢性發炎 ──
+  const homocysteine = getValue(['同半胱胺酸', 'homocysteine'])
+
+  {
+    const infMarkers: { name: string; value: number; unit: string }[] = []
+    let infScore = 0
+
+    if (crp && crp.value > 3.0) { infMarkers.push(crp); infScore++ }
+    if (homocysteine && homocysteine.value > 12) { infMarkers.push(homocysteine); infScore++ }
+    if (uricAcid) {
+      const uaMax = gender === '女性' ? 6.0 : 7.0
+      if (uricAcid.value > uaMax) { infMarkers.push(uricAcid); infScore++ }
+    }
+    if (ferritin && ferritin.value > (gender === '女性' ? 150 : 300)) { infMarkers.push(ferritin); infScore++ }
+
+    if (infScore >= 2) {
+      patterns.push({
+        pattern: 'chronic_inflammation',
+        title: '慢性發炎傾向',
+        icon: '🔴',
+        severity: infScore >= 3 ? 'high' : 'medium',
+        description: `${infMarkers.length} 項發炎相關指標偏高。慢性低度發炎會影響恢復、胰島素敏感度和整體健康。`,
+        triggeredMarkers: infMarkers,
+        actionItems: [
+          '增加 Omega-3（每日 2-3g EPA+DHA）— 最有效的抗發炎營養素',
+          '增加蔬果至每日 5-7 份（多酚和抗氧化物）',
+          '減少加工食品、油炸物、精緻糖',
+          ...(homocysteine && homocysteine.value > 12 ? ['同半胱胺酸偏高：補充 B6 + B12 + 葉酸（甲基化支持）'] : []),
+          ...(uricAcid && uricAcid.value > 7.0 ? ['減少果糖來源（含糖飲料、蜂蜜）和高普林食物（內臟、濃湯）'] : []),
+        ],
+        references: [
+          'Calder 2006 (Am J Clin Nutr): n-3 polyunsaturated fatty acids, inflammation, and inflammatory diseases',
+          'Minihane et al. 2015 (Br J Nutr): Low-grade inflammation, diet composition, and health',
+        ],
+      })
+    }
+  }
+
+  // 按嚴重度排序
+  patterns.sort((a, b) => {
+    const order = { critical: 0, high: 1, medium: 2 }
+    return order[a.severity] - order[b.severity]
+  })
+
+  return patterns
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 複檢提醒：根據異常指標自動計算建議複檢時間
+// ═══════════════════════════════════════════════════════════════
+
+export interface LabRetestReminder {
+  testName: string
+  lastValue: number
+  unit: string
+  lastDate: string
+  severity: 'high' | 'medium'
+  suggestedRetestDate: string  // ISO date
+  suggestedRetestWeeks: number
+  reason: string
+  isOverdue: boolean          // 已超過建議複檢日
+}
+
+export function generateRetestReminders(
+  labs: Array<{ test_name: string; value: number | null; unit: string; status: 'normal' | 'attention' | 'alert'; date: string }>,
+  options: { gender?: '男性' | '女性' } = {}
+): LabRetestReminder[] {
+  const reminders: LabRetestReminder[] = []
+  const now = new Date()
+
+  // 按 test_name 分組，取最新一筆
+  const latestByTest = new Map<string, typeof labs[0]>()
+  for (const lab of labs) {
+    if (lab.value == null) continue
+    const existing = latestByTest.get(lab.test_name)
+    if (!existing || lab.date > existing.date) {
+      latestByTest.set(lab.test_name, lab)
+    }
+  }
+
+  // 複檢週期對照表（僅異常指標需要複檢提醒）
+  // 文獻：各指標 clinical guidelines 的建議追蹤間隔
+  const retestSchedule: { keywords: string[]; weeks: number; reason: string; severity: 'high' | 'medium' }[] = [
+    // 鐵 — 補充後 8-12 週可見效果（Peeling 2008）
+    { keywords: ['鐵蛋白', 'ferritin'], weeks: 12, reason: '鐵劑補充後約 8-12 週可見鐵蛋白回升，建議追蹤效果', severity: 'high' },
+    { keywords: ['血紅素', 'hemoglobin', 'hb'], weeks: 12, reason: '貧血治療後 8-12 週追蹤血紅素恢復情況', severity: 'high' },
+    // 維生素 D — 補充 3 個月後複檢（Holick 2011）
+    { keywords: ['維生素d', 'vitamind', '25oh'], weeks: 12, reason: '維生素 D 補充後 3 個月達穩態，建議複檢確認是否達標', severity: 'medium' },
+    // 血脂 — 飲食調整後 3 個月（NCEP ATP III）
+    { keywords: ['apob', 'apolipoproteinb'], weeks: 12, reason: '飲食調整對 ApoB 的影響約 8-12 週可見', severity: 'medium' },
+    { keywords: ['ldl', '低密度脂蛋白'], weeks: 12, reason: '飲食調整後 3 個月追蹤 LDL 變化', severity: 'medium' },
+    { keywords: ['三酸甘油酯', 'triglycerides', 'tg'], weeks: 8, reason: '三酸甘油酯對飲食反應較快，8 週可見效果', severity: 'medium' },
+    // 血糖/胰島素 — 飲食調整後 8-12 週
+    { keywords: ['空腹血糖', 'fastingglucose', 'fbs'], weeks: 12, reason: '碳水調整後 3 個月追蹤血糖改善', severity: 'medium' },
+    { keywords: ['homair', 'homa-ir', '胰島素阻抗'], weeks: 12, reason: '飲食+運動介入後 3 個月評估胰島素敏感度改善', severity: 'high' },
+    { keywords: ['糖化血色素', 'hba1c'], weeks: 12, reason: 'HbA1c 反映 3 個月平均血糖，至少 3 個月後複檢', severity: 'medium' },
+    // 甲狀腺 — 6-8 週
+    { keywords: ['tsh', '促甲狀腺'], weeks: 8, reason: 'TSH 對飲食和藥物調整的反應約 6-8 週', severity: 'high' },
+    // 荷爾蒙 — 3 個月
+    { keywords: ['睪固酮', 'testosterone'], weeks: 12, reason: '生活方式調整後 3 個月追蹤睪固酮變化', severity: 'medium' },
+    // 發炎 — 4-8 週
+    { keywords: ['crp', 'hscrp', 'c反應蛋白'], weeks: 8, reason: '抗發炎飲食調整後 8 週追蹤 CRP 變化', severity: 'medium' },
+    // B12 — 補充後 3 個月
+    { keywords: ['維生素b12', 'b12', '鈷胺素'], weeks: 12, reason: 'B12 補充後 3 個月追蹤血清濃度', severity: 'medium' },
+    // 尿酸 — 飲食調整後 4-8 週
+    { keywords: ['尿酸', 'uricacid'], weeks: 8, reason: '飲食調整後 8 週追蹤尿酸變化', severity: 'medium' },
+  ]
+
+  for (const [, lab] of latestByTest) {
+    if (lab.status === 'normal') continue // 正常的不需要複檢提醒
+
+    for (const schedule of retestSchedule) {
+      if (!matchName(lab.test_name, schedule.keywords)) continue
+
+      const lastDate = new Date(lab.date)
+      const retestDate = new Date(lastDate)
+      retestDate.setDate(retestDate.getDate() + schedule.weeks * 7)
+      const isOverdue = now > retestDate
+
+      reminders.push({
+        testName: lab.test_name,
+        lastValue: lab.value!,
+        unit: lab.unit,
+        lastDate: lab.date,
+        severity: schedule.severity,
+        suggestedRetestDate: retestDate.toISOString().split('T')[0],
+        suggestedRetestWeeks: schedule.weeks,
+        reason: schedule.reason,
+        isOverdue,
+      })
+      break // 每個指標只匹配一次
+    }
+  }
+
+  // 已過期的排前面
+  reminders.sort((a, b) => {
+    if (a.isOverdue && !b.isOverdue) return -1
+    if (!a.isOverdue && b.isOverdue) return 1
+    return new Date(a.suggestedRetestDate).getTime() - new Date(b.suggestedRetestDate).getTime()
+  })
+
+  return reminders
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 變化追蹤報告：比較同一指標的前後兩次值
+// ═══════════════════════════════════════════════════════════════
+
+export interface LabChangeReport {
+  testName: string
+  previousValue: number
+  previousDate: string
+  currentValue: number
+  currentDate: string
+  unit: string
+  changeAbsolute: number     // 絕對變化
+  changePct: number          // 百分比變化
+  direction: 'improved' | 'worsened' | 'stable'
+  interpretation: string     // 變化解讀
+  isNowNormal: boolean       // 是否已回到正常範圍
+  previousStatus: 'normal' | 'attention' | 'alert'
+  currentStatus: 'normal' | 'attention' | 'alert'
+}
+
+export function generateLabChangeReport(
+  labs: Array<{ test_name: string; value: number | null; unit: string; status: 'normal' | 'attention' | 'alert'; date: string }>,
+  options: { gender?: '男性' | '女性' } = {}
+): LabChangeReport[] {
+  const reports: LabChangeReport[] = []
+
+  // 按 test_name 分組
+  const byTest = new Map<string, typeof labs>()
+  for (const lab of labs) {
+    if (lab.value == null) continue
+    const group = byTest.get(lab.test_name) || []
+    group.push(lab)
+    byTest.set(lab.test_name, group)
+  }
+
+  // 指標方向定義：value 升高是好還是壞
+  // true = 升高是壞的（需要降低），false = 升高是好的（需要升高）
+  const higherIsBad: Record<string, boolean> = {
+    '空腹血糖': true, 'fastingglucose': true, 'fbs': true,
+    '空腹胰島素': true, 'fastinginsulin': true,
+    'homair': true, 'homa-ir': true, '胰島素阻抗': true,
+    '糖化血色素': true, 'hba1c': true,
+    '尿酸': true, 'uricacid': true,
+    '三酸甘油酯': true, 'triglycerides': true,
+    'apob': true, 'ldl': true, '低密度脂蛋白': true,
+    '總膽固醇': true,
+    'ast': true, 'alt': true, 'ggt': true,
+    '肌酸酐': true, 'creatinine': true,
+    'bun': true, '血尿素氮': true,
+    'tsh': true, '促甲狀腺': true,
+    'crp': true, 'hscrp': true, 'c反應蛋白': true,
+    '同半胱胺酸': true, 'homocysteine': true,
+    '皮質醇': true, 'cortisol': true,
+    '雌二醇': true, 'estradiol': true,  // 男性偏高是壞的
+  }
+
+  const higherIsGood: Record<string, boolean> = {
+    'hdl': true, '高密度脂蛋白': true,
+    '鐵蛋白': true, 'ferritin': true,
+    '血紅素': true, 'hemoglobin': true,
+    '維生素d': true, 'vitamind': true, '25oh': true,
+    '維生素b12': true, 'b12': true,
+    '葉酸': true, 'folate': true,
+    '鎂': true, 'magnesium': true,
+    '鋅': true, 'zinc': true,
+    '鈣': true, 'calcium': true,
+    '白蛋白': true, 'albumin': true,
+    'egfr': true, '腎絲球過濾率': true,
+    '睪固酮': true, 'testosterone': true,  // 通常升高是好的
+    '游離睪固酮': true, 'freetestosterone': true,
+    'dheas': true, 'dhea-s': true,
+    'freet4': true, '游離t4': true, '游離甲狀腺素': true,
+  }
+
+  for (const [testName, results] of byTest) {
+    if (results.length < 2) continue
+
+    // 按日期排序，取最近兩筆
+    const sorted = results.sort((a, b) => b.date.localeCompare(a.date))
+    const current = sorted[0]
+    const previous = sorted[1]
+
+    const changeAbs = current.value! - previous.value!
+    const changePct = previous.value! !== 0 ? (changeAbs / previous.value!) * 100 : 0
+
+    // 判斷方向
+    const norm = testName.toLowerCase().replace(/[\s_\-()（）]/g, '')
+    let direction: 'improved' | 'worsened' | 'stable'
+
+    if (Math.abs(changePct) < 3) {
+      direction = 'stable'
+    } else {
+      const isHigherBad = Object.keys(higherIsBad).some(k => norm.includes(k.toLowerCase().replace(/[\s_\-()（）]/g, '')))
+      const isHigherGood = Object.keys(higherIsGood).some(k => norm.includes(k.toLowerCase().replace(/[\s_\-()（）]/g, '')))
+
+      if (isHigherBad) {
+        direction = changeAbs > 0 ? 'worsened' : 'improved'
+      } else if (isHigherGood) {
+        direction = changeAbs > 0 ? 'improved' : 'worsened'
+      } else {
+        // 用 status 判斷
+        if (current.status === 'normal' && previous.status !== 'normal') direction = 'improved'
+        else if (current.status !== 'normal' && previous.status === 'normal') direction = 'worsened'
+        else direction = 'stable'
+      }
+    }
+
+    // 解讀文字
+    const absStr = Math.abs(changeAbs).toFixed(1)
+    const pctStr = Math.abs(changePct).toFixed(1)
+    const dirStr = changeAbs > 0 ? '↑' : '↓'
+    let interpretation: string
+    if (direction === 'improved') {
+      interpretation = `${dirStr} ${absStr} ${current.unit}（${pctStr}%）— 飲食調整有效，持續保持`
+    } else if (direction === 'worsened') {
+      interpretation = `${dirStr} ${absStr} ${current.unit}（${pctStr}%）— 指標惡化，需檢視飲食執行狀況`
+    } else {
+      interpretation = `變化不大（${pctStr}%）— 目前策略維持穩定，持續觀察`
+    }
+
+    const isNowNormal = current.status === 'normal' && previous.status !== 'normal'
+    if (isNowNormal) {
+      interpretation += '。✅ 已回到正常範圍！'
+    }
+
+    reports.push({
+      testName,
+      previousValue: previous.value!,
+      previousDate: previous.date,
+      currentValue: current.value!,
+      currentDate: current.date,
+      unit: current.unit,
+      changeAbsolute: Math.round(changeAbs * 100) / 100,
+      changePct: Math.round(changePct * 10) / 10,
+      direction,
+      interpretation,
+      isNowNormal,
+      previousStatus: previous.status,
+      currentStatus: current.status,
+    })
+  }
+
+  // 改善的排前面（正向回饋），惡化的排後面
+  reports.sort((a, b) => {
+    const order = { improved: 0, stable: 1, worsened: 2 }
+    return order[a.direction] - order[b.direction]
+  })
+
+  return reports
+}

@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 新增血檢（白名單過濾）
-    const ALLOWED_LAB_FIELDS = ['marker_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
+    const ALLOWED_LAB_FIELDS = ['test_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
     if (labResults?.length > 0) {
       const withId = labResults.map((r: any) => {
         const sanitized: Record<string, any> = { client_id: newClient.id }
@@ -124,7 +124,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // 白名單過濾 lab/supplement 欄位
-    const ALLOWED_LAB_FIELDS = ['marker_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
+    const ALLOWED_LAB_FIELDS = ['test_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
     const ALLOWED_SUPP_FIELDS = ['name', 'dosage', 'timing', 'frequency', 'notes', 'is_active', 'category']
 
     function sanitizeFields(obj: any, allowedFields: string[]): Record<string, any> {
@@ -170,6 +170,7 @@ export async function PUT(request: NextRequest) {
       'calories_target', 'protein_target', 'carbs_target', 'fat_target', 'water_target',
       'carbs_training_day', 'carbs_rest_day',
       'next_checkup_date', 'coach_weekly_note', 'coach_summary',
+      'coach_macro_override',
     ]
     const sanitizedClientData: Record<string, any> = {}
     if (clientData && typeof clientData === 'object') {
@@ -178,6 +179,40 @@ export async function PUT(request: NextRequest) {
           sanitizedClientData[key] = clientData[key]
         }
       }
+    }
+
+    // 教練覆寫鎖定：如果教練修改了營養目標欄位，自動設定鎖定
+    // 防止 auto-apply 覆蓋教練的手動調整
+    const MACRO_FIELDS = ['calories_target', 'protein_target', 'carbs_target', 'fat_target', 'carbs_training_day', 'carbs_rest_day']
+    const changedMacroFields = MACRO_FIELDS.filter(f => f in sanitizedClientData && sanitizedClientData[f] != null)
+
+    if (changedMacroFields.length > 0) {
+      // 查詢現有值，比對是否真的有改動
+      const { data: currentClient } = await supabase
+        .from('clients')
+        .select(MACRO_FIELDS.join(', '))
+        .eq('id', clientId)
+        .single()
+
+      const cc = currentClient as Record<string, any> | null
+      const actuallyChanged = cc
+        ? changedMacroFields.filter(f => sanitizedClientData[f] !== cc[f])
+        : changedMacroFields
+
+      if (actuallyChanged.length > 0) {
+        sanitizedClientData.coach_macro_override = {
+          locked_at: new Date().toISOString(),
+          locked_fields: actuallyChanged,
+          previous_values: cc
+            ? Object.fromEntries(actuallyChanged.map(f => [f, cc[f]]))
+            : {},
+        }
+      }
+    }
+
+    // 教練明確要求解鎖時
+    if (clientData?.coach_macro_override === null) {
+      sanitizedClientData.coach_macro_override = null
     }
 
     const { error: clientError } = await supabase

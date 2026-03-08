@@ -20,6 +20,11 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     return { adjusted: false, debug: `skip: goal_type=${client?.goal_type}, nutrition_enabled=${client?.nutrition_enabled}` }
   }
 
+  // 教練覆寫鎖定：教練手動調整過營養目標 → 跳過自動調整
+  if (client.coach_macro_override) {
+    return { adjusted: false, debug: 'skip: coach_macro_override locked' }
+  }
+
   // 2. 取得近 30 天數據
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -77,14 +82,14 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     bodyWeight: latestWeight,
     goalType: client.goal_type,
     dietStartDate: client.diet_start_date || null,
-    targetWeight: client.target_weight || null,
+    targetWeight: client.target_weight ?? null,
     targetDate: client.competition_date || client.target_date || null,
-    currentCalories: client.calories_target || null,
-    currentProtein: client.protein_target || null,
-    currentCarbs: client.carbs_target || null,
-    currentFat: client.fat_target || null,
-    currentCarbsTrainingDay: client.carbs_training_day || null,
-    currentCarbsRestDay: client.carbs_rest_day || null,
+    currentCalories: client.calories_target ?? null,
+    currentProtein: client.protein_target ?? null,
+    currentCarbs: client.carbs_target ?? null,
+    currentFat: client.fat_target ?? null,
+    currentCarbsTrainingDay: client.carbs_training_day ?? null,
+    currentCarbsRestDay: client.carbs_rest_day ?? null,
     carbsCyclingEnabled: !!(client.carbs_training_day && client.carbs_rest_day),
     weeklyWeights,
     nutritionCompliance: compliance,
