@@ -28,6 +28,7 @@ import PwaPrompt from '@/components/client/PwaPrompt'
 import OnboardingGuide from '@/components/client/OnboardingGuide'
 import HealthModeAdvanced from '@/components/client/HealthModeAdvanced'
 import LabNutritionAdviceCard from '@/components/client/LabNutritionAdviceCard'
+import LabInsightsCard from '@/components/client/LabInsightsCard'
 import AiChatDrawer from '@/components/client/AiChatDrawer'
 import AiInsightsPanel from '@/components/client/AiInsightsPanel'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
@@ -1241,6 +1242,15 @@ export default function ClientDashboard() {
             labResults={c.lab_results}
             gender={(c.gender as '男性' | '女性') ?? undefined}
             goalType={c.goal_type as 'cut' | 'bulk' | null | undefined}
+          />
+        )}
+
+        {/* 血檢深度分析 — 交叉分析 + 變化追蹤 + 複檢提醒 */}
+        {c.lab_enabled && c.lab_results && c.lab_results.length > 0 && (
+          <LabInsightsCard
+            labResults={c.lab_results}
+            gender={(c.gender as '男性' | '女性') ?? undefined}
+            bodyFatPct={latestBodyData?.body_fat ?? null}
           />
         )}
 
