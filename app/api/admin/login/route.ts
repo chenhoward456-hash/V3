@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSession, rateLimit, getClientIP } from '@/lib/auth-middleware'
+import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +19,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '伺服器設定錯誤' }, { status: 500 })
     }
 
-    if (password === correctPassword) {
+    if (typeof password !== 'string' || !password) {
+      return NextResponse.json({ error: '登入失敗' }, { status: 401 })
+    }
+
+    // 使用 timing-safe comparison 防止計時攻擊
+    const passwordBuffer = Buffer.from(password)
+    const correctBuffer = Buffer.from(correctPassword)
+
+    const isValid = passwordBuffer.length === correctBuffer.length &&
+      crypto.timingSafeEqual(passwordBuffer, correctBuffer)
+
+    if (isValid) {
       const sessionToken = createAdminSession()
 
       const response = NextResponse.json({ success: true })
@@ -32,9 +44,10 @@ export async function POST(request: NextRequest) {
 
       return response
     } else {
-      return NextResponse.json({ error: '密碼錯誤' }, { status: 401 })
+      // 統一錯誤訊息，避免洩漏是否為有效帳號
+      return NextResponse.json({ error: '登入失敗' }, { status: 401 })
     }
   } catch {
-    return NextResponse.json({ error: '請求錯誤' }, { status: 400 })
+    return NextResponse.json({ error: '登入失敗' }, { status: 401 })
   }
 }

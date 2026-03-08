@@ -77,10 +77,12 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
     if (!form.test_name || !form.value || !form.date) { showToast('請填寫必要欄位', 'error'); return }
     try {
       const url = '/api/lab-results'
+      const isSelfEntry = !isCoachMode && !editing
       const body = editing
         ? { id: editing.id, testName: form.test_name, value: Number(form.value), unit: form.unit, referenceRange: form.reference_range, date: form.date, customAdvice: form.custom_advice || null, customTarget: form.custom_target || null }
-        : { clientId, testName: form.test_name, value: Number(form.value), unit: form.unit, referenceRange: form.reference_range, date: form.date, customAdvice: form.custom_advice || null, customTarget: form.custom_target || null }
-      const res = await fetch(url, { method: editing ? 'PUT' : 'POST', headers: coachHeaders, body: JSON.stringify(body) })
+        : { clientId, testName: form.test_name, value: Number(form.value), unit: form.unit, referenceRange: form.reference_range, date: form.date, customAdvice: form.custom_advice || null, customTarget: form.custom_target || null, ...(isSelfEntry ? { selfEntry: true } : {}) }
+      const headers = isSelfEntry ? { 'Content-Type': 'application/json' } : coachHeaders
+      const res = await fetch(url, { method: editing ? 'PUT' : 'POST', headers, body: JSON.stringify(body) })
       if (!res.ok) throw new Error('操作失敗')
       setShowModal(false)
       setEditing(null)
@@ -102,11 +104,9 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
       <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold text-gray-900">血檢數據紀錄</h2>
-          {isCoachMode && (
-            <button onClick={() => openModal()} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700 flex items-center">
-              <Plus size={16} className="mr-1" /> 新增血檢
-            </button>
-          )}
+          <button onClick={() => openModal()} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700 flex items-center">
+            <Plus size={16} className="mr-1" /> 新增血檢
+          </button>
         </div>
 
         <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-4">
@@ -153,14 +153,12 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                     <p className="text-sm text-gray-600 mt-2">{latest.custom_advice || advice}</p>
                   )}
                   <p className="text-xs text-gray-400 mt-1">參考範圍：{latest.custom_target || latest.reference_range}</p>
-                  {isCoachMode && (
-                    <button
-                      onClick={() => openModal(undefined, latest)}
-                      className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center"
-                    >
-                      <Plus size={12} className="mr-0.5" /> 新增此指標紀錄
-                    </button>
-                  )}
+                  <button
+                    onClick={() => openModal(undefined, latest)}
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                  >
+                    <Plus size={12} className="mr-0.5" /> 新增此指標紀錄
+                  </button>
 
                   {/* 迷你趨勢圖 */}
                   {history.length >= 2 && (
@@ -200,7 +198,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
         ) : (
           <div className="text-center py-4">
             <p className="text-gray-400">尚無血檢資料</p>
-            <p className="text-xs text-gray-300 mt-1">完成血檢後，教練會幫你上傳並分析結果</p>
+            <p className="text-xs text-gray-300 mt-1">點擊「新增血檢」上傳你的檢驗數據</p>
           </div>
         )}
       </div>
@@ -267,14 +265,18 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                 <label className="block text-sm font-medium text-gray-700 mb-1">檢測日期 *</label>
                 <input type="date" value={form.date} onChange={(e) => setForm(p => ({ ...p, date: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">自訂目標範圍</label>
-                <input type="text" value={form.custom_target} onChange={(e) => setForm(p => ({ ...p, custom_target: e.target.value }))} placeholder="留空則使用預設範圍" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">自訂建議</label>
-                <textarea value={form.custom_advice} onChange={(e) => setForm(p => ({ ...p, custom_advice: e.target.value }))} rows={2} placeholder="留空則使用預設建議" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
+              {isCoachMode && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">自訂目標範圍</label>
+                    <input type="text" value={form.custom_target} onChange={(e) => setForm(p => ({ ...p, custom_target: e.target.value }))} placeholder="留空則使用預設範圍" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">自訂建議</label>
+                    <textarea value={form.custom_advice} onChange={(e) => setForm(p => ({ ...p, custom_advice: e.target.value }))} rows={2} placeholder="留空則使用預設建議" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </>
+              )}
             </div>
             <div className="mt-4 flex gap-2">
               <button onClick={() => setShowModal(false)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">取消</button>

@@ -51,9 +51,16 @@ export function rateLimit(key: string, maxRequests: number = 10, windowMs: numbe
 const ADMIN_SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
 function getSessionSecret(): string {
-  // 優先使用獨立的 SESSION_SECRET，避免直接用 ADMIN_PASSWORD 作為簽名密鑰
-  const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD
-  if (!secret) throw new Error('SESSION_SECRET 或 ADMIN_PASSWORD 環境變數未設定')
+  // 使用獨立的 SESSION_SECRET，不再 fallback 到 ADMIN_PASSWORD
+  // 避免密碼洩漏時連帶影響 session 簽名安全性
+  const secret = process.env.SESSION_SECRET
+  if (!secret) {
+    // 向下相容：如果 SESSION_SECRET 未設定，使用 ADMIN_PASSWORD 並記錄警告
+    const fallback = process.env.ADMIN_PASSWORD
+    if (!fallback) throw new Error('SESSION_SECRET 環境變數未設定')
+    console.warn('[安全警告] 建議設定獨立的 SESSION_SECRET 環境變數，而非使用 ADMIN_PASSWORD')
+    return fallback
+  }
   return secret
 }
 
@@ -150,24 +157,24 @@ export async function verifyAuth(request: NextRequest): Promise<{ user: any; err
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return { user: null, error: '缺少 Authorization header 或格式錯誤' }
+      return { user: null, error: '身份驗證失敗' }
     }
 
     const token = authHeader.substring(7)
     if (!token) {
-      return { user: null, error: 'JWT token 不能為空' }
+      return { user: null, error: '身份驗證失敗' }
     }
 
     const { data: { user }, error } = await supabase.auth.getUser(token)
 
     if (error || !user) {
-      return { user: null, error: '無效的 JWT token' }
+      return { user: null, error: '身份驗證失敗' }
     }
 
     // 只從 app_metadata 讀取 role（user_metadata 可被使用者自行修改，有提權風險）
     const userRole = user.app_metadata?.role
     if (!userRole) {
-      return { user: null, error: '用戶缺少角色資訊' }
+      return { user: null, error: '身份驗證失敗' }
     }
 
     return { user: { ...user, role: userRole } }
