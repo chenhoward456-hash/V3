@@ -95,15 +95,29 @@ export async function POST(request: NextRequest) {
 
       // 計算初始營養目標
       try {
+        // 活動量：表單有填就用表單的，否則 moderate（預設）
+        const activityProfile = diagnosisData?.activityProfile || undefined
+        const trainingDays = diagnosisData?.trainingDaysPerWeek ?? 3
+
         const targets = calculateInitialTargets({
           gender: gender || '男性',
           bodyWeight: effectiveWeight,
           height: diagnosisData?.height || null,
           bodyFatPct: diagnosisData?.bodyFatPct || null,
           goalType: (goalType || 'cut') as 'cut' | 'bulk',
-          activityProfile: 'sedentary',
-          trainingDaysPerWeek: diagnosisData?.trainingDaysPerWeek || 3,
+          activityProfile,
+          trainingDaysPerWeek: trainingDays,
         })
+
+        // 計算目標時程（如果有目標體重）
+        const tgtWeight = diagnosisData?.targetWeight
+        let estimatedWeeks: number | null = null
+        if (tgtWeight && typeof tgtWeight === 'number' && tgtWeight >= 30 && tgtWeight <= 300) {
+          const weightDiff = Math.abs(effectiveWeight - tgtWeight)
+          // 減脂約 0.5-0.7 kg/週，增肌約 0.2-0.3 kg/週
+          const weeklyRate = goalType === 'cut' ? 0.5 : 0.25
+          estimatedWeeks = Math.ceil(weightDiff / weeklyRate)
+        }
 
         await supabase.from('clients').update({
           calories_target: targets.calories,
@@ -111,7 +125,24 @@ export async function POST(request: NextRequest) {
           carbs_target: targets.carbs,
           fat_target: targets.fat,
           diet_start_date: today,
+          ...(tgtWeight ? { target_weight: tgtWeight } : {}),
         }).eq('id', newClient.id)
+
+        // 把時程預估也回傳給前端（用 registration_data 存）
+        if (estimatedWeeks) {
+          await supabase.from('subscription_purchases').update({
+            registration_data: {
+              gender, age, goalType,
+              targetWeight: tgtWeight,
+              estimatedWeeks,
+              estimatedTDEE: targets.estimatedTDEE,
+              calories: targets.calories,
+              protein: targets.protein,
+              carbs: targets.carbs,
+              fat: targets.fat,
+            },
+          }).eq('client_id', newClient.id)
+        }
       } catch (err) {
         log.error('Nutrition target calculation failed (non-blocking)', err)
       }
@@ -144,11 +175,25 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // 讀取已計算的營養目標回傳給前端
+    const { data: clientData } = await supabase
+      .from('clients')
+      .select('calories_target, protein_target, carbs_target, fat_target, target_weight')
+      .eq('id', newClient.id)
+      .single()
+
     return NextResponse.json({
       success: true,
       uniqueCode,
       name: name.trim(),
       tier: 'free',
+      targets: clientData ? {
+        calories: clientData.calories_target,
+        protein: clientData.protein_target,
+        carbs: clientData.carbs_target,
+        fat: clientData.fat_target,
+        targetWeight: clientData.target_weight,
+      } : null,
     })
   } catch (err: any) {
     log.error('Unexpected error', err)

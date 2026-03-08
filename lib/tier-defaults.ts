@@ -12,7 +12,7 @@ const TIER_FEATURES: Record<SubscriptionTier, Record<string, boolean>> = {
     supplement_enabled: false,
     lab_enabled: false,
     ai_chat_enabled: false,
-    simple_mode: true,         // 免費用戶預設簡單模式，降低上手門檻
+    simple_mode: false,        // 免費用戶也顯示完整巨量營養素（碳水、脂肪），提升體驗感
   },
   self_managed: {
     body_composition_enabled: true,

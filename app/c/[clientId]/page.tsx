@@ -1370,6 +1370,17 @@ export default function ClientDashboard() {
           lab_enabled: c.lab_enabled,
           ai_chat_enabled: c.ai_chat_enabled,
         }}
+        nutritionTargets={{
+          calories: c.calories_target,
+          protein: c.protein_target,
+          carbs: c.carbs_target,
+          fat: c.fat_target,
+        }}
+        goalInfo={{
+          goalType: c.goal_type,
+          currentWeight: latestBodyData?.weight ?? null,
+          targetWeight: c.target_weight ?? null,
+        }}
       />
 
       {showSupplementModal && c.supplement_enabled && (

@@ -16,6 +16,17 @@ interface OnboardingGuideProps {
     lab_enabled: boolean
     ai_chat_enabled: boolean
   }
+  nutritionTargets?: {
+    calories?: number | null
+    protein?: number | null
+    carbs?: number | null
+    fat?: number | null
+  } | null
+  goalInfo?: {
+    goalType?: string | null
+    currentWeight?: number | null
+    targetWeight?: number | null
+  } | null
 }
 
 const STEPS = [
@@ -55,32 +66,44 @@ const STEPS = [
   },
 ]
 
-// 免費用戶專用步驟：展示可做的 + 預覽付費功能
-const FREE_STEPS = [
-  {
-    icon: '👋',
-    title: '歡迎體驗！',
-    desc: '系統已經根據你的資料算好了 TDEE 和營養目標，直接開始記錄吧！',
-  },
-  {
-    icon: '⚖️',
-    title: '第一步：記錄體重',
-    desc: '每天量體重是最重要的習慣。在下方「體組成」區塊輸入，或綁定 LINE 後直接傳數字。',
-  },
-  {
-    icon: '🍽️',
-    title: '第二步：追蹤飲食',
-    desc: '每天記錄飲食是否達標。AI 會根據你的營養目標判斷，持續記錄才能看到趨勢。',
-  },
-  {
-    icon: '🔓',
-    title: '升級解鎖更多',
-    desc: '訓練追蹤、身心狀態分析、無限次 AI 飲食顧問、每週自動報告 — 升級後全部解鎖。',
-    isUpgrade: true,
-  },
-]
+// 免費用戶步驟工廠：根據營養目標和 goalInfo 動態產生
+function buildFreeSteps(
+  nutritionTargets?: OnboardingGuideProps['nutritionTargets'],
+  goalInfo?: OnboardingGuideProps['goalInfo'],
+) {
+  // 歡迎步驟：如果有營養目標就顯示具體數字
+  let welcomeDesc = '系統已經根據你的資料算好了 TDEE 和營養目標，直接開始記錄吧！'
+  if (nutritionTargets?.calories) {
+    welcomeDesc = `系統已幫你算好每日目標：${nutritionTargets.calories} kcal、蛋白質 ${nutritionTargets.protein}g、碳水 ${nutritionTargets.carbs}g、脂肪 ${nutritionTargets.fat}g。`
+  }
 
-export default function OnboardingGuide({ clientId, clientName, tier, features }: OnboardingGuideProps) {
+  // 目標步驟：如果有目標體重就顯示時程
+  let goalStep = null
+  if (goalInfo?.targetWeight && goalInfo?.currentWeight) {
+    const diff = Math.abs(goalInfo.currentWeight - goalInfo.targetWeight)
+    const rate = goalInfo.goalType === 'cut' ? 0.5 : 0.25
+    const weeks = Math.ceil(diff / rate)
+    const timeStr = weeks <= 4 ? `${weeks} 週` : `約 ${Math.round(weeks / 4.3)} 個月`
+    goalStep = {
+      icon: '🎯',
+      title: '你的目標',
+      desc: `${goalInfo.goalType === 'cut' ? '減脂' : '增肌'}：${goalInfo.currentWeight} kg → ${goalInfo.targetWeight} kg，預估 ${timeStr} 達成。持續記錄，系統會每週校正讓計畫更精準。`,
+    }
+  }
+
+  const steps: Array<{ icon: string; title: string; desc: string; isUpgrade?: boolean }> = [
+    { icon: '👋', title: '歡迎體驗！', desc: welcomeDesc },
+  ]
+  if (goalStep) steps.push(goalStep)
+  steps.push(
+    { icon: '⚖️', title: '第一步：記錄體重', desc: '每天量體重是最重要的習慣。在下方「體組成」區塊輸入，或綁定 LINE 後直接傳數字。' },
+    { icon: '🍽️', title: '第二步：追蹤飲食', desc: '每天記錄飲食是否達標，照著你的營養目標吃。持續記錄 2 週，系統會自動校正 TDEE。' },
+    { icon: '🔓', title: '升級解鎖更多', desc: '訓練追蹤、身心狀態分析、無限次 AI 飲食顧問、每週自動報告 — 升級後全部解鎖。', isUpgrade: true },
+  )
+  return steps
+}
+
+export default function OnboardingGuide({ clientId, clientName, tier, features, nutritionTargets, goalInfo }: OnboardingGuideProps) {
   const [show, setShow] = useState(false)
   const [step, setStep] = useState(0)
 
@@ -101,7 +124,7 @@ export default function OnboardingGuide({ clientId, clientName, tier, features }
 
   // 根據方案選擇步驟
   const activeSteps = isFree
-    ? FREE_STEPS
+    ? buildFreeSteps(nutritionTargets, goalInfo)
     : STEPS.filter(s => {
         if (!('feature' in s) || !s.feature) return true
         return features[s.feature as keyof typeof features]
