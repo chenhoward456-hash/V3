@@ -498,7 +498,7 @@ export default function AdminDashboard() {
                     <Link href={`/admin/clients/${s.id}/overview`} className="text-sm font-medium text-red-700 hover:underline">{s.name}</Link>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-red-600">{s.reason}</span>
-                      <button onClick={() => openFeedback(clients.find(c => c.id === s.id)!)} className="p-1 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded transition-colors" title="快速回饋">
+                      <button onClick={() => { const c = clients.find(c => c.id === s.id); if (c) openFeedback(c) }} className="p-1 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded transition-colors" title="快速回饋">
                         <MessageSquare size={14} />
                       </button>
                     </div>

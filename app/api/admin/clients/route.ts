@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 新增血檢（白名單過濾）
-    const ALLOWED_LAB_FIELDS = ['marker_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
+    const ALLOWED_LAB_FIELDS = ['test_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
     if (labResults?.length > 0) {
       const withId = labResults.map((r: any) => {
         const sanitized: Record<string, any> = { client_id: newClient.id }
@@ -124,7 +124,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // 白名單過濾 lab/supplement 欄位
-    const ALLOWED_LAB_FIELDS = ['marker_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
+    const ALLOWED_LAB_FIELDS = ['test_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
     const ALLOWED_SUPP_FIELDS = ['name', 'dosage', 'timing', 'frequency', 'notes', 'is_active', 'category']
 
     function sanitizeFields(obj: any, allowedFields: string[]): Record<string, any> {

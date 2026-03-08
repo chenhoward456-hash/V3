@@ -212,14 +212,14 @@ export async function GET(request: NextRequest) {
           dietStartDate: client.diet_start_date || null,
           height: latestHeight,
           bodyFatPct: latestBodyFat,
-          targetWeight: client.target_weight || null,
+          targetWeight: client.target_weight ?? null,
           targetDate: client.competition_date || client.target_date || null,
-          currentCalories: client.calories_target || null,
-          currentProtein: client.protein_target || null,
-          currentCarbs: client.carbs_target || null,
-          currentFat: client.fat_target || null,
-          currentCarbsTrainingDay: client.carbs_training_day || null,
-          currentCarbsRestDay: client.carbs_rest_day || null,
+          currentCalories: client.calories_target ?? null,
+          currentProtein: client.protein_target ?? null,
+          currentCarbs: client.carbs_target ?? null,
+          currentFat: client.fat_target ?? null,
+          currentCarbsTrainingDay: client.carbs_training_day ?? null,
+          currentCarbsRestDay: client.carbs_rest_day ?? null,
           carbsCyclingEnabled: !!(client.carbs_training_day && client.carbs_rest_day),
           weeklyWeights,
           nutritionCompliance,
@@ -373,8 +373,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 5. 透過 LINE 推播週報給已綁定的學員 ──
+    // ── 5. 透過 LINE 推播週報給已綁定的學員（結構化數據 + AI 摘要合併為一則訊息）──
     let linePushCount = 0
+    let aiReportCount = 0
     for (const client of clients) {
       if (!client.line_user_id) continue
 
@@ -420,6 +421,44 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // AI 個人化摘要（有 API key 且學員啟用 AI 時附加在同一則訊息）
+      if (process.env.ANTHROPIC_API_KEY && client.ai_chat_enabled) {
+        try {
+          const clientWellness = allWellness.filter((w: any) => w.client_id === client.id && w.date >= sevenDaysStr)
+          const latestBodyEntry = clientBody.length > 0 ? clientBody[clientBody.length - 1] : null
+          const bodyFatEntry = [...clientBody].reverse().find((b: any) => b.body_fat != null)
+
+          const clientProfile: ClientProfile = {
+            name: client.name,
+            gender: client.gender || null,
+            goalType: client.goal_type || null,
+            currentWeight: latestBodyEntry?.weight ?? null,
+            currentBodyFat: bodyFatEntry?.body_fat ?? null,
+            targetWeight: client.target_weight ?? null,
+            caloriesTarget: client.calories_target ?? null,
+            proteinTarget: client.protein_target ?? null,
+            carbsTarget: client.carbs_target ?? null,
+            fatTarget: client.fat_target ?? null,
+          }
+
+          const insightData: InsightData = {
+            client: clientProfile,
+            nutritionLogs: weekNutrition,
+            wellnessLogs: clientWellness,
+            trainingLogs: weekTraining,
+            bodyLogs: clientBody.filter((b: any) => b.date >= sevenDaysStr),
+          }
+
+          const aiReport = await generateWeeklyAIReport(insightData)
+          if (aiReport) {
+            msgLines.push(`\n───────────────\n🤖 AI 分析\n\n${aiReport}`)
+            aiReportCount++
+          }
+        } catch (err: any) {
+          results.errors.push(`AI 週報失敗 [${client.name}]: ${err.message}`)
+        }
+      }
+
       msgLines.push('\n輸入「趨勢」查看詳細分析')
 
       try {
@@ -427,55 +466,6 @@ export async function GET(request: NextRequest) {
         linePushCount++
       } catch (err: any) {
         results.errors.push(`LINE 推播失敗 [${client.name}]: ${err.message}`)
-      }
-    }
-
-    // ── 6. AI 每週週報（用 Claude 生成個人化摘要）──
-    let aiReportCount = 0
-    if (process.env.ANTHROPIC_API_KEY) {
-      for (const client of clients) {
-        if (!client.line_user_id || !client.ai_chat_enabled) continue
-
-        const clientBody = allBody.filter((b: any) => b.client_id === client.id)
-        const clientNutrition = allNutrition.filter((n: any) => n.client_id === client.id && n.date >= sevenDaysStr)
-        const clientTraining = allTraining.filter((t: any) => t.client_id === client.id && t.date >= sevenDaysStr)
-        const clientWellness = allWellness.filter((w: any) => w.client_id === client.id && w.date >= sevenDaysStr)
-
-        const latestBodyEntry = clientBody.length > 0 ? clientBody[clientBody.length - 1] : null
-        const bodyFatEntry = [...clientBody].reverse().find((b: any) => b.body_fat != null)
-
-        const clientProfile: ClientProfile = {
-          name: client.name,
-          gender: client.gender || null,
-          goalType: client.goal_type || null,
-          currentWeight: latestBodyEntry?.weight ?? null,
-          currentBodyFat: bodyFatEntry?.body_fat ?? null,
-          targetWeight: client.target_weight ?? null,
-          caloriesTarget: client.calories_target ?? null,
-          proteinTarget: client.protein_target ?? null,
-          carbsTarget: client.carbs_target ?? null,
-          fatTarget: client.fat_target ?? null,
-        }
-
-        const insightData: InsightData = {
-          client: clientProfile,
-          nutritionLogs: clientNutrition,
-          wellnessLogs: clientWellness,
-          trainingLogs: clientTraining,
-          bodyLogs: clientBody.filter((b: any) => b.date >= sevenDaysStr),
-        }
-
-        try {
-          const aiReport = await generateWeeklyAIReport(insightData)
-          if (aiReport) {
-            await pushMessage(client.line_user_id, [
-              { type: 'text', text: `🤖 ${client.name} AI 週報\n\n${aiReport}` },
-            ])
-            aiReportCount++
-          }
-        } catch (err: any) {
-          results.errors.push(`AI 週報失敗 [${client.name}]: ${err.message}`)
-        }
       }
     }
 
