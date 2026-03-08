@@ -545,3 +545,10 @@ CREATE POLICY "Service role full access on garmin_oauth_states" ON garmin_oauth_
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS coach_macro_override JSONB DEFAULT NULL;
 -- 格式：{ "locked_at": "ISO date", "locked_fields": ["calories_target","protein_target",...], "reason": "教練備註" }
 -- NULL = 未鎖定（系統可自動調整）
+
+-- ============================================
+-- 簡單模式 (Simple Mode)
+-- 預設簡化 UI：只顯示核心欄位，隱藏進階數據
+-- 教練可在後台為每位學員開關
+-- ============================================
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS simple_mode BOOLEAN DEFAULT TRUE;

@@ -17,11 +17,12 @@ interface BodyCompositionProps {
   competitionEnabled?: boolean
   targetWeight?: number | null
   competitionDate?: string | null
+  simpleMode?: boolean
   onMutate: () => void
 }
 
 export default function BodyComposition({
-  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, onMutate
+  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, onMutate
 }: BodyCompositionProps) {
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
@@ -229,12 +230,14 @@ export default function BodyComposition({
       <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">身體數據追蹤</h2>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className={`grid ${simpleMode ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-4'} gap-3 mb-6`}>
           {[
             { label: '體重', value: latestBodyData?.weight, prev: prevBodyData?.weight, unit: 'kg', lowerBetter: true },
-            { label: '體脂', value: latestBodyData?.body_fat, prev: prevBodyData?.body_fat, unit: '%', lowerBetter: true },
-            { label: 'BMI', value: bmi ? parseFloat(bmi) : null, prev: null, unit: '', lowerBetter: false },
-            { label: '肌肉量', value: latestBodyData?.muscle_mass, prev: prevBodyData?.muscle_mass, unit: 'kg', lowerBetter: false },
+            ...(!simpleMode ? [
+              { label: '體脂', value: latestBodyData?.body_fat, prev: prevBodyData?.body_fat, unit: '%', lowerBetter: true },
+              { label: 'BMI', value: bmi ? parseFloat(bmi) : null, prev: null, unit: '', lowerBetter: false },
+              { label: '肌肉量', value: latestBodyData?.muscle_mass, prev: prevBodyData?.muscle_mass, unit: 'kg', lowerBetter: false },
+            ] : []),
           ].map(({ label, value, prev, unit, lowerBetter }) => (
             <div key={label} className="bg-gray-50 rounded-2xl p-4">
               <p className="text-xs text-gray-500 mb-1">{label}</p>
@@ -254,8 +257,8 @@ export default function BodyComposition({
           ))}
         </div>
 
-        {/* 體重波動科學解釋 */}
-        {weightFluctuationNote && (
+        {/* 體重波動科學解釋（簡單模式隱藏） */}
+        {!simpleMode && weightFluctuationNote && (
           <div className={`rounded-xl px-4 py-3 mb-4 flex items-start gap-2 ${
             weightFluctuationNote.color === 'blue' ? 'bg-blue-50 border border-blue-100' :
             weightFluctuationNote.color === 'green' ? 'bg-green-50 border border-green-100' :
@@ -284,22 +287,25 @@ export default function BodyComposition({
           </div>
         )}
 
-        <div className="flex space-x-2 mb-4">
-          {(['weight', 'body_fat'] as const).map(type => (
-            <button
-              key={type}
-              onClick={() => setTrendType(type)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                trendType === type ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {type === 'weight' ? '體重趨勢' : '體脂趨勢'}
-            </button>
-          ))}
-        </div>
+        {/* 趨勢切換（簡單模式只看體重，不顯示切換） */}
+        {!simpleMode && (
+          <div className="flex space-x-2 mb-4">
+            {(['weight', 'body_fat'] as const).map(type => (
+              <button
+                key={type}
+                onClick={() => setTrendType(type)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  trendType === type ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                {type === 'weight' ? '體重趨勢' : '體脂趨勢'}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="h-64 w-full min-w-0">
-          <LazyChart data={trendData[trendType] || []} height={256} stroke="#3b82f6" strokeWidth={2} />
+          <LazyChart data={trendData[simpleMode ? 'weight' : trendType] || []} height={256} stroke="#3b82f6" strokeWidth={2} />
         </div>
 
         {/* 體重軌跡 vs 目標體重（備賽模式） */}
@@ -484,10 +490,12 @@ export default function BodyComposition({
               {[
                 { key: 'date', label: '日期', icon: Calendar, type: 'date', required: false, unit: '', min: '', max: new Date().toISOString().split('T')[0], step: '' },
                 { key: 'weight', label: '體重 (kg)', icon: Scale, type: 'number', required: true, unit: 'kg', min: '20', max: '300', step: '0.1' },
-                { key: 'body_fat', label: '體脂 (%)', icon: Activity, type: 'number', required: false, unit: '%', min: '1', max: '60', step: '0.1' },
-                { key: 'muscle_mass', label: '肌肉量 (kg)', icon: Dumbbell, type: 'number', required: false, unit: 'kg', min: '10', max: '100', step: '0.1' },
-                { key: 'height', label: '身高 (cm)', icon: Ruler, type: 'number', required: false, unit: 'cm', min: '100', max: '250', step: '0.1' },
-                { key: 'visceral_fat', label: '內臟脂肪', icon: Heart, type: 'number', required: false, unit: '', min: '1', max: '30', step: '0.1' },
+                ...(!simpleMode ? [
+                  { key: 'body_fat', label: '體脂 (%)', icon: Activity, type: 'number', required: false, unit: '%', min: '1', max: '60', step: '0.1' },
+                  { key: 'muscle_mass', label: '肌肉量 (kg)', icon: Dumbbell, type: 'number', required: false, unit: 'kg', min: '10', max: '100', step: '0.1' },
+                  { key: 'height', label: '身高 (cm)', icon: Ruler, type: 'number', required: false, unit: 'cm', min: '100', max: '250', step: '0.1' },
+                  { key: 'visceral_fat', label: '內臟脂肪', icon: Heart, type: 'number', required: false, unit: '', min: '1', max: '30', step: '0.1' },
+                ] : []),
               ].map(({ key, label, icon: Icon, type, required, unit, min, max, step }) => (
                 <div key={key}>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">

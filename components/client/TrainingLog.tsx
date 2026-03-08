@@ -22,13 +22,15 @@ interface TrainingLogProps {
   onMutate: () => void
   carbsTrainingDay?: number | null
   carbsRestDay?: number | null
+  simpleMode?: boolean
 }
 
-export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay }: TrainingLogProps) {
+export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode }: TrainingLogProps) {
   const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
   const { showToast } = useToast()
   const [readiness, setReadiness] = useState<TrainingReadiness | null>(null)
+  const [showTrainingAdvanced, setShowTrainingAdvanced] = useState(false)
 
   // 載入今日訓練準備度
   useEffect(() => {
@@ -92,11 +94,11 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
       showToast('請選擇訓練類型', 'error')
       return
     }
-    if (!isRest && (!form.duration || form.duration <= 0)) {
+    if (!simpleMode && !isRest && (!form.duration || form.duration <= 0)) {
       showToast('請填寫訓練時長', 'error')
       return
     }
-    if (!isRest && !isCardio && !form.rpe) {
+    if (!simpleMode && !isRest && !isCardio && !form.rpe) {
       showToast('請選擇 RPE', 'error')
       return
     }
@@ -366,8 +368,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">訓練紀錄</h2>
       <div className="space-y-4">
-        {/* 今日訓練準備度 */}
-        {readiness && readiness.recoveryScore != null && (
+        {/* 今日訓練準備度（簡單模式隱藏） */}
+        {!simpleMode && readiness && readiness.recoveryScore != null && (
           <div className={`rounded-xl px-4 py-3 text-sm ${
             readiness.recommendedIntensity === 'high'
               ? 'bg-green-50 text-green-700'
@@ -434,8 +436,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           </div>
         </div>
 
-        {/* 碳循環提示 */}
-        {hasCarbCycling && form.training_type && (
+        {/* 碳循環提示（簡單模式隱藏） */}
+        {!simpleMode && hasCarbCycling && form.training_type && (
           <div className={`rounded-xl px-4 py-2.5 text-sm font-medium ${
             isWeightTraining(form.training_type)
               ? 'bg-cyan-50 text-cyan-700'
@@ -445,8 +447,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           </div>
         )}
 
-        {/* 上次同類型提示 */}
-        {lastSameType && (
+        {/* 上次同類型提示（簡單模式隱藏） */}
+        {!simpleMode && lastSameType && (
           <div className="bg-blue-50 rounded-xl px-4 py-3 text-sm text-blue-700">
             上次{getTypeLabel(lastSameType.training_type)}：{lastSameType.daysAgo} 天前
             {lastSameType.duration && `，${lastSameType.duration} 分鐘`}
@@ -455,8 +457,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           </div>
         )}
 
-        {/* 時長（休息時隱藏） */}
-        {!isRest && (
+        {/* 時長/組數/RPE/備註（簡單模式下收合） */}
+        {(!simpleMode || showTrainingAdvanced) && !isRest && (
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-sm font-medium text-gray-700 mb-2">⏱️ 時長（分鐘）</p>
@@ -485,8 +487,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           </div>
         )}
 
-        {/* RPE（休息時隱藏） */}
-        {!isRest && (
+        {(!simpleMode || showTrainingAdvanced) && !isRest && (
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">💥 RPE（自覺強度 1-10）{isCardio && <span className="text-gray-400 font-normal">（選填）</span>}</p>
             <div className="space-y-2">
@@ -524,17 +525,28 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           </div>
         )}
 
-        {/* 備註 */}
-        <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">備註</p>
-          <textarea
-            value={form.note}
-            onChange={(e) => setForm(prev => ({ ...prev, note: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            rows={2}
-            placeholder={isRest ? '今天好好休息！' : '訓練內容、感受...'}
-          />
-        </div>
+        {(!simpleMode || showTrainingAdvanced) && (
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">備註</p>
+            <textarea
+              value={form.note}
+              onChange={(e) => setForm(prev => ({ ...prev, note: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={2}
+              placeholder={isRest ? '今天好好休息！' : '訓練內容、感受...'}
+            />
+          </div>
+        )}
+
+        {/* 簡單模式：展開進階按鈕 */}
+        {simpleMode && !showTrainingAdvanced && !isRest && (
+          <button
+            onClick={() => setShowTrainingAdvanced(true)}
+            className="w-full text-center text-xs text-gray-400 hover:text-gray-600 py-2 transition-colors"
+          >
+            展開時長/組數/RPE ▾
+          </button>
+        )}
 
         <button
           onClick={handleSubmit}
@@ -566,17 +578,19 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
               </div>
             ))}
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
-            <span>🏋️ {weeklySummary.weightDays} 天</span>
-            {weeklySummary.cardioDays > 0 && <span>🏃 {weeklySummary.cardioDays} 天</span>}
-            <span>⏱️ {weeklySummary.totalDuration} 分鐘</span>
-            {weeklySummary.totalSets > 0 && <span>📊 {weeklySummary.totalSets} 組</span>}
-            <span>💥 RPE {weeklySummary.avgRpe}</span>
-          </div>
+          {!simpleMode && (
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
+              <span>🏋️ {weeklySummary.weightDays} 天</span>
+              {weeklySummary.cardioDays > 0 && <span>🏃 {weeklySummary.cardioDays} 天</span>}
+              <span>⏱️ {weeklySummary.totalDuration} 分鐘</span>
+              {weeklySummary.totalSets > 0 && <span>📊 {weeklySummary.totalSets} 組</span>}
+              <span>💥 RPE {weeklySummary.avgRpe}</span>
+            </div>
+          )}
         </div>
 
-        {/* ===== 訓練歷史日曆（5 週） ===== */}
-        <div className="pt-4 border-t border-gray-100">
+        {/* ===== 訓練歷史日曆（5 週）（簡單模式隱藏） ===== */}
+        {!simpleMode && <div className="pt-4 border-t border-gray-100">
           <p className="text-sm font-medium text-gray-700 mb-3">訓練日曆</p>
           <div className="space-y-1">
             {/* 星期標題 */}
@@ -609,10 +623,10 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
               </div>
             ))}
           </div>
-        </div>
+        </div>}
 
-        {/* ===== RPE 趨勢圖 ===== */}
-        {rpeChartData.length >= 2 && (
+        {/* ===== RPE 趨勢圖（簡單模式隱藏） ===== */}
+        {!simpleMode && rpeChartData.length >= 2 && (
           <div className="pt-4 border-t border-gray-100">
             <p className="text-sm font-medium text-gray-700 mb-3">RPE 趨勢</p>
             <ResponsiveContainer width="100%" height={200}>
@@ -639,8 +653,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           </div>
         )}
 
-        {/* ===== 訓練洞察 ===== */}
-        {insights && insights.typeAnalysis.length > 0 && (
+        {/* ===== 訓練洞察（簡單模式隱藏） ===== */}
+        {!simpleMode && insights && insights.typeAnalysis.length > 0 && (
           <div className="pt-4 border-t border-gray-100">
             <button
               onClick={() => setShowInsights(!showInsights)}

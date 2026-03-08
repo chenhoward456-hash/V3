@@ -66,6 +66,7 @@ interface Client {
   diet_start_date: string | null
   activity_profile: 'sedentary' | 'high_energy_flux' | null
   health_mode_enabled: boolean
+  simple_mode: boolean
   quarterly_cycle_start: string | null
   coach_macro_override: { locked_at: string; locked_fields: string[]; previous_values?: Record<string, number | null> } | null
 
@@ -139,6 +140,7 @@ export default function ClientEditor() {
         diet_start_date: null,
         activity_profile: null,
         health_mode_enabled: false,
+        simple_mode: true,
         quarterly_cycle_start: null,
         coach_macro_override: null,
 
@@ -232,6 +234,7 @@ export default function ClientEditor() {
         diet_start_date: client.diet_start_date || null,
         activity_profile: client.activity_profile || null,
         health_mode_enabled: client.health_mode_enabled,
+        simple_mode: client.simple_mode,
         quarterly_cycle_start: client.quarterly_cycle_start || null,
         subscription_tier: client.subscription_tier,
         ai_chat_enabled: client.ai_chat_enabled,
@@ -594,6 +597,7 @@ export default function ClientEditor() {
               <p className="text-xs text-gray-400 mb-4">依學員階段逐步開放功能</p>
               <div className="space-y-4">
                 {([
+                  { key: 'simple_mode', label: '簡單模式', desc: '簡化介面：只顯示體重、熱量、蛋白質等核心欄位，適合入門用戶' },
                   { key: 'body_composition_enabled', label: '體重/體態紀錄', desc: '體重、體脂、肌肉量登記（最基本功能）' },
                   { key: 'wellness_enabled', label: '每日感受紀錄', desc: '心情、睡眠品質、能量追蹤' },
                   { key: 'nutrition_enabled', label: '飲食追蹤', desc: '每日飲食合規紀錄' },
