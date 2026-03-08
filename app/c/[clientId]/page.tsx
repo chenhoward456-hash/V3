@@ -858,6 +858,13 @@ export default function ClientDashboard() {
               competitionEnabled={isCompetition}
               todayCalories={todayNutrition?.calories}
               caloriesTarget={c.calories_target}
+              wearable={todayWellness ? {
+                device_recovery_score: todayWellness.device_recovery_score,
+                resting_hr: todayWellness.resting_hr,
+                hrv: todayWellness.hrv,
+                wearable_sleep_score: todayWellness.wearable_sleep_score,
+                respiratory_rate: todayWellness.respiratory_rate,
+              } : null}
             />
           )}
         </div>

@@ -1,5 +1,15 @@
 'use client'
 
+import GaugeCard from '@/components/ui/GaugeCard'
+
+interface WearableData {
+  device_recovery_score?: number | null
+  resting_hr?: number | null
+  hrv?: number | null
+  wearable_sleep_score?: number | null
+  respiratory_rate?: number | null
+}
+
 interface HealthOverviewProps {
   weekRate: number
   monthRate: number
@@ -17,6 +27,31 @@ interface HealthOverviewProps {
   competitionEnabled?: boolean
   todayCalories?: number | null
   caloriesTarget?: number | null
+  wearable?: WearableData | null
+}
+
+function getRecoveryStatus(score: number): { label: string; color: string } {
+  if (score >= 67) return { label: '恢復良好', color: 'text-green-600' }
+  if (score >= 34) return { label: '中等', color: 'text-amber-600' }
+  return { label: '需要休息', color: 'text-red-500' }
+}
+
+function getHrStatus(hr: number): { label: string; color: string } {
+  if (hr <= 60) return { label: '優秀', color: 'text-green-600' }
+  if (hr <= 72) return { label: '正常', color: 'text-blue-600' }
+  return { label: '偏高', color: 'text-amber-600' }
+}
+
+function getHrvStatus(hrv: number): { label: string; color: string } {
+  if (hrv >= 60) return { label: '狀態佳', color: 'text-green-600' }
+  if (hrv >= 30) return { label: '正常', color: 'text-blue-600' }
+  return { label: '偏低', color: 'text-amber-600' }
+}
+
+function getSleepStatus(score: number): { label: string; color: string } {
+  if (score >= 80) return { label: '睡得不錯', color: 'text-green-600' }
+  if (score >= 60) return { label: '尚可', color: 'text-amber-600' }
+  return { label: '需改善', color: 'text-red-500' }
 }
 
 export default function HealthOverview({
@@ -31,6 +66,7 @@ export default function HealthOverview({
   competitionEnabled = false,
   todayCalories = null,
   caloriesTarget = null,
+  wearable = null,
 }: HealthOverviewProps) {
   const cards = []
 
@@ -58,7 +94,6 @@ export default function HealthOverview({
 
   if (labEnabled) {
     const labRate = labTotal > 0 ? Math.round((labNormal / labTotal) * 100) : 0
-    const labColor = labRate >= 80 ? 'text-green-600' : labRate >= 50 ? 'text-yellow-600' : 'text-red-500'
     const barColor = labRate >= 80 ? 'bg-green-500' : labRate >= 50 ? 'bg-yellow-400' : 'bg-red-400'
     cards.push(
       <div key="lab" className="bg-green-50 rounded-2xl p-4">
@@ -149,13 +184,96 @@ export default function HealthOverview({
     )
   }
 
-  if (cards.length === 0) return null
+  // 判斷是否有穿戴裝置數據
+  const hasWearableData = wearable && (
+    wearable.device_recovery_score != null ||
+    wearable.resting_hr != null ||
+    wearable.hrv != null ||
+    wearable.wearable_sleep_score != null
+  )
+
+  if (cards.length === 0 && !hasWearableData) return null
 
   const gridCols = cards.length === 1 ? 'grid-cols-1' : cards.length === 2 ? 'grid-cols-2' : cards.length === 3 ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2 md:grid-cols-4'
 
+  const recoveryStatus = wearable?.device_recovery_score != null ? getRecoveryStatus(wearable.device_recovery_score) : null
+  const hrStatus = wearable?.resting_hr != null ? getHrStatus(wearable.resting_hr) : null
+  const hrvStatus = wearable?.hrv != null ? getHrvStatus(wearable.hrv) : null
+  const sleepStatus = wearable?.wearable_sleep_score != null ? getSleepStatus(wearable.wearable_sleep_score) : null
+
   return (
-    <div className={`grid ${gridCols} gap-3`}>
-      {cards}
+    <div className="space-y-3">
+      {/* 既有卡片 */}
+      {cards.length > 0 && (
+        <div className={`grid ${gridCols} gap-3`}>
+          {cards}
+        </div>
+      )}
+
+      {/* 穿戴裝置 Gauge 四宮格（Garmin 風格） */}
+      {hasWearableData && (
+        <div className="bg-gray-900 rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-gray-400">⌚ 穿戴裝置數據</p>
+            {wearable?.respiratory_rate != null && (
+              <span className="text-[10px] text-gray-500">
+                呼吸 {wearable.respiratory_rate} 次/分
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {/* 恢復分數 / Body Battery */}
+            <GaugeCard
+              icon="⚡"
+              label="恢復分數"
+              value={wearable?.device_recovery_score ?? null}
+              max={100}
+              color="#10b981"
+              bgColor="bg-gray-800"
+              statusLabel={recoveryStatus?.label}
+              statusColor={recoveryStatus?.color}
+            />
+
+            {/* 睡眠分數 */}
+            <GaugeCard
+              icon="😴"
+              label="睡眠分數"
+              value={wearable?.wearable_sleep_score ?? null}
+              max={100}
+              color="#8b5cf6"
+              bgColor="bg-gray-800"
+              statusLabel={sleepStatus?.label}
+              statusColor={sleepStatus?.color}
+            />
+
+            {/* 靜息心率 */}
+            <GaugeCard
+              icon="❤️"
+              label="靜息心率"
+              value={wearable?.resting_hr ?? null}
+              max={100}
+              unit="bpm"
+              color="#ef4444"
+              bgColor="bg-gray-800"
+              statusLabel={hrStatus?.label}
+              statusColor={hrStatus?.color}
+            />
+
+            {/* HRV */}
+            <GaugeCard
+              icon="📊"
+              label="HRV"
+              value={wearable?.hrv ?? null}
+              max={150}
+              unit="ms"
+              color="#3b82f6"
+              bgColor="bg-gray-800"
+              statusLabel={hrvStatus?.label}
+              statusColor={hrvStatus?.color}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
