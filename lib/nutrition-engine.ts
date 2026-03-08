@@ -1513,11 +1513,51 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
 
   // 9. 根據目標類型分流
   const extraFields = { metabolicStress, tdeeAnomalyDetected, labMacroModifiers: labModResult.macroModifiers, labTrainingModifiers: labModResult.trainingModifiers, energyAvailability }
+  let result: NutritionSuggestion
   if (input.goalType === 'cut') {
-    return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
+    result = { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
   } else {
-    return { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
+    result = { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
   }
+
+  // 10. TDEE 異常 → 關閉 autoApply（數據不可信，需教練確認）
+  if (tdeeAnomalyDetected && result.autoApply) {
+    result.autoApply = false
+    result.warnings.push('🔍 TDEE 校正幅度異常，已暫停自動套用，需教練確認後手動調整')
+  }
+
+  // 11. 建議值二次 EA 驗證：用引擎建議的熱量重算 EA
+  if (input.bodyFatPct != null && input.bodyFatPct > 0 && result.suggestedCalories != null) {
+    const ffm = input.bodyWeight * (1 - input.bodyFatPct / 100)
+    const exerciseKcal = input.recentTrainingVolume
+      ? (input.recentTrainingVolume.avgRPE ?? 6) * (input.recentTrainingVolume.avgDurationMin ?? 45) * 0.12 * input.recentTrainingVolume.sessionsPerWeek / 7
+      : input.trainingDaysPerWeek * 450 / 7
+    const suggestedEA = ffm > 0 ? (result.suggestedCalories - exerciseKcal) / ffm : 0
+    const suggestedEARounded = Math.round(suggestedEA * 10) / 10
+
+    // 更新 energyAvailability 為建議值的 EA（而非現有攝入的 EA）
+    if (suggestedEARounded < 25) {
+      result.energyAvailability = {
+        eaKcalPerKgFFM: suggestedEARounded,
+        level: 'critical',
+        warning: `🚨 建議熱量下 EA 僅 ${suggestedEARounded} kcal/kg FFM/day（臨界值 30）！RED-S 風險。`,
+      }
+    } else if (suggestedEARounded < 30) {
+      result.energyAvailability = {
+        eaKcalPerKgFFM: suggestedEARounded,
+        level: 'low',
+        warning: `⚠️ 建議熱量下 EA 偏低（${suggestedEARounded} kcal/kg FFM/day，建議 >30）。`,
+      }
+    } else {
+      result.energyAvailability = {
+        eaKcalPerKgFFM: suggestedEARounded,
+        level: 'adequate',
+        warning: null,
+      }
+    }
+  }
+
+  return result
 }
 
 // ===== 減脂引擎 =====
@@ -1872,11 +1912,23 @@ function generateGoalDrivenCut(
   const requiredWeeklyLoss = weightToLose / (daysLeft / 7)
   const weeklyLossPct = (requiredWeeklyLoss / bw) * 100
 
-  // 2. 判斷安全等級
+  // 2. 減速上限：cap 赤字在安全範圍（MAX_WEEKLY_LOSS_PCT）
+  // 超過此上限 → 不再加深赤字，改標記不可行
+  const maxSafeWeeklyLoss = bw * GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT / 100
+  const maxSafeDailyDeficit = Math.round((maxSafeWeeklyLoss * energyDensity) / 7)
+  let goalInfeasible = false
+  if (requiredDailyDeficit > maxSafeDailyDeficit) {
+    goalInfeasible = true
+    warnings.push(`🚫 需要每週減 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW），超過安全上限 ${GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT}%。系統已將赤字鎖定在安全上限，建議與教練討論延長時程或調整目標體重`)
+  }
+  // 實際赤字不超過安全上限
+  const cappedDailyDeficit = Math.min(requiredDailyDeficit, maxSafeDailyDeficit)
+
+  // 2b. 判斷安全等級（用 capped 後的赤字）
   let safetyLevel: 'normal' | 'aggressive' | 'extreme'
-  if (requiredDailyDeficit <= SAFETY.MAX_DEFICIT_KCAL) {
+  if (cappedDailyDeficit <= SAFETY.MAX_DEFICIT_KCAL) {
     safetyLevel = 'normal'
-  } else if (requiredDailyDeficit <= GOAL_DRIVEN.MAX_DEFICIT_KCAL) {
+  } else if (cappedDailyDeficit <= GOAL_DRIVEN.MAX_DEFICIT_KCAL) {
     safetyLevel = 'aggressive'
   } else {
     safetyLevel = 'extreme'
@@ -1884,7 +1936,7 @@ function generateGoalDrivenCut(
 
   // 3. 進度超前檢測
   let aheadOfSchedule = false
-  let effectiveDailyDeficit = requiredDailyDeficit
+  let effectiveDailyDeficit = cappedDailyDeficit
 
   if (weeklyChangeRate < 0) {
     const actualWeeklyLoss = Math.abs(weeklyChangeRate / 100) * bw
@@ -2028,10 +2080,27 @@ function generateGoalDrivenCut(
     warnings.push(`⚠️ 巨量營養素底線 ${prevCalories}kcal 低於安全線 ${absoluteMinCal}kcal，已增加碳水至 ${suggestedCarb}g（${actualCalories}kcal）`)
   }
 
-  // 掉重率安全檢查
-  if (weeklyLossPct > GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT) {
-    warnings.push(`需要每週掉 ${weeklyLossPct.toFixed(1)}% BW，超過安全上限 ${GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT}%（${(bw * GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT / 100).toFixed(1)}kg/週）`)
+  // EA 安全閥：建議熱量不能讓 EA < 30 kcal/kg FFM/day
+  // 如果有體脂率，計算建議熱量下的 EA，若低於 30 則往上拉
+  if (input.bodyFatPct != null && input.bodyFatPct > 0) {
+    const ffm = bw * (1 - input.bodyFatPct / 100)
+    const exerciseKcal = input.recentTrainingVolume
+      ? (input.recentTrainingVolume.avgRPE ?? 6) * (input.recentTrainingVolume.avgDurationMin ?? 45) * 0.12 * input.recentTrainingVolume.sessionsPerWeek / 7
+      : input.trainingDaysPerWeek * 450 / 7
+    const EA_THRESHOLD = 30  // kcal/kg FFM/day
+    const minCalForEA = Math.round(EA_THRESHOLD * ffm + exerciseKcal)
+
+    if (actualCalories < minCalForEA) {
+      const prevCalories = actualCalories
+      const extraCal = minCalForEA - actualCalories
+      suggestedCarb += Math.round(extraCal / 4)
+      actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
+      goalInfeasible = true
+      warnings.push(`🚨 EA 安全閥：建議熱量 ${prevCalories}kcal 會導致 EA < 30 kcal/kg FFM/day（RED-S 風險）。已上調至 ${actualCalories}kcal（EA ≈ 30），多出的 ${Math.round(extraCal)}kcal 給碳水`)
+    }
   }
+
+  // 掉重率安全檢查（保留資訊性警告，赤字已在前面 cap 過）
   if (actualCalories < softMinCal) {
     warnings.push(`🔥 目標熱量 ${actualCalories}kcal 低於一般安全線 ${softMinCal}kcal，已進入備賽極限模式`)
   }
@@ -2265,7 +2334,7 @@ function generateGoalDrivenCut(
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
     deadlineInfo: enrichedDeadlineInfo,
-    autoApply: true, tdeeAnomalyDetected: false,  // Goal-driven 永遠自動套用
+    autoApply: !goalInfeasible, tdeeAnomalyDetected: false,  // 目標不可行時需教練確認
     labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
     peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
