@@ -45,6 +45,15 @@ export async function GET(request: NextRequest) {
       .order('date', { ascending: false })
       .limit(7)
 
+    // 查最近血檢結果（非 normal 的指標）
+    const { data: labResults } = await supabaseAdmin
+      .from('lab_results')
+      .select('test_name, value, unit, status')
+      .eq('client_id', client.id)
+      .in('status', ['attention', 'alert'])
+      .order('date', { ascending: false })
+      .limit(20)
+
     const wellnessLogs = (wellness || []).map(w => ({
       date: w.date,
       sleep_quality: w.sleep_quality,
@@ -69,7 +78,13 @@ export async function GET(request: NextRequest) {
         wearable_sleep_score: w.wearable_sleep_score,
       }))
 
-    const advice = getTrainingAdvice(wellnessLogs, trainingLogs, wearableData.length > 0 ? wearableData : undefined)
+    const labDataForTraining = (labResults || []).map(l => ({
+      test_name: l.test_name,
+      value: l.value as number | null,
+      status: l.status as 'normal' | 'attention' | 'alert',
+    }))
+
+    const advice = getTrainingAdvice(wellnessLogs, trainingLogs, wearableData.length > 0 ? wearableData : undefined, labDataForTraining.length > 0 ? labDataForTraining : undefined)
 
     return NextResponse.json(advice)
   } catch {

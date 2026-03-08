@@ -389,7 +389,8 @@ export interface TrainingAdvice {
 export function getTrainingAdvice(
   wellnessLogs: WellnessEntry[],
   trainingLogs: TrainingEntry[],
-  wearableData?: WearableEntry[]
+  wearableData?: WearableEntry[],
+  labData?: Array<{ test_name: string; value: number | null; status: 'normal' | 'attention' | 'alert' }>
 ): TrainingAdvice {
   const last3Wellness = wellnessLogs.slice(-3)
   const last7Training = trainingLogs.slice(-7)
@@ -463,6 +464,32 @@ export function getTrainingAdvice(
     if (latestWearable.hrv != null && latestWearable.hrv < 30) {
       recoveryScore -= 10
       reasons.push(`HRV 偏低（${latestWearable.hrv}ms）`)
+    }
+  }
+
+  // 血檢指標影響
+  if (labData && labData.length > 0) {
+    for (const lab of labData) {
+      if (lab.value == null || lab.status === 'normal') continue
+      const name = lab.test_name.toLowerCase().replace(/[\s_\-()（）]/g, '')
+
+      // 低鐵蛋白 → 有氧能力受限，降低建議強度
+      if ((name.includes('鐵蛋白') || name.includes('ferritin')) && lab.value < 30) {
+        recoveryScore -= 10
+        reasons.push(`鐵蛋白偏低（${lab.value}），有氧能力受限，建議減少有氧量`)
+      }
+
+      // 低血紅素 → 氧氣運輸下降
+      if ((name.includes('血紅素') || name.includes('hemoglobin') || name.includes('hgb')) && lab.value < 12) {
+        recoveryScore -= 15
+        reasons.push(`血紅素偏低（${lab.value}），氧氣運輸能力下降`)
+      }
+
+      // TSH 偏高 → 代謝率降低
+      if ((name.includes('tsh') || name.includes('促甲狀腺')) && lab.value > 4.0) {
+        recoveryScore -= 5
+        reasons.push(`TSH 偏高（${lab.value}），代謝率可能降低`)
+      }
     }
   }
 

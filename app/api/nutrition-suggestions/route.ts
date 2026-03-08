@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
 
-    const [bodyRes, nutritionRes, trainingRes, wellnessRes] = await Promise.all([
+    const [bodyRes, nutritionRes, trainingRes, wellnessRes, labRes] = await Promise.all([
       supabase
         .from('body_composition')
         .select('date, weight, height, body_fat')
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true }),
       supabase
         .from('training_logs')
-        .select('date, training_type, rpe')
+        .select('date, training_type, rpe, duration')
         .eq('client_id', clientId)
         .gte('date', sinceDate)
         .order('date', { ascending: true }),
@@ -82,12 +82,19 @@ export async function GET(request: NextRequest) {
         .eq('client_id', clientId)
         .gte('date', sinceDate)
         .order('date', { ascending: true }),
+      supabase
+        .from('lab_results')
+        .select('test_name, value, unit, status')
+        .eq('client_id', clientId)
+        .order('date', { ascending: false })
+        .limit(30),
     ])
 
     const bodyData = bodyRes.data || []
     const nutritionLogs = nutritionRes.data || []
     const trainingLogs = trainingRes.data || []
     const wellnessLogs = wellnessRes.data || []
+    const labResults = labRes.data || []
 
     // 2.5 查詢最近一次經期標記（60 天內，用於月經週期判斷）
     let lastPeriodDate: string | null = null
@@ -172,6 +179,15 @@ export async function GET(request: NextRequest) {
     // 新用戶友善提示：有體重但營養記錄不足 14 天
     const isNewUser = recentNutrition.length < 7
 
+    // 7b. 計算訓練量數據（RPE × duration × frequency → 影響 TDEE）
+    const recentTrainingWithRPE = trainingLogs.filter((t: any) => t.date >= sevenDaysStr && isWeightTraining(t.training_type))
+    const avgRPE = recentTrainingWithRPE.length > 0
+      ? recentTrainingWithRPE.reduce((s: number, t: any) => s + (t.rpe ?? 6), 0) / recentTrainingWithRPE.length
+      : null
+    const avgDurationMin = recentTrainingWithRPE.length > 0
+      ? recentTrainingWithRPE.reduce((s: number, t: any) => s + (t.duration ?? 45), 0) / recentTrainingWithRPE.length
+      : null
+
     // 8. 組裝引擎輸入
     const engineInput: NutritionInput = {
       gender: client.gender || '男性',
@@ -219,6 +235,17 @@ export async function GET(request: NextRequest) {
           carbs: n.carbs_grams ?? null,
         })),
       lastPeriodDate,
+      labResults: labResults.map((l: any) => ({
+        test_name: l.test_name,
+        value: l.value,
+        unit: l.unit,
+        status: l.status,
+      })),
+      recentTrainingVolume: recentTrainingWithRPE.length > 0 ? {
+        avgRPE,
+        avgDurationMin,
+        sessionsPerWeek: Math.round(recentTrainingWithRPE.length * 7 / 7),
+      } : undefined,
     }
 
     // 9. 執行引擎
