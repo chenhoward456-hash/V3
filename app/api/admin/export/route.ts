@@ -160,6 +160,6 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (err: any) {
-    return NextResponse.json({ error: '匯出失敗', detail: err.message }, { status: 500 })
+    return NextResponse.json({ error: '匯出失敗' }, { status: 500 })
   }
 }

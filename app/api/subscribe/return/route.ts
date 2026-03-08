@@ -6,12 +6,13 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const merchantTradeNo = formData.get('MerchantTradeNo')?.toString() || ''
 
-    const origin = request.headers.get('origin')
+    // 使用固定的 SITE_URL，不依賴可偽造的 origin header
+    const origin = process.env.NEXT_PUBLIC_SITE_URL
       || request.nextUrl.origin
       || 'https://howard456.vercel.app'
 
     return NextResponse.redirect(
-      `${origin}/join/success?order_id=${merchantTradeNo}`,
+      `${origin}/join/success?order_id=${encodeURIComponent(merchantTradeNo)}`,
       { status: 303 }
     )
   } catch {

@@ -8,13 +8,13 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const merchantTradeNo = formData.get('MerchantTradeNo')?.toString() || ''
 
-    const origin = request.headers.get('origin')
+    // 使用固定的 SITE_URL，不依賴可偽造的 origin header
+    const origin = process.env.NEXT_PUBLIC_SITE_URL
       || request.nextUrl.origin
       || 'https://howard456.vercel.app'
 
-    // 301 redirect 到 success page
     return NextResponse.redirect(
-      `${origin}/diagnosis/success?order_id=${merchantTradeNo}`,
+      `${origin}/diagnosis/success?order_id=${encodeURIComponent(merchantTradeNo)}`,
       { status: 303 } // 303 See Other: POST → GET redirect
     )
   } catch {

@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
       if (errorMessage.includes('credit balance is too low')) {
         return NextResponse.json({ error: 'AI 服務餘額不足，請聯繫管理員充值' }, { status: 503 })
       }
-      return NextResponse.json({ error: `AI 請求錯誤：${errorMessage}` }, { status: 400 })
+      return NextResponse.json({ error: 'AI 請求錯誤' }, { status: 400 })
     }
     if (status === 403) {
       return NextResponse.json({ error: 'API 權限不足，請確認帳戶已啟用且有餘額' }, { status: 500 })
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: `AI 回覆失敗（${errorType}: ${errorMessage}）` },
+      { error: 'AI 回覆失敗，請稍後再試' },
       { status: 500 }
     )
   }

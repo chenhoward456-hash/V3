@@ -151,6 +151,6 @@ export async function POST(request: NextRequest) {
       ...(errors.length > 0 && { errors }),
     })
   } catch (error: any) {
-    return NextResponse.json({ error: '伺服器錯誤', detail: error.message }, { status: 500 })
+    return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }

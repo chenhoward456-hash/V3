@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyCoachAuth } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 
 /**
@@ -7,6 +8,11 @@ import { createServiceSupabase } from '@/lib/supabase'
  * 用於教練後台顯示「用戶是否在線」
  */
 export async function GET(request: NextRequest) {
+  const { authorized } = await verifyCoachAuth(request)
+  if (!authorized) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 })
+  }
+
   const clientId = request.nextUrl.searchParams.get('clientId')
 
   if (!clientId) {
