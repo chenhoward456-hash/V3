@@ -130,15 +130,16 @@ export async function GET(request: NextRequest) {
     if (type === 'wellness' || type === 'all') {
       const { data } = await supabase
         .from('daily_wellness')
-        .select('date, sleep_quality, energy_level, mood, training_drive, stress_level, cognitive_clarity, period_start, note')
+        .select('date, sleep_quality, energy_level, mood, training_drive, stress_level, cognitive_clarity, period_start, note, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate')
         .eq('client_id', clientId)
         .gte('date', sinceDateStr)
         .order('date', { ascending: true })
 
-      const headers = ['日期', '睡眠品質(1-5)', '能量(1-5)', '情緒(1-5)', '訓練動力(1-5)', '壓力(1-5)', '認知清晰(1-5)', '經期開始', '備註']
+      const headers = ['日期', '睡眠品質(1-5)', '能量(1-5)', '情緒(1-5)', '訓練動力(1-5)', '壓力(1-5)', '認知清晰(1-5)', '恢復分數(0-100)', '靜息心率(bpm)', 'HRV(ms)', '睡眠分數(0-100)', '呼吸速率(次/分)', '經期開始', '備註']
       const rows = (data || []).map((r: any) => [
         r.date, r.sleep_quality, r.energy_level, r.mood, r.training_drive,
         r.stress_level, r.cognitive_clarity,
+        r.device_recovery_score, r.resting_hr, r.hrv, r.wearable_sleep_score, r.respiratory_rate,
         r.period_start ? '是' : '', r.note
       ])
 
