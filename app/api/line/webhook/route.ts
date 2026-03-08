@@ -288,7 +288,7 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
   }
 
   // 綁定指令
-  const bindMatch = text.match(/^綁定\s+([a-zA-Z0-9]+)$/i)
+  const bindMatch = text.match(/^綁定\s+([a-zA-Z0-9_-]+)$/i)
   if (bindMatch) {
     await handleBind(event.replyToken, userId, bindMatch[1], supabase)
     return

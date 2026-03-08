@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('缺少客戶 ID', 400)
     }
 
-    // 驗證 clientId 格式（只允許英數字，最長 20 字）
-    if (!/^[a-zA-Z0-9]{1,20}$/.test(clientId)) {
+    // 驗證 clientId 格式（允許英數字、連字號、底線，最長 20 字）
+    if (!/^[a-zA-Z0-9_-]{1,20}$/.test(clientId)) {
       return createErrorResponse('無效的客戶 ID 格式', 400)
     }
 
