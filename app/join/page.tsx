@@ -104,7 +104,8 @@ function JoinPageInner() {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('請輸入有效的 Email'); return }
     if (!selectedTier) { setError('請選擇方案'); return }
     const weightNum = weight ? parseFloat(weight) : null
-    if (!weightNum || weightNum < 30 || weightNum > 300) { setError('請輸入體重（30-300 kg）'); return }
+    if (weightNum && (weightNum < 30 || weightNum > 300)) { setError('體重請輸入 30-300 kg 之間'); return }
+    if (!weightNum) { setError('請輸入目前體重'); return }
 
     setError('')
     setIsSubmitting(true)
@@ -113,21 +114,16 @@ function JoinPageInner() {
     if (selectedTier === 'free') {
       trackEvent('free_trial_initiated', { email })
 
-      // 讀取 diagnosis 頁面的 localStorage 數據（如果有的話），否則用表單體重
+      // 讀取 diagnosis 頁面的 localStorage 數據（如果有的話）
+      // 體重一律用表單填的（最新），其他補充資料從 localStorage 取
       let diagnosisData: Record<string, any> = { weight: weightNum }
       try {
-        const dWeight = localStorage.getItem('demo_weight')
         const dHeight = localStorage.getItem('demo_height')
         const dBodyfat = localStorage.getItem('demo_bodyfat')
         const dTrainingDays = localStorage.getItem('demo_training_days')
-        if (dWeight) {
-          diagnosisData = {
-            weight: parseFloat(dWeight),
-            height: dHeight ? parseFloat(dHeight) : null,
-            bodyFatPct: dBodyfat ? parseFloat(dBodyfat) : null,
-            trainingDaysPerWeek: dTrainingDays ? parseInt(dTrainingDays) : null,
-          }
-        }
+        if (dHeight) diagnosisData.height = parseFloat(dHeight)
+        if (dBodyfat) diagnosisData.bodyFatPct = parseFloat(dBodyfat)
+        if (dTrainingDays) diagnosisData.trainingDaysPerWeek = parseInt(dTrainingDays)
       } catch {}
 
       try {
