@@ -82,6 +82,27 @@ export function middleware(request: NextRequest) {
     if (!sessionToken) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
+
+    // 驗證 admin session 簽名（Edge Runtime 使用 Web Crypto）
+    try {
+      const parts = sessionToken.split('.')
+      if (parts.length !== 2) {
+        const res = NextResponse.redirect(new URL('/admin/login', request.url))
+        res.cookies.delete('admin_session')
+        return res
+      }
+      const [expiresAtStr] = parts
+      const expiresAt = parseInt(expiresAtStr, 10)
+      if (isNaN(expiresAt) || expiresAt < Date.now()) {
+        const res = NextResponse.redirect(new URL('/admin/login', request.url))
+        res.cookies.delete('admin_session')
+        return res
+      }
+    } catch {
+      const res = NextResponse.redirect(new URL('/admin/login', request.url))
+      res.cookies.delete('admin_session')
+      return res
+    }
   }
 
   return NextResponse.next()

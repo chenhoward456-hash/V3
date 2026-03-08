@@ -695,8 +695,8 @@ export function generateLabNutritionAdvice(
     // ════════════════════════════════════════
 
     if (matchName(lab.test_name, ['鐵蛋白', 'ferritin'])) {
-      const ferritinMax = gender === '女性' ? 200 : 150
-      const ferritinMin = gender === '女性' ? 12 : 50
+      const ferritinMax = gender === '女性' ? 150 : 300
+      const ferritinMin = gender === '女性' ? 12 : 30
       const isHigh = lab.value > ferritinMax
       const isLow = lab.value < ferritinMin
 
@@ -1425,4 +1425,175 @@ export function generateLabNutritionAdvice(
   })
 
   return advice
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Lab → Macro Modifiers
+// 從血檢結果產出可直接影響營養引擎的巨量營養素修正
+// ═══════════════════════════════════════════════════════════════
+
+export interface LabMacroModifier {
+  nutrient: 'protein' | 'fat' | 'carbs' | 'calories'
+  direction: 'increase' | 'decrease'
+  /** 修正量（g 或 kcal），會疊加到引擎計算結果上 */
+  delta: number
+  reason: string
+  labMarker: string
+}
+
+export interface LabTrainingModifier {
+  area: 'cardio' | 'volume' | 'intensity'
+  direction: 'increase' | 'decrease'
+  reason: string
+  labMarker: string
+}
+
+/**
+ * 從血檢結果提取可量化的巨量營養素修正
+ * 供 nutrition-engine 在計算最終 macros 後疊加
+ *
+ * 文獻：
+ *  - Low ferritin + exercise → increased iron loss (Peeling et al. 2008, Br J Sports Med)
+ *  - High ApoB → reduce SFA < 7% total kcal (Ference et al. 2017, Eur Heart J)
+ *  - Low albumin → protein intake ≥ 2.0 g/kg (Don & Kaysen 2004)
+ *  - High fasting insulin / HOMA-IR → carb cycling benefit (Richter & Hargreaves 2013)
+ */
+export function getLabMacroModifiers(
+  labs: LabInput[],
+  options: { gender?: '男性' | '女性'; bodyWeight?: number } = {}
+): { macroModifiers: LabMacroModifier[]; trainingModifiers: LabTrainingModifier[]; warnings: string[] } {
+  const macroModifiers: LabMacroModifier[] = []
+  const trainingModifiers: LabTrainingModifier[] = []
+  const warnings: string[] = []
+  const bw = options.bodyWeight ?? 70
+
+  for (const lab of labs) {
+    if (lab.value == null || lab.status === 'normal') continue
+
+    // ── 低鐵蛋白 → 增加蛋白質（含鐵血紅蛋白來源）+ 減少有氧量 ──
+    if (matchName(lab.test_name, ['鐵蛋白', 'ferritin'])) {
+      const threshold = options.gender === '女性' ? 30 : 50
+      if (lab.value < threshold) {
+        macroModifiers.push({
+          nutrient: 'protein',
+          direction: 'increase',
+          delta: Math.round(bw * 0.2), // +0.2 g/kg protein（紅肉含鐵血紅蛋白）
+          reason: `鐵蛋白偏低（${lab.value}），增加蛋白質以攝取更多血紅素鐵`,
+          labMarker: lab.test_name,
+        })
+        trainingModifiers.push({
+          area: 'cardio',
+          direction: 'decrease',
+          reason: `鐵蛋白偏低（${lab.value}），建議減少有氧訓練量（汗液和足底衝擊會增加鐵流失）`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`🩸 鐵蛋白 ${lab.value}（目標 >${threshold}）：建議優先選擇紅肉、牛肉等含血紅素鐵的蛋白質來源，並減少有氧量`)
+      }
+    }
+
+    // ── 高 ApoB / LDL → 減少飽和脂肪，改用不飽和脂肪 ──
+    if (matchName(lab.test_name, ['apob', 'apolipoproteinb'])) {
+      if (lab.value > 90) {
+        macroModifiers.push({
+          nutrient: 'fat',
+          direction: 'decrease',
+          delta: Math.round(bw * 0.1), // -0.1 g/kg fat（減少飽和脂肪）
+          reason: `ApoB 偏高（${lab.value}），減少飽和脂肪攝取`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`❤️ ApoB ${lab.value}（目標 <80）：飽和脂肪 <7% 總熱量，以橄欖油、魚油替代`)
+      }
+    }
+
+    // ── 低白蛋白 → 增加蛋白質 ──
+    if (matchName(lab.test_name, ['白蛋白', 'albumin'])) {
+      if (lab.value < 3.5) {
+        macroModifiers.push({
+          nutrient: 'protein',
+          direction: 'increase',
+          delta: Math.round(bw * 0.3), // +0.3 g/kg
+          reason: `白蛋白偏低（${lab.value}），增加蛋白質攝取至 2.0-2.2 g/kg`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`🥚 白蛋白 ${lab.value}（目標 >4.0）：每餐確保 30-40g 優質蛋白質`)
+      }
+    }
+
+    // ── 高空腹胰島素 / HOMA-IR → 減少碳水，建議碳循環 ──
+    if (matchName(lab.test_name, ['空腹胰島素', 'fasting insulin'])) {
+      if (lab.value > 8) {
+        macroModifiers.push({
+          nutrient: 'carbs',
+          direction: 'decrease',
+          delta: Math.round(bw * 0.5), // -0.5 g/kg carbs
+          reason: `空腹胰島素偏高（${lab.value}），減少碳水並集中在訓練前後`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`💉 空腹胰島素 ${lab.value}（目標 <5）：碳水集中在訓練前後，休息日降低碳水比例`)
+      }
+    }
+
+    if (matchName(lab.test_name, ['homa-ir', 'homair'])) {
+      if (lab.value > 2.0) {
+        macroModifiers.push({
+          nutrient: 'carbs',
+          direction: 'decrease',
+          delta: Math.round(bw * 0.5),
+          reason: `HOMA-IR 偏高（${lab.value}），減少碳水攝取`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`📊 HOMA-IR ${lab.value}（目標 <2.0）：建議啟用碳循環，訓練日 4-5g/kg、休息日 2-3g/kg`)
+      }
+    }
+
+    // ── 高三酸甘油酯 → 減少精製碳水 ──
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg'])) {
+      if (lab.value > 150) {
+        macroModifiers.push({
+          nutrient: 'carbs',
+          direction: 'decrease',
+          delta: Math.round(bw * 0.3),
+          reason: `三酸甘油酯偏高（${lab.value}），減少精製碳水`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`💧 TG ${lab.value}（目標 <100）：碳水來源改為低 GI，增加 Omega-3`)
+      }
+    }
+
+    // ── TSH 偏高（甲狀腺低下）→ 不宜過度減卡 ──
+    if (matchName(lab.test_name, ['tsh', '促甲狀腺激素'])) {
+      if (lab.value > 4.0) {
+        macroModifiers.push({
+          nutrient: 'calories',
+          direction: 'increase',
+          delta: 100,
+          reason: `TSH 偏高（${lab.value}），甲狀腺低下傾向，不宜過度限制熱量`,
+          labMarker: lab.test_name,
+        })
+        trainingModifiers.push({
+          area: 'intensity',
+          direction: 'decrease',
+          reason: `TSH 偏高（${lab.value}），代謝率降低，建議適度降低訓練強度`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`🦋 TSH ${lab.value}（目標 1.0-2.0）：甲狀腺低下傾向，不宜過度限制熱量`)
+      }
+    }
+
+    // ── 低血紅素 → 減少有氧 ──
+    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hb', 'hgb'])) {
+      const hbMin = options.gender === '女性' ? 12.0 : 13.5
+      if (lab.value < hbMin) {
+        trainingModifiers.push({
+          area: 'cardio',
+          direction: 'decrease',
+          reason: `血紅素偏低（${lab.value}），氧氣運輸能力下降，減少有氧訓練量`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`🔴 血紅素 ${lab.value}（目標 >${hbMin}）：有氧能力受限，建議減少有氧量`)
+      }
+    }
+  }
+
+  return { macroModifiers, trainingModifiers, warnings }
 }

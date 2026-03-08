@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const { data: client, error: clientErr } = await supabase
       .from('clients')
       .select('*')
-      .eq('id', clientId)
+      .eq('unique_code', clientId)
       .single()
 
     if (clientErr || !client) {
@@ -56,38 +56,45 @@ export async function GET(request: NextRequest) {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
 
-    const [bodyRes, nutritionRes, trainingRes, wellnessRes] = await Promise.all([
+    const [bodyRes, nutritionRes, trainingRes, wellnessRes, labRes] = await Promise.all([
       supabase
         .from('body_composition')
         .select('date, weight, height, body_fat')
-        .eq('client_id', clientId)
+        .eq('client_id', client.id)
         .gte('date', sinceDate)
         .not('weight', 'is', null)
         .order('date', { ascending: true }),
       supabase
         .from('nutrition_logs')
         .select('date, compliant, calories, protein_grams, carbs_grams, fat_grams')
-        .eq('client_id', clientId)
+        .eq('client_id', client.id)
         .gte('date', sinceDate)
         .order('date', { ascending: true }),
       supabase
         .from('training_logs')
-        .select('date, training_type, rpe')
-        .eq('client_id', clientId)
+        .select('date, training_type, rpe, duration')
+        .eq('client_id', client.id)
         .gte('date', sinceDate)
         .order('date', { ascending: true }),
       supabase
         .from('daily_wellness')
         .select('date, sleep_quality, energy_level, mood, cognitive_clarity, stress_level, training_drive, period_start, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate')
-        .eq('client_id', clientId)
+        .eq('client_id', client.id)
         .gte('date', sinceDate)
         .order('date', { ascending: true }),
+      supabase
+        .from('lab_results')
+        .select('test_name, value, unit, status')
+        .eq('client_id', client.id)
+        .order('date', { ascending: false })
+        .limit(30),
     ])
 
     const bodyData = bodyRes.data || []
     const nutritionLogs = nutritionRes.data || []
     const trainingLogs = trainingRes.data || []
     const wellnessLogs = wellnessRes.data || []
+    const labResults = labRes.data || []
 
     // 2.5 查詢最近一次經期標記（60 天內，用於月經週期判斷）
     let lastPeriodDate: string | null = null
@@ -97,7 +104,7 @@ export async function GET(request: NextRequest) {
       const { data: periodData } = await supabase
         .from('daily_wellness')
         .select('date')
-        .eq('client_id', clientId)
+        .eq('client_id', client.id)
         .eq('period_start', true)
         .gte('date', sixtyDaysAgo.toISOString().split('T')[0])
         .order('date', { ascending: false })
@@ -106,6 +113,34 @@ export async function GET(request: NextRequest) {
         lastPeriodDate = periodData[0].date
       }
     }
+
+    // 2.6 查詢補品依從率（近 8 週）
+    const eightWeeksAgo = new Date()
+    eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
+    const eightWeeksStr = eightWeeksAgo.toISOString().split('T')[0]
+
+    const [suppLogsRes, suppListRes] = await Promise.all([
+      supabase
+        .from('supplement_logs')
+        .select('date, completed')
+        .eq('client_id', client.id)
+        .gte('date', eightWeeksStr),
+      supabase
+        .from('supplements')
+        .select('name')
+        .eq('client_id', client.id),
+    ])
+
+    const suppLogs = suppLogsRes.data || []
+    const suppList = suppListRes.data || []
+    const suppComplianceRate = suppLogs.length > 0
+      ? suppLogs.filter((s: any) => s.completed).length / suppLogs.length
+      : 0
+    // 計算持續使用週數：從最早有打卡記錄的日期算起
+    const suppDates = suppLogs.map((s: any) => s.date).sort()
+    const suppWeeksDuration = suppDates.length > 0
+      ? Math.floor((new Date().getTime() - new Date(suppDates[0]).getTime()) / (7 * 24 * 60 * 60 * 1000))
+      : 0
 
     // 3. 計算週均體重 (最多 4 週)
     const today = new Date()
@@ -172,6 +207,15 @@ export async function GET(request: NextRequest) {
     // 新用戶友善提示：有體重但營養記錄不足 14 天
     const isNewUser = recentNutrition.length < 7
 
+    // 7b. 計算訓練量數據（RPE × duration × frequency → 影響 TDEE）
+    const recentTrainingWithRPE = trainingLogs.filter((t: any) => t.date >= sevenDaysStr && isWeightTraining(t.training_type))
+    const avgRPE = recentTrainingWithRPE.length > 0
+      ? recentTrainingWithRPE.reduce((s: number, t: any) => s + (t.rpe ?? 6), 0) / recentTrainingWithRPE.length
+      : null
+    const avgDurationMin = recentTrainingWithRPE.length > 0
+      ? recentTrainingWithRPE.reduce((s: number, t: any) => s + (t.duration ?? 45), 0) / recentTrainingWithRPE.length
+      : null
+
     // 8. 組裝引擎輸入
     const engineInput: NutritionInput = {
       gender: client.gender || '男性',
@@ -219,6 +263,22 @@ export async function GET(request: NextRequest) {
           carbs: n.carbs_grams ?? null,
         })),
       lastPeriodDate,
+      labResults: labResults.map((l: any) => ({
+        test_name: l.test_name,
+        value: l.value,
+        unit: l.unit,
+        status: l.status,
+      })),
+      recentTrainingVolume: recentTrainingWithRPE.length > 0 ? {
+        avgRPE,
+        avgDurationMin,
+        sessionsPerWeek: recentTrainingWithRPE.length,
+      } : undefined,
+      supplementCompliance: suppLogs.length > 0 ? {
+        rate: suppComplianceRate,
+        weeksDuration: suppWeeksDuration,
+        supplements: suppList.map((s: any) => s.name),
+      } : undefined,
     }
 
     // 9. 執行引擎
@@ -244,7 +304,7 @@ export async function GET(request: NextRequest) {
         const { error: updateErr } = await supabase
           .from('clients')
           .update(updates)
-          .eq('id', clientId)
+          .eq('id', client.id)
 
         if (!updateErr) {
           applied = true

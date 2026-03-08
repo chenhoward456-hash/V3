@@ -123,6 +123,63 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('帳號已過期', 403)
     }
 
+    // ── 恢復狀態檢查：高強度 + 恢復差 → 附帶警告 ──
+    let recoveryWarning: string | null = null
+    if (training_type !== 'rest' && rpe != null && rpe >= 8) {
+      try {
+        // 查最近 3 天 wellness（穿戴裝置 + 主觀）
+        const { data: recentWellness } = await supabaseAdmin
+          .from('daily_wellness')
+          .select('date, energy_level, training_drive, device_recovery_score, resting_hr, hrv, wearable_sleep_score, sleep_quality')
+          .eq('client_id', client.id)
+          .order('date', { ascending: false })
+          .limit(3)
+
+        if (recentWellness && recentWellness.length > 0) {
+          // 檢查穿戴裝置恢復分數
+          const recoveryScores = recentWellness
+            .filter((w: any) => w.device_recovery_score != null)
+            .map((w: any) => w.device_recovery_score)
+          const avgRecovery = recoveryScores.length > 0
+            ? recoveryScores.reduce((s: number, v: number) => s + v, 0) / recoveryScores.length
+            : null
+
+          // 檢查主觀精力
+          const energyScores = recentWellness
+            .filter((w: any) => w.energy_level != null)
+            .map((w: any) => w.energy_level)
+          const avgEnergy = energyScores.length > 0
+            ? energyScores.reduce((s: number, v: number) => s + v, 0) / energyScores.length
+            : null
+
+          // 檢查睡眠
+          const sleepScores = recentWellness
+            .filter((w: any) => w.sleep_quality != null)
+            .map((w: any) => w.sleep_quality)
+          const avgSleep = sleepScores.length > 0
+            ? sleepScores.reduce((s: number, v: number) => s + v, 0) / sleepScores.length
+            : null
+
+          const warnings: string[] = []
+          if (avgRecovery != null && avgRecovery < 35) {
+            warnings.push(`裝置恢復分數偏低（${Math.round(avgRecovery)}/100）`)
+          }
+          if (avgEnergy != null && avgEnergy <= 2) {
+            warnings.push(`近 3 天精力偏低（${avgEnergy.toFixed(1)}/5）`)
+          }
+          if (avgSleep != null && avgSleep <= 2) {
+            warnings.push(`近 3 天睡眠品質差（${avgSleep.toFixed(1)}/5）`)
+          }
+
+          if (warnings.length > 0) {
+            recoveryWarning = `⚠️ 恢復狀態不佳：${warnings.join('、')}。高強度訓練可能增加受傷風險，建議考慮降低強度。`
+          }
+        }
+      } catch {
+        // 恢復檢查失敗不影響訓練記錄
+      }
+    }
+
     const upsertData: Record<string, string | number | null> = {
       client_id: client.id,
       date,
@@ -152,7 +209,12 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('新增/更新訓練紀錄失敗', 500)
     }
 
-    return createSuccessResponse(training, '訓練紀錄已記錄')
+    return NextResponse.json({
+      success: true,
+      data: training,
+      message: '訓練紀錄已記錄',
+      ...(recoveryWarning && { recoveryWarning }),
+    })
 
   } catch (error) {
     return createErrorResponse('伺服器錯誤', 500)

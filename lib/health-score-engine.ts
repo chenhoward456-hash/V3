@@ -37,6 +37,11 @@ export interface HealthScoreInput {
     mood: number | null
     cognitive_clarity?: number | null
     stress_level?: number | null
+    // 穿戴裝置數據
+    wearable_sleep_score?: number | null
+    device_recovery_score?: number | null
+    hrv?: number | null
+    resting_hr?: number | null
   }>
   nutritionLast7: Array<{ compliant: boolean | null }>
   trainingLast7: Array<{ training_type: string }>
@@ -61,11 +66,30 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
   } = input
 
   // ── 1. 睡眠分數（20%）──
-  const sleepRaw = wellnessLast7.map(w => w.sleep_quality).filter(v => v != null) as number[]
-  const sleepScore = sleepRaw.length > 0 ? (avg(sleepRaw) / 5) * 100 : 50
-  const sleepDetail = sleepRaw.length > 0
-    ? `近7天平均 ${avg(sleepRaw).toFixed(1)}/5`
-    : '尚無記錄'
+  // 優先使用穿戴裝置睡眠分數（0-100 客觀），fallback 到主觀睡眠品質（1-5）
+  // 兩者都有時取加權平均（裝置 60% + 主觀 40%）
+  const wearableSleepRaw = wellnessLast7.map(w => w.wearable_sleep_score).filter(v => v != null) as number[]
+  const subjectiveSleepRaw = wellnessLast7.map(w => w.sleep_quality).filter(v => v != null) as number[]
+
+  let sleepScore: number
+  let sleepDetail: string
+
+  if (wearableSleepRaw.length > 0 && subjectiveSleepRaw.length > 0) {
+    // 兩者都有：裝置 60% + 主觀 40%（客觀優先）
+    const wearableAvg = avg(wearableSleepRaw)
+    const subjectiveAvg = (avg(subjectiveSleepRaw) / 5) * 100
+    sleepScore = wearableAvg * 0.6 + subjectiveAvg * 0.4
+    sleepDetail = `裝置 ${Math.round(wearableAvg)}/100 + 主觀 ${avg(subjectiveSleepRaw).toFixed(1)}/5`
+  } else if (wearableSleepRaw.length > 0) {
+    sleepScore = avg(wearableSleepRaw)
+    sleepDetail = `裝置睡眠分數 ${Math.round(avg(wearableSleepRaw))}/100`
+  } else if (subjectiveSleepRaw.length > 0) {
+    sleepScore = (avg(subjectiveSleepRaw) / 5) * 100
+    sleepDetail = `近7天平均 ${avg(subjectiveSleepRaw).toFixed(1)}/5`
+  } else {
+    sleepScore = 50
+    sleepDetail = '尚無記錄'
+  }
 
   // ── 2. 主觀健康分數（25%）= 精力 + 心情 + 認知清晰 - 壓力 ──
   const energyRaw = wellnessLast7.map(w => w.energy_level).filter(v => v != null) as number[]
@@ -76,10 +100,26 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
   // 壓力反轉：壓力 5（高） → 貢獻 1 分（差），壓力 1（低） → 貢獻 5 分（好）
   const stressInverted = stressRaw.map(s => 6 - s)
   const allWellness = [...energyRaw, ...moodRaw, ...cogRaw, ...stressInverted]
-  const wellnessScore = allWellness.length > 0 ? (avg(allWellness) / 5) * 100 : 50
-  const wellnessDetail = allWellness.length > 0
-    ? `精力/情緒/認知 近7天均分 ${(avg(allWellness) / 5 * 10).toFixed(1)}/10`
-    : '尚無記錄'
+  const subjectiveWellnessScore = allWellness.length > 0 ? (avg(allWellness) / 5) * 100 : 50
+
+  // 整合穿戴裝置恢復分數：有裝置數據時做客觀+主觀融合
+  const recoveryRaw = wellnessLast7.map(w => w.device_recovery_score).filter(v => v != null) as number[]
+  let wellnessScore: number
+  let wellnessDetail: string
+
+  if (recoveryRaw.length > 0 && allWellness.length > 0) {
+    // 裝置恢復 40% + 主觀 60%（主觀涵蓋更多面向所以權重較高）
+    wellnessScore = avg(recoveryRaw) * 0.4 + subjectiveWellnessScore * 0.6
+    wellnessDetail = `主觀 ${(avg(allWellness) / 5 * 10).toFixed(1)}/10 + 裝置恢復 ${Math.round(avg(recoveryRaw))}/100`
+  } else if (recoveryRaw.length > 0) {
+    wellnessScore = avg(recoveryRaw)
+    wellnessDetail = `裝置恢復分數 ${Math.round(avg(recoveryRaw))}/100`
+  } else {
+    wellnessScore = subjectiveWellnessScore
+    wellnessDetail = allWellness.length > 0
+      ? `精力/情緒/認知 近7天均分 ${(avg(allWellness) / 5 * 10).toFixed(1)}/10`
+      : '尚無記錄'
+  }
 
   // ── 3. 飲食分數（20%）──
   const compliantDays = nutritionLast7.filter(n => n.compliant === true).length

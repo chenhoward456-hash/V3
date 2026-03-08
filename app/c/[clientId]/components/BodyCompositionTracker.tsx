@@ -147,8 +147,8 @@ function BodyCompositionTracker({
               <input
                 type="number"
                 step="0.1"
-                value={newRecord.height || ''}
-                onChange={(e) => setNewRecord(prev => ({ ...prev, height: Number(e.target.value) }))}
+                value={newRecord.height ?? ''}
+                onChange={(e) => setNewRecord(prev => ({ ...prev, height: e.target.value === '' ? undefined : Number(e.target.value) }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -158,8 +158,8 @@ function BodyCompositionTracker({
               <input
                 type="number"
                 step="0.1"
-                value={newRecord.weight || ''}
-                onChange={(e) => setNewRecord(prev => ({ ...prev, weight: Number(e.target.value) }))}
+                value={newRecord.weight ?? ''}
+                onChange={(e) => setNewRecord(prev => ({ ...prev, weight: e.target.value === '' ? undefined : Number(e.target.value) }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -169,8 +169,8 @@ function BodyCompositionTracker({
               <input
                 type="number"
                 step="0.1"
-                value={newRecord.body_fat || ''}
-                onChange={(e) => setNewRecord(prev => ({ ...prev, body_fat: Number(e.target.value) }))}
+                value={newRecord.body_fat ?? ''}
+                onChange={(e) => setNewRecord(prev => ({ ...prev, body_fat: e.target.value === '' ? undefined : Number(e.target.value) }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -179,8 +179,8 @@ function BodyCompositionTracker({
               <input
                 type="number"
                 step="0.1"
-                value={newRecord.muscle_mass || ''}
-                onChange={(e) => setNewRecord(prev => ({ ...prev, muscle_mass: Number(e.target.value) }))}
+                value={newRecord.muscle_mass ?? ''}
+                onChange={(e) => setNewRecord(prev => ({ ...prev, muscle_mass: e.target.value === '' ? undefined : Number(e.target.value) }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -189,8 +189,8 @@ function BodyCompositionTracker({
               <input
                 type="number"
                 step="0.1"
-                value={newRecord.visceral_fat || ''}
-                onChange={(e) => setNewRecord(prev => ({ ...prev, visceral_fat: Number(e.target.value) }))}
+                value={newRecord.visceral_fat ?? ''}
+                onChange={(e) => setNewRecord(prev => ({ ...prev, visceral_fat: e.target.value === '' ? undefined : Number(e.target.value) }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>

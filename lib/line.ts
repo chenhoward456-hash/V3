@@ -1,12 +1,21 @@
 import crypto from 'crypto'
 
-const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET!
-const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN!
+function getLineChannelSecret(): string {
+  const secret = process.env.LINE_CHANNEL_SECRET
+  if (!secret) throw new Error('LINE_CHANNEL_SECRET 環境變數未設定')
+  return secret
+}
+
+function getLineChannelAccessToken(): string {
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN
+  if (!token) throw new Error('LINE_CHANNEL_ACCESS_TOKEN 環境變數未設定')
+  return token
+}
 
 /** 驗證 LINE Webhook 簽名 */
 export function verifyLineSignature(body: string, signature: string): boolean {
   const hash = crypto
-    .createHmac('SHA256', LINE_CHANNEL_SECRET)
+    .createHmac('SHA256', getLineChannelSecret())
     .update(body)
     .digest('base64')
   // 使用 timing-safe 比較防止 timing attack
@@ -24,7 +33,7 @@ async function lineAPI(path: string, body?: object): Promise<Response> {
     method: body ? 'POST' : 'GET',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+      Authorization: `Bearer ${getLineChannelAccessToken()}`,
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   })
@@ -173,7 +182,7 @@ export async function uploadRichMenuImage(richMenuId: string, imageBuffer: Blob,
     headers: {
       'Content-Type': safeContentType,
       'Content-Length': String(arrayBuffer.byteLength),
-      Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+      Authorization: `Bearer ${getLineChannelAccessToken()}`,
     },
     body: arrayBuffer,
   })
@@ -190,7 +199,7 @@ export async function setDefaultRichMenu(richMenuId: string): Promise<boolean> {
   const res = await fetch(`https://api.line.me/v2/bot/user/all/richmenu/${richMenuId}`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+      Authorization: `Bearer ${getLineChannelAccessToken()}`,
     },
   })
   if (!res.ok) {
@@ -205,7 +214,7 @@ export async function deleteRichMenu(richMenuId: string): Promise<boolean> {
   const res = await fetch(`https://api.line.me/v2/bot/richmenu/${richMenuId}`, {
     method: 'DELETE',
     headers: {
-      Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+      Authorization: `Bearer ${getLineChannelAccessToken()}`,
     },
   })
   return res.ok
@@ -224,7 +233,7 @@ export async function linkRichMenuToUser(userId: string, richMenuId: string): Pr
   const res = await fetch(`https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+      Authorization: `Bearer ${getLineChannelAccessToken()}`,
     },
   })
   if (!res.ok) {
@@ -239,7 +248,7 @@ export async function unlinkRichMenuFromUser(userId: string): Promise<boolean> {
   const res = await fetch(`https://api.line.me/v2/bot/user/${userId}/richmenu`, {
     method: 'DELETE',
     headers: {
-      Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+      Authorization: `Bearer ${getLineChannelAccessToken()}`,
     },
   })
   if (!res.ok) {

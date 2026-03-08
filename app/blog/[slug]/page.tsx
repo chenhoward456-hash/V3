@@ -125,7 +125,7 @@ function renderMarkdown(content: string) {
       if (line === '---') return '<hr style="margin: 2rem 0; border-color: #E5E5E5;" />'
       if (line.startsWith('- ')) return `<li style="margin-bottom: 0.5rem;">${escapeHtml(line.replace('- ', ''))}</li>`
       if (line.startsWith('|')) return escapeHtml(line)
-      if (line.trim()) return `<p style="margin-bottom: 1rem;">${line}</p>`
+      if (line.trim()) return `<p style="margin-bottom: 1rem;">${escapeHtml(line)}</p>`
       return ''
     })
     .join('')

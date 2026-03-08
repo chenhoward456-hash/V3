@@ -116,6 +116,8 @@ import {
   type BodyFatZoneId,
 } from './body-fat-zone-table'
 
+import { getLabMacroModifiers, type LabMacroModifier, type LabTrainingModifier } from './lab-nutrition-advisor'
+
 // ===== 類型定義 =====
 
 export interface NutritionInput {
@@ -175,6 +177,23 @@ export interface NutritionInput {
 
   // 月經週期（女性專用，用於排除黃體期體重浮動）
   lastPeriodDate?: string | null  // 最近一次經期開始日 (ISO)
+
+  // 血檢結果（用於 lab → macro 調整）
+  labResults?: Array<{ test_name: string; value: number | null; unit: string; status: 'normal' | 'attention' | 'alert' }>
+
+  // 訓練量數據（RPE × duration × frequency → 影響 TDEE）
+  recentTrainingVolume?: {
+    avgRPE: number | null
+    avgDurationMin: number | null
+    sessionsPerWeek: number
+  }
+
+  // 補品依從率 + 補品清單（用於依從性回饋迴圈）
+  supplementCompliance?: {
+    rate: number  // 0-1 (近 8 週打卡率)
+    weeksDuration: number  // 持續使用週數
+    supplements?: string[]  // 補品名稱列表
+  }
 }
 
 export interface NutritionSuggestion {
@@ -257,6 +276,17 @@ export interface NutritionSuggestion {
     perMealGrams: { min: number; max: number }  // 每餐蛋白質克數
     mealsPerDay: { min: number; max: number }    // 建議餐數
     periWorkoutNote: string                       // 訓練前後進食指引
+  } | null
+
+  // 血檢驅動的巨量營養素修正（已套用到建議值中）
+  labMacroModifiers: LabMacroModifier[]
+  labTrainingModifiers: LabTrainingModifier[]
+
+  // Energy Availability 警告（RED-S 風險）
+  energyAvailability: {
+    eaKcalPerKgFFM: number
+    level: 'adequate' | 'low' | 'critical'
+    warning: string | null
   } | null
 
   // 是否可以自動套用
@@ -492,6 +522,7 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     currentState: 'unknown', readinessScore: null, wearableInsight: null,
     refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: null,
+    labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
     deadlineInfo: null, autoApply: false, tdeeAnomalyDetected: false, peakWeekPlan: null,
     menstrualCycleNote: null,
     metabolicStress: null,
@@ -556,12 +587,13 @@ interface MenstrualCycleInfo {
   inLutealPhase: boolean    // 是否在黃體期（day 14-28）
   daysSincePeriod: number   // 距上次經期天數
   note: string | null       // 給前端的提示文字
+  carbBoostGPerKg: number   // 黃體期碳水增量 g/kg（0 = 非黃體期）
 }
 
 function checkMenstrualCycle(input: NutritionInput): MenstrualCycleInfo {
   const isFemale = input.gender === '女性'
   if (!isFemale || !input.lastPeriodDate) {
-    return { inLutealPhase: false, daysSincePeriod: -1, note: null }
+    return { inLutealPhase: false, daysSincePeriod: -1, note: null, carbBoostGPerKg: 0 }
   }
 
   const now = new Date()
@@ -572,14 +604,19 @@ function checkMenstrualCycle(input: NutritionInput): MenstrualCycleInfo {
   // 黃體期孕酮升高 → 水分滯留 → 體重假性上升
   const inLutealPhase = daysSince >= 14 && daysSince <= 30
 
+  // 黃體期碳水增量：孕酮升高 → 碳水需求增加 ~0.5 g/kg
+  // 文獻：Hackney 2012 (Br J Sports Med): 黃體期碳水氧化率增加 ~15-20%
+  // Hulmi et al. 2017: 黃體期增加碳水可減緩訓練表現下降
+  const carbBoostGPerKg = inLutealPhase ? 0.5 : 0
+
   let note: string | null = null
   if (inLutealPhase) {
-    note = `🩸 目前處於黃體期（經期後第 ${daysSince} 天），體重可能因荷爾蒙導致 0.5-2kg 的水分滯留，屬於正常波動，不代表脂肪增加。`
+    note = `🩸 目前處於黃體期（經期後第 ${daysSince} 天），體重可能因荷爾蒙導致 0.5-2kg 的水分滯留，屬於正常波動。系統已自動增加碳水 +${carbBoostGPerKg} g/kg 支持黃體期代謝需求。`
   } else if (daysSince >= 0 && daysSince <= 5) {
     note = `🩸 經期中（第 ${daysSince + 1} 天），體重可能略有波動，持續記錄即可。`
   }
 
-  return { inLutealPhase, daysSincePeriod: daysSince, note }
+  return { inLutealPhase, daysSincePeriod: daysSince, note, carbBoostGPerKg }
 }
 
 // ===== 當前狀態評估（Readiness Score v2）=====
@@ -893,6 +930,7 @@ export function calculateMetabolicStressScore(params: {
   recentWellness?: { energy_level: number | null; training_drive: number | null }[]  // 最近 7 天
   daysUntilCompetition?: number | null
   bodyFatZoneRefeedFreq?: string | null  // 來自 body-fat-zone-table
+  bodyWeight?: number                // 用於 refeed 碳水體重區間調整
 }): MetabolicStressResult {
   const reasons: string[] = []
 
@@ -962,6 +1000,13 @@ export function calculateMetabolicStressScore(params: {
   // 備賽模式：≤7 天不建議 refeed（交給 Peak Week），但仍回報分數
   const nearCompetition = params.daysUntilCompetition != null && params.daysUntilCompetition <= 7
 
+  // Refeed 碳水依體重區間調整（較重者絕對碳水較多但 g/kg 略低，較輕者 g/kg 略高）
+  // 文獻：Roberts 2020: refeed carbs 4-8 g/kg，Escalante 2021: 8-12 g/kg for peak week
+  // 體重 <60kg → +0.5 g/kg, 60-80kg → 基準, >80kg → -0.5 g/kg, >100kg → -1.0 g/kg
+  const bwTierAdjust = (params as any).bodyWeight != null
+    ? ((params as any).bodyWeight < 60 ? 0.5 : (params as any).bodyWeight > 100 ? -1.0 : (params as any).bodyWeight > 80 ? -0.5 : 0)
+    : 0
+
   if (score >= 60) {
     level = 'high'
     if (nearCompetition) {
@@ -969,12 +1014,12 @@ export function calculateMetabolicStressScore(params: {
       reasons.push('代謝壓力高，但已進入 Peak Week 範圍，由 Peak Week 計畫接管')
     } else if (weeks >= 12) {
       recommendation = 'diet_break'
-      refeedCarbGPerKg = 5.0
-      reasons.push('建議安排 3-5 天 diet break（維持熱量 + 高碳水）')
+      refeedCarbGPerKg = Math.round((5.0 + bwTierAdjust) * 10) / 10
+      reasons.push(`建議安排 3-5 天 diet break（維持熱量 + 碳水 ${refeedCarbGPerKg}g/kg）`)
     } else {
       recommendation = 'refeed_2day'
-      refeedCarbGPerKg = 5.0  // Full refeed: 5 g/kg
-      reasons.push('建議 2 天 full refeed（碳水 5g/kg，脂肪壓低）')
+      refeedCarbGPerKg = Math.round((5.0 + bwTierAdjust) * 10) / 10
+      reasons.push(`建議 2 天 full refeed（碳水 ${refeedCarbGPerKg}g/kg，脂肪壓低）`)
     }
   } else if (score >= 45) {
     level = 'elevated'
@@ -982,8 +1027,8 @@ export function calculateMetabolicStressScore(params: {
       recommendation = 'monitor'
     } else {
       recommendation = 'refeed_1day'
-      refeedCarbGPerKg = 4.0  // Strategic refeed: 4 g/kg
-      reasons.push('建議 1 天 strategic refeed（碳水 4g/kg）')
+      refeedCarbGPerKg = Math.round((4.0 + bwTierAdjust) * 10) / 10
+      reasons.push(`建議 1 天 strategic refeed（碳水 ${refeedCarbGPerKg}g/kg）`)
     }
   } else if (score >= 30) {
     level = 'moderate'
@@ -1289,6 +1334,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     recentWellness: input.recentWellness,
     daysUntilCompetition: daysToTarget,
     bodyFatZoneRefeedFreq: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)?.refeedFrequency ?? null,
+    bodyWeight: input.bodyWeight,
   })
 
   // 代謝壓力警告
@@ -1300,8 +1346,112 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     }
   }
 
+  // 8a-2. 補品依從性 → 回饋迴圈
+  // 若補品吃了 8 週但相關血檢指標未改善 → 升級警告
+  if (input.supplementCompliance && input.labResults) {
+    const { rate, weeksDuration, supplements } = input.supplementCompliance
+    if (rate >= 0.8 && weeksDuration >= 8) {
+      // 檢查鐵相關補品 + 鐵蛋白未改善
+      const hasIronSupplement = (supplements || []).some(s =>
+        s.toLowerCase().includes('鐵') || s.toLowerCase().includes('iron')
+      )
+      const lowFerritin = input.labResults.find(l =>
+        (l.test_name.includes('鐵蛋白') || l.test_name.toLowerCase().includes('ferritin')) &&
+        l.status !== 'normal' && l.value != null
+      )
+      if (hasIronSupplement && lowFerritin) {
+        warnings.push(`🔄 補品回饋：已服用鐵劑 ${weeksDuration} 週（依從率 ${Math.round(rate * 100)}%），但鐵蛋白仍偏低（${lowFerritin.value}）。建議：1) 確認劑型（螯合鐵吸收率更高）2) 搭配維生素C 3) 避免與咖啡/茶同服 4) 若持續未改善請就醫排查吸收問題`)
+      }
+
+      // 檢查維生素D補品 + 維D未改善
+      const hasVitDSupplement = (supplements || []).some(s =>
+        s.includes('維生素D') || s.includes('D3') || s.toLowerCase().includes('vitamin d')
+      )
+      const lowVitD = input.labResults.find(l =>
+        (l.test_name.includes('維生素D') || l.test_name.toLowerCase().includes('vitamin d')) &&
+        l.status !== 'normal' && l.value != null
+      )
+      if (hasVitDSupplement && lowVitD) {
+        warnings.push(`🔄 補品回饋：已服用維生素D ${weeksDuration} 週（依從率 ${Math.round(rate * 100)}%），但血清值仍偏低（${lowVitD.value}）。建議：1) 確認劑量是否足夠（建議 2000-5000 IU/day）2) 搭配脂肪餐服用以提高吸收 3) 若持續未改善請就醫`)
+      }
+    }
+
+    // 低依從率警告
+    if (rate < 0.5 && weeksDuration >= 4) {
+      warnings.push(`💊 補品依從率偏低（${Math.round(rate * 100)}%），效果可能大打折扣。建議設定每日提醒或將補品放在固定位置。`)
+    }
+  }
+
+  // 8b. 血檢 → 巨量營養素修正
+  const labModResult = input.labResults
+    ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: input.bodyWeight })
+    : { macroModifiers: [], trainingModifiers: [], warnings: [] }
+  for (const w of labModResult.warnings) {
+    if (!warnings.includes(w)) warnings.push(w)
+  }
+
+  // 8c. 訓練量 → TDEE 修正
+  // RPE × duration × frequency 影響實際能量消耗
+  // 高訓練量（RPE≥8, >60min, ≥5x/week）→ TDEE +5-10%
+  // 低訓練量（RPE≤5, <30min, ≤2x/week）→ TDEE -5%
+  if (input.recentTrainingVolume && estimatedTDEE) {
+    const vol = input.recentTrainingVolume
+    const avgRPE = vol.avgRPE ?? 6
+    const avgDur = vol.avgDurationMin ?? 45
+    const freq = vol.sessionsPerWeek
+    // 訓練負荷指數 = RPE × duration(hr) × frequency
+    const loadIndex = avgRPE * (avgDur / 60) * freq
+    // 基準：RPE 7 × 1hr × 4x/week = 28
+    if (loadIndex > 40) {
+      const boost = Math.min(0.10, (loadIndex - 28) / 280)
+      estimatedTDEE = Math.round(estimatedTDEE * (1 + boost))
+      warnings.push(`🏋️ 訓練量偏高（RPE ${avgRPE}×${avgDur}min×${freq}次/週），TDEE 已上調 +${Math.round(boost * 100)}%`)
+    } else if (loadIndex < 15 && freq >= 1) {
+      estimatedTDEE = Math.round(estimatedTDEE * 0.95)
+      warnings.push(`💤 訓練量偏低，TDEE 已下調 -5%`)
+    }
+  }
+
+  // 8d. Energy Availability (RED-S) 檢查
+  // EA = (dietary intake - exercise expenditure) / FFM
+  // < 30 kcal/kg FFM/day → 荷爾蒙功能臨界閾值 (Loucks & Thuma 2003)
+  // < 25 kcal/kg FFM/day → 嚴重風險 (Mountjoy et al. 2018)
+  let energyAvailability: NutritionSuggestion['energyAvailability'] = null
+  if (input.bodyFatPct != null && input.bodyFatPct > 0) {
+    const ffm = input.bodyWeight * (1 - input.bodyFatPct / 100)
+    const intake = input.avgDailyCalories ?? input.currentCalories ?? 0
+    // 估算運動消耗：training days × ~400-600 kcal per session / 7
+    const exerciseKcal = input.recentTrainingVolume
+      ? (input.recentTrainingVolume.avgRPE ?? 6) * (input.recentTrainingVolume.avgDurationMin ?? 45) * 0.12 * input.recentTrainingVolume.sessionsPerWeek / 7
+      : input.trainingDaysPerWeek * 450 / 7
+    const eaValue = ffm > 0 ? (intake - exerciseKcal) / ffm : 0
+    const eaRounded = Math.round(eaValue * 10) / 10
+
+    if (eaRounded < 25) {
+      energyAvailability = {
+        eaKcalPerKgFFM: eaRounded,
+        level: 'critical',
+        warning: `🚨 能量可用性極低（${eaRounded} kcal/kg FFM/day，臨界值 30）！RED-S 風險：可能影響荷爾蒙、骨密度、免疫力。建議立即增加熱量攝取或減少運動量。`,
+      }
+      warnings.push(energyAvailability.warning!)
+    } else if (eaRounded < 30) {
+      energyAvailability = {
+        eaKcalPerKgFFM: eaRounded,
+        level: 'low',
+        warning: `⚠️ 能量可用性偏低（${eaRounded} kcal/kg FFM/day，建議 >30）：長期可能影響荷爾蒙和恢復。`,
+      }
+      warnings.push(energyAvailability.warning!)
+    } else {
+      energyAvailability = {
+        eaKcalPerKgFFM: eaRounded,
+        level: 'adequate',
+        warning: null,
+      }
+    }
+  }
+
   // 9. 根據目標類型分流
-  const extraFields = { metabolicStress, tdeeAnomalyDetected }
+  const extraFields = { metabolicStress, tdeeAnomalyDetected, labMacroModifiers: labModResult.macroModifiers, labTrainingModifiers: labModResult.trainingModifiers, energyAvailability }
   if (input.goalType === 'cut') {
     return { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
   } else {
@@ -1479,6 +1629,13 @@ function generateCutSuggestion(
   const currentCarb = input.currentCarbs || 0
   const currentFat = input.currentFat || 0
 
+  // 黃體期碳水增量（女性專用）
+  if (cycleInfo.carbBoostGPerKg > 0) {
+    const lutealCarbBoost = Math.round(bw * cycleInfo.carbBoostGPerKg)
+    carbDelta += lutealCarbBoost
+    calDelta += lutealCarbBoost * 4 // 碳水 4 kcal/g
+  }
+
   let suggestedCal = currentCal + calDelta
   let suggestedPro = currentPro  // 蛋白質永遠不降
   let suggestedCarb = currentCarb + carbDelta
@@ -1575,9 +1732,21 @@ function generateCutSuggestion(
       dietDurationWeeks, dietBreakSuggested, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
+      labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
       deadlineInfo, autoApply: hasCorrections, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
+    }
+  }
+
+  // 套用血檢巨量營養素修正到建議值
+  if (input.labResults) {
+    const labMods = getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+    for (const mod of labMods.macroModifiers) {
+      if (mod.nutrient === 'protein' && mod.direction === 'increase') suggestedPro += mod.delta
+      if (mod.nutrient === 'carbs' && mod.direction === 'decrease') suggestedCarb = Math.max(50, suggestedCarb - mod.delta)
+      if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * 0.7), suggestedFat - mod.delta)
+      if (mod.nutrient === 'calories' && mod.direction === 'increase') suggestedCal += mod.delta
     }
   }
 
@@ -1597,6 +1766,7 @@ function generateCutSuggestion(
     dietDurationWeeks, dietBreakSuggested, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
+    labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
     deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
@@ -2017,6 +2187,7 @@ function generateGoalDrivenCut(
     bodyFatZoneInfo: zoneInfo,
     deadlineInfo: enrichedDeadlineInfo,
     autoApply: true, tdeeAnomalyDetected: false,  // Goal-driven 永遠自動套用
+    labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
     peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, suggestedPro),
@@ -2230,6 +2401,7 @@ function generateBulkSuggestion(
       dietDurationWeeks, dietBreakSuggested: false, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
+      labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
       deadlineInfo, autoApply: hasCorrections, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
@@ -2252,6 +2424,7 @@ function generateBulkSuggestion(
     dietDurationWeeks, dietBreakSuggested: false, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
+    labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
     deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
@@ -2423,6 +2596,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number): Nutritio
     bodyFatZoneInfo: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType),
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
     autoApply: true, tdeeAnomalyDetected: false,
+    labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
     peakWeekPlan: plan, metabolicStress: null,
     menstrualCycleNote: null,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG)),

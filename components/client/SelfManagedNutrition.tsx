@@ -86,7 +86,7 @@ export default function SelfManagedNutrition({
       finally { setLoading(false) }
     }
     fetchSuggestion()
-  }, [clientId, needsOnboarding, onMutate])
+  }, [clientId, uniqueCode, needsOnboarding, onMutate])
 
   // 計算目標日期
   const getTargetDate = () => {
@@ -374,7 +374,7 @@ export default function SelfManagedNutrition({
   if (!data) return null
 
   // 目標倒數卡片
-  const GoalCountdownCard = () => {
+  const goalCountdownCard = (() => {
     // 使用引擎回傳的 deadlineInfo 或從 props 算
     const dl = data?.deadlineInfo
     if (dl) {
@@ -441,7 +441,7 @@ export default function SelfManagedNutrition({
         </div>
       </div>
     )
-  }
+  })()
 
   // ===== 數據不足但有初始目標 =====
   if (data.status === 'insufficient_data' && caloriesTarget) {
@@ -460,7 +460,7 @@ export default function SelfManagedNutrition({
         </div>
 
         {/* 目標倒數 */}
-        <GoalCountdownCard />
+        {goalCountdownCard}
 
         {/* 初始目標（從 InBody 計算） */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 mb-4">
@@ -523,7 +523,7 @@ export default function SelfManagedNutrition({
   const config = statusConfig[data.status] || statusConfig.on_track
 
   // 穿戴裝置回饋
-  const WearableInsightCard = () => {
+  const wearableInsightCard = (() => {
     if (!data.wearableInsight) return null
     const stateConfig: Record<string, { bg: string; border: string; text: string; emoji: string; label: string }> = {
       optimal: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', emoji: '💪', label: '恢復極佳' },
@@ -548,10 +548,10 @@ export default function SelfManagedNutrition({
         <p className={`text-xs ${sc.text} leading-relaxed`}>{data.wearableInsight}</p>
       </div>
     )
-  }
+  })()
 
   // 自動校正 LINE 導流卡片
-  const CalibrationLineCard = () => {
+  const calibrationLineCard = (() => {
     if (!calibrationApplied) return null
     // 只在有實際調整時顯示
     const hasAdjustment = data.caloriesDelta !== 0 || data.proteinDelta !== 0 || data.carbsDelta !== 0 || data.fatDelta !== 0
@@ -589,7 +589,7 @@ export default function SelfManagedNutrition({
         </a>
       </div>
     )
-  }
+  })()
 
   // 體重變化率
   const changeRate = data.weeklyWeightChangeRate
@@ -623,10 +623,10 @@ export default function SelfManagedNutrition({
       </div>
 
       {/* 自動校正 → LINE 導流 */}
-      <CalibrationLineCard />
+      {calibrationLineCard}
 
       {/* 目標倒數 */}
-      <GoalCountdownCard />
+      {goalCountdownCard}
 
       {/* 今日飲食目標 */}
       {data.suggestedCalories && (
@@ -798,7 +798,39 @@ export default function SelfManagedNutrition({
       )}
 
       {/* 穿戴裝置恢復回饋 */}
-      <WearableInsightCard />
+      {wearableInsightCard}
+
+      {/* Energy Availability (RED-S) 警告 */}
+      {data.energyAvailability && data.energyAvailability.level !== 'adequate' && (
+        <div className={`mt-3 rounded-2xl p-4 ${
+          data.energyAvailability.level === 'critical'
+            ? 'bg-red-50 border border-red-300'
+            : 'bg-amber-50 border border-amber-200'
+        }`}>
+          <p className={`text-xs font-medium mb-1 ${
+            data.energyAvailability.level === 'critical' ? 'text-red-700' : 'text-amber-700'
+          }`}>
+            能量可用性：{data.energyAvailability.eaKcalPerKgFFM} kcal/kg FFM/day
+          </p>
+          <p className={`text-[11px] leading-relaxed ${
+            data.energyAvailability.level === 'critical' ? 'text-red-600' : 'text-amber-600'
+          }`}>{data.energyAvailability.warning}</p>
+        </div>
+      )}
+
+      {/* 血檢驅動的營養調整 */}
+      {data.labMacroModifiers && data.labMacroModifiers.length > 0 && (
+        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-2xl p-4">
+          <p className="text-xs font-medium text-blue-700 mb-2">🩸 血檢指標建議</p>
+          <div className="space-y-1">
+            {data.labMacroModifiers.map((mod: any, i: number) => (
+              <p key={i} className="text-[11px] text-blue-600 leading-relaxed">
+                {mod.reason}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 月經週期 */}
       {data.menstrualCycleNote && (
@@ -811,8 +843,8 @@ export default function SelfManagedNutrition({
       {data.warnings && data.warnings.length > 0 && (
         <div className="mt-3 space-y-1">
           {data.warnings
-            .filter((w: string) => !w.startsWith('🔄'))
-            .slice(0, 3)
+            .filter((w: string) => !w.startsWith('🔄') && !w.startsWith('🩸') && !w.startsWith('🚨'))
+            .slice(0, 5)
             .map((w: string, i: number) => (
               <p key={i} className="text-[11px] text-gray-500 leading-relaxed">{w}</p>
             ))}
