@@ -210,6 +210,25 @@ export default function ClientDashboard() {
     return () => observer.disconnect()
   }, [clientData])
 
+  // 追蹤留存事件（從 render 移至 useEffect，避免每次 re-render 重複觸發）
+  const trackedEventsRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    if (!clientData?.client?.created_at) return
+    const daysSinceSignup = Math.floor((Date.now() - new Date(clientData.client.created_at).getTime()) / 86400000)
+    const track = (event: string) => {
+      if (!trackedEventsRef.current.has(event)) {
+        trackedEventsRef.current.add(event)
+        trackEvent(event)
+      }
+    }
+    if (daysSinceSignup >= 3 && daysSinceSignup <= 4) track('user_day_3_active')
+    if (daysSinceSignup >= 5 && daysSinceSignup <= 10) track('user_day_7_active')
+    if (daysSinceSignup >= 14 && daysSinceSignup <= 21) {
+      track('user_day_14_active')
+      track('tdee_calibration_complete')
+    }
+  }, [clientData?.client?.created_at])
+
   const handleToggleSupplement = async (supplementId: string, currentCompleted: boolean) => {
     setTogglingSupplements(prev => new Set(prev).add(supplementId))
     try {
@@ -763,7 +782,6 @@ export default function ClientDashboard() {
 
             // P0: Day 3 — 第3天留存觸發卡片
             if (daysSinceSignup >= 3 && daysSinceSignup <= 4) {
-              trackEvent('user_day_3_active')
               const totalLogDays = recentNutritionLogs.length
               return (
                 <RetentionCard onDismiss={() => {}} id="day3">
@@ -796,7 +814,6 @@ export default function ClientDashboard() {
 
             // P1: Day 7 — AI 顧問預覽
             if (daysSinceSignup >= 5 && daysSinceSignup <= 10 && c.nutrition_enabled) {
-              trackEvent('user_day_7_active')
               return (
                 <div className="bg-gradient-to-br from-violet-50 to-blue-50 border border-violet-200 rounded-2xl p-4 mb-3">
                   <div className="flex items-start gap-3">
@@ -824,8 +841,6 @@ export default function ClientDashboard() {
 
             // P0: Day 14+ — TDEE 校正完成 WOW Moment
             if (daysSinceSignup >= 14 && daysSinceSignup <= 21) {
-              trackEvent('user_day_14_active')
-              trackEvent('tdee_calibration_complete')
               return <TDEECalibrationCard client={c} />
             }
 
@@ -1161,7 +1176,6 @@ export default function ClientDashboard() {
             todayWellness={todayWellness}
             clientId={clientId as string}
             date={selectedDate}
-            competitionEnabled={clientData.client.competition_enabled}
             healthModeEnabled={clientData.client.health_mode_enabled}
             gender={c.gender ?? undefined}
             onMutate={mutate}

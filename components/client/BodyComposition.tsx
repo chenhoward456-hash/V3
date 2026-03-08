@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Calendar, X, Plus, Scale, Activity, Dumbbell, Ruler, Heart } from 'lucide-react'
 import LazyChart from '@/components/charts/LazyChart'
 import { getLocalDateStr } from '@/lib/date-utils'
@@ -27,6 +27,10 @@ export default function BodyComposition({
   const [showModal, setShowModal] = useState(false)
   const { showToast } = useToast()
   const [nutritionAdjusted, setNutritionAdjusted] = useState<{ message?: string; calories?: number; protein?: number; carbs?: number; fat?: number; adjusted?: boolean } | null>(null)
+  const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([])
+  useEffect(() => {
+    return () => { timerRefs.current.forEach(t => clearTimeout(t)) }
+  }, [])
   const todayStr = getLocalDateStr()
   const [form, setForm] = useState({
     date: todayStr,
@@ -171,10 +175,12 @@ export default function BodyComposition({
       // 營養素引擎結果（只在有調整時顯示）
       const na = result?.data?.nutritionAdjusted
       if (na?.adjusted) {
-        setTimeout(() => {
+        const t1 = setTimeout(() => {
           setNutritionAdjusted({ message: na.message, calories: na.calories, protein: na.protein, carbs: na.carbs, fat: na.fat, adjusted: true })
-          setTimeout(() => setNutritionAdjusted(null), 5000)
+          const t2 = setTimeout(() => setNutritionAdjusted(null), 5000)
+          timerRefs.current.push(t2)
         }, 2200)
+        timerRefs.current.push(t1)
       }
     } catch { showToast('儲存失敗，請重試', 'error') }
   }

@@ -32,18 +32,20 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
   // 載入今日訓練準備度
   useEffect(() => {
+    const controller = new AbortController()
     async function fetchReadiness() {
       try {
-        const res = await fetch(`/api/training-readiness?clientId=${clientId}`)
+        const res = await fetch(`/api/training-readiness?clientId=${clientId}`, { signal: controller.signal })
         if (res.ok) {
           const data = await res.json()
           setReadiness(data)
         }
       } catch {
-        // 靜默失敗
+        // 靜默失敗（含 AbortError）
       }
     }
     fetchReadiness()
+    return () => controller.abort()
   }, [clientId])
 
   const [form, setForm] = useState({

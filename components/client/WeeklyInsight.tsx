@@ -155,11 +155,11 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
       </div>
 
       {/* 調整參考（如果有 delta） */}
-      {(data.caloriesDelta !== 0 || data.proteinDelta !== 0 || data.carbsDelta !== 0 || data.fatDelta !== 0) && (
+      {(data.caloriesDelta != null && data.caloriesDelta !== 0) || (data.proteinDelta != null && data.proteinDelta !== 0) || (data.carbsDelta != null && data.carbsDelta !== 0) || (data.fatDelta != null && data.fatDelta !== 0) ? (
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
           <p className="text-xs font-semibold text-blue-700 mb-2">📋 系統分析 — 目標校正</p>
           <div className="grid grid-cols-2 gap-2">
-            {data.caloriesDelta !== 0 && (
+            {data.caloriesDelta != null && data.caloriesDelta !== 0 && (
               <div className="flex items-center justify-between bg-white bg-opacity-70 rounded-lg px-3 py-2">
                 <span className="text-xs text-gray-600">🔥 熱量</span>
                 <span className={`text-xs font-bold ${data.caloriesDelta > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -167,7 +167,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
                 </span>
               </div>
             )}
-            {data.proteinDelta !== 0 && (
+            {data.proteinDelta != null && data.proteinDelta !== 0 && (
               <div className="flex items-center justify-between bg-white bg-opacity-70 rounded-lg px-3 py-2">
                 <span className="text-xs text-gray-600">🥩 蛋白質</span>
                 <span className={`text-xs font-bold ${data.proteinDelta > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -175,7 +175,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
                 </span>
               </div>
             )}
-            {data.carbsDelta !== 0 && (
+            {data.carbsDelta != null && data.carbsDelta !== 0 && (
               <div className="flex items-center justify-between bg-white bg-opacity-70 rounded-lg px-3 py-2">
                 <span className="text-xs text-gray-600">🍚 碳水</span>
                 <span className={`text-xs font-bold ${data.carbsDelta > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -183,7 +183,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
                 </span>
               </div>
             )}
-            {data.fatDelta !== 0 && (
+            {data.fatDelta != null && data.fatDelta !== 0 && (
               <div className="flex items-center justify-between bg-white bg-opacity-70 rounded-lg px-3 py-2">
                 <span className="text-xs text-gray-600">🥑 脂肪</span>
                 <span className={`text-xs font-bold ${data.fatDelta > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -196,7 +196,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
             以上為系統根據體重趨勢自動分析的參考數據，僅供教練與你討論時參考
           </p>
         </div>
-      )}
+      ) : null}
 
       {/* Refeed 提示 */}
       {data.refeedSuggested && (

@@ -244,10 +244,14 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 先刪除 subscription_purchases（沒有 ON DELETE CASCADE）
-    await supabase
+    const { error: purchaseError } = await supabase
       .from('subscription_purchases')
       .delete()
       .eq('client_id', clientId)
+
+    if (purchaseError) {
+      return NextResponse.json({ error: '刪除購買記錄失敗' }, { status: 500 })
+    }
 
     const { error } = await supabase
       .from('clients')
@@ -255,7 +259,9 @@ export async function DELETE(request: NextRequest) {
       .eq('id', clientId)
 
     if (error) {
-      return NextResponse.json({ error: '刪除失敗' }, { status: 500 })
+      // 購買記錄已刪但客戶刪除失敗，記錄錯誤
+      console.error('[admin/clients] 客戶刪除失敗，subscription_purchases 已刪除', { clientId, error })
+      return NextResponse.json({ error: '刪除失敗，請聯繫技術支援' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
 
     // 使用固定的 SITE_URL，不依賴可偽造的 origin header
     const origin = process.env.NEXT_PUBLIC_SITE_URL
-      || request.nextUrl.origin
       || 'https://howard456.vercel.app'
 
     return NextResponse.redirect(

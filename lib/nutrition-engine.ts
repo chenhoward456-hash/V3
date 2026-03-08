@@ -932,6 +932,7 @@ export interface MetabolicStressResult {
     plateau: number                // 0-20
     lowCarb: number                // 0-15
     wellnessTrend: number          // 0-10
+    lutealBoost: number            // 0-10
   }
   reasons: string[]
 }
@@ -1083,7 +1084,7 @@ export function calculateMetabolicStressScore(params: {
     level,
     recommendation,
     refeedCarbGPerKg,
-    breakdown: { dietDuration, recovery, plateau, lowCarb, wellnessTrend },
+    breakdown: { dietDuration, recovery, plateau, lowCarb, wellnessTrend, lutealBoost: lutealBoost || 0 },
     reasons,
   }
 }
@@ -1228,7 +1229,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   }
 
   const weeklyChange = thisWeekAvg - lastWeekAvg  // kg
-  const weeklyChangeRate = (weeklyChange / lastWeekAvg) * 100  // %
+  const weeklyChangeRate = lastWeekAvg > 0 ? (weeklyChange / lastWeekAvg) * 100 : 0  // %
 
   // 4. 計算飲食持續天數（提前算，TDEE 和 goal-driven 都需要）
   let dietDurationWeeks: number | null = null
@@ -2725,8 +2726,9 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     plan.push(day)
   }
 
-  // 找到今天的計畫
-  const todayStr = new Date().toISOString().split('T')[0]
+  // 找到今天的計畫（使用 UTC+8 避免時區問題）
+  const nowMs = Date.now() + 8 * 60 * 60 * 1000
+  const todayStr = new Date(nowMs).toISOString().split('T')[0]
   const todayPlan = plan.find(p => p.date === todayStr) || plan[0]
 
   return {

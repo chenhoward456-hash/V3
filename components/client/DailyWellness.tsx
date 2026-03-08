@@ -9,7 +9,6 @@ interface DailyWellnessProps {
   todayWellness: any
   clientId: string
   date?: string
-  competitionEnabled?: boolean
   healthModeEnabled?: boolean
   gender?: string
   onMutate: () => void

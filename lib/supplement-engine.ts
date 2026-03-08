@@ -40,7 +40,7 @@ const ALIASES: Record<string, string[]> = {
   'vitd':         ['vitd', 'vitamind', '25ohd', '維生素d', 'vit.d', '25-ohd'],
   'vitb12':       ['vitb12', 'vitaminb12', 'b12', '維生素b12', 'cobalamin'],
   'zinc':         ['zinc', '鋅', 'zn'],
-  'magnesium':    ['magnesium', '鎂', 'mg', 'magnesium(鎂)'],
+  'magnesium':    ['magnesium', '鎂', 'magnesium(鎂)'],
   'testosterone': ['testosterone', '睪固酮', 'totaltestosterone', '總睪固酮'],
   'hemoglobin':   ['hemoglobin', 'hgb', 'hb', '血紅素', 'haemoglobin'],
   'folate':       ['folate', 'folicacid', '葉酸', 'vitaminb9'],

@@ -90,22 +90,23 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    fetchInsights()
-  }, [clientId])
-
-  const fetchInsights = async () => {
-    try {
-      setLoading(true)
-      const res = await fetch(`/api/ai/insights?clientId=${clientId}&type=all`)
-      if (!res.ok) throw new Error('載入失敗')
-      const json = await res.json()
-      setData(json)
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+    const controller = new AbortController()
+    const fetchInsights = async () => {
+      try {
+        setLoading(true)
+        const res = await fetch(`/api/ai/insights?clientId=${clientId}&type=all`, { signal: controller.signal })
+        if (!res.ok) throw new Error('載入失敗')
+        const json = await res.json()
+        setData(json)
+      } catch (err: any) {
+        if (err.name !== 'AbortError') setError(err.message)
+      } finally {
+        if (!controller.signal.aborted) setLoading(false)
+      }
     }
-  }
+    fetchInsights()
+    return () => controller.abort()
+  }, [clientId])
 
   const aiContentRef = useRef(aiContent)
   const aiLoadingRef = useRef(aiLoading)

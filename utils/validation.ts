@@ -12,8 +12,8 @@ export function validateLabValue(testName: string, value: number): { isValid: bo
     return { isValid: false, error: '檢測數值必須是有效的數字' }
   }
   
-  // 檢查是否為正數
-  if (value < 0) {
+  // 檢查是否為正數（大部分血檢項目不可能為 0）
+  if (value <= 0) {
     return { isValid: false, error: '檢測數值必須為正數' }
   }
   
@@ -62,10 +62,16 @@ export function validateSupplementName(name: string): { isValid: boolean; error:
   const dangerousPatterns = [
     /<script/i,
     /javascript:/i,
-    /on\w+=/i,
+    /on[a-z]{2,15}\s*=/i,
     /<iframe/i,
     /<object/i,
-    /<embed/i
+    /<embed/i,
+    /<svg/i,
+    /<img/i,
+    /<math/i,
+    /<style/i,
+    /data:\s*text\/html/i,
+    /vbscript:/i,
   ]
   
   for (const pattern of dangerousPatterns) {
@@ -90,7 +96,12 @@ export function validateSupplementDosage(dosage: string): { isValid: boolean; er
   if (dosage.length < 1 || dosage.length > 50) {
     return { isValid: false, error: '補品劑量長度必須在 1-50 字元之間' }
   }
-  
+
+  // XSS 防護
+  if (/<script/i.test(dosage) || /javascript:/i.test(dosage) || /on[a-z]{2,15}\s*=/i.test(dosage)) {
+    return { isValid: false, error: '劑量包含不安全的字符' }
+  }
+
   return { isValid: true, error: '' }
 }
 
@@ -140,19 +151,26 @@ export function validateDate(date: string): { isValid: boolean; error: string } 
     return { isValid: false, error: '日期不能為空' }
   }
   
-  const dateObj = new Date(date)
+  // 強制要求 YYYY-MM-DD 格式，避免 locale 解析歧義
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { isValid: false, error: '日期格式必須為 YYYY-MM-DD' }
+  }
+
+  const dateObj = new Date(date + 'T00:00:00+08:00') // 以 UTC+8 解析
   if (isNaN(dateObj.getTime())) {
     return { isValid: false, error: '無效的日期格式' }
   }
-  
+
   // 檢查日期是否在合理範圍內（1900-2100年）
   const year = dateObj.getFullYear()
   if (year < 1900 || year > 2100) {
     return { isValid: false, error: '日期必須在 1900-2100 年之間' }
   }
-  
-  // 檢查日期不能是未來
-  if (dateObj > new Date()) {
+
+  // 檢查日期不能是未來（以 UTC+8 比較）
+  const now = new Date()
+  const todayStr = new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString().split('T')[0]
+  if (date > todayStr) {
     return { isValid: false, error: '日期不能是未來時間' }
   }
   
@@ -169,9 +187,17 @@ export function sanitizeInput(input: string): string {
     return ''
   }
   
-  return input
-    .trim()
-    .replace(/[<>]/g, '') // 移除 < > 字符
-    .replace(/javascript:/gi, '') // 移除 javascript: 協議
-    .replace(/on\w+=/gi, '') // 移除事件處理器
+  let result = input.trim()
+  // 遞迴移除危險模式，防止嵌套繞過（如 javasjavascript:cript:）
+  let prev = ''
+  while (prev !== result) {
+    prev = result
+    result = result
+      .replace(/[<>]/g, '')
+      .replace(/javascript\s*:/gi, '')
+      .replace(/vbscript\s*:/gi, '')
+      .replace(/data\s*:\s*text\/html/gi, '')
+      .replace(/on[a-z]{2,15}\s*=/gi, '')
+  }
+  return result
 }

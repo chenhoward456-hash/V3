@@ -13,10 +13,13 @@ function calculateLabStatus(testName: string, value: number, gender?: '男性' |
 // 在編輯介面中使用的範例
 function handleLabResultChange(index: number, field: string, value: number, currentResults: any[], setResults: Function, gender?: '男性' | '女性') {
   const updatedResults = [...currentResults]
-  updatedResults[index] = {
-    ...updatedResults[index],
-    [field]: value,
-    status: calculateLabStatus(updatedResults[index].test_name, value, gender)
+  const updated = { ...updatedResults[index], [field]: value }
+  // 使用更新後的 test_name 和 value 重新計算 status
+  const testName = field === 'test_name' ? value as unknown as string : updated.test_name
+  const numValue = field === 'value' ? value : updated.value
+  if (typeof numValue === 'number' && typeof testName === 'string') {
+    updated.status = calculateLabStatus(testName, numValue, gender)
   }
+  updatedResults[index] = updated
   setResults(updatedResults)
 }

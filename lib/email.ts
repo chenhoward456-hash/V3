@@ -3,6 +3,15 @@ import { createLogger } from '@/lib/logger'
 
 const log = createLogger('email')
 
+function escapeHTML(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 // Lazy init：避免 build time 沒有 API key 導致 constructor 拋錯
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -31,7 +40,7 @@ export async function sendPurchaseEmail({
   merchantTradeNo,
 }: SendPurchaseEmailParams): Promise<{ success: boolean; error?: string }> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
-  const downloadUrl = `${siteUrl}/api/ebook/download?token=${downloadToken}`
+  const downloadUrl = `${siteUrl}/api/ebook/download?token=${encodeURIComponent(downloadToken)}`
   const successUrl = `${siteUrl}/diagnosis/success?order_id=${merchantTradeNo}`
 
   try {
@@ -134,7 +143,7 @@ function buildWelcomeEmailHTML({
     <tr>
       <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
         <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">歡迎加入 Howard Protocol</h1>
-        <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${name}，你的帳號已開通！</p>
+        <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，你的帳號已開通！</p>
       </td>
     </tr>
     <tr>
@@ -143,10 +152,10 @@ function buildWelcomeEmailHTML({
           <tr>
             <td style="padding: 30px; text-align:center;">
               <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">你的方案</p>
-              <p style="font-size:18px; color:#1e3a5f; font-weight:bold; margin:0 0 20px 0;">${tierName}</p>
+              <p style="font-size:18px; color:#1e3a5f; font-weight:bold; margin:0 0 20px 0;">${escapeHTML(tierName)}</p>
               <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">你的專屬代碼</p>
-              <p style="font-size:28px; color:#2563eb; font-weight:bold; font-family:monospace; letter-spacing:2px; margin:0 0 24px 0;">${uniqueCode}</p>
-              <a href="${dashboardUrl}"
+              <p style="font-size:28px; color:#2563eb; font-weight:bold; font-family:monospace; letter-spacing:2px; margin:0 0 24px 0;">${escapeHTML(uniqueCode)}</p>
+              <a href="${escapeHTML(dashboardUrl)}"
                  style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #2563eb); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
                 進入你的儀表板
               </a>
