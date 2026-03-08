@@ -60,13 +60,13 @@ function BodyCompositionTracker({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_id: clientId,
+          clientId,
           date: newRecord.date,
           height: newRecord.height,
           weight: newRecord.weight,
-          body_fat: newRecord.body_fat,
-          muscle_mass: newRecord.muscle_mass,
-          visceral_fat: newRecord.visceral_fat,
+          bodyFat: newRecord.body_fat,
+          muscleMass: newRecord.muscle_mass,
+          visceralFat: newRecord.visceral_fat,
           bmi
         })
       })
@@ -99,10 +99,8 @@ function BodyCompositionTracker({
     if (!confirm('確定要刪除這筆記錄嗎？')) return
 
     try {
-      const response = await fetch('/api/body-composition', {
+      const response = await fetch(`/api/body-composition?id=${id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
       })
 
       if (!response.ok) {

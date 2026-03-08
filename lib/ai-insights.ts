@@ -39,7 +39,7 @@ export interface WellnessEntry {
 export interface TrainingEntry {
   date: string
   training_type?: string | null
-  duration_minutes?: number | null
+  duration?: number | null
   rpe?: number | null
   note?: string | null
 }
@@ -147,7 +147,7 @@ ${avgStress != null ? `- 平均壓力：${avgStress.toFixed(1)}/5` : ''}
 ${last7Nutrition.map(n => `${n.date}: ${n.calories ?? 0}kcal P${n.protein_grams ?? 0}g C${n.carbs_grams ?? 0}g F${n.fat_grams ?? 0}g ${n.compliant ? '✓' : '✗'}`).join('\n')}
 
 ## 每日訓練明細
-${last7Training.map(t => `${t.date}: ${t.training_type || '休息'}${t.duration_minutes ? ` ${t.duration_minutes}分鐘` : ''}${t.rpe ? ` RPE${t.rpe}` : ''}`).join('\n')}
+${last7Training.map(t => `${t.date}: ${t.training_type || '休息'}${t.duration ? ` ${t.duration}分鐘` : ''}${t.rpe ? ` RPE${t.rpe}` : ''}`).join('\n')}
 
 ## 輸出格式要求
 請按以下結構輸出（使用繁體中文）：
