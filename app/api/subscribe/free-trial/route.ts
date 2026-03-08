@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { name, email, gender, age, goalType, diagnosisData } = await request.json()
+    const { name, email, gender, age, goalType, diagnosisData, ref } = await request.json()
 
     if (!name || typeof name !== 'string' || name.trim().length < 1) {
       return createErrorResponse('請輸入姓名', 400)
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
         gender: gender || null,
         goal_type: goalType || 'cut',
         subscription_tier: 'free',
+        ...(ref ? { ref_source: ref } : {}),
         ...getDefaultFeatures('free'),
       })
       .select('id')

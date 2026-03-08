@@ -155,6 +155,7 @@ export async function GET(request: NextRequest) {
       weekly_weight_change_rate: number | null
       refeed_suggested: boolean
       warnings: string[]
+      tdee_anomaly: boolean
     }> = []
 
     for (const client of clients) {
@@ -259,6 +260,7 @@ export async function GET(request: NextRequest) {
           weekly_weight_change_rate: suggestion.weeklyWeightChangeRate ?? null,
           refeed_suggested: suggestion.refeedSuggested,
           warnings: suggestion.warnings || [],
+          tdee_anomaly: suggestion.tdeeAnomalyDetected || false,
         })
 
         results.analysisGenerated++
@@ -315,6 +317,11 @@ export async function GET(request: NextRequest) {
         alertItems.push(`${client.name}：建議安排 Refeed`)
       }
 
+      // TDEE 校正異常（超過 15%）
+      if (summary?.tdee_anomaly) {
+        alertItems.push(`${client.name}：TDEE 校正幅度異常，建議人工確認`)
+      }
+
       // 季度週期到期
       if (client.health_mode_enabled && client.quarterly_cycle_start) {
         const elapsed = Math.floor((today.getTime() - new Date(client.quarterly_cycle_start).getTime()) / 86400000)
@@ -341,6 +348,28 @@ export async function GET(request: NextRequest) {
       if (notifErr) {
         logger.warn('coach_notifications 寫入失敗', { error: notifErr.message })
         results.errors.push(`coach_notifications 寫入失敗: ${notifErr.message}`)
+      }
+    }
+
+    // ── 4b. 90 天免費 Review 觸發（499 自主管理用戶滿 90 天） ──
+    let reviewTriggered = 0
+    for (const client of clients) {
+      if (client.subscription_tier !== 'self_managed') continue
+      if (!client.line_user_id) continue
+      if (!client.created_at) continue
+
+      const daysSinceCreated = Math.floor((today.getTime() - new Date(client.created_at).getTime()) / 86400000)
+      // 在第 88-92 天之間觸發（只觸發一次）
+      if (daysSinceCreated >= 88 && daysSinceCreated <= 92) {
+        try {
+          await pushMessage(client.line_user_id, [{
+            type: 'text',
+            text: `Howard 教練：\n\n你已經用系統追蹤 90 天了 🎉\n我幫你看了一下你的數據，有幾個地方想跟你聊聊。\n\n這是一次免費的數據 review，不需要升級。\n你方便這週找個時間嗎？`,
+          }])
+          reviewTriggered++
+        } catch (err: any) {
+          results.errors.push(`90 天 Review 推播失敗 [${client.name}]: ${err.message}`)
+        }
       }
     }
 
@@ -453,7 +482,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: results.errors.length === 0,
       timestamp: today.toISOString(),
-      results: { ...results, linePushCount, aiReportCount },
+      results: { ...results, linePushCount, aiReportCount, reviewTriggered },
       alerts: alertItems,
     })
   } catch (err: any) {

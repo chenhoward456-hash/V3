@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sharp from 'sharp'
 import { createLogger } from '@/lib/logger'
+import { verifyAdminSession } from '@/lib/auth-middleware'
 import {
   getMarketingRichMenuObject,
   getMemberRichMenuObject,
@@ -13,10 +14,18 @@ import {
 
 const logger = createLogger('line-richmenu')
 
+function getAdminSession(request: NextRequest): boolean {
+  const token = request.cookies.get('admin_session')?.value
+  return !!token && verifyAdminSession(token)
+}
+
 /**
  * GET /api/line/richmenu — 查看目前所有 Rich Menu
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!getAdminSession(request)) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 })
+  }
   const menus = await listRichMenus()
   return NextResponse.json({ menus, count: menus.length })
 }
@@ -27,6 +36,10 @@ export async function GET() {
  * Body: multipart/form-data with 'image' file
  */
 export async function POST(request: NextRequest) {
+  if (!getAdminSession(request)) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 })
+  }
+
   try {
     const contentType = request.headers.get('content-type') || ''
 
@@ -145,6 +158,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     logger.error('Rich menu setup error', error as Error)
-    return NextResponse.json({ error: `Internal error: ${error}` }, { status: 500 })
+    return NextResponse.json({ error: 'Rich Menu 設定失敗' }, { status: 500 })
   }
 }

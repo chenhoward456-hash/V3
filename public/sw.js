@@ -89,7 +89,9 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = event.notification.data?.url || '/'
+  let url = event.notification.data?.url || '/'
+  // 只允許同源路徑，防止 open redirect
+  if (!url.startsWith('/')) url = '/'
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {

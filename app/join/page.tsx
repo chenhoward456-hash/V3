@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { trackEvent } from '@/lib/analytics'
 
@@ -62,7 +62,17 @@ const PLANS: Record<Tier, {
 }
 
 export default function JoinPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <JoinPageInner />
+    </Suspense>
+  )
+}
+
+function JoinPageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const refSource = searchParams.get('ref')
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null)
   const [formStep, setFormStep] = useState<'plans' | 'form'>('plans')
 
@@ -76,6 +86,8 @@ export default function JoinPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [waitlistEmail, setWaitlistEmail] = useState('')
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false)
 
   const handleSelectPlan = (tier: Tier) => {
     setSelectedTier(tier)
@@ -126,6 +138,7 @@ export default function JoinPage() {
             age: age ? parseInt(age) : null,
             goalType,
             diagnosisData,
+            ...(refSource ? { ref: refSource } : {}),
           }),
         })
 
@@ -269,6 +282,48 @@ export default function JoinPage() {
           )
         })}
       </div>
+
+      {/* 499 候補名單收集 */}
+      {!selectedTier && (
+        <div className="max-w-md mx-auto mb-12">
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 text-center">
+            <p className="text-sm font-semibold text-gray-700 mb-1">還沒準備好？</p>
+            <p className="text-xs text-gray-500 mb-4">
+              留下 Email，自主管理版上線新功能時優先通知你。
+            </p>
+            {waitlistSubmitted ? (
+              <p className="text-sm text-green-600 font-semibold">✓ 已加入候補名單！上線時會優先通知你。</p>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={waitlistEmail}
+                  onChange={(e) => setWaitlistEmail(e.target.value)}
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#2563eb] transition-colors"
+                />
+                <button
+                  onClick={async () => {
+                    if (!waitlistEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(waitlistEmail)) return
+                    try {
+                      await fetch('/api/subscribe/waitlist', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: waitlistEmail, tier: 'self_managed' }),
+                      })
+                      setWaitlistSubmitted(true)
+                      trackEvent('upgrade_cta_clicked', { type: 'waitlist', tier: 'self_managed' })
+                    } catch {}
+                  }}
+                  className="bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1d4ed8] transition-colors whitespace-nowrap"
+                >
+                  加入候補
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Registration Form */}
       {formStep === 'form' && selectedTier && (

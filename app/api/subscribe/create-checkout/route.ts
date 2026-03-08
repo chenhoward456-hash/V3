@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     const plan = SUBSCRIPTION_PLANS[tier as SubscriptionTier]
-    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
     const merchantTradeNo = generateMerchantTradeNo()
 
     // ECPay 付款參數

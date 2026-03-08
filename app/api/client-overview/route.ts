@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyCoachAuth } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 
 const supabase = createServiceSupabase()
 
 export async function GET(request: NextRequest) {
+  // 需要教練權限才能查看學員全覽
+  const { authorized } = await verifyCoachAuth(request)
+  if (!authorized) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('clientId')
 

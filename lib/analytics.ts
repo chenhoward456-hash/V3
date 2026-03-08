@@ -128,5 +128,17 @@ export const AnalyticsEvents = {
   
   // 商業轉換
   CONSULTATION_REQUESTED: 'consultation_requested',
-  SUBSCRIPTION_INQUIRED: 'subscription_inquired'
+  SUBSCRIPTION_INQUIRED: 'subscription_inquired',
+
+  // 留存追蹤
+  USER_DAY_3_ACTIVE: 'user_day_3_active',
+  USER_DAY_7_ACTIVE: 'user_day_7_active',
+  USER_DAY_14_ACTIVE: 'user_day_14_active',
+  TDEE_CALIBRATION_COMPLETE: 'tdee_calibration_complete',
+  UPGRADE_CTA_CLICKED: 'upgrade_cta_clicked',
+
+  // 電子書漏斗
+  EBOOK_TO_FREE_TRIAL: 'ebook_to_free_trial_click',
+  TDEE_CALIBRATION_LINE_CLICK: 'tdee_calibration_line_click',
+  TDEE_CALIBRATION_CONFIRMED: 'tdee_calibration_confirmed',
 } as const;

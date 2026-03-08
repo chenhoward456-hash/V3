@@ -183,12 +183,21 @@ function parseWearableCSV(csvText: string, fieldMap: Record<string, keyof Omit<W
   return results
 }
 
+const MAX_ROWS = 10000
+const MAX_INPUT_SIZE = 10 * 1024 * 1024 // 10MB
+
 export function parseWearableJSON(jsonText: string): WearableRow[] {
+  if (jsonText.length > MAX_INPUT_SIZE) {
+    throw new Error(`檔案過大（超過 ${MAX_INPUT_SIZE / 1024 / 1024}MB），請縮小數據範圍`)
+  }
   const data = JSON.parse(jsonText)
   const arr = Array.isArray(data) ? data : data.data || data.rows || data.records || []
 
   if (!Array.isArray(arr) || arr.length === 0) {
     throw new Error('JSON 格式不正確，請提供陣列格式的數據')
+  }
+  if (arr.length > MAX_ROWS) {
+    throw new Error(`數據行數超過上限（${MAX_ROWS}），請縮小數據範圍`)
   }
 
   const results: WearableRow[] = []

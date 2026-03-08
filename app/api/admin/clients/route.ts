@@ -75,16 +75,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '新增學員失敗' }, { status: 500 })
     }
 
-    // 新增血檢
+    // 新增血檢（白名單過濾）
+    const ALLOWED_LAB_FIELDS = ['marker_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
     if (labResults?.length > 0) {
-      const withId = labResults.map((r: any) => ({ ...r, client_id: newClient.id }))
+      const withId = labResults.map((r: any) => {
+        const sanitized: Record<string, any> = { client_id: newClient.id }
+        for (const key of Object.keys(r)) {
+          if (ALLOWED_LAB_FIELDS.includes(key)) sanitized[key] = r[key]
+        }
+        return sanitized
+      })
       const { error: labError } = await supabase.from('lab_results').insert(withId)
       if (labError) { /* error logged via response */ }
     }
 
-    // 新增補品
+    // 新增補品（白名單過濾）
+    const ALLOWED_SUPP_FIELDS = ['name', 'dosage', 'timing', 'frequency', 'notes', 'is_active', 'category']
     if (supplements?.length > 0) {
-      const withId = supplements.map((s: any) => ({ ...s, client_id: newClient.id }))
+      const withId = supplements.map((s: any) => {
+        const sanitized: Record<string, any> = { client_id: newClient.id }
+        for (const key of Object.keys(s)) {
+          if (ALLOWED_SUPP_FIELDS.includes(key)) sanitized[key] = s[key]
+        }
+        return sanitized
+      })
       const { error: supError } = await supabase.from('supplements').insert(withId)
       if (supError) { /* error logged via response */ }
     }
@@ -109,13 +123,26 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
     }
 
+    // 白名單過濾 lab/supplement 欄位
+    const ALLOWED_LAB_FIELDS = ['marker_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
+    const ALLOWED_SUPP_FIELDS = ['name', 'dosage', 'timing', 'frequency', 'notes', 'is_active', 'category']
+
+    function sanitizeFields(obj: any, allowedFields: string[]): Record<string, any> {
+      const result: Record<string, any> = {}
+      for (const key of Object.keys(obj)) {
+        if (allowedFields.includes(key)) result[key] = obj[key]
+      }
+      return result
+    }
+
     // 先更新血檢（會觸發 trigger 覆蓋 status）
     if (labResults) {
       for (const result of labResults) {
+        const sanitized = sanitizeFields(result, ALLOWED_LAB_FIELDS)
         if (result.id) {
-          await supabase.from('lab_results').update(result).eq('id', result.id)
+          await supabase.from('lab_results').update(sanitized).eq('id', result.id).eq('client_id', clientId)
         } else {
-          await supabase.from('lab_results').insert({ ...result, client_id: clientId })
+          await supabase.from('lab_results').insert({ ...sanitized, client_id: clientId })
         }
       }
     }
@@ -123,10 +150,11 @@ export async function PUT(request: NextRequest) {
     // 再更新補品
     if (supplements) {
       for (const supplement of supplements) {
+        const sanitized = sanitizeFields(supplement, ALLOWED_SUPP_FIELDS)
         if (supplement.id) {
-          await supabase.from('supplements').update(supplement).eq('id', supplement.id)
+          await supabase.from('supplements').update(sanitized).eq('id', supplement.id).eq('client_id', clientId)
         } else {
-          await supabase.from('supplements').insert({ ...supplement, client_id: clientId })
+          await supabase.from('supplements').insert({ ...sanitized, client_id: clientId })
         }
       }
     }

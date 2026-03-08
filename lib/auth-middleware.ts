@@ -51,8 +51,9 @@ export function rateLimit(key: string, maxRequests: number = 10, windowMs: numbe
 const ADMIN_SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
 function getSessionSecret(): string {
-  const secret = process.env.ADMIN_PASSWORD
-  if (!secret) throw new Error('ADMIN_PASSWORD 環境變數未設定')
+  // 優先使用獨立的 SESSION_SECRET，避免直接用 ADMIN_PASSWORD 作為簽名密鑰
+  const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD
+  if (!secret) throw new Error('SESSION_SECRET 或 ADMIN_PASSWORD 環境變數未設定')
   return secret
 }
 
@@ -163,7 +164,8 @@ export async function verifyAuth(request: NextRequest): Promise<{ user: any; err
       return { user: null, error: '無效的 JWT token' }
     }
 
-    const userRole = user.user_metadata?.role || user.app_metadata?.role
+    // 只從 app_metadata 讀取 role（user_metadata 可被使用者自行修改，有提權風險）
+    const userRole = user.app_metadata?.role
     if (!userRole) {
       return { user: null, error: '用戶缺少角色資訊' }
     }

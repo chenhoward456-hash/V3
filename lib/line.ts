@@ -9,7 +9,13 @@ export function verifyLineSignature(body: string, signature: string): boolean {
     .createHmac('SHA256', LINE_CHANNEL_SECRET)
     .update(body)
     .digest('base64')
-  return hash === signature
+  // 使用 timing-safe 比較防止 timing attack
+  if (hash.length !== signature.length) return false
+  try {
+    return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(signature))
+  } catch {
+    return false
+  }
 }
 
 /** 呼叫 LINE Messaging API */
