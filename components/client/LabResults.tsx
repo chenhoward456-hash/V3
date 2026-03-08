@@ -72,7 +72,19 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
       setForm({ test_name: lab.test_name, value: String(lab.value), unit: lab.unit || '', reference_range: lab.reference_range || '', date: lab.date, custom_advice: lab.custom_advice || '', custom_target: lab.custom_target || '' })
     } else {
       setEditing(null)
-      setForm({ test_name: '', value: '', unit: '', reference_range: '', date: getLocalDateStr(), custom_advice: '', custom_target: '' })
+      // 預設選第一個已有指標，若無則選第一個預設模板
+      const defaultTest = existingTestNames[0] || availablePresets[0]?.name || ''
+      const defaultExisting = labResults?.find((r: any) => r.test_name === defaultTest)
+      const defaultPreset = presetTests.find(t => t.name === defaultTest)
+      setForm({
+        test_name: defaultTest,
+        value: '',
+        unit: defaultExisting?.unit || defaultPreset?.unit || '',
+        reference_range: defaultExisting?.reference_range || defaultPreset?.reference || '',
+        date: getLocalDateStr(),
+        custom_advice: '',
+        custom_target: ''
+      })
     }
     setShowModal(true)
   }

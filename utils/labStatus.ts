@@ -47,6 +47,8 @@ export const LAB_THRESHOLDS = {
   '鐵蛋白_female': { normal: { min: 12, max: 200 }, attention: { min: 8, max: 300 } },
 
   // ── 發炎 ──
+  'CRP': { normal: 1.0, attention: 3.0 },
+  'hs-CRP': { normal: 1.0, attention: 3.0 },
   '同半胱胺酸': { normal: 8.0, attention: 12.0 },
 
   // ── 維生素（越高越好）──
