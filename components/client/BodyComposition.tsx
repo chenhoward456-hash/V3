@@ -230,11 +230,11 @@ export default function BodyComposition({
       <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">身體數據追蹤</h2>
 
-        <div className={`grid ${simpleMode ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-4'} gap-3 mb-6`}>
+        <div className={`grid ${simpleMode ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'} gap-3 mb-6`}>
           {[
             { label: '體重', value: latestBodyData?.weight, prev: prevBodyData?.weight, unit: 'kg', lowerBetter: true },
+            { label: '體脂', value: latestBodyData?.body_fat, prev: prevBodyData?.body_fat, unit: '%', lowerBetter: true },
             ...(!simpleMode ? [
-              { label: '體脂', value: latestBodyData?.body_fat, prev: prevBodyData?.body_fat, unit: '%', lowerBetter: true },
               { label: 'BMI', value: bmi ? parseFloat(bmi) : null, prev: null, unit: '', lowerBetter: false },
               { label: '肌肉量', value: latestBodyData?.muscle_mass, prev: prevBodyData?.muscle_mass, unit: 'kg', lowerBetter: false },
             ] : []),
@@ -490,8 +490,8 @@ export default function BodyComposition({
               {[
                 { key: 'date', label: '日期', icon: Calendar, type: 'date', required: false, unit: '', min: '', max: new Date().toISOString().split('T')[0], step: '' },
                 { key: 'weight', label: '體重 (kg)', icon: Scale, type: 'number', required: true, unit: 'kg', min: '20', max: '300', step: '0.1' },
+                { key: 'body_fat', label: '體脂 (%)', icon: Activity, type: 'number', required: false, unit: '%', min: '1', max: '60', step: '0.1' },
                 ...(!simpleMode ? [
-                  { key: 'body_fat', label: '體脂 (%)', icon: Activity, type: 'number', required: false, unit: '%', min: '1', max: '60', step: '0.1' },
                   { key: 'muscle_mass', label: '肌肉量 (kg)', icon: Dumbbell, type: 'number', required: false, unit: 'kg', min: '10', max: '100', step: '0.1' },
                   { key: 'height', label: '身高 (cm)', icon: Ruler, type: 'number', required: false, unit: 'cm', min: '100', max: '250', step: '0.1' },
                   { key: 'visceral_fat', label: '內臟脂肪', icon: Heart, type: 'number', required: false, unit: '', min: '1', max: '30', step: '0.1' },
