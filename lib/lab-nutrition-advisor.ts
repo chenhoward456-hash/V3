@@ -226,7 +226,7 @@ export function generateLabNutritionAdvice(
     // 血脂
     // ════════════════════════════════════════
 
-    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg'])) {
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg']) && !matchName(lab.test_name, ['ast', 'got', 'alt', 'gpt'])) {
       advice.push({
         category: 'lipid',
         title: '三酸甘油酯偏高',
@@ -375,7 +375,7 @@ export function generateLabNutritionAdvice(
       }
     }
 
-    if (matchName(lab.test_name, ['總膽固醇', 'total cholesterol', 'tc'])) {
+    if (matchName(lab.test_name, ['總膽固醇', 'total cholesterol'])) {
       if (lab.value > 200) {
         advice.push({
           category: 'lipid',
@@ -406,7 +406,7 @@ export function generateLabNutritionAdvice(
     // 肝功能
     // ════════════════════════════════════════
 
-    if (matchName(lab.test_name, ['ast', 'got', 'sgot', '麩草酸轉胺酶'])) {
+    if (matchName(lab.test_name, ['ast', 'got', 'sgot', '麩草酸轉胺酶']) && !matchName(lab.test_name, ['fasting', '空腹'])) {
       advice.push({
         category: 'liver',
         title: 'AST（GOT）偏高',
@@ -433,7 +433,7 @@ export function generateLabNutritionAdvice(
       })
     }
 
-    if (matchName(lab.test_name, ['alt', 'gpt', 'sgpt', '麩丙酮酸轉胺酶'])) {
+    if (matchName(lab.test_name, ['alt', 'gpt', 'sgpt', '麩丙酮酸轉胺酶']) && !matchName(lab.test_name, ['testosterone', '睪固酮'])) {
       advice.push({
         category: 'liver',
         title: 'ALT（GPT）偏高',
@@ -763,7 +763,7 @@ export function generateLabNutritionAdvice(
       }
     }
 
-    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hgb', 'hb'])) {
+    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hgb']) && !matchName(lab.test_name, ['糖化', 'hba1c', 'glycated'])) {
       const hbMin = gender === '女性' ? 12.0 : 13.5
       if (lab.value < hbMin) {
         advice.push({
@@ -1155,7 +1155,7 @@ export function generateLabNutritionAdvice(
     // 荷爾蒙
     // ════════════════════════════════════════
 
-    if (matchName(lab.test_name, ['睪固酮', 'testosterone', '總睪固酮', 'total testosterone'])) {
+    if (matchName(lab.test_name, ['睪固酮', 'testosterone', '總睪固酮', 'total testosterone']) && !matchName(lab.test_name, ['游離', 'free'])) {
       const isMale = gender !== '女性'
       if (isMale && lab.value < 300) {
         advice.push({
@@ -1729,7 +1729,7 @@ export function generateLabOptimizationTips(
     }
 
     // ── 三酸甘油酯 ──
-    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg'])) {
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg']) && !matchName(lab.test_name, ['ast', 'got', 'alt', 'gpt'])) {
       if (lab.value >= 70 && lab.value < 100) {
         tips.push({
           category: 'lipid',
@@ -2017,7 +2017,7 @@ export function generateLabOptimizationTips(
     }
 
     // ── AST / ALT ──
-    if (matchName(lab.test_name, ['ast', 'got'])) {
+    if (matchName(lab.test_name, ['ast', 'got']) && !matchName(lab.test_name, ['fasting', '空腹'])) {
       if (lab.value >= 25 && lab.value < 40) {
         tips.push({
           category: 'liver',
@@ -2043,7 +2043,7 @@ export function generateLabOptimizationTips(
       }
     }
 
-    if (matchName(lab.test_name, ['alt', 'gpt'])) {
+    if (matchName(lab.test_name, ['alt', 'gpt']) && !matchName(lab.test_name, ['testosterone', '睪固酮'])) {
       if (lab.value >= 25 && lab.value < 40) {
         tips.push({
           category: 'liver',
@@ -2266,7 +2266,7 @@ export function generateLabOptimizationTips(
     }
 
     // ── 鎂 ──
-    if (matchName(lab.test_name, ['鎂', 'magnesium', 'mg'])) {
+    if (matchName(lab.test_name, ['鎂', 'magnesium'])) {
       if ((lab.value >= 2.0 && lab.value < 2.1) || (lab.value > 2.3 && lab.value <= 2.4)) {
         tips.push({
           category: 'mineral',
@@ -2322,7 +2322,7 @@ export function generateLabOptimizationTips(
     }
 
     // ── 鈣 ──
-    if (matchName(lab.test_name, ['鈣', 'calcium', 'ca'])) {
+    if (matchName(lab.test_name, ['鈣', 'calcium'])) {
       if ((lab.value >= 8.5 && lab.value < 9.0) || (lab.value > 10.0 && lab.value <= 10.5)) {
         tips.push({
           category: 'mineral',
@@ -2451,7 +2451,7 @@ export function generateLabOptimizationTips(
     }
 
     // ── 血紅素 ──
-    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hb', 'hgb'])) {
+    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hgb']) && !matchName(lab.test_name, ['糖化', 'hba1c', 'glycated'])) {
       const optMin = gender === '女性' ? 13.0 : 14.5
       const optMax = gender === '女性' ? 14.5 : 16.5
       const normalRange = gender === '女性' ? '12.0-15.5（正常）' : '13.5-17.5（正常）'
@@ -2639,7 +2639,7 @@ export function getLabMacroModifiers(
     }
 
     // ── 高三酸甘油酯 → 減少精製碳水 ──
-    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg'])) {
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg']) && !matchName(lab.test_name, ['ast', 'got', 'alt', 'gpt'])) {
       if (lab.value > 150) {
         macroModifiers.push({
           nutrient: 'carbs',
@@ -2673,7 +2673,7 @@ export function getLabMacroModifiers(
     }
 
     // ── 低血紅素 → 減少有氧 ──
-    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hb', 'hgb'])) {
+    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hgb']) && !matchName(lab.test_name, ['糖化', 'hba1c', 'glycated'])) {
       const hbMin = options.gender === '女性' ? 12.0 : 13.5
       if (lab.value < hbMin) {
         trainingModifiers.push({
@@ -2713,11 +2713,12 @@ export function detectLabCrossPatterns(
   const patterns: LabCrossAnalysis[] = []
   const { gender, bodyFatPct, hasAmenorrhea } = options
 
-  // 輔助：取得指標最新值
-  const getValue = (keywords: string[]): { name: string; value: number; unit: string } | null => {
+  // 輔助：取得指標最新值（支持排除關鍵字避免誤判）
+  const getValue = (keywords: string[], exclude?: string[]): { name: string; value: number; unit: string } | null => {
     let latest: { name: string; value: number; unit: string; date?: string } | null = null
     for (const lab of labs) {
       if (lab.value != null && matchName(lab.test_name, keywords)) {
+        if (exclude && matchName(lab.test_name, exclude)) continue
         if (!latest || (lab.date && (!latest.date || lab.date > latest.date))) {
           latest = { name: lab.test_name, value: lab.value, unit: lab.unit, date: lab.date }
         }
@@ -2732,8 +2733,8 @@ export function detectLabCrossPatterns(
   const vitD = getValue(['維生素d', 'vitamind', '25oh', '25-oh'])
   const tsh = getValue(['tsh', '促甲狀腺'])
   const cortisol = getValue(['皮質醇', 'cortisol'])
-  const testosterone = getValue(['睪固酮', 'testosterone', 'totaltestosterone'])
-  const freeT = getValue(['游離睪固酮', 'freetestosterone', 'freet'])
+  const testosterone = getValue(['睪固酮', 'testosterone', 'totaltestosterone'], ['游離', 'free'])
+  const freeT = getValue(['游離睪固酮', 'freetestosterone'])
 
   {
     const redSMarkers: { name: string; value: number; unit: string }[] = []
@@ -2773,10 +2774,10 @@ export function detectLabCrossPatterns(
 
   // ── Pattern 2: 代謝症候群風險 ──
   // IDF 2006: 空腹血糖 + 三酸甘油酯 + HDL + 血壓（我們沒有血壓）
-  const glucose = getValue(['空腹血糖', 'fastingglucose', 'fbs', 'ac'])
+  const glucose = getValue(['空腹血糖', 'fastingglucose', 'fbs'])
   const insulin = getValue(['空腹胰島素', 'fastinginsulin'])
   const homaIR = getValue(['homair', 'homa-ir', '胰島素阻抗'])
-  const triglycerides = getValue(['三酸甘油酯', 'triglycerides', 'tg'])
+  const triglycerides = getValue(['三酸甘油酯', 'triglycerides', 'tg'], ['ast', 'got', 'alt', 'gpt'])
   const hdl = getValue(['hdl', '高密度脂蛋白'])
   const uricAcid = getValue(['尿酸', 'uricacid'])
 
@@ -2966,16 +2967,16 @@ export function generateRetestReminders(
 
   // 複檢週期對照表（僅異常指標需要複檢提醒）
   // 文獻：各指標 clinical guidelines 的建議追蹤間隔
-  const retestSchedule: { keywords: string[]; weeks: number; reason: string; reasonHigh?: string; severity: 'high' | 'medium' }[] = [
+  const retestSchedule: { keywords: string[]; exclude?: string[]; weeks: number; reason: string; reasonHigh?: string; severity: 'high' | 'medium' }[] = [
     // 鐵 — 依偏高/偏低給不同原因（Peeling 2008）
     { keywords: ['鐵蛋白', 'ferritin'], weeks: 12, reason: '鐵劑補充後約 8-12 週可見鐵蛋白回升，建議追蹤效果', reasonHigh: '鐵蛋白偏高需定期追蹤，確認是否有改善或需進一步檢查', severity: 'high' },
-    { keywords: ['血紅素', 'hemoglobin', 'hb'], weeks: 12, reason: '貧血治療後 8-12 週追蹤血紅素恢復情況', severity: 'high' },
+    { keywords: ['血紅素', 'hemoglobin', 'hgb'], exclude: ['糖化', 'hba1c', 'glycated'], weeks: 12, reason: '貧血治療後 8-12 週追蹤血紅素恢復情況', severity: 'high' },
     // 維生素 D — 補充 3 個月後複檢（Holick 2011）
     { keywords: ['維生素d', 'vitamind', '25oh'], weeks: 12, reason: '維生素 D 補充後 3 個月達穩態，建議複檢確認是否達標', severity: 'medium' },
     // 血脂 — 飲食調整後 3 個月（NCEP ATP III）
     { keywords: ['apob', 'apolipoproteinb'], weeks: 12, reason: '飲食調整對 ApoB 的影響約 8-12 週可見', severity: 'medium' },
     { keywords: ['ldl', '低密度脂蛋白'], weeks: 12, reason: '飲食調整後 3 個月追蹤 LDL 變化', severity: 'medium' },
-    { keywords: ['三酸甘油酯', 'triglycerides', 'tg'], weeks: 8, reason: '三酸甘油酯對飲食反應較快，8 週可見效果', severity: 'medium' },
+    { keywords: ['三酸甘油酯', 'triglycerides', 'tg'], exclude: ['ast', 'got', 'alt', 'gpt'], weeks: 8, reason: '三酸甘油酯對飲食反應較快，8 週可見效果', severity: 'medium' },
     // 血糖/胰島素 — 飲食調整後 8-12 週
     { keywords: ['空腹血糖', 'fastingglucose', 'fbs'], weeks: 12, reason: '碳水調整後 3 個月追蹤血糖改善', severity: 'medium' },
     { keywords: ['homair', 'homa-ir', '胰島素阻抗'], weeks: 12, reason: '飲食+運動介入後 3 個月評估胰島素敏感度改善', severity: 'high' },
@@ -2983,7 +2984,7 @@ export function generateRetestReminders(
     // 甲狀腺 — 6-8 週
     { keywords: ['tsh', '促甲狀腺'], weeks: 8, reason: 'TSH 對飲食和藥物調整的反應約 6-8 週', severity: 'high' },
     // 荷爾蒙 — 3 個月
-    { keywords: ['睪固酮', 'testosterone'], weeks: 12, reason: '生活方式調整後 3 個月追蹤睪固酮變化', severity: 'medium' },
+    { keywords: ['睪固酮', 'testosterone'], exclude: ['游離', 'free'], weeks: 12, reason: '生活方式調整後 3 個月追蹤睪固酮變化', severity: 'medium' },
     // 發炎 — 4-8 週
     { keywords: ['crp', 'hscrp', 'c反應蛋白'], weeks: 8, reason: '抗發炎飲食調整後 8 週追蹤 CRP 變化', severity: 'medium' },
     // 同半胱胺酸 — B 群補充後 8-12 週（Clarke 2014）
@@ -2995,8 +2996,8 @@ export function generateRetestReminders(
     // 尿酸 — 飲食調整後 4-8 週
     { keywords: ['尿酸', 'uricacid'], weeks: 8, reason: '飲食調整後 8 週追蹤尿酸變化', severity: 'medium' },
     // 肝功能 — 飲食調整後 8-12 週
-    { keywords: ['alt', 'gpt', 'sgpt'], weeks: 12, reason: '飲食調整後 3 個月追蹤肝指數改善', severity: 'medium' },
-    { keywords: ['ast', 'got', 'sgot'], weeks: 12, reason: '飲食調整後 3 個月追蹤肝指數改善', severity: 'medium' },
+    { keywords: ['alt', 'gpt', 'sgpt'], exclude: ['fasting', '空腹', 'testosterone', '睪固酮'], weeks: 12, reason: '飲食調整後 3 個月追蹤肝指數改善', severity: 'medium' },
+    { keywords: ['ast', 'got', 'sgot'], exclude: ['fasting', '空腹'], weeks: 12, reason: '飲食調整後 3 個月追蹤肝指數改善', severity: 'medium' },
     { keywords: ['ggt', 'γ-gt'], weeks: 12, reason: '減少酒精與調整飲食後 3 個月追蹤 GGT 變化', severity: 'medium' },
     // 腎功能 — 3 個月
     { keywords: ['肌酸酐', 'creatinine'], weeks: 12, reason: '飲食調整後 3 個月追蹤腎功能變化', severity: 'medium' },
@@ -3008,6 +3009,7 @@ export function generateRetestReminders(
 
     for (const schedule of retestSchedule) {
       if (!matchName(lab.test_name, schedule.keywords)) continue
+      if (schedule.exclude && matchName(lab.test_name, schedule.exclude)) continue
 
       const lastDate = new Date(lab.date)
       const retestDate = new Date(lastDate)

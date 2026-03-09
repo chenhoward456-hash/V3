@@ -42,17 +42,27 @@ const ALIASES: Record<string, string[]> = {
   'zinc':         ['zinc', '鋅', 'zn'],
   'magnesium':    ['magnesium', '鎂', 'magnesium(鎂)'],
   'testosterone': ['testosterone', '睪固酮', 'totaltestosterone', '總睪固酮'],
-  'freetestosterone': ['游離睪固酮', 'freetestosterone', 'freet', '游離t'],
-  'hemoglobin':   ['hemoglobin', 'hgb', 'hb', '血紅素', 'haemoglobin'],
+  'freetestosterone': ['游離睪固酮', 'freetestosterone'],
+  'hemoglobin':   ['hemoglobin', 'hgb', '血紅素', 'haemoglobin'],
   'folate':       ['folate', 'folicacid', '葉酸', 'vitaminb9'],
   'omega3index':  ['omega3index', 'omega-3index', 'omega3', 'epa+dha'],
   'cortisol':     ['cortisol', '皮質醇', '可體松'],
   'crp':          ['crp', 'c-reactiveprotein', 'c反應蛋白', 'hscrp', 'hs-crp'],
 }
 
+// 排除關鍵字：避免 includes() 造成的子字串誤判
+const EXCLUDES: Record<string, string[]> = {
+  'testosterone': ['游離', 'free'],
+  'hemoglobin': ['糖化', 'hba1c', 'glycated'],
+}
+
 function matchTest(testName: string, key: string): boolean {
   const norm = normalize(testName)
-  return (ALIASES[key] || []).some(alias => norm.includes(normalize(alias)))
+  const matched = (ALIASES[key] || []).some(alias => norm.includes(normalize(alias)))
+  if (!matched) return false
+  const excludes = EXCLUDES[key]
+  if (excludes && excludes.some(ex => norm.includes(normalize(ex)))) return false
+  return true
 }
 
 function findLabValue(labs: LabResult[], key: string): LabResult | undefined {
