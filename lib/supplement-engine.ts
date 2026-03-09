@@ -43,7 +43,7 @@ const ALIASES: Record<string, string[]> = {
   'magnesium':    ['magnesium', '鎂', 'magnesium(鎂)'],
   'testosterone': ['testosterone', '睪固酮', 'totaltestosterone', '總睪固酮'],
   'freetestosterone': ['游離睪固酮', 'freetestosterone', 'freet', '游離t'],
-  'hemoglobin':   ['hemoglobin', 'hgb', 'hb', '血紅素', 'haemoglobin'],
+  'hemoglobin':   ['hemoglobin', 'hgb', '血紅素', 'haemoglobin'],
   'folate':       ['folate', 'folicacid', '葉酸', 'vitaminb9'],
   'omega3index':  ['omega3index', 'omega-3index', 'omega3', 'epa+dha'],
   'cortisol':     ['cortisol', '皮質醇', '可體松'],

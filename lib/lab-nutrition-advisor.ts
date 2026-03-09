@@ -763,7 +763,7 @@ export function generateLabNutritionAdvice(
       }
     }
 
-    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hgb', 'hb'])) {
+    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hgb'])) {
       const hbMin = gender === '女性' ? 12.0 : 13.5
       if (lab.value < hbMin) {
         advice.push({
@@ -2451,7 +2451,7 @@ export function generateLabOptimizationTips(
     }
 
     // ── 血紅素 ──
-    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hb', 'hgb'])) {
+    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hgb'])) {
       const optMin = gender === '女性' ? 13.0 : 14.5
       const optMax = gender === '女性' ? 14.5 : 16.5
       const normalRange = gender === '女性' ? '12.0-15.5（正常）' : '13.5-17.5（正常）'
@@ -2673,7 +2673,7 @@ export function getLabMacroModifiers(
     }
 
     // ── 低血紅素 → 減少有氧 ──
-    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hb', 'hgb'])) {
+    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hgb'])) {
       const hbMin = options.gender === '女性' ? 12.0 : 13.5
       if (lab.value < hbMin) {
         trainingModifiers.push({
@@ -2969,7 +2969,7 @@ export function generateRetestReminders(
   const retestSchedule: { keywords: string[]; weeks: number; reason: string; reasonHigh?: string; severity: 'high' | 'medium' }[] = [
     // 鐵 — 依偏高/偏低給不同原因（Peeling 2008）
     { keywords: ['鐵蛋白', 'ferritin'], weeks: 12, reason: '鐵劑補充後約 8-12 週可見鐵蛋白回升，建議追蹤效果', reasonHigh: '鐵蛋白偏高需定期追蹤，確認是否有改善或需進一步檢查', severity: 'high' },
-    { keywords: ['血紅素', 'hemoglobin', 'hb'], weeks: 12, reason: '貧血治療後 8-12 週追蹤血紅素恢復情況', severity: 'high' },
+    { keywords: ['血紅素', 'hemoglobin', 'hgb'], weeks: 12, reason: '貧血治療後 8-12 週追蹤血紅素恢復情況', severity: 'high' },
     // 維生素 D — 補充 3 個月後複檢（Holick 2011）
     { keywords: ['維生素d', 'vitamind', '25oh'], weeks: 12, reason: '維生素 D 補充後 3 個月達穩態，建議複檢確認是否達標', severity: 'medium' },
     // 血脂 — 飲食調整後 3 個月（NCEP ATP III）

@@ -13,7 +13,6 @@ import DailyWellness from '@/components/client/DailyWellness'
 import BodyComposition from '@/components/client/BodyComposition'
 import LabResults from '@/components/client/LabResults'
 import SupplementModal from '@/components/client/SupplementModal'
-import ActionPlan from '@/components/client/ActionPlan'
 import WellnessTrend from '@/components/client/WellnessTrend'
 import HealthReport from '@/components/client/HealthReport'
 import TrainingLog from '@/components/client/TrainingLog'
@@ -1317,8 +1316,7 @@ export default function ClientDashboard() {
         {(() => {
           const hasLabAnalysis = c.lab_enabled && c.lab_results && c.lab_results.length > 0
           const hasAi = c.ai_chat_enabled
-          const hasActionPlan = !!(c.health_goals || c.next_checkup_date || c.coach_summary || (c.supplement_enabled && topSupplements.length > 0))
-          if (!hasLabAnalysis && !hasAi && !hasActionPlan) return null
+          if (!hasLabAnalysis && !hasAi) return null
           return (
             <>
               <button
@@ -1354,12 +1352,6 @@ export default function ClientDashboard() {
                       />
                     </div>
                   )}
-                  <ActionPlan
-                    healthGoals={c.health_goals ?? undefined}
-                    nextCheckupDate={c.next_checkup_date ?? undefined}
-                    coachSummary={c.coach_summary ?? undefined}
-                    topSupplements={c.supplement_enabled ? topSupplements : []}
-                  />
                 </>
               )}
             </>
