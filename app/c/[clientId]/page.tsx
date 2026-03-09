@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { useClientData } from '@/hooks/useClientData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { useCoachMode } from '@/hooks/useCoachMode'
-import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
+import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown, Settings } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
 import HealthOverview from '@/components/client/HealthOverview'
 import DailyCheckIn from '@/components/client/DailyCheckIn'
@@ -186,7 +186,24 @@ export default function ClientDashboard() {
   const [showPhaseSelector, setShowPhaseSelector] = useState(false)
   const [updatingPhase, setUpdatingPhase] = useState(false)
   const [showMoreAnalysis, setShowMoreAnalysis] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const { showToast } = useToast()
+
+  const toggleSimpleMode = async () => {
+    if (!clientData?.client) return
+    const newVal = !clientData.client.simple_mode
+    try {
+      const res = await fetch('/api/clients', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: clientData.client.unique_code, simple_mode: newVal })
+      })
+      if (!res.ok) throw new Error()
+      mutate()
+      showToast(newVal ? '已切換為簡單模式' : '已切換為完整模式', 'success')
+      setShowSettings(false)
+    } catch { showToast('切換失敗，請重試', 'error') }
+  }
 
   // Scroll-based bottom nav highlighting
   const sectionIds = useRef<string[]>([])
@@ -431,28 +448,59 @@ export default function ClientDashboard() {
                 </span>
               </div>
             </div>
-            <div className="relative">
-              <button
-                onClick={toggleCoachMode}
-                className={`p-2 rounded-full transition-colors ${isCoachMode ? 'bg-green-100 text-green-700' : 'text-gray-400 hover:bg-gray-100'}`}
-              >
-                {isCoachMode ? <Unlock size={18} /> : <Lock size={18} />}
-              </button>
-              {showPinPopover && !isCoachMode && (
-                <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border p-3 z-50 w-48">
-                  <input
-                    type="password"
-                    value={pinInput}
-                    onChange={(e) => setPinInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
-                    placeholder="輸入教練密碼"
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${pinError ? 'border-red-400' : 'border-gray-300'}`}
-                    autoFocus
-                  />
-                  {pinError && <p className="text-xs text-red-500 mt-1">密碼錯誤</p>}
-                  <button onClick={handlePinSubmit} className="w-full mt-2 bg-blue-600 text-white py-1.5 rounded-lg text-sm hover:bg-blue-700">解鎖</button>
-                </div>
-              )}
+            <div className="flex items-center gap-1">
+              <div className="relative">
+                <button
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="p-2 rounded-full transition-colors text-gray-400 hover:bg-gray-100"
+                >
+                  <Settings size={18} />
+                </button>
+                {showSettings && (
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border p-4 z-50 w-56">
+                    <p className="text-xs font-semibold text-gray-500 mb-3">顯示設定</p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">簡單模式</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">只顯示核心欄位</p>
+                      </div>
+                      <button
+                        onClick={toggleSimpleMode}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          c.simple_mode ? 'bg-blue-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          c.simple_mode ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <button
+                  onClick={toggleCoachMode}
+                  className={`p-2 rounded-full transition-colors ${isCoachMode ? 'bg-green-100 text-green-700' : 'text-gray-400 hover:bg-gray-100'}`}
+                >
+                  {isCoachMode ? <Unlock size={18} /> : <Lock size={18} />}
+                </button>
+                {showPinPopover && !isCoachMode && (
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border p-3 z-50 w-48">
+                    <input
+                      type="password"
+                      value={pinInput}
+                      onChange={(e) => setPinInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
+                      placeholder="輸入教練密碼"
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${pinError ? 'border-red-400' : 'border-gray-300'}`}
+                      autoFocus
+                    />
+                    {pinError && <p className="text-xs text-red-500 mt-1">密碼錯誤</p>}
+                    <button onClick={handlePinSubmit} className="w-full mt-2 bg-blue-600 text-white py-1.5 rounded-lg text-sm hover:bg-blue-700">解鎖</button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
