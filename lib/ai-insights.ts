@@ -484,7 +484,7 @@ export function getTrainingAdvice(
       }
 
       // 低血紅素 → 氧氣運輸下降
-      if ((name.includes('血紅素') || name.includes('hemoglobin') || name.includes('hgb')) && lab.value < 12) {
+      if ((name.includes('血紅素') || name.includes('hemoglobin') || name.includes('hgb')) && !name.includes('糖化') && !name.includes('hba1c') && lab.value < 12) {
         recoveryScore -= 15
         reasons.push(`血紅素偏低（${lab.value}），氧氣運輸能力下降`)
       }
