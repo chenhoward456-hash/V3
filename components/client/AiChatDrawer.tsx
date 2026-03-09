@@ -30,6 +30,15 @@ interface WellnessEntry {
   stress?: number | null
 }
 
+interface LabResultEntry {
+  test_name: string
+  value: number
+  unit: string
+  status: string
+  date: string
+  custom_advice?: string | null
+}
+
 interface AiChatDrawerProps {
   open: boolean
   onClose: () => void
@@ -55,11 +64,12 @@ interface AiChatDrawerProps {
   // Extended context
   nutritionLogs?: NutritionEntry[]
   wellnessLogs?: WellnessEntry[]
-  trainingLogs?: { date: string; training_type?: string; note?: string }[]
+  trainingLogs?: { date: string; training_type?: string; note?: string; rpe?: number | null }[]
   supplements?: { name: string; dosage?: string; timing?: string }[]
   supplementComplianceRate?: number
   todayWellness?: WellnessEntry | null
   wearableData?: { hrv?: number | null; resting_hr?: number | null; device_recovery_score?: number | null } | null
+  labResults?: LabResultEntry[]
   onFirstMessage?: () => void
 }
 
@@ -74,6 +84,7 @@ export default function AiChatDrawer({
   nutritionLogs, wellnessLogs, trainingLogs,
   supplements, supplementComplianceRate,
   todayWellness, wearableData,
+  labResults,
   onFirstMessage,
 }: AiChatDrawerProps) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -139,12 +150,41 @@ export default function AiChatDrawer({
       })
       .join('\n')
 
-    // Build 7-day training summary
+    // Build 7-day training summary (include RPE if available)
     const last7Training = (trainingLogs || [])
       .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, 7)
-      .map(t => `${t.date}: ${t.training_type || '訓練'}${t.note ? ` (${t.note.slice(0, 30)})` : ''}`)
+      .map(t => `${t.date}: ${t.training_type || '訓練'}${t.rpe ? ` RPE${t.rpe}` : ''}${t.note ? ` (${t.note.slice(0, 30)})` : ''}`)
       .join('\n')
+
+    // Training recovery assessment
+    const recentTraining = (trainingLogs || []).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 7)
+    const highRPECount = recentTraining.filter(t => t.rpe != null && t.rpe >= 9).length
+    const recentWellness = (wellnessLogs || []).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3)
+    const avgSleep = recentWellness.length > 0
+      ? recentWellness.reduce((sum, w) => sum + (w.sleep_quality ?? 3), 0) / recentWellness.length
+      : null
+    const avgEnergy = recentWellness.length > 0
+      ? recentWellness.reduce((sum, w) => sum + (w.energy_level ?? 3), 0) / recentWellness.length
+      : null
+
+    let recoverySignals: string[] = []
+    if (highRPECount >= 3) recoverySignals.push(`近 7 天有 ${highRPECount} 次 RPE≥9 高強度訓練，累積疲勞風險高`)
+    if (avgSleep != null && avgSleep < 3) recoverySignals.push(`近 3 天平均睡眠品質 ${avgSleep.toFixed(1)}/5，睡眠不足`)
+    if (avgEnergy != null && avgEnergy < 3) recoverySignals.push(`近 3 天平均精力 ${avgEnergy.toFixed(1)}/5，能量偏低`)
+    if (wearableData?.hrv != null && wearableData.hrv < 30) recoverySignals.push(`HRV ${wearableData.hrv}ms 偏低，自律神經恢復不佳`)
+    if (wearableData?.device_recovery_score != null && wearableData.device_recovery_score < 33) recoverySignals.push(`裝置恢復分數 ${wearableData.device_recovery_score}/100，身體恢復狀態差`)
+
+    // Blood test summary (only for lab-enabled users who have results)
+    const labSummary = (labResults || [])
+      .filter(r => r.status === 'attention' || r.status === 'alert')
+      .map(r => `${r.test_name}: ${r.value} ${r.unit}（${r.status === 'alert' ? '異常' : '注意'}）${r.custom_advice ? ` — ${r.custom_advice}` : ''}`)
+      .join('\n')
+
+    const labNormalHighlights = (labResults || [])
+      .filter(r => r.status === 'normal')
+      .map(r => r.test_name)
+      .join('、')
 
     // Supplement list
     const suppList = (supplements || [])
@@ -208,6 +248,9 @@ ${last7Nutrition ? `\n## 過去 7 天營養紀錄\n${last7Nutrition}` : ''}
 ${last7Wellness ? `\n## 過去 7 天身心狀態\n${last7Wellness}` : ''}
 ${last7Training ? `\n## 過去 7 天訓練紀錄\n${last7Training}` : ''}
 ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != null ? `\n- 近 7 天服從率：${supplementComplianceRate}%` : ''}` : ''}
+${recoverySignals.length > 0 ? `\n## 訓練恢復評估\n${recoverySignals.join('\n')}\n- 請根據以上恢復狀態調整飲食建議（例如：恢復差時增加抗發炎食物、含鎂食物助眠、適當增加碳水幫助恢復）` : ''}
+${labSummary ? `\n## 最新血檢異常項目\n${labSummary}\n- 請根據血檢結果在飲食建議中自然帶入相關營養素（例如：鐵蛋白低→推薦含鐵食物；維生素D不足→建議補充；不需每次都提，在相關時自然帶入）` : ''}
+${labNormalHighlights && !labSummary ? `\n## 血檢狀態\n所有項目正常：${labNormalHighlights}` : ''}
 
 ## 回答原則
 1. 根據「剩餘需求」給出具體的外食建議（711、全家、超商、自助餐、外送等）
@@ -218,14 +261,17 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
 6. 根據過去 7 天的趨勢給出更精準的建議（例如連續幾天蛋白質不足、睡眠差影響恢復等）
 7. 如果身心狀態不佳（精力低、壓力高、睡眠差），適當調整飲食建議（例如建議含鎂食物助眠、抗氧化食物抗壓）
 8. 可以根據補劑清單給出搭配飲食的建議
-9. 不做醫療診斷，建議以科學為基礎
-10. 回答簡潔，不超過 400 字
+9. 如果有血檢數據，在推薦食物時自然融入（例如鐵蛋白低時優先推薦含鐵食物），但不要每次都強調血檢，只在相關時帶入
+10. 如果訓練恢復評估顯示疲勞累積，主動建議有助恢復的飲食策略（抗發炎、助眠、補充電解質）
+11. 當學員問訓練相關問題時，結合恢復狀態給出強度建議
+12. 不做醫療診斷，建議以科學為基礎
+13. 回答簡潔，不超過 400 字
 11. **食物估算功能**：當學員描述他吃了什麼（如「一個雞腿便當」、「超商鮭魚飯糰+茶葉蛋」），你要：
     - 估算該餐的蛋白質(g)、碳水(g)、脂肪(g)、總熱量(kcal)
     - 用清楚的格式列出，例如：「蛋白質 35g ｜ 碳水 75g ｜ 脂肪 18g ｜ 熱量 602 kcal」
     - 對比今日剩餘目標，告訴學員吃完這餐後還剩多少
     - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫`
-  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData])
+  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults])
 
   // 壓縮圖片：FileReader → Image → Canvas → base64 JPEG
   // 每一步都有 fallback，即使 Canvas 失敗也會回傳原圖 base64
