@@ -1565,7 +1565,8 @@ export default function ClientDashboard() {
           geneticProfile={c.gene_mthfr || c.gene_apoe || c.gene_depression_risk ? {
             mthfr: c.gene_mthfr as string | null,
             apoe: c.gene_apoe as string | null,
-            depressionRisk: c.gene_depression_risk as string | null,
+            serotonin: ['LL', 'SL', 'SS'].includes(c.gene_depression_risk as string) ? c.gene_depression_risk as string : null,
+            depressionRisk: ['low', 'moderate', 'high'].includes(c.gene_depression_risk as string) ? c.gene_depression_risk as string : null,
             notes: c.gene_notes as string | null,
           } : undefined}
         />

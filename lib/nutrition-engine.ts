@@ -117,7 +117,7 @@ import {
 } from './body-fat-zone-table'
 
 import { getLabMacroModifiers, type LabMacroModifier, type LabTrainingModifier } from './lab-nutrition-advisor'
-import type { GeneticProfile } from './supplement-engine'
+import { type GeneticProfile, getSerotoninRiskLevel } from './supplement-engine'
 
 // ===== 類型定義 =====
 
@@ -491,20 +491,23 @@ function applyGeneticCarbFloor(
 ): number {
   if (!geneticProfile) return suggestedCarbs
 
-  // 1. 憂鬱基因 → 碳水最低下限提高
-  if (geneticProfile.depressionRisk === 'high' && suggestedCarbs < GENETIC.DEPRESSION_CARB_FLOOR_HIGH) {
+  // 1. 5-HTTLPR 血清素轉運體基因 → 碳水最低下限提高
+  const serotoninRisk = getSerotoninRiskLevel(geneticProfile)
+  const genotypeLabel = geneticProfile.serotonin ?? (serotoninRisk === 'high' ? 'SS' : serotoninRisk === 'moderate' ? 'SL' : null)
+
+  if (serotoninRisk === 'high' && suggestedCarbs < GENETIC.DEPRESSION_CARB_FLOOR_HIGH) {
     corrections.push({
       gene: 'depression',
       rule: '碳水最低下限',
-      adjustment: `憂鬱基因（高風險）→ 碳水下限從 ${suggestedCarbs}g 提高至 ${GENETIC.DEPRESSION_CARB_FLOOR_HIGH}g，保護血清素合成`,
+      adjustment: `5-HTTLPR ${genotypeLabel}（高風險）→ 碳水下限從 ${suggestedCarbs}g 提高至 ${GENETIC.DEPRESSION_CARB_FLOOR_HIGH}g，保護血清素合成`,
     })
     return GENETIC.DEPRESSION_CARB_FLOOR_HIGH
   }
-  if (geneticProfile.depressionRisk === 'moderate' && suggestedCarbs < GENETIC.DEPRESSION_CARB_FLOOR_MODERATE) {
+  if (serotoninRisk === 'moderate' && suggestedCarbs < GENETIC.DEPRESSION_CARB_FLOOR_MODERATE) {
     corrections.push({
       gene: 'depression',
       rule: '碳水最低下限',
-      adjustment: `憂鬱基因（中風險）→ 碳水下限從 ${suggestedCarbs}g 提高至 ${GENETIC.DEPRESSION_CARB_FLOOR_MODERATE}g，保護血清素合成`,
+      adjustment: `5-HTTLPR ${genotypeLabel}（中風險）→ 碳水下限從 ${suggestedCarbs}g 提高至 ${GENETIC.DEPRESSION_CARB_FLOOR_MODERATE}g，保護血清素合成`,
     })
     return GENETIC.DEPRESSION_CARB_FLOOR_MODERATE
   }
@@ -2763,25 +2766,27 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
   const gp = input.geneticProfile
   const isApoe4 = gp?.apoe === 'e3/e4' || gp?.apoe === 'e4/e4'
 
-  // 憂鬱基因 → 耗竭期縮短 + 碳水提高
-  // [G1] 碳水耗竭 → 腦部血清素急降 → 高風險者情緒崩潰
+  // 5-HTTLPR 血清素轉運體基因 → 耗竭期縮短 + 碳水提高
+  // [G1] 碳水耗竭 → 腦部血清素急降 → SS/SL 型情緒崩潰風險高
+  const serotoninRisk = getSerotoninRiskLevel(gp)
+  const genotypeLabel = gp?.serotonin ?? (serotoninRisk === 'high' ? 'SS' : serotoninRisk === 'moderate' ? 'SL' : null)
   let depletionCutoffDay = 4  // 預設 Day 7-4 為耗竭期（d >= 4）
   let depletionCarbGPerKg = PEAK_WEEK.DEPLETION_CARB_G_PER_KG
-  if (gp?.depressionRisk === 'high') {
+  if (serotoninRisk === 'high') {
     depletionCutoffDay = 8 - GENETIC.DEPRESSION_DEPLETION_DAYS_HIGH  // 8-2=6, 只有 Day 7-6 耗竭
     depletionCarbGPerKg = GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG
     geneticCorrections.push({
       gene: 'depression',
       rule: 'Peak Week 耗竭策略',
-      adjustment: `憂鬱基因（高風險）→ 耗竭期從 4 天縮為 ${GENETIC.DEPRESSION_DEPLETION_DAYS_HIGH} 天，碳水從 ${PEAK_WEEK.DEPLETION_CARB_G_PER_KG}g/kg 提高至 ${GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG}g/kg，保護腦部血清素`,
+      adjustment: `5-HTTLPR ${genotypeLabel}（高風險）→ 耗竭期從 4 天縮為 ${GENETIC.DEPRESSION_DEPLETION_DAYS_HIGH} 天，碳水從 ${PEAK_WEEK.DEPLETION_CARB_G_PER_KG}g/kg 提高至 ${GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG}g/kg，保護腦部血清素`,
     })
-  } else if (gp?.depressionRisk === 'moderate') {
+  } else if (serotoninRisk === 'moderate') {
     depletionCutoffDay = 8 - GENETIC.DEPRESSION_DEPLETION_DAYS_MODERATE  // 8-3=5, Day 7-5 耗竭
     depletionCarbGPerKg = GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG
     geneticCorrections.push({
       gene: 'depression',
       rule: 'Peak Week 耗竭策略',
-      adjustment: `憂鬱基因（中風險）→ 耗竭期從 4 天縮為 ${GENETIC.DEPRESSION_DEPLETION_DAYS_MODERATE} 天，碳水從 ${PEAK_WEEK.DEPLETION_CARB_G_PER_KG}g/kg 提高至 ${GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG}g/kg，保護腦部血清素`,
+      adjustment: `5-HTTLPR ${genotypeLabel}（中風險）→ 耗竭期從 4 天縮為 ${GENETIC.DEPRESSION_DEPLETION_DAYS_MODERATE} 天，碳水從 ${PEAK_WEEK.DEPLETION_CARB_G_PER_KG}g/kg 提高至 ${GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG}g/kg，保護腦部血清素`,
     })
   }
 

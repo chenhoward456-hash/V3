@@ -564,8 +564,9 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS gene_mthfr TEXT CHECK (gene_mthfr I
 -- APOE4 基因：影響心血管風險與脂質代謝
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS gene_apoe TEXT CHECK (gene_apoe IN ('e2/e2', 'e2/e3', 'e3/e3', 'e3/e4', 'e4/e4'));
 
--- 憂鬱傾向基因：COMT、5-HTTLPR 等影響神經傳導物質代謝的基因變異
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS gene_depression_risk TEXT CHECK (gene_depression_risk IN ('low', 'moderate', 'high'));
+-- 5-HTTLPR 血清素轉運體基因：LL（低風險）、SL（中風險）、SS（高風險）
+-- 向後相容也接受舊值 low/moderate/high
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS gene_depression_risk TEXT CHECK (gene_depression_risk IN ('LL', 'SL', 'SS', 'low', 'moderate', 'high'));
 
 -- 基因檢測備註
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS gene_notes TEXT;

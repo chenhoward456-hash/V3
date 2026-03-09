@@ -72,7 +72,7 @@ interface Client {
   // 基因風險欄位
   gene_mthfr: 'normal' | 'heterozygous' | 'homozygous' | null
   gene_apoe: 'e2/e2' | 'e2/e3' | 'e3/e3' | 'e3/e4' | 'e4/e4' | null
-  gene_depression_risk: 'low' | 'moderate' | 'high' | null
+  gene_depression_risk: 'LL' | 'SL' | 'SS' | 'low' | 'moderate' | 'high' | null
   gene_notes: string | null
 
   lab_results: LabResult[]
@@ -1047,19 +1047,19 @@ export default function ClientEditor() {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">憂鬱傾向基因風險</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">5-HTTLPR 血清素轉運體基因</label>
                     <select
                       value={client.gene_depression_risk || ''}
                       onChange={(e) => updateClient('gene_depression_risk', e.target.value || null)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="">未檢測</option>
-                      <option value="low">低風險</option>
-                      <option value="moderate">中等風險</option>
-                      <option value="high">高風險</option>
+                      <option value="LL">LL（長/長）— 低風險</option>
+                      <option value="SL">SL（短/長）— 中風險</option>
+                      <option value="SS">SS（短/短）— 高風險</option>
                     </select>
-                    {client.gene_depression_risk && client.gene_depression_risk !== 'low' && (
-                      <p className="text-xs text-purple-600 mt-1">將強調維生素 D、Omega-3 EPA、鎂、運動處方</p>
+                    {client.gene_depression_risk && client.gene_depression_risk !== 'LL' && client.gene_depression_risk !== 'low' && (
+                      <p className="text-xs text-purple-600 mt-1">碳水下限提高、赤字期飲食多樣性保護、Peak Week 耗竭策略緩和</p>
                     )}
                   </div>
                   <div>

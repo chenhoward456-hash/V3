@@ -81,7 +81,8 @@ interface AiChatDrawerProps {
   geneticProfile?: {
     mthfr?: string | null
     apoe?: string | null
-    depressionRisk?: string | null
+    serotonin?: string | null  // 5-HTTLPR: LL/SL/SS
+    depressionRisk?: string | null  // 向後相容 (low/moderate/high)
     notes?: string | null
   } | null
 }
@@ -280,19 +281,19 @@ ${healthScore.daysUntilBloodTest != null && healthScore.daysUntilBloodTest <= 30
 ` : ''}${supplementSuggestions && supplementSuggestions.length > 0 ? `
 ## ${healthModeEnabled ? '健康模式' : '備賽模式'} — 系統建議補品
 ${supplementSuggestions.map(s => `- ${s.name}（${s.dosage}）：${s.reason.slice(0, 80)}`).join('\n')}
-` : ''}${geneticProfile && (geneticProfile.mthfr || geneticProfile.apoe || geneticProfile.depressionRisk) ? `
+` : ''}${geneticProfile && (geneticProfile.mthfr || geneticProfile.apoe || geneticProfile.serotonin || geneticProfile.depressionRisk) ? `
 ## 🧬 基因風險背景
 ${geneticProfile.mthfr && geneticProfile.mthfr !== 'normal' ? `- **MTHFR 突變**：${geneticProfile.mthfr === 'homozygous' ? '純合突變（C677T）— 葉酸代謝嚴重受損' : '雜合突變 — 葉酸代謝部分受損'}。需使用活性葉酸（5-MTHF）而非一般葉酸。飲食建議多攝取天然葉酸食物（深色蔬菜、肝臟）。注意同半胱胺酸控制。` : ''}
 ${geneticProfile.apoe === 'e3/e4' || geneticProfile.apoe === 'e4/e4' ? `- **APOE4 帶因者**（${geneticProfile.apoe}）：心血管與認知退化風險較高。飲食需嚴格控制飽和脂肪（<7% 總熱量），強調 Omega-3 DHA 攝取，避免反式脂肪。建議地中海飲食模式。定期追蹤血脂（特別是 ApoB、LDL-C）。` : ''}
-${geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high' ? `- **憂鬱傾向基因**（${geneticProfile.depressionRisk === 'high' ? '高' : '中等'}風險）：神經傳導物質代謝較脆弱。飲食建議強調：富含色胺酸食物（火雞、香蕉、堅果）、Omega-3 EPA 抗發炎、維生素 D 支持血清素合成、鎂穩定情緒。運動處方對此基因型特別有效。` : ''}
+${geneticProfile.serotonin === 'SS' || geneticProfile.serotonin === 'SL' || geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high' ? `- **5-HTTLPR 血清素轉運體基因**（${geneticProfile.serotonin || (geneticProfile.depressionRisk === 'high' ? 'SS' : 'SL')} 型，${geneticProfile.serotonin === 'SS' || geneticProfile.depressionRisk === 'high' ? '高' : '中等'}風險）：血清素回收效率${geneticProfile.serotonin === 'SS' || geneticProfile.depressionRisk === 'high' ? '最差' : '中等受損'}，壓力敏感度高。飲食建議強調：富含色胺酸食物（火雞、香蕉、堅果）、Omega-3 EPA 抗發炎、維生素 D 支持血清素合成、鎂穩定情緒。碳水不宜過度限制（維持腦部血清素合成需求）。運動處方對此基因型特別有效。` : ''}
 ${geneticProfile.notes ? `- 備註：${geneticProfile.notes}` : ''}
 **重要**：基因背景會影響你的所有建議方向。在推薦食物、補品、生活方式時，都需要考慮這些基因風險因素。但不要每次回覆都提到基因，只在建議與基因相關時自然帶入。
-` : ''}${competitionEnabled && geneticProfile && (geneticProfile.mthfr || geneticProfile.apoe || geneticProfile.depressionRisk) ? `
+` : ''}${competitionEnabled && geneticProfile && (geneticProfile.mthfr || geneticProfile.apoe || geneticProfile.serotonin || geneticProfile.depressionRisk) ? `
 ## 🏆🧬 備賽×基因交叉注意事項
 ${prepPhase === 'cut' && (geneticProfile.mthfr === 'heterozygous' || geneticProfile.mthfr === 'homozygous') ? `- **MTHFR + 減脂期**：熱量赤字加重甲基化壓力。確保活性葉酸充足，多攝取深色蔬菜（菠菜、青花菜）。同半胱胺酸可能升高，注意心血管保護。` : ''}
-${prepPhase === 'cut' && (geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high') ? `- **憂鬱基因 + 減脂期**：長期熱量赤字導致皮質醇升高、血清素下降。此基因型選手備賽心理風險高於常人。飲食上確保色胺酸來源（火雞、蛋、乳清蛋白），不要過度限制碳水（維持最低腦部血清素合成需求），重視睡眠與壓力管理。出現持續情緒低落時建議與教練溝通調整計畫。` : ''}
+${prepPhase === 'cut' && (geneticProfile.serotonin === 'SS' || geneticProfile.serotonin === 'SL' || geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high') ? `- **5-HTTLPR ${geneticProfile.serotonin || 'SL/SS'} + 減脂期**：長期熱量赤字導致皮質醇升高、血清素下降。此基因型選手備賽心理風險高於常人。飲食上確保色胺酸來源（火雞、蛋、乳清蛋白），不要過度限制碳水（維持最低腦部血清素合成需求），重視睡眠與壓力管理。出現持續情緒低落時建議與教練溝通調整計畫。` : ''}
 ${prepPhase === 'peak_week' && (geneticProfile.apoe === 'e3/e4' || geneticProfile.apoe === 'e4/e4') ? `- **APOE4 + Peak Week**：脂肪補充日避免大量飽和脂肪（牛油、奶油），改用 MCT 油、橄欖油、酪梨等。水鈉操控期間注意電解質平衡，此基因型心血管風險較高，極端脫水需格外謹慎。` : ''}
-${prepPhase === 'peak_week' && (geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high') ? `- **憂鬱基因 + Peak Week**：Peak Week 極端飲食操控（碳水耗竭→超補）對神經傳導物質波動大。此基因型選手可能出現劇烈情緒擺盪，屬正常反應。碳水超補日情緒會明顯改善。` : ''}
+${prepPhase === 'peak_week' && (geneticProfile.serotonin === 'SS' || geneticProfile.serotonin === 'SL' || geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high') ? `- **5-HTTLPR ${geneticProfile.serotonin || 'SL/SS'} + Peak Week**：Peak Week 極端飲食操控（碳水耗竭→超補）對神經傳導物質波動大。此基因型選手可能出現劇烈情緒擺盪，屬正常反應。碳水超補日情緒會明顯改善。營養計算機已自動縮短耗竭期並提高耗竭期碳水量。` : ''}
 ` : ''}
 ## 回答原則
 1. 根據「剩餘需求」給出具體的外食建議（711、全家、超商、自助餐、外送等）

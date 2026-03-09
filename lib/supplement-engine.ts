@@ -59,7 +59,22 @@ function findLabValue(labs: LabResult[], key: string): LabResult | undefined {
 export interface GeneticProfile {
   mthfr?: 'normal' | 'heterozygous' | 'homozygous' | null
   apoe?: 'e2/e2' | 'e2/e3' | 'e3/e3' | 'e3/e4' | 'e4/e4' | null
+  // 5-HTTLPR 血清素轉運體基因
+  // LL = 長/長（低風險），SL = 短/長（中風險），SS = 短/短（高風險）
+  serotonin?: 'LL' | 'SL' | 'SS' | null
+  /** @deprecated Use serotonin instead */
   depressionRisk?: 'low' | 'moderate' | 'high' | null
+}
+
+// 5-HTTLPR 基因型 → 風險等級映射
+export function getSerotoninRiskLevel(gp?: GeneticProfile | null): 'low' | 'moderate' | 'high' | null {
+  if (!gp) return null
+  // 優先使用新欄位
+  if (gp.serotonin === 'SS') return 'high'
+  if (gp.serotonin === 'SL') return 'moderate'
+  if (gp.serotonin === 'LL') return 'low'
+  // 向後相容：fallback 到舊欄位
+  return gp.depressionRisk ?? null
 }
 
 export function generateSupplementSuggestions(
@@ -437,9 +452,10 @@ export function generateSupplementSuggestions(
     }
   }
 
-  // 憂鬱傾向基因：強調維生素 D、Omega-3 EPA、鎂
-  if (genetics?.depressionRisk === 'moderate' || genetics?.depressionRisk === 'high') {
-    const isHighRisk = genetics.depressionRisk === 'high'
+  // 5-HTTLPR 血清素轉運體基因：SL/SS → 強調維生素 D、Omega-3 EPA、鎂
+  const serotoninRisk = getSerotoninRiskLevel(genetics)
+  if (serotoninRisk === 'moderate' || serotoninRisk === 'high') {
+    const isHighRisk = serotoninRisk === 'high'
 
     // 確保有維生素 D（升級劑量）
     const existingD = suggestions.find(s => s.name.includes('D3') || s.name.includes('維生素 D'))
@@ -523,9 +539,9 @@ export function generateSupplementSuggestions(
       })
     }
 
-    // 憂鬱基因 + 減脂期：皮質醇升高 + 血清素下降風險
-    if (isCutting && (genetics.depressionRisk === 'moderate' || genetics.depressionRisk === 'high')) {
-      const isHighRisk = genetics.depressionRisk === 'high'
+    // 5-HTTLPR SL/SS + 減脂期：皮質醇升高 + 血清素下降風險
+    if (isCutting && (serotoninRisk === 'moderate' || serotoninRisk === 'high')) {
+      const isHighRisk = serotoninRisk === 'high'
 
       // 確保有南非醉茄（降皮質醇）
       const alreadyHasAshwagandha = suggestions.some(s => s.name.includes('南非醉茄') || s.name.toLowerCase().includes('ashwagandha'))

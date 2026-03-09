@@ -23,6 +23,13 @@ const logger = createLogger('cron-weekly')
 
 const supabase = createServiceSupabase()
 
+function parseSerotoninField(value: string | null): { serotonin?: 'LL' | 'SL' | 'SS'; depressionRisk?: 'low' | 'moderate' | 'high' } {
+  if (!value) return {}
+  if (value === 'LL' || value === 'SL' || value === 'SS') return { serotonin: value }
+  if (value === 'low' || value === 'moderate' || value === 'high') return { depressionRisk: value }
+  return {}
+}
+
 function verifyCronAuth(request: NextRequest): boolean {
   // Vercel Cron 會帶 CRON_SECRET header
   const cronSecret = request.headers.get('authorization')
@@ -247,7 +254,7 @@ export async function GET(request: NextRequest) {
           geneticProfile: (client.gene_mthfr || client.gene_apoe || client.gene_depression_risk) ? {
             mthfr: client.gene_mthfr || undefined,
             apoe: client.gene_apoe || undefined,
-            depressionRisk: client.gene_depression_risk || undefined,
+            ...parseSerotoninField(client.gene_depression_risk),
           } : undefined,
         }
 
