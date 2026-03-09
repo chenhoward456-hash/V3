@@ -375,7 +375,7 @@ export function generateLabNutritionAdvice(
       }
     }
 
-    if (matchName(lab.test_name, ['總膽固醇', 'total cholesterol', 'tc'])) {
+    if (matchName(lab.test_name, ['總膽固醇', 'total cholesterol'])) {
       if (lab.value > 200) {
         advice.push({
           category: 'lipid',
