@@ -199,16 +199,16 @@ export default function LabResultEditor({
     { name: 'CRP', unit: 'mg/L', reference: '<1.0' },
     { name: '同半胱胺酸', unit: 'μmol/L', reference: '<8.0' },
     // 維生素
-    { name: '維生素D', unit: 'ng/mL', reference: '>50' },
-    { name: '維生素B12', unit: 'pg/mL', reference: '>400' },
-    { name: '葉酸', unit: 'ng/mL', reference: '>5.4' },
+    { name: '維生素D', unit: 'ng/mL', reference: '50-100' },
+    { name: '維生素B12', unit: 'pg/mL', reference: '400-900' },
+    { name: '葉酸', unit: 'ng/mL', reference: '5.4-20' },
     // 礦物質
     { name: '鎂', unit: 'mg/dL', reference: '2.0-2.4' },
     { name: '鋅', unit: 'μg/dL', reference: '70-120' },
     { name: '鈣', unit: 'mg/dL', reference: '8.5-10.5' },
     // 荷爾蒙
     { name: '睪固酮', unit: 'ng/dL', reference: '300-1000' },
-    { name: '游離睪固酮', unit: 'pg/mL', reference: '9-30' },
+    { name: '游離睪固酮', unit: 'pg/mL', reference: '47-244' },
     { name: '皮質醇', unit: 'μg/dL', reference: '6-18' },
     { name: 'DHEA-S', unit: 'μg/dL', reference: '100-500' },
     { name: '雌二醇', unit: 'pg/mL', reference: '10-40' },

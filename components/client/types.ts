@@ -129,16 +129,16 @@ export function getLabAdvice(testName: string, value: number): string {
     case 'CRP': return value < 1.0 ? '發炎指標正常' : value < 3.0 ? '輕度發炎' : '發炎指標偏高'
     case '同半胱胺酸': return value < 8 ? '甲基化代謝正常' : '甲基化代謝需要改善'
     // 維生素
-    case '維生素D': return value > 50 ? '維生素D充足' : value > 30 ? '維生素D偏低，建議補充' : '維生素D不足'
-    case '維生素B12': return value > 400 ? 'B12 充足' : value > 200 ? 'B12 偏低' : 'B12 不足'
-    case '葉酸': return value > 5.4 ? '葉酸充足' : '葉酸偏低'
+    case '維生素D': return value >= 50 && value <= 100 ? '維生素D充足' : value < 50 ? (value > 30 ? '維生素D偏低，建議補充' : '維生素D不足') : '維生素D過高，注意高血鈣風險'
+    case '維生素B12': return value >= 400 && value <= 900 ? 'B12 充足' : value < 400 ? 'B12 偏低，建議補充' : 'B12 異常偏高，建議檢查肝功能及發炎指標'
+    case '葉酸': return value >= 5.4 && value <= 20 ? '葉酸充足' : value < 5.4 ? '葉酸偏低' : '葉酸過高，可能遮蔽B12缺乏'
     // 礦物質
     case '鎂': return value >= 2.0 && value <= 2.4 ? '鎂正常' : value < 2.0 ? '鎂偏低' : '鎂偏高'
     case '鋅': return value >= 70 && value <= 120 ? '鋅正常' : value < 70 ? '鋅偏低' : '鋅偏高'
     case '鈣': return value >= 8.5 && value <= 10.5 ? '鈣正常' : value < 8.5 ? '鈣偏低' : '鈣偏高'
     // 荷爾蒙
     case '睪固酮': return value >= 300 && value <= 1000 ? '睪固酮正常' : value < 300 ? '睪固酮偏低' : '睪固酮偏高'
-    case '游離睪固酮': return value >= 9 && value <= 30 ? '游離睪固酮正常' : value < 9 ? '游離睪固酮偏低' : '游離睪固酮偏高'
+    case '游離睪固酮': return value >= 47 && value <= 244 ? '游離睪固酮正常' : value < 47 ? '游離睪固酮偏低' : '游離睪固酮偏高'
     case '皮質醇': return value >= 6 && value <= 18 ? '皮質醇正常' : value < 6 ? '皮質醇偏低' : '皮質醇偏高'
     case 'DHEA-S': return value >= 100 && value <= 500 ? 'DHEA-S 正常' : value < 100 ? 'DHEA-S 偏低' : 'DHEA-S 偏高'
     case '雌二醇': return value >= 10 && value <= 40 ? '雌二醇正常' : value < 10 ? '雌二醇偏低' : '雌二醇偏高'

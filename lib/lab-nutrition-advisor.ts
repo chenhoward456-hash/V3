@@ -1219,12 +1219,12 @@ export function generateLabNutritionAdvice(
 
     if (matchName(lab.test_name, ['游離睪固酮', 'free testosterone', 'freetestosterone'])) {
       const isMale = gender !== '女性'
-      if (isMale && lab.value < 9) {
+      if (isMale && lab.value < 47) {
         advice.push({
           category: 'hormone',
           title: '游離睪固酮偏低',
           icon: '💪',
-          severity: lab.value < 5 ? 'high' : 'medium',
+          severity: lab.value < 30 ? 'high' : 'medium',
           dietaryChanges: [
             '確保脂肪攝取充足（佔總熱量 25-35%）',
             '硼（Boron）可降低 SHBG 從而提高游離 T — 每日 3-6mg（酪梨、葡萄乾、杏仁）',
@@ -1241,7 +1241,7 @@ export function generateLabNutritionAdvice(
           labMarker: lab.test_name,
           currentValue: lab.value,
           unit: lab.unit,
-          targetRange: '9-30 pg/mL（男性）',
+          targetRange: '47-244 pg/mL（男性，平衡透析法）',
           references: [
             'Naghii et al. 2011 (J Trace Elem Med Biol): Comparative effects of boron on serum free testosterone',
             'Volek et al. 1997 (J Appl Physiol): Testosterone responses to dietary fat and resistance exercise',
@@ -1736,7 +1736,7 @@ export function detectLabCrossPatterns(
 
     if (cortisol && cortisol.value > 25) { otMarkers.push(cortisol); otScore++ }
     if (gender === '男性' && testosterone && testosterone.value < 400) { otMarkers.push(testosterone); otScore++ }
-    if (gender === '男性' && freeT && freeT.value < 9) { otMarkers.push(freeT); otScore++ }
+    if (gender === '男性' && freeT && freeT.value < 47) { otMarkers.push(freeT); otScore++ }
     if (ferritin && ferritin.value < 30) { otMarkers.push(ferritin); otScore++ }
     if (crp && crp.value > 3.0) { otMarkers.push(crp); otScore++ }
     if (tsh && tsh.value > 4.0) { otMarkers.push(tsh); otScore++ }

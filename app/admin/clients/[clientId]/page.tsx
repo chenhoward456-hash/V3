@@ -161,7 +161,8 @@ export default function ClientEditor() {
         fetch(`/api/client-overview?clientId=${clientId}`),
       ])
       if (!clientRes.ok) {
-        setError('載入學員資料失敗')
+        const errData = await clientRes.json().catch(() => ({}))
+        setError(`載入學員資料失敗${errData.detail ? `（${errData.detail}）` : ''}`)
         return
       }
       const data = await clientRes.json()
@@ -238,7 +239,11 @@ export default function ClientEditor() {
         quarterly_cycle_start: client.quarterly_cycle_start || null,
         subscription_tier: client.subscription_tier,
         ai_chat_enabled: client.ai_chat_enabled,
-        coach_macro_override: client.coach_macro_override ?? null,
+        // coach_macro_override 由後端自動處理（修改 macro 時自動鎖定）
+        // 只有教練明確解鎖時才送 null
+        ...(client.coach_macro_override === null && clientId !== 'new'
+          ? { coach_macro_override: null }
+          : {}),
       }
 
       if (clientId === 'new') {
@@ -396,6 +401,7 @@ export default function ClientEditor() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">找不到學員資料</h1>
+          {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
           <Link href="/admin" className="text-blue-600 hover:text-blue-800">
             返回後台
           </Link>

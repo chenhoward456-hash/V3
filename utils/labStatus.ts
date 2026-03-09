@@ -51,10 +51,10 @@ export const LAB_THRESHOLDS = {
   'hs-CRP': { normal: 1.0, attention: 3.0 },
   '同半胱胺酸': { normal: 8.0, attention: 12.0 },
 
-  // ── 維生素（越高越好）──
-  '維生素D': { normal: 50, attention: 30 },
-  '維生素B12': { normal: 400, attention: 200 },
-  '葉酸': { normal: 5.4, attention: 3.0 },
+  // ── 維生素（均為範圍型：過低=缺乏，過高=中毒/遮蔽效應）──
+  '維生素D': { normal: { min: 50, max: 100 }, attention: { min: 30, max: 150 } },      // >100 可能中毒（高血鈣）
+  '維生素B12': { normal: { min: 400, max: 900 }, attention: { min: 200, max: 1100 } }, // >900 可能代表肝病或發炎
+  '葉酸': { normal: { min: 5.4, max: 20 }, attention: { min: 3.0, max: 24 } },         // >20 可能遮蔽 B12 缺乏
 
   // ── 礦物質（範圍型）──
   '鎂': { normal: { min: 2.0, max: 2.4 }, attention: { min: 1.8, max: 2.6 } },
@@ -64,8 +64,8 @@ export const LAB_THRESHOLDS = {
   // ── 荷爾蒙 ──
   '睪固酮': { normal: { min: 300, max: 1000 }, attention: { min: 200, max: 1200 } },
   '睪固酮_female': { normal: { min: 15, max: 70 }, attention: { min: 10, max: 90 } },
-  '游離睪固酮': { normal: { min: 9, max: 30 }, attention: { min: 5, max: 35 } },
-  '游離睪固酮_female': { normal: { min: 0.3, max: 1.9 }, attention: { min: 0.2, max: 2.5 } },
+  '游離睪固酮': { normal: { min: 47, max: 244 }, attention: { min: 30, max: 300 } },
+  '游離睪固酮_female': { normal: { min: 0.5, max: 8.5 }, attention: { min: 0.3, max: 10.0 } },
   '皮質醇': { normal: { min: 6, max: 18 }, attention: { min: 4, max: 22 } },
   'DHEA-S': { normal: { min: 100, max: 500 }, attention: { min: 80, max: 600 } },
   'DHEA-S_female': { normal: { min: 65, max: 380 }, attention: { min: 50, max: 450 } },
@@ -84,7 +84,7 @@ export const LAB_THRESHOLDS = {
 
 // 「越高越好」的指標集合
 const HIGHER_IS_BETTER = new Set([
-  '維生素D', '維生素B12', '葉酸', 'HDL-C', 'HDL-C_female', '白蛋白', 'eGFR',
+  'HDL-C', 'HDL-C_female', '白蛋白', 'eGFR',
 ]);
 
 // 血檢狀態類型

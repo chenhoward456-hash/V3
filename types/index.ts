@@ -96,6 +96,11 @@ export interface Client {
   simple_mode: boolean
   coach_weekly_note: string | null
   coach_summary: string | null
+  coach_macro_override: {
+    locked_at: string
+    locked_fields: string[]
+    previous_values?: Record<string, number | null>
+  } | null
   next_checkup_date: string | null
   quarterly_cycle_start: string | null
   created_at: string
