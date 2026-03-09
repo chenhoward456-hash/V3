@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, simple_mode, goal_type, activity_profile, gender, height, body_weight, body_fat_pct, training_days_per_week, target_weight, target_date } = body
+    const { clientId, simple_mode, goal_type, activity_profile, gender, height, body_weight, body_fat_pct, training_days_per_week, target_weight, target_body_fat, target_date } = body
 
     if (!clientId || typeof clientId !== 'string') {
       return createErrorResponse('缺少客戶 ID', 400)
@@ -245,7 +245,7 @@ export async function PATCH(request: NextRequest) {
     // 白名單：只允許更新這些欄位
     const updates: Record<string, string | number | boolean | null> = {}
 
-    if (goal_type && ['cut', 'bulk'].includes(goal_type)) {
+    if (goal_type && ['cut', 'bulk', 'recomp'].includes(goal_type)) {
       updates.goal_type = goal_type
       updates.diet_start_date = new Date().toISOString().split('T')[0]
     }
@@ -265,6 +265,9 @@ export async function PATCH(request: NextRequest) {
     if (target_weight && typeof target_weight === 'number' && target_weight > 30 && target_weight < 300) {
       updates.target_weight = target_weight
     }
+    if (target_body_fat && typeof target_body_fat === 'number' && target_body_fat > 3 && target_body_fat < 60) {
+      updates.target_body_fat = target_body_fat
+    }
     if (target_date && typeof target_date === 'string') {
       const parsedDate = new Date(target_date)
       if (!isNaN(parsedDate.getTime()) && parsedDate > new Date()) {
@@ -274,7 +277,7 @@ export async function PATCH(request: NextRequest) {
 
     // InBody 數據 → 建立 body_composition 紀錄 + 計算初始營養目標
     const hasBodyData = body_weight && typeof body_weight === 'number' && body_weight > 30 && body_weight < 300
-    const validGoalType = goal_type && ['cut', 'bulk'].includes(goal_type) ? goal_type : null
+    const validGoalType = goal_type && ['cut', 'bulk', 'recomp'].includes(goal_type) ? goal_type : null
     const resolvedGender = gender || client.gender || '男性'
 
     if (hasBodyData) {
@@ -304,7 +307,7 @@ export async function PATCH(request: NextRequest) {
           bodyWeight: body_weight,
           height: validHeight,
           bodyFatPct: (bodyCompRecord.body_fat as number) || null,
-          goalType: validGoalType as 'cut' | 'bulk',
+          goalType: validGoalType as 'cut' | 'bulk' | 'recomp',
           activityProfile: (activity_profile as 'sedentary' | 'high_energy_flux') || 'sedentary',
           trainingDaysPerWeek: training_days_per_week || 3,
         })

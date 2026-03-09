@@ -124,7 +124,7 @@ export interface NutritionInput {
   // 學員資料
   gender: string  // '男性' | '女性'
   bodyWeight: number  // 當前體重 kg (最新紀錄)
-  goalType: 'cut' | 'bulk'
+  goalType: 'cut' | 'bulk' | 'recomp'
   dietStartDate: string | null  // 開始日期 (ISO)
 
   // 身體組成（用於 Katch-McArdle BMR 估算 TDEE）
@@ -571,18 +571,20 @@ function toZoneGender(gender: string): BFZGender {
 function buildBodyFatZoneInfo(
   gender: string,
   bodyFatPct: number | null | undefined,
-  goalType: 'cut' | 'bulk'
+  goalType: 'cut' | 'bulk' | 'recomp'
 ): NutritionSuggestion['bodyFatZoneInfo'] {
+  // recomp 用 cut 的 zone specs（高蛋白、refeed 建議等）
   if (bodyFatPct == null || bodyFatPct <= 0) return null
   const zone = getBodyFatZone(toZoneGender(gender), bodyFatPct)
   if (!zone) return null
-  const spec = goalType === 'cut' ? zone.cut : zone.bulk
+  const effectiveGoal = goalType === 'recomp' ? 'cut' : goalType
+  const spec = effectiveGoal === 'cut' ? zone.cut : zone.bulk
   return {
     zoneId: zone.id,
     zoneLabel: zone.label,
     proteinPerKg: spec.proteinGPerKg,
     fatPerKg: spec.fatGPerKg,
-    refeedFrequency: goalType === 'cut' ? zone.cut.refeedFrequency : null,
+    refeedFrequency: effectiveGoal === 'cut' ? zone.cut.refeedFrequency : null,
   }
 }
 
@@ -1515,7 +1517,8 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   // 9. 根據目標類型分流
   const extraFields = { metabolicStress, tdeeAnomalyDetected, labMacroModifiers: labModResult.macroModifiers, labTrainingModifiers: labModResult.trainingModifiers, energyAvailability }
   let result: NutritionSuggestion
-  if (input.goalType === 'cut') {
+  if (input.goalType === 'cut' || input.goalType === 'recomp') {
+    // recomp 用 cut 引擎（微赤字 + 高蛋白），但赤字幅度較小
     result = { ...generateCutSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
   } else {
     result = { ...generateBulkSuggestion(input, weeklyChangeRate, estimatedTDEE, dietDurationWeeks, deadlineInfo, warnings, cycleInfo, currentState), ...stateFields, ...extraFields }
@@ -2791,7 +2794,7 @@ export interface InitialTargetInput {
   bodyWeight: number      // kg
   height?: number | null  // cm
   bodyFatPct?: number | null  // % (e.g. 20 = 20%)
-  goalType: 'cut' | 'bulk'
+  goalType: 'cut' | 'bulk' | 'recomp'
   activityProfile?: 'sedentary' | 'high_energy_flux'
   trainingDaysPerWeek?: number
 }
@@ -2835,6 +2838,13 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
     // 保守赤字 300-400kcal（非備賽不需激進）
     deficit = Math.min(400, Math.round(estimatedTDEE * 0.18))
     deficit = Math.max(200, deficit)  // 至少 200
+  } else if (input.goalType === 'recomp') {
+    // 體態重組：維持 TDEE 或微赤字 (0~-150 kcal)
+    // 目標是降體脂 + 增肌，體重可能不變
+    // 文獻支持：訓練新手或體脂較高者可在等熱量下同時增肌減脂
+    // 蛋白質拉高（在下方 macro 分配處理）
+    deficit = Math.min(150, Math.round(estimatedTDEE * 0.05))
+    deficit = Math.max(0, deficit)
   } else {
     // 增肌：優先使用 zone table 的 surplusKcal（依體脂區間文獻校準）
     // Iraki 2019 [4]: surplus +10-20%；各 zone 有更精確的 surplusKcal 範圍
@@ -2862,7 +2872,9 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
   // 4. 巨量營養素分配
   // 有體脂區間 → 用 getZoneMacros() 取得基於文獻的精確建議
   // 無體脂區間 → fallback 男女固定值
-  const zoneInfo = buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType)
+  // recomp 用 cut 的蛋白質水準（較高），因為需要高蛋白支持肌肉合成
+  const macroGoalType = input.goalType === 'recomp' ? 'cut' : input.goalType
+  const zoneInfo = buildBodyFatZoneInfo(input.gender, input.bodyFatPct, macroGoalType)
 
   let protein: number
   let fat: number
@@ -2871,11 +2883,12 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
   if (input.bodyFatPct != null && input.bodyFatPct > 0 && zoneInfo) {
     // 用 getZoneMacros() 取得 protein/fat（含 overweight 體重校正）
     // 但不用它的 calories/carbs → 改用 finalCalories 算碳水，避免 zone 赤字 ≠ 函數赤字
+    // recomp 用 cut 的蛋白質標準（2.0+ g/kg），確保肌肉合成
     const zoneMacros = getZoneMacros({
       gender: toZoneGender(input.gender),
       bodyWeight: bw,
       bodyFatPct: input.bodyFatPct,
-      goalType: input.goalType,
+      goalType: macroGoalType,
       estimatedTDEE: estimatedTDEE,
     })
     protein = zoneMacros.protein
@@ -2885,7 +2898,8 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
     carbs = Math.max(50, Math.round(remainingCal / 4))
   } else {
     // Fallback: 固定 g/kg
-    const proteinPerKg = input.goalType === 'cut'
+    // recomp 用 cut 的高蛋白標準
+    const proteinPerKg = (input.goalType === 'cut' || input.goalType === 'recomp')
       ? (isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE)
       : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
     protein = Math.round(bw * proteinPerKg)

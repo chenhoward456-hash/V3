@@ -21,6 +21,7 @@ import NutritionLog from '@/components/client/NutritionLog'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
+import GoalSettings from '@/components/client/GoalSettings'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 import SelfManagedNutrition from '@/components/client/SelfManagedNutrition'
 import PwaPrompt from '@/components/client/PwaPrompt'
@@ -1098,6 +1099,23 @@ export default function ClientDashboard() {
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* 目標設定 — 免費/自主管理用戶可隨時調整目標 */}
+        {(isFree || isSelfManaged) && c.calories_target && (
+          <div className="mb-3">
+            <GoalSettings
+              clientId={c.id}
+              uniqueCode={c.unique_code}
+              currentGoalType={c.goal_type}
+              currentTargetWeight={c.target_weight}
+              currentTargetBodyFat={(c.target_body_fat as number) ?? null}
+              currentTargetDate={c.target_date}
+              latestWeight={latestBodyData?.weight || null}
+              latestBodyFat={latestBodyData?.body_fat || null}
+              onMutate={mutate}
+            />
           </div>
         )}
 
