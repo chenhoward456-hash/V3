@@ -204,13 +204,13 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, goal_type, activity_profile, gender, height, body_weight, body_fat_pct, training_days_per_week, target_weight, target_date } = body
+    const { clientId, simple_mode, goal_type, activity_profile, gender, height, body_weight, body_fat_pct, training_days_per_week, target_weight, target_date } = body
 
     if (!clientId || typeof clientId !== 'string') {
       return createErrorResponse('缺少客戶 ID', 400)
     }
 
-    // 驗證 unique_code 存在且為 self_managed
+    // 驗證 unique_code 存在
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('id, gender, subscription_tier, is_active')
@@ -225,6 +225,19 @@ export async function PATCH(request: NextRequest) {
       return createErrorResponse('帳號已暫停', 403)
     }
 
+    // simple_mode 切換：所有方案用戶皆可使用
+    if (typeof simple_mode === 'boolean') {
+      const { error: updateErr } = await supabase
+        .from('clients')
+        .update({ simple_mode })
+        .eq('id', client.id)
+      if (updateErr) {
+        return createErrorResponse('更新失敗', 500)
+      }
+      return createSuccessResponse({ updated: { simple_mode } })
+    }
+
+    // 以下為 Onboarding 功能，僅限 self_managed / free
     if (client.subscription_tier !== 'self_managed' && client.subscription_tier !== 'free') {
       return createErrorResponse('此功能僅限自主管理 / 免費方案', 403)
     }
