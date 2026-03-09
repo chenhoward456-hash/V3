@@ -182,7 +182,6 @@ export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState('')
   const [showCoachSummary, setShowCoachSummary] = useState(false)
   const [showAiChat, setShowAiChat] = useState(false)
-  const [showAiUpgrade, setShowAiUpgrade] = useState(false)
   const [showPhaseSelector, setShowPhaseSelector] = useState(false)
   const [updatingPhase, setUpdatingPhase] = useState(false)
   const [showMoreAnalysis, setShowMoreAnalysis] = useState(false)
@@ -340,7 +339,17 @@ export default function ClientDashboard() {
         <div className="text-center max-w-sm">
           <div className="text-5xl mb-4">{isSuspended ? '⛔' : isExpired ? '⏰' : '❌'}</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">{isSuspended ? '帳號已暫停' : isExpired ? '帳號已過期' : '載入失敗'}</h1>
-          <p className="text-gray-600">{isSuspended ? '請聯繫你的教練重新啟用' : error.message}</p>
+          <p className="text-gray-600 mb-4">{isSuspended ? '請聯繫你的教練重新啟用' : isExpired ? '你的方案已到期，續約後即可繼續使用。' : error.message}</p>
+          {isExpired && (
+            <div className="space-y-3 mt-4">
+              <a href="/pay?tier=self_managed" className="block bg-[#2563eb] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#1d4ed8] transition-colors text-sm">
+                續約自主管理版 NT$499/月
+              </a>
+              <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="block bg-[#06C755] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#05b04d] transition-colors text-sm">
+                💬 加 LINE 聯繫 Howard
+              </a>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -1382,7 +1391,7 @@ export default function ClientDashboard() {
               </div>
               {c.subscription_tier === 'free' ? (
                 <div className="mt-4 space-y-2">
-                  <a href="/pay?tier=self_managed" className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all">
+                  <a href={`/pay?tier=self_managed&name=${encodeURIComponent(c.name)}`} className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all">
                     升級自主管理版 NT$499/月
                   </a>
                   <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="block text-center bg-[#06C755] text-white text-sm font-bold py-2.5 rounded-xl hover:bg-[#05b04d] transition-all">
@@ -1458,42 +1467,6 @@ export default function ClientDashboard() {
         </button>
       )}
 
-      {/* 免費用戶 AI 升級提示（雙出口：候補 + LINE） */}
-      {showAiUpgrade && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6" onClick={() => setShowAiUpgrade(false)}>
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="text-center mb-4">
-              <div className="text-4xl mb-3">🤖</div>
-              <h3 className="text-lg font-bold text-gray-900">本月免費次數已用完</h3>
-              <p className="text-sm text-gray-500 mt-1">你可以選擇：</p>
-            </div>
-            <div className="space-y-3 mb-4">
-              <a
-                href="/pay?tier=self_managed"
-                className="block w-full text-center bg-blue-600 text-white font-bold py-3 rounded-2xl hover:bg-blue-700 transition-colors"
-              >
-                升級自主管理版 NT$499/月
-                <span className="block text-xs font-normal opacity-80 mt-0.5">解鎖無限 AI 顧問 + 訓練追蹤</span>
-              </a>
-              <a
-                href="https://lin.ee/LP65rCc"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full text-center bg-[#06C755] text-white font-bold py-3 rounded-2xl hover:bg-[#05b04d] transition-colors"
-              >
-                💬 加 LINE 讓 Howard 直接幫你分析
-                <span className="block text-xs font-normal opacity-80 mt-0.5">現在就可以，真人回覆</span>
-              </a>
-            </div>
-            <button
-              onClick={() => setShowAiUpgrade(false)}
-              className="block w-full text-center text-sm text-gray-400 mt-1 py-1"
-            >
-              稍後再說
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* AI 聊天抽屜（付費用戶 + 免費用戶月度免費額度） */}
       {c.nutrition_enabled && (

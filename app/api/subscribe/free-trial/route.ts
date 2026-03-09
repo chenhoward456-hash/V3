@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
         gender: gender || null,
         goal_type: goalType || 'cut',
         subscription_tier: 'free',
+        expires_at: null, // 免費用戶不過期，靠功能限制引導升級
         ...(ref ? { ref_source: ref } : {}),
         ...getDefaultFeatures('free'),
       })
