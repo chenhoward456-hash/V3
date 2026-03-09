@@ -59,6 +59,8 @@ interface AiChatDrawerProps {
   // Context
   isTrainingDay: boolean
   competitionEnabled: boolean
+  prepPhase?: string | null
+  competitionDate?: string | null
   latestWeight?: number | null
   latestBodyFat?: number | null
   // Extended context
@@ -90,7 +92,7 @@ export default function AiChatDrawer({
   clientName, gender, goalType,
   todayNutrition,
   caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget,
-  isTrainingDay, competitionEnabled,
+  isTrainingDay, competitionEnabled, prepPhase, competitionDate,
   latestWeight, latestBodyFat,
   nutritionLogs, wellnessLogs, trainingLogs,
   supplements, supplementComplianceRate,
@@ -233,7 +235,10 @@ export default function AiChatDrawer({
 - 性別：${gender || '未設定'}
 - 目標：${goalType === 'cut' ? '減脂' : goalType === 'bulk' ? '增肌' : '未設定'}
 - 今天是${isTrainingDay ? '訓練日' : '休息日'}
-${competitionEnabled ? '- 備賽模式' : ''}
+${competitionEnabled ? `- 備賽模式（${(() => {
+      const phaseLabels: Record<string, string> = { off_season: '休賽期', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' }
+      return phaseLabels[prepPhase || ''] || '未設定階段'
+    })()}）${competitionDate ? `\n- 比賽日期：${competitionDate}（距今 ${Math.ceil((new Date(competitionDate).getTime() - Date.now()) / 86400000)} 天）` : ''}` : ''}
 ${latestWeight ? `- 最新體重：${latestWeight} kg` : ''}
 ${latestBodyFat ? `- 最新體脂：${latestBodyFat}%` : ''}
 
@@ -272,9 +277,9 @@ ${healthModeEnabled && healthScore ? `
 ${healthScore.pillars.map(p => `- ${p.emoji} ${p.label}：${p.score}/100`).join('\n')}
 ${healthScore.daysInCycle != null ? `- 本季進度：第 ${healthScore.daysInCycle} 天 / 90 天` : ''}
 ${healthScore.daysUntilBloodTest != null && healthScore.daysUntilBloodTest <= 30 ? `- 🩸 距離季度血檢還有 ${healthScore.daysUntilBloodTest} 天` : ''}
-` : ''}${healthModeEnabled && supplementSuggestions && supplementSuggestions.length > 0 ? `
-## 健康模式 — 系統建議補品
-${supplementSuggestions.map(s => `- ${s.name}（${s.dosage}）：${s.reason.slice(0, 60)}`).join('\n')}
+` : ''}${supplementSuggestions && supplementSuggestions.length > 0 ? `
+## ${healthModeEnabled ? '健康模式' : '備賽模式'} — 系統建議補品
+${supplementSuggestions.map(s => `- ${s.name}（${s.dosage}）：${s.reason.slice(0, 80)}`).join('\n')}
 ` : ''}${geneticProfile && (geneticProfile.mthfr || geneticProfile.apoe || geneticProfile.depressionRisk) ? `
 ## 🧬 基因風險背景
 ${geneticProfile.mthfr && geneticProfile.mthfr !== 'normal' ? `- **MTHFR 突變**：${geneticProfile.mthfr === 'homozygous' ? '純合突變（C677T）— 葉酸代謝嚴重受損' : '雜合突變 — 葉酸代謝部分受損'}。需使用活性葉酸（5-MTHF）而非一般葉酸。飲食建議多攝取天然葉酸食物（深色蔬菜、肝臟）。注意同半胱胺酸控制。` : ''}
@@ -282,6 +287,12 @@ ${geneticProfile.apoe === 'e3/e4' || geneticProfile.apoe === 'e4/e4' ? `- **APOE
 ${geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high' ? `- **憂鬱傾向基因**（${geneticProfile.depressionRisk === 'high' ? '高' : '中等'}風險）：神經傳導物質代謝較脆弱。飲食建議強調：富含色胺酸食物（火雞、香蕉、堅果）、Omega-3 EPA 抗發炎、維生素 D 支持血清素合成、鎂穩定情緒。運動處方對此基因型特別有效。` : ''}
 ${geneticProfile.notes ? `- 備註：${geneticProfile.notes}` : ''}
 **重要**：基因背景會影響你的所有建議方向。在推薦食物、補品、生活方式時，都需要考慮這些基因風險因素。但不要每次回覆都提到基因，只在建議與基因相關時自然帶入。
+` : ''}${competitionEnabled && geneticProfile && (geneticProfile.mthfr || geneticProfile.apoe || geneticProfile.depressionRisk) ? `
+## 🏆🧬 備賽×基因交叉注意事項
+${prepPhase === 'cut' && (geneticProfile.mthfr === 'heterozygous' || geneticProfile.mthfr === 'homozygous') ? `- **MTHFR + 減脂期**：熱量赤字加重甲基化壓力。確保活性葉酸充足，多攝取深色蔬菜（菠菜、青花菜）。同半胱胺酸可能升高，注意心血管保護。` : ''}
+${prepPhase === 'cut' && (geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high') ? `- **憂鬱基因 + 減脂期**：長期熱量赤字導致皮質醇升高、血清素下降。此基因型選手備賽心理風險高於常人。飲食上確保色胺酸來源（火雞、蛋、乳清蛋白），不要過度限制碳水（維持最低腦部血清素合成需求），重視睡眠與壓力管理。出現持續情緒低落時建議與教練溝通調整計畫。` : ''}
+${prepPhase === 'peak_week' && (geneticProfile.apoe === 'e3/e4' || geneticProfile.apoe === 'e4/e4') ? `- **APOE4 + Peak Week**：脂肪補充日避免大量飽和脂肪（牛油、奶油），改用 MCT 油、橄欖油、酪梨等。水鈉操控期間注意電解質平衡，此基因型心血管風險較高，極端脫水需格外謹慎。` : ''}
+${prepPhase === 'peak_week' && (geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high') ? `- **憂鬱基因 + Peak Week**：Peak Week 極端飲食操控（碳水耗竭→超補）對神經傳導物質波動大。此基因型選手可能出現劇烈情緒擺盪，屬正常反應。碳水超補日情緒會明顯改善。` : ''}
 ` : ''}
 ## 回答原則
 1. 根據「剩餘需求」給出具體的外食建議（711、全家、超商、自助餐、外送等）
@@ -303,7 +314,7 @@ ${geneticProfile.notes ? `- 備註：${geneticProfile.notes}` : ''}
     - 用清楚的格式列出，例如：「蛋白質 35g ｜ 碳水 75g ｜ 脂肪 18g ｜ 熱量 602 kcal」
     - 對比今日剩餘目標，告訴學員吃完這餐後還剩多少
     - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫`
-  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions, geneticProfile])
+  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, prepPhase, competitionDate, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions, geneticProfile])
 
   // 壓縮圖片：FileReader → Image → Canvas → base64 JPEG
   // 每一步都有 fallback，即使 Canvas 失敗也會回傳原圖 base64
