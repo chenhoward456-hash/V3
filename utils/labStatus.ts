@@ -64,8 +64,8 @@ export const LAB_THRESHOLDS = {
   // ── 荷爾蒙 ──
   '睪固酮': { normal: { min: 300, max: 1000 }, attention: { min: 200, max: 1200 } },
   '睪固酮_female': { normal: { min: 15, max: 70 }, attention: { min: 10, max: 90 } },
-  '游離睪固酮': { normal: { min: 9, max: 30 }, attention: { min: 5, max: 35 } },
-  '游離睪固酮_female': { normal: { min: 0.3, max: 1.9 }, attention: { min: 0.2, max: 2.5 } },
+  '游離睪固酮': { normal: { min: 47, max: 244 }, attention: { min: 30, max: 300 } },
+  '游離睪固酮_female': { normal: { min: 0.5, max: 8.5 }, attention: { min: 0.3, max: 10.0 } },
   '皮質醇': { normal: { min: 6, max: 18 }, attention: { min: 4, max: 22 } },
   'DHEA-S': { normal: { min: 100, max: 500 }, attention: { min: 80, max: 600 } },
   'DHEA-S_female': { normal: { min: 65, max: 380 }, attention: { min: 50, max: 450 } },

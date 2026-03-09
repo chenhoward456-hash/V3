@@ -208,7 +208,7 @@ export default function LabResultEditor({
     { name: '鈣', unit: 'mg/dL', reference: '8.5-10.5' },
     // 荷爾蒙
     { name: '睪固酮', unit: 'ng/dL', reference: '300-1000' },
-    { name: '游離睪固酮', unit: 'pg/mL', reference: '9-30' },
+    { name: '游離睪固酮', unit: 'pg/mL', reference: '47-244' },
     { name: '皮質醇', unit: 'μg/dL', reference: '6-18' },
     { name: 'DHEA-S', unit: 'μg/dL', reference: '100-500' },
     { name: '雌二醇', unit: 'pg/mL', reference: '10-40' },

@@ -138,7 +138,7 @@ export function getLabAdvice(testName: string, value: number): string {
     case '鈣': return value >= 8.5 && value <= 10.5 ? '鈣正常' : value < 8.5 ? '鈣偏低' : '鈣偏高'
     // 荷爾蒙
     case '睪固酮': return value >= 300 && value <= 1000 ? '睪固酮正常' : value < 300 ? '睪固酮偏低' : '睪固酮偏高'
-    case '游離睪固酮': return value >= 9 && value <= 30 ? '游離睪固酮正常' : value < 9 ? '游離睪固酮偏低' : '游離睪固酮偏高'
+    case '游離睪固酮': return value >= 47 && value <= 244 ? '游離睪固酮正常' : value < 47 ? '游離睪固酮偏低' : '游離睪固酮偏高'
     case '皮質醇': return value >= 6 && value <= 18 ? '皮質醇正常' : value < 6 ? '皮質醇偏低' : '皮質醇偏高'
     case 'DHEA-S': return value >= 100 && value <= 500 ? 'DHEA-S 正常' : value < 100 ? 'DHEA-S 偏低' : 'DHEA-S 偏高'
     case '雌二醇': return value >= 10 && value <= 40 ? '雌二醇正常' : value < 10 ? '雌二醇偏低' : '雌二醇偏高'
