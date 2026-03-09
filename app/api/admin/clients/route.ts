@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
       'carbs_training_day', 'carbs_rest_day',
       'next_checkup_date', 'coach_weekly_note', 'coach_summary',
       'health_goals', 'quarterly_cycle_start',
+      'gene_mthfr', 'gene_apoe', 'gene_depression_risk', 'gene_notes',
     ]
     const sanitizedClientData: Record<string, any> = {}
     if (clientData && typeof clientData === 'object') {
@@ -178,6 +179,7 @@ export async function PUT(request: NextRequest) {
       'carbs_training_day', 'carbs_rest_day',
       'next_checkup_date', 'coach_weekly_note', 'coach_summary',
       'health_goals', 'quarterly_cycle_start',
+      'gene_mthfr', 'gene_apoe', 'gene_depression_risk', 'gene_notes',
     ]
     const sanitizedClientData: Record<string, any> = {}
     if (clientData && typeof clientData === 'object') {

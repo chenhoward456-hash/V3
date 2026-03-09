@@ -271,6 +271,11 @@ export default function ClientOverview() {
       hasHighRPE,
       goalType: client?.goal_type || null,
       isHealthMode: !!client?.health_mode_enabled,
+      genetics: {
+        mthfr: client?.gene_mthfr,
+        apoe: client?.gene_apoe,
+        depressionRisk: client?.gene_depression_risk,
+      },
     })
   }, [latestLabs, client, trainingLogs])
 

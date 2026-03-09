@@ -75,6 +75,13 @@ interface AiChatDrawerProps {
   healthModeEnabled?: boolean
   healthScore?: { total: number; grade: string; daysInCycle: number | null; daysUntilBloodTest: number | null; pillars: { pillar: string; label: string; score: number; emoji: string }[] } | null
   supplementSuggestions?: { name: string; dosage: string; reason: string; priority: string }[]
+  // Genetic profile
+  geneticProfile?: {
+    mthfr?: string | null
+    apoe?: string | null
+    depressionRisk?: string | null
+    notes?: string | null
+  } | null
 }
 
 export default function AiChatDrawer({
@@ -93,6 +100,7 @@ export default function AiChatDrawer({
   healthModeEnabled,
   healthScore,
   supplementSuggestions,
+  geneticProfile,
 }: AiChatDrawerProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -267,6 +275,13 @@ ${healthScore.daysUntilBloodTest != null && healthScore.daysUntilBloodTest <= 30
 ` : ''}${healthModeEnabled && supplementSuggestions && supplementSuggestions.length > 0 ? `
 ## 健康模式 — 系統建議補品
 ${supplementSuggestions.map(s => `- ${s.name}（${s.dosage}）：${s.reason.slice(0, 60)}`).join('\n')}
+` : ''}${geneticProfile && (geneticProfile.mthfr || geneticProfile.apoe || geneticProfile.depressionRisk) ? `
+## 🧬 基因風險背景
+${geneticProfile.mthfr && geneticProfile.mthfr !== 'normal' ? `- **MTHFR 突變**：${geneticProfile.mthfr === 'homozygous' ? '純合突變（C677T）— 葉酸代謝嚴重受損' : '雜合突變 — 葉酸代謝部分受損'}。需使用活性葉酸（5-MTHF）而非一般葉酸。飲食建議多攝取天然葉酸食物（深色蔬菜、肝臟）。注意同半胱胺酸控制。` : ''}
+${geneticProfile.apoe === 'e3/e4' || geneticProfile.apoe === 'e4/e4' ? `- **APOE4 帶因者**（${geneticProfile.apoe}）：心血管與認知退化風險較高。飲食需嚴格控制飽和脂肪（<7% 總熱量），強調 Omega-3 DHA 攝取，避免反式脂肪。建議地中海飲食模式。定期追蹤血脂（特別是 ApoB、LDL-C）。` : ''}
+${geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high' ? `- **憂鬱傾向基因**（${geneticProfile.depressionRisk === 'high' ? '高' : '中等'}風險）：神經傳導物質代謝較脆弱。飲食建議強調：富含色胺酸食物（火雞、香蕉、堅果）、Omega-3 EPA 抗發炎、維生素 D 支持血清素合成、鎂穩定情緒。運動處方對此基因型特別有效。` : ''}
+${geneticProfile.notes ? `- 備註：${geneticProfile.notes}` : ''}
+**重要**：基因背景會影響你的所有建議方向。在推薦食物、補品、生活方式時，都需要考慮這些基因風險因素。但不要每次回覆都提到基因，只在建議與基因相關時自然帶入。
 ` : ''}
 ## 回答原則
 1. 根據「剩餘需求」給出具體的外食建議（711、全家、超商、自助餐、外送等）
@@ -288,7 +303,7 @@ ${supplementSuggestions.map(s => `- ${s.name}（${s.dosage}）：${s.reason.slic
     - 用清楚的格式列出，例如：「蛋白質 35g ｜ 碳水 75g ｜ 脂肪 18g ｜ 熱量 602 kcal」
     - 對比今日剩餘目標，告訴學員吃完這餐後還剩多少
     - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫`
-  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions])
+  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions, geneticProfile])
 
   // 壓縮圖片：FileReader → Image → Canvas → base64 JPEG
   // 每一步都有 fallback，即使 Canvas 失敗也會回傳原圖 base64

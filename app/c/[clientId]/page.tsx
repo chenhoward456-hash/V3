@@ -407,9 +407,14 @@ export default function ClientDashboard() {
         isHealthMode: true,
         hasHighRPE,
         goalType: (c.goal_type as 'cut' | 'bulk' | null) || null,
+        genetics: {
+          mthfr: c.gene_mthfr as any,
+          apoe: c.gene_apoe as any,
+          depressionRisk: c.gene_depression_risk as any,
+        },
       }
     )
-  }, [isHealthMode, c.lab_results, c.gender, c.goal_type, clientData.trainingLogs])
+  }, [isHealthMode, c.lab_results, c.gender, c.goal_type, clientData.trainingLogs, c.gene_mthfr, c.gene_apoe, c.gene_depression_risk])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1551,6 +1556,12 @@ export default function ClientDashboard() {
           healthModeEnabled={isHealthMode}
           healthScore={healthScore}
           supplementSuggestions={healthSupplementSuggestions}
+          geneticProfile={c.gene_mthfr || c.gene_apoe || c.gene_depression_risk ? {
+            mthfr: c.gene_mthfr as string | null,
+            apoe: c.gene_apoe as string | null,
+            depressionRisk: c.gene_depression_risk as string | null,
+            notes: c.gene_notes as string | null,
+          } : undefined}
         />
       )}
 

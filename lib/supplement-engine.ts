@@ -56,6 +56,12 @@ function findLabValue(labs: LabResult[], key: string): LabResult | undefined {
 
 // ── 主引擎 ──
 
+export interface GeneticProfile {
+  mthfr?: 'normal' | 'heterozygous' | 'homozygous' | null
+  apoe?: 'e2/e2' | 'e2/e3' | 'e3/e3' | 'e3/e4' | 'e4/e4' | null
+  depressionRisk?: 'low' | 'moderate' | 'high' | null
+}
+
 export function generateSupplementSuggestions(
   labs: LabResult[],
   options: {
@@ -64,10 +70,11 @@ export function generateSupplementSuggestions(
     hasHighRPE?: boolean       // 近期訓練 RPE 持續偏高
     goalType?: 'cut' | 'bulk' | null
     isHealthMode?: boolean     // 健康模式：長壽導向補品建議
+    genetics?: GeneticProfile  // 基因風險資料
   } = {}
 ): SupplementSuggestion[] {
   const suggestions: SupplementSuggestion[] = []
-  const { gender, isCompetitionPrep, hasHighRPE, goalType, isHealthMode } = options
+  const { gender, isCompetitionPrep, hasHighRPE, goalType, isHealthMode, genetics } = options
 
   // ── 1. 鐵蛋白（Ferritin）──
   const ferritin = findLabValue(labs, 'ferritin')
@@ -203,18 +210,22 @@ export function generateSupplementSuggestions(
     const threshold = gender === '女性' ? 12.0 : 13.5
     if (hemoglobin.value < threshold) {
       const alreadyHasIron = suggestions.some(s => s.name.includes('鐵劑'))
+      const hasMTHFR = genetics?.mthfr === 'heterozygous' || genetics?.mthfr === 'homozygous'
+      const folateForm = hasMTHFR ? '5-MTHF 活性葉酸' : '葉酸'
+      const folateDose = hasMTHFR ? '5-MTHF 800mcg' : '葉酸 400mcg'
+
       if (alreadyHasIron) {
         // 已有鐵蛋白觸發的鐵劑建議 → 合併：升級劑量 + 加入葉酸 + 追加觸發指標
         const existing = suggestions.find(s => s.name.includes('鐵劑'))!
-        existing.name = '鐵劑 + 維生素 C + 葉酸'
-        existing.dosage = '鐵 25mg + 維生素 C 500mg + 葉酸 400mcg'
-        existing.reason += ` 同時血紅素 ${hemoglobin.value} g/dL 偏低，合併補充葉酸加速紅血球生成。`
+        existing.name = `鐵劑 + 維生素 C + ${folateForm}`
+        existing.dosage = `鐵 25mg + 維生素 C 500mg + ${folateDose}`
+        existing.reason += ` 同時血紅素 ${hemoglobin.value} g/dL 偏低，合併補充${folateForm}加速紅血球生成。${hasMTHFR ? '（MTHFR 突變，使用活性葉酸形式）' : ''}`
         existing.priority = 'high'
         existing.triggerTests.push(hemoglobin.test_name)
       } else {
         suggestions.push({
-          name: '鐵劑 + 葉酸',
-          dosage: '鐵 25mg + 葉酸 400mcg',
+          name: `鐵劑 + ${folateForm}`,
+          dosage: `鐵 25mg + ${folateDose}`,
           timing: '空腹服用，搭配維生素 C',
           reason: `血紅素 ${hemoglobin.value} g/dL，低於正常值（${gender === '女性' ? '女性 12.0' : '男性 13.5'} g/dL）。貧血嚴重影響有氧代謝與運動表現。`,
           priority: 'high',
@@ -360,6 +371,127 @@ export function generateSupplementSuggestions(
       triggerTests: [],
       category: 'hormonal',
     })
+  }
+
+  // ── 基因導向補品建議 ──
+
+  // MTHFR 突變：建議活性葉酸 + B12（甲基鈷胺素）
+  if (genetics?.mthfr === 'heterozygous' || genetics?.mthfr === 'homozygous') {
+    const alreadyHasFolate = suggestions.some(s =>
+      s.name.includes('葉酸') || s.name.includes('MTHF') || s.name.includes('B群')
+    )
+    if (!alreadyHasFolate) {
+      const isHomozygous = genetics.mthfr === 'homozygous'
+      suggestions.push({
+        name: '活性葉酸（5-MTHF）+ 甲基 B12',
+        dosage: isHomozygous ? '5-MTHF 1000mcg + 甲基B12 1000mcg' : '5-MTHF 800mcg + 甲基B12 1000mcg',
+        timing: '早餐後',
+        reason: `MTHFR ${isHomozygous ? '純合' : '雜合'}突變，無法有效將葉酸轉化為活性形式。需補充已活化的 5-MTHF 與甲基 B12，支持甲基化代謝、降低同半胱胺酸。`,
+        priority: isHomozygous ? 'high' : 'medium',
+        evidence: 'Tsang et al. 2015 (Mol Genet Metab)：MTHFR C677T 純合突變者補充 5-MTHF 顯著降低同半胱胺酸',
+        triggerTests: [],
+        category: 'deficiency',
+      })
+    }
+  }
+
+  // APOE4 帶因者：強調 Omega-3 DHA + 降低心血管風險
+  if (genetics?.apoe === 'e3/e4' || genetics?.apoe === 'e4/e4') {
+    const isDoubleE4 = genetics.apoe === 'e4/e4'
+
+    // 強調 DHA 為主的 Omega-3
+    const alreadyHasOmega3 = suggestions.some(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))
+    if (alreadyHasOmega3) {
+      // 升級現有 Omega-3 建議，強調 DHA
+      const existing = suggestions.find(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))!
+      existing.name = 'Omega-3 魚油（高 DHA 配方）'
+      existing.dosage = 'DHA 1000mg + EPA 500mg'
+      existing.reason += ` APOE4 帶因者需特別強調 DHA 攝取，支持腦部健康與心血管保護。`
+      existing.priority = 'high'
+    } else {
+      suggestions.push({
+        name: 'Omega-3 魚油（高 DHA 配方）',
+        dosage: 'DHA 1000mg + EPA 500mg',
+        timing: '隨餐服用',
+        reason: `APOE4 帶因者${isDoubleE4 ? '（雙 e4，高風險）' : ''}，DHA 對腦部與心血管保護尤為關鍵。建議搭配低飽和脂肪飲食。`,
+        priority: 'high',
+        evidence: 'Yassine et al. 2017 (JAMA Neurology)：APOE4 帶因者補充 DHA 改善腦部 DHA 攝取',
+        triggerTests: [],
+        category: 'recovery',
+      })
+    }
+
+    // 磷蝦油 / 磷脂質 DHA（APOE4 特異性，穿越血腦屏障效率更高）
+    if (isDoubleE4) {
+      suggestions.push({
+        name: '磷脂醯絲胺酸（PS）',
+        dosage: '100-300mg',
+        timing: '隨餐服用',
+        reason: 'APOE4/4 高風險基因型。磷脂醯絲胺酸支持細胞膜流動性與認知功能，與 DHA 協同保護腦部。',
+        priority: 'medium',
+        evidence: 'Richter et al. 2013 (Nutrition)：PS 補充改善認知功能指標',
+        triggerTests: [],
+        category: 'performance',
+      })
+    }
+  }
+
+  // 憂鬱傾向基因：強調維生素 D、Omega-3 EPA、鎂
+  if (genetics?.depressionRisk === 'moderate' || genetics?.depressionRisk === 'high') {
+    const isHighRisk = genetics.depressionRisk === 'high'
+
+    // 確保有維生素 D（升級劑量）
+    const existingD = suggestions.find(s => s.name.includes('D3') || s.name.includes('維生素 D'))
+    if (existingD) {
+      if (isHighRisk) {
+        existingD.dosage = 'D3 4000 IU + K2 100mcg'
+        existingD.reason += ' 憂鬱傾向基因高風險，維生素 D 與血清素合成密切相關，建議維持 50+ ng/mL。'
+        existingD.priority = 'high'
+      }
+    } else {
+      suggestions.push({
+        name: '維生素 D3 + K2',
+        dosage: isHighRisk ? 'D3 4000 IU + K2 100mcg' : 'D3 2000 IU + K2 100mcg',
+        timing: '隨含脂肪的餐點服用',
+        reason: `憂鬱傾向基因${isHighRisk ? '高' : '中等'}風險。維生素 D 參與血清素合成，不足與憂鬱症狀顯著相關。`,
+        priority: isHighRisk ? 'high' : 'medium',
+        evidence: 'Anglin et al. 2013 (Br J Psychiatry)：低維生素 D 與憂鬱風險增加 2 倍相關',
+        triggerTests: [],
+        category: 'deficiency',
+      })
+    }
+
+    // Omega-3 EPA（抗憂鬱效果主要來自 EPA）
+    const existingOmega = suggestions.find(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))
+    if (existingOmega) {
+      existingOmega.reason += ' 憂鬱傾向基因風險，EPA 的抗發炎與神經保護作用有助穩定情緒。'
+    } else {
+      suggestions.push({
+        name: 'Omega-3 魚油（高 EPA 配方）',
+        dosage: 'EPA 1000mg + DHA 500mg',
+        timing: '隨餐服用',
+        reason: `憂鬱傾向基因${isHighRisk ? '高' : '中等'}風險。EPA 具抗發炎與調節神經傳導物質的作用，臨床研究顯示對憂鬱症狀有改善效果。`,
+        priority: 'high',
+        evidence: 'Liao et al. 2019 (Transl Psychiatry)：EPA ≥1g/day 對憂鬱症狀有顯著改善',
+        triggerTests: [],
+        category: 'recovery',
+      })
+    }
+
+    // 鎂（放鬆、助眠、穩定情緒）
+    const alreadyHasMag = suggestions.some(s => s.name.includes('鎂'))
+    if (!alreadyHasMag) {
+      suggestions.push({
+        name: '甘胺酸鎂（Magnesium Glycinate）',
+        dosage: '400mg',
+        timing: '睡前 30 分鐘',
+        reason: `憂鬱傾向基因風險。鎂調節 NMDA 受體與 HPA 軸，不足會加重焦慮與憂鬱。甘胺酸鎂兼具助眠與穩定情緒效果。`,
+        priority: 'high',
+        evidence: 'Tarleton et al. 2017 (PLoS One)：鎂補充 6 週顯著改善輕中度憂鬱症狀',
+        triggerTests: [],
+        category: 'recovery',
+      })
+    }
   }
 
   // ── 排序：high → medium → low，同優先級按 category 排序 ──

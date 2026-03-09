@@ -69,6 +69,11 @@ interface Client {
   simple_mode: boolean
   quarterly_cycle_start: string | null
   coach_macro_override: { locked_at: string; locked_fields: string[]; previous_values?: Record<string, number | null> } | null
+  // 基因風險欄位
+  gene_mthfr: 'normal' | 'heterozygous' | 'homozygous' | null
+  gene_apoe: 'e2/e2' | 'e2/e3' | 'e3/e3' | 'e3/e4' | 'e4/e4' | null
+  gene_depression_risk: 'low' | 'moderate' | 'high' | null
+  gene_notes: string | null
 
   lab_results: LabResult[]
   supplements: Supplement[]
@@ -143,6 +148,10 @@ export default function ClientEditor() {
         simple_mode: true,
         quarterly_cycle_start: null,
         coach_macro_override: null,
+        gene_mthfr: null,
+        gene_apoe: null,
+        gene_depression_risk: null,
+        gene_notes: null,
 
         lab_results: [],
         supplements: []
@@ -239,6 +248,10 @@ export default function ClientEditor() {
         quarterly_cycle_start: client.quarterly_cycle_start || null,
         subscription_tier: client.subscription_tier,
         ai_chat_enabled: client.ai_chat_enabled,
+        gene_mthfr: client.gene_mthfr || null,
+        gene_apoe: client.gene_apoe || null,
+        gene_depression_risk: client.gene_depression_risk || null,
+        gene_notes: client.gene_notes || null,
         // coach_macro_override 由後端自動處理（修改 macro 時自動鎖定）
         // 只有教練明確解鎖時才送 null
         ...(client.coach_macro_override === null && clientId !== 'new'
@@ -989,6 +1002,76 @@ export default function ClientEditor() {
                       </div>
                     )
                   })()}
+                </div>
+              </div>
+            )}
+
+            {/* Genetic Risk Profile — 基因風險欄位 */}
+            {client.health_mode_enabled && (
+              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-400">
+                <h2 className="text-lg font-medium text-gray-900 mb-1">🧬 基因風險設定</h2>
+                <p className="text-xs text-gray-400 mb-4">根據基因檢測結果設定，系統會自動調整補品建議與 AI 顧問回覆</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">MTHFR 基因</label>
+                    <select
+                      value={client.gene_mthfr || ''}
+                      onChange={(e) => updateClient('gene_mthfr', e.target.value || null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">未檢測</option>
+                      <option value="normal">正常</option>
+                      <option value="heterozygous">雜合突變（C677T 或 A1298C）</option>
+                      <option value="homozygous">純合突變（C677T）</option>
+                    </select>
+                    {client.gene_mthfr && client.gene_mthfr !== 'normal' && (
+                      <p className="text-xs text-purple-600 mt-1">補品引擎將建議活性葉酸（5-MTHF）取代一般葉酸</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">APOE 基因型</label>
+                    <select
+                      value={client.gene_apoe || ''}
+                      onChange={(e) => updateClient('gene_apoe', e.target.value || null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">未檢測</option>
+                      <option value="e2/e2">e2/e2</option>
+                      <option value="e2/e3">e2/e3</option>
+                      <option value="e3/e3">e3/e3（最常見）</option>
+                      <option value="e3/e4">e3/e4（一個 e4 等位基因）</option>
+                      <option value="e4/e4">e4/e4（高風險）</option>
+                    </select>
+                    {(client.gene_apoe === 'e3/e4' || client.gene_apoe === 'e4/e4') && (
+                      <p className="text-xs text-purple-600 mt-1">將強調 Omega-3 DHA、降低飽和脂肪、加強心血管監控</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">憂鬱傾向基因風險</label>
+                    <select
+                      value={client.gene_depression_risk || ''}
+                      onChange={(e) => updateClient('gene_depression_risk', e.target.value || null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">未檢測</option>
+                      <option value="low">低風險</option>
+                      <option value="moderate">中等風險</option>
+                      <option value="high">高風險</option>
+                    </select>
+                    {client.gene_depression_risk && client.gene_depression_risk !== 'low' && (
+                      <p className="text-xs text-purple-600 mt-1">將強調維生素 D、Omega-3 EPA、鎂、運動處方</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">基因備註</label>
+                    <input
+                      type="text"
+                      value={client.gene_notes || ''}
+                      onChange={(e) => updateClient('gene_notes', e.target.value || null)}
+                      placeholder="其他基因相關資訊..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
                 </div>
               </div>
             )}
