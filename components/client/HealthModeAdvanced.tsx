@@ -66,24 +66,45 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'advice' | 'report' | 'micro'>('advice')
 
+  const [fetchError, setFetchError] = useState<string | null>(null)
+
   useEffect(() => {
     const fetchReport = async () => {
+      setFetchError(null)
       try {
         const res = await fetch(`/api/health-report?clientId=${clientId}${code ? `&code=${code}` : ''}`)
         if (res.ok) {
           const json = await res.json()
           setData(json)
+        } else {
+          const errJson = await res.json().catch(() => null)
+          setFetchError(errJson?.error || `載入失敗 (${res.status})`)
         }
-      } catch { /* ignore */ }
-      finally { setLoading(false) }
+      } catch (err) {
+        console.error('HealthModeAdvanced fetch error:', err)
+        setFetchError('網路錯誤，無法載入健康報告')
+      } finally {
+        setLoading(false)
+      }
     }
     fetchReport()
-  }, [clientId])
+  }, [clientId, code])
 
   if (loading) return null
 
   const hasAdvice = data?.labNutritionAdvice && data.labNutritionAdvice.length > 0
   const hasReport = data?.report?.comparisons && data.report.comparisons.some(c => c.previous != null)
+
+  // 載入失敗 → 顯示錯誤
+  if (fetchError) {
+    return (
+      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-center">
+          <p className="text-sm text-red-600">{fetchError}</p>
+        </div>
+      </div>
+    )
+  }
 
   // 沒有任何數據 → 不顯示
   if (!data && !hasAdvice) return null
@@ -229,7 +250,7 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
           </div>
           <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
             <p className="text-[10px] text-emerald-700">
-              💡 這些目標會根據你的血檢結果自動調整。缺鎂 → 鎂目標提高；CRP 高 → Omega-3 目標提高。
+              💡 以上為基於運動營養研究的每日建議攝取量。搭配血檢結果，可在「血檢飲食」分頁查看個人化調整建議。
             </p>
           </div>
         </div>

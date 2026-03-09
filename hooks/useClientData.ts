@@ -42,6 +42,10 @@ export interface Client {
   next_checkup_date: string | null
   health_goals: string | null
   quarterly_cycle_start: string | null
+  gene_mthfr: string | null
+  gene_apoe: string | null
+  gene_depression_risk: string | null
+  gene_notes: string | null
   line_user_id: string | null
   created_at: string
   height: number | null

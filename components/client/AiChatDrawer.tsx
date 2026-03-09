@@ -71,6 +71,17 @@ interface AiChatDrawerProps {
   wearableData?: { hrv?: number | null; resting_hr?: number | null; device_recovery_score?: number | null } | null
   labResults?: LabResultEntry[]
   onFirstMessage?: () => void
+  // Health mode context
+  healthModeEnabled?: boolean
+  healthScore?: { total: number; grade: string; daysInCycle: number | null; daysUntilBloodTest: number | null; pillars: { pillar: string; label: string; score: number; emoji: string }[] } | null
+  supplementSuggestions?: { name: string; dosage: string; reason: string; priority: string }[]
+  // Genetic profile
+  geneticProfile?: {
+    mthfr?: string | null
+    apoe?: string | null
+    depressionRisk?: string | null
+    notes?: string | null
+  } | null
 }
 
 export default function AiChatDrawer({
@@ -86,6 +97,10 @@ export default function AiChatDrawer({
   todayWellness, wearableData,
   labResults,
   onFirstMessage,
+  healthModeEnabled,
+  healthScore,
+  supplementSuggestions,
+  geneticProfile,
 }: AiChatDrawerProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -251,7 +266,23 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
 ${recoverySignals.length > 0 ? `\n## 訓練恢復評估\n${recoverySignals.join('\n')}\n- 請根據以上恢復狀態調整飲食建議（例如：恢復差時增加抗發炎食物、含鎂食物助眠、適當增加碳水幫助恢復）` : ''}
 ${labSummary ? `\n## 最新血檢異常項目\n${labSummary}\n- 請根據血檢結果在飲食建議中自然帶入相關營養素（例如：鐵蛋白低→推薦含鐵食物；維生素D不足→建議補充；不需每次都提，在相關時自然帶入）` : ''}
 ${labNormalHighlights && !labSummary ? `\n## 血檢狀態\n所有項目正常：${labNormalHighlights}` : ''}
-
+${healthModeEnabled && healthScore ? `
+## 健康模式 — 季度健康分數
+- 總分：${healthScore.total}/100（${healthScore.grade} 級）
+${healthScore.pillars.map(p => `- ${p.emoji} ${p.label}：${p.score}/100`).join('\n')}
+${healthScore.daysInCycle != null ? `- 本季進度：第 ${healthScore.daysInCycle} 天 / 90 天` : ''}
+${healthScore.daysUntilBloodTest != null && healthScore.daysUntilBloodTest <= 30 ? `- 🩸 距離季度血檢還有 ${healthScore.daysUntilBloodTest} 天` : ''}
+` : ''}${healthModeEnabled && supplementSuggestions && supplementSuggestions.length > 0 ? `
+## 健康模式 — 系統建議補品
+${supplementSuggestions.map(s => `- ${s.name}（${s.dosage}）：${s.reason.slice(0, 60)}`).join('\n')}
+` : ''}${geneticProfile && (geneticProfile.mthfr || geneticProfile.apoe || geneticProfile.depressionRisk) ? `
+## 🧬 基因風險背景
+${geneticProfile.mthfr && geneticProfile.mthfr !== 'normal' ? `- **MTHFR 突變**：${geneticProfile.mthfr === 'homozygous' ? '純合突變（C677T）— 葉酸代謝嚴重受損' : '雜合突變 — 葉酸代謝部分受損'}。需使用活性葉酸（5-MTHF）而非一般葉酸。飲食建議多攝取天然葉酸食物（深色蔬菜、肝臟）。注意同半胱胺酸控制。` : ''}
+${geneticProfile.apoe === 'e3/e4' || geneticProfile.apoe === 'e4/e4' ? `- **APOE4 帶因者**（${geneticProfile.apoe}）：心血管與認知退化風險較高。飲食需嚴格控制飽和脂肪（<7% 總熱量），強調 Omega-3 DHA 攝取，避免反式脂肪。建議地中海飲食模式。定期追蹤血脂（特別是 ApoB、LDL-C）。` : ''}
+${geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high' ? `- **憂鬱傾向基因**（${geneticProfile.depressionRisk === 'high' ? '高' : '中等'}風險）：神經傳導物質代謝較脆弱。飲食建議強調：富含色胺酸食物（火雞、香蕉、堅果）、Omega-3 EPA 抗發炎、維生素 D 支持血清素合成、鎂穩定情緒。運動處方對此基因型特別有效。` : ''}
+${geneticProfile.notes ? `- 備註：${geneticProfile.notes}` : ''}
+**重要**：基因背景會影響你的所有建議方向。在推薦食物、補品、生活方式時，都需要考慮這些基因風險因素。但不要每次回覆都提到基因，只在建議與基因相關時自然帶入。
+` : ''}
 ## 回答原則
 1. 根據「剩餘需求」給出具體的外食建議（711、全家、超商、自助餐、外送等）
 2. 每個建議要附上大約的營養素估算（蛋白質、碳水、脂肪、熱量）
@@ -266,12 +297,13 @@ ${labNormalHighlights && !labSummary ? `\n## 血檢狀態\n所有項目正常：
 11. 當學員問訓練相關問題時，結合恢復狀態給出強度建議
 12. 不做醫療診斷，建議以科學為基礎
 13. 回答簡潔，不超過 400 字
-14. **食物估算功能**：當學員描述他吃了什麼（如「一個雞腿便當」、「超商鮭魚飯糰+茶葉蛋」），你要：
+14. **健康模式用戶**（如有健康分數數據）：你是他們的長壽健康顧問，除了飲食建議外，還要根據健康分數各支柱表現、血檢趨勢、補品建議，提供全面的健康優化方案。關注抗發炎、抗氧化、微營養素攝取、睡眠品質等長壽相關指標。
+15. **食物估算功能**：當學員描述他吃了什麼（如「一個雞腿便當」、「超商鮭魚飯糰+茶葉蛋」），你要：
     - 估算該餐的蛋白質(g)、碳水(g)、脂肪(g)、總熱量(kcal)
     - 用清楚的格式列出，例如：「蛋白質 35g ｜ 碳水 75g ｜ 脂肪 18g ｜ 熱量 602 kcal」
     - 對比今日剩餘目標，告訴學員吃完這餐後還剩多少
     - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫`
-  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults])
+  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions, geneticProfile])
 
   // 壓縮圖片：FileReader → Image → Canvas → base64 JPEG
   // 每一步都有 fallback，即使 Canvas 失敗也會回傳原圖 base64

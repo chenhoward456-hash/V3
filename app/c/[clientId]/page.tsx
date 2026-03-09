@@ -33,6 +33,7 @@ import AiChatDrawer from '@/components/client/AiChatDrawer'
 import AiInsightsPanel from '@/components/client/AiInsightsPanel'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
+import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 import { trackEvent } from '@/lib/analytics'
@@ -388,6 +389,32 @@ export default function ClientDashboard() {
     labResults: c.lab_results || [],
     quarterlyStart: c.quarterly_cycle_start,
   }) : null
+
+  // 健康模式：生成補品建議（給 AI 用）
+  const healthSupplementSuggestions = useMemo(() => {
+    if (!isHealthMode || !c.lab_results?.length) return []
+    const recentTraining = (clientData.trainingLogs || []).slice(-7)
+    const hasHighRPE = recentTraining.filter((t: any) => t.rpe != null && t.rpe >= 9).length >= 3
+    return generateSupplementSuggestions(
+      (c.lab_results || []).map((r: any) => ({
+        test_name: r.test_name,
+        value: r.value,
+        unit: r.unit,
+        status: r.status,
+      })),
+      {
+        gender: c.gender as '男性' | '女性' | undefined,
+        isHealthMode: true,
+        hasHighRPE,
+        goalType: (c.goal_type as 'cut' | 'bulk' | null) || null,
+        genetics: {
+          mthfr: c.gene_mthfr as any,
+          apoe: c.gene_apoe as any,
+          depressionRisk: c.gene_depression_risk as any,
+        },
+      }
+    )
+  }, [isHealthMode, c.lab_results, c.gender, c.goal_type, clientData.trainingLogs, c.gene_mthfr, c.gene_apoe, c.gene_depression_risk])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1102,8 +1129,8 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* 目標設定 — 免費/自主管理用戶可隨時調整目標 */}
-        {(isFree || isSelfManaged) && c.calories_target && (
+        {/* 目標設定 — 所有學員皆可調整目標（例如賽後切換休賽季目標） */}
+        {c.calories_target && (
           <div className="mb-3">
             <GoalSettings
               clientId={c.id}
@@ -1485,8 +1512,8 @@ export default function ClientDashboard() {
       )}
 
 
-      {/* AI 聊天抽屜（付費用戶 + 免費用戶月度免費額度） */}
-      {c.nutrition_enabled && (
+      {/* AI 聊天抽屜（付費用戶 + 健康模式用戶 + 免費用戶月度免費額度） */}
+      {(c.nutrition_enabled || isHealthMode) && (
         <AiChatDrawer
           open={showAiChat}
           onClose={() => setShowAiChat(false)}
@@ -1526,6 +1553,15 @@ export default function ClientDashboard() {
             custom_advice: r.custom_advice,
           })) : undefined}
           onFirstMessage={undefined}
+          healthModeEnabled={isHealthMode}
+          healthScore={healthScore}
+          supplementSuggestions={healthSupplementSuggestions}
+          geneticProfile={c.gene_mthfr || c.gene_apoe || c.gene_depression_risk ? {
+            mthfr: c.gene_mthfr as string | null,
+            apoe: c.gene_apoe as string | null,
+            depressionRisk: c.gene_depression_risk as string | null,
+            notes: c.gene_notes as string | null,
+          } : undefined}
         />
       )}
 
