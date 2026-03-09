@@ -1492,6 +1492,14 @@ export default function ClientDashboard() {
             resting_hr: todayWellness?.resting_hr ?? null,
             device_recovery_score: todayWellness?.device_recovery_score ?? null,
           }}
+          labResults={c.lab_enabled ? (c.lab_results || []).map((r: any) => ({
+            test_name: r.test_name,
+            value: r.value,
+            unit: r.unit,
+            status: r.status,
+            date: r.date,
+            custom_advice: r.custom_advice,
+          })) : undefined}
           onFirstMessage={undefined}
         />
       )}
