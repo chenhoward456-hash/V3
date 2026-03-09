@@ -244,6 +244,11 @@ export async function GET(request: NextRequest) {
             .filter((n: any) => n.date >= sevenDaysStr)
             .map((n: any) => ({ date: n.date, carbs: n.carbs_grams ?? null })),
           lastPeriodDate: periodMap[client.id] || null,
+          geneticProfile: (client.gene_mthfr || client.gene_apoe || client.gene_depression_risk) ? {
+            mthfr: client.gene_mthfr || undefined,
+            apoe: client.gene_apoe || undefined,
+            depressionRisk: client.gene_depression_risk || undefined,
+          } : undefined,
         }
 
         const suggestion = generateNutritionSuggestion(engineInput)

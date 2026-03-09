@@ -279,6 +279,11 @@ export async function GET(request: NextRequest) {
         weeksDuration: suppWeeksDuration,
         supplements: suppList.map((s: any) => s.name),
       } : undefined,
+      geneticProfile: (client.gene_mthfr || client.gene_apoe || client.gene_depression_risk) ? {
+        mthfr: client.gene_mthfr || undefined,
+        apoe: client.gene_apoe || undefined,
+        depressionRisk: client.gene_depression_risk || undefined,
+      } : undefined,
     }
 
     // 9. 執行引擎

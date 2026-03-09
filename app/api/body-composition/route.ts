@@ -97,6 +97,11 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     trainingDaysPerWeek: trainingDays,
     prepPhase: client.prep_phase || undefined,
     activityProfile: (client.activity_profile as 'sedentary' | 'high_energy_flux') || undefined,
+    geneticProfile: (client.gene_mthfr || client.gene_apoe || client.gene_depression_risk) ? {
+      mthfr: client.gene_mthfr || undefined,
+      apoe: client.gene_apoe || undefined,
+      depressionRisk: client.gene_depression_risk || undefined,
+    } : undefined,
   })
 
   const debugInfo = `status=${suggestion.status}, autoApply=${suggestion.autoApply}, compliance=${compliance}%, weeklyWeights=${weeklyWeights.length}, rate=${suggestion.weeklyWeightChangeRate?.toFixed(2)}%/wk`
