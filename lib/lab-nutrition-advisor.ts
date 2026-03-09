@@ -44,6 +44,7 @@ interface LabInput {
   value: number | null
   unit: string
   status: 'normal' | 'attention' | 'alert'
+  date?: string
 }
 
 function matchName(testName: string, keywords: string[]): boolean {
@@ -1452,7 +1453,19 @@ export function generateLabOptimizationTips(
   const tips: LabOptimizationTip[] = []
   const { gender } = options
 
+  // 每個指標只保留最新一筆，避免舊值產生錯誤建議
+  const latestByName = new Map<string, LabInput>()
   for (const lab of labs) {
+    if (lab.value == null) continue
+    const key = lab.test_name.toLowerCase().trim()
+    const existing = latestByName.get(key)
+    if (!existing || (lab.date && (!existing.date || lab.date > existing.date))) {
+      latestByName.set(key, lab)
+    }
+  }
+  const dedupedLabs = Array.from(latestByName.values())
+
+  for (const lab of dedupedLabs) {
     if (lab.value == null || lab.status !== 'normal') continue
 
     // ── 游離睪固酮（男性）──
@@ -2350,7 +2363,7 @@ export function generateLabOptimizationTips(
           labMarker: lab.test_name,
           currentValue: lab.value,
           unit: lab.unit,
-          optimalRange: `${optMin}-${optMax} μg/dL`,
+          optimalRange: `${optMin}-${optMax} ${lab.unit}`,
           currentRange: normalRange,
           tips: lab.value < optMin ? [
             '增加規律運動（重訓+有氧組合最有效）',
@@ -2383,7 +2396,7 @@ export function generateLabOptimizationTips(
           labMarker: lab.test_name,
           currentValue: lab.value,
           unit: lab.unit,
-          optimalRange: `${optMin}-${optMax} nmol/L`,
+          optimalRange: `${optMin}-${optMax} ${lab.unit}`,
           currentRange: normalRange,
           tips: lab.value > optMax ? [
             'SHBG 過高會結合過多游離睪固酮，降低生物利用率',
@@ -2450,7 +2463,7 @@ export function generateLabOptimizationTips(
           labMarker: lab.test_name,
           currentValue: lab.value,
           unit: lab.unit,
-          optimalRange: `${optMin}-${optMax} g/dL`,
+          optimalRange: `${optMin}-${optMax} ${lab.unit}`,
           currentRange: normalRange,
           tips: lab.value < optMin ? [
             '增加富鐵食物攝取（紅肉、牡蠣、肝臟）',
@@ -2700,14 +2713,17 @@ export function detectLabCrossPatterns(
   const patterns: LabCrossAnalysis[] = []
   const { gender, bodyFatPct, hasAmenorrhea } = options
 
-  // 輔助：取得指標值
+  // 輔助：取得指標最新值
   const getValue = (keywords: string[]): { name: string; value: number; unit: string } | null => {
+    let latest: { name: string; value: number; unit: string; date?: string } | null = null
     for (const lab of labs) {
       if (lab.value != null && matchName(lab.test_name, keywords)) {
-        return { name: lab.test_name, value: lab.value, unit: lab.unit }
+        if (!latest || (lab.date && (!latest.date || lab.date > latest.date))) {
+          latest = { name: lab.test_name, value: lab.value, unit: lab.unit, date: lab.date }
+        }
       }
     }
-    return null
+    return latest ? { name: latest.name, value: latest.value, unit: latest.unit } : null
   }
 
   // ── Pattern 1: RED-S 風險群組（女性為主，男性也可能）──
