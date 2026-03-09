@@ -1744,25 +1744,587 @@ export function generateLabOptimizationTips(
 
     // ── 皮質醇 ──
     if (matchName(lab.test_name, ['皮質醇', 'cortisol'])) {
-      if (lab.value > 14 && lab.value <= 18) {
+      if ((lab.value > 12 && lab.value <= 18) || (lab.value >= 6 && lab.value < 8)) {
         tips.push({
           category: 'hormone',
-          title: '皮質醇偏高端，可優化壓力管理',
+          title: lab.value > 12 ? '皮質醇偏高端，可優化壓力管理' : '皮質醇偏低端，注意腎上腺健康',
           icon: '🧘',
           labMarker: lab.test_name,
           currentValue: lab.value,
           unit: lab.unit,
-          optimalRange: '8-14 μg/dL',
+          optimalRange: '8-12 μg/dL',
           currentRange: '6-18（正常）',
-          tips: [
+          tips: lab.value > 12 ? [
             '建立固定的放鬆習慣（冥想、深呼吸、散步）',
             '確保充足睡眠（7-9小時）',
             '避免過度訓練（監控 RPE 和恢復狀態）',
             '考慮適度補充鎂（有助於壓力荷爾蒙調節）',
+          ] : [
+            '確保不過度限制熱量（長期低卡會壓低皮質醇）',
+            '規律作息、避免慢性壓力耗竭',
+            '適量攝取維生素C與B5（泛酸）支持腎上腺功能',
           ],
           references: [
             'Hirotsu et al. 2015 (Sleep Sci): Sleep and cortisol relationship',
           ],
+        })
+      }
+    }
+
+    // ── 空腹胰島素 ──
+    if (matchName(lab.test_name, ['空腹胰島素', 'fasting insulin'])) {
+      if (lab.value >= 2.5 && lab.value < 5) {
+        tips.push({
+          category: 'glucose',
+          title: '空腹胰島素可再優化（目標 <2.5）',
+          icon: '📉',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<2.5 μIU/mL',
+          currentRange: '<5.0（正常）',
+          tips: [
+            '持續減少精製碳水，增加纖維攝取',
+            '間歇性斷食可改善胰島素效率',
+            '增加重訓（肌肉越多，胰島素效率越高）',
+          ],
+          references: ['Patarrão et al. 2014 (Curr Diabetes Rev): Insulin sensitivity assessment'],
+        })
+      }
+    }
+
+    // ── HbA1c ──
+    if (matchName(lab.test_name, ['hba1c', '糖化血色素'])) {
+      if (lab.value >= 5.0 && lab.value < 5.5) {
+        tips.push({
+          category: 'glucose',
+          title: 'HbA1c 可再優化（目標 <5.0）',
+          icon: '📊',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<5.0%',
+          currentRange: '<5.5（正常）',
+          tips: [
+            '控制精製碳水和含糖食物',
+            '增加膳食纖維攝取（每天 30g+）',
+            '進食順序：蔬菜→蛋白質→碳水',
+            '規律運動（有氧+重訓）改善長期血糖控制',
+          ],
+          references: ['ADA 2024: Standards of Care in Diabetes'],
+        })
+      }
+    }
+
+    // ── 尿酸 ──
+    if (matchName(lab.test_name, ['尿酸', 'uric acid'])) {
+      const optTarget = gender === '女性' ? 4.0 : 5.0
+      const normalMax = gender === '女性' ? 6.0 : 7.0
+      if (lab.value >= optTarget && lab.value < normalMax) {
+        tips.push({
+          category: 'glucose',
+          title: `尿酸可再優化（目標 <${optTarget}）`,
+          icon: '🧪',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `<${optTarget} mg/dL`,
+          currentRange: `<${normalMax}（正常）`,
+          tips: [
+            '減少高普林食物（內臟、紅肉、啤酒）',
+            '增加水分攝取（每天 2-3L）促進尿酸排泄',
+            '多攝取櫻桃、莓果（有助降低尿酸）',
+            '減少果糖攝取（果汁、含糖飲料會升高尿酸）',
+          ],
+          references: ['Choi et al. 2004 (NEJM): Diet and hyperuricemia'],
+        })
+      }
+    }
+
+    // ── ApoB ──
+    if (matchName(lab.test_name, ['apob', 'apo b', 'apolipoprotein b'])) {
+      if (lab.value >= 50 && lab.value < 80) {
+        tips.push({
+          category: 'lipid',
+          title: 'ApoB 可再優化（目標 <50）',
+          icon: '🫀',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<50 mg/dL',
+          currentRange: '<80（正常）',
+          tips: [
+            '增加水溶性纖維攝取（燕麥、豆類、蘋果）',
+            '減少飽和脂肪（紅肉、全脂乳製品），增加不飽和脂肪',
+            '考慮植物固醇補充（每日 2g 可降低 LDL 10%）',
+            '增加 Omega-3 攝取（深海魚、魚油）',
+          ],
+          references: ['Ference et al. 2017 (Eur Heart J): LDL and ApoB as causal risk factors'],
+        })
+      }
+    }
+
+    // ── LDL-C ──
+    if (matchName(lab.test_name, ['ldl', 'ldl-c'])) {
+      if (lab.value >= 60 && lab.value < 100) {
+        tips.push({
+          category: 'lipid',
+          title: 'LDL 可再優化（目標 <60）',
+          icon: '💔',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<60 mg/dL',
+          currentRange: '<100（正常）',
+          tips: [
+            '增加水溶性纖維攝取（每天 10-25g）',
+            '減少飽和脂肪至總熱量 7% 以下',
+            '增加植物性蛋白質（豆類、堅果）',
+            '規律有氧運動有助改善 LDL 顆粒大小',
+          ],
+          references: ['Grundy et al. 2019 (Circulation): AHA/ACC Cholesterol guidelines'],
+        })
+      }
+    }
+
+    // ── 總膽固醇 ──
+    if (matchName(lab.test_name, ['總膽固醇', 'total cholesterol'])) {
+      if (lab.value >= 170 && lab.value < 200) {
+        tips.push({
+          category: 'lipid',
+          title: '總膽固醇可再優化',
+          icon: '📋',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<170 mg/dL',
+          currentRange: '<200（正常）',
+          tips: [
+            '增加纖維攝取與減少飽和脂肪',
+            '規律有氧運動',
+            '注意 HDL/LDL 比例比總膽固醇更重要',
+          ],
+          references: ['Grundy et al. 2019 (Circulation): AHA/ACC Cholesterol guidelines'],
+        })
+      }
+    }
+
+    // ── AST / ALT ──
+    if (matchName(lab.test_name, ['ast', 'got'])) {
+      if (lab.value >= 25 && lab.value < 40) {
+        tips.push({
+          category: 'liver',
+          title: 'AST 可再優化（目標 <25）',
+          icon: '🫁',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<25 U/L',
+          currentRange: '<40（正常）',
+          tips: [
+            '減少酒精攝取',
+            '避免高油脂飲食，增加蔬果',
+            '注意運動後會暫時升高（避免在激烈運動 24hr 內抽血）',
+            '確保充足休息與睡眠',
+          ],
+          references: ['Kim et al. 2004 (Hepatology): Optimal ALT cut-off values'],
+        })
+      }
+    }
+
+    if (matchName(lab.test_name, ['alt', 'gpt'])) {
+      if (lab.value >= 25 && lab.value < 40) {
+        tips.push({
+          category: 'liver',
+          title: 'ALT 可再優化（目標 <25）',
+          icon: '🫁',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<25 U/L',
+          currentRange: '<40（正常）',
+          tips: [
+            '減少酒精攝取',
+            '控制體脂率（脂肪肝是 ALT 升高的常見原因）',
+            '減少加工食品與精製碳水',
+            '增加十字花科蔬菜（花椰菜、高麗菜）支持肝臟解毒',
+          ],
+          references: ['Kim et al. 2004 (Hepatology): Optimal ALT cut-off values'],
+        })
+      }
+    }
+
+    // ── GGT ──
+    if (matchName(lab.test_name, ['ggt', 'γ-gt'])) {
+      const optTarget = gender === '女性' ? 25 : 30
+      const normalMax = gender === '女性' ? 40 : 60
+      if (lab.value >= optTarget && lab.value < normalMax) {
+        tips.push({
+          category: 'liver',
+          title: `GGT 可再優化（目標 <${optTarget}）`,
+          icon: '🍷',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `<${optTarget} U/L`,
+          currentRange: `<${normalMax}（正常）`,
+          tips: [
+            '減少或戒除酒精（GGT 對酒精非常敏感）',
+            '增加抗氧化食物：莓果、綠茶、薑黃',
+            '維持健康體重，減少內臟脂肪',
+          ],
+          references: ['Whitfield 2001 (Crit Rev Clin Lab Sci): GGT as biomarker'],
+        })
+      }
+    }
+
+    // ── 白蛋白 ──
+    if (matchName(lab.test_name, ['白蛋白', 'albumin'])) {
+      if (lab.value >= 3.5 && lab.value < 4.2) {
+        tips.push({
+          category: 'liver',
+          title: '白蛋白可再優化（目標 >4.2）',
+          icon: '🥚',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '>4.2 g/dL',
+          currentRange: '>3.5（正常）',
+          tips: [
+            '增加優質蛋白攝取（每天 1.6-2.2g/kg 體重）',
+            '確保蛋白質來源多樣化：蛋、魚、肉、豆類',
+            '避免長期低蛋白飲食',
+          ],
+          references: ['Don & Kaysen 2004: Serum albumin and nutritional status'],
+        })
+      }
+    }
+
+    // ── eGFR ──
+    if (matchName(lab.test_name, ['egfr', '腎絲球過濾率'])) {
+      if (lab.value >= 90 && lab.value < 100) {
+        tips.push({
+          category: 'kidney',
+          title: 'eGFR 可再優化（目標 >100）',
+          icon: '💧',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '>100 mL/min',
+          currentRange: '>90（正常）',
+          tips: [
+            '確保充足水分攝取（每天 2-3L）',
+            '控制血壓與血糖在最佳範圍',
+            '避免過量 NSAID 類止痛藥',
+          ],
+          references: ['KDIGO 2024: Clinical practice guideline for CKD'],
+        })
+      }
+    }
+
+    // ── TSH ──
+    if (matchName(lab.test_name, ['tsh', '促甲狀腺激素'])) {
+      if ((lab.value >= 0.4 && lab.value < 1.0) || (lab.value > 2.5 && lab.value <= 4.0)) {
+        tips.push({
+          category: 'thyroid',
+          title: 'TSH 可再優化（目標 1.0-2.5）',
+          icon: '🦋',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '1.0-2.5 mIU/L',
+          currentRange: '0.4-4.0（正常）',
+          tips: lab.value > 2.5 ? [
+            '確保碘攝取充足（海帶、海鮮、碘鹽）',
+            '補充硒（巴西堅果 2 顆/天即可達標）',
+            '避免過度限制熱量（長期低卡會升高 TSH）',
+            '確保充足睡眠與壓力管理',
+          ] : [
+            '注意碘攝取是否過多',
+            '確認甲狀腺功能穩定，定期追蹤',
+          ],
+          references: ['Biondi & Cooper 2008 (JCEM): Subclinical thyroid disease — lancet review'],
+        })
+      }
+    }
+
+    // ── Free T4 ──
+    if (matchName(lab.test_name, ['free t4', '游離t4'])) {
+      if ((lab.value >= 0.8 && lab.value < 1.0) || (lab.value > 1.5 && lab.value <= 1.8)) {
+        tips.push({
+          category: 'thyroid',
+          title: 'Free T4 可再優化（目標 1.0-1.5）',
+          icon: '🦋',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '1.0-1.5 ng/dL',
+          currentRange: '0.8-1.8（正常）',
+          tips: [
+            '確保碘和硒攝取充足',
+            '避免長期壓力與熱量不足（影響 T4→T3 轉換）',
+            '搭配 TSH 和 Free T3 綜合判讀',
+          ],
+          references: ['Biondi & Cooper 2008 (JCEM): Thyroid hormone assessment'],
+        })
+      }
+    }
+
+    // ── Free T3 ──
+    if (matchName(lab.test_name, ['free t3', '游離t3'])) {
+      if ((lab.value >= 2.3 && lab.value < 3.0) || (lab.value > 4.0 && lab.value <= 4.2)) {
+        tips.push({
+          category: 'thyroid',
+          title: 'Free T3 可再優化（目標 3.0-4.0）',
+          icon: '🦋',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '3.0-4.0 pg/mL',
+          currentRange: '2.3-4.2（正常）',
+          tips: lab.value < 3.0 ? [
+            '確保充足碳水攝取（碳水過低會降低 T4→T3 轉換）',
+            '補充硒（支持脫碘酶活性）',
+            '避免長期熱量赤字（代謝適應會降低 T3）',
+            '確保充足睡眠',
+          ] : [
+            '略高於最佳區間，持續追蹤即可',
+          ],
+          references: ['Mullur et al. 2014 (Physiol Rev): Thyroid hormone regulation of metabolism'],
+        })
+      }
+    }
+
+    // ── 葉酸 ──
+    if (matchName(lab.test_name, ['葉酸', 'folate', 'folic acid'])) {
+      if ((lab.value >= 5.4 && lab.value < 10) || (lab.value > 18 && lab.value <= 20)) {
+        tips.push({
+          category: 'vitamin',
+          title: '葉酸可再優化（目標 10-18）',
+          icon: '🥬',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '10-18 ng/mL',
+          currentRange: '5.4-20（正常）',
+          tips: lab.value < 10 ? [
+            '多攝取深色蔬菜：菠菜、花椰菜、蘆筍',
+            '豆類和扁豆也是優質葉酸來源',
+            '考慮補充活性葉酸（methylfolate）',
+          ] : [
+            '略高於最佳區間，減少補劑量即可',
+          ],
+          references: ['Bailey et al. 2015 (Adv Nutr): Folate and health'],
+        })
+      }
+    }
+
+    // ── 鎂 ──
+    if (matchName(lab.test_name, ['鎂', 'magnesium', 'mg'])) {
+      if ((lab.value >= 2.0 && lab.value < 2.1) || (lab.value > 2.3 && lab.value <= 2.4)) {
+        tips.push({
+          category: 'mineral',
+          title: '鎂可再優化（目標 2.1-2.3）',
+          icon: '🌰',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '2.1-2.3 mg/dL',
+          currentRange: '2.0-2.4（正常）',
+          tips: lab.value < 2.1 ? [
+            '增加鎂豐富食物：堅果、深色蔬菜、黑巧克力、南瓜子',
+            '考慮補充甘胺酸鎂或蘇糖酸鎂（吸收率較佳）',
+            '鎂有助於睡眠品質和肌肉恢復',
+          ] : [
+            '略高於最佳區間，維持目前飲食即可',
+          ],
+          references: ['DiNicolantonio et al. 2018 (Open Heart): Subclinical magnesium deficiency'],
+        })
+      }
+    }
+
+    // ── 鋅 ──
+    if (matchName(lab.test_name, ['鋅', 'zinc', 'zn'])) {
+      if ((lab.value >= 70 && lab.value < 85) || (lab.value > 110 && lab.value <= 120)) {
+        tips.push({
+          category: 'mineral',
+          title: '鋅可再優化（目標 85-110）',
+          icon: '🦪',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '85-110 μg/dL',
+          currentRange: '70-120（正常）',
+          tips: lab.value < 85 ? [
+            '增加牡蠣、牛肉、南瓜子攝取（最佳鋅來源）',
+            '鋅對睪固酮、免疫力和傷口癒合都很重要',
+            '避免長期高劑量鈣或鐵補充（會競爭吸收）',
+          ] : [
+            '略高於最佳區間，減少鋅補劑即可',
+          ],
+          references: ['Prasad 2008 (Mol Med): Zinc in human health'],
+        })
+      }
+    }
+
+    // ── 鈣 ──
+    if (matchName(lab.test_name, ['鈣', 'calcium', 'ca'])) {
+      if ((lab.value >= 8.5 && lab.value < 9.0) || (lab.value > 10.0 && lab.value <= 10.5)) {
+        tips.push({
+          category: 'mineral',
+          title: '鈣可再優化（目標 9.0-10.0）',
+          icon: '🦴',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '9.0-10.0 mg/dL',
+          currentRange: '8.5-10.5（正常）',
+          tips: lab.value < 9.0 ? [
+            '增加乳製品、小魚乾、豆腐攝取',
+            '確保維生素D充足（有助鈣吸收）',
+            '負重運動有助鈣質保留在骨骼中',
+          ] : [
+            '略高於最佳區間，注意維生素D不要過量',
+          ],
+          references: ['Ross et al. 2011 (JCEM): Dietary reference intakes for calcium and vitamin D'],
+        })
+      }
+    }
+
+    // ── DHEA-S ──
+    if (matchName(lab.test_name, ['dhea-s', 'dhea', '硫酸脫氫異雄固酮'])) {
+      const optMin = gender === '女性' ? 200 : 250
+      const optMax = gender === '女性' ? 350 : 450
+      const normalRange = gender === '女性' ? '65-380（正常）' : '100-500（正常）'
+      if (lab.value < optMin || lab.value > optMax) {
+        tips.push({
+          category: 'hormone',
+          title: `DHEA-S 可再優化（目標 ${optMin}-${optMax}）`,
+          icon: '⏳',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `${optMin}-${optMax} μg/dL`,
+          currentRange: normalRange,
+          tips: lab.value < optMin ? [
+            '增加規律運動（重訓+有氧組合最有效）',
+            '壓力管理：長期高壓會消耗 DHEA-S',
+            '確保充足睡眠（7-9小時）',
+            '適量攝取健康脂肪（DHEA-S 合成需要膽固醇前驅物）',
+          ] : [
+            '略高於最佳區間，持續追蹤即可',
+          ],
+          references: ['Labrie et al. 2005 (J Endocrinol): DHEA and aging'],
+        })
+      }
+    }
+
+    // ── SHBG ──
+    if (matchName(lab.test_name, ['shbg', '性荷爾蒙結合球蛋白'])) {
+      const optMin = gender === '女性' ? 30 : 20
+      const optMax = gender === '女性' ? 120 : 40
+      const normalRange = gender === '女性' ? '18-144（正常）' : '10-57（正常）'
+      if (lab.value < optMin || lab.value > optMax) {
+        tips.push({
+          category: 'hormone',
+          title: lab.value > optMax ? 'SHBG 偏高端（會降低游離睪固酮）' : 'SHBG 偏低端',
+          icon: '🔗',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `${optMin}-${optMax} nmol/L`,
+          currentRange: normalRange,
+          tips: lab.value > optMax ? [
+            'SHBG 過高會結合過多游離睪固酮，降低生物利用率',
+            '確保碳水攝取不要過低（低碳飲食會升高 SHBG）',
+            '確保鋅和鎂攝取充足',
+            '檢查甲狀腺功能（甲亢會升高 SHBG）',
+          ] : [
+            'SHBG 偏低可能與胰島素阻抗相關',
+            '改善胰島素敏感度：運動、控制碳水',
+            '減少過量酒精攝取',
+          ],
+          references: ['Hammond 2011 (Mol Cell Endocrinol): SHBG and metabolic function'],
+        })
+      }
+    }
+
+    // ── 雌二醇（男性）──
+    if (matchName(lab.test_name, ['雌二醇', 'estradiol', 'e2'])) {
+      if (gender !== '女性') {
+        if ((lab.value >= 10 && lab.value < 15) || (lab.value > 30 && lab.value <= 40)) {
+          tips.push({
+            category: 'hormone',
+            title: '雌二醇可再優化（目標 15-30）',
+            icon: '⚖️',
+            labMarker: lab.test_name,
+            currentValue: lab.value,
+            unit: lab.unit,
+            optimalRange: '15-30 pg/mL',
+            currentRange: '10-40（正常）',
+            tips: lab.value > 30 ? [
+              '高雌二醇常與高體脂相關（減脂可降低芳香化酶活性）',
+              '增加十字花科蔬菜（含 DIM，有助雌激素代謝）',
+              '減少酒精攝取（酒精會升高雌二醇）',
+            ] : [
+              '雌二醇過低也不好（骨密度和關節健康需要適量雌激素）',
+              '確保脂肪攝取充足',
+            ],
+            references: ['Schulster et al. 2016 (Rev Urol): Male estradiol and health'],
+          })
+        }
+      }
+    }
+
+    // ── 血紅素 ──
+    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hb', 'hgb'])) {
+      const optMin = gender === '女性' ? 13.0 : 14.5
+      const optMax = gender === '女性' ? 14.5 : 16.5
+      const normalRange = gender === '女性' ? '12.0-15.5（正常）' : '13.5-17.5（正常）'
+      if (lab.value < optMin || lab.value > optMax) {
+        tips.push({
+          category: 'blood',
+          title: `血紅素可再優化（目標 ${optMin}-${optMax}）`,
+          icon: '🩸',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `${optMin}-${optMax} g/dL`,
+          currentRange: normalRange,
+          tips: lab.value < optMin ? [
+            '增加富鐵食物攝取（紅肉、牡蠣、肝臟）',
+            '搭配維生素C提升鐵吸收',
+            '確保 B12 和葉酸充足（造血所需）',
+            '運動員需注意「運動性溶血」—足底衝擊會破壞紅血球',
+          ] : [
+            '略高於最佳區間，確保水分攝取充足',
+          ],
+          references: ['WHO 2020: Haemoglobin concentrations for diagnosis of anaemia'],
+        })
+      }
+    }
+
+    // ── MCV ──
+    if (matchName(lab.test_name, ['mcv', '平均紅血球容積'])) {
+      if ((lab.value >= 80 && lab.value < 85) || (lab.value > 95 && lab.value <= 100)) {
+        tips.push({
+          category: 'blood',
+          title: 'MCV 可再優化（目標 85-95）',
+          icon: '🔬',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '85-95 fL',
+          currentRange: '80-100（正常）',
+          tips: lab.value < 85 ? [
+            'MCV 偏低端可能暗示早期鐵缺乏',
+            '增加鐵質攝取，搭配維生素C',
+            '追蹤鐵蛋白確認鐵儲存狀態',
+          ] : [
+            'MCV 偏高端可能暗示 B12 或葉酸不足',
+            '增加 B12（肉類、蛋）和葉酸（深色蔬菜）攝取',
+          ],
+          references: ['Maner & Moosavi 2023 (StatPearls): Mean Corpuscular Volume'],
         })
       }
     }
