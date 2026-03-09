@@ -226,7 +226,7 @@ export function generateLabNutritionAdvice(
     // 血脂
     // ════════════════════════════════════════
 
-    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg'])) {
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg']) && !matchName(lab.test_name, ['ast', 'got', 'alt', 'gpt'])) {
       advice.push({
         category: 'lipid',
         title: '三酸甘油酯偏高',
@@ -433,7 +433,7 @@ export function generateLabNutritionAdvice(
       })
     }
 
-    if (matchName(lab.test_name, ['alt', 'gpt', 'sgpt', '麩丙酮酸轉胺酶'])) {
+    if (matchName(lab.test_name, ['alt', 'gpt', 'sgpt', '麩丙酮酸轉胺酶']) && !matchName(lab.test_name, ['testosterone', '睪固酮'])) {
       advice.push({
         category: 'liver',
         title: 'ALT（GPT）偏高',
@@ -1729,7 +1729,7 @@ export function generateLabOptimizationTips(
     }
 
     // ── 三酸甘油酯 ──
-    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg'])) {
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg']) && !matchName(lab.test_name, ['ast', 'got', 'alt', 'gpt'])) {
       if (lab.value >= 70 && lab.value < 100) {
         tips.push({
           category: 'lipid',
@@ -2043,7 +2043,7 @@ export function generateLabOptimizationTips(
       }
     }
 
-    if (matchName(lab.test_name, ['alt', 'gpt'])) {
+    if (matchName(lab.test_name, ['alt', 'gpt']) && !matchName(lab.test_name, ['testosterone', '睪固酮'])) {
       if (lab.value >= 25 && lab.value < 40) {
         tips.push({
           category: 'liver',
@@ -2639,7 +2639,7 @@ export function getLabMacroModifiers(
     }
 
     // ── 高三酸甘油酯 → 減少精製碳水 ──
-    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg'])) {
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg']) && !matchName(lab.test_name, ['ast', 'got', 'alt', 'gpt'])) {
       if (lab.value > 150) {
         macroModifiers.push({
           nutrient: 'carbs',
@@ -2777,7 +2777,7 @@ export function detectLabCrossPatterns(
   const glucose = getValue(['空腹血糖', 'fastingglucose', 'fbs'])
   const insulin = getValue(['空腹胰島素', 'fastinginsulin'])
   const homaIR = getValue(['homair', 'homa-ir', '胰島素阻抗'])
-  const triglycerides = getValue(['三酸甘油酯', 'triglycerides', 'tg'])
+  const triglycerides = getValue(['三酸甘油酯', 'triglycerides', 'tg'], ['ast', 'got', 'alt', 'gpt'])
   const hdl = getValue(['hdl', '高密度脂蛋白'])
   const uricAcid = getValue(['尿酸', 'uricacid'])
 
@@ -2976,7 +2976,7 @@ export function generateRetestReminders(
     // 血脂 — 飲食調整後 3 個月（NCEP ATP III）
     { keywords: ['apob', 'apolipoproteinb'], weeks: 12, reason: '飲食調整對 ApoB 的影響約 8-12 週可見', severity: 'medium' },
     { keywords: ['ldl', '低密度脂蛋白'], weeks: 12, reason: '飲食調整後 3 個月追蹤 LDL 變化', severity: 'medium' },
-    { keywords: ['三酸甘油酯', 'triglycerides', 'tg'], weeks: 8, reason: '三酸甘油酯對飲食反應較快，8 週可見效果', severity: 'medium' },
+    { keywords: ['三酸甘油酯', 'triglycerides', 'tg'], exclude: ['ast', 'got', 'alt', 'gpt'], weeks: 8, reason: '三酸甘油酯對飲食反應較快，8 週可見效果', severity: 'medium' },
     // 血糖/胰島素 — 飲食調整後 8-12 週
     { keywords: ['空腹血糖', 'fastingglucose', 'fbs'], weeks: 12, reason: '碳水調整後 3 個月追蹤血糖改善', severity: 'medium' },
     { keywords: ['homair', 'homa-ir', '胰島素阻抗'], weeks: 12, reason: '飲食+運動介入後 3 個月評估胰島素敏感度改善', severity: 'high' },
@@ -2996,7 +2996,7 @@ export function generateRetestReminders(
     // 尿酸 — 飲食調整後 4-8 週
     { keywords: ['尿酸', 'uricacid'], weeks: 8, reason: '飲食調整後 8 週追蹤尿酸變化', severity: 'medium' },
     // 肝功能 — 飲食調整後 8-12 週
-    { keywords: ['alt', 'gpt', 'sgpt'], exclude: ['fasting', '空腹'], weeks: 12, reason: '飲食調整後 3 個月追蹤肝指數改善', severity: 'medium' },
+    { keywords: ['alt', 'gpt', 'sgpt'], exclude: ['fasting', '空腹', 'testosterone', '睪固酮'], weeks: 12, reason: '飲食調整後 3 個月追蹤肝指數改善', severity: 'medium' },
     { keywords: ['ast', 'got', 'sgot'], exclude: ['fasting', '空腹'], weeks: 12, reason: '飲食調整後 3 個月追蹤肝指數改善', severity: 'medium' },
     { keywords: ['ggt', 'γ-gt'], weeks: 12, reason: '減少酒精與調整飲食後 3 個月追蹤 GGT 變化', severity: 'medium' },
     // 腎功能 — 3 個月
