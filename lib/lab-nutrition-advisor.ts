@@ -1456,13 +1456,13 @@ export function generateLabOptimizationTips(
 
     // ── 游離睪固酮（男性）──
     if (matchName(lab.test_name, ['游離睪固酮', 'free testosterone'])) {
-      const optMin = gender === '女性' ? 2.0 : 100
+      const optMin = gender === '女性' ? 3.0 : 150
       const optMax = gender === '女性' ? 7.0 : 220
       if (lab.value < optMin || lab.value > optMax) {
         if (gender !== '女性') {
           tips.push({
             category: 'hormone',
-            title: '游離睪固酮可再優化',
+            title: `游離睪固酮可再提升（目標 ${optMin}+）`,
             icon: '💪',
             labMarker: lab.test_name,
             currentValue: lab.value,
@@ -1472,9 +1472,10 @@ export function generateLabOptimizationTips(
             tips: [
               '確保每晚 7-9 小時高品質睡眠（睡眠不足可降低睪固酮 10-15%）',
               '每週至少 3 次大肌群複合動作重訓（深蹲、硬舉、臥推）',
-              '確保鋅（牡蠣、牛肉）與維生素D攝取充足',
+              '確保鋅（牡蠣、牛肉）與維生素D（目標 60+ ng/mL）攝取充足',
               '避免長期高壓與過度節食（皮質醇升高會抑制睪固酮）',
               '適量攝取健康油脂（每日熱量 25-35% 來自脂肪）',
+              '降低 SHBG 可釋放更多游離T：避免過度限制碳水、確保鋅充足',
             ],
             references: [
               'Leproult & Van Cauter 2011 (JAMA): Sleep loss lowers testosterone in young men',
@@ -1488,12 +1489,12 @@ export function generateLabOptimizationTips(
 
     // ── 睪固酮 ──
     if (matchName(lab.test_name, ['睪固酮', 'testosterone']) && !matchName(lab.test_name, ['游離', 'free'])) {
-      const optMin = gender === '女性' ? 30 : 500
+      const optMin = gender === '女性' ? 40 : 700
       const optMax = gender === '女性' ? 60 : 900
       if (lab.value < optMin) {
         tips.push({
           category: 'hormone',
-          title: '睪固酮可再優化',
+          title: `睪固酮可再提升（目標 ${optMin}+）`,
           icon: '🏋️',
           labMarker: lab.test_name,
           currentValue: lab.value,
@@ -1501,13 +1502,15 @@ export function generateLabOptimizationTips(
           optimalRange: `${optMin}-${optMax} ${lab.unit}`,
           currentRange: gender === '女性' ? '15-70（正常）' : '300-1000（正常）',
           tips: [
-            '重訓為主（大肌群複合動作最有效提升睪固酮）',
-            '確保充足睡眠（7-9小時）與壓力管理',
-            '攝取足夠鋅、鎂、維生素D',
-            '避免過度限制脂肪攝取（建議佔總熱量 25-35%）',
+            '重訓為主：大肌群複合動作（深蹲、硬舉、臥推）最有效提升睪固酮',
+            '確保充足睡眠 7-9 小時（每少睡 1 小時，睪固酮平均降 10-15%）',
+            '攝取足夠鋅（15-30mg/天）、鎂（400mg/天）、維生素D（目標 60+）',
+            '脂肪不低於總熱量 25%（膽固醇是睪固酮的前驅物）',
+            '管理壓力：長期高皮質醇會直接抑制睪固酮合成',
           ],
           references: [
             'Kraemer & Ratamess 2005 (Sports Med): Hormonal responses to resistance exercise',
+            'Pilz et al. 2011 (Horm Metab Res): Vitamin D supplementation increases testosterone',
           ],
         })
       }
@@ -1592,7 +1595,7 @@ export function generateLabOptimizationTips(
 
     // ── 空腹血糖 ──
     if (matchName(lab.test_name, ['空腹血糖', 'fasting glucose'])) {
-      if (lab.value >= 82 && lab.value <= 90) {
+      if (lab.value >= 80 && lab.value <= 90) {
         tips.push({
           category: 'glucose',
           title: '空腹血糖可再優化',
@@ -1600,7 +1603,7 @@ export function generateLabOptimizationTips(
           labMarker: lab.test_name,
           currentValue: lab.value,
           unit: lab.unit,
-          optimalRange: '<82 mg/dL',
+          optimalRange: '<80 mg/dL',
           currentRange: '<90（正常）',
           tips: [
             '進食順序：蔬菜→蛋白質→碳水（可降低餐後血糖 30-40%）',
@@ -1617,7 +1620,7 @@ export function generateLabOptimizationTips(
 
     // ── HOMA-IR ──
     if (matchName(lab.test_name, ['homa-ir', 'homa ir'])) {
-      if (lab.value >= 1.0 && lab.value < 2.0) {
+      if (lab.value >= 0.8 && lab.value < 2.0) {
         tips.push({
           category: 'glucose',
           title: '胰島素敏感度可再優化',
@@ -1625,7 +1628,7 @@ export function generateLabOptimizationTips(
           labMarker: lab.test_name,
           currentValue: lab.value,
           unit: lab.unit,
-          optimalRange: '<1.0',
+          optimalRange: '<0.8',
           currentRange: '<2.0（正常）',
           tips: [
             '增加重訓頻率（肌肉是最大的葡萄糖接收器）',

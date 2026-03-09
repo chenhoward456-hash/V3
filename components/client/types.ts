@@ -96,10 +96,10 @@ export interface ClientInfo {
 export function getLabAdvice(testName: string, value: number): string {
   switch (testName) {
     // 代謝 / 血糖
-    case 'HOMA-IR': return value < 1.0 ? '胰島素敏感度很好' : value < 2.0 ? '正常，可透過運動與飲食進一步優化' : '胰島素阻抗偏高'
-    case '空腹血糖': return value < 82 ? '血糖控制極佳' : value < 90 ? '正常，可透過進食順序與餐後走路再優化' : value < 100 ? '血糖偏高，注意碳水攝取' : '血糖過高'
-    case '空腹胰島素': return value < 3 ? '胰島素分泌效率極佳' : value < 5 ? '正常，持續維持低精製碳水飲食' : value < 8 ? '胰島素偏高' : '胰島素過高'
-    case 'HbA1c': return value < 5.2 ? '長期血糖控制極佳' : value < 5.5 ? '正常，可透過碳水管理進一步優化' : value < 5.7 ? '血糖略高' : '糖化血色素偏高'
+    case 'HOMA-IR': return value < 0.8 ? '胰島素敏感度頂尖' : value < 1.0 ? '很好，目標 <0.8 可再精進' : value < 2.0 ? '正常，可透過運動與飲食進一步優化' : '胰島素阻抗偏高'
+    case '空腹血糖': return value < 80 ? '血糖控制頂尖' : value < 85 ? '很好，目標 <80 可再優化' : value < 90 ? '正常，可透過進食順序與餐後走路再優化' : value < 100 ? '血糖偏高，注意碳水攝取' : '血糖過高'
+    case '空腹胰島素': return value < 2.5 ? '胰島素分泌效率頂尖' : value < 5 ? '正常，持續維持低精製碳水飲食' : value < 8 ? '胰島素偏高' : '胰島素過高'
+    case 'HbA1c': return value < 5.0 ? '長期血糖控制頂尖' : value < 5.5 ? '正常，可透過碳水管理進一步優化' : value < 5.7 ? '血糖略高' : '糖化血色素偏高'
     case '尿酸': return value < 5.5 ? '尿酸控制極佳' : value < 7.0 ? '正常，可減少高普林食物再優化' : '尿酸偏高，注意飲食'
     // 血脂
     case '三酸甘油酯': return value < 70 ? '三酸甘油酯極佳' : value < 100 ? '正常，可透過 Omega-3 和減少精緻碳水再優化' : value < 150 ? '偏高，減少精緻碳水' : '過高，需飲食調整'
@@ -137,8 +137,8 @@ export function getLabAdvice(testName: string, value: number): string {
     case '鋅': return value >= 85 && value <= 110 ? '鋅極佳' : value >= 70 && value <= 120 ? '正常，可增加牡蠣、牛肉攝取' : value < 70 ? '鋅偏低' : '鋅偏高'
     case '鈣': return value >= 9.0 && value <= 10.0 ? '鈣極佳' : value >= 8.5 && value <= 10.5 ? '正常' : value < 8.5 ? '鈣偏低' : '鈣偏高'
     // 荷爾蒙
-    case '睪固酮': return value >= 500 && value <= 900 ? '睪固酮極佳' : value >= 300 && value <= 1000 ? '正常，可透過重訓、充足睡眠與鋅攝取優化' : value < 300 ? '睪固酮偏低' : '睪固酮偏高'
-    case '游離睪固酮': return value >= 100 && value <= 220 ? '游離睪固酮極佳' : value >= 47 && value <= 244 ? '正常偏低，可透過重訓、睡眠、鋅與維生素D優化' : value < 47 ? '游離睪固酮偏低' : '游離睪固酮偏高'
+    case '睪固酮': return value >= 700 ? '睪固酮極佳' : value >= 500 ? '正常，目標 700+ 可透過重訓、睡眠與鋅再提升' : value >= 300 ? '正常偏低，建議加強重訓、充足睡眠與鋅攝取' : value < 300 ? '睪固酮偏低' : '睪固酮偏高'
+    case '游離睪固酮': return value >= 150 ? '游離睪固酮極佳' : value >= 100 ? '正常，目標 150+ 可透過重訓與睡眠再提升' : value >= 47 ? '正常偏低，建議重訓、睡眠、鋅與維生素D優化' : value < 47 ? '游離睪固酮偏低' : '游離睪固酮偏高'
     case '皮質醇': return value >= 8 && value <= 14 ? '皮質醇極佳' : value >= 6 && value <= 18 ? '正常，注意壓力管理與睡眠品質' : value < 6 ? '皮質醇偏低' : '皮質醇偏高'
     case 'DHEA-S': return value >= 200 && value <= 450 ? 'DHEA-S 極佳' : value >= 100 && value <= 500 ? '正常，可透過運動與壓力管理優化' : value < 100 ? 'DHEA-S 偏低' : 'DHEA-S 偏高'
     case '雌二醇': return value >= 15 && value <= 30 ? '雌二醇極佳' : value >= 10 && value <= 40 ? '正常' : value < 10 ? '雌二醇偏低' : '雌二醇偏高'
