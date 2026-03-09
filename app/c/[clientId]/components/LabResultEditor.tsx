@@ -200,7 +200,7 @@ export default function LabResultEditor({
     { name: '同半胱胺酸', unit: 'μmol/L', reference: '<8.0' },
     // 維生素
     { name: '維生素D', unit: 'ng/mL', reference: '>50' },
-    { name: '維生素B12', unit: 'pg/mL', reference: '>400' },
+    { name: '維生素B12', unit: 'pg/mL', reference: '400-900' },
     { name: '葉酸', unit: 'ng/mL', reference: '>5.4' },
     // 礦物質
     { name: '鎂', unit: 'mg/dL', reference: '2.0-2.4' },

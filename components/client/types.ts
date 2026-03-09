@@ -130,7 +130,7 @@ export function getLabAdvice(testName: string, value: number): string {
     case '同半胱胺酸': return value < 8 ? '甲基化代謝正常' : '甲基化代謝需要改善'
     // 維生素
     case '維生素D': return value > 50 ? '維生素D充足' : value > 30 ? '維生素D偏低，建議補充' : '維生素D不足'
-    case '維生素B12': return value > 400 ? 'B12 充足' : value > 200 ? 'B12 偏低' : 'B12 不足'
+    case '維生素B12': return value >= 400 && value <= 900 ? 'B12 充足' : value < 400 ? 'B12 偏低，建議補充' : 'B12 異常偏高，建議檢查肝功能及發炎指標'
     case '葉酸': return value > 5.4 ? '葉酸充足' : '葉酸偏低'
     // 礦物質
     case '鎂': return value >= 2.0 && value <= 2.4 ? '鎂正常' : value < 2.0 ? '鎂偏低' : '鎂偏高'
