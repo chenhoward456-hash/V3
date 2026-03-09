@@ -30,43 +30,28 @@ export interface SupplementSuggestion {
   category: 'deficiency' | 'performance' | 'recovery' | 'hormonal'
 }
 
-// ── 血檢項目名稱標準化（相容不同寫法）──
-function normalize(name: string): string {
-  return name.toLowerCase().replace(/[\s_\-()（）]/g, '')
-}
+import { matchLabName } from '@/utils/labMatch'
 
-const ALIASES: Record<string, string[]> = {
-  'ferritin':     ['ferritin', '鐵蛋白', 'ferritin(鐵蛋白)'],
-  'vitd':         ['vitd', 'vitamind', '25ohd', '維生素d', 'vit.d', '25-ohd'],
-  'vitb12':       ['vitb12', 'vitaminb12', 'b12', '維生素b12', 'cobalamin'],
-  'zinc':         ['zinc', '鋅', 'zn'],
-  'magnesium':    ['magnesium', '鎂', 'magnesium(鎂)'],
-  'testosterone': ['testosterone', '睪固酮', 'totaltestosterone', '總睪固酮'],
-  'freetestosterone': ['游離睪固酮', 'freetestosterone'],
-  'hemoglobin':   ['hemoglobin', 'hgb', '血紅素', 'haemoglobin'],
-  'folate':       ['folate', 'folicacid', '葉酸', 'vitaminb9'],
-  'omega3index':  ['omega3index', 'omega-3index', 'omega3', 'epa+dha'],
-  'cortisol':     ['cortisol', '皮質醇', '可體松'],
-  'crp':          ['crp', 'c-reactiveprotein', 'c反應蛋白', 'hscrp', 'hs-crp'],
-}
-
-// 排除關鍵字：避免 includes() 造成的子字串誤判
-const EXCLUDES: Record<string, string[]> = {
-  'testosterone': ['游離', 'free'],
-  'hemoglobin': ['糖化', 'hba1c', 'glycated'],
-}
-
-function matchTest(testName: string, key: string): boolean {
-  const norm = normalize(testName)
-  const matched = (ALIASES[key] || []).some(alias => norm.includes(normalize(alias)))
-  if (!matched) return false
-  const excludes = EXCLUDES[key]
-  if (excludes && excludes.some(ex => norm.includes(normalize(ex)))) return false
-  return true
+// ── 補品引擎的 key → 血檢關鍵字映射 ──
+const KEY_ALIASES: Record<string, string[]> = {
+  'ferritin':           ['鐵蛋白', 'ferritin'],
+  'vitd':               ['維生素d', 'vitamin d'],
+  'vitb12':             ['維生素b12', 'b12'],
+  'zinc':               ['鋅', 'zinc'],
+  'magnesium':          ['鎂', 'magnesium'],
+  'testosterone':       ['睪固酮', 'testosterone'],
+  'freetestosterone':   ['游離睪固酮', 'free testosterone'],
+  'hemoglobin':         ['血紅素', 'hemoglobin'],
+  'folate':             ['葉酸', 'folate'],
+  'omega3index':        ['omega3', 'omega-3 index'],
+  'cortisol':           ['皮質醇', 'cortisol'],
+  'crp':                ['crp', 'hs-crp'],
 }
 
 function findLabValue(labs: LabResult[], key: string): LabResult | undefined {
-  return labs.find(l => matchTest(l.test_name, key))
+  const keywords = KEY_ALIASES[key]
+  if (!keywords) return undefined
+  return labs.find(l => matchLabName(l.test_name, keywords))
 }
 
 // ── 主引擎 ──

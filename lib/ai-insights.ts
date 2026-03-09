@@ -12,6 +12,7 @@
 
 import { askClaude, ChatMessage } from './claude'
 import { isInOptimalRange } from '@/utils/labStatus'
+import { matchLabName } from '@/utils/labMatch'
 
 // ═══════════════════════════════════════
 // Types
@@ -475,22 +476,21 @@ export function getTrainingAdvice(
   if (labData && labData.length > 0) {
     for (const lab of labData) {
       if (lab.value == null || lab.status === 'normal') continue
-      const name = lab.test_name.toLowerCase().replace(/[\s_\-()（）]/g, '')
 
       // 低鐵蛋白 → 有氧能力受限，降低建議強度
-      if ((name.includes('鐵蛋白') || name.includes('ferritin')) && lab.value < 30) {
+      if (matchLabName(lab.test_name, ['鐵蛋白', 'ferritin']) && lab.value < 30) {
         recoveryScore -= 10
         reasons.push(`鐵蛋白偏低（${lab.value}），有氧能力受限，建議減少有氧量`)
       }
 
       // 低血紅素 → 氧氣運輸下降
-      if ((name.includes('血紅素') || name.includes('hemoglobin') || name.includes('hgb')) && !name.includes('糖化') && !name.includes('hba1c') && lab.value < 12) {
+      if (matchLabName(lab.test_name, ['血紅素', 'hemoglobin']) && lab.value < 12) {
         recoveryScore -= 15
         reasons.push(`血紅素偏低（${lab.value}），氧氣運輸能力下降`)
       }
 
       // TSH 偏高 → 代謝率降低
-      if ((name.includes('tsh') || name.includes('促甲狀腺')) && lab.value > 4.0) {
+      if (matchLabName(lab.test_name, ['tsh', '促甲狀腺']) && lab.value > 4.0) {
         recoveryScore -= 5
         reasons.push(`TSH 偏高（${lab.value}），代謝率可能降低`)
       }
