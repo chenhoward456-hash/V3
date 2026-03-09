@@ -88,7 +88,7 @@ function JoinPageInner() {
   const [activityLevel, setActivityLevel] = useState<'sedentary' | 'moderate' | 'high_energy_flux'>('moderate')
   const [trainingDays, setTrainingDays] = useState('3')
   const [targetWeight, setTargetWeight] = useState('')
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [bodyFatPct, setBodyFatPct] = useState('')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -123,17 +123,21 @@ function JoinPageInner() {
       const heightNum = height ? parseFloat(height) : null
       const trainingDaysNum = trainingDays ? parseInt(trainingDays) : 3
       const targetWeightNum = targetWeight ? parseFloat(targetWeight) : null
+      const bodyFatNum = bodyFatPct ? parseFloat(bodyFatPct) : null
       let diagnosisData: Record<string, any> = {
         weight: weightNum,
         ...(heightNum && heightNum > 100 && heightNum < 250 ? { height: heightNum } : {}),
         activityProfile: activityLevel === 'moderate' ? undefined : activityLevel,
         trainingDaysPerWeek: trainingDaysNum,
         ...(targetWeightNum && targetWeightNum >= 30 && targetWeightNum <= 300 ? { targetWeight: targetWeightNum } : {}),
+        ...(bodyFatNum && bodyFatNum > 3 && bodyFatNum < 60 ? { bodyFatPct: bodyFatNum } : {}),
       }
-      // 如果 diagnosis 頁有體脂率資料，也帶上
+      // 如果表單沒填體脂率，嘗試從 diagnosis 頁帶入
       try {
-        const dBodyfat = localStorage.getItem('demo_bodyfat')
-        if (dBodyfat) diagnosisData.bodyFatPct = parseFloat(dBodyfat)
+        if (!bodyFatNum) {
+          const dBodyfat = localStorage.getItem('demo_bodyfat')
+          if (dBodyfat) diagnosisData.bodyFatPct = parseFloat(dBodyfat)
+        }
         // diagnosis 頁的身高只在表單沒填時才用
         if (!heightNum) {
           const dHeight = localStorage.getItem('demo_height')
@@ -510,6 +514,25 @@ function JoinPageInner() {
                 </div>
               </div>
 
+              {/* 體脂率 */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                  體脂率 (%) <span className="text-gray-400 font-normal">— 選填，有填計算更準</span>
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="例如 20"
+                  value={bodyFatPct}
+                  onChange={(e) => setBodyFatPct(e.target.value)}
+                  min="3"
+                  max="60"
+                  step="0.1"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                />
+                <p className="text-xs text-gray-400 mt-1">InBody、體脂計或健身房量測的數字。沒有也沒關係，系統會用體重估算。</p>
+              </div>
+
               {/* 目標體重 */}
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
@@ -528,68 +551,53 @@ function JoinPageInner() {
                 />
               </div>
 
-              {/* 進階選填（折疊） */}
-              {!showAdvanced ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAdvanced(true)}
-                  className="w-full py-2 text-xs text-gray-400 hover:text-[#2563eb] transition-colors"
-                >
-                  填寫更多資料，讓計算更精準 ▼
-                </button>
-              ) : (
-                <div className="space-y-4 pt-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-400">選填，幫助系統更精準計算你的 TDEE</p>
-
-                  {/* 活動量 */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-1.5">日常活動量</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {([
-                        { key: 'sedentary' as const, label: '久坐', desc: '辦公室為主' },
-                        { key: 'moderate' as const, label: '中等', desc: '偶爾走動' },
-                        { key: 'high_energy_flux' as const, label: '活躍', desc: '常走動/體力活' },
-                      ]).map(({ key, label, desc }) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setActivityLevel(key)}
-                          className={`py-2.5 rounded-xl text-sm transition-all border-2 ${
-                            activityLevel === key
-                              ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb] font-semibold'
-                              : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
-                          }`}
-                        >
-                          <div className="font-medium">{label}</div>
-                          <div className="text-[10px] opacity-70">{desc}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 每週訓練天數 */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-1.5">每週訓練幾天</label>
-                    <div className="flex gap-2">
-                      {[0, 1, 2, 3, 4, 5, 6, 7].map((d) => (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => setTrainingDays(String(d))}
-                          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all border-2 ${
-                            parseInt(trainingDays) === d
-                              ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
-                              : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
-                          }`}
-                        >
-                          {d}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">包含重訓和有氧</p>
-                  </div>
+              {/* 活動量 */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">日常活動量</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { key: 'sedentary' as const, label: '久坐', desc: '辦公室為主' },
+                    { key: 'moderate' as const, label: '中等', desc: '偶爾走動' },
+                    { key: 'high_energy_flux' as const, label: '活躍', desc: '常走動/體力活' },
+                  ]).map(({ key, label, desc }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setActivityLevel(key)}
+                      className={`py-2.5 rounded-xl text-sm transition-all border-2 ${
+                        activityLevel === key
+                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb] font-semibold'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="font-medium">{label}</div>
+                      <div className="text-[10px] opacity-70">{desc}</div>
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
+
+              {/* 每週訓練天數 */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">每週訓練幾天</label>
+                <div className="flex gap-2">
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setTrainingDays(String(d))}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all border-2 ${
+                        parseInt(trainingDays) === d
+                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                          : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
+                      }`}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 mt-1">包含重訓和有氧</p>
+              </div>
 
               {/* Error */}
               {error && (
