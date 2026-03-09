@@ -225,6 +225,9 @@ function OptimizationSection({ tips }: { tips: LabOptimizationTip[] }) {
     <div>
       <p className="text-xs font-bold text-gray-700 mb-2">🎯 正常範圍內的優化空間</p>
       <p className="text-[10px] text-gray-400 mb-3">以下指標在正常範圍內，但尚未達到最佳區間，可進一步優化</p>
+      <p className="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-3">
+        ⚠️ 補品建議僅供參考，不構成醫療建議。使用前請諮詢醫師或營養師，特別是正在服藥者。
+      </p>
       <div className="space-y-3">
         {tips.map((tip, i) => (
           <OptimizationTipItem key={i} tip={tip} />
@@ -276,6 +279,28 @@ function OptimizationTipItem({ tip }: { tip: LabOptimizationTip }) {
               ))}
             </ul>
           </div>
+
+          {/* 補品建議 */}
+          {tip.supplements && tip.supplements.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold text-gray-700 mb-1">💊 補品建議</p>
+              <div className="space-y-1.5">
+                {tip.supplements.map((s, i) => (
+                  <div key={i} className="bg-white bg-opacity-70 border border-blue-100 rounded-xl p-2.5">
+                    <div className="flex items-start justify-between">
+                      <p className="text-[11px] font-bold text-blue-800">{s.name}</p>
+                    </div>
+                    <p className="text-[10px] text-gray-600 mt-0.5">
+                      {s.dosage}{s.timing ? ` · ${s.timing}` : ''}
+                    </p>
+                    {s.note && (
+                      <p className="text-[9px] text-gray-400 mt-0.5">{s.note}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 文獻 */}
           {tip.references.length > 0 && (
