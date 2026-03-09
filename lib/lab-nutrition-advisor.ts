@@ -1428,6 +1428,347 @@ export function generateLabNutritionAdvice(
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 正常值優化建議 — 值在正常範圍但尚未達到最佳區間
+// ═══════════════════════════════════════════════════════════════
+
+export interface LabOptimizationTip {
+  category: string
+  title: string
+  icon: string
+  labMarker: string
+  currentValue: number
+  unit: string
+  optimalRange: string
+  currentRange: string
+  tips: string[]
+  references: string[]
+}
+
+export function generateLabOptimizationTips(
+  labs: LabInput[],
+  options: { gender?: '男性' | '女性' } = {}
+): LabOptimizationTip[] {
+  const tips: LabOptimizationTip[] = []
+  const { gender } = options
+
+  for (const lab of labs) {
+    if (lab.value == null || lab.status !== 'normal') continue
+
+    // ── 游離睪固酮（男性）──
+    if (matchName(lab.test_name, ['游離睪固酮', 'free testosterone'])) {
+      const optMin = gender === '女性' ? 2.0 : 100
+      const optMax = gender === '女性' ? 7.0 : 220
+      if (lab.value < optMin || lab.value > optMax) {
+        if (gender !== '女性') {
+          tips.push({
+            category: 'hormone',
+            title: '游離睪固酮可再優化',
+            icon: '💪',
+            labMarker: lab.test_name,
+            currentValue: lab.value,
+            unit: lab.unit,
+            optimalRange: `${optMin}-${optMax} ${lab.unit}`,
+            currentRange: '47-244（正常）',
+            tips: [
+              '確保每晚 7-9 小時高品質睡眠（睡眠不足可降低睪固酮 10-15%）',
+              '每週至少 3 次大肌群複合動作重訓（深蹲、硬舉、臥推）',
+              '確保鋅（牡蠣、牛肉）與維生素D攝取充足',
+              '避免長期高壓與過度節食（皮質醇升高會抑制睪固酮）',
+              '適量攝取健康油脂（每日熱量 25-35% 來自脂肪）',
+            ],
+            references: [
+              'Leproult & Van Cauter 2011 (JAMA): Sleep loss lowers testosterone in young men',
+              'Vingren et al. 2010 (Sports Med): Testosterone response to resistance exercise',
+              'Prasad et al. 1996 (Nutrition): Zinc status and testosterone levels',
+            ],
+          })
+        }
+      }
+    }
+
+    // ── 睪固酮 ──
+    if (matchName(lab.test_name, ['睪固酮', 'testosterone']) && !matchName(lab.test_name, ['游離', 'free'])) {
+      const optMin = gender === '女性' ? 30 : 500
+      const optMax = gender === '女性' ? 60 : 900
+      if (lab.value < optMin) {
+        tips.push({
+          category: 'hormone',
+          title: '睪固酮可再優化',
+          icon: '🏋️',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `${optMin}-${optMax} ${lab.unit}`,
+          currentRange: gender === '女性' ? '15-70（正常）' : '300-1000（正常）',
+          tips: [
+            '重訓為主（大肌群複合動作最有效提升睪固酮）',
+            '確保充足睡眠（7-9小時）與壓力管理',
+            '攝取足夠鋅、鎂、維生素D',
+            '避免過度限制脂肪攝取（建議佔總熱量 25-35%）',
+          ],
+          references: [
+            'Kraemer & Ratamess 2005 (Sports Med): Hormonal responses to resistance exercise',
+          ],
+        })
+      }
+    }
+
+    // ── 維生素D ──
+    if (matchName(lab.test_name, ['維生素d', 'vitamin d', '25-oh'])) {
+      if (lab.value < 60 || lab.value > 80) {
+        tips.push({
+          category: 'vitamin',
+          title: '維生素D可進一步優化',
+          icon: '☀️',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '60-80 ng/mL',
+          currentRange: '50-100（正常）',
+          tips: lab.value < 60 ? [
+            '增加日照時間（每天 15-20 分鐘裸露手臂和腿部）',
+            '補充維生素D3（建議 2000-4000 IU/天，搭配 K2 提升吸收）',
+            '食物來源：鮭魚、沙丁魚、蛋黃、香菇',
+          ] : [
+            '目前略高於最佳區間，可減少補劑量',
+            '維持均衡飲食與適度日照即可',
+          ],
+          references: [
+            'Holick 2007 (NEJM): Vitamin D deficiency — the pandemic',
+            'Wacker & Holick 2013 (Nutrients): Optimal vitamin D range',
+          ],
+        })
+      }
+    }
+
+    // ── 同半胱胺酸 ──
+    if (matchName(lab.test_name, ['同半胱胺酸', 'homocysteine'])) {
+      if (lab.value >= 6 && lab.value < 8) {
+        tips.push({
+          category: 'inflammation',
+          title: '同半胱胺酸可再優化',
+          icon: '🧬',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<6 μmol/L',
+          currentRange: '<8（正常）',
+          tips: [
+            '增加 B 族維生素攝取（B6、B12、葉酸是關鍵輔因子）',
+            '多吃深色蔬菜（菠菜、花椰菜）、雞蛋、魚類',
+            '考慮補充活性葉酸（methylfolate）而非合成葉酸',
+          ],
+          references: [
+            'Refsum et al. 2004 (Clin Chem): Homocysteine and cardiovascular risk',
+          ],
+        })
+      }
+    }
+
+    // ── CRP / hs-CRP ──
+    if (matchName(lab.test_name, ['crp', 'hs-crp', 'c-reactive'])) {
+      if (lab.value >= 0.5 && lab.value < 1.0) {
+        tips.push({
+          category: 'inflammation',
+          title: '發炎指標可再優化',
+          icon: '🔥',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<0.5 mg/L',
+          currentRange: '<1.0（正常）',
+          tips: [
+            '增加 Omega-3 攝取（每日 2-3g EPA+DHA，或每週 3 次深海魚）',
+            '多攝取抗發炎食物：薑黃、莓果、深色蔬菜、橄欖油',
+            '減少精製碳水、加工食品、過量 Omega-6 油脂',
+            '確保充足睡眠與壓力管理',
+          ],
+          references: [
+            'Ridker 2003 (Circulation): C-reactive protein and cardiovascular risk',
+          ],
+        })
+      }
+    }
+
+    // ── 空腹血糖 ──
+    if (matchName(lab.test_name, ['空腹血糖', 'fasting glucose'])) {
+      if (lab.value >= 82 && lab.value <= 90) {
+        tips.push({
+          category: 'glucose',
+          title: '空腹血糖可再優化',
+          icon: '🩸',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<82 mg/dL',
+          currentRange: '<90（正常）',
+          tips: [
+            '進食順序：蔬菜→蛋白質→碳水（可降低餐後血糖 30-40%）',
+            '餐後散步 10-15 分鐘',
+            '增加膳食纖維攝取（每天 30g+）',
+            '減少精製碳水與含糖飲料',
+          ],
+          references: [
+            'Shukla et al. 2015 (Diabetes Care): Food order and postprandial glucose',
+          ],
+        })
+      }
+    }
+
+    // ── HOMA-IR ──
+    if (matchName(lab.test_name, ['homa-ir', 'homa ir'])) {
+      if (lab.value >= 1.0 && lab.value < 2.0) {
+        tips.push({
+          category: 'glucose',
+          title: '胰島素敏感度可再優化',
+          icon: '⚡',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<1.0',
+          currentRange: '<2.0（正常）',
+          tips: [
+            '增加重訓頻率（肌肉是最大的葡萄糖接收器）',
+            '餐前醋飲或肉桂（改善胰島素敏感度）',
+            '確保充足睡眠（睡眠不足會降低胰島素敏感度）',
+          ],
+          references: [
+            'Colberg et al. 2016 (Diabetes Care): Exercise and diabetes management',
+          ],
+        })
+      }
+    }
+
+    // ── HDL-C ──
+    if (matchName(lab.test_name, ['hdl', 'hdl-c'])) {
+      const optMin = gender === '女性' ? 70 : 60
+      if (lab.value < optMin) {
+        tips.push({
+          category: 'lipid',
+          title: 'HDL 膽固醇可再提升',
+          icon: '❤️',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `>${optMin} ${lab.unit}`,
+          currentRange: gender === '女性' ? '>50（正常）' : '>40（正常）',
+          tips: [
+            '增加有氧運動（每週 150 分鐘中等強度）',
+            '攝取優質油脂：橄欖油、酪梨、堅果',
+            '適量飲食中的椰子油可提升 HDL',
+            '減少反式脂肪與精製碳水',
+          ],
+          references: [
+            'Kodama et al. 2007 (Arch Intern Med): Exercise and HDL meta-analysis',
+          ],
+        })
+      }
+    }
+
+    // ── 三酸甘油酯 ──
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg'])) {
+      if (lab.value >= 70 && lab.value < 100) {
+        tips.push({
+          category: 'lipid',
+          title: '三酸甘油酯可再優化',
+          icon: '💧',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<70 mg/dL',
+          currentRange: '<100（正常）',
+          tips: [
+            '增加 Omega-3 攝取（深海魚或魚油補劑）',
+            '減少精緻碳水和果糖攝取',
+            '增加膳食纖維',
+          ],
+          references: [
+            'Miller et al. 2011 (Circulation): Triglycerides and cardiovascular risk',
+          ],
+        })
+      }
+    }
+
+    // ── 鐵蛋白 ──
+    if (matchName(lab.test_name, ['鐵蛋白', 'ferritin'])) {
+      const optMin = gender === '女性' ? 40 : 70
+      const optMax = 120
+      if (lab.value < optMin) {
+        tips.push({
+          category: 'iron',
+          title: '鐵儲存可再優化',
+          icon: '🥩',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `${optMin}-${optMax} ${lab.unit}`,
+          currentRange: gender === '女性' ? '12-200（正常）' : '50-150（正常）',
+          tips: [
+            '增加紅肉、牡蠣等血鐵質來源（吸收率是植物鐵的 2-3 倍）',
+            '鐵質搭配維生素C一起攝取（可提升吸收 2-6 倍）',
+            '避免與茶、咖啡同時攝取鐵質食物',
+          ],
+          references: [
+            'WHO 2020: Iron supplementation guidelines',
+          ],
+        })
+      }
+    }
+
+    // ── 維生素B12 ──
+    if (matchName(lab.test_name, ['維生素b12', 'b12', 'cobalamin'])) {
+      if (lab.value < 500) {
+        tips.push({
+          category: 'vitamin',
+          title: 'B12 可進一步優化',
+          icon: '💊',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '500-800 pg/mL',
+          currentRange: '400-900（正常）',
+          tips: [
+            '增加動物性食物攝取：肝臟、蛤蜊、牛肉、蛋',
+            '素食者建議補充甲基鈷胺素（methylcobalamin）',
+            '搭配葉酸一起補充效果更佳',
+          ],
+          references: [
+            'Green et al. 2017 (BMJ): Vitamin B12 deficiency',
+          ],
+        })
+      }
+    }
+
+    // ── 皮質醇 ──
+    if (matchName(lab.test_name, ['皮質醇', 'cortisol'])) {
+      if (lab.value > 14 && lab.value <= 18) {
+        tips.push({
+          category: 'hormone',
+          title: '皮質醇偏高端，可優化壓力管理',
+          icon: '🧘',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '8-14 μg/dL',
+          currentRange: '6-18（正常）',
+          tips: [
+            '建立固定的放鬆習慣（冥想、深呼吸、散步）',
+            '確保充足睡眠（7-9小時）',
+            '避免過度訓練（監控 RPE 和恢復狀態）',
+            '考慮適度補充鎂（有助於壓力荷爾蒙調節）',
+          ],
+          references: [
+            'Hirotsu et al. 2015 (Sleep Sci): Sleep and cortisol relationship',
+          ],
+        })
+      }
+    }
+  }
+
+  return tips
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Lab → Macro Modifiers
 // 從血檢結果產出可直接影響營養引擎的巨量營養素修正
 // ═══════════════════════════════════════════════════════════════
