@@ -96,7 +96,7 @@ function buildFreeSteps(
     }
   }
 
-  const steps: Array<{ icon: string; title: string; desc: string; isUpgrade?: boolean }> = [
+  const steps: Array<{ icon: string; title: string; desc: string }> = [
     { icon: '👋', title: '歡迎體驗！', desc: welcomeDesc },
   ]
   if (goalStep) steps.push(goalStep)
@@ -104,7 +104,6 @@ function buildFreeSteps(
     { icon: '⚖️', title: '第一步：記錄體重', desc: '每天量體重是最重要的習慣。在下方「體組成」區塊輸入，或綁定 LINE 後直接傳數字。' },
     { icon: '🍽️', title: '第二步：追蹤飲食', desc: '每天記錄飲食是否達標，照著你的營養目標吃。持續記錄 2 週，系統會自動校正 TDEE。' },
     { icon: '📱', title: '加到主畫面', desc: '把這個頁面加到手機主畫面，像 App 一樣一鍵開啟，不用每次開瀏覽器找。' },
-    { icon: '🔓', title: '升級解鎖更多', desc: '訓練追蹤、身心狀態分析、無限次 AI 飲食顧問、每週自動報告 — 升級後全部解鎖。', isUpgrade: true },
   )
   return steps
 }
@@ -140,7 +139,6 @@ export default function OnboardingGuide({ clientId, clientName, tier, features, 
 
   const current = activeSteps[step]
   const isLast = step === activeSteps.length - 1
-  const isUpgradeStep = 'isUpgrade' in current && current.isUpgrade
 
   return (
     <>
@@ -176,25 +174,16 @@ export default function OnboardingGuide({ clientId, clientName, tier, features, 
             >
               跳過
             </button>
-            {isUpgradeStep ? (
-              <a
-                href="/join"
-                className="flex-1 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
-              >
-                查看方案
-              </a>
-            ) : (
-              <button
-                onClick={() => {
-                  if (isLast) dismiss()
-                  else setStep(step + 1)
-                }}
-                className="flex-1 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
-              >
-                {isLast ? '開始使用' : '下一步'}
-                {!isLast && <ChevronRight size={16} />}
-              </button>
-            )}
+            <button
+              onClick={() => {
+                if (isLast) dismiss()
+                else setStep(step + 1)
+              }}
+              className="flex-1 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+            >
+              {isLast ? '開始使用' : '下一步'}
+              {!isLast && <ChevronRight size={16} />}
+            </button>
           </div>
         </div>
       </div>
