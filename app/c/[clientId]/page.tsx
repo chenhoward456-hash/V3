@@ -1102,8 +1102,8 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* 目標設定 — 免費/自主管理用戶可隨時調整目標 */}
-        {(isFree || isSelfManaged) && c.calories_target && (
+        {/* 目標設定 — 所有學員皆可調整目標（例如賽後切換休賽季目標） */}
+        {c.calories_target && (
           <div className="mb-3">
             <GoalSettings
               clientId={c.id}

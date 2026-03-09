@@ -341,3 +341,79 @@ export async function PATCH(request: NextRequest) {
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
+
+// PUT: 所有學員皆可調整目標（體重、體脂、日期、目標類型）
+export async function PUT(request: NextRequest) {
+  try {
+    const ip = getClientIP(request)
+    const { allowed } = rateLimit(`clients-put:${ip}`, 10, 60_000)
+    if (!allowed) {
+      return createErrorResponse('請求過於頻繁，請稍後再試', 429)
+    }
+
+    const body = await request.json()
+    const { clientId, goal_type, target_weight, target_body_fat, target_date } = body
+
+    if (!clientId || typeof clientId !== 'string') {
+      return createErrorResponse('缺少客戶 ID', 400)
+    }
+
+    // 驗證 clientId 格式
+    if (!/^[a-zA-Z0-9_-]{1,36}$/.test(clientId)) {
+      return createErrorResponse('無效的客戶 ID 格式', 400)
+    }
+
+    // 查詢客戶（用 id 或 unique_code）
+    const { data: client, error: clientError } = await supabase
+      .from('clients')
+      .select('id, is_active')
+      .or(`id.eq.${clientId},unique_code.eq.${clientId}`)
+      .single()
+
+    if (clientError || !client) {
+      return createErrorResponse('找不到客戶', 404)
+    }
+
+    if (client.is_active === false) {
+      return createErrorResponse('帳號已暫停', 403)
+    }
+
+    const updates: Record<string, string | number | null> = {}
+
+    if (goal_type && ['cut', 'bulk', 'recomp'].includes(goal_type)) {
+      updates.goal_type = goal_type
+    }
+
+    if (target_weight && typeof target_weight === 'number' && target_weight > 30 && target_weight < 300) {
+      updates.target_weight = target_weight
+    }
+
+    if (target_body_fat && typeof target_body_fat === 'number' && target_body_fat > 3 && target_body_fat < 60) {
+      updates.target_body_fat = target_body_fat
+    }
+
+    if (target_date && typeof target_date === 'string') {
+      const parsedDate = new Date(target_date)
+      if (!isNaN(parsedDate.getTime()) && parsedDate > new Date()) {
+        updates.target_date = target_date
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return createErrorResponse('沒有有效的更新欄位', 400)
+    }
+
+    const { error: updateError } = await supabase
+      .from('clients')
+      .update(updates)
+      .eq('id', client.id)
+
+    if (updateError) {
+      return createErrorResponse('更新失敗', 500)
+    }
+
+    return createSuccessResponse({ updated: true })
+  } catch {
+    return createErrorResponse('伺服器錯誤', 500)
+  }
+}
