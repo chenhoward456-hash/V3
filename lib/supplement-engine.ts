@@ -42,6 +42,7 @@ const ALIASES: Record<string, string[]> = {
   'zinc':         ['zinc', '鋅', 'zn'],
   'magnesium':    ['magnesium', '鎂', 'magnesium(鎂)'],
   'testosterone': ['testosterone', '睪固酮', 'totaltestosterone', '總睪固酮'],
+  'freetestosterone': ['游離睪固酮', 'freetestosterone', 'freet', '游離t'],
   'hemoglobin':   ['hemoglobin', 'hgb', 'hb', '血紅素', 'haemoglobin'],
   'folate':       ['folate', 'folicacid', '葉酸', 'vitaminb9'],
   'omega3index':  ['omega3index', 'omega-3index', 'omega3', 'epa+dha'],
@@ -120,14 +121,14 @@ export function generateSupplementSuggestions(
 
   // ── 3. 維生素 B12 ──
   const b12 = findLabValue(labs, 'vitb12')
-  if (b12?.value != null && b12.value < 300) {
+  if (b12?.value != null && b12.value < 400) {
     suggestions.push({
       name: '維生素 B12',
       dosage: '1000mcg（甲基鈷胺素形式）',
       timing: '早餐後',
-      reason: `B12 ${b12.value} pg/mL，偏低（建議 > 300 pg/mL）。B12 不足影響紅血球生成、神經功能與能量代謝。`,
+      reason: `B12 ${b12.value} pg/mL，偏低（建議 400-900 pg/mL）。B12 不足影響紅血球生成、神經功能與能量代謝。`,
       priority: b12.value < 200 ? 'high' : 'medium',
-      evidence: 'National Institute of Health：B12 < 200 pg/mL 為缺乏，< 300 pg/mL 為亞臨床不足',
+      evidence: 'National Institute of Health：B12 < 200 pg/mL 為缺乏，< 400 pg/mL 為亞臨床不足',
       triggerTests: [b12.test_name],
       category: 'deficiency',
     })
@@ -177,6 +178,27 @@ export function generateSupplementSuggestions(
         triggerTests: [testosterone.test_name],
         category: 'hormonal',
       })
+    }
+  }
+
+  // ── 6b. 游離睪固酮（男性）──
+  if (gender === '男性') {
+    const freeT = findLabValue(labs, 'freetestosterone')
+    if (freeT?.value != null && freeT.value < 47) {
+      // 只有在尚未因總 T 偏低推薦 ZMA 時才推薦
+      const alreadyHasZMA = suggestions.some(s => s.name.includes('ZMA'))
+      if (!alreadyHasZMA) {
+        suggestions.push({
+          name: 'ZMA（鋅鎂合劑）',
+          dosage: '鋅 30mg + 鎂 450mg + B6 10.5mg',
+          timing: '睡前空腹',
+          reason: `游離睪固酮 ${freeT.value} pg/mL，低於理想範圍（47-244 pg/mL）。游離 T 比總 T 更反映實際活性水平。`,
+          priority: freeT.value < 30 ? 'high' : 'medium',
+          evidence: 'Brilla & Conte 2000：ZMA 補充顯著提升訓練運動員睪固酮水平',
+          triggerTests: [freeT.test_name],
+          category: 'hormonal',
+        })
+      }
     }
   }
 

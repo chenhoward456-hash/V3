@@ -51,10 +51,10 @@ export const LAB_THRESHOLDS = {
   'hs-CRP': { normal: 1.0, attention: 3.0 },
   '同半胱胺酸': { normal: 8.0, attention: 12.0 },
 
-  // ── 維生素 ──
-  '維生素D': { normal: 50, attention: 30 },                                       // 越高越好
-  '維生素B12': { normal: { min: 400, max: 900 }, attention: { min: 200, max: 1100 } }, // 過高可能代表肝病或發炎
-  '葉酸': { normal: 5.4, attention: 3.0 },                                        // 越高越好
+  // ── 維生素（均為範圍型：過低=缺乏，過高=中毒/遮蔽效應）──
+  '維生素D': { normal: { min: 50, max: 100 }, attention: { min: 30, max: 150 } },      // >100 可能中毒（高血鈣）
+  '維生素B12': { normal: { min: 400, max: 900 }, attention: { min: 200, max: 1100 } }, // >900 可能代表肝病或發炎
+  '葉酸': { normal: { min: 5.4, max: 20 }, attention: { min: 3.0, max: 24 } },         // >20 可能遮蔽 B12 缺乏
 
   // ── 礦物質（範圍型）──
   '鎂': { normal: { min: 2.0, max: 2.4 }, attention: { min: 1.8, max: 2.6 } },
@@ -84,7 +84,7 @@ export const LAB_THRESHOLDS = {
 
 // 「越高越好」的指標集合
 const HIGHER_IS_BETTER = new Set([
-  '維生素D', '葉酸', 'HDL-C', 'HDL-C_female', '白蛋白', 'eGFR',
+  'HDL-C', 'HDL-C_female', '白蛋白', 'eGFR',
 ]);
 
 // 血檢狀態類型
