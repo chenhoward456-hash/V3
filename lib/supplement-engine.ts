@@ -197,21 +197,32 @@ export function generateSupplementSuggestions(
     }
   }
 
-  // ── 7. 血紅素（貧血）──
+  // ── 7. 血紅素（貧血）— 避免與鐵蛋白低的鐵劑建議重複 ──
   const hemoglobin = findLabValue(labs, 'hemoglobin')
   if (hemoglobin?.value != null) {
     const threshold = gender === '女性' ? 12.0 : 13.5
     if (hemoglobin.value < threshold) {
-      suggestions.push({
-        name: '鐵劑 + 葉酸',
-        dosage: '鐵 25mg + 葉酸 400mcg',
-        timing: '空腹服用，搭配維生素 C',
-        reason: `血紅素 ${hemoglobin.value} g/dL，低於正常值（${gender === '女性' ? '女性 12.0' : '男性 13.5'} g/dL）。貧血嚴重影響有氧代謝與運動表現。`,
-        priority: 'high',
-        evidence: 'WHO：血紅素低於閾值定義為貧血，需積極補充鐵劑',
-        triggerTests: [hemoglobin.test_name],
-        category: 'deficiency',
-      })
+      const alreadyHasIron = suggestions.some(s => s.name.includes('鐵劑'))
+      if (alreadyHasIron) {
+        // 已有鐵蛋白觸發的鐵劑建議 → 合併：升級劑量 + 加入葉酸 + 追加觸發指標
+        const existing = suggestions.find(s => s.name.includes('鐵劑'))!
+        existing.name = '鐵劑 + 維生素 C + 葉酸'
+        existing.dosage = '鐵 25mg + 維生素 C 500mg + 葉酸 400mcg'
+        existing.reason += ` 同時血紅素 ${hemoglobin.value} g/dL 偏低，合併補充葉酸加速紅血球生成。`
+        existing.priority = 'high'
+        existing.triggerTests.push(hemoglobin.test_name)
+      } else {
+        suggestions.push({
+          name: '鐵劑 + 葉酸',
+          dosage: '鐵 25mg + 葉酸 400mcg',
+          timing: '空腹服用，搭配維生素 C',
+          reason: `血紅素 ${hemoglobin.value} g/dL，低於正常值（${gender === '女性' ? '女性 12.0' : '男性 13.5'} g/dL）。貧血嚴重影響有氧代謝與運動表現。`,
+          priority: 'high',
+          evidence: 'WHO：血紅素低於閾值定義為貧血，需積極補充鐵劑',
+          triggerTests: [hemoglobin.test_name],
+          category: 'deficiency',
+        })
+      }
     }
   }
 
@@ -247,18 +258,21 @@ export function generateSupplementSuggestions(
     }
   }
 
-  // ── 10. 高 RPE 恢復建議 ──
+  // ── 10. 高 RPE 恢復建議（鎂 — 避免與血檢鎂重複）──
   if (hasHighRPE) {
-    suggestions.push({
-      name: '鎂（Magnesium Glycinate）',
-      dosage: '400mg',
-      timing: '睡前 30 分鐘',
-      reason: '近期訓練 RPE 持續偏高，肌肉疲勞積累。甘胺酸鎂有助於改善睡眠深度與肌肉恢復速度。',
-      priority: 'medium',
-      evidence: 'Abbasi et al. 2012 (J Res Med Sci)：鎂補充顯著改善睡眠品質指標',
-      triggerTests: [],
-      category: 'recovery',
-    })
+    const alreadyHasMagnesium = suggestions.some(s => s.name.includes('鎂'))
+    if (!alreadyHasMagnesium) {
+      suggestions.push({
+        name: '鎂（Magnesium Glycinate）',
+        dosage: '400mg',
+        timing: '睡前 30 分鐘',
+        reason: '近期訓練 RPE 持續偏高，肌肉疲勞積累。甘胺酸鎂有助於改善睡眠深度與肌肉恢復速度。',
+        priority: 'medium',
+        evidence: 'Abbasi et al. 2012 (J Res Med Sci)：鎂補充顯著改善睡眠品質指標',
+        triggerTests: [],
+        category: 'recovery',
+      })
+    }
   }
 
   // ── 健康模式：長壽導向補品（不依賴血檢，基於循證長壽研究）──
@@ -308,8 +322,9 @@ export function generateSupplementSuggestions(
       })
     }
 
-    // 白藜蘆醇（Resveratrol）
-    suggestions.push({
+    // 白藜蘆醇（Resveratrol）— 避免重複
+    const alreadyHasResveratrol = suggestions.some(s => s.name.includes('白藜蘆醇') || s.name.toLowerCase().includes('resveratrol'))
+    if (!alreadyHasResveratrol) suggestions.push({
       name: '白藜蘆醇（Trans-Resveratrol）',
       dosage: '250-500mg',
       timing: '隨餐服用',
@@ -320,8 +335,9 @@ export function generateSupplementSuggestions(
       category: 'performance',
     })
 
-    // 輔酶 Q10（CoQ10）
-    suggestions.push({
+    // 輔酶 Q10（CoQ10）— 避免重複
+    const alreadyHasCoQ10 = suggestions.some(s => s.name.includes('CoQ10') || s.name.includes('Q10') || s.name.includes('輔酶'))
+    if (!alreadyHasCoQ10) suggestions.push({
       name: '輔酶 Q10（Ubiquinol 還原型）',
       dosage: '100-200mg',
       timing: '隨含脂肪的餐點服用',
@@ -332,8 +348,9 @@ export function generateSupplementSuggestions(
       category: 'performance',
     })
 
-    // 南非醉茄（Ashwagandha）— 壓力管理
-    suggestions.push({
+    // 南非醉茄（Ashwagandha）— 壓力管理，避免重複
+    const alreadyHasAshwagandha = suggestions.some(s => s.name.includes('南非醉茄') || s.name.toLowerCase().includes('ashwagandha'))
+    if (!alreadyHasAshwagandha) suggestions.push({
       name: '南非醉茄（Ashwagandha）',
       dosage: 'KSM-66 萃取 300-600mg',
       timing: '晚餐後或睡前',

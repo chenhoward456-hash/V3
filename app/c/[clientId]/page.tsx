@@ -33,6 +33,7 @@ import AiChatDrawer from '@/components/client/AiChatDrawer'
 import AiInsightsPanel from '@/components/client/AiInsightsPanel'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
+import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 import { trackEvent } from '@/lib/analytics'
@@ -388,6 +389,27 @@ export default function ClientDashboard() {
     labResults: c.lab_results || [],
     quarterlyStart: c.quarterly_cycle_start,
   }) : null
+
+  // 健康模式：生成補品建議（給 AI 用）
+  const healthSupplementSuggestions = useMemo(() => {
+    if (!isHealthMode || !c.lab_results?.length) return []
+    const recentTraining = (clientData.trainingLogs || []).slice(-7)
+    const hasHighRPE = recentTraining.filter((t: any) => t.rpe != null && t.rpe >= 9).length >= 3
+    return generateSupplementSuggestions(
+      (c.lab_results || []).map((r: any) => ({
+        test_name: r.test_name,
+        value: r.value,
+        unit: r.unit,
+        status: r.status,
+      })),
+      {
+        gender: c.gender as '男性' | '女性' | undefined,
+        isHealthMode: true,
+        hasHighRPE,
+        goalType: (c.goal_type as 'cut' | 'bulk' | null) || null,
+      }
+    )
+  }, [isHealthMode, c.lab_results, c.gender, c.goal_type, clientData.trainingLogs])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1485,8 +1507,8 @@ export default function ClientDashboard() {
       )}
 
 
-      {/* AI 聊天抽屜（付費用戶 + 免費用戶月度免費額度） */}
-      {c.nutrition_enabled && (
+      {/* AI 聊天抽屜（付費用戶 + 健康模式用戶 + 免費用戶月度免費額度） */}
+      {(c.nutrition_enabled || isHealthMode) && (
         <AiChatDrawer
           open={showAiChat}
           onClose={() => setShowAiChat(false)}
@@ -1526,6 +1548,9 @@ export default function ClientDashboard() {
             custom_advice: r.custom_advice,
           })) : undefined}
           onFirstMessage={undefined}
+          healthModeEnabled={isHealthMode}
+          healthScore={healthScore}
+          supplementSuggestions={healthSupplementSuggestions}
         />
       )}
 

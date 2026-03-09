@@ -270,6 +270,7 @@ export default function ClientOverview() {
       isCompetitionPrep: !!client?.prep_phase,
       hasHighRPE,
       goalType: client?.goal_type || null,
+      isHealthMode: !!client?.health_mode_enabled,
     })
   }, [latestLabs, client, trainingLogs])
 

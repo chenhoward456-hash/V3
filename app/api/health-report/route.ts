@@ -73,9 +73,14 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. 計算本季和上季的日期範圍
-    const cycleStart = client.quarterly_cycle_start
-      ? new Date(client.quarterly_cycle_start)
-      : new Date()
+    if (!client.quarterly_cycle_start) {
+      return NextResponse.json({
+        error: '尚未設定季度起始日，請聯繫教練設定 quarterly_cycle_start',
+        report: null,
+        labNutritionAdvice: [],
+      })
+    }
+    const cycleStart = new Date(client.quarterly_cycle_start)
 
     const currentQuarter = {
       start: cycleStart.toISOString().split('T')[0],
@@ -189,8 +194,15 @@ async function fetchQuarterData(
 
   const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
 
-  // 每週訓練天數
-  const weeks = Math.max(1, Math.ceil(trainingData.length / 7))
+  // 每週訓練天數 — 用實際天數跨度計算，而非 log 數量
+  const trainingDates = trainingData.map((t: any) => t.date as string).filter(Boolean)
+  const uniqueTrainingDates = [...new Set(trainingDates)]
+  const daySpan = uniqueTrainingDates.length >= 2
+    ? Math.max(1, Math.ceil(
+        (new Date(uniqueTrainingDates[uniqueTrainingDates.length - 1]).getTime() - new Date(uniqueTrainingDates[0]).getTime()) / 86400000 + 1
+      ))
+    : Math.max(1, uniqueTrainingDates.length)
+  const weeks = Math.max(1, daySpan / 7)
   const trainingDays = trainingData.filter((t: any) => t.training_type !== 'rest').length
 
   return {
