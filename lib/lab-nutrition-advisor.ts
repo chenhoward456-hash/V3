@@ -1428,6 +1428,1085 @@ export function generateLabNutritionAdvice(
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 正常值優化建議 — 值在正常範圍但尚未達到最佳區間
+// ═══════════════════════════════════════════════════════════════
+
+export interface LabOptimizationTip {
+  category: string
+  title: string
+  icon: string
+  labMarker: string
+  currentValue: number
+  unit: string
+  optimalRange: string
+  currentRange: string
+  tips: string[]
+  supplements?: { name: string; dosage: string; timing?: string; note?: string }[]
+  references: string[]
+}
+
+export function generateLabOptimizationTips(
+  labs: LabInput[],
+  options: { gender?: '男性' | '女性' } = {}
+): LabOptimizationTip[] {
+  const tips: LabOptimizationTip[] = []
+  const { gender } = options
+
+  for (const lab of labs) {
+    if (lab.value == null || lab.status !== 'normal') continue
+
+    // ── 游離睪固酮（男性）──
+    if (matchName(lab.test_name, ['游離睪固酮', 'free testosterone'])) {
+      const optMin = gender === '女性' ? 3.0 : 150
+      const optMax = gender === '女性' ? 7.0 : 220
+      if (lab.value < optMin || lab.value > optMax) {
+        if (gender !== '女性') {
+          tips.push({
+            category: 'hormone',
+            title: `游離睪固酮可再提升（目標 ${optMin}+）`,
+            icon: '💪',
+            labMarker: lab.test_name,
+            currentValue: lab.value,
+            unit: lab.unit,
+            optimalRange: `${optMin}-${optMax} ${lab.unit}`,
+            currentRange: '47-244（正常）',
+            tips: [
+              '確保每晚 7-9 小時高品質睡眠（睡眠不足可降低睪固酮 10-15%）',
+              '每週至少 3 次大肌群複合動作重訓（深蹲、硬舉、臥推）',
+              '確保鋅（牡蠣、牛肉）與維生素D（目標 60+ ng/mL）攝取充足',
+              '避免長期高壓與過度節食（皮質醇升高會抑制睪固酮）',
+              '適量攝取健康油脂（每日熱量 25-35% 來自脂肪）',
+              '降低 SHBG 可釋放更多游離T：避免過度限制碳水、確保鋅充足',
+            ],
+            supplements: [
+              { name: '東革阿里 (Tongkat Ali)', dosage: '200-400mg/天（標準化萃取）', timing: '早餐後', note: '多項 RCT 顯示可提升游離睪固酮 15-30%' },
+              { name: 'Ashwagandha (KSM-66)', dosage: '600mg/天', timing: '早晚各 300mg', note: '降低皮質醇、間接提升睪固酮' },
+              { name: '鋅', dosage: '15-30mg/天（鋅雙甘胺酸）', timing: '晚餐後', note: '缺鋅者補充後睪固酮可提升 30%+' },
+              { name: '鎂', dosage: '400mg/天（甘胺酸鎂或蘇糖酸鎂）', timing: '睡前', note: '改善睡眠品質，間接支持睪固酮' },
+              { name: '維生素D3', dosage: '2000-4000 IU/天', timing: '隨餐（含油脂）', note: '目標血清 60+ ng/mL' },
+            ],
+            references: [
+              'Leproult & Van Cauter 2011 (JAMA): Sleep loss lowers testosterone in young men',
+              'Vingren et al. 2010 (Sports Med): Testosterone response to resistance exercise',
+              'Prasad et al. 1996 (Nutrition): Zinc status and testosterone levels',
+              'Henkel et al. 2014 (Phytother Res): Tongkat Ali and male hormonal profile',
+              'Lopresti et al. 2019 (Am J Mens Health): Ashwagandha and testosterone in overweight men',
+            ],
+          })
+        }
+      }
+    }
+
+    // ── 睪固酮 ──
+    if (matchName(lab.test_name, ['睪固酮', 'testosterone']) && !matchName(lab.test_name, ['游離', 'free'])) {
+      const optMin = gender === '女性' ? 40 : 700
+      const optMax = gender === '女性' ? 60 : 900
+      if (lab.value < optMin) {
+        tips.push({
+          category: 'hormone',
+          title: `睪固酮可再提升（目標 ${optMin}+）`,
+          icon: '🏋️',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `${optMin}-${optMax} ${lab.unit}`,
+          currentRange: gender === '女性' ? '15-70（正常）' : '300-1000（正常）',
+          tips: [
+            '重訓為主：大肌群複合動作（深蹲、硬舉、臥推）最有效提升睪固酮',
+            '確保充足睡眠 7-9 小時（每少睡 1 小時，睪固酮平均降 10-15%）',
+            '攝取足夠鋅（15-30mg/天）、鎂（400mg/天）、維生素D（目標 60+）',
+            '脂肪不低於總熱量 25%（膽固醇是睪固酮的前驅物）',
+            '管理壓力：長期高皮質醇會直接抑制睪固酮合成',
+          ],
+          supplements: [
+            { name: '東革阿里 (Tongkat Ali)', dosage: '200-400mg/天', timing: '早餐後', note: 'RCT 顯示可提升總睪固酮' },
+            { name: 'Ashwagandha (KSM-66)', dosage: '600mg/天', timing: '早晚各 300mg', note: '降低皮質醇 + 提升睪固酮' },
+            { name: 'Fadogia Agrestis', dosage: '600mg/天', timing: '早餐後', note: '動物研究支持，人體數據有限，建議週期使用' },
+            { name: '鋅 + 鎂 + D3', dosage: '鋅 30mg + 鎂 400mg + D3 4000IU', timing: '鋅鎂睡前，D3 隨餐', note: '基礎荷爾蒙支持三件套' },
+          ],
+          references: [
+            'Kraemer & Ratamess 2005 (Sports Med): Hormonal responses to resistance exercise',
+            'Pilz et al. 2011 (Horm Metab Res): Vitamin D supplementation increases testosterone',
+            'Henkel et al. 2014 (Phytother Res): Tongkat Ali review',
+          ],
+        })
+      }
+    }
+
+    // ── 維生素D ──
+    if (matchName(lab.test_name, ['維生素d', 'vitamin d', '25-oh'])) {
+      if (lab.value < 60 || lab.value > 80) {
+        tips.push({
+          category: 'vitamin',
+          title: '維生素D可進一步優化',
+          icon: '☀️',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '60-80 ng/mL',
+          currentRange: '50-100（正常）',
+          tips: lab.value < 60 ? [
+            '增加日照時間（每天 15-20 分鐘裸露手臂和腿部）',
+            '食物來源：鮭魚、沙丁魚、蛋黃、香菇',
+          ] : [
+            '目前略高於最佳區間，可減少補劑量',
+            '維持均衡飲食與適度日照即可',
+          ],
+          supplements: lab.value < 60 ? [
+            { name: '維生素D3', dosage: '2000-4000 IU/天', timing: '隨含油脂餐食', note: '每 1000 IU 約可提升血清 10 ng/mL' },
+            { name: '維生素K2 (MK-7)', dosage: '100-200μg/天', timing: '與 D3 一起', note: '導引鈣至骨骼，避免血管鈣化' },
+          ] : [],
+          references: [
+            'Holick 2007 (NEJM): Vitamin D deficiency — the pandemic',
+            'Wacker & Holick 2013 (Nutrients): Optimal vitamin D range',
+          ],
+        })
+      }
+    }
+
+    // ── 同半胱胺酸 ──
+    if (matchName(lab.test_name, ['同半胱胺酸', 'homocysteine'])) {
+      if (lab.value >= 6 && lab.value < 8) {
+        tips.push({
+          category: 'inflammation',
+          title: '同半胱胺酸可再優化',
+          icon: '🧬',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<6 μmol/L',
+          currentRange: '<8（正常）',
+          tips: [
+            '增加 B 族維生素攝取（B6、B12、葉酸是關鍵輔因子）',
+            '多吃深色蔬菜（菠菜、花椰菜）、雞蛋、魚類',
+          ],
+          supplements: [
+            { name: '活性 B 群複合物', dosage: '含 methylfolate 800μg + methylcobalamin 1000μg + P5P(B6) 50mg', timing: '早餐後', note: '甲基化關鍵輔因子，優先選活性形式' },
+            { name: 'TMG (甜菜鹼)', dosage: '500-1500mg/天', timing: '隨餐', note: '提供甲基，直接幫助同半胱胺酸代謝' },
+            { name: '肌酸 (Creatine)', dosage: '3-5g/天', timing: '任意時間', note: '消耗甲基合成肌酸，間接降低同半胱胺酸' },
+          ],
+          references: [
+            'Refsum et al. 2004 (Clin Chem): Homocysteine and cardiovascular risk',
+            'Steenge et al. 2003 (J Nutr): Betaine supplementation lowers homocysteine',
+            'Stead et al. 2006 (Am J Clin Nutr): Methylation demand of creatine synthesis',
+          ],
+        })
+      }
+    }
+
+    // ── CRP / hs-CRP ──
+    if (matchName(lab.test_name, ['crp', 'hs-crp', 'c-reactive'])) {
+      if (lab.value >= 0.5 && lab.value < 1.0) {
+        tips.push({
+          category: 'inflammation',
+          title: '發炎指標可再優化',
+          icon: '🔥',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<0.5 mg/L',
+          currentRange: '<1.0（正常）',
+          tips: [
+            '多攝取抗發炎食物：薑黃、莓果、深色蔬菜、橄欖油',
+            '減少精製碳水、加工食品、過量 Omega-6 油脂',
+            '確保充足睡眠與壓力管理',
+          ],
+          supplements: [
+            { name: 'Omega-3 魚油 (EPA+DHA)', dosage: '2-3g/天（以 EPA 為主）', timing: '隨餐', note: '抗發炎效果顯著，EPA 比 DHA 對 CRP 效果更強' },
+            { name: '薑黃素 (Curcumin)', dosage: '500-1000mg/天（含胡椒鹼或脂質體形式）', timing: '隨餐', note: '強效抗發炎，需搭配黑胡椒或脂質體提升吸收' },
+          ],
+          references: [
+            'Ridker 2003 (Circulation): C-reactive protein and cardiovascular risk',
+            'Calder 2017 (Ann Nutr Metab): Omega-3 and inflammation',
+          ],
+        })
+      }
+    }
+
+    // ── 空腹血糖 ──
+    if (matchName(lab.test_name, ['空腹血糖', 'fasting glucose'])) {
+      if (lab.value >= 80 && lab.value <= 90) {
+        tips.push({
+          category: 'glucose',
+          title: '空腹血糖可再優化',
+          icon: '🩸',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<80 mg/dL',
+          currentRange: '<90（正常）',
+          tips: [
+            '進食順序：蔬菜→蛋白質→碳水（可降低餐後血糖 30-40%）',
+            '餐後散步 10-15 分鐘',
+            '增加膳食纖維攝取（每天 30g+）',
+            '減少精製碳水與含糖飲料',
+          ],
+          supplements: [
+            { name: '肉桂萃取 (Ceylon Cinnamon)', dosage: '500-1000mg/天', timing: '隨餐', note: '改善胰島素敏感度與餐後血糖反應' },
+            { name: '小檗鹼 (Berberine)', dosage: '500mg x 2-3次/天', timing: '餐前', note: '多項 RCT 顯示可降空腹血糖，效果接近二甲雙胍' },
+            { name: '鉻 (Chromium Picolinate)', dosage: '200-400μg/天', timing: '隨餐', note: '增強胰島素受體敏感度' },
+          ],
+          references: [
+            'Shukla et al. 2015 (Diabetes Care): Food order and postprandial glucose',
+            'Yin et al. 2008 (Metabolism): Berberine improves glucose metabolism',
+          ],
+        })
+      }
+    }
+
+    // ── HOMA-IR ──
+    if (matchName(lab.test_name, ['homa-ir', 'homa ir'])) {
+      if (lab.value >= 0.8 && lab.value < 2.0) {
+        tips.push({
+          category: 'glucose',
+          title: '胰島素敏感度可再優化',
+          icon: '⚡',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<0.8',
+          currentRange: '<2.0（正常）',
+          tips: [
+            '增加重訓頻率（肌肉是最大的葡萄糖接收器）',
+            '餐前醋飲或肉桂（改善胰島素敏感度）',
+            '確保充足睡眠（睡眠不足會降低胰島素敏感度）',
+          ],
+          supplements: [
+            { name: '小檗鹼 (Berberine)', dosage: '500mg x 2-3次/天', timing: '餐前', note: '改善胰島素阻抗，多項 RCT 支持' },
+            { name: '鉻 (Chromium Picolinate)', dosage: '200-400μg/天', timing: '隨餐', note: '增強胰島素受體敏感度' },
+            { name: 'Alpha-Lipoic Acid (ALA)', dosage: '300-600mg/天', timing: '餐前', note: '強效抗氧化劑，改善胰島素敏感度' },
+          ],
+          references: [
+            'Colberg et al. 2016 (Diabetes Care): Exercise and diabetes management',
+            'Yin et al. 2008 (Metabolism): Berberine and insulin resistance',
+          ],
+        })
+      }
+    }
+
+    // ── HDL-C ──
+    if (matchName(lab.test_name, ['hdl', 'hdl-c'])) {
+      const optMin = gender === '女性' ? 70 : 60
+      if (lab.value < optMin) {
+        tips.push({
+          category: 'lipid',
+          title: 'HDL 膽固醇可再提升',
+          icon: '❤️',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `>${optMin} ${lab.unit}`,
+          currentRange: gender === '女性' ? '>50（正常）' : '>40（正常）',
+          tips: [
+            '增加有氧運動（每週 150 分鐘中等強度）',
+            '攝取優質油脂：橄欖油、酪梨、堅果',
+            '適量飲食中的椰子油可提升 HDL',
+            '減少反式脂肪與精製碳水',
+          ],
+          supplements: [
+            { name: 'Omega-3 魚油 (EPA+DHA)', dosage: '2-3g/天', timing: '隨餐', note: '提升 HDL 並降低三酸甘油酯' },
+            { name: '菸鹼酸 (Niacin/B3)', dosage: '500mg/天（緩釋型）', timing: '睡前', note: '最有效提升 HDL 的營養素，但可能引起潮紅反應' },
+          ],
+          references: [
+            'Kodama et al. 2007 (Arch Intern Med): Exercise and HDL meta-analysis',
+            'Boden et al. 2014 (NEJM): Niacin and HDL',
+          ],
+        })
+      }
+    }
+
+    // ── 三酸甘油酯 ──
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg'])) {
+      if (lab.value >= 70 && lab.value < 100) {
+        tips.push({
+          category: 'lipid',
+          title: '三酸甘油酯可再優化',
+          icon: '💧',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<70 mg/dL',
+          currentRange: '<100（正常）',
+          tips: [
+            '增加 Omega-3 攝取（深海魚或魚油補劑）',
+            '減少精緻碳水和果糖攝取',
+            '增加膳食纖維',
+          ],
+          supplements: [
+            { name: 'Omega-3 魚油 (EPA+DHA)', dosage: '2-4g/天（高 EPA 比例）', timing: '隨餐', note: '降低三酸甘油酯效果顯著（可降 15-30%）' },
+            { name: '洋車前子殼 (Psyllium)', dosage: '5-10g/天', timing: '餐前加水服用', note: '水溶性纖維，降低餐後血脂吸收' },
+          ],
+          references: [
+            'Miller et al. 2011 (Circulation): Triglycerides and cardiovascular risk',
+            'Harris et al. 2008 (Am J Clin Nutr): Omega-3 and triglycerides dose-response',
+          ],
+        })
+      }
+    }
+
+    // ── 鐵蛋白 ──
+    if (matchName(lab.test_name, ['鐵蛋白', 'ferritin'])) {
+      const optMin = gender === '女性' ? 40 : 70
+      const optMax = 120
+      if (lab.value < optMin) {
+        tips.push({
+          category: 'iron',
+          title: '鐵儲存可再優化',
+          icon: '🥩',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `${optMin}-${optMax} ${lab.unit}`,
+          currentRange: gender === '女性' ? '12-200（正常）' : '50-150（正常）',
+          tips: [
+            '增加紅肉、牡蠣等血鐵質來源（吸收率是植物鐵的 2-3 倍）',
+            '鐵質搭配維生素C一起攝取（可提升吸收 2-6 倍）',
+            '避免與茶、咖啡同時攝取鐵質食物',
+          ],
+          supplements: [
+            { name: '鐵雙甘胺酸 (Iron Bisglycinate)', dosage: '25-50mg/天', timing: '空腹或搭配維C', note: '吸收率高、腸胃刺激小，優於硫酸亞鐵' },
+            { name: '維生素C', dosage: '500mg（與鐵一起）', timing: '與鐵劑同服', note: '提升非血鐵吸收 2-6 倍' },
+            { name: 'Lactoferrin（乳鐵蛋白）', dosage: '100-200mg/天', timing: '空腹', note: '促進鐵吸收，腸胃耐受性佳' },
+          ],
+          references: [
+            'WHO 2020: Iron supplementation guidelines',
+            'Hallberg et al. 1989 (Am J Clin Nutr): Iron absorption and vitamin C',
+          ],
+        })
+      }
+    }
+
+    // ── 維生素B12 ──
+    if (matchName(lab.test_name, ['維生素b12', 'b12', 'cobalamin'])) {
+      if (lab.value < 500) {
+        tips.push({
+          category: 'vitamin',
+          title: 'B12 可進一步優化',
+          icon: '💊',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '500-800 pg/mL',
+          currentRange: '400-900（正常）',
+          tips: [
+            '增加動物性食物攝取：肝臟、蛤蜊、牛肉、蛋',
+          ],
+          supplements: [
+            { name: '甲基鈷胺素 (Methylcobalamin)', dosage: '1000-2000μg/天', timing: '早餐後舌下含服', note: '活性形式，吸收率優於氰鈷胺素' },
+            { name: '活性葉酸 (Methylfolate)', dosage: '400-800μg/天', timing: '與 B12 一起', note: 'B12 + 葉酸協同作用，甲基化效率更佳' },
+          ],
+          references: [
+            'Green et al. 2017 (BMJ): Vitamin B12 deficiency',
+          ],
+        })
+      }
+    }
+
+    // ── 皮質醇 ──
+    if (matchName(lab.test_name, ['皮質醇', 'cortisol'])) {
+      if ((lab.value > 12 && lab.value <= 18) || (lab.value >= 6 && lab.value < 8)) {
+        tips.push({
+          category: 'hormone',
+          title: lab.value > 12 ? '皮質醇偏高端，可優化壓力管理' : '皮質醇偏低端，注意腎上腺健康',
+          icon: '🧘',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '8-12 μg/dL',
+          currentRange: '6-18（正常）',
+          tips: lab.value > 12 ? [
+            '建立固定的放鬆習慣（冥想、深呼吸、散步）',
+            '確保充足睡眠（7-9小時）',
+            '避免過度訓練（監控 RPE 和恢復狀態）',
+          ] : [
+            '確保不過度限制熱量（長期低卡會壓低皮質醇）',
+            '規律作息、避免慢性壓力耗竭',
+          ],
+          supplements: lab.value > 12 ? [
+            { name: 'Ashwagandha (KSM-66)', dosage: '600mg/天', timing: '早晚各 300mg', note: 'RCT 顯示可降低皮質醇 25-30%' },
+            { name: '鎂 (甘胺酸鎂)', dosage: '400mg/天', timing: '睡前', note: '放鬆神經系統、改善睡眠品質' },
+            { name: 'L-Theanine', dosage: '200mg/天', timing: '壓力大時或睡前', note: '促進 alpha 腦波，減輕壓力反應' },
+            { name: 'Phosphatidylserine (PS)', dosage: '400-800mg/天', timing: '運動前', note: '可鈍化運動引起的皮質醇飆升' },
+          ] : [
+            { name: '維生素C', dosage: '500-1000mg/天', timing: '分次攝取', note: '腎上腺合成皮質醇需要大量維C' },
+            { name: '泛酸 (B5)', dosage: '500mg/天', timing: '早餐後', note: '支持腎上腺功能的關鍵 B 群' },
+          ],
+          references: [
+            'Hirotsu et al. 2015 (Sleep Sci): Sleep and cortisol relationship',
+            'Chandrasekhar et al. 2012 (Indian J Psychol Med): Ashwagandha reduces cortisol',
+          ],
+        })
+      }
+    }
+
+    // ── 空腹胰島素 ──
+    if (matchName(lab.test_name, ['空腹胰島素', 'fasting insulin'])) {
+      if (lab.value >= 2.5 && lab.value < 5) {
+        tips.push({
+          category: 'glucose',
+          title: '空腹胰島素可再優化（目標 <2.5）',
+          icon: '📉',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<2.5 μIU/mL',
+          currentRange: '<5.0（正常）',
+          tips: [
+            '持續減少精製碳水，增加纖維攝取',
+            '間歇性斷食可改善胰島素效率',
+            '增加重訓（肌肉越多，胰島素效率越高）',
+          ],
+          supplements: [
+            { name: '小檗鹼 (Berberine)', dosage: '500mg x 2-3次/天', timing: '餐前', note: '改善胰島素敏感度，降低空腹胰島素' },
+            { name: '肉桂萃取 (Ceylon Cinnamon)', dosage: '500-1000mg/天', timing: '隨餐', note: '增強胰島素訊號傳導' },
+          ],
+          references: ['Patarrão et al. 2014 (Curr Diabetes Rev): Insulin sensitivity assessment'],
+        })
+      }
+    }
+
+    // ── HbA1c ──
+    if (matchName(lab.test_name, ['hba1c', '糖化血色素'])) {
+      if (lab.value >= 5.0 && lab.value < 5.5) {
+        tips.push({
+          category: 'glucose',
+          title: 'HbA1c 可再優化（目標 <5.0）',
+          icon: '📊',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<5.0%',
+          currentRange: '<5.5（正常）',
+          tips: [
+            '控制精製碳水和含糖食物',
+            '增加膳食纖維攝取（每天 30g+）',
+            '進食順序：蔬菜→蛋白質→碳水',
+            '規律運動（有氧+重訓）改善長期血糖控制',
+          ],
+          supplements: [
+            { name: '小檗鹼 (Berberine)', dosage: '500mg x 2-3次/天', timing: '餐前', note: '多項 RCT 顯示可降低 HbA1c' },
+            { name: '肉桂萃取 (Ceylon Cinnamon)', dosage: '500-1000mg/天', timing: '隨餐', note: '改善長期血糖控制' },
+          ],
+          references: ['ADA 2024: Standards of Care in Diabetes'],
+        })
+      }
+    }
+
+    // ── 尿酸 ──
+    if (matchName(lab.test_name, ['尿酸', 'uric acid'])) {
+      const optTarget = gender === '女性' ? 4.0 : 5.0
+      const normalMax = gender === '女性' ? 6.0 : 7.0
+      if (lab.value >= optTarget && lab.value < normalMax) {
+        tips.push({
+          category: 'glucose',
+          title: `尿酸可再優化（目標 <${optTarget}）`,
+          icon: '🧪',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `<${optTarget} mg/dL`,
+          currentRange: `<${normalMax}（正常）`,
+          tips: [
+            '減少高普林食物（內臟、紅肉、啤酒）',
+            '增加水分攝取（每天 2-3L）促進尿酸排泄',
+            '多攝取櫻桃、莓果（有助降低尿酸）',
+            '減少果糖攝取（果汁、含糖飲料會升高尿酸）',
+          ],
+          supplements: [
+            { name: '維生素C', dosage: '500-1000mg/天', timing: '分次攝取', note: '促進尿酸排泄，降低血清尿酸' },
+            { name: '櫻桃萃取 (Tart Cherry)', dosage: '500-1000mg/天', timing: '隨餐', note: '含花青素，研究顯示可降低尿酸與痛風發作風險' },
+          ],
+          references: ['Choi et al. 2004 (NEJM): Diet and hyperuricemia', 'Huang et al. 2005 (Arthritis Rheum): Vitamin C and uric acid'],
+        })
+      }
+    }
+
+    // ── ApoB ──
+    if (matchName(lab.test_name, ['apob', 'apo b', 'apolipoprotein b'])) {
+      if (lab.value >= 50 && lab.value < 80) {
+        tips.push({
+          category: 'lipid',
+          title: 'ApoB 可再優化（目標 <50）',
+          icon: '🫀',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<50 mg/dL',
+          currentRange: '<80（正常）',
+          tips: [
+            '增加水溶性纖維攝取（燕麥、豆類、蘋果）',
+            '減少飽和脂肪（紅肉、全脂乳製品），增加不飽和脂肪',
+            '考慮植物固醇補充（每日 2g 可降低 LDL 10%）',
+            '增加 Omega-3 攝取（深海魚、魚油）',
+          ],
+          supplements: [
+            { name: '植物固醇 (Plant Sterols)', dosage: '2g/天', timing: '隨餐', note: '可降低 LDL/ApoB 約 10%' },
+            { name: 'Omega-3 魚油 (EPA+DHA)', dosage: '2-3g/天', timing: '隨餐', note: '改善血脂組成' },
+            { name: '洋車前子殼 (Psyllium)', dosage: '5-10g/天', timing: '餐前', note: '水溶性纖維，減少膽固醇吸收' },
+          ],
+          references: ['Ference et al. 2017 (Eur Heart J): LDL and ApoB as causal risk factors'],
+        })
+      }
+    }
+
+    // ── LDL-C ──
+    if (matchName(lab.test_name, ['ldl', 'ldl-c'])) {
+      if (lab.value >= 60 && lab.value < 100) {
+        tips.push({
+          category: 'lipid',
+          title: 'LDL 可再優化（目標 <60）',
+          icon: '💔',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<60 mg/dL',
+          currentRange: '<100（正常）',
+          tips: [
+            '增加水溶性纖維攝取（每天 10-25g）',
+            '減少飽和脂肪至總熱量 7% 以下',
+            '增加植物性蛋白質（豆類、堅果）',
+            '規律有氧運動有助改善 LDL 顆粒大小',
+          ],
+          supplements: [
+            { name: '植物固醇 (Plant Sterols)', dosage: '2g/天', timing: '隨餐', note: '阻斷膽固醇吸收，降低 LDL 約 10%' },
+            { name: '紅麴萃取 (Red Yeast Rice)', dosage: '1200mg/天', timing: '晚餐後', note: '含天然 Monacolin K，注意與 statin 機制相似' },
+            { name: '洋車前子殼 (Psyllium)', dosage: '5-10g/天', timing: '餐前', note: '水溶性纖維，與膽酸結合促進 LDL 排泄' },
+          ],
+          references: ['Grundy et al. 2019 (Circulation): AHA/ACC Cholesterol guidelines'],
+        })
+      }
+    }
+
+    // ── 總膽固醇 ──
+    if (matchName(lab.test_name, ['總膽固醇', 'total cholesterol'])) {
+      if (lab.value >= 170 && lab.value < 200) {
+        tips.push({
+          category: 'lipid',
+          title: '總膽固醇可再優化',
+          icon: '📋',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<170 mg/dL',
+          currentRange: '<200（正常）',
+          tips: [
+            '增加纖維攝取與減少飽和脂肪',
+            '規律有氧運動',
+            '注意 HDL/LDL 比例比總膽固醇更重要',
+          ],
+          supplements: [
+            { name: '植物固醇 (Plant Sterols)', dosage: '2g/天', timing: '隨餐', note: '降低膽固醇吸收' },
+            { name: 'Omega-3 魚油', dosage: '2-3g/天', timing: '隨餐', note: '改善整體血脂比例' },
+          ],
+          references: ['Grundy et al. 2019 (Circulation): AHA/ACC Cholesterol guidelines'],
+        })
+      }
+    }
+
+    // ── AST / ALT ──
+    if (matchName(lab.test_name, ['ast', 'got'])) {
+      if (lab.value >= 25 && lab.value < 40) {
+        tips.push({
+          category: 'liver',
+          title: 'AST 可再優化（目標 <25）',
+          icon: '🫁',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<25 U/L',
+          currentRange: '<40（正常）',
+          tips: [
+            '減少酒精攝取',
+            '避免高油脂飲食，增加蔬果',
+            '注意運動後會暫時升高（避免在激烈運動 24hr 內抽血）',
+            '確保充足休息與睡眠',
+          ],
+          supplements: [
+            { name: 'NAC (N-乙醯半胱氨酸)', dosage: '600-1200mg/天', timing: '空腹', note: '穀胱甘肽前驅物，支持肝臟解毒' },
+            { name: '水飛薊素 (Milk Thistle)', dosage: '150-300mg/天（標準化 80% silymarin）', timing: '隨餐', note: '保護肝細胞，多項研究支持降低 AST/ALT' },
+          ],
+          references: ['Kim et al. 2004 (Hepatology): Optimal ALT cut-off values'],
+        })
+      }
+    }
+
+    if (matchName(lab.test_name, ['alt', 'gpt'])) {
+      if (lab.value >= 25 && lab.value < 40) {
+        tips.push({
+          category: 'liver',
+          title: 'ALT 可再優化（目標 <25）',
+          icon: '🫁',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '<25 U/L',
+          currentRange: '<40（正常）',
+          tips: [
+            '減少酒精攝取',
+            '控制體脂率（脂肪肝是 ALT 升高的常見原因）',
+            '減少加工食品與精製碳水',
+            '增加十字花科蔬菜（花椰菜、高麗菜）支持肝臟解毒',
+          ],
+          supplements: [
+            { name: 'NAC (N-乙醯半胱氨酸)', dosage: '600-1200mg/天', timing: '空腹', note: '最有效的肝臟保護補劑之一' },
+            { name: '水飛薊素 (Milk Thistle)', dosage: '150-300mg/天', timing: '隨餐', note: '保護肝細胞再生' },
+            { name: 'TUDCA', dosage: '250-500mg/天', timing: '隨餐', note: '膽汁酸衍生物，支持肝臟排毒' },
+          ],
+          references: ['Kim et al. 2004 (Hepatology): Optimal ALT cut-off values'],
+        })
+      }
+    }
+
+    // ── GGT ──
+    if (matchName(lab.test_name, ['ggt', 'γ-gt'])) {
+      const optTarget = gender === '女性' ? 25 : 30
+      const normalMax = gender === '女性' ? 40 : 60
+      if (lab.value >= optTarget && lab.value < normalMax) {
+        tips.push({
+          category: 'liver',
+          title: `GGT 可再優化（目標 <${optTarget}）`,
+          icon: '🍷',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `<${optTarget} U/L`,
+          currentRange: `<${normalMax}（正常）`,
+          tips: [
+            '減少或戒除酒精（GGT 對酒精非常敏感）',
+            '增加抗氧化食物：莓果、綠茶、薑黃',
+            '維持健康體重，減少內臟脂肪',
+          ],
+          supplements: [
+            { name: 'NAC (N-乙醯半胱氨酸)', dosage: '600-1200mg/天', timing: '空腹', note: '提升穀胱甘肽，GGT 與氧化壓力密切相關' },
+            { name: '水飛薊素 (Milk Thistle)', dosage: '150-300mg/天', timing: '隨餐', note: '保護肝細胞' },
+          ],
+          references: ['Whitfield 2001 (Crit Rev Clin Lab Sci): GGT as biomarker'],
+        })
+      }
+    }
+
+    // ── 白蛋白 ──
+    if (matchName(lab.test_name, ['白蛋白', 'albumin'])) {
+      if (lab.value >= 3.5 && lab.value < 4.2) {
+        tips.push({
+          category: 'liver',
+          title: '白蛋白可再優化（目標 >4.2）',
+          icon: '🥚',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '>4.2 g/dL',
+          currentRange: '>3.5（正常）',
+          tips: [
+            '增加優質蛋白攝取（每天 1.6-2.2g/kg 體重）',
+            '確保蛋白質來源多樣化：蛋、魚、肉、豆類',
+            '避免長期低蛋白飲食',
+          ],
+          supplements: [
+            { name: '乳清蛋白 (Whey Protein)', dosage: '20-30g/天', timing: '訓練後或餐間', note: '高生物利用率蛋白質，快速補充胺基酸' },
+            { name: '膠原蛋白 (Collagen Peptides)', dosage: '10-15g/天', timing: '任意時間', note: '額外蛋白質來源，同時支持關節與皮膚' },
+          ],
+          references: ['Don & Kaysen 2004: Serum albumin and nutritional status'],
+        })
+      }
+    }
+
+    // ── eGFR ──
+    if (matchName(lab.test_name, ['egfr', '腎絲球過濾率'])) {
+      if (lab.value >= 90 && lab.value < 100) {
+        tips.push({
+          category: 'kidney',
+          title: 'eGFR 可再優化（目標 >100）',
+          icon: '💧',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '>100 mL/min',
+          currentRange: '>90（正常）',
+          tips: [
+            '確保充足水分攝取（每天 2-3L）',
+            '控制血壓與血糖在最佳範圍',
+            '避免過量 NSAID 類止痛藥',
+          ],
+          supplements: [
+            { name: 'Omega-3 魚油', dosage: '2g/天', timing: '隨餐', note: '抗發炎，多項研究顯示對腎功能有保護作用' },
+            { name: 'CoQ10', dosage: '100-200mg/天', timing: '隨餐', note: '抗氧化，支持腎臟細胞能量代謝' },
+          ],
+          references: ['KDIGO 2024: Clinical practice guideline for CKD'],
+        })
+      }
+    }
+
+    // ── TSH ──
+    if (matchName(lab.test_name, ['tsh', '促甲狀腺激素'])) {
+      if ((lab.value >= 0.4 && lab.value < 1.0) || (lab.value > 2.5 && lab.value <= 4.0)) {
+        tips.push({
+          category: 'thyroid',
+          title: 'TSH 可再優化（目標 1.0-2.5）',
+          icon: '🦋',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '1.0-2.5 mIU/L',
+          currentRange: '0.4-4.0（正常）',
+          tips: lab.value > 2.5 ? [
+            '確保碘攝取充足（海帶、海鮮、碘鹽）',
+            '補充硒（巴西堅果 2 顆/天即可達標）',
+            '避免過度限制熱量（長期低卡會升高 TSH）',
+            '確保充足睡眠與壓力管理',
+          ] : [
+            '注意碘攝取是否過多',
+            '確認甲狀腺功能穩定，定期追蹤',
+          ],
+          supplements: lab.value > 2.5 ? [
+            { name: '硒 (Selenium)', dosage: '100-200μg/天', timing: '隨餐', note: '支持 T4→T3 轉換，保護甲狀腺' },
+            { name: '碘 (Iodine/海帶)', dosage: '150-300μg/天', timing: '隨餐', note: '甲狀腺激素合成的必需礦物質' },
+            { name: '鋅', dosage: '15-30mg/天', timing: '晚餐後', note: '支持甲狀腺激素代謝' },
+          ] : [],
+          references: ['Biondi & Cooper 2008 (JCEM): Subclinical thyroid disease — lancet review'],
+        })
+      }
+    }
+
+    // ── Free T4 ──
+    if (matchName(lab.test_name, ['free t4', '游離t4'])) {
+      if ((lab.value >= 0.8 && lab.value < 1.0) || (lab.value > 1.5 && lab.value <= 1.8)) {
+        tips.push({
+          category: 'thyroid',
+          title: 'Free T4 可再優化（目標 1.0-1.5）',
+          icon: '🦋',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '1.0-1.5 ng/dL',
+          currentRange: '0.8-1.8（正常）',
+          tips: [
+            '確保碘和硒攝取充足',
+            '避免長期壓力與熱量不足（影響 T4→T3 轉換）',
+            '搭配 TSH 和 Free T3 綜合判讀',
+          ],
+          supplements: [
+            { name: '硒 (Selenium)', dosage: '100-200μg/天', timing: '隨餐', note: '支持甲狀腺過氧化物酶和脫碘酶活性' },
+            { name: '碘', dosage: '150-300μg/天', timing: '隨餐', note: '確保甲狀腺激素合成原料充足' },
+          ],
+          references: ['Biondi & Cooper 2008 (JCEM): Thyroid hormone assessment'],
+        })
+      }
+    }
+
+    // ── Free T3 ──
+    if (matchName(lab.test_name, ['free t3', '游離t3'])) {
+      if ((lab.value >= 2.3 && lab.value < 3.0) || (lab.value > 4.0 && lab.value <= 4.2)) {
+        tips.push({
+          category: 'thyroid',
+          title: 'Free T3 可再優化（目標 3.0-4.0）',
+          icon: '🦋',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '3.0-4.0 pg/mL',
+          currentRange: '2.3-4.2（正常）',
+          tips: lab.value < 3.0 ? [
+            '確保充足碳水攝取（碳水過低會降低 T4→T3 轉換）',
+            '補充硒（支持脫碘酶活性）',
+            '避免長期熱量赤字（代謝適應會降低 T3）',
+            '確保充足睡眠',
+          ] : [
+            '略高於最佳區間，持續追蹤即可',
+          ],
+          supplements: lab.value < 3.0 ? [
+            { name: '硒 (Selenium)', dosage: '100-200μg/天', timing: '隨餐', note: '脫碘酶需要硒，促進 T4→T3 轉換' },
+            { name: '鋅', dosage: '15-30mg/天', timing: '晚餐後', note: '支持甲狀腺激素代謝' },
+            { name: '鐵 (如缺乏)', dosage: '依鐵蛋白數值調整', timing: '空腹', note: '缺鐵會影響甲狀腺過氧化物酶活性' },
+          ] : [],
+          references: ['Mullur et al. 2014 (Physiol Rev): Thyroid hormone regulation of metabolism'],
+        })
+      }
+    }
+
+    // ── 葉酸 ──
+    if (matchName(lab.test_name, ['葉酸', 'folate', 'folic acid'])) {
+      if ((lab.value >= 5.4 && lab.value < 10) || (lab.value > 18 && lab.value <= 20)) {
+        tips.push({
+          category: 'vitamin',
+          title: '葉酸可再優化（目標 10-18）',
+          icon: '🥬',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '10-18 ng/mL',
+          currentRange: '5.4-20（正常）',
+          tips: lab.value < 10 ? [
+            '多攝取深色蔬菜：菠菜、花椰菜、蘆筍',
+            '豆類和扁豆也是優質葉酸來源',
+            '考慮補充活性葉酸（methylfolate）',
+          ] : [
+            '略高於最佳區間，減少補劑量即可',
+          ],
+          supplements: lab.value < 10 ? [
+            { name: '活性葉酸 (Methylfolate)', dosage: '400-800μg/天', timing: '早餐後', note: '活性形式，跳過 MTHFR 基因多態性問題' },
+            { name: '活性 B 群複合物', dosage: '含 methylfolate + methylcobalamin', timing: '早餐後', note: 'B 群協同作用，提升甲基化效率' },
+          ] : [],
+          references: ['Bailey et al. 2015 (Adv Nutr): Folate and health'],
+        })
+      }
+    }
+
+    // ── 鎂 ──
+    if (matchName(lab.test_name, ['鎂', 'magnesium', 'mg'])) {
+      if ((lab.value >= 2.0 && lab.value < 2.1) || (lab.value > 2.3 && lab.value <= 2.4)) {
+        tips.push({
+          category: 'mineral',
+          title: '鎂可再優化（目標 2.1-2.3）',
+          icon: '🌰',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '2.1-2.3 mg/dL',
+          currentRange: '2.0-2.4（正常）',
+          tips: lab.value < 2.1 ? [
+            '增加鎂豐富食物：堅果、深色蔬菜、黑巧克力、南瓜子',
+            '考慮補充甘胺酸鎂或蘇糖酸鎂（吸收率較佳）',
+            '鎂有助於睡眠品質和肌肉恢復',
+          ] : [
+            '略高於最佳區間，維持目前飲食即可',
+          ],
+          supplements: lab.value < 2.1 ? [
+            { name: '甘胺酸鎂 (Magnesium Glycinate)', dosage: '200-400mg/天', timing: '睡前', note: '吸收率佳、不易腹瀉，改善睡眠' },
+            { name: '蘇糖酸鎂 (Magnesium L-Threonate)', dosage: '1000-2000mg/天', timing: '睡前', note: '可穿越血腦屏障，改善認知與睡眠' },
+          ] : [],
+          references: ['DiNicolantonio et al. 2018 (Open Heart): Subclinical magnesium deficiency'],
+        })
+      }
+    }
+
+    // ── 鋅 ──
+    if (matchName(lab.test_name, ['鋅', 'zinc', 'zn'])) {
+      if ((lab.value >= 70 && lab.value < 85) || (lab.value > 110 && lab.value <= 120)) {
+        tips.push({
+          category: 'mineral',
+          title: '鋅可再優化（目標 85-110）',
+          icon: '🦪',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '85-110 μg/dL',
+          currentRange: '70-120（正常）',
+          tips: lab.value < 85 ? [
+            '增加牡蠣、牛肉、南瓜子攝取（最佳鋅來源）',
+            '鋅對睪固酮、免疫力和傷口癒合都很重要',
+            '避免長期高劑量鈣或鐵補充（會競爭吸收）',
+          ] : [
+            '略高於最佳區間，減少鋅補劑即可',
+          ],
+          supplements: lab.value < 85 ? [
+            { name: '鋅雙甘胺酸 (Zinc Bisglycinate)', dosage: '15-30mg/天', timing: '晚餐後', note: '吸收率最佳的鋅形式，腸胃刺激小' },
+            { name: '鋅+銅複合', dosage: '鋅 30mg + 銅 2mg', timing: '晚餐後', note: '長期補鋅需搭配銅，避免銅缺乏' },
+          ] : [],
+          references: ['Prasad 2008 (Mol Med): Zinc in human health'],
+        })
+      }
+    }
+
+    // ── 鈣 ──
+    if (matchName(lab.test_name, ['鈣', 'calcium', 'ca'])) {
+      if ((lab.value >= 8.5 && lab.value < 9.0) || (lab.value > 10.0 && lab.value <= 10.5)) {
+        tips.push({
+          category: 'mineral',
+          title: '鈣可再優化（目標 9.0-10.0）',
+          icon: '🦴',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '9.0-10.0 mg/dL',
+          currentRange: '8.5-10.5（正常）',
+          tips: lab.value < 9.0 ? [
+            '增加乳製品、小魚乾、豆腐攝取',
+            '確保維生素D充足（有助鈣吸收）',
+            '負重運動有助鈣質保留在骨骼中',
+          ] : [
+            '略高於最佳區間，注意維生素D不要過量',
+          ],
+          supplements: lab.value < 9.0 ? [
+            { name: '檸檬酸鈣 (Calcium Citrate)', dosage: '500-600mg/天（分次）', timing: '隨餐', note: '吸收率優於碳酸鈣，空腹也可吸收' },
+            { name: '維生素D3', dosage: '2000 IU/天', timing: '隨餐', note: '提升鈣吸收率' },
+            { name: '維生素K2 (MK-7)', dosage: '100μg/天', timing: '與 D3 一起', note: '導引鈣至骨骼而非血管' },
+          ] : [],
+          references: ['Ross et al. 2011 (JCEM): Dietary reference intakes for calcium and vitamin D'],
+        })
+      }
+    }
+
+    // ── DHEA-S ──
+    if (matchName(lab.test_name, ['dhea-s', 'dhea', '硫酸脫氫異雄固酮'])) {
+      const optMin = gender === '女性' ? 200 : 250
+      const optMax = gender === '女性' ? 350 : 450
+      const normalRange = gender === '女性' ? '65-380（正常）' : '100-500（正常）'
+      if (lab.value < optMin || lab.value > optMax) {
+        tips.push({
+          category: 'hormone',
+          title: `DHEA-S 可再優化（目標 ${optMin}-${optMax}）`,
+          icon: '⏳',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `${optMin}-${optMax} μg/dL`,
+          currentRange: normalRange,
+          tips: lab.value < optMin ? [
+            '增加規律運動（重訓+有氧組合最有效）',
+            '壓力管理：長期高壓會消耗 DHEA-S',
+            '確保充足睡眠（7-9小時）',
+            '適量攝取健康脂肪（DHEA-S 合成需要膽固醇前驅物）',
+          ] : [
+            '略高於最佳區間，持續追蹤即可',
+          ],
+          supplements: lab.value < optMin ? [
+            { name: 'DHEA', dosage: '25-50mg/天', timing: '早餐後', note: '直接補充前驅物，建議在醫師指導下使用' },
+            { name: '維生素D3', dosage: '2000-4000 IU/天', timing: '隨餐', note: '維D不足會降低 DHEA-S' },
+            { name: 'Ashwagandha', dosage: '600mg/天', timing: '早晚各 300mg', note: '研究顯示可提升 DHEA-S' },
+          ] : [],
+          references: ['Labrie et al. 2005 (J Endocrinol): DHEA and aging'],
+        })
+      }
+    }
+
+    // ── SHBG ──
+    if (matchName(lab.test_name, ['shbg', '性荷爾蒙結合球蛋白'])) {
+      const optMin = gender === '女性' ? 30 : 20
+      const optMax = gender === '女性' ? 120 : 40
+      const normalRange = gender === '女性' ? '18-144（正常）' : '10-57（正常）'
+      if (lab.value < optMin || lab.value > optMax) {
+        tips.push({
+          category: 'hormone',
+          title: lab.value > optMax ? 'SHBG 偏高端（會降低游離睪固酮）' : 'SHBG 偏低端',
+          icon: '🔗',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `${optMin}-${optMax} nmol/L`,
+          currentRange: normalRange,
+          tips: lab.value > optMax ? [
+            'SHBG 過高會結合過多游離睪固酮，降低生物利用率',
+            '確保碳水攝取不要過低（低碳飲食會升高 SHBG）',
+            '確保鋅和鎂攝取充足',
+            '檢查甲狀腺功能（甲亢會升高 SHBG）',
+          ] : [
+            'SHBG 偏低可能與胰島素阻抗相關',
+            '改善胰島素敏感度：運動、控制碳水',
+            '減少過量酒精攝取',
+          ],
+          supplements: lab.value > optMax ? [
+            { name: '硼 (Boron)', dosage: '6-10mg/天', timing: '隨餐', note: '研究顯示可降低 SHBG，提升游離睪固酮' },
+            { name: '鎂', dosage: '400mg/天', timing: '睡前', note: '鎂缺乏與 SHBG 升高相關' },
+          ] : [
+            { name: '小檗鹼 (Berberine)', dosage: '500mg x 2次/天', timing: '餐前', note: '改善胰島素敏感度，低 SHBG 常與胰島素阻抗相關' },
+          ],
+          references: ['Hammond 2011 (Mol Cell Endocrinol): SHBG and metabolic function', 'Naghii et al. 2011 (J Trace Elem Med Biol): Boron and steroid hormones'],
+        })
+      }
+    }
+
+    // ── 雌二醇（男性）──
+    if (matchName(lab.test_name, ['雌二醇', 'estradiol', 'e2'])) {
+      if (gender !== '女性') {
+        if ((lab.value >= 10 && lab.value < 15) || (lab.value > 30 && lab.value <= 40)) {
+          tips.push({
+            category: 'hormone',
+            title: '雌二醇可再優化（目標 15-30）',
+            icon: '⚖️',
+            labMarker: lab.test_name,
+            currentValue: lab.value,
+            unit: lab.unit,
+            optimalRange: '15-30 pg/mL',
+            currentRange: '10-40（正常）',
+            tips: lab.value > 30 ? [
+              '高雌二醇常與高體脂相關（減脂可降低芳香化酶活性）',
+              '增加十字花科蔬菜（含 DIM，有助雌激素代謝）',
+              '減少酒精攝取（酒精會升高雌二醇）',
+            ] : [
+              '雌二醇過低也不好（骨密度和關節健康需要適量雌激素）',
+              '確保脂肪攝取充足',
+            ],
+            supplements: lab.value > 30 ? [
+              { name: 'DIM (Diindolylmethane)', dosage: '100-200mg/天', timing: '隨餐', note: '來自十字花科蔬菜，促進雌激素健康代謝' },
+              { name: '鈣-D-葡萄糖酸 (CDG)', dosage: '500mg/天', timing: '隨餐', note: '支持肝臟雌激素代謝清除' },
+            ] : [],
+            references: ['Schulster et al. 2016 (Rev Urol): Male estradiol and health'],
+          })
+        }
+      }
+    }
+
+    // ── 血紅素 ──
+    if (matchName(lab.test_name, ['血紅素', 'hemoglobin', 'hb', 'hgb'])) {
+      const optMin = gender === '女性' ? 13.0 : 14.5
+      const optMax = gender === '女性' ? 14.5 : 16.5
+      const normalRange = gender === '女性' ? '12.0-15.5（正常）' : '13.5-17.5（正常）'
+      if (lab.value < optMin || lab.value > optMax) {
+        tips.push({
+          category: 'blood',
+          title: `血紅素可再優化（目標 ${optMin}-${optMax}）`,
+          icon: '🩸',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: `${optMin}-${optMax} g/dL`,
+          currentRange: normalRange,
+          tips: lab.value < optMin ? [
+            '增加富鐵食物攝取（紅肉、牡蠣、肝臟）',
+            '搭配維生素C提升鐵吸收',
+            '確保 B12 和葉酸充足（造血所需）',
+            '運動員需注意「運動性溶血」—足底衝擊會破壞紅血球',
+          ] : [
+            '略高於最佳區間，確保水分攝取充足',
+          ],
+          supplements: lab.value < optMin ? [
+            { name: '鐵雙甘胺酸 (Iron Bisglycinate)', dosage: '25-50mg/天', timing: '空腹搭配維C', note: '補充鐵質，促進血紅素合成' },
+            { name: '活性 B 群複合物', dosage: '含 B12 + 葉酸', timing: '早餐後', note: 'B12 和葉酸是造血必需' },
+            { name: '維生素C', dosage: '500mg', timing: '與鐵劑同服', note: '提升鐵吸收' },
+          ] : [],
+          references: ['WHO 2020: Haemoglobin concentrations for diagnosis of anaemia'],
+        })
+      }
+    }
+
+    // ── MCV ──
+    if (matchName(lab.test_name, ['mcv', '平均紅血球容積'])) {
+      if ((lab.value >= 80 && lab.value < 85) || (lab.value > 95 && lab.value <= 100)) {
+        tips.push({
+          category: 'blood',
+          title: 'MCV 可再優化（目標 85-95）',
+          icon: '🔬',
+          labMarker: lab.test_name,
+          currentValue: lab.value,
+          unit: lab.unit,
+          optimalRange: '85-95 fL',
+          currentRange: '80-100（正常）',
+          tips: lab.value < 85 ? [
+            'MCV 偏低端可能暗示早期鐵缺乏',
+            '增加鐵質攝取，搭配維生素C',
+            '追蹤鐵蛋白確認鐵儲存狀態',
+          ] : [
+            'MCV 偏高端可能暗示 B12 或葉酸不足',
+            '增加 B12（肉類、蛋）和葉酸（深色蔬菜）攝取',
+          ],
+          supplements: lab.value < 85 ? [
+            { name: '鐵雙甘胺酸', dosage: '25mg/天', timing: '空腹搭配維C', note: '低 MCV 常見原因是缺鐵' },
+            { name: '維生素C', dosage: '500mg', timing: '與鐵劑同服', note: '提升鐵吸收' },
+          ] : [
+            { name: '甲基鈷胺素 (Methylcobalamin)', dosage: '1000μg/天', timing: '舌下含服', note: '高 MCV 可能暗示 B12 不足' },
+            { name: '活性葉酸 (Methylfolate)', dosage: '400-800μg/天', timing: '早餐後', note: '葉酸不足也會造成 MCV 偏高' },
+          ],
+          references: ['Maner & Moosavi 2023 (StatPearls): Mean Corpuscular Volume'],
+        })
+      }
+    }
+  }
+
+  return tips
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Lab → Macro Modifiers
 // 從血檢結果產出可直接影響營養引擎的巨量營養素修正
 // ═══════════════════════════════════════════════════════════════

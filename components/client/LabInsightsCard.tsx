@@ -5,9 +5,11 @@ import {
   detectLabCrossPatterns,
   generateRetestReminders,
   generateLabChangeReport,
+  generateLabOptimizationTips,
   type LabCrossAnalysis,
   type LabRetestReminder,
   type LabChangeReport,
+  type LabOptimizationTip,
 } from '@/lib/lab-nutrition-advisor'
 
 interface LabInsightsCardProps {
@@ -26,9 +28,10 @@ export default function LabInsightsCard({ labResults, gender, bodyFatPct }: LabI
   const crossPatterns = detectLabCrossPatterns(labResults, { gender, bodyFatPct })
   const retestReminders = generateRetestReminders(labResults, { gender })
   const changeReports = generateLabChangeReport(labResults, { gender })
+  const optimizationTips = generateLabOptimizationTips(labResults, { gender })
 
   // 沒有任何資料就不渲染
-  if (crossPatterns.length === 0 && retestReminders.length === 0 && changeReports.length === 0) {
+  if (crossPatterns.length === 0 && retestReminders.length === 0 && changeReports.length === 0 && optimizationTips.length === 0) {
     return null
   }
 
@@ -43,6 +46,11 @@ export default function LabInsightsCard({ labResults, gender, bodyFatPct }: LabI
       </div>
 
       <div className="space-y-5">
+        {/* 優化建議 */}
+        {optimizationTips.length > 0 && (
+          <OptimizationSection tips={optimizationTips} />
+        )}
+
         {/* 交叉分析 */}
         {crossPatterns.length > 0 && (
           <CrossAnalysisSection patterns={crossPatterns} />
@@ -206,6 +214,106 @@ function ChangeReportSection({ reports }: { reports: LabChangeReport[] }) {
         >
           {showAll ? '收起' : `查看全部 ${reports.length} 項`}
         </button>
+      )}
+    </div>
+  )
+}
+
+// ── 優化建議區塊 ──
+function OptimizationSection({ tips }: { tips: LabOptimizationTip[] }) {
+  return (
+    <div>
+      <p className="text-xs font-bold text-gray-700 mb-2">🎯 正常範圍內的優化空間</p>
+      <p className="text-[10px] text-gray-400 mb-3">以下指標在正常範圍內，但尚未達到最佳區間，可進一步優化</p>
+      <p className="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-3">
+        ⚠️ 補品建議僅供參考，不構成醫療建議。使用前請諮詢醫師或營養師，特別是正在服藥者。
+      </p>
+      <div className="space-y-3">
+        {tips.map((tip, i) => (
+          <OptimizationTipItem key={i} tip={tip} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function OptimizationTipItem({ tip }: { tip: LabOptimizationTip }) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+      <button onClick={() => setExpanded(!expanded)} className="w-full text-left">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{tip.icon}</span>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-bold text-blue-700">{tip.title}</p>
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-blue-100 text-blue-700">可優化</span>
+              </div>
+              <p className="text-[10px] text-gray-500 mt-0.5">
+                目前 {tip.currentValue} {tip.unit}｜最佳 {tip.optimalRange}
+              </p>
+            </div>
+          </div>
+          <span className="text-gray-400 text-xs">{expanded ? '▲' : '▼'}</span>
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-3">
+          <div className="flex items-center gap-2 text-[10px] text-gray-500">
+            <span className="bg-white px-2 py-0.5 rounded-full border border-gray-200">正常範圍：{tip.currentRange}</span>
+            <span className="bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 text-blue-700">最佳目標：{tip.optimalRange}</span>
+          </div>
+
+          {/* 優化建議 */}
+          <div>
+            <p className="text-[10px] font-bold text-gray-700 mb-1">💡 優化建議</p>
+            <ul className="space-y-1">
+              {tip.tips.map((item, i) => (
+                <li key={i} className="text-[11px] text-gray-700 flex gap-1">
+                  <span className="text-blue-400">•</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 補品建議 */}
+          {tip.supplements && tip.supplements.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold text-gray-700 mb-1">💊 補品建議</p>
+              <div className="space-y-1.5">
+                {tip.supplements.map((s, i) => (
+                  <div key={i} className="bg-white bg-opacity-70 border border-blue-100 rounded-xl p-2.5">
+                    <div className="flex items-start justify-between">
+                      <p className="text-[11px] font-bold text-blue-800">{s.name}</p>
+                    </div>
+                    <p className="text-[10px] text-gray-600 mt-0.5">
+                      {s.dosage}{s.timing ? ` · ${s.timing}` : ''}
+                    </p>
+                    {s.note && (
+                      <p className="text-[9px] text-gray-400 mt-0.5">{s.note}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 文獻 */}
+          {tip.references.length > 0 && (
+            <div className="border-t border-blue-100 pt-2">
+              <p className="text-[10px] font-bold text-gray-400 mb-1">📚 文獻依據</p>
+              <ul className="space-y-0.5">
+                {tip.references.map((ref, i) => (
+                  <li key={i} className="text-[9px] text-gray-400">{ref}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

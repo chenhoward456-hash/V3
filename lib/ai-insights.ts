@@ -11,6 +11,7 @@
  */
 
 import { askClaude, ChatMessage } from './claude'
+import { isInOptimalRange } from '@/utils/labStatus'
 
 // ═══════════════════════════════════════
 // Types
@@ -640,6 +641,17 @@ export async function generateLabComparisonSummary(comparisons: LabComparison[])
     `${c.testName}: ${c.previous!.value}→${c.current!.value} ${c.unit}（${c.previous!.status}→${c.current!.status}，${c.change! > 0 ? '+' : ''}${c.change}）`
   ).join('\n')
 
+  // 找出正常但可優化的指標
+  const allCurrentValues = comparisons.filter(c => c.current != null)
+  const normalButSuboptimal = allCurrentValues.filter(c => {
+    if (!c.current || c.current.status !== 'normal') return false
+    return !isInOptimalRange(c.testName, c.current.value)
+  })
+
+  const optimizationStr = normalButSuboptimal.length > 0
+    ? `\n\n## 正常但可優化的指標\n${normalButSuboptimal.map(c => `${c.testName}: ${c.current!.value} ${c.unit}（正常範圍內，但尚未達最佳區間）`).join('\n')}`
+    : ''
+
   const prompt = `你是 Howard Protocol 的 AI 健康分析師。請根據以下血檢趨勢變化，給出簡潔的分析和建議。
 
 ## 血檢變化
@@ -648,17 +660,17 @@ ${dataStr}
 ## 統計
 - 改善：${improved.length} 項
 - 惡化：${worsened.length} 項
-- 總共：${withChanges.length} 項
+- 總共：${withChanges.length} 項${optimizationStr}
 
-請用以下格式輸出（繁體中文，200 字以內）：
+請用以下格式輸出（繁體中文，250 字以內）：
 
 📊 血檢趨勢摘要
 （列出重要的改善和需注意項目）
-
+${normalButSuboptimal.length > 0 ? '\n🎯 優化空間\n（列出 1-2 個雖在正常範圍但可進一步優化的指標，給出具體建議）\n' : ''}
 💡 建議
 （1-2 個具體可執行的飲食或生活建議）
 
-注意：不做醫療診斷`
+注意：不做醫療診斷。即使指標在正常範圍內，也應指出可以更好的方向。`
 
   const messages: ChatMessage[] = [{ role: 'user', content: prompt }]
   return askClaude(messages)

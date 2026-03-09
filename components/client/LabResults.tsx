@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { getLabAdvice } from './types'
+import { isInOptimalRange, getOptimalRangeText } from '@/utils/labStatus'
 import { useToast } from '@/components/ui/Toast'
 
 interface LabResultsProps {
@@ -202,9 +203,18 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
             {grouped.map((group) => {
               const { latest, prev, history } = group
               const advice = getLabAdvice(latest.test_name, latest.value)
-              const statusColor = latest.status === 'normal' ? 'border-green-200 bg-green-50' : latest.status === 'attention' ? 'border-yellow-200 bg-yellow-50' : 'border-red-200 bg-red-50'
-              const dotColor = latest.status === 'normal' ? 'bg-green-500' : latest.status === 'attention' ? 'bg-yellow-500' : 'bg-red-500'
-              const lineColor = latest.status === 'normal' ? '#22c55e' : latest.status === 'attention' ? '#eab308' : '#ef4444'
+              const isOptimal = latest.status === 'normal' && isInOptimalRange(latest.test_name, latest.value)
+              const canOptimize = latest.status === 'normal' && !isOptimal
+              const optimalRange = canOptimize ? getOptimalRangeText(latest.test_name) : null
+              const statusColor = latest.status !== 'normal'
+                ? (latest.status === 'attention' ? 'border-yellow-200 bg-yellow-50' : 'border-red-200 bg-red-50')
+                : isOptimal ? 'border-green-200 bg-green-50' : 'border-blue-100 bg-blue-50'
+              const dotColor = latest.status !== 'normal'
+                ? (latest.status === 'attention' ? 'bg-yellow-500' : 'bg-red-500')
+                : isOptimal ? 'bg-green-500' : 'bg-blue-500'
+              const lineColor = latest.status !== 'normal'
+                ? (latest.status === 'attention' ? '#eab308' : '#ef4444')
+                : isOptimal ? '#22c55e' : '#3b82f6'
 
               // 變化計算
               let changeText = ''
@@ -234,7 +244,10 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                   {(latest.custom_advice || advice) && (
                     <p className="text-sm text-gray-600 mt-2">{latest.custom_advice || advice}</p>
                   )}
-                  <p className="text-xs text-gray-400 mt-1">參考範圍：{latest.custom_target || latest.reference_range}</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    參考範圍：{latest.custom_target || latest.reference_range}
+                    {optimalRange && <span className="text-blue-500">｜最佳：{optimalRange}</span>}
+                  </p>
                   <button
                     onClick={() => openModal(undefined, latest)}
                     className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center"
