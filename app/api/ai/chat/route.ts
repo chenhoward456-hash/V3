@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // AI 未開放的用戶：每月允許 1 次免費體驗，由後端計數
+    let isFreeQuotaUse = false
     if (!client.ai_chat_enabled) {
       const now = new Date()
       const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
@@ -77,12 +78,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: '本月免費次數已用完，請升級方案', quota_exceeded: true }, { status: 403 })
       }
 
-      // 尚未使用，插入使用記錄
-      const { error: insertError } = await supabase.from('ai_chat_usage').insert({ client_id: client.id })
-      if (insertError) {
-        console.error('[ai/chat] 插入使用記錄失敗', insertError)
-        return NextResponse.json({ error: '系統錯誤，請稍後再試' }, { status: 500 })
-      }
+      // 標記為免費額度使用，AI 回覆成功後才記錄
+      isFreeQuotaUse = true
     }
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -115,6 +112,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (reply === null) throw lastErr
+
+    // AI 回覆成功後才扣免費額度，避免 API 失敗白白消耗
+    if (isFreeQuotaUse) {
+      await supabase.from('ai_chat_usage').insert({ client_id: client.id }).then(({ error: insertError }) => {
+        if (insertError) logger.error('插入使用記錄失敗', insertError)
+      })
+    }
 
     return NextResponse.json({ reply })
   } catch (err: any) {

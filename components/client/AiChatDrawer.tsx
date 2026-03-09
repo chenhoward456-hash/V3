@@ -516,7 +516,7 @@ ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != 
                 </p>
                 <div className="space-y-2">
                   <a
-                    href="/pay?tier=self_managed"
+                    href={`/pay?tier=self_managed&name=${encodeURIComponent(clientName)}`}
                     className="block w-full text-center bg-blue-600 text-white font-semibold py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors text-sm"
                   >
                     升級自主管理版 NT$499/月

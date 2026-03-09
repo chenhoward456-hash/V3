@@ -153,7 +153,7 @@ function JoinSuccessContent() {
           </h1>
           <p className="text-gray-500 text-sm mb-8">
             你的 {TIER_NAMES[tier || ''] || '方案'} 已啟用
-            {isFree && '，可免費使用所有功能'}
+            {isFree && '，開始追蹤你的體重與飲食'}
           </p>
 
           {/* Unique Code Card */}
