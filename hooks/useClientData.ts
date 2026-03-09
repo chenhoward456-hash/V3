@@ -30,6 +30,7 @@ export interface Client {
   carbs_rest_day: number | null
   water_target: number | null
   target_weight: number | null
+  target_body_fat: number | null
   target_date: string | null
   goal_type: string | null
   activity_profile: string | null

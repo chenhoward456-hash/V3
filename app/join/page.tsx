@@ -82,13 +82,14 @@ function JoinPageInner() {
   const [phone, setPhone] = useState('')
   const [gender, setGender] = useState<'男性' | '女性' | ''>('')
   const [age, setAge] = useState('')
-  const [goalType, setGoalType] = useState<'cut' | 'bulk'>('cut')
+  const [goalType, setGoalType] = useState<'cut' | 'bulk' | 'recomp'>('cut')
   const [weight, setWeight] = useState('')
   const [height, setHeight] = useState('')
   const [activityLevel, setActivityLevel] = useState<'sedentary' | 'moderate' | 'high_energy_flux'>('moderate')
   const [trainingDays, setTrainingDays] = useState('3')
   const [targetWeight, setTargetWeight] = useState('')
   const [bodyFatPct, setBodyFatPct] = useState('')
+  const [targetBodyFatPct, setTargetBodyFatPct] = useState('')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -124,6 +125,7 @@ function JoinPageInner() {
       const trainingDaysNum = trainingDays ? parseInt(trainingDays) : 3
       const targetWeightNum = targetWeight ? parseFloat(targetWeight) : null
       const bodyFatNum = bodyFatPct ? parseFloat(bodyFatPct) : null
+      const targetBodyFatNum = targetBodyFatPct ? parseFloat(targetBodyFatPct) : null
       let diagnosisData: Record<string, any> = {
         weight: weightNum,
         ...(heightNum && heightNum > 100 && heightNum < 250 ? { height: heightNum } : {}),
@@ -131,6 +133,7 @@ function JoinPageInner() {
         trainingDaysPerWeek: trainingDaysNum,
         ...(targetWeightNum && targetWeightNum >= 30 && targetWeightNum <= 300 ? { targetWeight: targetWeightNum } : {}),
         ...(bodyFatNum && bodyFatNum > 3 && bodyFatNum < 60 ? { bodyFatPct: bodyFatNum } : {}),
+        ...(targetBodyFatNum && targetBodyFatNum > 3 && targetBodyFatNum < 60 ? { targetBodyFatPct: targetBodyFatNum } : {}),
       }
       // 如果表單沒填體脂率，嘗試從 diagnosis 頁帶入
       try {
@@ -169,6 +172,9 @@ function JoinPageInner() {
         }
         if (targetWeight) {
           try { sessionStorage.setItem('signup_target_weight', targetWeight) } catch {}
+        }
+        if (targetBodyFatPct) {
+          try { sessionStorage.setItem('signup_target_body_fat', targetBodyFatPct) } catch {}
         }
         if (weight) {
           try { sessionStorage.setItem('signup_weight', weight) } catch {}
@@ -461,9 +467,10 @@ function JoinPageInner() {
               {/* 目標 */}
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">你的目標</label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {([
                     { key: 'cut' as const, label: '減脂' },
+                    { key: 'recomp' as const, label: '體態重組' },
                     { key: 'bulk' as const, label: '增肌' },
                   ]).map(({ key, label }) => (
                     <button
@@ -533,23 +540,44 @@ function JoinPageInner() {
                 <p className="text-xs text-gray-400 mt-1">InBody、體脂計或健身房量測的數字。沒有也沒關係，系統會用體重估算。</p>
               </div>
 
-              {/* 目標體重 */}
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                  目標體重 (kg) <span className="text-gray-400 font-normal">— 選填，填了才能算時程</span>
-                </label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  placeholder={goalType === 'cut' ? '例如 60' : '例如 72'}
-                  value={targetWeight}
-                  onChange={(e) => setTargetWeight(e.target.value)}
-                  min="30"
-                  max="300"
-                  step="0.1"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
-                />
+              {/* 目標體重 & 目標體脂 */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                    目標體重 (kg) <span className="text-gray-400 font-normal">— 選填</span>
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    placeholder={goalType === 'cut' ? '例如 60' : goalType === 'bulk' ? '例如 72' : '例如 68'}
+                    value={targetWeight}
+                    onChange={(e) => setTargetWeight(e.target.value)}
+                    min="30"
+                    max="300"
+                    step="0.1"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                    目標體脂 (%) <span className="text-gray-400 font-normal">— 選填</span>
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="例如 15"
+                    value={targetBodyFatPct}
+                    onChange={(e) => setTargetBodyFatPct(e.target.value)}
+                    min="3"
+                    max="60"
+                    step="0.1"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                  />
+                </div>
               </div>
+              {goalType === 'recomp' && (
+                <p className="text-xs text-gray-400 mt-1">體態重組：體重可能不變，但體脂下降、肌肉增加。建議填寫目標體脂。</p>
+              )}
 
               {/* 活動量 */}
               <div>

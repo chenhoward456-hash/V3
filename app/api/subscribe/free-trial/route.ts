@@ -105,19 +105,34 @@ export async function POST(request: NextRequest) {
           bodyWeight: effectiveWeight,
           height: diagnosisData?.height || null,
           bodyFatPct: diagnosisData?.bodyFatPct || null,
-          goalType: (goalType || 'cut') as 'cut' | 'bulk',
+          goalType: (goalType || 'cut') as 'cut' | 'bulk' | 'recomp',
           activityProfile,
           trainingDaysPerWeek: trainingDays,
         })
 
-        // 計算目標時程（如果有目標體重）
+        // 計算目標時程
         const tgtWeight = diagnosisData?.targetWeight
+        const tgtBodyFat = diagnosisData?.targetBodyFatPct
+        const currentBodyFat = diagnosisData?.bodyFatPct
         let estimatedWeeks: number | null = null
-        if (tgtWeight && typeof tgtWeight === 'number' && tgtWeight >= 30 && tgtWeight <= 300) {
+
+        if (goalType === 'recomp' && currentBodyFat && tgtBodyFat && typeof currentBodyFat === 'number' && typeof tgtBodyFat === 'number') {
+          // 體態重組：用體脂率變化估算時程
+          // 體脂每降 1% 大約需要減 ~0.5-0.8kg 脂肪（依體重），同時增肌
+          // 保守估算：每週體脂降 0.3-0.5%
+          const bfDiff = Math.abs(currentBodyFat - tgtBodyFat)
+          const weeklyBfRate = 0.3 // % per week (conservative for recomp)
+          estimatedWeeks = Math.ceil(bfDiff / weeklyBfRate)
+        } else if (tgtWeight && typeof tgtWeight === 'number' && tgtWeight >= 30 && tgtWeight <= 300) {
           const weightDiff = Math.abs(effectiveWeight - tgtWeight)
           // 減脂約 0.5-0.7 kg/週，增肌約 0.2-0.3 kg/週
           const weeklyRate = goalType === 'cut' ? 0.5 : 0.25
           estimatedWeeks = Math.ceil(weightDiff / weeklyRate)
+        } else if (currentBodyFat && tgtBodyFat && typeof currentBodyFat === 'number' && typeof tgtBodyFat === 'number') {
+          // 有體脂目標但沒有體重目標 → 也用體脂率估算
+          const bfDiff = Math.abs(currentBodyFat - tgtBodyFat)
+          const weeklyBfRate = goalType === 'cut' ? 0.5 : 0.3
+          estimatedWeeks = Math.ceil(bfDiff / weeklyBfRate)
         }
 
         await supabase.from('clients').update({
@@ -127,6 +142,7 @@ export async function POST(request: NextRequest) {
           fat_target: targets.fat,
           diet_start_date: today,
           ...(tgtWeight ? { target_weight: tgtWeight } : {}),
+          ...(tgtBodyFat ? { target_body_fat: tgtBodyFat } : {}),
         }).eq('id', newClient.id)
 
         // 把時程預估也回傳給前端（用 registration_data 存）

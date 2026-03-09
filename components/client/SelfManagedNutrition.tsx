@@ -45,8 +45,8 @@ export default function SelfManagedNutrition({
   const [loading, setLoading] = useState(true)
   const [calibrationApplied, setCalibrationApplied] = useState(false)
   // Onboarding form state — pre-populate from existing data
-  const [selectedGoal, setSelectedGoal] = useState<'cut' | 'bulk' | null>(
-    goalType === 'cut' || goalType === 'bulk' ? goalType : null
+  const [selectedGoal, setSelectedGoal] = useState<'cut' | 'bulk' | 'recomp' | null>(
+    goalType === 'cut' || goalType === 'bulk' || goalType === 'recomp' ? goalType : null
   )
   const [selectedActivity, setSelectedActivity] = useState<'sedentary' | 'high_energy_flux'>(
     activityProfile === 'high_energy_flux' ? 'high_energy_flux' : 'sedentary'
@@ -153,30 +153,42 @@ export default function SelfManagedNutrition({
         {/* 目標選擇 */}
         <div className="mb-4">
           <p className="text-xs font-semibold text-gray-700 mb-2">你的目標是？</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => setSelectedGoal('cut')}
-              className={`p-4 rounded-2xl border-2 transition-all text-left ${
+              className={`p-3 rounded-2xl border-2 transition-all text-left ${
                 selectedGoal === 'cut'
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
               }`}
             >
-              <span className="text-2xl block mb-1">🔥</span>
+              <span className="text-xl block mb-1">🔥</span>
               <p className="text-sm font-bold text-gray-900">減脂</p>
-              <p className="text-[11px] text-gray-500 mt-1">降低體脂率、改善體態</p>
+              <p className="text-[10px] text-gray-500 mt-1">降體脂、減體重</p>
+            </button>
+            <button
+              onClick={() => setSelectedGoal('recomp')}
+              className={`p-3 rounded-2xl border-2 transition-all text-left ${
+                selectedGoal === 'recomp'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+              }`}
+            >
+              <span className="text-xl block mb-1">⚡</span>
+              <p className="text-sm font-bold text-gray-900">體態重組</p>
+              <p className="text-[10px] text-gray-500 mt-1">降體脂、增肌肉</p>
             </button>
             <button
               onClick={() => setSelectedGoal('bulk')}
-              className={`p-4 rounded-2xl border-2 transition-all text-left ${
+              className={`p-3 rounded-2xl border-2 transition-all text-left ${
                 selectedGoal === 'bulk'
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 bg-gray-50 hover:border-gray-300'
               }`}
             >
-              <span className="text-2xl block mb-1">💪</span>
+              <span className="text-xl block mb-1">💪</span>
               <p className="text-sm font-bold text-gray-900">增肌</p>
-              <p className="text-[11px] text-gray-500 mt-1">增加肌肉量、提升力量</p>
+              <p className="text-[10px] text-gray-500 mt-1">增肌肉、提升力量</p>
             </button>
           </div>
         </div>
@@ -275,10 +287,10 @@ export default function SelfManagedNutrition({
             </div>
 
             {/* 目標體重 + 期限 */}
-            {selectedGoal === 'cut' && (
+            {(selectedGoal === 'cut' || selectedGoal === 'recomp') && (
               <div className="mb-5">
-                <p className="text-xs font-semibold text-gray-700 mb-2">目標體重（選填）</p>
-                <p className="text-[10px] text-gray-400 mb-2">設定後系統會根據期限自動倒推每週減幅</p>
+                <p className="text-xs font-semibold text-gray-700 mb-2">{selectedGoal === 'recomp' ? '目標體重 / 體脂（選填）' : '目標體重（選填）'}</p>
+                <p className="text-[10px] text-gray-400 mb-2">{selectedGoal === 'recomp' ? '體態重組可能體重不變，建議設定目標體脂' : '設定後系統會根據期限自動倒推每週減幅'}</p>
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className="text-[10px] text-gray-500 block mb-1">想減到幾公斤？</label>
@@ -453,9 +465,9 @@ export default function SelfManagedNutrition({
             <h2 className="text-lg font-bold text-gray-900">智能營養計算</h2>
           </div>
           <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-            goalType === 'cut' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
+            goalType === 'cut' ? 'bg-orange-100 text-orange-700' : goalType === 'recomp' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
           }`}>
-            {goalType === 'cut' ? '🔥 減脂中' : '💪 增肌中'}
+            {goalType === 'cut' ? '🔥 減脂中' : goalType === 'recomp' ? '⚡ 體態重組中' : '💪 增肌中'}
           </span>
         </div>
 
@@ -608,7 +620,7 @@ export default function SelfManagedNutrition({
         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
           goalType === 'cut' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
         }`}>
-          {goalType === 'cut' ? '🔥 減脂中' : '💪 增肌中'}
+          {goalType === 'cut' ? '🔥 減脂中' : goalType === 'recomp' ? '⚡ 體態重組中' : '💪 增肌中'}
         </span>
       </div>
 
@@ -792,7 +804,7 @@ export default function SelfManagedNutrition({
             <p className="text-sm font-bold text-purple-800">系統偵測：可考慮安排 Diet Break</p>
           </div>
           <p className="text-xs text-purple-700">
-            已持續{goalType === 'cut' ? '減脂' : '增肌'} {data.dietDurationWeeks} 週以上。可考慮安排 1-2 週維持熱量。
+            已持續{goalType === 'cut' ? '減脂' : goalType === 'recomp' ? '體態重組' : '增肌'} {data.dietDurationWeeks} 週以上。可考慮安排 1-2 週維持熱量。
           </p>
         </div>
       )}
