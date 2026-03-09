@@ -148,6 +148,13 @@ export default function ClientDashboard() {
   const { clientId } = useParams()
   const { data: clientData, error, isLoading, mutate } = useClientData(clientId as string)
 
+  // 儲存 clientId 到 localStorage，讓 PWA 從主畫面開啟時能跳轉到儀表板
+  useEffect(() => {
+    if (clientId && typeof window !== 'undefined') {
+      localStorage.setItem('hp_client_id', clientId as string)
+    }
+  }, [clientId])
+
   const today = getLocalDateStr()
 
   // 日期導航

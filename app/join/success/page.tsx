@@ -124,6 +124,15 @@ function JoinSuccessContent() {
     }
   }
 
+  const [copiedBind, setCopiedBind] = useState(false)
+  const handleCopyBind = () => {
+    if (uniqueCode) {
+      navigator.clipboard.writeText(`綁定 ${uniqueCode}`)
+      setCopiedBind(true)
+      setTimeout(() => setCopiedBind(false), 2000)
+    }
+  }
+
   const isFree = tier === 'free'
 
   return (
@@ -180,7 +189,7 @@ function JoinSuccessContent() {
           {/* LINE 綁定引導 */}
           <div className="bg-[#06C755]/10 border border-[#06C755]/30 rounded-2xl p-5 mb-8 text-left">
             <p className="text-sm font-semibold text-gray-800 mb-3">💬 綁定 LINE，用訊息就能記錄</p>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-[#06C755]/20 flex items-center justify-center text-xs font-bold text-[#06C755] shrink-0">1</span>
                 <p className="text-sm text-gray-600">
@@ -189,11 +198,20 @@ function JoinSuccessContent() {
                   </a>
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-[#06C755]/20 flex items-center justify-center text-xs font-bold text-[#06C755] shrink-0">2</span>
-                <p className="text-sm text-gray-600">
-                  傳送「<span className="font-mono bg-white px-1.5 py-0.5 rounded border text-gray-700">綁定 {uniqueCode}</span>」
-                </p>
+              <div className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#06C755]/20 flex items-center justify-center text-xs font-bold text-[#06C755] shrink-0 mt-0.5">2</span>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600 mb-2">複製下方指令，貼到 LINE 對話送出：</p>
+                  <button
+                    onClick={handleCopyBind}
+                    className="w-full flex items-center justify-between gap-2 bg-white border-2 border-[#06C755]/40 rounded-xl px-4 py-3 hover:border-[#06C755] transition-colors group"
+                  >
+                    <span className="font-mono text-sm font-semibold text-gray-800">綁定 {uniqueCode}</span>
+                    <span className="text-xs text-[#06C755] font-semibold whitespace-nowrap">
+                      {copiedBind ? '已複製 ✓' : '點此複製'}
+                    </span>
+                  </button>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <span className="w-6 h-6 rounded-full bg-[#06C755]/20 flex items-center justify-center text-xs font-bold text-[#06C755] shrink-0">3</span>
