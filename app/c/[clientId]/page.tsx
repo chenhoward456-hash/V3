@@ -30,6 +30,7 @@ import HealthModeAdvanced from '@/components/client/HealthModeAdvanced'
 import LabNutritionAdviceCard from '@/components/client/LabNutritionAdviceCard'
 import LabInsightsCard from '@/components/client/LabInsightsCard'
 import AiChatDrawer from '@/components/client/AiChatDrawer'
+import GeneProfileCard from '@/components/client/GeneProfileCard'
 import AiInsightsPanel from '@/components/client/AiInsightsPanel'
 import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
 import { calculateHealthScore } from '@/lib/health-score-engine'
@@ -1285,6 +1286,16 @@ export default function ClientDashboard() {
             onManageSupplements={() => setShowSupplementModal(true)}
           /></div>
         )}
+
+        {/* 基因檔案卡片 */}
+        <GeneProfileCard
+          mthfr={c.gene_mthfr as string | null}
+          apoe={c.gene_apoe as string | null}
+          serotonin={c.gene_depression_risk as string | null}
+          notes={c.gene_notes as string | null}
+          clientId={c.unique_code}
+          onMutate={mutate}
+        />
 
         {c.wellness_enabled && (
           <div id="section-wellness" className="scroll-mt-4"><DailyWellness

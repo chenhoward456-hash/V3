@@ -399,6 +399,25 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // 基因資料（學員可自行填寫）
+    const { gene_mthfr, gene_apoe, gene_depression_risk, gene_notes } = body
+    const VALID_MTHFR = ['normal', 'heterozygous', 'homozygous']
+    const VALID_APOE = ['e2/e2', 'e2/e3', 'e3/e3', 'e3/e4', 'e4/e4']
+    const VALID_SEROTONIN = ['LL', 'SL', 'SS', 'low', 'moderate', 'high']
+
+    if (gene_mthfr !== undefined) {
+      updates.gene_mthfr = gene_mthfr && VALID_MTHFR.includes(gene_mthfr) ? gene_mthfr : null
+    }
+    if (gene_apoe !== undefined) {
+      updates.gene_apoe = gene_apoe && VALID_APOE.includes(gene_apoe) ? gene_apoe : null
+    }
+    if (gene_depression_risk !== undefined) {
+      updates.gene_depression_risk = gene_depression_risk && VALID_SEROTONIN.includes(gene_depression_risk) ? gene_depression_risk : null
+    }
+    if (gene_notes !== undefined) {
+      updates.gene_notes = typeof gene_notes === 'string' ? gene_notes.slice(0, 500) : null
+    }
+
     if (Object.keys(updates).length === 0) {
       return createErrorResponse('沒有有效的更新欄位', 400)
     }
