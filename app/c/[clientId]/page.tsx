@@ -339,11 +339,11 @@ export default function ClientDashboard() {
         <div className="text-center max-w-sm">
           <div className="text-5xl mb-4">{isSuspended ? '⛔' : isExpired ? '⏰' : '❌'}</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">{isSuspended ? '帳號已暫停' : isExpired ? '帳號已過期' : '載入失敗'}</h1>
-          <p className="text-gray-600 mb-4">{isSuspended ? '請聯繫你的教練重新啟用' : isExpired ? '你的免費體驗期已結束，升級後即可繼續使用。' : error.message}</p>
+          <p className="text-gray-600 mb-4">{isSuspended ? '請聯繫你的教練重新啟用' : isExpired ? '你的方案已到期，續約後即可繼續使用。' : error.message}</p>
           {isExpired && (
             <div className="space-y-3 mt-4">
               <a href="/pay?tier=self_managed" className="block bg-[#2563eb] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#1d4ed8] transition-colors text-sm">
-                升級自主管理版 NT$499/月
+                續約自主管理版 NT$499/月
               </a>
               <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="block bg-[#06C755] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#05b04d] transition-colors text-sm">
                 💬 加 LINE 聯繫 Howard
