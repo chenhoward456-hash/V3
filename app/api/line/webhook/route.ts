@@ -294,6 +294,15 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     return
   }
 
+  // 未綁定用戶直接傳送 8 碼代碼 → 自動當作綁定
+  if (!client) {
+    const bareCodeMatch = text.match(/^[a-zA-Z0-9_-]{8}$/)
+    if (bareCodeMatch) {
+      await handleBind(event.replyToken, userId, text, supabase)
+      return
+    }
+  }
+
   // ── 需要綁定帳號的功能（未綁定 → 升級提示）──
   const MEMBER_COMMANDS = ['狀態', '今天狀態', '趨勢', '週報', '記體重', '記水量', '記飲食', '記訓練', '記身心']
   if (MEMBER_COMMANDS.includes(text) && !client) {

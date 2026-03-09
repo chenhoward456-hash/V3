@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import ScrollReveal from '@/components/ScrollReveal'
 import LineButton from '@/components/LineButton'
+import PwaRedirect from '@/components/PwaRedirect'
 
 const personSchema = {
   '@context': 'https://schema.org',
@@ -77,6 +78,7 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <>
+      <PwaRedirect />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
