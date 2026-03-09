@@ -117,6 +117,7 @@ import {
 } from './body-fat-zone-table'
 
 import { getLabMacroModifiers, type LabMacroModifier, type LabTrainingModifier } from './lab-nutrition-advisor'
+import { type GeneticProfile, getSerotoninRiskLevel } from './supplement-engine'
 
 // ===== 類型定義 =====
 
@@ -194,6 +195,9 @@ export interface NutritionInput {
     weeksDuration: number  // 持續使用週數
     supplements?: string[]  // 補品名稱列表
   }
+
+  // 基因資料（用於基因修正層）
+  geneticProfile?: GeneticProfile
 }
 
 export interface NutritionSuggestion {
@@ -297,6 +301,16 @@ export interface NutritionSuggestion {
 
   // Peak Week 每日計畫（僅 peak_week 狀態時有值）
   peakWeekPlan: PeakWeekDay[] | null
+
+  // 基因修正紀錄（已套用到建議值中，前端可顯示）
+  geneticCorrections: GeneticCorrection[]
+}
+
+// 基因修正紀錄
+export interface GeneticCorrection {
+  gene: 'depression' | 'mthfr' | 'apoe4'
+  rule: string       // 修正規則名稱
+  adjustment: string  // 修正內容（中文說明）
 }
 
 // Peak Week 每日計畫
@@ -436,6 +450,118 @@ const BULK_TARGETS = {
 const CARB_CYCLE_TRAINING_RATIO = 0.6
 const CARB_CYCLE_REST_RATIO = 0.4
 
+// ===== 基因修正層常數 =====
+// 在計算完基礎巨量營養素後，依基因風險調整安全邊界
+//
+// 文獻依據：
+// [G1] Wurtman RJ, Wurtman JJ (1995). Brain serotonin, carbohydrate-craving, obesity and depression.
+//      Obes Res, 3 Suppl 4:477S-480S. → 低碳水 → 色胺酸進入大腦減少 → 血清素合成下降
+// [G2] Gilbody S, Lightfoot T, Sheldon T (2007). Is low folate a risk factor for depression? A meta-analysis.
+//      J Epidemiol Community Health, 61(7):631-637. → MTHFR 突變 → 葉酸代謝受損 → 憂鬱風險
+// [G3] Minihane AM, et al. (2015). APOE genotype, cardiovascular risk and responsiveness to dietary fat
+//      manipulation. Proc Nutr Soc, 66(2):183-197. → APOE4 攜帶者 LDL-C 對飽和脂肪敏感度 2-3 倍
+const GENETIC = {
+  // 憂鬱基因 → 碳水最低下限提高
+  // [G1] 低碳水 → 血清素合成不足，憂鬱風險者更脆弱
+  DEPRESSION_CARB_FLOOR_HIGH: 120,     // 高風險：最低 120g（正常人 50g）
+  DEPRESSION_CARB_FLOOR_MODERATE: 100, // 中風險：最低 100g
+
+  // MTHFR 突變 → 最大赤字收窄
+  // [G2] 熱量赤字 → 飲食多樣性下降 → 天然葉酸攝取不足 → MTHFR 突變者甲基化崩潰
+  MTHFR_DEFICIT_REDUCTION_HOMOZYGOUS: 150,  // 純合子：赤字縮小 150kcal
+  MTHFR_DEFICIT_REDUCTION_HETEROZYGOUS: 100, // 雜合子：赤字縮小 100kcal
+
+  // APOE4 → 飽和脂肪比例限制
+  // [G3] APOE4 攜帶者對飽和脂肪敏感度是正常人 2-3 倍
+  APOE4_SAT_FAT_PCT_CAP: 0.30,  // 飽和脂肪 ≤ 總脂肪的 30%（正常人無強制限制）
+
+  // 憂鬱基因 + Peak Week 耗竭期 → 縮短/緩和
+  // [G1] 碳水耗竭 → 腦部血清素急降 → 高風險者可能嚴重情緒崩潰
+  DEPRESSION_DEPLETION_DAYS_HIGH: 2,        // 高風險：耗竭期從 4 天縮為 2 天
+  DEPRESSION_DEPLETION_DAYS_MODERATE: 3,    // 中風險：耗竭期從 4 天縮為 3 天
+  DEPRESSION_DEPLETION_CARB_G_PER_KG: 2.0,  // 耗竭期碳水提高到 2.0g/kg（原 1.1g/kg）
+}
+
+// 基因修正層：根據基因資料調整巨量營養素
+// 在基礎計算完成後調用，修正 carbs / deficit / fat source
+function applyGeneticCarbFloor(
+  suggestedCarbs: number,
+  geneticProfile: GeneticProfile | undefined,
+  corrections: GeneticCorrection[],
+): number {
+  if (!geneticProfile) return suggestedCarbs
+
+  // 1. 5-HTTLPR 血清素轉運體基因 → 碳水最低下限提高
+  const serotoninRisk = getSerotoninRiskLevel(geneticProfile)
+  const genotypeLabel = geneticProfile.serotonin ?? (serotoninRisk === 'high' ? 'SS' : serotoninRisk === 'moderate' ? 'SL' : null)
+
+  if (serotoninRisk === 'high' && suggestedCarbs < GENETIC.DEPRESSION_CARB_FLOOR_HIGH) {
+    corrections.push({
+      gene: 'depression',
+      rule: '碳水最低下限',
+      adjustment: `5-HTTLPR ${genotypeLabel}（高風險）→ 碳水下限從 ${suggestedCarbs}g 提高至 ${GENETIC.DEPRESSION_CARB_FLOOR_HIGH}g，保護血清素合成`,
+    })
+    return GENETIC.DEPRESSION_CARB_FLOOR_HIGH
+  }
+  if (serotoninRisk === 'moderate' && suggestedCarbs < GENETIC.DEPRESSION_CARB_FLOOR_MODERATE) {
+    corrections.push({
+      gene: 'depression',
+      rule: '碳水最低下限',
+      adjustment: `5-HTTLPR ${genotypeLabel}（中風險）→ 碳水下限從 ${suggestedCarbs}g 提高至 ${GENETIC.DEPRESSION_CARB_FLOOR_MODERATE}g，保護血清素合成`,
+    })
+    return GENETIC.DEPRESSION_CARB_FLOOR_MODERATE
+  }
+
+  return suggestedCarbs
+}
+
+function getGeneticDeficitReduction(
+  geneticProfile: GeneticProfile | undefined,
+  corrections: GeneticCorrection[],
+): number {
+  if (!geneticProfile) return 0
+
+  // 2. MTHFR 突變 → 赤字收窄（減少赤字 = 吃更多 = 飲食多樣性更高 = 葉酸攝取更足）
+  if (geneticProfile.mthfr === 'homozygous') {
+    corrections.push({
+      gene: 'mthfr',
+      rule: '最大赤字收窄',
+      adjustment: `MTHFR 純合子突變 → 赤字縮小 ${GENETIC.MTHFR_DEFICIT_REDUCTION_HOMOZYGOUS}kcal，保護甲基化代謝`,
+    })
+    return GENETIC.MTHFR_DEFICIT_REDUCTION_HOMOZYGOUS
+  }
+  if (geneticProfile.mthfr === 'heterozygous') {
+    corrections.push({
+      gene: 'mthfr',
+      rule: '最大赤字收窄',
+      adjustment: `MTHFR 雜合子突變 → 赤字縮小 ${GENETIC.MTHFR_DEFICIT_REDUCTION_HETEROZYGOUS}kcal，保護甲基化代謝`,
+    })
+    return GENETIC.MTHFR_DEFICIT_REDUCTION_HETEROZYGOUS
+  }
+
+  return 0
+}
+
+function getApoe4FatWarnings(
+  geneticProfile: GeneticProfile | undefined,
+  corrections: GeneticCorrection[],
+  warnings: string[],
+): void {
+  if (!geneticProfile) return
+
+  // 3. APOE4 → 脂肪來源比例限制
+  const isApoe4 = geneticProfile.apoe === 'e3/e4' || geneticProfile.apoe === 'e4/e4'
+  if (isApoe4) {
+    const severity = geneticProfile.apoe === 'e4/e4' ? '純合子' : '雜合子'
+    corrections.push({
+      gene: 'apoe4',
+      rule: '脂肪來源比例限制',
+      adjustment: `APOE4 ${severity} → 飽和脂肪應 ≤ 總脂肪的 30%，優先 MUFA/MCT`,
+    })
+    warnings.push(`🧬 APOE4（${severity}）：飽和脂肪應限制在總脂肪的 30% 以內，脂肪來源優先選擇橄欖油、酪梨、MCT oil（避免牛油、奶油、椰子油高飽和來源）`)
+  }
+}
+
 // Peak Week 常數 [12] Escalante 2021 + [13] Barakat 2022 + [14] Homer/Helms 2024
 const PEAK_WEEK = {
   // 碳水耗竭期 (Day 7-4)：低碳 + 高脂補充肌內三酸甘油酯 (IMT)
@@ -536,6 +662,7 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     menstrualCycleNote: null,
     metabolicStress: null,
     perMealProteinGuide: null,
+    geneticCorrections: [],
     ...overrides,
   }
 }
@@ -1849,6 +1976,7 @@ function generateCutSuggestion(
       deadlineInfo, autoApply: hasCorrections, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
+      geneticCorrections: [],
     }
   }
 
@@ -1862,6 +1990,11 @@ function generateCutSuggestion(
       if (mod.nutrient === 'calories' && mod.direction === 'increase') suggestedCal += mod.delta
     }
   }
+
+  // 基因修正層（Reactive 模式）
+  const geneticCorrections: GeneticCorrection[] = []
+  suggestedCarb = applyGeneticCarbFloor(suggestedCarb, input.geneticProfile, geneticCorrections)
+  getApoe4FatWarnings(input.geneticProfile, geneticCorrections, warnings)
 
   return {
     status, statusLabel, statusEmoji, message,
@@ -1882,6 +2015,7 @@ function generateCutSuggestion(
     labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
     deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
+    geneticCorrections,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
   }
 }
@@ -1993,7 +2127,14 @@ function generateGoalDrivenCut(
     warnings.push('🩸 黃體期 BMR 升高約 5-10%，系統已自動縮小赤字 100kcal（碳水補回），避免實際赤字過深。')
   }
 
-  effectiveDailyDeficit = Math.max(0, effectiveDailyDeficit + recoveryDeficitAdjust + lutealDeficitAdjust)
+  // 3.7 基因修正：MTHFR 突變 → 赤字收窄（保護甲基化代謝）
+  const geneticCorrections: GeneticCorrection[] = []
+  const geneticDeficitReduction = getGeneticDeficitReduction(input.geneticProfile, geneticCorrections)
+  if (geneticDeficitReduction > 0) {
+    warnings.push(`🧬 ${geneticCorrections[geneticCorrections.length - 1].adjustment}`)
+  }
+
+  effectiveDailyDeficit = Math.max(0, effectiveDailyDeficit + recoveryDeficitAdjust + lutealDeficitAdjust - geneticDeficitReduction)
 
   // 計算目標每日卡路里（用放鬆後的赤字）
   let targetCalories = Math.round(estimatedTDEE - effectiveDailyDeficit)
@@ -2103,6 +2244,16 @@ function generateGoalDrivenCut(
       warnings.push(`🚨 EA 安全閥：建議熱量 ${prevCalories}kcal 會導致 EA < 30 kcal/kg FFM/day（RED-S 風險）。已上調至 ${actualCalories}kcal（EA ≈ 30），多出的 ${Math.round(extraCal)}kcal 給碳水`)
     }
   }
+
+  // 基因修正層（Goal-Driven 模式）
+  // 碳水下限提高 + APOE4 脂肪來源警告
+  const prevCarb = suggestedCarb
+  suggestedCarb = applyGeneticCarbFloor(suggestedCarb, input.geneticProfile, geneticCorrections)
+  if (suggestedCarb > prevCarb) {
+    // 碳水提高 → 熱量同步上調（不壓回赤字，因為這是基因安全需求）
+    actualCalories += (suggestedCarb - prevCarb) * 4
+  }
+  getApoe4FatWarnings(input.geneticProfile, geneticCorrections, warnings)
 
   // 掉重率安全檢查（保留資訊性警告，赤字已在前面 cap 過）
   if (actualCalories < softMinCal) {
@@ -2343,6 +2494,7 @@ function generateGoalDrivenCut(
     peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, suggestedPro),
+    geneticCorrections,
   }
 }
 
@@ -2566,6 +2718,7 @@ function generateBulkSuggestion(
       deadlineInfo, autoApply: hasCorrections, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
+      geneticCorrections: [],
     }
   }
 
@@ -2589,6 +2742,7 @@ function generateBulkSuggestion(
     deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
+    geneticCorrections: [],
   }
 }
 
@@ -2607,6 +2761,44 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
   const loadingFat = isFemale ? PEAK_WEEK.LOADING_FAT_G_PER_KG_FEMALE : PEAK_WEEK.LOADING_FAT_G_PER_KG
   const taperCarb = isFemale ? PEAK_WEEK.TAPER_CARB_G_PER_KG_FEMALE : PEAK_WEEK.TAPER_CARB_G_PER_KG
 
+  // 基因修正層（Peak Week）
+  const geneticCorrections: GeneticCorrection[] = []
+  const gp = input.geneticProfile
+  const isApoe4 = gp?.apoe === 'e3/e4' || gp?.apoe === 'e4/e4'
+
+  // 5-HTTLPR 血清素轉運體基因 → 耗竭期縮短 + 碳水提高
+  // [G1] 碳水耗竭 → 腦部血清素急降 → SS/SL 型情緒崩潰風險高
+  const serotoninRisk = getSerotoninRiskLevel(gp)
+  const genotypeLabel = gp?.serotonin ?? (serotoninRisk === 'high' ? 'SS' : serotoninRisk === 'moderate' ? 'SL' : null)
+  let depletionCutoffDay = 4  // 預設 Day 7-4 為耗竭期（d >= 4）
+  let depletionCarbGPerKg = PEAK_WEEK.DEPLETION_CARB_G_PER_KG
+  if (serotoninRisk === 'high') {
+    depletionCutoffDay = 8 - GENETIC.DEPRESSION_DEPLETION_DAYS_HIGH  // 8-2=6, 只有 Day 7-6 耗竭
+    depletionCarbGPerKg = GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG
+    geneticCorrections.push({
+      gene: 'depression',
+      rule: 'Peak Week 耗竭策略',
+      adjustment: `5-HTTLPR ${genotypeLabel}（高風險）→ 耗竭期從 4 天縮為 ${GENETIC.DEPRESSION_DEPLETION_DAYS_HIGH} 天，碳水從 ${PEAK_WEEK.DEPLETION_CARB_G_PER_KG}g/kg 提高至 ${GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG}g/kg，保護腦部血清素`,
+    })
+  } else if (serotoninRisk === 'moderate') {
+    depletionCutoffDay = 8 - GENETIC.DEPRESSION_DEPLETION_DAYS_MODERATE  // 8-3=5, Day 7-5 耗竭
+    depletionCarbGPerKg = GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG
+    geneticCorrections.push({
+      gene: 'depression',
+      rule: 'Peak Week 耗竭策略',
+      adjustment: `5-HTTLPR ${genotypeLabel}（中風險）→ 耗竭期從 4 天縮為 ${GENETIC.DEPRESSION_DEPLETION_DAYS_MODERATE} 天，碳水從 ${PEAK_WEEK.DEPLETION_CARB_G_PER_KG}g/kg 提高至 ${GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG}g/kg，保護腦部血清素`,
+    })
+  }
+
+  // APOE4 → 脂肪來源限制（耗竭期高脂需避免飽和脂肪）
+  if (isApoe4) {
+    geneticCorrections.push({
+      gene: 'apoe4',
+      rule: '脂肪來源比例限制',
+      adjustment: `APOE4 → Peak Week 脂肪來源優先 MCT/MUFA，飽和脂肪 ≤ 30%（避免牛油奶油）`,
+    })
+  }
+
   // 建立 Day 7 到 Day 0（比賽日）的每日計畫
   for (let d = Math.min(daysLeft, 7); d >= 0; d--) {
     const dayDate = new Date(compDate)
@@ -2615,7 +2807,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
 
     let day: PeakWeekDay
 
-    if (d >= 4) {
+    if (d >= depletionCutoffDay) {
       // Day 7-4：碳水耗竭 + 高脂補充肌內三酸甘油酯 (IMT)
       const trainingMap: Record<number, string> = {
         7: '耗竭訓練：上半身（高次數 >12RM，巨組），每肌群 3-4 組',
@@ -2629,11 +2821,14 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         5: 'Posing 練習 10 分鐘（中等強度）',
         4: 'Posing 練習 10 分鐘（輕度，避免過度消耗）',
       }
+      const depletionFoodNote = isApoe4
+        ? '碳水來源：纖維蔬菜為主；脂肪來源：MCT oil、橄欖油、酪梨（APOE4 → 避免牛油、奶油等高飽和脂肪來源）'
+        : '碳水來源：纖維蔬菜為主（花椰菜、蘆筍、菠菜）；脂肪來源：酪梨、堅果、橄欖油（補充 IMT）'
       day = {
         daysOut: d, date: dateStr,
         label: `Day ${d} — 碳水耗竭期`,
         phase: 'depletion',
-        carbsGPerKg: PEAK_WEEK.DEPLETION_CARB_G_PER_KG,
+        carbsGPerKg: depletionCarbGPerKg,
         proteinGPerKg: PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.DEPLETION_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_BASELINE,
@@ -2641,12 +2836,12 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         sodiumNote: `正常鈉攝取（${PEAK_WEEK.SODIUM_BASELINE}mg）`,
         fiberNote: d <= 5 ? '開始減少纖維（目標 <15g）— 碳水來源選低纖維蔬菜（去莖花椰菜、櫛瓜、蘆筍尖）' : '正常纖維攝取',
         trainingNote: trainingMap[d] || '休息',
-        carbs: Math.round(bw * PEAK_WEEK.DEPLETION_CARB_G_PER_KG),
+        carbs: Math.round(bw * depletionCarbGPerKg),
         protein: Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG),
         fat: Math.round(bw * PEAK_WEEK.DEPLETION_FAT_G_PER_KG),
         calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_BASELINE),
         potassiumNote: `正常鉀攝取（~${PEAK_WEEK.POTASSIUM_BASELINE}mg）`,
-        foodNote: '碳水來源：纖維蔬菜為主（花椰菜、蘆筍、菠菜）；脂肪來源：酪梨、堅果、橄欖油（補充 IMT）',
+        foodNote: depletionFoodNote,
         creatineNote: '維持肌酸 5g/天（不要停！停肌酸會流失細胞內水分和肌肉飽滿度）',
         posingNote: posingMap[d] || '輕度 Posing',
       }
@@ -2773,6 +2968,8 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
       ...(isFemale ? [
         `📋 女性碳水超補量已調整為 ${PEAK_WEEK.LOADING_CARB_G_PER_KG_FEMALE}g/kg（男性 ${PEAK_WEEK.LOADING_CARB_G_PER_KG}g/kg）— 女性肌肉肝醣超補反應約為男性 50-70%（Tarnopolsky 1995, James 2001），過量碳水只會增加腸胃不適而非更多肝醣儲存。`,
       ] : []),
+      // 基因修正警告
+      ...geneticCorrections.map(gc => `🧬 ${gc.adjustment}`),
     ],
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType),
@@ -2782,6 +2979,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     peakWeekPlan: plan, metabolicStress: null,
     menstrualCycleNote: cycleInfo?.note ?? null,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG)),
+    geneticCorrections,
   }
 }
 

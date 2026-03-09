@@ -390,9 +390,11 @@ export default function ClientDashboard() {
     quarterlyStart: c.quarterly_cycle_start,
   }) : null
 
-  // 健康模式：生成補品建議（給 AI 用）
-  const healthSupplementSuggestions = useMemo(() => {
-    if (!isHealthMode || !c.lab_results?.length) return []
+  // 生成補品建議（健康模式 + 備賽模式都可用，給 AI 和 UI 使用）
+  const supplementSuggestions = useMemo(() => {
+    const hasGenetics = !!(c.gene_mthfr || c.gene_apoe || c.gene_depression_risk)
+    if (!isHealthMode && !isCompetition) return []
+    if (!isHealthMode && !hasGenetics) return [] // 備賽但沒有基因資料，靠原本邏輯就好
     const recentTraining = (clientData.trainingLogs || []).slice(-7)
     const hasHighRPE = recentTraining.filter((t: any) => t.rpe != null && t.rpe >= 9).length >= 3
     return generateSupplementSuggestions(
@@ -404,7 +406,8 @@ export default function ClientDashboard() {
       })),
       {
         gender: c.gender as '男性' | '女性' | undefined,
-        isHealthMode: true,
+        isHealthMode,
+        isCompetitionPrep: isCompetition,
         hasHighRPE,
         goalType: (c.goal_type as 'cut' | 'bulk' | null) || null,
         genetics: {
@@ -412,9 +415,10 @@ export default function ClientDashboard() {
           apoe: c.gene_apoe as any,
           depressionRisk: c.gene_depression_risk as any,
         },
+        prepPhase: (c.prep_phase as 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | null) || null,
       }
     )
-  }, [isHealthMode, c.lab_results, c.gender, c.goal_type, clientData.trainingLogs, c.gene_mthfr, c.gene_apoe, c.gene_depression_risk])
+  }, [isHealthMode, isCompetition, c.lab_results, c.gender, c.goal_type, c.prep_phase, clientData.trainingLogs, c.gene_mthfr, c.gene_apoe, c.gene_depression_risk])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1531,6 +1535,8 @@ export default function ClientDashboard() {
           waterTarget={c.water_target}
           isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
           competitionEnabled={isCompetition}
+          prepPhase={c.prep_phase as string | null}
+          competitionDate={c.competition_date as string | null}
           latestWeight={latestBodyData?.weight}
           latestBodyFat={latestBodyData?.body_fat}
           nutritionLogs={clientData.nutritionLogs || []}
@@ -1555,11 +1561,12 @@ export default function ClientDashboard() {
           onFirstMessage={undefined}
           healthModeEnabled={isHealthMode}
           healthScore={healthScore}
-          supplementSuggestions={healthSupplementSuggestions}
+          supplementSuggestions={supplementSuggestions}
           geneticProfile={c.gene_mthfr || c.gene_apoe || c.gene_depression_risk ? {
             mthfr: c.gene_mthfr as string | null,
             apoe: c.gene_apoe as string | null,
-            depressionRisk: c.gene_depression_risk as string | null,
+            serotonin: ['LL', 'SL', 'SS'].includes(c.gene_depression_risk as string) ? c.gene_depression_risk as string : null,
+            depressionRisk: ['low', 'moderate', 'high'].includes(c.gene_depression_risk as string) ? c.gene_depression_risk as string : null,
             notes: c.gene_notes as string | null,
           } : undefined}
         />

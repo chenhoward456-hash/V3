@@ -6,6 +6,14 @@ import { verifyAdminSession } from '@/lib/auth-middleware'
 
 const supabase = createServiceSupabase()
 
+// DB 欄位 gene_depression_risk 可能是新格式 (LL/SL/SS) 或舊格式 (low/moderate/high)
+function parseSerotoninField(value: string | null): { serotonin?: 'LL' | 'SL' | 'SS'; depressionRisk?: 'low' | 'moderate' | 'high' } {
+  if (!value) return {}
+  if (value === 'LL' || value === 'SL' || value === 'SS') return { serotonin: value }
+  if (value === 'low' || value === 'moderate' || value === 'high') return { depressionRisk: value }
+  return {}
+}
+
 function getAdminSession(request: NextRequest): boolean {
   const token = request.cookies.get('admin_session')?.value
   return !!token && verifyAdminSession(token)
@@ -278,6 +286,11 @@ export async function GET(request: NextRequest) {
         rate: suppComplianceRate,
         weeksDuration: suppWeeksDuration,
         supplements: suppList.map((s: any) => s.name),
+      } : undefined,
+      geneticProfile: (client.gene_mthfr || client.gene_apoe || client.gene_depression_risk) ? {
+        mthfr: client.gene_mthfr || undefined,
+        apoe: client.gene_apoe || undefined,
+        ...parseSerotoninField(client.gene_depression_risk),
       } : undefined,
     }
 

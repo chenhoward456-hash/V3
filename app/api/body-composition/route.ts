@@ -7,6 +7,13 @@ import { isWeightTraining } from '@/components/client/types'
 
 const supabase = createServiceSupabase()
 
+function parseSerotoninField(value: string | null): { serotonin?: 'LL' | 'SL' | 'SS'; depressionRisk?: 'low' | 'moderate' | 'high' } {
+  if (!value) return {}
+  if (value === 'LL' || value === 'SL' || value === 'SS') return { serotonin: value }
+  if (value === 'low' || value === 'moderate' || value === 'high') return { depressionRisk: value }
+  return {}
+}
+
 // 自動調整營養素目標
 async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolean; message?: string; calories?: number; protein?: number; carbs?: number; fat?: number; debug?: string }> {
   // 1. 取得學員資料
@@ -97,6 +104,11 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     trainingDaysPerWeek: trainingDays,
     prepPhase: client.prep_phase || undefined,
     activityProfile: (client.activity_profile as 'sedentary' | 'high_energy_flux') || undefined,
+    geneticProfile: (client.gene_mthfr || client.gene_apoe || client.gene_depression_risk) ? {
+      mthfr: client.gene_mthfr || undefined,
+      apoe: client.gene_apoe || undefined,
+      ...parseSerotoninField(client.gene_depression_risk),
+    } : undefined,
   })
 
   const debugInfo = `status=${suggestion.status}, autoApply=${suggestion.autoApply}, compliance=${compliance}%, weeklyWeights=${weeklyWeights.length}, rate=${suggestion.weeklyWeightChangeRate?.toFixed(2)}%/wk`

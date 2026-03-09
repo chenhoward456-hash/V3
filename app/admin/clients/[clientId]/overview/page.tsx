@@ -267,7 +267,7 @@ export default function ClientOverview() {
     const hasHighRPE = recentRPELogs.length >= 3 && recentRPELogs.every((t: any) => t.rpe > 8.5)
     return generateSupplementSuggestions(latestLabs, {
       gender: client?.gender,
-      isCompetitionPrep: !!client?.prep_phase,
+      isCompetitionPrep: !!client?.competition_enabled,
       hasHighRPE,
       goalType: client?.goal_type || null,
       isHealthMode: !!client?.health_mode_enabled,
@@ -276,6 +276,7 @@ export default function ClientOverview() {
         apoe: client?.gene_apoe,
         depressionRisk: client?.gene_depression_risk,
       },
+      prepPhase: client?.prep_phase || null,
     })
   }, [latestLabs, client, trainingLogs])
 

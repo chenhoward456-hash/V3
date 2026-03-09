@@ -59,7 +59,22 @@ function findLabValue(labs: LabResult[], key: string): LabResult | undefined {
 export interface GeneticProfile {
   mthfr?: 'normal' | 'heterozygous' | 'homozygous' | null
   apoe?: 'e2/e2' | 'e2/e3' | 'e3/e3' | 'e3/e4' | 'e4/e4' | null
+  // 5-HTTLPR 血清素轉運體基因
+  // LL = 長/長（低風險），SL = 短/長（中風險），SS = 短/短（高風險）
+  serotonin?: 'LL' | 'SL' | 'SS' | null
+  /** @deprecated Use serotonin instead */
   depressionRisk?: 'low' | 'moderate' | 'high' | null
+}
+
+// 5-HTTLPR 基因型 → 風險等級映射
+export function getSerotoninRiskLevel(gp?: GeneticProfile | null): 'low' | 'moderate' | 'high' | null {
+  if (!gp) return null
+  // 優先使用新欄位
+  if (gp.serotonin === 'SS') return 'high'
+  if (gp.serotonin === 'SL') return 'moderate'
+  if (gp.serotonin === 'LL') return 'low'
+  // 向後相容：fallback 到舊欄位
+  return gp.depressionRisk ?? null
 }
 
 export function generateSupplementSuggestions(
@@ -71,10 +86,11 @@ export function generateSupplementSuggestions(
     goalType?: 'cut' | 'bulk' | null
     isHealthMode?: boolean     // 健康模式：長壽導向補品建議
     genetics?: GeneticProfile  // 基因風險資料
+    prepPhase?: 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | null
   } = {}
 ): SupplementSuggestion[] {
   const suggestions: SupplementSuggestion[] = []
-  const { gender, isCompetitionPrep, hasHighRPE, goalType, isHealthMode, genetics } = options
+  const { gender, isCompetitionPrep, hasHighRPE, goalType, isHealthMode, genetics, prepPhase } = options
 
   // ── 1. 鐵蛋白（Ferritin）──
   const ferritin = findLabValue(labs, 'ferritin')
@@ -436,9 +452,10 @@ export function generateSupplementSuggestions(
     }
   }
 
-  // 憂鬱傾向基因：強調維生素 D、Omega-3 EPA、鎂
-  if (genetics?.depressionRisk === 'moderate' || genetics?.depressionRisk === 'high') {
-    const isHighRisk = genetics.depressionRisk === 'high'
+  // 5-HTTLPR 血清素轉運體基因：SL/SS → 強調維生素 D、Omega-3 EPA、鎂
+  const serotoninRisk = getSerotoninRiskLevel(genetics)
+  if (serotoninRisk === 'moderate' || serotoninRisk === 'high') {
+    const isHighRisk = serotoninRisk === 'high'
 
     // 確保有維生素 D（升級劑量）
     const existingD = suggestions.find(s => s.name.includes('D3') || s.name.includes('維生素 D'))
@@ -491,6 +508,84 @@ export function generateSupplementSuggestions(
         triggerTests: [],
         category: 'recovery',
       })
+    }
+  }
+
+  // ── 備賽 × 基因交叉建議 ──
+  if (isCompetitionPrep && genetics) {
+    const isCutting = prepPhase === 'cut' || goalType === 'cut'
+    const isPeakWeek = prepPhase === 'peak_week'
+
+    // MTHFR + 減脂期：熱量赤字加重甲基化壓力，提升葉酸優先級
+    if (isCutting && (genetics.mthfr === 'heterozygous' || genetics.mthfr === 'homozygous')) {
+      const existingFolate = suggestions.find(s => s.name.includes('MTHF') || s.name.includes('葉酸'))
+      if (existingFolate) {
+        existingFolate.priority = 'high'
+        existingFolate.reason += ' 備賽減脂期熱量赤字會加重甲基化壓力，MTHFR 突變者更需確保活性葉酸充足。'
+      }
+    }
+
+    // APOE4 + Peak Week 脂肪補充：避免高飽和脂肪，建議 MCT/橄欖油
+    if (isPeakWeek && (genetics.apoe === 'e3/e4' || genetics.apoe === 'e4/e4')) {
+      suggestions.push({
+        name: 'MCT 油（中鏈脂肪酸）',
+        dosage: '15-30ml',
+        timing: 'Peak Week 脂肪補充日隨餐',
+        reason: `APOE4 帶因者進行 Peak Week 脂肪補充時，應避免高飽和脂肪。MCT 油不經膽固醇代謝途徑，快速供能且不增加 LDL-C 風險。搭配橄欖油、酪梨等單元不飽和脂肪來源。`,
+        priority: 'high',
+        evidence: 'St-Onge & Jones 2002 (J Nutr)：MCT 增加能量消耗且不影響血脂；Yassine 2017：APOE4 需嚴控飽和脂肪',
+        triggerTests: [],
+        category: 'performance',
+      })
+    }
+
+    // 5-HTTLPR SL/SS + 減脂期：皮質醇升高 + 血清素下降風險
+    if (isCutting && (serotoninRisk === 'moderate' || serotoninRisk === 'high')) {
+      const isHighRisk = serotoninRisk === 'high'
+
+      // 確保有南非醉茄（降皮質醇）
+      const alreadyHasAshwagandha = suggestions.some(s => s.name.includes('南非醉茄') || s.name.toLowerCase().includes('ashwagandha'))
+      if (!alreadyHasAshwagandha) {
+        suggestions.push({
+          name: '南非醉茄（Ashwagandha KSM-66）',
+          dosage: '600mg',
+          timing: '晚餐後或睡前',
+          reason: `備賽減脂期皮質醇顯著升高，憂鬱傾向基因${isHighRisk ? '高' : '中等'}風險者更易受影響。南非醉茄臨床證實降低皮質醇 27%，有助穩定備賽心理狀態。`,
+          priority: 'high',
+          evidence: 'Chandrasekhar et al. 2012 (Indian J Psychol Med)：KSM-66 降低皮質醇 27.9%',
+          triggerTests: [],
+          category: 'hormonal',
+        })
+      }
+
+      // 升級色胺酸支持（5-HTP）— 減脂期碳水降低影響血清素合成
+      suggestions.push({
+        name: '5-HTP（5-羥色胺酸）',
+        dosage: isHighRisk ? '200mg' : '100mg',
+        timing: '睡前空腹（與碳水間隔 2 小時）',
+        reason: `備賽減脂期碳水大幅降低，影響色胺酸進入腦部合成血清素。憂鬱傾向基因風險者血清素系統更脆弱，5-HTP 直接補充血清素前驅物，改善情緒與睡眠。`,
+        priority: isHighRisk ? 'high' : 'medium',
+        evidence: 'Jangid et al. 2013 (Asian J Psychiatr)：5-HTP 改善憂鬱症狀；Turner 2006：低碳水降低腦部色胺酸攝取',
+        triggerTests: [],
+        category: 'recovery',
+      })
+    }
+
+    // 備賽 + 任何基因風險：電解質管理（脫水期尤其重要）
+    if (isPeakWeek) {
+      const alreadyHasElectrolytes = suggestions.some(s => s.name.includes('電解質'))
+      if (!alreadyHasElectrolytes) {
+        suggestions.push({
+          name: '電解質（鈉鉀鎂配方）',
+          dosage: '依 Peak Week 計畫調整',
+          timing: '全天分次攝取',
+          reason: 'Peak Week 水鈉操控期間電解質平衡至關重要。基因風險者（特別是心血管相關 APOE4）需更謹慎監控電解質狀態，避免極端脫水。',
+          priority: 'high',
+          evidence: 'Chappell & Simper 2018 (JISSN)：備賽選手 Peak Week 策略與安全性回顧',
+          triggerTests: [],
+          category: 'performance',
+        })
+      }
     }
   }
 
