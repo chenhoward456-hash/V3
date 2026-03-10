@@ -6,11 +6,52 @@ import { TRAINING_TYPES, isWeightTraining } from './types'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 
+interface ModeReason {
+  signal: string
+  emoji: string
+  description: string
+}
+
+interface GeneticCorrection {
+  gene: string
+  variant: string
+  effect: string
+  emoji: string
+}
+
+interface ModeRecommendation {
+  recommendedMode: string
+  modeLabel: string
+  modeEmoji: string
+  modeColor: string
+  volumeAdjustment: number
+  targetRpeRange: [number, number]
+  suggestedSets: string
+  suggestions: string[]
+  focusAreas: string[]
+  reasons: ModeReason[]
+  geneticTrainingCorrections: GeneticCorrection[]
+  confidence: 'high' | 'medium' | 'low'
+}
+
 interface TrainingReadiness {
   recommendedIntensity: 'high' | 'moderate' | 'low' | 'rest'
   recoveryScore: number
   reasons: string[]
   suggestion: string
+  modeRecommendation?: ModeRecommendation
+}
+
+// 靜態 Tailwind class map（避免動態 class 被 purge）
+const MODE_COLOR_MAP: Record<string, { bg: string; text: string; border: string; tagBg: string }> = {
+  purple: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', tagBg: 'bg-purple-100' },
+  red:    { bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-200',    tagBg: 'bg-red-100' },
+  blue:   { bg: 'bg-blue-50',   text: 'text-blue-700',   border: 'border-blue-200',   tagBg: 'bg-blue-100' },
+  amber:  { bg: 'bg-amber-50',  text: 'text-amber-700',  border: 'border-amber-200',  tagBg: 'bg-amber-100' },
+  teal:   { bg: 'bg-teal-50',   text: 'text-teal-700',   border: 'border-teal-200',   tagBg: 'bg-teal-100' },
+  green:  { bg: 'bg-green-50',  text: 'text-green-700',  border: 'border-green-200',  tagBg: 'bg-green-100' },
+  cyan:   { bg: 'bg-cyan-50',   text: 'text-cyan-700',   border: 'border-cyan-200',   tagBg: 'bg-cyan-100' },
+  gray:   { bg: 'bg-gray-50',   text: 'text-gray-700',   border: 'border-gray-200',   tagBg: 'bg-gray-100' },
 }
 
 interface TrainingLogProps {
@@ -400,6 +441,61 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
             )}
           </div>
         )}
+
+        {/* ===== 訓練模式建議（簡單模式隱藏） ===== */}
+        {!simpleMode && readiness?.modeRecommendation && (() => {
+          const mode = readiness.modeRecommendation
+          const colors = MODE_COLOR_MAP[mode.modeColor] || MODE_COLOR_MAP.blue
+          const totalReasons = mode.reasons.length + mode.geneticTrainingCorrections.length
+          return (
+            <div className={`rounded-xl border px-4 py-3 text-sm ${colors.bg} ${colors.text} ${colors.border}`}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium">
+                  {mode.modeEmoji} 建議模式：{mode.modeLabel}
+                </span>
+                <span className="text-xs opacity-70">
+                  {mode.confidence === 'high' ? '信心高' : mode.confidence === 'medium' ? '信心中' : '信心低'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs opacity-80 mb-2">
+                <span>目標 RPE {mode.targetRpeRange[0]}-{mode.targetRpeRange[1]}</span>
+                <span>建議 {mode.suggestedSets}</span>
+                {mode.volumeAdjustment !== 0 && (
+                  <span>容量 {mode.volumeAdjustment > 0 ? '+' : ''}{mode.volumeAdjustment}%</span>
+                )}
+              </div>
+              <ul className="space-y-1 mb-2">
+                {mode.suggestions.map((s, i) => (
+                  <li key={i} className="text-xs opacity-80">- {s}</li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap gap-1 mb-2">
+                {mode.focusAreas.map((area, i) => (
+                  <span key={i} className={`text-[10px] ${colors.tagBg} rounded px-1.5 py-0.5`}>{area}</span>
+                ))}
+              </div>
+              {totalReasons > 0 && (
+                <details className="text-xs">
+                  <summary className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity">
+                    查看分析依據（{totalReasons} 項信號）
+                  </summary>
+                  <div className="mt-2 space-y-1">
+                    {mode.reasons.map((r, i) => (
+                      <div key={i} className="opacity-80">
+                        {r.emoji} {r.description}
+                      </div>
+                    ))}
+                    {mode.geneticTrainingCorrections.map((g, i) => (
+                      <div key={`g-${i}`} className="text-purple-700">
+                        {g.emoji} {g.gene} {g.variant}：{g.effect}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          )
+        })()}
 
         {/* 訓練類型 */}
         <div>
