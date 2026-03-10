@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useClientData } from '@/hooks/useClientData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { useCoachMode } from '@/hooks/useCoachMode'
 import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown, Settings } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
+import UpgradeGate from '@/components/client/UpgradeGate'
 import HealthOverview from '@/components/client/HealthOverview'
 import DailyCheckIn from '@/components/client/DailyCheckIn'
 import DailyWellness from '@/components/client/DailyWellness'
@@ -1446,6 +1448,28 @@ export default function ClientDashboard() {
           )
         })()}
 
+        {/* 免費用戶升級提示（使用數據後提示） */}
+        {isFree && streakDays >= 3 && (
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-3xl p-5 mb-6">
+            <div className="text-center mb-3">
+              <span className="text-2xl">🎯</span>
+              <p className="text-sm font-bold text-gray-800 mt-1">
+                你已經連續記錄 {streakDays} 天了！
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                升級後解鎖 AI 飲食顧問、身心狀態追蹤、訓練紀錄，讓系統更完整地幫你分析。
+              </p>
+            </div>
+            <Link
+              href="/join"
+              onClick={() => trackEvent('upgrade_cta_clicked', { source: 'streak_prompt', streak_days: streakDays })}
+              className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+            >
+              升級自主管理版 — NT$499/月
+            </Link>
+          </div>
+        )}
+
         {/* 未開放功能提示 */}
         {(() => {
           const locked = []
@@ -1471,11 +1495,15 @@ export default function ClientDashboard() {
               </div>
               {c.subscription_tier === 'free' ? (
                 <div className="mt-4 space-y-2">
-                  <a href={`/pay?tier=self_managed&name=${encodeURIComponent(c.name)}`} className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all">
+                  <Link
+                    href="/join"
+                    onClick={() => trackEvent('upgrade_cta_clicked', { source: 'locked_features' })}
+                    className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+                  >
                     升級自主管理版 NT$499/月
-                  </a>
+                  </Link>
                   <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="block text-center bg-[#06C755] text-white text-sm font-bold py-2.5 rounded-xl hover:bg-[#05b04d] transition-all">
-                    💬 加 LINE 找 Howard
+                    加 LINE 找 Howard
                   </a>
                 </div>
               ) : (

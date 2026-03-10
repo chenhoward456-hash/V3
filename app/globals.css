@@ -222,14 +222,26 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* 確保所有互動元素達到 44px 最小觸控區域 */
+  button, [role="button"], a.inline-block, a.block {
+    min-height: 44px;
+  }
+
   /* 防止 iOS 輸入框放大 */
   input[type="text"],
   input[type="number"],
+  input[type="email"],
+  input[type="tel"],
   input[type="password"],
   input[type="date"],
   select,
   textarea {
     font-size: 16px !important;
+  }
+
+  /* 改善表單輸入體驗 */
+  input, select, textarea {
+    min-height: 44px;
   }
 }
 

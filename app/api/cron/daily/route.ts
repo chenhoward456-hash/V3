@@ -18,6 +18,8 @@ import { pushMessage } from '@/lib/line'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
+import { getDefaultFeatures } from '@/lib/tier-defaults'
+import { startCronRun, completeCronRun, failCronRun } from '@/lib/cron-utils'
 
 export const maxDuration = 300
 
@@ -47,6 +49,14 @@ export async function GET(request: NextRequest) {
   const supabase = createServiceSupabase()
   const hour = getTaiwanHour()
   const today = getTaiwanDate()
+  const isMorningRun = hour >= 5 && hour < 12
+  const cronJobType = isMorningRun ? 'daily_morning' as const : 'daily_evening' as const
+
+  // Cron runs 冪等性檢查
+  const { runId, alreadyRan } = await startCronRun(cronJobType, today)
+  if (alreadyRan) {
+    return NextResponse.json({ success: true, skipped: true, reason: '今日已執行過' })
+  }
 
   // 取得所有已綁定 LINE 的活躍學員
   const { data: clients, error } = await supabase
@@ -63,7 +73,7 @@ export async function GET(request: NextRequest) {
   const errors: string[] = []
 
   // 判斷早上或晚上
-  const isMorning = hour >= 5 && hour < 12
+  const isMorning = isMorningRun
 
   if (isMorning) {
     // ── 早上提醒：量體重 ──
@@ -307,13 +317,118 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({
+  // ===== 付費帳號到期自動降級（早上執行）=====
+  let downgradedCount = 0
+  if (isMorning) {
+    const { data: expiredClients } = await supabase
+      .from('clients')
+      .select('id, name, line_user_id, subscription_tier, expires_at')
+      .eq('is_active', true)
+      .not('subscription_tier', 'eq', 'free')
+      .not('expires_at', 'is', null)
+
+    if (expiredClients) {
+      const now = new Date()
+      for (const c of expiredClients) {
+        if (!c.expires_at) continue
+        const expiresAt = new Date(c.expires_at)
+        if (expiresAt < now) {
+          // 降級為免費方案
+          const freeFeatures = getDefaultFeatures('free')
+          const { error: downgradeErr } = await supabase
+            .from('clients')
+            .update({
+              subscription_tier: 'free',
+              ...freeFeatures,
+            })
+            .eq('id', c.id)
+
+          if (downgradeErr) {
+            errors.push(`降級失敗 [${c.name}]: ${downgradeErr.message}`)
+          } else {
+            downgradedCount++
+            logger.info('帳號已降級為免費', { clientName: c.name, previousTier: c.subscription_tier })
+
+            // 通知用戶
+            if (c.line_user_id) {
+              const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+              try {
+                await pushMessage(c.line_user_id, [{
+                  type: 'text',
+                  text: `${c.name}，你的方案已到期，帳號已切換為免費版。\n\n免費版仍可使用體重追蹤和基本營養紀錄。\n\n想繼續使用完整功能？\n👉 ${siteUrl}/join\n\n你之前的數據都完整保留 💪`,
+                }])
+              } catch (err: any) {
+                errors.push(`降級通知失敗 [${c.name}]: ${err.message}`)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ===== 沉默用戶偵測 + 再喚醒（晚上執行）=====
+  let reengagementSent = 0
+  if (!isMorning) {
+    const threeDaysAgo = new Date()
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
+    const threeDaysStr = threeDaysAgo.toISOString().split('T')[0]
+
+    // 取得所有活躍且有 LINE 的學員
+    const { data: activeClients } = await supabase
+      .from('clients')
+      .select('id, name, line_user_id, subscription_tier')
+      .eq('is_active', true)
+      .not('line_user_id', 'is', null)
+
+    if (activeClients) {
+      // 查詢過去 3 天所有紀錄
+      const [recentBody, recentNutrition, recentWellness] = await Promise.all([
+        supabase.from('body_composition').select('client_id').gte('date', threeDaysStr),
+        supabase.from('nutrition_logs').select('client_id').gte('date', threeDaysStr),
+        supabase.from('daily_wellness').select('client_id').gte('date', threeDaysStr),
+      ])
+
+      const activeClientIds = new Set([
+        ...(recentBody.data || []).map((r: any) => r.client_id),
+        ...(recentNutrition.data || []).map((r: any) => r.client_id),
+        ...(recentWellness.data || []).map((r: any) => r.client_id),
+      ])
+
+      const silentClients = activeClients.filter(c => !activeClientIds.has(c.id))
+
+      for (const c of silentClients) {
+        try {
+          await pushMessage(c.line_user_id, [{
+            type: 'text',
+            text: `${c.name}，好幾天沒看到你了 👋\n\n不需要完美，只要持續記錄。\n今天花 10 秒記一筆體重就好：\n\n輸入「體重 XX.X」即可 ✌️`,
+          }])
+          reengagementSent++
+        } catch (err: any) {
+          errors.push(`再喚醒失敗 [${c.name}]: ${err.message}`)
+        }
+      }
+    }
+  }
+
+  const responseData = {
     success: errors.length === 0,
     type: isMorning ? 'morning' : 'evening',
     sent,
     expiryReminders,
     milestonesSent,
     smartAlertsSent,
+    downgradedCount,
+    reengagementSent,
     errors,
-  })
+  }
+
+  // 寫入 cron_runs
+  if (errors.length === 0) {
+    await completeCronRun(runId, responseData)
+  } else {
+    await failCronRun(runId, errors.join('; '), responseData)
+  }
+
+  return NextResponse.json(responseData)
 }

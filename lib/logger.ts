@@ -2,7 +2,10 @@
  * 結構化日誌模組
  * 在 production 環境輸出 JSON 格式，方便 Vercel / 外部 log 服務解析
  * 在 development 環境輸出可讀格式
+ * 自動將 error/warn 級別報告給 Sentry
  */
+
+import * as Sentry from '@sentry/nextjs'
 
 type LogLevel = 'info' | 'warn' | 'error'
 
@@ -27,6 +30,24 @@ function formatLog(entry: LogEntry): string {
   return JSON.stringify(entry)
 }
 
+function reportToSentry(level: LogLevel, module: string, message: string, extra?: { data?: Record<string, unknown>; error?: unknown }) {
+  if (level === 'error') {
+    const err = extra?.error instanceof Error
+      ? extra.error
+      : new Error(`[${module}] ${message}`)
+    Sentry.captureException(err, {
+      tags: { module },
+      extra: { ...extra?.data, originalMessage: message },
+    })
+  } else if (level === 'warn') {
+    Sentry.captureMessage(`[${module}] ${message}`, {
+      level: 'warning',
+      tags: { module },
+      extra: extra?.data,
+    })
+  }
+}
+
 function log(level: LogLevel, module: string, message: string, extra?: { data?: Record<string, unknown>; error?: unknown }) {
   const entry: LogEntry = {
     level,
@@ -49,6 +70,9 @@ function log(level: LogLevel, module: string, message: string, extra?: { data?: 
   } else {
     console.log(formatted)
   }
+
+  // 報告 error/warn 到 Sentry
+  reportToSentry(level, module, message, extra)
 }
 
 export function createLogger(module: string) {

@@ -76,19 +76,28 @@ function JoinPageInner() {
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null)
   const [formStep, setFormStep] = useState<'plans' | 'form'>('plans')
 
+  // 從 URL params 預填（來自 diagnosis 頁面）
+  const paramGender = searchParams.get('gender') as '男性' | '女性' | null
+  const paramGoal = searchParams.get('goal') as 'cut' | 'bulk' | null
+  const paramWeight = searchParams.get('weight')
+  const paramHeight = searchParams.get('height')
+  const paramBf = searchParams.get('bf')
+  const paramTw = searchParams.get('tw')
+  const paramTd = searchParams.get('td')
+
   // 表單欄位
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [gender, setGender] = useState<'男性' | '女性' | ''>('')
+  const [gender, setGender] = useState<'男性' | '女性' | ''>(paramGender || '')
   const [age, setAge] = useState('')
-  const [goalType, setGoalType] = useState<'cut' | 'bulk' | 'recomp'>('cut')
-  const [weight, setWeight] = useState('')
-  const [height, setHeight] = useState('')
+  const [goalType, setGoalType] = useState<'cut' | 'bulk' | 'recomp'>(paramGoal || 'cut')
+  const [weight, setWeight] = useState(paramWeight || '')
+  const [height, setHeight] = useState(paramHeight || '')
   const [activityLevel, setActivityLevel] = useState<'sedentary' | 'moderate' | 'high_energy_flux'>('moderate')
-  const [trainingDays, setTrainingDays] = useState('3')
-  const [targetWeight, setTargetWeight] = useState('')
-  const [bodyFatPct, setBodyFatPct] = useState('')
+  const [trainingDays, setTrainingDays] = useState(paramTd || '3')
+  const [targetWeight, setTargetWeight] = useState(paramTw || '')
+  const [bodyFatPct, setBodyFatPct] = useState(paramBf || '')
   const [targetBodyFatPct, setTargetBodyFatPct] = useState('')
 
   const [agreedToTerms, setAgreedToTerms] = useState(false)
@@ -96,6 +105,7 @@ function JoinPageInner() {
   const [error, setError] = useState('')
   const [waitlistEmail, setWaitlistEmail] = useState('')
   const [waitlistSubmitted, setWaitlistSubmitted] = useState(false)
+  const [showOptionalFields, setShowOptionalFields] = useState(false)
 
   const handleSelectPlan = (tier: Tier) => {
     setSelectedTier(tier)
@@ -431,40 +441,44 @@ function JoinPageInner() {
                 </div>
               )}
 
-              {/* 性別 */}
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">性別</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {(['男性', '女性'] as const).map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => setGender(g)}
-                      className={`py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
-                        gender === g
-                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
-                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
-                      }`}
-                    >
-                      {g === '男性' ? '♂ 男性' : '♀ 女性'}
-                    </button>
-                  ))}
+              {/* 性別（免費版下放到選填區） */}
+              {!isFree && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">性別</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(['男性', '女性'] as const).map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setGender(g)}
+                        className={`py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
+                          gender === g
+                            ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                            : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        {g === '男性' ? '♂ 男性' : '♀ 女性'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* 年齡 */}
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                  年齡 <span className="text-gray-400 font-normal">— 選填</span>
-                </label>
-                <input
-                  type="number"
-                  placeholder="例如 28"
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
-                />
-              </div>
+              {/* 年齡（付費版才在主表單顯示） */}
+              {!isFree && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                    年齡 <span className="text-gray-400 font-normal">— 選填</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="例如 28"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                  />
+                </div>
+              )}
 
               {/* 目標 */}
               <div>
@@ -523,7 +537,61 @@ function JoinPageInner() {
                 </div>
               </div>
 
-              {/* 體脂率 */}
+              {/* 免費版：選填欄位折疊區 */}
+              {isFree && !showOptionalFields && (
+                <button
+                  type="button"
+                  onClick={() => setShowOptionalFields(true)}
+                  className="w-full text-center text-sm text-[#2563eb] hover:underline py-2"
+                >
+                  填寫更多資料（選填，計算更準確）
+                </button>
+              )}
+
+              {/* 免費版折疊區包含：性別、年齡、體脂率、目標體重、目標體脂、活動量、訓練天數 */}
+              {isFree && showOptionalFields && (
+                <>
+                  {/* 性別 */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                      性別 <span className="text-gray-400 font-normal">— 選填</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {(['男性', '女性'] as const).map((g) => (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => setGender(g)}
+                          className={`py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
+                            gender === g
+                              ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                              : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          {g === '男性' ? '♂ 男性' : '♀ 女性'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 年齡 */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                      年齡 <span className="text-gray-400 font-normal">— 選填</span>
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="例如 28"
+                      value={age}
+                      onChange={(e) => setAge(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* 體脂率（付費版顯示 or 免費版展開時顯示） */}
+              {(!isFree || showOptionalFields) && (
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
                   體脂率 (%) <span className="text-gray-400 font-normal">— 選填，有填計算更準</span>
@@ -541,8 +609,11 @@ function JoinPageInner() {
                 />
                 <p className="text-xs text-gray-400 mt-1">InBody、體脂計或健身房量測的數字。沒有也沒關係，系統會用體重估算。</p>
               </div>
+              )}
 
-              {/* 目標體重 & 目標體脂 */}
+              {/* 目標體重 & 目標體脂（付費版 or 免費版展開） */}
+              {(!isFree || showOptionalFields) && (
+              <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-1.5">
@@ -580,8 +651,12 @@ function JoinPageInner() {
               {goalType === 'recomp' && (
                 <p className="text-xs text-gray-400 mt-1">體態重組：體重可能不變，但體脂下降、肌肉增加。建議填寫目標體脂。</p>
               )}
+              </>
+              )}
 
-              {/* 活動量 */}
+              {/* 活動量（付費版 or 免費版展開） */}
+              {(!isFree || showOptionalFields) && (
+              <>
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">日常活動量</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -628,6 +703,8 @@ function JoinPageInner() {
                 </div>
                 <p className="text-xs text-gray-400 mt-1">包含重訓和有氧</p>
               </div>
+              </>
+              )}
 
               {/* Error */}
               {error && (

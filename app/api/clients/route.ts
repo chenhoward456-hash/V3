@@ -5,6 +5,7 @@ import { validateDate } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { calculateInitialTargets } from '@/lib/nutrition-engine'
 import { createLogger } from '@/lib/logger'
+import { writeAuditLog } from '@/lib/audit'
 
 const logger = createLogger('api-clients')
 
@@ -188,9 +189,18 @@ export async function POST(request: NextRequest) {
     if (error) {
       return createErrorResponse('建立客戶失敗', 500)
     }
-    
+
+    // 審計日誌（非阻塞）
+    writeAuditLog({
+      action: 'client.create',
+      actor: 'system',
+      targetType: 'client',
+      targetId: data.id,
+      details: { name, uniqueCode },
+    })
+
     return createSuccessResponse(data)
-    
+
   } catch {
     return createErrorResponse('伺服器錯誤', 500)
   }
@@ -199,11 +209,23 @@ export async function POST(request: NextRequest) {
 // PATCH: 自主管理用戶 Onboarding — 設定目標 + InBody 數據 → 即時算出初始營養目標
 export async function PATCH(request: NextRequest) {
   try {
+    // Rate limit: 每分鐘 10 次
+    const ip = getClientIP(request)
+    const { allowed } = rateLimit(`clients-patch:${ip}`, 10, 60_000)
+    if (!allowed) {
+      return createErrorResponse('請求過於頻繁，請稍後再試', 429)
+    }
+
     const body = await request.json()
     const { clientId, simple_mode, goal_type, activity_profile, gender, height, body_weight, body_fat_pct, training_days_per_week, target_weight, target_body_fat, target_date } = body
 
     if (!clientId || typeof clientId !== 'string') {
       return createErrorResponse('缺少客戶 ID', 400)
+    }
+
+    // 驗證 clientId 格式
+    if (!/^[a-zA-Z0-9_-]{1,20}$/.test(clientId)) {
+      return createErrorResponse('無效的客戶 ID 格式', 400)
     }
 
     // 驗證 unique_code 存在
@@ -230,6 +252,17 @@ export async function PATCH(request: NextRequest) {
       if (updateErr) {
         return createErrorResponse('更新失敗', 500)
       }
+
+      // 審計日誌（非阻塞）
+      writeAuditLog({
+        action: 'client.update',
+        actor: `client:${clientId}`,
+        targetType: 'client',
+        targetId: client.id,
+        details: { simple_mode },
+        ip,
+      })
+
       return createSuccessResponse({ updated: { simple_mode } })
     }
 
@@ -331,6 +364,16 @@ export async function PATCH(request: NextRequest) {
     if (updateError) {
       return createErrorResponse('更新失敗', 500)
     }
+
+    // 審計日誌（非阻塞）
+    writeAuditLog({
+      action: 'client.update',
+      actor: `client:${clientId}`,
+      targetType: 'client',
+      targetId: client.id,
+      details: { fields: Object.keys(updates) },
+      ip,
+    })
 
     return createSuccessResponse({ updated: true })
   } catch {
@@ -435,6 +478,16 @@ export async function PUT(request: NextRequest) {
     if (updateError) {
       return createErrorResponse('更新失敗', 500)
     }
+
+    // 審計日誌（非阻塞）
+    writeAuditLog({
+      action: 'client.update',
+      actor: `client:${clientId}`,
+      targetType: 'client',
+      targetId: client.id,
+      details: { fields: Object.keys(updates) },
+      ip,
+    })
 
     return createSuccessResponse({ updated: true })
   } catch {

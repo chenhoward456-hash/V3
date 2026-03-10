@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+// Stub env vars needed by auth-middleware
+vi.stubEnv('SESSION_SECRET', 'test-session-secret-for-vitest')
+
 // Mock Supabase before importing auth-middleware (it creates client at module level)
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({

@@ -102,21 +102,29 @@ export default function HomePage() {
               <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
                 每天 2 分鐘記錄，系統告訴你今天做對了沒有
               </p>
-              <p className="text-sm text-gray-400 mb-8 leading-relaxed max-w-lg">
+              <p className="text-sm text-gray-400 mb-6 leading-relaxed max-w-lg">
                 系統追蹤你的體重趨勢，每週自動校正目標。<br />
                 不是給你數字就消失 — 是每天告訴你：對，繼續。
               </p>
+              {/* 社會證明 */}
+              <div className="flex items-center gap-4 mb-8 text-sm text-gray-500">
+                <span className="flex items-center gap-1"><span className="font-bold text-navy">6+</span> 年系統開發</span>
+                <span className="w-1 h-1 rounded-full bg-gray-300" />
+                <span className="flex items-center gap-1"><span className="font-bold text-navy">CSCS</span> 認證</span>
+                <span className="w-1 h-1 rounded-full bg-gray-300" />
+                <span className="flex items-center gap-1"><span className="font-bold text-navy">30 秒</span> 開通</span>
+              </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/join"
-                  className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition-all shadow-lg shadow-blue-500/25 text-center"
+                  className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition-all shadow-lg shadow-blue-500/25 text-center min-h-[48px]"
                 >
                   免費開始記錄 →
                 </Link>
                 <LineButton
                   source="homepage_hero"
                   intent="general"
-                  className="inline-block bg-white text-navy border-2 border-navy px-8 py-4 rounded-xl font-semibold text-lg hover:bg-navy/5 transition-all text-center"
+                  className="inline-block bg-white text-navy border-2 border-navy px-8 py-4 rounded-xl font-semibold text-lg hover:bg-navy/5 transition-all text-center min-h-[48px]"
                 >
                   加 LINE 了解更多
                 </LineButton>
@@ -369,10 +377,11 @@ export default function HomePage() {
               <div className="mt-auto">
                 <Link
                   href="/join"
-                  className="block bg-green-500 text-white py-3.5 rounded-xl font-semibold hover:bg-green-600 transition-colors text-center text-lg"
+                  className="block bg-green-500 text-white py-3.5 rounded-xl font-semibold hover:bg-green-600 transition-colors text-center text-lg min-h-[48px] flex items-center justify-center"
                 >
                   免費開始記錄 →
                 </Link>
+                <p className="text-xs text-gray-400 text-center mt-2">不需信用卡，30 秒開通</p>
               </div>
             </div>
 
@@ -494,17 +503,16 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/join"
-              className="inline-block bg-white text-navy px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
+              className="inline-block bg-white text-navy px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors min-h-[48px]"
             >
               免費開始記錄 →
             </Link>
-            <LineButton
-              source="homepage_bottom"
-              intent="general"
-              className="inline-block bg-transparent text-white border-2 border-white/50 px-10 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-colors"
+            <Link
+              href="/diagnosis"
+              className="inline-block bg-transparent text-white border-2 border-white/50 px-10 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-colors min-h-[48px]"
             >
-              加 LINE 聊聊 💬
-            </LineButton>
+              先免費體驗分析
+            </Link>
           </div>
         </div>
       </section>

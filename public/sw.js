@@ -2,10 +2,12 @@
  * Service Worker — 離線快取 + 推播通知
  */
 
-const CACHE_NAME = 'hp-v2'
+const CACHE_NAME = 'hp-v3'
 const PRECACHE_URLS = [
   '/icon-192.png',
   '/icon-512.png',
+  '/icon.svg',
+  '/manifest.json',
 ]
 
 // Install: precache core assets
@@ -36,27 +38,28 @@ self.addEventListener('fetch', (event) => {
   // API requests: network only (don't cache)
   if (url.pathname.startsWith('/api/')) return
 
-  // Static assets (images, fonts, icons): cache-first
+  // Static assets (images, fonts, icons, CSS, JS): cache-first with network update
   if (
     url.pathname.match(/\.(png|jpg|jpeg|svg|ico|woff2?|ttf|css|js)$/) ||
     url.pathname.startsWith('/_next/static/')
   ) {
     event.respondWith(
       caches.match(event.request).then((cached) => {
-        if (cached) return cached
-        return fetch(event.request).then((response) => {
+        const fetchPromise = fetch(event.request).then((response) => {
           if (response.ok) {
             const clone = response.clone()
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
           }
           return response
-        })
+        }).catch(() => cached)
+
+        return cached || fetchPromise
       })
     )
     return
   }
 
-  // Pages: network-first, fall back to cache
+  // Pages: network-first, fall back to cache, then offline fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -80,6 +83,7 @@ self.addEventListener('push', (event) => {
     icon: data.icon || '/icon-192.png',
     badge: '/icon-192.png',
     data: { url: data.url || '/' },
+    vibrate: [100, 50, 100],
   }
 
   event.waitUntil(

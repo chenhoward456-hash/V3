@@ -5,6 +5,7 @@ import { sendWelcomeEmail } from '@/lib/email'
 import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { calculateInitialTargets } from '@/lib/nutrition-engine'
 import { createLogger } from '@/lib/logger'
+import { writeAuditLog } from '@/lib/audit'
 import crypto from 'crypto'
 
 const log = createLogger('free-trial')
@@ -179,6 +180,16 @@ export async function POST(request: NextRequest) {
     })
 
     log.info('Account created', { uniqueCode, email })
+
+    // 審計日誌（非阻塞）
+    writeAuditLog({
+      action: 'subscription.created',
+      actor: 'system',
+      targetType: 'client',
+      targetId: newClient.id,
+      details: { tier: 'free', email: email.trim(), uniqueCode },
+      ip,
+    })
 
     // 寄歡迎信
     if (email) {

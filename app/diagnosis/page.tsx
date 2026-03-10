@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { generateDemoAnalysis, type DemoAnalysisInput, type DemoAnalysisResult } from '@/lib/nutrition-engine'
 import LineButton from '@/components/LineButton'
+import { trackEvent } from '@/lib/analytics'
 
 export default function DiagnosisPage() {
   const [step, setStep] = useLocalStorage('demo_step', 1)
@@ -17,6 +18,15 @@ export default function DiagnosisPage() {
   const [trainingDays, setTrainingDays] = useLocalStorage('demo_training_days', 4)
   const [, , isClient] = useLocalStorage('_client_check', true)
   const [result, setResult] = useState<DemoAnalysisResult | null>(null)
+  const hasTrackedStart = useRef(false)
+
+  // 追蹤診斷頁面進入
+  useEffect(() => {
+    if (!hasTrackedStart.current) {
+      trackEvent('diagnosis_page_view')
+      hasTrackedStart.current = true
+    }
+  }, [])
 
   const canProceedStep1 = gender && bodyWeight && parseFloat(bodyWeight) > 0 && goalType
   const canProceedStep2 = trainingDays >= 1 && trainingDays <= 7
@@ -50,6 +60,13 @@ export default function DiagnosisPage() {
     const analysisResult = generateDemoAnalysis(input)
     setResult(analysisResult)
     setStep(3)
+    trackEvent('diagnosis_analysis_complete', {
+      gender,
+      goal_type: goalType,
+      has_body_fat: !!bodyFatPct,
+      has_target_weight: !!targetWeight,
+      training_days: trainingDays,
+    })
   }
 
   const handleReset = () => {
@@ -208,7 +225,10 @@ export default function DiagnosisPage() {
               </div>
 
               <button
-                onClick={() => setStep(2)}
+                onClick={() => {
+                  setStep(2)
+                  trackEvent('diagnosis_step1_complete', { gender, goal_type: goalType })
+                }}
                 disabled={!canProceedStep1}
                 className="w-full bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold text-base hover:bg-[#1d4ed8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed mt-4"
               >
@@ -403,7 +423,8 @@ export default function DiagnosisPage() {
                         <p>✓ AI 智慧回饋，最低 NT$499/月</p>
                       </div>
                       <Link
-                        href="/join"
+                        href={`/join?ref=diagnosis&gender=${encodeURIComponent(gender)}&goal=${goalType}&weight=${bodyWeight}${height ? `&height=${height}` : ''}${bodyFatPct ? `&bf=${bodyFatPct}` : ''}${targetWeight ? `&tw=${targetWeight}` : ''}&td=${trainingDays}`}
+                        onClick={() => trackEvent('diagnosis_to_join_click')}
                         className="inline-block bg-white text-[#1e3a5f] px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-colors shadow-lg"
                       >
                         查看方案 & 立即加入
