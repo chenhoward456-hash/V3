@@ -135,14 +135,9 @@ export async function POST(request: NextRequest) {
           .single()
 
         if (clientError) {
-          log.error('Client creation error', clientError)
-          await supabase.from('subscription_purchases').update({
-            status: 'completed',
-            ecpay_trade_no: params.TradeNo || null,
-            completed_at: new Date().toISOString(),
-          }).eq('merchant_trade_no', merchantTradeNo)
-
-          return new NextResponse('1|OK', { status: 200, headers: { 'Content-Type': 'text/plain' } })
+          log.error('Client creation error', clientError, { merchantTradeNo, tier })
+          // 回傳 0|Error 讓 ECPay 重試（用戶已付款但帳號未建立）
+          return new NextResponse('0|ErrorMessage', { status: 200 })
         }
 
         clientId = newClient.id

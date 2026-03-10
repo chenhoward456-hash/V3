@@ -78,19 +78,23 @@ export const SUBSCRIPTION_PLANS = {
 export type SubscriptionTier = keyof typeof SUBSCRIPTION_PLANS
 
 // ========== ECPay .NET 風格 URL Encode ==========
-// ECPay 使用 .NET 的 UrlEncode 規則，需要特殊轉換
+// ECPay 使用 .NET 的 HttpUtility.UrlEncode 規則
+// 與 JS encodeURIComponent 的差異：
+//   space → + (不是 %20)
+//   !*()~' → %XX (encodeURIComponent 不編碼這些)
+//   -_. → 維持原樣 (兩者一致)
 function ecpayUrlEncode(str: string): string {
   let encoded = encodeURIComponent(str)
-  // ECPay 特殊規則：某些字元要轉回來（符合 .NET UrlEncode）
+  // space: %20 → +
+  encoded = encoded.replace(/%20/g, '+')
+  // .NET 會編碼這些字元，但 encodeURIComponent 不會
   encoded = encoded
-    .replace(/%2d/gi, '-')
-    .replace(/%5f/gi, '_')
-    .replace(/%2e/gi, '.')
-    .replace(/%21/gi, '!')
-    .replace(/%2a/gi, '*')
-    .replace(/%28/gi, '(')
-    .replace(/%29/gi, ')')
-    .replace(/%20/gi, '+')
+    .replace(/!/g, '%21')
+    .replace(/\*/g, '%2A')
+    .replace(/\(/g, '%28')
+    .replace(/\)/g, '%29')
+    .replace(/~/g, '%7E')
+    .replace(/'/g, '%27')
   return encoded
 }
 

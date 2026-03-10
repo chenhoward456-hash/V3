@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     const [nutritionRes, wellnessRes, trainingRes, bodyRes, labRes, wearableRes, suppRes] = await Promise.all([
       supabase.from('nutrition_logs').select('date, calories, protein_grams, carbs_grams, fat_grams, water_ml, compliant')
         .eq('client_id', client.id).gte('date', sinceDate).order('date'),
-      supabase.from('daily_wellness').select('date, mood, energy_level, sleep_quality, hunger, stress, digestion')
+      supabase.from('daily_wellness').select('date, mood, energy_level, sleep_quality, hunger, stress_level, digestion')
         .eq('client_id', client.id).gte('date', sinceDate).order('date'),
       supabase.from('training_logs').select('date, training_type, duration, rpe, note')
         .eq('client_id', client.id).gte('date', sinceDate).order('date'),
