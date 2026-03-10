@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useToast } from '@/components/ui/Toast'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { calcRecommendedStageWeight, type RecommendedStageWeightResult } from '@/lib/nutrition-engine'
@@ -82,6 +83,7 @@ interface Client {
 export default function ClientEditor() {
   const params = useParams()
   const router = useRouter()
+  const { showToast } = useToast()
   const clientId = params.clientId as string
 
   const [client, setClient] = useState<Client | null>(null)
@@ -293,7 +295,7 @@ export default function ClientEditor() {
         }
 
         const result = await res.json().catch(() => ({}))
-        alert(`✅ 學員「${client.name}」新增成功！\n代碼：${uniqueCode}`)
+        showToast(`學員「${client.name}」新增成功！代碼：${uniqueCode}`, 'success')
         window.location.href = '/admin'
       } else {
         // 更新現有學員

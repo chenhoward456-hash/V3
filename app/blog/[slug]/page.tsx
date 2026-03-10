@@ -243,6 +243,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           <div className="text-gray-500 text-sm">發布於 {post.date}</div>
         </header>
 
+        <div className="bg-amber-50/60 border border-amber-200/60 rounded-xl px-5 py-3 mb-8 text-sm text-amber-800/80">
+          本文為個人經驗與知識分享，不構成醫療、營養或運動處方建議。如有健康疑慮請諮詢專業醫療人員。
+        </div>
+
         <div
           className="prose prose-lg max-w-none"
           style={{ color: '#2D2D2D', lineHeight: '1.8' }}

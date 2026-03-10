@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { messages, systemPrompt, clientId, image } = body as {
+    const { messages, systemPrompt: clientContext, clientId, image } = body as {
       messages: ChatMessage[]
       systemPrompt?: string
       clientId?: string
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
-        reply = await askClaude(trimmedMessages, systemPrompt)
+        reply = await askClaude(trimmedMessages, clientContext)
         break
       } catch (e: any) {
         lastErr = e

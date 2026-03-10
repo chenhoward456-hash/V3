@@ -69,11 +69,17 @@ function trimMessagesToFit(messages: ChatMessage[], maxTokens: number = 6000): C
 
 export async function askClaude(
   messages: ChatMessage[],
-  systemPrompt?: string
+  clientContext?: string
 ): Promise<string> {
   const trimmedMessages = trimMessagesToFit(messages, 6000)
 
   const model = process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001'
+
+  // Always use hardcoded SYSTEM_PROMPT as the base to prevent prompt injection.
+  // Client-provided context is appended as supplementary data only.
+  const system = clientContext
+    ? `${SYSTEM_PROMPT}\n\n---\n\n${clientContext}`
+    : SYSTEM_PROMPT
 
   // Convert ChatMessage[] to Anthropic API format (support images)
   const apiMessages = trimmedMessages.map((msg) => {
@@ -100,7 +106,7 @@ export async function askClaude(
   const response = await getClient().messages.create({
     model,
     max_tokens: 1024,
-    system: systemPrompt || SYSTEM_PROMPT,
+    system,
     messages: apiMessages,
   })
 

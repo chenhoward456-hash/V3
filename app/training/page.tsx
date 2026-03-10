@@ -172,7 +172,7 @@ export default function TrainingPage() {
           </a>
         </div>
         <p className="text-gray-400 text-sm">
-          Coolday Fitness 北屯館 • 一對一訓練指導
+          Coolday Fitness 北屯館 • 一對一訓練指導 • 個人經驗分享，不構成醫療或運動指導建議
         </p>
       </div>
     </section>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2 } from 'lucide-react'
@@ -46,6 +47,7 @@ type StatusFilter = 'all' | 'normal' | 'attention' | 'competition' | 'coached' |
 
 export default function AdminDashboard() {
   const router = useRouter()
+  const { showToast } = useToast()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [allLogs, setAllLogs] = useState<SupplementLog[]>([])
@@ -112,12 +114,12 @@ export default function AdminDashboard() {
       const res = await fetch('/api/cron/weekly')
       if (res.ok) {
         const data = await res.json()
-        alert(`每週分析完成！\n• 季度重置：${data.results.quarterlyResets} 人\n• 分析生成：${data.results.analysisGenerated} 人\n• 通知：${data.results.alertsGenerated} 項`)
+        showToast(`每週分析完成！季度重置：${data.results.quarterlyResets} 人，分析生成：${data.results.analysisGenerated} 人，通知：${data.results.alertsGenerated} 項`, 'success')
         fetchNotifications()
       } else {
-        alert('執行失敗，請檢查 console')
+        showToast('執行失敗，請檢查 console', 'error')
       }
-    } catch { alert('執行失敗') } finally { setRunningCron(false) }
+    } catch { showToast('執行失敗', 'error') } finally { setRunningCron(false) }
   }
 
   const fetchData = async () => {
@@ -324,7 +326,7 @@ export default function AdminDashboard() {
     return list
   }, [clients, search, statusFilter, sortKey, sortDir, clientStats])
 
-  const copyClientUrl = (code: string) => { navigator.clipboard.writeText(`${window.location.origin}/c/${code}`).then(() => alert('學員網址已複製到剪貼簿')) }
+  const copyClientUrl = (code: string) => { navigator.clipboard.writeText(`${window.location.origin}/c/${code}`).then(() => showToast('已複製學員網址', 'success')) }
   const handleLogout = async () => { await fetch('/api/admin/logout', { method: 'POST' }); router.push('/admin/login') }
   const SortIcon = ({ column }: { column: SortKey }) => sortKey !== column ? <ChevronUp size={14} className="text-gray-300 ml-1 inline" /> : sortDir === 'asc' ? <ChevronUp size={14} className="text-blue-600 ml-1 inline" /> : <ChevronDown size={14} className="text-blue-600 ml-1 inline" />
   const getActivityLabel = (id: string) => { const s = clientStats[id]; if (!s?.lastActivity) return { text: '無記錄', color: 'text-gray-400' }; const d = Math.floor((Date.now() - new Date(s.lastActivity).getTime()) / 86400000); if (d >= 5) return { text: `${d}天未活動`, color: 'text-red-600 font-medium' }; if (d >= 3) return { text: `${d}天前`, color: 'text-yellow-600' }; if (d === 0) return { text: '今天', color: 'text-green-600' }; return { text: `${d}天前`, color: 'text-gray-600' } }
@@ -381,9 +383,9 @@ export default function AdminDashboard() {
         setClients(prev => prev.filter(c => c.id !== client.id))
       } else {
         const data = await res.json()
-        alert(`刪除失敗：${data.error || '未知錯誤'}`)
+        showToast(`刪除失敗：${data.error || '未知錯誤'}`, 'error')
       }
-    } catch { alert('刪除失敗，請稍後再試') }
+    } catch { showToast('刪除失敗，請稍後再試', 'error') }
   }
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" /><p className="text-gray-600">載入中...</p></div></div>

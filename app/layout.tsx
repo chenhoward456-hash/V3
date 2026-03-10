@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { Inter, Noto_Sans_TC, Playfair_Display } from 'next/font/google'
-import Script from 'next/script'
 import './globals.css'
 import LayoutShell from '@/components/LayoutShell'
 import ManifestLink from '@/components/ManifestLink'
+import GoogleAnalytics from '@/components/GoogleAnalytics'
+import CookieConsent from '@/components/CookieConsent'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -103,19 +104,8 @@ export default function RootLayout({
       </head>
       <body>
         <LayoutShell>{children}</LayoutShell>
-        {/* Google Analytics - 延遲載入不阻塞頁面渲染 */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-8GMW6GH1QB"
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-8GMW6GH1QB');
-          `}
-        </Script>
+        <GoogleAnalytics />
+        <CookieConsent />
       </body>
     </html>
   )

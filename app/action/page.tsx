@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 
 export const metadata: Metadata = {
   title: '實體訓練方案 - Howard Protocol | 台中北屯一對一指導',
@@ -34,12 +35,15 @@ export default function ActionPage() {
 
       {/* Howard 實戰工作照 */}
       <section className="max-w-4xl mx-auto px-6 -mt-6 mb-16">
-        <div className="w-full h-[400px] rounded-2xl overflow-hidden shadow-sm">
-          <img
+        <div className="relative w-full h-[400px] rounded-2xl overflow-hidden shadow-sm">
+          <Image
             src="/howard-training.jpg"
             alt="Howard Chen 指導學員動作矯正"
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
             style={{ objectPosition: 'center 30%' }}
+            sizes="(max-width: 768px) 100vw, 896px"
+            priority
           />
         </div>
       </section>

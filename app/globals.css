@@ -233,6 +233,15 @@
   }
 }
 
+/* Toast 滑入 */
+@keyframes slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
 /* Modal 背景淡入 */
 @keyframes fade-in {
   from { opacity: 0; }
@@ -250,6 +259,16 @@
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* 無障礙：減少動態效果 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* 健康報告列印區塊 - 螢幕上隱藏 */
