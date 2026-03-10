@@ -33,6 +33,7 @@ import {
 const logger = createLogger('ai-insights')
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request)

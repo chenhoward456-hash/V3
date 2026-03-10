@@ -41,10 +41,10 @@ export async function GET(request: NextRequest) {
       recentWellnessResult,
       recentTrainingRPEResult,
     ] = await Promise.all([
-      // 所有學員，按建立時間倒序
+      // 所有學員，按建立時間倒序（只選必要欄位）
       supabase
         .from('clients')
-        .select('*')
+        .select('id, unique_code, name, gender, status, is_active, expires_at, subscription_tier, competition_enabled, health_mode_enabled, body_composition_enabled, nutrition_enabled, wellness_enabled, training_enabled, supplement_enabled, lab_enabled, ai_chat_enabled, simple_mode, goal_type, prep_phase, coach_last_viewed_at, coach_weekly_note, created_at, line_user_id')
         .order('created_at', { ascending: false }),
 
       // 最近 7 天的補品打卡記錄

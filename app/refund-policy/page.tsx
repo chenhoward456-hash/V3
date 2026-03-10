@@ -99,6 +99,36 @@ export default function RefundPolicyPage() {
               </ul>
             </div>
           </div>
+
+          <div className="mt-6">
+            <h4 className="text-lg font-semibold mb-3 text-text-primary">七日鑑賞期</h4>
+            <ul className="list-disc list-inside space-y-2 text-text-secondary leading-relaxed">
+              <li>
+                依據《消費者保護法》第 19 條，您於<span className="font-medium text-text-primary">首次付款後七日內</span>得以書面或 LINE 通知方式解除契約，無須說明理由。
+              </li>
+              <li>
+                七日鑑賞期內申請退費，我們將<span className="font-medium text-text-primary">全額退還</span>已收取之費用。
+              </li>
+              <li>
+                超過七日後，當月已繳費用不予退還，但您可隨時取消下期續約。
+              </li>
+            </ul>
+          </div>
+
+          <div className="mt-6">
+            <h4 className="text-lg font-semibold mb-3 text-text-primary">實體訓練方案退費</h4>
+            <ul className="list-disc list-inside space-y-2 text-text-secondary leading-relaxed">
+              <li>
+                「實體 + 智能管理」方案包含台中一對一訓練課程。<span className="font-medium text-text-primary">已進行之課程不予退費</span>。
+              </li>
+              <li>
+                七日鑑賞期內若尚未使用任何實體課程，可申請全額退費。
+              </li>
+              <li>
+                七日鑑賞期內若已使用部分課程，退費金額將扣除已使用課程之費用（以單堂計費）。
+              </li>
+            </ul>
+          </div>
         </div>
 
         {/* 電子書與數位商品 */}

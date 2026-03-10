@@ -4,6 +4,8 @@ import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-eng
 import { isWeightTraining } from '@/components/client/types'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 
+export const maxDuration = 60
+
 const supabase = createServiceSupabase()
 
 // DB 欄位 gene_depression_risk 可能是新格式 (LL/SL/SS) 或舊格式 (low/moderate/high)
@@ -64,7 +66,12 @@ export async function GET(request: NextRequest) {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
 
-    const [bodyRes, nutritionRes, trainingRes, wellnessRes, labRes] = await Promise.all([
+    // 月經週期查詢（女性用戶）— 合併到主查詢批次
+    const sixtyDaysAgo = new Date()
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
+    const sixtyDaysStr = sixtyDaysAgo.toISOString().split('T')[0]
+
+    const [bodyRes, nutritionRes, trainingRes, wellnessRes, labRes, periodRes] = await Promise.all([
       supabase
         .from('body_composition')
         .select('date, weight, height, body_fat')
@@ -96,6 +103,17 @@ export async function GET(request: NextRequest) {
         .eq('client_id', client.id)
         .order('date', { ascending: false })
         .limit(30),
+      // 月經週期：最近 60 天內最後一次經期標記
+      client.gender === '女性'
+        ? supabase
+            .from('daily_wellness')
+            .select('date')
+            .eq('client_id', client.id)
+            .eq('period_start', true)
+            .gte('date', sixtyDaysStr)
+            .order('date', { ascending: false })
+            .limit(1)
+        : Promise.resolve({ data: null, error: null }),
     ])
 
     const bodyData = bodyRes.data || []
@@ -104,22 +122,10 @@ export async function GET(request: NextRequest) {
     const wellnessLogs = wellnessRes.data || []
     const labResults = labRes.data || []
 
-    // 2.5 查詢最近一次經期標記（60 天內，用於月經週期判斷）
+    // 月經週期結果（已合併到上方 Promise.all）
     let lastPeriodDate: string | null = null
-    if (client.gender === '女性') {
-      const sixtyDaysAgo = new Date()
-      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
-      const { data: periodData } = await supabase
-        .from('daily_wellness')
-        .select('date')
-        .eq('client_id', client.id)
-        .eq('period_start', true)
-        .gte('date', sixtyDaysAgo.toISOString().split('T')[0])
-        .order('date', { ascending: false })
-        .limit(1)
-      if (periodData && periodData.length > 0) {
-        lastPeriodDate = periodData[0].date
-      }
+    if (periodRes.data && periodRes.data.length > 0) {
+      lastPeriodDate = periodRes.data[0].date
     }
 
     // 2.6 查詢補品依從率（近 8 週）

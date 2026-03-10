@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('[admin/clients GET] 載入失敗:', error)
-    return NextResponse.json({ error: '載入失敗', detail: error.message }, { status: 500 })
+    return NextResponse.json({ error: '載入失敗' }, { status: 500 })
   }
 
   return NextResponse.json(data)
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     if (clientError) {
       console.error('[admin/clients POST] 新增失敗:', clientError)
-      return NextResponse.json({ error: '新增學員失敗', detail: clientError.message }, { status: 500 })
+      return NextResponse.json({ error: '新增學員失敗' }, { status: 500 })
     }
 
     // 新增血檢（白名單過濾）
@@ -198,7 +198,7 @@ export async function PUT(request: NextRequest) {
 
     if (clientError) {
       console.error('[admin/clients PUT] 更新失敗:', clientError)
-      return NextResponse.json({ error: '更新學員失敗', detail: clientError.message }, { status: 500 })
+      return NextResponse.json({ error: '更新學員失敗' }, { status: 500 })
     }
 
     // 教練覆寫鎖定：如果教練修改了營養目標欄位，自動設定鎖定
@@ -252,7 +252,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[admin/clients PUT] 伺服器錯誤:', err)
-    return NextResponse.json({ error: '伺服器錯誤', detail: err instanceof Error ? err.message : String(err) }, { status: 500 })
+    return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }
 

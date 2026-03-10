@@ -33,7 +33,7 @@ export function useScrollTracking(articleTitle: string, slug?: string) {
       }
     }
 
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [articleTitle, slug])
 }

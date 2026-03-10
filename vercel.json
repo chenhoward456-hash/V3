@@ -1,6 +1,14 @@
 {
   "crons": [
     {
+      "path": "/api/cron/daily",
+      "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/cron/daily",
+      "schedule": "0 14 * * *"
+    },
+    {
       "path": "/api/cron/weekly",
       "schedule": "0 8 * * 0"
     },
@@ -8,5 +16,16 @@
       "path": "/api/cron/monthly",
       "schedule": "0 0 1 * *"
     }
-  ]
+  ],
+  "functions": {
+    "app/api/cron/**/*.ts": {
+      "maxDuration": 300
+    },
+    "app/api/ai/**/*.ts": {
+      "maxDuration": 60
+    },
+    "app/api/nutrition-suggestions/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }

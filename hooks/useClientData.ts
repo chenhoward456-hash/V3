@@ -119,9 +119,9 @@ export function useClientData(
     clientId ? `/api/clients?clientId=${clientId}` : null,
     fetcher,
     {
-      revalidateOnFocus,
+      revalidateOnFocus: true,
       dedupingInterval,
-      refreshInterval: 30000, // 30秒自動刷新
+      refreshInterval: 120000, // 2分鐘自動刷新
       errorRetryCount: 3,
       onError: (error) => {
         console.error('客戶資料獲取失敗:', error)

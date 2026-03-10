@@ -91,6 +91,7 @@ function JoinPageInner() {
   const [bodyFatPct, setBodyFatPct] = useState('')
   const [targetBodyFatPct, setTargetBodyFatPct] = useState('')
 
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [waitlistEmail, setWaitlistEmail] = useState('')
@@ -106,6 +107,7 @@ function JoinPageInner() {
   }
 
   const handleSubmit = async () => {
+    if (!agreedToTerms) { setError('請先同意服務條款與隱私政策'); return }
     if (!name.trim()) { setError('請輸入姓名'); return }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('請輸入有效的 Email'); return }
     if (!selectedTier) { setError('請選擇方案'); return }
@@ -633,6 +635,23 @@ function JoinPageInner() {
                   <p className="text-sm text-red-600">{error}</p>
                 </div>
               )}
+
+              {/* 同意條款 */}
+              <label className="flex items-start gap-3 cursor-pointer mt-2">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#2563eb] focus:ring-[#2563eb]"
+                />
+                <span className="text-xs text-gray-500 leading-relaxed">
+                  我已閱讀並同意{' '}
+                  <Link href="/terms" target="_blank" className="text-[#2563eb] hover:underline">服務條款</Link>、
+                  <Link href="/privacy" target="_blank" className="text-[#2563eb] hover:underline">隱私政策</Link>
+                  {' '}及{' '}
+                  <Link href="/refund-policy" target="_blank" className="text-[#2563eb] hover:underline">退費政策</Link>
+                </span>
+              </label>
 
               {/* Submit */}
               <button

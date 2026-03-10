@@ -8,8 +8,8 @@ import ArticleCTA from '@/components/ArticleCTA'
 import StickyCTA from '@/components/StickyCTA'
 import { blogContent } from '@/data/blog-content'
 
-// 所有文章頁面都動態渲染，不快取
-export const dynamic = 'force-dynamic'
+// ISR：每小時重新驗證
+export const revalidate = 3600
 export const dynamicParams = true
 
 async function getSupabasePost(slug: string) {

@@ -18,16 +18,21 @@ export default function TermsPage() {
           {/* 1 */}
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">1. 服務說明</h2>
-            <p className="text-sm text-gray-700 leading-relaxed">
+            <p className="text-sm text-gray-700 leading-relaxed mb-3">
               Howard Protocol（以下稱「本服務」）提供數據驅動的體態與營養管理工具，
               包含但不限於：自適應 TDEE 校正、體重趨勢分析、每週智能報告、AI 對話顧問、
               血檢數據紀錄、備賽 Peak Week 計畫產生等功能。本服務由 CSCS 認證教練監督運作。
+            </p>
+            <h3 className="text-sm font-semibold text-gray-800 mt-4 mb-2">1.1 經營主體</h3>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              本服務由個人工作室經營，非公司法人。服務聯繫方式：LINE 官方帳號 @howard456、
+              Email：chenhoward456@gmail.com。如有任何疑問或需要，請透過上述方式聯繫。
             </p>
           </section>
 
           {/* 2 — 核心免責 */}
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">2. 非醫療服務聲明</h2>
+            <h2 id="medical-disclaimer" className="text-lg font-semibold text-gray-900 mb-3">2. 非醫療服務聲明</h2>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
               <p className="text-sm text-amber-900 leading-relaxed font-medium mb-2">
                 請特別注意以下事項：
@@ -73,7 +78,7 @@ export default function TermsPage() {
               <li>訂閱費用依所選方案收取，付款由綠界科技（ECPay）處理。</li>
               <li>訂閱期間您可完整使用該方案對應的所有功能。</li>
               <li>訂閱到期後，系統將停止更新分析報告，但您仍可查看歷史紀錄。</li>
-              <li>由於數位服務的性質，訂閱付款後原則上不提供退款。如有特殊情況，請聯繫我們協商處理。</li>
+              <li>退費相關規則請參閱<Link href="/refund-policy" className="text-blue-600 hover:underline">退費政策</Link>。</li>
             </ul>
           </section>
 

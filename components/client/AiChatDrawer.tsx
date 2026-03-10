@@ -559,6 +559,11 @@ ${prepPhase === 'peak_week' && (geneticProfile.serotonin === 'SS' || geneticProf
           </button>
         </div>
 
+        {/* AI Disclaimer */}
+        <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 shrink-0">
+          <p className="text-[11px] text-gray-400 text-center">AI 建議僅供參考，不構成醫療診斷或治療建議</p>
+        </div>
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ minHeight: '200px' }}>
           {messages.length === 0 && (

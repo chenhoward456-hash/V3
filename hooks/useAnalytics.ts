@@ -23,7 +23,7 @@ export function useScrollDepth(thresholds: number[] = [25, 50, 75, 90]) {
       })
     }
 
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [thresholds])
 }

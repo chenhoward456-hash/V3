@@ -40,7 +40,7 @@ export default function StickyCTA({ articleTitle, slug, intent = 'performance', 
       }
     }
 
-    window.addEventListener('scroll', onScroll)
+    window.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
     return () => window.removeEventListener('scroll', onScroll)
   }, [])

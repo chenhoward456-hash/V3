@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { createServerSupabase } from '@/lib/supabase'
 import BlogFilter from '@/components/BlogFilter'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: '知識分享 - Howard | 訓練、營養、恢復優化',

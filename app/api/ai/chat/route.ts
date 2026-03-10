@@ -6,6 +6,8 @@ import { createLogger } from '@/lib/logger'
 
 const logger = createLogger('ai-chat')
 
+export const maxDuration = 60
+
 const supabase = createServiceSupabase()
 
 export async function POST(request: NextRequest) {
@@ -28,6 +30,24 @@ export async function POST(request: NextRequest) {
       clientId?: string
       /** Base64 JPEG image to attach to the latest user message */
       image?: string
+    }
+
+    // Validate image size (≤ 2MB ≈ 2.67M base64 chars)
+    if (image && image.length > 2_670_000) {
+      return NextResponse.json({ error: '圖片過大，請壓縮後再試（上限 2MB）' }, { status: 400 })
+    }
+
+    // Validate messages
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return NextResponse.json({ error: '缺少 messages' }, { status: 400 })
+    }
+    for (const msg of messages) {
+      if (msg.role !== 'user' && msg.role !== 'assistant') {
+        return NextResponse.json({ error: '無效的 message role' }, { status: 400 })
+      }
+      if (typeof msg.content !== 'string' || msg.content.length > 10000) {
+        return NextResponse.json({ error: '訊息內容過長（上限 10000 字元）' }, { status: 400 })
+      }
     }
 
     // Attach image to the last user message if provided
@@ -80,10 +100,6 @@ export async function POST(request: NextRequest) {
 
       // 標記為免費額度使用，AI 回覆成功後才記錄
       isFreeQuotaUse = true
-    }
-
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json({ error: '缺少 messages' }, { status: 400 })
     }
 
     // 限制對話長度避免 token 爆炸

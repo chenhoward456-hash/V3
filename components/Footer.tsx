@@ -64,6 +64,10 @@ export default function Footer() {
             <Link href="/privacy" className="hover:text-gray-300 transition-colors">隱私政策</Link>
             <span className="text-gray-600">|</span>
             <Link href="/terms" className="hover:text-gray-300 transition-colors">服務條款</Link>
+            <span className="text-gray-600">|</span>
+            <Link href="/medical-disclaimer" className="hover:text-gray-300 transition-colors">醫療免責聲明</Link>
+            <span className="text-gray-600">|</span>
+            <Link href="/refund-policy" className="hover:text-gray-300 transition-colors">退費政策</Link>
           </div>
           <p>&copy; 2026 The Howard Protocol. All rights reserved.</p>
         </div>

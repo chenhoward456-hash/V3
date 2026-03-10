@@ -17,6 +17,11 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { pushMessage } from '@/lib/line'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
+import { createLogger } from '@/lib/logger'
+
+export const maxDuration = 300
+
+const logger = createLogger('cron-daily')
 
 function verifyCronAuth(request: NextRequest): boolean {
   const cronSecret = request.headers.get('authorization')
@@ -70,21 +75,29 @@ export async function GET(request: NextRequest) {
 
     const hasWeight = new Set((todayWeights || []).map((w: any) => w.client_id))
 
-    for (const client of clients) {
-      if (!client.body_composition_enabled) continue
-      if (hasWeight.has(client.id)) continue // 已經量了
+    // 篩選需要提醒的學員
+    const morningTargets = clients.filter(c => c.body_composition_enabled && !hasWeight.has(c.id))
 
-      try {
-        await pushMessage(client.line_user_id, [
-          {
-            type: 'text',
-            text: `☀️ 早安 ${client.name}！\n\n別忘了量體重喔\n💡 直接輸入「體重 72.5」就能記錄`,
-          },
-        ])
-        sent++
-      } catch (err: any) {
-        errors.push(`${client.name}: ${err.message}`)
-      }
+    // 批次發送（每批 5 個）
+    for (let i = 0; i < morningTargets.length; i += 5) {
+      const batch = morningTargets.slice(i, i + 5)
+      const results = await Promise.allSettled(
+        batch.map(client =>
+          pushMessage(client.line_user_id, [
+            {
+              type: 'text',
+              text: `☀️ 早安 ${client.name}！\n\n別忘了量體重喔\n💡 直接輸入「體重 72.5」就能記錄`,
+            },
+          ])
+        )
+      )
+      results.forEach((result, idx) => {
+        if (result.status === 'fulfilled') {
+          sent++
+        } else {
+          errors.push(`${batch[idx].name}: ${result.reason?.message || 'unknown'}`)
+        }
+      })
     }
   } else {
     // ── 晚上提醒：填寫今日紀錄 ──
@@ -99,9 +112,10 @@ export async function GET(request: NextRequest) {
     const hasNutrition = new Set((nutritionRes.data || []).map((n: any) => n.client_id))
     const hasTraining = new Set((trainingRes.data || []).map((t: any) => t.client_id))
 
+    // 篩選需要提醒的學員及其缺少項目
+    const eveningTargets: { client: typeof clients[0]; missing: string[] }[] = []
     for (const client of clients) {
       const missing: string[] = []
-
       if (client.wellness_enabled && !hasWellness.has(client.id)) {
         missing.push('• 身心狀態 → 輸入「身心 4 3 4」')
       }
@@ -111,24 +125,33 @@ export async function GET(request: NextRequest) {
       if (client.training_enabled && !hasTraining.has(client.id)) {
         missing.push('• 訓練紀錄 → 輸入「訓練 推 60分鐘」')
       }
+      if (missing.length > 0) eveningTargets.push({ client, missing })
+    }
 
-      if (missing.length === 0) continue // 都填了，不打擾
-
-      try {
-        await pushMessage(client.line_user_id, [
-          {
-            type: 'text',
-            text: [
-              `🌙 ${client.name}，今天還有 ${missing.length} 項沒記錄：\n`,
-              ...missing,
-              '\n回覆指令就能快速完成 ✌️',
-            ].join('\n'),
-          },
-        ])
-        sent++
-      } catch (err: any) {
-        errors.push(`${client.name}: ${err.message}`)
-      }
+    // 批次發送（每批 5 個）
+    for (let i = 0; i < eveningTargets.length; i += 5) {
+      const batch = eveningTargets.slice(i, i + 5)
+      const results = await Promise.allSettled(
+        batch.map(({ client, missing }) =>
+          pushMessage(client.line_user_id, [
+            {
+              type: 'text',
+              text: [
+                `🌙 ${client.name}，今天還有 ${missing.length} 項沒記錄：\n`,
+                ...missing,
+                '\n回覆指令就能快速完成 ✌️',
+              ].join('\n'),
+            },
+          ])
+        )
+      )
+      results.forEach((result, idx) => {
+        if (result.status === 'fulfilled') {
+          sent++
+        } else {
+          errors.push(`${batch[idx].client.name}: ${result.reason?.message || 'unknown'}`)
+        }
+      })
     }
   }
 

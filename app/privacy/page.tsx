@@ -110,9 +110,46 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* 5 */}
+          {/* 5 — 特殊類別資料 */}
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">5. 資料保護措施</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">5. 特殊類別個人資料</h2>
+            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+              本服務可能涉及以下特殊類別之個人資料，我們以更高標準加以保護：
+            </p>
+
+            <h3 className="text-sm font-semibold text-gray-800 mt-4 mb-2">5.1 基因檢測數據</h3>
+            <ul className="text-sm text-gray-700 space-y-1 list-disc pl-5">
+              <li>包含 MTHFR、APOE、5-HTTLPR 等基因型態資料</li>
+              <li>由您自行輸入，本服務不執行基因檢測</li>
+              <li>僅用於個人化營養與補劑建議演算</li>
+              <li>不會提供給第三方，不會用於保險、就業或其他歧視性用途</li>
+            </ul>
+
+            <h3 className="text-sm font-semibold text-gray-800 mt-4 mb-2">5.2 月經週期數據</h3>
+            <ul className="text-sm text-gray-700 space-y-1 list-disc pl-5">
+              <li>記錄經期開始日期，用於調整營養建議（如碳水攝取、鐵質補充）</li>
+              <li>資料僅儲存於資料庫中，僅教練與系統可存取</li>
+            </ul>
+
+            <h3 className="text-sm font-semibold text-gray-800 mt-4 mb-2">5.3 穿戴裝置數據（Garmin 等）</h3>
+            <ul className="text-sm text-gray-700 space-y-1 list-disc pl-5">
+              <li>透過 Garmin Connect API 同步之數據：靜息心率、HRV、睡眠分數、壓力分數、步數等</li>
+              <li>您可隨時中斷裝置連接，中斷後不再同步新數據</li>
+              <li>已同步之歷史數據將保留至您請求刪除為止</li>
+              <li>Garmin OAuth Token 儲存於資料庫，用於定期同步</li>
+            </ul>
+
+            <h3 className="text-sm font-semibold text-gray-800 mt-4 mb-2">5.4 跨境資料傳輸</h3>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              本服務使用之第三方雲端服務（Supabase、Vercel、Anthropic、Sentry）伺服器可能位於美國或其他國家。
+              您的資料可能因此傳輸至中華民國以外之地區。這些服務提供商均承諾遵守其所在地之資料保護法規。
+              使用本服務即視為您同意此跨境傳輸。如您不同意，請勿使用本服務。
+            </p>
+          </section>
+
+          {/* 6 */}
+          <section>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">6. 資料保護措施</h2>
             <ul className="text-sm text-gray-700 space-y-1 list-disc pl-5">
               <li>資料庫啟用列層級安全性（Row Level Security），限制存取範圍</li>
               <li>管理員 Session 使用 HMAC 簽章、HttpOnly Cookie</li>
@@ -122,9 +159,9 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          {/* 6 */}
+          {/* 7 */}
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">6. 資料保存期限</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">7. 資料保存期限</h2>
             <p className="text-sm text-gray-700 leading-relaxed">
               您的帳號資料預設保存至訂閱到期後 90 天。付費訂閱期間，資料將持續保存。
               訂閱到期或終止後，我們將於合理期間內刪除或去識別化處理您的個人資料，
@@ -132,9 +169,9 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          {/* 7 */}
+          {/* 8 */}
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">7. 您的權利</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">8. 您的權利</h2>
             <p className="text-sm text-gray-700 leading-relaxed mb-2">
               依據《個人資料保護法》，您享有以下權利：
             </p>
@@ -150,26 +187,26 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          {/* 8 */}
+          {/* 9 */}
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">8. 未成年人保護</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">9. 未成年人保護</h2>
             <p className="text-sm text-gray-700 leading-relaxed">
               本服務不針對未滿 16 歲之未成年人提供。如果我們發現不慎收集了未成年人的資料，將立即刪除。
             </p>
           </section>
 
-          {/* 9 */}
+          {/* 10 */}
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">9. 隱私政策修訂</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">10. 隱私政策修訂</h2>
             <p className="text-sm text-gray-700 leading-relaxed">
               本政策可能隨服務調整而更新。重大變更時，我們會透過網站公告或 LINE 通知您。
               繼續使用本服務即視為同意修訂後的隱私政策。
             </p>
           </section>
 
-          {/* 10 */}
+          {/* 11 */}
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">10. 聯絡方式</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">11. 聯絡方式</h2>
             <p className="text-sm text-gray-700 leading-relaxed">
               如對本隱私政策有任何疑問，請透過以下方式聯繫：
             </p>

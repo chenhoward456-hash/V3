@@ -19,9 +19,9 @@ import { pushMessage } from '@/lib/line'
 import { generateWeeklyAIReport, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
 
-const logger = createLogger('cron-weekly')
+export const maxDuration = 300
 
-const supabase = createServiceSupabase()
+const logger = createLogger('cron-weekly')
 
 function parseSerotoninField(value: string | null): { serotonin?: 'LL' | 'SL' | 'SS'; depressionRisk?: 'low' | 'moderate' | 'high' } {
   if (!value) return {}
@@ -51,6 +51,8 @@ export async function GET(request: NextRequest) {
     alertsGenerated: 0,
     errors: [] as string[],
   }
+
+  const supabase = createServiceSupabase()
 
   try {
     // ── 1. 取得所有活躍學員 ──
@@ -129,6 +131,32 @@ export async function GET(request: NextRequest) {
     const allTraining = trainingRes.data || []
     const allWellness = wellnessRes.data || []
 
+    // 預建 Map 索引（避免 O(N*M) filter）
+    const bodyByClient = new Map<string, typeof allBody>()
+    for (const b of allBody) {
+      const arr = bodyByClient.get(b.client_id) || []
+      arr.push(b)
+      bodyByClient.set(b.client_id, arr)
+    }
+    const nutritionByClient = new Map<string, typeof allNutrition>()
+    for (const n of allNutrition) {
+      const arr = nutritionByClient.get(n.client_id) || []
+      arr.push(n)
+      nutritionByClient.set(n.client_id, arr)
+    }
+    const trainingByClient = new Map<string, typeof allTraining>()
+    for (const t of allTraining) {
+      const arr = trainingByClient.get(t.client_id) || []
+      arr.push(t)
+      trainingByClient.set(t.client_id, arr)
+    }
+    const wellnessByClient = new Map<string, typeof allWellness>()
+    for (const w of allWellness) {
+      const arr = wellnessByClient.get(w.client_id) || []
+      arr.push(w)
+      wellnessByClient.set(w.client_id, arr)
+    }
+
     // 查詢女性學員的經期記錄
     const femaleIds = clients.filter(c => c.gender === '女性').map(c => c.id)
     let periodMap: Record<string, string> = {}
@@ -168,10 +196,10 @@ export async function GET(request: NextRequest) {
     for (const client of clients) {
       if (!client.nutrition_enabled && !client.body_composition_enabled) continue
 
-      const clientBody = allBody.filter((b: any) => b.client_id === client.id)
-      const clientNutrition = allNutrition.filter((n: any) => n.client_id === client.id)
-      const clientTraining = allTraining.filter((t: any) => t.client_id === client.id)
-      const clientWellness = allWellness.filter((w: any) => w.client_id === client.id)
+      const clientBody = bodyByClient.get(client.id) || []
+      const clientNutrition = nutritionByClient.get(client.id) || []
+      const clientTraining = trainingByClient.get(client.id) || []
+      const clientWellness = wellnessByClient.get(client.id) || []
 
       // 計算週均體重
       const weeklyWeights: { week: number; avgWeight: number }[] = []
@@ -298,7 +326,7 @@ export async function GET(request: NextRequest) {
 
     for (const client of clients) {
       // 體重停滯
-      const bodyLogs = allBody.filter((b: any) => b.client_id === client.id && b.date >= fourteenStr)
+      const bodyLogs = (bodyByClient.get(client.id) || []).filter((b: any) => b.date >= fourteenStr)
       if (bodyLogs.length >= 4) {
         const weights = bodyLogs.map((b: any) => b.weight)
         if (Math.max(...weights) - Math.min(...weights) < 0.5) {
@@ -307,7 +335,7 @@ export async function GET(request: NextRequest) {
       }
 
       // 飲食合規率低
-      const nutLogs = allNutrition.filter((n: any) => n.client_id === client.id && n.date >= fourteenStr)
+      const nutLogs = (nutritionByClient.get(client.id) || []).filter((n: any) => n.date >= fourteenStr)
       const validNutLogs = nutLogs.filter((n: any) => n.compliant !== null)
       if (validNutLogs.length >= 5) {
         const rate = Math.round((validNutLogs.filter((n: any) => n.compliant).length / validNutLogs.length) * 100)
@@ -315,8 +343,7 @@ export async function GET(request: NextRequest) {
       }
 
       // 能量連續偏低
-      const wLogs = allWellness
-        .filter((w: any) => w.client_id === client.id)
+      const wLogs = (wellnessByClient.get(client.id) || [])
         .sort((a: any, b: any) => b.date.localeCompare(a.date))
         .slice(0, 3)
       if (wLogs.length >= 3 && wLogs.every((w: any) => w.energy_level <= 2)) {
@@ -392,7 +419,7 @@ export async function GET(request: NextRequest) {
       if (!client.line_user_id) continue
 
       const summary = summaries.find(s => s.client_id === client.id)
-      const clientBody = allBody.filter((b: any) => b.client_id === client.id)
+      const clientBody = bodyByClient.get(client.id) || []
 
       const msgLines: string[] = [`📋 ${client.name} 本週報告\n`]
 
@@ -407,14 +434,14 @@ export async function GET(request: NextRequest) {
       }
 
       // 飲食合規率
-      const weekNutrition = allNutrition.filter((n: any) => n.client_id === client.id && n.date >= sevenDaysStr)
+      const weekNutrition = (nutritionByClient.get(client.id) || []).filter((n: any) => n.date >= sevenDaysStr)
       if (weekNutrition.length > 0) {
         const comp = weekNutrition.filter((n: any) => n.compliant).length
         msgLines.push(`🍽️ 飲食合規：${comp}/${weekNutrition.length} 天`)
       }
 
       // 訓練天數
-      const weekTraining = allTraining.filter((t: any) => t.client_id === client.id && t.date >= sevenDaysStr)
+      const weekTraining = (trainingByClient.get(client.id) || []).filter((t: any) => t.date >= sevenDaysStr)
       msgLines.push(`🏋️ 訓練：${weekTraining.length} 天`)
 
       // 營養引擎建議
@@ -436,7 +463,7 @@ export async function GET(request: NextRequest) {
       // AI 個人化摘要（有 API key 且學員啟用 AI 時附加在同一則訊息）
       if (process.env.ANTHROPIC_API_KEY && client.ai_chat_enabled) {
         try {
-          const clientWellness = allWellness.filter((w: any) => w.client_id === client.id && w.date >= sevenDaysStr)
+          const clientWellness = (wellnessByClient.get(client.id) || []).filter((w: any) => w.date >= sevenDaysStr)
           const latestBodyEntry = clientBody.length > 0 ? clientBody[clientBody.length - 1] : null
           const bodyFatEntry = [...clientBody].reverse().find((b: any) => b.body_fat != null)
 

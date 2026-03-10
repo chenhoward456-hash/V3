@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { useClientData } from '@/hooks/useClientData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { useCoachMode } from '@/hooks/useCoachMode'
@@ -21,19 +22,21 @@ import NutritionLog from '@/components/client/NutritionLog'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
-import GoalSettings from '@/components/client/GoalSettings'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 import SelfManagedNutrition from '@/components/client/SelfManagedNutrition'
 import PwaPrompt from '@/components/client/PwaPrompt'
-import OnboardingGuide from '@/components/client/OnboardingGuide'
-import HealthModeAdvanced from '@/components/client/HealthModeAdvanced'
-import LabNutritionAdviceCard from '@/components/client/LabNutritionAdviceCard'
-import LabInsightsCard from '@/components/client/LabInsightsCard'
-import AiChatDrawer from '@/components/client/AiChatDrawer'
-import GeneProfileCard from '@/components/client/GeneProfileCard'
-import AiInsightsPanel from '@/components/client/AiInsightsPanel'
-import { calcRecommendedStageWeight } from '@/lib/nutrition-engine'
+import { calcRecommendedStageWeight } from '@/lib/stage-weight'
 import { calculateHealthScore } from '@/lib/health-score-engine'
+
+// Dynamic imports for code splitting (client-only components)
+const AiChatDrawer = dynamic(() => import('@/components/client/AiChatDrawer'), { ssr: false })
+const AiInsightsPanel = dynamic(() => import('@/components/client/AiInsightsPanel'), { ssr: false })
+const GeneProfileCard = dynamic(() => import('@/components/client/GeneProfileCard'), { ssr: false })
+const LabInsightsCard = dynamic(() => import('@/components/client/LabInsightsCard'), { ssr: false })
+const LabNutritionAdviceCard = dynamic(() => import('@/components/client/LabNutritionAdviceCard'), { ssr: false })
+const GoalSettings = dynamic(() => import('@/components/client/GoalSettings'), { ssr: false })
+const HealthModeAdvanced = dynamic(() => import('@/components/client/HealthModeAdvanced'), { ssr: false })
+const OnboardingGuide = dynamic(() => import('@/components/client/OnboardingGuide'), { ssr: false })
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'

@@ -12,6 +12,11 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { pushMessage, LineMessage } from '@/lib/line'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isWeightTraining } from '@/components/client/types'
+import { createLogger } from '@/lib/logger'
+
+export const maxDuration = 300
+
+const logger = createLogger('cron-monthly')
 
 function verifyCronAuth(request: NextRequest): boolean {
   const cronSecret = request.headers.get('authorization')
