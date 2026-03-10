@@ -352,7 +352,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { clientId, goal_type, target_weight, target_body_fat, target_date } = body
+    const { clientId, goal_type, target_weight, target_body_fat, target_date, competition_date } = body
 
     if (!clientId || typeof clientId !== 'string') {
       return createErrorResponse('缺少客戶 ID', 400)
@@ -366,7 +366,7 @@ export async function PUT(request: NextRequest) {
     // 查詢客戶（用 id 或 unique_code）
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('id, is_active')
+      .select('id, is_active, competition_enabled')
       .or(`id.eq.${clientId},unique_code.eq.${clientId}`)
       .single()
 
@@ -396,6 +396,14 @@ export async function PUT(request: NextRequest) {
       const parsedDate = new Date(target_date)
       if (!isNaN(parsedDate.getTime()) && parsedDate > new Date()) {
         updates.target_date = target_date
+      }
+    }
+
+    // 備賽模式下允許學員同步更新 competition_date
+    if (competition_date && typeof competition_date === 'string' && client.competition_enabled) {
+      const parsedCompDate = new Date(competition_date)
+      if (!isNaN(parsedCompDate.getTime()) && parsedCompDate > new Date()) {
+        updates.competition_date = competition_date
       }
     }
 
