@@ -1394,6 +1394,7 @@ export default function ClientDashboard() {
             latestWeight={latestBodyData?.weight || null}
             latestBodyFat={latestBodyData?.body_fat || null}
             clientHeight={c.height || null}
+            geneticCorrections={geneCorrections}
             onMutate={mutate}
           />
         )}

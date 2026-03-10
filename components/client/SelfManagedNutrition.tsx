@@ -19,6 +19,7 @@ interface SelfManagedNutritionProps {
   latestWeight?: number | null
   latestBodyFat?: number | null
   clientHeight?: number | null
+  geneticCorrections?: { gene: string; rule: string; adjustment: string }[]
   onMutate?: () => void
 }
 
@@ -38,6 +39,7 @@ export default function SelfManagedNutrition({
   latestWeight,
   latestBodyFat,
   clientHeight,
+  geneticCorrections,
   onMutate,
 }: SelfManagedNutritionProps) {
   const [data, setData] = useState<any>(null)
@@ -672,16 +674,23 @@ export default function SelfManagedNutrition({
               碳水循環：訓練日 {data.suggestedCarbsTrainingDay}g ／ 休息日 {data.suggestedCarbsRestDay}g
             </p>
           )}
-          {data.geneticCorrections?.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-blue-100 space-y-1">
-              {data.geneticCorrections.map((gc: any, i: number) => (
-                <p key={i} className="text-[11px] text-purple-600 flex items-start gap-1">
-                  <span className="shrink-0">🧬</span>
-                  <span>{gc.adjustment}</span>
-                </p>
-              ))}
-            </div>
-          )}
+          {/* 基因修正：優先用引擎回傳，fallback 到 page 層傳入的 prop */}
+          {(() => {
+            const corrections = data.geneticCorrections?.length > 0
+              ? data.geneticCorrections
+              : geneticCorrections
+            if (!corrections || corrections.length === 0) return null
+            return (
+              <div className="mt-3 pt-3 border-t border-blue-100 space-y-1">
+                {corrections.map((gc: any, i: number) => (
+                  <p key={i} className="text-[11px] text-purple-600 flex items-start gap-1">
+                    <span className="shrink-0">🧬</span>
+                    <span>{gc.adjustment}</span>
+                  </p>
+                ))}
+              </div>
+            )
+          })()}
         </div>
       )}
 

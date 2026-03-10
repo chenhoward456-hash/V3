@@ -1959,15 +1959,21 @@ function generateCutSuggestion(
       warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFatOT}g（${fatPerKgFloorOT}g/kg），系統已自動調高`)
     }
 
-    const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat
+    // on_track 路徑也要計算基因修正（讓前端能顯示修正資訊）
+    const otGeneticCorrections: GeneticCorrection[] = []
+    getGeneticDeficitReduction(input.geneticProfile, otGeneticCorrections) // MTHFR 赤字收窄紀錄
+    const validatedCarb = applyGeneticCarbFloor(currentCarb, input.geneticProfile, otGeneticCorrections)
+    getApoe4FatWarnings(input.geneticProfile, otGeneticCorrections, warnings)
+
+    const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat || validatedCarb !== currentCarb
     return {
       status, statusLabel, statusEmoji, message,
       suggestedCalories: currentCal, suggestedProtein: validatedPro,
-      suggestedCarbs: currentCarb, suggestedFat: validatedFat,
+      suggestedCarbs: validatedCarb, suggestedFat: validatedFat,
       suggestedCarbsTrainingDay: input.currentCarbsTrainingDay,
       suggestedCarbsRestDay: input.currentCarbsRestDay,
       caloriesDelta: 0, proteinDelta: validatedPro - currentPro,
-      carbsDelta: 0, fatDelta: validatedFat - currentFat,
+      carbsDelta: validatedCarb - currentCarb, fatDelta: validatedFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
@@ -1976,7 +1982,7 @@ function generateCutSuggestion(
       deadlineInfo, autoApply: hasCorrections, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
-      geneticCorrections: [],
+      geneticCorrections: otGeneticCorrections,
     }
   }
 
@@ -2701,15 +2707,20 @@ function generateBulkSuggestion(
       warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFatBulk}g（${bulkFatFloorOT}g/kg），系統已自動調高`)
     }
 
-    const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat
+    // bulk on_track 也計算基因修正
+    const otBulkGC: GeneticCorrection[] = []
+    const validatedCarb = applyGeneticCarbFloor(currentCarb, input.geneticProfile, otBulkGC)
+    getApoe4FatWarnings(input.geneticProfile, otBulkGC, warnings)
+
+    const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat || validatedCarb !== currentCarb
     return {
       status, statusLabel, statusEmoji, message,
       suggestedCalories: currentCal, suggestedProtein: validatedPro,
-      suggestedCarbs: currentCarb, suggestedFat: validatedFat,
+      suggestedCarbs: validatedCarb, suggestedFat: validatedFat,
       suggestedCarbsTrainingDay: input.currentCarbsTrainingDay,
       suggestedCarbsRestDay: input.currentCarbsRestDay,
       caloriesDelta: 0, proteinDelta: validatedPro - currentPro,
-      carbsDelta: 0, fatDelta: validatedFat - currentFat,
+      carbsDelta: validatedCarb - currentCarb, fatDelta: validatedFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested: false, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
@@ -2718,9 +2729,14 @@ function generateBulkSuggestion(
       deadlineInfo, autoApply: hasCorrections, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
-      geneticCorrections: [],
+      geneticCorrections: otBulkGC,
     }
   }
+
+  // bulk 主路徑基因修正
+  const bulkGC: GeneticCorrection[] = []
+  suggestedCarb = applyGeneticCarbFloor(suggestedCarb, input.geneticProfile, bulkGC)
+  getApoe4FatWarnings(input.geneticProfile, bulkGC, warnings)
 
   return {
     status, statusLabel, statusEmoji, message,
@@ -2742,7 +2758,7 @@ function generateBulkSuggestion(
     deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
-    geneticCorrections: [],
+    geneticCorrections: bulkGC,
   }
 }
 
