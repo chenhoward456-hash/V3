@@ -672,6 +672,16 @@ export default function SelfManagedNutrition({
               碳水循環：訓練日 {data.suggestedCarbsTrainingDay}g ／ 休息日 {data.suggestedCarbsRestDay}g
             </p>
           )}
+          {data.geneticCorrections?.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-blue-100 space-y-1">
+              {data.geneticCorrections.map((gc: any, i: number) => (
+                <p key={i} className="text-[11px] text-purple-600 flex items-start gap-1">
+                  <span className="shrink-0">🧬</span>
+                  <span>{gc.adjustment}</span>
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

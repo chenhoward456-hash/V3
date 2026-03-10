@@ -11,6 +11,7 @@ interface DailyNutritionTargetProps {
   isTrainingDay?: boolean
   carbsTrainingDay?: number | null
   carbsRestDay?: number | null
+  geneticCorrections?: { gene: string; rule: string; adjustment: string }[]
 }
 
 export default function DailyNutritionTarget({
@@ -22,6 +23,7 @@ export default function DailyNutritionTarget({
   isTrainingDay,
   carbsTrainingDay,
   carbsRestDay,
+  geneticCorrections,
 }: DailyNutritionTargetProps) {
   const [manualDayType, setManualDayType] = useState<'training' | 'rest' | null>(null)
   const effectiveIsTraining = manualDayType != null ? manualDayType === 'training' : !!isTrainingDay
@@ -78,6 +80,16 @@ export default function DailyNutritionTarget({
           <p className="text-[10px] text-gray-400 mt-2 text-center">
             碳水循環：訓練日 {carbsTrainingDay}g ／ 休息日 {carbsRestDay}g
           </p>
+        )}
+        {geneticCorrections && geneticCorrections.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-blue-100 space-y-1">
+            {geneticCorrections.map((gc, i) => (
+              <p key={i} className="text-[11px] text-purple-600 flex items-start gap-1">
+                <span className="shrink-0">🧬</span>
+                <span>{gc.adjustment}</span>
+              </p>
+            ))}
+          </div>
         )}
       </div>
     </div>

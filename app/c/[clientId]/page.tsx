@@ -334,6 +334,63 @@ export default function ClientDashboard() {
     trendData, topSupplements,
   } = useDashboardStats(clientData, selectedDate, today)
 
+  // 生成補品建議（必須在所有條件 return 之前，遵守 React Hooks 規則）
+  const supplementSuggestions = useMemo(() => {
+    const c = clientData?.client
+    if (!c) return []
+    const isHealthMode = c.health_mode_enabled
+    const isCompetition = c.competition_enabled
+    const hasGenetics = !!(c.gene_mthfr || c.gene_apoe || c.gene_depression_risk)
+    if (!isHealthMode && !isCompetition) return []
+    if (!isHealthMode && !hasGenetics) return []
+    const recentTraining = (clientData.trainingLogs || []).slice(-7)
+    const hasHighRPE = recentTraining.filter((t: any) => t.rpe != null && t.rpe >= 9).length >= 3
+    return generateSupplementSuggestions(
+      (c.lab_results || []).map((r: any) => ({
+        test_name: r.test_name,
+        value: r.value,
+        unit: r.unit,
+        status: r.status,
+      })),
+      {
+        gender: c.gender as '男性' | '女性' | undefined,
+        isHealthMode,
+        isCompetitionPrep: isCompetition,
+        hasHighRPE,
+        goalType: (c.goal_type as 'cut' | 'bulk' | null) || null,
+        genetics: {
+          mthfr: c.gene_mthfr as any,
+          apoe: c.gene_apoe as any,
+          depressionRisk: c.gene_depression_risk as any,
+        },
+        prepPhase: (c.prep_phase as 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | null) || null,
+      }
+    )
+  }, [clientData?.client, clientData?.trainingLogs])
+
+  // 基因修正提示（從基因欄位推導，用於營養目標旁顯示）
+  const geneCorrections = useMemo(() => {
+    const c = clientData?.client
+    if (!c) return []
+    const corrections: { gene: string; rule: string; adjustment: string }[] = []
+    if (c.gene_mthfr === 'homozygous') {
+      corrections.push({ gene: 'mthfr', rule: 'MTHFR 純合突變', adjustment: '因 MTHFR 純合突變，每日赤字已收窄 150 kcal' })
+    } else if (c.gene_mthfr === 'heterozygous') {
+      corrections.push({ gene: 'mthfr', rule: 'MTHFR 雜合突變', adjustment: '因 MTHFR 雜合突變，每日赤字已收窄 100 kcal' })
+    }
+    if (c.gene_depression_risk === 'SS' || c.gene_depression_risk === 'high') {
+      corrections.push({ gene: 'depression', rule: '5-HTTLPR SS', adjustment: '因 5-HTTLPR SS 型，碳水下限提高至 120g' })
+    } else if (c.gene_depression_risk === 'SL' || c.gene_depression_risk === 'moderate') {
+      corrections.push({ gene: 'depression', rule: '5-HTTLPR SL', adjustment: '因 5-HTTLPR SL 型，碳水下限提高至 100g' })
+    }
+    if (c.gene_apoe === 'e4/e4') {
+      corrections.push({ gene: 'apoe4', rule: 'APOE e4/e4', adjustment: '因 APOE e4/e4，飽和脂肪應 <7% 總熱量，優先 MUFA/MCT' })
+    } else if (c.gene_apoe === 'e3/e4') {
+      corrections.push({ gene: 'apoe4', rule: 'APOE e3/e4', adjustment: '因 APOE e3/e4，注意控制飽和脂肪比例' })
+    }
+    return corrections
+  }, [clientData?.client])
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -395,36 +452,6 @@ export default function ClientDashboard() {
     labResults: c.lab_results || [],
     quarterlyStart: c.quarterly_cycle_start,
   }) : null
-
-  // 生成補品建議（健康模式 + 備賽模式都可用，給 AI 和 UI 使用）
-  const supplementSuggestions = useMemo(() => {
-    const hasGenetics = !!(c.gene_mthfr || c.gene_apoe || c.gene_depression_risk)
-    if (!isHealthMode && !isCompetition) return []
-    if (!isHealthMode && !hasGenetics) return [] // 備賽但沒有基因資料，靠原本邏輯就好
-    const recentTraining = (clientData.trainingLogs || []).slice(-7)
-    const hasHighRPE = recentTraining.filter((t: any) => t.rpe != null && t.rpe >= 9).length >= 3
-    return generateSupplementSuggestions(
-      (c.lab_results || []).map((r: any) => ({
-        test_name: r.test_name,
-        value: r.value,
-        unit: r.unit,
-        status: r.status,
-      })),
-      {
-        gender: c.gender as '男性' | '女性' | undefined,
-        isHealthMode,
-        isCompetitionPrep: isCompetition,
-        hasHighRPE,
-        goalType: (c.goal_type as 'cut' | 'bulk' | null) || null,
-        genetics: {
-          mthfr: c.gene_mthfr as any,
-          apoe: c.gene_apoe as any,
-          depressionRisk: c.gene_depression_risk as any,
-        },
-        prepPhase: (c.prep_phase as 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | null) || null,
-      }
-    )
-  }, [isHealthMode, isCompetition, c.lab_results, c.gender, c.goal_type, c.prep_phase, clientData.trainingLogs, c.gene_mthfr, c.gene_apoe, c.gene_depression_risk])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1166,6 +1193,7 @@ export default function ClientDashboard() {
               apoe={c.gene_apoe as string | null}
               serotonin={c.gene_depression_risk as string | null}
               notes={c.gene_notes as string | null}
+              geneticCorrections={geneCorrections}
               clientId={c.unique_code}
               onMutate={mutate}
             />
@@ -1264,6 +1292,7 @@ export default function ClientDashboard() {
             isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
             carbsTrainingDay={c.carbs_training_day}
             carbsRestDay={c.carbs_rest_day}
+            geneticCorrections={geneCorrections}
           />
         )}
 
@@ -1315,6 +1344,7 @@ export default function ClientDashboard() {
             apoe={c.gene_apoe as string | null}
             serotonin={c.gene_depression_risk as string | null}
             notes={c.gene_notes as string | null}
+            geneticCorrections={geneCorrections}
             clientId={c.unique_code}
             onMutate={mutate}
           />
