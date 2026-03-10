@@ -360,10 +360,11 @@ export async function PUT(request: NextRequest) {
     }
 
     // 查詢客戶（用 id 或 unique_code）
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('id, is_active, competition_enabled')
-      .or(`id.eq.${clientId},unique_code.eq.${clientId}`)
+      .eq(isUUID ? 'id' : 'unique_code', clientId)
       .single()
 
     if (clientError || !client) {
