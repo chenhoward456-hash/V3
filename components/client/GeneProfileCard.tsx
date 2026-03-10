@@ -229,12 +229,14 @@ export default function GeneProfileCard({
               </div>
 
               {saveError && (
-                <p className="text-xs text-red-500 text-center">{saveError}</p>
+                <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  <p className="text-xs text-red-600">{saveError}</p>
+                </div>
               )}
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => setEditing(false)}
+                  onClick={() => { setEditing(false); setSaveError('') }}
                   className="flex-1 py-2 text-sm text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
                 >
                   取消

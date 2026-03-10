@@ -476,7 +476,8 @@ export async function PUT(request: NextRequest) {
       .eq('id', client.id)
 
     if (updateError) {
-      return createErrorResponse('更新失敗', 500)
+      logger.error('PUT /api/clients update failed', { error: updateError, fields: Object.keys(updates) })
+      return createErrorResponse(`更新失敗：${updateError.message}`, 500)
     }
 
     // 審計日誌（非阻塞）
@@ -490,7 +491,8 @@ export async function PUT(request: NextRequest) {
     })
 
     return createSuccessResponse({ updated: true })
-  } catch {
+  } catch (err) {
+    logger.error('PUT /api/clients unexpected error', err)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
