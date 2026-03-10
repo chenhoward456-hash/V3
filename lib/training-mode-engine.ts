@@ -425,6 +425,14 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
     scores.reduced_volume += 30
     scores.high_volume -= 20
     reasons.push({ signal: '備賽階段', emoji: '🏆', description: 'Peak Week：減少訓練量，避免額外疲勞' })
+  } else if (prepPhase === 'cut') {
+    scores.high_intensity += 15
+    scores.high_volume -= 10
+    reasons.push({ signal: '備賽階段', emoji: '🏆', description: '備賽減脂期：優先高強度維持力量，控制總訓練量' })
+  } else if (prepPhase === 'bulk') {
+    scores.high_volume += 20
+    scores.high_intensity += 10
+    reasons.push({ signal: '備賽階段', emoji: '🏆', description: '備賽增肌期：提高訓練容量促進肌肥大' })
   } else if (prepPhase === 'off_season') {
     scores.high_volume += 15
     scores.high_intensity += 10
@@ -455,7 +463,6 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       effect: '減脂期避免高容量訓練：高容量消耗大量肌醣 → 色胺酸/BCAA 比值改變 → 腦部血清素合成不足 → 情緒崩潰風險',
       emoji: '🧬',
     })
-    reasons.push({ signal: '基因', emoji: '🧬', description: '5-HTTLPR SS：減脂期避免高容量，改用高強度低量策略' })
   } else if (serotoninRisk === 'moderate' && goalType === 'cut') {
     scores.high_intensity += 10
     scores.high_volume -= 10
@@ -465,7 +472,6 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       effect: '減脂期適度降低訓練容量，監控情緒狀態',
       emoji: '🧬',
     })
-    reasons.push({ signal: '基因', emoji: '🧬', description: '5-HTTLPR SL：減脂期適度降低容量' })
   }
 
   if (geneticProfile?.mthfr === 'homozygous') {
@@ -477,7 +483,6 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       effect: '甲基化代謝受損 → DNA 修復與蛋白質合成恢復較慢 → 降低總訓練量，確保足夠休息日',
       emoji: '🧬',
     })
-    reasons.push({ signal: '基因', emoji: '🧬', description: 'MTHFR 純合突變：恢復較慢，降低總訓練量' })
   }
 
   if (geneticProfile?.apoe === 'e3/e4' || geneticProfile?.apoe === 'e4/e4') {
