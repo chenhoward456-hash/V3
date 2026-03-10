@@ -10,6 +10,8 @@ interface GoalSettingsProps {
   currentTargetWeight: number | null
   currentTargetBodyFat: number | null
   currentTargetDate: string | null
+  competitionEnabled?: boolean
+  competitionDate?: string | null
   latestWeight: number | null
   latestBodyFat: number | null
   onMutate: () => void
@@ -28,6 +30,8 @@ export default function GoalSettings({
   currentTargetWeight,
   currentTargetBodyFat,
   currentTargetDate,
+  competitionEnabled,
+  competitionDate,
   latestWeight,
   latestBodyFat,
   onMutate,
@@ -36,7 +40,9 @@ export default function GoalSettings({
   const [goalType, setGoalType] = useState(currentGoalType || 'cut')
   const [targetWeight, setTargetWeight] = useState(currentTargetWeight?.toString() || '')
   const [targetBodyFat, setTargetBodyFat] = useState(currentTargetBodyFat?.toString() || '')
-  const [targetDate, setTargetDate] = useState(currentTargetDate || '')
+  // 備賽模式用 competition_date，一般模式用 target_date
+  const effectiveDate = competitionEnabled ? (competitionDate || '') : (currentTargetDate || '')
+  const [targetDate, setTargetDate] = useState(effectiveDate)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -45,7 +51,7 @@ export default function GoalSettings({
     goalType !== (currentGoalType || 'cut') ||
     targetWeight !== (currentTargetWeight?.toString() || '') ||
     targetBodyFat !== (currentTargetBodyFat?.toString() || '') ||
-    targetDate !== (currentTargetDate || '')
+    targetDate !== effectiveDate
 
   const handleSave = async () => {
     setSaving(true)
@@ -64,7 +70,13 @@ export default function GoalSettings({
       const tbf = targetBodyFat ? parseFloat(targetBodyFat) : null
       if (tbf && tbf > 3 && tbf < 60) body.target_body_fat = tbf
 
-      if (targetDate) body.target_date = targetDate
+      if (targetDate) {
+        body.target_date = targetDate
+        // 備賽模式下同步更新 competition_date
+        if (competitionEnabled) {
+          body.competition_date = targetDate
+        }
+      }
 
       const res = await fetch('/api/clients', {
         method: 'PUT',
@@ -141,7 +153,7 @@ export default function GoalSettings({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1.5">
-                目標體重 (kg)
+                {competitionEnabled ? '目標上台體重 (kg)' : '目標體重 (kg)'}
               </label>
               <input
                 type="number"
@@ -173,10 +185,11 @@ export default function GoalSettings({
             </div>
           </div>
 
-          {/* Target Date */}
+          {/* Target Date / Competition Date */}
           <div>
             <label className="text-xs font-medium text-gray-600 block mb-1.5">
-              目標日期 <span className="text-gray-400 font-normal">— 選填</span>
+              {competitionEnabled ? '比賽日期' : '目標日期'}{' '}
+              {!competitionEnabled && <span className="text-gray-400 font-normal">— 選填</span>}
             </label>
             <input
               type="date"
@@ -185,7 +198,11 @@ export default function GoalSettings({
               min={new Date().toISOString().split('T')[0]}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
             />
-            <p className="text-[10px] text-gray-400 mt-1">有設定日期時，系統會計算每週需要的進度</p>
+            <p className="text-[10px] text-gray-400 mt-1">
+              {competitionEnabled
+                ? '修改後會同步更新頂部倒數日期與後台資料'
+                : '有設定日期時，系統會計算每週需要的進度'}
+            </p>
           </div>
 
           {goalType === 'recomp' && (

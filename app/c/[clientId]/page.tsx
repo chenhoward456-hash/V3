@@ -1144,8 +1144,24 @@ export default function ClientDashboard() {
               currentTargetWeight={c.target_weight}
               currentTargetBodyFat={(c.target_body_fat as number) ?? null}
               currentTargetDate={c.target_date}
+              competitionEnabled={!!c.competition_enabled}
+              competitionDate={c.competition_date || null}
               latestWeight={latestBodyData?.weight || null}
               latestBodyFat={latestBodyData?.body_fat || null}
+              onMutate={mutate}
+            />
+          </div>
+        )}
+
+        {/* 備賽模式：基因檔案卡片提前顯示（基因影響 Peak Week 計算） */}
+        {isCompetition && (
+          <div className="mb-3">
+            <GeneProfileCard
+              mthfr={c.gene_mthfr as string | null}
+              apoe={c.gene_apoe as string | null}
+              serotonin={c.gene_depression_risk as string | null}
+              notes={c.gene_notes as string | null}
+              clientId={c.unique_code}
               onMutate={mutate}
             />
           </div>
@@ -1287,15 +1303,17 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {/* 基因檔案卡片 */}
-        <GeneProfileCard
-          mthfr={c.gene_mthfr as string | null}
-          apoe={c.gene_apoe as string | null}
-          serotonin={c.gene_depression_risk as string | null}
-          notes={c.gene_notes as string | null}
-          clientId={c.unique_code}
-          onMutate={mutate}
-        />
+        {/* 基因檔案卡片（非備賽模式；備賽模式已在上方提前顯示） */}
+        {!isCompetition && (
+          <GeneProfileCard
+            mthfr={c.gene_mthfr as string | null}
+            apoe={c.gene_apoe as string | null}
+            serotonin={c.gene_depression_risk as string | null}
+            notes={c.gene_notes as string | null}
+            clientId={c.unique_code}
+            onMutate={mutate}
+          />
+        )}
 
         {c.wellness_enabled && (
           <div id="section-wellness" className="scroll-mt-4"><DailyWellness
