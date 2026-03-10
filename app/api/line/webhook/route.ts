@@ -612,17 +612,8 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     }
   }
 
-  // 非指令訊息 → 給提示，避免已讀不回
-  if (client) {
-    await replyMessage(event.replyToken, [
-      {
-        type: 'text',
-        text: '我不太確定你的意思 😅\n點下方按鈕快速記錄 👇',
-        quickReply: QR_MAIN,
-      },
-    ])
-  }
-  // 未綁定的非指令訊息 → 不回覆，讓教練在 LINE OA 後台手動回覆
+  // 非指令訊息 → 不自動回覆，讓教練在 LINE OA 後台手動回覆
+  // （避免學員問正常問題時收到罐頭回覆，造成尷尬）
 }
 
 // ═══════════════════════════════════════
