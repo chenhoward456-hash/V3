@@ -62,6 +62,7 @@ export default function GeneProfileCard({
   const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [formMthfr, setFormMthfr] = useState(mthfr || '')
   const [formApoe, setFormApoe] = useState(apoe || '')
   const [formSerotonin, setFormSerotonin] = useState(serotonin || '')
@@ -72,6 +73,7 @@ export default function GeneProfileCard({
 
   const handleSave = async () => {
     setSaving(true)
+    setSaveError('')
     try {
       const res = await fetch('/api/clients', {
         method: 'PUT',
@@ -84,11 +86,14 @@ export default function GeneProfileCard({
           gene_notes: formNotes || null,
         }),
       })
-      if (!res.ok) throw new Error('Save failed')
-      onMutate()
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null)
+        throw new Error(errBody?.error || '儲存失敗')
+      }
+      await onMutate()
       setEditing(false)
-    } catch {
-      // silent fail, user can retry
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : '儲存失敗，請稍後再試')
     } finally {
       setSaving(false)
     }
@@ -222,6 +227,10 @@ export default function GeneProfileCard({
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
                 />
               </div>
+
+              {saveError && (
+                <p className="text-xs text-red-500 text-center">{saveError}</p>
+              )}
 
               <div className="flex gap-2">
                 <button
