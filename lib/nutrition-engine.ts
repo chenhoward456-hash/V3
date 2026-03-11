@@ -1583,7 +1583,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   // 8b. 血檢 → 巨量營養素修正
   const labModResult = input.labResults
     ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: input.bodyWeight })
-    : { macroModifiers: [], trainingModifiers: [], warnings: [] }
+    : { macroModifiers: [], trainingModifiers: [], warnings: [], carbCycleMultiplier: 1.5 }
   for (const w of labModResult.warnings) {
     if (!warnings.includes(w)) warnings.push(w)
   }
@@ -1815,11 +1815,14 @@ function generateCutSuggestion(
           message = `體重停滯（${weeklyChangeRate.toFixed(2)}%/週），恢復偏低。系統暫維持熱量不動，優先觀察恢復趨勢。`
           warnings.push('💡 停滯 + 恢復偏低：目前不宜再減卡。建議改善睡眠品質，若恢復改善後體重仍停滯再微降熱量。')
         } else if (recoveryState === 'optimal') {
+          // 恢復極佳 + 停滯 → 不應只是砍更多（懲罰恢復好的人）
+          // 策略：適度減脂肪（保護碳水），同時建議增加訓練量利用好的恢復狀態
           status = 'plateau'
           statusLabel = '停滯期'
           statusEmoji = '🟡'
-          calDelta = -225; carbDelta = -28; fatDelta = -7
-          message = `體重停滯（${weeklyChangeRate.toFixed(2)}%/週），但恢復狀態極佳！身體撐得住，系統已加大減幅（-225kcal）突破停滯。`
+          calDelta = -125; carbDelta = 0; fatDelta = -14
+          message = `體重停滯（${weeklyChangeRate.toFixed(2)}%/週），恢復狀態極佳！策略：保留碳水支撐訓練表現，從脂肪微降突破停滯，並建議增加訓練量或強度來擴大消耗。`
+          warnings.push('💪 恢復極佳是優勢：優先用增加訓練量/強度來突破停滯，而非一味減卡。碳水保留有助維持訓練品質和代謝率。')
         } else {
           status = 'plateau'
           statusLabel = '停滯期'
@@ -1941,11 +1944,16 @@ function generateCutSuggestion(
       warnings.push('休息日碳水已觸及最低值 30g')
     }
   } else if (input.carbsCyclingEnabled && suggestedCarb >= 50) {
-    // 碳循環啟用但尚無分配值 → 首次從平均碳水分配 60:40
+    // 碳循環啟用但尚無分配值 → 首次從平均碳水分配
+    // 倍率由血檢代謝健康決定：優秀 1.8x / 一般 1.5x / 偏差 1.3x
+    const cutLabMods = input.labResults
+      ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+      : null
+    const ccm = cutLabMods?.carbCycleMultiplier ?? 1.5
     const T = Math.min(Math.max(input.trainingDaysPerWeek, 4), 6)
     const R = 7 - T
-    suggestedCarbsRD = Math.round((suggestedCarb * 7) / (1.5 * T + R))
-    suggestedCarbsTD = Math.round(suggestedCarbsRD * 1.5)
+    suggestedCarbsRD = Math.round((suggestedCarb * 7) / (ccm * T + R))
+    suggestedCarbsTD = Math.round(suggestedCarbsRD * ccm)
     if (suggestedCarbsRD < 30) suggestedCarbsRD = 30
   }
 
@@ -1985,12 +1993,18 @@ function generateCutSuggestion(
     getApoe4FatWarnings(input.geneticProfile, otGeneticCorrections, warnings)
 
     // 血檢修正
+    let otLabMacroModifiers: LabMacroModifier[] = []
+    let otLabTrainingModifiers: LabTrainingModifier[] = []
     if (input.labResults) {
       const labMods = getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+      otLabMacroModifiers = labMods.macroModifiers
+      otLabTrainingModifiers = labMods.trainingModifiers
       for (const mod of labMods.macroModifiers) {
         if (mod.nutrient === 'protein' && mod.direction === 'increase') recalcPro += mod.delta
         if (mod.nutrient === 'carbs' && mod.direction === 'decrease') recalcCarb = Math.max(50, recalcCarb - mod.delta)
+        if (mod.nutrient === 'carbs' && mod.direction === 'increase') recalcCarb += mod.delta
         if (mod.nutrient === 'fat' && mod.direction === 'decrease') recalcFat = Math.max(Math.round(bw * 0.7), recalcFat - mod.delta)
+        if (mod.nutrient === 'fat' && mod.direction === 'increase') recalcFat += mod.delta
       }
     }
 
@@ -2006,7 +2020,7 @@ function generateCutSuggestion(
       dietDurationWeeks, dietBreakSuggested, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
-      labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
+      labMacroModifiers: otLabMacroModifiers, labTrainingModifiers: otLabTrainingModifiers, energyAvailability: null,
       deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, recalcPro),
@@ -2015,12 +2029,18 @@ function generateCutSuggestion(
   }
 
   // 套用血檢巨量營養素修正到建議值
+  let mainLabMacroModifiers: LabMacroModifier[] = []
+  let mainLabTrainingModifiers: LabTrainingModifier[] = []
   if (input.labResults) {
     const labMods = getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+    mainLabMacroModifiers = labMods.macroModifiers
+    mainLabTrainingModifiers = labMods.trainingModifiers
     for (const mod of labMods.macroModifiers) {
       if (mod.nutrient === 'protein' && mod.direction === 'increase') suggestedPro += mod.delta
       if (mod.nutrient === 'carbs' && mod.direction === 'decrease') suggestedCarb = Math.max(50, suggestedCarb - mod.delta)
+      if (mod.nutrient === 'carbs' && mod.direction === 'increase') suggestedCarb += mod.delta
       if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * 0.7), suggestedFat - mod.delta)
+      if (mod.nutrient === 'fat' && mod.direction === 'increase') suggestedFat += mod.delta
       if (mod.nutrient === 'calories' && mod.direction === 'increase') suggestedCal += mod.delta
     }
   }
@@ -2050,7 +2070,7 @@ function generateCutSuggestion(
     dietDurationWeeks, dietBreakSuggested, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
-    labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
+    labMacroModifiers: mainLabMacroModifiers, labTrainingModifiers: mainLabTrainingModifiers, energyAvailability: null,
     deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     geneticCorrections,
@@ -2392,15 +2412,19 @@ function generateGoalDrivenCut(
       suggestedCarbsRD = suggestedCarb
       warnings.push('碳水已低於 50g，暫停碳循環（訓練日/休息日統一），優先確保最低碳水攝取')
     } else {
-      // 訓練日:休息日 = 60:40 比例，根據訓練天數加權以保留週總碳水量
-      // 公式：weeklyCarb = T × TD + R × RD，TD/RD = 1.5（60:40）
+      // 訓練日:休息日比例由血檢代謝健康動態決定（預設 1.5x）
+      // 優秀胰島素敏感度 1.8x / 一般 1.5x / 偏差 1.3x
       const avgDailyCarb = suggestedCarb
+      const gdLabMods = input.labResults
+        ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+        : null
+      const gdCcm = gdLabMods?.carbCycleMultiplier ?? 1.5
       // 訓練天數為 0 時（紀錄空白），預設 4 天以產生有意義的碳循環分配
       const T = Math.min(Math.max(input.trainingDaysPerWeek, 4), 6)
       const R = 7 - T
       if (T > 0 && R > 0) {
-        suggestedCarbsRD = Math.round((avgDailyCarb * 7) / (1.5 * T + R))
-        suggestedCarbsTD = Math.round(suggestedCarbsRD * 1.5)
+        suggestedCarbsRD = Math.round((avgDailyCarb * 7) / (gdCcm * T + R))
+        suggestedCarbsTD = Math.round(suggestedCarbsRD * gdCcm)
       } else {
         suggestedCarbsTD = avgDailyCarb
         suggestedCarbsRD = avgDailyCarb

@@ -36,8 +36,14 @@ function AdviceItem({ advice }: { advice: LabNutritionAdvice }) {
   const [expanded, setExpanded] = useState(false)
   const bgColor = advice.severity === 'high'
     ? 'bg-red-50 border-red-200'
-    : 'bg-amber-50 border-amber-200'
-  const textColor = advice.severity === 'high' ? 'text-red-700' : 'text-amber-700'
+    : advice.severity === 'positive'
+      ? 'bg-green-50 border-green-200'
+      : 'bg-amber-50 border-amber-200'
+  const textColor = advice.severity === 'high'
+    ? 'text-red-700'
+    : advice.severity === 'positive'
+      ? 'text-green-700'
+      : 'text-amber-700'
 
   return (
     <div className={`${bgColor} border rounded-2xl p-4`}>

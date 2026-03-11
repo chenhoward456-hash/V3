@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyCheckMacValue, SUBSCRIPTION_PLANS, type SubscriptionTier } from '@/lib/ecpay'
 import { createServiceSupabase } from '@/lib/supabase'
 import { sendWelcomeEmail } from '@/lib/email'
+import { pushMessage } from '@/lib/line'
 import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { createLogger } from '@/lib/logger'
 import crypto from 'crypto'
@@ -161,6 +162,28 @@ export async function POST(request: NextRequest) {
           tier,
         }).catch((err) => {
           log.error('Welcome email error (non-blocking)', err)
+        })
+      }
+
+      // LINE 推播通知付款成功
+      const { data: updatedClient } = await supabase
+        .from('clients')
+        .select('line_user_id')
+        .eq('id', clientId)
+        .single()
+
+      if (updatedClient?.line_user_id) {
+        const tierNames: Record<string, string> = {
+          self_managed: '自主管理方案',
+          coached: '教練指導方案',
+        }
+        const tierName = tierNames[tier] || tier
+        const isUpgrade = !!existingClient
+        const msg = isUpgrade
+          ? `${purchase.name}，你的方案已升級為「${tierName}」！\n\n所有新功能已解鎖，直接使用下方按鈕開始 👇`
+          : `${purchase.name}，付款成功！你的「${tierName}」已啟用 🎉\n\n你的學員代碼：${uniqueCode}\n\n直接使用下方按鈕開始記錄 👇`
+        pushMessage(updatedClient.line_user_id, [{ type: 'text', text: msg }]).catch((err) => {
+          log.error('Payment LINE push error (non-blocking)', err)
         })
       }
     } else {

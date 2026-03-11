@@ -14,7 +14,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
-import { pushMessage } from '@/lib/line'
+import { pushMessage, unlinkRichMenuFromUser } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
@@ -357,13 +357,14 @@ export async function GET(request: NextRequest) {
             downgradedCount++
             logger.info('帳號已降級為免費', { clientName: c.name, previousTier: c.subscription_tier })
 
-            // 通知用戶
+            // 通知用戶 + 切回行銷版 Rich Menu
             if (c.line_user_id) {
               const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
               try {
+                await unlinkRichMenuFromUser(c.line_user_id)
                 await pushMessage(c.line_user_id, [{
                   type: 'text',
-                  text: `${c.name}，你的方案已到期，帳號已切換為免費版。\n\n免費版仍可使用體重追蹤和基本營養紀錄。\n\n想繼續使用完整功能？\n👉 ${siteUrl}/join\n\n你之前的數據都完整保留 💪`,
+                  text: `${c.name}，你的方案已到期，帳號已切換為免費版。\n\n免費版仍可使用體重追蹤和飲食達標紀錄。\n\n想繼續使用完整功能？\n👉 ${siteUrl}/remote\n\n你之前的數據都完整保留，重新訂閱後立即恢復。`,
                 }])
               } catch (err: any) {
                 errors.push(`降級通知失敗 [${c.name}]: ${err.message}`)

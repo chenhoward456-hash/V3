@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyCheckMacValue, SUBSCRIPTION_PLANS, type SubscriptionTier } from '@/lib/ecpay'
 import { createServiceSupabase } from '@/lib/supabase'
+import { pushMessage } from '@/lib/line'
 import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { createLogger } from '@/lib/logger'
 
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     // 取得現有帳號
     const { data: client } = await supabase
       .from('clients')
-      .select('id, expires_at')
+      .select('id, expires_at, line_user_id, name')
       .eq('id', purchase.client_id)
       .single()
 
@@ -91,6 +92,17 @@ export async function POST(request: NextRequest) {
       newExpiry: newExpiry.toISOString(),
       email: purchase.email,
     })
+
+    // LINE 推播通知續訂成功
+    if (client.line_user_id) {
+      const expiryStr = newExpiry.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })
+      pushMessage(client.line_user_id, [{
+        type: 'text',
+        text: `${client.name || purchase.name}，本月訂閱已自動續訂成功！\n\n方案有效期延長至 ${expiryStr}。\n繼續加油 💪`,
+      }]).catch((err) => {
+        log.error('Period renewal LINE push error (non-blocking)', err)
+      })
+    }
 
     return new NextResponse('1|OK', {
       status: 200,

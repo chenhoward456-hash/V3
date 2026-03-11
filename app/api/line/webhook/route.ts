@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyLineSignature, replyMessage, qr, linkRichMenuToUser, unlinkRichMenuFromUser, listRichMenus } from '@/lib/line'
+import { verifyLineSignature, replyMessage, pushMessage, qr, linkRichMenuToUser, unlinkRichMenuFromUser, listRichMenus } from '@/lib/line'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
 
@@ -396,6 +396,13 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     return
   }
   if (text === '記訓練') {
+    if (!client?.training_enabled) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+      await replyMessage(event.replyToken, [
+        { type: 'text', text: `訓練記錄是自主管理方案（$499/月）以上的功能 🔒\n\n升級後解鎖訓練追蹤、AI 分析等完整功能。\n\n👉 ${siteUrl}/remote` },
+      ])
+      return
+    }
     await replyMessage(event.replyToken, [
       {
         type: 'text',
@@ -413,6 +420,13 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     return
   }
   if (text === '記身心') {
+    if (!client?.wellness_enabled) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+      await replyMessage(event.replyToken, [
+        { type: 'text', text: `身心狀態記錄是自主管理方案（$499/月）以上的功能 🔒\n\n升級後解鎖身心追蹤、AI 分析等完整功能。\n\n👉 ${siteUrl}/remote` },
+      ])
+      return
+    }
     await replyMessage(event.replyToken, [
       {
         type: 'text',
@@ -623,7 +637,7 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
 async function getClientByLineId(lineUserId: string, supabase: any) {
   const { data } = await supabase
     .from('clients')
-    .select('id, name, protein_target, water_target, calories_target')
+    .select('id, name, protein_target, water_target, calories_target, subscription_tier, training_enabled, wellness_enabled')
     .eq('line_user_id', lineUserId)
     .single()
   return data
@@ -1052,7 +1066,7 @@ async function handleBind(replyToken: string, lineUserId: string, code: string, 
 
   const { data: client } = await supabase
     .from('clients')
-    .select('id, name, line_user_id')
+    .select('id, name, line_user_id, subscription_tier')
     .eq('unique_code', code)
     .single()
 
@@ -1088,6 +1102,107 @@ async function handleBind(replyToken: string, lineUserId: string, code: string, 
       quickReply: QR_MAIN,
     },
   ])
+
+  // 延遲 1 秒後推送系統使用指南（用 pushMessage 避免 reply 限制）
+  setTimeout(async () => {
+    try {
+      const guide = buildOnboardingGuide(client.name, client.subscription_tier || 'free')
+      await pushMessage(lineUserId, [{ type: 'text', text: guide }])
+    } catch (err) {
+      log.error('Onboarding guide push failed', err)
+    }
+  }, 1000)
+}
+
+function buildOnboardingGuide(name: string, tier: string): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+
+  const common = [
+    `📋 ${name} 的系統使用指南`,
+    '',
+    '━━━━━━━━━━━━━━━━',
+    '⚖️ 每日體重記錄（最重要！）',
+    '→ 每天起床後空腹量體重，直接輸入數字（如「73.5」）系統會自動記錄',
+    '→ 連續 14 天後啟動 TDEE 校正',
+    '',
+    '🍽️ 飲食記錄',
+    '→ 輸入「記飲食」標記今天飲食達標或未達標',
+    '→ 搭配體重數據，系統可分析你的飲食合規率',
+    '',
+    '📊 查看狀態',
+    '→ 輸入「今日」查看今天的攝取總覽',
+    '→ 輸入「趨勢」查看 7 天體重與熱量變化',
+  ]
+
+  if (tier === 'free') {
+    return [
+      ...common,
+      '',
+      '━━━━━━━━━━━━━━━━',
+      '🎁 你目前是免費方案，包含：',
+      '✅ 體重追蹤 + 趨勢圖',
+      '✅ 飲食達標紀錄',
+      '✅ TDEE 與巨量營養素計算',
+      '',
+      '🔒 升級自主管理方案（$499/月）解鎖：',
+      '• 24h AI 自動分析你的數據趨勢',
+      '• 自適應 TDEE 每週自動校正',
+      '• 訓練紀錄 + 身心狀態追蹤',
+      '• Carb Cycling / Refeed 智能觸發',
+      '',
+      `👉 升級連結：${siteUrl}/remote`,
+      '',
+      '💡 建議先持續記錄 7 天，體驗系統後再決定是否升級！',
+    ].join('\n')
+  }
+
+  if (tier === 'coached') {
+    return [
+      ...common,
+      '',
+      '🏋️ 訓練記錄',
+      '→ 輸入「練」開始記錄今天的訓練內容',
+      '',
+      '😊 身心狀態',
+      '→ 輸入「狀態」記錄睡眠、壓力、疲勞等指標',
+      '',
+      '💊 補劑追蹤',
+      '→ 輸入「補劑」記錄每日補劑攝取',
+      '',
+      '━━━━━━━━━━━━━━━━',
+      '🏆 你是教練指導方案，專屬功能：',
+      '✅ 以上全部功能',
+      '✅ CSCS 教練每週審閱你的數據',
+      '✅ LINE 一對一諮詢',
+      '✅ 補劑與血檢個人化建議',
+      '',
+      '💡 第一步：現在就輸入今天的體重吧！',
+    ].join('\n')
+  }
+
+  // self_managed (499) — default for paid
+  return [
+    ...common,
+    '',
+    '🏋️ 訓練記錄',
+    '→ 輸入「練」開始記錄今天的訓練內容',
+    '',
+    '😊 身心狀態',
+    '→ 輸入「狀態」記錄睡眠、壓力、疲勞等指標',
+    '',
+    '🤖 AI 教練',
+    '→ 直接用自然語言問問題（如「我這週吃太多了嗎？」）',
+    '→ AI 會根據你的數據給出個人化建議',
+    '',
+    '━━━━━━━━━━━━━━━━',
+    '✅ 你的方案包含：',
+    '• 24h AI 自動分析 + 個人化建議',
+    '• 自適應 TDEE 每週校正',
+    '• 訓練追蹤 + 身心狀態記錄',
+    '• Carb Cycling / Refeed 智能觸發',
+    '',
+    '💡 第一步：現在就輸入今天的體重吧！',
+  ].join('\n')
 }
 
 // ═══════════════════════════════════════
