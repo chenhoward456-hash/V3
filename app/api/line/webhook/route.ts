@@ -396,6 +396,13 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     return
   }
   if (text === '記訓練') {
+    if (!client?.training_enabled) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+      await replyMessage(event.replyToken, [
+        { type: 'text', text: `訓練記錄是自主管理方案（$499/月）以上的功能 🔒\n\n升級後解鎖訓練追蹤、AI 分析等完整功能。\n\n👉 ${siteUrl}/remote` },
+      ])
+      return
+    }
     await replyMessage(event.replyToken, [
       {
         type: 'text',
@@ -413,6 +420,13 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
     return
   }
   if (text === '記身心') {
+    if (!client?.wellness_enabled) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+      await replyMessage(event.replyToken, [
+        { type: 'text', text: `身心狀態記錄是自主管理方案（$499/月）以上的功能 🔒\n\n升級後解鎖身心追蹤、AI 分析等完整功能。\n\n👉 ${siteUrl}/remote` },
+      ])
+      return
+    }
     await replyMessage(event.replyToken, [
       {
         type: 'text',
@@ -623,7 +637,7 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
 async function getClientByLineId(lineUserId: string, supabase: any) {
   const { data } = await supabase
     .from('clients')
-    .select('id, name, protein_target, water_target, calories_target')
+    .select('id, name, protein_target, water_target, calories_target, subscription_tier, training_enabled, wellness_enabled')
     .eq('line_user_id', lineUserId)
     .single()
   return data
