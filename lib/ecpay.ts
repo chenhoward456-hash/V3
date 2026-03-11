@@ -48,12 +48,16 @@ export const EBOOK_PRODUCTS = {
 export type EbookProductKey = keyof typeof EBOOK_PRODUCTS
 
 // ========== 訂閱方案設定 ==========
+// 定期定額：每月自動扣款，ExecTimes=99 表示最多扣 99 次（約 8 年）
 export const SUBSCRIPTION_PLANS = {
   self_managed: {
     name: '自主管理方案',
     description: 'AI 系統完整存取，自動營養分析與追蹤',
     amount: 499,
     duration_months: 1,
+    periodType: 'M' as const,   // 月為週期
+    frequency: 1,                // 每 1 個月扣一次
+    execTimes: 99,               // 最多執行 99 次
     features: [
       'TDEE + 巨量營養素自動計算',
       '每日飲食 / 訓練 / 體態追蹤',
@@ -66,6 +70,9 @@ export const SUBSCRIPTION_PLANS = {
     description: 'AI 系統 + CSCS 教練每週審閱與 LINE 指導',
     amount: 2999,
     duration_months: 1,
+    periodType: 'M' as const,
+    frequency: 1,
+    execTimes: 99,
     features: [
       '包含自主管理方案所有功能',
       'CSCS 教練每週數據審閱',

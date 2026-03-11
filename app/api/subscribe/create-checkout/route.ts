@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
     const merchantTradeNo = generateMerchantTradeNo()
 
-    // ECPay 付款參數
+    // ECPay 定期定額付款參數（信用卡）
     const params: Record<string, string | number> = {
       MerchantID: ECPAY_CONFIG.MerchantID,
       MerchantTradeNo: merchantTradeNo,
@@ -45,13 +45,19 @@ export async function POST(request: NextRequest) {
       PaymentType: 'aio',
       TotalAmount: plan.amount,
       TradeDesc: `Howard Protocol ${plan.name}`,
-      ItemName: `${plan.name} - 首月`,
+      ItemName: `${plan.name} - 月訂閱`,
       ReturnURL: `${origin}/api/subscribe/webhook`,
       OrderResultURL: `${origin}/api/subscribe/return`,
       ClientBackURL: `${origin}/join?cancelled=1`,
-      ChoosePayment: 'ALL',
+      ChoosePayment: 'Credit',          // 定期定額僅限信用卡
       EncryptType: 1,
       NeedExtraPaidInfo: 'Y',
+      // 定期定額參數
+      PeriodAmount: plan.amount,         // 每次扣款金額（與 TotalAmount 相同）
+      PeriodType: plan.periodType,       // M = 月
+      Frequency: plan.frequency,         // 每 1 個月
+      ExecTimes: plan.execTimes,         // 最多 99 次
+      PeriodReturnURL: `${origin}/api/subscribe/period-webhook`,
       CustomField1: email,
       CustomField2: tier,
       CustomField3: name,
