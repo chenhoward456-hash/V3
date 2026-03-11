@@ -49,7 +49,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         }
       } catch (err) {
         console.error('[GoalDrivenStatus] fetch 錯誤:', err)
-      finally { setLoading(false) }
+      } finally { setLoading(false) }
     }
     fetchSuggestion()
   }, [clientId, code, onMutate])
