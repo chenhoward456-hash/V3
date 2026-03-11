@@ -700,6 +700,132 @@ function buildExpiryWarningEmailHTML({
 </html>`
 }
 
+// ===== 取消訂閱確認信 =====
+
+interface SendCancellationEmailParams {
+  to: string
+  name: string
+  tier: string
+  expiresAt: string
+}
+
+export async function sendCancellationEmail({
+  to,
+  name,
+  tier,
+  expiresAt,
+}: SendCancellationEmailParams): Promise<{ success: boolean; error?: string }> {
+  const tierNames: Record<string, string> = {
+    free: '免費體驗',
+    self_managed: '自主管理方案',
+    coached: '教練指導方案',
+  }
+
+  const expiryDate = new Date(expiresAt).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  try {
+    const resend = getResend()
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Howard Protocol <onboarding@resend.dev>'
+
+    const { error } = await resend.emails.send({
+      from: fromEmail,
+      to,
+      subject: `已取消定期扣款 — 帳號可使用至 ${expiryDate}`,
+      html: buildCancellationEmailHTML({
+        name,
+        tierName: tierNames[tier] || tier,
+        expiryDate,
+      }),
+    })
+
+    if (error) {
+      log.error('Resend error', error)
+      return { success: false, error: error.message }
+    }
+
+    log.info('Cancellation email sent', { to })
+    return { success: true }
+  } catch (err: any) {
+    log.error('Cancellation send failed', err)
+    return { success: false, error: err?.message || 'Unknown error' }
+  }
+}
+
+function buildCancellationEmailHTML({
+  name,
+  tierName,
+  expiryDate,
+}: {
+  name: string
+  tierName: string
+  expiryDate: string
+}): string {
+  return `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>取消訂閱確認</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
+    <tr>
+      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+        <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">已取消定期扣款</h1>
+        <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，你的帳號仍可繼續使用</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 40px 30px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; margin:0 0 24px 0;">
+          <tr>
+            <td style="padding: 30px; text-align:center;">
+              <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">原訂閱方案</p>
+              <p style="font-size:18px; color:#1e3a5f; font-weight:bold; margin:0 0 16px 0;">${escapeHTML(tierName)}</p>
+              <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">可使用至</p>
+              <p style="font-size:24px; color:#2563eb; font-weight:bold; margin:0;">${escapeHTML(expiryDate)}</p>
+            </td>
+          </tr>
+        </table>
+        <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 16px 0;">
+          已停止自動扣款，之後不會再從你的信用卡扣款。
+        </p>
+        <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 16px 0;">
+          在到期日之前，你仍可正常使用所有功能。到期後帳號會降級為免費方案，<strong>所有歷史數據都會完整保留</strong>。
+        </p>
+        <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 24px 0;">
+          如果改變主意，隨時可以重新訂閱，資料會立即恢復。
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0 30px 30px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;">
+          <tr>
+            <td style="padding: 20px 24px; text-align:center;">
+              <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">
+                有任何問題？加 LINE 直接聊
+              </p>
+              <p style="font-size:12px; color:#4ade80; margin:0;">
+                LINE ID: @chenhoward
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align:center;">
+        <p style="font-size:11px; color:#94a3b8; margin:0;">
+          &copy; Howard Protocol &middot; howardprotocol.com
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
 // ===== 流失用戶挽回信 =====
 
 interface SendWinBackEmailParams {
