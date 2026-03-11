@@ -196,7 +196,7 @@ export default function RemotePage() {
             </div>
 
             <p className="text-center text-xs text-gray-400 mt-8">
-              月繳制，隨時可取消。自主管理版可隨時升級教練指導版，補差額即可。
+              信用卡定期定額，每月自動扣款。可隨時在儀表板取消，取消後用到當期到期日。自主管理版可隨時升級教練指導版，補差額即可。
             </p>
           </div>
         </section>

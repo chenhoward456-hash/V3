@@ -572,7 +572,7 @@ interface SendExpiryWarningEmailParams {
 }
 
 /**
- * 訂閱即將到期提醒（到期前 7 天 / 3 天 / 1 天）
+ * 訂閱即將自動續訂提醒（到期前 7 天 / 3 天 / 1 天）
  */
 export async function sendExpiryWarningEmail({
   to,
@@ -580,9 +580,6 @@ export async function sendExpiryWarningEmail({
   daysLeft,
   tier,
 }: SendExpiryWarningEmailParams): Promise<{ success: boolean; error?: string }> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
-  const pricingUrl = `${siteUrl}/pricing`
-
   const tierNames: Record<string, string> = {
     free: '免費體驗',
     self_managed: '自主管理方案',
@@ -593,17 +590,16 @@ export async function sendExpiryWarningEmail({
     const resend = getResend()
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Howard Protocol <onboarding@resend.dev>'
 
-    const urgencyLabel = daysLeft <= 1 ? '明天' : `${daysLeft} 天後`
+    const renewLabel = daysLeft <= 1 ? '明天' : `${daysLeft} 天後`
 
     const { error } = await resend.emails.send({
       from: fromEmail,
       to,
-      subject: `${name}，你的訂閱將在${urgencyLabel}到期`,
+      subject: `${name}，你的方案將在${renewLabel}自動續訂`,
       html: buildExpiryWarningEmailHTML({
         name,
         daysLeft,
         tierName: tierNames[tier] || tier,
-        pricingUrl,
       }),
     })
 
@@ -624,29 +620,26 @@ function buildExpiryWarningEmailHTML({
   name,
   daysLeft,
   tierName,
-  pricingUrl,
 }: {
   name: string
   daysLeft: number
   tierName: string
-  pricingUrl: string
 }): string {
-  const urgencyLabel = daysLeft <= 1 ? '明天' : `${daysLeft} 天後`
-  const urgencyColor = daysLeft <= 1 ? '#dc2626' : daysLeft <= 3 ? '#ea580c' : '#2563eb'
+  const renewLabel = daysLeft <= 1 ? '明天' : `${daysLeft} 天後`
 
   return `<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>訂閱到期提醒</title>
+  <title>自動續訂通知</title>
 </head>
 <body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
     <tr>
       <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
-        <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">訂閱即將到期</h1>
-        <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，請注意你的方案到期時間</p>
+        <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">自動續訂通知</h1>
+        <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，你的方案即將自動續訂</p>
       </td>
     </tr>
     <tr>
@@ -656,19 +649,16 @@ function buildExpiryWarningEmailHTML({
             <td style="padding: 30px; text-align:center;">
               <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">目前方案</p>
               <p style="font-size:18px; color:#1e3a5f; font-weight:bold; margin:0 0 16px 0;">${escapeHTML(tierName)}</p>
-              <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">距離到期</p>
-              <p style="font-size:32px; color:${urgencyColor}; font-weight:bold; margin:0;">${escapeHTML(urgencyLabel)}</p>
+              <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">下次扣款</p>
+              <p style="font-size:32px; color:#2563eb; font-weight:bold; margin:0;">${escapeHTML(renewLabel)}</p>
             </td>
           </tr>
         </table>
-        <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 24px 0;">
-          到期後你的帳號將降級為免費方案，部分功能（如 AI 教練、訓練追蹤）將無法使用。<strong>你的歷史數據不會被刪除</strong>，續訂後可以隨時恢復完整功能。
+        <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 16px 0;">
+          系統將自動從你的信用卡扣款，無需手動操作。扣款成功後方案會自動延長一個月。
         </p>
-        <p style="text-align:center;">
-          <a href="${escapeHTML(pricingUrl)}"
-             style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #2563eb); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
-            立即續訂
-          </a>
+        <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 24px 0;">
+          如需取消自動扣款，請至儀表板右上角設定中操作。取消後仍可使用至當期到期日。
         </p>
       </td>
     </tr>

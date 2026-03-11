@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
   }
 
   // ===== 到期提醒（每日檢查，早上執行一次就好）=====
-  // 到期前 3 天 + 到期當天 → LINE 提醒續費
+  // 到期前 7/3/1 天 + 到期當天 → LINE 通知自動扣款時間
   let expiryReminders = 0
   if (isMorning) {
     const { data: allClients } = await supabase
@@ -190,7 +190,6 @@ export async function GET(request: NextRequest) {
 
     if (allClients) {
       const now = new Date()
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
 
       for (const c of allClients) {
         if (!c.expires_at || c.subscription_tier === 'free') continue
@@ -198,13 +197,10 @@ export async function GET(request: NextRequest) {
         const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
         if (daysLeft === 7 || daysLeft === 3 || daysLeft === 1 || daysLeft === 0) {
-          const renewUrl = `${siteUrl}/pay?tier=${c.subscription_tier}&email=&name=${encodeURIComponent(c.name)}`
           try {
             const expiryMsg = daysLeft === 0
-              ? `⚠️ ${c.name}，你的方案今天到期！\n\n續費後資料會完整保留，不用重新設定。\n\n👉 續費連結：${renewUrl}\n\n有問題直接在這裡問我 💬`
-              : daysLeft === 7
-              ? `📢 ${c.name}，你的方案將在 7 天後到期。\n\n提早續費，資料完整保留，不用重新設定 👍\n\n👉 續費連結：${renewUrl}`
-              : `📢 ${c.name}，你的方案將在 ${daysLeft} 天後到期。\n\n續費連結：${renewUrl}\n到期前續費，資料完整保留。`
+              ? `${c.name}，你的方案今天自動續訂扣款。\n\n扣款成功後會自動延長一個月，無需手動操作。\n\n如需取消，請至儀表板設定頁面操作。`
+              : `${c.name}，你的方案將在 ${daysLeft} 天後自動續訂。\n\n系統會自動從信用卡扣款，不需手動操作。\n如需取消自動扣款，請至儀表板右上角設定。`
             await pushMessage(c.line_user_id, [{ type: 'text', text: expiryMsg }])
             expiryReminders++
           } catch (err: any) {
