@@ -18,7 +18,9 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
     const fetchSuggestion = async () => {
       try {
         // 帶 autoApply=true 讓引擎結果寫回 DB，飲食紀錄才能同步
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}&autoApply=true${code ? `&code=${code}` : ''}`)
+        // API 用 unique_code 查詢學員，所以 clientId 參數用 code（unique_code）
+        const lookupId = code || clientId
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${lookupId}&autoApply=true${code ? `&code=${code}` : ''}`)
         if (!res.ok) return
         const json = await res.json()
         if (json.suggestion) {
