@@ -1332,12 +1332,19 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   }
 
   // 1. 檢查數據是否足夠
+  // Goal-Driven（有目標體重+日期）或備賽客戶（有 prepPhase）只需 1 週
+  // 用本週均值複製為 lastWeek（weeklyChangeRate = 0），讓引擎能跑
+  const hasGoalOrPrep = !!(input.targetWeight && input.targetDate) || !!input.prepPhase
   if (input.weeklyWeights.length < 2) {
-    return emptyResult({
-      status: 'insufficient_data', statusLabel: '數據不足', statusEmoji: '📊',
-      message: '需要至少 2 週的體重數據才能開始分析。請讓學員持續記錄體重。',
-      ...stateFields,
-    })
+    if (input.weeklyWeights.length === 1 && hasGoalOrPrep) {
+      input.weeklyWeights.push({ week: 1, avgWeight: input.weeklyWeights[0].avgWeight })
+    } else {
+      return emptyResult({
+        status: 'insufficient_data', statusLabel: '數據不足', statusEmoji: '📊',
+        message: '需要至少 2 週的體重數據才能開始分析。請讓學員持續記錄體重。',
+        ...stateFields,
+      })
+    }
   }
 
   // 2. 合規率低時加入警告，但不阻擋引擎運作（體重是最真實的指標）
@@ -1987,7 +1994,7 @@ function generateCutSuggestion(
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
       labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
-      deadlineInfo, autoApply: hasCorrections, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
+      deadlineInfo, autoApply: hasCorrections || !!(input.targetWeight && input.targetDate) || !!input.prepPhase, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
       geneticCorrections: otGeneticCorrections,
@@ -2741,7 +2748,7 @@ function generateBulkSuggestion(
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
       labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
-      deadlineInfo, autoApply: hasCorrections, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
+      deadlineInfo, autoApply: hasCorrections || !!(input.targetWeight && input.targetDate) || !!input.prepPhase, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
       geneticCorrections: otBulkGC,
