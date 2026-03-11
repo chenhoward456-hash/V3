@@ -1953,50 +1953,63 @@ function generateCutSuggestion(
   // Reactive 模式僅處理無目標體重或已達標的情況
 
   if (status === 'on_track' && calDelta === 0 && carbDelta === 0) {
-    // 進度正常且無恢復狀態調整 → 驗證巨量營養素安全底線即可
-    let validatedPro = currentPro
-    let validatedFat = currentFat
-    const proteinPerKgFloorOT = zoneInfo
+    // 進度正常 → 根據當前體重重新計算最佳巨量營養素分配
+    // 體重變化時蛋白質/碳水/脂肪的最佳 per-kg 值也會跟著變
+    const proteinPerKgOT = zoneInfo
       ? zoneInfo.proteinPerKg
       : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_CUT : SAFETY.MIN_PROTEIN_PER_KG_CUT_FEMALE)
-    const fatPerKgFloorOT = zoneInfo
+    const fatPerKgOT = zoneInfo
       ? zoneInfo.fatPerKg
       : (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)
-    const minProteinOT = Math.round(bw * proteinPerKgFloorOT)
-    const minFatOT = Math.round(bw * fatPerKgFloorOT)
 
-    if (currentPro > 0 && currentPro < minProteinOT) {
-      validatedPro = minProteinOT
-      warnings.push(`⚠️ 目前蛋白質 ${currentPro}g 低於安全最低值 ${minProteinOT}g（${proteinPerKgFloorOT}g/kg），系統已自動調高`)
-    }
-    if (currentFat > 0 && currentFat < minFatOT) {
-      validatedFat = minFatOT
-      warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFatOT}g（${fatPerKgFloorOT}g/kg），系統已自動調高`)
+    // 重算蛋白質：取 per-kg 底線和現有值的較大值
+    let recalcPro = Math.max(Math.round(bw * proteinPerKgOT), currentPro)
+    // 重算脂肪：取 per-kg 底線和現有值的較大值
+    let recalcFat = Math.max(Math.round(bw * fatPerKgOT), currentFat)
+
+    // 如果有 TDEE，根據目標卡路里重算碳水（卡路里 - 蛋白質 - 脂肪 = 碳水）
+    let recalcCarb = currentCarb
+    if (currentCal > 0) {
+      const proCalories = recalcPro * 4
+      const fatCalories = recalcFat * 9
+      const remainingForCarbs = currentCal - proCalories - fatCalories
+      if (remainingForCarbs > 0) {
+        recalcCarb = Math.max(50, Math.round(remainingForCarbs / 4))
+      }
     }
 
-    // on_track 路徑也要計算基因修正（讓前端能顯示修正資訊）
+    // 基因修正
     const otGeneticCorrections: GeneticCorrection[] = []
-    getGeneticDeficitReduction(input.geneticProfile, otGeneticCorrections) // MTHFR 赤字收窄紀錄
-    const validatedCarb = applyGeneticCarbFloor(currentCarb, input.geneticProfile, otGeneticCorrections)
+    getGeneticDeficitReduction(input.geneticProfile, otGeneticCorrections)
+    recalcCarb = applyGeneticCarbFloor(recalcCarb, input.geneticProfile, otGeneticCorrections)
     getApoe4FatWarnings(input.geneticProfile, otGeneticCorrections, warnings)
 
-    const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat || validatedCarb !== currentCarb
+    // 血檢修正
+    if (input.labResults) {
+      const labMods = getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+      for (const mod of labMods.macroModifiers) {
+        if (mod.nutrient === 'protein' && mod.direction === 'increase') recalcPro += mod.delta
+        if (mod.nutrient === 'carbs' && mod.direction === 'decrease') recalcCarb = Math.max(50, recalcCarb - mod.delta)
+        if (mod.nutrient === 'fat' && mod.direction === 'decrease') recalcFat = Math.max(Math.round(bw * 0.7), recalcFat - mod.delta)
+      }
+    }
+
     return {
       status, statusLabel, statusEmoji, message,
-      suggestedCalories: currentCal, suggestedProtein: validatedPro,
-      suggestedCarbs: validatedCarb, suggestedFat: validatedFat,
+      suggestedCalories: currentCal, suggestedProtein: recalcPro,
+      suggestedCarbs: recalcCarb, suggestedFat: recalcFat,
       suggestedCarbsTrainingDay: input.currentCarbsTrainingDay,
       suggestedCarbsRestDay: input.currentCarbsRestDay,
-      caloriesDelta: 0, proteinDelta: validatedPro - currentPro,
-      carbsDelta: validatedCarb - currentCarb, fatDelta: validatedFat - currentFat,
+      caloriesDelta: 0, proteinDelta: recalcPro - currentPro,
+      carbsDelta: recalcCarb - currentCarb, fatDelta: recalcFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
       labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
-      deadlineInfo, autoApply: hasCorrections || !!(input.targetWeight && input.targetDate) || !!input.prepPhase, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
+      deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
-      perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
+      perMealProteinGuide: buildPerMealProteinGuide(bw, recalcPro),
       geneticCorrections: otGeneticCorrections,
     }
   }
