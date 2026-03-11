@@ -2259,7 +2259,12 @@ function generateGoalDrivenCut(
   // 女性脂肪壓縮底線比男性高（0.7g/kg vs 0.5g/kg），保護荷爾蒙
   if (proFatCal + carbFloorCal > targetCalories) {
     // 先降脂肪到絕對底線（使用 GOAL_DRIVEN 常數：男 0.7g/kg，女 0.9g/kg）
-    const absoluteMinFat = Math.round(bw * (isMale ? GOAL_DRIVEN.MIN_FAT_PER_KG : GOAL_DRIVEN.MIN_FAT_PER_KG_FEMALE))
+    // 如果血檢有 fat increase modifier（如 ApoB 優秀），底線要加上 lab delta，
+    // 否則「可放寬」只是空話，數字根本沒變
+    const labFatIncrease = gdMacroMods
+      .filter(m => m.nutrient === 'fat' && m.direction === 'increase')
+      .reduce((sum, m) => sum + m.delta, 0)
+    const absoluteMinFat = Math.round(bw * (isMale ? GOAL_DRIVEN.MIN_FAT_PER_KG : GOAL_DRIVEN.MIN_FAT_PER_KG_FEMALE)) + labFatIncrease
     suggestedFat = absoluteMinFat
     proFatCal = suggestedPro * 4 + suggestedFat * 9
 
