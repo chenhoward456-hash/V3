@@ -16,6 +16,7 @@ import {
   analyzeTrainingPattern,
   extractHormoneLabs,
 } from '@/lib/training-mode-engine'
+import { calculateMetabolicStressScore } from '@/lib/nutrition-engine'
 
 const supabaseAdmin = createServiceSupabase()
 
@@ -26,10 +27,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
     }
 
-    // 查客戶資料（含基因、目標、備賽階段）
+    // 查客戶資料（含基因、目標、備賽階段、減脂起始日）
     const { data: client } = await supabaseAdmin
       .from('clients')
-      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, competition_enabled')
+      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, competition_enabled, diet_start_date, weight, gender')
       .eq('unique_code', clientId)
       .single()
 
@@ -45,13 +46,13 @@ export async function GET(request: NextRequest) {
       .order('date', { ascending: false })
       .limit(7)
 
-    // 查最近 14 天 training（擴展為模式分析用）
+    // 查最近 56 天 training（8 週週期化分析用）
     const { data: training } = await supabaseAdmin
       .from('training_logs')
       .select('date, training_type, rpe, sets, duration')
       .eq('client_id', client.id)
       .order('date', { ascending: false })
-      .limit(14)
+      .limit(56)
 
     // 查最近血檢結果（非 normal 的指標 — 用於 getTrainingAdvice）
     const { data: labResults } = await supabaseAdmin
@@ -85,7 +86,7 @@ export async function GET(request: NextRequest) {
       rpe: t.rpe,
     }))
 
-    // 全部 14 天給 analyzeTrainingPattern
+    // 全部 56 天給 analyzeTrainingPattern（週期化分析需要 8 週數據）
     const trainingLogs14d = (training || []).map(t => ({
       date: t.date,
       training_type: t.training_type,
@@ -139,6 +140,94 @@ export async function GET(request: NextRequest) {
     // ── 提取荷爾蒙數據 ──
     const hormoneLabs = extractHormoneLabs(allLabs || [])
 
+    // ── 查詢體重歷史（用於代謝壓力 + 體重變化率偵測）──
+    const { data: weightHistory } = await supabaseAdmin
+      .from('body_composition')
+      .select('date, weight')
+      .eq('client_id', client.id)
+      .not('weight', 'is', null)
+      .order('date', { ascending: false })
+      .limit(28)
+
+    // 計算每週體重變化率（所有目標都適用）
+    let weeklyWeightChangePercent: number | null = null
+    let consecutivePlateauWeeks = 0
+    if (weightHistory && weightHistory.length >= 7) {
+      const recentWeek = weightHistory.slice(0, 7)
+      const prevWeek = weightHistory.slice(7, 14)
+      const recentAvg = recentWeek.reduce((s, w) => s + (w.weight || 0), 0) / recentWeek.length
+      if (prevWeek.length >= 3) {
+        const prevAvg = prevWeek.reduce((s, w) => s + (w.weight || 0), 0) / prevWeek.length
+        weeklyWeightChangePercent = prevAvg > 0 ? ((recentAvg - prevAvg) / prevAvg) * 100 : 0
+        // 停滯 = 變化率 < 0.3%
+        if (Math.abs(weeklyWeightChangePercent) < 0.3) {
+          consecutivePlateauWeeks = 1
+          const olderWeek = weightHistory.slice(14, 21)
+          if (olderWeek.length >= 3) {
+            const olderAvg = olderWeek.reduce((s, w) => s + (w.weight || 0), 0) / olderWeek.length
+            const olderRate = olderAvg > 0 ? ((prevAvg - olderAvg) / olderAvg) * 100 : 0
+            if (Math.abs(olderRate) < 0.3) consecutivePlateauWeeks = 2
+            const oldestWeek = weightHistory.slice(21, 28)
+            if (oldestWeek.length >= 3 && consecutivePlateauWeeks === 2) {
+              const oldestAvg = oldestWeek.reduce((s, w) => s + (w.weight || 0), 0) / oldestWeek.length
+              const oldestRate = oldestAvg > 0 ? ((olderAvg - oldestAvg) / olderAvg) * 100 : 0
+              if (Math.abs(oldestRate) < 0.3) consecutivePlateauWeeks = 3
+            }
+          }
+        }
+      }
+    }
+
+    // ── 計算代謝壓力分數（如果在減脂期）──
+    let metabolicStress: { score: number; level: string } | null = null
+    if (client.goal_type === 'cut') {
+      let dietDurationWeeks: number | null = null
+      if (client.diet_start_date) {
+        const cutStart = new Date(client.diet_start_date)
+        const now = new Date()
+        dietDurationWeeks = Math.floor((now.getTime() - cutStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
+      }
+
+      // 查詢低碳天數
+      const { data: nutritionLogs } = await supabaseAdmin
+        .from('nutrition_logs')
+        .select('date, carbs_grams')
+        .eq('client_id', client.id)
+        .order('date', { ascending: false })
+        .limit(14)
+
+      let lowCarbDays = 0
+      if (nutritionLogs) {
+        for (const log of nutritionLogs) {
+          if (log.carbs_grams != null && log.carbs_grams < 150) lowCarbDays++
+          else break
+        }
+      }
+
+      const recoveryState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown' =
+        advice.recoveryScore >= 75 ? 'optimal' :
+        advice.recoveryScore >= 50 ? 'good' :
+        advice.recoveryScore >= 30 ? 'struggling' : 'critical'
+
+      const recentWellness = (wellness || []).map(w => ({
+        energy_level: w.energy_level,
+        training_drive: null as number | null,
+      }))
+
+      const stressResult = calculateMetabolicStressScore({
+        dietDurationWeeks,
+        recoveryState,
+        readinessScore: advice.recoveryScore,
+        weeklyChangeRate: weeklyWeightChangePercent ?? 0,
+        consecutivePlateauWeeks,
+        lowCarbDays,
+        recentWellness,
+        bodyWeight: client.weight ?? undefined,
+      })
+
+      metabolicStress = { score: stressResult.score, level: stressResult.level }
+    }
+
     // ── 呼叫訓練模式引擎 ──
     const modeRecommendation = getTrainingModeRecommendation({
       baseAdvice: advice,
@@ -147,8 +236,8 @@ export async function GET(request: NextRequest) {
       geneticProfile,
       recentTrainingPattern: trainingPattern,
       hormoneLabs,
-      labTrainingModifiers: [],
-      metabolicStress: null,  // Phase 2 再整合
+      metabolicStress,
+      weeklyWeightChangePercent,
     })
 
     return NextResponse.json({ ...advice, modeRecommendation })

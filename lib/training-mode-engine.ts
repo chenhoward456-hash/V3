@@ -59,6 +59,7 @@ export interface TrainingModeRecommendation {
   reasons: TrainingModeReason[]
   geneticTrainingCorrections: GeneticTrainingCorrection[]
   confidence: 'high' | 'medium' | 'low'
+  sameSplitWarning?: string | null  // 如果用戶選的部位和昨天一樣，顯示警告
 }
 
 // ═══════════════════════════════════════
@@ -205,13 +206,19 @@ export interface TrainingPatternAnalysis {
   highRpeCount: number        // RPE >= 8 的次數 (7d)
   consecutiveTrainingDays: number
   daysSinceLastRest: number
+  lastSessionRpe: number | null  // 最近一次訓練的 RPE（前一天上下文）
+  lastSessionDate: string | null // 最近一次訓練日期
+  lastTrainingType: string | null // 最近一次訓練類型（push/pull/legs 等）
+  // P2: 長期週期化分析
+  weeksSinceLastDeload: number   // 自上次 deload 週以來的週數（deload = 該週 avgRPE<6 或 sessions≤2）
+  totalWeeksAnalyzed: number     // 有數據的總週數（最多 8）
 }
 
 export function analyzeTrainingPattern(
   logs: Array<{ date: string; training_type?: string | null; rpe?: number | null; sets?: number | null; duration?: number | null }>
 ): TrainingPatternAnalysis {
   if (!logs || logs.length === 0) {
-    return { sessionsLast7d: 0, sessionsLast14d: 0, avgRpe: null, highRpeCount: 0, consecutiveTrainingDays: 0, daysSinceLastRest: 0 }
+    return { sessionsLast7d: 0, sessionsLast14d: 0, avgRpe: null, highRpeCount: 0, consecutiveTrainingDays: 0, daysSinceLastRest: 0, lastSessionRpe: null, lastSessionDate: null, lastTrainingType: null, weeksSinceLastDeload: 0, totalWeeksAnalyzed: 0 }
   }
 
   const now = new Date()
@@ -268,6 +275,55 @@ export function analyzeTrainingPattern(
     daysSinceLastRest = i + 1
   }
 
+  // 最近一次訓練的 RPE
+  const lastSession = activeLogs.length > 0 ? activeLogs[0] : null  // sorted DESC, first = most recent
+  const lastSessionRpe = lastSession?.rpe ?? null
+  const lastSessionDate = lastSession?.date ?? null
+  const lastTrainingType = lastSession?.training_type ?? null
+
+  // P2: 長期週期化分析 — 逐週檢查 deload 週
+  // Deload 週定義：該週 sessions ≤ 2 或 avgRPE < 6
+  let weeksSinceLastDeload = 0
+  let totalWeeksAnalyzed = 0
+  let foundDeload = false
+
+  for (let w = 0; w < 8; w++) {
+    const weekStart = new Date(today)
+    weekStart.setDate(today.getDate() - (w + 1) * 7)
+    const weekEnd = new Date(today)
+    weekEnd.setDate(today.getDate() - w * 7)
+
+    const weekLogs = activeLogs.filter(l => {
+      const d = new Date(l.date)
+      return d >= weekStart && d < weekEnd
+    })
+
+    if (weekLogs.length === 0 && w > 0) {
+      // 沒有數據的週不計入（可能還沒開始用系統）
+      if (totalWeeksAnalyzed === 0) continue  // 從有數據的週開始算
+      // 沒訓練 = 等同 deload
+      foundDeload = true
+      break
+    }
+
+    if (weekLogs.length > 0) {
+      totalWeeksAnalyzed++
+      const weekRpes = weekLogs.filter(l => l.rpe != null).map(l => l.rpe!)
+      const weekAvgRpe = weekRpes.length > 0 ? weekRpes.reduce((a, b) => a + b, 0) / weekRpes.length : 0
+
+      if (weekLogs.length <= 2 || weekAvgRpe < 6) {
+        foundDeload = true
+        break
+      }
+
+      if (!foundDeload) weeksSinceLastDeload = w + 1
+    }
+  }
+
+  if (!foundDeload && totalWeeksAnalyzed > 0) {
+    weeksSinceLastDeload = totalWeeksAnalyzed
+  }
+
   return {
     sessionsLast7d: last7dActive.length,
     sessionsLast14d: last14dActive.length,
@@ -275,6 +331,11 @@ export function analyzeTrainingPattern(
     highRpeCount,
     consecutiveTrainingDays,
     daysSinceLastRest,
+    lastSessionRpe,
+    lastSessionDate,
+    lastTrainingType,
+    weeksSinceLastDeload,
+    totalWeeksAnalyzed,
   }
 }
 
@@ -329,8 +390,9 @@ export interface TrainingModeInput {
   geneticProfile?: GeneticProfile | null
   recentTrainingPattern?: TrainingPatternAnalysis | null
   hormoneLabs?: HormoneLabValues | null
-  labTrainingModifiers?: TrainingModeReason[]
   metabolicStress?: { score: number; level: string } | null
+  // P2: 體重變化率（每週 % 變化，負值 = 下降）
+  weeklyWeightChangePercent?: number | null
 }
 
 export function getTrainingModeRecommendation(input: TrainingModeInput): TrainingModeRecommendation {
@@ -342,6 +404,7 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
     recentTrainingPattern,
     hormoneLabs,
     metabolicStress,
+    weeklyWeightChangePercent,
   } = input
 
   const recovery = baseAdvice.recoveryScore
@@ -483,6 +546,15 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       effect: '甲基化代謝受損 → DNA 修復與蛋白質合成恢復較慢 → 降低總訓練量，確保足夠休息日',
       emoji: '🧬',
     })
+  } else if (geneticProfile?.mthfr === 'heterozygous') {
+    scores.high_volume -= 8
+    scores.reduced_volume += 5
+    geneticCorrections.push({
+      gene: 'MTHFR',
+      variant: '雜合突變',
+      effect: '甲基化效率約降 35% → 恢復速度略慢 → 適度控制訓練量，避免連續高容量',
+      emoji: '🧬',
+    })
   }
 
   if (geneticProfile?.apoe === 'e3/e4' || geneticProfile?.apoe === 'e4/e4') {
@@ -497,27 +569,128 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
 
   // --- Hormone Labs ---
   if (hormoneLabs) {
+    // Bug 1 fix: 睪固酮/皮質醇作為過度訓練指標
+    if (hormoneLabs.testosterone != null && hormoneLabs.testosterone < 300) {
+      scores.high_intensity -= 15
+      scores.high_volume -= 15
+      scores.reduced_volume += 15
+      reasons.push({ signal: '血檢', emoji: '🩸', description: `睪固酮偏低（${hormoneLabs.testosterone}），可能處於過度訓練或恢復不足，建議減量` })
+    }
+    if (hormoneLabs.cortisol != null && hormoneLabs.cortisol > 25) {
+      scores.high_intensity -= 10
+      scores.high_volume -= 10
+      scores.reduced_volume += 10
+      scores.deload += 5
+      reasons.push({ signal: '血檢', emoji: '🩸', description: `皮質醇偏高（${hormoneLabs.cortisol}），壓力荷爾蒙升高，建議減少訓練壓力` })
+    }
+    // T/C 比值（睪固酮/皮質醇）— 過度訓練黃金指標
+    if (hormoneLabs.testosterone != null && hormoneLabs.cortisol != null && hormoneLabs.cortisol > 0) {
+      const tcRatio = hormoneLabs.testosterone / hormoneLabs.cortisol
+      if (tcRatio < 15) {
+        scores.deload += 15
+        scores.high_volume -= 10
+        reasons.push({ signal: '血檢', emoji: '🩸', description: `睪固酮/皮質醇比值偏低（${tcRatio.toFixed(1)}），過度訓練風險高` })
+      }
+    }
+
+    // Bug 2 fix: ferritin/hemoglobin 改為推薦 cardio_focus 而非扣分
     if (hormoneLabs.ferritin != null && hormoneLabs.ferritin < 30) {
-      scores.cardio_focus -= 20
-      reasons.push({ signal: '血檢', emoji: '🩸', description: `鐵蛋白偏低（${hormoneLabs.ferritin}），有氧能力受限，減少有氧量` })
+      scores.high_volume -= 10
+      scores.high_intensity -= 10
+      reasons.push({ signal: '血檢', emoji: '🩸', description: `鐵蛋白偏低（${hormoneLabs.ferritin}），氧氣運輸受限，避免高組數/高強度訓練` })
     }
     if (hormoneLabs.hemoglobin != null && hormoneLabs.hemoglobin < 12) {
-      scores.cardio_focus -= 20
-      reasons.push({ signal: '血檢', emoji: '🩸', description: `血紅素偏低（${hormoneLabs.hemoglobin}），氧氣運輸下降` })
+      scores.reduced_volume += 10
+      reasons.push({ signal: '血檢', emoji: '🩸', description: `血紅素偏低（${hormoneLabs.hemoglobin}），運動耐力下降，建議減量` })
     }
   }
 
   // --- Training Pattern ---
   if (recentTrainingPattern) {
-    if (recentTrainingPattern.consecutiveTrainingDays >= 5) {
-      scores.active_recovery += 15
-      scores.rest += 10
-      reasons.push({ signal: '訓練模式', emoji: '📊', description: `已連續訓練 ${recentTrainingPattern.consecutiveTrainingDays} 天，建議安排休息` })
+    // P0: 前一天 RPE 上下文 — 昨天 RPE≥9 應降低今天強度
+    if (recentTrainingPattern.lastSessionRpe != null && recentTrainingPattern.lastSessionDate) {
+      const today = new Date()
+      const lastDate = new Date(recentTrainingPattern.lastSessionDate)
+      const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000))
+
+      if (daysDiff <= 1 && recentTrainingPattern.lastSessionRpe >= 9) {
+        scores.high_intensity -= 25
+        scores.high_volume -= 15
+        scores.moderate += 10
+        scores.reduced_volume += 15
+        reasons.push({ signal: '前次訓練', emoji: '⚡', description: `昨天 RPE ${recentTrainingPattern.lastSessionRpe}（接近極限），今天應降低強度讓神經系統恢復` })
+      } else if (daysDiff <= 1 && recentTrainingPattern.lastSessionRpe >= 8) {
+        scores.high_intensity -= 10
+        scores.moderate += 5
+        reasons.push({ signal: '前次訓練', emoji: '⚡', description: `昨天 RPE ${recentTrainingPattern.lastSessionRpe}，今天避免連續高強度` })
+      }
     }
-    if (recentTrainingPattern.highRpeCount >= 3) {
-      scores.moderate += 10
+
+    // P1: 連續訓練天數 penalty — 不只加 recovery，也要扣高強度
+    if (recentTrainingPattern.consecutiveTrainingDays >= 5) {
+      scores.active_recovery += 20
+      scores.rest += 15
+      scores.high_volume -= 20
+      scores.high_intensity -= 15
+      reasons.push({ signal: '訓練模式', emoji: '📊', description: `已連續訓練 ${recentTrainingPattern.consecutiveTrainingDays} 天，累積疲勞風險高，強烈建議休息` })
+    } else if (recentTrainingPattern.consecutiveTrainingDays >= 4) {
+      scores.active_recovery += 10
+      scores.reduced_volume += 10
+      scores.high_volume -= 10
       scores.high_intensity -= 10
-      reasons.push({ signal: '訓練模式', emoji: '📊', description: `近 7 天有 ${recentTrainingPattern.highRpeCount} 次高強度（RPE≥8）訓練，建議適度降強度` })
+      reasons.push({ signal: '訓練模式', emoji: '📊', description: `已連續訓練 ${recentTrainingPattern.consecutiveTrainingDays} 天，建議減量或安排休息` })
+    }
+
+    // P1: 高 RPE 累積 — 不只加 moderate，也要扣高強度和高容量
+    if (recentTrainingPattern.highRpeCount >= 4) {
+      scores.reduced_volume += 15
+      scores.moderate += 10
+      scores.high_intensity -= 20
+      scores.high_volume -= 15
+      reasons.push({ signal: '訓練模式', emoji: '📊', description: `近 7 天有 ${recentTrainingPattern.highRpeCount} 次高強度（RPE≥8），疲勞累積明顯，建議減量` })
+    } else if (recentTrainingPattern.highRpeCount >= 3) {
+      scores.moderate += 10
+      scores.high_intensity -= 15
+      scores.high_volume -= 10
+      reasons.push({ signal: '訓練模式', emoji: '📊', description: `近 7 天有 ${recentTrainingPattern.highRpeCount} 次高強度（RPE≥8），建議適度降強度` })
+    }
+
+    // P2: 長期週期化 — 連續多週高強度未安排 deload
+    if (recentTrainingPattern.totalWeeksAnalyzed >= 4 && recentTrainingPattern.weeksSinceLastDeload >= 6) {
+      scores.deload += 25
+      scores.reduced_volume += 15
+      scores.high_volume -= 15
+      scores.high_intensity -= 10
+      reasons.push({ signal: '週期化', emoji: '📅', description: `已連續 ${recentTrainingPattern.weeksSinceLastDeload} 週未安排 deload，累積疲勞風險高，建議安排減負荷週` })
+    } else if (recentTrainingPattern.totalWeeksAnalyzed >= 3 && recentTrainingPattern.weeksSinceLastDeload >= 5) {
+      scores.deload += 15
+      scores.reduced_volume += 10
+      scores.high_volume -= 10
+      reasons.push({ signal: '週期化', emoji: '📅', description: `已 ${recentTrainingPattern.weeksSinceLastDeload} 週未 deload，接近建議減負荷時機（通常 4-6 週一次）` })
+    }
+  }
+
+  // --- P2: 體重變化率偵測 ---
+  if (weeklyWeightChangePercent != null && goalType === 'cut') {
+    // 掉太快：每週 > 1% 體重 → 減訓練量（肌肉流失風險）
+    if (weeklyWeightChangePercent < -1.0) {
+      scores.high_volume -= 15
+      scores.high_intensity -= 10
+      scores.reduced_volume += 10
+      reasons.push({ signal: '體重變化', emoji: '⚖️', description: `每週減重 ${Math.abs(weeklyWeightChangePercent).toFixed(1)}%，超過安全上限 1%，肌肉流失風險升高，建議減少訓練量` })
+    }
+    // 掉太慢或沒掉：可以推更硬
+    else if (weeklyWeightChangePercent > -0.3 && weeklyWeightChangePercent <= 0) {
+      scores.high_intensity += 10
+      scores.high_volume += 5
+      reasons.push({ signal: '體重變化', emoji: '⚖️', description: `每週減重僅 ${Math.abs(weeklyWeightChangePercent).toFixed(1)}%，體重接近停滯，可適度提高訓練強度促進能量消耗` })
+    }
+  } else if (weeklyWeightChangePercent != null && goalType === 'bulk') {
+    // 增太快：每週 > 0.5% → 可能脂肪增加過多
+    if (weeklyWeightChangePercent > 0.5) {
+      scores.high_volume += 10
+      scores.cardio_focus += 5
+      reasons.push({ signal: '體重變化', emoji: '⚖️', description: `每週增重 ${weeklyWeightChangePercent.toFixed(1)}%，增速偏快，可增加訓練容量消耗多餘熱量` })
     }
   }
 
@@ -544,7 +717,31 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
   if (margin >= 20) confidence = 'high'
   else if (margin < 10) confidence = 'low'
 
-  return buildRecommendation(bestMode, config, reasons, geneticCorrections, confidence)
+  // Fix 5: 訓練類型偵測 — 提醒避免連續同部位
+  let sameSplitWarning: string | null = null
+  if (recentTrainingPattern?.lastTrainingType && recentTrainingPattern.lastSessionDate) {
+    const today = new Date()
+    const lastDate = new Date(recentTrainingPattern.lastSessionDate)
+    const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000))
+
+    if (daysDiff <= 1) {
+      const lastType = recentTrainingPattern.lastTrainingType.toLowerCase()
+      // 定義肌群衝突映射
+      const muscleGroups: Record<string, string[]> = {
+        '推': ['推', '胸', '肩', 'push', 'chest', 'shoulder'],
+        '拉': ['拉', '背', 'pull', 'back'],
+        '腿': ['腿', 'legs', 'leg'],
+      }
+      for (const [group, aliases] of Object.entries(muscleGroups)) {
+        if (aliases.some(a => lastType.includes(a))) {
+          sameSplitWarning = `昨天已練「${recentTrainingPattern.lastTrainingType}」，建議今天換${group === '推' ? '拉或腿' : group === '拉' ? '推或腿' : '推或拉'}，讓肌群有 48 小時恢復`
+          break
+        }
+      }
+    }
+  }
+
+  return buildRecommendation(bestMode, config, reasons, geneticCorrections, confidence, sameSplitWarning)
 }
 
 function buildRecommendation(
@@ -553,6 +750,7 @@ function buildRecommendation(
   reasons: TrainingModeReason[],
   geneticCorrections: GeneticTrainingCorrection[],
   confidence: 'high' | 'medium' | 'low',
+  sameSplitWarning?: string | null,
 ): TrainingModeRecommendation {
   return {
     recommendedMode: mode,
@@ -567,5 +765,6 @@ function buildRecommendation(
     reasons,
     geneticTrainingCorrections: geneticCorrections,
     confidence,
+    sameSplitWarning: sameSplitWarning ?? null,
   }
 }

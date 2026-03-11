@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { pushMessage } from '@/lib/line'
+import { sendRoutineReminder } from '@/lib/notify'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
@@ -70,22 +71,22 @@ export async function GET(request: NextRequest) {
   }
 
   let sent = 0
+  let webPushUsed = 0
+  let linePushUsed = 0
   const errors: string[] = []
 
   // 判斷早上或晚上
   const isMorning = isMorningRun
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
 
   if (isMorning) {
-    // ── 早上提醒：量體重 ──
-    // 先查哪些人今天還沒量體重
+    // ── 早上提醒：量體重（Web Push 優先，省 LINE 額度）──
     const { data: todayWeights } = await supabase
       .from('body_composition')
       .select('client_id')
       .eq('date', today)
 
     const hasWeight = new Set((todayWeights || []).map((w: any) => w.client_id))
-
-    // 篩選需要提醒的學員
     const morningTargets = clients.filter(c => c.body_composition_enabled && !hasWeight.has(c.id))
 
     // 批次發送（每批 5 個）
@@ -93,25 +94,29 @@ export async function GET(request: NextRequest) {
       const batch = morningTargets.slice(i, i + 5)
       const results = await Promise.allSettled(
         batch.map(client =>
-          pushMessage(client.line_user_id, [
-            {
-              type: 'text',
-              text: `☀️ 早安 ${client.name}！\n\n別忘了量體重喔\n💡 直接輸入「體重 72.5」就能記錄`,
-            },
-          ])
+          sendRoutineReminder(client.id, client.line_user_id, {
+            title: `☀️ 早安 ${client.name}！`,
+            body: '別忘了量體重喔',
+            lineText: `☀️ 早安 ${client.name}！\n\n別忘了量體重喔\n💡 直接輸入「體重 72.5」就能記錄`,
+            url: `${siteUrl}/dashboard`,
+          })
         )
       )
       results.forEach((result, idx) => {
         if (result.status === 'fulfilled') {
-          sent++
+          const r = result.value
+          if (r.success) {
+            sent++
+            if (r.method === 'web_push') webPushUsed++
+            else linePushUsed++
+          }
         } else {
           errors.push(`${batch[idx].name}: ${result.reason?.message || 'unknown'}`)
         }
       })
     }
   } else {
-    // ── 晚上提醒：填寫今日紀錄 ──
-    // 批量查詢今日所有紀錄
+    // ── 晚上提醒：填寫今日紀錄（Web Push 優先）──
     const [wellnessRes, nutritionRes, trainingRes] = await Promise.all([
       supabase.from('daily_wellness').select('client_id').eq('date', today),
       supabase.from('nutrition_logs').select('client_id').eq('date', today),
@@ -122,42 +127,49 @@ export async function GET(request: NextRequest) {
     const hasNutrition = new Set((nutritionRes.data || []).map((n: any) => n.client_id))
     const hasTraining = new Set((trainingRes.data || []).map((t: any) => t.client_id))
 
-    // 篩選需要提醒的學員及其缺少項目
-    const eveningTargets: { client: typeof clients[0]; missing: string[] }[] = []
+    const eveningTargets: { client: typeof clients[0]; missing: string[]; missingShort: string[] }[] = []
     for (const client of clients) {
       const missing: string[] = []
+      const missingShort: string[] = []
       if (client.wellness_enabled && !hasWellness.has(client.id)) {
         missing.push('• 身心狀態 → 輸入「身心 4 3 4」')
+        missingShort.push('身心狀態')
       }
       if (client.nutrition_enabled && !hasNutrition.has(client.id)) {
         missing.push('• 飲食紀錄 → 輸入「達標」或「未達標」')
+        missingShort.push('飲食紀錄')
       }
       if (client.training_enabled && !hasTraining.has(client.id)) {
         missing.push('• 訓練紀錄 → 輸入「訓練 推 60分鐘」')
+        missingShort.push('訓練紀錄')
       }
-      if (missing.length > 0) eveningTargets.push({ client, missing })
+      if (missing.length > 0) eveningTargets.push({ client, missing, missingShort })
     }
 
-    // 批次發送（每批 5 個）
     for (let i = 0; i < eveningTargets.length; i += 5) {
       const batch = eveningTargets.slice(i, i + 5)
       const results = await Promise.allSettled(
-        batch.map(({ client, missing }) =>
-          pushMessage(client.line_user_id, [
-            {
-              type: 'text',
-              text: [
-                `🌙 ${client.name}，今天還有 ${missing.length} 項沒記錄：\n`,
-                ...missing,
-                '\n回覆指令就能快速完成 ✌️',
-              ].join('\n'),
-            },
-          ])
+        batch.map(({ client, missing, missingShort }) =>
+          sendRoutineReminder(client.id, client.line_user_id, {
+            title: `🌙 還有 ${missing.length} 項沒記錄`,
+            body: `缺少：${missingShort.join('、')}`,
+            lineText: [
+              `🌙 ${client.name}，今天還有 ${missing.length} 項沒記錄：\n`,
+              ...missing,
+              '\n回覆指令就能快速完成 ✌️',
+            ].join('\n'),
+            url: `${siteUrl}/dashboard`,
+          })
         )
       )
       results.forEach((result, idx) => {
         if (result.status === 'fulfilled') {
-          sent++
+          const r = result.value
+          if (r.success) {
+            sent++
+            if (r.method === 'web_push') webPushUsed++
+            else linePushUsed++
+          }
         } else {
           errors.push(`${batch[idx].client.name}: ${result.reason?.message || 'unknown'}`)
         }
@@ -415,6 +427,8 @@ export async function GET(request: NextRequest) {
     success: errors.length === 0,
     type: isMorning ? 'morning' : 'evening',
     sent,
+    webPushUsed,
+    linePushUsed,
     expiryReminders,
     milestonesSent,
     smartAlertsSent,
