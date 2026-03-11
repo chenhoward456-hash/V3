@@ -315,11 +315,12 @@ export async function GET(request: NextRequest) {
     const isCompetitionClient = !!client.competition_enabled
     const canAutoApply = wantsAutoApply && suggestion.autoApply && (isAdmin || suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)
 
-    // 教練覆寫鎖定：教練手動調整過營養目標 → 跳過 auto-apply（admin 操作不受限）
+    // 教練覆寫鎖定：教練手動調整過營養目標
+    // 自動調整引擎（autoApply）不受 coach lock 限制 — 動態調整是核心功能
+    // coach lock 只在手動 API 呼叫（非 autoApply）時生效
     const coachOverride = client.coach_macro_override as { locked_at: string; locked_fields: string[] } | null
-    if (coachOverride && !isAdmin) {
+    if (coachOverride && !isAdmin && !wantsAutoApply) {
       coachLocked = true
-      // 附加提示到 suggestion message
       suggestion.message += '\n\n🔒 教練已手動設定你的營養目標，系統建議僅供參考，不會自動調整。'
     }
 
