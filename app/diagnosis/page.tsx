@@ -303,7 +303,7 @@ export default function DiagnosisPage() {
               {/* Header */}
               <div className="text-center">
                 <div className="inline-block bg-green-100 border border-green-300 rounded-full px-4 py-1.5 mb-4">
-                  <span className="text-green-700 font-mono font-bold text-xs">/// ANALYSIS_COMPLETE</span>
+                  <span className="text-green-700 font-mono font-bold text-xs">{'/// ANALYSIS_COMPLETE'}</span>
                 </div>
                 <h2 className="text-2xl font-bold" style={{ color: '#1e3a5f' }}>系統分析結果</h2>
               </div>
