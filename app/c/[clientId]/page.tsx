@@ -507,12 +507,21 @@ export default function ClientDashboard() {
   const isFree = c.subscription_tier === 'free'
 
   // 健康模式：計算健康分數
+  // HRV baseline：用 7 天前以前的所有 HRV 數據算長期平均
+  const allWellness = clientData.wellness || []
+  const hrvOlder = allWellness.slice(0, -7)
+    .map((w: { hrv?: number | null }) => w.hrv)
+    .filter((v: number | null | undefined): v is number => v != null)
+  const hrvBaseline = hrvOlder.length >= 7
+    ? hrvOlder.reduce((a: number, b: number) => a + b, 0) / hrvOlder.length
+    : null
   const healthScore = isHealthMode ? calculateHealthScore({
-    wellnessLast7: (clientData.wellness || []).slice(-7),
+    wellnessLast7: allWellness.slice(-7),
     nutritionLast7: (clientData.nutritionLogs || []).slice(-7),
     trainingLast7: (clientData.trainingLogs || []).slice(-7),
     supplementComplianceRate: supplementComplianceStats.weekRate / 100,
     labResults: c.lab_results || [],
+    hrvBaseline,
     quarterlyStart: c.quarterly_cycle_start,
   }) : null
 
@@ -777,6 +786,21 @@ export default function ClientDashboard() {
                   )
                 })}
               </div>
+              {/* 血檢 & 獎勵加減分 */}
+              {(healthScore.labBonus > 0 || healthScore.labPenalty < 0) && (
+                <div className="flex items-center gap-2 mt-2 text-[10px]">
+                  {healthScore.labBonus > 0 && (
+                    <span className="text-emerald-600 font-medium bg-emerald-100 px-1.5 py-0.5 rounded">
+                      +{healthScore.labBonus} 優秀獎勵
+                    </span>
+                  )}
+                  {healthScore.labPenalty < 0 && (
+                    <span className="text-red-500 font-medium bg-red-50 px-1.5 py-0.5 rounded">
+                      {healthScore.labPenalty} 血檢異常
+                    </span>
+                  )}
+                </div>
+              )}
               {/* 最低分柱提示 */}
               {(() => {
                 const lowest = [...healthScore.pillars].sort((a, b) => a.score - b.score)[0]

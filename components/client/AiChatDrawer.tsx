@@ -75,7 +75,7 @@ interface AiChatDrawerProps {
   onFirstMessage?: () => void
   // Health mode context
   healthModeEnabled?: boolean
-  healthScore?: { total: number; grade: string; daysInCycle: number | null; daysUntilBloodTest: number | null; pillars: { pillar: string; label: string; score: number; emoji: string }[] } | null
+  healthScore?: { total: number; grade: string; daysInCycle: number | null; daysUntilBloodTest: number | null; labPenalty: number; labBonus: number; pillars: { pillar: string; label: string; score: number; emoji: string }[] } | null
   supplementSuggestions?: { name: string; dosage: string; reason: string; priority: string }[]
   // Genetic profile
   geneticProfile?: {
@@ -311,7 +311,7 @@ ${labSummary ? `\n## 最新血檢異常項目\n${labSummary}\n- 請根據血檢�
 ${labNormalHighlights && !labSummary ? `\n## 血檢狀態\n所有項目正常：${labNormalHighlights}` : ''}
 ${healthModeEnabled && healthScore ? `
 ## 健康模式 — 季度健康分數
-- 總分：${healthScore.total}/100（${healthScore.grade} 級）
+- 總分：${healthScore.total}/100（${healthScore.grade} 級）${healthScore.labBonus > 0 ? `（含優秀獎勵 +${healthScore.labBonus}）` : ''}${healthScore.labPenalty < 0 ? `（含血檢扣分 ${healthScore.labPenalty}）` : ''}
 ${healthScore.pillars.map(p => `- ${p.emoji} ${p.label}：${p.score}/100`).join('\n')}
 ${healthScore.daysInCycle != null ? `- 本季進度：第 ${healthScore.daysInCycle} 天 / 90 天` : ''}
 ${healthScore.daysUntilBloodTest != null && healthScore.daysUntilBloodTest <= 30 ? `- 🩸 距離季度血檢還有 ${healthScore.daysUntilBloodTest} 天` : ''}
