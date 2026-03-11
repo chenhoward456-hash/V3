@@ -2007,7 +2007,7 @@ function generateCutSuggestion(
         if (mod.nutrient === 'protein' && mod.direction === 'increase') recalcPro += mod.delta
         if (mod.nutrient === 'carbs' && mod.direction === 'decrease') recalcCarb = Math.max(50, recalcCarb - mod.delta)
         if (mod.nutrient === 'carbs' && mod.direction === 'increase') recalcCarb += mod.delta
-        if (mod.nutrient === 'fat' && mod.direction === 'decrease') recalcFat = Math.max(Math.round(bw * 0.7), recalcFat - mod.delta)
+        if (mod.nutrient === 'fat' && mod.direction === 'decrease') recalcFat = Math.max(Math.round(bw * (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)), recalcFat - mod.delta)
         if (mod.nutrient === 'fat' && mod.direction === 'increase') recalcFat += mod.delta
       }
     }
@@ -2041,9 +2041,18 @@ function generateCutSuggestion(
     mainLabTrainingModifiers = labMods.trainingModifiers
     for (const mod of labMods.macroModifiers) {
       if (mod.nutrient === 'protein' && mod.direction === 'increase') suggestedPro += mod.delta
-      if (mod.nutrient === 'carbs' && mod.direction === 'decrease') suggestedCarb = Math.max(50, suggestedCarb - mod.delta)
-      if (mod.nutrient === 'carbs' && mod.direction === 'increase') suggestedCarb += mod.delta
-      if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * 0.7), suggestedFat - mod.delta)
+      if (mod.nutrient === 'carbs' && mod.direction === 'decrease') {
+        suggestedCarb = Math.max(50, suggestedCarb - mod.delta)
+        // Bug 5 fix: 碳循環 TD/RD 也要同步套用血檢碳水修正
+        if (suggestedCarbsTD != null) suggestedCarbsTD = Math.max(30, suggestedCarbsTD - mod.delta)
+        if (suggestedCarbsRD != null) suggestedCarbsRD = Math.max(30, suggestedCarbsRD - mod.delta)
+      }
+      if (mod.nutrient === 'carbs' && mod.direction === 'increase') {
+        suggestedCarb += mod.delta
+        if (suggestedCarbsTD != null) suggestedCarbsTD += mod.delta
+        if (suggestedCarbsRD != null) suggestedCarbsRD += mod.delta
+      }
+      if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)), suggestedFat - mod.delta)
       if (mod.nutrient === 'fat' && mod.direction === 'increase') suggestedFat += mod.delta
       if (mod.nutrient === 'calories' && mod.direction === 'increase') suggestedCal += mod.delta
     }
@@ -2241,13 +2250,20 @@ function generateGoalDrivenCut(
     ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
     : null
   const gdMacroMods = gdLabModResult?.macroModifiers ?? []
+  let gdCarbDeltaFromLab = 0
+  let gdCalDeltaFromLab = 0
+  let gdProDeltaFromLab = 0
   for (const mod of gdMacroMods) {
-    if (mod.nutrient === 'protein' && mod.direction === 'increase') suggestedPro += mod.delta
+    if (mod.nutrient === 'protein' && mod.direction === 'increase') { suggestedPro += mod.delta; gdProDeltaFromLab += mod.delta }
     if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * (isMale ? GOAL_DRIVEN.MIN_FAT_PER_KG : GOAL_DRIVEN.MIN_FAT_PER_KG_FEMALE)), suggestedFat - mod.delta)
     if (mod.nutrient === 'fat' && mod.direction === 'increase') suggestedFat += mod.delta
-    if (mod.nutrient === 'carbs' && mod.direction === 'decrease') {
-      // 碳水修正延後到碳水計算後處理（carbDeltaFromLab）
-    }
+    if (mod.nutrient === 'carbs' && mod.direction === 'decrease') gdCarbDeltaFromLab -= mod.delta
+    if (mod.nutrient === 'carbs' && mod.direction === 'increase') gdCarbDeltaFromLab += mod.delta
+    if (mod.nutrient === 'calories' && mod.direction === 'increase') gdCalDeltaFromLab += mod.delta
+  }
+  // Bug 3 fix: TSH > 4.0 等血檢熱量修正，直接加到 targetCalories
+  if (gdCalDeltaFromLab > 0) {
+    targetCalories += gdCalDeltaFromLab
   }
 
   // 計算蛋白質+脂肪的最低卡路里（碳水底線 30g = 120kcal）
@@ -2269,9 +2285,9 @@ function generateGoalDrivenCut(
     proFatCal = suggestedPro * 4 + suggestedFat * 9
 
     if (proFatCal + carbFloorCal > targetCalories) {
-      // 再降蛋白質（不低於 2.0g/kg）
+      // 再降蛋白質（不低於 2.0g/kg + 血檢增量，如低鐵蛋白/低白蛋白）
       const maxProCal = targetCalories - carbFloorCal - suggestedFat * 9
-      const minPro = Math.round(bw * 2.0)
+      const minPro = Math.round(bw * 2.0) + gdProDeltaFromLab
       suggestedPro = Math.max(minPro, Math.round(maxProCal / 4))
       proFatCal = suggestedPro * 4 + suggestedFat * 9
 
@@ -2287,6 +2303,11 @@ function generateGoalDrivenCut(
   // 碳水 = 剩餘卡路里（若 proFatCal > targetCalories，剩餘為負，碳水壓底線 30g）
   const remainingCalForCarb = targetCalories - proFatCal
   let suggestedCarb = Math.max(30, Math.round(remainingCalForCarb / 4))
+
+  // Bug 1 fix: 套用血檢碳水修正（HOMA-IR、胰島素、三酸甘油脂等）
+  if (gdCarbDeltaFromLab !== 0) {
+    suggestedCarb = Math.max(30, suggestedCarb + gdCarbDeltaFromLab)
+  }
 
   // 反算「真實卡路里底線」— 這才是選手實際能吃到的最低值
   let actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
@@ -2728,6 +2749,21 @@ function generateBulkSuggestion(
   let suggestedCarb = currentCarb + carbDelta
   let suggestedFat = currentFat + fatDelta
 
+  // Bug 7 fix: 增肌路徑也套用血檢 modifier
+  const bulkLabModResult = input.labResults
+    ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+    : null
+  const bulkLabMacroMods = bulkLabModResult?.macroModifiers ?? []
+  const bulkLabTrainingMods = bulkLabModResult?.trainingModifiers ?? []
+  for (const mod of bulkLabMacroMods) {
+    if (mod.nutrient === 'protein' && mod.direction === 'increase') suggestedPro += mod.delta
+    if (mod.nutrient === 'carbs' && mod.direction === 'decrease') suggestedCarb = Math.max(50, suggestedCarb - mod.delta)
+    if (mod.nutrient === 'carbs' && mod.direction === 'increase') suggestedCarb += mod.delta
+    if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)), suggestedFat - mod.delta)
+    if (mod.nutrient === 'fat' && mod.direction === 'increase') suggestedFat += mod.delta
+    if (mod.nutrient === 'calories' && mod.direction === 'increase') suggestedCal += mod.delta
+  }
+
   // 安全底線（有體脂區間用 zone 值，否則 fallback 男女固定值）
   const bulkProteinFloor = zoneInfo
     ? zoneInfo.proteinPerKg
@@ -2788,11 +2824,18 @@ function generateBulkSuggestion(
     const minProteinBulk = Math.round(bw * bulkProteinFloorOT)
     const minFatBulk = Math.round(bw * bulkFatFloorOT)
 
-    if (currentPro > 0 && currentPro < minProteinBulk) {
+    // Bug 7 fix: on_track 也套用血檢 modifier
+    for (const mod of bulkLabMacroMods) {
+      if (mod.nutrient === 'protein' && mod.direction === 'increase') validatedPro += mod.delta
+      if (mod.nutrient === 'fat' && mod.direction === 'decrease') validatedFat = Math.max(minFatBulk, validatedFat - mod.delta)
+      if (mod.nutrient === 'fat' && mod.direction === 'increase') validatedFat += mod.delta
+    }
+
+    if (currentPro > 0 && validatedPro < minProteinBulk) {
       validatedPro = minProteinBulk
       warnings.push(`⚠️ 目前蛋白質 ${currentPro}g 低於安全最低值 ${minProteinBulk}g（${bulkProteinFloorOT}g/kg），系統已自動調高`)
     }
-    if (currentFat > 0 && currentFat < minFatBulk) {
+    if (currentFat > 0 && validatedFat < minFatBulk) {
       validatedFat = minFatBulk
       warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFatBulk}g（${bulkFatFloorOT}g/kg），系統已自動調高`)
     }
@@ -2815,7 +2858,7 @@ function generateBulkSuggestion(
       dietDurationWeeks, dietBreakSuggested: false, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
-      labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
+      labMacroModifiers: bulkLabMacroMods, labTrainingModifiers: bulkLabTrainingMods, energyAvailability: null,
       deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
@@ -2844,7 +2887,7 @@ function generateBulkSuggestion(
     dietDurationWeeks, dietBreakSuggested: false, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
-    labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
+    labMacroModifiers: bulkLabMacroMods, labTrainingModifiers: bulkLabTrainingMods, energyAvailability: null,
     deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
@@ -2861,6 +2904,13 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
   const isFemale = input.gender === '女性'
   const compDate = new Date(input.targetDate!)
   const plan: PeakWeekDay[] = []
+
+  // Bug 6 fix: Peak Week 也要取得血檢 modifier，用於 training modifier 警告和 labMacroModifiers 回傳
+  const pwLabModResult = input.labResults
+    ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+    : null
+  const pwLabMacroMods = pwLabModResult?.macroModifiers ?? []
+  const pwLabTrainingMods = pwLabModResult?.trainingModifiers ?? []
 
   // 女性專用常數：碳水超補量較低（Tarnopolsky 1995, James 2001）、脂肪地板較高（Loucks 2003）
   const loadingCarb = isFemale ? PEAK_WEEK.LOADING_CARB_G_PER_KG_FEMALE : PEAK_WEEK.LOADING_CARB_G_PER_KG
@@ -3081,7 +3131,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     bodyFatZoneInfo: buildBodyFatZoneInfo(input.gender, input.bodyFatPct, input.goalType),
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
     autoApply: true, tdeeAnomalyDetected: false,
-    labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
+    labMacroModifiers: pwLabMacroMods, labTrainingModifiers: pwLabTrainingMods, energyAvailability: null,
     peakWeekPlan: plan, metabolicStress: null,
     menstrualCycleNote: cycleInfo?.note ?? null,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG)),
