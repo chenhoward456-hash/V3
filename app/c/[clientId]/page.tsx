@@ -391,6 +391,45 @@ export default function ClientDashboard() {
     return corrections
   }, [clientData?.client])
 
+  // 所有有營養追蹤的學員：頁面載入時自動觸發營養引擎更新目標
+  // 備賽客戶由 GoalDrivenStatus 處理，這裡處理一般學員
+  const autoNutritionTriggered = useRef(false)
+  useEffect(() => {
+    const c = clientData?.client
+    if (!c || !c.nutrition_enabled || !c.goal_type) return
+    if (c.competition_enabled) return // 備賽客戶由 GoalDrivenStatus 處理
+    if (autoNutritionTriggered.current) return
+    autoNutritionTriggered.current = true
+
+    const triggerAutoAdjust = async () => {
+      try {
+        const code = clientId as string
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${code}&autoApply=true&code=${code}`)
+        if (!res.ok) {
+          console.error('[AutoNutrition] API 失敗:', res.status)
+          return
+        }
+        const json = await res.json()
+        console.log('[AutoNutrition] 引擎結果:', {
+          status: json.suggestion?.status,
+          autoApply: json.suggestion?.autoApply,
+          applied: json.applied,
+          coachLocked: json.coachLocked,
+          suggestedCalories: json.suggestion?.suggestedCalories,
+          suggestedProtein: json.suggestion?.suggestedProtein,
+          suggestedCarbs: json.suggestion?.suggestedCarbs,
+          suggestedFat: json.suggestion?.suggestedFat,
+        })
+        if (json.applied && mutate) {
+          mutate()
+        }
+      } catch (err) {
+        console.error('[AutoNutrition] 錯誤:', err)
+      }
+    }
+    triggerAutoAdjust()
+  }, [clientData?.client, clientId, mutate])
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

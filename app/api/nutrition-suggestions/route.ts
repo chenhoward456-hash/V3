@@ -313,7 +313,7 @@ export async function GET(request: NextRequest) {
     let coachLocked = false
     const isSelfManaged = client.subscription_tier === 'self_managed'
     const isCompetitionClient = !!client.competition_enabled
-    const canAutoApply = wantsAutoApply && suggestion.autoApply && (isAdmin || suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged)
+    const canAutoApply = wantsAutoApply && suggestion.autoApply && (isAdmin || suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)
 
     // 教練覆寫鎖定：教練手動調整過營養目標 → 跳過 auto-apply（admin 操作不受限）
     const coachOverride = client.coach_macro_override as { locked_at: string; locked_fields: string[] } | null

@@ -21,8 +21,24 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         // API 用 unique_code 查詢學員，所以 clientId 參數用 code（unique_code）
         const lookupId = code || clientId
         const res = await fetch(`/api/nutrition-suggestions?clientId=${lookupId}&autoApply=true${code ? `&code=${code}` : ''}`)
-        if (!res.ok) return
+        if (!res.ok) {
+          console.error('[GoalDrivenStatus] API 失敗:', res.status, res.statusText, 'lookupId:', lookupId)
+          return
+        }
         const json = await res.json()
+        console.log('[GoalDrivenStatus] API 回應:', {
+          status: json.suggestion?.status,
+          autoApply: json.suggestion?.autoApply,
+          applied: json.applied,
+          coachLocked: json.coachLocked,
+          suggestedCalories: json.suggestion?.suggestedCalories,
+          suggestedProtein: json.suggestion?.suggestedProtein,
+          suggestedCarbs: json.suggestion?.suggestedCarbs,
+          suggestedFat: json.suggestion?.suggestedFat,
+          weeklyWeights: json.meta?.weeklyWeights?.length,
+          targetWeight: json.meta?.targetWeight,
+          targetDate: json.meta?.targetDate,
+        })
         if (json.suggestion) {
           setData(json.suggestion)
           setTargetWeightValue(json.meta?.targetWeight || null)
@@ -31,8 +47,9 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
             onMutate()
           }
         }
-      } catch { /* ignore */ }
-      finally { setLoading(false) }
+      } catch (err) {
+        console.error('[GoalDrivenStatus] fetch 錯誤:', err)
+      } finally { setLoading(false) }
     }
     fetchSuggestion()
   }, [clientId, code, onMutate])
