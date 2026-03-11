@@ -27,10 +27,8 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     return { adjusted: false, debug: `skip: goal_type=${client?.goal_type}, nutrition_enabled=${client?.nutrition_enabled}` }
   }
 
-  // 教練覆寫鎖定：教練手動調整過營養目標 → 跳過自動調整
-  if (client.coach_macro_override) {
-    return { adjusted: false, debug: 'skip: coach_macro_override locked' }
-  }
+  // 教練覆寫鎖定已移除 — 自動調整引擎是核心功能，不應被 coach lock 阻擋
+  // coach_macro_override 僅供前端顯示提示，不阻止引擎更新
 
   // 2. 取得近 30 天所有相關數據（平行查詢）
   const thirtyDaysAgo = new Date()
