@@ -205,13 +205,15 @@ export interface TrainingPatternAnalysis {
   highRpeCount: number        // RPE >= 8 的次數 (7d)
   consecutiveTrainingDays: number
   daysSinceLastRest: number
+  lastSessionRpe: number | null  // 最近一次訓練的 RPE（前一天上下文）
+  lastSessionDate: string | null // 最近一次訓練日期
 }
 
 export function analyzeTrainingPattern(
   logs: Array<{ date: string; training_type?: string | null; rpe?: number | null; sets?: number | null; duration?: number | null }>
 ): TrainingPatternAnalysis {
   if (!logs || logs.length === 0) {
-    return { sessionsLast7d: 0, sessionsLast14d: 0, avgRpe: null, highRpeCount: 0, consecutiveTrainingDays: 0, daysSinceLastRest: 0 }
+    return { sessionsLast7d: 0, sessionsLast14d: 0, avgRpe: null, highRpeCount: 0, consecutiveTrainingDays: 0, daysSinceLastRest: 0, lastSessionRpe: null, lastSessionDate: null }
   }
 
   const now = new Date()
@@ -268,6 +270,11 @@ export function analyzeTrainingPattern(
     daysSinceLastRest = i + 1
   }
 
+  // 最近一次訓練的 RPE
+  const lastSession = activeLogs.length > 0 ? activeLogs[0] : null  // sorted DESC, first = most recent
+  const lastSessionRpe = lastSession?.rpe ?? null
+  const lastSessionDate = lastSession?.date ?? null
+
   return {
     sessionsLast7d: last7dActive.length,
     sessionsLast14d: last14dActive.length,
@@ -275,6 +282,8 @@ export function analyzeTrainingPattern(
     highRpeCount,
     consecutiveTrainingDays,
     daysSinceLastRest,
+    lastSessionRpe,
+    lastSessionDate,
   }
 }
 
@@ -509,15 +518,52 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
 
   // --- Training Pattern ---
   if (recentTrainingPattern) {
-    if (recentTrainingPattern.consecutiveTrainingDays >= 5) {
-      scores.active_recovery += 15
-      scores.rest += 10
-      reasons.push({ signal: '訓練模式', emoji: '📊', description: `已連續訓練 ${recentTrainingPattern.consecutiveTrainingDays} 天，建議安排休息` })
+    // P0: 前一天 RPE 上下文 — 昨天 RPE≥9 應降低今天強度
+    if (recentTrainingPattern.lastSessionRpe != null && recentTrainingPattern.lastSessionDate) {
+      const today = new Date()
+      const lastDate = new Date(recentTrainingPattern.lastSessionDate)
+      const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000))
+
+      if (daysDiff <= 1 && recentTrainingPattern.lastSessionRpe >= 9) {
+        scores.high_intensity -= 25
+        scores.high_volume -= 15
+        scores.moderate += 10
+        scores.reduced_volume += 15
+        reasons.push({ signal: '前次訓練', emoji: '⚡', description: `昨天 RPE ${recentTrainingPattern.lastSessionRpe}（接近極限），今天應降低強度讓神經系統恢復` })
+      } else if (daysDiff <= 1 && recentTrainingPattern.lastSessionRpe >= 8) {
+        scores.high_intensity -= 10
+        scores.moderate += 5
+        reasons.push({ signal: '前次訓練', emoji: '⚡', description: `昨天 RPE ${recentTrainingPattern.lastSessionRpe}，今天避免連續高強度` })
+      }
     }
-    if (recentTrainingPattern.highRpeCount >= 3) {
-      scores.moderate += 10
+
+    // P1: 連續訓練天數 penalty — 不只加 recovery，也要扣高強度
+    if (recentTrainingPattern.consecutiveTrainingDays >= 5) {
+      scores.active_recovery += 20
+      scores.rest += 15
+      scores.high_volume -= 20
+      scores.high_intensity -= 15
+      reasons.push({ signal: '訓練模式', emoji: '📊', description: `已連續訓練 ${recentTrainingPattern.consecutiveTrainingDays} 天，累積疲勞風險高，強烈建議休息` })
+    } else if (recentTrainingPattern.consecutiveTrainingDays >= 4) {
+      scores.active_recovery += 10
+      scores.reduced_volume += 10
+      scores.high_volume -= 10
       scores.high_intensity -= 10
-      reasons.push({ signal: '訓練模式', emoji: '📊', description: `近 7 天有 ${recentTrainingPattern.highRpeCount} 次高強度（RPE≥8）訓練，建議適度降強度` })
+      reasons.push({ signal: '訓練模式', emoji: '📊', description: `已連續訓練 ${recentTrainingPattern.consecutiveTrainingDays} 天，建議減量或安排休息` })
+    }
+
+    // P1: 高 RPE 累積 — 不只加 moderate，也要扣高強度和高容量
+    if (recentTrainingPattern.highRpeCount >= 4) {
+      scores.reduced_volume += 15
+      scores.moderate += 10
+      scores.high_intensity -= 20
+      scores.high_volume -= 15
+      reasons.push({ signal: '訓練模式', emoji: '📊', description: `近 7 天有 ${recentTrainingPattern.highRpeCount} 次高強度（RPE≥8），疲勞累積明顯，建議減量` })
+    } else if (recentTrainingPattern.highRpeCount >= 3) {
+      scores.moderate += 10
+      scores.high_intensity -= 15
+      scores.high_volume -= 10
+      reasons.push({ signal: '訓練模式', emoji: '📊', description: `近 7 天有 ${recentTrainingPattern.highRpeCount} 次高強度（RPE≥8），建議適度降強度` })
     }
   }
 
