@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     // 查客戶資料（含基因、目標、備賽階段、減脂起始日）
     const { data: client } = await supabaseAdmin
       .from('clients')
-      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, competition_enabled, diet_start_date, weight, gender')
+      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, competition_enabled, diet_start_date, gender')
       .eq('unique_code', clientId)
       .single()
 
@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
         consecutivePlateauWeeks,
         lowCarbDays,
         recentWellness,
-        bodyWeight: client.weight ?? undefined,
+        bodyWeight: (weightHistory && weightHistory.length > 0 ? weightHistory[0].weight : undefined) ?? undefined,
       })
 
       metabolicStress = { score: stressResult.score, level: stressResult.level }
