@@ -1990,7 +1990,9 @@ function generateCutSuggestion(
       for (const mod of labMods.macroModifiers) {
         if (mod.nutrient === 'protein' && mod.direction === 'increase') recalcPro += mod.delta
         if (mod.nutrient === 'carbs' && mod.direction === 'decrease') recalcCarb = Math.max(50, recalcCarb - mod.delta)
+        if (mod.nutrient === 'carbs' && mod.direction === 'increase') recalcCarb += mod.delta
         if (mod.nutrient === 'fat' && mod.direction === 'decrease') recalcFat = Math.max(Math.round(bw * 0.7), recalcFat - mod.delta)
+        if (mod.nutrient === 'fat' && mod.direction === 'increase') recalcFat += mod.delta
       }
     }
 
@@ -2020,7 +2022,9 @@ function generateCutSuggestion(
     for (const mod of labMods.macroModifiers) {
       if (mod.nutrient === 'protein' && mod.direction === 'increase') suggestedPro += mod.delta
       if (mod.nutrient === 'carbs' && mod.direction === 'decrease') suggestedCarb = Math.max(50, suggestedCarb - mod.delta)
+      if (mod.nutrient === 'carbs' && mod.direction === 'increase') suggestedCarb += mod.delta
       if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * 0.7), suggestedFat - mod.delta)
+      if (mod.nutrient === 'fat' && mod.direction === 'increase') suggestedFat += mod.delta
       if (mod.nutrient === 'calories' && mod.direction === 'increase') suggestedCal += mod.delta
     }
   }

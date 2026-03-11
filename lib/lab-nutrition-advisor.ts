@@ -2557,7 +2557,70 @@ export function getLabMacroModifiers(
   const bw = options.bodyWeight ?? 70
 
   for (const lab of labs) {
-    if (lab.value == null || lab.status === 'normal') continue
+    if (lab.value == null) continue
+
+    // ═══ 優勢指標正向調配（Positive Modifiers）═══
+    // 當血檢指標優秀時，放寬對應營養素限制，讓飲食分配更靈活
+    // 文獻：
+    //  - HOMA-IR < 1.0 → 極佳胰島素敏感度，碳水耐受力高 (Volek & Phinney 2011)
+    //  - ApoB < 60 → 心血管風險極低，脂肪攝取彈性更大 (Sniderman et al. 2019, Lancet)
+    //  - 空腹胰島素 < 5 → 碳水分配窗口可拉寬 (Ludwig 2002, JAMA)
+    //  - TG < 70 → 脂質代謝極佳，不需額外限制碳水 (Miller et al. 2011)
+
+    if (matchName(lab.test_name, ['homa-ir', 'homair'])) {
+      if (lab.value < 1.0) {
+        macroModifiers.push({
+          nutrient: 'carbs',
+          direction: 'increase',
+          delta: Math.round(bw * 0.3), // +0.3 g/kg carbs
+          reason: `HOMA-IR 極佳（${lab.value}），胰島素敏感度頂尖，可增加碳水攝取`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`🟢 HOMA-IR ${lab.value}（優秀 <1.0）：胰島素敏感度極佳，碳水耐受力高，訓練日碳水可拉到 5-6g/kg`)
+      }
+    }
+
+    if (matchName(lab.test_name, ['apob', 'apolipoproteinb'])) {
+      if (lab.value < 60) {
+        macroModifiers.push({
+          nutrient: 'fat',
+          direction: 'increase',
+          delta: Math.round(bw * 0.1), // +0.1 g/kg fat
+          reason: `ApoB 極佳（${lab.value}），心血管風險極低，脂肪攝取彈性更大`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`🟢 ApoB ${lab.value}（優秀 <60）：脂質代謝頂尖，飲食脂肪比例可適度放寬`)
+      }
+    }
+
+    if (matchName(lab.test_name, ['空腹胰島素', 'fasting insulin'])) {
+      if (lab.value < 5 && lab.value > 0) {
+        macroModifiers.push({
+          nutrient: 'carbs',
+          direction: 'increase',
+          delta: Math.round(bw * 0.3), // +0.3 g/kg carbs
+          reason: `空腹胰島素極低（${lab.value}），碳水處理能力優秀，可增加碳水`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`🟢 空腹胰島素 ${lab.value}（優秀 <5）：碳循環高碳日可拉到 5-6g/kg`)
+      }
+    }
+
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg'])) {
+      if (lab.value < 70) {
+        macroModifiers.push({
+          nutrient: 'carbs',
+          direction: 'increase',
+          delta: Math.round(bw * 0.2), // +0.2 g/kg carbs
+          reason: `三酸甘油酯極低（${lab.value}），脂質代謝優秀，碳水耐受力高`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`🟢 TG ${lab.value}（優秀 <70）：脂質代謝極佳，不需額外限制碳水`)
+      }
+    }
+
+    // ═══ 異常指標負向修正（原有邏輯）═══
+    if (lab.status === 'normal') continue
 
     // ── 低鐵蛋白 → 增加蛋白質（含鐵血紅蛋白來源）+ 減少有氧量 ──
     if (matchName(lab.test_name, ['鐵蛋白', 'ferritin'])) {
