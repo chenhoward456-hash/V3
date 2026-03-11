@@ -1924,6 +1924,7 @@ function generateCutSuggestion(
   let suggestedCarbsTD: number | null = null
   let suggestedCarbsRD: number | null = null
   if (input.carbsCyclingEnabled && input.currentCarbsTrainingDay != null && input.currentCarbsRestDay != null) {
+    // 已有碳循環值 → 增量調整
     const tdChange = Math.round(carbDelta * CARB_CYCLE_TRAINING_RATIO)
     const rdChange = carbDelta - tdChange
     suggestedCarbsTD = input.currentCarbsTrainingDay + tdChange
@@ -1932,6 +1933,13 @@ function generateCutSuggestion(
       suggestedCarbsRD = 30
       warnings.push('休息日碳水已觸及最低值 30g')
     }
+  } else if (input.carbsCyclingEnabled && suggestedCarb >= 50) {
+    // 碳循環啟用但尚無分配值 → 首次從平均碳水分配 60:40
+    const T = Math.min(Math.max(input.trainingDaysPerWeek, 4), 6)
+    const R = 7 - T
+    suggestedCarbsRD = Math.round((suggestedCarb * 7) / (1.5 * T + R))
+    suggestedCarbsTD = Math.round(suggestedCarbsRD * 1.5)
+    if (suggestedCarbsRD < 30) suggestedCarbsRD = 30
   }
 
   // 注意：Deadline-aware 的緊急加速已由 Goal-Driven 引擎處理（weightToLose > 0 時自動進入）
@@ -2367,7 +2375,8 @@ function generateGoalDrivenCut(
       // 訓練日:休息日 = 60:40 比例，根據訓練天數加權以保留週總碳水量
       // 公式：weeklyCarb = T × TD + R × RD，TD/RD = 1.5（60:40）
       const avgDailyCarb = suggestedCarb
-      const T = Math.min(input.trainingDaysPerWeek, 6)
+      // 訓練天數為 0 時（紀錄空白），預設 4 天以產生有意義的碳循環分配
+      const T = Math.min(Math.max(input.trainingDaysPerWeek, 4), 6)
       const R = 7 - T
       if (T > 0 && R > 0) {
         suggestedCarbsRD = Math.round((avgDailyCarb * 7) / (1.5 * T + R))

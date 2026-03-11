@@ -65,7 +65,17 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     }
   }
 
-  if (weeklyWeights.length < 2) return { adjusted: false, debug: `skip: weeklyWeights=${weeklyWeights.length} (need ≥2)` }
+  // Goal-Driven 客戶（有目標體重+日期）只需 1 週數據即可反算赤字
+  // Reactive 模式需要 2 週趨勢比較
+  const hasGoalDrivenData = !!(client.target_weight && (client.competition_date || client.target_date))
+  if (weeklyWeights.length < 2) {
+    if (weeklyWeights.length === 1 && hasGoalDrivenData) {
+      // 用本週均值作為 lastWeek 的替代（weeklyChangeRate = 0），讓 Goal-Driven 引擎能跑
+      weeklyWeights.push({ week: 1, avgWeight: weeklyWeights[0].avgWeight })
+    } else {
+      return { adjusted: false, debug: `skip: weeklyWeights=${weeklyWeights.length} (need ≥2)` }
+    }
+  }
 
   // 4. 合規率
   const fourteenStr = new Date(today.getTime() - 13 * 86400000).toISOString().split('T')[0]
