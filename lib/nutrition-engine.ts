@@ -1945,11 +1945,15 @@ function generateCutSuggestion(
     }
   } else if (input.carbsCyclingEnabled && suggestedCarb >= 50) {
     // 碳循環啟用但尚無分配值 → 首次從平均碳水分配
-    // 倍率由血檢代謝健康決定：優秀 1.8x / 一般 1.5x / 偏差 1.3x
+    // 優先用血檢 → 沒血檢時用恢復分數當代理指標
     const cutLabMods = input.labResults
       ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
       : null
-    const ccm = cutLabMods?.carbCycleMultiplier ?? 1.5
+    let ccm = cutLabMods?.carbCycleMultiplier ?? 1.5
+    if (ccm === 1.5 && recoveryState !== 'unknown') {
+      if (recoveryState === 'optimal') ccm = 1.7
+      else if (recoveryState === 'struggling' || recoveryState === 'critical') ccm = 1.3
+    }
     const T = Math.min(Math.max(input.trainingDaysPerWeek, 4), 6)
     const R = 7 - T
     suggestedCarbsRD = Math.round((suggestedCarb * 7) / (ccm * T + R))
@@ -2231,6 +2235,21 @@ function generateGoalDrivenCut(
   let suggestedPro = Math.round(bw * proteinPerKg)
   let suggestedFat = Math.round(bw * minFatPerKg)
 
+  // 血檢驅動巨量營養素修正（ApoB、鐵蛋白、胰島素等）
+  // Goal-Driven 也需要套用，不能只靠 reactive 路徑
+  const gdLabModResult = input.labResults
+    ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+    : null
+  const gdMacroMods = gdLabModResult?.macroModifiers ?? []
+  for (const mod of gdMacroMods) {
+    if (mod.nutrient === 'protein' && mod.direction === 'increase') suggestedPro += mod.delta
+    if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * (isMale ? GOAL_DRIVEN.MIN_FAT_PER_KG : GOAL_DRIVEN.MIN_FAT_PER_KG_FEMALE)), suggestedFat - mod.delta)
+    if (mod.nutrient === 'fat' && mod.direction === 'increase') suggestedFat += mod.delta
+    if (mod.nutrient === 'carbs' && mod.direction === 'decrease') {
+      // 碳水修正延後到碳水計算後處理（carbDeltaFromLab）
+    }
+  }
+
   // 計算蛋白質+脂肪的最低卡路里（碳水底線 30g = 120kcal）
   let proFatCal = suggestedPro * 4 + suggestedFat * 9
   const carbFloorCal = 30 * 4  // 120 kcal
@@ -2412,13 +2431,20 @@ function generateGoalDrivenCut(
       suggestedCarbsRD = suggestedCarb
       warnings.push('碳水已低於 50g，暫停碳循環（訓練日/休息日統一），優先確保最低碳水攝取')
     } else {
-      // 訓練日:休息日比例由血檢代謝健康動態決定（預設 1.5x）
-      // 優秀胰島素敏感度 1.8x / 一般 1.5x / 偏差 1.3x
+      // 訓練日:休息日比例由代謝健康動態決定（預設 1.5x）
+      // 優先用血檢（HOMA-IR / 空腹胰島素）→ 沒血檢時用恢復分數當代理指標
+      // 恢復極佳（≥85）= 身體代謝適應良好，碳水利用效率高 → 1.7x
+      // 恢復差（≤50）= 身體壓力大，碳水分配保守 → 1.3x
       const avgDailyCarb = suggestedCarb
       const gdLabMods = input.labResults
         ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
         : null
-      const gdCcm = gdLabMods?.carbCycleMultiplier ?? 1.5
+      let gdCcm = gdLabMods?.carbCycleMultiplier ?? 1.5
+      // 沒有代謝相關血檢時，用恢復分數當 fallback
+      if (gdCcm === 1.5 && recoveryState !== 'unknown') {
+        if (recoveryState === 'optimal') gdCcm = 1.7
+        else if (recoveryState === 'struggling' || recoveryState === 'critical') gdCcm = 1.3
+      }
       // 訓練天數為 0 時（紀錄空白），預設 4 天以產生有意義的碳循環分配
       const T = Math.min(Math.max(input.trainingDaysPerWeek, 4), 6)
       const R = 7 - T
@@ -2555,7 +2581,7 @@ function generateGoalDrivenCut(
     bodyFatZoneInfo: zoneInfo,
     deadlineInfo: enrichedDeadlineInfo,
     autoApply: true, tdeeAnomalyDetected: false,  // Goal-Driven 結果已 safety-capped，一律自動套用（不可行時 warning 通知教練但仍更新）
-    labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
+    labMacroModifiers: gdMacroMods, labTrainingModifiers: gdLabModResult?.trainingModifiers ?? [], energyAvailability: null,
     peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, suggestedPro),
