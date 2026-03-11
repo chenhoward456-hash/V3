@@ -2235,6 +2235,21 @@ function generateGoalDrivenCut(
   let suggestedPro = Math.round(bw * proteinPerKg)
   let suggestedFat = Math.round(bw * minFatPerKg)
 
+  // 血檢驅動巨量營養素修正（ApoB、鐵蛋白、胰島素等）
+  // Goal-Driven 也需要套用，不能只靠 reactive 路徑
+  const gdLabModResult = input.labResults
+    ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+    : null
+  const gdMacroMods = gdLabModResult?.macroModifiers ?? []
+  for (const mod of gdMacroMods) {
+    if (mod.nutrient === 'protein' && mod.direction === 'increase') suggestedPro += mod.delta
+    if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * (isMale ? GOAL_DRIVEN.MIN_FAT_PER_KG : GOAL_DRIVEN.MIN_FAT_PER_KG_FEMALE)), suggestedFat - mod.delta)
+    if (mod.nutrient === 'fat' && mod.direction === 'increase') suggestedFat += mod.delta
+    if (mod.nutrient === 'carbs' && mod.direction === 'decrease') {
+      // 碳水修正延後到碳水計算後處理（carbDeltaFromLab）
+    }
+  }
+
   // 計算蛋白質+脂肪的最低卡路里（碳水底線 30g = 120kcal）
   let proFatCal = suggestedPro * 4 + suggestedFat * 9
   const carbFloorCal = 30 * 4  // 120 kcal
@@ -2566,7 +2581,7 @@ function generateGoalDrivenCut(
     bodyFatZoneInfo: zoneInfo,
     deadlineInfo: enrichedDeadlineInfo,
     autoApply: true, tdeeAnomalyDetected: false,  // Goal-Driven 結果已 safety-capped，一律自動套用（不可行時 warning 通知教練但仍更新）
-    labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
+    labMacroModifiers: gdMacroMods, labTrainingModifiers: gdLabModResult?.trainingModifiers ?? [], energyAvailability: null,
     peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, suggestedPro),
