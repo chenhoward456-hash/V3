@@ -144,7 +144,7 @@ export default function SupplementManager({
     }
   }
 
-  const useTemplate = (template: typeof supplementTemplates[0]) => {
+  const applyTemplate = (template: typeof supplementTemplates[0]) => {
     setNewSupplement(template)
   }
 
@@ -265,7 +265,7 @@ export default function SupplementManager({
               {supplementTemplates.map((template, index) => (
                 <button
                   key={index}
-                  onClick={() => useTemplate(template)}
+                  onClick={() => applyTemplate(template)}
                   className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 transition-colors"
                 >
                   {template.name}
