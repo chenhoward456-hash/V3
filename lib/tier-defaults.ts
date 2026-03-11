@@ -3,7 +3,18 @@
 
 export type SubscriptionTier = 'free' | 'self_managed' | 'coached'
 
-const TIER_FEATURES: Record<SubscriptionTier, Record<string, boolean>> = {
+interface TierFeatures {
+  body_composition_enabled: boolean
+  wellness_enabled: boolean
+  nutrition_enabled: boolean
+  training_enabled: boolean
+  supplement_enabled: boolean
+  lab_enabled: boolean
+  ai_chat_enabled: boolean
+  simple_mode: boolean
+}
+
+const TIER_FEATURES: Record<SubscriptionTier, TierFeatures> = {
   free: {
     body_composition_enabled: true,
     wellness_enabled: false,
@@ -39,6 +50,6 @@ const TIER_FEATURES: Record<SubscriptionTier, Record<string, boolean>> = {
 export function getDefaultFeatures(tier: SubscriptionTier) {
   return {
     ...TIER_FEATURES[tier],
-    is_active: true,
+    is_active: true as const,
   }
 }
