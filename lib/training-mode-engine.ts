@@ -17,6 +17,7 @@
 import type { GeneticProfile } from './supplement-engine'
 import { getSerotoninRiskLevel } from './supplement-engine'
 import type { TrainingAdvice } from './ai-insights'
+import type { RecoveryAssessment } from './recovery-engine'
 import { getLocalDateStr } from './date-utils'
 
 // ═══════════════════════════════════════
@@ -391,6 +392,8 @@ export interface TrainingModeInput {
   recentTrainingPattern?: TrainingPatternAnalysis | null
   hormoneLabs?: HormoneLabValues | null
   metabolicStress?: { score: number; level: string } | null
+  /** 完整恢復評估（來自 recovery-engine），含 ACWR / ANS / 多系統分解 */
+  recoveryAssessment?: RecoveryAssessment | null
   // P2: 體重變化率（每週 % 變化，負值 = 下降）
   weeklyWeightChangePercent?: number | null
 }
@@ -408,6 +411,7 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
   } = input
 
   const recovery = baseAdvice.recoveryScore
+  const ra = input.recoveryAssessment  // 完整恢復評估（可選）
   const reasons: TrainingModeReason[] = []
   const geneticCorrections: GeneticTrainingCorrection[] = []
 
@@ -419,6 +423,13 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
     const config = MODE_CONFIG.rest
     reasons.push({ signal: '恢復分數', emoji: '🔴', description: `恢復分數極低（${recovery}/100），身體需要完全休息` })
     return buildRecommendation('rest', config, reasons, geneticCorrections, 'high')
+  }
+
+  // NEW: 過度訓練風險極高 → 強制 deload (Gabbett 2016)
+  if (ra?.overtrainingRisk.riskLevel === 'very_high') {
+    const config = MODE_CONFIG.deload
+    reasons.push({ signal: '過度訓練', emoji: '🚨', description: `過度訓練風險極高（ACWR ${ra.overtrainingRisk.acwr ?? '?'}），強制 deload` })
+    return buildRecommendation('deload', config, reasons, geneticCorrections, 'high')
   }
 
   if (metabolicStress && metabolicStress.score >= 60) {
@@ -466,6 +477,41 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
     scores.reduced_volume += 25
     scores.active_recovery += 15
     reasons.push({ signal: '恢復分數', emoji: '🟠', description: `恢復分數偏低（${recovery}/100），建議減量或主動恢復` })
+  }
+
+  // --- Overtraining Risk (from recovery-engine) ---
+  if (ra?.overtrainingRisk.riskLevel === 'high') {
+    scores.deload += 25
+    scores.reduced_volume += 20
+    scores.high_volume -= 20
+    scores.high_intensity -= 15
+    reasons.push({ signal: '過度訓練', emoji: '🟠', description: `過度訓練風險偏高（ACWR ${ra.overtrainingRisk.acwr ?? '?'}），建議減量` })
+  } else if (ra?.overtrainingRisk.riskLevel === 'moderate') {
+    scores.reduced_volume += 10
+    scores.high_volume -= 10
+    reasons.push({ signal: '過度訓練', emoji: '🟡', description: `過度訓練風險中等（ACWR ${ra.overtrainingRisk.acwr ?? '?'}），注意負荷管理` })
+  }
+
+  // --- ANS Balance (from recovery-engine) ---
+  if (ra?.autonomicBalance.status === 'sympathetic_dominant') {
+    scores.reduced_volume += 15
+    scores.active_recovery += 10
+    scores.high_intensity -= 10
+    reasons.push({ signal: '自律神經', emoji: '🟠', description: '交感主導（壓力態），優先恢復' })
+  } else if (ra?.autonomicBalance.status === 'parasympathetic_dominant') {
+    scores.high_volume += 10
+    scores.high_intensity += 10
+    reasons.push({ signal: '自律神經', emoji: '🟢', description: '副交感主導（恢復態），適合訓練' })
+  }
+
+  // --- Recovery Trajectory (from recovery-engine) ---
+  if (ra?.trajectory === 'declining') {
+    scores.reduced_volume += 15
+    scores.deload += 10
+    reasons.push({ signal: '恢復趨勢', emoji: '📉', description: '恢復趨勢持續下滑，建議減負荷' })
+  } else if (ra?.trajectory === 'improving') {
+    scores.high_volume += 10
+    reasons.push({ signal: '恢復趨勢', emoji: '📈', description: '恢復趨勢上升，可逐步增加負荷' })
   }
 
   // --- Goal Type ---
