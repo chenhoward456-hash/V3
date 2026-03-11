@@ -207,13 +207,16 @@ export interface TrainingPatternAnalysis {
   daysSinceLastRest: number
   lastSessionRpe: number | null  // 最近一次訓練的 RPE（前一天上下文）
   lastSessionDate: string | null // 最近一次訓練日期
+  // P2: 長期週期化分析
+  weeksSinceLastDeload: number   // 自上次 deload 週以來的週數（deload = 該週 avgRPE<6 或 sessions≤2）
+  totalWeeksAnalyzed: number     // 有數據的總週數（最多 8）
 }
 
 export function analyzeTrainingPattern(
   logs: Array<{ date: string; training_type?: string | null; rpe?: number | null; sets?: number | null; duration?: number | null }>
 ): TrainingPatternAnalysis {
   if (!logs || logs.length === 0) {
-    return { sessionsLast7d: 0, sessionsLast14d: 0, avgRpe: null, highRpeCount: 0, consecutiveTrainingDays: 0, daysSinceLastRest: 0, lastSessionRpe: null, lastSessionDate: null }
+    return { sessionsLast7d: 0, sessionsLast14d: 0, avgRpe: null, highRpeCount: 0, consecutiveTrainingDays: 0, daysSinceLastRest: 0, lastSessionRpe: null, lastSessionDate: null, weeksSinceLastDeload: 0, totalWeeksAnalyzed: 0 }
   }
 
   const now = new Date()
@@ -275,6 +278,49 @@ export function analyzeTrainingPattern(
   const lastSessionRpe = lastSession?.rpe ?? null
   const lastSessionDate = lastSession?.date ?? null
 
+  // P2: 長期週期化分析 — 逐週檢查 deload 週
+  // Deload 週定義：該週 sessions ≤ 2 或 avgRPE < 6
+  let weeksSinceLastDeload = 0
+  let totalWeeksAnalyzed = 0
+  let foundDeload = false
+
+  for (let w = 0; w < 8; w++) {
+    const weekStart = new Date(today)
+    weekStart.setDate(today.getDate() - (w + 1) * 7)
+    const weekEnd = new Date(today)
+    weekEnd.setDate(today.getDate() - w * 7)
+
+    const weekLogs = activeLogs.filter(l => {
+      const d = new Date(l.date)
+      return d >= weekStart && d < weekEnd
+    })
+
+    if (weekLogs.length === 0 && w > 0) {
+      // 沒有數據的週不計入（可能還沒開始用系統）
+      if (totalWeeksAnalyzed === 0) continue  // 從有數據的週開始算
+      // 沒訓練 = 等同 deload
+      foundDeload = true
+      break
+    }
+
+    if (weekLogs.length > 0) {
+      totalWeeksAnalyzed++
+      const weekRpes = weekLogs.filter(l => l.rpe != null).map(l => l.rpe!)
+      const weekAvgRpe = weekRpes.length > 0 ? weekRpes.reduce((a, b) => a + b, 0) / weekRpes.length : 0
+
+      if (weekLogs.length <= 2 || weekAvgRpe < 6) {
+        foundDeload = true
+        break
+      }
+
+      if (!foundDeload) weeksSinceLastDeload = w + 1
+    }
+  }
+
+  if (!foundDeload && totalWeeksAnalyzed > 0) {
+    weeksSinceLastDeload = totalWeeksAnalyzed
+  }
+
   return {
     sessionsLast7d: last7dActive.length,
     sessionsLast14d: last14dActive.length,
@@ -284,6 +330,8 @@ export function analyzeTrainingPattern(
     daysSinceLastRest,
     lastSessionRpe,
     lastSessionDate,
+    weeksSinceLastDeload,
+    totalWeeksAnalyzed,
   }
 }
 
@@ -340,6 +388,8 @@ export interface TrainingModeInput {
   hormoneLabs?: HormoneLabValues | null
   labTrainingModifiers?: TrainingModeReason[]
   metabolicStress?: { score: number; level: string } | null
+  // P2: 體重變化率（每週 % 變化，負值 = 下降）
+  weeklyWeightChangePercent?: number | null
 }
 
 export function getTrainingModeRecommendation(input: TrainingModeInput): TrainingModeRecommendation {
@@ -351,6 +401,7 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
     recentTrainingPattern,
     hormoneLabs,
     metabolicStress,
+    weeklyWeightChangePercent,
   } = input
 
   const recovery = baseAdvice.recoveryScore
@@ -564,6 +615,44 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       scores.high_intensity -= 15
       scores.high_volume -= 10
       reasons.push({ signal: '訓練模式', emoji: '📊', description: `近 7 天有 ${recentTrainingPattern.highRpeCount} 次高強度（RPE≥8），建議適度降強度` })
+    }
+
+    // P2: 長期週期化 — 連續多週高強度未安排 deload
+    if (recentTrainingPattern.totalWeeksAnalyzed >= 4 && recentTrainingPattern.weeksSinceLastDeload >= 6) {
+      scores.deload += 25
+      scores.reduced_volume += 15
+      scores.high_volume -= 15
+      scores.high_intensity -= 10
+      reasons.push({ signal: '週期化', emoji: '📅', description: `已連續 ${recentTrainingPattern.weeksSinceLastDeload} 週未安排 deload，累積疲勞風險高，建議安排減負荷週` })
+    } else if (recentTrainingPattern.totalWeeksAnalyzed >= 3 && recentTrainingPattern.weeksSinceLastDeload >= 5) {
+      scores.deload += 15
+      scores.reduced_volume += 10
+      scores.high_volume -= 10
+      reasons.push({ signal: '週期化', emoji: '📅', description: `已 ${recentTrainingPattern.weeksSinceLastDeload} 週未 deload，接近建議減負荷時機（通常 4-6 週一次）` })
+    }
+  }
+
+  // --- P2: 體重變化率偵測 ---
+  if (weeklyWeightChangePercent != null && goalType === 'cut') {
+    // 掉太快：每週 > 1% 體重 → 減訓練量（肌肉流失風險）
+    if (weeklyWeightChangePercent < -1.0) {
+      scores.high_volume -= 15
+      scores.high_intensity -= 10
+      scores.reduced_volume += 10
+      reasons.push({ signal: '體重變化', emoji: '⚖️', description: `每週減重 ${Math.abs(weeklyWeightChangePercent).toFixed(1)}%，超過安全上限 1%，肌肉流失風險升高，建議減少訓練量` })
+    }
+    // 掉太慢或沒掉：可以推更硬
+    else if (weeklyWeightChangePercent > -0.3 && weeklyWeightChangePercent <= 0) {
+      scores.high_intensity += 10
+      scores.high_volume += 5
+      reasons.push({ signal: '體重變化', emoji: '⚖️', description: `每週減重僅 ${Math.abs(weeklyWeightChangePercent).toFixed(1)}%，體重接近停滯，可適度提高訓練強度促進能量消耗` })
+    }
+  } else if (weeklyWeightChangePercent != null && goalType === 'bulk') {
+    // 增太快：每週 > 0.5% → 可能脂肪增加過多
+    if (weeklyWeightChangePercent > 0.5) {
+      scores.high_volume += 10
+      scores.cardio_focus += 5
+      reasons.push({ signal: '體重變化', emoji: '⚖️', description: `每週增重 ${weeklyWeightChangePercent.toFixed(1)}%，增速偏快，可增加訓練容量消耗多餘熱量` })
     }
   }
 
