@@ -12,7 +12,7 @@ function requireEnv(name: string): string {
 }
 
 // Lazy getter：只在 runtime 真正呼叫時才讀取 env var，避免 build 階段 throw
-let _ecpayConfig: { MerchantID: string; HashKey: string; HashIV: string; PaymentURL: string } | null = null
+let _ecpayConfig: { MerchantID: string; HashKey: string; HashIV: string; PaymentURL: string; PeriodActionURL: string } | null = null
 
 export function getEcpayConfig() {
   if (!_ecpayConfig) {
@@ -23,13 +23,16 @@ export function getEcpayConfig() {
       PaymentURL: isEcpayProduction
         ? 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5'
         : 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5',
+      PeriodActionURL: isEcpayProduction
+        ? 'https://payment.ecpay.com.tw/Cashier/CreditCardPeriodAction'
+        : 'https://payment-stage.ecpay.com.tw/Cashier/CreditCardPeriodAction',
     }
   }
   return _ecpayConfig
 }
 
 // 向後相容：保留 ECPAY_CONFIG 作為 lazy proxy
-export const ECPAY_CONFIG = new Proxy({} as { MerchantID: string; HashKey: string; HashIV: string; PaymentURL: string }, {
+export const ECPAY_CONFIG = new Proxy({} as { MerchantID: string; HashKey: string; HashIV: string; PaymentURL: string; PeriodActionURL: string }, {
   get(_, prop: string) {
     return getEcpayConfig()[prop as keyof ReturnType<typeof getEcpayConfig>]
   },

@@ -200,6 +200,8 @@ export default function ClientDashboard() {
   const [updatingPhase, setUpdatingPhase] = useState(false)
   const [showMoreAnalysis, setShowMoreAnalysis] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [cancellingSubscription, setCancellingSubscription] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const { showToast } = useToast()
 
   const toggleSimpleMode = async () => {
@@ -216,6 +218,27 @@ export default function ClientDashboard() {
       showToast(newVal ? '已切換為簡單模式' : '已切換為完整模式', 'success')
       setShowSettings(false)
     } catch { showToast('切換失敗，請重試', 'error') }
+  }
+
+  const handleCancelSubscription = async () => {
+    if (!clientData?.client) return
+    setCancellingSubscription(true)
+    try {
+      const res = await fetch('/api/subscribe/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: clientData.client.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || '取消失敗')
+      showToast('已取消定期定額，帳號可使用至到期日', 'success')
+      setShowCancelConfirm(false)
+      setShowSettings(false)
+    } catch (err: any) {
+      showToast(err.message || '取消失敗，請重試', 'error')
+    } finally {
+      setCancellingSubscription(false)
+    }
   }
 
   // Scroll-based bottom nav highlighting
@@ -595,6 +618,40 @@ export default function ClientDashboard() {
                         }`} />
                       </button>
                     </div>
+
+                    {/* 取消訂閱 */}
+                    {c.subscription_tier !== 'free' && (
+                      <div className="mt-4 pt-3 border-t border-gray-100">
+                        {!showCancelConfirm ? (
+                          <button
+                            onClick={() => setShowCancelConfirm(true)}
+                            className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            取消定期定額
+                          </button>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-red-600 font-medium">確定要取消嗎？</p>
+                            <p className="text-[10px] text-gray-500">取消後不再自動扣款，帳號可使用至到期日。</p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleCancelSubscription}
+                                disabled={cancellingSubscription}
+                                className="px-3 py-1.5 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                              >
+                                {cancellingSubscription ? '處理中...' : '確認取消'}
+                              </button>
+                              <button
+                                onClick={() => setShowCancelConfirm(false)}
+                                className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-gray-200 transition-colors"
+                              >
+                                返回
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
