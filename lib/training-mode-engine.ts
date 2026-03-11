@@ -59,6 +59,7 @@ export interface TrainingModeRecommendation {
   reasons: TrainingModeReason[]
   geneticTrainingCorrections: GeneticTrainingCorrection[]
   confidence: 'high' | 'medium' | 'low'
+  sameSplitWarning?: string | null  // 如果用戶選的部位和昨天一樣，顯示警告
 }
 
 // ═══════════════════════════════════════
@@ -207,6 +208,7 @@ export interface TrainingPatternAnalysis {
   daysSinceLastRest: number
   lastSessionRpe: number | null  // 最近一次訓練的 RPE（前一天上下文）
   lastSessionDate: string | null // 最近一次訓練日期
+  lastTrainingType: string | null // 最近一次訓練類型（push/pull/legs 等）
   // P2: 長期週期化分析
   weeksSinceLastDeload: number   // 自上次 deload 週以來的週數（deload = 該週 avgRPE<6 或 sessions≤2）
   totalWeeksAnalyzed: number     // 有數據的總週數（最多 8）
@@ -216,7 +218,7 @@ export function analyzeTrainingPattern(
   logs: Array<{ date: string; training_type?: string | null; rpe?: number | null; sets?: number | null; duration?: number | null }>
 ): TrainingPatternAnalysis {
   if (!logs || logs.length === 0) {
-    return { sessionsLast7d: 0, sessionsLast14d: 0, avgRpe: null, highRpeCount: 0, consecutiveTrainingDays: 0, daysSinceLastRest: 0, lastSessionRpe: null, lastSessionDate: null, weeksSinceLastDeload: 0, totalWeeksAnalyzed: 0 }
+    return { sessionsLast7d: 0, sessionsLast14d: 0, avgRpe: null, highRpeCount: 0, consecutiveTrainingDays: 0, daysSinceLastRest: 0, lastSessionRpe: null, lastSessionDate: null, lastTrainingType: null, weeksSinceLastDeload: 0, totalWeeksAnalyzed: 0 }
   }
 
   const now = new Date()
@@ -277,6 +279,7 @@ export function analyzeTrainingPattern(
   const lastSession = activeLogs.length > 0 ? activeLogs[0] : null  // sorted DESC, first = most recent
   const lastSessionRpe = lastSession?.rpe ?? null
   const lastSessionDate = lastSession?.date ?? null
+  const lastTrainingType = lastSession?.training_type ?? null
 
   // P2: 長期週期化分析 — 逐週檢查 deload 週
   // Deload 週定義：該週 sessions ≤ 2 或 avgRPE < 6
@@ -330,6 +333,7 @@ export function analyzeTrainingPattern(
     daysSinceLastRest,
     lastSessionRpe,
     lastSessionDate,
+    lastTrainingType,
     weeksSinceLastDeload,
     totalWeeksAnalyzed,
   }
@@ -386,7 +390,6 @@ export interface TrainingModeInput {
   geneticProfile?: GeneticProfile | null
   recentTrainingPattern?: TrainingPatternAnalysis | null
   hormoneLabs?: HormoneLabValues | null
-  labTrainingModifiers?: TrainingModeReason[]
   metabolicStress?: { score: number; level: string } | null
   // P2: 體重變化率（每週 % 變化，負值 = 下降）
   weeklyWeightChangePercent?: number | null
@@ -543,6 +546,15 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       effect: '甲基化代謝受損 → DNA 修復與蛋白質合成恢復較慢 → 降低總訓練量，確保足夠休息日',
       emoji: '🧬',
     })
+  } else if (geneticProfile?.mthfr === 'heterozygous') {
+    scores.high_volume -= 8
+    scores.reduced_volume += 5
+    geneticCorrections.push({
+      gene: 'MTHFR',
+      variant: '雜合突變',
+      effect: '甲基化效率約降 35% → 恢復速度略慢 → 適度控制訓練量，避免連續高容量',
+      emoji: '🧬',
+    })
   }
 
   if (geneticProfile?.apoe === 'e3/e4' || geneticProfile?.apoe === 'e4/e4') {
@@ -557,13 +569,39 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
 
   // --- Hormone Labs ---
   if (hormoneLabs) {
+    // Bug 1 fix: 睪固酮/皮質醇作為過度訓練指標
+    if (hormoneLabs.testosterone != null && hormoneLabs.testosterone < 300) {
+      scores.high_intensity -= 15
+      scores.high_volume -= 15
+      scores.reduced_volume += 15
+      reasons.push({ signal: '血檢', emoji: '🩸', description: `睪固酮偏低（${hormoneLabs.testosterone}），可能處於過度訓練或恢復不足，建議減量` })
+    }
+    if (hormoneLabs.cortisol != null && hormoneLabs.cortisol > 25) {
+      scores.high_intensity -= 10
+      scores.high_volume -= 10
+      scores.reduced_volume += 10
+      scores.deload += 5
+      reasons.push({ signal: '血檢', emoji: '🩸', description: `皮質醇偏高（${hormoneLabs.cortisol}），壓力荷爾蒙升高，建議減少訓練壓力` })
+    }
+    // T/C 比值（睪固酮/皮質醇）— 過度訓練黃金指標
+    if (hormoneLabs.testosterone != null && hormoneLabs.cortisol != null && hormoneLabs.cortisol > 0) {
+      const tcRatio = hormoneLabs.testosterone / hormoneLabs.cortisol
+      if (tcRatio < 15) {
+        scores.deload += 15
+        scores.high_volume -= 10
+        reasons.push({ signal: '血檢', emoji: '🩸', description: `睪固酮/皮質醇比值偏低（${tcRatio.toFixed(1)}），過度訓練風險高` })
+      }
+    }
+
+    // Bug 2 fix: ferritin/hemoglobin 改為推薦 cardio_focus 而非扣分
     if (hormoneLabs.ferritin != null && hormoneLabs.ferritin < 30) {
-      scores.cardio_focus -= 20
-      reasons.push({ signal: '血檢', emoji: '🩸', description: `鐵蛋白偏低（${hormoneLabs.ferritin}），有氧能力受限，減少有氧量` })
+      scores.high_volume -= 10
+      scores.high_intensity -= 10
+      reasons.push({ signal: '血檢', emoji: '🩸', description: `鐵蛋白偏低（${hormoneLabs.ferritin}），氧氣運輸受限，避免高組數/高強度訓練` })
     }
     if (hormoneLabs.hemoglobin != null && hormoneLabs.hemoglobin < 12) {
-      scores.cardio_focus -= 20
-      reasons.push({ signal: '血檢', emoji: '🩸', description: `血紅素偏低（${hormoneLabs.hemoglobin}），氧氣運輸下降` })
+      scores.reduced_volume += 10
+      reasons.push({ signal: '血檢', emoji: '🩸', description: `血紅素偏低（${hormoneLabs.hemoglobin}），運動耐力下降，建議減量` })
     }
   }
 
@@ -679,7 +717,31 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
   if (margin >= 20) confidence = 'high'
   else if (margin < 10) confidence = 'low'
 
-  return buildRecommendation(bestMode, config, reasons, geneticCorrections, confidence)
+  // Fix 5: 訓練類型偵測 — 提醒避免連續同部位
+  let sameSplitWarning: string | null = null
+  if (recentTrainingPattern?.lastTrainingType && recentTrainingPattern.lastSessionDate) {
+    const today = new Date()
+    const lastDate = new Date(recentTrainingPattern.lastSessionDate)
+    const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000))
+
+    if (daysDiff <= 1) {
+      const lastType = recentTrainingPattern.lastTrainingType.toLowerCase()
+      // 定義肌群衝突映射
+      const muscleGroups: Record<string, string[]> = {
+        '推': ['推', '胸', '肩', 'push', 'chest', 'shoulder'],
+        '拉': ['拉', '背', 'pull', 'back'],
+        '腿': ['腿', 'legs', 'leg'],
+      }
+      for (const [group, aliases] of Object.entries(muscleGroups)) {
+        if (aliases.some(a => lastType.includes(a))) {
+          sameSplitWarning = `昨天已練「${recentTrainingPattern.lastTrainingType}」，建議今天換${group === '推' ? '拉或腿' : group === '拉' ? '推或腿' : '推或拉'}，讓肌群有 48 小時恢復`
+          break
+        }
+      }
+    }
+  }
+
+  return buildRecommendation(bestMode, config, reasons, geneticCorrections, confidence, sameSplitWarning)
 }
 
 function buildRecommendation(
@@ -688,6 +750,7 @@ function buildRecommendation(
   reasons: TrainingModeReason[],
   geneticCorrections: GeneticTrainingCorrection[],
   confidence: 'high' | 'medium' | 'low',
+  sameSplitWarning?: string | null,
 ): TrainingModeRecommendation {
   return {
     recommendedMode: mode,
@@ -702,5 +765,6 @@ function buildRecommendation(
     reasons,
     geneticTrainingCorrections: geneticCorrections,
     confidence,
+    sameSplitWarning: sameSplitWarning ?? null,
   }
 }

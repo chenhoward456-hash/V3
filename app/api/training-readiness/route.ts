@@ -236,7 +236,6 @@ export async function GET(request: NextRequest) {
       geneticProfile,
       recentTrainingPattern: trainingPattern,
       hormoneLabs,
-      labTrainingModifiers: [],
       metabolicStress,
       weeklyWeightChangePercent,
     })

@@ -448,11 +448,11 @@ export function getTrainingAdvice(
     reasons.push(`近 7 天僅訓練 ${recentTrainingDays} 天，恢復充足`)
   }
 
-  // 高 RPE 訓練累積
-  const highRPE = last7Training.filter(t => t.rpe != null && t.rpe >= 9).length
+  // 高 RPE 訓練累積（閾值統一為 ≥8，與 training-mode-engine 一致）
+  const highRPE = last7Training.filter(t => t.rpe != null && t.rpe >= 8).length
   if (highRPE >= 3) {
     recoveryScore -= 15
-    reasons.push(`近 7 天有 ${highRPE} 次高強度（RPE≥9）訓練`)
+    reasons.push(`近 7 天有 ${highRPE} 次高強度（RPE≥8）訓練`)
   }
 
   // 穿戴裝置數據

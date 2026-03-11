@@ -32,6 +32,7 @@ interface ModeRecommendation {
   reasons: ModeReason[]
   geneticTrainingCorrections: GeneticCorrection[]
   confidence: 'high' | 'medium' | 'low'
+  sameSplitWarning?: string | null
 }
 
 interface TrainingReadiness {
@@ -469,6 +470,11 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                   <li key={i} className="text-xs opacity-80">- {s}</li>
                 ))}
               </ul>
+              {mode.sameSplitWarning && (
+                <div className="text-xs bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-3 py-2 mb-2">
+                  ⚠️ {mode.sameSplitWarning}
+                </div>
+              )}
               <div className="flex flex-wrap gap-1 mb-2">
                 {mode.focusAreas.map((area, i) => (
                   <span key={i} className={`text-[10px] ${colors.tagBg} rounded px-1.5 py-0.5`}>{area}</span>
