@@ -1985,8 +1985,12 @@ function generateCutSuggestion(
     getApoe4FatWarnings(input.geneticProfile, otGeneticCorrections, warnings)
 
     // 血檢修正
+    let otLabMacroModifiers: LabMacroModifier[] = []
+    let otLabTrainingModifiers: LabTrainingModifier[] = []
     if (input.labResults) {
       const labMods = getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+      otLabMacroModifiers = labMods.macroModifiers
+      otLabTrainingModifiers = labMods.trainingModifiers
       for (const mod of labMods.macroModifiers) {
         if (mod.nutrient === 'protein' && mod.direction === 'increase') recalcPro += mod.delta
         if (mod.nutrient === 'carbs' && mod.direction === 'decrease') recalcCarb = Math.max(50, recalcCarb - mod.delta)
@@ -2008,7 +2012,7 @@ function generateCutSuggestion(
       dietDurationWeeks, dietBreakSuggested, warnings,
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
-      labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
+      labMacroModifiers: otLabMacroModifiers, labTrainingModifiers: otLabTrainingModifiers, energyAvailability: null,
       deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, recalcPro),
@@ -2017,8 +2021,12 @@ function generateCutSuggestion(
   }
 
   // 套用血檢巨量營養素修正到建議值
+  let mainLabMacroModifiers: LabMacroModifier[] = []
+  let mainLabTrainingModifiers: LabTrainingModifier[] = []
   if (input.labResults) {
     const labMods = getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
+    mainLabMacroModifiers = labMods.macroModifiers
+    mainLabTrainingModifiers = labMods.trainingModifiers
     for (const mod of labMods.macroModifiers) {
       if (mod.nutrient === 'protein' && mod.direction === 'increase') suggestedPro += mod.delta
       if (mod.nutrient === 'carbs' && mod.direction === 'decrease') suggestedCarb = Math.max(50, suggestedCarb - mod.delta)
@@ -2054,7 +2062,7 @@ function generateCutSuggestion(
     dietDurationWeeks, dietBreakSuggested, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
-    labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
+    labMacroModifiers: mainLabMacroModifiers, labTrainingModifiers: mainLabTrainingModifiers, energyAvailability: null,
     deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     geneticCorrections,

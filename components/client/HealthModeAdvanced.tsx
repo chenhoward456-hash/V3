@@ -20,7 +20,7 @@ interface LabAdvice {
   category: string
   title: string
   icon: string
-  severity: 'high' | 'medium'
+  severity: 'high' | 'medium' | 'positive'
   dietaryChanges: string[]
   foodsToIncrease: string[]
   foodsToReduce: string[]

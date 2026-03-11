@@ -22,7 +22,7 @@ export interface LabNutritionAdvice {
   category: 'iron' | 'inflammation' | 'lipid' | 'glucose' | 'vitamin' | 'mineral' | 'hormone' | 'liver' | 'kidney' | 'thyroid' | 'blood'
   title: string
   icon: string
-  severity: 'high' | 'medium'
+  severity: 'high' | 'medium' | 'positive'
   dietaryChanges: string[]
   foodsToIncrease: string[]
   foodsToReduce: string[]
@@ -57,7 +57,79 @@ export function generateLabNutritionAdvice(
   const { gender, goalType } = options
 
   for (const lab of labs) {
-    if (lab.value == null || lab.status === 'normal') continue
+    if (lab.value == null) continue
+
+    // ════════════════════════════════════════
+    // 優勢指標正向建議（Positive Advice Cards）
+    // ════════════════════════════════════════
+
+    if (matchName(lab.test_name, ['homa-ir', 'homair']) && lab.value < 1.0) {
+      advice.push({
+        category: 'glucose',
+        title: '胰島素敏感度頂尖',
+        icon: '🟢',
+        severity: 'positive',
+        dietaryChanges: [
+          '訓練日碳水可拉高至 5-6g/kg，充分利用胰島素敏感度優勢',
+          '碳水時機可更靈活，不需嚴格限制在訓練前後',
+          '高碳日可作為合成代謝的推力，有利增肌或維持肌肉量',
+        ],
+        foodsToIncrease: ['白飯', '地瓜', '馬鈴薯', '香蕉', '燕麥'],
+        foodsToReduce: [],
+        macroAdjustment: { nutrient: '碳水化合物', direction: 'increase', detail: '碳水 +0.3g/kg，訓練日可拉到 5-6g/kg' },
+        labMarker: lab.test_name,
+        currentValue: lab.value,
+        unit: lab.unit,
+        targetRange: '<1.0（頂尖）/ <1.4（優秀）',
+        references: ['Volek & Phinney 2011', 'Richter & Hargreaves 2013, Physiol Rev'],
+      })
+    }
+
+    if (matchName(lab.test_name, ['apob', 'apolipoproteinb']) && lab.value < 60) {
+      advice.push({
+        category: 'lipid',
+        title: 'ApoB 極低，心血管風險極低',
+        icon: '🟢',
+        severity: 'positive',
+        dietaryChanges: [
+          '飲食脂肪比例可適度放寬，不需刻意限制飽和脂肪',
+          '可以更靈活地選擇蛋白質來源（含脂肉品、全蛋等）',
+          '堅果、酪梨等高脂食物可自由攝取',
+        ],
+        foodsToIncrease: ['全蛋', '牛排', '酪梨', '堅果', '起司'],
+        foodsToReduce: [],
+        macroAdjustment: { nutrient: '脂肪', direction: 'increase', detail: '脂肪 +0.1g/kg，飽和脂肪不需嚴格限制' },
+        labMarker: lab.test_name,
+        currentValue: lab.value,
+        unit: lab.unit,
+        targetRange: '<60（頂尖）/ <80（理想）',
+        references: ['Sniderman et al. 2019, Lancet', 'Ference et al. 2017, Eur Heart J'],
+      })
+    }
+
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg']) && lab.value < 70) {
+      advice.push({
+        category: 'lipid',
+        title: '三酸甘油酯極低，脂質代謝極佳',
+        icon: '🟢',
+        severity: 'positive',
+        dietaryChanges: [
+          '碳水耐受力強，不需額外限制精製碳水',
+          '可在訓練日攝取較高碳水而無脂質代謝風險',
+        ],
+        foodsToIncrease: ['白飯', '水果', '果汁（訓練後）'],
+        foodsToReduce: [],
+        macroAdjustment: { nutrient: '碳水化合物', direction: 'increase', detail: '碳水 +0.2g/kg，碳水來源限制可放寬' },
+        labMarker: lab.test_name,
+        currentValue: lab.value,
+        unit: lab.unit,
+        targetRange: '<70（頂尖）/ <100（理想）',
+        references: ['Miller et al. 2011, Circulation'],
+      })
+    }
+
+    // 跳過正常指標的異常分析
+    if (lab.status === 'normal') continue
 
     // ════════════════════════════════════════
     // 代謝 / 血糖
@@ -2555,6 +2627,7 @@ export function getLabMacroModifiers(
   const trainingModifiers: LabTrainingModifier[] = []
   const warnings: string[] = []
   const bw = options.bodyWeight ?? 70
+  let hasInsulinSensitivityBoost = false // 防止 HOMA-IR + 空腹胰島素雙重加碳水
 
   for (const lab of labs) {
     if (lab.value == null) continue
@@ -2565,7 +2638,10 @@ export function getLabMacroModifiers(
     //  - HOMA-IR < 1.0 → 極佳胰島素敏感度，碳水耐受力高 (Volek & Phinney 2011)
     //  - ApoB < 60 → 心血管風險極低，脂肪攝取彈性更大 (Sniderman et al. 2019, Lancet)
     //  - 空腹胰島素 < 5 → 碳水分配窗口可拉寬 (Ludwig 2002, JAMA)
-    //  - TG < 70 → 脂質代謝極佳，不需額外限制碳水 (Miller et al. 2011)
+    //  - TG < 70 → 脂質代謝極佳，不需額外限制碳水
+    //
+    // 防重複計算：HOMA-IR = (空腹胰島素 × 空腹血糖) / 405
+    // 兩者高度相關，只取其一加碳水，優先用 HOMA-IR（更完整的指標）
 
     if (matchName(lab.test_name, ['homa-ir', 'homair'])) {
       if (lab.value < 1.0) {
@@ -2577,6 +2653,7 @@ export function getLabMacroModifiers(
           labMarker: lab.test_name,
         })
         warnings.push(`🟢 HOMA-IR ${lab.value}（優秀 <1.0）：胰島素敏感度極佳，碳水耐受力高，訓練日碳水可拉到 5-6g/kg`)
+        hasInsulinSensitivityBoost = true
       }
     }
 
@@ -2593,8 +2670,9 @@ export function getLabMacroModifiers(
       }
     }
 
+    // 只在沒有 HOMA-IR 優勢加成時才用空腹胰島素加碳水（避免雙重計算）
     if (matchName(lab.test_name, ['空腹胰島素', 'fasting insulin'])) {
-      if (lab.value < 5 && lab.value > 0) {
+      if (lab.value < 5 && lab.value > 0 && !hasInsulinSensitivityBoost) {
         macroModifiers.push({
           nutrient: 'carbs',
           direction: 'increase',
@@ -2603,6 +2681,7 @@ export function getLabMacroModifiers(
           labMarker: lab.test_name,
         })
         warnings.push(`🟢 空腹胰島素 ${lab.value}（優秀 <5）：碳循環高碳日可拉到 5-6g/kg`)
+        hasInsulinSensitivityBoost = true
       }
     }
 
