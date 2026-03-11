@@ -304,13 +304,16 @@ export async function GET(request: NextRequest) {
     const suggestion = generateNutritionSuggestion(engineInput)
 
     // 10. 自動套用：如果引擎說 autoApply 且有調整
-    // goal-driven 模式允許客戶端自動套用（備賽選手需即時同步）
-    // self_managed 訂閱用戶也允許自動套用（499 自主管理）
-    // 其他模式仍需 admin 權限
+    // 允許自動套用的條件（OR）：
+    //   - admin 操作
+    //   - goal_driven 模式（有目標體重+日期）
+    //   - 備賽選手（competition_enabled，不論有無目標體重）
+    //   - self_managed 訂閱用戶（499 自主管理）
     let applied = false
     let coachLocked = false
     const isSelfManaged = client.subscription_tier === 'self_managed'
-    const canAutoApply = wantsAutoApply && suggestion.autoApply && (isAdmin || suggestion.status === 'goal_driven' || isSelfManaged)
+    const isCompetitionClient = !!client.competition_enabled
+    const canAutoApply = wantsAutoApply && suggestion.autoApply && (isAdmin || suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged)
 
     // 教練覆寫鎖定：教練手動調整過營養目標 → 跳過 auto-apply（admin 操作不受限）
     const coachOverride = client.coach_macro_override as { locked_at: string; locked_fields: string[] } | null
