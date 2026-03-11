@@ -2000,6 +2000,10 @@ function generateCutSuggestion(
   // 基因修正層（Reactive 模式）
   const geneticCorrections: GeneticCorrection[] = []
   suggestedCarb = applyGeneticCarbFloor(suggestedCarb, input.geneticProfile, geneticCorrections)
+  // 碳循環拆分後，休息日碳水也要套用基因下限（5-HTTLPR SL/SS）
+  if (suggestedCarbsRD != null) {
+    suggestedCarbsRD = applyGeneticCarbFloor(suggestedCarbsRD, input.geneticProfile, geneticCorrections)
+  }
   getApoe4FatWarnings(input.geneticProfile, geneticCorrections, warnings)
 
   return {
@@ -2374,6 +2378,8 @@ function generateGoalDrivenCut(
       }
       if (suggestedCarbsRD < 20) suggestedCarbsRD = 20
     }
+    // 碳循環拆分後，休息日碳水也要套用基因下限（5-HTTLPR SL/SS）
+    suggestedCarbsRD = applyGeneticCarbFloor(suggestedCarbsRD, input.geneticProfile, geneticCorrections)
   }
 
   // 7. 構建狀態訊息

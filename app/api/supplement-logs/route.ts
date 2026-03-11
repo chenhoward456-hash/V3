@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         supplement_id: supplementId,
         date,
         completed
-      })
+      }, { onConflict: 'client_id,supplement_id,date' })
       .select()
       .single()
 
