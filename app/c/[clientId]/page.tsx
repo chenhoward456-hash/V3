@@ -1217,8 +1217,9 @@ export default function ClientDashboard() {
           /></div>
         )}
 
-        {/* Goal-Driven 目標體重計畫（備賽 + 有目標體重 + 非 peak_week） */}
-        {isCompetition && c.target_weight && c.prep_phase !== 'peak_week' && (
+        {/* Goal-Driven 目標體重計畫（備賽客戶 + 非 peak_week）*/}
+        {/* 不再要求 target_weight 才渲染：備賽選手都需要引擎每次重算目標 */}
+        {isCompetition && c.prep_phase !== 'peak_week' && (
           <GoalDrivenStatus
             clientId={c.id}
             code={c.unique_code}
