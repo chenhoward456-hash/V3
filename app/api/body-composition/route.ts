@@ -14,7 +14,7 @@ function parseSerotoninField(value: string | null): { serotonin?: 'LL' | 'SL' | 
   return {}
 }
 
-// 自動調整營養素目標
+// 自動調整營養素目標（與 nutrition-suggestions API 保持一致的完整輸入）
 async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolean; message?: string; calories?: number; protein?: number; carbs?: number; fat?: number; debug?: string }> {
   // 1. 取得學員資料
   const { data: client } = await supabase
@@ -32,25 +32,64 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     return { adjusted: false, debug: 'skip: coach_macro_override locked' }
   }
 
-  // 2. 取得近 30 天數據
+  // 2. 取得近 30 天所有相關數據（平行查詢）
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
   const sinceDate = thirtyDaysAgo.toISOString().split('T')[0]
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(today.getDate() - 6)
+  const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
+  const sixtyDaysAgo = new Date(today)
+  sixtyDaysAgo.setDate(today.getDate() - 60)
+  const sixtyDaysStr = sixtyDaysAgo.toISOString().split('T')[0]
+  const eightWeeksAgo = new Date(today)
+  eightWeeksAgo.setDate(today.getDate() - 56)
+  const eightWeeksStr = eightWeeksAgo.toISOString().split('T')[0]
 
-  const [bodyRes, nutritionRes, trainingRes] = await Promise.all([
-    supabase.from('body_composition').select('date, weight').eq('client_id', clientId)
+  const [bodyRes, nutritionRes, trainingRes, wellnessRes, labRes, periodRes, suppLogsRes, suppListRes] = await Promise.all([
+    supabase.from('body_composition').select('date, weight, body_fat, height').eq('client_id', clientId)
       .gte('date', sinceDate).not('weight', 'is', null).order('date', { ascending: true }),
-    supabase.from('nutrition_logs').select('date, compliant, calories').eq('client_id', clientId)
+    supabase.from('nutrition_logs').select('date, compliant, calories, carbs_grams').eq('client_id', clientId)
       .gte('date', sinceDate).order('date', { ascending: true }),
-    supabase.from('training_logs').select('date, training_type').eq('client_id', clientId)
+    supabase.from('training_logs').select('date, training_type, rpe, duration').eq('client_id', clientId)
       .gte('date', sinceDate).order('date', { ascending: true }),
+    supabase.from('daily_wellness').select('date, energy_level, training_drive, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate').eq('client_id', clientId)
+      .gte('date', sinceDate).order('date', { ascending: true }),
+    supabase.from('lab_results').select('test_name, value, unit, status').eq('client_id', clientId)
+      .order('date', { ascending: false }).limit(30),
+    // 月經週期：最近 60 天內最後一次經期標記
+    client.gender === '女性'
+      ? supabase.from('daily_wellness').select('date').eq('client_id', clientId)
+          .eq('period_start', true).gte('date', sixtyDaysStr).order('date', { ascending: false }).limit(1)
+      : Promise.resolve({ data: null, error: null }),
+    supabase.from('supplement_logs').select('date, completed').eq('client_id', clientId).gte('date', eightWeeksStr),
+    supabase.from('supplements').select('name').eq('client_id', clientId),
   ])
 
   const bodyData = bodyRes.data || []
   const nutritionLogs = nutritionRes.data || []
   const trainingLogs = trainingRes.data || []
+  const wellnessLogs = wellnessRes.data || []
+  const labResults = labRes.data || []
+
+  // 月經週期
+  let lastPeriodDate: string | null = null
+  if (periodRes.data && periodRes.data.length > 0) {
+    lastPeriodDate = periodRes.data[0].date
+  }
+
+  // 補品依從率
+  const suppLogs = suppLogsRes.data || []
+  const suppList = suppListRes.data || []
+  const suppComplianceRate = suppLogs.length > 0
+    ? suppLogs.filter((s: any) => s.completed).length / suppLogs.length
+    : 0
+  const suppDates = suppLogs.map((s: any) => s.date).sort()
+  const suppWeeksDuration = suppDates.length > 0
+    ? Math.floor((new Date().getTime() - new Date(suppDates[0]).getTime()) / (7 * 24 * 60 * 60 * 1000))
+    : 0
 
   // 3. 計算週均體重
   const weeklyWeights: { week: number; avgWeight: number }[] = []
@@ -65,19 +104,18 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     }
   }
 
-  // Goal-Driven 客戶（有目標體重+日期）只需 1 週數據即可反算赤字
-  // Reactive 模式需要 2 週趨勢比較
+  // Goal-Driven 或備賽客戶只需 1 週數據即可反算赤字
   const hasGoalDrivenData = !!(client.target_weight && (client.competition_date || client.target_date))
+  const isCompetition = !!client.competition_enabled
   if (weeklyWeights.length < 2) {
-    if (weeklyWeights.length === 1 && hasGoalDrivenData) {
-      // 用本週均值作為 lastWeek 的替代（weeklyChangeRate = 0），讓 Goal-Driven 引擎能跑
+    if (weeklyWeights.length === 1 && (hasGoalDrivenData || isCompetition)) {
       weeklyWeights.push({ week: 1, avgWeight: weeklyWeights[0].avgWeight })
     } else {
       return { adjusted: false, debug: `skip: weeklyWeights=${weeklyWeights.length} (need ≥2)` }
     }
   }
 
-  // 4. 合規率
+  // 4. 合規率（近 14 天）
   const fourteenStr = new Date(today.getTime() - 13 * 86400000).toISOString().split('T')[0]
   const recent = nutritionLogs.filter((l) => l.date >= fourteenStr && l.date <= todayStr)
   const compliance = recent.length > 0 ? Math.round(recent.filter((l) => l.compliant).length / recent.length * 100) : 0
@@ -88,18 +126,34 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
 
   // 6. 訓練天數
   const recentTraining = trainingLogs.filter((l) => l.date >= fourteenStr && l.date <= todayStr && isWeightTraining(l.training_type as string))
-  const trainingDays = Math.round(recentTraining.length / 2)
+  const trainingDaysPerWeek = Math.round(recentTraining.length / 2)
 
   const latestWeight = bodyData[bodyData.length - 1]?.weight
   if (!latestWeight) return { adjusted: false, debug: 'skip: no latestWeight' }
 
-  // 7. 跑引擎
+  // 7. 體脂率 + 身高（反向找最近有值的紀錄）
+  const latestBodyFat = [...bodyData].reverse().find((b: any) => b.body_fat != null)?.body_fat as number | null ?? null
+  const latestHeight = [...bodyData].reverse().find((b: any) => b.height != null)?.height as number | null ?? null
+
+  // 8. 訓練量統計（近 7 天）
+  const recentTrainingWithRPE = trainingLogs.filter((t: any) => t.date >= sevenDaysStr && isWeightTraining(t.training_type as string))
+  const avgRPE = recentTrainingWithRPE.length > 0
+    ? recentTrainingWithRPE.reduce((s: number, t: any) => s + (t.rpe ?? 6), 0) / recentTrainingWithRPE.length
+    : null
+  const avgDurationMin = recentTrainingWithRPE.length > 0
+    ? recentTrainingWithRPE.reduce((s: number, t: any) => s + ((t.duration as number) ?? 45), 0) / recentTrainingWithRPE.length
+    : null
+
+  // 9. 跑引擎（與 nutrition-suggestions API 一致的完整輸入）
   const suggestion = generateNutritionSuggestion({
     gender: client.gender || '男性',
     bodyWeight: latestWeight,
+    height: latestHeight,
+    bodyFatPct: latestBodyFat,
     goalType: client.goal_type,
     dietStartDate: client.diet_start_date || null,
     targetWeight: client.target_weight ?? null,
+    targetBodyFatPct: (client.target_body_fat as number) ?? undefined,
     targetDate: client.competition_date || client.target_date || null,
     currentCalories: client.calories_target ?? null,
     currentProtein: client.protein_target ?? null,
@@ -111,7 +165,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     weeklyWeights,
     nutritionCompliance: compliance,
     avgDailyCalories: avgCal,
-    trainingDaysPerWeek: trainingDays,
+    trainingDaysPerWeek,
     prepPhase: client.prep_phase || undefined,
     activityProfile: (client.activity_profile as 'sedentary' | 'high_energy_flux') || undefined,
     geneticProfile: (client.gene_mthfr || client.gene_apoe || client.gene_depression_risk) ? {
@@ -119,11 +173,44 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
       apoe: client.gene_apoe || undefined,
       ...parseSerotoninField(client.gene_depression_risk),
     } : undefined,
+    recentWellness: wellnessLogs.map((w: any) => ({
+      date: w.date,
+      energy_level: w.energy_level ?? null,
+      training_drive: w.training_drive ?? null,
+      device_recovery_score: w.device_recovery_score ?? null,
+      resting_hr: w.resting_hr ?? null,
+      hrv: w.hrv ?? null,
+      wearable_sleep_score: w.wearable_sleep_score ?? null,
+      respiratory_rate: w.respiratory_rate ?? null,
+    })),
+    recentTrainingLogs: trainingLogs
+      .filter((t: any) => t.date >= sevenDaysStr)
+      .map((t: any) => ({ date: t.date, rpe: t.rpe ?? null })),
+    recentCarbsPerDay: nutritionLogs
+      .filter((n: any) => n.date >= sevenDaysStr)
+      .map((n: any) => ({ date: n.date, carbs: n.carbs_grams ?? null })),
+    lastPeriodDate: lastPeriodDate || undefined,
+    labResults: labResults.map((l: any) => ({
+      test_name: l.test_name,
+      value: l.value,
+      unit: l.unit,
+      status: l.status,
+    })),
+    recentTrainingVolume: recentTrainingWithRPE.length > 0 ? {
+      avgRPE,
+      avgDurationMin,
+      sessionsPerWeek: recentTrainingWithRPE.length,
+    } : undefined,
+    supplementCompliance: suppLogs.length > 0 ? {
+      rate: suppComplianceRate,
+      weeksDuration: suppWeeksDuration,
+      supplements: suppList.map((s: any) => s.name),
+    } : undefined,
   })
 
-  const debugInfo = `status=${suggestion.status}, autoApply=${suggestion.autoApply}, compliance=${compliance}%, weeklyWeights=${weeklyWeights.length}, rate=${suggestion.weeklyWeightChangeRate?.toFixed(2)}%/wk`
+  const debugInfo = `status=${suggestion.status}, autoApply=${suggestion.autoApply}, compliance=${compliance}%, weeklyWeights=${weeklyWeights.length}, rate=${suggestion.weeklyWeightChangeRate?.toFixed(2)}%/wk, bf=${latestBodyFat ?? 'n/a'}%, wellness=${wellnessLogs.length}, labs=${labResults.length}`
 
-  // 8. 自動套用
+  // 10. 自動套用（Goal-Driven 結果已 safety-capped，一律套用）
   if (suggestion.autoApply) {
     const updates: Record<string, number> = {}
     if (suggestion.suggestedCalories != null) updates.calories_target = suggestion.suggestedCalories

@@ -2510,7 +2510,7 @@ function generateGoalDrivenCut(
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
     deadlineInfo: enrichedDeadlineInfo,
-    autoApply: !goalInfeasible, tdeeAnomalyDetected: false,  // 目標不可行時需教練確認
+    autoApply: true, tdeeAnomalyDetected: false,  // Goal-Driven 結果已 safety-capped，一律自動套用（不可行時 warning 通知教練但仍更新）
     labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
     peakWeekPlan: null, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
