@@ -420,7 +420,8 @@ export default function ClientDashboard() {
           suggestedCarbs: json.suggestion?.suggestedCarbs,
           suggestedFat: json.suggestion?.suggestedFat,
         })
-        if (json.applied && mutate) {
+        // 無論 applied 是否為 true，都刷新 SWR 確保 UI 顯示最新 DB 值
+        if (mutate) {
           mutate()
         }
       } catch (err) {
