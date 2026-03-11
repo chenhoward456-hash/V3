@@ -2012,12 +2012,28 @@ function generateCutSuggestion(
       }
     }
 
+    // on_track 碳循環也要套用血檢碳水修正（不能原封不動 pass through）
+    let otCarbsTD = input.currentCarbsTrainingDay ?? null
+    let otCarbsRD = input.currentCarbsRestDay ?? null
+    if (otLabMacroModifiers.length > 0 && otCarbsTD != null && otCarbsRD != null) {
+      for (const mod of otLabMacroModifiers) {
+        if (mod.nutrient === 'carbs' && mod.direction === 'decrease') {
+          otCarbsTD = Math.max(30, otCarbsTD - mod.delta)
+          otCarbsRD = Math.max(30, otCarbsRD - mod.delta)
+        }
+        if (mod.nutrient === 'carbs' && mod.direction === 'increase') {
+          otCarbsTD += mod.delta
+          otCarbsRD += mod.delta
+        }
+      }
+    }
+
     return {
       status, statusLabel, statusEmoji, message,
       suggestedCalories: currentCal, suggestedProtein: recalcPro,
       suggestedCarbs: recalcCarb, suggestedFat: recalcFat,
-      suggestedCarbsTrainingDay: input.currentCarbsTrainingDay,
-      suggestedCarbsRestDay: input.currentCarbsRestDay,
+      suggestedCarbsTrainingDay: otCarbsTD,
+      suggestedCarbsRestDay: otCarbsRD,
       caloriesDelta: 0, proteinDelta: recalcPro - currentPro,
       carbsDelta: recalcCarb - currentCarb, fatDelta: recalcFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
