@@ -42,8 +42,8 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         if (json.suggestion) {
           setData(json.suggestion)
           setTargetWeightValue(json.meta?.targetWeight || null)
-          // 如果有自動套用，trigger mutate 讓其他組件同步
-          if (json.applied && onMutate) {
+          // 無論是否自動套用，都 trigger mutate 確保其他組件顯示最新 DB 值
+          if (onMutate) {
             onMutate()
           }
         }

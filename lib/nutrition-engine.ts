@@ -2761,7 +2761,7 @@ function generateBulkSuggestion(
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
       labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
-      deadlineInfo, autoApply: hasCorrections || !!(input.targetWeight && input.targetDate) || !!input.prepPhase, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
+      deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
       geneticCorrections: otBulkGC,

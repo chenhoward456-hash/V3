@@ -239,7 +239,7 @@ export async function GET(request: NextRequest) {
       height: latestHeight,
       bodyFatPct: latestBodyFat,
       targetWeight: client.target_weight ?? null,
-      targetBodyFatPct: client.body_fat_target ?? null,
+      targetBodyFatPct: (client.target_body_fat as number) ?? null,
       targetDate: client.competition_date || client.target_date || null,
       currentCalories: client.calories_target ?? null,
       currentProtein: client.protein_target ?? null,
@@ -313,7 +313,13 @@ export async function GET(request: NextRequest) {
     let coachLocked = false
     const isSelfManaged = client.subscription_tier === 'self_managed'
     const isCompetitionClient = !!client.competition_enabled
-    const canAutoApply = wantsAutoApply && suggestion.autoApply && (isAdmin || suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)
+    // autoApply 模式（頁面自動觸發）不受 TDEE 異常限制 — 引擎已有安全上下限保護
+    // TDEE 異常警告仍保留在 warnings 中供教練參考
+    // insufficient_data 除外（數據不足不應自動套用）
+    const effectiveAutoApply = wantsAutoApply
+      ? (suggestion.status !== 'insufficient_data')
+      : suggestion.autoApply
+    const canAutoApply = wantsAutoApply && effectiveAutoApply && (isAdmin || suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)
 
     // 教練覆寫鎖定：教練手動調整過營養目標
     // 自動調整引擎（autoApply）不受 coach lock 限制 — 動態調整是核心功能
@@ -341,6 +347,8 @@ export async function GET(request: NextRequest) {
 
         if (!updateErr) {
           applied = true
+        } else {
+          console.error('[AutoNutrition] DB 更新失敗:', updateErr.message, 'clientId:', client.id, 'updates:', updates)
         }
       }
     }
