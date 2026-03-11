@@ -11,6 +11,7 @@ import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown, Settings } from '
 import BottomNav from '@/components/client/BottomNav'
 import UpgradeGate from '@/components/client/UpgradeGate'
 import HealthOverview from '@/components/client/HealthOverview'
+import RecoveryDashboard from '@/components/client/RecoveryDashboard'
 import DailyCheckIn from '@/components/client/DailyCheckIn'
 import DailyWellness from '@/components/client/DailyWellness'
 import BodyComposition from '@/components/client/BodyComposition'
@@ -1257,6 +1258,13 @@ export default function ClientDashboard() {
             />
           )}
         </div>
+
+        {/* 恢復評估儀表板 */}
+        {c.wellness_enabled && (
+          <div className="mb-3">
+            <RecoveryDashboard clientId={c.unique_code} />
+          </div>
+        )}
 
         {/* 性別未設定提示 — 僅 free/self_managed 可自行設定，coached 由教練處理 */}
         {!c.gender && (isFree || isSelfManaged) && (
