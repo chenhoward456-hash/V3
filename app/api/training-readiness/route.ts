@@ -237,6 +237,7 @@ export async function GET(request: NextRequest) {
       recentTrainingPattern: trainingPattern,
       hormoneLabs,
       metabolicStress,
+      recoveryAssessment: advice.recoveryAssessment,
       weeklyWeightChangePercent,
     })
 

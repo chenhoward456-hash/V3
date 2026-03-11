@@ -13,6 +13,7 @@
 import { askClaude, ChatMessage } from './claude'
 import { isInOptimalRange } from '@/utils/labStatus'
 import { matchLabName } from '@/utils/labMatch'
+import { generateRecoveryAssessment, getTrainingAdviceFromRecovery, type RecoveryAssessment } from './recovery-engine'
 
 // ═══════════════════════════════════════
 // Types
@@ -389,136 +390,75 @@ export interface TrainingAdvice {
   recoveryScore: number  // 0-100
   reasons: string[]
   suggestion: string
+  /** 完整恢復評估（含多系統、過度訓練風險、自律神經等） */
+  recoveryAssessment?: RecoveryAssessment
 }
 
+/**
+ * getTrainingAdvice — 委託給 recovery-engine 進行統一恢復評估。
+ *
+ * 整合 wellness、訓練、穿戴裝置、血檢數據，透過 recovery-engine 的
+ * 多系統評估 + ACWR + ANS 分析產出訓練強度建議。
+ */
 export function getTrainingAdvice(
   wellnessLogs: WellnessEntry[],
   trainingLogs: TrainingEntry[],
   wearableData?: WearableEntry[],
   labData?: Array<{ test_name: string; value: number | null; status: 'normal' | 'attention' | 'alert' }>
 ): TrainingAdvice {
-  const last3Wellness = wellnessLogs.slice(-3)
-  const last7Training = trainingLogs.slice(-7)
-  const latestWearable = wearableData?.slice(-1)[0]
-
-  let recoveryScore = 70 // 基準
-  const reasons: string[] = []
-
-  // 睡眠品質影響
-  const avgSleep = calcAvg(last3Wellness.map(w => w.sleep_quality))
-  if (avgSleep != null) {
-    if (avgSleep < 2.5) {
-      recoveryScore -= 25
-      reasons.push(`近 3 天睡眠品質偏低（${avgSleep.toFixed(1)}/5）`)
-    } else if (avgSleep < 3.5) {
-      recoveryScore -= 10
-      reasons.push(`睡眠品質一般（${avgSleep.toFixed(1)}/5）`)
-    } else if (avgSleep >= 4) {
-      recoveryScore += 10
-      reasons.push(`睡眠品質良好（${avgSleep.toFixed(1)}/5）`)
+  // 合併 wellness + wearable 為 recovery-engine 的輸入格式
+  const mergedWellness = wellnessLogs.map(w => {
+    const wearable = wearableData?.find(wd => wd.date === w.date)
+    return {
+      date: w.date,
+      sleep_quality: w.sleep_quality,
+      energy_level: w.energy_level,
+      mood: w.mood,
+      stress: w.stress,
+      device_recovery_score: wearable?.device_recovery_score,
+      resting_hr: wearable?.resting_hr,
+      hrv: wearable?.hrv,
+      wearable_sleep_score: wearable?.wearable_sleep_score,
     }
-  }
+  })
 
-  // 精力影響
-  const avgEnergy = calcAvg(last3Wellness.map(w => w.energy_level))
-  if (avgEnergy != null) {
-    if (avgEnergy < 2.5) {
-      recoveryScore -= 20
-      reasons.push(`精力偏低（${avgEnergy.toFixed(1)}/5）`)
-    } else if (avgEnergy >= 4) {
-      recoveryScore += 10
-      reasons.push(`精力充沛（${avgEnergy.toFixed(1)}/5）`)
-    }
-  }
-
-  // 壓力影響
-  const avgStress = calcAvg(last3Wellness.map(w => w.stress))
-  if (avgStress != null && avgStress >= 4) {
-    recoveryScore -= 15
-    reasons.push(`壓力較大（${avgStress.toFixed(1)}/5）`)
-  }
-
-  // 連續訓練天數
-  const recentTrainingDays = last7Training.filter(t => t.training_type && t.training_type !== 'rest').length
-  if (recentTrainingDays >= 5) {
-    recoveryScore -= 15
-    reasons.push(`近 7 天已訓練 ${recentTrainingDays} 天，累積疲勞`)
-  } else if (recentTrainingDays <= 2) {
-    recoveryScore += 10
-    reasons.push(`近 7 天僅訓練 ${recentTrainingDays} 天，恢復充足`)
-  }
-
-  // 高 RPE 訓練累積（閾值統一為 ≥8，與 training-mode-engine 一致）
-  const highRPE = last7Training.filter(t => t.rpe != null && t.rpe >= 8).length
-  if (highRPE >= 3) {
-    recoveryScore -= 15
-    reasons.push(`近 7 天有 ${highRPE} 次高強度（RPE≥8）訓練`)
-  }
-
-  // 穿戴裝置數據
-  if (latestWearable) {
-    if (latestWearable.device_recovery_score != null) {
-      if (latestWearable.device_recovery_score < 33) {
-        recoveryScore -= 20
-        reasons.push(`裝置恢復分數低（${latestWearable.device_recovery_score}/100）`)
-      } else if (latestWearable.device_recovery_score >= 67) {
-        recoveryScore += 10
-        reasons.push(`裝置恢復分數佳（${latestWearable.device_recovery_score}/100）`)
-      }
-    }
-    if (latestWearable.hrv != null && latestWearable.hrv < 30) {
-      recoveryScore -= 10
-      reasons.push(`HRV 偏低（${latestWearable.hrv}ms）`)
-    }
-  }
-
-  // 血檢指標影響
-  if (labData && labData.length > 0) {
-    for (const lab of labData) {
-      if (lab.value == null || lab.status === 'normal') continue
-
-      // 低鐵蛋白 → 有氧能力受限，降低建議強度
-      if (matchLabName(lab.test_name, ['鐵蛋白', 'ferritin']) && lab.value < 30) {
-        recoveryScore -= 10
-        reasons.push(`鐵蛋白偏低（${lab.value}），有氧能力受限，建議減少有氧量`)
-      }
-
-      // 低血紅素 → 氧氣運輸下降
-      if (matchLabName(lab.test_name, ['血紅素', 'hemoglobin']) && lab.value < 12) {
-        recoveryScore -= 15
-        reasons.push(`血紅素偏低（${lab.value}），氧氣運輸能力下降`)
-      }
-
-      // TSH 偏高 → 代謝率降低
-      if (matchLabName(lab.test_name, ['tsh', '促甲狀腺']) && lab.value > 4.0) {
-        recoveryScore -= 5
-        reasons.push(`TSH 偏高（${lab.value}），代謝率可能降低`)
+  // 加入沒有 wellness 對應的 wearable 數據
+  if (wearableData) {
+    const wellnessDates = new Set(wellnessLogs.map(w => w.date))
+    for (const wd of wearableData) {
+      if (!wellnessDates.has(wd.date)) {
+        mergedWellness.push({
+          date: wd.date,
+          sleep_quality: undefined,
+          energy_level: undefined,
+          mood: undefined,
+          stress: undefined,
+          device_recovery_score: wd.device_recovery_score,
+          resting_hr: wd.resting_hr,
+          hrv: wd.hrv,
+          wearable_sleep_score: wd.wearable_sleep_score,
+        })
       }
     }
   }
 
-  // Clamp
-  recoveryScore = Math.max(0, Math.min(100, recoveryScore))
+  const assessment = generateRecoveryAssessment({
+    wellness: mergedWellness,
+    trainingLogs: trainingLogs.map(t => ({
+      date: t.date,
+      training_type: t.training_type,
+      rpe: t.rpe,
+      duration: t.duration,
+    })),
+    labResults: labData?.map(l => ({
+      test_name: l.test_name,
+      value: l.value,
+      status: l.status,
+    })),
+  })
 
-  // 決定建議強度
-  let recommendedIntensity: TrainingAdvice['recommendedIntensity']
-  let suggestion: string
-
-  if (recoveryScore >= 75) {
-    recommendedIntensity = 'high'
-    suggestion = '恢復狀態良好，可以進行高強度訓練。建議挑戰新的 PR 或增加訓練量。'
-  } else if (recoveryScore >= 50) {
-    recommendedIntensity = 'moderate'
-    suggestion = '恢復狀態一般，建議維持正常訓練強度。避免過度追求 PR，專注在動作品質。'
-  } else if (recoveryScore >= 30) {
-    recommendedIntensity = 'low'
-    suggestion = '恢復狀態偏差，建議降低訓練強度。可以做輕量訓練或主動恢復（散步、伸展）。'
-  } else {
-    recommendedIntensity = 'rest'
-    suggestion = '身體需要休息。建議今天安排完全休息日，專注睡眠和營養補充。'
-  }
-
-  return { recommendedIntensity, recoveryScore, reasons, suggestion }
+  const advice = getTrainingAdviceFromRecovery(assessment)
+  return { ...advice, recoveryAssessment: assessment }
 }
 
 // ═══════════════════════════════════════

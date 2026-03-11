@@ -44,16 +44,9 @@ export type BodyFatZoneId =
   | 'average'
   | 'overweight'
 
-export type RecoveryState = 'optimal' | 'good' | 'struggling' | 'critical'
-
-/** Composite recovery score from wellness tracking */
-export interface RecoveryIndicators {
-  sleepQuality: number       // 1-5 scale (7-day avg)
-  energyLevel: number        // 1-5 scale (7-day avg)
-  mood: number               // 1-5 scale (7-day avg)
-  trainingRPE: number        // 1-10 scale (recent sessions avg)
-  performanceTrend: 'improving' | 'stable' | 'declining'
-}
+// 從 recovery-engine 統一匯入恢復相關類型與函數
+export { type RecoveryState, type RecoveryIndicators, classifyRecovery } from './recovery-engine'
+import { type RecoveryState, type RecoveryIndicators, classifyRecovery } from './recovery-engine'
 
 /** Full zone definition with all macro and deficit parameters */
 export interface BodyFatZone {
@@ -111,36 +104,6 @@ export interface RecoveryAction {
   carbAdjustPct: number             // multiply carb allocation (1.0 = no change)
   refeedOverride: string | null     // override refeed frequency, or null = use default
   actionLabel: string               // human-readable summary
-}
-
-// ============================================================
-//  HELPER: classify recovery state from indicators
-// ============================================================
-
-export function classifyRecovery(indicators: RecoveryIndicators): RecoveryState {
-  // Normalize RPE to 1-5 scale (RPE 1-4 = good, 5-7 = moderate, 8-10 = high)
-  const rpeNormalized = indicators.trainingRPE <= 5
-    ? 5
-    : indicators.trainingRPE <= 7
-      ? 3
-      : 1
-
-  // Weighted composite (sleep 30%, energy 25%, mood 20%, RPE 15%, trend 10%)
-  const trendScore = indicators.performanceTrend === 'improving' ? 5
-    : indicators.performanceTrend === 'stable' ? 3
-    : 1
-
-  const composite =
-    indicators.sleepQuality * 0.30 +
-    indicators.energyLevel * 0.25 +
-    indicators.mood * 0.20 +
-    rpeNormalized * 0.15 +
-    trendScore * 0.10
-
-  if (composite >= 4.0) return 'optimal'
-  if (composite >= 3.0) return 'good'
-  if (composite >= 2.0) return 'struggling'
-  return 'critical'
 }
 
 // ============================================================

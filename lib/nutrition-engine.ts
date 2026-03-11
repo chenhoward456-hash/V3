@@ -118,6 +118,7 @@ import {
 
 import { getLabMacroModifiers, type LabMacroModifier, type LabTrainingModifier } from './lab-nutrition-advisor'
 import { type GeneticProfile, getSerotoninRiskLevel } from './supplement-engine'
+import { generateRecoveryAssessment, type RecoveryAssessment, type RecoveryState as RecoveryEngineState } from './recovery-engine'
 
 // ===== 類型定義 =====
 
@@ -259,6 +260,9 @@ export interface NutritionSuggestion {
     dietWeightToLose?: number        // 需要靠飲食減掉的量 (kg)
     peakWeekExpectedLoss?: number    // Peak Week 預估可處理的量 (kg)
   } | null
+
+  // 恢復評估（來自 recovery-engine，完整多系統分析）
+  recoveryAssessment?: RecoveryAssessment | null
 
   // 代謝壓力分數
   metabolicStress: MetabolicStressResult | null
@@ -656,6 +660,7 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
     dietDurationWeeks: null, dietBreakSuggested: false, warnings: [],
     currentState: 'unknown', readinessScore: null, wearableInsight: null,
     refeedSuggested: false, refeedReason: null, refeedDays: null,
+    recoveryAssessment: null,
     bodyFatZoneInfo: null,
     labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
     deadlineInfo: null, autoApply: false, tdeeAnomalyDetected: false, peakWeekPlan: null,
@@ -819,210 +824,41 @@ type WellnessWithWearable = {
   respiratory_rate?: number | null
 }
 
+/**
+ * assessCurrentState — 委託給 recovery-engine 進行統一恢復評估。
+ * 保持原有回傳簽名以維持向後相容。
+ */
 function assessCurrentState(
   recentWellness: WellnessWithWearable[],
   recentTrainingLogs: { date: string; rpe: number | null }[]
-): { state: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'; readinessScore: number | null } {
-  // 排序：最新在前
-  const sorted = [...recentWellness].sort((a, b) => b.date.localeCompare(a.date))
+): { state: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'; readinessScore: number | null; recoveryAssessment?: RecoveryAssessment } {
+  // 數據不足時直接返回
+  const hasWellness = recentWellness.some(w =>
+    w.energy_level != null || w.training_drive != null ||
+    w.device_recovery_score != null || w.resting_hr != null || w.hrv != null || w.wearable_sleep_score != null
+  )
+  const hasTraining = recentTrainingLogs.some(t => t.rpe != null)
+  if (!hasWellness && !hasTraining) return { state: 'unknown', readinessScore: null }
 
-  // 近 3 天 = 當前狀態
-  const last3Wellness = sorted
-    .slice(0, 3)
-    .filter(w => w.energy_level != null || w.training_drive != null ||
-      w.device_recovery_score != null || w.resting_hr != null || w.hrv != null || w.wearable_sleep_score != null)
+  const assessment = generateRecoveryAssessment({
+    wellness: recentWellness.map(w => ({
+      date: w.date,
+      energy_level: w.energy_level,
+      training_drive: w.training_drive,
+      device_recovery_score: w.device_recovery_score,
+      resting_hr: w.resting_hr,
+      hrv: w.hrv,
+      wearable_sleep_score: w.wearable_sleep_score,
+      respiratory_rate: w.respiratory_rate,
+    })),
+    trainingLogs: recentTrainingLogs.map(t => ({ date: t.date, rpe: t.rpe })),
+  })
 
-  // 第 4-30 天 = 個人基線（用於計算 SWC）
-  const baselineWellness = sorted.slice(3)
-
-  const last3Training = [...recentTrainingLogs]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 3)
-    .filter(t => t.rpe != null)
-
-  if (last3Wellness.length === 0 && last3Training.length === 0) return { state: 'unknown', readinessScore: null }
-
-  // ── 主觀指標 ──
-  const avgEnergy = last3Wellness.length > 0
-    ? last3Wellness.reduce((s, w) => s + (w.energy_level ?? 3), 0) / last3Wellness.length
-    : null
-
-  const avgDrive = last3Wellness.length > 0
-    ? last3Wellness.reduce((s, w) => s + (w.training_drive ?? 3), 0) / last3Wellness.length
-    : null
-
-  // ── 穿戴裝置客觀指標 → Readiness Score ──
-  // 路徑 1: device_recovery_score（使用者只填 1 個數字，裝置已做個人比較）
-  // 路徑 2: 個別指標 + 個人基線 SWC 比較
-  // 路徑 3: 個別指標 + 族群範圍（基線不足時的 fallback）
-
-  const recoveryScores = last3Wellness
-    .filter(w => w.device_recovery_score != null)
-    .map(w => w.device_recovery_score!)
-
-  let readinessScore: number | null = null
-
-  if (recoveryScores.length >= 1) {
-    // 路徑 1: 裝置恢復分數直接使用
-    readinessScore = recoveryScores.reduce((s, v) => s + v, 0) / recoveryScores.length
+  return {
+    state: assessment.state,
+    readinessScore: assessment.readinessScore,
+    recoveryAssessment: assessment,
   }
-
-  if (readinessScore == null) {
-    // 路徑 2 或 3: 從個別指標計算
-    const currentEntries = last3Wellness.filter(w =>
-      w.resting_hr != null || w.hrv != null || w.wearable_sleep_score != null
-    )
-
-    if (currentEntries.length >= 2) {
-      const scores: { value: number; weight: number }[] = []
-
-      // 工具函數：計算基線 mean + SD
-      const calcBaseline = (vals: number[]) => {
-        if (vals.length < 5) return null // 基線至少需要 5 天數據
-        const mean = vals.reduce((s, v) => s + v, 0) / vals.length
-        const sd = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length)
-        return { mean, sd, swc: 0.5 * sd }
-      }
-
-      // 工具函數：基於個人基線的偏移量 → 0-100 分
-      // zScore = (current - baseline.mean) / baseline.sd
-      // 正向指標（HRV、睡眠）：z=0 → 50 分, z≥+2 → 100, z≤-2 → 0
-      // 反向指標（RHR、呼吸）：z=0 → 50 分, z≤-2 → 100, z≥+2 → 0
-      const zToScore = (z: number) => Math.min(100, Math.max(0, 50 + z * 25))
-
-      // ── HRV ── 權重 35%（正向：越高越好）
-      // Sensors 2025: RMSSD 7 天滾動均值 + CV，偏離個人基線 >SWC 有臨床意義
-      const currentHRV = currentEntries.filter(w => w.hrv != null).map(w => w.hrv!)
-      if (currentHRV.length > 0) {
-        const avgHRV = currentHRV.reduce((s, v) => s + v, 0) / currentHRV.length
-        const baselineHRV = calcBaseline(
-          baselineWellness.filter(w => w.hrv != null).map(w => w.hrv!)
-        )
-
-        if (baselineHRV && baselineHRV.sd > 0) {
-          // 路徑 2: 個人基線比較
-          const z = (avgHRV - baselineHRV.mean) / baselineHRV.sd
-          scores.push({ value: zToScore(z), weight: 35 })
-        } else {
-          // 路徑 3 fallback: 族群範圍 (20-100ms)
-          scores.push({
-            value: Math.min(100, Math.max(0, (avgHRV - 20) * (100 / 80))),
-            weight: 35
-          })
-        }
-      }
-
-      // ── RHR ── 權重 25%（反向：越低越好）
-      // PMC 2024: Nocturnal HR 升高 >5bpm 持續 2+ 天 = overreaching 信號
-      const currentRHR = currentEntries.filter(w => w.resting_hr != null).map(w => w.resting_hr!)
-      if (currentRHR.length > 0) {
-        const avgRHR = currentRHR.reduce((s, v) => s + v, 0) / currentRHR.length
-        const baselineRHR = calcBaseline(
-          baselineWellness.filter(w => w.resting_hr != null).map(w => w.resting_hr!)
-        )
-
-        if (baselineRHR && baselineRHR.sd > 0) {
-          // 路徑 2: RHR 升高 = 差，取反
-          const z = -(avgRHR - baselineRHR.mean) / baselineRHR.sd
-          scores.push({ value: zToScore(z), weight: 25 })
-        } else {
-          // 路徑 3 fallback: 族群範圍 (50-90bpm, 反向)
-          scores.push({
-            value: Math.min(100, Math.max(0, (90 - avgRHR) * (100 / 40))),
-            weight: 25
-          })
-        }
-      }
-
-      // ── 睡眠分數 ── 權重 30%（正向：越高越好）
-      // 已經是 0-100，可直接用；有基線時用 z-score 更精準
-      const currentSleep = currentEntries.filter(w => w.wearable_sleep_score != null).map(w => w.wearable_sleep_score!)
-      if (currentSleep.length > 0) {
-        const avgSleep = currentSleep.reduce((s, v) => s + v, 0) / currentSleep.length
-        const baselineSleep = calcBaseline(
-          baselineWellness.filter(w => w.wearable_sleep_score != null).map(w => w.wearable_sleep_score!)
-        )
-
-        if (baselineSleep && baselineSleep.sd > 0) {
-          // 路徑 2: 相對於個人睡眠品質水平
-          const z = (avgSleep - baselineSleep.mean) / baselineSleep.sd
-          scores.push({ value: zToScore(z), weight: 30 })
-        } else {
-          // 路徑 3 fallback: 直接用 0-100
-          scores.push({ value: avgSleep, weight: 30 })
-        }
-      }
-
-      // ── 呼吸速率 ── 權重 10%（反向：越低越好）
-      const currentRR = currentEntries.filter(w => w.respiratory_rate != null).map(w => w.respiratory_rate!)
-      if (currentRR.length > 0) {
-        const avgRR = currentRR.reduce((s, v) => s + v, 0) / currentRR.length
-        const baselineRR = calcBaseline(
-          baselineWellness.filter(w => w.respiratory_rate != null).map(w => w.respiratory_rate!)
-        )
-
-        if (baselineRR && baselineRR.sd > 0) {
-          const z = -(avgRR - baselineRR.mean) / baselineRR.sd
-          scores.push({ value: zToScore(z), weight: 10 })
-        } else {
-          // 路徑 3 fallback: 族群範圍 (12-24 次/分, 反向)
-          scores.push({
-            value: Math.min(100, Math.max(0, (24 - avgRR) * (100 / 12))),
-            weight: 10
-          })
-        }
-      }
-
-      if (scores.length > 0) {
-        const totalWeight = scores.reduce((s, sc) => s + sc.weight, 0)
-        readinessScore = scores.reduce((s, sc) => s + sc.value * sc.weight, 0) / totalWeight
-      }
-    }
-  }
-
-  // ── 判定邏輯 ──
-  // 有穿戴裝置 → 以 Readiness Score 為主（客觀優先）
-  // 無穿戴裝置 → 使用主觀 energy + drive（不再單獨依賴 RPE）
-  //
-  // 關鍵原則（Nature 2025 Scientific Reports）：
-  //   主觀 + 客觀整合效果 > 任一單獨使用
-  //   RPE 高 + Readiness 好 = 有效訓練（不觸發 Refeed）
-  //   RPE 高 + Readiness 差 = 真正過度疲勞（觸發 Refeed）
-
-  if (readinessScore != null) {
-    const rs = Math.round(readinessScore)
-    if (readinessScore < 25) {
-      return { state: 'critical', readinessScore: rs }
-    }
-    if (readinessScore < 40) {
-      if (avgEnergy != null && avgEnergy <= 2) return { state: 'critical', readinessScore: rs }
-      return { state: 'struggling', readinessScore: rs }
-    }
-    if (readinessScore < 55) {
-      if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) return { state: 'struggling', readinessScore: rs }
-      return { state: 'good', readinessScore: rs }
-    }
-    if (readinessScore >= 70) {
-      return { state: 'optimal', readinessScore: rs }
-    }
-    return { state: 'good', readinessScore: rs }
-  }
-
-  // ── 無穿戴裝置：改良的主觀判定 ──
-  // 核心修正：RPE 高≠疲勞（接近力竭是肌肥大訓練的目標）
-  // 只用 energy_level + training_drive 作為主觀疲勞信號
-
-  if (avgEnergy != null && avgEnergy <= 1.5 && last3Wellness.length >= 2) {
-    return { state: 'critical', readinessScore: null }
-  }
-  if (avgEnergy != null && avgEnergy <= 2 && avgDrive != null && avgDrive <= 2) {
-    return { state: 'struggling', readinessScore: null }
-  }
-  if (avgEnergy != null && avgEnergy >= 4 && (avgDrive == null || avgDrive >= 3)) {
-    return { state: 'optimal', readinessScore: null }
-  }
-
-  return { state: 'good', readinessScore: null }
 }
 
 // ===== 低碳連續天數 =====
@@ -1302,6 +1138,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     refeedSuggested: refeedTrigger.suggested,
     refeedReason: refeedTrigger.reason,
     refeedDays: refeedTrigger.days,
+    recoveryAssessment: stateResult.recoveryAssessment ?? null,
   }
 
   // 月經週期判斷（女性專用）
