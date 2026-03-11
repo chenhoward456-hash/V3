@@ -26,6 +26,7 @@ export interface HealthScore {
   grade: 'A' | 'B' | 'C' | 'D'  // A≥80, B≥65, C≥50, D<50
   pillars: HealthPillarScore[]
   labPenalty: number       // 負值，血檢異常扣分
+  labBonus: number         // 正值，血檢全正常 / 優秀行為獎勵
   daysInCycle: number | null     // 本季第幾天（1-90）
   daysUntilBloodTest: number | null  // 距下次血檢（季末）
 }
@@ -146,6 +147,34 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
     ? Math.max(-20, -(alertCount * 10 + attentionCount * 5))
     : 0
 
+  // ── 7. 正向獎勵（最多 +10 分）──
+  // 當行為和指標都優秀時，給予額外加分，而不只是「沒扣分」
+  let labBonus = 0
+
+  // 7a. 血檢全正常獎勵：有做血檢且全部 normal → +5 分
+  if (labResults.length >= 3 && alertCount === 0 && attentionCount === 0) {
+    labBonus += 5
+  }
+
+  // 7b. 睡眠卓越獎勵：7 天平均 >90 分 → +2 分
+  if (sleepScore > 90) {
+    labBonus += 2
+  }
+
+  // 7c. 飲食完美週獎勵：7/7 天合規 → +2 分
+  if (compliantDays === 7 && nutritionLast7.length === 7) {
+    labBonus += 2
+  }
+
+  // 7d. HRV 卓越獎勵：平均 HRV > 60ms → +1 分（交感神經恢復充分）
+  const hrvRaw = wellnessLast7.map(w => w.hrv).filter(v => v != null) as number[]
+  if (hrvRaw.length > 0 && avg(hrvRaw) > 60) {
+    labBonus += 1
+  }
+
+  // 上限 +10 分
+  labBonus = Math.min(10, labBonus)
+
   // ── 加權合計 ──
   const weighted =
     sleepScore * 0.20 +
@@ -153,7 +182,8 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
     nutritionScore * 0.20 +
     trainingScore * 0.20 +
     supplementScore * 0.15 +
-    labPenalty
+    labPenalty +
+    labBonus
 
   const total = Math.max(0, Math.min(100, Math.round(weighted)))
 
@@ -183,6 +213,7 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
       { pillar: 'supplement', label: '補品',   score: Math.round(supplementScore),  emoji: '💊', detail: supplementDetail },
     ],
     labPenalty,
+    labBonus,
     daysInCycle,
     daysUntilBloodTest,
   }

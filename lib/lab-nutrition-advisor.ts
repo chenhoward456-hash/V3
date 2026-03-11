@@ -2622,12 +2622,16 @@ export interface LabTrainingModifier {
 export function getLabMacroModifiers(
   labs: LabInput[],
   options: { gender?: '男性' | '女性'; bodyWeight?: number } = {}
-): { macroModifiers: LabMacroModifier[]; trainingModifiers: LabTrainingModifier[]; warnings: string[] } {
+): { macroModifiers: LabMacroModifier[]; trainingModifiers: LabTrainingModifier[]; warnings: string[]; carbCycleMultiplier: number } {
   const macroModifiers: LabMacroModifier[] = []
   const trainingModifiers: LabTrainingModifier[] = []
   const warnings: string[] = []
   const bw = options.bodyWeight ?? 70
   let hasInsulinSensitivityBoost = false // 防止 HOMA-IR + 空腹胰島素雙重加碳水
+  // 碳循環倍率：預設 1.5x，根據代謝健康動態調整
+  // 優秀胰島素敏感度 → 訓練日可吃更多碳水（1.8x）
+  // 差的胰島素敏感度 → 訓練日碳水集中但不要太高（1.3x）
+  let carbCycleMultiplier = 1.5
 
   for (const lab of labs) {
     if (lab.value == null) continue
@@ -2654,6 +2658,7 @@ export function getLabMacroModifiers(
         })
         warnings.push(`🟢 HOMA-IR ${lab.value}（優秀 <1.0）：胰島素敏感度極佳，碳水耐受力高，訓練日碳水可拉到 5-6g/kg`)
         hasInsulinSensitivityBoost = true
+        carbCycleMultiplier = 1.8 // 胰島素敏感度極佳，訓練日碳水可拉更高
       }
     }
 
@@ -2682,6 +2687,7 @@ export function getLabMacroModifiers(
         })
         warnings.push(`🟢 空腹胰島素 ${lab.value}（優秀 <5）：碳循環高碳日可拉到 5-6g/kg`)
         hasInsulinSensitivityBoost = true
+        carbCycleMultiplier = 1.8
       }
     }
 
@@ -2774,6 +2780,7 @@ export function getLabMacroModifiers(
           labMarker: lab.test_name,
         })
         warnings.push(`📊 HOMA-IR ${lab.value}（目標 <2.0）：建議啟用碳循環，訓練日 4-5g/kg、休息日 2-3g/kg`)
+        carbCycleMultiplier = 1.3 // 胰島素阻抗偏高，訓練日碳水不宜拉太高
       }
     }
 
@@ -2826,7 +2833,7 @@ export function getLabMacroModifiers(
     }
   }
 
-  return { macroModifiers, trainingModifiers, warnings }
+  return { macroModifiers, trainingModifiers, warnings, carbCycleMultiplier }
 }
 
 // ═══════════════════════════════════════════════════════════════
