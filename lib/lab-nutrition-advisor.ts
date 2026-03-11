@@ -2742,6 +2742,24 @@ export function getLabMacroModifiers(
       }
     }
 
+    // ── 高 LDL-C → 減少飽和脂肪（ApoB 的 fallback，不是每人都測 ApoB）──
+    if (matchName(lab.test_name, ['ldl-c', 'ldl', '低密度脂蛋白', '低密度膽固醇'])) {
+      if (lab.value > 130) {
+        // 只在沒有 ApoB modifier 時才加，避免跟 ApoB > 90 重複扣
+        const hasApobMod = macroModifiers.some(m => m.labMarker && matchName(m.labMarker, ['apob', 'apolipoproteinb']))
+        if (!hasApobMod) {
+          macroModifiers.push({
+            nutrient: 'fat',
+            direction: 'decrease',
+            delta: Math.round(bw * 0.1), // -0.1 g/kg fat
+            reason: `LDL-C 偏高（${lab.value}），減少飽和脂肪攝取`,
+            labMarker: lab.test_name,
+          })
+          warnings.push(`❤️ LDL-C ${lab.value}（目標 <130）：飽和脂肪 <7% 總熱量，優先選擇不飽和脂肪`)
+        }
+      }
+    }
+
     // ── 低白蛋白 → 增加蛋白質 ──
     if (matchName(lab.test_name, ['白蛋白', 'albumin'])) {
       if (lab.value < 3.5) {
@@ -2815,6 +2833,38 @@ export function getLabMacroModifiers(
           labMarker: lab.test_name,
         })
         warnings.push(`🦋 TSH ${lab.value}（目標 1.0-2.0）：甲狀腺低下傾向，不宜過度限制熱量`)
+      }
+    }
+
+    // ── 低睪固酮（男性）→ 增加脂肪，脂肪過低會壓制睪固酮合成 ──
+    if (matchName(lab.test_name, ['睪固酮', 'testosterone', '總睪固酮', 'total testosterone'])) {
+      if (options.gender === '男性' && lab.value < 300) {
+        macroModifiers.push({
+          nutrient: 'fat',
+          direction: 'increase',
+          delta: Math.round(bw * 0.1), // +0.1 g/kg fat
+          reason: `睪固酮偏低（${lab.value}），增加脂肪攝取支持荷爾蒙合成`,
+          labMarker: lab.test_name,
+        })
+        warnings.push(`🔻 睪固酮 ${lab.value}（目標 >300 ng/dL）：脂肪攝取 ≥25% 總熱量，確保飽和脂肪 ≥10%，支持睪固酮合成`)
+      }
+    }
+
+    // ── 低游離睪固酮（男性）→ 增加脂肪 ──
+    if (matchName(lab.test_name, ['游離睪固酮', 'free testosterone', 'freetestosterone'])) {
+      if (options.gender === '男性' && lab.value < 5) {
+        // 只在沒有總睪固酮 modifier 時才加，避免重複
+        const hasTestoMod = macroModifiers.some(m => m.labMarker && matchName(m.labMarker, ['睪固酮', 'testosterone', '總睪固酮', 'total testosterone']))
+        if (!hasTestoMod) {
+          macroModifiers.push({
+            nutrient: 'fat',
+            direction: 'increase',
+            delta: Math.round(bw * 0.1), // +0.1 g/kg fat
+            reason: `游離睪固酮偏低（${lab.value}），增加脂肪攝取支持荷爾蒙合成`,
+            labMarker: lab.test_name,
+          })
+          warnings.push(`🔻 游離睪固酮 ${lab.value}（偏低）：脂肪攝取 ≥25% 總熱量，支持荷爾蒙合成`)
+        }
       }
     }
 
