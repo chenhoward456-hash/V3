@@ -48,6 +48,7 @@ export interface HealthScoreInput {
   trainingLast7: Array<{ training_type: string }>
   supplementComplianceRate: number   // 0–1（週平均補品打卡率）
   labResults: Array<{ status: 'normal' | 'attention' | 'alert' }>
+  hrvBaseline?: number | null          // 個人 HRV 長期平均（ms），用來跟近 7 天比
   quarterlyStart?: string | null     // ISO date string
 }
 
@@ -166,10 +167,14 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
     labBonus += 2
   }
 
-  // 7d. HRV 卓越獎勵：平均 HRV > 60ms → +1 分（交感神經恢復充分）
+  // 7d. HRV 卓越獎勵：近 7 天平均 HRV 高於個人 baseline 10% → +1 分
+  // HRV 個體差異極大（30-100+ms），必須跟自己比才有意義
   const hrvRaw = wellnessLast7.map(w => w.hrv).filter(v => v != null) as number[]
-  if (hrvRaw.length > 0 && avg(hrvRaw) > 60) {
-    labBonus += 1
+  if (hrvRaw.length > 0 && input.hrvBaseline && input.hrvBaseline > 0) {
+    const hrvWeekAvg = avg(hrvRaw)
+    if (hrvWeekAvg > input.hrvBaseline * 1.1) {
+      labBonus += 1
+    }
   }
 
   // 上限 +10 分
