@@ -192,11 +192,14 @@ function PayContent() {
           <button onClick={handleSubmit} disabled={isSubmitting}
             className="w-full py-4 rounded-xl font-bold text-base bg-[#2563eb] text-white hover:bg-[#1d4ed8] transition-colors disabled:opacity-50 mt-2"
           >
-            {isSubmitting ? '正在跳轉至付款頁面...' : `前往付款 — NT$${plan.priceLabel}`}
+            {isSubmitting ? '正在跳轉至付款頁面...' : `訂閱 — NT$${plan.priceLabel}/月`}
           </button>
 
           <p className="text-center text-xs text-gray-400 mt-2">
-            支援信用卡、ATM、超商付款
+            信用卡定期定額，每月自動扣款 NT${plan.priceLabel}
+          </p>
+          <p className="text-center text-xs text-gray-400">
+            可隨時在儀表板取消，取消後用到當期到期日
           </p>
         </div>
       </div>

@@ -520,31 +520,32 @@ export default function ClientDashboard() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
 
-        {/* 到期提醒 Banner */}
+        {/* 訂閱狀態 Banner */}
         {c.expires_at && (() => {
           const daysLeft = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-          if (daysLeft > 7 || c.subscription_tier === 'free') return null
-          const renewUrl = `/pay?tier=${c.subscription_tier}&name=${encodeURIComponent(c.name)}`
+          if (c.subscription_tier === 'free') return null
+          // 定期定額用戶：到期前不顯示續費按鈕（會自動扣款），只在到期後顯示重新訂閱
           if (daysLeft <= 0) {
+            const renewUrl = `/pay?tier=${c.subscription_tier}&name=${encodeURIComponent(c.name)}`
             return (
               <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
                 <p className="text-sm font-semibold text-red-700">你的方案已到期</p>
-                <p className="text-xs text-red-600 mt-1">續費後所有數據完整保留，不需重新設定。</p>
+                <p className="text-xs text-red-600 mt-1">重新訂閱後所有數據完整保留，不需重新設定。</p>
                 <a href={renewUrl} className="inline-block mt-2 bg-red-600 text-white text-sm font-semibold px-6 py-2 rounded-xl hover:bg-red-700 transition-colors">
-                  立即續費
+                  重新訂閱
                 </a>
               </div>
             )
           }
-          return (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
-              <p className="text-sm font-semibold text-amber-700">你的方案將在 {daysLeft} 天後到期</p>
-              <p className="text-xs text-amber-600 mt-1">到期前續費，資料完整保留。</p>
-              <a href={renewUrl} className="inline-block mt-2 bg-amber-600 text-white text-sm font-semibold px-5 py-2 rounded-xl hover:bg-amber-700 transition-colors">
-                續費
-              </a>
-            </div>
-          )
+          if (daysLeft <= 7) {
+            return (
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
+                <p className="text-sm font-semibold text-blue-700">下次扣款日：{new Date(c.expires_at).toLocaleDateString('zh-TW')}</p>
+                <p className="text-xs text-blue-600 mt-1">系統將自動續訂，無需手動操作。如需取消，請至右上角設定。</p>
+              </div>
+            )
+          }
+          return null
         })()}
 
         {/* LINE 綁定提示 Banner */}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ECPAY_CONFIG, generateCheckMacValue } from '@/lib/ecpay'
 import { createServiceSupabase } from '@/lib/supabase'
+import { sendCancellationEmail } from '@/lib/email'
 import { createLogger } from '@/lib/logger'
 
 const supabase = createServiceSupabase()
@@ -76,6 +77,24 @@ export async function POST(request: NextRequest) {
       merchantTradeNo: purchase.merchant_trade_no,
       email: purchase.email,
     })
+
+    // 查詢到期日並寄送取消確認信
+    if (purchase.email) {
+      const { data: client } = await supabase
+        .from('clients')
+        .select('expires_at')
+        .eq('id', clientId)
+        .single()
+
+      sendCancellationEmail({
+        to: purchase.email,
+        name: purchase.name,
+        tier: purchase.subscription_tier,
+        expiresAt: client?.expires_at || new Date().toISOString(),
+      }).catch((err) => {
+        log.error('Cancellation email error (non-blocking)', err)
+      })
+    }
 
     return NextResponse.json({ success: true, message: '已取消定期定額，你的帳號將持續使用至到期日。' })
   } catch (err: any) {

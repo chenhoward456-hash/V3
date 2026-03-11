@@ -111,6 +111,21 @@ export default function AiChatDrawer({
   const [quotaExceeded, setQuotaExceeded] = useState(false)
   const [pendingImage, setPendingImage] = useState<string | null>(null) // base64 JPEG
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null) // object URL for preview
+  const [trainingReadiness, setTrainingReadiness] = useState<{
+    recoveryScore?: number
+    recommendedIntensity?: string
+    suggestion?: string
+    reasons?: string[]
+    modeRecommendation?: {
+      modeLabel?: string
+      confidence?: string
+      targetRpeRange?: number[]
+      suggestedSets?: string
+      suggestions?: string[]
+      sameSplitWarning?: string | null
+      focusAreas?: string[]
+    }
+  } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -118,6 +133,16 @@ export default function AiChatDrawer({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // 開啟時抓取訓練準備度數據
+  useEffect(() => {
+    if (open && clientId && !trainingReadiness) {
+      fetch(`/api/training-readiness?clientId=${clientId}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => { if (data) setTrainingReadiness(data) })
+        .catch(() => {})
+    }
+  }, [open, clientId, trainingReadiness])
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -270,6 +295,18 @@ ${last7Wellness ? `\n## 過去 7 天身心狀態\n${last7Wellness}` : ''}
 ${last7Training ? `\n## 過去 7 天訓練紀錄\n${last7Training}` : ''}
 ${suppList ? `\n## 目前補劑清單\n${suppList}${supplementComplianceRate != null ? `\n- 近 7 天服從率：${supplementComplianceRate}%` : ''}` : ''}
 ${recoverySignals.length > 0 ? `\n## 訓練恢復評估\n${recoverySignals.join('\n')}\n- 請根據以上恢復狀態調整飲食建議（例如：恢復差時增加抗發炎食物、含鎂食物助眠、適當增加碳水幫助恢復）` : ''}
+${trainingReadiness ? `\n## 訓練引擎分析結果
+- 恢復分數：${trainingReadiness.recoveryScore ?? '未知'}/100
+- 整體狀態：${trainingReadiness.recommendedIntensity === 'high' ? '狀態良好' : trainingReadiness.recommendedIntensity === 'moderate' ? '狀態一般' : trainingReadiness.recommendedIntensity === 'low' ? '恢復偏差' : '建議休息'}
+- 系統建議：${trainingReadiness.suggestion || '無'}
+${trainingReadiness.reasons && trainingReadiness.reasons.length > 0 ? `- 分析依據：${trainingReadiness.reasons.join('、')}` : ''}
+${trainingReadiness.modeRecommendation ? `- 建議訓練模式：${trainingReadiness.modeRecommendation.modeLabel || '未知'}（信心${trainingReadiness.modeRecommendation.confidence === 'high' ? '高' : trainingReadiness.modeRecommendation.confidence === 'medium' ? '中' : '低'}）
+- 目標 RPE：${trainingReadiness.modeRecommendation.targetRpeRange?.join('-') || '未知'}
+- 建議組數：${trainingReadiness.modeRecommendation.suggestedSets || '未知'}
+${trainingReadiness.modeRecommendation.suggestions?.map(s => `- ${s}`).join('\n') || ''}
+${trainingReadiness.modeRecommendation.sameSplitWarning ? `- ⚠️ ${trainingReadiness.modeRecommendation.sameSplitWarning}` : ''}
+${trainingReadiness.modeRecommendation.focusAreas?.length ? `- 重點：${trainingReadiness.modeRecommendation.focusAreas.join('、')}` : ''}` : ''}
+**重要**：你擁有完整的訓練引擎分析數據。當學員詢問身體狀況、今天該怎麼練、恢復狀態時，直接引用這些數據給出具體建議。像一位掌握所有數據的私人教練/顧問一樣回答。` : ''}
 ${labSummary ? `\n## 最新血檢異常項目\n${labSummary}\n- 請根據血檢結果在飲食建議中自然帶入相關營養素（例如：鐵蛋白低→推薦含鐵食物；維生素D不足→建議補充；不需每次都提，在相關時自然帶入）` : ''}
 ${labNormalHighlights && !labSummary ? `\n## 血檢狀態\n所有項目正常：${labNormalHighlights}` : ''}
 ${healthModeEnabled && healthScore ? `
@@ -306,7 +343,7 @@ ${prepPhase === 'peak_week' && (geneticProfile.serotonin === 'SS' || geneticProf
 8. 可以根據補劑清單給出搭配飲食的建議
 9. 如果有血檢數據，在推薦食物時自然融入（例如鐵蛋白低時優先推薦含鐵食物），但不要每次都強調血檢，只在相關時帶入
 10. 如果訓練恢復評估顯示疲勞累積，主動建議有助恢復的飲食策略（抗發炎、助眠、補充電解質）
-11. 當學員問訓練相關問題時，結合恢復狀態給出強度建議
+11. 當學員問訓練相關問題或身體狀況時，結合訓練引擎分析結果（恢復分數、建議模式、RPE 建議）給出像私人教練一樣的具體建議
 12. 不做醫療診斷，建議以科學為基礎
 13. 回答簡潔，不超過 400 字
 14. **健康模式用戶**（如有健康分數數據）：你是他們的長壽健康顧問，除了飲食建議外，還要根據健康分數各支柱表現、血檢趨勢、補品建議，提供全面的健康優化方案。關注抗發炎、抗氧化、微營養素攝取、睡眠品質等長壽相關指標。
@@ -315,7 +352,7 @@ ${prepPhase === 'peak_week' && (geneticProfile.serotonin === 'SS' || geneticProf
     - 用清楚的格式列出，例如：「蛋白質 35g ｜ 碳水 75g ｜ 脂肪 18g ｜ 熱量 602 kcal」
     - 對比今日剩餘目標，告訴學員吃完這餐後還剩多少
     - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫`
-  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, prepPhase, competitionDate, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions, geneticProfile])
+  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, prepPhase, competitionDate, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions, geneticProfile, trainingReadiness])
 
   // 壓縮圖片：FileReader → Image → Canvas → base64 JPEG
   // 每一步都有 fallback，即使 Canvas 失敗也會回傳原圖 base64

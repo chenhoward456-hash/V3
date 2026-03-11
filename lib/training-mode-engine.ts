@@ -609,20 +609,25 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
   if (recentTrainingPattern) {
     // P0: 前一天 RPE 上下文 — 昨天 RPE≥9 應降低今天強度
     if (recentTrainingPattern.lastSessionRpe != null && recentTrainingPattern.lastSessionDate) {
-      const today = new Date()
-      const lastDate = new Date(recentTrainingPattern.lastSessionDate)
-      const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000))
+      // 使用 UTC+8 日期比較（Vercel 伺服器在 UTC）
+      const nowMs = Date.now() + 8 * 60 * 60 * 1000
+      const todayStr = new Date(nowMs).toISOString().split('T')[0]
+      const lastDateStr = recentTrainingPattern.lastSessionDate // YYYY-MM-DD
+      const todayEpoch = new Date(todayStr + 'T00:00:00Z').getTime()
+      const lastEpoch = new Date(lastDateStr + 'T00:00:00Z').getTime()
+      const daysDiff = Math.round((todayEpoch - lastEpoch) / (24 * 60 * 60 * 1000))
+      const timeLabel = daysDiff === 0 ? '今天' : '昨天'
 
       if (daysDiff <= 1 && recentTrainingPattern.lastSessionRpe >= 9) {
         scores.high_intensity -= 25
         scores.high_volume -= 15
         scores.moderate += 10
         scores.reduced_volume += 15
-        reasons.push({ signal: '前次訓練', emoji: '⚡', description: `昨天 RPE ${recentTrainingPattern.lastSessionRpe}（接近極限），今天應降低強度讓神經系統恢復` })
+        reasons.push({ signal: '前次訓練', emoji: '⚡', description: `${timeLabel} RPE ${recentTrainingPattern.lastSessionRpe}（接近極限），今天應降低強度讓神經系統恢復` })
       } else if (daysDiff <= 1 && recentTrainingPattern.lastSessionRpe >= 8) {
         scores.high_intensity -= 10
         scores.moderate += 5
-        reasons.push({ signal: '前次訓練', emoji: '⚡', description: `昨天 RPE ${recentTrainingPattern.lastSessionRpe}，今天避免連續高強度` })
+        reasons.push({ signal: '前次訓練', emoji: '⚡', description: `${timeLabel} RPE ${recentTrainingPattern.lastSessionRpe}，今天避免連續高強度` })
       }
     }
 
@@ -720,9 +725,14 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
   // Fix 5: 訓練類型偵測 — 提醒避免連續同部位
   let sameSplitWarning: string | null = null
   if (recentTrainingPattern?.lastTrainingType && recentTrainingPattern.lastSessionDate) {
-    const today = new Date()
-    const lastDate = new Date(recentTrainingPattern.lastSessionDate)
-    const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000))
+    // 使用 UTC+8 日期比較
+    const nowMs = Date.now() + 8 * 60 * 60 * 1000
+    const todayStr = new Date(nowMs).toISOString().split('T')[0]
+    const lastDateStr = recentTrainingPattern.lastSessionDate
+    const todayEpoch = new Date(todayStr + 'T00:00:00Z').getTime()
+    const lastEpoch = new Date(lastDateStr + 'T00:00:00Z').getTime()
+    const daysDiff = Math.round((todayEpoch - lastEpoch) / (24 * 60 * 60 * 1000))
+    const timeLabel = daysDiff === 0 ? '今天' : '昨天'
 
     if (daysDiff <= 1) {
       const lastType = recentTrainingPattern.lastTrainingType.toLowerCase()
@@ -734,7 +744,7 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       }
       for (const [group, aliases] of Object.entries(muscleGroups)) {
         if (aliases.some(a => lastType.includes(a))) {
-          sameSplitWarning = `昨天已練「${recentTrainingPattern.lastTrainingType}」，建議今天換${group === '推' ? '拉或腿' : group === '拉' ? '推或腿' : '推或拉'}，讓肌群有 48 小時恢復`
+          sameSplitWarning = `${timeLabel}已練「${recentTrainingPattern.lastTrainingType}」，建議今天換${group === '推' ? '拉或腿' : group === '拉' ? '推或腿' : '推或拉'}，讓肌群有 48 小時恢復`
           break
         }
       }
