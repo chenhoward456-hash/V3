@@ -315,31 +315,41 @@ export function getCoachedRichMenuObject() {
 /**
  * 根據訂閱方案自動切換用戶的 Rich Menu
  *
- * - coached: 綁定教練版 Rich Menu（RICH_MENU_COACHED_ID）
- * - self_managed: 綁定學員版 Rich Menu（RICH_MENU_MEMBER_ID）
+ * 優先使用環境變數 RICH_MENU_MEMBER_ID / RICH_MENU_COACHED_ID，
+ * 若未設定則自動搜尋已建立的 Rich Menu（用名稱比對）。
+ *
+ * - coached/self_managed: 綁定學員版（或教練版）Rich Menu
  * - free / 其他: 解除個人 Rich Menu，回到預設行銷版
  *
  * 此函式不會拋出錯誤（non-blocking），僅 console.error 記錄。
  */
 export async function switchRichMenuForUser(lineUserId: string, tier: string): Promise<void> {
-  const memberMenuId = process.env.RICH_MENU_MEMBER_ID
-  const coachedMenuId = process.env.RICH_MENU_COACHED_ID
-  const marketingMenuId = process.env.RICH_MENU_MARKETING_ID
-
-  // Rich Menu IDs not configured yet — skip silently
-  if (!memberMenuId && !coachedMenuId) return
-
   try {
-    if (tier === 'coached' && coachedMenuId) {
-      await linkRichMenuToUser(lineUserId, coachedMenuId)
-    } else if (tier === 'self_managed' || tier === 'coached') {
-      // coached without dedicated menu falls back to member menu
-      if (memberMenuId) {
-        await linkRichMenuToUser(lineUserId, memberMenuId)
-      }
-    } else {
-      // Free user or unknown tier: unlink personal menu, fall back to default marketing menu
+    if (tier === 'free' || (!tier)) {
       await unlinkRichMenuFromUser(lineUserId)
+      return
+    }
+
+    // 優先用環境變數
+    let menuId = tier === 'coached'
+      ? (process.env.RICH_MENU_COACHED_ID || process.env.RICH_MENU_MEMBER_ID)
+      : process.env.RICH_MENU_MEMBER_ID
+
+    // 沒有環境變數 → 搜尋已建立的 Rich Menu（用名稱比對）
+    if (!menuId) {
+      const menus = await listRichMenus()
+      if (tier === 'coached') {
+        const coached = menus.find((m: any) => m.name?.includes('教練版'))
+        const member = menus.find((m: any) => m.name?.includes('學員版'))
+        menuId = coached?.richMenuId || member?.richMenuId
+      } else {
+        const member = menus.find((m: any) => m.name?.includes('學員版'))
+        menuId = member?.richMenuId
+      }
+    }
+
+    if (menuId) {
+      await linkRichMenuToUser(lineUserId, menuId)
     }
   } catch (err) {
     console.error('[Rich Menu] Switch failed for user', lineUserId, 'tier', tier, ':', err)
