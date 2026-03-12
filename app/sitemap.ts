@@ -15,6 +15,7 @@ const hardcodedSlugs = [
   'female-menstrual-cycle-training',
   'sleep-quality-hrv-optimization',
   'testosterone-optimization-3-months',
+  'back-acne-igg-food-sensitivity',
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
