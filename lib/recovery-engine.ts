@@ -478,24 +478,31 @@ function assessOvertrainingRisk(trainingLogs: TrainingLogEntry[]): OvertrainingR
   // 計算每日 session load = RPE × duration (Foster's sRPE)
   const sorted = [...trainingLogs].sort((a, b) => a.date.localeCompare(b.date))
 
-  // 用最近 28 天
-  const last28 = sorted.slice(-28)
-  if (last28.length < 14) {
-    return { acwr: null, monotony: null, strain: null, riskLevel: 'low', reasons: ['訓練數據不足 14 天，無法評估'] }
-  }
+  // 建立最近 28 天的完整日期範圍（含休息日）
+  const today = new Date()
+  const day28Ago = new Date(today)
+  day28Ago.setDate(day28Ago.getDate() - 27) // 含今天共 28 天
 
   // 計算每日負荷 (sRPE)
   const dailyLoads: Map<string, number> = new Map()
-  for (const t of last28) {
-    const load = (t.rpe ?? 5) * (t.duration ?? 45)  // 預設 RPE 5, 45min
+
+  // 先把 28 天全部填 0（休息日 = 0 負荷）
+  for (let d = new Date(day28Ago); d <= today; d.setDate(d.getDate() + 1)) {
+    dailyLoads.set(d.toISOString().split('T')[0], 0)
+  }
+
+  // 再把有訓練紀錄的日期覆蓋上去
+  for (const t of sorted) {
+    if (!dailyLoads.has(t.date)) continue // 超出 28 天範圍
+    if (t.training_type === 'rest') continue // 明確標為休息日 → 保持 0
+    const load = (t.rpe ?? 5) * (t.duration ?? 45)
     const existing = dailyLoads.get(t.date) ?? 0
     dailyLoads.set(t.date, existing + load)
   }
 
-  // 填充缺失日為 0
   const allDates = [...dailyLoads.keys()].sort()
   if (allDates.length < 14) {
-    return { acwr: null, monotony: null, strain: null, riskLevel: 'low', reasons: ['訓練日數不足'] }
+    return { acwr: null, monotony: null, strain: null, riskLevel: 'low', reasons: ['訓練數據不足 14 天，無法評估'] }
   }
 
   const loads = allDates.map(d => dailyLoads.get(d) ?? 0)
@@ -801,9 +808,10 @@ export function generateRecoveryAssessment(input: RecoveryInput): RecoveryAssess
       psychological.score * 0.15
   }
 
-  // 過度訓練風險懲罰
-  if (overtrainingRisk.riskLevel === 'very_high') score = Math.min(score, 30)
-  else if (overtrainingRisk.riskLevel === 'high') score = Math.min(score, 45)
+  // 過度訓練風險懲罰（加權扣分，而非硬上限）
+  if (overtrainingRisk.riskLevel === 'very_high') score *= 0.55
+  else if (overtrainingRisk.riskLevel === 'high') score *= 0.75
+  else if (overtrainingRisk.riskLevel === 'moderate') score *= 0.90
 
   // 交感主導懲罰
   if (autonomicBalance.status === 'sympathetic_dominant') score = Math.min(score, score * 0.85)
