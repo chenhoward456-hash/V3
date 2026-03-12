@@ -1354,7 +1354,21 @@ export default function ClientDashboard() {
             clientId={c.id}
             code={c.unique_code}
             isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
-            onMutate={mutate}
+            onMutate={(appliedTargets?: Record<string, number | undefined>) => {
+              if (appliedTargets) {
+                // Optimistic update：引擎已套用新目標到 DB，直接更新本地快取
+                mutate((prev: any) => {
+                  if (!prev?.client) return prev
+                  const updates: Record<string, number> = {}
+                  for (const [k, v] of Object.entries(appliedTargets)) {
+                    if (v != null) updates[k] = v
+                  }
+                  return { ...prev, client: { ...prev.client, ...updates } }
+                }, { revalidate: true })
+              } else {
+                mutate()
+              }
+            }}
           />
         )}
 
