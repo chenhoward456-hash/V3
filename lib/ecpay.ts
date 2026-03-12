@@ -115,9 +115,9 @@ export function generateCheckMacValue(params: Record<string, string | number>): 
     a.toLowerCase().localeCompare(b.toLowerCase())
   )
 
-  // 2. 組合成 query string
+  // 2. 組合成 query string（確保所有值為字串）
   const queryString = sortedKeys
-    .map((key) => `${key}=${params[key]}`)
+    .map((key) => `${key}=${String(params[key])}`)
     .join('&')
 
   // 3. 前後加上 HashKey / HashIV

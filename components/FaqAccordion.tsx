@@ -48,6 +48,7 @@ export default function FaqAccordion() {
             onClick={() => toggle(index)}
             className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-gray-50/50 transition-colors"
             aria-expanded={openIndex === index}
+            aria-controls={`faq-answer-${index}`}
           >
             <span className="text-sm font-semibold text-navy pr-4">{item.q}</span>
             <span
@@ -59,6 +60,7 @@ export default function FaqAccordion() {
             </span>
           </button>
           <div
+            id={`faq-answer-${index}`}
             className={`overflow-hidden transition-all duration-300 ease-in-out ${
               openIndex === index ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
             }`}

@@ -154,6 +154,8 @@ export default function DailyCheckIn({
             return (
               <button
                 key={supplement.id}
+                role="checkbox"
+                aria-checked={isCompleted}
                 onClick={() => {
                   if (!isCompleted && navigator.vibrate) {
                     navigator.vibrate(30)

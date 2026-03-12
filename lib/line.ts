@@ -40,7 +40,11 @@ async function lineAPI(path: string, body?: object): Promise<Response> {
       ...(body ? { body: JSON.stringify(body) } : {}),
     })
     // Don't retry client errors (4xx) except 429 (rate limit)
-    if (res.ok || (res.status >= 400 && res.status < 500 && res.status !== 429)) {
+    if (res.ok) {
+      return res
+    }
+    if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+      console.error(`[LINE API] ${path} failed with status ${res.status}`)
       return res
     }
     // Retry on 429, 5xx with exponential backoff
@@ -48,6 +52,7 @@ async function lineAPI(path: string, body?: object): Promise<Response> {
       const delay = Math.min(1000 * Math.pow(2, attempt), 4000)
       await new Promise(resolve => setTimeout(resolve, delay))
     } else {
+      console.error(`[LINE API] ${path} failed after ${maxRetries} retries, status ${res.status}`)
       return res // Return last failed response
     }
   }

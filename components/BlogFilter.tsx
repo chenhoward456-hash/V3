@@ -29,6 +29,7 @@ export default function BlogFilter({ posts }: { posts: BlogPost[] }) {
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
+            aria-label={`篩選${category}分類`}
             className={`px-6 py-2 rounded-full font-medium transition-all ${
               selectedCategory === category
                 ? 'bg-primary text-white shadow-lg'

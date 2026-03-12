@@ -17,9 +17,13 @@ export default function PwaRedirect() {
 
     if (!isStandalone) return
 
-    const savedClientId = localStorage.getItem('hp_client_id')
-    if (savedClientId) {
-      router.replace(`/c/${savedClientId}`)
+    try {
+      const savedClientId = localStorage.getItem('hp_client_id')
+      if (savedClientId) {
+        router.replace(`/c/${savedClientId}`)
+      }
+    } catch {
+      // localStorage may be unavailable (private browsing, quota, etc.)
     }
   }, [router])
 

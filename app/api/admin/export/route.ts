@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('clientId')
   const type = searchParams.get('type') || 'all'
-  const days = Math.min(365, Math.max(7, parseInt(searchParams.get('days') || '90')))
+  const daysRaw = parseInt(searchParams.get('days') || '90')
+  const days = !isNaN(daysRaw) ? Math.min(365, Math.max(7, daysRaw)) : 90
 
   if (!clientId) {
     return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
@@ -64,7 +65,8 @@ export async function GET(request: NextRequest) {
   const sinceDateStr = sinceDate.toISOString().split('T')[0]
 
   const sections: string[] = []
-  const clientName = client.name || 'client'
+  const clientNameRaw = client.name || 'client'
+  const clientName = clientNameRaw.replace(/[^a-zA-Z0-9\u4e00-\u9fff_-]/g, '_')
 
   try {
     // ── 體組成 ──

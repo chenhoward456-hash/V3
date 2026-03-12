@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     .order('date', { ascending: false })
 
   if (error) {
+    console.error('[admin/blog GET] 載入失敗:', error)
     return NextResponse.json({ error: '操作失敗' }, { status: 500 })
   }
 
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     .from('blog_posts')
     .select('id')
     .eq('slug', slug)
-    .single()
+    .maybeSingle()
 
   if (existing) {
     return NextResponse.json({ error: '此 slug 已存在，請換一個網址' }, { status: 409 })

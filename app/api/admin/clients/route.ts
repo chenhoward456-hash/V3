@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         return sanitized
       })
       const { error: labError } = await supabase.from('lab_results').insert(withId)
-      if (labError) { /* error logged via response */ }
+      if (labError) { console.error('[admin/clients POST] 血檢新增失敗:', labError) }
     }
 
     // 新增補品（白名單過濾）
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
         return sanitized
       })
       const { error: supError } = await supabase.from('supplements').insert(withId)
-      if (supError) { /* error logged via response */ }
+      if (supError) { console.error('[admin/clients POST] 補品新增失敗:', supError) }
     }
 
     return NextResponse.json({ success: true, id: newClient.id })
