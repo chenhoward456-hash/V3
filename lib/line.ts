@@ -27,16 +27,32 @@ export function verifyLineSignature(body: string, signature: string): boolean {
   }
 }
 
-/** 呼叫 LINE Messaging API */
+/** 呼叫 LINE Messaging API（含重試機制） */
 async function lineAPI(path: string, body?: object): Promise<Response> {
-  return fetch(`https://api.line.me/v2/bot${path}`, {
-    method: body ? 'POST' : 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getLineChannelAccessToken()}`,
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  })
+  const maxRetries = 3
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const res = await fetch(`https://api.line.me/v2/bot${path}`, {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getLineChannelAccessToken()}`,
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    })
+    // Don't retry client errors (4xx) except 429 (rate limit)
+    if (res.ok || (res.status >= 400 && res.status < 500 && res.status !== 429)) {
+      return res
+    }
+    // Retry on 429, 5xx with exponential backoff
+    if (attempt < maxRetries - 1) {
+      const delay = Math.min(1000 * Math.pow(2, attempt), 4000)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    } else {
+      return res // Return last failed response
+    }
+  }
+  // TypeScript: unreachable but satisfy compiler
+  throw new Error('LINE API retry exhausted')
 }
 
 /** 回覆訊息 */

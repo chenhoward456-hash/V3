@@ -2,12 +2,13 @@
  * Service Worker — 離線快取 + 推播通知
  */
 
-const CACHE_NAME = 'hp-v3'
+const CACHE_NAME = 'hp-v4'
 const PRECACHE_URLS = [
   '/icon-192.png',
   '/icon-512.png',
   '/icon.svg',
   '/manifest.json',
+  '/offline.html',
 ]
 
 // Install: precache core assets
@@ -69,7 +70,7 @@ self.addEventListener('fetch', (event) => {
         }
         return response
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/offline.html')))
   )
 })
 

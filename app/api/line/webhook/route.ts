@@ -68,9 +68,8 @@ export async function POST(request: NextRequest) {
     const data = JSON.parse(body)
     const events = data.events || []
 
-    for (const event of events) {
-      await handleEvent(event)
-    }
+    // Process events in parallel for faster response to LINE platform
+    await Promise.allSettled(events.map((event: any) => handleEvent(event)))
 
     return NextResponse.json({ ok: true })
   } catch (error) {
@@ -351,7 +350,7 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
         .not('weight', 'is', null)
         .order('date', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (lastWeight?.weight) {
         const w = lastWeight.weight
@@ -639,7 +638,7 @@ async function getClientByLineId(lineUserId: string, supabase: any) {
     .from('clients')
     .select('id, name, protein_target, water_target, calories_target, subscription_tier, training_enabled, wellness_enabled')
     .eq('line_user_id', lineUserId)
-    .single()
+    .maybeSingle()
   return data
 }
 
@@ -678,7 +677,7 @@ async function handleQuickWeight(replyToken: string, client: any, weight: number
     .lt('date', today)
     .order('date', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
   let msg = `✅ 已記錄體重：${weight} kg`
   if (prev?.weight) {
@@ -713,7 +712,7 @@ async function handleQuickWater(replyToken: string, client: any, waterMl: number
     .select('water_ml')
     .eq('client_id', client.id)
     .eq('date', today)
-    .single()
+    .maybeSingle()
 
   const newWater = (existing?.water_ml || 0) + waterMl
 
@@ -962,7 +961,7 @@ async function handleTrendQuery(replyToken: string, client: any, supabase: any) 
       .eq('client_id', client.id).gte('date', sevenDaysAgo).lte('date', today)
       .order('date', { ascending: true }),
     supabase.from('weekly_summaries').select('summary, status, suggested_calories, weekly_weight_change_rate, warnings')
-      .eq('client_id', client.id).order('week_of', { ascending: false }).limit(1).single(),
+      .eq('client_id', client.id).order('week_of', { ascending: false }).limit(1).maybeSingle(),
   ])
 
   const body = bodyRes.data || []
@@ -1055,7 +1054,7 @@ async function handleBind(replyToken: string, lineUserId: string, code: string, 
     .from('clients')
     .select('id, name')
     .eq('line_user_id', lineUserId)
-    .single()
+    .maybeSingle()
 
   if (existing) {
     await replyMessage(replyToken, [
@@ -1068,7 +1067,7 @@ async function handleBind(replyToken: string, lineUserId: string, code: string, 
     .from('clients')
     .select('id, name, line_user_id, subscription_tier')
     .eq('unique_code', code)
-    .single()
+    .maybeSingle()
 
   if (!client) {
     await replyMessage(replyToken, [
@@ -1317,10 +1316,10 @@ async function handleStatusQuery(replyToken: string, client: any, supabase: any)
   const today = getTaiwanDate()
 
   const [bodyRes, wellness, nutrition, training] = await Promise.all([
-    supabase.from('body_composition').select('weight').eq('client_id', client.id).eq('date', today).single(),
-    supabase.from('daily_wellness').select('*').eq('client_id', client.id).eq('date', today).single(),
-    supabase.from('nutrition_logs').select('*').eq('client_id', client.id).eq('date', today).single(),
-    supabase.from('training_logs').select('*').eq('client_id', client.id).eq('date', today).single(),
+    supabase.from('body_composition').select('weight').eq('client_id', client.id).eq('date', today).maybeSingle(),
+    supabase.from('daily_wellness').select('*').eq('client_id', client.id).eq('date', today).maybeSingle(),
+    supabase.from('nutrition_logs').select('*').eq('client_id', client.id).eq('date', today).maybeSingle(),
+    supabase.from('training_logs').select('*').eq('client_id', client.id).eq('date', today).maybeSingle(),
   ])
 
   const lines: string[] = [`📊 ${client.name} 今日狀態\n`]

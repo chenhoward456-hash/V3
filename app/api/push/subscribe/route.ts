@@ -13,14 +13,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '無效的訂閱資料' }, { status: 400 })
     }
 
+    // clientId 驗證：必須提供且格式合法
+    if (!clientId || typeof clientId !== 'string' || clientId.length > 36) {
+      return NextResponse.json({ error: '無效的 clientId' }, { status: 400 })
+    }
+
     const supabase = createServiceSupabase()
+
+    // 驗證 clientId 對應的學員存在
+    const { data: clientExists } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('unique_code', clientId)
+      .maybeSingle()
+
+    if (!clientExists) {
+      return NextResponse.json({ error: '找不到對應的學員' }, { status: 404 })
+    }
 
     // upsert：同一個 endpoint 只保留一筆
     const { error } = await supabase
       .from('push_subscriptions')
       .upsert(
         {
-          client_id: clientId || null,
+          client_id: clientExists.id,
           endpoint: subscription.endpoint,
           p256dh: subscription.keys.p256dh,
           auth: subscription.keys.auth,

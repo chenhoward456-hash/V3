@@ -70,7 +70,20 @@ function createSupabaseMock(
           error: defaultSingleData ? null : { message: 'not found' },
         })
       })
+      chain.maybeSingle = vi.fn(() => {
+        if (override !== undefined) {
+          if (typeof override === 'function') {
+            return Promise.resolve(override(chain._calls))
+          }
+          return Promise.resolve(override)
+        }
+        return Promise.resolve({
+          data: defaultSingleData,
+          error: null,
+        })
+      })
       // For queries that don't call .single() (like Promise.all trend queries)
+      chain.maybeSingle = chain.single
       chain.then = (resolve: any) => {
         if (override !== undefined) {
           if (typeof override === 'function') {
@@ -106,6 +119,7 @@ function createDetailedSupabaseMock(tableMap: Record<string, { data: any; error:
         chain[m] = vi.fn(() => chain)
       }
       chain.single = vi.fn(() => Promise.resolve(result))
+      chain.maybeSingle = vi.fn(() => Promise.resolve(result))
       chain.then = (resolve: any) => {
         // For array-style results (non-single), wrap single data in array
         const arrayResult = {
@@ -623,6 +637,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -670,6 +685,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -737,6 +753,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -836,6 +853,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -871,6 +889,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: { message: 'not found' } })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1057,6 +1076,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1134,6 +1154,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1170,6 +1191,7 @@ describe('POST /api/line/webhook', () => {
             // body_composition: upsert ok, previous weight = null
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1219,6 +1241,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1254,6 +1277,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1327,6 +1351,7 @@ describe('POST /api/line/webhook', () => {
             // existing nutrition_logs
             return Promise.resolve({ data: { water_ml: 500 }, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1368,6 +1393,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1404,6 +1430,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1476,6 +1503,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1517,6 +1545,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1552,6 +1581,7 @@ describe('POST /api/line/webhook', () => {
             }
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1585,6 +1615,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'clients') return Promise.resolve({ data: BOUND_CLIENT, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1637,6 +1668,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'clients') return Promise.resolve({ data: BOUND_CLIENT, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1748,6 +1780,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'clients') return Promise.resolve({ data: BOUND_CLIENT, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1800,6 +1833,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'clients') return Promise.resolve({ data: BOUND_CLIENT, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1851,6 +1885,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'clients') return Promise.resolve({ data: BOUND_CLIENT, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1926,6 +1961,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'clients') return Promise.resolve({ data: BOUND_CLIENT, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -1959,6 +1995,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'clients') return Promise.resolve({ data: BOUND_CLIENT, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -2029,6 +2066,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'clients') return Promise.resolve({ data: BOUND_CLIENT, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -2068,6 +2106,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'clients') return Promise.resolve({ data: BOUND_CLIENT, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -2136,6 +2175,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'training_logs') return Promise.resolve({ data: { training_type: 'push', rpe: 7 }, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -2178,6 +2218,7 @@ describe('POST /api/line/webhook', () => {
             // All other tables return no data
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -2228,6 +2269,7 @@ describe('POST /api/line/webhook', () => {
             return Promise.resolve({ data: null, error: null })
           })
           // For non-single queries (body, nutrition, training, wellness arrays)
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => {
             if (table === 'body_composition') {
               return Promise.resolve({
@@ -2304,6 +2346,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'clients') return Promise.resolve({ data: BOUND_CLIENT, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
           return chain
         }),
@@ -2335,6 +2378,7 @@ describe('POST /api/line/webhook', () => {
             if (table === 'clients') return Promise.resolve({ data: BOUND_CLIENT, error: null })
             return Promise.resolve({ data: null, error: null })
           })
+          chain.maybeSingle = chain.single
           chain.then = (resolve: any) => {
             if (table === 'body_composition') {
               return Promise.resolve({

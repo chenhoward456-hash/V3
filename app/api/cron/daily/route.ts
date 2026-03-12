@@ -247,7 +247,7 @@ export async function GET(request: NextRequest) {
         if (digestLines.length > 0) {
           const header = `☀️ 教練晨報 ${today}\n\n`
           const digestText = header + digestLines.join('\n')
-          await pushMessage(coachLineId, digestText)
+          await pushMessage(coachLineId, [{ type: 'text', text: digestText }])
           logger.info(`Coach digest sent: ${digestLines.length} lines`)
         }
       } catch (err) {
