@@ -283,6 +283,22 @@ export default function ClientDashboard() {
     }
   }, [clientData?.client?.created_at])
 
+  // 共用的 optimistic SWR update：引擎寫入 DB 後，直接同步本地快取
+  const mutateWithTargets = useCallback((appliedTargets?: Record<string, number | undefined>) => {
+    if (appliedTargets) {
+      mutate((prev: any) => {
+        if (!prev?.client) return prev
+        const updates: Record<string, number> = {}
+        for (const [k, v] of Object.entries(appliedTargets)) {
+          if (v != null) updates[k] = v
+        }
+        return { ...prev, client: { ...prev.client, ...updates } }
+      }, { revalidate: true })
+    } else {
+      mutate()
+    }
+  }, [mutate])
+
   const handleToggleSupplement = async (supplementId: string, currentCompleted: boolean) => {
     setTogglingSupplements(prev => new Set(prev).add(supplementId))
     try {
@@ -1343,7 +1359,7 @@ export default function ClientDashboard() {
             targetWeight={clientData.client.target_weight}
             competitionDate={clientData.client.competition_date}
             simpleMode={clientData.client.simple_mode}
-            onMutate={mutate}
+            onMutate={mutateWithTargets}
           /></div>
         )}
 
@@ -1354,7 +1370,7 @@ export default function ClientDashboard() {
             clientId={c.id}
             code={c.unique_code}
             isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
-            onMutate={mutate}
+            onMutate={mutateWithTargets}
           />
         )}
 
@@ -1550,7 +1566,7 @@ export default function ClientDashboard() {
             targetWeight={clientData.client.target_weight}
             competitionDate={clientData.client.competition_date}
             simpleMode={clientData.client.simple_mode}
-            onMutate={mutate}
+            onMutate={mutateWithTargets}
           /></div>
         )}
 

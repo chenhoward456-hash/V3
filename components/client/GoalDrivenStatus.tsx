@@ -6,7 +6,7 @@ interface GoalDrivenStatusProps {
   clientId: string
   code?: string
   isTrainingDay?: boolean
-  onMutate?: () => void
+  onMutate?: (appliedTargets?: Record<string, number | undefined>) => void
 }
 
 export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMutate }: GoalDrivenStatusProps) {
@@ -42,9 +42,21 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         if (json.suggestion) {
           setData(json.suggestion)
           setTargetWeightValue(json.meta?.targetWeight || null)
-          // 無論是否自動套用，都 trigger mutate 確保其他組件顯示最新 DB 值
+          // applied = DB 已更新，帶上新值讓父元件做 optimistic update
           if (onMutate) {
-            onMutate()
+            if (json.applied) {
+              const s = json.suggestion
+              onMutate({
+                calories_target: s.suggestedCalories,
+                protein_target: s.suggestedProtein,
+                carbs_target: s.suggestedCarbs,
+                fat_target: s.suggestedFat,
+                carbs_training_day: s.suggestedCarbsTrainingDay,
+                carbs_rest_day: s.suggestedCarbsRestDay,
+              })
+            } else {
+              onMutate()
+            }
           }
         }
       } catch (err) {

@@ -18,7 +18,7 @@ interface BodyCompositionProps {
   targetWeight?: number | null
   competitionDate?: string | null
   simpleMode?: boolean
-  onMutate: () => void
+  onMutate: (appliedTargets?: Record<string, number | undefined>) => void
 }
 
 export default function BodyComposition({
@@ -171,10 +171,20 @@ export default function BodyComposition({
       const result = await res.json()
       setShowModal(false)
       setForm({ date: getLocalDateStr(), weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
-      onMutate()
-      showToast('身體數據已記錄！', 'success', '🎉')
       // 營養素引擎結果（只在有調整時顯示）
       const na = result?.data?.nutritionAdjusted
+      if (na?.adjusted) {
+        // Optimistic update: 引擎已寫入 DB，直接同步 SWR 快取
+        onMutate({
+          calories_target: na.calories,
+          protein_target: na.protein,
+          carbs_target: na.carbs,
+          fat_target: na.fat,
+        })
+      } else {
+        onMutate()
+      }
+      showToast('身體數據已記錄！', 'success', '🎉')
       if (na?.adjusted) {
         const t1 = setTimeout(() => {
           setNutritionAdjusted({ message: na.message, calories: na.calories, protein: na.protein, carbs: na.carbs, fat: na.fat, adjusted: true })

@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 創建或更新打卡記錄
+    // DB constraint 為 UNIQUE(supplement_id, date)，onConflict 需匹配
     const { data, error } = await supabase
       .from('supplement_logs')
       .upsert({
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
         supplement_id: supplementId,
         date,
         completed
-      }, { onConflict: 'client_id,supplement_id,date' })
+      }, { onConflict: 'supplement_id,date' })
       .select()
       .single()
 
