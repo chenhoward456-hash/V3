@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       .select('id, product_key, download_count, status')
       .eq('download_token', token)
       .eq('status', 'completed')
-      .single()
+      .maybeSingle()
 
     if (error || !purchase) {
       return createErrorResponse('無效的下載連結，請確認已完成付款', 404)

@@ -8,6 +8,8 @@ import FaqAccordion from '@/components/FaqAccordion'
 import StickyMobileCta from '@/components/StickyMobileCta'
 import ABTest from '@/components/ABTest'
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+
 const personSchema = {
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -15,8 +17,8 @@ const personSchema = {
   alternateName: 'Howard',
   jobTitle: 'CSCS 認證體能教練 / Howard Protocol 創辦人',
   description: '數據驅動體態與健康管理系統 Howard Protocol 創辦人，CSCS 認證，運動醫學背景。智能系統 × 教練監督。',
-  url: 'https://howard456.vercel.app',
-  image: 'https://howard456.vercel.app/howard-profile.jpg',
+  url: SITE_URL,
+  image: `${SITE_URL}/howard-profile.jpg`,
   sameAs: [
     'https://www.instagram.com/chenhoward/',
     'https://lin.ee/LP65rCc',
@@ -39,8 +41,8 @@ const localBusinessSchema = {
   '@type': 'LocalBusiness',
   name: 'Howard Protocol',
   description: '數據驅動的體態與健康管理系統。CSCS 認證教練監督 × 智能系統 24 小時分析。',
-  url: 'https://howard456.vercel.app',
-  image: 'https://howard456.vercel.app/howard-profile.jpg',
+  url: SITE_URL,
+  image: `${SITE_URL}/howard-profile.jpg`,
   address: {
     '@type': 'PostalAddress',
     addressLocality: '台中市',
@@ -68,15 +70,15 @@ const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'Howard Protocol',
-  url: 'https://howard456.vercel.app',
-  logo: 'https://howard456.vercel.app/icon-192.png',
-  image: 'https://howard456.vercel.app/howard-profile.jpg',
+  url: SITE_URL,
+  logo: `${SITE_URL}/icon-192.png`,
+  image: `${SITE_URL}/howard-profile.jpg`,
   description: '數據驅動的體態與健康管理系統。CSCS 認證教練監督 × 智能系統 24 小時分析。',
   founder: {
     '@type': 'Person',
     name: 'Howard Chen',
     jobTitle: 'CSCS 認證體能教練',
-    url: 'https://howard456.vercel.app',
+    url: SITE_URL,
   },
   address: {
     '@type': 'PostalAddress',
@@ -102,7 +104,7 @@ const webApplicationSchema = {
   '@type': 'WebApplication',
   name: 'Howard Protocol',
   description: '數據驅動的體態與健康管理系統',
-  url: 'https://howard456.vercel.app',
+  url: SITE_URL,
   applicationCategory: 'HealthApplication',
   operatingSystem: 'Web',
   inLanguage: 'zh-TW',
@@ -135,7 +137,7 @@ const webApplicationSchema = {
     '@type': 'Person',
     name: 'Howard Chen',
     jobTitle: 'CSCS 認證體能教練',
-    url: 'https://howard456.vercel.app',
+    url: SITE_URL,
   },
 }
 
@@ -147,7 +149,7 @@ const serviceSchema = {
   provider: {
     '@type': 'Organization',
     name: 'Howard Protocol',
-    url: 'https://howard456.vercel.app',
+    url: SITE_URL,
   },
   serviceType: '健康管理與體態優化',
   areaServed: {
@@ -236,12 +238,12 @@ export const metadata: Metadata = {
   title: 'Howard Protocol - 數據驅動的體態與健康管理 | CSCS 教練監督',
   description: '不只是教練服務，是一套數據驅動的體態與健康管理系統。自適應 TDEE 校正、每週智能分析、Refeed 自動觸發、月經週期濾鏡。CSCS 認證教練監督，運動醫學背景。台中實體 / 全台遠端。',
   keywords: ['數據化體態管理', '自適應TDEE', '智能營養系統', 'CSCS教練', '數據化訓練', '遠端訓練', '科學化減脂', '台中教練', '健康管理'],
-  alternates: { canonical: 'https://howard456.vercel.app' },
+  alternates: { canonical: SITE_URL },
   openGraph: {
     title: 'Howard Protocol - 數據驅動的體態與健康管理',
     description: '智能系統 24 小時分析 × CSCS 教練即時監督',
     type: 'website',
-    url: 'https://howard456.vercel.app',
+    url: SITE_URL,
     images: [{ url: '/howard-profile.jpg', width: 1200, height: 630, alt: 'Howard Protocol - 數據驅動的體態與健康管理' }],
   },
 }
@@ -362,6 +364,7 @@ export default function HomePage() {
                 alt="Howard Chen - CSCS 認證體能教練 / Howard Protocol 創辦人"
                 width={240}
                 height={240}
+                sizes="(max-width: 768px) 240px, 240px"
                 className="rounded-2xl object-cover shadow-[0_8px_30px_rgba(30,58,95,0.12)]"
                 priority
               />
@@ -767,6 +770,7 @@ export default function HomePage() {
                 alt="Howard Chen"
                 width={120}
                 height={120}
+                sizes="120px"
                 className="rounded-xl object-cover"
               />
               <div>

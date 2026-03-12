@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       .from('clients')
       .select('id, unique_code, created_at')
       .eq('unique_code', clientId)
-      .single()
+      .maybeSingle()
 
     if (clientError || !client) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       .from('referral_codes')
       .select('*')
       .eq('client_id', client.id)
-      .single()
+      .maybeSingle()
 
     if (existingCode) {
       // Calculate total reward days earned
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       .from('referral_codes')
       .select('*, client_id')
       .eq('code', referralCode)
-      .single()
+      .maybeSingle()
 
     if (codeError || !codeRecord) {
       return NextResponse.json({ error: 'Invalid referral code' }, { status: 404 })
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       .from('referrals')
       .select('id')
       .eq('referee_id', refereeClientId)
-      .single()
+      .maybeSingle()
 
     if (existingReferral) {
       return NextResponse.json(

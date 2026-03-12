@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       .from('ebook_purchases')
       .select('status, download_token, email')
       .eq('merchant_trade_no', orderId)
-      .single()
+      .maybeSingle()
 
     if (!purchase) {
       return NextResponse.json({ purchased: false })

@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       .from('subscription_purchases')
       .select('status, client_id, subscription_tier, name')
       .eq('merchant_trade_no', orderId)
-      .single()
+      .maybeSingle()
 
     if (error || !purchase) {
       return NextResponse.json({ completed: false })

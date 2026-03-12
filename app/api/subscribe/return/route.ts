@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         .from('subscription_purchases')
         .select('email')
         .eq('merchant_trade_no', merchantTradeNo)
-        .single()
+        .maybeSingle()
 
       if (currentPurchase?.email) {
         const { data: prevPurchases } = await supabase

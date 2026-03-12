@@ -17,8 +17,8 @@ export default function CookieConsent() {
   const accept = () => {
     localStorage.setItem('cookie_consent', 'accepted')
     setShow(false)
-    // Reload to trigger GA loading
-    window.location.reload()
+    // Notify other components (e.g. GoogleAnalytics) without reloading the page
+    window.dispatchEvent(new Event('cookie-consent-changed'))
   }
 
   const decline = () => {

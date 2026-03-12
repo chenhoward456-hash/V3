@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import LineButton from '@/components/LineButton'
 
 const navItems = [
@@ -17,6 +17,20 @@ const navItems = [
 export default function Navigation() {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const hamburgerButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      // Focus close button when menu opens
+      requestAnimationFrame(() => {
+        closeButtonRef.current?.focus()
+      })
+    } else {
+      // Return focus to hamburger button when menu closes
+      hamburgerButtonRef.current?.focus()
+    }
+  }, [mobileMenuOpen])
 
   return (
     <>
@@ -35,6 +49,7 @@ export default function Navigation() {
         >
           {/* 關閉按鈕 */}
           <button
+            ref={closeButtonRef}
             onClick={() => setMobileMenuOpen(false)}
             className="self-end p-2 text-gray-500 hover:text-gray-800 transition-colors"
             aria-label="關閉選單"
@@ -107,9 +122,11 @@ export default function Navigation() {
 
               {/* Mobile Menu Button */}
               <button
+                ref={hamburgerButtonRef}
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="lg:hidden flex flex-col gap-1.5 p-2"
                 aria-label="Toggle menu"
+                aria-expanded={mobileMenuOpen}
               >
                 <span className="w-6 h-0.5 bg-text-primary rounded-full"></span>
                 <span className="w-6 h-0.5 bg-text-primary rounded-full"></span>

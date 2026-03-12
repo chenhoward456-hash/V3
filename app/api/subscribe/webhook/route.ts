@@ -160,14 +160,14 @@ export async function POST(request: NextRequest) {
             .from('referral_codes')
             .select('id, client_id, total_referrals')
             .eq('code', regData.ref)
-            .single()
+            .maybeSingle()
 
           if (codeRecord && codeRecord.client_id !== clientId) {
             const { data: existingReferral } = await supabase
               .from('referrals')
               .select('id')
               .eq('referee_id', clientId)
-              .single()
+              .maybeSingle()
 
             if (!existingReferral) {
               await supabase.from('referrals').insert({

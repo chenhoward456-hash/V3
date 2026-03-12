@@ -11,6 +11,13 @@ export default function GoogleAnalytics() {
   useEffect(() => {
     const consent = localStorage.getItem('cookie_consent')
     setConsented(consent === 'accepted')
+
+    const handleConsentChange = () => {
+      const updated = localStorage.getItem('cookie_consent')
+      setConsented(updated === 'accepted')
+    }
+    window.addEventListener('cookie-consent-changed', handleConsentChange)
+    return () => window.removeEventListener('cookie-consent-changed', handleConsentChange)
   }, [])
 
   if (!consented) return null

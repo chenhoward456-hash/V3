@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       .select('client_id, subscription_tier, email, name')
       .eq('merchant_trade_no', merchantTradeNo)
       .eq('status', 'completed')
-      .single()
+      .maybeSingle()
 
     if (!purchase?.client_id) {
       log.error('Purchase or client not found for period renewal', { merchantTradeNo })
