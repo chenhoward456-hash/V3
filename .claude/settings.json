@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/chenyinhao/V3 && npx vitest run --reporter=dot 2>&1 | tail -5"
+          }
+        ]
+      }
+    ]
+  }
+}

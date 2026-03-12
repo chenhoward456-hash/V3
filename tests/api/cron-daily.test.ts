@@ -44,11 +44,12 @@ const mockSupabase = {
   }),
 }
 
-const { mockPushMessage, mockUnlinkRichMenuFromUser, mockSendRoutineReminder, mockGenerateSmartAlerts } = vi.hoisted(() => ({
+const { mockPushMessage, mockUnlinkRichMenuFromUser, mockSendRoutineReminder, mockGenerateSmartAlerts, mockSendPushNotification } = vi.hoisted(() => ({
   mockPushMessage: vi.fn().mockResolvedValue(undefined),
   mockUnlinkRichMenuFromUser: vi.fn().mockResolvedValue(undefined),
   mockSendRoutineReminder: vi.fn().mockResolvedValue({ success: true, method: 'web_push' }),
   mockGenerateSmartAlerts: vi.fn(() => []),
+  mockSendPushNotification: vi.fn().mockResolvedValue(true),
 }))
 
 vi.mock('@/lib/supabase', () => ({
@@ -62,6 +63,10 @@ vi.mock('@/lib/line', () => ({
 
 vi.mock('@/lib/notify', () => ({
   sendRoutineReminder: mockSendRoutineReminder,
+}))
+
+vi.mock('@/lib/web-push', () => ({
+  sendPushNotification: mockSendPushNotification,
 }))
 
 vi.mock('@/lib/auth-middleware', () => ({
@@ -256,19 +261,20 @@ describe('GET /api/cron/daily', () => {
 
   // ── Morning Reminders ──
 
-  it('should send morning reminders to clients who have not logged weight', async () => {
+  it('should send morning reminders to clients who have not logged weight (Web Push only)', async () => {
     mockDateForHour(8) // morning
     mockFromResults['clients'] = { data: morningClients, error: null }
     mockFromResults['body_composition'] = { data: [], error: null }
+    mockFromResults['push_subscriptions'] = { data: [{ endpoint: 'https://push.example.com', p256dh: 'key', auth: 'auth' }], error: null }
 
-    mockSendRoutineReminder.mockResolvedValue({ success: true, method: 'web_push' })
+    mockSendPushNotification.mockResolvedValue(true)
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
     const body = await res.json()
 
     expect(res.status).toBe(200)
-    expect(mockSendRoutineReminder).toHaveBeenCalledTimes(2)
+    expect(mockSendRoutineReminder).not.toHaveBeenCalled()
     expect(body.sent).toBe(2)
     expect(body.webPushUsed).toBe(2)
     expect(body.type).toBe('morning')
@@ -292,54 +298,55 @@ describe('GET /api/cron/daily', () => {
     expect(body.sent).toBe(0)
   })
 
-  it('should count LINE push method in morning reminders', async () => {
+  it('should not use LINE for morning reminders even without push subscriptions', async () => {
     mockDateForHour(8)
     mockFromResults['clients'] = {
       data: [morningClients[0]],
       error: null,
     }
     mockFromResults['body_composition'] = { data: [], error: null }
-    mockSendRoutineReminder.mockResolvedValue({ success: true, method: 'line_push' })
+    mockFromResults['push_subscriptions'] = { data: [], error: null }
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
     const body = await res.json()
 
-    expect(body.linePushUsed).toBe(1)
-    expect(body.webPushUsed).toBe(0)
+    expect(body.linePushUsed).toBe(0)
+    expect(body.sent).toBe(0)
   })
 
-  it('should handle failed sendRoutineReminder in morning batch', async () => {
+  it('should handle failed Web Push in morning batch', async () => {
     mockDateForHour(8)
     mockFromResults['clients'] = {
       data: [morningClients[0]],
       error: null,
     }
     mockFromResults['body_composition'] = { data: [], error: null }
-    mockSendRoutineReminder.mockRejectedValue(new Error('push failed'))
+    mockFromResults['push_subscriptions'] = { data: [{ endpoint: 'https://push.example.com', p256dh: 'key', auth: 'auth' }], error: null }
+    mockSendPushNotification.mockResolvedValue(false)
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
     const body = await res.json()
 
     expect(body.sent).toBe(0)
-    expect(body.errors).toContain('Alice: push failed')
   })
 
-  it('should handle sendRoutineReminder returning success false in morning', async () => {
+  it('should skip morning reminder when client has no push subscriptions', async () => {
     mockDateForHour(8)
     mockFromResults['clients'] = {
       data: [morningClients[0]],
       error: null,
     }
     mockFromResults['body_composition'] = { data: [], error: null }
-    mockSendRoutineReminder.mockResolvedValue({ success: false })
+    mockFromResults['push_subscriptions'] = { data: null, error: null }
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
     const body = await res.json()
 
     expect(body.sent).toBe(0)
+    expect(body.linePushUsed).toBe(0)
   })
 
   // ── Evening Reminders ──
@@ -1078,7 +1085,7 @@ describe('GET /api/cron/daily', () => {
 
   // ── Batch processing (more than 5 clients) ──
 
-  it('should batch morning reminders in groups of 5', async () => {
+  it('should batch morning Web Push reminders in groups of 5', async () => {
     mockDateForHour(8)
     const manyClients = Array.from({ length: 7 }, (_, i) => ({
       id: `client-${i}`,
@@ -1091,14 +1098,16 @@ describe('GET /api/cron/daily', () => {
     }))
     mockFromResults['clients'] = { data: manyClients, error: null }
     mockFromResults['body_composition'] = { data: [], error: null }
+    mockFromResults['push_subscriptions'] = { data: [{ endpoint: 'https://push.example.com', p256dh: 'key', auth: 'auth' }], error: null }
 
-    mockSendRoutineReminder.mockResolvedValue({ success: true, method: 'web_push' })
+    mockSendPushNotification.mockResolvedValue(true)
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
     const body = await res.json()
 
-    expect(mockSendRoutineReminder).toHaveBeenCalledTimes(7)
+    expect(mockSendRoutineReminder).not.toHaveBeenCalled()
     expect(body.sent).toBe(7)
+    expect(body.webPushUsed).toBe(7)
   })
 })

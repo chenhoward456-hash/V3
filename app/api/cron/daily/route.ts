@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { pushMessage, unlinkRichMenuFromUser } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
+import { sendPushNotification } from '@/lib/web-push'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
@@ -32,6 +33,29 @@ function verifyCronAuth(request: NextRequest): boolean {
 
   const token = request.cookies.get('admin_session')?.value
   return !!token && verifyAdminSession(token)
+}
+
+/** 僅 Web Push，不 fallback LINE（用於低優先度日常提醒如量體重） */
+async function sendWebPushOnly(
+  clientId: string,
+  message: { title: string; body: string; url?: string }
+): Promise<boolean> {
+  const supabase = createServiceSupabase()
+  const { data: subs } = await supabase
+    .from('push_subscriptions')
+    .select('endpoint, p256dh, auth')
+    .eq('client_id', clientId)
+
+  if (!subs || subs.length === 0) return false
+
+  for (const sub of subs) {
+    const ok = await sendPushNotification(
+      { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+      message
+    )
+    if (ok) return true
+  }
+  return false
 }
 
 function getTaiwanDate(): string {
@@ -80,7 +104,7 @@ export async function GET(request: NextRequest) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
 
   if (isMorning) {
-    // ── 早上提醒：量體重（Web Push 優先，省 LINE 額度）──
+    // ── 早上提醒：量體重（僅 Web Push，不消耗 LINE 額度）──
     const { data: todayWeights } = await supabase
       .from('body_composition')
       .select('client_id')
@@ -89,28 +113,23 @@ export async function GET(request: NextRequest) {
     const hasWeight = new Set((todayWeights || []).map((w: any) => w.client_id))
     const morningTargets = clients.filter(c => c.body_composition_enabled && !hasWeight.has(c.id))
 
-    // 批次發送（每批 5 個）
+    // 批次發送（每批 5 個，僅 Web Push）
     for (let i = 0; i < morningTargets.length; i += 5) {
       const batch = morningTargets.slice(i, i + 5)
       const results = await Promise.allSettled(
         batch.map(client =>
-          sendRoutineReminder(client.id, client.line_user_id, {
+          sendWebPushOnly(client.id, {
             title: `☀️ 早安 ${client.name}！`,
             body: '別忘了量體重喔',
-            lineText: `☀️ 早安 ${client.name}！\n\n別忘了量體重喔\n💡 直接輸入「體重 72.5」就能記錄`,
             url: `${siteUrl}/dashboard`,
           })
         )
       )
       results.forEach((result, idx) => {
-        if (result.status === 'fulfilled') {
-          const r = result.value
-          if (r.success) {
-            sent++
-            if (r.method === 'web_push') webPushUsed++
-            else linePushUsed++
-          }
-        } else {
+        if (result.status === 'fulfilled' && result.value) {
+          sent++
+          webPushUsed++
+        } else if (result.status === 'rejected') {
           errors.push(`${batch[idx].name}: ${result.reason?.message || 'unknown'}`)
         }
       })
