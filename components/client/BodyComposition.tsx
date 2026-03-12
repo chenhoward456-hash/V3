@@ -267,6 +267,51 @@ export default function BodyComposition({
           ))}
         </div>
 
+        {/* Week-over-Week 體重比較 */}
+        {(() => {
+          const now = new Date()
+          const dayOfWeek = now.getDay() || 7 // 1=Mon ... 7=Sun
+          const thisWeekStart = new Date(now)
+          thisWeekStart.setDate(now.getDate() - dayOfWeek + 1)
+          const thisWeekStartStr = thisWeekStart.toISOString().split('T')[0]
+          const lastWeekStart = new Date(thisWeekStart)
+          lastWeekStart.setDate(lastWeekStart.getDate() - 7)
+          const lastWeekStartStr = lastWeekStart.toISOString().split('T')[0]
+
+          const thisWeekWeights = (bodyData || []).filter((b: any) => b.date >= thisWeekStartStr && b.weight != null).map((b: any) => b.weight as number)
+          const lastWeekWeights = (bodyData || []).filter((b: any) => b.date >= lastWeekStartStr && b.date < thisWeekStartStr && b.weight != null).map((b: any) => b.weight as number)
+
+          if (thisWeekWeights.length < 3 || lastWeekWeights.length < 3) return null
+
+          const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length
+          const thisAvg = avg(thisWeekWeights)
+          const lastAvg = avg(lastWeekWeights)
+          const change = thisAvg - lastAvg
+          // Lower weight is generally the goal (cut) — green for decrease
+          const isPositive = targetWeight != null ? (change < 0 === targetWeight < lastAvg) : change < 0
+          return (
+            <div className={`rounded-xl px-4 py-3 mb-4 border ${isPositive ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+              <p className="text-xs font-semibold text-gray-700 mb-2">Week-over-Week</p>
+              <div className="flex items-center justify-between">
+                <div className="text-center">
+                  <p className="text-[10px] text-gray-400">上週均值</p>
+                  <p className="text-sm font-bold text-gray-700">{lastAvg.toFixed(1)} kg</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-gray-400">本週均值</p>
+                  <p className="text-sm font-bold text-gray-700">{thisAvg.toFixed(1)} kg</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-gray-400">變化</p>
+                  <p className={`text-sm font-bold ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+                    {change > 0 ? '+' : ''}{change.toFixed(1)} kg
+                  </p>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* 體重波動科學解釋（簡單模式隱藏） */}
         {!simpleMode && weightFluctuationNote && (
           <div className={`rounded-xl px-4 py-3 mb-4 flex items-start gap-2 ${

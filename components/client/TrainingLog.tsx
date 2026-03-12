@@ -755,6 +755,35 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           </div>
         )}
 
+        {/* ===== 訓練洞察頂部摘要（不需展開即可看到） ===== */}
+        {!simpleMode && insights && insights.bestRecovery && insights.bestRecovery.avgNextEnergy != null && (
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl px-4 py-3">
+            <p className="text-xs font-semibold text-emerald-700 mb-2">Sleep x Training Insight</p>
+            <p className="text-sm text-emerald-800">
+              {insights.bestRecovery.emoji} {insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）
+            </p>
+            {/* Mini bar chart: 各訓練類型的隔天精力 */}
+            {insights.typeAnalysis.filter(t => t.avgNextEnergy != null).length >= 2 && (
+              <div className="mt-2 space-y-1">
+                {insights.typeAnalysis
+                  .filter(t => t.avgNextEnergy != null)
+                  .map(t => (
+                    <div key={t.type} className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-500 w-12 text-right truncate">{t.label}</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all ${(t.avgNextEnergy ?? 0) >= 4 ? 'bg-green-400' : (t.avgNextEnergy ?? 0) >= 3 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                          style={{ width: `${((t.avgNextEnergy ?? 0) / 5) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-gray-600 w-6">{t.avgNextEnergy?.toFixed(1)}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ===== 訓練洞察（簡單模式隱藏） ===== */}
         {!simpleMode && insights && insights.typeAnalysis.length > 0 && (
           <div className="pt-4 border-t border-gray-100">

@@ -883,7 +883,8 @@ describe('TrainingLog', () => {
       renderTrainingLog({ trainingLogs: insightLogs, wellness: insightWellness })
       fireEvent.click(screen.getByText(/訓練洞察/))
 
-      expect(screen.getByText(/日後恢復最好/)).toBeInTheDocument()
+      // Best recovery text appears in both summary card and expanded insights
+      expect(screen.getAllByText(/日後恢復最好/).length).toBeGreaterThanOrEqual(1)
       expect(screen.getByText(/日後恢復最差/)).toBeInTheDocument()
     })
 

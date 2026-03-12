@@ -279,12 +279,28 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold text-amber-700">{simpleMode ? '🔥 今日熱量' : (competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 今日巨量營養素')}</p>
                 {!simpleMode && carbsCyclingEnabled && (
-                  <button
-                    onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-100 text-gray-600'}`}
-                  >
-                    🔄 {effectiveIsTraining ? '訓練日' : '休息日'} ▾
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-100 text-gray-600'}`}
+                    >
+                      🔄 {effectiveIsTraining ? '訓練日' : '休息日'} {manualDayType ? '(手動)' : '(自動)'} ▾
+                    </button>
+                    {manualDayType && (
+                      <button
+                        onClick={() => setManualDayType(null)}
+                        className="px-1.5 py-0.5 rounded-full text-[10px] text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        title="重置為自動偵測"
+                      >
+                        ↺
+                      </button>
+                    )}
+                    {!manualDayType && isTrainingDay && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] text-cyan-600 bg-cyan-50 animate-pulse">
+                        從訓練紀錄偵測
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
               <div className={`grid ${simpleMode ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3'} gap-3`}>
@@ -361,12 +377,23 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-amber-600">{competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 巨量營養素'}</p>
                 {carbsCyclingEnabled && carbsTrainingDay && carbsRestDay && (
-                  <button
-                    onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-200 text-gray-600'}`}
-                  >
-                    🔄 {effectiveIsTraining ? '訓練日' : '休息日'} ▾
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-200 text-gray-600'}`}
+                    >
+                      🔄 {effectiveIsTraining ? '訓練日' : '休息日'} {manualDayType ? '(手動)' : '(自動)'} ▾
+                    </button>
+                    {manualDayType && (
+                      <button
+                        onClick={() => setManualDayType(null)}
+                        className="px-1.5 py-0.5 rounded-full text-[10px] text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        title="重置為自動偵測"
+                      >
+                        ↺
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
               <NutrientSlider

@@ -9,6 +9,8 @@ import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { useCoachMode } from '@/hooks/useCoachMode'
 import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown, Settings } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
+import CollapsibleSection from '@/components/client/CollapsibleSection'
+import QuickActions from '@/components/client/QuickActions'
 import UpgradeGate from '@/components/client/UpgradeGate'
 import HealthOverview from '@/components/client/HealthOverview'
 import RecoveryDashboard from '@/components/client/RecoveryDashboard'
@@ -1275,11 +1277,21 @@ export default function ClientDashboard() {
           )}
         </div>
 
-        {/* 恢復評估儀表板 */}
-        {c.wellness_enabled && (
-          <div className="mb-3">
-            <RecoveryDashboard clientId={c.unique_code} />
-          </div>
+        {/* === QuickActions: 未完成項目快速導航 === */}
+        {isToday && (
+          <QuickActions
+            enabledSections={[
+              ...(c.body_composition_enabled ? [{ id: 'section-body', icon: '⚖️', label: '記錄體重', completed: !!latestBodyData && latestBodyData.date === selectedDate }] : []),
+              ...(c.nutrition_enabled ? [{ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: '🥗', label: '記錄飲食', completed: !!todayNutrition }] : []),
+              ...(c.supplement_enabled ? [{ id: 'section-supplements', icon: '💊', label: '補品打卡', completed: todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total }] : []),
+              ...(c.wellness_enabled ? [{ id: 'section-wellness', icon: '😊', label: '記錄感受', completed: !!todayWellness }] : []),
+              ...(c.training_enabled ? [{ id: 'section-training', icon: '🏋️', label: '記錄訓練', completed: !!todayTraining }] : []),
+            ]}
+            onNavigate={(sectionId) => {
+              setActiveTab(sectionId)
+              document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}
+          />
         )}
 
         {/* 性別未設定提示 — 僅 free/self_managed 可自行設定，coached 由教練處理 */}
@@ -1312,59 +1324,167 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* 目標設定 — 所有學員皆可調整目標（例如賽後切換休賽季目標） */}
-        {c.calories_target && (
-          <div className="mb-3">
-            <GoalSettings
-              clientId={c.id}
-              uniqueCode={c.unique_code}
-              currentGoalType={c.goal_type}
-              currentTargetWeight={c.target_weight}
-              currentTargetBodyFat={(c.target_body_fat as number) ?? null}
-              currentTargetDate={c.target_date}
-              competitionEnabled={!!c.competition_enabled}
-              competitionDate={c.competition_date || null}
-              latestWeight={latestBodyData?.weight || null}
-              latestBodyFat={latestBodyData?.body_fat || null}
-              onMutate={mutate}
+        {/* ================================================================ */}
+        {/* === DO section: 每日記錄（wrapped in CollapsibleSection） === */}
+        {/* ================================================================ */}
+
+        {/* 身體數據記錄（ALL modes — 每日量體重最優先） */}
+        {c.body_composition_enabled && (
+          <CollapsibleSection
+            id="section-body"
+            icon="⚖️"
+            title="身體數據"
+            isCompleted={!!latestBodyData && latestBodyData.date === selectedDate}
+            summaryLine={latestBodyData ? `體重 ${latestBodyData.weight ?? '--'} kg${latestBodyData.body_fat ? ` | 體脂 ${latestBodyData.body_fat}%` : ''}` : undefined}
+            isToday={isToday}
+          >
+            <BodyComposition
+              latestBodyData={latestBodyData}
+              prevBodyData={prevBodyData}
+              bmi={bmi}
+              trendData={trendData}
+              bodyData={clientData.bodyData || []}
+              clientId={clientId as string}
+              competitionEnabled={clientData.client.competition_enabled}
+              targetWeight={clientData.client.target_weight}
+              competitionDate={clientData.client.competition_date}
+              simpleMode={clientData.client.simple_mode}
+              onMutate={mutateWithTargets}
             />
-          </div>
+          </CollapsibleSection>
         )}
 
-        {/* 備賽模式：基因檔案卡片提前顯示（基因影響 Peak Week 計算） */}
-        {isCompetition && (
-          <div className="mb-3">
-            <GeneProfileCard
-              mthfr={c.gene_mthfr as string | null}
-              apoe={c.gene_apoe as string | null}
-              serotonin={c.gene_depression_risk as string | null}
-              notes={c.gene_notes as string | null}
-              geneticCorrections={geneCorrections}
-              clientId={c.unique_code}
+        {/* 飲食目標 + 飲食紀錄 */}
+        {c.nutrition_enabled && (
+          <CollapsibleSection
+            id={isCompetition ? 'section-nutrition' : 'section-nutrition-general'}
+            icon="🥗"
+            title="飲食紀錄"
+            isCompleted={!!todayNutrition}
+            summaryLine={todayNutrition ? `${todayNutrition.calories ? `${todayNutrition.calories} kcal` : ''}${c.calories_target ? ` / ${c.calories_target} kcal` : ''}${todayNutrition.compliant === true ? ' ✓ 合規' : todayNutrition.compliant === false ? ' ✗ 未合規' : ''}` : undefined}
+            isToday={isToday}
+          >
+            {/* 一般學員（非自主管理、非免費）的飲食目標卡片 */}
+            {!isCompetition && !isSelfManaged && !isFree && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
+              <DailyNutritionTarget
+                caloriesTarget={c.calories_target}
+                proteinTarget={c.protein_target}
+                carbsTarget={c.carbs_target}
+                fatTarget={c.fat_target}
+                carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
+                isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+                carbsTrainingDay={c.carbs_training_day}
+                carbsRestDay={c.carbs_rest_day}
+                geneticCorrections={geneCorrections}
+              />
+            )}
+            <NutritionLog
+              todayNutrition={todayNutrition}
+              nutritionLogs={clientData.nutritionLogs || []}
+              clientId={clientId as string}
+              date={selectedDate}
+              proteinTarget={c.protein_target}
+              waterTarget={c.water_target}
+              competitionEnabled={c.competition_enabled}
+              carbsTarget={c.carbs_training_day && c.carbs_rest_day
+                ? (todayTraining && isWeightTraining(todayTraining.training_type) ? c.carbs_training_day : c.carbs_rest_day)
+                : c.carbs_target}
+              carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
+              isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+              carbsTrainingDay={c.carbs_training_day}
+              carbsRestDay={c.carbs_rest_day}
+              fatTarget={c.fat_target}
+              caloriesTarget={c.calories_target}
+              simpleMode={c.simple_mode}
               onMutate={mutate}
             />
-          </div>
+          </CollapsibleSection>
         )}
 
-        {/* === 備賽選手：體重軌跡優先 === */}
-        {isCompetition && c.body_composition_enabled && (
-          <div id="section-body" className="scroll-mt-4"><BodyComposition
-            latestBodyData={latestBodyData}
-            prevBodyData={prevBodyData}
-            bmi={bmi}
-            trendData={trendData}
-            bodyData={clientData.bodyData || []}
-            clientId={clientId as string}
-            competitionEnabled={clientData.client.competition_enabled}
-            targetWeight={clientData.client.target_weight}
-            competitionDate={clientData.client.competition_date}
-            simpleMode={clientData.client.simple_mode}
-            onMutate={mutateWithTargets}
-          /></div>
+        {/* 補品打卡 */}
+        {c.supplement_enabled && (
+          <CollapsibleSection
+            id="section-supplements"
+            icon="💊"
+            title="補品打卡"
+            isCompleted={todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total}
+            summaryLine={todaySupplementStats.total > 0 ? `${todaySupplementStats.completed}/${todaySupplementStats.total} 已完成` : undefined}
+            isToday={isToday}
+          >
+            <DailyCheckIn
+              supplements={c.supplements || []}
+              todayLogs={selectedDateLogs}
+              todayStats={todaySupplementStats}
+              streakDays={streakDays}
+              streakMessage={streakMessage}
+              isCoachMode={isCoachMode}
+              togglingSupplements={togglingSupplements}
+              recentLogs={clientData.recentLogs || []}
+              selectedDate={selectedDate}
+              onToggleSupplement={handleToggleSupplement}
+              onMarkAllComplete={handleMarkAllSupplementsComplete}
+              onManageSupplements={() => setShowSupplementModal(true)}
+            />
+          </CollapsibleSection>
+        )}
+
+        {/* 每日感受 */}
+        {c.wellness_enabled && (
+          <CollapsibleSection
+            id="section-wellness"
+            icon="😊"
+            title="每日感受"
+            isCompleted={!!todayWellness}
+            summaryLine={todayWellness ? `睡眠 ${todayWellness.sleep_quality ?? '--'}/5 | 精力 ${todayWellness.energy_level ?? '--'}/5 | 心情 ${todayWellness.mood ?? '--'}/5` : undefined}
+            isToday={isToday}
+          >
+            <DailyWellness
+              todayWellness={todayWellness}
+              clientId={clientId as string}
+              date={selectedDate}
+              healthModeEnabled={clientData.client.health_mode_enabled}
+              gender={c.gender ?? undefined}
+              onMutate={mutate}
+            />
+          </CollapsibleSection>
+        )}
+
+        {/* 訓練紀錄 */}
+        {c.training_enabled && (
+          <CollapsibleSection
+            id="section-training"
+            icon="🏋️"
+            title="訓練紀錄"
+            isCompleted={!!todayTraining}
+            summaryLine={todayTraining ? `${todayTraining.training_type ? todayTraining.training_type : '訓練'}${todayTraining.rpe ? ` · RPE ${todayTraining.rpe}` : ''}` : undefined}
+            isToday={isToday}
+          >
+            <TrainingLog
+              todayTraining={todayTraining}
+              trainingLogs={clientData.trainingLogs || []}
+              wellness={clientData.wellness || []}
+              clientId={clientId as string}
+              date={selectedDate}
+              onMutate={mutate}
+              carbsTrainingDay={c.carbs_training_day}
+              carbsRestDay={c.carbs_rest_day}
+              simpleMode={c.simple_mode}
+            />
+          </CollapsibleSection>
+        )}
+
+        {/* ================================================================ */}
+        {/* === SEE section: 狀態與趨勢（唯讀分析） === */}
+        {/* ================================================================ */}
+
+        {/* 恢復評估儀表板 */}
+        {c.wellness_enabled && (
+          <div className="mb-3">
+            <RecoveryDashboard clientId={c.unique_code} />
+          </div>
         )}
 
         {/* Goal-Driven 目標體重計畫（備賽客戶 + 非 peak_week）*/}
-        {/* 不再要求 target_weight 才渲染：備賽選手都需要引擎每次重算目標 */}
         {isCompetition && c.prep_phase !== 'peak_week' && (
           <GoalDrivenStatus
             clientId={c.id}
@@ -1401,128 +1521,6 @@ export default function ClientDashboard() {
           )
         })()}
 
-        {/* 飲食（備賽選手排第二） */}
-        {isCompetition && c.nutrition_enabled && (
-          <div id="section-nutrition" className="scroll-mt-4"><NutritionLog
-            todayNutrition={todayNutrition}
-            nutritionLogs={clientData.nutritionLogs || []}
-            clientId={clientId as string}
-            date={selectedDate}
-            proteinTarget={c.protein_target}
-            waterTarget={c.water_target}
-            competitionEnabled={c.competition_enabled}
-            carbsTarget={c.carbs_training_day && c.carbs_rest_day
-              ? (todayTraining && isWeightTraining(todayTraining.training_type) ? c.carbs_training_day : c.carbs_rest_day)
-              : c.carbs_target}
-            carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
-            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
-            carbsTrainingDay={c.carbs_training_day}
-            carbsRestDay={c.carbs_rest_day}
-            fatTarget={c.fat_target}
-            caloriesTarget={c.calories_target}
-            simpleMode={c.simple_mode}
-            onMutate={mutate}
-          /></div>
-        )}
-
-        {/* === 一般學員區塊順序 / 備賽學員剩餘區塊 === */}
-        {/* 飲食目標 + 飲食紀錄優先（每日最常用） */}
-
-        {/* 一般學員（非自主管理、非免費）的飲食目標卡片 */}
-        {!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
-          <DailyNutritionTarget
-            caloriesTarget={c.calories_target}
-            proteinTarget={c.protein_target}
-            carbsTarget={c.carbs_target}
-            fatTarget={c.fat_target}
-            carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
-            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
-            carbsTrainingDay={c.carbs_training_day}
-            carbsRestDay={c.carbs_rest_day}
-            geneticCorrections={geneCorrections}
-          />
-        )}
-
-        {/* 一般學員的飲食紀錄（非備賽） */}
-        {!isCompetition && c.nutrition_enabled && (
-          <div id="section-nutrition-general" className="scroll-mt-4"><NutritionLog
-            todayNutrition={todayNutrition}
-            nutritionLogs={clientData.nutritionLogs || []}
-            clientId={clientId as string}
-            date={selectedDate}
-            proteinTarget={c.protein_target}
-            waterTarget={c.water_target}
-            competitionEnabled={c.competition_enabled}
-            carbsTarget={c.carbs_training_day && c.carbs_rest_day
-              ? (todayTraining && isWeightTraining(todayTraining.training_type) ? c.carbs_training_day : c.carbs_rest_day)
-              : c.carbs_target}
-            carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
-            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
-            carbsTrainingDay={c.carbs_training_day}
-            carbsRestDay={c.carbs_rest_day}
-            fatTarget={c.fat_target}
-            caloriesTarget={c.calories_target}
-            simpleMode={c.simple_mode}
-            onMutate={mutate}
-          /></div>
-        )}
-
-        {c.supplement_enabled && (
-          <div id="section-supplements" className="scroll-mt-4"><DailyCheckIn
-            supplements={c.supplements || []}
-            todayLogs={selectedDateLogs}
-            todayStats={todaySupplementStats}
-            streakDays={streakDays}
-            streakMessage={streakMessage}
-            isCoachMode={isCoachMode}
-            togglingSupplements={togglingSupplements}
-            recentLogs={clientData.recentLogs || []}
-            selectedDate={selectedDate}
-            onToggleSupplement={handleToggleSupplement}
-            onMarkAllComplete={handleMarkAllSupplementsComplete}
-            onManageSupplements={() => setShowSupplementModal(true)}
-          /></div>
-        )}
-
-        {/* 基因檔案卡片（非備賽模式；備賽模式已在上方提前顯示） */}
-        {!isCompetition && (
-          <GeneProfileCard
-            mthfr={c.gene_mthfr as string | null}
-            apoe={c.gene_apoe as string | null}
-            serotonin={c.gene_depression_risk as string | null}
-            notes={c.gene_notes as string | null}
-            geneticCorrections={geneCorrections}
-            clientId={c.unique_code}
-            onMutate={mutate}
-          />
-        )}
-
-        {c.wellness_enabled && (
-          <div id="section-wellness" className="scroll-mt-4"><DailyWellness
-            todayWellness={todayWellness}
-            clientId={clientId as string}
-            date={selectedDate}
-            healthModeEnabled={clientData.client.health_mode_enabled}
-            gender={c.gender ?? undefined}
-            onMutate={mutate}
-          /></div>
-        )}
-
-        {c.training_enabled && (
-          <div id="section-training" className="scroll-mt-4"><TrainingLog
-            todayTraining={todayTraining}
-            trainingLogs={clientData.trainingLogs || []}
-            wellness={clientData.wellness || []}
-            clientId={clientId as string}
-            date={selectedDate}
-            onMutate={mutate}
-            carbsTrainingDay={c.carbs_training_day}
-            carbsRestDay={c.carbs_rest_day}
-            simpleMode={c.simple_mode}
-          /></div>
-        )}
-
-
         {/* 自主管理 / 免費學員的智能營養計算（已完成 onboarding 才顯示，避免跟頂部重複） */}
         {!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target && (
           <SelfManagedNutrition
@@ -1553,21 +1551,38 @@ export default function ClientDashboard() {
 
         {c.wellness_enabled && <WellnessTrend wellness={clientData.wellness || []} />}
 
-        {/* 一般學員的身體數據（非備賽才在這裡顯示） */}
-        {!isCompetition && c.body_composition_enabled && (
-          <div id="section-body" className="scroll-mt-4"><BodyComposition
-            latestBodyData={latestBodyData}
-            prevBodyData={prevBodyData}
-            bmi={bmi}
-            trendData={trendData}
-            bodyData={clientData.bodyData || []}
-            clientId={clientId as string}
-            competitionEnabled={clientData.client.competition_enabled}
-            targetWeight={clientData.client.target_weight}
-            competitionDate={clientData.client.competition_date}
-            simpleMode={clientData.client.simple_mode}
-            onMutate={mutateWithTargets}
-          /></div>
+        {/* ================================================================ */}
+        {/* === REFERENCE section: 參考資料（少變動） === */}
+        {/* ================================================================ */}
+
+        {/* 基因檔案卡片 */}
+        <GeneProfileCard
+          mthfr={c.gene_mthfr as string | null}
+          apoe={c.gene_apoe as string | null}
+          serotonin={c.gene_depression_risk as string | null}
+          notes={c.gene_notes as string | null}
+          geneticCorrections={geneCorrections}
+          clientId={c.unique_code}
+          onMutate={mutate}
+        />
+
+        {/* 目標設定 */}
+        {c.calories_target && (
+          <div className="mb-3">
+            <GoalSettings
+              clientId={c.id}
+              uniqueCode={c.unique_code}
+              currentGoalType={c.goal_type}
+              currentTargetWeight={c.target_weight}
+              currentTargetBodyFat={(c.target_body_fat as number) ?? null}
+              currentTargetDate={c.target_date}
+              competitionEnabled={!!c.competition_enabled}
+              competitionDate={c.competition_date || null}
+              latestWeight={latestBodyData?.weight || null}
+              latestBodyFat={latestBodyData?.body_fat || null}
+              onMutate={mutate}
+            />
+          </div>
         )}
 
         {c.lab_enabled && (
@@ -1691,6 +1706,7 @@ export default function ClientDashboard() {
           )
         })()}
 
+        {/* 教練報告（教練模式） */}
         {isCoachMode && (
           <HealthReport client={c as any} latestBodyData={latestBodyData} bmi={bmi}
             weekRate={supplementComplianceStats.weekRate} monthRate={supplementComplianceStats.monthRate}
@@ -1813,12 +1829,11 @@ export default function ClientDashboard() {
       {/* 底部導航 */}
       {(() => {
         const tabs: { id: string; icon: string; label: string }[] = []
-        if (isCompetition && c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
+        if (c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
         if (c.nutrition_enabled) tabs.push({ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: '🥗', label: '飲食' })
         if (c.supplement_enabled) tabs.push({ id: 'section-supplements', icon: '💊', label: '補品' })
         if (c.wellness_enabled) tabs.push({ id: 'section-wellness', icon: '😊', label: '感受' })
         if (c.training_enabled) tabs.push({ id: 'section-training', icon: '🏋️', label: '訓練' })
-        if (!isCompetition && c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
         if (c.lab_enabled) tabs.push({ id: 'section-lab', icon: '🩸', label: '血檢' })
 
         const completedMap: Record<string, boolean> = {

@@ -134,6 +134,127 @@ export async function GET(request: NextRequest) {
         }
       })
     }
+
+    // ── 教練晨間摘要：推送昨日學員狀態到教練 LINE ──
+    const coachLineId = process.env.COACH_LINE_USER_ID
+    if (coachLineId) {
+      try {
+        const yesterday = new Date()
+        yesterday.setDate(yesterday.getDate() - 1)
+        const yesterdayStr = yesterday.toISOString().split('T')[0]
+
+        // Query yesterday's data
+        const [yWeightRes, yNutritionRes, yTrainingRes, yWellnessRes] = await Promise.all([
+          supabase.from('body_composition').select('client_id, weight').eq('date', yesterdayStr),
+          supabase.from('nutrition_logs').select('client_id').eq('date', yesterdayStr),
+          supabase.from('training_logs').select('client_id, rpe').eq('date', yesterdayStr),
+          supabase.from('daily_wellness').select('client_id, energy_level').eq('date', yesterdayStr),
+        ])
+
+        const hadWeight = new Set((yWeightRes.data || []).map((w: any) => w.client_id))
+        const hadNutrition = new Set((yNutritionRes.data || []).map((n: any) => n.client_id))
+        const hadTraining = new Set((yTrainingRes.data || []).map((t: any) => t.client_id))
+        const hadWellness = new Set((yWellnessRes.data || []).map((w: any) => w.client_id))
+
+        const digestLines: string[] = []
+
+        // 1. Clients who missed records yesterday
+        const missedClients = clients.filter(c => {
+          const missed: string[] = []
+          if (c.body_composition_enabled && !hadWeight.has(c.id)) missed.push('體重')
+          if (c.nutrition_enabled && !hadNutrition.has(c.id)) missed.push('飲食')
+          if (c.training_enabled && !hadTraining.has(c.id)) missed.push('訓練')
+          if (c.wellness_enabled && !hadWellness.has(c.id)) missed.push('感受')
+          return missed.length > 0
+        })
+        if (missedClients.length > 0) {
+          digestLines.push('📋 昨日未記錄：')
+          for (const mc of missedClients.slice(0, 10)) {
+            const missed: string[] = []
+            if (mc.body_composition_enabled && !hadWeight.has(mc.id)) missed.push('體重')
+            if (mc.nutrition_enabled && !hadNutrition.has(mc.id)) missed.push('飲食')
+            if (mc.training_enabled && !hadTraining.has(mc.id)) missed.push('訓練')
+            if (mc.wellness_enabled && !hadWellness.has(mc.id)) missed.push('感受')
+            digestLines.push(`  • ${mc.name}：${missed.join('、')}`)
+          }
+        }
+
+        // 2. Low energy or high RPE
+        const lowEnergy = (yWellnessRes.data || []).filter((w: any) => w.energy_level != null && w.energy_level <= 2)
+        const highRPE = (yTrainingRes.data || []).filter((t: any) => t.rpe != null && t.rpe >= 9)
+        if (lowEnergy.length > 0 || highRPE.length > 0) {
+          digestLines.push('')
+          digestLines.push('⚠️ 需關注：')
+          for (const w of lowEnergy) {
+            const name = clients.find(c => c.id === w.client_id)?.name || '未知'
+            digestLines.push(`  • ${name}：精力 ${w.energy_level}/5`)
+          }
+          for (const t of highRPE) {
+            const name = clients.find(c => c.id === t.client_id)?.name || '未知'
+            digestLines.push(`  • ${name}：RPE ${t.rpe}`)
+          }
+        }
+
+        // 3. Weight plateau alerts (>7 days no change ±0.2kg)
+        const recentWeightsRes = await supabase
+          .from('body_composition')
+          .select('client_id, weight, date')
+          .gte('date', new Date(Date.now() - 10 * 86400000).toISOString().split('T')[0])
+          .order('date', { ascending: false })
+        const weightsByClient: Record<string, number[]> = {}
+        for (const w of (recentWeightsRes.data || [])) {
+          if (w.weight == null) continue
+          if (!weightsByClient[w.client_id]) weightsByClient[w.client_id] = []
+          weightsByClient[w.client_id].push(w.weight)
+        }
+        const plateauClients: string[] = []
+        for (const [cid, weights] of Object.entries(weightsByClient)) {
+          if (weights.length >= 7) {
+            const range = Math.max(...weights) - Math.min(...weights)
+            if (range <= 0.2) {
+              const name = clients.find(c => c.id === cid)?.name || '未知'
+              plateauClients.push(name)
+            }
+          }
+        }
+        if (plateauClients.length > 0) {
+          digestLines.push('')
+          digestLines.push('📊 體重停滯（>7天 ±0.2kg）：')
+          plateauClients.forEach(name => digestLines.push(`  • ${name}`))
+        }
+
+        // 4. Competition countdowns (<30 days)
+        const { data: compClients } = await supabase
+          .from('clients')
+          .select('name, competition_date')
+          .eq('is_active', true)
+          .eq('competition_enabled', true)
+          .not('competition_date', 'is', null)
+        const urgentComp = (compClients || []).filter((c: any) => {
+          const days = Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
+          return days > 0 && days <= 30
+        })
+        if (urgentComp.length > 0) {
+          digestLines.push('')
+          digestLines.push('🏆 備賽倒數：')
+          for (const cc of urgentComp) {
+            const days = Math.ceil((new Date(cc.competition_date).getTime() - Date.now()) / 86400000)
+            digestLines.push(`  • ${cc.name}：${days} 天`)
+          }
+        }
+
+        // Only send if there are actionable items
+        if (digestLines.length > 0) {
+          const header = `☀️ 教練晨報 ${today}\n\n`
+          const digestText = header + digestLines.join('\n')
+          await pushMessage(coachLineId, digestText)
+          logger.info(`Coach digest sent: ${digestLines.length} lines`)
+        }
+      } catch (err) {
+        logger.error('Coach digest error:', err)
+        errors.push(`Coach digest: ${(err as Error).message || 'unknown'}`)
+      }
+    }
   } else {
     // ── 晚上提醒：填寫今日紀錄（Web Push 優先）──
     const [wellnessRes, nutritionRes, trainingRes] = await Promise.all([
