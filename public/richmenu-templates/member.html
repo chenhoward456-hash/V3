@@ -1,0 +1,229 @@
+<!--
+  LINE Rich Menu Template: Member (Self-Managed)
+  Size: 2500 x 1686 px (LINE Rich Menu standard)
+
+  HOW TO USE:
+  1. Open this file in a browser (Chrome recommended)
+  2. Open DevTools (F12) > toggle Device Toolbar (Ctrl+Shift+M)
+  3. Set custom resolution to 2500 x 1686
+  4. Or: zoom browser so the entire menu fits on screen
+  5. Take a screenshot at exactly 2500 x 1686 pixels
+  6. Tip: In Chrome DevTools, use "Capture screenshot" from the 3-dot menu
+-->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=2500">
+<title>Member Rich Menu - Howard Protocol</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    width: 2500px;
+    height: 1686px;
+    overflow: hidden;
+    font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  body {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 30%, #1e3a5f 70%, #162d4a 100%);
+  }
+
+  .container {
+    width: 2500px;
+    height: 1686px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Top accent bar */
+  .top-bar {
+    height: 6px;
+    background: linear-gradient(90deg, #60a5fa, #3b82f6, #2563eb, #3b82f6, #60a5fa);
+  }
+
+  .grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 0;
+  }
+
+  .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    cursor: pointer;
+  }
+
+  /* Action-oriented glow effect behind icon */
+  .cell::before {
+    content: '';
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -60%);
+    pointer-events: none;
+  }
+
+  /* Subtle per-cell color variation for action-oriented feel */
+  .cell:nth-child(1) {
+    background: linear-gradient(180deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+  }
+  .cell:nth-child(1)::before {
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+  }
+
+  .cell:nth-child(2) {
+    background: linear-gradient(180deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.03) 100%);
+  }
+  .cell:nth-child(2)::before {
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.10) 0%, transparent 70%);
+  }
+
+  .cell:nth-child(3) {
+    background: linear-gradient(180deg, rgba(249, 115, 22, 0.12) 0%, rgba(249, 115, 22, 0.03) 100%);
+  }
+  .cell:nth-child(3)::before {
+    background: radial-gradient(circle, rgba(249, 115, 22, 0.10) 0%, transparent 70%);
+  }
+
+  .cell:nth-child(4) {
+    background: linear-gradient(180deg, rgba(168, 85, 247, 0.10) 0%, rgba(168, 85, 247, 0.03) 100%);
+  }
+  .cell:nth-child(4)::before {
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.10) 0%, transparent 70%);
+  }
+
+  .cell:nth-child(5) {
+    background: linear-gradient(180deg, rgba(14, 165, 233, 0.12) 0%, rgba(14, 165, 233, 0.03) 100%);
+  }
+  .cell:nth-child(5)::before {
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.10) 0%, transparent 70%);
+  }
+
+  .cell:nth-child(6) {
+    background: linear-gradient(180deg, rgba(236, 72, 153, 0.10) 0%, rgba(236, 72, 153, 0.03) 100%);
+  }
+  .cell:nth-child(6)::before {
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.10) 0%, transparent 70%);
+  }
+
+  .icon-wrapper {
+    width: 180px;
+    height: 180px;
+    border-radius: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(4px);
+  }
+
+  .icon {
+    font-size: 100px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  }
+
+  .label {
+    font-size: 48px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 3px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  .action-hint {
+    font-size: 24px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .footer {
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .footer-text {
+    font-size: 22px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.25);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="top-bar"></div>
+  <div class="grid">
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">&#x2696;&#xFE0F;</div>
+      </div>
+      <div class="label">記體重</div>
+      <div class="action-hint">Log Weight</div>
+    </div>
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">🍽️</div>
+      </div>
+      <div class="label">記飲食</div>
+      <div class="action-hint">Log Meals</div>
+    </div>
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">🏋️</div>
+      </div>
+      <div class="label">記訓練</div>
+      <div class="action-hint">Log Training</div>
+    </div>
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">📊</div>
+      </div>
+      <div class="label">今日狀態</div>
+      <div class="action-hint">Today's Status</div>
+    </div>
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">📈</div>
+      </div>
+      <div class="label">7天趨勢</div>
+      <div class="action-hint">7-Day Trends</div>
+    </div>
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">💬</div>
+      </div>
+      <div class="label">聯繫客服</div>
+      <div class="action-hint">Contact Support</div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-text">Howard Protocol Fitness &middot; Member</div>
+  </div>
+</div>
+</body>
+</html>

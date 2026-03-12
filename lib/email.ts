@@ -562,6 +562,175 @@ function buildDay7EmailHTML({
 </html>`
 }
 
+// ===== Day 14 升級鼓勵信 =====
+
+interface SendDay14EmailParams {
+  to: string
+  name: string
+  uniqueCode: string
+}
+
+/**
+ * Day 14：兩週里程碑，鼓勵免費用戶升級，強調已累積的數據價值
+ */
+export async function sendDay14Email({
+  to,
+  name,
+  uniqueCode,
+}: SendDay14EmailParams): Promise<{ success: boolean; error?: string }> {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+  const dashboardUrl = `${siteUrl}/c/${uniqueCode}`
+  const pricingUrl = `${siteUrl}/pricing`
+
+  try {
+    const resend = getResend()
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Howard Protocol <onboarding@resend.dev>'
+
+    const { error } = await resend.emails.send({
+      from: fromEmail,
+      to,
+      subject: `${name}，兩週了！你的 TDEE 校正已就緒`,
+      html: buildDay14EmailHTML({ name, dashboardUrl, pricingUrl }),
+    })
+
+    if (error) {
+      log.error('Resend error', error)
+      return { success: false, error: error.message }
+    }
+
+    log.info('Day14 email sent', { to })
+    return { success: true }
+  } catch (err: any) {
+    log.error('Day14 send failed', err)
+    return { success: false, error: err?.message || 'Unknown error' }
+  }
+}
+
+function buildDay14EmailHTML({
+  name,
+  dashboardUrl,
+  pricingUrl,
+}: {
+  name: string
+  dashboardUrl: string
+  pricingUrl: string
+}): string {
+  return `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>兩週里程碑</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
+    <tr>
+      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+        <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">兩週達成！</h1>
+        <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，你的數據已經開始發揮價值</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 40px 30px;">
+        <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 16px 0;">
+          嗨 ${escapeHTML(name)}，
+        </p>
+        <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 16px 0;">
+          恭喜你持續追蹤兩週了！這不是一件容易的事——你已經展現了真正改變體態的決心。
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff; border-radius:12px; border:1px solid #bfdbfe; margin:0 0 24px 0;">
+          <tr>
+            <td style="padding: 20px 24px;">
+              <p style="font-size:14px; color:#1e40af; margin:0 0 8px 0; font-weight:600;">
+                14 天數據 = TDEE 校正已就緒
+              </p>
+              <p style="font-size:13px; color:#334155; line-height:1.6; margin:0;">
+                系統已根據你過去兩週的體重與飲食數據，計算出你的真實每日總消耗熱量。這是精準調整飲食的基礎，升級後即可查看完整校正結果。
+              </p>
+            </td>
+          </tr>
+        </table>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; margin:0 0 24px 0;">
+          <tr>
+            <td style="padding: 24px;">
+              <p style="font-size:15px; color:#1e3a5f; margin:0 0 16px 0; font-weight:600;">
+                升級後，你的兩週數據能做更多事：
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:8px 0;">
+                    <p style="font-size:14px; color:#334155; margin:0;">
+                      <span style="color:#2563eb; font-weight:bold;">TDEE 校正報告</span> — 知道你每天真正消耗多少卡路里
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;">
+                    <p style="font-size:14px; color:#334155; margin:0;">
+                      <span style="color:#2563eb; font-weight:bold;">AI 飲食建議</span> — 根據你的數據趨勢，自動調整熱量與巨量營養素
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;">
+                    <p style="font-size:14px; color:#334155; margin:0;">
+                      <span style="color:#2563eb; font-weight:bold;">趨勢分析圖表</span> — 7 天移動平均、體重變化率一目瞭然
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;">
+                    <p style="font-size:14px; color:#334155; margin:0;">
+                      <span style="color:#2563eb; font-weight:bold;">教練監督</span> — 讓專業教練根據你的數據調整計畫
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <p style="text-align:center; margin:0 0 12px 0;">
+          <a href="${escapeHTML(pricingUrl)}"
+             style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #2563eb); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
+            查看升級方案
+          </a>
+        </p>
+        <p style="text-align:center;">
+          <a href="${escapeHTML(dashboardUrl)}"
+             style="display:inline-block; color:#2563eb; padding:8px 24px; text-decoration:none; font-size:14px;">
+            或繼續使用免費版 →
+          </a>
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0 30px 30px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;">
+          <tr>
+            <td style="padding: 20px 24px; text-align:center;">
+              <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">
+                有任何問題？加 LINE 直接聊
+              </p>
+              <p style="font-size:12px; color:#4ade80; margin:0;">
+                LINE ID: @chenhoward
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align:center;">
+        <p style="font-size:11px; color:#94a3b8; margin:0;">
+          &copy; Howard Protocol &middot; howardprotocol.com
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
 // ===== 訂閱到期提醒信 =====
 
 interface SendExpiryWarningEmailParams {

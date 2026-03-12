@@ -20,6 +20,13 @@ import { sendPushNotification } from '@/lib/web-push'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
+import {
+  sendDay3Email,
+  sendDay7Email,
+  sendDay14Email,
+  sendExpiryWarningEmail,
+  sendWinBackEmail,
+} from '@/lib/email'
 import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { startCronRun, completeCronRun, failCronRun } from '@/lib/cron-utils'
 
@@ -390,6 +397,271 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ===== Email Drip Sequence（早上執行）=====
+  // Day 3 / Day 7 / Day 14（免費用戶）/ Win-back / Expiry warning emails
+  let emailDripSent = 0
+  let emailDripFailed = 0
+  if (isMorning) {
+    const now = new Date()
+
+    // Helper: get email for a client from subscription_purchases (most recent completed)
+    const getClientEmail = async (clientId: string): Promise<string | null> => {
+      const { data } = await supabase
+        .from('subscription_purchases')
+        .select('email')
+        .eq('client_id', clientId)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      return data?.email || null
+    }
+
+    // Helper: compute days since a date (integer, floor)
+    const daysSince = (dateStr: string): number => {
+      return Math.floor((now.getTime() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
+    }
+
+    // Helper: compute days until a date (integer, ceil)
+    const daysUntil = (dateStr: string): number => {
+      return Math.ceil((new Date(dateStr).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    }
+
+    // ── a) Day 3 email: active clients created exactly 3 days ago ──
+    {
+      const { data: day3Clients } = await supabase
+        .from('clients')
+        .select('id, name, unique_code, created_at')
+        .eq('is_active', true)
+
+      if (day3Clients) {
+        for (const c of day3Clients) {
+          if (daysSince(c.created_at) !== 3) continue
+          try {
+            const email = await getClientEmail(c.id)
+            if (!email) continue
+            const result = await sendDay3Email({ to: email, name: c.name, uniqueCode: c.unique_code })
+            if (result.success) emailDripSent++
+            else emailDripFailed++
+          } catch (err: any) {
+            emailDripFailed++
+            errors.push(`email_day3_${c.name}: ${err.message}`)
+          }
+        }
+      }
+    }
+
+    // ── b) Day 7 email: active clients created exactly 7 days ago ──
+    {
+      const { data: day7Clients } = await supabase
+        .from('clients')
+        .select('id, name, unique_code, created_at')
+        .eq('is_active', true)
+
+      if (day7Clients) {
+        for (const c of day7Clients) {
+          if (daysSince(c.created_at) !== 7) continue
+          try {
+            const email = await getClientEmail(c.id)
+            if (!email) continue
+            const result = await sendDay7Email({ to: email, name: c.name, uniqueCode: c.unique_code })
+            if (result.success) emailDripSent++
+            else emailDripFailed++
+          } catch (err: any) {
+            emailDripFailed++
+            errors.push(`email_day7_${c.name}: ${err.message}`)
+          }
+        }
+      }
+    }
+
+    // ── c) Day 14 email: free users at day 14 who haven't upgraded ──
+    {
+      const { data: day14Clients } = await supabase
+        .from('clients')
+        .select('id, name, unique_code, created_at, subscription_tier')
+        .eq('is_active', true)
+        .eq('subscription_tier', 'free')
+
+      if (day14Clients) {
+        for (const c of day14Clients) {
+          if (daysSince(c.created_at) !== 14) continue
+          try {
+            const email = await getClientEmail(c.id)
+            if (!email) continue
+            const result = await sendDay14Email({ to: email, name: c.name, uniqueCode: c.unique_code })
+            if (result.success) emailDripSent++
+            else emailDripFailed++
+          } catch (err: any) {
+            emailDripFailed++
+            errors.push(`email_day14_${c.name}: ${err.message}`)
+          }
+        }
+      }
+    }
+
+    // ── d) Win-back email: inactive clients whose expires_at was exactly 7 days ago ──
+    {
+      const { data: churnedClients } = await supabase
+        .from('clients')
+        .select('id, name, expires_at')
+        .eq('is_active', false)
+        .not('expires_at', 'is', null)
+
+      if (churnedClients) {
+        for (const c of churnedClients) {
+          if (!c.expires_at || daysSince(c.expires_at) !== 7) continue
+          try {
+            const email = await getClientEmail(c.id)
+            if (!email) continue
+            const result = await sendWinBackEmail({ to: email, name: c.name })
+            if (result.success) emailDripSent++
+            else emailDripFailed++
+          } catch (err: any) {
+            emailDripFailed++
+            errors.push(`email_winback_${c.name}: ${err.message}`)
+          }
+        }
+      }
+    }
+
+    // ── e) Expiry warning email: paid clients expiring in 7/3/1 days ──
+    {
+      const { data: paidClients } = await supabase
+        .from('clients')
+        .select('id, name, subscription_tier, expires_at')
+        .eq('is_active', true)
+        .not('subscription_tier', 'eq', 'free')
+        .not('expires_at', 'is', null)
+
+      if (paidClients) {
+        for (const c of paidClients) {
+          if (!c.expires_at) continue
+          const dl = daysUntil(c.expires_at)
+          if (dl !== 7 && dl !== 3 && dl !== 1) continue
+          try {
+            const email = await getClientEmail(c.id)
+            if (!email) continue
+            const result = await sendExpiryWarningEmail({
+              to: email,
+              name: c.name,
+              daysLeft: dl,
+              tier: c.subscription_tier,
+            })
+            if (result.success) emailDripSent++
+            else emailDripFailed++
+          } catch (err: any) {
+            emailDripFailed++
+            errors.push(`email_expiry_${c.name}: ${err.message}`)
+          }
+        }
+      }
+    }
+
+    logger.info('Email drip sequence completed', { sent: emailDripSent, failed: emailDripFailed })
+  }
+
+  // ===== Referral Reward Automation（早上執行）=====
+  let referralsCompleted = 0
+  let referralsExpired = 0
+  if (isMorning) {
+    const now = new Date()
+    const sevenDaysAgoDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const thirtyDaysAgoDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+    // Find all pending referrals created 7+ days ago
+    const { data: pendingReferrals } = await supabase
+      .from('referrals')
+      .select('id, referrer_id, referee_id, created_at')
+      .eq('status', 'pending')
+      .lte('created_at', sevenDaysAgoDate.toISOString())
+
+    if (pendingReferrals) {
+      const sevenDaysAgoStr = sevenDaysAgoDate.toISOString().split('T')[0]
+
+      for (const ref of pendingReferrals) {
+        try {
+          // Check if referee has been active: at least 3 records in body_data OR nutrition_logs in past 7 days
+          const [bodyRes, nutritionRes] = await Promise.all([
+            supabase
+              .from('body_composition')
+              .select('id', { count: 'exact', head: true })
+              .eq('client_id', ref.referee_id)
+              .gte('date', sevenDaysAgoStr),
+            supabase
+              .from('nutrition_logs')
+              .select('id', { count: 'exact', head: true })
+              .eq('client_id', ref.referee_id)
+              .gte('date', sevenDaysAgoStr),
+          ])
+
+          const totalActivity = (bodyRes.count || 0) + (nutritionRes.count || 0)
+
+          if (totalActivity >= 3) {
+            // Referee is active — complete the referral and reward the referrer
+            const { error: updateErr } = await supabase
+              .from('referrals')
+              .update({
+                status: 'completed',
+                completed_at: now.toISOString(),
+                reward_applied: true,
+              })
+              .eq('id', ref.id)
+
+            if (!updateErr) {
+              // Extend referrer's expires_at by 7 days
+              const { data: referrer } = await supabase
+                .from('clients')
+                .select('expires_at')
+                .eq('id', ref.referrer_id)
+                .single()
+
+              let newExpiry: Date
+              if (referrer?.expires_at && new Date(referrer.expires_at) > now) {
+                // Extend from current expiry
+                newExpiry = new Date(new Date(referrer.expires_at).getTime() + 7 * 24 * 60 * 60 * 1000)
+              } else {
+                // Set to now + 7 days if null or already past
+                newExpiry = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+              }
+
+              await supabase
+                .from('clients')
+                .update({ expires_at: newExpiry.toISOString() })
+                .eq('id', ref.referrer_id)
+
+              referralsCompleted++
+              logger.info('Referral completed, reward applied', {
+                referralId: ref.id,
+                referrerId: ref.referrer_id,
+                newExpiry: newExpiry.toISOString(),
+              })
+            }
+          } else {
+            // Check if 30+ days have passed since referral creation — expire it
+            const referralCreatedAt = new Date(ref.created_at)
+            if (referralCreatedAt <= thirtyDaysAgoDate) {
+              await supabase
+                .from('referrals')
+                .update({ status: 'expired' })
+                .eq('id', ref.id)
+
+              referralsExpired++
+              logger.info('Referral expired (inactive referee)', {
+                referralId: ref.id,
+                refereeId: ref.referee_id,
+              })
+            }
+          }
+        } catch (err: any) {
+          errors.push(`referral_${ref.id}: ${err.message}`)
+        }
+      }
+    }
+
+    logger.info('Referral automation completed', { completed: referralsCompleted, expired: referralsExpired })
+  }
+
   // ===== 智能警示推播（晚上執行）=====
   let smartAlertsSent = 0
   if (!isMorning) {
@@ -568,6 +840,10 @@ export async function GET(request: NextRequest) {
     linePushUsed,
     expiryReminders,
     milestonesSent,
+    emailDripSent,
+    emailDripFailed,
+    referralsCompleted,
+    referralsExpired,
     smartAlertsSent,
     downgradedCount,
     reengagementSent,

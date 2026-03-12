@@ -48,6 +48,8 @@ import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 import { trackEvent } from '@/lib/analytics'
+import ABTest from '@/components/ABTest'
+import { trackConversion, peekVariant } from '@/lib/ab-testing'
 
 /** Dismissable retention card — stores dismissed state in localStorage */
 function RetentionCard({ children, onDismiss, id }: { children: React.ReactNode; onDismiss: () => void; id: string }) {
@@ -1704,10 +1706,21 @@ export default function ClientDashboard() {
             </div>
             <Link
               href={`/upgrade?from=${c.subscription_tier}`}
-              onClick={() => trackEvent('upgrade_cta_clicked', { source: 'streak_prompt', streak_days: streakDays })}
+              onClick={() => {
+                trackEvent('upgrade_cta_clicked', { source: 'streak_prompt', streak_days: streakDays })
+                trackConversion('pricing_cta', peekVariant('pricing_cta') ?? 'original', 'click_upgrade')
+              }}
               className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
             >
-              升級自主管理版 — NT$499/月
+              <ABTest
+                experimentId="pricing_cta"
+                variants={{
+                  original: <span>升級自主管理版 — NT$499/月</span>,
+                  urgency: <span>限時優惠：首月 NT$399（原價 NT$499）</span>,
+                  social_proof: <span>200+ 學員正在使用 — 升級 NT$499/月</span>,
+                }}
+                fallback={<span>升級自主管理版 — NT$499/月</span>}
+              />
             </Link>
           </div>
         )}

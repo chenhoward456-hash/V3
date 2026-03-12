@@ -8,6 +8,21 @@ export const metadata: Metadata = {
     title: '免費系統分析 - 體驗 Howard Protocol 智能引擎',
     description: '30 秒體驗智能引擎，即時估算 TDEE、每日參考熱量、巨量營養素分配。免費、不需註冊。',
     url: 'https://howard456.vercel.app/diagnosis',
+    type: 'website',
+    images: [
+      {
+        url: 'https://howard456.vercel.app/howard-profile.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Howard Protocol 免費系統分析',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '免費系統分析 - 體驗 Howard Protocol 智能引擎',
+    description: '即時估算 TDEE、每日參考熱量、巨量營養素分配。免費、不需註冊。',
+    images: ['https://howard456.vercel.app/howard-profile.jpg'],
   },
 }
 

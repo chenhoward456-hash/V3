@@ -2,6 +2,7 @@
 export function generateArticleSchema(article: {
   title: string
   date: string
+  dateModified?: string
   category: string
   content: string
   slug: string
@@ -11,23 +12,35 @@ export function generateArticleSchema(article: {
     '@type': 'Article',
     headline: article.title,
     datePublished: article.date,
-    dateModified: article.date,
+    dateModified: article.dateModified || article.date,
     author: {
       '@type': 'Person',
       name: 'Howard Chen',
       url: 'https://howard456.vercel.app',
       jobTitle: 'CSCS 認證體能教練',
+      image: 'https://howard456.vercel.app/howard-profile.jpg',
       affiliation: {
         '@type': 'Organization',
-        name: 'Coolday Fitness 北屯館',
+        name: 'Howard Protocol',
       },
     },
     publisher: {
-      '@type': 'Person',
-      name: 'Howard Chen',
+      '@type': 'Organization',
+      name: 'Howard Protocol',
       url: 'https://howard456.vercel.app',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://howard456.vercel.app/icon-192.png',
+        width: 192,
+        height: 192,
+      },
     },
-    image: 'https://howard456.vercel.app/howard-profile.jpg',
+    image: {
+      '@type': 'ImageObject',
+      url: 'https://howard456.vercel.app/howard-profile.jpg',
+      width: 1200,
+      height: 630,
+    },
     articleSection: article.category,
     inLanguage: 'zh-TW',
     mainEntityOfPage: {
@@ -35,6 +48,37 @@ export function generateArticleSchema(article: {
       '@id': `https://howard456.vercel.app/blog/${article.slug}`,
     },
     description: article.content.substring(0, 160).replace(/[#*\n]/g, ' ').trim(),
+  }
+}
+
+// 麵包屑結構化資料（BreadcrumbList）
+export function generateBreadcrumbSchema(article: {
+  title: string
+  slug: string
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: '首頁',
+        item: 'https://howard456.vercel.app',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: '部落格',
+        item: 'https://howard456.vercel.app/blog',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: article.title,
+        item: `https://howard456.vercel.app/blog/${article.slug}`,
+      },
+    ],
   }
 }
 

@@ -1,0 +1,175 @@
+<!--
+  LINE Rich Menu Template: Marketing
+  Size: 2500 x 1686 px (LINE Rich Menu standard)
+
+  HOW TO USE:
+  1. Open this file in a browser (Chrome recommended)
+  2. Open DevTools (F12) > toggle Device Toolbar (Ctrl+Shift+M)
+  3. Set custom resolution to 2500 x 1686
+  4. Or: zoom browser so the entire menu fits on screen
+  5. Take a screenshot at exactly 2500 x 1686 pixels
+  6. Tip: In Chrome DevTools, use "Capture screenshot" from the 3-dot menu
+-->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=2500">
+<title>Marketing Rich Menu - Howard Protocol</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    width: 2500px;
+    height: 1686px;
+    overflow: hidden;
+    font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  body {
+    background: linear-gradient(160deg, #264d73 0%, #1e3a5f 40%, #162d4a 100%);
+  }
+
+  .container {
+    width: 2500px;
+    height: 1686px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 0;
+  }
+
+  .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  .cell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cell:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  /* Subtle per-cell color variation */
+  .cell:nth-child(1) { background: rgba(59, 130, 246, 0.08); }
+  .cell:nth-child(2) { background: rgba(99, 102, 241, 0.06); }
+  .cell:nth-child(3) { background: rgba(37, 99, 235, 0.07); }
+  .cell:nth-child(4) { background: rgba(79, 70, 229, 0.06); }
+  .cell:nth-child(5) { background: rgba(55, 48, 163, 0.05); }
+  .cell:nth-child(6) { background: rgba(67, 56, 202, 0.07); }
+
+  .icon {
+    font-size: 120px;
+    line-height: 1.2;
+    margin-bottom: 24px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  }
+
+  .label {
+    font-size: 48px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  .sublabel {
+    font-size: 28px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+
+  .footer {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .footer-text {
+    font-size: 24px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+  }
+
+  /* Decorative corner accents on each cell */
+  .cell::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="grid">
+    <div class="cell">
+      <div class="icon">🏋️</div>
+      <div class="label">免費健身教學</div>
+      <div class="sublabel">Free Fitness Tips</div>
+    </div>
+    <div class="cell">
+      <div class="icon">📋</div>
+      <div class="label">免費評估</div>
+      <div class="sublabel">Free Assessment</div>
+    </div>
+    <div class="cell">
+      <div class="icon">💻</div>
+      <div class="label">線上方案</div>
+      <div class="sublabel">Online Programs</div>
+    </div>
+    <div class="cell">
+      <div class="icon">🤝</div>
+      <div class="label">實體教練課</div>
+      <div class="sublabel">In-Person Coaching</div>
+    </div>
+    <div class="cell">
+      <div class="icon">💡</div>
+      <div class="label">關於我們</div>
+      <div class="sublabel">About Us</div>
+    </div>
+    <div class="cell">
+      <div class="icon">💬</div>
+      <div class="label">聯繫客服</div>
+      <div class="sublabel">Contact Us</div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-text">Howard Protocol Fitness</div>
+  </div>
+</div>
+</body>
+</html>

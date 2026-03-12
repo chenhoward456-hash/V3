@@ -6,6 +6,7 @@ import LineButton from '@/components/LineButton'
 import PwaRedirect from '@/components/PwaRedirect'
 import FaqAccordion from '@/components/FaqAccordion'
 import StickyMobileCta from '@/components/StickyMobileCta'
+import ABTest from '@/components/ABTest'
 
 const personSchema = {
   '@context': 'https://schema.org',
@@ -63,6 +64,174 @@ const localBusinessSchema = {
   ],
 }
 
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Howard Protocol',
+  url: 'https://howard456.vercel.app',
+  logo: 'https://howard456.vercel.app/icon-192.png',
+  image: 'https://howard456.vercel.app/howard-profile.jpg',
+  description: '數據驅動的體態與健康管理系統。CSCS 認證教練監督 × 智能系統 24 小時分析。',
+  founder: {
+    '@type': 'Person',
+    name: 'Howard Chen',
+    jobTitle: 'CSCS 認證體能教練',
+    url: 'https://howard456.vercel.app',
+  },
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: '台中市',
+    addressRegion: '北屯區',
+    addressCountry: 'TW',
+  },
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer service',
+    email: 'chenhoward456@gmail.com',
+    telephone: '+886-978-185-268',
+    availableLanguage: ['zh-TW', 'en'],
+  },
+  sameAs: [
+    'https://www.instagram.com/chenhoward/',
+    'https://lin.ee/LP65rCc',
+  ],
+}
+
+const webApplicationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'Howard Protocol',
+  description: '數據驅動的體態與健康管理系統',
+  url: 'https://howard456.vercel.app',
+  applicationCategory: 'HealthApplication',
+  operatingSystem: 'Web',
+  inLanguage: 'zh-TW',
+  offers: [
+    {
+      '@type': 'Offer',
+      name: '免費體驗',
+      description: '體重趨勢追蹤 + 飲食紀錄 + TDEE 自動計算 + 14 天後自動校正營養目標',
+      price: '0',
+      priceCurrency: 'TWD',
+    },
+    {
+      '@type': 'Offer',
+      name: '自主管理方案',
+      description: '身心狀態追蹤 + AI 飲食顧問無限使用 + 碳水循環 + 停滯期偵測',
+      price: '499',
+      priceCurrency: 'TWD',
+      billingIncrement: 'P1M',
+    },
+    {
+      '@type': 'Offer',
+      name: '教練指導方案',
+      description: '自主管理全部功能 + CSCS 教練每週 review + LINE 即時問答 + 訓練/補劑/血檢追蹤',
+      price: '2999',
+      priceCurrency: 'TWD',
+      billingIncrement: 'P1M',
+    },
+  ],
+  author: {
+    '@type': 'Person',
+    name: 'Howard Chen',
+    jobTitle: 'CSCS 認證體能教練',
+    url: 'https://howard456.vercel.app',
+  },
+}
+
+const serviceSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  name: 'Howard Protocol 數據驅動健康管理',
+  description: '結合 CSCS 認證教練監督與智能系統 24 小時分析的體態與健康管理服務。自適應 TDEE 校正、每週智能分析、Refeed 自動觸發。',
+  provider: {
+    '@type': 'Organization',
+    name: 'Howard Protocol',
+    url: 'https://howard456.vercel.app',
+  },
+  serviceType: '健康管理與體態優化',
+  areaServed: {
+    '@type': 'Country',
+    name: '台灣',
+  },
+  hasOfferCatalog: {
+    '@type': 'OfferCatalog',
+    name: 'Howard Protocol 方案',
+    itemListElement: [
+      {
+        '@type': 'Offer',
+        name: '免費體驗',
+        description: '體重趨勢 + 飲食紀錄 + TDEE 計算 + 14 天自動校正',
+        price: '0',
+        priceCurrency: 'TWD',
+      },
+      {
+        '@type': 'Offer',
+        name: '自主管理方案',
+        description: 'AI 飲食顧問無限使用 + 身心狀態追蹤 + 碳水循環',
+        price: '499',
+        priceCurrency: 'TWD',
+        billingIncrement: 'P1M',
+      },
+      {
+        '@type': 'Offer',
+        name: '教練指導方案',
+        description: 'CSCS 教練每週 review + LINE 即時諮詢 + 訓練/補劑/血檢追蹤',
+        price: '2999',
+        priceCurrency: 'TWD',
+        billingIncrement: 'P1M',
+      },
+    ],
+  },
+}
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: '這跟一般的飲食 App 有什麼不同？',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: '一般 App 只讓你記錄熱量，但不會告訴你「方向對不對」。Howard Protocol 的智能引擎會根據你的真實體重趨勢，自動校正 TDEE、每週分析進度、判斷你該不該調整 — 是一套會「思考」的系統。',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '我不會計算熱量，可以用嗎？',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: '可以！初期不用太精確，用「手掌法」估算份量就好。系統會根據你的體重趨勢自動校正，就算記錄不完美，14 天後系統也能算出你實際燃燒多少。',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '要綁約嗎？可以隨時取消嗎？',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: '全部月繳制，不綁約，隨時可取消。當月不退費，下個月停止扣款。免費版永久免費，隨時可升級付費方案。',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '免費版可以用多久？有什麼限制？',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: '免費版永久免費，包含體重趨勢追蹤、飲食紀錄、TDEE 自動計算、和 14 天後自動校正營養目標。付費版額外解鎖身心狀態追蹤、AI 飲食顧問、教練每週 review 等功能。',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '需要什麼設備？',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: '只需要手機和一台體重計就好。系統透過 LINE 和網頁運作，不需要安裝額外 App。建議使用智慧型體重計（能測體脂），但普通體重計也可以。',
+      },
+    },
+  ],
+}
+
 export const metadata: Metadata = {
   title: 'Howard Protocol - 數據驅動的體態與健康管理 | CSCS 教練監督',
   description: '不只是教練服務，是一套數據驅動的體態與健康管理系統。自適應 TDEE 校正、每週智能分析、Refeed 自動觸發、月經週期濾鏡。CSCS 認證教練監督，運動醫學背景。台中實體 / 全台遠端。',
@@ -89,6 +258,22 @@ export default function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webApplicationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
 
       {/* ===== 區塊 1: Hero ===== */}
       <section className="relative overflow-hidden bg-gradient-to-b from-white to-[#f5f7fa]">
@@ -98,16 +283,53 @@ export default function HomePage() {
               <div className="inline-block bg-primary/10 text-primary text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
                 CSCS 認證 × 數據驅動
               </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-navy">
-                你不是不夠努力<br />你只是每天都在<br className="md:hidden" />用感覺做決定
-              </h1>
-              <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
-                每天 2 分鐘記錄，系統告訴你今天做對了沒有
-              </p>
-              <p className="text-sm text-gray-400 mb-6 leading-relaxed max-w-lg">
-                系統追蹤你的體重趨勢，每週自動校正目標。<br />
-                不是給你數字就消失 — 是每天告訴你：對，繼續。
-              </p>
+              <ABTest
+                experimentId="landing_hero"
+                variants={{
+                  data_focus: (
+                    <>
+                      <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-navy">
+                        你不是不夠努力<br />你只是每天都在<br className="md:hidden" />用感覺做決定
+                      </h1>
+                      <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
+                        每天 2 分鐘記錄，系統告訴你今天做對了沒有
+                      </p>
+                      <p className="text-sm text-gray-400 mb-6 leading-relaxed max-w-lg">
+                        系統追蹤你的體重趨勢，每週自動校正目標。<br />
+                        不是給你數字就消失 — 是每天告訴你：對，繼續。
+                      </p>
+                    </>
+                  ),
+                  coach_focus: (
+                    <>
+                      <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-navy">
+                        CSCS 教練 + 智能系統<br />你的專屬<br className="md:hidden" />體態管理團隊
+                      </h1>
+                      <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
+                        不只是系統分析 — 還有真人教練每週幫你把關
+                      </p>
+                      <p className="text-sm text-gray-400 mb-6 leading-relaxed max-w-lg">
+                        運動醫學背景教練 + 數據驅動系統，雙重保障。<br />
+                        方向對了，結果只是時間問題。
+                      </p>
+                    </>
+                  ),
+                }}
+                fallback={
+                  <>
+                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-navy">
+                      你不是不夠努力<br />你只是每天都在<br className="md:hidden" />用感覺做決定
+                    </h1>
+                    <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
+                      每天 2 分鐘記錄，系統告訴你今天做對了沒有
+                    </p>
+                    <p className="text-sm text-gray-400 mb-6 leading-relaxed max-w-lg">
+                      系統追蹤你的體重趨勢，每週自動校正目標。<br />
+                      不是給你數字就消失 — 是每天告訴你：對，繼續。
+                    </p>
+                  </>
+                }
+              />
               {/* 社會證明 */}
               <div className="flex items-center gap-4 mb-8 text-sm text-gray-500">
                 <span className="flex items-center gap-1"><span className="font-bold text-navy">6+</span> 年系統開發</span>

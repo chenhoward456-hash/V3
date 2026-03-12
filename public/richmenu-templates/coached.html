@@ -1,0 +1,259 @@
+<!--
+  LINE Rich Menu Template: Coached (Premium)
+  Size: 2500 x 1686 px (LINE Rich Menu standard)
+
+  HOW TO USE:
+  1. Open this file in a browser (Chrome recommended)
+  2. Open DevTools (F12) > toggle Device Toolbar (Ctrl+Shift+M)
+  3. Set custom resolution to 2500 x 1686
+  4. Or: zoom browser so the entire menu fits on screen
+  5. Take a screenshot at exactly 2500 x 1686 pixels
+  6. Tip: In Chrome DevTools, use "Capture screenshot" from the 3-dot menu
+-->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=2500">
+<title>Coached Rich Menu - Howard Protocol (Premium)</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    width: 2500px;
+    height: 1686px;
+    overflow: hidden;
+    font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  body {
+    background: linear-gradient(150deg, #1a1a2e 0%, #16213e 35%, #0f3460 70%, #1a1a2e 100%);
+  }
+
+  .container {
+    width: 2500px;
+    height: 1686px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Premium gold accent bar at top */
+  .top-bar {
+    height: 8px;
+    background: linear-gradient(90deg, #92702a, #d4a843, #f5d678, #d4a843, #92702a);
+    box-shadow: 0 2px 16px rgba(212, 168, 67, 0.3);
+  }
+
+  .grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 0;
+  }
+
+  .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    border: 1px solid rgba(212, 168, 67, 0.12);
+  }
+
+  /* Inner gold border accent */
+  .cell::after {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    border: 1px solid rgba(212, 168, 67, 0.08);
+    border-radius: 12px;
+    pointer-events: none;
+  }
+
+  /* Subtle radial glow per cell */
+  .cell::before {
+    content: '';
+    position: absolute;
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    pointer-events: none;
+  }
+
+  /* Per-cell premium color variations */
+  .cell:nth-child(1) {
+    background: linear-gradient(180deg, rgba(212, 168, 67, 0.08) 0%, rgba(212, 168, 67, 0.02) 100%);
+  }
+  .cell:nth-child(1)::before {
+    background: radial-gradient(circle, rgba(212, 168, 67, 0.08) 0%, transparent 70%);
+  }
+
+  .cell:nth-child(2) {
+    background: linear-gradient(180deg, rgba(196, 155, 55, 0.07) 0%, rgba(196, 155, 55, 0.02) 100%);
+  }
+  .cell:nth-child(2)::before {
+    background: radial-gradient(circle, rgba(196, 155, 55, 0.08) 0%, transparent 70%);
+  }
+
+  .cell:nth-child(3) {
+    background: linear-gradient(180deg, rgba(230, 180, 75, 0.07) 0%, rgba(230, 180, 75, 0.02) 100%);
+  }
+  .cell:nth-child(3)::before {
+    background: radial-gradient(circle, rgba(230, 180, 75, 0.08) 0%, transparent 70%);
+  }
+
+  .cell:nth-child(4) {
+    background: linear-gradient(180deg, rgba(180, 140, 50, 0.06) 0%, rgba(180, 140, 50, 0.02) 100%);
+  }
+  .cell:nth-child(4)::before {
+    background: radial-gradient(circle, rgba(180, 140, 50, 0.07) 0%, transparent 70%);
+  }
+
+  .cell:nth-child(5) {
+    background: linear-gradient(180deg, rgba(212, 168, 67, 0.08) 0%, rgba(212, 168, 67, 0.02) 100%);
+  }
+  .cell:nth-child(5)::before {
+    background: radial-gradient(circle, rgba(212, 168, 67, 0.09) 0%, transparent 70%);
+  }
+
+  .cell:nth-child(6) {
+    background: linear-gradient(180deg, rgba(200, 160, 60, 0.07) 0%, rgba(200, 160, 60, 0.02) 100%);
+  }
+  .cell:nth-child(6)::before {
+    background: radial-gradient(circle, rgba(200, 160, 60, 0.08) 0%, transparent 70%);
+  }
+
+  .icon-wrapper {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+    background: rgba(212, 168, 67, 0.06);
+    border: 2px solid rgba(212, 168, 67, 0.18);
+    box-shadow: 0 0 30px rgba(212, 168, 67, 0.08), inset 0 0 20px rgba(212, 168, 67, 0.04);
+  }
+
+  .icon {
+    font-size: 100px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+  }
+
+  .label {
+    font-size: 48px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 3px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .sublabel {
+    font-size: 24px;
+    font-weight: 500;
+    color: rgba(212, 168, 67, 0.55);
+    margin-top: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .footer {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(212, 168, 67, 0.15);
+  }
+
+  .footer-text {
+    font-size: 22px;
+    font-weight: 600;
+    color: rgba(212, 168, 67, 0.4);
+    letter-spacing: 8px;
+    text-transform: uppercase;
+  }
+
+  .footer-badge {
+    display: inline-block;
+    padding: 4px 20px;
+    border: 1px solid rgba(212, 168, 67, 0.25);
+    border-radius: 4px;
+    margin-left: 20px;
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(212, 168, 67, 0.5);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="top-bar"></div>
+  <div class="grid">
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">&#x2696;&#xFE0F;</div>
+      </div>
+      <div class="label">記體重</div>
+      <div class="sublabel">Log Weight</div>
+    </div>
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">🍽️</div>
+      </div>
+      <div class="label">記飲食</div>
+      <div class="sublabel">Log Meals</div>
+    </div>
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">🏋️</div>
+      </div>
+      <div class="label">記訓練</div>
+      <div class="sublabel">Log Training</div>
+    </div>
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">💊</div>
+      </div>
+      <div class="label">補品打卡</div>
+      <div class="sublabel">Supplement Check</div>
+    </div>
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">👨‍🏫</div>
+      </div>
+      <div class="label">問教練</div>
+      <div class="sublabel">Ask Coach</div>
+    </div>
+    <div class="cell">
+      <div class="icon-wrapper">
+        <div class="icon">📊</div>
+      </div>
+      <div class="label">我的儀表板</div>
+      <div class="sublabel">My Dashboard</div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-text">Howard Protocol Fitness</div>
+    <div class="footer-badge">Premium</div>
+  </div>
+</div>
+</body>
+</html>

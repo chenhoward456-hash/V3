@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createServerSupabase } from '@/lib/supabase'
-import { generateArticleSchema } from './schema'
+import { generateArticleSchema, generateBreadcrumbSchema } from './schema'
 import Breadcrumb from '@/components/Breadcrumb'
 import ArticleTracker from './ArticleTracker'
 import ArticleCTA from '@/components/ArticleCTA'
@@ -213,6 +213,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(generateBreadcrumbSchema({ title: post.title, slug: params.slug })) }}
       />
 
       <article className="max-w-3xl mx-auto px-6 py-16">
