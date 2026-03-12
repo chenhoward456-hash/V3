@@ -218,6 +218,7 @@ function JoinPageInner() {
             age: age ? parseInt(age) : null,
             goalType,
             weight: weightNum,
+            ...(refSource ? { ref: refSource } : {}),
           },
         }),
       })

@@ -9,6 +9,7 @@ const mockPushMessage = vi.fn()
 const mockLinkRichMenuToUser = vi.fn()
 const mockUnlinkRichMenuFromUser = vi.fn()
 const mockListRichMenus = vi.fn()
+const mockSwitchRichMenuForUser = vi.fn()
 
 vi.mock('@/lib/line', () => ({
   verifyLineSignature: (...args: any[]) => mockVerifyLineSignature(...args),
@@ -21,6 +22,7 @@ vi.mock('@/lib/line', () => ({
   linkRichMenuToUser: (...args: any[]) => mockLinkRichMenuToUser(...args),
   unlinkRichMenuFromUser: (...args: any[]) => mockUnlinkRichMenuFromUser(...args),
   listRichMenus: (...args: any[]) => mockListRichMenus(...args),
+  switchRichMenuForUser: (...args: any[]) => mockSwitchRichMenuForUser(...args),
 }))
 
 vi.mock('@/lib/logger', () => ({
@@ -199,12 +201,14 @@ describe('POST /api/line/webhook', () => {
     mockLinkRichMenuToUser.mockReset()
     mockUnlinkRichMenuFromUser.mockReset()
     mockListRichMenus.mockReset()
+    mockSwitchRichMenuForUser.mockReset()
 
     mockReplyMessage.mockResolvedValue({ ok: true })
     mockPushMessage.mockResolvedValue({ ok: true })
     mockLinkRichMenuToUser.mockResolvedValue(undefined)
     mockUnlinkRichMenuFromUser.mockResolvedValue(undefined)
     mockListRichMenus.mockResolvedValue([])
+    mockSwitchRichMenuForUser.mockResolvedValue(undefined)
 
     // Default: valid signature
     mockVerifyLineSignature.mockReturnValue(true)
@@ -361,7 +365,8 @@ describe('POST /api/line/webhook', () => {
           }),
         ]),
       )
-      expect(mockLinkRichMenuToUser).toHaveBeenCalledWith('U_returning', 'rm-member')
+      await new Promise((r) => setTimeout(r, 10))
+      expect(mockSwitchRichMenuForUser).toHaveBeenCalledWith('U_returning', BOUND_CLIENT.subscription_tier || 'free')
     })
   })
 
@@ -2437,11 +2442,8 @@ describe('POST /api/line/webhook', () => {
   // ═══════════════════════════════════════
 
   describe('Rich menu switching', () => {
-    it('switches to member rich menu when bound user sends any text', async () => {
+    it('calls switchRichMenuForUser when bound user sends any text', async () => {
       mockSupabase = createSupabaseMock(BOUND_CLIENT)
-      mockListRichMenus.mockResolvedValue([
-        { name: 'Howard Protocol -- 學員版', richMenuId: 'rm-member-123' },
-      ])
       vi.resetModules()
       const mod = await import('@/app/api/line/webhook/route')
 
@@ -2449,31 +2451,13 @@ describe('POST /api/line/webhook', () => {
       await mod.POST(req)
 
       // Should attempt to switch rich menu (background call)
-      // Give it a tick to resolve
       await new Promise((r) => setTimeout(r, 10))
-      expect(mockListRichMenus).toHaveBeenCalled()
-      expect(mockLinkRichMenuToUser).toHaveBeenCalledWith('U_test', 'rm-member-123')
+      expect(mockSwitchRichMenuForUser).toHaveBeenCalledWith('U_test', BOUND_CLIENT.subscription_tier || 'free')
     })
 
-    it('does not crash when member rich menu not found', async () => {
+    it('does not crash when switchRichMenuForUser throws', async () => {
       mockSupabase = createSupabaseMock(BOUND_CLIENT)
-      mockListRichMenus.mockResolvedValue([
-        { name: 'Some Other Menu', richMenuId: 'rm-other' },
-      ])
-      vi.resetModules()
-      const mod = await import('@/app/api/line/webhook/route')
-
-      const req = makeWebhookRequest({ events: [textEvent('FAQ')] })
-      const res = await mod.POST(req)
-      expect(res.status).toBe(200)
-      // linkRichMenuToUser should NOT be called since no member menu found
-      await new Promise((r) => setTimeout(r, 10))
-      expect(mockLinkRichMenuToUser).not.toHaveBeenCalled()
-    })
-
-    it('does not crash when listRichMenus throws', async () => {
-      mockSupabase = createSupabaseMock(BOUND_CLIENT)
-      mockListRichMenus.mockRejectedValue(new Error('API down'))
+      mockSwitchRichMenuForUser.mockRejectedValue(new Error('API down'))
       vi.resetModules()
       const mod = await import('@/app/api/line/webhook/route')
 

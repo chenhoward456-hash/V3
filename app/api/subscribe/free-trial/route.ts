@@ -181,6 +181,44 @@ export async function POST(request: NextRequest) {
 
     log.info('Account created', { uniqueCode, email })
 
+    // 推薦碼追蹤：如果 ref 參數匹配 referral_codes 表中的記錄，建立推薦關係
+    if (ref) {
+      try {
+        const { data: codeRecord } = await supabase
+          .from('referral_codes')
+          .select('id, client_id, total_referrals')
+          .eq('code', ref)
+          .single()
+
+        if (codeRecord && codeRecord.client_id !== newClient.id) {
+          // Check referee hasn't been referred before
+          const { data: existingReferral } = await supabase
+            .from('referrals')
+            .select('id')
+            .eq('referee_id', newClient.id)
+            .single()
+
+          if (!existingReferral) {
+            await supabase.from('referrals').insert({
+              referrer_id: codeRecord.client_id,
+              referee_id: newClient.id,
+              referral_code: ref,
+              status: 'pending',
+            })
+
+            await supabase
+              .from('referral_codes')
+              .update({ total_referrals: (codeRecord.total_referrals || 0) + 1 })
+              .eq('id', codeRecord.id)
+
+            log.info('Referral tracked (free trial)', { referralCode: ref, refereeId: newClient.id })
+          }
+        }
+      } catch (refErr) {
+        log.error('Referral tracking error (non-blocking)', refErr)
+      }
+    }
+
     // 審計日誌（非阻塞）
     writeAuditLog({
       action: 'subscription.created',

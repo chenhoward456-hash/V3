@@ -61,10 +61,27 @@ const config: Config = {
           '50%': { transform: 'scale(1.2)' },
           '100%': { transform: 'scale(1)' },
         },
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'ping-once': {
+          '0%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.3)' },
+          '100%': { transform: 'scale(1)' },
+        },
+        'celebrate': {
+          '0%': { transform: 'scale(0.8)', opacity: '0' },
+          '50%': { transform: 'scale(1.05)' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
       },
       animation: {
         'slide-in-down': 'slide-in-down 0.3s ease-out',
         'check-pop': 'check-pop 0.3s ease-out',
+        'fade-in-up': 'fade-in-up 0.5s ease-out',
+        'ping-once': 'ping-once 0.5s ease-out',
+        'celebrate': 'celebrate 0.5s ease-out',
       },
     },
   },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyLineSignature, replyMessage, pushMessage, qr, linkRichMenuToUser, unlinkRichMenuFromUser, listRichMenus } from '@/lib/line'
+import { verifyLineSignature, replyMessage, pushMessage, qr, linkRichMenuToUser, unlinkRichMenuFromUser, listRichMenus, switchRichMenuForUser } from '@/lib/line'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
 
@@ -96,7 +96,7 @@ async function handleEvent(event: any) {
       // 檢查是否是已綁定的回歸用戶 → 自動切到學員版 Rich Menu
       const existingClient = await getClientByLineId(userId, supabase)
       if (existingClient) {
-        await switchToMemberRichMenu(userId)
+        await switchRichMenuForUser(userId, existingClient.subscription_tier || 'free')
         await replyMessage(event.replyToken, [
           {
             type: 'text',
@@ -164,9 +164,9 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
   // 一次性查詢 client，後續所有 handler 共用，避免重複 DB 查詢
   const client = await getClientByLineId(userId, supabase)
 
-  // 已綁定用戶 → 確保使用學員版 Rich Menu（背景執行，不阻塞回覆）
+  // 已綁定用戶 → 確保使用正確方案的 Rich Menu（背景執行，不阻塞回覆）
   if (client) {
-    switchToMemberRichMenu(userId).catch(() => {})
+    switchRichMenuForUser(userId, client.subscription_tier || 'free').catch(() => {})
   }
 
   // 選單指令 — 叫出所有功能按鈕
@@ -1091,8 +1091,8 @@ async function handleBind(replyToken: string, lineUserId: string, code: string, 
     })
     .eq('id', client.id)
 
-  // 切換到學員版 Rich Menu
-  await switchToMemberRichMenu(lineUserId)
+  // 根據訂閱方案切換對應 Rich Menu
+  await switchRichMenuForUser(lineUserId, client.subscription_tier || 'free')
 
   await replyMessage(replyToken, [
     {
@@ -1208,21 +1208,9 @@ function buildOnboardingGuide(name: string, tier: string): string {
 // Rich Menu 切換
 // ═══════════════════════════════════════
 
-/** 找到學員版 Rich Menu 並綁定給用戶 */
-async function switchToMemberRichMenu(lineUserId: string) {
-  try {
-    const menus = await listRichMenus()
-    const memberMenu = menus.find((m: any) => m.name?.includes('學員版'))
-    if (memberMenu) {
-      await linkRichMenuToUser(lineUserId, memberMenu.richMenuId)
-      log.info(`Switched to member rich menu for ${lineUserId}`)
-    } else {
-      log.warn('Member rich menu not found — user will see default (marketing) menu')
-    }
-  } catch (err) {
-    log.error('Failed to switch rich menu:', err)
-  }
-}
+// Rich Menu switching is now handled by switchRichMenuForUser() from @/lib/line
+// which uses env-var-based menu IDs (RICH_MENU_MEMBER_ID, RICH_MENU_COACHED_ID)
+// instead of listing all menus via API each time.
 
 // ═══════════════════════════════════════
 // Rich Menu Postback 處理

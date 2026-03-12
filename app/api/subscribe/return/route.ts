@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyCheckMacValue } from '@/lib/ecpay'
+import { createServiceSupabase } from '@/lib/supabase'
 import crypto from 'crypto'
 
 // 為 order_id 生成 HMAC 簽名，用於驗證 verify endpoint 的請求者身份
@@ -31,10 +32,39 @@ export async function POST(request: NextRequest) {
     // 使用固定的 SITE_URL，不依賴可偽造的 Host header
     const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
 
+    // 檢查是否為升級：查詢此筆 purchase 的 email 是否已有其他 completed purchase（有 client_id）
+    let isUpgrade = false
+    try {
+      const supabase = createServiceSupabase()
+      const { data: currentPurchase } = await supabase
+        .from('subscription_purchases')
+        .select('email')
+        .eq('merchant_trade_no', merchantTradeNo)
+        .single()
+
+      if (currentPurchase?.email) {
+        const { data: prevPurchases } = await supabase
+          .from('subscription_purchases')
+          .select('client_id')
+          .eq('email', currentPurchase.email)
+          .eq('status', 'completed')
+          .not('client_id', 'is', null)
+          .neq('merchant_trade_no', merchantTradeNo)
+          .limit(1)
+
+        if (prevPurchases && prevPurchases.length > 0) {
+          isUpgrade = true
+        }
+      }
+    } catch {
+      // Non-blocking: if upgrade detection fails, just proceed without upgrade flag
+    }
+
     // 設定簽名 cookie，讓 verify endpoint 能驗證請求者是付款本人
     const signature = signOrderId(merchantTradeNo)
+    const upgradeParam = isUpgrade ? '&upgrade=1' : ''
     const response = NextResponse.redirect(
-      `${origin}/join/success?order_id=${encodeURIComponent(merchantTradeNo)}`,
+      `${origin}/join/success?order_id=${encodeURIComponent(merchantTradeNo)}${upgradeParam}`,
       { status: 303 }
     )
     response.cookies.set('order_sig', signature, {

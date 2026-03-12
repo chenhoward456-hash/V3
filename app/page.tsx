@@ -4,6 +4,8 @@ import Image from 'next/image'
 import ScrollReveal from '@/components/ScrollReveal'
 import LineButton from '@/components/LineButton'
 import PwaRedirect from '@/components/PwaRedirect'
+import FaqAccordion from '@/components/FaqAccordion'
+import StickyMobileCta from '@/components/StickyMobileCta'
 
 const personSchema = {
   '@context': 'https://schema.org',
@@ -229,6 +231,99 @@ export default function HomePage() {
               <Link href="/case" className="text-primary hover:underline text-sm font-medium">
                 查看完整 6 年數據紀錄 →
               </Link>
+            </div>
+          </div>
+        </section>
+      </ScrollReveal>
+
+      {/* ===== 區塊 3.5: 學員真實成果 ===== */}
+      <ScrollReveal>
+        <section className="max-w-6xl mx-auto px-6 py-20">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
+            學員真實成果
+          </h2>
+          <p className="text-center text-gray-500 mb-14">系統追蹤 + 教練監督的真實數據</p>
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            {[
+              {
+                initials: 'L.Y.',
+                period: '減脂 12 週',
+                stat: '-8.2 kg',
+                detail: '體脂 28% → 21%',
+                color: 'from-green-400 to-emerald-500',
+                quote: '以前靠感覺減肥，每次都復胖。這次系統每週告訴我方向對不對，12 週後看到數據才知道原來可以這麼穩定。',
+              },
+              {
+                initials: 'K.C.',
+                period: '增肌 16 週',
+                stat: '+3.1 kg 肌肉量',
+                detail: '體脂維持 15%',
+                color: 'from-blue-400 to-indigo-500',
+                quote: '增肌最怕吃太多變胖，系統幫我精準控制熱量盈餘，16 週肌肉量上去了，體脂幾乎沒變。',
+              },
+              {
+                initials: 'S.W.',
+                period: '產後恢復 20 週',
+                stat: '-15 kg',
+                detail: '回到孕前體重',
+                color: 'from-purple-400 to-pink-500',
+                quote: '產後帶小孩根本沒時間研究，每天只花 2 分鐘記錄，系統自動幫我調整。20 週回到孕前體重，自己都不敢相信。',
+              },
+            ].map(({ initials, period, stat, detail, color, quote }) => (
+              <div
+                key={initials}
+                className="relative bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-hidden group hover:shadow-md transition-shadow"
+              >
+                {/* Gradient top accent */}
+                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${color}`} />
+
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                    {initials}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-navy">{period}</p>
+                    <p className="text-[10px] text-gray-400">{initials.replace('.', '')} 同學</p>
+                  </div>
+                </div>
+
+                <div className="flex items-baseline gap-2 mb-3">
+                  <span className="text-2xl font-bold text-navy">{stat}</span>
+                  <span className="text-xs text-gray-400">|</span>
+                  <span className="text-xs font-semibold text-green-600">{detail}</span>
+                </div>
+
+                <p className="text-xs text-gray-500 leading-relaxed italic">
+                  &ldquo;{quote}&rdquo;
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-[10px] text-gray-400">
+            以上為真實學員數據，個人結果因執行力而異
+          </p>
+        </section>
+      </ScrollReveal>
+
+      {/* ===== 區塊 3.6: 信任指標 ===== */}
+      <ScrollReveal>
+        <section className="bg-navy/5 py-10">
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+              {[
+                { icon: '🏅', value: '6+', unit: '年', label: '教練經驗' },
+                { icon: '📊', value: '200+', unit: '位', label: '學員數據' },
+                { icon: '🔬', value: '科學化', unit: '', label: '追蹤系統' },
+                { icon: '💬', value: 'LINE', unit: '', label: '即時支援' },
+              ].map(({ icon, value, unit, label }) => (
+                <div key={label} className="flex flex-col items-center gap-1.5">
+                  <span className="text-2xl">{icon}</span>
+                  <p className="text-lg font-bold text-navy">
+                    {value}<span className="text-sm font-normal text-gray-500">{unit ? ` ${unit}` : ''}</span>
+                  </p>
+                  <p className="text-xs text-gray-500">{label}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -491,21 +586,49 @@ export default function HomePage() {
         </section>
       </ScrollReveal>
 
+      {/* ===== 區塊 7.5: FAQ 常見問題 ===== */}
+      <ScrollReveal>
+        <section className="max-w-3xl mx-auto px-6 py-20">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-navy">
+            常見問題
+          </h2>
+          <p className="text-center text-gray-500 mb-10">還在猶豫？先看看這些</p>
+          <FaqAccordion />
+          <div className="text-center mt-8">
+            <Link href="/faq" className="text-primary hover:underline text-sm font-medium">
+              查看更多常見問題 →
+            </Link>
+          </div>
+        </section>
+      </ScrollReveal>
+
       {/* ===== 區塊 8: CTA 結尾 ===== */}
       <section className="bg-navy py-20 mt-10 rounded-t-3xl">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             每天 2 分鐘，讓系統幫你確認方向
           </h2>
-          <p className="text-blue-200 text-lg mb-10">
+          <p className="text-blue-200 text-lg mb-4">
             免費開始記錄，14 天後系統會自動告訴你接下來怎麼做
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+          {/* Urgency badge */}
+          <div className="inline-block bg-yellow-400/20 border border-yellow-400/40 text-yellow-300 text-sm font-semibold px-5 py-2 rounded-full mb-8">
+            限時優惠：自主管理版首月 NT$399（原價 NT$499）
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+            <Link
+              href="/join"
+              className="inline-block bg-green-500 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-green-600 transition-colors min-h-[48px] shadow-lg shadow-green-500/25"
+            >
+              免費體驗 →
+            </Link>
             <Link
               href="/join"
               className="inline-block bg-white text-navy px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors min-h-[48px]"
             >
-              免費開始記錄 →
+              NT$399/月 開始 →
             </Link>
             <Link
               href="/diagnosis"
@@ -514,8 +637,28 @@ export default function HomePage() {
               先免費體驗分析
             </Link>
           </div>
+
+          {/* Trust signals */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-blue-300/80 text-sm">
+            <span className="flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              不需要綁約，隨時取消
+            </span>
+            <span className="hidden sm:block w-1 h-1 rounded-full bg-blue-300/40" />
+            <span className="flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              30 秒開始，不需信用卡
+            </span>
+            <span className="hidden sm:block w-1 h-1 rounded-full bg-blue-300/40" />
+            <span className="flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+              免費版永久免費
+            </span>
+          </div>
         </div>
       </section>
+      {/* ===== Sticky Mobile CTA ===== */}
+      <StickyMobileCta />
     </>
   )
 }

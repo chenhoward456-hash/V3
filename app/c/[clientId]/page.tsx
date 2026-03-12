@@ -42,6 +42,8 @@ const LabNutritionAdviceCard = dynamic(() => import('@/components/client/LabNutr
 const GoalSettings = dynamic(() => import('@/components/client/GoalSettings'), { ssr: false })
 const HealthModeAdvanced = dynamic(() => import('@/components/client/HealthModeAdvanced'), { ssr: false })
 const OnboardingGuide = dynamic(() => import('@/components/client/OnboardingGuide'), { ssr: false })
+const OnboardingChecklist = dynamic(() => import('@/components/client/OnboardingChecklist'), { ssr: false })
+const ReferralCard = dynamic(() => import('@/components/client/ReferralCard'), { ssr: false })
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
@@ -205,6 +207,7 @@ export default function ClientDashboard() {
   const [showSettings, setShowSettings] = useState(false)
   const [cancellingSubscription, setCancellingSubscription] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [checklistDismissed, setChecklistDismissed] = useState(false)
   const { showToast } = useToast()
 
   const toggleSimpleMode = async () => {
@@ -1277,6 +1280,44 @@ export default function ClientDashboard() {
           )}
         </div>
 
+        {/* === Onboarding Checklist: persistent task checklist for new users (first 14 days) === */}
+        {(() => {
+          if (checklistDismissed) return null
+          if (!c.created_at) return null
+          const daysSinceCreation = Math.floor(
+            (Date.now() - new Date(c.created_at).getTime()) / 86400000
+          )
+          if (daysSinceCreation > 14) return null
+          const hasWeight = (clientData.bodyData || []).length > 0
+          const hasNutrition = (clientData.nutritionLogs || []).length > 0
+          const hasTraining = (clientData.trainingLogs || []).length > 0
+          const hasWellness = (clientData.wellness || []).length > 0
+          const hasLineBinding = !!c.line_user_id
+          const trainingEnabled = !!c.training_enabled
+          const wellnessEnabled = !!c.wellness_enabled
+          // Build items to check if all are already complete
+          const checkItems = [hasWeight, hasNutrition, hasLineBinding]
+          if (trainingEnabled) checkItems.push(hasTraining)
+          if (wellnessEnabled) checkItems.push(hasWellness)
+          const allComplete = checkItems.every(Boolean)
+          if (allComplete) return null
+          return (
+            <OnboardingChecklist
+              clientId={clientId as string}
+              clientName={c.name}
+              tier={c.subscription_tier || 'free'}
+              hasWeight={hasWeight}
+              hasNutrition={hasNutrition}
+              hasTraining={hasTraining}
+              hasWellness={hasWellness}
+              hasLineBinding={hasLineBinding}
+              trainingEnabled={trainingEnabled}
+              wellnessEnabled={wellnessEnabled}
+              onDismiss={() => setChecklistDismissed(true)}
+            />
+          )
+        })()}
+
         {/* === QuickActions: 未完成項目快速導航 === */}
         {isToday && (
           <QuickActions
@@ -1555,6 +1596,14 @@ export default function ClientDashboard() {
         {/* === REFERENCE section: 參考資料（少變動） === */}
         {/* ================================================================ */}
 
+        {/* 推薦好友卡片 — 至少使用 7 天以上且非免費用戶才顯示 */}
+        {c.created_at && (() => {
+          const daysSinceSignup = Math.floor((Date.now() - new Date(c.created_at).getTime()) / 86400000)
+          if (daysSinceSignup < 7) return null
+          if (c.subscription_tier === 'free' && streakDays < 7) return null
+          return <ReferralCard clientId={c.unique_code} />
+        })()}
+
         {/* 基因檔案卡片 */}
         <GeneProfileCard
           mthfr={c.gene_mthfr as string | null}
@@ -1654,7 +1703,7 @@ export default function ClientDashboard() {
               </p>
             </div>
             <Link
-              href="/join"
+              href={`/upgrade?from=${c.subscription_tier}`}
               onClick={() => trackEvent('upgrade_cta_clicked', { source: 'streak_prompt', streak_days: streakDays })}
               className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
             >
@@ -1689,7 +1738,7 @@ export default function ClientDashboard() {
               {c.subscription_tier === 'free' ? (
                 <div className="mt-4 space-y-2">
                   <Link
-                    href="/join"
+                    href={`/upgrade?from=${c.subscription_tier}`}
                     onClick={() => trackEvent('upgrade_cta_clicked', { source: 'locked_features' })}
                     className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
                   >

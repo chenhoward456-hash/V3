@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyCheckMacValue, SUBSCRIPTION_PLANS, type SubscriptionTier } from '@/lib/ecpay'
 import { createServiceSupabase } from '@/lib/supabase'
 import { sendWelcomeEmail } from '@/lib/email'
-import { pushMessage } from '@/lib/line'
+import { pushMessage, switchRichMenuForUser } from '@/lib/line'
 import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { createLogger } from '@/lib/logger'
 import crypto from 'crypto'
@@ -153,6 +153,43 @@ export async function POST(request: NextRequest) {
         completed_at: new Date().toISOString(),
       }).eq('merchant_trade_no', merchantTradeNo)
 
+      // 推薦碼追蹤：如果 registration_data 中有 ref 且匹配 referral_codes，建立推薦關係
+      if (regData.ref && !existingClient) {
+        try {
+          const { data: codeRecord } = await supabase
+            .from('referral_codes')
+            .select('id, client_id, total_referrals')
+            .eq('code', regData.ref)
+            .single()
+
+          if (codeRecord && codeRecord.client_id !== clientId) {
+            const { data: existingReferral } = await supabase
+              .from('referrals')
+              .select('id')
+              .eq('referee_id', clientId)
+              .single()
+
+            if (!existingReferral) {
+              await supabase.from('referrals').insert({
+                referrer_id: codeRecord.client_id,
+                referee_id: clientId,
+                referral_code: regData.ref,
+                status: 'pending',
+              })
+
+              await supabase
+                .from('referral_codes')
+                .update({ total_referrals: (codeRecord.total_referrals || 0) + 1 })
+                .eq('id', codeRecord.id)
+
+              log.info('Referral tracked (paid signup)', { referralCode: regData.ref, refereeId: clientId })
+            }
+          }
+        } catch (refErr) {
+          log.error('Referral tracking error (non-blocking)', refErr)
+        }
+      }
+
       // 非同步寄送歡迎信（升級也寄，通知新代碼或確認升級）
       if (purchase.email) {
         sendWelcomeEmail({
@@ -184,6 +221,11 @@ export async function POST(request: NextRequest) {
           : `${purchase.name}，付款成功！你的「${tierName}」已啟用 🎉\n\n你的學員代碼：${uniqueCode}\n\n直接使用下方按鈕開始記錄 👇`
         pushMessage(updatedClient.line_user_id, [{ type: 'text', text: msg }]).catch((err) => {
           log.error('Payment LINE push error (non-blocking)', err)
+        })
+
+        // 根據新方案切換 Rich Menu（non-blocking）
+        switchRichMenuForUser(updatedClient.line_user_id, tier).catch((err) => {
+          log.error('Payment Rich Menu switch error (non-blocking)', err)
         })
       }
     } else {

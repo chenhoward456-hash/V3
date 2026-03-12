@@ -11,6 +11,22 @@ const TIER_NAMES: Record<string, string> = {
   coached: '教練指導方案',
 }
 
+// Feature definitions for each tier
+const SELF_MANAGED_FEATURES = [
+  { icon: '📊', label: '身體狀態追蹤', desc: '體重、體脂、感受紀錄' },
+  { icon: '🏋️', label: '訓練日誌', desc: '記錄每次訓練內容' },
+  { icon: '🤖', label: 'AI 飲食顧問', desc: '無限次數 AI 對話' },
+  { icon: '🔄', label: '碳循環規劃', desc: '自動配置高低碳日' },
+]
+
+const COACHED_EXTRA_FEATURES = [
+  { icon: '💊', label: '補充品建議', desc: '個人化補充品方案' },
+  { icon: '🔬', label: '血液檢驗分析', desc: '上傳報告 AI 解讀' },
+  { icon: '🧬', label: '基因體質分析', desc: '基因報告整合建議' },
+  { icon: '💬', label: '教練回饋', desc: '專業教練定期檢視' },
+  { icon: '📋', label: '週報分析', desc: '每週自動產出進度報告' },
+]
+
 export default function JoinSuccessPage() {
   return (
     <Suspense
@@ -26,6 +42,63 @@ export default function JoinSuccessPage() {
   )
 }
 
+// CSS-only confetti celebration component
+function ConfettiCelebration() {
+  const sparkles = ['✨', '🎉', '🌟', '⭐', '💫', '🎊', '✨', '🌟', '🎉', '⭐', '💫', '🎊']
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden" aria-hidden="true">
+      <style>{`
+        @keyframes confetti-fall {
+          0% {
+            transform: translateY(-10vh) rotate(0deg) scale(1);
+            opacity: 1;
+          }
+          70% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(110vh) rotate(720deg) scale(0.3);
+            opacity: 0;
+          }
+        }
+        @keyframes confetti-sway {
+          0%, 100% {
+            transform: translateX(0px);
+          }
+          25% {
+            transform: translateX(30px);
+          }
+          75% {
+            transform: translateX(-30px);
+          }
+        }
+        .confetti-particle {
+          position: absolute;
+          top: -5vh;
+          animation:
+            confetti-fall var(--fall-duration) var(--fall-delay) ease-in forwards,
+            confetti-sway var(--sway-duration) var(--fall-delay) ease-in-out infinite;
+        }
+      `}</style>
+      {sparkles.map((emoji, i) => (
+        <span
+          key={i}
+          className="confetti-particle text-2xl md:text-3xl"
+          style={{
+            left: `${5 + (i * 8) % 90}%`,
+            '--fall-duration': `${2.5 + (i % 5) * 0.5}s`,
+            '--fall-delay': `${(i % 4) * 0.3}s`,
+            '--sway-duration': `${1.5 + (i % 3) * 0.5}s`,
+            fontSize: `${1.2 + (i % 3) * 0.4}rem`,
+          } as React.CSSProperties}
+        >
+          {emoji}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function JoinSuccessContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order_id')
@@ -33,6 +106,7 @@ function JoinSuccessContent() {
   const directCode = searchParams.get('code')
   const directName = searchParams.get('name')
   const directTier = searchParams.get('tier')
+  const upgradeParam = searchParams.get('upgrade')
 
   const [status, setStatus] = useState<'loading' | 'success' | 'failed' | 'timeout'>('loading')
   const [uniqueCode, setUniqueCode] = useState<string | null>(directCode)
@@ -41,6 +115,8 @@ function JoinSuccessContent() {
   const [copied, setCopied] = useState(false)
   const [targets, setTargets] = useState<{ calories: number; protein: number; carbs: number; fat: number; targetWeight?: number } | null>(null)
   const [goalInfo, setGoalInfo] = useState<{ currentWeight?: number; targetWeight?: number; goalType?: string } | null>(null)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [isUpgrade, setIsUpgrade] = useState(upgradeParam === '1')
 
   // 讀取 sessionStorage 中的營養目標
   useEffect(() => {
@@ -64,6 +140,7 @@ function JoinSuccessContent() {
     // 免費體驗：已有 code，直接顯示成功
     if (directCode) {
       setStatus('success')
+      setShowConfetti(true)
       trackEvent('free_trial_success', { tier: 'free' })
       return
     }
@@ -87,6 +164,7 @@ function JoinSuccessContent() {
           setTier(data.tier)
           setName(data.name)
           setStatus('success')
+          setShowConfetti(true)
           trackEvent('subscribe_success', { tier: data.tier, orderId })
           return
         }
@@ -116,6 +194,14 @@ function JoinSuccessContent() {
     poll()
   }, [orderId, directCode])
 
+  // Auto-hide confetti after animation completes
+  useEffect(() => {
+    if (showConfetti) {
+      const timer = setTimeout(() => setShowConfetti(false), 4000)
+      return () => clearTimeout(timer)
+    }
+  }, [showConfetti])
+
   const handleCopy = () => {
     if (uniqueCode) {
       navigator.clipboard.writeText(uniqueCode)
@@ -134,9 +220,22 @@ function JoinSuccessContent() {
   }
 
   const isFree = tier === 'free'
+  const isPaid = tier === 'self_managed' || tier === 'coached'
+  const isCoached = tier === 'coached'
+
+  // Determine which features to show
+  const unlockedFeatures = isCoached
+    ? [...SELF_MANAGED_FEATURES, ...COACHED_EXTRA_FEATURES]
+    : SELF_MANAGED_FEATURES
+
+  // For upgrades from self_managed to coached, show only the delta
+  const upgradeNewFeatures = isUpgrade && isCoached ? COACHED_EXTRA_FEATURES : unlockedFeatures
 
   return (
     <section className="max-w-2xl mx-auto px-6 py-16 md:py-24">
+      {/* Confetti celebration */}
+      {showConfetti && status === 'success' && <ConfettiCelebration />}
+
       {/* Loading */}
       {status === 'loading' && (
         <div className="text-center">
@@ -154,15 +253,24 @@ function JoinSuccessContent() {
       {status === 'success' && uniqueCode && (
         <div className="text-center">
           <div className="inline-block bg-green-100 border border-green-300 rounded-full px-6 py-2 mb-6">
-            <span className="text-green-700 font-bold text-sm">&#10003; 帳號開通成功</span>
+            <span className="text-green-700 font-bold text-sm">
+              &#10003; {isUpgrade ? '方案升級成功' : '帳號開通成功'}
+            </span>
           </div>
 
           <h1 className="text-3xl font-bold mb-2" style={{ color: '#1e3a5f' }}>
-            歡迎，{name}！
+            {isUpgrade ? `升級完成，${name}！` : `歡迎，${name}！`}
           </h1>
           <p className="text-gray-500 text-sm mb-8">
-            你的 {TIER_NAMES[tier || ''] || '方案'} 已啟用
-            {isFree && '，開始追蹤你的體重與飲食'}
+            {isUpgrade
+              ? `你已成功升級至 ${TIER_NAMES[tier || ''] || '方案'}，所有新功能已解鎖`
+              : (
+                <>
+                  你的 {TIER_NAMES[tier || ''] || '方案'} 已啟用
+                  {isFree && '，開始追蹤你的體重與飲食'}
+                </>
+              )
+            }
           </p>
 
           {/* Unique Code Card */}
@@ -185,6 +293,32 @@ function JoinSuccessContent() {
               這是你登入儀表板的唯一憑證，請妥善保存。我們也已將此代碼寄到你的 Email。
             </p>
           </div>
+
+          {/* What's Unlocked - for paid tiers */}
+          {isPaid && (
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-6 mb-8 text-left">
+              <p className="text-sm font-semibold text-gray-800 mb-4">
+                {isUpgrade ? '🔓 新解鎖的功能' : '🔓 你已解鎖的功能'}
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {(isUpgrade ? upgradeNewFeatures : unlockedFeatures).map((feat, i) => (
+                  <div
+                    key={i}
+                    className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                  >
+                    <div className="text-xl mb-1">{feat.icon}</div>
+                    <p className="text-sm font-semibold text-gray-800">{feat.label}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{feat.desc}</p>
+                  </div>
+                ))}
+              </div>
+              {isUpgrade && isCoached && (
+                <p className="text-xs text-indigo-500 mt-3 text-center">
+                  加上原有的自主管理功能，你現在擁有所有完整功能
+                </p>
+              )}
+            </div>
+          )}
 
           {/* LINE 綁定引導 */}
           <div className="bg-[#06C755]/10 border border-[#06C755]/30 rounded-2xl p-5 mb-8 text-left">
@@ -269,7 +403,7 @@ function JoinSuccessContent() {
             </div>
           )}
 
-          {/* Quick Guide */}
+          {/* Quick Guide - Free tier */}
           {isFree && (
             <div className="bg-gray-50 rounded-2xl p-5 mb-8 text-left">
               <p className="text-sm font-semibold text-gray-700 mb-3">接下來要做什麼？</p>
@@ -285,6 +419,74 @@ function JoinSuccessContent() {
                 <div className="flex items-center gap-3">
                   <span className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-600 shrink-0">3</span>
                   <p className="text-sm text-gray-600">持續 2 週，系統會自動<strong>校正你的 TDEE</strong> 讓目標更準</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* First Steps Guide - Paid tiers (self_managed) */}
+          {isPaid && !isCoached && (
+            <div className="bg-gray-50 rounded-2xl p-5 mb-8 text-left">
+              <p className="text-sm font-semibold text-gray-700 mb-3">開始你的第一步</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-600 shrink-0">1</span>
+                  <p className="text-sm text-gray-600">
+                    <strong>綁定 LINE</strong>（如果還沒綁定，參考上方步驟）
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600 shrink-0">2</span>
+                  <p className="text-sm text-gray-600">
+                    <strong>記錄你的第一筆體重</strong>，進儀表板輸入或 LINE 傳數字
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-xs font-bold text-purple-600 shrink-0">3</span>
+                  <p className="text-sm text-gray-600">
+                    <strong>試試 AI 飲食顧問</strong>，問任何飲食相關問題
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-xs font-bold text-amber-600 shrink-0">4</span>
+                  <p className="text-sm text-gray-600">
+                    <strong>記錄今天的訓練</strong>，開始建立你的訓練日誌
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* First Steps Guide - Coached tier */}
+          {isCoached && (
+            <div className="bg-gray-50 rounded-2xl p-5 mb-8 text-left">
+              <p className="text-sm font-semibold text-gray-700 mb-3">
+                {isUpgrade ? '升級後的下一步' : '開始你的第一步'}
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-600 shrink-0">1</span>
+                  <p className="text-sm text-gray-600">
+                    <strong>綁定 LINE</strong>（如果還沒綁定，參考上方步驟）
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600 shrink-0">2</span>
+                  <p className="text-sm text-gray-600">
+                    <strong>記錄你的第一筆體重</strong>，進儀表板輸入或 LINE 傳數字
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-xs font-bold text-purple-600 shrink-0">3</span>
+                  <p className="text-sm text-gray-600">
+                    <strong>試試 AI 飲食顧問</strong>，問任何飲食相關問題
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-xs font-bold text-amber-600 shrink-0">4</span>
+                  <p className="text-sm text-gray-600">
+                    <strong>記錄今天的訓練</strong>，開始建立你的訓練日誌
+                  </p>
                 </div>
               </div>
             </div>

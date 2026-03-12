@@ -79,20 +79,21 @@ describe('UpgradeGate', () => {
     expect(screen.getByText(/NT\$2,999/)).toBeInTheDocument()
   })
 
-  // ---- Link points to /join ----
-  it('renders a link to /join', () => {
+  // ---- Link points to /upgrade (updated from /join) ----
+  it('renders a link to /upgrade', () => {
     render(<UpgradeGate feature="Premium Feature" />)
 
-    const link = screen.getByRole('link')
-    expect(link).toHaveAttribute('href', '/join')
+    const links = screen.getAllByRole('link')
+    const upgradeLink = links[0]
+    expect(upgradeLink).toHaveAttribute('href', expect.stringContaining('/upgrade'))
   })
 
   // ---- Tracks analytics on click ----
   it('calls trackEvent with correct params when the upgrade link is clicked', () => {
     render(<UpgradeGate feature="AI Analysis" tier="coached" />)
 
-    const link = screen.getByRole('link')
-    fireEvent.click(link)
+    const links = screen.getAllByRole('link')
+    fireEvent.click(links[0])
 
     expect(mockTrackEvent).toHaveBeenCalledWith('upgrade_cta_clicked', {
       feature: 'AI Analysis',
@@ -103,8 +104,8 @@ describe('UpgradeGate', () => {
   it('passes default tier to trackEvent when not specified', () => {
     render(<UpgradeGate feature="Basic Feature" />)
 
-    const link = screen.getByRole('link')
-    fireEvent.click(link)
+    const links = screen.getAllByRole('link')
+    fireEvent.click(links[0])
 
     expect(mockTrackEvent).toHaveBeenCalledWith('upgrade_cta_clicked', {
       feature: 'Basic Feature',
@@ -119,5 +120,100 @@ describe('UpgradeGate', () => {
     const wrapper = container.firstElementChild as HTMLElement
     expect(wrapper.className).toContain('bg-gradient-to-br')
     expect(wrapper.className).toContain('from-blue-50')
+  })
+
+  // ---- New: Enhanced variant with currentTier ----
+  it('shows upgrade path context when currentTier is provided', () => {
+    render(
+      <UpgradeGate
+        feature="Training Log"
+        tier="self_managed"
+        currentTier="free"
+      />
+    )
+
+    expect(screen.getByText(/免費版 → 自主管理版/)).toBeInTheDocument()
+  })
+
+  it('shows self_managed to coached upgrade path', () => {
+    render(
+      <UpgradeGate
+        feature="Blood Analysis"
+        tier="coached"
+        currentTier="self_managed"
+      />
+    )
+
+    expect(screen.getByText(/自主管理版 → 教練指導版/)).toBeInTheDocument()
+  })
+
+  // ---- New: Benefits list ----
+  it('renders custom benefits list when provided with currentTier', () => {
+    render(
+      <UpgradeGate
+        feature="Wellness Tracking"
+        currentTier="free"
+        benefits={['Mood tracking', 'Sleep analysis']}
+      />
+    )
+
+    expect(screen.getByText('Mood tracking')).toBeInTheDocument()
+    expect(screen.getByText('Sleep analysis')).toBeInTheDocument()
+  })
+
+  it('renders default benefits when currentTier provided but no custom benefits', () => {
+    render(
+      <UpgradeGate
+        feature="Training"
+        tier="self_managed"
+        currentTier="free"
+      />
+    )
+
+    // Default self_managed benefits include these
+    expect(screen.getByText('身心狀態追蹤')).toBeInTheDocument()
+    expect(screen.getByText('完整訓練記錄')).toBeInTheDocument()
+  })
+
+  // ---- New: Preview content ----
+  it('renders blurred preview content when previewContent is provided', () => {
+    render(
+      <UpgradeGate
+        feature="Charts"
+        currentTier="free"
+        previewContent={<div data-testid="preview">Chart Preview</div>}
+      />
+    )
+
+    expect(screen.getByTestId('preview')).toBeInTheDocument()
+    expect(screen.getByText('升級後解鎖')).toBeInTheDocument()
+  })
+
+  // ---- New: Link includes from and feature params ----
+  it('includes from and feature params in upgrade link when currentTier is set', () => {
+    render(
+      <UpgradeGate
+        feature="AI Chat"
+        tier="self_managed"
+        currentTier="free"
+      />
+    )
+
+    const links = screen.getAllByRole('link')
+    const ctaLink = links[0]
+    expect(ctaLink).toHaveAttribute('href', expect.stringContaining('from=free'))
+    expect(ctaLink).toHaveAttribute('href', expect.stringContaining('feature=AI'))
+  })
+
+  // ---- New: "View full comparison" link ----
+  it('shows "view full comparison" link in enhanced variant', () => {
+    render(
+      <UpgradeGate
+        feature="Feature"
+        currentTier="free"
+      />
+    )
+
+    expect(screen.getByText(/查看完整方案比較/)).toBeInTheDocument()
   })
 })

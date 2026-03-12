@@ -273,3 +273,75 @@ export async function unlinkRichMenuFromUser(userId: string): Promise<boolean> {
   }
   return true
 }
+
+/** Rich Menu — 教練指導版 (coached 用戶專屬) */
+export function getCoachedRichMenuObject() {
+  return {
+    size: { width: 2500, height: 1686 },
+    selected: true,
+    name: 'Howard Protocol — 教練版',
+    chatBarText: '📋 教練專屬選單',
+    areas: [
+      // Row 1: 記錄動作
+      {
+        bounds: { x: 0, y: 0, width: 833, height: 843 },
+        action: { type: 'message', label: '記體重', text: '記體重' },
+      },
+      {
+        bounds: { x: 833, y: 0, width: 834, height: 843 },
+        action: { type: 'message', label: '記飲食', text: '記飲食' },
+      },
+      {
+        bounds: { x: 1667, y: 0, width: 833, height: 843 },
+        action: { type: 'message', label: '記訓練', text: '記訓練' },
+      },
+      // Row 2: 教練專屬功能
+      {
+        bounds: { x: 0, y: 843, width: 833, height: 843 },
+        action: { type: 'message', label: '補品打卡', text: '補品打卡' },
+      },
+      {
+        bounds: { x: 833, y: 843, width: 834, height: 843 },
+        action: { type: 'message', label: '問教練', text: '我想詢問問題' },
+      },
+      {
+        bounds: { x: 1667, y: 843, width: 833, height: 843 },
+        action: { type: 'uri', label: '我的儀表板', uri: `${SITE_URL}/dashboard` },
+      },
+    ],
+  }
+}
+
+/**
+ * 根據訂閱方案自動切換用戶的 Rich Menu
+ *
+ * - coached: 綁定教練版 Rich Menu（RICH_MENU_COACHED_ID）
+ * - self_managed: 綁定學員版 Rich Menu（RICH_MENU_MEMBER_ID）
+ * - free / 其他: 解除個人 Rich Menu，回到預設行銷版
+ *
+ * 此函式不會拋出錯誤（non-blocking），僅 console.error 記錄。
+ */
+export async function switchRichMenuForUser(lineUserId: string, tier: string): Promise<void> {
+  const memberMenuId = process.env.RICH_MENU_MEMBER_ID
+  const coachedMenuId = process.env.RICH_MENU_COACHED_ID
+  const marketingMenuId = process.env.RICH_MENU_MARKETING_ID
+
+  // Rich Menu IDs not configured yet — skip silently
+  if (!memberMenuId && !coachedMenuId) return
+
+  try {
+    if (tier === 'coached' && coachedMenuId) {
+      await linkRichMenuToUser(lineUserId, coachedMenuId)
+    } else if (tier === 'self_managed' || tier === 'coached') {
+      // coached without dedicated menu falls back to member menu
+      if (memberMenuId) {
+        await linkRichMenuToUser(lineUserId, memberMenuId)
+      }
+    } else {
+      // Free user or unknown tier: unlink personal menu, fall back to default marketing menu
+      await unlinkRichMenuFromUser(lineUserId)
+    }
+  } catch (err) {
+    console.error('[Rich Menu] Switch failed for user', lineUserId, 'tier', tier, ':', err)
+  }
+}
