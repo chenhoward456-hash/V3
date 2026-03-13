@@ -5,6 +5,7 @@ import LayoutShell from '@/components/LayoutShell'
 import ManifestLink from '@/components/ManifestLink'
 import GoogleAnalytics from '@/components/GoogleAnalytics'
 import CookieConsent from '@/components/CookieConsent'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -103,7 +104,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
-        <LayoutShell>{children}</LayoutShell>
+        <ErrorBoundary>
+          <LayoutShell>{children}</LayoutShell>
+        </ErrorBoundary>
         <GoogleAnalytics />
         <CookieConsent />
       </body>

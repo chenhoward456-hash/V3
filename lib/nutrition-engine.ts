@@ -1008,8 +1008,8 @@ export function calculateMetabolicStressScore(params: {
   // Refeed 碳水依體重區間調整（較重者絕對碳水較多但 g/kg 略低，較輕者 g/kg 略高）
   // 文獻：Roberts 2020: refeed carbs 4-8 g/kg，Escalante 2021: 8-12 g/kg for peak week
   // 體重 <60kg → +0.5 g/kg, 60-80kg → 基準, >80kg → -0.5 g/kg, >100kg → -1.0 g/kg
-  const bwTierAdjust = (params as any).bodyWeight != null
-    ? ((params as any).bodyWeight < 60 ? 0.5 : (params as any).bodyWeight > 100 ? -1.0 : (params as any).bodyWeight > 80 ? -0.5 : 0)
+  const bwTierAdjust = params.bodyWeight != null
+    ? (params.bodyWeight < 60 ? 0.5 : params.bodyWeight > 100 ? -1.0 : params.bodyWeight > 80 ? -0.5 : 0)
     : 0
 
   if (score >= 60) {

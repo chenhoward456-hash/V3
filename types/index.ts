@@ -47,7 +47,7 @@ export interface ContactForm {
 
 export interface AnalyticsEvent {
   event: string
-  parameters?: Record<string, any>
+  parameters?: Record<string, string | number | boolean>
   timestamp: number
 }
 

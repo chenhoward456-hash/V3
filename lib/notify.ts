@@ -77,8 +77,8 @@ export async function sendRoutineReminder(
   try {
     await pushMessage(lineUserId, [{ type: 'text', text: message.lineText }])
     return { method: 'line_push', success: true }
-  } catch (err: any) {
-    log.error('LINE push fallback failed', { clientId, error: err.message })
+  } catch (err: unknown) {
+    log.error('LINE push fallback failed', { clientId, error: err instanceof Error ? err.message : String(err) })
     return { method: 'line_push', success: false }
   }
 }

@@ -165,37 +165,37 @@ async function fetchQuarterData(
   const last7Nutrition = nutritionData.slice(-7)
   const last7Training = trainingData.slice(-7)
   const suppCompliance = suppData.length > 0
-    ? suppData.filter((s: any) => s.completed).length / suppData.length
+    ? suppData.filter((s: { completed: boolean | null }) => s.completed).length / suppData.length
     : 0
 
   const healthScoreInput: HealthScoreInput = {
-    wellnessLast7: last7Wellness.map((w: any) => ({
+    wellnessLast7: last7Wellness.map((w: { sleep_quality: number | null; energy_level: number | null; mood: number | null; cognitive_clarity: number | null; stress_level: number | null }) => ({
       sleep_quality: w.sleep_quality,
       energy_level: w.energy_level,
       mood: w.mood,
       cognitive_clarity: w.cognitive_clarity,
       stress_level: w.stress_level,
     })),
-    nutritionLast7: last7Nutrition.map((n: any) => ({ compliant: n.compliant })),
-    trainingLast7: last7Training.map((t: any) => ({ training_type: t.training_type })),
+    nutritionLast7: last7Nutrition.map((n: { compliant: boolean | null }) => ({ compliant: n.compliant })),
+    trainingLast7: last7Training.map((t: { training_type: string }) => ({ training_type: t.training_type })),
     supplementComplianceRate: suppCompliance,
-    labResults: labData.map((l: any) => ({ status: l.status })),
+    labResults: labData.map((l: { status: string }) => ({ status: l.status as 'normal' | 'attention' | 'alert' })),
     quarterlyStart: startDate,
   }
 
   const healthScore = wellnessData.length > 0 ? calculateHealthScore(healthScoreInput) : null
 
   // 平均值計算
-  const weights = bodyData.filter((b: any) => b.weight).map((b: any) => b.weight)
-  const bodyFats = bodyData.filter((b: any) => b.body_fat).map((b: any) => b.body_fat)
-  const sleepScores = wellnessData.filter((w: any) => w.sleep_quality).map((w: any) => w.sleep_quality)
-  const energyScores = wellnessData.filter((w: any) => w.energy_level).map((w: any) => w.energy_level)
-  const stressScores = wellnessData.filter((w: any) => w.stress_level).map((w: any) => w.stress_level)
+  const weights = bodyData.filter((b: { weight: number | null }) => b.weight).map((b: { weight: number | null }) => b.weight as number)
+  const bodyFats = bodyData.filter((b: { body_fat: number | null }) => b.body_fat).map((b: { body_fat: number | null }) => b.body_fat as number)
+  const sleepScores = wellnessData.filter((w: { sleep_quality: number | null }) => w.sleep_quality).map((w: { sleep_quality: number | null }) => w.sleep_quality as number)
+  const energyScores = wellnessData.filter((w: { energy_level: number | null }) => w.energy_level).map((w: { energy_level: number | null }) => w.energy_level as number)
+  const stressScores = wellnessData.filter((w: { stress_level: number | null }) => w.stress_level).map((w: { stress_level: number | null }) => w.stress_level as number)
 
   const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
 
   // 每週訓練天數 — 用實際天數跨度計算，而非 log 數量
-  const trainingDates = trainingData.map((t: any) => t.date as string).filter(Boolean)
+  const trainingDates = trainingData.map((t: { date: string }) => t.date).filter(Boolean)
   const uniqueTrainingDates = [...new Set(trainingDates)]
   const daySpan = uniqueTrainingDates.length >= 2
     ? Math.max(1, Math.ceil(
@@ -203,13 +203,13 @@ async function fetchQuarterData(
       ))
     : Math.max(1, uniqueTrainingDates.length)
   const weeks = Math.max(1, daySpan / 7)
-  const trainingDays = trainingData.filter((t: any) => t.training_type !== 'rest').length
+  const trainingDays = trainingData.filter((t: { training_type: string }) => t.training_type !== 'rest').length
 
   return {
     healthScore,
     avgWeight: avg(weights),
     avgBodyFat: avg(bodyFats),
-    labResults: labData as any,
+    labResults: labData as Array<{ test_name: string; value: number; unit: string; status: string; date: string }>,
     supplementCompliance: suppCompliance,
     trainingDaysPerWeek: Math.round(trainingDays / weeks * 10) / 10,
     avgSleepQuality: avg(sleepScores),

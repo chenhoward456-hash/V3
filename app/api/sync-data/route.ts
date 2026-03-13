@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 解析數據
-    const metrics = data.map((row: any[]) => ({
+    const metrics = data.map((row: string[]) => ({
       id: row[0] || '',
       name: row[1] || '',
       current: parseFloat(row[2]) || 0,

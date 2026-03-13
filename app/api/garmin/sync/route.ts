@@ -142,11 +142,12 @@ export async function POST(request: NextRequest) {
       imported,
       total: dailies.length,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Garmin sync error:', error)
 
     // Token 失效的話提示重新授權
-    if (error.message?.includes('401') || error.message?.includes('403')) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    if (errorMessage.includes('401') || errorMessage.includes('403')) {
       return NextResponse.json({
         error: 'Garmin 授權已過期，請重新連線',
         needReconnect: true,

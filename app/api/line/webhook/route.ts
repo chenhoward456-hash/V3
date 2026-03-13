@@ -1,10 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { SupabaseClient } from '@supabase/supabase-js'
 import { verifyLineSignature, replyMessage, pushMessage, qr, linkRichMenuToUser, unlinkRichMenuFromUser, listRichMenus, switchRichMenuForUser } from '@/lib/line'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('LINE-Webhook')
 
+/** LINE webhook event shape (subset of fields we use) */
+interface LineWebhookEvent {
+  type: string
+  replyToken: string
+  source?: { userId?: string; type?: string }
+  message?: { type: string; text?: string }
+  postback?: { data: string }
+}
+
+/** Client record returned from LINE quick-record queries */
+interface LineClient {
+  id: string
+  name: string
+  protein_target: number | null
+  water_target: number | null
+  calories_target: number | null
+  subscription_tier: string | null
+  training_enabled: boolean
+  wellness_enabled: boolean
+}
 
 // 台灣時區 helper
 function getTaiwanDate(): string {
@@ -69,7 +90,7 @@ export async function POST(request: NextRequest) {
     const events = data.events || []
 
     // Process events in parallel for faster response to LINE platform
-    await Promise.allSettled(events.map((event: any) => handleEvent(event)))
+    await Promise.allSettled(events.map((event: LineWebhookEvent) => handleEvent(event)))
 
     return NextResponse.json({ ok: true })
   } catch (error) {
@@ -78,7 +99,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleEvent(event: any) {
+async function handleEvent(event: LineWebhookEvent) {
   const userId = event.source?.userId
   if (!userId) return
 
@@ -158,8 +179,8 @@ async function handleEvent(event: any) {
   }
 }
 
-async function handleTextMessage(event: any, userId: string, supabase: any) {
-  const text = (event.message.text || '').trim()
+async function handleTextMessage(event: LineWebhookEvent, userId: string, supabase: SupabaseClient) {
+  const text = (event.message?.text || '').trim()
 
   // 一次性查詢 client，後續所有 handler 共用，避免重複 DB 查詢
   const client = await getClientByLineId(userId, supabase)
@@ -633,7 +654,7 @@ async function handleTextMessage(event: any, userId: string, supabase: any) {
 // 快速記錄 handlers
 // ═══════════════════════════════════════
 
-async function getClientByLineId(lineUserId: string, supabase: any) {
+async function getClientByLineId(lineUserId: string, supabase: SupabaseClient): Promise<LineClient | null> {
   const { data } = await supabase
     .from('clients')
     .select('id, name, protein_target, water_target, calories_target, subscription_tier, training_enabled, wellness_enabled')
@@ -642,7 +663,7 @@ async function getClientByLineId(lineUserId: string, supabase: any) {
   return data
 }
 
-async function handleQuickWeight(replyToken: string, client: any, weight: number, supabase: any) {
+async function handleQuickWeight(replyToken: string, client: LineClient | null, weight: number, supabase: SupabaseClient) {
   if (!client) {
     await replyMessage(replyToken, [
       {
@@ -689,7 +710,7 @@ async function handleQuickWeight(replyToken: string, client: any, weight: number
   await replyMessage(replyToken, [{ type: 'text', text: msg, quickReply: QR_AFTER_RECORD }])
 }
 
-async function handleQuickWater(replyToken: string, client: any, waterMl: number, supabase: any) {
+async function handleQuickWater(replyToken: string, client: LineClient | null, waterMl: number, supabase: SupabaseClient) {
   if (!client) {
     await replyMessage(replyToken, [
       {
@@ -749,7 +770,7 @@ async function handleQuickWater(replyToken: string, client: any, waterMl: number
   ])
 }
 
-async function handleQuickProtein(replyToken: string, client: any, protein: number, supabase: any) {
+async function handleQuickProtein(replyToken: string, client: LineClient | null, protein: number, supabase: SupabaseClient) {
   if (!client) {
     await replyMessage(replyToken, [
       {
@@ -787,7 +808,7 @@ async function handleQuickProtein(replyToken: string, client: any, protein: numb
   await replyMessage(replyToken, [{ type: 'text', text: msg, quickReply: QR_AFTER_RECORD }])
 }
 
-async function handleQuickCompliance(replyToken: string, client: any, compliant: boolean, supabase: any) {
+async function handleQuickCompliance(replyToken: string, client: LineClient | null, compliant: boolean, supabase: SupabaseClient) {
   if (!client) {
     await replyMessage(replyToken, [
       {
@@ -829,9 +850,9 @@ async function handleQuickCompliance(replyToken: string, client: any, compliant:
 }
 
 async function handleQuickTraining(
-  replyToken: string, client: any,
+  replyToken: string, client: LineClient | null,
   trainingType: string, duration: number | null, rpe: number | null,
-  supabase: any
+  supabase: SupabaseClient
 ) {
   if (!client) {
     await replyMessage(replyToken, [
@@ -850,7 +871,7 @@ async function handleQuickTraining(
   }
 
   const today = getTaiwanDate()
-  const record: any = { client_id: client.id, date: today, training_type: trainingType }
+  const record: { client_id: string; date: string; training_type: string; duration?: number; rpe?: number } = { client_id: client.id, date: today, training_type: trainingType }
   if (duration) record.duration = duration
   if (rpe) record.rpe = rpe
 
@@ -886,9 +907,9 @@ async function handleQuickTraining(
 }
 
 async function handleQuickWellness(
-  replyToken: string, client: any,
+  replyToken: string, client: LineClient | null,
   sleep: number, energy: number, mood: number,
-  supabase: any
+  supabase: SupabaseClient
 ) {
   if (!client) {
     await replyMessage(replyToken, [
@@ -942,7 +963,7 @@ async function handleQuickWellness(
 // 趨勢查詢
 // ═══════════════════════════════════════
 
-async function handleTrendQuery(replyToken: string, client: any, supabase: any) {
+async function handleTrendQuery(replyToken: string, client: LineClient, supabase: SupabaseClient) {
 
   const today = getTaiwanDate()
   const sevenDaysAgo = new Date(new Date().getTime() - 7 * 86400000).toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' })
@@ -977,7 +998,7 @@ async function handleTrendQuery(replyToken: string, client: any, supabase: any) 
     const diff = last - first
     const sign = diff > 0 ? '+' : ''
     lines.push(`⚖️ 體重：${last}kg（${sign}${diff.toFixed(1)}kg）`)
-    lines.push(`   ${body.map((b: any) => b.weight).join(' → ')}`)
+    lines.push(`   ${body.map((b: { weight: number }) => b.weight).join(' → ')}`)
   } else if (body.length === 1) {
     lines.push(`⚖️ 體重：${body[0].weight}kg（僅 1 筆紀錄）`)
   } else {
@@ -985,17 +1006,17 @@ async function handleTrendQuery(replyToken: string, client: any, supabase: any) 
   }
 
   if (nutrition.length > 0) {
-    const compliantDays = nutrition.filter((n: any) => n.compliant).length
+    const compliantDays = nutrition.filter((n: { compliant: boolean | null }) => n.compliant).length
     const rate = Math.round((compliantDays / nutrition.length) * 100)
     lines.push(`\n🍽️ 飲食合規：${compliantDays}/${nutrition.length} 天（${rate}%）`)
 
-    const proteins = nutrition.filter((n: any) => n.protein_grams).map((n: any) => n.protein_grams)
+    const proteins = nutrition.filter((n: { protein_grams: number | null }) => n.protein_grams).map((n: { protein_grams: number | null }) => n.protein_grams as number)
     if (proteins.length > 0) {
       const avg = Math.round(proteins.reduce((a: number, b: number) => a + b, 0) / proteins.length)
       lines.push(`🥩 平均蛋白質：${avg}g/天`)
     }
 
-    const waters = nutrition.filter((n: any) => n.water_ml).map((n: any) => n.water_ml)
+    const waters = nutrition.filter((n: { water_ml: number | null }) => n.water_ml).map((n: { water_ml: number | null }) => n.water_ml as number)
     if (waters.length > 0) {
       const avg = Math.round(waters.reduce((a: number, b: number) => a + b, 0) / waters.length)
       lines.push(`💧 平均水量：${avg}ml/天`)
@@ -1016,7 +1037,7 @@ async function handleTrendQuery(replyToken: string, client: any, supabase: any) 
     const typeSummary = Object.entries(typeCount).map(([k, v]) => `${typeLabel[k] || k}×${v}`).join(' ')
     lines.push(`\n🏋️ 訓練 ${training.length} 天：${typeSummary}`)
 
-    const rpes = training.filter((t: any) => t.rpe).map((t: any) => t.rpe)
+    const rpes = training.filter((t: { rpe: number | null }) => t.rpe).map((t: { rpe: number | null }) => t.rpe as number)
     if (rpes.length > 0) {
       const avg = (rpes.reduce((a: number, b: number) => a + b, 0) / rpes.length).toFixed(1)
       lines.push(`💪 平均 RPE：${avg}`)
@@ -1026,9 +1047,9 @@ async function handleTrendQuery(replyToken: string, client: any, supabase: any) 
   }
 
   if (wellness.length > 0) {
-    const avgSleep = (wellness.reduce((s: number, w: any) => s + (w.sleep_quality || 0), 0) / wellness.length).toFixed(1)
-    const avgEnergy = (wellness.reduce((s: number, w: any) => s + (w.energy_level || 0), 0) / wellness.length).toFixed(1)
-    const avgMood = (wellness.reduce((s: number, w: any) => s + (w.mood || 0), 0) / wellness.length).toFixed(1)
+    const avgSleep = (wellness.reduce((s: number, w: { sleep_quality: number | null }) => s + (w.sleep_quality || 0), 0) / wellness.length).toFixed(1)
+    const avgEnergy = (wellness.reduce((s: number, w: { energy_level: number | null }) => s + (w.energy_level || 0), 0) / wellness.length).toFixed(1)
+    const avgMood = (wellness.reduce((s: number, w: { mood: number | null }) => s + (w.mood || 0), 0) / wellness.length).toFixed(1)
     lines.push(`\n😴 平均睡眠：${avgSleep}/5`)
     lines.push(`⚡ 平均精力：${avgEnergy}/5`)
     lines.push(`😊 平均心情：${avgMood}/5`)
@@ -1049,7 +1070,7 @@ async function handleTrendQuery(replyToken: string, client: any, supabase: any) 
 // 原有功能
 // ═══════════════════════════════════════
 
-async function handleBind(replyToken: string, lineUserId: string, code: string, supabase: any) {
+async function handleBind(replyToken: string, lineUserId: string, code: string, supabase: SupabaseClient) {
   const { data: existing } = await supabase
     .from('clients')
     .select('id, name')
@@ -1218,7 +1239,7 @@ function buildOnboardingGuide(name: string, tier: string): string {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
 
-async function handlePostback(event: any, userId: string, supabase: any) {
+async function handlePostback(event: LineWebhookEvent, userId: string, supabase: SupabaseClient) {
   const data = event.postback?.data || ''
   const params = new URLSearchParams(data)
   const action = params.get('action')
@@ -1300,7 +1321,7 @@ async function handleContactSupport(replyToken: string) {
   ])
 }
 
-async function handleStatusQuery(replyToken: string, client: any, supabase: any) {
+async function handleStatusQuery(replyToken: string, client: LineClient, supabase: SupabaseClient) {
   const today = getTaiwanDate()
 
   const [bodyRes, wellness, nutrition, training] = await Promise.all([

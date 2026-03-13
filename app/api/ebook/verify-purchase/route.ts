@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     // ECPay 不像 Stripe 有 API 可以直接查，只能等 webhook
     // 前端會持續輪詢
     return NextResponse.json({ purchased: false, status: purchase.status })
-  } catch (err: any) {
+  } catch (err: unknown) {
     return createErrorResponse('驗證失敗', 500)
   }
 }

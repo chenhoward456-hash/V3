@@ -184,7 +184,7 @@ async function garminApiRequest(
   url: string,
   opts: GarminApiOptions,
   queryParams?: Record<string, string>
-): Promise<any> {
+): Promise<unknown> {
   const { consumerKey, consumerSecret } = getOAuthConfig()
 
   const fullUrl = queryParams
@@ -228,6 +228,23 @@ async function garminApiRequest(
   return res.json()
 }
 
+/** Raw daily record shape from Garmin Wellness API */
+interface GarminRawDaily {
+  calendarDate?: string
+  bodyBatteryChargedValue?: number
+  bodyBatteryMostRecentValue?: number
+  restingHeartRate?: number
+  hrvSummary?: { lastNightAvg?: number }
+  averageHrv?: number
+  respirationAvgBreathingRate?: number
+}
+
+/** Raw sleep record shape from Garmin Wellness API */
+interface GarminRawSleep {
+  calendarDate?: string
+  overallSleepScore?: number
+}
+
 export interface GarminDailySummary {
   date: string
   device_recovery_score: number | null
@@ -249,7 +266,7 @@ export async function fetchGarminDailies(
   const startTime = endTime - days * 86400
 
   // Garmin Wellness API: GET /dailies
-  const dailies = await garminApiRequest(
+  const rawDailies = await garminApiRequest(
     `${GARMIN_API_BASE}/dailies`,
     opts,
     {
@@ -259,9 +276,9 @@ export async function fetchGarminDailies(
   )
 
   // Garmin Wellness API: GET /epochs (for HRV, sleep score)
-  let sleepData: any[] = []
+  let rawSleepData: unknown = []
   try {
-    sleepData = await garminApiRequest(
+    rawSleepData = await garminApiRequest(
       `${GARMIN_API_BASE}/sleeps`,
       opts,
       {
@@ -275,7 +292,8 @@ export async function fetchGarminDailies(
 
   // Build sleep score map by date
   const sleepMap = new Map<string, number>()
-  if (Array.isArray(sleepData)) {
+  const sleepData = Array.isArray(rawSleepData) ? rawSleepData as GarminRawSleep[] : []
+  if (sleepData.length > 0) {
     for (const s of sleepData) {
       if (s.calendarDate && s.overallSleepScore != null) {
         sleepMap.set(s.calendarDate, s.overallSleepScore)
@@ -285,7 +303,8 @@ export async function fetchGarminDailies(
 
   const results: GarminDailySummary[] = []
 
-  if (!Array.isArray(dailies)) return results
+  if (!Array.isArray(rawDailies)) return results
+  const dailies = rawDailies as GarminRawDaily[]
 
   for (const d of dailies) {
     const date = d.calendarDate

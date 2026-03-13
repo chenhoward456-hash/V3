@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       totalReferrals: 0,
       rewardDays: 0,
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Referral GET error', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ success: true })
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Referral POST error', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

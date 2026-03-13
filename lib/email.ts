@@ -61,9 +61,9 @@ export async function sendPurchaseEmail({
 
     log.info('Purchase email sent', { to })
     return { success: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Send failed', err)
-    return { success: false, error: err?.message || 'Unknown error' }
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
 }
 
@@ -114,9 +114,9 @@ export async function sendWelcomeEmail({
 
     log.info('Welcome email sent', { to })
     return { success: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Welcome send failed', err)
-    return { success: false, error: err?.message || 'Unknown error' }
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
 }
 
@@ -337,9 +337,9 @@ export async function sendDay3Email({
 
     log.info('Day3 email sent', { to })
     return { success: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Day3 send failed', err)
-    return { success: false, error: err?.message || 'Unknown error' }
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
 }
 
@@ -458,9 +458,9 @@ export async function sendDay7Email({
 
     log.info('Day7 email sent', { to })
     return { success: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Day7 send failed', err)
-    return { success: false, error: err?.message || 'Unknown error' }
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
 }
 
@@ -600,9 +600,9 @@ export async function sendDay14Email({
 
     log.info('Day14 email sent', { to })
     return { success: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Day14 send failed', err)
-    return { success: false, error: err?.message || 'Unknown error' }
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
 }
 
@@ -779,9 +779,9 @@ export async function sendExpiryWarningEmail({
 
     log.info('Expiry warning email sent', { to, daysLeft })
     return { success: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Expiry warning send failed', err)
-    return { success: false, error: err?.message || 'Unknown error' }
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
 }
 
@@ -904,9 +904,9 @@ export async function sendCancellationEmail({
 
     log.info('Cancellation email sent', { to })
     return { success: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Cancellation send failed', err)
-    return { success: false, error: err?.message || 'Unknown error' }
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
 }
 
@@ -1020,9 +1020,9 @@ export async function sendWinBackEmail({
 
     log.info('Win-back email sent', { to })
     return { success: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Win-back send failed', err)
-    return { success: false, error: err?.message || 'Unknown error' }
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
 }
 

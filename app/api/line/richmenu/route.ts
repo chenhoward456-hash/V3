@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const results: any = { success: true }
+    const results: Record<string, unknown> = { success: true }
 
     // Helper: 壓縮、建立、上傳一套 Rich Menu
     async function setupMenu(menuObject: object, image: Blob, setAsDefault: boolean) {
@@ -127,8 +127,8 @@ export async function POST(request: NextRequest) {
         const id = await setupMenu(getMarketingRichMenuObject(), marketingImage, true)
         results.marketingMenuId = id
         results.marketingStatus = 'ok'
-      } catch (err: any) {
-        results.marketingStatus = `error: ${err.message}`
+      } catch (err: unknown) {
+        results.marketingStatus = `error: ${err instanceof Error ? err.message : String(err)}`
       }
     }
 
@@ -138,8 +138,8 @@ export async function POST(request: NextRequest) {
         const id = await setupMenu(getMemberRichMenuObject(), memberImage, false)
         results.memberMenuId = id
         results.memberStatus = 'ok'
-      } catch (err: any) {
-        results.memberStatus = `error: ${err.message}`
+      } catch (err: unknown) {
+        results.memberStatus = `error: ${err instanceof Error ? err.message : String(err)}`
       }
     }
 

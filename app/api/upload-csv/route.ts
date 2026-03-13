@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const data: any = {}
+    const data: Record<string, unknown> = {}
 
     // 解析指標數據
     if (metricsFile) {

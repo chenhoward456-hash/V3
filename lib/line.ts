@@ -241,8 +241,18 @@ export async function deleteRichMenu(richMenuId: string): Promise<boolean> {
   return res.ok
 }
 
+/** Rich Menu record from LINE API */
+export interface LineRichMenu {
+  richMenuId: string
+  name?: string
+  size?: { width: number; height: number }
+  chatBarText?: string
+  selected?: boolean
+  areas?: Array<{ bounds: { x: number; y: number; width: number; height: number }; action: Record<string, string> }>
+}
+
 /** 取得所有 Rich Menu */
-export async function listRichMenus(): Promise<any[]> {
+export async function listRichMenus(): Promise<LineRichMenu[]> {
   const res = await lineAPI('/richmenu/list')
   if (!res.ok) return []
   const data = await res.json()
@@ -344,11 +354,11 @@ export async function switchRichMenuForUser(lineUserId: string, tier: string): P
     if (!menuId) {
       const menus = await listRichMenus()
       if (tier === 'coached') {
-        const coached = menus.find((m: any) => m.name?.includes('教練版'))
-        const member = menus.find((m: any) => m.name?.includes('學員版'))
+        const coached = menus.find((m) => m.name?.includes('教練版'))
+        const member = menus.find((m) => m.name?.includes('學員版'))
         menuId = coached?.richMenuId || member?.richMenuId
       } else {
-        const member = menus.find((m: any) => m.name?.includes('學員版'))
+        const member = menus.find((m) => m.name?.includes('學員版'))
         menuId = member?.richMenuId
       }
     }

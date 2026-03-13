@@ -32,9 +32,9 @@ async function apiRequest<T>(
 export const diagnosisAPI = {
   // 提交診斷結果
   submitResult: async (data: {
-    answers: Record<string, any>
-    result: any
-    userInfo?: any
+    answers: Record<string, string | number | boolean>
+    result: Record<string, unknown>
+    userInfo?: { name?: string; email?: string; phone?: string }
   }) => {
     return apiRequest('/diagnosis/submit', {
       method: 'POST',
@@ -58,7 +58,7 @@ export const serviceAPI = {
   // 提交服務詢問
   submitInquiry: async (data: {
     planId: string
-    userInfo: any
+    userInfo: { name?: string; email?: string; phone?: string }
     message?: string
   }) => {
     return apiRequest('/services/inquiry', {
@@ -70,7 +70,7 @@ export const serviceAPI = {
   // 預約諮詢
   bookConsultation: async (data: {
     datetime: string
-    userInfo: any
+    userInfo: { name?: string; email?: string; phone?: string }
     type: 'online' | 'offline'
   }) => {
     return apiRequest('/services/book-consultation', {
@@ -109,7 +109,12 @@ export const contentAPI = {
     limit?: number
     offset?: number
   }) => {
-    const searchParams = new URLSearchParams(params as any)
+    const searchParams = new URLSearchParams(
+      Object.fromEntries(
+        Object.entries(params || {}).filter((entry): entry is [string, string] => entry[1] != null)
+          .map(([k, v]) => [k, String(v)])
+      )
+    )
     return apiRequest(`/blog/posts?${searchParams}`)
   },
   

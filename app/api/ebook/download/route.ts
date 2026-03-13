@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'no-store',
       },
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     return createErrorResponse('下載失敗，請稍後再試', 500)
   }
 }

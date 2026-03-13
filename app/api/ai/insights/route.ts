@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     const wellnessLogs = wellnessRes.data || []
     const trainingLogs = trainingRes.data || []
     const bodyLogs = bodyRes.data || []
-    const labResults = (labRes.data || []) as any[]
+    const labResults = (labRes.data || []) as Array<{ date: string; test_name: string; value: number; unit: string; status: 'normal' | 'attention' | 'alert' }>
     const wearableData = wearableRes.data || []
 
     const latestBody = bodyLogs.length > 0 ? bodyLogs[bodyLogs.length - 1] : null
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
       supplements: suppRes.data || [],
     }
 
-    const result: Record<string, any> = {}
+    const result: Record<string, unknown> = {}
 
     // 非 AI 功能（不耗 API）— 即時計算
     if (type === 'all' || type === 'dietary-patterns') {
@@ -176,7 +176,10 @@ export async function GET(request: NextRequest) {
       if (!process.env.ANTHROPIC_API_KEY) {
         return NextResponse.json({ error: 'AI 服務未設定' }, { status: 500 })
       }
-      const mealType = (searchParams.get('meal') as any) || undefined
+      const mealTypeRaw = searchParams.get('meal')
+      const mealType = (mealTypeRaw && ['breakfast', 'lunch', 'dinner', 'snack'].includes(mealTypeRaw))
+        ? mealTypeRaw as 'breakfast' | 'lunch' | 'dinner' | 'snack'
+        : undefined
       const isTrainingDay = searchParams.get('training') === '1'
 
       // 計算今日剩餘
@@ -193,7 +196,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(result)
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error('AI Insights Error', err)
     return NextResponse.json({ error: 'AI 分析失敗' }, { status: 500 })
   }

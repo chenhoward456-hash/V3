@@ -4,7 +4,8 @@ import { createLogger } from '@/lib/logger'
 const logger = createLogger('fetchClientData')
 
 // 重新導出 types 保持向後相容
-export type { LabResult, Supplement } from '@/types'
+import type { LabResult, Supplement } from '@/types'
+export type { LabResult, Supplement }
 
 // 補品打卡記錄介面定義
 export interface SupplementLog {
@@ -35,9 +36,9 @@ export interface Client {
   gender: string | null
   status: 'normal' | 'attention' | 'alert'
   expires_at: string | null
-  lab_results: any[]
-  supplements: any[]
-  [key: string]: any
+  lab_results: LabResult[]
+  supplements: Supplement[]
+  [key: string]: unknown
 }
 
 // 完整的客戶資料介面定義

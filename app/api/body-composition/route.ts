@@ -82,9 +82,9 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
   const suppLogs = suppLogsRes.data || []
   const suppList = suppListRes.data || []
   const suppComplianceRate = suppLogs.length > 0
-    ? suppLogs.filter((s: any) => s.completed).length / suppLogs.length
+    ? suppLogs.filter((s: { completed: boolean | null }) => s.completed).length / suppLogs.length
     : 0
-  const suppDates = suppLogs.map((s: any) => s.date).sort()
+  const suppDates = suppLogs.map((s: { date: string }) => s.date).sort()
   const suppWeeksDuration = suppDates.length > 0
     ? Math.floor((new Date().getTime() - new Date(suppDates[0]).getTime()) / (7 * 24 * 60 * 60 * 1000))
     : 0
@@ -130,16 +130,16 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
   if (!latestWeight) return { adjusted: false, debug: 'skip: no latestWeight' }
 
   // 7. 體脂率 + 身高（反向找最近有值的紀錄）
-  const latestBodyFat = [...bodyData].reverse().find((b: any) => b.body_fat != null)?.body_fat as number | null ?? null
-  const latestHeight = [...bodyData].reverse().find((b: any) => b.height != null)?.height as number | null ?? null
+  const latestBodyFat = [...bodyData].reverse().find((b: { body_fat: number | null }) => b.body_fat != null)?.body_fat as number | null ?? null
+  const latestHeight = [...bodyData].reverse().find((b: { height: number | null }) => b.height != null)?.height as number | null ?? null
 
   // 8. 訓練量統計（近 7 天）
-  const recentTrainingWithRPE = trainingLogs.filter((t: any) => t.date >= sevenDaysStr && isWeightTraining(t.training_type as string))
+  const recentTrainingWithRPE = trainingLogs.filter((t: { date: string; training_type: string }) => t.date >= sevenDaysStr && isWeightTraining(t.training_type))
   const avgRPE = recentTrainingWithRPE.length > 0
-    ? recentTrainingWithRPE.reduce((s: number, t: any) => s + (t.rpe ?? 6), 0) / recentTrainingWithRPE.length
+    ? recentTrainingWithRPE.reduce((s: number, t: { rpe: number | null }) => s + (t.rpe ?? 6), 0) / recentTrainingWithRPE.length
     : null
   const avgDurationMin = recentTrainingWithRPE.length > 0
-    ? recentTrainingWithRPE.reduce((s: number, t: any) => s + ((t.duration as number) ?? 45), 0) / recentTrainingWithRPE.length
+    ? recentTrainingWithRPE.reduce((s: number, t: { duration: number | null }) => s + ((t.duration as number) ?? 45), 0) / recentTrainingWithRPE.length
     : null
 
   // 9. 跑引擎（與 nutrition-suggestions API 一致的完整輸入）
@@ -171,7 +171,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
       apoe: client.gene_apoe || undefined,
       ...parseSerotoninField(client.gene_depression_risk),
     } : undefined,
-    recentWellness: wellnessLogs.map((w: any) => ({
+    recentWellness: wellnessLogs.map((w: { date: string; energy_level: number | null; training_drive: number | null; device_recovery_score: number | null; resting_hr: number | null; hrv: number | null; wearable_sleep_score: number | null; respiratory_rate: number | null }) => ({
       date: w.date,
       energy_level: w.energy_level ?? null,
       training_drive: w.training_drive ?? null,
@@ -182,17 +182,17 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
       respiratory_rate: w.respiratory_rate ?? null,
     })),
     recentTrainingLogs: trainingLogs
-      .filter((t: any) => t.date >= sevenDaysStr)
-      .map((t: any) => ({ date: t.date, rpe: t.rpe ?? null })),
+      .filter((t: { date: string }) => t.date >= sevenDaysStr)
+      .map((t: { date: string; rpe: number | null }) => ({ date: t.date, rpe: t.rpe ?? null })),
     recentCarbsPerDay: nutritionLogs
-      .filter((n: any) => n.date >= sevenDaysStr)
-      .map((n: any) => ({ date: n.date, carbs: n.carbs_grams ?? null })),
+      .filter((n: { date: string }) => n.date >= sevenDaysStr)
+      .map((n: { date: string; carbs_grams: number | null }) => ({ date: n.date, carbs: n.carbs_grams ?? null })),
     lastPeriodDate: lastPeriodDate || undefined,
-    labResults: labResults.map((l: any) => ({
+    labResults: labResults.map((l: { test_name: string; value: number; unit: string; status: string }) => ({
       test_name: l.test_name,
       value: l.value,
       unit: l.unit,
-      status: l.status,
+      status: l.status as 'normal' | 'attention' | 'alert',
     })),
     recentTrainingVolume: recentTrainingWithRPE.length > 0 ? {
       avgRPE,
@@ -202,7 +202,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     supplementCompliance: suppLogs.length > 0 ? {
       rate: suppComplianceRate,
       weeksDuration: suppWeeksDuration,
-      supplements: suppList.map((s: any) => s.name),
+      supplements: suppList.map((s: { name: string }) => s.name),
     } : undefined,
   })
 

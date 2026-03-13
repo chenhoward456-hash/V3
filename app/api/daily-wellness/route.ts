@@ -10,7 +10,7 @@ function createErrorResponse(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
 }
 
-function createSuccessResponse(data: any, message?: string) {
+function createSuccessResponse(data: unknown, message?: string) {
   return NextResponse.json({
     success: true,
     data,

@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     await supabaseAdmin.from('garmin_oauth_states').delete().eq('id', state.id)
 
     return redirectWithMessage(request, 'success', 'Garmin 連線成功！')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Garmin callback error:', error)
     return redirectWithMessage(request, 'error', '授權失敗，請重新連線')
   }

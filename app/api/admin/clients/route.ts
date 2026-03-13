@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       'health_goals', 'quarterly_cycle_start',
       'gene_mthfr', 'gene_apoe', 'gene_depression_risk', 'gene_notes',
     ]
-    const sanitizedClientData: Record<string, any> = {}
+    const sanitizedClientData: Record<string, unknown> = {}
     if (clientData && typeof clientData === 'object') {
       for (const key of Object.keys(clientData)) {
         if (ALLOWED_CREATE_FIELDS.includes(key)) {
@@ -82,8 +82,8 @@ export async function POST(request: NextRequest) {
     // 新增血檢（白名單過濾）
     const ALLOWED_LAB_FIELDS = ['test_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
     if (labResults?.length > 0) {
-      const withId = labResults.map((r: any) => {
-        const sanitized: Record<string, any> = { client_id: newClient.id }
+      const withId = labResults.map((r: Record<string, unknown>) => {
+        const sanitized: Record<string, unknown> = { client_id: newClient.id }
         for (const key of Object.keys(r)) {
           if (ALLOWED_LAB_FIELDS.includes(key)) sanitized[key] = r[key]
         }
@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
     // 新增補品（白名單過濾）
     const ALLOWED_SUPP_FIELDS = ['name', 'dosage', 'timing', 'frequency', 'notes', 'is_active', 'category']
     if (supplements?.length > 0) {
-      const withId = supplements.map((s: any) => {
-        const sanitized: Record<string, any> = { client_id: newClient.id }
+      const withId = supplements.map((s: Record<string, unknown>) => {
+        const sanitized: Record<string, unknown> = { client_id: newClient.id }
         for (const key of Object.keys(s)) {
           if (ALLOWED_SUPP_FIELDS.includes(key)) sanitized[key] = s[key]
         }
@@ -131,8 +131,8 @@ export async function PUT(request: NextRequest) {
     const ALLOWED_LAB_FIELDS = ['test_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
     const ALLOWED_SUPP_FIELDS = ['name', 'dosage', 'timing', 'frequency', 'notes', 'is_active', 'category']
 
-    function sanitizeFields(obj: any, allowedFields: string[]): Record<string, any> {
-      const result: Record<string, any> = {}
+    function sanitizeFields(obj: Record<string, unknown>, allowedFields: string[]): Record<string, unknown> {
+      const result: Record<string, unknown> = {}
       for (const key of Object.keys(obj)) {
         if (allowedFields.includes(key)) result[key] = obj[key]
       }
@@ -181,7 +181,7 @@ export async function PUT(request: NextRequest) {
       'health_goals', 'quarterly_cycle_start',
       'gene_mthfr', 'gene_apoe', 'gene_depression_risk', 'gene_notes',
     ]
-    const sanitizedClientData: Record<string, any> = {}
+    const sanitizedClientData: Record<string, unknown> = {}
     if (clientData && typeof clientData === 'object') {
       for (const key of Object.keys(clientData)) {
         if (ALLOWED_CLIENT_FIELDS.includes(key)) {
@@ -206,7 +206,7 @@ export async function PUT(request: NextRequest) {
     try {
       const MACRO_FIELDS = ['calories_target', 'protein_target', 'carbs_target', 'fat_target', 'carbs_training_day', 'carbs_rest_day']
       const changedMacroFields = MACRO_FIELDS.filter(f => f in sanitizedClientData && sanitizedClientData[f] != null)
-      let overrideValue: any = undefined
+      let overrideValue: Record<string, unknown> | null | undefined = undefined
 
       if (changedMacroFields.length > 0) {
         const { data: currentClient } = await supabase
@@ -215,7 +215,7 @@ export async function PUT(request: NextRequest) {
           .eq('id', clientId)
           .single()
 
-        const cc = currentClient as Record<string, any> | null
+        const cc = currentClient as Record<string, unknown> | null
         const actuallyChanged = cc
           ? changedMacroFields.filter(f => sanitizedClientData[f] !== cc[f])
           : changedMacroFields

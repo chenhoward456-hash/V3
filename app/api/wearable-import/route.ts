@@ -67,10 +67,10 @@ export async function POST(request: NextRequest) {
         default:
           rows = []
       }
-    } catch (parseError: any) {
+    } catch (parseError: unknown) {
       return NextResponse.json({
         error: '檔案解析失敗',
-        detail: parseError.message,
+        detail: parseError instanceof Error ? parseError.message : String(parseError),
       }, { status: 400 })
     }
 
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
       total: rows.length,
       ...(errors.length > 0 && { errors }),
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }

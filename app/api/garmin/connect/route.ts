@@ -66,10 +66,10 @@ export async function POST(request: NextRequest) {
       authorizeUrl,
       message: '請前往 Garmin 授權頁面完成連線',
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Garmin connect error:', error)
 
-    if (error.message?.includes('尚未設定')) {
+    if (error instanceof Error && error.message?.includes('尚未設定')) {
       return NextResponse.json({ error: 'Garmin API 尚未設定，請聯繫管理員' }, { status: 501 })
     }
 

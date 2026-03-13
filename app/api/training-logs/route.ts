@@ -138,24 +138,24 @@ export async function POST(request: NextRequest) {
         if (recentWellness && recentWellness.length > 0) {
           // 檢查穿戴裝置恢復分數
           const recoveryScores = recentWellness
-            .filter((w: any) => w.device_recovery_score != null)
-            .map((w: any) => w.device_recovery_score)
+            .filter((w: { device_recovery_score: number | null }) => w.device_recovery_score != null)
+            .map((w: { device_recovery_score: number | null }) => w.device_recovery_score as number)
           const avgRecovery = recoveryScores.length > 0
             ? recoveryScores.reduce((s: number, v: number) => s + v, 0) / recoveryScores.length
             : null
 
           // 檢查主觀精力
           const energyScores = recentWellness
-            .filter((w: any) => w.energy_level != null)
-            .map((w: any) => w.energy_level)
+            .filter((w: { energy_level: number | null }) => w.energy_level != null)
+            .map((w: { energy_level: number | null }) => w.energy_level as number)
           const avgEnergy = energyScores.length > 0
             ? energyScores.reduce((s: number, v: number) => s + v, 0) / energyScores.length
             : null
 
           // 檢查睡眠
           const sleepScores = recentWellness
-            .filter((w: any) => w.sleep_quality != null)
-            .map((w: any) => w.sleep_quality)
+            .filter((w: { sleep_quality: number | null }) => w.sleep_quality != null)
+            .map((w: { sleep_quality: number | null }) => w.sleep_quality as number)
           const avgSleep = sleepScores.length > 0
             ? sleepScores.reduce((s: number, v: number) => s + v, 0) / sleepScores.length
             : null

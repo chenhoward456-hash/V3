@@ -106,16 +106,17 @@ export async function POST(request: NextRequest) {
     const trimmedMessages = messages.slice(-20)
 
     let reply: string | null = null
-    let lastErr: any = null
+    let lastErr: unknown = null
     const MAX_RETRIES = 5
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
         reply = await askClaude(trimmedMessages, clientContext)
         break
-      } catch (e: any) {
+      } catch (e: unknown) {
         lastErr = e
-        const code = e?.status || e?.statusCode
+        const errObj = e as Record<string, unknown> | undefined
+        const code = errObj?.status || errObj?.statusCode
         // Retry on 529 (overloaded), 500 (internal server error), or 429 (rate limited)
         if ((code === 529 || code === 500 || code === 429) && attempt < MAX_RETRIES - 1) {
           const delay = Math.min(2000 * Math.pow(2, attempt), 16000) // 2s, 4s, 8s, 16s
@@ -137,10 +138,13 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ reply })
-  } catch (err: any) {
-    const status = err?.status || err?.statusCode
-    const errorMessage = err?.error?.error?.message || err?.error?.message || err?.message || String(err)
-    const errorType = err?.error?.error?.type || err?.error?.type || err?.type || 'unknown'
+  } catch (err: unknown) {
+    const errObj = err as Record<string, unknown> | undefined
+    const errError = errObj?.error as Record<string, unknown> | undefined
+    const errErrorInner = errError?.error as Record<string, unknown> | undefined
+    const status = errObj?.status || errObj?.statusCode
+    const errorMessage = (errErrorInner?.message || errError?.message || (err instanceof Error ? err.message : null) || String(err)) as string
+    const errorType = (errErrorInner?.type || errError?.type || errObj?.type || 'unknown') as string
     logger.error('AI Chat Error', err, {
       status,
       type: errorType,

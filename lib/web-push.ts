@@ -55,9 +55,10 @@ export async function sendPushNotification(
       JSON.stringify(payload)
     )
     return true
-  } catch (err: any) {
+  } catch (err: unknown) {
     // 410 = 訂閱已過期，應從資料庫移除
-    if (err.statusCode === 410 || err.statusCode === 404) {
+    const statusCode = err instanceof Error && 'statusCode' in err ? (err as { statusCode: number }).statusCode : undefined
+    if (statusCode === 410 || statusCode === 404) {
       log.info('Push subscription expired', { endpoint: subscription.endpoint })
       return false
     }

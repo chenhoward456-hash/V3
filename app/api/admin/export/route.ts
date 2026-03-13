@@ -17,7 +17,7 @@ import { verifyAdminSession } from '@/lib/auth-middleware'
 
 const supabase = createServiceSupabase()
 
-function escapeCSV(value: any): string {
+function escapeCSV(value: unknown): string {
   if (value === null || value === undefined) return ''
   const str = String(value)
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
@@ -26,7 +26,7 @@ function escapeCSV(value: any): string {
   return str
 }
 
-function toCSV(headers: string[], rows: any[][]): string {
+function toCSV(headers: string[], rows: unknown[][]): string {
   const headerLine = headers.map(escapeCSV).join(',')
   const dataLines = rows.map(row => row.map(escapeCSV).join(','))
   return [headerLine, ...dataLines].join('\n')
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true })
 
       const headers = ['日期', '體重(kg)', '身高(cm)', '體脂率(%)', '肌肉量(kg)', '腰圍(cm)', '臀圍(cm)', '備註']
-      const rows = (data || []).map((r: any) => [
+      const rows = (data || []).map((r: { date: string; weight: number | null; height: number | null; body_fat: number | null; muscle_mass: number | null; waist: number | null; hip: number | null; note: string | null }) => [
         r.date, r.weight, r.height, r.body_fat, r.muscle_mass, r.waist, r.hip, r.note
       ])
 
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true })
 
       const headers = ['日期', '熱量(kcal)', '蛋白質(g)', '碳水(g)', '脂肪(g)', '合規', '備註']
-      const rows = (data || []).map((r: any) => [
+      const rows = (data || []).map((r: { date: string; calories: number | null; protein_grams: number | null; carbs_grams: number | null; fat_grams: number | null; compliant: boolean | null; note: string | null }) => [
         r.date, r.calories, r.protein_grams, r.carbs_grams, r.fat_grams,
         r.compliant === true ? '是' : r.compliant === false ? '否' : '', r.note
       ])
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
         cardio: '有氧', rest: '休息', chest: '胸', shoulder: '肩', arms: '手臂',
       }
       const headers = ['日期', '訓練類型', 'RPE', '備註']
-      const rows = (data || []).map((r: any) => [
+      const rows = (data || []).map((r: { date: string; training_type: string; rpe: number | null; note: string | null }) => [
         r.date, trainingTypeMap[r.training_type] || r.training_type, r.rpe, r.note
       ])
 
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true })
 
       const headers = ['日期', '睡眠品質(1-5)', '能量(1-5)', '情緒(1-5)', '訓練動力(1-5)', '壓力(1-5)', '認知清晰(1-5)', '恢復分數(0-100)', '靜息心率(bpm)', 'HRV(ms)', '睡眠分數(0-100)', '呼吸速率(次/分)', '經期開始', '備註']
-      const rows = (data || []).map((r: any) => [
+      const rows = (data || []).map((r: { date: string; sleep_quality: number | null; energy_level: number | null; mood: number | null; training_drive: number | null; stress_level: number | null; cognitive_clarity: number | null; device_recovery_score: number | null; resting_hr: number | null; hrv: number | null; wearable_sleep_score: number | null; respiratory_rate: number | null; period_start: boolean | null; note: string | null }) => [
         r.date, r.sleep_quality, r.energy_level, r.mood, r.training_drive,
         r.stress_level, r.cognitive_clarity,
         r.device_recovery_score, r.resting_hr, r.hrv, r.wearable_sleep_score, r.respiratory_rate,
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
         'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
       },
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json({ error: '匯出失敗' }, { status: 500 })
   }
 }

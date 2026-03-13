@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers: { 'Content-Type': 'text/plain' },
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Webhook error', err)
     return new NextResponse('0|ErrorMessage', { status: 200 })
   }

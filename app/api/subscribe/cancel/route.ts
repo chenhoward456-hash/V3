@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, message: '已取消定期定額，你的帳號將持續使用至到期日。' })
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Cancel subscription error', err)
     return NextResponse.json({ error: '取消訂閱時發生錯誤' }, { status: 500 })
   }

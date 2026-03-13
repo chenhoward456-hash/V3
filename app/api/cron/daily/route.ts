@@ -13,6 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import type { BodyComposition, NutritionLog, TrainingLog, DailyWellness } from '@/types'
 import { createServiceSupabase } from '@/lib/supabase'
 import { pushMessage, unlinkRichMenuFromUser } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
@@ -117,7 +118,7 @@ export async function GET(request: NextRequest) {
       .select('client_id')
       .eq('date', today)
 
-    const hasWeight = new Set((todayWeights || []).map((w: any) => w.client_id))
+    const hasWeight = new Set((todayWeights || []).map((w: { client_id: string }) => w.client_id))
     const morningTargets = clients.filter(c => c.body_composition_enabled && !hasWeight.has(c.id))
 
     // 批次發送（每批 5 個，僅 Web Push）
@@ -158,10 +159,10 @@ export async function GET(request: NextRequest) {
           supabase.from('daily_wellness').select('client_id, energy_level').eq('date', yesterdayStr),
         ])
 
-        const hadWeight = new Set((yWeightRes.data || []).map((w: any) => w.client_id))
-        const hadNutrition = new Set((yNutritionRes.data || []).map((n: any) => n.client_id))
-        const hadTraining = new Set((yTrainingRes.data || []).map((t: any) => t.client_id))
-        const hadWellness = new Set((yWellnessRes.data || []).map((w: any) => w.client_id))
+        const hadWeight = new Set((yWeightRes.data || []).map((w: { client_id: string }) => w.client_id))
+        const hadNutrition = new Set((yNutritionRes.data || []).map((n: { client_id: string }) => n.client_id))
+        const hadTraining = new Set((yTrainingRes.data || []).map((t: { client_id: string }) => t.client_id))
+        const hadWellness = new Set((yWellnessRes.data || []).map((w: { client_id: string }) => w.client_id))
 
         const digestLines: string[] = []
 
@@ -187,8 +188,8 @@ export async function GET(request: NextRequest) {
         }
 
         // 2. Low energy or high RPE
-        const lowEnergy = (yWellnessRes.data || []).filter((w: any) => w.energy_level != null && w.energy_level <= 2)
-        const highRPE = (yTrainingRes.data || []).filter((t: any) => t.rpe != null && t.rpe >= 9)
+        const lowEnergy = (yWellnessRes.data || []).filter((w: { client_id: string; energy_level: number | null }) => w.energy_level != null && w.energy_level <= 2)
+        const highRPE = (yTrainingRes.data || []).filter((t: { client_id: string; rpe: number | null }) => t.rpe != null && t.rpe >= 9)
         if (lowEnergy.length > 0 || highRPE.length > 0) {
           digestLines.push('')
           digestLines.push('⚠️ 需關注：')
@@ -237,7 +238,7 @@ export async function GET(request: NextRequest) {
           .eq('is_active', true)
           .eq('competition_enabled', true)
           .not('competition_date', 'is', null)
-        const urgentComp = (compClients || []).filter((c: any) => {
+        const urgentComp = (compClients || []).filter((c: { name: string; competition_date: string }) => {
           const days = Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
           return days > 0 && days <= 30
         })
@@ -270,9 +271,9 @@ export async function GET(request: NextRequest) {
       supabase.from('training_logs').select('client_id').eq('date', today),
     ])
 
-    const hasWellness = new Set((wellnessRes.data || []).map((w: any) => w.client_id))
-    const hasNutrition = new Set((nutritionRes.data || []).map((n: any) => n.client_id))
-    const hasTraining = new Set((trainingRes.data || []).map((t: any) => t.client_id))
+    const hasWellness = new Set((wellnessRes.data || []).map((w: { client_id: string }) => w.client_id))
+    const hasNutrition = new Set((nutritionRes.data || []).map((n: { client_id: string }) => n.client_id))
+    const hasTraining = new Set((trainingRes.data || []).map((t: { client_id: string }) => t.client_id))
 
     const eveningTargets: { client: typeof clients[0]; missing: string[]; missingShort: string[] }[] = []
     for (const client of clients) {
@@ -350,8 +351,8 @@ export async function GET(request: NextRequest) {
               : `${c.name}，你的方案將在 ${daysLeft} 天後自動續訂。\n\n系統會自動從信用卡扣款，不需手動操作。\n如需取消自動扣款，請至儀表板右上角設定。`
             await pushMessage(c.line_user_id, [{ type: 'text', text: expiryMsg }])
             expiryReminders++
-          } catch (err: any) {
-            errors.push(`expiry_${c.name}: ${err.message}`)
+          } catch (err: unknown) {
+            errors.push(`expiry_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
           }
         }
       }
@@ -389,8 +390,8 @@ export async function GET(request: NextRequest) {
           try {
             await pushMessage(c.line_user_id, [{ type: 'text', text: milestoneMsg }])
             milestonesSent++
-          } catch (err: any) {
-            errors.push(`milestone_${c.name}: ${err.message}`)
+          } catch (err: unknown) {
+            errors.push(`milestone_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
           }
         }
       }
@@ -443,9 +444,9 @@ export async function GET(request: NextRequest) {
             const result = await sendDay3Email({ to: email, name: c.name, uniqueCode: c.unique_code })
             if (result.success) emailDripSent++
             else emailDripFailed++
-          } catch (err: any) {
+          } catch (err: unknown) {
             emailDripFailed++
-            errors.push(`email_day3_${c.name}: ${err.message}`)
+            errors.push(`email_day3_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
           }
         }
       }
@@ -467,9 +468,9 @@ export async function GET(request: NextRequest) {
             const result = await sendDay7Email({ to: email, name: c.name, uniqueCode: c.unique_code })
             if (result.success) emailDripSent++
             else emailDripFailed++
-          } catch (err: any) {
+          } catch (err: unknown) {
             emailDripFailed++
-            errors.push(`email_day7_${c.name}: ${err.message}`)
+            errors.push(`email_day7_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
           }
         }
       }
@@ -492,9 +493,9 @@ export async function GET(request: NextRequest) {
             const result = await sendDay14Email({ to: email, name: c.name, uniqueCode: c.unique_code })
             if (result.success) emailDripSent++
             else emailDripFailed++
-          } catch (err: any) {
+          } catch (err: unknown) {
             emailDripFailed++
-            errors.push(`email_day14_${c.name}: ${err.message}`)
+            errors.push(`email_day14_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
           }
         }
       }
@@ -517,9 +518,9 @@ export async function GET(request: NextRequest) {
             const result = await sendWinBackEmail({ to: email, name: c.name })
             if (result.success) emailDripSent++
             else emailDripFailed++
-          } catch (err: any) {
+          } catch (err: unknown) {
             emailDripFailed++
-            errors.push(`email_winback_${c.name}: ${err.message}`)
+            errors.push(`email_winback_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
           }
         }
       }
@@ -550,9 +551,9 @@ export async function GET(request: NextRequest) {
             })
             if (result.success) emailDripSent++
             else emailDripFailed++
-          } catch (err: any) {
+          } catch (err: unknown) {
             emailDripFailed++
-            errors.push(`email_expiry_${c.name}: ${err.message}`)
+            errors.push(`email_expiry_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
           }
         }
       }
@@ -653,8 +654,8 @@ export async function GET(request: NextRequest) {
               })
             }
           }
-        } catch (err: any) {
-          errors.push(`referral_${ref.id}: ${err.message}`)
+        } catch (err: unknown) {
+          errors.push(`referral_${ref.id}: ${err instanceof Error ? err.message : String(err)}`)
         }
       }
     }
@@ -710,10 +711,10 @@ export async function GET(request: NextRequest) {
 
         const insightData: InsightData = {
           client: clientProfile,
-          nutritionLogs: allNut.filter((n: any) => n.client_id === c.id),
-          wellnessLogs: allWell.filter((w: any) => w.client_id === c.id),
-          trainingLogs: allTrain.filter((t: any) => t.client_id === c.id),
-          bodyLogs: allBody.filter((b: any) => b.client_id === c.id),
+          nutritionLogs: allNut.filter((n: { client_id: string }) => n.client_id === c.id),
+          wellnessLogs: allWell.filter((w: { client_id: string }) => w.client_id === c.id),
+          trainingLogs: allTrain.filter((t: { client_id: string }) => t.client_id === c.id),
+          bodyLogs: allBody.filter((b: { client_id: string }) => b.client_id === c.id),
         }
 
         const alerts = generateSmartAlerts(insightData)
@@ -729,8 +730,8 @@ export async function GET(request: NextRequest) {
           try {
             await pushMessage(c.line_user_id, [{ type: 'text', text: alertMsg }])
             smartAlertsSent++
-          } catch (err: any) {
-            errors.push(`alert_${c.name}: ${err.message}`)
+          } catch (err: unknown) {
+            errors.push(`alert_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
           }
         }
       }
@@ -778,8 +779,8 @@ export async function GET(request: NextRequest) {
                   type: 'text',
                   text: `${c.name}，你的方案已到期，帳號已切換為免費版。\n\n免費版仍可使用體重追蹤和飲食達標紀錄。\n\n想繼續使用完整功能？\n👉 ${siteUrl}/remote\n\n你之前的數據都完整保留，重新訂閱後立即恢復。`,
                 }])
-              } catch (err: any) {
-                errors.push(`降級通知失敗 [${c.name}]: ${err.message}`)
+              } catch (err: unknown) {
+                errors.push(`降級通知失敗 [${c.name}]: ${err instanceof Error ? err.message : String(err)}`)
               }
             }
           }
@@ -811,9 +812,9 @@ export async function GET(request: NextRequest) {
       ])
 
       const activeClientIds = new Set([
-        ...(recentBody.data || []).map((r: any) => r.client_id),
-        ...(recentNutrition.data || []).map((r: any) => r.client_id),
-        ...(recentWellness.data || []).map((r: any) => r.client_id),
+        ...(recentBody.data || []).map((r: { client_id: string }) => r.client_id),
+        ...(recentNutrition.data || []).map((r: { client_id: string }) => r.client_id),
+        ...(recentWellness.data || []).map((r: { client_id: string }) => r.client_id),
       ])
 
       const silentClients = activeClients.filter(c => !activeClientIds.has(c.id))
@@ -825,8 +826,8 @@ export async function GET(request: NextRequest) {
             text: `${c.name}，好幾天沒看到你了 👋\n\n不需要完美，只要持續記錄。\n今天花 10 秒記一筆體重就好：\n\n輸入「體重 XX.X」即可 ✌️`,
           }])
           reengagementSent++
-        } catch (err: any) {
-          errors.push(`再喚醒失敗 [${c.name}]: ${err.message}`)
+        } catch (err: unknown) {
+          errors.push(`再喚醒失敗 [${c.name}]: ${err instanceof Error ? err.message : String(err)}`)
         }
       }
     }

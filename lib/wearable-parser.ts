@@ -113,7 +113,7 @@ function parseWearableCSV(csvText: string, fieldMap: Record<string, keyof Omit<W
 
   // 取得原始 header 並建立對應
   const headers = Object.keys(rawData[0])
-  const headerMap: Record<string, string> = {}
+  const headerMap: Record<string, keyof Omit<WearableRow, 'date'>> = {}
 
   // 找出日期欄位
   let dateCol: string | null = null
@@ -158,7 +158,7 @@ function parseWearableCSV(csvText: string, fieldMap: Record<string, keyof Omit<W
 
     for (const [origHeader, field] of Object.entries(headerMap)) {
       const val = parseNumeric(row[origHeader])
-      ;(entry as any)[field] = val
+      entry[field] = val
     }
 
     // 驗證範圍

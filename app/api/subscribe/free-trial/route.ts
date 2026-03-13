@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     // 有體重 → 建立初始體重紀錄 + 計算營養目標
     if (effectiveWeight) {
       const today = new Date().toISOString().split('T')[0]
-      const bodyRecord: Record<string, any> = {
+      const bodyRecord: Record<string, string | number> = {
         client_id: newClient.id,
         date: today,
         weight: effectiveWeight,
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
         targetWeight: clientData.target_weight,
       } : null,
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('Unexpected error', err)
     return createErrorResponse('建立帳號失敗，請稍後再試', 500)
   }

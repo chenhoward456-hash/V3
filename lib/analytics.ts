@@ -1,7 +1,14 @@
+// Extend Window interface for Google Analytics gtag
+declare global {
+  interface Window {
+    gtag?: (...args: [string, ...unknown[]]) => void
+  }
+}
+
 // Google Analytics 事件追蹤函數
-export const trackEvent = (eventName: string, eventParams?: Record<string, any>) => {
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('event', eventName, eventParams);
+export const trackEvent = (eventName: string, eventParams?: Record<string, string | number | boolean | undefined>) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', eventName, eventParams);
   }
 };
 

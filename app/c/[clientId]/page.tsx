@@ -50,6 +50,7 @@ import { useToast } from '@/components/ui/Toast'
 import { trackEvent } from '@/lib/analytics'
 import ABTest from '@/components/ABTest'
 import { trackConversion, peekVariant } from '@/lib/ab-testing'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 /** Dismissable retention card — stores dismissed state in localStorage */
 function RetentionCard({ children, onDismiss, id }: { children: React.ReactNode; onDismiss: () => void; id: string }) {
@@ -550,6 +551,7 @@ export default function ClientDashboard() {
   }) : null
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
 
@@ -1920,5 +1922,6 @@ export default function ClientDashboard() {
         )
       })()}
     </div>
+    </ErrorBoundary>
   )
 }

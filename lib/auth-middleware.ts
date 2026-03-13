@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
+/** Authenticated user returned from verifyAuth */
+export interface AuthUser {
+  id: string
+  email?: string
+  role: string
+  app_metadata?: Record<string, unknown>
+  user_metadata?: Record<string, unknown>
+  [key: string]: unknown
+}
+
 // 建立帶有 Service Role Key 的 Supabase 客戶端（用於驗證 JWT）
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -151,9 +161,9 @@ export async function verifyCoachAuth(request: NextRequest): Promise<{ authorize
 /**
  * 驗證請求者身份的中間件
  * @param request NextRequest 物件
- * @returns { user: any, error?: string } 驗證結果
+ * @returns { user: AuthUser | null, error?: string } 驗證結果
  */
-export async function verifyAuth(request: NextRequest): Promise<{ user: any; error?: string }> {
+export async function verifyAuth(request: NextRequest): Promise<{ user: AuthUser | null; error?: string }> {
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -187,15 +197,15 @@ export async function verifyAuth(request: NextRequest): Promise<{ user: any; err
 /**
  * 檢查用戶是否為教練
  */
-export function isCoach(user: any): boolean {
-  return user && user.role === 'coach'
+export function isCoach(user: AuthUser | null): boolean {
+  return !!user && user.role === 'coach'
 }
 
 /**
  * 檢查用戶是否為學員
  */
-export function isClient(user: any): boolean {
-  return user && user.role === 'client'
+export function isClient(user: AuthUser | null): boolean {
+  return !!user && user.role === 'client'
 }
 
 // ===== 回應工具 =====
@@ -217,7 +227,7 @@ export function createErrorResponse(message: string, status: number = 401): Next
 /**
  * 建立標準化的成功回應
  */
-export function createSuccessResponse(data: any): NextResponse {
+export function createSuccessResponse(data: unknown): NextResponse {
   return NextResponse.json({
     success: true,
     data,
@@ -251,7 +261,7 @@ export function sanitizeTextField(input: string | null | undefined, maxLength: n
 /**
  * 驗證數值在合理範圍內
  */
-export function validateNumericField(value: any, min: number, max: number, fieldName: string): { isValid: boolean; error: string } {
+export function validateNumericField(value: unknown, min: number, max: number, fieldName: string): { isValid: boolean; error: string } {
   if (value === null || value === undefined) return { isValid: true, error: '' }
   if (typeof value !== 'number' || isNaN(value)) {
     return { isValid: false, error: `${fieldName} 必須是有效的數字` }
