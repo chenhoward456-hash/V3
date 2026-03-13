@@ -1614,6 +1614,7 @@ export default function ClientDashboard() {
                   competitionDate={c.competition_date!}
                   bodyWeight={latestBodyData!.weight}
                   previewDate={selectedDate > today ? selectedDate : undefined}
+                  onMutate={mutateWithTargets}
                 />
               )}
             </>

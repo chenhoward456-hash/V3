@@ -35,6 +35,8 @@ interface PeakWeekPlanProps {
   bodyWeight: number
   /** 預覽日期（看明天的計畫時傳入） */
   previewDate?: string
+  /** 成功套用 Peak Week 營養目標後，刷新 client 資料 */
+  onMutate?: () => void
 }
 
 const phaseColors: Record<string, { bg: string; text: string; border: string; badge: string }> = {
@@ -53,7 +55,7 @@ const phaseLabels: Record<string, string> = {
   show_day: '比賽日',
 }
 
-export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeight, previewDate }: PeakWeekPlanProps) {
+export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeight, previewDate, onMutate }: PeakWeekPlanProps) {
   const [plan, setPlan] = useState<PeakWeekDay[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [expandedDay, setExpandedDay] = useState<number | null>(null)
@@ -65,13 +67,15 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
     const fetchPlan = async () => {
       try {
         const queryId = code || clientId
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${queryId}${code ? `&code=${code}` : ''}`)
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${queryId}${code ? `&code=${code}` : ''}&autoApply=true`)
         if (!res.ok) return
         const data = await res.json()
         if (data.suggestion?.peakWeekPlan) {
           setPlan(data.suggestion.peakWeekPlan)
           const focusIdx = data.suggestion.peakWeekPlan.findIndex((d: PeakWeekDay) => d.date === focusDate)
           if (focusIdx >= 0) setExpandedDay(focusIdx)
+          // 如果成功 autoApply，刷新 client 資料讓下面的營養區塊也更新
+          if (data.applied && onMutate) onMutate()
         }
       } catch {
         console.warn('[PeakWeekPlan] 載入失敗')
