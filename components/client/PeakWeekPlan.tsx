@@ -20,12 +20,15 @@ interface PeakWeekDay {
   potassiumNote?: string
   foodNote?: string
   creatineNote?: string
+  supplementNote?: string
   posingNote?: string
   pumpUpNote?: string
   waterMlPerKg?: number
   carbsGPerKg?: number
   proteinGPerKg?: number
   fatGPerKg?: number
+  expectedWeight?: number
+  weightNote?: string
 }
 
 interface PeakWeekPlanProps {
@@ -129,6 +132,19 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
             <span className="text-[10px] text-gray-400">Day {focusPlan.daysOut}</span>
           </div>
 
+          {/* 預估體重 badge */}
+          {focusPlan.expectedWeight && (
+            <div className="flex items-center gap-2 mb-3 bg-white/50 rounded-lg px-3 py-1.5">
+              <span className="text-xs">⚖️</span>
+              <span className="text-xs text-gray-600">
+                預估體重 <strong className="text-gray-900">{focusPlan.expectedWeight}kg</strong>
+              </span>
+              {focusPlan.weightNote && (
+                <span className="text-[10px] text-gray-400">— {focusPlan.weightNote}</span>
+              )}
+            </div>
+          )}
+
           {/* 六大指標：碳水、蛋白質、脂肪、熱量、水、鈉 */}
           <div className="grid grid-cols-3 gap-2 mb-3">
             {[
@@ -205,6 +221,18 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
               </div>
             )}
 
+            {/* 補劑建議 */}
+            {focusPlan.supplementNote && (
+              <div className="bg-white/60 rounded-lg px-3 py-2 border border-gray-200">
+                <p className="font-semibold text-gray-700 mb-1">💊 今日補劑清單</p>
+                <div className="space-y-0.5">
+                  {focusPlan.supplementNote.split('；').map((item, i) => (
+                    <p key={i} className="text-gray-600">• {item}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* 比賽日 Pump-up */}
             {focusPlan.pumpUpNote && (
               <div className="bg-amber-100/80 border border-amber-200 rounded-lg px-3 py-2.5">
@@ -233,7 +261,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
               <th className="text-right py-1 px-1.5 font-medium">脂肪</th>
               <th className="text-right py-1 px-1.5 font-medium">熱量</th>
               <th className="text-right py-1 px-1.5 font-medium">水</th>
-              <th className="text-right py-1 px-1.5 font-medium">鈉</th>
+              <th className="text-right py-1 px-1.5 font-medium">體重</th>
             </tr>
           </thead>
           <tbody>
@@ -267,7 +295,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                   <td className="text-right py-1.5 px-1.5 text-gray-700">{day.fat}g</td>
                   <td className="text-right py-1.5 px-1.5 text-gray-700">{day.calories}</td>
                   <td className="text-right py-1.5 px-1.5 text-blue-600 font-semibold">{(day.water / 1000).toFixed(1)}L</td>
-                  <td className="text-right py-1.5 px-1.5 text-orange-600 font-semibold">{day.sodiumMg}</td>
+                  <td className="text-right py-1.5 px-1.5 text-gray-500">{day.expectedWeight ? `${day.expectedWeight}` : '--'}</td>
                 </tr>
               )
             })}
@@ -311,7 +339,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                   <span>🍚{day.carbs}g</span>
                   <span>🔥{day.calories}</span>
                   <span className="text-blue-500 font-semibold">💧{(day.water / 1000).toFixed(1)}L</span>
-                  <span className="text-orange-500 font-semibold">🧂{day.sodiumMg}mg</span>
+                  {day.expectedWeight && <span className="text-gray-400">⚖️{day.expectedWeight}kg</span>}
                 </div>
 
                 <span className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
@@ -341,6 +369,17 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                       </div>
                     )}
                     {day.creatineNote && <p><strong>💊 肌酸：</strong>{day.creatineNote}</p>}
+                    {day.supplementNote && (
+                      <div className="mt-1">
+                        <p className="font-medium text-gray-700 mb-0.5">💊 補劑清單：</p>
+                        {day.supplementNote.split('；').map((item, i) => (
+                          <p key={i} className="ml-2 text-gray-500">• {item}</p>
+                        ))}
+                      </div>
+                    )}
+                    {day.expectedWeight && (
+                      <p><strong>⚖️ 預估體重：</strong>{day.expectedWeight}kg{day.weightNote ? ` — ${day.weightNote}` : ''}</p>
+                    )}
                     {day.pumpUpNote && (
                       <div className="mt-1 bg-amber-100/50 rounded-lg px-2.5 py-2">
                         <p className="font-medium text-amber-700">💪 Pump-up：</p>
@@ -362,7 +401,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
           <ul className="text-[11px] text-amber-600 space-y-1">
             <li>• 碳水超補期選精緻高 GI 碳水（白飯、白吐司、年糕），避免高纖食物</li>
             <li>• <strong>不要突然斷水或斷鈉</strong> — 醛固酮反彈會導致皮下水分滯留，肌肉反而看起來更水</li>
-            <li>• 碳水超補後體重增加 1-2kg 屬正常（肝醣 + 細胞內水分），不是變胖</li>
+            <li>• 碳水超補後體重增加 1-2kg 屬正常（1g 肝醣結合 3g 水分），不是變胖，表示超補成功</li>
             <li>• 維持肌酸補充 — 停肌酸會流失細胞內水分，肌肉飽滿度下降</li>
             <li>• Day 3 起不做重訓 — 任何訓練都會消耗超補的肝醣</li>
             <li>• 如有腹脹、腸胃不適，減少單餐碳水量並增加餐數</li>

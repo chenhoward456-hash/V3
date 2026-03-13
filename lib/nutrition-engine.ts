@@ -341,8 +341,11 @@ export interface PeakWeekDay {
   potassiumNote?: string    // 鉀離子建議
   foodNote?: string         // 食物選擇建議
   creatineNote?: string     // 肌酸建議
+  supplementNote?: string   // 補劑建議（TMG, B群, D3, 鎂, 茶氨酸等）
   posingNote?: string       // Posing 練習排程
   pumpUpNote?: string       // 後台 pump-up 指引（比賽日）
+  expectedWeight?: number   // 預估體重（基於肝醣 + 水分變化）
+  weightNote?: string       // 體重變化說明
 }
 
 // ===== 常數 (基於文獻，編號對應檔案頂部 References) =====
@@ -2819,20 +2822,79 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     })
   }
 
+  // ===== 體重預測 =====
+  // 生理學基礎：1g 肝醣結合 2.7-3g 水分（Fernández-Elías 2015）
+  // 完全耗竭可清空 ~400g 肌肉肝醣 + 100g 肝臟肝醣 = ~500g
+  // 500g 肝醣 + 1500g 水 ≈ 2.0kg 流失（理論最大值，實際約 1.0-1.5kg）
+  // 超補可儲存 600-700g 肝醣 + 1.8-2.1kg 水分 ≈ 2.5-2.8kg 增加
+  const weightDeltaMap: Record<number, { delta: number; note: string }> = {
+    7: { delta: 0, note: '基準體重' },
+    6: { delta: -0.3, note: '肝醣開始消耗，體重微降' },
+    5: { delta: -0.7, note: '肝醣持續消耗 + 脂肪補充 IMT' },
+    4: { delta: -1.0, note: '肝醣接近耗盡，體重最低點' },
+    3: { delta: -0.2, note: '碳水超補開始，肝醣+水分快速回填' },
+    2: { delta: 0.8, note: '肝醣超補高峰，體重顯著增加（正常！）' },
+    1: { delta: 1.2, note: '肝醣飽和 + 細胞內水分最大化' },
+    0: { delta: 0.5, note: '水分微調後，肌肉飽滿但皮下水分減少' },
+  }
+  // 女性體重變化較小（肝醣超補反應約男性 50-70%）
+  if (isFemale) {
+    Object.keys(weightDeltaMap).forEach(k => {
+      const key = Number(k)
+      weightDeltaMap[key].delta = Math.round(weightDeltaMap[key].delta * 0.65 * 10) / 10
+    })
+  }
+
+  // ===== 補劑建議 =====
+  const supplementDepletion = [
+    '肌酸 5g/天（不要停！停肌酸會流失細胞內水分和肌肉飽滿度）',
+    '鎂 400mg 睡前（甘氨酸鎂或蘋果酸鎂）— 改善睡眠品質、減少肌肉痙攣',
+    '茶氨酸 200mg 睡前 — 降低耗竭期皮質醇、改善睡眠',
+    'B群（含 B1, B6, B12）早餐後 — 低碳期能量代謝輔酶需求增加',
+    'D3 2000-4000 IU/天 — 維持免疫力（備賽後期免疫力下降）',
+    '電解質補充（鈉、鉀、鎂）— 低碳期水分流失加速電解質排出',
+  ].join('；')
+  const supplementLoading = [
+    '肌酸 5g/天（搭配碳水一起吃，肌酸+碳水超補可增強肝醣儲存）',
+    '鎂 400mg 睡前 — 碳水超補期鎂需求增加（葡萄糖代謝輔因子）',
+    '茶氨酸 200mg 睡前 — 維持睡眠品質',
+    'D3 2000-4000 IU/天',
+    '消化酵素（每餐服用）— 大量碳水攝取減少腸胃不適',
+  ].join('；')
+  const supplementTaper = [
+    '肌酸 5g/天',
+    '鎂 400mg 睡前',
+    '茶氨酸 200mg 睡前（比賽前一晚好睡很重要）',
+    'D3 2000-4000 IU/天',
+  ].join('；')
+  const supplementShowDay = [
+    '賽前 caffeine 200mg（上台前 45-60 分鐘）— 增強血管充盈和 pump',
+    '肌酸可省略（非必要）',
+    '維他命 C 500mg — 抗氧化',
+  ].join('；')
+
   // 建立 Day 7 到 Day 0（比賽日）的每日計畫
   for (let d = Math.min(daysLeft, 7); d >= 0; d--) {
     const dayDate = new Date(compDate)
     dayDate.setDate(compDate.getDate() - d)
     const dateStr = dayDate.toISOString().split('T')[0]
 
+    // 體重預測
+    const wd = weightDeltaMap[d] || { delta: 0, note: '' }
+    const expectedWt = Math.round((bw + wd.delta) * 10) / 10
+
     let day: PeakWeekDay
 
+    // 區分耗竭期和 IMT 脂肪補充期
+    // Day 7-6：高強度耗竭訓練（真正的碳水耗竭）
+    // Day 5-4：訓練強度降低，重點轉為高脂補充 IMT（肌內三酸甘油酯）
+    const isIMTPhase = d >= depletionCutoffDay && d <= 5
+
     if (d >= depletionCutoffDay) {
-      // Day 7-4：碳水耗竭 + 高脂補充肌內三酸甘油酯 (IMT)
       const trainingMap: Record<number, string> = {
         7: '耗竭訓練：上半身（高次數 >12RM，巨組），每肌群 3-4 組',
         6: '耗竭訓練：下半身（高次數 >12RM，巨組），每肌群 3-4 組',
-        5: '耗竭訓練：全身（中等重量，每組 >15 次），確保全身肝醣耗盡',
+        5: '輕量全身訓練（每組 >15 次）— 重點已轉為 IMT 補充，不需極度耗竭',
         4: '輕量 pump / 完全休息（從今天起不再做重訓）',
       }
       const posingMap: Record<number, string> = {
@@ -2841,13 +2903,17 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         5: 'Posing 練習 10 分鐘（中等強度）',
         4: 'Posing 練習 10 分鐘（輕度，避免過度消耗）',
       }
-      const depletionFoodNote = isApoe4
-        ? '碳水來源：纖維蔬菜為主；脂肪來源：MCT oil、橄欖油、酪梨（APOE4 → 避免牛油、奶油等高飽和脂肪來源）'
-        : '碳水來源：纖維蔬菜為主（花椰菜、蘆筍、菠菜）；脂肪來源：酪梨、堅果、橄欖油（補充 IMT）'
+      const depletionFoodNote = isIMTPhase
+        ? (isApoe4
+            ? 'IMT 補充重點：MCT oil、橄欖油、酪梨、鮭魚（APOE4 → 避免牛油、奶油等高飽和脂肪來源）。少量纖維蔬菜搭配'
+            : 'IMT 補充重點：酪梨、堅果、橄欖油、鮭魚、蛋黃。高脂飲食補充肌內三酸甘油酯，提升比賽日肌肉飽滿度')
+        : (isApoe4
+            ? '碳水來源：纖維蔬菜為主；脂肪來源：MCT oil、橄欖油、酪梨（APOE4 → 避免牛油、奶油等高飽和脂肪來源）'
+            : '碳水來源：纖維蔬菜為主（花椰菜、蘆筍、菠菜）；脂肪來源：酪梨、堅果、橄欖油（補充 IMT）')
       day = {
         daysOut: d, date: dateStr,
-        label: `Day ${d} — 碳水耗竭期`,
-        phase: 'depletion',
+        label: isIMTPhase ? `Day ${d} — 脂肪補充 IMT` : `Day ${d} — 碳水耗竭期`,
+        phase: isIMTPhase ? 'fat_load' : 'depletion',
         carbsGPerKg: depletionCarbGPerKg,
         proteinGPerKg: PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.DEPLETION_FAT_G_PER_KG,
@@ -2863,7 +2929,10 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         potassiumNote: `正常鉀攝取（~${PEAK_WEEK.POTASSIUM_BASELINE}mg）`,
         foodNote: depletionFoodNote,
         creatineNote: '維持肌酸 5g/天（不要停！停肌酸會流失細胞內水分和肌肉飽滿度）',
+        supplementNote: supplementDepletion,
         posingNote: posingMap[d] || '輕度 Posing',
+        expectedWeight: expectedWt,
+        weightNote: wd.note,
       }
     } else if (d >= 2) {
       // Day 3-2：碳水超補 + 鈉加載 + 鉀加載
@@ -2888,7 +2957,10 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
           ? `精緻高 GI 碳水為主：白飯、白吐司、年糕、蜂蜜、果醬。分 6-7 餐進食（女性超補量 ${loadingCarb}g/kg，少量多餐更易執行）`
           : '精緻高 GI 碳水為主：白飯、白吐司、年糕、麻糬、蜂蜜、果醬。分 5-6 餐進食，避免單餐過量導致腸胃不適',
         creatineNote: '維持肌酸 5g/天（搭配碳水一起吃，肌酸+碳水超補可增強肝醣儲存）',
+        supplementNote: supplementLoading,
         posingNote: '僅輕度 Posing 排練 5 分鐘（避免消耗超補的肝醣）',
+        expectedWeight: expectedWt,
+        weightNote: wd.note,
       }
     } else if (d === 1) {
       // Day 1：Taper — 碳水微降 + 水分適度減少 + 脂肪中等（防 IMT 流失）
@@ -2911,7 +2983,10 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         potassiumNote: `維持高鉀 ~${PEAK_WEEK.POTASSIUM_LOADING}mg（延續超補期策略）`,
         foodNote: '延續精緻碳水但量減半；少量多餐；晚餐前最後一餐加少許鹹食',
         creatineNote: '維持肌酸 5g/天',
+        supplementNote: supplementTaper,
         posingNote: 'Posing 排練 5 分鐘（僅走流程，不做長時間持續收縮）',
+        expectedWeight: expectedWt,
+        weightNote: wd.note,
       }
     } else {
       // Day 0：比賽日
@@ -2932,10 +3007,13 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         fat: Math.round(bw * PEAK_WEEK.SHOW_FAT_G_PER_KG),
         calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_SHOW),
         potassiumNote: '正常鉀攝取',
-        foodNote: '小份量碳水持續補充：飯糰、年糕、米餅、糖果。依視覺評估彈性調整 — 看起來扁就多吃碳水，看起來水就減少',
+        foodNote: '小份量碳水持續補充：飯糰、年糕、米餅、糖果、蜂蜜。依視覺評估彈性調整 — 看起來扁就多吃碳水+鹽，看起來水就減少',
         creatineNote: '比賽日可省略肌酸（非必要）',
+        supplementNote: supplementShowDay,
         posingNote: '上台前反覆練習指定動作',
         pumpUpNote: '上台前 30-45 分鐘開始 pump-up：彈力帶 + 輕啞鈴。專注三角肌、手臂、胸、上背。每部位 2-3 組 x 12-20 下，不到力竭。避免腿部 pump。上台前 5-10 分鐘停止。注意：3 組彎舉就能消耗 24% 肱二頭肌肝醣，保持輕量！',
+        expectedWeight: expectedWt,
+        weightNote: wd.note,
       }
     }
 
@@ -2977,8 +3055,10 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
       ...(todayPlan.potassiumNote ? [`🍌 ${todayPlan.potassiumNote}`] : []),
       ...(todayPlan.foodNote ? [`🍽️ ${todayPlan.foodNote}`] : []),
       ...(todayPlan.creatineNote ? [`💊 ${todayPlan.creatineNote}`] : []),
+      ...(todayPlan.supplementNote ? [`💊 補劑：${todayPlan.supplementNote}`] : []),
       ...(todayPlan.posingNote ? [`🪞 ${todayPlan.posingNote}`] : []),
       ...(todayPlan.pumpUpNote ? [`💪 ${todayPlan.pumpUpNote}`] : []),
+      ...(todayPlan.expectedWeight ? [`⚖️ 預估體重 ${todayPlan.expectedWeight}kg — ${todayPlan.weightNote}`] : []),
       '⚠️ 重要：不要突然斷水或斷鈉！醛固酮反彈會導致皮下水分滯留，效果適得其反',
       // 女性黃體期警告：水分操控效果不穩定
       ...(isFemale && cycleInfo?.inLutealPhase ? [
