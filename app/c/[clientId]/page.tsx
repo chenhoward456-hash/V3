@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic'
 import { useClientData } from '@/hooks/useClientData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { useCoachMode } from '@/hooks/useCoachMode'
-import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown, Settings } from 'lucide-react'
+import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Settings } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
 import CollapsibleSection from '@/components/client/CollapsibleSection'
 import QuickActions from '@/components/client/QuickActions'
@@ -248,6 +248,7 @@ export default function ClientDashboard() {
   const [cancellingSubscription, setCancellingSubscription] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [checklistDismissed, setChecklistDismissed] = useState(false)
+  const [showScrollTop, setShowScrollTop] = useState(false)
   const { showToast } = useToast()
 
   // 監聽血檢「問 AI」按鈕的 custom event
@@ -261,6 +262,13 @@ export default function ClientDashboard() {
     }
     window.addEventListener('open-ai-chat', handler)
     return () => window.removeEventListener('open-ai-chat', handler)
+  }, [])
+
+  // 滾動超過 600px 顯示「回到頂部」按鈕
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 600)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   const toggleSimpleMode = async () => {
@@ -1949,6 +1957,17 @@ export default function ClientDashboard() {
           />
         )
       })()}
+
+      {/* 回到頂部按鈕 */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-24 right-4 z-40 w-10 h-10 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-opacity"
+          aria-label="回到頂部"
+        >
+          <ChevronUp size={20} className="text-gray-600" />
+        </button>
+      )}
     </div>
     </ErrorBoundary>
   )

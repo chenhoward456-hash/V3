@@ -162,7 +162,7 @@ export default function HealthOverview({
           {todayCalories ? `${todayCalories}` : '--'}
         </p>
         <p className="text-xs text-gray-400">
-          {todayCalories ? `${pct}% of ${caloriesTarget}kcal` : `目標 ${caloriesTarget}kcal`}
+          {todayCalories ? `${pct}% of ${caloriesTarget}kcal` : '尚未記錄，點飲食區填寫'}
         </p>
       </div>
     )
