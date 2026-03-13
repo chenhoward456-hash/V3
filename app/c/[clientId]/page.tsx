@@ -1591,7 +1591,16 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* Goal-Driven 目標體重計畫（備賽客戶）*/}
+        {/* DEBUG: 版本確認 — 確認部署後刪除 */}
+        <div className="bg-black text-green-400 text-[10px] font-mono rounded-lg px-3 py-2 mb-3">
+          BUILD: v2026-0314a | comp={String(!!isCompetition)} | date={c.competition_date || 'null'} | prep={c.prep_phase || 'null'} | weight={latestBodyData?.weight || 'null'}
+          {isCompetition && c.competition_date && (() => {
+            const dl = Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
+            return ` | daysLeft=${dl} | show=${dl <= 14 && !!latestBodyData?.weight}`
+          })()}
+        </div>
+
+        {/* Goal-Driven + Peak Week（備賽客戶）*/}
         {isCompetition && (() => {
           const compDaysLeft = c.competition_date
             ? Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
@@ -1599,7 +1608,6 @@ export default function ClientDashboard() {
           const showPeakWeek = compDaysLeft != null && compDaysLeft <= 14 && latestBodyData?.weight
           return (
             <>
-              {/* GoalDrivenStatus: 距比賽 >8 天 或 任何備賽客戶都顯示 */}
               {(!showPeakWeek || compDaysLeft! > 8) && (
                 <GoalDrivenStatus
                   clientId={c.id}
@@ -1608,7 +1616,6 @@ export default function ClientDashboard() {
                   onMutate={mutateWithTargets}
                 />
               )}
-              {/* Peak Week: 距比賽 ≤14 天自動顯示（不需要手動切 prep_phase） */}
               {showPeakWeek && (
                 <PeakWeekPlan
                   clientId={c.id}
