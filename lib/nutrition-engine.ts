@@ -1157,8 +1157,10 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     warnings.push(`⚠️ 注意狀態：${refeedTrigger.reason}（低碳天數未達 3 天，持續觀察）`)
   }
 
-  // 0. Peak Week 偵測：距比賽 ≤ 7 天且 prepPhase 是 peak_week 或 competition
-  // competition 階段也要觸發，確保比賽日當天仍顯示 Day 0 的完整計畫（pump-up、鈉策略等）
+  // 0. Peak Week 偵測：prepPhase 是 peak_week 或 competition 時產生每日計畫
+  // daysLeft <= 8：完整啟用 Peak Week（autoApply + 回傳 peak_week status）
+  // daysLeft > 8：仍然產生 peakWeekPlan 供前端預覽，但營養建議走正常流程
+  let previewPeakWeekPlan: PeakWeekDay[] | null = null
   if (input.targetDate && (input.prepPhase === 'peak_week' || input.prepPhase === 'competition')) {
     const now = new Date()
     const target = new Date(input.targetDate)
@@ -1166,6 +1168,8 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     if (daysLeft <= 8) {
       return { ...generatePeakWeekPlan(input, daysLeft, cycleInfo), ...stateFields }
     }
+    // daysLeft > 8：預先產生 7 天計畫供前端預覽
+    previewPeakWeekPlan = generatePeakWeekPlan(input, 7, cycleInfo).peakWeekPlan
   }
 
   // 1. 檢查數據是否足夠
@@ -1878,7 +1882,7 @@ function generateCutSuggestion(
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
       labMacroModifiers: otLabMacroModifiers, labTrainingModifiers: otLabTrainingModifiers, energyAvailability: null,
-      deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
+      deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: previewPeakWeekPlan, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, recalcPro),
       geneticCorrections: otGeneticCorrections,
@@ -1937,7 +1941,7 @@ function generateCutSuggestion(
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
     labMacroModifiers: mainLabMacroModifiers, labTrainingModifiers: mainLabTrainingModifiers, energyAvailability: null,
-    deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
+    deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: previewPeakWeekPlan, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     geneticCorrections,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
@@ -2461,7 +2465,7 @@ function generateGoalDrivenCut(
     deadlineInfo: enrichedDeadlineInfo,
     autoApply: true, tdeeAnomalyDetected: false,  // Goal-Driven 結果已 safety-capped，一律自動套用（不可行時 warning 通知教練但仍更新）
     labMacroModifiers: gdMacroMods, labTrainingModifiers: gdLabModResult?.trainingModifiers ?? [], energyAvailability: null,
-    peakWeekPlan: null, metabolicStress: null,
+    peakWeekPlan: previewPeakWeekPlan, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, suggestedPro),
     geneticCorrections,
@@ -2712,7 +2716,7 @@ function generateBulkSuggestion(
       currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
       bodyFatZoneInfo: zoneInfo,
       labMacroModifiers: bulkLabMacroMods, labTrainingModifiers: bulkLabTrainingMods, energyAvailability: null,
-      deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
+      deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: previewPeakWeekPlan, metabolicStress: null,
       menstrualCycleNote: cycleInfo.note,
       perMealProteinGuide: buildPerMealProteinGuide(bw, validatedPro),
       geneticCorrections: otBulkGC,
@@ -2741,7 +2745,7 @@ function generateBulkSuggestion(
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
     bodyFatZoneInfo: zoneInfo,
     labMacroModifiers: bulkLabMacroMods, labTrainingModifiers: bulkLabTrainingMods, energyAvailability: null,
-    deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: null, metabolicStress: null,
+    deadlineInfo, autoApply: true, tdeeAnomalyDetected: false, peakWeekPlan: previewPeakWeekPlan, metabolicStress: null,
     menstrualCycleNote: cycleInfo.note,
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
     geneticCorrections: bulkGC,

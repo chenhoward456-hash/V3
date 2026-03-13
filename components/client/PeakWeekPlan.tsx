@@ -13,7 +13,7 @@ interface PeakWeekDay {
   fat: number
   calories: number
   water: number
-  sodiumMg?: number
+  sodiumMg: number
   sodiumNote: string
   fiberNote: string
   trainingNote: string
@@ -22,6 +22,10 @@ interface PeakWeekDay {
   creatineNote?: string
   posingNote?: string
   pumpUpNote?: string
+  waterMlPerKg?: number
+  carbsGPerKg?: number
+  proteinGPerKg?: number
+  fatGPerKg?: number
 }
 
 interface PeakWeekPlanProps {
@@ -55,7 +59,6 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
   const [expandedDay, setExpandedDay] = useState<number | null>(null)
 
   const todayStr = getLocalDateStr()
-  // 顯示的焦點日：預覽模式用 previewDate，否則用今天
   const focusDate = previewDate || todayStr
 
   useEffect(() => {
@@ -66,7 +69,6 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
         const data = await res.json()
         if (data.suggestion?.peakWeekPlan) {
           setPlan(data.suggestion.peakWeekPlan)
-          // 自動展開焦點日（預覽 or 今天）
           const focusIdx = data.suggestion.peakWeekPlan.findIndex((d: PeakWeekDay) => d.date === focusDate)
           if (focusIdx >= 0) setExpandedDay(focusIdx)
         }
@@ -91,9 +93,10 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
 
   if (!plan || plan.length === 0) return null
 
-  const todayPlan = plan.find(d => d.date === focusDate)
+  const focusPlan = plan.find(d => d.date === focusDate)
   const compDate = new Date(competitionDate)
   const daysLeft = Math.max(0, Math.ceil((compDate.getTime() - new Date().getTime()) / 86400000))
+  const focusLabel = previewDate ? '明日計畫' : '今日計畫'
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
@@ -108,104 +111,173 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
         </span>
       </div>
 
-      {/* 今日重點卡片 */}
-      {todayPlan && (
-        <div className={`${phaseColors[todayPlan.phase]?.bg || 'bg-gray-50'} ${phaseColors[todayPlan.phase]?.border || 'border-gray-200'} border rounded-2xl p-4 mb-4`}>
+      {/* ===== 焦點日重點卡片 ===== */}
+      {focusPlan && (
+        <div className={`${phaseColors[focusPlan.phase]?.bg || 'bg-gray-50'} ${phaseColors[focusPlan.phase]?.border || 'border-gray-200'} border-2 rounded-2xl p-4 mb-5`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${phaseColors[todayPlan.phase]?.badge || 'bg-gray-100 text-gray-600'}`}>
-                {phaseLabels[todayPlan.phase] || todayPlan.phase}
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${phaseColors[focusPlan.phase]?.badge || 'bg-gray-100 text-gray-600'}`}>
+                {phaseLabels[focusPlan.phase] || focusPlan.phase}
               </span>
-              <span className="text-sm font-semibold text-gray-700">{previewDate ? '明日計畫' : '今日計畫'}</span>
+              <span className="text-sm font-semibold text-gray-700">{focusLabel}</span>
             </div>
+            <span className="text-[10px] text-gray-400">Day {focusPlan.daysOut}</span>
           </div>
 
-          {/* 四大巨量 */}
-          <div className="grid grid-cols-4 gap-2 mb-3">
+          {/* 六大指標：碳水、蛋白質、脂肪、熱量、水、鈉 */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
             {[
-              { label: '碳水', value: todayPlan.carbs, unit: 'g', emoji: '🍚' },
-              { label: '蛋白質', value: todayPlan.protein, unit: 'g', emoji: '🥩' },
-              { label: '脂肪', value: todayPlan.fat, unit: 'g', emoji: '🥑' },
-              { label: '熱量', value: todayPlan.calories, unit: '', emoji: '🔥' },
+              { label: '碳水', value: focusPlan.carbs, unit: 'g', emoji: '🍚' },
+              { label: '蛋白質', value: focusPlan.protein, unit: 'g', emoji: '🥩' },
+              { label: '脂肪', value: focusPlan.fat, unit: 'g', emoji: '🥑' },
+              { label: '熱量', value: focusPlan.calories, unit: 'kcal', emoji: '🔥' },
+              { label: '飲水', value: `${(focusPlan.water / 1000).toFixed(1)}`, unit: 'L', emoji: '💧' },
+              { label: '鈉', value: focusPlan.sodiumMg, unit: 'mg', emoji: '🧂' },
             ].map(({ label, value, unit, emoji }) => (
               <div key={label} className="text-center bg-white bg-opacity-70 rounded-xl py-2 px-1">
                 <p className="text-[10px] text-gray-500">{emoji} {label}</p>
                 <p className="text-lg font-bold text-gray-900">{value}</p>
-                <p className="text-[10px] text-gray-400">{unit || 'kcal'}</p>
+                <p className="text-[10px] text-gray-400">{unit}</p>
               </div>
             ))}
           </div>
 
-          {/* 水分 + 基本指引 */}
-          <div className="space-y-1.5">
-            <div className="flex items-start gap-2 text-xs">
-              <span className="shrink-0">💧</span>
-              <span className="text-gray-600">飲水：<strong>{(todayPlan.water / 1000).toFixed(1)}L</strong></span>
+          {/* 關鍵指引 */}
+          <div className="space-y-2 text-xs">
+            {/* 鈉策略（醒目） */}
+            <div className="bg-white/60 rounded-lg px-3 py-2">
+              <p className="font-semibold text-gray-700 mb-0.5">🧂 鈉策略</p>
+              <p className="text-gray-600">{focusPlan.sodiumNote}</p>
             </div>
-            <div className="flex items-start gap-2 text-xs">
-              <span className="shrink-0">🧂</span>
-              <span className="text-gray-600">鈉：{todayPlan.sodiumMg ? <><strong>{todayPlan.sodiumMg}mg</strong> — </> : ''}{todayPlan.sodiumNote}</span>
+
+            {/* 飲水說明 */}
+            <div className="bg-white/60 rounded-lg px-3 py-2">
+              <p className="font-semibold text-gray-700 mb-0.5">💧 飲水</p>
+              <p className="text-gray-600">{(focusPlan.water / 1000).toFixed(1)}L（{focusPlan.waterMlPerKg || Math.round(focusPlan.water / bodyWeight)} mL/kg）</p>
             </div>
-            {todayPlan.potassiumNote && (
-              <div className="flex items-start gap-2 text-xs">
-                <span className="shrink-0">🍌</span>
-                <span className="text-gray-600">{todayPlan.potassiumNote}</span>
+
+            {/* 鉀離子 */}
+            {focusPlan.potassiumNote && (
+              <div className="bg-white/60 rounded-lg px-3 py-2">
+                <p className="font-semibold text-gray-700 mb-0.5">🍌 鉀離子</p>
+                <p className="text-gray-600">{focusPlan.potassiumNote}</p>
               </div>
             )}
-            <div className="flex items-start gap-2 text-xs">
-              <span className="shrink-0">🥬</span>
-              <span className="text-gray-600">{todayPlan.fiberNote}</span>
+
+            {/* 纖維 */}
+            <div className="bg-white/60 rounded-lg px-3 py-2">
+              <p className="font-semibold text-gray-700 mb-0.5">🥬 纖維</p>
+              <p className="text-gray-600">{focusPlan.fiberNote}</p>
             </div>
-            <div className="flex items-start gap-2 text-xs">
-              <span className="shrink-0">🏋️</span>
-              <span className="text-gray-600">{todayPlan.trainingNote}</span>
+
+            {/* 訓練 */}
+            <div className="bg-white/60 rounded-lg px-3 py-2">
+              <p className="font-semibold text-gray-700 mb-0.5">🏋️ 訓練</p>
+              <p className="text-gray-600">{focusPlan.trainingNote}</p>
             </div>
-            {todayPlan.posingNote && (
-              <div className="flex items-start gap-2 text-xs">
-                <span className="shrink-0">🪞</span>
-                <span className="text-gray-600">{todayPlan.posingNote}</span>
+
+            {/* Posing */}
+            {focusPlan.posingNote && (
+              <div className="bg-white/60 rounded-lg px-3 py-2">
+                <p className="font-semibold text-gray-700 mb-0.5">🪞 Posing</p>
+                <p className="text-gray-600">{focusPlan.posingNote}</p>
+              </div>
+            )}
+
+            {/* 食物建議 */}
+            {focusPlan.foodNote && (
+              <div className="bg-white/60 rounded-lg px-3 py-2 border border-gray-200">
+                <p className="font-semibold text-gray-700 mb-0.5">🍽️ 食物來源建議</p>
+                <p className="text-gray-600">{focusPlan.foodNote}</p>
+              </div>
+            )}
+
+            {/* 肌酸 */}
+            {focusPlan.creatineNote && (
+              <div className="bg-white/60 rounded-lg px-3 py-2">
+                <p className="font-semibold text-gray-700 mb-0.5">💊 肌酸</p>
+                <p className="text-gray-600">{focusPlan.creatineNote}</p>
+              </div>
+            )}
+
+            {/* 比賽日 Pump-up */}
+            {focusPlan.pumpUpNote && (
+              <div className="bg-amber-100/80 border border-amber-200 rounded-lg px-3 py-2.5">
+                <p className="font-bold text-amber-700 mb-1">💪 後台 Pump-up 指引</p>
+                <p className="text-[11px] text-amber-600 leading-relaxed">{focusPlan.pumpUpNote}</p>
               </div>
             )}
           </div>
-
-          {/* 食物建議（獨立區塊，更醒目） */}
-          {todayPlan.foodNote && (
-            <div className="mt-3 pt-2.5 border-t border-gray-200/50">
-              <div className="flex items-start gap-2 text-xs">
-                <span className="shrink-0">🍽️</span>
-                <span className="text-gray-600">{todayPlan.foodNote}</span>
-              </div>
-            </div>
-          )}
-
-          {/* 肌酸建議 */}
-          {todayPlan.creatineNote && (
-            <div className="mt-1.5">
-              <div className="flex items-start gap-2 text-xs">
-                <span className="shrink-0">💊</span>
-                <span className="text-gray-600">{todayPlan.creatineNote}</span>
-              </div>
-            </div>
-          )}
-
-          {/* 比賽日 Pump-up 指引（特別醒目） */}
-          {todayPlan.pumpUpNote && (
-            <div className="mt-3 bg-amber-100/60 border border-amber-200 rounded-xl px-3 py-2.5">
-              <p className="text-[10px] font-bold text-amber-700 mb-1">💪 後台 Pump-up 指引</p>
-              <p className="text-[11px] text-amber-600 leading-relaxed">{todayPlan.pumpUpNote}</p>
-            </div>
-          )}
         </div>
       )}
 
-      {/* 7 天時間軸 */}
+      {/* ===== 7 天總覽表 ===== */}
+      <div className="mb-2">
+        <p className="text-xs font-semibold text-gray-500 mb-2">📅 完整 7 天計畫</p>
+      </div>
+
+      {/* 表格式總覽 — 一眼看出每天的差異 */}
+      <div className="overflow-x-auto -mx-2 px-2 mb-4">
+        <table className="w-full text-[10px] border-collapse">
+          <thead>
+            <tr className="text-gray-400">
+              <th className="text-left py-1 px-1.5 font-medium">日期</th>
+              <th className="text-left py-1 px-1.5 font-medium">階段</th>
+              <th className="text-right py-1 px-1.5 font-medium">碳水</th>
+              <th className="text-right py-1 px-1.5 font-medium">蛋白</th>
+              <th className="text-right py-1 px-1.5 font-medium">脂肪</th>
+              <th className="text-right py-1 px-1.5 font-medium">熱量</th>
+              <th className="text-right py-1 px-1.5 font-medium">水</th>
+              <th className="text-right py-1 px-1.5 font-medium">鈉</th>
+            </tr>
+          </thead>
+          <tbody>
+            {plan.map((day) => {
+              const isFocus = day.date === focusDate
+              const isPast = day.date < todayStr
+              const colors = phaseColors[day.phase] || phaseColors.depletion
+              const dateObj = new Date(day.date + 'T12:00:00')
+              const dateLabel = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`
+              const weekDay = ['日', '一', '二', '三', '四', '五', '六'][dateObj.getDay()]
+
+              return (
+                <tr
+                  key={day.date}
+                  className={`border-t border-gray-100 ${
+                    isFocus ? `${colors.bg} font-bold` : isPast ? 'opacity-40' : ''
+                  }`}
+                >
+                  <td className="py-1.5 px-1.5 whitespace-nowrap">
+                    <span className={isFocus ? colors.text : 'text-gray-600'}>
+                      {dateLabel}({weekDay})
+                    </span>
+                  </td>
+                  <td className="py-1.5 px-1.5">
+                    <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${colors.badge}`}>
+                      {phaseLabels[day.phase]}
+                    </span>
+                  </td>
+                  <td className="text-right py-1.5 px-1.5 text-gray-700">{day.carbs}g</td>
+                  <td className="text-right py-1.5 px-1.5 text-gray-700">{day.protein}g</td>
+                  <td className="text-right py-1.5 px-1.5 text-gray-700">{day.fat}g</td>
+                  <td className="text-right py-1.5 px-1.5 text-gray-700">{day.calories}</td>
+                  <td className="text-right py-1.5 px-1.5 text-blue-600 font-semibold">{(day.water / 1000).toFixed(1)}L</td>
+                  <td className="text-right py-1.5 px-1.5 text-orange-600 font-semibold">{day.sodiumMg}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ===== 各天展開詳情 ===== */}
       <div className="space-y-2">
         {plan.map((day, idx) => {
-          const isToday = day.date === focusDate
+          const isFocus = day.date === focusDate
           const isPast = day.date < todayStr
           const isExpanded = expandedDay === idx
           const colors = phaseColors[day.phase] || phaseColors.depletion
-          const dateObj = new Date(day.date)
+          const dateObj = new Date(day.date + 'T12:00:00')
           const dateLabel = dateObj.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })
           const weekDayLabel = ['日', '一', '二', '三', '四', '五', '六'][dateObj.getDay()]
 
@@ -214,59 +286,56 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
               <button
                 onClick={() => setExpandedDay(isExpanded ? null : idx)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${
-                  isToday ? `${colors.bg} ${colors.border} border-2 shadow-sm`
+                  isFocus ? `${colors.bg} ${colors.border} border-2 shadow-sm`
                   : isPast ? 'bg-gray-50 opacity-60'
                   : 'bg-gray-50 hover:bg-gray-100'
                 }`}
               >
-                {/* 日期 */}
                 <div className="w-12 text-center shrink-0">
-                  <p className={`text-xs font-bold ${isToday ? colors.text : 'text-gray-500'}`}>
+                  <p className={`text-xs font-bold ${isFocus ? colors.text : 'text-gray-500'}`}>
                     {dateLabel}
                   </p>
                   <p className="text-[10px] text-gray-400">({weekDayLabel})</p>
                 </div>
 
-                {/* 階段標籤 */}
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${colors.badge}`}>
                   {phaseLabels[day.phase]}
                 </span>
 
-                {/* 簡要數據 */}
-                <div className="flex-1 flex items-center gap-3 text-[10px] text-gray-500">
-                  <span>🍚 {day.carbs}g</span>
-                  <span>🥩 {day.protein}g</span>
-                  <span>🔥 {day.calories}</span>
-                  <span>💧 {(day.water / 1000).toFixed(1)}L</span>
+                <div className="flex-1 flex items-center gap-2 text-[10px] text-gray-500 flex-wrap">
+                  <span>🍚{day.carbs}g</span>
+                  <span>🔥{day.calories}</span>
+                  <span className="text-blue-500 font-semibold">💧{(day.water / 1000).toFixed(1)}L</span>
+                  <span className="text-orange-500 font-semibold">🧂{day.sodiumMg}mg</span>
                 </div>
 
-                {/* 展開箭頭 */}
                 <span className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
                   ▾
                 </span>
               </button>
 
-              {/* 展開詳情 */}
               {isExpanded && (
                 <div className={`ml-4 mr-2 mt-1 mb-2 px-4 py-3 rounded-xl border ${colors.bg} ${colors.border}`}>
-                  {/* 巨量營養素 */}
-                  <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                  <div className="grid grid-cols-3 gap-2 text-xs mb-3">
                     <div><span className="text-gray-500">碳水：</span><strong>{day.carbs}g</strong></div>
                     <div><span className="text-gray-500">蛋白質：</span><strong>{day.protein}g</strong></div>
                     <div><span className="text-gray-500">脂肪：</span><strong>{day.fat}g</strong></div>
                     <div><span className="text-gray-500">熱量：</span><strong>{day.calories} kcal</strong></div>
-                    <div><span className="text-gray-500">飲水：</span><strong>{(day.water / 1000).toFixed(1)}L</strong></div>
-                    {day.sodiumMg && <div><span className="text-gray-500">鈉：</span><strong>{day.sodiumMg}mg</strong></div>}
+                    <div><span className="text-blue-600">飲水：</span><strong className="text-blue-700">{(day.water / 1000).toFixed(1)}L</strong></div>
+                    <div><span className="text-orange-600">鈉：</span><strong className="text-orange-700">{day.sodiumMg}mg</strong></div>
                   </div>
-                  {/* 詳細指引 */}
                   <div className="space-y-1.5 text-[11px] text-gray-600 border-t border-gray-200 pt-2">
-                    <p>🧂 {day.sodiumNote}</p>
-                    {day.potassiumNote && <p>🍌 {day.potassiumNote}</p>}
-                    <p>🥬 {day.fiberNote}</p>
-                    <p>🏋️ {day.trainingNote}</p>
-                    {day.posingNote && <p>🪞 {day.posingNote}</p>}
-                    {day.foodNote && <p>🍽️ {day.foodNote}</p>}
-                    {day.creatineNote && <p>💊 {day.creatineNote}</p>}
+                    <p><strong>🧂 鈉策略：</strong>{day.sodiumNote}</p>
+                    {day.potassiumNote && <p><strong>🍌 鉀離子：</strong>{day.potassiumNote}</p>}
+                    <p><strong>🥬 纖維：</strong>{day.fiberNote}</p>
+                    <p><strong>🏋️ 訓練：</strong>{day.trainingNote}</p>
+                    {day.posingNote && <p><strong>🪞 Posing：</strong>{day.posingNote}</p>}
+                    {day.foodNote && (
+                      <div className="mt-1 bg-white/60 rounded-lg px-2.5 py-2 border border-gray-200">
+                        <p><strong>🍽️ 食物來源：</strong>{day.foodNote}</p>
+                      </div>
+                    )}
+                    {day.creatineNote && <p><strong>💊 肌酸：</strong>{day.creatineNote}</p>}
                     {day.pumpUpNote && (
                       <div className="mt-1 bg-amber-100/50 rounded-lg px-2.5 py-2">
                         <p className="font-medium text-amber-700">💪 Pump-up：</p>
@@ -281,7 +350,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
         })}
       </div>
 
-      {/* 注意事項 — 升級為完整的科學提醒 */}
+      {/* 注意事項 */}
       <div className="mt-4 space-y-2">
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
           <p className="text-xs text-amber-700 font-medium mb-1">⚠️ Peak Week 關鍵注意事項</p>
@@ -292,22 +361,13 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
             <li>• 維持肌酸補充 — 停肌酸會流失細胞內水分，肌肉飽滿度下降</li>
             <li>• Day 3 起不做重訓 — 任何訓練都會消耗超補的肝醣</li>
             <li>• 如有腹脹、腸胃不適，減少單餐碳水量並增加餐數</li>
-            <li>• 如有任何不適，立即恢復正常飲食並通知教練</li>
           </ul>
-        </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
-          <p className="text-xs text-blue-700 font-medium mb-1">📋 建議：賽前 2-4 週做一次模擬 Peak Week</p>
-          <p className="text-[11px] text-blue-600">
-            在相似的身體狀態下練習完整的碳水耗竭→超補流程，觀察身體反應（GI 耐受度、視覺效果、體重變化），
-            根據結果調整正式 Peak Week 的碳水量和食物選擇。文獻強烈建議不要第一次就在正式比賽執行 [12][14]。
-          </p>
         </div>
       </div>
 
       <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-3">
         <p className="text-[10px] text-gray-500 leading-relaxed">
-          此計畫由系統根據文獻公式自動產生，僅供教練與選手參考，不構成醫療建議。Peak Week 涉及水分與鈉操作，請務必在教練監督下執行。如有任何身體不適，應立即停止並諮詢醫師。
+          此計畫由系統根據文獻公式自動產生，僅供教練與選手參考，不構成醫療建議。Peak Week 涉及水分與鈉操作，請務必在教練監督下執行。
         </p>
       </div>
     </div>
