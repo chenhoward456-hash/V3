@@ -65,7 +65,8 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
   useEffect(() => {
     const fetchPlan = async () => {
       try {
-        const url = `/api/nutrition-suggestions?clientId=${clientId}${code ? `&code=${code}` : ''}`
+        const queryId = code || clientId
+        const url = `/api/nutrition-suggestions?clientId=${queryId}${code ? `&code=${code}` : ''}`
         setDebugInfo(`calling: ${url}`)
         const res = await fetch(url)
         if (!res.ok) {
