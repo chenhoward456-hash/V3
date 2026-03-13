@@ -29,6 +29,20 @@ interface PeakWeekDay {
   fatGPerKg?: number
   expectedWeight?: number
   weightNote?: string
+  showDayTimeline?: ShowDayMeal[]
+}
+
+interface ShowDayMeal {
+  timeLabel: string
+  relativeHours: number
+  carbs: number
+  protein: number
+  fat: number
+  waterMl: number
+  sodiumMg: number
+  items: string[]
+  note?: string
+  emoji: string
 }
 
 interface PeakWeekPlanProps {
@@ -163,84 +177,173 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
             ))}
           </div>
 
-          {/* 關鍵指引 */}
-          <div className="space-y-2 text-xs">
-            {/* 鈉策略（醒目） */}
-            <div className="bg-white/60 rounded-lg px-3 py-2">
-              <p className="font-semibold text-gray-700 mb-0.5">🧂 鈉策略</p>
-              <p className="text-gray-600">{focusPlan.sodiumNote}</p>
-            </div>
+          {/* ===== 比賽日時間軸模式 ===== */}
+          {focusPlan.showDayTimeline && focusPlan.showDayTimeline.length > 0 ? (
+            <div className="space-y-0">
+              <p className="text-xs font-bold text-amber-700 mb-3">📋 比賽日完整時間軸</p>
 
-            {/* 飲水說明 */}
-            <div className="bg-white/60 rounded-lg px-3 py-2">
-              <p className="font-semibold text-gray-700 mb-0.5">💧 飲水</p>
-              <p className="text-gray-600">{(focusPlan.water / 1000).toFixed(1)}L（{focusPlan.waterMlPerKg || Math.round(focusPlan.water / bodyWeight)} mL/kg）</p>
-            </div>
-
-            {/* 鉀離子 */}
-            {focusPlan.potassiumNote && (
-              <div className="bg-white/60 rounded-lg px-3 py-2">
-                <p className="font-semibold text-gray-700 mb-0.5">🍌 鉀離子</p>
-                <p className="text-gray-600">{focusPlan.potassiumNote}</p>
+              {/* 鈉策略總覽 */}
+              <div className="bg-white/70 border border-amber-300 rounded-lg px-3 py-2 mb-3">
+                <p className="text-[11px] font-semibold text-amber-700 mb-0.5">🧂 鈉策略核心</p>
+                <p className="text-[11px] text-amber-600">{focusPlan.sodiumNote}</p>
               </div>
-            )}
 
-            {/* 纖維 */}
-            <div className="bg-white/60 rounded-lg px-3 py-2">
-              <p className="font-semibold text-gray-700 mb-0.5">🥬 纖維</p>
-              <p className="text-gray-600">{focusPlan.fiberNote}</p>
-            </div>
+              {/* 時間軸 */}
+              <div className="relative">
+                {/* 垂直連接線 */}
+                <div className="absolute left-4 top-6 bottom-6 w-0.5 bg-amber-200" />
 
-            {/* 訓練 */}
-            <div className="bg-white/60 rounded-lg px-3 py-2">
-              <p className="font-semibold text-gray-700 mb-0.5">🏋️ 訓練</p>
-              <p className="text-gray-600">{focusPlan.trainingNote}</p>
-            </div>
+                <div className="space-y-3">
+                  {focusPlan.showDayTimeline.map((meal, i) => (
+                    <div key={i} className="relative flex gap-3">
+                      {/* 圓形節點 */}
+                      <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${
+                        meal.relativeHours === 0
+                          ? 'bg-amber-500 shadow-lg shadow-amber-200'
+                          : meal.relativeHours === -1.5
+                          ? 'bg-red-100 border-2 border-red-300'
+                          : 'bg-amber-100 border-2 border-amber-300'
+                      }`}>
+                        {meal.emoji}
+                      </div>
 
-            {/* Posing */}
-            {focusPlan.posingNote && (
-              <div className="bg-white/60 rounded-lg px-3 py-2">
-                <p className="font-semibold text-gray-700 mb-0.5">🪞 Posing</p>
-                <p className="text-gray-600">{focusPlan.posingNote}</p>
-              </div>
-            )}
+                      {/* 內容卡片 */}
+                      <div className={`flex-1 rounded-xl px-3 py-2.5 ${
+                        meal.relativeHours === 0
+                          ? 'bg-amber-200/60 border border-amber-300'
+                          : meal.relativeHours === -1.5
+                          ? 'bg-red-50/80 border border-red-200'
+                          : 'bg-white/60 border border-gray-200'
+                      }`}>
+                        <p className={`text-xs font-bold mb-1.5 ${
+                          meal.relativeHours === 0 ? 'text-amber-800' : meal.relativeHours === -1.5 ? 'text-red-700' : 'text-gray-700'
+                        }`}>
+                          {meal.timeLabel}
+                        </p>
 
-            {/* 食物建議 */}
-            {focusPlan.foodNote && (
-              <div className="bg-white/60 rounded-lg px-3 py-2 border border-gray-200">
-                <p className="font-semibold text-gray-700 mb-0.5">🍽️ 食物來源建議</p>
-                <p className="text-gray-600">{focusPlan.foodNote}</p>
-              </div>
-            )}
+                        {/* 迷你指標 */}
+                        {(meal.carbs > 0 || meal.waterMl > 0) && (
+                          <div className="flex flex-wrap gap-2 mb-1.5 text-[10px]">
+                            {meal.carbs > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-gray-600">🍚 {meal.carbs}g</span>}
+                            {meal.protein > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-gray-600">🥩 {meal.protein}g</span>}
+                            {meal.waterMl > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-blue-600">💧 {meal.waterMl}ml</span>}
+                            {meal.sodiumMg > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-orange-600 font-bold">🧂 {meal.sodiumMg}mg</span>}
+                          </div>
+                        )}
 
-            {/* 肌酸 */}
-            {focusPlan.creatineNote && (
-              <div className="bg-white/60 rounded-lg px-3 py-2">
-                <p className="font-semibold text-gray-700 mb-0.5">💊 肌酸</p>
-                <p className="text-gray-600">{focusPlan.creatineNote}</p>
-              </div>
-            )}
+                        {/* 項目清單 */}
+                        <div className="space-y-0.5 text-[11px] text-gray-600">
+                          {meal.items.map((item, j) => (
+                            <p key={j}>• {item}</p>
+                          ))}
+                        </div>
 
-            {/* 補劑建議 */}
-            {focusPlan.supplementNote && (
-              <div className="bg-white/60 rounded-lg px-3 py-2 border border-gray-200">
-                <p className="font-semibold text-gray-700 mb-1">💊 今日補劑清單</p>
-                <div className="space-y-0.5">
-                  {focusPlan.supplementNote.split('；').map((item, i) => (
-                    <p key={i} className="text-gray-600">• {item}</p>
+                        {/* 說明 */}
+                        {meal.note && (
+                          <p className={`mt-1.5 text-[10px] leading-relaxed ${
+                            meal.relativeHours === -1.5 ? 'text-red-500 font-medium' : 'text-gray-400'
+                          }`}>
+                            {meal.note}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
-            )}
 
-            {/* 比賽日 Pump-up */}
-            {focusPlan.pumpUpNote && (
-              <div className="bg-amber-100/80 border border-amber-200 rounded-lg px-3 py-2.5">
-                <p className="font-bold text-amber-700 mb-1">💪 後台 Pump-up 指引</p>
-                <p className="text-[11px] text-amber-600 leading-relaxed">{focusPlan.pumpUpNote}</p>
+              {/* 比賽日總計 */}
+              <div className="mt-3 bg-gray-900 rounded-xl px-4 py-3">
+                <p className="text-[10px] text-gray-400 mb-1.5">比賽日總計</p>
+                <div className="flex justify-between text-xs">
+                  <span className="text-white">🍚 {focusPlan.carbs}g</span>
+                  <span className="text-white">🥩 {focusPlan.protein}g</span>
+                  <span className="text-blue-300">💧 ~{(focusPlan.water / 1000).toFixed(1)}L</span>
+                  <span className="text-orange-300 font-bold">🧂 ~{focusPlan.sodiumMg}mg</span>
+                </div>
+                <p className="text-[10px] text-gray-500 mt-1">鈉大部分集中在上台前 1.5 小時</p>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            /* ===== 一般日模式（非比賽日） ===== */
+            <div className="space-y-2 text-xs">
+              {/* 鈉策略（醒目） */}
+              <div className="bg-white/60 rounded-lg px-3 py-2">
+                <p className="font-semibold text-gray-700 mb-0.5">🧂 鈉策略</p>
+                <p className="text-gray-600">{focusPlan.sodiumNote}</p>
+              </div>
+
+              {/* 飲水說明 */}
+              <div className="bg-white/60 rounded-lg px-3 py-2">
+                <p className="font-semibold text-gray-700 mb-0.5">💧 飲水</p>
+                <p className="text-gray-600">{(focusPlan.water / 1000).toFixed(1)}L（{focusPlan.waterMlPerKg || Math.round(focusPlan.water / bodyWeight)} mL/kg）</p>
+              </div>
+
+              {/* 鉀離子 */}
+              {focusPlan.potassiumNote && (
+                <div className="bg-white/60 rounded-lg px-3 py-2">
+                  <p className="font-semibold text-gray-700 mb-0.5">🍌 鉀離子</p>
+                  <p className="text-gray-600">{focusPlan.potassiumNote}</p>
+                </div>
+              )}
+
+              {/* 纖維 */}
+              <div className="bg-white/60 rounded-lg px-3 py-2">
+                <p className="font-semibold text-gray-700 mb-0.5">🥬 纖維</p>
+                <p className="text-gray-600">{focusPlan.fiberNote}</p>
+              </div>
+
+              {/* 訓練 */}
+              <div className="bg-white/60 rounded-lg px-3 py-2">
+                <p className="font-semibold text-gray-700 mb-0.5">🏋️ 訓練</p>
+                <p className="text-gray-600">{focusPlan.trainingNote}</p>
+              </div>
+
+              {/* Posing */}
+              {focusPlan.posingNote && (
+                <div className="bg-white/60 rounded-lg px-3 py-2">
+                  <p className="font-semibold text-gray-700 mb-0.5">🪞 Posing</p>
+                  <p className="text-gray-600">{focusPlan.posingNote}</p>
+                </div>
+              )}
+
+              {/* 食物建議 */}
+              {focusPlan.foodNote && (
+                <div className="bg-white/60 rounded-lg px-3 py-2 border border-gray-200">
+                  <p className="font-semibold text-gray-700 mb-0.5">🍽️ 食物來源建議</p>
+                  <p className="text-gray-600">{focusPlan.foodNote}</p>
+                </div>
+              )}
+
+              {/* 肌酸 */}
+              {focusPlan.creatineNote && (
+                <div className="bg-white/60 rounded-lg px-3 py-2">
+                  <p className="font-semibold text-gray-700 mb-0.5">💊 肌酸</p>
+                  <p className="text-gray-600">{focusPlan.creatineNote}</p>
+                </div>
+              )}
+
+              {/* 補劑建議 */}
+              {focusPlan.supplementNote && (
+                <div className="bg-white/60 rounded-lg px-3 py-2 border border-gray-200">
+                  <p className="font-semibold text-gray-700 mb-1">💊 今日補劑清單</p>
+                  <div className="space-y-0.5">
+                    {focusPlan.supplementNote.split('；').map((item, i) => (
+                      <p key={i} className="text-gray-600">• {item}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 比賽日 Pump-up */}
+              {focusPlan.pumpUpNote && (
+                <div className="bg-amber-100/80 border border-amber-200 rounded-lg px-3 py-2.5">
+                  <p className="font-bold text-amber-700 mb-1">💪 後台 Pump-up 指引</p>
+                  <p className="text-[11px] text-amber-600 leading-relaxed">{focusPlan.pumpUpNote}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -357,36 +460,56 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                     <div><span className="text-blue-600">飲水：</span><strong className="text-blue-700">{(day.water / 1000).toFixed(1)}L</strong></div>
                     <div><span className="text-orange-600">鈉：</span><strong className="text-orange-700">{day.sodiumMg}mg</strong></div>
                   </div>
-                  <div className="space-y-1.5 text-[11px] text-gray-600 border-t border-gray-200 pt-2">
-                    <p><strong>🧂 鈉策略：</strong>{day.sodiumNote}</p>
-                    {day.potassiumNote && <p><strong>🍌 鉀離子：</strong>{day.potassiumNote}</p>}
-                    <p><strong>🥬 纖維：</strong>{day.fiberNote}</p>
-                    <p><strong>🏋️ 訓練：</strong>{day.trainingNote}</p>
-                    {day.posingNote && <p><strong>🪞 Posing：</strong>{day.posingNote}</p>}
-                    {day.foodNote && (
-                      <div className="mt-1 bg-white/60 rounded-lg px-2.5 py-2 border border-gray-200">
-                        <p><strong>🍽️ 食物來源：</strong>{day.foodNote}</p>
-                      </div>
-                    )}
-                    {day.creatineNote && <p><strong>💊 肌酸：</strong>{day.creatineNote}</p>}
-                    {day.supplementNote && (
-                      <div className="mt-1">
-                        <p className="font-medium text-gray-700 mb-0.5">💊 補劑清單：</p>
-                        {day.supplementNote.split('；').map((item, i) => (
-                          <p key={i} className="ml-2 text-gray-500">• {item}</p>
-                        ))}
-                      </div>
-                    )}
-                    {day.expectedWeight && (
-                      <p><strong>⚖️ 預估體重：</strong>{day.expectedWeight}kg{day.weightNote ? ` — ${day.weightNote}` : ''}</p>
-                    )}
-                    {day.pumpUpNote && (
-                      <div className="mt-1 bg-amber-100/50 rounded-lg px-2.5 py-2">
-                        <p className="font-medium text-amber-700">💪 Pump-up：</p>
-                        <p className="text-amber-600 mt-0.5">{day.pumpUpNote}</p>
-                      </div>
-                    )}
-                  </div>
+
+                  {/* 比賽日展開：顯示簡化時間軸 */}
+                  {day.showDayTimeline && day.showDayTimeline.length > 0 ? (
+                    <div className="border-t border-gray-200 pt-2 space-y-2">
+                      <p className="text-[11px] font-bold text-amber-700">📋 比賽日時間軸</p>
+                      {day.showDayTimeline.map((meal, mi) => (
+                        <div key={mi} className="flex gap-2 text-[11px]">
+                          <span className="shrink-0">{meal.emoji}</span>
+                          <div>
+                            <p className="font-medium text-gray-700">{meal.timeLabel}</p>
+                            <div className="flex flex-wrap gap-1.5 my-0.5">
+                              {meal.carbs > 0 && <span className="text-[10px] text-gray-500">🍚{meal.carbs}g</span>}
+                              {meal.protein > 0 && <span className="text-[10px] text-gray-500">🥩{meal.protein}g</span>}
+                              {meal.waterMl > 0 && <span className="text-[10px] text-blue-500">💧{meal.waterMl}ml</span>}
+                              {meal.sodiumMg > 0 && <span className="text-[10px] text-orange-500 font-bold">🧂{meal.sodiumMg}mg</span>}
+                            </div>
+                            <div className="text-gray-500">
+                              {meal.items.map((item, j) => <p key={j}>• {item}</p>)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <p className="text-[10px] text-amber-600 font-medium mt-1">{day.sodiumNote}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 text-[11px] text-gray-600 border-t border-gray-200 pt-2">
+                      <p><strong>🧂 鈉策略：</strong>{day.sodiumNote}</p>
+                      {day.potassiumNote && <p><strong>🍌 鉀離子：</strong>{day.potassiumNote}</p>}
+                      <p><strong>🥬 纖維：</strong>{day.fiberNote}</p>
+                      <p><strong>🏋️ 訓練：</strong>{day.trainingNote}</p>
+                      {day.posingNote && <p><strong>🪞 Posing：</strong>{day.posingNote}</p>}
+                      {day.foodNote && (
+                        <div className="mt-1 bg-white/60 rounded-lg px-2.5 py-2 border border-gray-200">
+                          <p><strong>🍽️ 食物來源：</strong>{day.foodNote}</p>
+                        </div>
+                      )}
+                      {day.creatineNote && <p><strong>💊 肌酸：</strong>{day.creatineNote}</p>}
+                      {day.supplementNote && (
+                        <div className="mt-1">
+                          <p className="font-medium text-gray-700 mb-0.5">💊 補劑清單：</p>
+                          {day.supplementNote.split('；').map((item, si) => (
+                            <p key={si} className="ml-2 text-gray-500">• {item}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {day.expectedWeight && (
+                    <p className="text-[11px] text-gray-600 mt-2"><strong>⚖️ 預估體重：</strong>{day.expectedWeight}kg{day.weightNote ? ` — ${day.weightNote}` : ''}</p>
+                  )}
                 </div>
               )}
             </div>

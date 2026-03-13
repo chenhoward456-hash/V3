@@ -346,6 +346,20 @@ export interface PeakWeekDay {
   pumpUpNote?: string       // 後台 pump-up 指引（比賽日）
   expectedWeight?: number   // 預估體重（基於肝醣 + 水分變化）
   weightNote?: string       // 體重變化說明
+  showDayTimeline?: ShowDayMeal[]  // 比賽日時間軸（僅 show_day 階段）
+}
+
+export interface ShowDayMeal {
+  timeLabel: string     // 例如 '起床（上台前 7 小時）'
+  relativeHours: number // 相對於上台時間，負數表示上台前
+  carbs: number
+  protein: number
+  fat: number
+  waterMl: number
+  sodiumMg: number
+  items: string[]       // 食物/補劑清單
+  note?: string         // 特別說明
+  emoji: string         // 時段 emoji
 }
 
 // ===== 常數 (基於文獻，編號對應檔案頂部 References) =====
@@ -2989,31 +3003,124 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         weightNote: wd.note,
       }
     } else {
-      // Day 0：比賽日
+      // Day 0：比賽日 — 完整時間軸協議
+      // 策略核心：前半段碳水為主（不加鈉） → 後半段鈉+簡單糖 dump → pump → 上台
+      // 生理學：早期碳水進入肌肉不需要鈉（GLUT-4 insulin-mediated），
+      //         最後 1-2 小時才加鈉（SGLT-1 + 血管充盈 + pump 效果）
+
+      // 根據體重計算各餐份量
+      const meal1Carbs = Math.round(bw * 1.0)     // 起床大餐：1.0 g/kg
+      const meal1Protein = Math.round(bw * 0.35)   // 少量蛋白質
+      const meal2Carbs = Math.round(bw * 0.6)      // 中間餐：0.6 g/kg
+      const meal2Protein = Math.round(bw * 0.25)
+      const meal3Carbs = Math.round(bw * 0.8)      // Pre-stage dump：0.8 g/kg（蜂蜜+運動飲料）
+      const pumpSnackCarbs = Math.round(bw * 0.15) // Pump 中間小口補：0.15 g/kg
+
+      const totalShowCarbs = meal1Carbs + meal2Carbs + meal3Carbs + pumpSnackCarbs
+      const totalShowProtein = meal1Protein + meal2Protein
+      const totalShowFat = Math.round(bw * 0.3)    // 極低脂肪，僅來自食物附帶
+
+      const timeline: ShowDayMeal[] = [
+        {
+          timeLabel: '起床（上台前 7 小時）',
+          relativeHours: -7,
+          carbs: meal1Carbs, protein: meal1Protein, fat: 5,
+          waterMl: 300, sodiumMg: 0,
+          emoji: '🌅',
+          items: [
+            '量體重（目標體重確認）',
+            `白飯 / 地瓜 ${meal1Carbs}g 碳水`,
+            `蛋白質 ${meal1Protein}g（雞胸 / 水煮蛋）`,
+            '水 300ml（小口喝）',
+          ],
+          note: '不加鈉 — 早期碳水經 GLUT-4 路徑進入肌肉，不需要鈉輔助。過早加鈉可能造成皮下水分滯留',
+        },
+        {
+          timeLabel: '上台前 3 小時',
+          relativeHours: -3,
+          carbs: meal2Carbs, protein: meal2Protein, fat: 3,
+          waterMl: 200, sodiumMg: 200,
+          emoji: '🍌',
+          items: [
+            `蜂蜜 + 香蕉（碳水 ${meal2Carbs}g）`,
+            `蛋白質 ${meal2Protein}g`,
+            '水 200ml',
+            '微量鈉 ~200mg（少許鹽）',
+          ],
+          note: '開始微量鈉 — 為最後的鈉 dump 做準備，避免突然大量鈉攝入造成不適',
+        },
+        {
+          timeLabel: '上台前 1-1.5 小時',
+          relativeHours: -1.5,
+          carbs: meal3Carbs, protein: 0, fat: 0,
+          waterMl: 250, sodiumMg: 700,
+          emoji: '⚡',
+          items: [
+            'Citrulline 6-8g（增強血管擴張 + pump）',
+            `蜂蜜 ${Math.round(meal3Carbs * 0.8)}g（直接擠著喝）`,
+            '舒跑 / 運動飲料 200-300ml',
+            `鹽 500-800mg（直接加在蜂蜜或運動飲料裡）`,
+            'Caffeine 200mg（增強 pump + 專注力）',
+          ],
+          note: '鈉 dump — SGLT-1 鈉-葡萄糖共轉運體：鈉+糖同時攝入，最大化葡萄糖進入肌肉。鹹+甜一起灌下去，血管充盈感會非常明顯',
+        },
+        {
+          timeLabel: '上台前 30-45 分鐘 — Pump Up',
+          relativeHours: -0.5,
+          carbs: pumpSnackCarbs, protein: 0, fat: 0,
+          waterMl: 50, sodiumMg: 100,
+          emoji: '💪',
+          items: [
+            '彈力帶 + 輕啞鈴',
+            '專注三角肌、手臂、胸、上背',
+            '每部位 2-3 組 × 12-20 下，不到力竭',
+            '組間小口蜂蜜或糖果',
+            '避免腿部 pump',
+            '上台前 5-10 分鐘停止',
+          ],
+          note: '3 組彎舉就能消耗 24% 肱二頭肌肝醣 — 保持輕量！目標是充血不是訓練。如果看起來扁就多吃幾口蜂蜜+鹽，看起來水就不要再喝了',
+        },
+        {
+          timeLabel: '上台',
+          relativeHours: 0,
+          carbs: 0, protein: 0, fat: 0,
+          waterMl: 0, sodiumMg: 0,
+          emoji: '🏆',
+          items: ['爆炸！'],
+          note: '上台前最後確認：肌肉飽滿度、血管充盈、姿勢。深呼吸，享受比賽',
+        },
+      ]
+
       day = {
         daysOut: 0, date: dateStr,
         label: '比賽日',
         phase: 'show_day',
-        carbsGPerKg: PEAK_WEEK.SHOW_CARB_G_PER_KG,
-        proteinGPerKg: PEAK_WEEK.SHOW_PROTEIN_G_PER_KG,
-        fatGPerKg: PEAK_WEEK.SHOW_FAT_G_PER_KG,
-        waterMlPerKg: PEAK_WEEK.WATER_SHOW,
-        sodiumMg: PEAK_WEEK.SODIUM_SHOW,
-        sodiumNote: `少量鹹食（~${PEAK_WEEK.SODIUM_SHOW}mg）— 上台前 2 小時吃鹹零食可增強血管充盈和 pump 效果`,
-        fiberNote: '幾乎零纖維',
-        trainingNote: '後台 pump-up（詳見下方指引）',
-        carbs: Math.round(bw * PEAK_WEEK.SHOW_CARB_G_PER_KG),
-        protein: Math.round(bw * PEAK_WEEK.SHOW_PROTEIN_G_PER_KG),
-        fat: Math.round(bw * PEAK_WEEK.SHOW_FAT_G_PER_KG),
-        calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_SHOW),
-        potassiumNote: '正常鉀攝取',
-        foodNote: '小份量碳水持續補充：飯糰、年糕、米餅、糖果、蜂蜜。依視覺評估彈性調整 — 看起來扁就多吃碳水+鹽，看起來水就減少',
+        carbsGPerKg: Math.round(totalShowCarbs / bw * 10) / 10,
+        proteinGPerKg: Math.round(totalShowProtein / bw * 10) / 10,
+        fatGPerKg: Math.round(totalShowFat / bw * 10) / 10,
+        waterMlPerKg: Math.round(800 / bw * 10) / 10,  // ~800ml 總計
+        sodiumMg: 1000,  // 總計 ~1000mg，大部分在最後 1.5 小時
+        sodiumNote: '鈉集中在最後 1.5 小時 — 前半段不加鈉，上台前 dump 鹽+蜂蜜+運動飲料，最大化 SGLT-1 效果和血管充盈',
+        fiberNote: '幾乎零纖維（全部吃精緻碳水）',
+        trainingNote: '後台 pump-up（詳見時間軸）',
+        carbs: totalShowCarbs,
+        protein: totalShowProtein,
+        fat: totalShowFat,
+        calories: 0,
+        water: 800,  // 總計約 800ml（不含運動飲料）
+        potassiumNote: '從運動飲料和香蕉自然攝取即可',
+        foodNote: '比賽日所有食物依時間軸進食（詳見下方完整時間軸）',
         creatineNote: '比賽日可省略肌酸（非必要）',
-        supplementNote: supplementShowDay,
+        supplementNote: [
+          'Citrulline 6-8g（上台前 1-1.5 小時）— 一氧化氮前驅物，增強血管擴張',
+          'Caffeine 200mg（上台前 1-1.5 小時）— 增強 pump + 專注力',
+          '維他命 C 500mg（早餐時）',
+        ].join('；'),
         posingNote: '上台前反覆練習指定動作',
-        pumpUpNote: '上台前 30-45 分鐘開始 pump-up：彈力帶 + 輕啞鈴。專注三角肌、手臂、胸、上背。每部位 2-3 組 x 12-20 下，不到力竭。避免腿部 pump。上台前 5-10 分鐘停止。注意：3 組彎舉就能消耗 24% 肱二頭肌肝醣，保持輕量！',
+        pumpUpNote: '上台前 30-45 分鐘開始 pump-up：彈力帶 + 輕啞鈴。專注三角肌、手臂、胸、上背。每部位 2-3 組 x 12-20 下，不到力竭。避免腿部 pump。上台前 5-10 分鐘停止。',
         expectedWeight: expectedWt,
         weightNote: wd.note,
+        showDayTimeline: timeline,
       }
     }
 
