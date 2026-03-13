@@ -21,14 +21,14 @@ const LabResults = dynamic(() => import('@/components/client/LabResults'), { ssr
 const SupplementModal = dynamic(() => import('@/components/client/SupplementModal'), { ssr: false })
 import WellnessTrend from '@/components/client/WellnessTrend'
 const HealthReport = dynamic(() => import('@/components/client/HealthReport'), { ssr: false })
-import TrainingLog from '@/components/client/TrainingLog'
+const TrainingLog = dynamic(() => import('@/components/client/TrainingLog'), { ssr: false })
 import { isWeightTraining } from '@/components/client/types'
 import NutritionLog from '@/components/client/NutritionLog'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
-import SelfManagedNutrition from '@/components/client/SelfManagedNutrition'
+const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManagedNutrition'), { ssr: false })
 import PwaPrompt from '@/components/client/PwaPrompt'
 import { calcRecommendedStageWeight } from '@/lib/stage-weight'
 import { calculateHealthScore } from '@/lib/health-score-engine'
@@ -51,6 +51,42 @@ import { trackEvent } from '@/lib/analytics'
 import ABTest from '@/components/ABTest'
 import { trackConversion, peekVariant } from '@/lib/ab-testing'
 import ErrorBoundary from '@/components/ErrorBoundary'
+
+// ── Module-level constants (avoid re-creation on every render) ──
+
+const PILLARS_EXPLAIN: Record<string, string> = {
+  wellness: '身心狀態 25%',
+  nutrition: '營養合規 20%',
+  training: '訓練規律 20%',
+  supplement: '補品服從 15%',
+  lab: '血檢結果 20%',
+}
+
+const PILLAR_TIPS: Record<string, string> = {
+  wellness: '多休息、保持正面心態',
+  nutrition: '注意營養目標的執行',
+  training: '保持規律的訓練頻率',
+  supplement: '別忘了每天的補品打卡',
+  lab: '可考慮安排血檢追蹤',
+}
+
+const PHASE_LABELS: Record<string, string> = {
+  off_season: '休賽期',
+  bulk: '增肌期',
+  cut: '減脂期',
+  peak_week: 'Peak Week',
+  competition: '比賽日',
+  recovery: '賽後恢復',
+}
+
+const PHASE_OPTIONS = [
+  { value: 'off_season', label: '休賽期', icon: '🌙' },
+  { value: 'bulk', label: '增肌期', icon: '💪' },
+  { value: 'cut', label: '減脂期', icon: '🔥' },
+  { value: 'peak_week', label: 'Peak Week', icon: '⚡' },
+  { value: 'competition', label: '比賽日', icon: '🏆' },
+  { value: 'recovery', label: '賽後恢復', icon: '🧘' },
+] as const
 
 /** Dismissable retention card — stores dismissed state in localStorage */
 function RetentionCard({ children, onDismiss, id }: { children: React.ReactNode; onDismiss: () => void; id: string }) {
@@ -786,13 +822,6 @@ export default function ClientDashboard() {
               {/* 五柱進度條（附解釋） */}
               <div className="grid grid-cols-5 gap-1">
                 {healthScore.pillars.map(p => {
-                  const pillarsExplain: Record<string, string> = {
-                    wellness: '身心狀態 25%',
-                    nutrition: '營養合規 20%',
-                    training: '訓練規律 20%',
-                    supplement: '補品服從 15%',
-                    lab: '血檢結果 20%',
-                  }
                   return (
                     <div key={p.pillar} className="text-center">
                       <div className="text-base leading-none mb-1">{p.emoji}</div>
@@ -831,17 +860,10 @@ export default function ClientDashboard() {
               {(() => {
                 const lowest = [...healthScore.pillars].sort((a, b) => a.score - b.score)[0]
                 if (lowest && lowest.score < 70) {
-                  const tips: Record<string, string> = {
-                    wellness: '多休息、保持正面心態',
-                    nutrition: '注意營養目標的執行',
-                    training: '保持規律的訓練頻率',
-                    supplement: '別忘了每天的補品打卡',
-                    lab: '可考慮安排血檢追蹤',
-                  }
                   return (
                     <div className="mt-2 pt-2 border-t border-emerald-200">
                       <p className="text-xs text-amber-600 font-medium">
-                        💡 {lowest.label}分數偏低（{lowest.score}分）— {tips[lowest.pillar] || '持續改善中'}
+                        💡 {lowest.label}分數偏低（{lowest.score}分）— {PILLAR_TIPS[lowest.pillar] || '持續改善中'}
                       </p>
                     </div>
                   )
@@ -866,15 +888,6 @@ export default function ClientDashboard() {
           {/* 備賽倒數 Banner */}
           {isCompetition && c.competition_date && (() => {
             const daysLeft = Math.ceil((new Date(c.competition_date).getTime() - new Date().getTime()) / 86400000)
-            const phaseLabels: Record<string, string> = { off_season: '休賽期', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' }
-            const phaseOptions = [
-              { value: 'off_season', label: '休賽期', icon: '🌙' },
-              { value: 'bulk', label: '增肌期', icon: '💪' },
-              { value: 'cut', label: '減脂期', icon: '🔥' },
-              { value: 'peak_week', label: 'Peak Week', icon: '⚡' },
-              { value: 'competition', label: '比賽日', icon: '🏆' },
-              { value: 'recovery', label: '賽後恢復', icon: '🧘' },
-            ]
             const phase = c.prep_phase || 'off_season'
             const urgencyColor = daysLeft <= 7 ? 'from-red-500 to-red-600' : daysLeft <= 14 ? 'from-amber-500 to-orange-500' : daysLeft <= 30 ? 'from-amber-400 to-yellow-500' : 'from-blue-500 to-blue-600'
             const urgencyBg = daysLeft <= 7 ? 'bg-red-50 border-red-200' : daysLeft <= 14 ? 'bg-amber-50 border-amber-200' : daysLeft <= 30 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
@@ -888,7 +901,7 @@ export default function ClientDashboard() {
                         onClick={() => setShowPhaseSelector(!showPhaseSelector)}
                         className={`px-2 py-0.5 text-xs font-bold rounded-full text-white bg-gradient-to-r ${urgencyColor} flex items-center gap-1 transition-all active:scale-95`}
                       >
-                        {phaseLabels[phase] || phase}
+                        {PHASE_LABELS[phase] || phase}
                         <ChevronDown className={`w-3 h-3 transition-transform ${showPhaseSelector ? 'rotate-180' : ''}`} />
                       </button>
                     </div>
@@ -906,7 +919,7 @@ export default function ClientDashboard() {
                   <div className="mt-3 pt-3 border-t border-gray-200/60">
                     <p className="text-xs text-gray-500 mb-2 font-medium">切換備賽階段</p>
                     <div className="grid grid-cols-3 gap-1.5">
-                      {phaseOptions.map(opt => (
+                      {PHASE_OPTIONS.map(opt => (
                         <button
                           key={opt.value}
                           onClick={() => handlePrepPhaseChange(opt.value)}

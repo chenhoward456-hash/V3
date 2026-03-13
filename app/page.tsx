@@ -10,45 +10,45 @@ import ABTest from '@/components/ABTest'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
 
+// Shared constants to avoid duplication across schemas
+const SHARED_ADDRESS = {
+  '@type': 'PostalAddress' as const,
+  addressLocality: '台中市',
+  addressRegion: '北屯區',
+  addressCountry: 'TW',
+}
+
+const SHARED_SAME_AS = [
+  'https://www.instagram.com/chenhoward/',
+  'https://lin.ee/LP65rCc',
+]
+
+const SHARED_PROFILE_IMAGE = `${SITE_URL}/howard-profile.jpg`
+
 const personSchema = {
-  '@context': 'https://schema.org',
   '@type': 'Person',
   name: 'Howard Chen',
   alternateName: 'Howard',
   jobTitle: 'CSCS 認證體能教練 / Howard Protocol 創辦人',
   description: '數據驅動體態與健康管理系統 Howard Protocol 創辦人，CSCS 認證，運動醫學背景。智能系統 × 教練監督。',
   url: SITE_URL,
-  image: `${SITE_URL}/howard-profile.jpg`,
-  sameAs: [
-    'https://www.instagram.com/chenhoward/',
-    'https://lin.ee/LP65rCc',
-  ],
+  image: SHARED_PROFILE_IMAGE,
+  sameAs: SHARED_SAME_AS,
   worksFor: {
     '@type': 'Organization',
     name: 'Howard Protocol',
-    address: {
-      '@type': 'PostalAddress',
-      addressLocality: '台中市',
-      addressRegion: '北屯區',
-      addressCountry: 'TW',
-    },
+    address: SHARED_ADDRESS,
   },
   knowsAbout: ['肌力訓練', '體能訓練', '代謝優化', '營養優化', '運動科學', 'CSCS', '數據化健康管理', '體態管理'],
 }
 
 const localBusinessSchema = {
-  '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
   name: 'Howard Protocol',
   description: '數據驅動的體態與健康管理系統。CSCS 認證教練監督 × 智能系統 24 小時分析。',
   url: SITE_URL,
-  image: `${SITE_URL}/howard-profile.jpg`,
-  address: {
-    '@type': 'PostalAddress',
-    addressLocality: '台中市',
-    addressRegion: '北屯區',
-    addressCountry: 'TW',
-  },
+  image: SHARED_PROFILE_IMAGE,
+  address: SHARED_ADDRESS,
   geo: {
     '@type': 'GeoCoordinates',
     latitude: 24.1827,
@@ -60,19 +60,15 @@ const localBusinessSchema = {
   ],
   serviceType: ['個人教練', '遠端訓練管理', '營養諮詢'],
   priceRange: '$$',
-  sameAs: [
-    'https://www.instagram.com/chenhoward/',
-    'https://lin.ee/LP65rCc',
-  ],
+  sameAs: SHARED_SAME_AS,
 }
 
 const organizationSchema = {
-  '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'Howard Protocol',
   url: SITE_URL,
   logo: `${SITE_URL}/icon-192.png`,
-  image: `${SITE_URL}/howard-profile.jpg`,
+  image: SHARED_PROFILE_IMAGE,
   description: '數據驅動的體態與健康管理系統。CSCS 認證教練監督 × 智能系統 24 小時分析。',
   founder: {
     '@type': 'Person',
@@ -80,12 +76,7 @@ const organizationSchema = {
     jobTitle: 'CSCS 認證體能教練',
     url: SITE_URL,
   },
-  address: {
-    '@type': 'PostalAddress',
-    addressLocality: '台中市',
-    addressRegion: '北屯區',
-    addressCountry: 'TW',
-  },
+  address: SHARED_ADDRESS,
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'customer service',
@@ -93,14 +84,10 @@ const organizationSchema = {
     telephone: '+886-978-185-268',
     availableLanguage: ['zh-TW', 'en'],
   },
-  sameAs: [
-    'https://www.instagram.com/chenhoward/',
-    'https://lin.ee/LP65rCc',
-  ],
+  sameAs: SHARED_SAME_AS,
 }
 
 const webApplicationSchema = {
-  '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'Howard Protocol',
   description: '數據驅動的體態與健康管理系統',
@@ -142,7 +129,6 @@ const webApplicationSchema = {
 }
 
 const serviceSchema = {
-  '@context': 'https://schema.org',
   '@type': 'Service',
   name: 'Howard Protocol 數據驅動健康管理',
   description: '結合 CSCS 認證教練監督與智能系統 24 小時分析的體態與健康管理服務。自適應 TDEE 校正、每週智能分析、Refeed 自動觸發。',
@@ -188,7 +174,6 @@ const serviceSchema = {
 }
 
 const faqSchema = {
-  '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: [
     {
@@ -234,6 +219,19 @@ const faqSchema = {
   ],
 }
 
+// Consolidated structured data using @graph approach
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    personSchema,
+    localBusinessSchema,
+    organizationSchema,
+    webApplicationSchema,
+    serviceSchema,
+    faqSchema,
+  ],
+}
+
 export const metadata: Metadata = {
   title: 'Howard Protocol - 數據驅動的體態與健康管理 | CSCS 教練監督',
   description: '不只是教練服務，是一套數據驅動的體態與健康管理系統。自適應 TDEE 校正、每週智能分析、Refeed 自動觸發、月經週期濾鏡。CSCS 認證教練監督，運動醫學背景。台中實體 / 全台遠端。',
@@ -254,27 +252,7 @@ export default function HomePage() {
       <PwaRedirect />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(webApplicationSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
       {/* ===== 區塊 1: Hero ===== */}
