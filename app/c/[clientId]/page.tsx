@@ -1591,15 +1591,6 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* DEBUG: Peak Week 條件診斷 — 確認後刪除 */}
-        <div className="bg-red-600 text-white text-[11px] font-mono rounded-lg px-3 py-2 mb-3">
-          PEAK-DEBUG v3 | isComp={String(!!isCompetition)} | compDate={c.competition_date || 'NULL'} | weight={String(latestBodyData?.weight ?? 'NULL')} | prepPhase={c.prep_phase || 'NULL'}
-          {c.competition_date && (() => {
-            const dl = Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
-            return ` | daysLeft=${dl} | showPW=${dl <= 14 && !!latestBodyData?.weight}`
-          })()}
-        </div>
-
         {/* Goal-Driven + Peak Week（備賽客戶）*/}
         {isCompetition && (() => {
           const compDaysLeft = c.competition_date
