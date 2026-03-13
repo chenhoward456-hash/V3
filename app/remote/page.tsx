@@ -89,21 +89,23 @@ export default function RemotePage() {
             <h2 className="text-2xl md:text-3xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
               選擇你的方案
             </h2>
-            <p className="text-center text-gray-500 mb-12 text-sm">同一套智能引擎，三種使用方式</p>
+            <p className="text-center text-gray-500 mb-12 text-sm">同一套智能引擎，兩種使用方式</p>
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
 
               {/* 方案 1：自主管理 NT$499 */}
-              <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-[#2563eb]/30 flex flex-col relative">
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
                 <div className="absolute -top-3 left-6 bg-[#2563eb] text-white text-xs font-bold px-3 py-1 rounded-full">
                   最多人選
                 </div>
                 <h3 className="text-xl font-bold mb-1" style={{ color: '#1e3a5f' }}>自主管理版</h3>
-                <p className="text-gray-400 text-sm mb-4">系統幫你管，不需要教練</p>
-                <div className="mb-6">
+                <p className="text-gray-400 text-sm mb-1">系統幫你管，不需要教練</p>
+                <p className="text-[#2563eb] text-xs font-medium mb-4">適合知道方向、需要工具輔助的你</p>
+                <div className="mb-1">
                   <span className="text-4xl font-bold" style={{ color: '#1e3a5f' }}>NT$499</span>
                   <span className="text-gray-400 text-sm"> /月</span>
                 </div>
+                <p className="text-xs text-gray-400 mb-6">每天不到 NT$17，比一杯超商咖啡便宜</p>
                 <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
                   <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>智能引擎 24 小時自動分析</li>
                   <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>每週體重趨勢自動判讀</li>
@@ -118,24 +120,29 @@ export default function RemotePage() {
                   href="/join"
                   className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
                 >
-                  免費體驗 →
+                  免費體驗 &rarr;
                 </Link>
                 <p className="text-center text-xs text-gray-400 mt-3">
                   免費試用，不需綁卡
                 </p>
               </div>
 
-              {/* 方案 2：教練指導 NT$2,999 */}
-              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
+              {/* 方案 2：教練指導 NT$2,999 — Recommended / Highlighted */}
+              <div className="bg-white rounded-2xl p-8 shadow-md border-2 border-[#1e3a5f] flex flex-col relative ring-1 ring-[#1e3a5f]/20">
                 <div className="absolute -top-3 left-6 bg-[#1e3a5f] text-white text-xs font-bold px-3 py-1 rounded-full">
+                  推薦
+                </div>
+                <div className="absolute -top-3 right-6 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                   全台適用
                 </div>
                 <h3 className="text-xl font-bold mb-1" style={{ color: '#1e3a5f' }}>教練指導版</h3>
-                <p className="text-gray-400 text-sm mb-4">系統 + CSCS 教練監督</p>
-                <div className="mb-6">
+                <p className="text-gray-400 text-sm mb-1">系統 + CSCS 教練監督</p>
+                <p className="text-[#1e3a5f] text-xs font-medium mb-4">適合需要專業教練判斷與把關的你</p>
+                <div className="mb-1">
                   <span className="text-4xl font-bold" style={{ color: '#1e3a5f' }}>NT$2,999</span>
                   <span className="text-gray-400 text-sm"> /月</span>
                 </div>
+                <p className="text-xs text-gray-400 mb-6">每天不到 NT$100，比一堂私人教練課便宜</p>
                 <ul className="space-y-3 text-gray-700 mb-4 text-sm">
                   <li className="flex items-start gap-2"><span className="text-[#1e3a5f] mt-0.5">&#10003;</span>包含自主管理版所有功能</li>
                 </ul>
@@ -151,7 +158,7 @@ export default function RemotePage() {
                 <LineButton
                   source="remote_page"
                   intent="coach_plan"
-                  className="block text-center bg-[#1e3a5f] text-white py-3.5 rounded-xl font-semibold hover:bg-[#162d4a] transition-colors"
+                  className="block text-center bg-[#1e3a5f] text-white py-3.5 rounded-xl font-semibold hover:bg-[#162d4a] transition-colors shadow-lg shadow-[#1e3a5f]/25"
                 >
                   加 LINE 諮詢
                 </LineButton>
@@ -160,39 +167,6 @@ export default function RemotePage() {
                 </p>
               </div>
 
-              {/* 方案 3：實體 + 遠端 NT$5,000 */}
-              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
-                <div className="absolute -top-3 left-6 bg-amber-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  台中限定
-                </div>
-                <h3 className="text-xl font-bold mb-1" style={{ color: '#1e3a5f' }}>實體 + 智能管理</h3>
-                <p className="text-gray-400 text-sm mb-4">一對一指導 + 系統全套</p>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold" style={{ color: '#1e3a5f' }}>NT$5,000</span>
-                  <span className="text-gray-400 text-sm"> /月</span>
-                </div>
-                <ul className="space-y-3 text-gray-700 mb-4 text-sm">
-                  <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>包含教練指導版所有功能</li>
-                </ul>
-                <div className="border-t border-gray-100 pt-4 mb-8 flex-1">
-                  <p className="text-xs text-gray-400 mb-3">額外包含：</p>
-                  <ul className="space-y-3 text-gray-700 text-sm">
-                    <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>一對一動作評估與矯正</li>
-                    <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>即時訓練指導與調整</li>
-                    <li className="flex items-start gap-2"><span className="text-amber-600 mt-0.5">&#10003;</span>Coolday Fitness 北屯館</li>
-                  </ul>
-                </div>
-                <LineButton
-                  source="remote_page"
-                  intent="in_person"
-                  className="block text-center bg-white text-[#1e3a5f] border-2 border-[#1e3a5f] py-3.5 rounded-xl font-semibold hover:bg-[#1e3a5f]/5 transition-colors"
-                >
-                  加 LINE 預約
-                </LineButton>
-                <p className="text-center text-xs text-gray-400 mt-3">
-                  台中地區，實體課另計
-                </p>
-              </div>
             </div>
 
             <p className="text-center text-xs text-gray-400 mt-8">
@@ -206,10 +180,10 @@ export default function RemotePage() {
       <ScrollReveal>
         <section className="max-w-4xl mx-auto px-6 py-20">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-4" style={{ color: '#1e3a5f' }}>
-            為什麼 NT$499 就能做到？
+            為什麼大部分人從自主管理開始
           </h2>
           <p className="text-center text-gray-500 mb-12 text-sm">
-            因為系統在做事，不是教練在花時間
+            系統在做事，不需要教練花時間 — 所以價格可以更低
           </p>
           <div className="grid md:grid-cols-3 gap-6">
             {[

@@ -12,11 +12,26 @@ vi.mock('next/link', () => ({
 }))
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+const mockLocalStorage = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: vi.fn((key: string) => store[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => { store[key] = value }),
+    removeItem: vi.fn((key: string) => { delete store[key] }),
+    clear: vi.fn(() => { store = {} }),
+  }
+})()
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 describe('StickyMobileCta', () => {
   beforeEach(() => {
     Object.defineProperty(window, 'scrollY', { value: 0, writable: true })
+    Object.defineProperty(window, 'localStorage', { value: mockLocalStorage, writable: true })
+    mockLocalStorage.clear()
   })
 
   afterEach(() => {
@@ -55,19 +70,32 @@ describe('StickyMobileCta', () => {
     expect(wrapper.className).toContain('translate-y-full')
   })
 
-  it('renders CTA links pointing to /join', () => {
+  it('shows diagnosis CTA when user has NOT completed diagnosis', () => {
     render(<StickyMobileCta />)
 
+    expect(screen.getByText('60 秒免費體態分析')).toBeInTheDocument()
     const links = screen.getAllByRole('link')
-    links.forEach((link) => {
-      expect(link).toHaveAttribute('href', '/join')
-    })
+    const primaryLink = links.find(l => l.textContent === '60 秒免費體態分析')
+    expect(primaryLink).toHaveAttribute('href', '/diagnosis')
   })
 
-  it('renders both free and paid CTA labels', () => {
+  it('shows plan CTA when user HAS completed diagnosis (demo_step = 3)', () => {
+    mockLocalStorage.setItem('demo_step', '3')
+
     render(<StickyMobileCta />)
 
-    expect(screen.getByText('免費開始')).toBeInTheDocument()
+    expect(screen.getByText('查看完整方案')).toBeInTheDocument()
+    const links = screen.getAllByRole('link')
+    const primaryLink = links.find(l => l.textContent === '查看完整方案')
+    expect(primaryLink).toHaveAttribute('href', '/remote')
+  })
+
+  it('always renders the paid upgrade CTA', () => {
+    render(<StickyMobileCta />)
+
     expect(screen.getByText(/NT\$499/)).toBeInTheDocument()
+    const links = screen.getAllByRole('link')
+    const paidLink = links.find(l => l.textContent?.includes('NT$499'))
+    expect(paidLink).toHaveAttribute('href', '/join')
   })
 })

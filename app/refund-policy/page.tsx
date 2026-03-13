@@ -70,11 +70,6 @@ export default function RefundPolicyPage() {
                     <td className="py-3 pr-4">NT$2,999 / 月</td>
                     <td className="py-3 text-sm">自主管理 + CSCS 教練監督</td>
                   </tr>
-                  <tr>
-                    <td className="py-3 pr-4 font-medium text-text-primary">實體 + 智能管理</td>
-                    <td className="py-3 pr-4">NT$5,000 / 月</td>
-                    <td className="py-3 text-sm">教練指導 + 台中一對一（台中限定）</td>
-                  </tr>
                 </tbody>
               </table>
             </div>
@@ -115,20 +110,6 @@ export default function RefundPolicyPage() {
             </ul>
           </div>
 
-          <div className="mt-6">
-            <h4 className="text-lg font-semibold mb-3 text-text-primary">實體訓練方案退費</h4>
-            <ul className="list-disc list-inside space-y-2 text-text-secondary leading-relaxed">
-              <li>
-                「實體 + 智能管理」方案包含台中一對一訓練課程。<span className="font-medium text-text-primary">已進行之課程不予退費</span>。
-              </li>
-              <li>
-                七日鑑賞期內若尚未使用任何實體課程，可申請全額退費。
-              </li>
-              <li>
-                七日鑑賞期內若已使用部分課程，退費金額將扣除已使用課程之費用（以單堂計費）。
-              </li>
-            </ul>
-          </div>
         </div>
 
         {/* 電子書與數位商品 */}

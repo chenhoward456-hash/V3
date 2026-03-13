@@ -30,7 +30,7 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-4">學習資源</h4>
             <ul className="space-y-2.5 text-sm">
-              <li><Link href="/blog" className="hover:text-white transition-colors">知識分享</Link></li>
+              <li><Link href="/blog" className="hover:text-white transition-colors">文章</Link></li>
               <li><Link href="/training" className="hover:text-white transition-colors">訓練工程</Link></li>
               <li><Link href="/nutrition" className="hover:text-white transition-colors">營養與恢復</Link></li>
               <li><Link href="/faq" className="hover:text-white transition-colors">常見問題</Link></li>

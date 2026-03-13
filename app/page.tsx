@@ -258,7 +258,7 @@ export default function HomePage() {
       {/* ===== 區塊 1: Hero ===== */}
       <section className="relative overflow-hidden bg-gradient-to-b from-white to-[#f5f7fa]">
         <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
-          <div className="flex flex-col-reverse md:flex-row items-center gap-10 md:gap-16">
+          <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
             <div className="flex-1 text-center md:text-left">
               <div className="inline-block bg-primary/10 text-primary text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
                 CSCS 認證 × 數據驅動
@@ -661,7 +661,7 @@ export default function HomePage() {
               </div>
 
               {/* 升級 $499 */}
-              <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-2xl font-bold text-navy">$499</span>
                   <span className="text-xs text-gray-400">/月 · 升級解鎖</span>
@@ -670,6 +670,7 @@ export default function HomePage() {
                   <li className="flex items-start gap-1.5"><span className="text-green-500">&#10003;</span>身心狀態追蹤（睡眠、能量、壓力）</li>
                   <li className="flex items-start gap-1.5"><span className="text-green-500">&#10003;</span>AI 飲食顧問無限使用</li>
                 </ul>
+                <Link href="/join?tier=self_managed" className="inline-block text-sm font-semibold text-blue-600 hover:text-blue-800 mt-2">升級解鎖 →</Link>
               </div>
 
               <div className="mt-auto">
@@ -694,7 +695,7 @@ export default function HomePage() {
               </p>
 
               {/* 遠端 $2,999 */}
-              <div className="bg-blue-50 rounded-xl p-4 mb-3">
+              <div className="bg-blue-50 rounded-xl p-4 mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-2xl font-bold text-navy">$2,999</span>
                   <span className="text-xs text-gray-400">/月 · 全台遠端</span>
@@ -703,18 +704,6 @@ export default function HomePage() {
                   <li className="flex items-start gap-1.5"><span className="text-primary">&#10003;</span>自主管理全部功能</li>
                   <li className="flex items-start gap-1.5"><span className="text-primary">&#10003;</span>教練每週營養 review + LINE 即時問答</li>
                   <li className="flex items-start gap-1.5"><span className="text-primary">&#10003;</span>訓練 / 補劑 / 血檢完整追蹤</li>
-                </ul>
-              </div>
-
-              {/* 實體 $5,000 */}
-              <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-2xl font-bold text-navy">$5,000</span>
-                  <span className="text-xs text-gray-400">/月 · 台中北屯</span>
-                </div>
-                <ul className="space-y-1 text-xs text-gray-600">
-                  <li className="flex items-start gap-1.5"><span className="text-navy">&#10003;</span>教練指導全部功能</li>
-                  <li className="flex items-start gap-1.5"><span className="text-navy">&#10003;</span>每月實體 1 對 1 + 動作矯正 + 課表設計</li>
                 </ul>
               </div>
 
@@ -830,7 +819,7 @@ export default function HomePage() {
               免費體驗 →
             </Link>
             <Link
-              href="/join"
+              href="/join?tier=self_managed&promo=first399"
               className="inline-block bg-white text-navy px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors min-h-[48px]"
             >
               NT$399/月 開始 →

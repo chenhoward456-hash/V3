@@ -75,6 +75,14 @@ const config: Config = {
           '50%': { transform: 'scale(1.05)' },
           '100%': { transform: 'scale(1)', opacity: '1' },
         },
+        'slide-in-right': {
+          '0%': { opacity: '0', transform: 'translateX(100%) translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateX(0) translateY(0)' },
+        },
+        'slide-out-right': {
+          '0%': { opacity: '1', transform: 'translateX(0) translateY(0)' },
+          '100%': { opacity: '0', transform: 'translateX(100%) translateY(8px)' },
+        },
       },
       animation: {
         'slide-in-down': 'slide-in-down 0.3s ease-out',
@@ -82,6 +90,8 @@ const config: Config = {
         'fade-in-up': 'fade-in-up 0.5s ease-out',
         'ping-once': 'ping-once 0.5s ease-out',
         'celebrate': 'celebrate 0.5s ease-out',
+        'slide-in-right': 'slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        'slide-out-right': 'slide-out-right 0.3s ease-in forwards',
       },
     },
   },

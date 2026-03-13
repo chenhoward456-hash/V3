@@ -3,8 +3,26 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
+type CtaState = 'not_started' | 'diagnosis_done'
+
 export default function StickyMobileCta() {
   const [visible, setVisible] = useState(false)
+  const [ctaState, setCtaState] = useState<CtaState>('not_started')
+
+  useEffect(() => {
+    // Determine CTA context based on diagnosis completion
+    try {
+      const demoStep = localStorage.getItem('demo_step')
+      if (demoStep) {
+        const step = JSON.parse(demoStep)
+        if (step === 3) {
+          setCtaState('diagnosis_done')
+        }
+      }
+    } catch {
+      // localStorage unavailable or parse error — keep default
+    }
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -15,6 +33,10 @@ export default function StickyMobileCta() {
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const ctaConfig = ctaState === 'diagnosis_done'
+    ? { text: '查看完整方案', href: '/remote' }
+    : { text: '60 秒免費體態分析', href: '/diagnosis' }
 
   return (
     <div
@@ -27,10 +49,10 @@ export default function StickyMobileCta() {
       <div className="bg-white/90 backdrop-blur-xl border-t border-gray-200 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         <div className="flex gap-3 max-w-lg mx-auto">
           <Link
-            href="/join"
+            href={ctaConfig.href}
             className="flex-1 bg-primary text-white text-center py-3 rounded-xl font-semibold text-sm hover:bg-primary-dark transition-colors min-h-[44px] flex items-center justify-center"
           >
-            免費開始
+            {ctaConfig.text}
           </Link>
           <Link
             href="/join"

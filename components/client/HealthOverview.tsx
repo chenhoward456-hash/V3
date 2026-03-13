@@ -192,7 +192,7 @@ export default function HealthOverview({
     wearable.wearable_sleep_score != null
   )
 
-  if (cards.length === 0 && !hasWearableData) return null
+  if (cards.length === 0 && !hasWearableData && !wearable) return null
 
   const gridCols = cards.length === 1 ? 'grid-cols-1' : cards.length === 2 ? 'grid-cols-2' : cards.length === 3 ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2 md:grid-cols-4'
 
@@ -211,6 +211,16 @@ export default function HealthOverview({
       )}
 
       {/* 穿戴裝置 Gauge 四宮格（Garmin 風格） */}
+      {/* 穿戴裝置空狀態：已填寫 wellness 但沒有任何裝置數據 */}
+      {wearable && !hasWearableData && (
+        <div className="bg-gray-50 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <span className="text-lg shrink-0">⌚</span>
+          <p className="text-xs text-gray-400 leading-relaxed">
+            連結穿戴裝置可自動同步睡眠與心率數據
+          </p>
+        </div>
+      )}
+
       {hasWearableData && (
         <div className="bg-gray-900 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-3">
@@ -233,6 +243,7 @@ export default function HealthOverview({
               dark
               statusLabel={recoveryStatus?.label}
               statusColor={recoveryStatus?.color}
+              sourceLabel="穿戴裝置"
             />
 
             {/* 睡眠分數 */}

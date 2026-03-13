@@ -5,17 +5,44 @@ import BlogFilter from '@/components/BlogFilter'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: '知識分享 - Howard | 訓練、營養、恢復優化',
-  description: '個人實驗紀錄、研究心得與學習筆記。涵蓋訓練方法、營養科學、睡眠恢復、血檢優化等主題。',
+  title: '文章與知識 - Howard Protocol | 用數據理解你的身體',
+  description: '用數據理解你的身體。涵蓋 TDEE 計算、碳循環飲食、血液檢查、訓練方法、營養科學、睡眠恢復等主題的實戰經驗分享。',
   alternates: { canonical: 'https://howard456.vercel.app/blog' },
   openGraph: {
-    title: '知識分享 - Howard',
-    description: '訓練、營養、恢復優化的實戰經驗分享',
+    title: '文章與知識 - Howard Protocol',
+    description: '用數據理解你的身體 — 訓練、營養、恢復優化的實戰經驗分享',
     url: 'https://howard456.vercel.app/blog',
   },
 }
 
 const hardcodedPosts = [
+  {
+    id: '14',
+    title: 'TDEE 計算全攻略：為什麼計算器都不準？',
+    description: '網路上的 TDEE 計算器誤差可能高達 500 大卡。了解背後的原因，以及如何更精準地計算你的每日熱量消耗。',
+    date: '2026-03-10',
+    category: '基礎知識',
+    readTime: '7 分鐘',
+    slug: 'tdee-calculator-accuracy',
+  },
+  {
+    id: '13',
+    title: '碳循環飲食完整指南：從原理到實戰',
+    description: '碳循環不是什麼神秘的東西。根據訓練日和休息日調整碳水攝取，讓減脂更有效率。',
+    date: '2026-03-05',
+    category: '飲食策略',
+    readTime: '8 分鐘',
+    slug: 'carb-cycling-complete-guide',
+  },
+  {
+    id: '12',
+    title: '血液檢查與減脂的關係：教練不會告訴你的事',
+    description: '你的血液報告藏著減脂的關鍵線索。發炎指數、荷爾蒙、胰島素...這些數字比體重計更重要。',
+    date: '2026-03-01',
+    category: '進階知識',
+    readTime: '9 分鐘',
+    slug: 'blood-test-fat-loss-connection',
+  },
   {
     id: '11',
     title: '你睡覺還在用嘴巴呼吸？這可能是你減脂卡關的原因',
@@ -144,31 +171,28 @@ export default async function BlogPage() {
     <div style={{ backgroundColor: '#F9F9F7' }} className="min-h-screen">
       <div className="max-w-5xl mx-auto px-6 py-16">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold mb-4" style={{ color: '#2D2D2D' }}>
-            知識分享
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-navy">
+            文章與知識
           </h1>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            個人實驗紀錄、研究心得與學習筆記。<br />
-            所有內容均為個人經驗分享，不構成醫療建議。
+          <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+            用數據理解你的身體
           </p>
         </div>
 
         <BlogFilter posts={allPosts} />
 
         <div className="mt-16 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-10 text-center border-2 border-primary/20">
-          <h3 className="text-2xl font-bold mb-4" style={{ color: '#2D2D2D' }}>
-            想獲得更深度的內容？
+          <h3 className="text-2xl font-bold mb-4 text-navy">
+            想要個人化的飲食建議？
           </h3>
           <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            透過 LINE 預約免費諮詢，了解個人化的健康優化方案。
+            60 秒免費體態分析，系統即時估算你的 TDEE 和每日營養目標。
           </p>
           <a
-            href="https://lin.ee/LP65rCc"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block bg-success text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+            href="/diagnosis"
+            className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
           >
-            預約免費諮詢
+            開始免費分析 →
           </a>
         </div>
       </div>

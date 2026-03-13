@@ -73,6 +73,7 @@ interface AiChatDrawerProps {
   wearableData?: { hrv?: number | null; resting_hr?: number | null; device_recovery_score?: number | null } | null
   labResults?: LabResultEntry[]
   onFirstMessage?: () => void
+  initialPrompt?: string
   // Health mode context
   healthModeEnabled?: boolean
   healthScore?: { total: number; grade: string; daysInCycle: number | null; daysUntilBloodTest: number | null; labPenalty: number; labBonus: number; pillars: { pillar: string; label: string; score: number; emoji: string }[] } | null
@@ -100,6 +101,7 @@ export default function AiChatDrawer({
   todayWellness, wearableData,
   labResults,
   onFirstMessage,
+  initialPrompt,
   healthModeEnabled,
   healthScore,
   supplementSuggestions,
@@ -149,6 +151,13 @@ export default function AiChatDrawer({
       setTimeout(() => inputRef.current?.focus(), 300)
     }
   }, [open])
+
+  // 預填 initialPrompt（從血檢「問 AI」等入口帶入）
+  useEffect(() => {
+    if (open && initialPrompt && messages.length === 0) {
+      setInput(initialPrompt)
+    }
+  }, [open, initialPrompt, messages.length])
 
   useEffect(() => {
     if (inputRef.current) {

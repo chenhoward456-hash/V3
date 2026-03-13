@@ -5,6 +5,8 @@ import NutrientSlider from './NutrientSlider'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 
+const NONCOMPLIANT_REASONS = ['外食', '應酬', '壓力', '沒時間', '其他']
+
 interface NutritionLogProps {
   todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null; carbs_grams?: number | null; fat_grams?: number | null; calories?: number | null } | null
   nutritionLogs: any[]
@@ -43,6 +45,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   const [fatInput, setFatInput] = useState<string>(todayNutrition?.fat_grams?.toString() || '')
   // 合規性也作為本地 state，一次提交
   const [compliant, setCompliant] = useState<boolean | null>(todayNutrition?.compliant ?? null)
+  const [selectedReason, setSelectedReason] = useState<string | null>(null)
 
   const today = date || getLocalDateStr()
 
@@ -55,6 +58,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     setCarbsInput(todayNutrition?.carbs_grams?.toString() || '')
     setFatInput(todayNutrition?.fat_grams?.toString() || '')
     setCompliant(todayNutrition?.compliant ?? null)
+    setSelectedReason(null)
   }, [todayNutrition])
 
   // 自動計算熱量：蛋白質×4 + 碳水×4 + 脂肪×9
@@ -78,13 +82,16 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     }
     // 存手動回報值（教練看行為意圖）；新用戶預設 null
     const finalCompliant = isNewUser ? null : compliant
+    // 將非合規原因寫入 note 欄位
+    const reasonPrefix = selectedReason && compliant === false ? `[${selectedReason}] ` : ''
+    const finalNote = reasonPrefix + (note || '')
     setSaving(true)
     try {
       const res = await fetch('/api/nutrition-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clientId, date: today, compliant: finalCompliant, note: note || null,
+          clientId, date: today, compliant: finalCompliant, note: finalNote || null,
           protein_grams: proteinInput ? Number(proteinInput) : null,
           water_ml: waterInput ? Number(waterInput) : null,
           carbs_grams: carbsInput ? Number(carbsInput) : null,
@@ -259,6 +266,28 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
               <span>沒照計畫</span>
             </button>
           </div>
+
+          {/* 非合規原因選擇 */}
+          {compliant === false && (
+            <div className="mt-3">
+              <p className="text-xs text-gray-400 mb-2">原因（選填）</p>
+              <div className="flex flex-wrap gap-2">
+                {NONCOMPLIANT_REASONS.map((reason) => (
+                  <button
+                    key={reason}
+                    onClick={() => setSelectedReason(selectedReason === reason ? null : reason)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      selectedReason === reason
+                        ? 'bg-red-100 border border-red-400 text-red-700 scale-[1.05]'
+                        : 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -562,19 +591,21 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                 <p className="text-sm font-medium text-gray-700">近 7 天蛋白質</p>
                 <p className="text-xs text-gray-400">目標 {proteinTarget}g</p>
               </div>
-              <div className="flex items-end gap-1 h-16">
+              <div className="flex items-end gap-1 h-20">
                 {nutrientTrend.days.map((d, i) => {
                   const pct = d.protein != null ? Math.min(100, (d.protein / proteinTarget) * 100) : 0
                   const reached = d.protein != null && d.protein >= proteinTarget
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                      <div className="w-full flex flex-col justify-end h-12">
+                      <div className="w-full flex flex-col justify-end h-16">
                         {d.protein != null ? (
-                          <div
-                            className={`w-full rounded-t transition-all ${reached ? 'bg-green-400' : 'bg-blue-300'}`}
-                            style={{ height: `${Math.max(8, pct)}%` }}
-                            title={`${d.protein}g`}
-                          />
+                          <>
+                            <span className="text-[9px] text-gray-500 font-medium text-center w-full block">{d.protein}</span>
+                            <div
+                              className={`w-full rounded-t transition-all ${reached ? 'bg-green-400' : 'bg-blue-300'}`}
+                              style={{ height: `${Math.max(8, pct)}%` }}
+                            />
+                          </>
                         ) : (
                           <div className="w-full h-full flex items-end justify-center">
                             <div className="w-full h-2 bg-gray-100 rounded border border-dashed border-gray-200" title="未記錄" />

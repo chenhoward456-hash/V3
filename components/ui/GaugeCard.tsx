@@ -16,6 +16,7 @@ interface GaugeCardProps {
   bgColor: string       // tailwind bg class for card
   icon?: string
   dark?: boolean        // 深色模式（文字改為白色系）
+  sourceLabel?: string  // 數據來源標籤（如「穿戴裝置」）
 }
 
 export default function GaugeCard({
@@ -29,6 +30,7 @@ export default function GaugeCard({
   bgColor,
   icon,
   dark = false,
+  sourceLabel,
 }: GaugeCardProps) {
   const size = 80
   const strokeWidth = 6
@@ -123,6 +125,12 @@ export default function GaugeCard({
       {statusLabel && (
         <span className={`text-[10px] font-bold mt-0.5 ${statusColor}`}>
           {statusLabel}
+        </span>
+      )}
+      {/* 數據來源標籤 */}
+      {sourceLabel && (
+        <span className="text-[10px] text-gray-400 mt-0.5">
+          {sourceLabel}
         </span>
       )}
     </div>

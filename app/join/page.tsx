@@ -16,6 +16,8 @@ const PLANS: Record<Tier, {
   features: string[]
   highlight?: boolean
   badge?: string
+  promoPrice?: number
+  promoLabel?: string
 }> = {
   free: {
     name: '免費體驗',
@@ -36,6 +38,8 @@ const PLANS: Record<Tier, {
     price: 499,
     priceLabel: '499',
     unit: '/月',
+    promoPrice: 399,
+    promoLabel: '首月 $399',
     description: 'AI 系統完整存取，自動追蹤與分析',
     features: [
       'AI 飲食顧問 + 訓練 / 感受追蹤',
@@ -73,6 +77,7 @@ function JoinPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const refSource = searchParams.get('ref')
+  const promoParam = searchParams.get('promo')
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null)
   const [formStep, setFormStep] = useState<'plans' | 'form'>('plans')
 
@@ -245,8 +250,48 @@ function JoinPageInner() {
 
   const isFree = selectedTier === 'free'
 
+  // Progress step calculation
+  const totalSteps = 2
+  const currentStep = formStep === 'plans' ? 1 : 2
+  const stepLabels = ['選擇方案', '填寫資料']
+  const progressPercent = (currentStep / totalSteps) * 100
+
   return (
     <section className="max-w-5xl mx-auto px-6 py-16 md:py-20">
+      {/* Progress Indicator */}
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md -mx-6 px-6 pt-4 pb-3 mb-8 border-b border-gray-100">
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-gray-500">Step {currentStep} of {totalSteps}</span>
+            <span className="text-xs text-gray-400">{stepLabels[currentStep - 1]}</span>
+          </div>
+          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#2563eb] rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-2">
+            {stepLabels.map((label, i) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
+                  i + 1 <= currentStep
+                    ? 'bg-[#2563eb] text-white'
+                    : 'bg-gray-200 text-gray-400'
+                }`}>
+                  {i + 1 <= currentStep ? '\u2713' : i + 1}
+                </div>
+                <span className={`text-xs transition-colors ${
+                  i + 1 <= currentStep ? 'text-[#2563eb] font-semibold' : 'text-gray-400'
+                }`}>
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="text-center mb-12">
         <div className="inline-block bg-[#2563eb]/10 text-[#2563eb] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
@@ -290,6 +335,16 @@ function JoinPageInner() {
                 {plan.name}
               </h3>
               <p className="text-[11px] text-gray-500 mb-3">{plan.description}</p>
+              {tier === 'self_managed' && plan.promoPrice ? (
+                <div className="text-center">
+                  <div className="flex items-baseline justify-center gap-1.5">
+                    <span className="line-through text-gray-400 text-sm">NT${plan.priceLabel}</span>
+                    <span className="text-2xl font-bold text-blue-600">NT${plan.promoPrice}</span>
+                    <span className="text-xs text-gray-400">/首月</span>
+                  </div>
+                  <span className="text-xs text-gray-500">次月起 NT${plan.priceLabel}/月</span>
+                </div>
+              ) : (
               <div className="flex items-baseline justify-center gap-1">
                 {plan.price > 0 && <span className="text-xs text-gray-400">NT$</span>}
                 <span className="text-3xl font-bold" style={{ color: plan.price === 0 ? '#16a34a' : '#1e3a5f' }}>
@@ -297,6 +352,7 @@ function JoinPageInner() {
                 </span>
                 <span className="text-xs text-gray-400">{plan.unit}</span>
               </div>
+              )}
             </div>
 
             <ul className="space-y-2 mb-5">
@@ -338,6 +394,18 @@ function JoinPageInner() {
           )
         })}
       </div>
+
+      {/* Free plan escape link -- shown when a paid plan is selected */}
+      {selectedTier && selectedTier !== 'free' && (
+        <div className="text-center mb-6 -mt-6">
+          <button
+            onClick={() => handleSelectPlan('free')}
+            className="text-sm text-gray-400 hover:text-[#2563eb] transition-colors"
+          >
+            還沒準備好？先從免費方案開始 &rarr;
+          </button>
+        </div>
+      )}
 
       {/* 499 候補名單收集 */}
       {!selectedTier && (
@@ -746,13 +814,65 @@ function JoinPageInner() {
                   : isFree ? '立即開始免費體驗' : `前往付款 — NT$${PLANS[selectedTier].priceLabel}`
                 }
               </button>
+              <p className="text-xs text-gray-400 text-center mt-2">提交後系統會自動建立帳號，登入資訊會寄到你的 Email</p>
+
+              {/* Reassurance text */}
+              {!isFree && (
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-center gap-4 text-gray-400">
+                    <span className="flex items-center gap-1 text-xs">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      隨時取消
+                    </span>
+                    <span className="flex items-center gap-1 text-xs">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      無綁約
+                    </span>
+                    <span className="flex items-center gap-1 text-xs">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      無違約金
+                    </span>
+                  </div>
+                  <p className="text-center text-xs text-gray-400">
+                    月繳制，不滿意隨時停止
+                  </p>
+                  <div className="flex items-center justify-center gap-1.5 text-gray-400">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span className="text-[11px]">付款資訊由 ECPay 安全加密處理</span>
+                  </div>
+                </div>
+              )}
 
               <p className="text-center text-xs text-gray-400 mt-2">
                 {isFree
                   ? '不需信用卡，隨時可升級付費方案。'
-                  : '付款由綠界科技（ECPay）安全處理，支援信用卡、ATM、超商付款'
+                  : '支援信用卡、ATM、超商付款'
                 }
               </p>
+
+              {/* Free plan escape in form step for paid plans */}
+              {!isFree && (
+                <div className="text-center mt-3">
+                  <button
+                    onClick={() => {
+                      setSelectedTier('free')
+                      trackEvent('plan_downgrade_to_free', { from: selectedTier })
+                    }}
+                    className="text-xs text-gray-400 hover:text-[#2563eb] transition-colors"
+                  >
+                    還沒準備好？先從免費方案開始 &rarr;
+                  </button>
+                </div>
+              )}
+
               <p className="text-center text-[10px] text-gray-300 mt-3">
                 服務提供：Howard Protocol ｜ chenhoward456@gmail.com ｜ 0978-185-268
               </p>

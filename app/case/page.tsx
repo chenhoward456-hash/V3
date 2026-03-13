@@ -3,12 +3,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 export const metadata: Metadata = {
-  title: '個案追蹤 - The Howard Protocol',
-  description: '6年系統修復的完整數據紀錄。從2020年系統崩潰到2026年完全重生，透過系統化訓練與營養介入達到菁英等級。',
+  title: '我的故事 - The Howard Protocol',
+  description: 'Howard 的 6 年體態追蹤紀錄。從2020年系統崩潰到2026年完全重生，透過系統化訓練與營養介入達到菁英等級。',
   alternates: { canonical: 'https://howard456.vercel.app/case' },
   openGraph: {
-    title: '個案追蹤 - The Howard Protocol',
-    description: '6年系統修復的完整數據紀錄 - 從系統崩潰到完全重生',
+    title: '我的故事 - The Howard Protocol',
+    description: 'Howard 的 6 年體態追蹤紀錄 - 從系統崩潰到完全重生',
     url: 'https://howard456.vercel.app/case',
   },
 }
@@ -16,8 +16,8 @@ export const metadata: Metadata = {
 export default function CasePage() {
   return (
     <section className="section-container">
-      <h2 className="doc-title">個案追蹤</h2>
-      <p className="doc-subtitle">6年系統修復的完整數據紀錄 | Case Study 2020-2026</p>
+      <h2 className="doc-title">我的故事</h2>
+      <p className="doc-subtitle">Howard 的 6 年體態追蹤紀錄</p>
 
       <div className="bg-warning/5 border-2 border-warning/30 rounded-xl p-6 mb-8">
         <p className="text-text-secondary text-sm leading-relaxed">

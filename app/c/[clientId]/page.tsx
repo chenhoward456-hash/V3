@@ -240,6 +240,7 @@ export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState('')
   const [showCoachSummary, setShowCoachSummary] = useState(false)
   const [showAiChat, setShowAiChat] = useState(false)
+  const [aiChatInitialPrompt, setAiChatInitialPrompt] = useState<string | undefined>()
   const [showPhaseSelector, setShowPhaseSelector] = useState(false)
   const [updatingPhase, setUpdatingPhase] = useState(false)
   const [showMoreAnalysis, setShowMoreAnalysis] = useState(false)
@@ -248,6 +249,19 @@ export default function ClientDashboard() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [checklistDismissed, setChecklistDismissed] = useState(false)
   const { showToast } = useToast()
+
+  // 監聽血檢「問 AI」按鈕的 custom event
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail?.prompt) {
+        setAiChatInitialPrompt(detail.prompt)
+        setShowAiChat(true)
+      }
+    }
+    window.addEventListener('open-ai-chat', handler)
+    return () => window.removeEventListener('open-ai-chat', handler)
+  }, [])
 
   const toggleSimpleMode = async () => {
     if (!clientData?.client) return
@@ -1542,8 +1556,8 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* Goal-Driven 目標體重計畫（備賽客戶 + 非 peak_week）*/}
-        {isCompetition && c.prep_phase !== 'peak_week' && (
+        {/* Goal-Driven 目標體重計畫（備賽客戶 + 非 peak_week/competition）*/}
+        {isCompetition && c.prep_phase !== 'peak_week' && c.prep_phase !== 'competition' && (
           <GoalDrivenStatus
             clientId={c.id}
             code={c.unique_code}
@@ -1552,8 +1566,8 @@ export default function ClientDashboard() {
           />
         )}
 
-        {/* Peak Week 計畫（備賽階段為 peak_week 時顯示） */}
-        {isCompetition && c.prep_phase === 'peak_week' && c.competition_date && latestBodyData?.weight && (() => {
+        {/* Peak Week 計畫（備賽階段為 peak_week 或 competition 時顯示） */}
+        {isCompetition && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition') && c.competition_date && latestBodyData?.weight && (() => {
           const peakDaysLeft = Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
           if (peakDaysLeft > 8) {
             return (
@@ -1851,7 +1865,8 @@ export default function ClientDashboard() {
       {(c.nutrition_enabled || isHealthMode) && (
         <AiChatDrawer
           open={showAiChat}
-          onClose={() => setShowAiChat(false)}
+          onClose={() => { setShowAiChat(false); setAiChatInitialPrompt(undefined) }}
+          initialPrompt={aiChatInitialPrompt}
           clientId={c.unique_code}
           clientName={c.name}
           gender={c.gender}

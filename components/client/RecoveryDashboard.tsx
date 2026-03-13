@@ -207,6 +207,7 @@ export default function RecoveryDashboard({ clientId }: RecoveryDashboardProps) 
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-xl font-bold text-gray-900">{data.score}</span>
               <span className="text-[9px] text-gray-400">/ 100</span>
+              <span className="text-[10px] text-gray-400">系統綜合評估</span>
             </div>
           </div>
 

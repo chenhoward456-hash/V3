@@ -20,6 +20,15 @@ export default function DiagnosisPage() {
   const [result, setResult] = useState<DemoAnalysisResult | null>(null)
   const hasTrackedStart = useRef(false)
 
+  // Email capture state
+  const [emailInput, setEmailInput] = useState('')
+  const [emailSubmitting, setEmailSubmitting] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
+  const [emailError, setEmailError] = useState('')
+
+  // Share link state
+  const [linkCopied, setLinkCopied] = useState(false)
+
   // 追蹤診斷頁面進入
   useEffect(() => {
     if (!hasTrackedStart.current) {
@@ -83,6 +92,79 @@ export default function DiagnosisPage() {
     setTargetWeight('')
     setTrainingDays(4)
     setResult(null)
+  }
+
+  // Check localStorage for previously sent email on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const sent = localStorage.getItem('diagnosis_email_sent')
+      if (sent) setEmailSent(true)
+    }
+  }, [])
+
+  const handleEmailSubmit = async () => {
+    if (!emailInput || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput)) {
+      setEmailError('請輸入有效的 Email')
+      return
+    }
+    setEmailError('')
+    setEmailSubmitting(true)
+
+    try {
+      const res = await fetch('/api/diagnosis/email-capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailInput,
+          tdee: result?.estimatedTDEE ?? null,
+          gender: gender || null,
+          age: null,
+          weight: bodyWeight ? parseFloat(bodyWeight) : null,
+          height: height ? parseFloat(height) : null,
+          goal: goalType || null,
+        }),
+      })
+      if (res.ok) {
+        setEmailSent(true)
+        localStorage.setItem('diagnosis_email_sent', '1')
+        trackEvent('diagnosis_email_capture', { email: emailInput })
+      } else {
+        setEmailError('寄送失敗，請稍後再試')
+      }
+    } catch {
+      setEmailError('網路錯誤，請稍後再試')
+    } finally {
+      setEmailSubmitting(false)
+    }
+  }
+
+  const handleCopyShareLink = async () => {
+    const url = 'https://howardprotocol.com/diagnosis?ref=share'
+    try {
+      await navigator.clipboard.writeText(url)
+      setLinkCopied(true)
+      trackEvent('diagnosis_share_copy')
+      setTimeout(() => setLinkCopied(false), 2000)
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea')
+      textarea.value = url
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      setLinkCopied(true)
+      trackEvent('diagnosis_share_copy')
+      setTimeout(() => setLinkCopied(false), 2000)
+    }
+  }
+
+  const handleLineShare = () => {
+    trackEvent('diagnosis_share_line')
+    const text = encodeURIComponent('我剛做了免費體態分析，你也來試試！ https://howardprotocol.com/diagnosis?ref=line_share')
+    window.open(`https://line.me/R/msg/text/?${text}`, '_blank', 'noopener,noreferrer')
   }
 
   // ========== 子元件：模糊化 wrapper ==========
@@ -410,6 +492,84 @@ export default function DiagnosisPage() {
                       </div>
                     </BlurredSection>
                   )}
+
+                  {/* ===== Email Capture Section ===== */}
+                  <div className="bg-[#2563eb]/5 border border-[#2563eb]/15 rounded-2xl p-5 md:p-6">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="flex-shrink-0 w-10 h-10 bg-[#2563eb]/10 rounded-xl flex items-center justify-center">
+                        <svg className="w-5 h-5 text-[#2563eb]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold" style={{ color: '#1e3a5f' }}>寄送我的分析結果</p>
+                        <p className="text-xs text-gray-500 mt-0.5">輸入 Email，我們會將你的 TDEE 結果寄到你的信箱，不怕遺失。</p>
+                      </div>
+                    </div>
+
+                    {emailSent ? (
+                      <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                        <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-sm text-green-700 font-medium">已寄出！請查看你的信箱</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex gap-2">
+                          <input
+                            type="email"
+                            placeholder="your@email.com"
+                            value={emailInput}
+                            onChange={(e) => {
+                              setEmailInput(e.target.value)
+                              if (emailError) setEmailError('')
+                            }}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleEmailSubmit() }}
+                            className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#2563eb] transition-colors bg-white"
+                          />
+                          <button
+                            onClick={handleEmailSubmit}
+                            disabled={emailSubmitting}
+                            className="px-5 py-2.5 bg-[#2563eb] text-white text-sm font-semibold rounded-xl hover:bg-[#1d4ed8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                          >
+                            {emailSubmitting ? '寄送中...' : '免費寄送'}
+                          </button>
+                        </div>
+                        {emailError && (
+                          <p className="text-xs text-red-500 mt-1.5 ml-1">{emailError}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ===== Share Section ===== */}
+                  <div className="flex flex-col sm:flex-row gap-2.5">
+                    <button
+                      onClick={handleCopyShareLink}
+                      className="relative flex-1 flex items-center justify-center gap-2 py-3 px-4 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:border-[#2563eb] hover:text-[#2563eb] transition-all bg-white"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0-12.814a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0 12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                      </svg>
+                      {linkCopied ? '已複製連結！' : '分享給朋友，一起做免費診斷'}
+                      {linkCopied && (
+                        <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1 rounded-lg whitespace-nowrap">
+                          已複製連結！
+                          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleLineShare}
+                      className="flex items-center justify-center gap-2 py-3 px-5 bg-[#06C755] text-white rounded-xl text-sm font-semibold hover:bg-[#05b34d] transition-colors"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
+                      </svg>
+                      LINE 分享
+                    </button>
+                  </div>
 
                   {/* ===== 訂閱方案 CTA ===== */}
                   <div className="border-t border-gray-100 pt-6 mt-2">

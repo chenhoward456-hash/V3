@@ -240,6 +240,16 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                   </div>
                   <p className="text-2xl font-bold text-gray-900">
                     {latest.value} <span className="text-sm font-normal text-gray-500">{latest.unit}</span>
+                    {latest.status !== 'normal' && (
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('open-ai-chat', { detail: { prompt: `我的${latest.test_name}數值是 ${latest.value} ${latest.unit}，參考範圍是 ${latest.reference_range}，這代表什麼？我該怎麼做？` } }))
+                        }}
+                        className="text-[10px] text-blue-500 hover:text-blue-700 font-medium ml-1"
+                      >
+                        問 AI →
+                      </button>
+                    )}
                   </p>
                   {(latest.custom_advice || advice) && (
                     <p className="text-sm text-gray-600 mt-2">{latest.custom_advice || advice}</p>

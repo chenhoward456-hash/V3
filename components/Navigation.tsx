@@ -10,7 +10,7 @@ const navItems = [
   { label: '免費體驗', href: '/join' },
   { label: 'AI 顧問', href: '/ai' },
   { label: '知識分享', href: '/blog' },
-  { label: '成功案例', href: '/case' },
+  { label: '我的故事', href: '/case' },
   { label: '方案說明', href: '/remote' },
 ]
 
