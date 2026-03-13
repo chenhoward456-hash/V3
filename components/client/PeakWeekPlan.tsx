@@ -57,6 +57,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
   const [plan, setPlan] = useState<PeakWeekDay[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [expandedDay, setExpandedDay] = useState<number | null>(null)
+  const [debugInfo, setDebugInfo] = useState<string>('fetching...')
 
   const todayStr = getLocalDateStr()
   const focusDate = previewDate || todayStr
@@ -64,15 +65,25 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
   useEffect(() => {
     const fetchPlan = async () => {
       try {
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}${code ? `&code=${code}` : ''}`)
-        if (!res.ok) return
+        const url = `/api/nutrition-suggestions?clientId=${clientId}${code ? `&code=${code}` : ''}`
+        setDebugInfo(`calling: ${url}`)
+        const res = await fetch(url)
+        if (!res.ok) {
+          setDebugInfo(`API error: ${res.status} ${res.statusText}`)
+          return
+        }
         const data = await res.json()
+        const keys = data.suggestion ? Object.keys(data.suggestion).join(', ') : 'no suggestion'
+        const hasPW = !!data.suggestion?.peakWeekPlan
+        const pwLen = data.suggestion?.peakWeekPlan?.length ?? 0
+        setDebugInfo(`status=${data.status || 'ok'} | keys=[${keys}] | hasPeakWeek=${hasPW} | len=${pwLen}`)
         if (data.suggestion?.peakWeekPlan) {
           setPlan(data.suggestion.peakWeekPlan)
           const focusIdx = data.suggestion.peakWeekPlan.findIndex((d: PeakWeekDay) => d.date === focusDate)
           if (focusIdx >= 0) setExpandedDay(focusIdx)
         }
-      } catch {
+      } catch (err) {
+        setDebugInfo(`fetch error: ${err}`)
         console.warn('[PeakWeekPlan] 載入失敗')
       }
       finally { setLoading(false) }
@@ -80,18 +91,22 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
     fetchPlan()
   }, [clientId, code, focusDate])
 
+  /* DEBUG: 暫時顯示 API 回傳狀態 — 確認後刪除 */
   if (loading) {
     return (
-      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-        <div className="animate-pulse flex items-center gap-2">
-          <div className="w-6 h-6 bg-gray-200 rounded-full" />
-          <div className="h-5 bg-gray-200 rounded w-40" />
-        </div>
+      <div className="bg-black text-green-400 text-[10px] font-mono rounded-lg px-3 py-2 mb-3">
+        PeakWeek DEBUG: loading... | props: compDate={competitionDate} weight={bodyWeight}
       </div>
     )
   }
 
-  if (!plan || plan.length === 0) return null
+  if (!plan || plan.length === 0) {
+    return (
+      <div className="bg-black text-green-400 text-[10px] font-mono rounded-lg px-3 py-2 mb-3">
+        PeakWeek DEBUG: NO PLAN | {debugInfo} | props: compDate={competitionDate} weight={bodyWeight}
+      </div>
+    )
+  }
 
   const focusPlan = plan.find(d => d.date === focusDate)
   const compDate = new Date(competitionDate)
