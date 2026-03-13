@@ -1591,37 +1591,36 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* Goal-Driven 目標體重計畫（備賽客戶 + 非 peak_week/competition）*/}
-        {isCompetition && c.prep_phase !== 'peak_week' && c.prep_phase !== 'competition' && (
-          <GoalDrivenStatus
-            clientId={c.id}
-            code={c.unique_code}
-            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
-            onMutate={mutateWithTargets}
-          />
-        )}
-
-        {/* Peak Week 計畫（備賽階段為 peak_week 或 competition 時顯示） */}
-        {isCompetition && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition') && c.competition_date && latestBodyData?.weight ? (
-          <PeakWeekPlan
-            clientId={c.id}
-            code={c.unique_code}
-            competitionDate={c.competition_date}
-            bodyWeight={latestBodyData.weight}
-            previewDate={selectedDate > today ? selectedDate : undefined}
-          />
-        ) : isCompetition && (
-          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 mb-3">
-            <p className="text-sm font-bold text-red-700 mb-2">Peak Week 無法顯示，缺少以下設定：</p>
-            <ul className="text-xs text-red-600 space-y-1">
-              {c.prep_phase !== 'peak_week' && c.prep_phase !== 'competition' && (
-                <li>prep_phase = &quot;{c.prep_phase || '(未設定)'}&quot; → 需要改為 &quot;peak_week&quot; 或 &quot;competition&quot;</li>
+        {/* Goal-Driven 目標體重計畫（備賽客戶）*/}
+        {isCompetition && (() => {
+          const compDaysLeft = c.competition_date
+            ? Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
+            : null
+          const showPeakWeek = compDaysLeft != null && compDaysLeft <= 14 && latestBodyData?.weight
+          return (
+            <>
+              {/* GoalDrivenStatus: 距比賽 >8 天 或 任何備賽客戶都顯示 */}
+              {(!showPeakWeek || compDaysLeft! > 8) && (
+                <GoalDrivenStatus
+                  clientId={c.id}
+                  code={c.unique_code}
+                  isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+                  onMutate={mutateWithTargets}
+                />
               )}
-              {!c.competition_date && <li>competition_date 未設定 → 需要在後台填入比賽日期</li>}
-              {!latestBodyData?.weight && <li>沒有體重紀錄 → 需要至少記錄一筆體重</li>}
-            </ul>
-          </div>
-        )}
+              {/* Peak Week: 距比賽 ≤14 天自動顯示（不需要手動切 prep_phase） */}
+              {showPeakWeek && (
+                <PeakWeekPlan
+                  clientId={c.id}
+                  code={c.unique_code}
+                  competitionDate={c.competition_date!}
+                  bodyWeight={latestBodyData!.weight}
+                  previewDate={selectedDate > today ? selectedDate : undefined}
+                />
+              )}
+            </>
+          )
+        })()}
 
         {/* 自主管理 / 免費學員的智能營養計算（已完成 onboarding 才顯示，避免跟頂部重複） */}
         {!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target && (

@@ -1157,19 +1157,21 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     warnings.push(`⚠️ 注意狀態：${refeedTrigger.reason}（低碳天數未達 3 天，持續觀察）`)
   }
 
-  // 0. Peak Week 偵測：prepPhase 是 peak_week 或 competition 時產生每日計畫
+  // 0. Peak Week 偵測：備賽客戶距比賽 ≤14 天自動產生 Peak Week 計畫
+  // 不再需要 prepPhase = peak_week/competition，只要有 targetDate + 距比賽夠近
   // daysLeft <= 8：完整啟用 Peak Week（autoApply + 回傳 peak_week status）
-  // daysLeft > 8：仍然產生 peakWeekPlan 供前端預覽，但營養建議走正常流程
+  // 8 < daysLeft <= 14：產生 peakWeekPlan 供前端預覽，營養建議走正常流程
   let previewPeakWeekPlan: PeakWeekDay[] | null = null
-  if (input.targetDate && (input.prepPhase === 'peak_week' || input.prepPhase === 'competition')) {
+  if (input.targetDate && input.prepPhase) {
     const now = new Date()
     const target = new Date(input.targetDate)
     const daysLeft = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
     if (daysLeft <= 8) {
       return { ...generatePeakWeekPlan(input, daysLeft, cycleInfo), ...stateFields }
     }
-    // daysLeft > 8：預先產生 7 天計畫供前端預覽
-    previewPeakWeekPlan = generatePeakWeekPlan(input, 7, cycleInfo).peakWeekPlan
+    if (daysLeft <= 14) {
+      previewPeakWeekPlan = generatePeakWeekPlan(input, 7, cycleInfo).peakWeekPlan
+    }
   }
 
   // 1. 檢查數據是否足夠
