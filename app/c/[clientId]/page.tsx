@@ -17,10 +17,10 @@ import RecoveryDashboard from '@/components/client/RecoveryDashboard'
 import DailyCheckIn from '@/components/client/DailyCheckIn'
 import DailyWellness from '@/components/client/DailyWellness'
 import BodyComposition from '@/components/client/BodyComposition'
-import LabResults from '@/components/client/LabResults'
-import SupplementModal from '@/components/client/SupplementModal'
+const LabResults = dynamic(() => import('@/components/client/LabResults'), { ssr: false })
+const SupplementModal = dynamic(() => import('@/components/client/SupplementModal'), { ssr: false })
 import WellnessTrend from '@/components/client/WellnessTrend'
-import HealthReport from '@/components/client/HealthReport'
+const HealthReport = dynamic(() => import('@/components/client/HealthReport'), { ssr: false })
 import TrainingLog from '@/components/client/TrainingLog'
 import { isWeightTraining } from '@/components/client/types'
 import NutritionLog from '@/components/client/NutritionLog'

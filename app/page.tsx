@@ -772,6 +772,7 @@ export default function HomePage() {
                 height={120}
                 sizes="120px"
                 className="rounded-xl object-cover"
+                loading="lazy"
               />
               <div>
                 <h3 className="text-xl font-bold mb-2 text-navy">Howard Chen</h3>
