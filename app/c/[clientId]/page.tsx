@@ -213,16 +213,28 @@ export default function ClientDashboard() {
   const [selectedDate, setSelectedDate] = useState(today)
   const isToday = selectedDate === today
 
+  // Peak Week 允許看明天的計畫
+  const tomorrow = (() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return getLocalDateStr(d)
+  })()
+
   const changeDate = (offset: number) => {
     const d = new Date(selectedDate + 'T12:00:00')
     d.setDate(d.getDate() + offset)
     const newDate = getLocalDateStr(d)
-    if (newDate > today) return
+    // Peak Week / competition: 最多看到明天；一般模式: 最多到今天
+    const isPeakWeek = clientData?.client?.competition_enabled &&
+      (clientData.client.prep_phase === 'peak_week' || clientData.client.prep_phase === 'competition')
+    const maxDate = isPeakWeek ? tomorrow : today
+    if (newDate > maxDate) return
     setSelectedDate(newDate)
   }
 
   const formatSelectedDate = (dateStr: string) => {
     if (dateStr === today) return '今天'
+    if (dateStr === tomorrow) return '明天'
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     if (dateStr === getLocalDateStr(yesterday)) return '昨天'
@@ -790,28 +802,43 @@ export default function ClientDashboard() {
               >
                 {formatSelectedDate(selectedDate)}
               </button>
-              <input
-                id="date-picker"
-                type="date"
-                value={selectedDate}
-                max={today}
-                onChange={(e) => {
-                  if (e.target.value && e.target.value <= today) setSelectedDate(e.target.value)
-                }}
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-              />
+              {(() => {
+                const isPeakWeekNav = isCompetition && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition')
+                const maxDate = isPeakWeekNav ? tomorrow : today
+                return (
+                  <input
+                    id="date-picker"
+                    type="date"
+                    value={selectedDate}
+                    max={maxDate}
+                    onChange={(e) => {
+                      if (e.target.value && e.target.value <= maxDate) setSelectedDate(e.target.value)
+                    }}
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                  />
+                )
+              })()}
               {!isToday && (
                 <p className="text-xs text-gray-400 pointer-events-none">{new Date(selectedDate).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}</p>
               )}
             </div>
             <button
               onClick={() => changeDate(1)}
-              disabled={isToday}
+              disabled={isCompetition && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition') ? selectedDate >= tomorrow : isToday}
               className="p-1.5 rounded-full hover:bg-gray-200 transition-colors text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
             >
               <ChevronRight size={18} />
             </button>
           </div>
+
+          {/* 明日預覽 Banner */}
+          {selectedDate > today && (
+            <div className="bg-indigo-50 border border-indigo-200 rounded-2xl px-4 py-3 mb-3 flex items-center gap-2">
+              <span className="text-base">🔮</span>
+              <p className="text-sm font-semibold text-indigo-700">明日預覽模式</p>
+              <p className="text-xs text-indigo-500 ml-auto">查看明天的 Peak Week 計畫</p>
+            </div>
+          )}
 
           {/* 健康模式 Banner */}
           {isHealthMode && healthScore && (
@@ -1597,6 +1624,7 @@ export default function ClientDashboard() {
               code={c.unique_code}
               competitionDate={c.competition_date}
               bodyWeight={latestBodyData.weight}
+              previewDate={selectedDate > today ? selectedDate : undefined}
             />
           )
         })()}

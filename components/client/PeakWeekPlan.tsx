@@ -29,6 +29,8 @@ interface PeakWeekPlanProps {
   code?: string
   competitionDate: string
   bodyWeight: number
+  /** 預覽日期（看明天的計畫時傳入） */
+  previewDate?: string
 }
 
 const phaseColors: Record<string, { bg: string; text: string; border: string; badge: string }> = {
@@ -47,12 +49,14 @@ const phaseLabels: Record<string, string> = {
   show_day: '比賽日',
 }
 
-export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeight }: PeakWeekPlanProps) {
+export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeight, previewDate }: PeakWeekPlanProps) {
   const [plan, setPlan] = useState<PeakWeekDay[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [expandedDay, setExpandedDay] = useState<number | null>(null)
 
   const todayStr = getLocalDateStr()
+  // 顯示的焦點日：預覽模式用 previewDate，否則用今天
+  const focusDate = previewDate || todayStr
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -62,9 +66,9 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
         const data = await res.json()
         if (data.suggestion?.peakWeekPlan) {
           setPlan(data.suggestion.peakWeekPlan)
-          // 自動展開今天
-          const todayIdx = data.suggestion.peakWeekPlan.findIndex((d: PeakWeekDay) => d.date === todayStr)
-          if (todayIdx >= 0) setExpandedDay(todayIdx)
+          // 自動展開焦點日（預覽 or 今天）
+          const focusIdx = data.suggestion.peakWeekPlan.findIndex((d: PeakWeekDay) => d.date === focusDate)
+          if (focusIdx >= 0) setExpandedDay(focusIdx)
         }
       } catch {
         console.warn('[PeakWeekPlan] 載入失敗')
@@ -72,7 +76,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
       finally { setLoading(false) }
     }
     fetchPlan()
-  }, [clientId, code, todayStr])
+  }, [clientId, code, focusDate])
 
   if (loading) {
     return (
@@ -87,7 +91,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
 
   if (!plan || plan.length === 0) return null
 
-  const todayPlan = plan.find(d => d.date === todayStr)
+  const todayPlan = plan.find(d => d.date === focusDate)
   const compDate = new Date(competitionDate)
   const daysLeft = Math.max(0, Math.ceil((compDate.getTime() - new Date().getTime()) / 86400000))
 
@@ -112,7 +116,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${phaseColors[todayPlan.phase]?.badge || 'bg-gray-100 text-gray-600'}`}>
                 {phaseLabels[todayPlan.phase] || todayPlan.phase}
               </span>
-              <span className="text-sm font-semibold text-gray-700">今日計畫</span>
+              <span className="text-sm font-semibold text-gray-700">{previewDate ? '明日計畫' : '今日計畫'}</span>
             </div>
           </div>
 
@@ -197,7 +201,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
       {/* 7 天時間軸 */}
       <div className="space-y-2">
         {plan.map((day, idx) => {
-          const isToday = day.date === todayStr
+          const isToday = day.date === focusDate
           const isPast = day.date < todayStr
           const isExpanded = expandedDay === idx
           const colors = phaseColors[day.phase] || phaseColors.depletion
