@@ -1591,15 +1591,6 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* DEBUG: 版本確認 — 確認部署後刪除 */}
-        <div className="bg-black text-green-400 text-[10px] font-mono rounded-lg px-3 py-2 mb-3">
-          BUILD: v2026-0314a | comp={String(!!isCompetition)} | date={c.competition_date || 'null'} | prep={c.prep_phase || 'null'} | weight={latestBodyData?.weight || 'null'}
-          {isCompetition && c.competition_date && (() => {
-            const dl = Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
-            return ` | daysLeft=${dl} | show=${dl <= 14 && !!latestBodyData?.weight}`
-          })()}
-        </div>
-
         {/* Goal-Driven + Peak Week（備賽客戶）*/}
         {isCompetition && (() => {
           const compDaysLeft = c.competition_date
