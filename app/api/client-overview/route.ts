@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       supabase.from('supplement_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('daily_wellness').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('training_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
-      supabase.from('body_composition').select('id, client_id, date, weight, height, body_fat, muscle_mass, waist, hip, chest, arm, thigh, visceral_fat').eq('client_id', realId).order('date', { ascending: true }).limit(365),
+      supabase.from('body_composition').select('*').eq('client_id', realId).order('date', { ascending: true }).limit(365),
       supabase.from('lab_results').select('*').eq('client_id', realId).order('date', { ascending: false }),
       supabase.from('nutrition_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
     ])
