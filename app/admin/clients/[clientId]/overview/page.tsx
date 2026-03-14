@@ -1685,7 +1685,7 @@ export default function ClientOverview() {
             <LabInsightsCard
               labResults={labResults}
               gender={(client.gender as '男性' | '女性') ?? undefined}
-              bodyFatPct={bodyData[0]?.body_fat ?? null}
+              bodyFatPct={bodyData.length ? bodyData[bodyData.length - 1]?.body_fat ?? null : null}
             />
           </>
         )}

@@ -109,36 +109,36 @@ export default function HealthReportPage() {
     return Math.round((logs.length / (total * daysWithData)) * 100)
   }, [supplements, supplementLogs])
 
-  // Latest body data
-  const latestBody = bodyData[0] || null
+  // Latest body data (API returns ascending, newest is last)
+  const latestBody = bodyData.length ? bodyData[bodyData.length - 1] : null
   const bmi = latestBody?.weight && latestBody?.height
     ? (latestBody.weight / ((latestBody.height / 100) ** 2)).toFixed(1)
     : null
 
-  // Weight trend (30 days)
+  // Weight trend (last 30 entries, ascending order — oldest first, newest last)
   const weightTrend = useMemo(() => {
-    const recent = bodyData.filter(b => b.weight != null).slice(0, 30)
+    const recent = bodyData.filter(b => b.weight != null).slice(-30)
     if (recent.length < 2) return null
-    const oldest = recent[recent.length - 1].weight
-    const newest = recent[0].weight
+    const oldest = recent[0].weight
+    const newest = recent[recent.length - 1].weight
     return { change: (newest - oldest).toFixed(1), from: oldest, to: newest, days: recent.length }
   }, [bodyData])
 
-  // Body fat trend (30 days)
+  // Body fat trend (last 30 entries)
   const bodyFatTrend = useMemo(() => {
-    const recent = bodyData.filter(b => b.body_fat != null).slice(0, 30)
+    const recent = bodyData.filter(b => b.body_fat != null).slice(-30)
     if (recent.length < 2) return null
-    const oldest = recent[recent.length - 1].body_fat
-    const newest = recent[0].body_fat
+    const oldest = recent[0].body_fat
+    const newest = recent[recent.length - 1].body_fat
     return { change: (newest - oldest).toFixed(1), from: oldest, to: newest, days: recent.length }
   }, [bodyData])
 
   // ── Health Score (5 pillars) ──
   const healthScore = useMemo(() => {
     if (!client) return null
-    const last7Wellness = wellness.slice(0, 7)
-    const last7Nutrition = nutritionLogs.slice(0, 7)
-    const last7Training = trainingLogs.slice(0, 7)
+    const last7Wellness = wellness.slice(-7)
+    const last7Nutrition = nutritionLogs.slice(-7)
+    const last7Training = trainingLogs.slice(-7)
     if (!last7Wellness.length && !last7Nutrition.length && !last7Training.length) return null
     return calculateHealthScore({
       wellnessLast7: last7Wellness,
@@ -155,7 +155,7 @@ export default function HealthReportPage() {
     if (!latestLabs.length) return []
     return detectLabCrossPatterns(labResults, {
       gender: client?.gender,
-      bodyFatPct: bodyData[0]?.body_fat ?? null,
+      bodyFatPct: latestBody?.body_fat ?? null,
     })
   }, [labResults, client, bodyData, latestLabs])
 
