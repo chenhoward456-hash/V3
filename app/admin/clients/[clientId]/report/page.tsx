@@ -4,6 +4,13 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { generateSupplementSuggestions, type SupplementSuggestion } from '@/lib/supplement-engine'
 import { getLabAdvice } from '@/components/client/types'
+import { calculateHealthScore } from '@/lib/health-score-engine'
+import {
+  detectLabCrossPatterns,
+  generateLabOptimizationTips,
+  generateLabChangeReport,
+} from '@/lib/lab-nutrition-advisor'
+import { TRAINING_TYPES } from '@/components/client/types'
 
 const MTHFR_LABELS: Record<string, string> = {
   normal: '正常（野生型）',
@@ -36,6 +43,9 @@ export default function HealthReportPage() {
   const [supplementLogs, setSupplementLogs] = useState<any[]>([])
   const [bodyData, setBodyData] = useState<any[]>([])
   const [labResults, setLabResults] = useState<any[]>([])
+  const [wellness, setWellness] = useState<any[]>([])
+  const [trainingLogs, setTrainingLogs] = useState<any[]>([])
+  const [nutritionLogs, setNutritionLogs] = useState<any[]>([])
 
   useEffect(() => {
     fetch(`/api/client-overview?clientId=${clientId}`)
@@ -46,6 +56,9 @@ export default function HealthReportPage() {
         setSupplementLogs(data.supplementLogs || [])
         setBodyData(data.bodyData || [])
         setLabResults(data.labResults || [])
+        setWellness(data.wellness || [])
+        setTrainingLogs(data.trainingLogs || [])
+        setNutritionLogs(data.nutritionLogs || [])
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -111,6 +124,73 @@ export default function HealthReportPage() {
     const newest = recent[0].weight
     return { change: (newest - oldest).toFixed(1), from: oldest, to: newest, days: recent.length }
   }, [bodyData])
+
+  // ── Health Score (5 pillars) ──
+  const healthScore = useMemo(() => {
+    if (!client) return null
+    const last7Wellness = wellness.slice(0, 7)
+    const last7Nutrition = nutritionLogs.slice(0, 7)
+    const last7Training = trainingLogs.slice(0, 7)
+    if (!last7Wellness.length && !last7Nutrition.length && !last7Training.length) return null
+    return calculateHealthScore({
+      wellnessLast7: last7Wellness,
+      nutritionLast7: last7Nutrition,
+      trainingLast7: last7Training,
+      supplementComplianceRate: compliance != null ? compliance / 100 : 0,
+      labResults: latestLabs,
+      quarterlyStart: client.quarterly_cycle_start || null,
+    })
+  }, [client, wellness, nutritionLogs, trainingLogs, compliance, latestLabs])
+
+  // ── Lab Cross-Analysis ──
+  const crossPatterns = useMemo(() => {
+    if (!latestLabs.length) return []
+    return detectLabCrossPatterns(labResults, {
+      gender: client?.gender,
+      bodyFatPct: bodyData[0]?.body_fat ?? null,
+    })
+  }, [labResults, client, bodyData, latestLabs])
+
+  // ── Lab Optimization Tips ──
+  const optimizationTips = useMemo(() => {
+    if (!latestLabs.length) return []
+    return generateLabOptimizationTips(labResults, { gender: client?.gender })
+  }, [labResults, client, latestLabs])
+
+  // ── Lab Change Report ──
+  const changeReports = useMemo(() => {
+    if (!labResults.length) return []
+    return generateLabChangeReport(labResults, { gender: client?.gender })
+  }, [labResults, client])
+
+  // ── Training × Recovery Cross-Analysis ──
+  const recoveryAnalysis = useMemo(() => {
+    if (!trainingLogs.length || !wellness.length) return []
+    const wellnessMap: Record<string, any> = {}
+    for (const w of wellness) wellnessMap[w.date] = w
+    const nextDay = (dateStr: string) => {
+      const d = new Date(dateStr); d.setDate(d.getDate() + 1)
+      return d.toISOString().split('T')[0]
+    }
+    const typeStats: Record<string, { count: number; energy: number[]; sleep: number[] }> = {}
+    for (const log of trainingLogs.filter(l => l.training_type !== 'rest')) {
+      const t = log.training_type
+      if (!typeStats[t]) typeStats[t] = { count: 0, energy: [], sleep: [] }
+      typeStats[t].count++
+      const nextW = wellnessMap[nextDay(log.date)]
+      if (nextW) {
+        if (nextW.energy_level != null) typeStats[t].energy.push(nextW.energy_level)
+        if (nextW.sleep_quality != null) typeStats[t].sleep.push(nextW.sleep_quality)
+      }
+    }
+    const avg = (arr: number[]) => arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : null
+    return Object.entries(typeStats).map(([type, s]) => ({
+      type: TRAINING_TYPES.find(t => t.value === type)?.label || type,
+      count: s.count,
+      avgEnergy: avg(s.energy),
+      avgSleep: avg(s.sleep),
+    })).filter(r => r.avgEnergy || r.avgSleep).sort((a, b) => b.count - a.count)
+  }, [trainingLogs, wellness])
 
   const today = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })
   const statusLabel = (s: string) => s === 'normal' ? '正常' : s === 'attention' ? '需注意' : '異常'
@@ -223,6 +303,156 @@ export default function HealthReportPage() {
               </tbody>
             </table>
             <p className="report-note">檢驗日期：{latestLabs[0]?.date || '-'}</p>
+          </section>
+        )}
+
+        {/* ── System Analysis (the unique value) ── */}
+        {(healthScore || crossPatterns.length > 0 || optimizationTips.length > 0 || changeReports.length > 0 || recoveryAnalysis.length > 0) && (
+          <section className="report-section page-break-before">
+            <h2>系統綜合分析</h2>
+            <p className="report-note" style={{ marginTop: 0, marginBottom: 16 }}>
+              以下分析由系統根據血檢、訓練、睡眠、飲食、補品等多維度數據交叉比對自動產出
+            </p>
+
+            {/* Health Score */}
+            {healthScore && (
+              <div className="analysis-block">
+                <h3>健康總評分</h3>
+                <div className="score-header">
+                  <span className={`score-grade grade-${healthScore.grade}`}>{healthScore.grade}</span>
+                  <span className="score-total">{healthScore.total} / 100</span>
+                </div>
+                <table className="report-table report-table-full">
+                  <thead>
+                    <tr><th>支柱</th><th>分數</th><th>權重</th><th>說明</th></tr>
+                  </thead>
+                  <tbody>
+                    {healthScore.pillars.map((p: any) => (
+                      <tr key={p.key}>
+                        <td className="font-semibold">{
+                          p.key === 'sleep' ? '😴 睡眠' :
+                          p.key === 'wellness' ? '💚 身心狀態' :
+                          p.key === 'nutrition' ? '🥗 營養合規' :
+                          p.key === 'training' ? '🏋️ 訓練規律' :
+                          '💊 補品服從'
+                        }</td>
+                        <td className="text-mono">{p.score}/{p.max}</td>
+                        <td>{p.weight}%</td>
+                        <td className="text-small">{p.detail || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {(healthScore.labPenalty !== 0 || healthScore.labBonus !== 0) && (
+                  <p className="report-note">
+                    血檢修正：{healthScore.labPenalty !== 0 ? `扣分 ${healthScore.labPenalty}` : ''}{healthScore.labBonus !== 0 ? ` 加分 +${healthScore.labBonus}` : ''}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Lab Change Report */}
+            {changeReports.length > 0 && (
+              <div className="analysis-block">
+                <h3>血檢指標變化追蹤</h3>
+                <table className="report-table report-table-full">
+                  <thead>
+                    <tr><th>指標</th><th>前次</th><th>本次</th><th>變化</th><th>趨勢</th><th>解讀</th></tr>
+                  </thead>
+                  <tbody>
+                    {changeReports.map((r, i) => (
+                      <tr key={i} className={r.direction === 'worsened' ? 'row-attention' : ''}>
+                        <td className="font-semibold">{r.testName}</td>
+                        <td className="text-mono">{r.previousValue} {r.unit}<br/><span className="text-tiny">{r.previousDate}</span></td>
+                        <td className="text-mono">{r.currentValue} {r.unit}<br/><span className="text-tiny">{r.currentDate}</span></td>
+                        <td className="text-mono">{r.changeAbsolute > 0 ? '+' : ''}{r.changeAbsolute.toFixed(1)}</td>
+                        <td>
+                          <span className={`status-badge ${r.direction === 'improved' ? 'normal' : r.direction === 'worsened' ? 'attention' : ''}`}>
+                            {r.direction === 'improved' ? '改善' : r.direction === 'worsened' ? '惡化' : '穩定'}
+                          </span>
+                        </td>
+                        <td className="text-small">{r.interpretation}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Cross-Analysis */}
+            {crossPatterns.length > 0 && (
+              <div className="analysis-block">
+                <h3>多指標交叉分析</h3>
+                {crossPatterns.map((p, i) => (
+                  <div key={i} className={`cross-pattern severity-${p.severity}`}>
+                    <div className="cross-pattern-header">
+                      <span>{p.icon} <strong>{p.title}</strong></span>
+                      <span className={`status-badge ${p.severity === 'critical' ? 'alert' : p.severity === 'high' ? 'alert' : 'attention'}`}>
+                        {p.severity === 'critical' ? '嚴重' : p.severity === 'high' ? '高風險' : '注意'}
+                      </span>
+                    </div>
+                    <p className="text-small">{p.description}</p>
+                    <div className="cross-pattern-markers">
+                      {p.triggeredMarkers.map((m, j) => (
+                        <span key={j} className="marker-tag">{m.name} {m.value} {m.unit}</span>
+                      ))}
+                    </div>
+                    {p.actionItems.length > 0 && (
+                      <ul className="action-list">
+                        {p.actionItems.map((item, j) => <li key={j}>{item}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Optimization Tips */}
+            {optimizationTips.length > 0 && (
+              <div className="analysis-block">
+                <h3>正常範圍內的優化空間</h3>
+                <table className="report-table report-table-full">
+                  <thead>
+                    <tr><th>指標</th><th>目前</th><th>最佳範圍</th><th>優化建議</th></tr>
+                  </thead>
+                  <tbody>
+                    {optimizationTips.map((tip, i) => (
+                      <tr key={i}>
+                        <td className="font-semibold">{tip.icon} {tip.title}</td>
+                        <td className="text-mono">{tip.currentValue} {tip.unit}</td>
+                        <td>{tip.optimalRange}</td>
+                        <td className="text-small">{tip.tips.join('；')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Training × Recovery */}
+            {recoveryAnalysis.length > 0 && (
+              <div className="analysis-block">
+                <h3>訓練 × 恢復交叉分析</h3>
+                <p className="report-note" style={{ marginTop: 0, marginBottom: 8 }}>
+                  統計各訓練類型隔天的睡眠品質與精力（1-5 分），數值越低代表該類訓練對恢復壓力越大
+                </p>
+                <table className="report-table report-table-full">
+                  <thead>
+                    <tr><th>訓練類型</th><th>次數</th><th>隔天睡眠</th><th>隔天精力</th></tr>
+                  </thead>
+                  <tbody>
+                    {recoveryAnalysis.map((r, i) => (
+                      <tr key={i} className={r.avgSleep && Number(r.avgSleep) < 3 ? 'row-attention' : ''}>
+                        <td className="font-semibold">{r.type}</td>
+                        <td>{r.count} 次</td>
+                        <td className="text-mono">{r.avgSleep ?? '-'} / 5</td>
+                        <td className="text-mono">{r.avgEnergy ?? '-'} / 5</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
         )}
 
@@ -492,6 +722,104 @@ export default function HealthReportPage() {
         .report-empty {
           font-size: 13px;
           color: #999;
+        }
+
+        /* ── Analysis Blocks ── */
+        .analysis-block {
+          margin-bottom: 24px;
+          padding-bottom: 20px;
+          border-bottom: 1px dashed #e5e5e5;
+        }
+
+        .analysis-block:last-child {
+          border-bottom: none;
+          margin-bottom: 0;
+        }
+
+        .analysis-block h3 {
+          font-size: 14px;
+          font-weight: 700;
+          margin: 0 0 10px 0;
+          color: #333;
+        }
+
+        .score-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+
+        .score-grade {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          font-size: 20px;
+          font-weight: 800;
+          color: white;
+        }
+
+        .grade-A { background: #16a34a; }
+        .grade-B { background: #2563eb; }
+        .grade-C { background: #d97706; }
+        .grade-D { background: #dc2626; }
+
+        .score-total {
+          font-size: 24px;
+          font-weight: 700;
+          color: #1a1a1a;
+        }
+
+        .cross-pattern {
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          padding: 12px 14px;
+          margin-bottom: 10px;
+        }
+
+        .severity-critical, .severity-high { border-color: #fca5a5; background: #fef2f2; }
+        .severity-medium { border-color: #fcd34d; background: #fffbeb; }
+
+        .cross-pattern-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 6px;
+          font-size: 13px;
+        }
+
+        .cross-pattern-markers {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin: 8px 0;
+        }
+
+        .marker-tag {
+          display: inline-block;
+          padding: 2px 8px;
+          font-size: 11px;
+          border: 1px solid #ddd;
+          border-radius: 12px;
+          background: white;
+          color: #555;
+        }
+
+        .action-list {
+          margin: 6px 0 0 0;
+          padding-left: 18px;
+          font-size: 12px;
+          color: #444;
+        }
+
+        .action-list li { margin-bottom: 2px; }
+
+        .text-tiny {
+          font-size: 10px;
+          color: #aaa;
         }
 
         .report-footer {
