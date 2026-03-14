@@ -608,16 +608,19 @@ const PEAK_WEEK = {
   SHOW_PROTEIN_G_PER_KG: 3.0,
   SHOW_FAT_G_PER_KG: 0.5,
 
-  // 水分操控（mL/kg）— 保守策略，避免醛固酮反彈
-  WATER_BASELINE: 90,     // Day 7-4：90 mL/kg (Barakat 2022: 93.4)
-  WATER_LOADING: 100,     // Day 3-2：100 mL/kg (文獻最高實測值；原 140 無證據且有低血鈉風險)
-  WATER_TAPER: 70,        // Day 1：70 mL/kg (適度減少，避免醛固酮反彈)
-  WATER_SHOW: 40,         // 比賽日：40 mL/kg (原 20 過於激進；脫水反而使肌肉扁平、損害 pump)
+  // 水分操控（mL/kg）— 關鍵是「對比」：正常→載入→驟降，製造 ADH 抑制→反彈
+  // 耗竭期不需要水載入，正常運動員飲水即可；載入期大量灌水抑制 ADH；
+  // Day 1 驟降 → ADH 來不及回升 → 身體繼續排水 → 皮下水分減少
+  WATER_BASELINE: 55,      // Day 7-4：55 mL/kg（正常運動員飲水量，不載入）
+  WATER_LOADING: 100,      // Day 3-2：100 mL/kg（從 55→100 = 1.8x 對比，足以抑制 ADH）
+  WATER_TAPER: 45,         // Day 1：45 mL/kg（從 100→45 = 急降 55%，ADH 來不及回升繼續排水）
+  WATER_SHOW: 10,          // 比賽日：由時間軸協議控制（~800ml 總計），此值為 fallback
 
   // 鈉目標（mg/天）— Escalante 2021: 避免突然斷鈉；Barakat 2022: 超補期微增鈉促 SGLT-1
-  SODIUM_BASELINE: 2300,     // 正常飲食鈉攝取（衛福部建議上限）
-  SODIUM_LOADING: 3000,      // 超補期 +30%（SGLT-1 幫助葡萄糖進入肌肉細胞）
-  SODIUM_SHOW: 1500,         // 比賽日少量鹹食即可（上台前 2 小時吃鹹零食增強 pump）
+  // 耗竭期：低碳→胰島素低→腎臟排鈉增加，所以基線鈉應略高於一般人
+  SODIUM_BASELINE: 2500,     // 耗竭期鈉（略高於一般 2300mg，補償低胰島素排鈉）
+  SODIUM_LOADING: 3500,      // 超補期（SGLT-1 + 鉀鈉泵 → 葡萄糖+水進入肌肉細胞）
+  SODIUM_SHOW: 1000,         // 比賽日由時間軸協議控制（集中在最後 1.5 小時）
 
   // 鉀離子目標（mg/天）— Barakat 2022: ~6246 mg/day during loading
   POTASSIUM_BASELINE: 3500,  // 正常飲食鉀攝取
@@ -2933,7 +2936,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         fatGPerKg: PEAK_WEEK.DEPLETION_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_BASELINE,
         sodiumMg: PEAK_WEEK.SODIUM_BASELINE,
-        sodiumNote: `正常鈉攝取（${PEAK_WEEK.SODIUM_BASELINE}mg）`,
+        sodiumNote: `低碳期鈉攝取（${PEAK_WEEK.SODIUM_BASELINE}mg）— 胰島素低→腎臟排鈉增加，需略高於一般飲食鈉攝取量`,
         fiberNote: d <= 5 ? '開始減少纖維（目標 <15g）— 碳水來源選低纖維蔬菜（去莖花椰菜、櫛瓜、蘆筍尖）' : '正常纖維攝取',
         trainingNote: trainingMap[d] || '休息',
         carbs: Math.round(bw * depletionCarbGPerKg),
@@ -2959,7 +2962,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         fatGPerKg: loadingFat,
         waterMlPerKg: PEAK_WEEK.WATER_LOADING,
         sodiumMg: PEAK_WEEK.SODIUM_LOADING,
-        sodiumNote: `鈉加載 +30%（${PEAK_WEEK.SODIUM_LOADING}mg）— 鈉經 SGLT-1 幫助葡萄糖進入肌肉細胞`,
+        sodiumNote: `鈉加載（${PEAK_WEEK.SODIUM_LOADING}mg）— 鈉經 SGLT-1 幫助葡萄糖進入肌肉細胞，搭配高碳水最大化肝醣超補`,
         fiberNote: '極低纖維（<10g），避免腹脹影響比賽日外觀',
         trainingNote: '完全休息（任何訓練都會重新消耗肝醣，破壞超補效果）',
         carbs: Math.round(bw * loadingCarb),
@@ -2987,7 +2990,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         fatGPerKg: PEAK_WEEK.TAPER_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_TAPER,
         sodiumMg: PEAK_WEEK.SODIUM_BASELINE,
-        sodiumNote: `恢復正常鈉（${PEAK_WEEK.SODIUM_BASELINE}mg）— 不要突然斷鈉，避免醛固酮反彈導致皮下積水`,
+        sodiumNote: `鈉回到基線（${PEAK_WEEK.SODIUM_BASELINE}mg）— 從超補期的高鈉緩降，不要突然斷鈉，避免醛固酮反彈導致皮下積水`,
         fiberNote: '極低纖維（<8g），避免腹脹',
         trainingNote: '完全休息（不要做任何訓練）',
         carbs: Math.round(bw * taperCarb),
