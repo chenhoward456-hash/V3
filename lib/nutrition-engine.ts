@@ -608,18 +608,18 @@ const PEAK_WEEK = {
   SHOW_PROTEIN_G_PER_KG: 3.0,
   SHOW_FAT_G_PER_KG: 0.5,
 
-  // 水分操控（mL/kg）— 關鍵是「對比」：正常→載入→驟降，製造 ADH 抑制→反彈
-  // 耗竭期不需要水載入，正常運動員飲水即可；載入期大量灌水抑制 ADH；
-  // Day 1 驟降 → ADH 來不及回升 → 身體繼續排水 → 皮下水分減少
-  WATER_BASELINE: 55,      // Day 7-4：55 mL/kg（正常運動員飲水量，不載入）
-  WATER_LOADING: 100,      // Day 3-2：100 mL/kg（從 55→100 = 1.8x 對比，足以抑制 ADH）
-  WATER_TAPER: 45,         // Day 1：45 mL/kg（從 100→45 = 急降 55%，ADH 來不及回升繼續排水）
+  // 水分操控 — 多數自然選手策略：一開始中度灌水壓 ADH → 超補期拉到最高 → Day 1 驟降
+  // ADH 被壓越久（6 天 vs 2 天），切水後身體繼續排水的窗口越大、效果越穩定
+  // 搭配碳水對比（低→高）：碳水超補把水拉進肌肉（肝醣滲透壓），皮下水繼續被排掉
+  WATER_BASELINE: 75,      // Day 7-4：75 mL/kg（中度灌水，從 Day 7 就開始壓 ADH）
+  WATER_LOADING: 100,      // Day 3-2：100 mL/kg（搭配碳水超補，最大化水分進入肌肉細胞）
+  WATER_TAPER: 40,         // Day 1：40 mL/kg（從 100→40 = 急降 60%，ADH 壓了 6 天來不及回升）
   WATER_SHOW: 10,          // 比賽日：由時間軸協議控制（~800ml 總計），此值為 fallback
 
-  // 鈉目標（mg/天）— Escalante 2021: 避免突然斷鈉；Barakat 2022: 超補期微增鈉促 SGLT-1
-  // 耗竭期：低碳→胰島素低→腎臟排鈉增加，所以基線鈉應略高於一般人
-  SODIUM_BASELINE: 2500,     // 耗竭期鈉（略高於一般 2300mg，補償低胰島素排鈉）
-  SODIUM_LOADING: 3500,      // 超補期（SGLT-1 + 鉀鈉泵 → 葡萄糖+水進入肌肉細胞）
+  // 鈉目標（mg/天）— 鈉跟著水走，水高鈉就高；避免稀釋性低血鈉
+  // 耗竭期：低碳→胰島素低→腎臟排鈉增加 + 水量較高 → 鈉需 3000mg 以上
+  SODIUM_BASELINE: 3000,     // 耗竭期（配合 75mL/kg 水量，Na/水比=400+mg/L，安全）
+  SODIUM_LOADING: 3500,      // 超補期（SGLT-1 + 高碳水 → 鈉幫助葡萄糖+水進入肌肉細胞）
   SODIUM_SHOW: 1000,         // 比賽日由時間軸協議控制（集中在最後 1.5 小時）
 
   // 鉀離子目標（mg/天）— Barakat 2022: ~6246 mg/day during loading
@@ -2936,7 +2936,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         fatGPerKg: PEAK_WEEK.DEPLETION_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_BASELINE,
         sodiumMg: PEAK_WEEK.SODIUM_BASELINE,
-        sodiumNote: `低碳期鈉攝取（${PEAK_WEEK.SODIUM_BASELINE}mg）— 胰島素低→腎臟排鈉增加，需略高於一般飲食鈉攝取量`,
+        sodiumNote: `鈉攝取（${PEAK_WEEK.SODIUM_BASELINE}mg）— 配合灌水策略，鈉跟著水走避免低血鈉。低碳期胰島素低、腎臟排鈉增加，鈉需足量`,
         fiberNote: d <= 5 ? '開始減少纖維（目標 <15g）— 碳水來源選低纖維蔬菜（去莖花椰菜、櫛瓜、蘆筍尖）' : '正常纖維攝取',
         trainingNote: trainingMap[d] || '休息',
         carbs: Math.round(bw * depletionCarbGPerKg),
