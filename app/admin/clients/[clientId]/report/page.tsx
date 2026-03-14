@@ -76,12 +76,17 @@ export default function HealthReportPage() {
   }, [labResults])
 
   // Supplement suggestions
+  const hasHighRPE = useMemo(() => {
+    const recent = trainingLogs.slice(-7)
+    return recent.some(l => l.rpe != null && l.rpe >= 9)
+  }, [trainingLogs])
+
   const suggestions = useMemo(() => {
     if (!latestLabs.length || !client) return []
     return generateSupplementSuggestions(latestLabs, {
       gender: client.gender,
       isCompetitionPrep: !!client.competition_enabled,
-      hasHighRPE: false,
+      hasHighRPE,
       goalType: client.goal_type || null,
       isHealthMode: !!client.health_mode_enabled,
       genetics: {
@@ -92,7 +97,7 @@ export default function HealthReportPage() {
       },
       prepPhase: client.prep_phase || null,
     })
-  }, [latestLabs, client])
+  }, [latestLabs, client, hasHighRPE])
 
   // Supplement compliance (30 days)
   const compliance = useMemo(() => {
@@ -245,7 +250,7 @@ export default function HealthReportPage() {
         <header className="report-header">
           <h1>{client.name} 健康追蹤報告</h1>
           <div className="report-meta">
-            <span>{client.age} 歲 · {client.gender}</span>
+            <span>{client.age != null ? `${client.age} 歲` : ''}{client.age != null && client.gender ? ' · ' : ''}{client.gender || ''}</span>
             <span>報告日期：{today}</span>
           </div>
         </header>
@@ -315,7 +320,7 @@ export default function HealthReportPage() {
                 ))}
               </tbody>
             </table>
-            <p className="report-note">檢驗日期：{latestLabs[0]?.date || '-'}</p>
+            <p className="report-note">最近檢驗日期：{latestLabs.reduce((latest, r) => r.date > latest ? r.date : latest, latestLabs[0]?.date || '-')}</p>
           </section>
         )}
 
