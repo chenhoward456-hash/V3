@@ -1618,42 +1618,57 @@ export default function ClientOverview() {
               <h3 className="text-sm font-semibold text-gray-900">補品建議</h3>
               <span className="text-xs text-gray-400 ml-auto">依血檢數值與訓練狀態自動分析</span>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {supplementSuggestions.map((s, i) => (
-                <div key={i} className={`rounded-xl p-4 border ${
-                  s.priority === 'high' ? 'bg-red-50 border-red-100' :
-                  s.priority === 'medium' ? 'bg-amber-50 border-amber-100' :
-                  'bg-gray-50 border-gray-100'
+                <div key={i} className={`rounded-xl border overflow-hidden ${
+                  s.priority === 'high' ? 'border-red-200' :
+                  s.priority === 'medium' ? 'border-amber-200' :
+                  'border-gray-200'
                 }`}>
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-gray-900">{s.name}</span>
-                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                        s.priority === 'high' ? 'bg-red-100 text-red-700' :
-                        s.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>{s.priority === 'high' ? '強烈建議' : s.priority === 'medium' ? '建議' : '可考慮'}</span>
-                      <span className={`px-2 py-0.5 text-[10px] rounded-full ${
-                        s.category === 'deficiency' ? 'bg-blue-100 text-blue-700' :
-                        s.category === 'hormonal' ? 'bg-purple-100 text-purple-700' :
-                        s.category === 'performance' ? 'bg-green-100 text-green-700' :
-                        'bg-orange-100 text-orange-700'
-                      }`}>{
-                        s.category === 'deficiency' ? '補充缺乏' :
-                        s.category === 'hormonal' ? '荷爾蒙' :
-                        s.category === 'performance' ? '運動表現' : '恢復'
-                      }</span>
+                  {/* 標題列 */}
+                  <div className={`px-5 py-3 flex items-center gap-2 flex-wrap ${
+                    s.priority === 'high' ? 'bg-red-50' :
+                    s.priority === 'medium' ? 'bg-amber-50' :
+                    'bg-gray-50'
+                  }`}>
+                    <span className="text-base font-bold text-gray-900">{s.name}</span>
+                    <span className={`px-2.5 py-0.5 text-[11px] font-bold rounded-full ${
+                      s.priority === 'high' ? 'bg-red-100 text-red-700' :
+                      s.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>{s.priority === 'high' ? '強烈建議' : s.priority === 'medium' ? '建議' : '可考慮'}</span>
+                    <span className={`px-2.5 py-0.5 text-[11px] rounded-full ${
+                      s.category === 'deficiency' ? 'bg-blue-100 text-blue-700' :
+                      s.category === 'hormonal' ? 'bg-purple-100 text-purple-700' :
+                      s.category === 'performance' ? 'bg-green-100 text-green-700' :
+                      'bg-orange-100 text-orange-700'
+                    }`}>{
+                      s.category === 'deficiency' ? '補充缺乏' :
+                      s.category === 'hormonal' ? '荷爾蒙' :
+                      s.category === 'performance' ? '運動表現' : '恢復'
+                    }</span>
+                  </div>
+
+                  {/* 內容區 */}
+                  <div className="px-5 py-4 bg-white space-y-3">
+                    <p className="text-sm text-gray-700 leading-relaxed">{s.reason}</p>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gray-50 rounded-lg px-3 py-2.5">
+                        <p className="text-[10px] font-medium text-gray-400 mb-1">劑量</p>
+                        <p className="text-sm font-medium text-gray-800">{s.dosage}</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg px-3 py-2.5">
+                        <p className="text-[10px] font-medium text-gray-400 mb-1">服用時機</p>
+                        <p className="text-sm font-medium text-gray-800">{s.timing}</p>
+                      </div>
                     </div>
+
+                    {s.triggerTests.length > 0 && (
+                      <p className="text-xs text-gray-400">觸發指標：{s.triggerTests.join('、')}</p>
+                    )}
+                    <p className="text-xs text-gray-400 italic">文獻：{s.evidence}</p>
                   </div>
-                  <p className="text-xs text-gray-700 mb-2">{s.reason}</p>
-                  <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-                    <span>📦 {s.dosage}</span>
-                    <span>⏰ {s.timing}</span>
-                  </div>
-                  {s.triggerTests.length > 0 && (
-                    <p className="text-[10px] text-gray-400 mt-2">觸發指標：{s.triggerTests.join('、')}</p>
-                  )}
-                  <p className="text-[10px] text-gray-400 mt-1 italic">文獻：{s.evidence}</p>
                 </div>
               ))}
             </div>
