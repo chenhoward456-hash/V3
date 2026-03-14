@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Calendar, X, Plus, Scale, Activity, Dumbbell, Ruler, Heart } from 'lucide-react'
 import LazyChart from '@/components/charts/LazyChart'
-import { getLocalDateStr } from '@/lib/date-utils'
+import { getLocalDateStr, daysUntilDateTW } from '@/lib/date-utils'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useToast } from '@/components/ui/Toast'
 
@@ -69,7 +69,7 @@ export default function BodyComposition({
 
     const compDate = new Date(competitionDate)
     const now = new Date()
-    const daysToComp = Math.ceil((compDate.getTime() - now.getTime()) / 86400000)
+    const daysToComp = daysUntilDateTW(competitionDate)
     if (daysToComp < 0) return null // 比賽已過
 
     // 取近 14 天的 MA7 做線性回歸

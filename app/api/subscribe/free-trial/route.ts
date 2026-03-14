@@ -12,9 +12,9 @@ const log = createLogger('free-trial')
 
 const supabase = createServiceSupabase()
 
-// 密碼學安全隨機 unique_code
+// 密碼學安全隨機 unique_code（12 碼，~72 bits 熵值）
 function generateUniqueCode(): string {
-  return crypto.randomBytes(6).toString('base64url').slice(0, 8)
+  return crypto.randomBytes(9).toString('base64url').slice(0, 12)
 }
 
 export async function POST(request: NextRequest) {

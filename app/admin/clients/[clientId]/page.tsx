@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { calcRecommendedStageWeight, type RecommendedStageWeightResult } from '@/lib/nutrition-engine'
+import { daysUntilDateTW } from '@/lib/date-utils'
 import { getDefaultFeatures, type SubscriptionTier } from '@/lib/tier-defaults'
 
 type EditorTab = 'basic' | 'features' | 'notes' | 'lab' | 'supplements'
@@ -1094,7 +1095,7 @@ export default function ClientEditor() {
                     />
                     {client.competition_date && (
                       <p className="text-xs text-amber-600 mt-1 font-medium">
-                        距離比賽還有 {Math.max(0, Math.ceil((new Date(client.competition_date).getTime() - new Date().getTime()) / 86400000))} 天
+                        距離比賽還有 {Math.max(0, daysUntilDateTW(client.competition_date))} 天
                       </p>
                     )}
                   </div>

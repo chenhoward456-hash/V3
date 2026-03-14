@@ -21,6 +21,7 @@ import { sendPushNotification } from '@/lib/web-push'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
+import { daysUntilDateTW } from '@/lib/date-utils'
 import {
   sendDay3Email,
   sendDay7Email,
@@ -239,14 +240,14 @@ export async function GET(request: NextRequest) {
           .eq('competition_enabled', true)
           .not('competition_date', 'is', null)
         const urgentComp = (compClients || []).filter((c: { name: string; competition_date: string }) => {
-          const days = Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
+          const days = daysUntilDateTW(c.competition_date)
           return days > 0 && days <= 30
         })
         if (urgentComp.length > 0) {
           digestLines.push('')
           digestLines.push('🏆 備賽倒數：')
           for (const cc of urgentComp) {
-            const days = Math.ceil((new Date(cc.competition_date).getTime() - Date.now()) / 86400000)
+            const days = daysUntilDateTW(cc.competition_date)
             digestLines.push(`  • ${cc.name}：${days} 天`)
           }
         }

@@ -10,9 +10,9 @@ import crypto from 'crypto'
 const supabase = createServiceSupabase()
 const log = createLogger('subscribe/webhook')
 
-// 生成 8 碼 unique_code（密碼學安全隨機）
+// 生成 12 碼 unique_code（密碼學安全隨機，~72 bits 熵值）
 function generateUniqueCode(): string {
-  return crypto.randomBytes(6).toString('base64url').slice(0, 8)
+  return crypto.randomBytes(9).toString('base64url').slice(0, 12)
 }
 
 // getDefaultFeatures 已移至 @/lib/tier-defaults

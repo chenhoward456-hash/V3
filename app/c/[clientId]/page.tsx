@@ -45,7 +45,7 @@ const OnboardingGuide = dynamic(() => import('@/components/client/OnboardingGuid
 const OnboardingChecklist = dynamic(() => import('@/components/client/OnboardingChecklist'), { ssr: false })
 const ReferralCard = dynamic(() => import('@/components/client/ReferralCard'), { ssr: false })
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
-import { getLocalDateStr } from '@/lib/date-utils'
+import { getLocalDateStr, daysUntilDateTW } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 import { trackEvent } from '@/lib/analytics'
 import ABTest from '@/components/ABTest'
@@ -306,7 +306,7 @@ export default function ClientDashboard() {
       const res = await fetch('/api/subscribe/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: clientData.client.id }),
+        body: JSON.stringify({ clientId: clientData.client.id, uniqueCode: clientData.client.unique_code }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '取消失敗')
@@ -452,6 +452,25 @@ export default function ClientDashboard() {
     trendData, topSupplements,
   } = useDashboardStats(clientData, selectedDate, today)
 
+  // AI Chat 用的體重/體脂趨勢（最近 14 天）
+  const weightTrendForAi = useMemo(() => {
+    if (!clientData?.bodyData?.length) return []
+    return (clientData.bodyData as any[])
+      .filter((b: any) => b.weight != null)
+      .sort((a: any, b: any) => a.date.localeCompare(b.date))
+      .slice(-14)
+      .map((b: any) => ({ date: b.date, weight: b.weight as number }))
+  }, [clientData?.bodyData])
+
+  const bodyFatTrendForAi = useMemo(() => {
+    if (!clientData?.bodyData?.length) return []
+    return (clientData.bodyData as any[])
+      .filter((b: any) => b.body_fat != null)
+      .sort((a: any, b: any) => a.date.localeCompare(b.date))
+      .slice(-14)
+      .map((b: any) => ({ date: b.date, bodyFat: b.body_fat as number }))
+  }, [clientData?.bodyData])
+
   // 生成補品建議（必須在所有條件 return 之前，遵守 React Hooks 規則）
   const supplementSuggestions = useMemo(() => {
     const c = clientData?.client
@@ -509,6 +528,9 @@ export default function ClientDashboard() {
     return corrections
   }, [clientData?.client])
 
+  // 營養引擎分析結果（傳給 AI Chat 用）
+  const [nutritionEngineSuggestion, setNutritionEngineSuggestion] = useState<any>(null)
+
   // 所有有營養追蹤的學員：頁面載入時自動觸發營養引擎更新目標
   // 備賽客戶由 GoalDrivenStatus 處理，這裡處理一般學員
   const autoNutritionTriggered = useRef(false)
@@ -528,6 +550,7 @@ export default function ClientDashboard() {
           return
         }
         const json = await res.json()
+        if (json.suggestion) setNutritionEngineSuggestion(json.suggestion)
         console.log('[AutoNutrition] 引擎結果:', {
           status: json.suggestion?.status,
           autoApply: json.suggestion?.autoApply,
@@ -936,7 +959,7 @@ export default function ClientDashboard() {
 
           {/* 備賽倒數 Banner */}
           {isCompetition && c.competition_date && (() => {
-            const daysLeft = Math.ceil((new Date(c.competition_date).getTime() - new Date().getTime()) / 86400000)
+            const daysLeft = daysUntilDateTW(c.competition_date)
             const phase = c.prep_phase || 'off_season'
             const urgencyColor = daysLeft <= 7 ? 'from-red-500 to-red-600' : daysLeft <= 14 ? 'from-amber-500 to-orange-500' : daysLeft <= 30 ? 'from-amber-400 to-yellow-500' : 'from-blue-500 to-blue-600'
             const urgencyBg = daysLeft <= 7 ? 'bg-red-50 border-red-200' : daysLeft <= 14 ? 'bg-amber-50 border-amber-200' : daysLeft <= 30 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
@@ -1030,7 +1053,7 @@ export default function ClientDashboard() {
                     const peakWeekLoss = Math.round(latestBodyData.weight * waterCutPct * 10) / 10
                     const prePeakTarget = Math.round((c.target_weight + peakWeekLoss) * 10) / 10
                     const dietGap = Math.max(0, Math.round((latestBodyData.weight - prePeakTarget) * 10) / 10)
-                    const daysLeft = c.competition_date ? Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000) : null
+                    const daysLeft = c.competition_date ? daysUntilDateTW(c.competition_date) : null
                     const showSplit = daysLeft != null && daysLeft > 7 && c.prep_phase !== 'peak_week'
 
                     return (
@@ -1593,13 +1616,11 @@ export default function ClientDashboard() {
 
         {/* Goal-Driven + Peak Week（備賽客戶）*/}
         {isCompetition && (() => {
-          const compDaysLeft = c.competition_date
-            ? Math.ceil((new Date(c.competition_date).getTime() - Date.now()) / 86400000)
-            : null
-          const showPeakWeek = compDaysLeft != null && compDaysLeft <= 14 && latestBodyData?.weight
+          const compDaysLeft = c.competition_date ? daysUntilDateTW(c.competition_date) : null
+          const showPeakWeek = compDaysLeft != null && compDaysLeft >= 0 && compDaysLeft <= 14 && latestBodyData?.weight
           return (
             <>
-              {(!showPeakWeek || compDaysLeft! > 8) && (
+              {(!showPeakWeek || compDaysLeft! > 7) && (
                 <GoalDrivenStatus
                   clientId={c.id}
                   code={c.unique_code}
@@ -1943,6 +1964,23 @@ export default function ClientDashboard() {
             depressionRisk: ['low', 'moderate', 'high'].includes(c.gene_depression_risk as string) ? c.gene_depression_risk as string : null,
             notes: c.gene_notes as string | null,
           } : undefined}
+          weightTrend={weightTrendForAi}
+          bodyFatTrend={bodyFatTrendForAi}
+          nutritionEngineStatus={nutritionEngineSuggestion ? {
+            status: nutritionEngineSuggestion.status,
+            message: nutritionEngineSuggestion.message,
+            estimatedTDEE: nutritionEngineSuggestion.estimatedTDEE,
+            weeklyWeightChangeRate: nutritionEngineSuggestion.weeklyWeightChangeRate,
+            dietBreakSuggested: nutritionEngineSuggestion.dietBreakSuggested ?? false,
+            warnings: nutritionEngineSuggestion.warnings || [],
+          } : undefined}
+          coachSummary={c.coach_summary as string | null}
+          coachWeeklyNote={c.coach_weekly_note as string | null}
+          streakDays={streakDays}
+          streakMessage={streakMessage}
+          targetWeight={c.target_weight as number | null}
+          targetBodyFat={(c.target_body_fat as number) ?? null}
+          dietStartDate={c.diet_start_date as string | null}
         />
       )}
 

@@ -1,10 +1,17 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
+import { rateLimit, getClientIP } from '@/lib/auth-middleware'
 
 const logger = createLogger('diagnosis-email-capture')
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const ip = getClientIP(request)
+  const { allowed } = rateLimit(`diag_email_${ip}`, 5, 60_000)
+  if (!allowed) {
+    return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
+  }
+
   try {
     const { email, tdee, gender, age, weight, height, goal } = await request.json()
 

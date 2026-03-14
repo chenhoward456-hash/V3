@@ -1,10 +1,17 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
+import { rateLimit, getClientIP } from '@/lib/auth-middleware'
 
 const logger = createLogger('waitlist')
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const ip = getClientIP(request)
+  const { allowed } = rateLimit(`waitlist_${ip}`, 5, 60_000)
+  if (!allowed) {
+    return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
+  }
+
   try {
     const { email, tier } = await request.json()
 

@@ -29,10 +29,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (purchase.status === 'completed' && purchase.download_token) {
+      // 遮罩 email，避免洩漏完整信箱
+      const maskedEmail = purchase.email
+        ? purchase.email.replace(/^(.{1,2})(.*)(@.*)$/, (_m: string, a: string, b: string, c: string) => a + '*'.repeat(Math.min(b.length, 5)) + c)
+        : null
       return NextResponse.json({
         purchased: true,
         downloadToken: purchase.download_token,
-        email: purchase.email,
+        email: maskedEmail,
       })
     }
 

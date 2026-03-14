@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getLocalDateStr } from '@/lib/date-utils'
+import { getLocalDateStr, daysUntilDateTW } from '@/lib/date-utils'
 
 interface SelfManagedNutritionProps {
   clientId: string  // UUID (internal ID)
@@ -435,7 +435,7 @@ export default function SelfManagedNutrition({
     if (!existingTargetWeight || !existingTargetDate) return null
     const now = new Date()
     const target = new Date(existingTargetDate)
-    const daysLeft = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / 86400000))
+    const daysLeft = Math.max(0, daysUntilDateTW(existingTargetDate))
     if (daysLeft <= 0) return null
 
     return (

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { X, Send, Camera } from 'lucide-react'
+import { daysUntilDateTW } from '@/lib/date-utils'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -86,6 +87,28 @@ interface AiChatDrawerProps {
     depressionRisk?: string | null  // 向後相容 (low/moderate/high)
     notes?: string | null
   } | null
+  // Weight & body composition trend
+  weightTrend?: { date: string; weight: number }[]
+  bodyFatTrend?: { date: string; bodyFat: number }[]
+  // Nutrition engine analysis
+  nutritionEngineStatus?: {
+    status: string
+    message: string
+    estimatedTDEE: number | null
+    weeklyWeightChangeRate: number | null
+    dietBreakSuggested: boolean
+    warnings: string[]
+  } | null
+  // Coach notes
+  coachSummary?: string | null
+  coachWeeklyNote?: string | null
+  // Behavioral
+  streakDays?: number
+  streakMessage?: string
+  // Goals
+  targetWeight?: number | null
+  targetBodyFat?: number | null
+  dietStartDate?: string | null
 }
 
 export default function AiChatDrawer({
@@ -106,6 +129,16 @@ export default function AiChatDrawer({
   healthScore,
   supplementSuggestions,
   geneticProfile,
+  weightTrend,
+  bodyFatTrend,
+  nutritionEngineStatus,
+  coachSummary,
+  coachWeeklyNote,
+  streakDays,
+  streakMessage,
+  targetWeight,
+  targetBodyFat,
+  dietStartDate,
 }: AiChatDrawerProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -273,9 +306,29 @@ export default function AiChatDrawer({
 ${competitionEnabled ? `- 備賽模式（${(() => {
       const phaseLabels: Record<string, string> = { off_season: '休賽期', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' }
       return phaseLabels[prepPhase || ''] || '未設定階段'
-    })()}）${competitionDate ? `\n- 比賽日期：${competitionDate}（距今 ${Math.ceil((new Date(competitionDate).getTime() - Date.now()) / 86400000)} 天）` : ''}` : ''}
-${latestWeight ? `- 最新體重：${latestWeight} kg` : ''}
-${latestBodyFat ? `- 最新體脂：${latestBodyFat}%` : ''}
+    })()}）${competitionDate ? `\n- 比賽日期：${competitionDate}（距今 ${daysUntilDateTW(competitionDate)} 天）` : ''}` : ''}
+${(() => {
+      if (weightTrend && weightTrend.length >= 2) {
+        const first = weightTrend[0], last = weightTrend[weightTrend.length - 1]
+        const diff = (last.weight - first.weight).toFixed(1)
+        const dir = Number(diff) > 0 ? '上升' : Number(diff) < 0 ? '下降' : '持平'
+        return `- 體重趨勢（${weightTrend.length}天）：${first.date} ${first.weight}kg → ${last.date} ${last.weight}kg（${dir} ${Math.abs(Number(diff))}kg）`
+      }
+      return latestWeight ? `- 最新體重：${latestWeight} kg` : ''
+    })()}
+${(() => {
+      if (bodyFatTrend && bodyFatTrend.length >= 2) {
+        const first = bodyFatTrend[0], last = bodyFatTrend[bodyFatTrend.length - 1]
+        const diff = (last.bodyFat - first.bodyFat).toFixed(1)
+        const dir = Number(diff) > 0 ? '上升' : Number(diff) < 0 ? '下降' : '持平'
+        return `- 體脂趨勢（${bodyFatTrend.length}天）：${first.date} ${first.bodyFat}% → ${last.date} ${last.bodyFat}%（${dir} ${Math.abs(Number(diff))}%）`
+      }
+      return latestBodyFat ? `- 最新體脂：${latestBodyFat}%` : ''
+    })()}
+${targetWeight ? `- 目標體重：${targetWeight} kg${latestWeight ? `（還差 ${Math.abs(latestWeight - targetWeight).toFixed(1)} kg）` : ''}` : ''}
+${targetBodyFat ? `- 目標體脂：${targetBodyFat}%` : ''}
+${dietStartDate ? `- 飲食計畫開始：${dietStartDate}（已執行 ${Math.max(0, Math.round((Date.now() - new Date(dietStartDate).getTime()) / 86400000))} 天）` : ''}
+${streakDays ? `- 連續記錄：${streakDays} 天` : ''}
 
 ## 今日營養目標
 ${caloriesTarget ? `- 熱量目標：${caloriesTarget} kcal` : ''}
@@ -341,7 +394,17 @@ ${prepPhase === 'cut' && (geneticProfile.serotonin === 'SS' || geneticProfile.se
 ${prepPhase === 'peak_week' && (geneticProfile.apoe === 'e3/e4' || geneticProfile.apoe === 'e4/e4') ? `- **APOE4 + Peak Week**：脂肪補充日避免大量飽和脂肪（牛油、奶油），改用 MCT 油、橄欖油、酪梨等。水鈉操控期間注意電解質平衡，此基因型心血管風險較高，極端脫水需格外謹慎。` : ''}
 ${prepPhase === 'peak_week' && (geneticProfile.serotonin === 'SS' || geneticProfile.serotonin === 'SL' || geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high') ? `- **5-HTTLPR ${geneticProfile.serotonin || 'SL/SS'} + Peak Week**：Peak Week 極端飲食操控（碳水耗竭→超補）對神經傳導物質波動大。此基因型選手可能出現劇烈情緒擺盪，屬正常反應。碳水超補日情緒會明顯改善。營養計算機已自動縮短耗竭期並提高耗竭期碳水量。` : ''}
 ` : ''}
-## 回答原則
+${nutritionEngineStatus ? `## 營養引擎分析
+- 狀態：${({ on_track: '進度正常', too_fast: '減脂過快', plateau: '停滯期', wrong_direction: '方向偏離', insufficient_data: '數據不足', low_compliance: '合規率低', peak_week: 'Peak Week', goal_driven: '目標導向' } as Record<string, string>)[nutritionEngineStatus.status] || nutritionEngineStatus.status}
+${nutritionEngineStatus.estimatedTDEE ? `- 估算 TDEE：${nutritionEngineStatus.estimatedTDEE} kcal` : ''}
+${nutritionEngineStatus.weeklyWeightChangeRate != null ? `- 週均體重變化：${nutritionEngineStatus.weeklyWeightChangeRate > 0 ? '+' : ''}${nutritionEngineStatus.weeklyWeightChangeRate.toFixed(2)}% BW` : ''}
+${nutritionEngineStatus.dietBreakSuggested ? '- ⚠️ 系統建議 Diet Break（代謝壓力累積）' : ''}
+${nutritionEngineStatus.warnings.length > 0 ? `- 注意：${nutritionEngineStatus.warnings.slice(0, 3).map(w => w.replace(/[^\u4e00-\u9fff\w\s,.!?，。！？、：:()（）%+\-→←↑↓/]/g, '')).join('；')}` : ''}
+**重要**：你的回答要跟營養引擎的分析一致。如果引擎說停滯期，不要說進度正常；如果引擎說減脂過快，要建議增加攝取。
+` : ''}${coachSummary || coachWeeklyNote ? `## 教練備註
+${coachWeeklyNote ? `- 本週回饋：${coachWeeklyNote.slice(0, 150)}` : ''}
+${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
+` : ''}## 回答原則
 1. 根據「剩餘需求」給出具體的外食建議（711、全家、超商、自助餐、外送等）
 2. 每個建議要附上大約的營養素估算（蛋白質、碳水、脂肪、熱量）
 3. 回答以繁體中文為主，語氣親切實用
@@ -360,8 +423,10 @@ ${prepPhase === 'peak_week' && (geneticProfile.serotonin === 'SS' || geneticProf
     - 估算該餐的蛋白質(g)、碳水(g)、脂肪(g)、總熱量(kcal)
     - 用清楚的格式列出，例如：「蛋白質 35g ｜ 碳水 75g ｜ 脂肪 18g ｜ 熱量 602 kcal」
     - 對比今日剩餘目標，告訴學員吃完這餐後還剩多少
-    - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫`
-  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, prepPhase, competitionDate, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions, geneticProfile, trainingReadiness])
+    - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫
+16. 當學員問體重變化（變重/變輕/停滯）時，優先引用體重趨勢數據回答，結合飲食合規率、睡眠、水分等因素分析原因
+17. 如果有教練備註，你的建議方向要跟教練一致，不要與教練的評估矛盾`
+  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, prepPhase, competitionDate, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions, geneticProfile, trainingReadiness, weightTrend, bodyFatTrend, nutritionEngineStatus, coachSummary, coachWeeklyNote, streakDays, targetWeight, targetBodyFat, dietStartDate])
 
   // 壓縮圖片：FileReader → Image → Canvas → base64 JPEG
   // 每一步都有 fallback，即使 Canvas 失敗也會回傳原圖 base64

@@ -7,7 +7,8 @@ const supabase = createServiceSupabase()
 
 // 驗證 order_id 簽名（與 return handler 的 signOrderId 一致）
 function verifyOrderSignature(orderId: string, signature: string): boolean {
-  const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD || 'fallback'
+  const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD
+  if (!secret) throw new Error('Missing SESSION_SECRET or ADMIN_PASSWORD')
   const expected = crypto.createHmac('sha256', secret).update(orderId).digest('hex').slice(0, 32)
   if (expected.length !== signature.length) return false
   try {

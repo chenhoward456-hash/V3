@@ -138,16 +138,22 @@ export function verifyCoachPin(request: NextRequest): boolean {
 }
 
 /**
- * 驗證教練權限（JWT 或 PIN 二擇一）
- * 適用於需要教練身份的 POST/PUT/DELETE 操作
+ * 驗證教練權限（Admin Session Cookie / Coach PIN / JWT 三擇一）
+ * 適用於需要教練身份的操作
  */
 export async function verifyCoachAuth(request: NextRequest): Promise<{ authorized: boolean; error?: string }> {
-  // 方法一：Coach PIN
+  // 方法一：Admin Session Cookie（後台頁面自動帶 cookie）
+  const sessionToken = request.cookies.get('admin_session')?.value
+  if (sessionToken && verifyAdminSession(sessionToken)) {
+    return { authorized: true }
+  }
+
+  // 方法二：Coach PIN
   if (verifyCoachPin(request)) {
     return { authorized: true }
   }
 
-  // 方法二：JWT + coach role
+  // 方法三：JWT + coach role
   const { user, error: authError } = await verifyAuth(request)
   if (authError || !user || !isCoach(user)) {
     return { authorized: false, error: '權限不足，需要教練身份' }
@@ -276,7 +282,9 @@ export function validateNumericField(value: unknown, min: number, max: number, f
  * 取得用戶端 IP（用於 rate limiting）
  */
 export function getClientIP(request: NextRequest): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  // request.ip 由 Vercel 平台提供，不可被 header 偽造；API route 中可能為 undefined
+  return (request as any).ip
+    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     || request.headers.get('x-real-ip')
     || 'unknown'
 }

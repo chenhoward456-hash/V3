@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import crypto from 'crypto'
 import { validateDate } from '@/utils/validation'
-import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP } from '@/lib/auth-middleware'
+import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP, sanitizeTextField } from '@/lib/auth-middleware'
 import { calculateInitialTargets } from '@/lib/nutrition-engine'
 import { createLogger } from '@/lib/logger'
 import { writeAuditLog } from '@/lib/audit'
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 生成唯一代碼（密碼學安全隨機）
-    const uniqueCode = crypto.randomBytes(5).toString('hex').substring(0, 9)
+    const uniqueCode = crypto.randomBytes(9).toString('base64url').slice(0, 12)
     
     const { data, error } = await supabase
       .from('clients')
@@ -463,7 +463,7 @@ export async function PUT(request: NextRequest) {
       updates.gene_depression_risk = gene_depression_risk && VALID_SEROTONIN.includes(gene_depression_risk) ? gene_depression_risk : null
     }
     if (gene_notes !== undefined) {
-      updates.gene_notes = typeof gene_notes === 'string' ? gene_notes.slice(0, 500) : null
+      updates.gene_notes = sanitizeTextField(gene_notes, 500)
     }
 
     if (Object.keys(updates).length === 0) {
@@ -477,7 +477,7 @@ export async function PUT(request: NextRequest) {
 
     if (updateError) {
       logger.error('PUT /api/clients update failed', { error: updateError, fields: Object.keys(updates) })
-      return createErrorResponse(`更新失敗：${updateError.message}`, 500)
+      return createErrorResponse('更新失敗，請稍後再試', 500)
     }
 
     // 審計日誌（非阻塞）

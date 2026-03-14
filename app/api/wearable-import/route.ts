@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     } catch (parseError: unknown) {
       return NextResponse.json({
         error: '檔案解析失敗',
-        detail: parseError instanceof Error ? parseError.message : String(parseError),
+        detail: '請確認檔案格式為支援的穿戴裝置匯出格式',
       }, { status: 400 })
     }
 
@@ -135,7 +135,8 @@ export async function POST(request: NextRequest) {
         .upsert(upsertData, { onConflict: 'client_id,date' })
 
       if (upsertError) {
-        errors.push(`批次 ${Math.floor(i / batchSize) + 1} 失敗: ${upsertError.message}`)
+        console.error('[wearable-import] Upsert batch failed:', { batch: Math.floor(i / batchSize) + 1, error: upsertError.message })
+        errors.push(`批次 ${Math.floor(i / batchSize) + 1} 匯入失敗`)
         skipped += batch.length
       } else {
         imported += batch.length

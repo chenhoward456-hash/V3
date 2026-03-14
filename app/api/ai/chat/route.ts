@@ -81,6 +81,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '帳號已過期' }, { status: 403 })
     }
 
+    // 每日用量上限（防止 API 費用被灌爆）
+    const todayStr = new Date().toISOString().split('T')[0]
+    const { count: dailyCount } = await supabase
+      .from('ai_chat_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', client.id)
+      .gte('created_at', todayStr)
+
+    if ((dailyCount ?? 0) >= 30) {
+      return NextResponse.json({ error: '今日 AI 對話次數已達上限（30 次），明天再來吧', daily_limit: true }, { status: 429 })
+    }
+
     // AI 未開放的用戶：每月允許 1 次免費體驗，由後端計數
     let isFreeQuotaUse = false
     if (!client.ai_chat_enabled) {
@@ -130,12 +142,10 @@ export async function POST(request: NextRequest) {
 
     if (reply === null) throw lastErr
 
-    // AI 回覆成功後才扣免費額度，避免 API 失敗白白消耗
-    if (isFreeQuotaUse) {
-      await supabase.from('ai_chat_usage').insert({ client_id: client.id }).then(({ error: insertError }) => {
-        if (insertError) logger.error('插入使用記錄失敗', insertError)
-      })
-    }
+    // 所有成功的 AI 回覆都記錄用量（用於每日上限 + 免費額度計數）
+    await supabase.from('ai_chat_usage').insert({ client_id: client.id }).then(({ error: insertError }) => {
+      if (insertError) logger.error('插入使用記錄失敗', insertError)
+    })
 
     return NextResponse.json({ reply })
   } catch (err: unknown) {

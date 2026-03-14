@@ -355,6 +355,16 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // 賽後恢復期：重設 water_target 為正常值（Peak Week 可能留下極端值如 800ml）
+      // 同時清除碳循環值（恢復期不需要碳循環）
+      if ((suggestion as any).postCompetitionRecovery) {
+        updates.carbs_training_day = null
+        updates.carbs_rest_day = null
+        if ((suggestion as any).recoveryWater) {
+          updates.water_target = (suggestion as any).recoveryWater
+        }
+      }
+
       if (Object.keys(updates).length > 0) {
         const { error: updateErr } = await supabase
           .from('clients')

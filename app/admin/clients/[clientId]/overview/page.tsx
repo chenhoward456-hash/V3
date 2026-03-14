@@ -8,6 +8,7 @@ import {
   ResponsiveContainer, BarChart, Bar, ReferenceLine, Cell
 } from 'recharts'
 import { Download } from 'lucide-react'
+import { daysUntilDateTW } from '@/lib/date-utils'
 import { TRAINING_TYPES, isWeightTraining } from '@/components/client/types'
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 
@@ -700,7 +701,7 @@ export default function ClientOverview() {
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold text-gray-900">{client.name} — 學員總覽</h1>
                   {client.competition_enabled && client.competition_date && (() => {
-                    const d = Math.ceil((new Date(client.competition_date).getTime() - Date.now()) / 86400000)
+                    const d = daysUntilDateTW(client.competition_date)
                     return d > 0 ? <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${d <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {d}天</span> : null
                   })()}
                 </div>
@@ -758,7 +759,7 @@ export default function ClientOverview() {
                 <h2 className="text-base font-bold text-gray-900">{client.name} — 快速摘要</h2>
                 <p className="text-xs text-gray-500">
                   {client.competition_enabled && client.competition_date && (() => {
-                    const d = Math.ceil((new Date(client.competition_date).getTime() - Date.now()) / 86400000)
+                    const d = daysUntilDateTW(client.competition_date)
                     return d > 0 ? `🏆 距比賽 ${d} 天 · ${
                       (({ off_season: '非賽季', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' } as Record<string, string>)[client.prep_phase || ''] || client.prep_phase || '')
                     }` : '比賽已結束'

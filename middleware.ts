@@ -34,9 +34,10 @@ function edgeRateLimit(key: string, maxRequests: number, windowMs: number): bool
 }
 
 function getIP(request: NextRequest): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  // Vercel 提供的 request.ip 最可靠，不可被 header 偽造
+  return request.ip
+    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     || request.headers.get('x-real-ip')
-    || request.ip
     || 'unknown'
 }
 

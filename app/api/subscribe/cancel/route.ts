@@ -9,10 +9,23 @@ const log = createLogger('subscribe/cancel')
 
 export async function POST(request: NextRequest) {
   try {
-    const { clientId } = await request.json()
+    const { clientId, uniqueCode } = await request.json()
 
-    if (!clientId) {
-      return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
+    if (!clientId || !uniqueCode) {
+      return NextResponse.json({ error: '缺少必要參數' }, { status: 400 })
+    }
+
+    // 驗證 uniqueCode 對應 clientId（防止未授權取消）
+    const { data: verifyClient } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('id', clientId)
+      .eq('unique_code', uniqueCode)
+      .single()
+
+    if (!verifyClient) {
+      log.warn('Cancel auth failed', { clientId })
+      return NextResponse.json({ error: '驗證失敗' }, { status: 403 })
     }
 
     // 查找該用戶最近一筆已完成的訂閱購買（定期定額的原始訂單）
@@ -63,7 +76,7 @@ export async function POST(request: NextRequest) {
     if (rtnCode !== '1') {
       const rtnMsg = responseParams.get('RtnMsg') || responseText
       log.error('ECPay cancel failed', null, { rtnCode, rtnMsg, merchantTradeNo: purchase.merchant_trade_no })
-      return NextResponse.json({ error: `取消失敗：${rtnMsg}` }, { status: 400 })
+      return NextResponse.json({ error: '取消失敗，請稍後再試或聯繫客服' }, { status: 400 })
     }
 
     // 更新購買紀錄狀態

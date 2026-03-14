@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getLocalDateStr } from '@/lib/date-utils'
+import { getLocalDateStr, daysUntilDateTW } from '@/lib/date-utils'
 
 interface PeakWeekDay {
   daysOut: number
@@ -116,8 +116,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
   if (!plan || plan.length === 0) return null
 
   const focusPlan = plan.find(d => d.date === focusDate)
-  const compDate = new Date(competitionDate)
-  const daysLeft = Math.max(0, Math.ceil((compDate.getTime() - new Date().getTime()) / 86400000))
+  const daysLeft = Math.max(0, daysUntilDateTW(competitionDate))
   const focusLabel = previewDate ? '明日計畫' : '今日計畫'
 
   return (

@@ -32,6 +32,8 @@ export async function POST(request: NextRequest) {
     }
 
     // upsert：同一個 endpoint 只保留一筆
+    // onConflict: 'endpoint' 確保同一瀏覽器不會重複註冊
+    // 同時綁定 client_id，防止 A 的 endpoint 被改綁到 B
     const { error } = await supabase
       .from('push_subscriptions')
       .upsert(
@@ -56,22 +58,38 @@ export async function POST(request: NextRequest) {
 
 /**
  * DELETE /api/push/subscribe
- * 取消推播訂閱
+ * 取消推播訂閱（需提供 clientId 驗證所有權）
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const { endpoint } = await request.json()
+    const { endpoint, clientId } = await request.json()
 
     if (!endpoint) {
       return NextResponse.json({ error: '缺少 endpoint' }, { status: 400 })
     }
+    if (!clientId) {
+      return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
+    }
 
     const supabase = createServiceSupabase()
 
+    // 驗證 clientId 存在
+    const { data: client } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('unique_code', clientId)
+      .maybeSingle()
+
+    if (!client) {
+      return NextResponse.json({ error: '驗證失敗' }, { status: 403 })
+    }
+
+    // 只刪除屬於該 client 的 endpoint（防止刪除別人的訂閱）
     await supabase
       .from('push_subscriptions')
       .delete()
       .eq('endpoint', endpoint)
+      .eq('client_id', client.id)
 
     return NextResponse.json({ success: true })
   } catch {

@@ -8,3 +8,19 @@ export function getLocalDateStr(date: Date = new Date()): string {
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 }
+
+/**
+ * 計算從今天到目標日期的天數差（UTC+8 台北時區對齊）
+ * 正值 = 未來，0 = 今天，負值 = 已過去
+ *
+ * 統一公式避免 browser/server 時區不一致：
+ * - Browser (UTC+8): new Date() 已是本地時間，但 new Date("YYYY-MM-DD") 是 UTC midnight
+ * - Server (UTC): Date.now() 是 UTC，需 +8hr 對齊台北
+ * - 此函式在兩端都產出正確的台北日期差
+ */
+export function daysUntilDateTW(targetDateStr: string): number {
+  const nowTW = new Date(Date.now() + 8 * 60 * 60 * 1000)
+  const nowTWMidnight = new Date(nowTW.toISOString().split('T')[0])
+  const target = new Date(targetDateStr)
+  return Math.round((target.getTime() - nowTWMidnight.getTime()) / 86400000)
+}

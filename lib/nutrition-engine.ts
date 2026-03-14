@@ -308,6 +308,10 @@ export interface NutritionSuggestion {
 
   // 基因修正紀錄（已套用到建議值中，前端可顯示）
   geneticCorrections: GeneticCorrection[]
+
+  // 賽後恢復標記（比賽日期已過時自動啟用）
+  postCompetitionRecovery?: boolean
+  recoveryWater?: number  // 恢復期建議水量 (ml)
 }
 
 // 基因修正紀錄
@@ -1184,12 +1188,69 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   // 不再需要 prepPhase，只要有 targetDate + 距比賽夠近即可
   // daysLeft <= 8：完整啟用 Peak Week（autoApply + 回傳 peak_week status）
   // 8 < daysLeft <= 14：產生 peakWeekPlan 供前端預覽，營養建議走正常流程
+  // daysLeft < 0：比賽已結束 → 進入賽後恢復模式（不再卡在 Day 0）
   let previewPeakWeekPlan: PeakWeekDay[] | null = null
   if (input.targetDate) {
-    const now = new Date()
-    const target = new Date(input.targetDate)
-    const daysLeft = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
-    if (daysLeft <= 8) {
+    // 統一使用 UTC+8（台北時區）計算天數，與 todayStr 一致
+    const nowTW = new Date(Date.now() + 8 * 60 * 60 * 1000)
+    const nowTWDate = new Date(nowTW.toISOString().split('T')[0]) // UTC+8 的午夜
+    const target = new Date(input.targetDate) // DB DATE 欄位 = UTC midnight
+    const rawDaysLeft = Math.round((target.getTime() - nowTWDate.getTime()) / (1000 * 60 * 60 * 24))
+
+    // 比賽已結束 → 賽後恢復模式（rawDaysLeft < 0 = 比賽日已過）
+    if (rawDaysLeft < 0) {
+      const daysSinceComp = Math.abs(rawDaysLeft)
+      // 賽後恢復：漸進式提升熱量，避免暴食反彈
+      // 第 1-3 天：維持量 ×1.0（腸胃重新適應）
+      // 第 4-7 天：維持量 ×1.1（逐步提升）
+      // 第 8+ 天：維持量 ×1.2（正常反向飲食起點）
+      const recoveryMultiplier = daysSinceComp <= 3 ? 1.0 : daysSinceComp <= 7 ? 1.1 : 1.2
+      const bw = input.bodyWeight
+      const estimatedMaintenance = Math.round(bw * 33) // 粗估維持量
+      const recoveryCals = Math.round(estimatedMaintenance * recoveryMultiplier)
+      const recoveryProtein = Math.round(bw * 2.2)
+      const recoveryFat = Math.round(bw * 1.0)
+      const recoveryCarbs = Math.round((recoveryCals - recoveryProtein * 4 - recoveryFat * 9) / 4)
+
+      const recoveryWater = Math.round(bw * 40) // 恢復期正常水量 40ml/kg
+      return {
+        status: 'on_track' as const,
+        statusLabel: '賽後恢復',
+        statusEmoji: '🔄',
+        message: `比賽已結束 ${daysSinceComp} 天。目前為賽後恢復期（反向飲食 Phase ${daysSinceComp <= 3 ? 1 : daysSinceComp <= 7 ? 2 : 3}），漸進提升熱量避免暴食反彈。建議教練設定新的目標或清除比賽日期。`,
+        warnings: [
+          '🔄 賽後恢復期：優先恢復腸胃功能和荷爾蒙平衡',
+          '⚠️ 避免暴食 — 比賽後 leptin 急降，飢餓感會很強，用高蛋白+高纖維穩定食慾',
+          `📈 目前恢復倍率 ×${recoveryMultiplier}（維持量 ${estimatedMaintenance} → ${recoveryCals} kcal）`,
+          ...(daysSinceComp <= 3 ? ['🍽️ 第 1-3 天：以維持量進食，避免高脂高糖，讓腸胃重新適應正常食物量'] : []),
+          ...(daysSinceComp > 3 && daysSinceComp <= 7 ? ['🍽️ 第 4-7 天：每日增加 100-150kcal，以碳水為主（恢復肝醣和代謝率）'] : []),
+          ...(daysSinceComp > 7 ? ['🍽️ 第 8+ 天：進入正式反向飲食，每週增加 100-200kcal 直到新維持量'] : []),
+        ],
+        suggestedCalories: recoveryCals,
+        suggestedProtein: recoveryProtein,
+        suggestedCarbs: Math.max(recoveryCarbs, 150), // 恢復期碳水不低於 150g
+        suggestedFat: recoveryFat,
+        suggestedCarbsTrainingDay: null,
+        suggestedCarbsRestDay: null,
+        caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
+        estimatedTDEE: estimatedMaintenance, weeklyWeightChangeRate: 0,
+        dietDurationWeeks: 0, dietBreakSuggested: false,
+        bodyFatZoneInfo: null,
+        labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
+        deadlineInfo: null,
+        autoApply: true, tdeeAnomalyDetected: false,
+        peakWeekPlan: null, metabolicStress: null,
+        menstrualCycleNote: null,
+        perMealProteinGuide: buildPerMealProteinGuide(bw, recoveryProtein),
+        geneticCorrections: [],
+        postCompetitionRecovery: true, // 標記讓 API route 重設 water_target
+        recoveryWater,
+        ...stateFields, // 包含 refeedSuggested, refeedReason, refeedDays, currentState, readinessScore 等
+      }
+    }
+
+    const daysLeft = Math.max(0, rawDaysLeft)
+    if (daysLeft <= 7) {
       return { ...generatePeakWeekPlan(input, daysLeft, cycleInfo), ...stateFields }
     }
     if (daysLeft <= 14) {
@@ -2732,13 +2793,29 @@ function generateBulkSuggestion(
     const validatedCarb = applyGeneticCarbFloor(currentCarb, input.geneticProfile, otBulkGC)
     getApoe4FatWarnings(input.geneticProfile, otBulkGC, warnings)
 
+    // on_track 碳循環也要套用血檢碳水修正（與 cut on_track 一致，不能原封不動 pass through）
+    let otBulkCarbsTD = input.currentCarbsTrainingDay ?? null
+    let otBulkCarbsRD = input.currentCarbsRestDay ?? null
+    if (bulkLabMacroMods.length > 0 && otBulkCarbsTD != null && otBulkCarbsRD != null) {
+      for (const mod of bulkLabMacroMods) {
+        if (mod.nutrient === 'carbs' && mod.direction === 'decrease') {
+          otBulkCarbsTD = Math.max(30, otBulkCarbsTD - mod.delta)
+          otBulkCarbsRD = Math.max(30, otBulkCarbsRD - mod.delta)
+        }
+        if (mod.nutrient === 'carbs' && mod.direction === 'increase') {
+          otBulkCarbsTD += mod.delta
+          otBulkCarbsRD += mod.delta
+        }
+      }
+    }
+
     const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat || validatedCarb !== currentCarb
     return {
       status, statusLabel, statusEmoji, message,
       suggestedCalories: currentCal, suggestedProtein: validatedPro,
       suggestedCarbs: validatedCarb, suggestedFat: validatedFat,
-      suggestedCarbsTrainingDay: input.currentCarbsTrainingDay,
-      suggestedCarbsRestDay: input.currentCarbsRestDay,
+      suggestedCarbsTrainingDay: otBulkCarbsTD,
+      suggestedCarbsRestDay: otBulkCarbsRD,
       caloriesDelta: 0, proteinDelta: validatedPro - currentPro,
       carbsDelta: validatedCarb - currentCarb, fatDelta: validatedFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
@@ -2842,6 +2919,18 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     })
   }
 
+  // MTHFR 突變 → 甲基化 B 群 + TMG（補劑切換）
+  // 活性葉酸代謝不良 → BH4 合成受限 → 血清素/多巴胺製造端受限
+  // 與 5-HTTLPR SL/SS 形成複合風險：製造端 + 回收端雙重限制
+  if (gp?.mthfr === 'homozygous' || gp?.mthfr === 'heterozygous') {
+    const mthfrLabel = gp.mthfr === 'homozygous' ? '純合子' : '雜合子'
+    geneticCorrections.push({
+      gene: 'mthfr',
+      rule: 'Peak Week 補劑甲基化',
+      adjustment: `MTHFR ${mthfrLabel}突變 → 補劑切換為甲基化 B 群（Methylfolate + Methylcobalamin + P-5-P）+ TMG，保護甲基化循環和神經傳導物質合成`,
+    })
+  }
+
   // ===== 體重預測 =====
   // 生理學基礎：1g 肝醣結合 2.7-3g 水分（Fernández-Elías 2015）
   // 完全耗竭可清空 ~400g 肌肉肝醣 + 100g 肝臟肝醣 = ~500g
@@ -2866,11 +2955,24 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
   }
 
   // ===== 補劑建議 =====
+  // MTHFR 突變者需要甲基化 B 群（methylfolate + methylcobalamin + P-5-P）
+  // 而非普通合成葉酸（folic acid），因為 MTHFR 酶活性不足無法將 folic acid 轉換為活性 5-MTHF
+  // 活性葉酸是 BH4 合成的關鍵輔因子 → BH4 是血清素/多巴胺合成限速酶輔因子
+  // MTHFR + 5-HTTLPR SL = 複合風險：製造端（MTHFR）+ 回收端（SL）雙重受限
+  const isMthfr = gp?.mthfr === 'homozygous' || gp?.mthfr === 'heterozygous'
+  const bVitaminNote = isMthfr
+    ? '甲基化 B 群早餐後（Methylfolate 800mcg + Methylcobalamin 1000mcg + P-5-P 50mg）— MTHFR 突變者需活性形式，普通 B 群的 folic acid 無法有效轉換'
+    : 'B群（含 B1, B6, B12）早餐後 — 低碳期能量代謝輔酶需求增加'
+  const tmgNote = isMthfr
+    ? 'TMG（三甲基甘氨酸）500-1000mg — 提供備用甲基捐贈路徑，降低同型半胱氨酸（MTHFR 突變者 Hcy 易堆積）'
+    : null
+
   const supplementDepletion = [
     '肌酸 5g/天（不要停！停肌酸會流失細胞內水分和肌肉飽滿度）',
     '鎂 400mg 睡前（甘氨酸鎂或蘋果酸鎂）— 改善睡眠品質、減少肌肉痙攣',
     '茶氨酸 200mg 睡前 — 降低耗竭期皮質醇、改善睡眠',
-    'B群（含 B1, B6, B12）早餐後 — 低碳期能量代謝輔酶需求增加',
+    bVitaminNote,
+    ...(tmgNote ? [tmgNote] : []),
     'D3 2000-4000 IU/天 — 維持免疫力（備賽後期免疫力下降）',
     '電解質補充（鈉、鉀、鎂）— 低碳期水分流失加速電解質排出',
   ].join('；')
@@ -2878,6 +2980,8 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     '肌酸 5g/天（搭配碳水一起吃，肌酸+碳水超補可增強肝醣儲存）',
     '鎂 400mg 睡前 — 碳水超補期鎂需求增加（葡萄糖代謝輔因子）',
     '茶氨酸 200mg 睡前 — 維持睡眠品質',
+    bVitaminNote,
+    ...(tmgNote ? [tmgNote] : []),
     'D3 2000-4000 IU/天',
     '消化酵素（每餐服用）— 大量碳水攝取減少腸胃不適',
   ].join('；')
@@ -2885,6 +2989,8 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     '肌酸 5g/天',
     '鎂 400mg 睡前',
     '茶氨酸 200mg 睡前（比賽前一晚好睡很重要）',
+    bVitaminNote,
+    ...(tmgNote ? [tmgNote] : []),
     'D3 2000-4000 IU/天',
   ].join('；')
   const supplementShowDay = [
@@ -2951,6 +3057,34 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         creatineNote: '維持肌酸 5g/天（不要停！停肌酸會流失細胞內水分和肌肉飽滿度）',
         supplementNote: supplementDepletion,
         posingNote: posingMap[d] || '輕度 Posing',
+        expectedWeight: expectedWt,
+        weightNote: wd.note,
+      }
+    } else if (d >= 4 && d < depletionCutoffDay) {
+      // 基因修正（SL/SS）縮短耗竭期後，多出的中間日 → IMT 脂肪補充 + 漸進碳水提升
+      // 避免直接跳入全量碳水超補（9 g/kg），改用中間碳水（3.5 g/kg）平穩過渡
+      const transitionCarbGPerKg = 3.5
+      day = {
+        daysOut: d, date: dateStr,
+        label: `Day ${d} — IMT 脂肪補充 + 過渡`,
+        phase: 'fat_load' as const,
+        carbsGPerKg: transitionCarbGPerKg,
+        proteinGPerKg: PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG,
+        fatGPerKg: PEAK_WEEK.DEPLETION_FAT_G_PER_KG,
+        waterMlPerKg: PEAK_WEEK.WATER_BASELINE,
+        sodiumMg: PEAK_WEEK.SODIUM_BASELINE,
+        sodiumNote: `鈉攝取（${PEAK_WEEK.SODIUM_BASELINE}mg）— 過渡期維持基線鈉`,
+        fiberNote: '低纖維（<12g）— 開始為碳水超補清腸',
+        trainingNote: '完全休息或極輕量 pump（保存肝醣容量給超補期）',
+        carbs: Math.round(bw * transitionCarbGPerKg),
+        protein: Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG),
+        fat: Math.round(bw * PEAK_WEEK.DEPLETION_FAT_G_PER_KG),
+        calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_BASELINE),
+        potassiumNote: `正常鉀攝取（~${PEAK_WEEK.POTASSIUM_BASELINE}mg）`,
+        foodNote: '過渡期：維持高脂（IMT）+ 中等碳水。脂肪來源：酪梨、堅果、橄欖油；碳水來源：白飯少量、地瓜',
+        creatineNote: '維持肌酸 5g/天',
+        supplementNote: supplementDepletion,
+        posingNote: 'Posing 練習 10 分鐘（輕度）',
         expectedWeight: expectedWt,
         weightNote: wd.note,
       }

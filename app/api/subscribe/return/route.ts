@@ -5,7 +5,8 @@ import crypto from 'crypto'
 
 // 為 order_id 生成 HMAC 簽名，用於驗證 verify endpoint 的請求者身份
 function signOrderId(orderId: string): string {
-  const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD || 'fallback'
+  const secret = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD
+  if (!secret) throw new Error('Missing SESSION_SECRET or ADMIN_PASSWORD')
   return crypto.createHmac('sha256', secret).update(orderId).digest('hex').slice(0, 32)
 }
 

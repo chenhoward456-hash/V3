@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2 } from 'lucide-react'
+import { daysUntilDateTW } from '@/lib/date-utils'
 
 interface Client {
   id: string
@@ -191,7 +192,7 @@ export default function AdminDashboard() {
     return clients
       .filter(c => c.competition_enabled && c.competition_date)
       .map(c => {
-        const daysLeft = Math.ceil((new Date(c.competition_date!).getTime() - Date.now()) / 86400000)
+        const daysLeft = daysUntilDateTW(c.competition_date!)
         return { ...c, daysLeft }
       })
       .filter(c => c.daysLeft > 0)
@@ -535,7 +536,7 @@ export default function AdminDashboard() {
             <>
             {/* 手機版卡片 */}
             <div className="sm:hidden divide-y divide-gray-100">
-              {filteredClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = client.competition_enabled && client.competition_date ? Math.ceil((new Date(client.competition_date).getTime() - Date.now()) / 86400000) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); return (
+              {filteredClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = client.competition_enabled && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); return (
                 <div key={client.id} className="px-4 py-4">
                   <Link href={`/admin/clients/${client.id}/overview`} className="block hover:bg-gray-50 active:bg-gray-100 transition-colors rounded-lg -mx-2 px-2 py-1">
                     <div className="flex items-center justify-between mb-2">
@@ -583,7 +584,7 @@ export default function AdminDashboard() {
             </div>
             {/* 桌面版表格 */}
             <div className="hidden sm:block overflow-x-auto"><table className="min-w-full"><thead><tr className="border-b border-gray-100"><th onClick={() => handleSort('name')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">學員 <SortIcon column="name" /></th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">方案</th><th onClick={() => handleSort('status')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">狀態 <SortIcon column="status" /></th><th onClick={() => handleSort('compliance')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">本週服從率 <SortIcon column="compliance" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">今日進度</th><th onClick={() => handleSort('lastActivity')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">最後活動 <SortIcon column="lastActivity" /></th><th onClick={() => handleSort('nextCheckup')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">下次回檢 <SortIcon column="nextCheckup" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th></tr></thead>
-            <tbody className="divide-y divide-gray-50">{filteredClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = client.competition_enabled && client.competition_date ? Math.ceil((new Date(client.competition_date).getTime() - Date.now()) / 86400000) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); return (
+            <tbody className="divide-y divide-gray-50">{filteredClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = client.competition_enabled && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); return (
               <tr key={client.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-blue-600"><div className="text-sm font-medium text-gray-900">{client.name}{client.line_user_id && <span className={`ml-1 text-[10px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? '🟢' : '💬'}</span>}{client.competition_enabled && daysToComp && daysToComp > 0 && <span className={`ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingEmoji(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className="ml-1" title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'🥗':'🍔'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{client.competition_enabled && ` · ${getPrepPhaseLabel(client.prep_phase)}`}<span className="ml-1.5 inline-flex gap-0.5">{client.body_composition_enabled&&<span title="體重/體態">⚖️</span>}{client.wellness_enabled&&<span title="每日感受">😊</span>}{client.nutrition_enabled&&<span title="飲食">🥗</span>}{client.training_enabled&&<span title="訓練">🏋️</span>}{client.supplement_enabled&&<span title="補品">💊</span>}{client.lab_enabled&&<span title="血檢">🩸</span>}</span></div></Link></td>
                 <td className="px-4 py-4"><div><span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${tier.color}`}>{tier.label}</span>{expiry && <p className={`text-[10px] mt-1 ${expiry.color}`}>{expiry.text}</p>}</div></td>

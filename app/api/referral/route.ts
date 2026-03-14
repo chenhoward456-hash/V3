@@ -8,12 +8,12 @@ const log = createLogger('referral')
 const supabase = createServiceSupabase()
 
 /**
- * Generate a referral code based on the client's unique_code + random 4 chars.
- * Format: "ABC123XY-R4K2"
+ * Generate an opaque referral code (不嵌入 unique_code，避免洩漏認證密鑰)
+ * Format: "REF-XXXXXXXX" (8 chars random base64url)
  */
-function generateReferralCode(uniqueCode: string): string {
-  const randomPart = crypto.randomBytes(3).toString('base64url').slice(0, 4).toUpperCase()
-  return `${uniqueCode.toUpperCase()}-${randomPart}`
+function generateReferralCode(_uniqueCode: string): string {
+  const code = crypto.randomBytes(6).toString('base64url').slice(0, 8).toUpperCase()
+  return `REF-${code}`
 }
 
 /**
