@@ -48,11 +48,6 @@ export async function GET(request: NextRequest) {
       supabase.from('nutrition_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
     ])
 
-    // Debug: log body_composition query result
-    if (bodyRes.error) {
-      console.error('[client-overview] body_composition error:', bodyRes.error)
-    }
-
     return NextResponse.json({
       client: clientRes.data,
       supplements: suppRes.data || [],
@@ -62,10 +57,6 @@ export async function GET(request: NextRequest) {
       bodyData: bodyRes.data || [],
       labResults: labRes.data || [],
       nutritionLogs: nutritionRes.data || [],
-      _debug: {
-        bodyCount: bodyRes.data?.length ?? 0,
-        bodyError: bodyRes.error?.message ?? null,
-      },
     })
   } catch (err) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
