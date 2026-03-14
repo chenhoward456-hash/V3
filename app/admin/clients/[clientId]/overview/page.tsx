@@ -8,7 +8,7 @@ import {
   ResponsiveContainer, BarChart, Bar, ReferenceLine, Cell
 } from 'recharts'
 import dynamic from 'next/dynamic'
-import { Download } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import { daysUntilDateTW } from '@/lib/date-utils'
 import { TRAINING_TYPES, isWeightTraining } from '@/components/client/types'
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
@@ -714,16 +714,11 @@ export default function ClientOverview() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => {
-                  const a = document.createElement('a')
-                  a.href = `/api/admin/export?clientId=${clientId}&type=all&days=90`
-                  a.download = ''
-                  a.click()
-                }}
+                onClick={() => window.open(`/admin/clients/${clientId}/report`, '_blank')}
                 className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors"
-                title="匯出 CSV"
+                title="產生健康報告"
               >
-                <Download size={15} /> 匯出
+                <FileText size={15} /> 健康報告
               </button>
               <Link
                 href={`/admin/clients/${clientId}`}
