@@ -7,10 +7,14 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, BarChart, Bar, ReferenceLine, Cell
 } from 'recharts'
+import dynamic from 'next/dynamic'
 import { Download } from 'lucide-react'
 import { daysUntilDateTW } from '@/lib/date-utils'
 import { TRAINING_TYPES, isWeightTraining } from '@/components/client/types'
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
+
+const LabNutritionAdviceCard = dynamic(() => import('@/components/client/LabNutritionAdviceCard'), { ssr: false })
+const LabInsightsCard = dynamic(() => import('@/components/client/LabInsightsCard'), { ssr: false })
 
 export default function ClientOverview() {
   const { clientId } = useParams()
@@ -1673,6 +1677,22 @@ export default function ClientOverview() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* ===== 血檢飲食建議 + 深度分析（與學員端同步）===== */}
+        {client.lab_enabled && labResults.length > 0 && (
+          <>
+            <LabNutritionAdviceCard
+              labResults={labResults}
+              gender={(client.gender as '男性' | '女性') ?? undefined}
+              goalType={client.goal_type as 'cut' | 'bulk' | null | undefined}
+            />
+            <LabInsightsCard
+              labResults={labResults}
+              gender={(client.gender as '男性' | '女性') ?? undefined}
+              bodyFatPct={bodyData[0]?.body_fat ?? null}
+            />
+          </>
         )}
 
         {/* ===== 教練備註 ===== */}
