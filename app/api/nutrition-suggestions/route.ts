@@ -331,13 +331,20 @@ export async function GET(request: NextRequest) {
     }
 
     if (canAutoApply && !coachLocked) {
-      const updates: Record<string, number> = {}
+      const updates: Record<string, number | null> = {}
       if (suggestion.suggestedCalories != null) updates.calories_target = suggestion.suggestedCalories
       if (suggestion.suggestedProtein != null) updates.protein_target = suggestion.suggestedProtein
       if (suggestion.suggestedCarbs != null) updates.carbs_target = suggestion.suggestedCarbs
       if (suggestion.suggestedFat != null) updates.fat_target = suggestion.suggestedFat
       if (suggestion.suggestedCarbsTrainingDay != null) updates.carbs_training_day = suggestion.suggestedCarbsTrainingDay
       if (suggestion.suggestedCarbsRestDay != null) updates.carbs_rest_day = suggestion.suggestedCarbsRestDay
+
+      // Peak Week 期間：每日營養素不同，清掉碳水循環值讓 NutritionLog 使用 carbs_target
+      // 否則 NutritionLog 會優先顯示舊的 carbs_training_day / carbs_rest_day
+      if (suggestion.status === 'peak_week') {
+        updates.carbs_training_day = null
+        updates.carbs_rest_day = null
+      }
 
       if (Object.keys(updates).length > 0) {
         const { error: updateErr } = await supabase
