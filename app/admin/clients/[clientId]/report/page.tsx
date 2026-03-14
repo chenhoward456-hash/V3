@@ -3,14 +3,13 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { generateSupplementSuggestions, type SupplementSuggestion } from '@/lib/supplement-engine'
-import { getLabAdvice } from '@/components/client/types'
+import { getLabAdvice, TRAINING_TYPES } from '@/components/client/types'
 import { calculateHealthScore } from '@/lib/health-score-engine'
 import {
   detectLabCrossPatterns,
   generateLabOptimizationTips,
   generateLabChangeReport,
 } from '@/lib/lab-nutrition-advisor'
-import { TRAINING_TYPES } from '@/components/client/types'
 
 const MTHFR_LABELS: Record<string, string> = {
   normal: '正常（野生型）',
@@ -122,6 +121,15 @@ export default function HealthReportPage() {
     if (recent.length < 2) return null
     const oldest = recent[recent.length - 1].weight
     const newest = recent[0].weight
+    return { change: (newest - oldest).toFixed(1), from: oldest, to: newest, days: recent.length }
+  }, [bodyData])
+
+  // Body fat trend (30 days)
+  const bodyFatTrend = useMemo(() => {
+    const recent = bodyData.filter(b => b.body_fat != null).slice(0, 30)
+    if (recent.length < 2) return null
+    const oldest = recent[recent.length - 1].body_fat
+    const newest = recent[0].body_fat
     return { change: (newest - oldest).toFixed(1), from: oldest, to: newest, days: recent.length }
   }, [bodyData])
 
@@ -262,7 +270,12 @@ export default function HealthReportPage() {
                     <td>{latestBody.weight} kg{weightTrend ? ` （近 ${weightTrend.days} 天 ${Number(weightTrend.change) > 0 ? '+' : ''}${weightTrend.change} kg）` : ''}</td>
                   </tr>
                 )}
-                {latestBody.body_fat != null && <tr><td>體脂率</td><td>{latestBody.body_fat}%</td></tr>}
+                {latestBody.body_fat != null && (
+                  <tr>
+                    <td>體脂率</td>
+                    <td>{latestBody.body_fat}%{bodyFatTrend ? ` （近 ${bodyFatTrend.days} 天 ${Number(bodyFatTrend.change) > 0 ? '+' : ''}${bodyFatTrend.change}%）` : ''}</td>
+                  </tr>
+                )}
                 {bmi && <tr><td>BMI</td><td>{bmi}</td></tr>}
                 {latestBody.muscle_mass != null && <tr><td>肌肉量</td><td>{latestBody.muscle_mass} kg</td></tr>}
                 {latestBody.height != null && <tr><td>身高</td><td>{latestBody.height} cm</td></tr>}
@@ -327,20 +340,17 @@ export default function HealthReportPage() {
                     <tr><th>支柱</th><th>分數</th><th>權重</th><th>說明</th></tr>
                   </thead>
                   <tbody>
-                    {healthScore.pillars.map((p: any) => (
-                      <tr key={p.key}>
-                        <td className="font-semibold">{
-                          p.key === 'sleep' ? '😴 睡眠' :
-                          p.key === 'wellness' ? '💚 身心狀態' :
-                          p.key === 'nutrition' ? '🥗 營養合規' :
-                          p.key === 'training' ? '🏋️ 訓練規律' :
-                          '💊 補品服從'
-                        }</td>
-                        <td className="text-mono">{p.score}/{p.max}</td>
-                        <td>{p.weight}%</td>
-                        <td className="text-small">{p.detail || '-'}</td>
-                      </tr>
-                    ))}
+                    {healthScore.pillars.map((p) => {
+                      const weightMap: Record<string, number> = { sleep: 20, wellness: 25, nutrition: 20, training: 20, supplement: 15 }
+                      return (
+                        <tr key={p.pillar}>
+                          <td className="font-semibold">{p.emoji} {p.label}</td>
+                          <td className="text-mono">{p.score} / 100</td>
+                          <td>{weightMap[p.pillar] ?? '-'}%</td>
+                          <td className="text-small">{p.detail || '-'}</td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
                 {(healthScore.labPenalty !== 0 || healthScore.labBonus !== 0) && (
