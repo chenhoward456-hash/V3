@@ -50,6 +50,7 @@ export default function HealthReportPage() {
     fetch(`/api/client-overview?clientId=${clientId}`)
       .then(r => r.json())
       .then(data => {
+        console.log('[HealthReport] bodyData count:', data.bodyData?.length, 'debug:', data._debug)
         setClient(data.client)
         setSupplements(data.supplements || [])
         setSupplementLogs(data.supplementLogs || [])
