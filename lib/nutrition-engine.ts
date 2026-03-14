@@ -498,9 +498,12 @@ const GENETIC = {
 
   // 憂鬱基因 + Peak Week 耗竭期 → 縮短/緩和
   // [G1] 碳水耗竭 → 腦部血清素急降 → 高風險者可能嚴重情緒崩潰
-  DEPRESSION_DEPLETION_DAYS_HIGH: 2,        // 高風險：耗竭期從 4 天縮為 2 天
-  DEPRESSION_DEPLETION_DAYS_MODERATE: 3,    // 中風險：耗竭期從 4 天縮為 3 天
-  DEPRESSION_DEPLETION_CARB_G_PER_KG: 2.0,  // 耗竭期碳水提高到 2.0g/kg（原 1.1g/kg）
+  DEPRESSION_DEPLETION_DAYS_HIGH: 2,        // SS 高風險：耗竭期從 4 天縮為 2 天
+  DEPRESSION_DEPLETION_DAYS_MODERATE: 3,    // SL 中風險：耗竭期從 4 天縮為 3 天
+  DEPRESSION_DEPLETION_CARB_HIGH: 2.0,      // SS：2.0 g/kg（最大保護，接受耗竭效果較差）
+  DEPRESSION_DEPLETION_CARB_MODERATE: 1.5,  // SL：1.5 g/kg（平衡保護與耗竭效果）
+  // 設計邏輯：各基因型的耗竭期總碳水攝取量趨近一致
+  // LL: 1.1 × 4 days × 82kg = 361g  |  SL: 1.5 × 3 days × 82kg = 369g  |  SS: 2.0 × 2 days × 82kg = 328g
 }
 
 // 基因修正層：根據基因資料調整巨量營養素
@@ -2814,19 +2817,19 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
   let depletionCarbGPerKg = PEAK_WEEK.DEPLETION_CARB_G_PER_KG
   if (serotoninRisk === 'high') {
     depletionCutoffDay = 8 - GENETIC.DEPRESSION_DEPLETION_DAYS_HIGH  // 8-2=6, 只有 Day 7-6 耗竭
-    depletionCarbGPerKg = GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG
+    depletionCarbGPerKg = GENETIC.DEPRESSION_DEPLETION_CARB_HIGH
     geneticCorrections.push({
       gene: 'depression',
       rule: 'Peak Week 耗竭策略',
-      adjustment: `5-HTTLPR ${genotypeLabel}（高風險）→ 耗竭期從 4 天縮為 ${GENETIC.DEPRESSION_DEPLETION_DAYS_HIGH} 天，碳水從 ${PEAK_WEEK.DEPLETION_CARB_G_PER_KG}g/kg 提高至 ${GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG}g/kg，保護腦部血清素`,
+      adjustment: `5-HTTLPR ${genotypeLabel}（高風險）→ 耗竭期從 4 天縮為 ${GENETIC.DEPRESSION_DEPLETION_DAYS_HIGH} 天，碳水從 ${PEAK_WEEK.DEPLETION_CARB_G_PER_KG}g/kg 提高至 ${GENETIC.DEPRESSION_DEPLETION_CARB_HIGH}g/kg，最大保護腦部血清素`,
     })
   } else if (serotoninRisk === 'moderate') {
     depletionCutoffDay = 8 - GENETIC.DEPRESSION_DEPLETION_DAYS_MODERATE  // 8-3=5, Day 7-5 耗竭
-    depletionCarbGPerKg = GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG
+    depletionCarbGPerKg = GENETIC.DEPRESSION_DEPLETION_CARB_MODERATE
     geneticCorrections.push({
       gene: 'depression',
       rule: 'Peak Week 耗竭策略',
-      adjustment: `5-HTTLPR ${genotypeLabel}（中風險）→ 耗竭期從 4 天縮為 ${GENETIC.DEPRESSION_DEPLETION_DAYS_MODERATE} 天，碳水從 ${PEAK_WEEK.DEPLETION_CARB_G_PER_KG}g/kg 提高至 ${GENETIC.DEPRESSION_DEPLETION_CARB_G_PER_KG}g/kg，保護腦部血清素`,
+      adjustment: `5-HTTLPR ${genotypeLabel}（中風險）→ 耗竭期從 4 天縮為 ${GENETIC.DEPRESSION_DEPLETION_DAYS_MODERATE} 天，碳水從 ${PEAK_WEEK.DEPLETION_CARB_G_PER_KG}g/kg 提高至 ${GENETIC.DEPRESSION_DEPLETION_CARB_MODERATE}g/kg，平衡血清素保護與肝醣耗竭效果`,
     })
   }
 

@@ -344,6 +344,15 @@ export async function GET(request: NextRequest) {
       if (suggestion.status === 'peak_week') {
         updates.carbs_training_day = null
         updates.carbs_rest_day = null
+        // 同步更新 water_target（Peak Week 每日水量不同）
+        const todayPlan = suggestion.peakWeekPlan?.find((d: { date: string }) => {
+          const nowMs = Date.now() + 8 * 60 * 60 * 1000
+          const todayStr = new Date(nowMs).toISOString().split('T')[0]
+          return d.date === todayStr
+        })
+        if (todayPlan?.water) {
+          updates.water_target = todayPlan.water
+        }
       }
 
       if (Object.keys(updates).length > 0) {
