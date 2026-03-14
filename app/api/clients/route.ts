@@ -243,11 +243,19 @@ export async function PATCH(request: NextRequest) {
       return createErrorResponse('帳號已暫停', 403)
     }
 
-    // simple_mode 切換：所有方案用戶皆可使用
-    if (typeof simple_mode === 'boolean') {
+    // 功能開關切換：所有方案用戶皆可自行開關
+    const FEATURE_TOGGLES = ['simple_mode', 'body_composition_enabled', 'wellness_enabled', 'nutrition_enabled', 'training_enabled', 'supplement_enabled', 'lab_enabled', 'ai_chat_enabled'] as const
+    const toggleUpdates: Record<string, boolean> = {}
+    for (const key of FEATURE_TOGGLES) {
+      if (typeof body[key] === 'boolean') {
+        toggleUpdates[key] = body[key]
+      }
+    }
+
+    if (Object.keys(toggleUpdates).length > 0) {
       const { error: updateErr } = await supabase
         .from('clients')
-        .update({ simple_mode })
+        .update(toggleUpdates)
         .eq('id', client.id)
       if (updateErr) {
         return createErrorResponse('更新失敗', 500)
@@ -259,11 +267,11 @@ export async function PATCH(request: NextRequest) {
         actor: `client:${clientId}`,
         targetType: 'client',
         targetId: client.id,
-        details: { simple_mode },
+        details: toggleUpdates,
         ip,
       })
 
-      return createSuccessResponse({ updated: { simple_mode } })
+      return createSuccessResponse({ updated: toggleUpdates })
     }
 
     // 以下為 Onboarding 功能，僅限 self_managed / free

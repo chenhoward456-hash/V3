@@ -283,19 +283,18 @@ export default function ClientDashboard() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const toggleSimpleMode = async () => {
+  const toggleFeature = async (key: string) => {
     if (!clientData?.client) return
-    const newVal = !clientData.client.simple_mode
+    const newVal = !(clientData.client as any)[key]
     try {
       const res = await fetch('/api/clients', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: clientData.client.unique_code, simple_mode: newVal })
+        body: JSON.stringify({ clientId: clientData.client.unique_code, [key]: newVal })
       })
       if (!res.ok) throw new Error()
       mutate()
-      showToast(newVal ? '已切換為簡單模式' : '已切換為完整模式', 'success')
-      setShowSettings(false)
+      showToast(newVal ? '已開啟' : '已關閉', 'success')
     } catch { showToast('切換失敗，請重試', 'error') }
   }
 
@@ -729,16 +728,18 @@ export default function ClientDashboard() {
                   <Settings size={18} />
                 </button>
                 {showSettings && (
-                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border p-4 z-50 w-56">
-                    <p className="text-xs font-semibold text-gray-500 mb-3">顯示設定</p>
-                    <div className="flex items-center justify-between">
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border p-4 z-50 w-64 max-h-[70vh] overflow-y-auto">
+                    <p className="text-xs font-semibold text-gray-500 mb-3">功能設定</p>
+
+                    {/* 簡單模式 */}
+                    <div className="flex items-center justify-between mb-2">
                       <div>
                         <p className="text-sm font-medium text-gray-700">簡單模式</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">只顯示核心欄位</p>
                       </div>
                       <button
-                        onClick={toggleSimpleMode}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        onClick={() => toggleFeature('simple_mode')}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
                           c.simple_mode ? 'bg-blue-500' : 'bg-gray-300'
                         }`}
                       >
@@ -748,9 +749,37 @@ export default function ClientDashboard() {
                       </button>
                     </div>
 
+                    <div className="border-t border-gray-100 my-3" />
+                    <p className="text-[10px] text-gray-400 mb-2">不需要的功能可以關掉</p>
+
+                    {/* 功能開關 */}
+                    {([
+                      { key: 'body_composition_enabled', label: '體重/體態', icon: '⚖️' },
+                      { key: 'nutrition_enabled', label: '飲食追蹤', icon: '🥗' },
+                      { key: 'wellness_enabled', label: '每日感受', icon: '😊' },
+                      { key: 'training_enabled', label: '訓練追蹤', icon: '🏋️' },
+                      { key: 'supplement_enabled', label: '補品管理', icon: '💊' },
+                      { key: 'lab_enabled', label: '血檢追蹤', icon: '🩸' },
+                      { key: 'ai_chat_enabled', label: 'AI 顧問', icon: '🤖' },
+                    ] as const).map(({ key, label, icon }) => (
+                      <div key={key} className="flex items-center justify-between py-1.5">
+                        <span className="text-sm text-gray-700">{icon} {label}</span>
+                        <button
+                          onClick={() => toggleFeature(key)}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+                            (c as any)[key] ? 'bg-blue-500' : 'bg-gray-300'
+                          }`}
+                        >
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            (c as any)[key] ? 'translate-x-6' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
+                    ))}
+
                     {/* 取消訂閱 */}
                     {c.subscription_tier !== 'free' && (
-                      <div className="mt-4 pt-3 border-t border-gray-100">
+                      <div className="mt-3 pt-3 border-t border-gray-100">
                         {!showCancelConfirm ? (
                           <button
                             onClick={() => setShowCancelConfirm(true)}
