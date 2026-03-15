@@ -754,8 +754,10 @@ export function generateLabNutritionAdvice(
           references: [
             'Garber et al. 2012 (Endocr Pract): ATA/AACE guidelines for hypothyroidism',
             'Danforth et al. 1979 (J Clin Invest): Dietary carbohydrate and thyroid hormone metabolism',
+            'Kose et al. 2024 (Nutrients): Low-glycemic diets and thyroid — 低碳水使 T3 降幅達 34.6%（vs 高碳水 17.9%），機制為低胰島素抑制脫碘酶活性',
+            'Krupa-Kotara et al. 2025 (Curr Issues Mol Biol): Ketogenic diet and thyroid — 生酮飲食降低 T3/FT3，T4 代償性升高',
           ],
-          caveat: '長期低碳水飲食會降低 T3（活性甲狀腺素），但 T4 較穩定。若 T4 也低，建議回診確認。',
+          caveat: '長期低碳水飲食會降低 T3（活性甲狀腺素），降幅可達 35%（Kose 2024）。機制：低胰島素 → 脫碘酶活性下降 → T4→T3 轉換受阻。T4 較穩定但若也低，建議回診。',
         })
       }
     }

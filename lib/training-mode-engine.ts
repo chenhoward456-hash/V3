@@ -8,7 +8,9 @@
  * 與營養引擎的 calculateMetabolicStressScore 同一設計模式。
  *
  * 文獻依據：
- *   - Schoenfeld 2017 (JSCR) — 訓練量與肌肥大劑量反應
+ *   - Schoenfeld 2017 (JSCR) — 訓練量與肌肥大劑量反應（每增加 1 組 ≈ +0.38% 肌肥大）
+ *   - Schoenfeld & Grgic 2025 (SportRxiv/PubMed) — 更新版 meta-regression：每增加 1 組 ≈ +0.24%，
+ *     確認遞減效應（diminishing returns），且頻率在總量相同時不影響肌肥大
  *   - Helms 2014 (JISSN) — 自然健美減脂期的力量訓練策略
  *   - Fernandez-del-Olmo 2021 — 5-HTTLPR 與運動後血清素反應
  *   - Shimoda 2014 — MTHFR 多型性與運動恢復

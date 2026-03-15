@@ -706,7 +706,11 @@ function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggesti
 }
 
 // ===== 分餐蛋白質指引 helper =====
-// Iraki et al. (2019): 每餐 0.40-0.55 g/kg，均勻分佈 3-6 餐，訓練前後 1-2 小時內進食
+// Iraki et al. (2019): 每餐 0.40-0.55 g/kg，均勻分佈 3-6 餐
+// 2024 更新（IJSNEM 2024 debate, Frontiers Nutrition 2024）：
+// - 單餐蛋白質利用上限比過去認知更高（Trommelen 2023: 100g 單餐仍有合成效益）
+// - 蛋白質分配可能沒有總攝取量重要，但均勻分佈仍建議作為實務最佳策略
+// - 訓練前後進食仍有輕微優勢（窗口比過去認為的更寬，約 4-6 小時）
 function buildPerMealProteinGuide(
   bodyWeight: number,
   totalProtein: number | null
@@ -722,7 +726,7 @@ function buildPerMealProteinGuide(
   return {
     perMealGrams: { min: perMealMin, max: perMealMax },
     mealsPerDay: { min: mealsMin, max: mealsMax },
-    periWorkoutNote: '訓練前後 1-2 小時各安排一餐（含 0.40-0.55 g/kg 蛋白質），最大化肌肉蛋白合成。',
+    periWorkoutNote: '訓練前後各安排一餐（含足量蛋白質）。合成窗口約 4-6 小時，不需要急著在 30 分鐘內吃（Trommelen 2023）。總量比分配更重要，但均勻分佈仍是好習慣。',
   }
 }
 
@@ -942,7 +946,7 @@ export interface MetabolicStressResult {
  *   1. 飲食持續時間 (0-25) — [7] Trexler 2014: 持續限制加劇代謝適應
  *   2. 恢復狀態 (0-30)     — [10] RED-S: 低 EA 影響多系統恢復
  *   3. 體重停滯 (0-20)     — [8] MATADOR: 停滯是代謝適應的外顯指標
- *   4. 連續低碳天數 (0-15) — [7] Trexler 2014: 碳水不足 → T3/leptin 下降
+ *   4. 連續低碳天數 (0-15) — [7] Trexler 2014 + Kose 2024: 碳水不足 → T3 降幅達 34.6% + leptin 下降
  *   5. 主觀趨勢下滑 (0-10) — wellness tracking (能量、訓練動力)
  *
  * 建議閾值：≥60 diet break/2-day refeed, ≥45 1-day refeed, ≥30 monitor

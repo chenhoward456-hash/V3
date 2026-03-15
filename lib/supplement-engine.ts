@@ -187,12 +187,12 @@ export function generateSupplementSuggestions(
     const testosterone = findLabValue(labs, 'testosterone')
     if (testosterone?.value != null && testosterone.value < 400) {
       suggestions.push({
-        name: 'ZMA（鋅鎂合劑）',
-        dosage: '鋅 30mg + 鎂 450mg + B6 10.5mg',
-        timing: '睡前空腹',
-        reason: `睪固酮 ${testosterone.value} ng/dL，低於男性理想範圍（400-700 ng/dL）。ZMA 有助於改善鋅鎂不足導致的睪固酮偏低。`,
+        name: '鋅 + 鎂（分開補充）',
+        dosage: '鋅 30mg + 鎂甘胺酸鹽 400mg',
+        timing: '鋅隨餐、鎂睡前',
+        reason: `睪固酮 ${testosterone.value} ng/dL，低於男性理想範圍（400-700 ng/dL）。鋅鎂不足會影響睪固酮合成，建議分開補充以提高吸收率。`,
         priority: testosterone.value < 300 ? 'high' : 'medium',
-        evidence: 'Brilla & Conte 2000：ZMA 補充顯著提升訓練運動員睪固酮水平',
+        evidence: 'Abbasi 2012 + Zhang 2017（鎂與睡眠）；Prasad 1996（鋅與睪固酮）。注意：ZMA 複合配方的專利研究（Brilla 2000）由配方持有者資助，2024 獨立研究未能複製睪固酮提升效果（PMC 2024）',
         triggerTests: [testosterone.test_name],
         category: 'hormonal',
       })
@@ -207,12 +207,12 @@ export function generateSupplementSuggestions(
       const alreadyHasZMA = suggestions.some(s => s.name.includes('ZMA'))
       if (!alreadyHasZMA) {
         suggestions.push({
-          name: 'ZMA（鋅鎂合劑）',
-          dosage: '鋅 30mg + 鎂 450mg + B6 10.5mg',
-          timing: '睡前空腹',
-          reason: `游離睪固酮 ${freeT.value} pg/mL，低於理想範圍（47-244 pg/mL）。游離 T 比總 T 更反映實際活性水平。`,
+          name: '鋅 + 鎂（分開補充）',
+          dosage: '鋅 30mg + 鎂甘胺酸鹽 400mg',
+          timing: '鋅隨餐、鎂睡前',
+          reason: `游離睪固酮 ${freeT.value} pg/mL，低於理想範圍（47-244 pg/mL）。游離 T 比總 T 更反映實際活性水平。鋅鎂不足會影響睪固酮合成。`,
           priority: freeT.value < 30 ? 'high' : 'medium',
-          evidence: 'Brilla & Conte 2000：ZMA 補充顯著提升訓練運動員睪固酮水平',
+          evidence: 'Prasad 1996（鋅與睪固酮）；Abbasi 2012（鎂與睡眠品質）。ZMA 複合配方證據不足（AIS: 缺乏明確效益證明）',
           triggerTests: [freeT.test_name],
           category: 'hormonal',
         })
