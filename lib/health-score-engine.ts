@@ -186,25 +186,31 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
     labBonus += 2
   }
 
-  // 7d. HRV 卓越獎勵：近 7 天平均 HRV 高於個人 baseline 10% → +1 分
-  // HRV 個體差異極大（30-100+ms），必須跟自己比才有意義
-  const hrvRaw = wellnessLast7.map(w => w.hrv).filter(v => v != null) as number[]
-  if (hrvRaw.length > 0 && input.hrvBaseline && input.hrvBaseline > 0) {
-    const hrvWeekAvg = avg(hrvRaw)
-    if (hrvWeekAvg > input.hrvBaseline * 1.1) {
-      labBonus += 1
-    }
-  }
+  // 7d/7e. HRV + RHR 獎懲 — 只在「沒有」裝置恢復分數時啟用
+  // Garmin 身體能量指數 / Whoop Recovery 等已經把 HRV + RHR 算在裡面了，
+  // 如果有 device_recovery_score 就已經反映在 wellness 支柱裡，不要重複計算。
+  // 只有純手動用戶（沒穿戴裝置但有手動輸入 HRV/RHR）才用原始數值獎懲。
+  const hasDeviceRecovery = wellnessLast7.some(w => w.device_recovery_score != null)
 
-  // 7e. 靜息心率獎勵/懲罰（Palatini 2024）：RHR 是心血管風險最簡單的預測指標
-  // 跟個人 baseline 比：RHR 低於 baseline 5% → +1，高於 baseline 10% → -2（過度訓練/壓力警訊）
-  const rhrRaw = wellnessLast7.map(w => w.resting_hr).filter(v => v != null) as number[]
-  if (rhrRaw.length > 0 && input.rhrBaseline && input.rhrBaseline > 0) {
-    const rhrWeekAvg = avg(rhrRaw)
-    if (rhrWeekAvg < input.rhrBaseline * 0.95) {
-      labBonus += 1  // 心率偏低 = 心血管適應良好
-    } else if (rhrWeekAvg > input.rhrBaseline * 1.10) {
-      labBonus -= 2  // 心率顯著升高 = 過度訓練/壓力/生病警訊
+  if (!hasDeviceRecovery) {
+    // 7d. HRV 卓越獎勵：近 7 天平均 HRV 高於個人 baseline 10% → +1 分
+    const hrvRaw = wellnessLast7.map(w => w.hrv).filter(v => v != null) as number[]
+    if (hrvRaw.length > 0 && input.hrvBaseline && input.hrvBaseline > 0) {
+      const hrvWeekAvg = avg(hrvRaw)
+      if (hrvWeekAvg > input.hrvBaseline * 1.1) {
+        labBonus += 1
+      }
+    }
+
+    // 7e. 靜息心率獎勵/懲罰（Palatini 2024）
+    const rhrRaw = wellnessLast7.map(w => w.resting_hr).filter(v => v != null) as number[]
+    if (rhrRaw.length > 0 && input.rhrBaseline && input.rhrBaseline > 0) {
+      const rhrWeekAvg = avg(rhrRaw)
+      if (rhrWeekAvg < input.rhrBaseline * 0.95) {
+        labBonus += 1  // 心率偏低 = 心血管適應良好
+      } else if (rhrWeekAvg > input.rhrBaseline * 1.10) {
+        labBonus -= 2  // 心率顯著升高 = 過度訓練/壓力/生病警訊
+      }
     }
   }
 
