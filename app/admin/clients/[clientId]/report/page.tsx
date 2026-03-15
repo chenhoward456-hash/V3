@@ -346,7 +346,7 @@ export default function HealthReportPage() {
                   </thead>
                   <tbody>
                     {healthScore.pillars.map((p) => {
-                      const weightMap: Record<string, number> = { sleep: 20, wellness: 25, nutrition: 20, training: 20, supplement: 15 }
+                      const weightMap: Record<string, number> = { sleep: 25, wellness: 20, nutrition: 20, training: 25, supplement: 10 }
                       return (
                         <tr key={p.pillar}>
                           <td className="font-semibold">{p.emoji} {p.label}</td>

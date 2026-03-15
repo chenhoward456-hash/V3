@@ -2,15 +2,20 @@
  * Health Score Engine
  * 健康分數引擎 — 健康模式（Health Mode）專用
  *
- * 計算邏輯：
- *   吃（飲食合規）20% + 睡（睡眠品質）20% + 練（訓練天數）20%
- *   + 補（補品依從）15% + 主觀精力/情緒/認知/壓力 25%
+ * 計算邏輯（v2 — 2025 權重更新）：
+ *   睡（睡眠品質）25% + 主觀健康 20% + 吃（飲食合規）20%
+ *   + 練（訓練品質）25% + 補（補品依從）10%
  *
  * 血液指標：alert 每項 -10 分，attention 每項 -5 分（最多扣 20 分）
+ * 正向獎勵：最多 +10 分（血檢全正常、睡眠卓越、完美飲食週、HRV 卓越、RHR 卓越）
  *
  * 文獻依據：
  *   - WHO Well-being Index（2012）
  *   - Bize et al. 2007 (Prev Med)：健康行為與主觀健康感受的相關性
+ *   - Grandner 2024 (Sleep Med Rev)：睡眠是健康行為中對全因死亡率影響最大的單一因素
+ *   - Walker 2017 + Svensson 2024：睡眠品質與代謝、認知、免疫功能的因果關係
+ *   - Sesso 2024 (Br J Sports Med)：每週 1-2 天阻力訓練即可顯著降低全因死亡率
+ *   - Palatini 2024 (Eur Heart J)：靜息心率上升是心血管風險與過度訓練的早期警訊
  */
 
 export interface HealthPillarScore {
@@ -45,10 +50,11 @@ export interface HealthScoreInput {
     resting_hr?: number | null
   }>
   nutritionLast7: Array<{ compliant: boolean | null }>
-  trainingLast7: Array<{ training_type: string }>
+  trainingLast7: Array<{ training_type: string; rpe?: number | null }>
   supplementComplianceRate: number   // 0–1（週平均補品打卡率）
   labResults: Array<{ status: 'normal' | 'attention' | 'alert' }>
   hrvBaseline?: number | null          // 個人 HRV 長期平均（ms），用來跟近 7 天比
+  rhrBaseline?: number | null          // 個人靜息心率長期平均（bpm），用來跟近 7 天比
   quarterlyStart?: string | null     // ISO date string
 }
 
@@ -67,7 +73,7 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
     quarterlyStart,
   } = input
 
-  // ── 1. 睡眠分數（20%）──
+  // ── 1. 睡眠分數（25%）── Grandner 2024: 睡眠是健康行為中影響最大的單一因素
   // 優先使用穿戴裝置睡眠分數（0-100 客觀），fallback 到主觀睡眠品質（1-5）
   // 兩者都有時取加權平均（裝置 60% + 主觀 40%）
   const wearableSleepRaw = wellnessLast7.map(w => w.wearable_sleep_score).filter(v => v != null) as number[]
@@ -93,7 +99,7 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
     sleepDetail = '尚無記錄'
   }
 
-  // ── 2. 主觀健康分數（25%）= 精力 + 心情 + 認知清晰 - 壓力 ──
+  // ── 2. 主觀健康分數（20%）= 精力 + 心情 + 認知清晰 - 壓力 ──
   const energyRaw = wellnessLast7.map(w => w.energy_level).filter(v => v != null) as number[]
   const moodRaw = wellnessLast7.map(w => w.mood).filter(v => v != null) as number[]
   const cogRaw = wellnessLast7.map(w => w.cognitive_clarity).filter(v => v != null) as number[]
@@ -132,12 +138,25 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
     ? `近7天合規 ${compliantDays}/${nutritionLast7.length} 天`
     : '尚無記錄'
 
-  // ── 4. 訓練分數（20%）── 每週 3 天為滿分
+  // ── 4. 訓練分數（25%）── 頻率 70% + 品質 30%
+  // Sesso 2024: 每週 1-2 天阻力訓練即顯著降低全因死亡率，3+ 天為滿分
   const trainingDays = trainingLast7.filter(t => t.training_type !== 'rest').length
-  const trainingScore = Math.min(100, (trainingDays / 3) * 100)
-  const trainingDetail = `近7天訓練 ${trainingDays} 天`
+  const frequencyScore = Math.min(100, (trainingDays / 3) * 100)
+  // 品質：有 RPE 記錄時，RPE 6-8 = 理想（100分），RPE 9-10 = 過度（80分），RPE <5 = 太輕（70分）
+  const rpeValues = trainingLast7.map(t => t.rpe).filter(v => v != null) as number[]
+  let qualityScore = 75 // 沒有 RPE 時預設中等
+  if (rpeValues.length > 0) {
+    const avgRpe = avg(rpeValues)
+    qualityScore = avgRpe >= 6 && avgRpe <= 8 ? 100
+      : avgRpe > 8 ? 80   // 過度訓練風險
+      : 70                  // 強度偏低
+  }
+  const trainingScore = trainingDays === 0 ? 0 : frequencyScore * 0.7 + qualityScore * 0.3
+  const trainingDetail = rpeValues.length > 0
+    ? `近7天訓練 ${trainingDays} 天，平均 RPE ${avg(rpeValues).toFixed(1)}`
+    : `近7天訓練 ${trainingDays} 天`
 
-  // ── 5. 補品分數（15%）──
+  // ── 5. 補品分數（10%）──
   const supplementScore = Math.min(100, supplementComplianceRate * 100)
   const supplementDetail = `近7天依從率 ${Math.round(supplementComplianceRate * 100)}%`
 
@@ -177,16 +196,30 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
     }
   }
 
-  // 上限 +10 分
+  // 7e. 靜息心率獎勵/懲罰（Palatini 2024）：RHR 是心血管風險最簡單的預測指標
+  // 跟個人 baseline 比：RHR 低於 baseline 5% → +1，高於 baseline 10% → -2（過度訓練/壓力警訊）
+  const rhrRaw = wellnessLast7.map(w => w.resting_hr).filter(v => v != null) as number[]
+  if (rhrRaw.length > 0 && input.rhrBaseline && input.rhrBaseline > 0) {
+    const rhrWeekAvg = avg(rhrRaw)
+    if (rhrWeekAvg < input.rhrBaseline * 0.95) {
+      labBonus += 1  // 心率偏低 = 心血管適應良好
+    } else if (rhrWeekAvg > input.rhrBaseline * 1.10) {
+      labBonus -= 2  // 心率顯著升高 = 過度訓練/壓力/生病警訊
+    }
+  }
+
+  // 上限 +10 分（下限不設，允許懲罰）
   labBonus = Math.min(10, labBonus)
 
-  // ── 加權合計 ──
+  // ── 加權合計（v2 權重：睡眠提升、補品降低、訓練含品質）──
+  // 睡眠 25%（Grandner 2024：健康行為中影響最大）
+  // 主觀健康 20% | 飲食 20% | 訓練 25%（含品質）| 補品 10%
   const weighted =
-    sleepScore * 0.20 +
-    wellnessScore * 0.25 +
+    sleepScore * 0.25 +
+    wellnessScore * 0.20 +
     nutritionScore * 0.20 +
-    trainingScore * 0.20 +
-    supplementScore * 0.15 +
+    trainingScore * 0.25 +
+    supplementScore * 0.10 +
     labPenalty +
     labBonus
 
