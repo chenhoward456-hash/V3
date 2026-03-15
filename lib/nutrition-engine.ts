@@ -590,7 +590,7 @@ function getApoe4FatWarnings(
   }
 }
 
-// Peak Week 常數 [12] Escalante 2021 + [13] Barakat 2022 + [14] Homer/Helms 2024
+// Peak Week 常數 [12] Escalante 2021 + [13] Barakat 2022 + [14] Homer/Helms 2024 + [15] Kistler 2024 narrative review
 const PEAK_WEEK = {
   // 碳水耗竭期 (Day 7-4)：低碳 + 高脂補充肌內三酸甘油酯 (IMT)
   DEPLETION_CARB_G_PER_KG: 1.1,    // Barakat 2022: 1.0-1.2 g/kg
@@ -598,14 +598,17 @@ const PEAK_WEEK = {
   DEPLETION_FAT_G_PER_KG: 1.5,     // Barakat 2022: ~1.56 g/kg；高脂補 IMT（1.2-1.8 range）
 
   // 碳水超補期 (Day 3-2)
-  LOADING_CARB_G_PER_KG: 9.0,      // Homer 2024 實驗: 9.0 g/kg；Escalante: 8-12, Barakat: 7.8-8.0
+  // [15] Kistler 2024 review：建議範圍 3-12 g/kg，個體差異大
+  // 基準值用 Homer 2024 的 9.0 g/kg（~80kg 受試者），但需依體重調整：
+  // >90kg 選手絕對量過高（>810g）會造成 GI distress，需降低 g/kg
+  LOADING_CARB_G_PER_KG: 9.0,      // 基準值（≤90kg），>90kg 由 generatePeakWeekPlan 動態降低
   LOADING_CARB_G_PER_KG_FEMALE: 6.5, // Tarnopolsky 1995, James 2001: 女性肌肉肝醣超補反應約為男性 50-70%
   LOADING_PROTEIN_G_PER_KG: 1.6,   // Escalante 2021: ~1.6 g/kg；降低蛋白為碳水騰空間，最大化肝醣超補
   LOADING_FAT_G_PER_KG: 0.65,      // 低脂最大化碳水吸收
   LOADING_FAT_G_PER_KG_FEMALE: 1.0, // 女性超補期脂肪不低於 1.0 g/kg（Loucks 2003: 雌激素合成需求）
 
   // Taper (Day 1)
-  TAPER_CARB_G_PER_KG: 5.5,        // Barakat 2022: 5.46 g/kg
+  TAPER_CARB_G_PER_KG: 5.5,        // Barakat 2022: 5.46 g/kg（基準值，會隨 loadingCarb 等比調整）
   TAPER_CARB_G_PER_KG_FEMALE: 4.0, // 女性按超補比例等比縮減（6.5/9.0 × 5.5 ≈ 4.0）
   TAPER_PROTEIN_G_PER_KG: 2.8,
   TAPER_FAT_G_PER_KG: 1.1,         // 中等脂肪防止 IMT 流失
@@ -617,7 +620,10 @@ const PEAK_WEEK = {
 
   // 水分操控 — 多數自然選手策略：一開始中度灌水壓 ADH → 超補期拉到最高 → Day 1 驟降
   // ADH 被壓越久（6 天 vs 2 天），切水後身體繼續排水的窗口越大、效果越穩定
-  // 搭配碳水對比（低→高）：碳水超補把水拉進肌肉（肝醣滲透壓），皮下水繼續被排掉
+  // 搭配碳水對比（低→高）：碳水超補理論上把水拉進肌肉（肝醣滲透壓），皮下水繼續被排掉
+  // ⚠️ [15] Kistler 2024 review 指出：先前 ICW/ECW 轉移的研究使用單頻 BIA，
+  // 無法準確區分細胞內外水分（需多頻 BIA 或 BIS）。水分重分佈的方向可能正確，
+  // 但精確機制尚未被 RCT 驗證。目前協議仍基於理論框架 + 實務經驗，非確定性證據。
   WATER_BASELINE: 75,      // Day 7-4：75 mL/kg（中度灌水，從 Day 7 就開始壓 ADH）
   WATER_LOADING: 100,      // Day 3-2：100 mL/kg（搭配碳水超補，最大化水分進入肌肉細胞）
   WATER_TAPER: 40,         // Day 1：40 mL/kg（從 100→40 = 急降 60%，ADH 壓了 6 天來不及回升）
@@ -2860,7 +2866,8 @@ function generateBulkSuggestion(
 }
 
 // ===== Peak Week 引擎 =====
-// 基於 Escalante 2021 [12] + Barakat 2022 [13] + Homer/Helms 2024 [14]
+// 基於 Escalante 2021 [12] + Barakat 2022 [13] + Homer/Helms 2024 [14] + Kistler 2024 [15]
+// [15] 指出：碳水超補有效（肌肉厚度 +2%, 皮下 -2%），但水分 ICW/ECW 轉移的精確機制尚缺嚴格 RCT
 // 每日協議含：巨量營養素、水分、鈉、鉀、纖維、訓練、食物選擇、肌酸、Posing、Pump-up
 
 function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo?: MenstrualCycleInfo): NutritionSuggestion {
@@ -2876,10 +2883,17 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
   const pwLabMacroMods = pwLabModResult?.macroModifiers ?? []
   const pwLabTrainingMods = pwLabModResult?.trainingModifiers ?? []
 
-  // 女性專用常數：碳水超補量較低（Tarnopolsky 1995, James 2001）、脂肪地板較高（Loucks 2003）
-  const loadingCarb = isFemale ? PEAK_WEEK.LOADING_CARB_G_PER_KG_FEMALE : PEAK_WEEK.LOADING_CARB_G_PER_KG
+  // 碳水超補量依體重動態調整 [15] Kistler 2024：3-12 g/kg 範圍，個體差異大
+  // 重量級選手 (>90kg) 絕對碳水量過高（>810g）會造成腸胃不適，需降低 g/kg
+  // 男性基準 9.0 g/kg（Homer 2024, ~80kg）；女性基準 6.5 g/kg（Tarnopolsky 1995）
+  const baseLoadingCarb = isFemale ? PEAK_WEEK.LOADING_CARB_G_PER_KG_FEMALE : PEAK_WEEK.LOADING_CARB_G_PER_KG
+  const loadingCarb = bw > 100 ? baseLoadingCarb - 1.5   // >100kg: 男 7.5, 女 5.0
+    : bw > 90 ? baseLoadingCarb - 1.0                     // 90-100kg: 男 8.0, 女 5.5
+    : baseLoadingCarb                                      // ≤90kg: 男 9.0, 女 6.5
   const loadingFat = isFemale ? PEAK_WEEK.LOADING_FAT_G_PER_KG_FEMALE : PEAK_WEEK.LOADING_FAT_G_PER_KG
-  const taperCarb = isFemale ? PEAK_WEEK.TAPER_CARB_G_PER_KG_FEMALE : PEAK_WEEK.TAPER_CARB_G_PER_KG
+  // Taper 碳水等比縮減：loadingCarb × (基準taper/基準loading)
+  const baseTaperCarb = isFemale ? PEAK_WEEK.TAPER_CARB_G_PER_KG_FEMALE : PEAK_WEEK.TAPER_CARB_G_PER_KG
+  const taperCarb = Math.round(loadingCarb * (baseTaperCarb / baseLoadingCarb) * 10) / 10
 
   // 基因修正層（Peak Week）
   const geneticCorrections: GeneticCorrection[] = []
@@ -3311,9 +3325,12 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
       ...(isFemale && cycleInfo?.inLutealPhase ? [
         '🩸 ⚠️ 目前處於黃體期 — 孕酮升高會導致額外水分滯留，Peak Week 水分操控效果可能不如預期。視覺評估時需考慮荷爾蒙因素，不要過度反應體重數字。',
       ] : []),
-      // 女性碳水超補量說明
+      // 碳水超補量說明（體重調整 + 女性調整）
+      ...(loadingCarb !== baseLoadingCarb ? [
+        `📋 碳水超補量已依體重調整：${loadingCarb}g/kg（基準 ${baseLoadingCarb}g/kg）— 體重 ${bw}kg 時絕對量為 ${Math.round(bw * loadingCarb)}g，維持在腸胃可負荷範圍（Kistler 2024: 建議範圍 3-12g/kg）`,
+      ] : []),
       ...(isFemale ? [
-        `📋 女性碳水超補量已調整為 ${PEAK_WEEK.LOADING_CARB_G_PER_KG_FEMALE}g/kg（男性 ${PEAK_WEEK.LOADING_CARB_G_PER_KG}g/kg）— 女性肌肉肝醣超補反應約為男性 50-70%（Tarnopolsky 1995, James 2001），過量碳水只會增加腸胃不適而非更多肝醣儲存。`,
+        `📋 女性碳水超補量已調整為 ${loadingCarb}g/kg（男性基準 ${PEAK_WEEK.LOADING_CARB_G_PER_KG}g/kg）— 女性肌肉肝醣超補反應約為男性 50-70%（Tarnopolsky 1995, James 2001），過量碳水只會增加腸胃不適而非更多肝醣儲存。`,
       ] : []),
       // 基因修正警告
       ...geneticCorrections.map(gc => `🧬 ${gc.adjustment}`),
