@@ -1221,7 +1221,7 @@ export default function ClientDashboard() {
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                         </svg>
                         試試看
-                        {!c.ai_chat_enabled && <span className="text-[10px] opacity-80">（每月 1 次免費）</span>}
+                        {!c.ai_chat_enabled && <span className="text-[10px] opacity-80">（每月 3 次免費）</span>}
                       </button>
                     </div>
                   </div>
@@ -1807,8 +1807,8 @@ export default function ClientDashboard() {
               <p className="text-sm font-bold text-gray-800 mt-1">
                 你已經連續記錄 {streakDays} 天了！
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                升級後解鎖 AI 私人顧問、身心狀態追蹤、訓練紀錄，讓系統更完整地幫你分析。
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                你的數據已經開始累積趨勢了。升級後 AI 能根據這些數據幫你判斷進度、調整方向——不用自己猜。
               </p>
             </div>
             <Link
@@ -1933,7 +1933,7 @@ export default function ClientDashboard() {
           </svg>
           <span className="text-sm font-medium">AI 顧問</span>
           {!c.ai_chat_enabled && (
-            <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">1次免費</span>
+            <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">3次免費</span>
           )}
         </button>
       )}

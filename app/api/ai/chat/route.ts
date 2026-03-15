@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '今日 AI 對話次數已達上限（30 次），明天再來吧', daily_limit: true }, { status: 429 })
     }
 
-    // AI 未開放的用戶：每月允許 1 次免費體驗，由後端計數
+    // AI 未開放的用戶：每月允許 3 次免費體驗，由後端計數
     let isFreeQuotaUse = false
     if (!client.ai_chat_enabled) {
       const now = new Date()
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         .eq('client_id', client.id)
         .gte('created_at', monthStart)
 
-      if ((count ?? 0) >= 1) {
+      if ((count ?? 0) >= 3) {
         return NextResponse.json({ error: '本月免費次數已用完，請升級方案', quota_exceeded: true }, { status: 403 })
       }
 

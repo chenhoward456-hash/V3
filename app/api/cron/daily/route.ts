@@ -380,11 +380,11 @@ export async function GET(request: NextRequest) {
         let milestoneMsg: string | null = null
 
         if (daysSinceJoin === 3) {
-          milestoneMsg = `👋 ${c.name}，加入 3 天了！\n\n你知道嗎？持續記錄體重的人，減脂成功率提高 2 倍。\n\n💡 每天花 10 秒量體重，輸入「體重 XX」就能記錄。\n\n想要更完整的追蹤？\n👉 ${siteUrl}/join`
+          milestoneMsg = `${c.name}，你已經記錄 3 天了 👍\n\n持續記錄的人，減脂成功率是沒記錄的 2 倍——你已經在對的路上了。\n\n💡 每天量完體重直接輸入「體重 XX」就好，10 秒搞定。`
         } else if (daysSinceJoin === 7) {
-          milestoneMsg = `🎯 ${c.name}，已經一週了！\n\n免費版可以追蹤體重和基本營養，但付費方案還能解鎖：\n• AI 私人顧問（無限次）\n• 訓練紀錄追蹤\n• 身心狀態分析\n• 每週自動報告\n\n🔥 現在升級：${siteUrl}/join`
+          milestoneMsg = `${c.name}，一週了！你的數據已經開始有趨勢了 📈\n\n你目前用的是免費版，已經可以追蹤體重和飲食。\n\n不過如果你想知道「我的進度到底正不正常」「該不該調整」，升級後 AI 會根據你這一週的真實數據幫你判斷，不是給你網路上的通用建議。\n\n👉 看看差在哪：${siteUrl}/upgrade?from=free`
         } else if (daysSinceJoin === 14) {
-          milestoneMsg = `📊 ${c.name}，兩週了！\n\n如果你覺得記錄有幫助，升級方案可以讓教練幫你看數據、調整計畫。\n\n很多學員在這個階段升級後，進步速度明顯加快 💪\n\n👉 了解方案：${siteUrl}/join\n\n有任何問題都可以直接問我！`
+          milestoneMsg = `${c.name}，兩週了，你的數據量已經蠻有參考價值了 📊\n\n如果你有時候會不確定自己的方向對不對——升級後可以直接問 AI，它看得到你所有的紀錄，會根據趨勢給你具體建議。\n\n👉 ${siteUrl}/upgrade?from=free\n\n有問題也可以直接問我！`
         }
 
         if (milestoneMsg) {
