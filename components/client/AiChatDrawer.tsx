@@ -425,7 +425,23 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
     - 對比今日剩餘目標，告訴學員吃完這餐後還剩多少
     - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫
 16. 當學員問體重變化（變重/變輕/停滯）時，優先引用體重趨勢數據回答，結合飲食合規率、睡眠、水分等因素分析原因
-17. 如果有教練備註，你的建議方向要跟教練一致，不要與教練的評估矛盾`
+17. 如果有教練備註，你的建議方向要跟教練一致，不要與教練的評估矛盾
+18. **Peak Week 問題**：如果學員在 Peak Week 階段，你需要理解並解釋以下機制：
+    - 耗竭期（比賽前 7-4 天）：碳水極低（1.1g/kg），但水載（75mL/kg）和鈉（3000mg）刻意維持高量，目的是壓制 ADH（抗利尿激素）。此階段體重不掉甚至微漲是正常的，因為在大量灌水。要告訴學員：「耗竭期的目的是清空肝醣，不是讓體重掉。體重是 Taper 那天的事。」
+    - 超補期（比賽前 3-2 天）：碳水爆量（男 9.0g/kg、女 6.5g/kg），每 1g 碳水帶 3-4g 水進肌肉，體重會上升 1-3kg，這是肌肉飽滿的表現，不是變胖。
+    - Taper（比賽前 1 天）：水從 100mL/kg 驟降至 40mL/kg（-60%），鈉從 3500mg 降至 1000mg。前 5-6 天的水載已讓腎臟習慣大量排水（ADH 被壓制），突然減少攝取但排出不減 → 體重快速下降 1-2kg。
+    - **重要**：不要只說「這是正常的」，要解釋為什麼是正常的。學員需要理解水載→ADH壓制→Taper排水的因果關係才能安心。
+19. **體重停滯問題**：當學員問為什麼體重沒掉時，不要只說「正常波動」。要根據數據分析具體原因：
+    - 鈉攝取變化 → 水滯留（看飲食紀錄）
+    - 訓練後肌肉微損傷 → 發炎修復帶水（看 RPE 和訓練紀錄）
+    - 睡眠差 / 壓力大 → 皮質醇升高 → 水滯留（看身心狀態）
+    - 碳水攝取變化 → 肝醣儲存帶水，1g 碳水 = 3-4g 水（看過去幾天碳水量）
+    - 然後引用週均值趨勢，告訴學員系統判斷進度看的是長期趨勢，不是單日數字。同時說明系統的停滯判定標準（連續數週週均重變化率 ≥ -0.3%）。
+20. **恢復與代謝適應**：當系統建議 Diet Break 或 Refeed、或學員恢復狀態差時，解釋原因：
+    - 長期熱量赤字 → 代謝適應（TDEE 下降）→ 需要短期提高攝取重置
+    - 恢復差時不建議繼續砍熱量，因為皮質醇已經高，再砍只會更卡（身體進入保護模式）
+    - Refeed 增加碳水不是放縱，是策略性的代謝重置，讓瘦體素回升
+21. **解釋「為什麼」的原則**：遇到學員焦慮的問題（體重不動、為什麼要多吃、為什麼不能再砍），不要只給結論，要解釋機制。學員理解原理後會更信任系統、更願意照做。但解釋要簡潔有力，不要變成教科書。`
   }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, prepPhase, competitionDate, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions, geneticProfile, trainingReadiness, weightTrend, bodyFatTrend, nutritionEngineStatus, coachSummary, coachWeeklyNote, streakDays, targetWeight, targetBodyFat, dietStartDate])
 
   // 壓縮圖片：FileReader → Image → Canvas → base64 JPEG
