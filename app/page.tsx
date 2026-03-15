@@ -106,7 +106,7 @@ const webApplicationSchema = {
     {
       '@type': 'Offer',
       name: '自主管理方案',
-      description: '身心狀態追蹤 + AI 飲食顧問無限使用 + 碳水循環 + 停滯期偵測',
+      description: '身心狀態追蹤 + AI 私人顧問無限使用 + 碳水循環 + 停滯期偵測',
       price: '499',
       priceCurrency: 'TWD',
       billingIncrement: 'P1M',
@@ -156,7 +156,7 @@ const serviceSchema = {
       {
         '@type': 'Offer',
         name: '自主管理方案',
-        description: 'AI 飲食顧問無限使用 + 身心狀態追蹤 + 碳水循環',
+        description: 'AI 私人顧問無限使用 + 身心狀態追蹤 + 碳水循環',
         price: '499',
         priceCurrency: 'TWD',
         billingIncrement: 'P1M',
@@ -205,7 +205,7 @@ const faqSchema = {
       name: '免費版可以用多久？有什麼限制？',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: '免費版永久免費，包含體重趨勢追蹤、飲食紀錄、TDEE 自動計算、和 14 天後自動校正營養目標。付費版額外解鎖身心狀態追蹤、AI 飲食顧問、教練每週 review 等功能。',
+        text: '免費版永久免費，包含體重趨勢追蹤、飲食紀錄、TDEE 自動計算、和 14 天後自動校正營養目標。付費版額外解鎖身心狀態追蹤、AI 私人顧問（根據你的真實數據回答）、教練每週 review 等功能。',
       },
     },
     {
@@ -599,7 +599,7 @@ export default function HomePage() {
                 </div>
                 <ul className="space-y-1 text-xs text-gray-600">
                   <li className="flex items-start gap-1.5"><span className="text-green-500">&#10003;</span>身心狀態追蹤（睡眠、能量、壓力）</li>
-                  <li className="flex items-start gap-1.5"><span className="text-green-500">&#10003;</span>AI 飲食顧問無限使用</li>
+                  <li className="flex items-start gap-1.5"><span className="text-green-500">&#10003;</span>AI 私人顧問 — 根據你的數據回答，不是通用建議</li>
                 </ul>
                 <Link href="/join?tier=self_managed" className="inline-block text-sm font-semibold text-blue-600 hover:text-blue-800 mt-2">升級解鎖 →</Link>
               </div>

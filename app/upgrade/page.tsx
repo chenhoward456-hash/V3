@@ -71,7 +71,7 @@ const FEATURES: FeatureRow[] = [
   { label: '自動 TDEE 校正', free: true, self_managed: true, coached: true },
   { label: '身心狀態追蹤', free: false, self_managed: true, coached: true },
   { label: '訓練記錄', free: false, self_managed: true, coached: true },
-  { label: 'AI 飲食顧問', free: '每月1次', self_managed: '無限', coached: '無限' },
+  { label: 'AI 私人顧問', free: '每月1次', self_managed: '無限', coached: '無限' },
   { label: '碳水循環', free: false, self_managed: true, coached: true },
   { label: '每日補品管理', free: false, self_managed: false, coached: true },
   { label: '血檢分析', free: false, self_managed: false, coached: true },
@@ -456,7 +456,7 @@ function getQuickFeatures(tier: Tier): string[] {
     case 'self_managed':
       return [
         '包含免費版所有功能',
-        'AI 飲食顧問無限次',
+        'AI 私人顧問無限次',
         '身心狀態 + 訓練追蹤',
         '碳水循環 & 停滯期偵測',
       ]

@@ -83,10 +83,10 @@ function AIAdvisorContent() {
       {/* Header */}
       <div className="text-center mb-8">
         <div className="inline-block bg-[#2563eb]/10 text-[#2563eb] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
-          AI 健康顧問
+          AI 私人顧問
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-          Howard Protocol AI 助手
+          根據你的數據，給你個人化的建議
         </h1>
         <p className="text-gray-500 text-sm">
           營養規劃 · 訓練建議 · 恢復策略 · 補劑諮詢

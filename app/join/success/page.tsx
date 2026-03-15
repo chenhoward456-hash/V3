@@ -15,7 +15,7 @@ const TIER_NAMES: Record<string, string> = {
 const SELF_MANAGED_FEATURES = [
   { icon: '📊', label: '身體狀態追蹤', desc: '體重、體脂、感受紀錄' },
   { icon: '🏋️', label: '訓練日誌', desc: '記錄每次訓練內容' },
-  { icon: '🤖', label: 'AI 飲食顧問', desc: '無限次數 AI 對話' },
+  { icon: '🤖', label: 'AI 私人顧問', desc: '根據你的數據回答' },
   { icon: '🔄', label: '碳循環規劃', desc: '自動配置高低碳日' },
 ]
 
@@ -444,7 +444,7 @@ function JoinSuccessContent() {
                 <div className="flex items-center gap-3">
                   <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-xs font-bold text-purple-600 shrink-0">3</span>
                   <p className="text-sm text-gray-600">
-                    <strong>試試 AI 飲食顧問</strong>，問任何飲食相關問題
+                    <strong>試試 AI 私人顧問</strong>，問任何飲食相關問題
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -479,7 +479,7 @@ function JoinSuccessContent() {
                 <div className="flex items-center gap-3">
                   <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-xs font-bold text-purple-600 shrink-0">3</span>
                   <p className="text-sm text-gray-600">
-                    <strong>試試 AI 飲食顧問</strong>，問任何飲食相關問題
+                    <strong>試試 AI 私人顧問</strong>，問任何飲食相關問題
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

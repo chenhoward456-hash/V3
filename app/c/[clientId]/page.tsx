@@ -1209,9 +1209,9 @@ export default function ClientDashboard() {
                   <div className="flex items-start gap-3">
                     <span className="text-xl flex-shrink-0">🤖</span>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-gray-900 mb-1">試試 AI 飲食顧問</p>
+                      <p className="text-sm font-bold text-gray-900 mb-1">試試 AI 私人顧問</p>
                       <p className="text-xs text-gray-600 leading-relaxed mb-3">
-                        系統已經收集了一週的數據。你可以問 AI 顧問「今天剩下的量要怎麼吃？」，它會根據你的目標和已攝取量推薦具體的外食組合。
+                        系統已經收集了一週的數據。AI 顧問知道你的飲食、訓練、睡眠紀錄，可以回答「我的進度正常嗎」「今天剩下的量要怎麼吃」這類問題。
                       </p>
                       <button
                         onClick={() => setShowAiChat(true)}
@@ -1353,7 +1353,7 @@ export default function ClientDashboard() {
                   >
                     <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-xl shrink-0">🤖</div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">步驟 3：問 AI 顧問怎麼吃</p>
+                      <p className="text-sm font-semibold text-gray-900">步驟 3：問 AI 顧問任何問題</p>
                       <p className="text-xs text-gray-500 mt-0.5">不知道吃什麼？告訴 AI 你剛吃了什麼，它幫你估算營養素</p>
                     </div>
                     <ChevronRight size={18} className="text-gray-300" />
@@ -1808,7 +1808,7 @@ export default function ClientDashboard() {
                 你已經連續記錄 {streakDays} 天了！
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                升級後解鎖 AI 飲食顧問、身心狀態追蹤、訓練紀錄，讓系統更完整地幫你分析。
+                升級後解鎖 AI 私人顧問、身心狀態追蹤、訓練紀錄，讓系統更完整地幫你分析。
               </p>
             </div>
             <Link

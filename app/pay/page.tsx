@@ -9,7 +9,7 @@ const PLAN_INFO: Record<string, { name: string; price: number; priceLabel: strin
     name: '自主管理方案',
     price: 499,
     priceLabel: '499',
-    features: ['AI 飲食顧問完整存取', '訓練 / 體態 / 感受追蹤', 'TDEE + 巨量營養素自動校正', '碳水循環 & Refeed 智能提醒'],
+    features: ['AI 私人顧問 — 了解你的訓練、飲食、睡眠、血檢', '訓練 / 體態 / 感受追蹤', 'TDEE + 巨量營養素自動校正', '碳水循環 & Refeed 智能提醒'],
   },
   coached: {
     name: '教練指導方案',

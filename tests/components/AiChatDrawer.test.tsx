@@ -54,8 +54,8 @@ describe('AiChatDrawer', () => {
 
   it('renders drawer header and quick questions when open', () => {
     render(<AiChatDrawer {...baseProps} />)
-    expect(screen.getByText('AI 飲食顧問')).toBeInTheDocument()
-    expect(screen.getByText(/直接問我怎麼吃就好/)).toBeInTheDocument()
+    expect(screen.getByText('AI 私人顧問')).toBeInTheDocument()
+    expect(screen.getByText(/什麼都可以問我/)).toBeInTheDocument()
   })
 
   it('calls onClose when backdrop is clicked', () => {

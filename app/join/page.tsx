@@ -42,7 +42,7 @@ const PLANS: Record<Tier, {
     promoLabel: '首月 $399',
     description: 'AI 系統完整存取，自動追蹤與分析',
     features: [
-      'AI 飲食顧問 + 訓練 / 感受追蹤',
+      'AI 私人顧問 + 訓練 / 感受追蹤',
       '自適應 TDEE 每週自動校正',
       '碳水循環 & Refeed 智能排程',
       '停滯期自動偵測 + 突破建議',

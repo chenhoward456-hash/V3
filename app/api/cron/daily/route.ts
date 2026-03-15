@@ -382,7 +382,7 @@ export async function GET(request: NextRequest) {
         if (daysSinceJoin === 3) {
           milestoneMsg = `👋 ${c.name}，加入 3 天了！\n\n你知道嗎？持續記錄體重的人，減脂成功率提高 2 倍。\n\n💡 每天花 10 秒量體重，輸入「體重 XX」就能記錄。\n\n想要更完整的追蹤？\n👉 ${siteUrl}/join`
         } else if (daysSinceJoin === 7) {
-          milestoneMsg = `🎯 ${c.name}，已經一週了！\n\n免費版可以追蹤體重和基本營養，但付費方案還能解鎖：\n• AI 飲食顧問（無限次）\n• 訓練紀錄追蹤\n• 身心狀態分析\n• 每週自動報告\n\n🔥 現在升級：${siteUrl}/join`
+          milestoneMsg = `🎯 ${c.name}，已經一週了！\n\n免費版可以追蹤體重和基本營養，但付費方案還能解鎖：\n• AI 私人顧問（無限次）\n• 訓練紀錄追蹤\n• 身心狀態分析\n• 每週自動報告\n\n🔥 現在升級：${siteUrl}/join`
         } else if (daysSinceJoin === 14) {
           milestoneMsg = `📊 ${c.name}，兩週了！\n\n如果你覺得記錄有幫助，升級方案可以讓教練幫你看數據、調整計畫。\n\n很多學員在這個階段升級後，進步速度明顯加快 💪\n\n👉 了解方案：${siteUrl}/join\n\n有任何問題都可以直接問我！`
         }

@@ -628,14 +628,14 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
   if (!open) return null
 
   const quickQuestions = [
+    '我的減脂進度正常嗎？',
+    '根據我的恢復狀態，今天適合練什麼？',
+    '我今天剩下的量，去超商要怎麼買？',
     '幫我算這餐：一個雞腿便當加一杯豆漿',
-    '我今天剩餘的量，去 711 要怎麼買？',
-    '幫我配一餐自助餐的組合',
-    '外食怎麼搭才能補齊蛋白質？',
-    '幫我分析這週的飲食模式',
-    '根據我的恢復狀態，今天適合什麼強度的訓練？',
+    '這週我的睡眠跟訓練有什麼需要注意的？',
+    '幫我分析我最近的飲食模式',
+    '我的血檢有什麼需要透過飲食改善的？',
     '幫我預測還要多久能達到目標體重',
-    '推薦下一餐吃什麼能補齊剩餘營養素',
   ]
 
   return (
@@ -659,7 +659,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">AI 飲食顧問</p>
+              <p className="text-sm font-semibold text-gray-900">AI 私人顧問</p>
               {remaining.length > 0 && (
                 <p className="text-[10px] text-gray-400">今日還需：{remaining.join('、')}</p>
               )}
@@ -680,7 +680,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
           {messages.length === 0 && (
             <div className="py-6">
               <p className="text-sm text-gray-500 text-center mb-4">
-                我知道你今天的營養目標和已攝取量，直接問我怎麼吃就好！
+                我有你的飲食、訓練、睡眠、血檢、體重變化等數據，什麼都可以問我。
               </p>
               <div className="space-y-2">
                 {quickQuestions.map((q) => (
@@ -807,7 +807,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
             </button>
           </div>
           <p className="text-[10px] text-gray-400 mt-1.5 text-center">
-            拍照或打字描述食物，AI 幫你估算營養素
+            拍照估算營養素，或問任何跟你數據有關的問題
           </p>
         </div>
       </div>
