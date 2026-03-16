@@ -1723,9 +1723,8 @@ export default function ClientDashboard() {
         {isFree ? (
           <UpgradeGate
             feature="基因檔案"
-            description="填寫基因檢測結果，AI 會根據你的基因型調整營養建議"
+            description="升級後可填寫基因檢測結果，獲得個人化營養建議"
             tier="coached"
-            currentTier={c.subscription_tier as 'free' | 'self_managed' | 'coached'}
           />
         ) : (
           <GeneProfileCard
