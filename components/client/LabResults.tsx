@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, Trash2, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, ChevronDown } from 'lucide-react'
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { getLabAdvice } from './types'
@@ -25,6 +25,7 @@ interface GroupedLab {
 
 export default function LabResults({ labResults, isCoachMode, clientId, coachHeaders, onMutate }: LabResultsProps) {
   const { showToast } = useToast()
+  const [isExpanded, setIsExpanded] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<any>(null)
   const [form, setForm] = useState({ test_name: '', value: '', unit: '', reference_range: '', date: getLocalDateStr(), custom_advice: '', custom_target: '' })
@@ -61,6 +62,19 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
     }
     return result
   }, [labResults])
+
+  // 摘要統計（收合時顯示）
+  const summary = useMemo(() => {
+    if (!grouped.length) return null
+    const total = grouped.length
+    const attentionCount = grouped.filter(g => g.latest.status === 'attention').length
+    const abnormalCount = grouped.filter(g => g.latest.status !== 'normal' && g.latest.status !== 'attention').length
+    const latestDate = grouped.reduce((latest, g) => {
+      const d = new Date(g.latest.date)
+      return d > latest ? d : latest
+    }, new Date(0))
+    return { total, attentionCount, abnormalCount, latestDate }
+  }, [grouped])
 
   // addFor: 從現有卡片「新增紀錄」，帶入名稱/單位/範圍但清空數值
   const openModal = (lab?: any, addFor?: any) => {
@@ -185,127 +199,177 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
   return (
     <>
       <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold text-gray-900">血檢數據紀錄</h2>
-          <button onClick={() => openModal()} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700 flex items-center">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setIsExpanded(prev => !prev)}
+            className="flex items-center gap-2 group"
+          >
+            <ChevronDown
+              size={20}
+              className={`text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+            />
+            <h2 className="text-2xl font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">血檢數據紀錄</h2>
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); openModal() }} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700 flex items-center">
             <Plus size={16} className="mr-1" /> 新增血檢
           </button>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-4">
-          <p className="text-[10px] text-gray-500 leading-relaxed">
-            此頁面僅供數據紀錄與趨勢追蹤，不構成醫療診斷或健康評估。數值判讀請以你的醫師意見為準。
-          </p>
-        </div>
-
-        {grouped.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {grouped.map((group) => {
-              const { latest, prev, history } = group
-              const advice = getLabAdvice(latest.test_name, latest.value)
-              const isOptimal = latest.status === 'normal' && isInOptimalRange(latest.test_name, latest.value)
-              const canOptimize = latest.status === 'normal' && !isOptimal
-              const optimalRange = canOptimize ? getOptimalRangeText(latest.test_name) : null
-              const statusColor = latest.status !== 'normal'
-                ? (latest.status === 'attention' ? 'border-yellow-200 bg-yellow-50' : 'border-red-200 bg-red-50')
-                : isOptimal ? 'border-green-200 bg-green-50' : 'border-blue-100 bg-blue-50'
-              const dotColor = latest.status !== 'normal'
-                ? (latest.status === 'attention' ? 'bg-yellow-500' : 'bg-red-500')
-                : isOptimal ? 'bg-green-500' : 'bg-blue-500'
-              const lineColor = latest.status !== 'normal'
-                ? (latest.status === 'attention' ? '#eab308' : '#ef4444')
-                : isOptimal ? '#22c55e' : '#3b82f6'
-
-              // 變化計算
-              let changeText = ''
-              if (prev) {
-                const diff = latest.value - prev.value
-                const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : ''
-                if (diff !== 0) changeText = `${arrow} ${Math.abs(diff).toFixed(2)} vs 上次`
-              }
-
-              return (
-                <div key={group.testName} className={`rounded-xl p-4 border ${statusColor}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-gray-900">{latest.test_name}</h3>
-                    <div className="flex items-center gap-1">
-                      {isCoachMode && (
-                        <>
-                          <button onClick={() => openModal(latest)} className="p-1 hover:bg-white/50 rounded"><Pencil size={14} className="text-gray-500" /></button>
-                          <button onClick={() => handleDelete(latest.id)} className="p-1 hover:bg-white/50 rounded"><Trash2 size={14} className="text-red-400" /></button>
-                        </>
-                      )}
-                      <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
-                    </div>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {latest.value} <span className="text-sm font-normal text-gray-500">{latest.unit}</span>
-                    {latest.status !== 'normal' && (
-                      <button
-                        onClick={() => {
-                          window.dispatchEvent(new CustomEvent('open-ai-chat', { detail: { prompt: `我的${latest.test_name}數值是 ${latest.value} ${latest.unit}，參考範圍是 ${latest.reference_range}，這代表什麼？我該怎麼做？` } }))
-                        }}
-                        className="text-[10px] text-blue-500 hover:text-blue-700 font-medium ml-1"
-                      >
-                        問 AI →
-                      </button>
-                    )}
-                  </p>
-                  {(latest.custom_advice || advice) && (
-                    <p className="text-sm text-gray-600 mt-2">{latest.custom_advice || advice}</p>
-                  )}
-                  <p className="text-xs text-gray-400 mt-1">
-                    參考範圍：{latest.custom_target || latest.reference_range}
-                    {optimalRange && <span className="text-blue-500">｜最佳：{optimalRange}</span>}
-                  </p>
-                  <button
-                    onClick={() => openModal(undefined, latest)}
-                    className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center"
-                  >
-                    <Plus size={12} className="mr-0.5" /> 新增此指標紀錄
-                  </button>
-
-                  {/* 迷你趨勢圖 */}
-                  {history.length >= 2 && (
-                    <div className="mt-3 pt-3 border-t border-gray-200/50">
-                      {changeText && <p className="text-xs text-gray-500 mb-1">{changeText}</p>}
-                      <ResponsiveContainer width="100%" height={60}>
-                        <LineChart data={history}>
-                          <XAxis
-                            dataKey="date"
-                            fontSize={10}
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fill: '#9ca3af' }}
-                            interval="preserveStartEnd"
-                          />
-                          <Tooltip
-                            formatter={(value: any) => [`${value} ${latest.unit}`, latest.test_name]}
-                            labelFormatter={(label) => `日期：${label}`}
-                            contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="value"
-                            stroke={lineColor}
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: lineColor }}
-                            connectNulls
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-gray-400">尚無血檢資料</p>
-            <p className="text-xs text-gray-300 mt-1">點擊「新增血檢」上傳你的檢驗數據</p>
+        {/* 收合時的摘要 */}
+        {!isExpanded && summary && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
+            <span>{summary.total} 項血檢</span>
+            <span className="text-gray-300">·</span>
+            <span>最近: {summary.latestDate.toLocaleDateString('zh-TW')}</span>
+            {summary.attentionCount === 0 && summary.abnormalCount === 0 ? (
+              <>
+                <span className="text-gray-300">·</span>
+                <span className="text-green-600 font-medium">全部正常</span>
+              </>
+            ) : (
+              <>
+                {summary.attentionCount > 0 && (
+                  <>
+                    <span className="text-gray-300">·</span>
+                    <span className="flex items-center gap-1">
+                      <span className="inline-block w-2 h-2 rounded-full bg-yellow-500" />
+                      <span className="text-yellow-600 font-medium">{summary.attentionCount} 需注意</span>
+                    </span>
+                  </>
+                )}
+                {summary.abnormalCount > 0 && (
+                  <>
+                    <span className="text-gray-300">·</span>
+                    <span className="flex items-center gap-1">
+                      <span className="inline-block w-2 h-2 rounded-full bg-red-500" />
+                      <span className="text-red-600 font-medium">{summary.abnormalCount} 異常</span>
+                    </span>
+                  </>
+                )}
+              </>
+            )}
           </div>
         )}
+
+        {/* 可收合的內容區域 */}
+        <div
+          className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}
+        >
+          <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-4">
+            <p className="text-[10px] text-gray-500 leading-relaxed">
+              此頁面僅供數據紀錄與趨勢追蹤，不構成醫療診斷或健康評估。數值判讀請以你的醫師意見為準。
+            </p>
+          </div>
+
+          {grouped.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {grouped.map((group) => {
+                const { latest, prev, history } = group
+                const advice = getLabAdvice(latest.test_name, latest.value)
+                const isOptimal = latest.status === 'normal' && isInOptimalRange(latest.test_name, latest.value)
+                const canOptimize = latest.status === 'normal' && !isOptimal
+                const optimalRange = canOptimize ? getOptimalRangeText(latest.test_name) : null
+                const statusColor = latest.status !== 'normal'
+                  ? (latest.status === 'attention' ? 'border-yellow-200 bg-yellow-50' : 'border-red-200 bg-red-50')
+                  : isOptimal ? 'border-green-200 bg-green-50' : 'border-blue-100 bg-blue-50'
+                const dotColor = latest.status !== 'normal'
+                  ? (latest.status === 'attention' ? 'bg-yellow-500' : 'bg-red-500')
+                  : isOptimal ? 'bg-green-500' : 'bg-blue-500'
+                const lineColor = latest.status !== 'normal'
+                  ? (latest.status === 'attention' ? '#eab308' : '#ef4444')
+                  : isOptimal ? '#22c55e' : '#3b82f6'
+
+                // 變化計算
+                let changeText = ''
+                if (prev) {
+                  const diff = latest.value - prev.value
+                  const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : ''
+                  if (diff !== 0) changeText = `${arrow} ${Math.abs(diff).toFixed(2)} vs 上次`
+                }
+
+                return (
+                  <div key={group.testName} className={`rounded-xl p-4 border ${statusColor}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium text-gray-900">{latest.test_name}</h3>
+                      <div className="flex items-center gap-1">
+                        {isCoachMode && (
+                          <>
+                            <button onClick={() => openModal(latest)} className="p-1 hover:bg-white/50 rounded"><Pencil size={14} className="text-gray-500" /></button>
+                            <button onClick={() => handleDelete(latest.id)} className="p-1 hover:bg-white/50 rounded"><Trash2 size={14} className="text-red-400" /></button>
+                          </>
+                        )}
+                        <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {latest.value} <span className="text-sm font-normal text-gray-500">{latest.unit}</span>
+                      {latest.status !== 'normal' && (
+                        <button
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('open-ai-chat', { detail: { prompt: `我的${latest.test_name}數值是 ${latest.value} ${latest.unit}，參考範圍是 ${latest.reference_range}，這代表什麼？我該怎麼做？` } }))
+                          }}
+                          className="text-[10px] text-blue-500 hover:text-blue-700 font-medium ml-1"
+                        >
+                          問 AI →
+                        </button>
+                      )}
+                    </p>
+                    {(latest.custom_advice || advice) && (
+                      <p className="text-sm text-gray-600 mt-2">{latest.custom_advice || advice}</p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">
+                      參考範圍：{latest.custom_target || latest.reference_range}
+                      {optimalRange && <span className="text-blue-500">｜最佳：{optimalRange}</span>}
+                    </p>
+                    <button
+                      onClick={() => openModal(undefined, latest)}
+                      className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                    >
+                      <Plus size={12} className="mr-0.5" /> 新增此指標紀錄
+                    </button>
+
+                    {/* 迷你趨勢圖 */}
+                    {history.length >= 2 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200/50">
+                        {changeText && <p className="text-xs text-gray-500 mb-1">{changeText}</p>}
+                        <ResponsiveContainer width="100%" height={60}>
+                          <LineChart data={history}>
+                            <XAxis
+                              dataKey="date"
+                              fontSize={10}
+                              tickLine={false}
+                              axisLine={false}
+                              tick={{ fill: '#9ca3af' }}
+                              interval="preserveStartEnd"
+                            />
+                            <Tooltip
+                              formatter={(value: any) => [`${value} ${latest.unit}`, latest.test_name]}
+                              labelFormatter={(label) => `日期：${label}`}
+                              contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="value"
+                              stroke={lineColor}
+                              strokeWidth={2}
+                              dot={{ r: 3, fill: lineColor }}
+                              connectNulls
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-gray-400">尚無血檢資料</p>
+              <p className="text-xs text-gray-300 mt-1">點擊「新增血檢」上傳你的檢驗數據</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modal */}
