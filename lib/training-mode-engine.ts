@@ -679,19 +679,21 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       }
     }
 
-    // P1: 連續訓練天數 penalty — 不只加 recovery，也要扣高強度
-    if (recentTrainingPattern.consecutiveTrainingDays >= 5) {
-      scores.active_recovery += 20
-      scores.rest += 15
-      scores.high_volume -= 20
-      scores.high_intensity -= 15
-      reasons.push({ signal: '訓練模式', emoji: '📊', description: `已連續訓練 ${recentTrainingPattern.consecutiveTrainingDays} 天，累積疲勞風險高，強烈建議休息` })
-    } else if (recentTrainingPattern.consecutiveTrainingDays >= 4) {
-      scores.active_recovery += 10
-      scores.reduced_volume += 10
-      scores.high_volume -= 10
-      scores.high_intensity -= 10
-      reasons.push({ signal: '訓練模式', emoji: '📊', description: `已連續訓練 ${recentTrainingPattern.consecutiveTrainingDays} 天，建議減量或安排休息` })
+    // P1: 連續訓練天數 penalty — peak_week/competition 時跳過（備賽期連續訓練屬預期）
+    if (prepPhase !== 'peak_week' && prepPhase !== 'competition') {
+      if (recentTrainingPattern.consecutiveTrainingDays >= 5) {
+        scores.active_recovery += 20
+        scores.rest += 15
+        scores.high_volume -= 20
+        scores.high_intensity -= 15
+        reasons.push({ signal: '訓練模式', emoji: '📊', description: `已連續訓練 ${recentTrainingPattern.consecutiveTrainingDays} 天，累積疲勞風險高，強烈建議休息` })
+      } else if (recentTrainingPattern.consecutiveTrainingDays >= 4) {
+        scores.active_recovery += 10
+        scores.reduced_volume += 10
+        scores.high_volume -= 10
+        scores.high_intensity -= 10
+        reasons.push({ signal: '訓練模式', emoji: '📊', description: `已連續訓練 ${recentTrainingPattern.consecutiveTrainingDays} 天，建議減量或安排休息` })
+      }
     }
 
     // P1: 高 RPE 累積 — 不只加 moderate，也要扣高強度和高容量

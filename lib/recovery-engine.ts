@@ -139,6 +139,7 @@ export interface RecoveryInput {
   dietDurationWeeks?: number | null     // 減脂持續週數
   inLutealPhase?: boolean               // 女性黃體期
   inMenstruation?: boolean              // 經期中
+  prepPhase?: 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | null
 }
 
 // ═══════════════════════════════════════
@@ -313,31 +314,41 @@ function assessNeuralRecovery(
 function assessMuscularRecovery(
   current: WellnessEntry[],
   trainingLogs: TrainingLogEntry[],
+  prepPhase?: string | null,
 ): SystemRecovery {
   let score = 65
   const signals: string[] = []
+
+  const isPeakWeek = prepPhase === 'peak_week'
+  const isCompetition = prepPhase === 'competition'
 
   // 近 7 天訓練負荷
   const last7 = trainingLogs.slice(-7)
   const trainDays = last7.filter(t => t.training_type && t.training_type !== 'rest').length
   const highRPE = last7.filter(t => t.rpe != null && t.rpe >= 8).length
 
-  if (trainDays >= 6) { score -= 25; signals.push(`近 7 天訓練 ${trainDays} 天，肌肉恢復不足`) }
-  else if (trainDays >= 5) { score -= 15; signals.push(`近 7 天訓練 ${trainDays} 天`) }
-  else if (trainDays <= 2) { score += 15; signals.push(`近 7 天僅訓練 ${trainDays} 天，恢復充足`) }
+  // peak_week: 7 天訓練頻率 penalty 減半；competition: 跳過
+  if (!isCompetition) {
+    const freqPenaltyMultiplier = isPeakWeek ? 0.5 : 1
+    if (trainDays >= 6) { score -= Math.round(25 * freqPenaltyMultiplier); if (!isPeakWeek) signals.push(`近 7 天訓練 ${trainDays} 天，肌肉恢復不足`); else signals.push(`Peak Week 期間高頻訓練屬預期（${trainDays} 天/週）`) }
+    else if (trainDays >= 5) { score -= Math.round(15 * freqPenaltyMultiplier); signals.push(`近 7 天訓練 ${trainDays} 天`) }
+    else if (trainDays <= 2) { score += 15; signals.push(`近 7 天僅訓練 ${trainDays} 天，恢復充足`) }
+  }
 
   if (highRPE >= 4) { score -= 20; signals.push(`${highRPE} 次高強度（RPE≥8），肌肉疲勞累積`) }
   else if (highRPE >= 3) { score -= 10; signals.push(`${highRPE} 次高強度訓練`) }
 
-  // 連續訓練天數（不休息）
-  const sorted = [...trainingLogs].sort((a, b) => b.date.localeCompare(a.date))
-  let consecutiveDays = 0
-  for (const t of sorted) {
-    if (t.training_type && t.training_type !== 'rest') consecutiveDays++
-    else break
+  // 連續訓練天數（不休息）— peak_week/competition 時跳過（耗竭期/比賽日本來就要連續練）
+  if (!isPeakWeek && !isCompetition) {
+    const sorted = [...trainingLogs].sort((a, b) => b.date.localeCompare(a.date))
+    let consecutiveDays = 0
+    for (const t of sorted) {
+      if (t.training_type && t.training_type !== 'rest') consecutiveDays++
+      else break
+    }
+    if (consecutiveDays >= 5) { score -= 15; signals.push(`已連續訓練 ${consecutiveDays} 天未休息`) }
+    else if (consecutiveDays >= 4) { score -= 5; signals.push(`連續訓練 ${consecutiveDays} 天`) }
   }
-  if (consecutiveDays >= 5) { score -= 15; signals.push(`已連續訓練 ${consecutiveDays} 天未休息`) }
-  else if (consecutiveDays >= 4) { score -= 5; signals.push(`連續訓練 ${consecutiveDays} 天`) }
 
   // 訓練動力（主觀肌肉準備度代理）
   const avgDrive = avg(current.filter(w => w.training_drive != null).map(w => w.training_drive!))
@@ -703,10 +714,14 @@ function generateRecommendations(
   overtrainingRisk: OvertrainingRisk,
   autonomicBalance: AutonomicBalance,
   trajectory: RecoveryAssessment['trajectory'],
+  prepPhase?: string | null,
 ): RecoveryRecommendation[] {
   const recs: RecoveryRecommendation[] = []
 
-  // 睡眠
+  const isPeakWeek = prepPhase === 'peak_week'
+  const isCompetition = prepPhase === 'competition'
+
+  // 睡眠（peak_week/competition 照給）
   if (systems.hormonal.score < 50 && systems.hormonal.signals.some(s => s.includes('睡眠'))) {
     recs.push({ priority: 'high', category: 'sleep', message: '睡眠品質嚴重不足。建議：固定就寢時間、睡前 1 小時停止藍光、臥室溫度 18-20°C。' })
   } else if (systems.hormonal.score < 65 && systems.hormonal.signals.some(s => s.includes('睡眠'))) {
@@ -715,35 +730,49 @@ function generateRecommendations(
 
   // 訓練
   if (overtrainingRisk.riskLevel === 'very_high' || overtrainingRisk.riskLevel === 'high') {
-    recs.push({ priority: 'high', category: 'training', message: `過度訓練風險${overtrainingRisk.riskLevel === 'very_high' ? '極' : ''}高。建議安排 deload 週或增加 1-2 天完全休息。` })
+    if (isPeakWeek) {
+      // peak_week：不建議 deload/停練，改為提醒注意恢復策略
+      recs.push({ priority: 'medium', category: 'training', message: `Peak Week 期間疲勞累積屬預期。留意主觀感受，加強恢復策略（睡眠、營養、伸展）。` })
+    } else if (!isCompetition) {
+      recs.push({ priority: 'high', category: 'training', message: `過度訓練風險${overtrainingRisk.riskLevel === 'very_high' ? '極' : ''}高。建議安排 deload 週或增加 1-2 天完全休息。` })
+    }
+    // competition：完全不計訓練 penalty 建議
   }
   if (systems.muscular.state === 'critical') {
-    recs.push({ priority: 'high', category: 'training', message: '肌肉恢復嚴重不足。建議今天完全休息，或僅做輕量主動恢復（散步、伸展）。' })
+    if (isPeakWeek) {
+      recs.push({ priority: 'medium', category: 'training', message: 'Peak Week 肌肉疲勞明顯，注意恢復策略（充足蛋白質、伸展、冷熱交替）。' })
+    } else if (!isCompetition) {
+      recs.push({ priority: 'high', category: 'training', message: '肌肉恢復嚴重不足。建議今天完全休息，或僅做輕量主動恢復（散步、伸展）。' })
+    }
   }
 
-  // 營養
+  // 營養（peak_week/competition 照給）
   if (systems.metabolic.score < 40) {
     recs.push({ priority: 'high', category: 'nutrition', message: '代謝壓力偏高。考慮安排 refeed day（碳水 4-5g/kg）或 1 週 diet break。' })
   }
 
-  // 壓力
+  // 壓力（照給）
   if (systems.psychological.state === 'critical' || systems.psychological.state === 'struggling') {
     recs.push({ priority: 'medium', category: 'stress', message: '心理疲勞明顯。建議減少訓練量、增加休閒活動、考慮冥想或散步。' })
   }
 
-  // 自律神經
+  // 自律神經（照給）
   if (autonomicBalance.status === 'sympathetic_dominant') {
     recs.push({ priority: 'medium', category: 'stress', message: '自律神經偏向交感主導（壓力態）。優先恢復：深呼吸、輕量有氧、充足睡眠。' })
   }
 
-  // 醫療
+  // 醫療（照給）
   if (systems.hormonal.signals.some(s => s.includes('皮質醇') || s.includes('睪固酮') || s.includes('CRP'))) {
     recs.push({ priority: 'medium', category: 'medical', message: '血檢荷爾蒙指標異常，建議追蹤複檢並諮詢醫師。' })
   }
 
-  // 軌跡下滑
+  // 軌跡下滑 — peak_week 時不發「建議停練 1-2 天」
   if (trajectory === 'declining') {
-    recs.push({ priority: 'medium', category: 'training', message: '恢復趨勢持續下滑，建議主動安排 1-2 天輕量或休息日，避免累積疲勞惡化。' })
+    if (isPeakWeek) {
+      recs.push({ priority: 'low', category: 'training', message: 'Peak Week 期間恢復趨勢下滑屬預期，留意主觀感受並加強恢復措施。' })
+    } else if (!isCompetition) {
+      recs.push({ priority: 'medium', category: 'training', message: '恢復趨勢持續下滑，建議主動安排 1-2 天輕量或休息日，避免累積疲勞惡化。' })
+    }
   }
 
   return recs
@@ -772,7 +801,7 @@ export function generateRecoveryAssessment(input: RecoveryInput): RecoveryAssess
 
   // ── 多系統評估 ──
   const neural = assessNeuralRecovery(current, baseline)
-  const muscular = assessMuscularRecovery(current, trainingLogs)
+  const muscular = assessMuscularRecovery(current, trainingLogs, input.prepPhase)
   const metabolic = assessMetabolicRecovery(current, input.dietDurationWeeks ?? null, input.inLutealPhase ?? false)
   const hormonal = assessHormonalRecovery(current, labResults, input.inMenstruation ?? false)
   const psychological = assessPsychologicalRecovery(current)
@@ -842,7 +871,7 @@ export function generateRecoveryAssessment(input: RecoveryInput): RecoveryAssess
   }
 
   // ── 建議 ──
-  const recommendations = generateRecommendations(systems, overtrainingRisk, autonomicBalance, trajectory)
+  const recommendations = generateRecommendations(systems, overtrainingRisk, autonomicBalance, trajectory, input.prepPhase)
 
   return {
     score,

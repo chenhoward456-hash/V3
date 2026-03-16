@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     const { data: client } = await supabase
       .from('clients')
-      .select('id, gender, diet_start_date')
+      .select('id, gender, diet_start_date, prep_phase, competition_enabled')
       .eq('unique_code', clientId)
       .single()
 
@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
         status: l.status as 'normal' | 'attention' | 'alert',
       })),
       dietDurationWeeks,
+      prepPhase: client.prep_phase,
     }
 
     const assessment = generateRecoveryAssessment(input)
