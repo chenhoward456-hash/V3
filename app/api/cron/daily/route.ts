@@ -237,7 +237,7 @@ export async function GET(request: NextRequest) {
           .from('clients')
           .select('name, competition_date')
           .eq('is_active', true)
-          .eq('competition_enabled', true)
+          .in('client_mode', ['bodybuilding', 'athletic'])
           .not('competition_date', 'is', null)
         const urgentComp = (compClients || []).filter((c: { name: string; competition_date: string }) => {
           const days = daysUntilDateTW(c.competition_date)

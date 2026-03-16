@@ -45,6 +45,16 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const ip = getIP(request)
 
+  // ===== PWA 啟動重導 =====
+  // 當 PWA 從主畫面開啟時（start_url: "/?pwa=1"），
+  // 讀取 cookie 中的 clientId，直接 302 到他的儀表板，零閃爍
+  if (pathname === '/' && request.nextUrl.searchParams.get('pwa') === '1') {
+    const savedClientId = request.cookies.get('hp_client_id')?.value
+    if (savedClientId && /^[a-zA-Z0-9_-]{1,20}$/.test(savedClientId)) {
+      return NextResponse.redirect(new URL(`/c/${savedClientId}`, request.url))
+    }
+  }
+
   // ===== API rate limiting =====
   if (pathname.startsWith('/api/')) {
     // 敏感 API：嚴格限制（每 IP 每分鐘 20 次）
@@ -163,5 +173,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/:path*'],
+  matcher: ['/', '/admin/:path*', '/api/:path*'],
 }

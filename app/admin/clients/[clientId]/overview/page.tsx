@@ -12,6 +12,7 @@ import { FileText } from 'lucide-react'
 import { daysUntilDateTW } from '@/lib/date-utils'
 import { TRAINING_TYPES, isWeightTraining } from '@/components/client/types'
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
+import { isCompetitionMode, isHealthMode, PHASE_LABELS } from '@/lib/client-mode'
 
 const LabNutritionAdviceCard = dynamic(() => import('@/components/client/LabNutritionAdviceCard'), { ssr: false })
 const LabInsightsCard = dynamic(() => import('@/components/client/LabInsightsCard'), { ssr: false })
@@ -272,10 +273,10 @@ export default function ClientOverview() {
     const hasHighRPE = recentRPELogs.length >= 3 && recentRPELogs.every((t: any) => t.rpe > 8.5)
     return generateSupplementSuggestions(latestLabs, {
       gender: client?.gender,
-      isCompetitionPrep: !!client?.competition_enabled,
+      isCompetitionPrep: isCompetitionMode(client?.client_mode),
       hasHighRPE,
       goalType: client?.goal_type || null,
-      isHealthMode: !!client?.health_mode_enabled,
+      isHealthMode: isHealthMode(client?.client_mode),
       genetics: {
         mthfr: client?.gene_mthfr,
         apoe: client?.gene_apoe,
@@ -368,7 +369,7 @@ export default function ClientOverview() {
 
   // ===== 備賽巨量營養素趨勢 =====
   const macroTrend = useMemo(() => {
-    if (!client?.competition_enabled || !nutritionLogs.length) return { calories: [], carbs: [], fat: [] }
+    if (!isCompetitionMode(client?.client_mode) || !nutritionLogs.length) return { calories: [], carbs: [], fat: [] }
     const rangeDays = parseInt(dateRange)
     const now = new Date()
     const rangeStart = new Date(now); rangeStart.setDate(now.getDate() - (rangeDays - 1))
@@ -394,7 +395,7 @@ export default function ClientOverview() {
         脂肪: l.fat_grams,
       }))
     return { calories, carbs, fat }
-  }, [nutritionLogs, client?.competition_enabled, dateRange])
+  }, [nutritionLogs, client?.client_mode, dateRange])
 
   // ===== 巨量營養素偏差報告 =====
   const macroDeviation = useMemo(() => {
@@ -614,7 +615,7 @@ export default function ClientOverview() {
     }
 
     // 備賽巨量摘要
-    if (client?.competition_enabled) {
+    if (isCompetitionMode(client?.client_mode)) {
       const macroParts: string[] = []
       if (avgCalories != null) macroParts.push(`熱量 ${avgCalories}kcal${client?.calories_target ? `/${client.calories_target}` : ''}`)
       if (avgCarbs != null) macroParts.push(`碳水 ${avgCarbs}g${client?.carbs_target ? `/${client.carbs_target}` : ''}`)
@@ -704,12 +705,12 @@ export default function ClientOverview() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold text-gray-900">{client.name} — 學員總覽</h1>
-                  {client.competition_enabled && client.competition_date && (() => {
+                  {isCompetitionMode(client.client_mode) && client.competition_date && (() => {
                     const d = daysUntilDateTW(client.competition_date)
                     return d > 0 ? <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${d <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {d}天</span> : null
                   })()}
                 </div>
-                <p className="text-xs text-gray-500">{client.age}歲 · {client.gender}{client.competition_enabled ? ` · ${({ off_season: '非賽季', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' } as Record<string, string>)[client.prep_phase || ''] || ''}` : ''}</p>
+                <p className="text-xs text-gray-500">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) ? ` · ${PHASE_LABELS[client.prep_phase || ''] || ''}` : ''}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -757,13 +758,13 @@ export default function ClientOverview() {
               <div>
                 <h2 className="text-base font-bold text-gray-900">{client.name} — 快速摘要</h2>
                 <p className="text-xs text-gray-500">
-                  {client.competition_enabled && client.competition_date && (() => {
+                  {isCompetitionMode(client.client_mode) && client.competition_date && (() => {
                     const d = daysUntilDateTW(client.competition_date)
                     return d > 0 ? `🏆 距比賽 ${d} 天 · ${
-                      (({ off_season: '非賽季', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' } as Record<string, string>)[client.prep_phase || ''] || client.prep_phase || '')
+                      (PHASE_LABELS[client.prep_phase || ''] || client.prep_phase || '')
                     }` : '比賽已結束'
                   })()}
-                  {!client.competition_enabled && (client.health_goals || `${client.age}歲 · ${client.gender}`)}
+                  {!isCompetitionMode(client.client_mode) && (client.health_goals || `${client.age}歲 · ${client.gender}`)}
                 </p>
               </div>
             </div>
@@ -913,7 +914,7 @@ export default function ClientOverview() {
                 {client.water_target && <p className="text-xs text-gray-400">目標 {client.water_target}ml</p>}
               </div>
             )}
-            {client.competition_enabled && weeklyReport.avgCalories != null && (
+            {isCompetitionMode(client.client_mode) && weeklyReport.avgCalories != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">🔥 平均熱量</p>
                 <p className={`text-2xl font-bold ${client.calories_target && weeklyReport.avgCalories >= client.calories_target * 0.9 && weeklyReport.avgCalories <= client.calories_target * 1.1 ? 'text-green-600' : 'text-orange-600'}`}>
@@ -922,7 +923,7 @@ export default function ClientOverview() {
                 {client.calories_target && <p className="text-xs text-gray-400">目標 {client.calories_target}kcal</p>}
               </div>
             )}
-            {client.competition_enabled && weeklyReport.avgCarbs != null && (
+            {isCompetitionMode(client.client_mode) && weeklyReport.avgCarbs != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">🍚 平均碳水</p>
                 <p className={`text-2xl font-bold ${client.carbs_target && weeklyReport.avgCarbs >= client.carbs_target * 0.9 && weeklyReport.avgCarbs <= client.carbs_target * 1.1 ? 'text-green-600' : 'text-amber-600'}`}>
@@ -931,7 +932,7 @@ export default function ClientOverview() {
                 {client.carbs_target && <p className="text-xs text-gray-400">目標 {client.carbs_target}g</p>}
               </div>
             )}
-            {client.competition_enabled && weeklyReport.avgFat != null && (
+            {isCompetitionMode(client.client_mode) && weeklyReport.avgFat != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">🥑 平均脂肪</p>
                 <p className={`text-2xl font-bold ${client.fat_target && weeklyReport.avgFat >= client.fat_target * 0.9 && weeklyReport.avgFat <= client.fat_target * 1.1 ? 'text-green-600' : 'text-yellow-600'}`}>
@@ -1243,7 +1244,7 @@ export default function ClientOverview() {
         )}
 
         {/* ===== 備賽巨量營養素趨勢 ===== */}
-        {client.competition_enabled && (macroTrend.calories.length >= 2 || macroTrend.carbs.length >= 2 || macroTrend.fat.length >= 2) && (
+        {isCompetitionMode(client.client_mode) && (macroTrend.calories.length >= 2 || macroTrend.carbs.length >= 2 || macroTrend.fat.length >= 2) && (
           <div className="bg-white rounded-2xl shadow-sm p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">🏆 備賽巨量營養素趨勢</h3>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -139,7 +139,8 @@ export interface RecoveryInput {
   dietDurationWeeks?: number | null     // 減脂持續週數
   inLutealPhase?: boolean               // 女性黃體期
   inMenstruation?: boolean              // 經期中
-  prepPhase?: 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | null
+  prepPhase?: 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery'
+    | 'training_camp' | 'weight_cut' | 'weigh_in' | 'rebound' | null
 }
 
 // ═══════════════════════════════════════
@@ -321,6 +322,16 @@ function assessMuscularRecovery(
 
   const isPeakWeek = prepPhase === 'peak_week'
   const isCompetition = prepPhase === 'competition'
+  const isWeighIn = prepPhase === 'weigh_in'
+  const isRebound = prepPhase === 'rebound'
+  const isWeightCut = prepPhase === 'weight_cut'
+
+  // weigh_in: skip all penalty (same as competition)
+  // rebound: treat like recovery
+  if (isWeighIn) {
+    signals.push('秤重日：跳過所有肌肉恢復 penalty')
+    return { score: clamp(score, 0, 100), state: scoreToState(clamp(score, 0, 100)), signals }
+  }
 
   // 近 7 天訓練負荷
   const last7 = trainingLogs.slice(-7)
@@ -328,9 +339,10 @@ function assessMuscularRecovery(
   const highRPE = last7.filter(t => t.rpe != null && t.rpe >= 8).length
 
   // peak_week: 7 天訓練頻率 penalty 減半；competition: 跳過
+  // weight_cut: frequency penalty halved (similar to peak_week but encourages taper)
   if (!isCompetition) {
-    const freqPenaltyMultiplier = isPeakWeek ? 0.5 : 1
-    if (trainDays >= 6) { score -= Math.round(25 * freqPenaltyMultiplier); if (!isPeakWeek) signals.push(`近 7 天訓練 ${trainDays} 天，肌肉恢復不足`); else signals.push(`Peak Week 期間高頻訓練屬預期（${trainDays} 天/週）`) }
+    const freqPenaltyMultiplier = (isPeakWeek || isWeightCut) ? 0.5 : 1
+    if (trainDays >= 6) { score -= Math.round(25 * freqPenaltyMultiplier); if (!isPeakWeek && !isWeightCut) signals.push(`近 7 天訓練 ${trainDays} 天，肌肉恢復不足`); else signals.push(`${isPeakWeek ? 'Peak Week' : '降體重'}期間高頻訓練屬預期（${trainDays} 天/週）`) }
     else if (trainDays >= 5) { score -= Math.round(15 * freqPenaltyMultiplier); signals.push(`近 7 天訓練 ${trainDays} 天`) }
     else if (trainDays <= 2) { score += 15; signals.push(`近 7 天僅訓練 ${trainDays} 天，恢復充足`) }
   }
@@ -338,8 +350,8 @@ function assessMuscularRecovery(
   if (highRPE >= 4) { score -= 20; signals.push(`${highRPE} 次高強度（RPE≥8），肌肉疲勞累積`) }
   else if (highRPE >= 3) { score -= 10; signals.push(`${highRPE} 次高強度訓練`) }
 
-  // 連續訓練天數（不休息）— peak_week/competition 時跳過（耗竭期/比賽日本來就要連續練）
-  if (!isPeakWeek && !isCompetition) {
+  // 連續訓練天數（不休息）— peak_week/competition/weight_cut/weigh_in/rebound 時跳過
+  if (!isPeakWeek && !isCompetition && !isWeightCut && !isRebound) {
     const sorted = [...trainingLogs].sort((a, b) => b.date.localeCompare(a.date))
     let consecutiveDays = 0
     for (const t of sorted) {
@@ -720,6 +732,21 @@ function generateRecommendations(
 
   const isPeakWeek = prepPhase === 'peak_week'
   const isCompetition = prepPhase === 'competition'
+  const isWeighIn = prepPhase === 'weigh_in'
+  const isRebound = prepPhase === 'rebound'
+
+  // weigh_in: force rest recommendation
+  if (isWeighIn) {
+    recs.push({ priority: 'high', category: 'training', message: '秤重日：強制休息，秤重後立刻開始回補。' })
+    return recs
+  }
+
+  // rebound: supercompensation nutrition recommendation
+  if (isRebound) {
+    recs.push({ priority: 'high', category: 'nutrition', message: '超補償期：碳水 6-10g/kg，快速回補肌醣與體液。大量碳水 + 水 + 電解質。' })
+    recs.push({ priority: 'medium', category: 'training', message: '超補償期：以主動恢復為主，避免高強度訓練。' })
+    return recs
+  }
 
   // 睡眠（peak_week/competition 照給）
   if (systems.hormonal.score < 50 && systems.hormonal.signals.some(s => s.includes('睡眠'))) {

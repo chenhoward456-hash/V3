@@ -148,6 +148,7 @@ function makeClient(overrides: Record<string, any> = {}) {
     body_composition_enabled: true,
     gender: '男性',
     goal_type: 'cut',
+    client_mode: 'standard',
     health_mode_enabled: false,
     quarterly_cycle_start: null,
     subscription_tier: 'coached',
@@ -632,6 +633,7 @@ describe('GET /api/cron/weekly', () => {
       name: 'Health Mode Client',
       nutrition_enabled: false,
       body_composition_enabled: false,
+      client_mode: 'health',
       health_mode_enabled: true,
       quarterly_cycle_start: ninetyDaysAgo.toISOString().split('T')[0],
     })]
@@ -655,6 +657,7 @@ describe('GET /api/cron/weekly', () => {
       name: 'Reset Fail Client',
       nutrition_enabled: false,
       body_composition_enabled: false,
+      client_mode: 'health',
       health_mode_enabled: true,
       quarterly_cycle_start: ninetyDaysAgo.toISOString().split('T')[0],
     })]
@@ -693,6 +696,7 @@ describe('GET /api/cron/weekly', () => {
       name: 'Not Due Client',
       nutrition_enabled: false,
       body_composition_enabled: false,
+      client_mode: 'health',
       health_mode_enabled: true,
       quarterly_cycle_start: fiftyDaysAgo.toISOString().split('T')[0],
     })]
@@ -937,6 +941,7 @@ describe('GET /api/cron/weekly', () => {
       name: 'Cycle Expiring Client',
       nutrition_enabled: false,
       body_composition_enabled: false,
+      client_mode: 'health',
       health_mode_enabled: true,
       quarterly_cycle_start: eightyFiveDaysAgo.toISOString().split('T')[0],
     })]

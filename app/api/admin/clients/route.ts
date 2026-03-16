@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const ALLOWED_CREATE_FIELDS = [
       'unique_code', 'name', 'age', 'gender', 'status', 'expires_at', 'is_active', 'subscription_tier',
       'nutrition_enabled', 'supplement_enabled', 'wellness_enabled', 'training_enabled',
-      'body_composition_enabled', 'lab_enabled', 'ai_chat_enabled', 'competition_enabled', 'health_mode_enabled', 'simple_mode',
+      'body_composition_enabled', 'lab_enabled', 'ai_chat_enabled', 'competition_enabled', 'health_mode_enabled', 'simple_mode', 'client_mode',
       'target_weight', 'body_fat_target', 'target_date', 'competition_date', 'prep_phase',
       'goal_type', 'activity_profile', 'diet_start_date',
       'calories_target', 'protein_target', 'carbs_target', 'fat_target', 'water_target',
@@ -172,7 +172,7 @@ export async function PUT(request: NextRequest) {
     const ALLOWED_CLIENT_FIELDS = [
       'name', 'age', 'gender', 'status', 'expires_at', 'is_active', 'subscription_tier',
       'nutrition_enabled', 'supplement_enabled', 'wellness_enabled', 'training_enabled',
-      'body_composition_enabled', 'lab_enabled', 'ai_chat_enabled', 'competition_enabled', 'health_mode_enabled', 'simple_mode',
+      'body_composition_enabled', 'lab_enabled', 'ai_chat_enabled', 'competition_enabled', 'health_mode_enabled', 'simple_mode', 'client_mode',
       'target_weight', 'body_fat_target', 'target_date', 'competition_date', 'prep_phase',
       'goal_type', 'activity_profile', 'diet_start_date',
       'calories_target', 'protein_target', 'carbs_target', 'fat_target', 'water_target',

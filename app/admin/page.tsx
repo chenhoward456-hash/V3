@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2 } from 'lucide-react'
 import { daysUntilDateTW } from '@/lib/date-utils'
+import { isCompetitionMode, PHASE_LABELS } from '@/lib/client-mode'
 
 interface Client {
   id: string
@@ -24,6 +25,7 @@ interface Client {
   supplement_enabled: boolean
   lab_enabled: boolean
   competition_enabled: boolean
+  client_mode: string
   competition_date: string | null
   prep_phase: string | null
   coach_weekly_note: string | null
@@ -182,7 +184,7 @@ export default function AdminDashboard() {
     const needAttention = clients.filter(c => c.status !== 'normal').length
     const rates = Object.values(clientStats).filter(s => s.supplementCount > 0).map(s => s.weekRate)
     const avgCompliance = rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0
-    const competitionCount = clients.filter(c => c.competition_enabled).length
+    const competitionCount = clients.filter(c => isCompetitionMode(c.client_mode)).length
     const coachedCount = clients.filter(c => c.subscription_tier === 'coached').length
     const selfManagedCount = clients.filter(c => c.subscription_tier === 'self_managed').length
     const freeCount = clients.filter(c => c.subscription_tier === 'free').length
@@ -194,7 +196,7 @@ export default function AdminDashboard() {
   // === 備賽倒數（距比賽最近的排最前） ===
   const competitionClients = useMemo(() => {
     return clients
-      .filter(c => c.competition_enabled && c.competition_date)
+      .filter(c => isCompetitionMode(c.client_mode) && c.competition_date)
       .map(c => {
         const daysLeft = daysUntilDateTW(c.competition_date!)
         return { ...c, daysLeft }
@@ -306,19 +308,19 @@ export default function AdminDashboard() {
     if (search.trim()) { const q = search.trim().toLowerCase(); list = list.filter(c => c.name.toLowerCase().includes(q)) }
     if (statusFilter === 'normal') list = list.filter(c => c.status === 'normal')
     else if (statusFilter === 'attention') list = list.filter(c => c.status !== 'normal')
-    else if (statusFilter === 'competition') list = list.filter(c => c.competition_enabled)
+    else if (statusFilter === 'competition') list = list.filter(c => isCompetitionMode(c.client_mode))
     else if (statusFilter === 'coached') list = list.filter(c => c.subscription_tier === 'coached')
     else if (statusFilter === 'self_managed') list = list.filter(c => c.subscription_tier === 'self_managed')
     else if (statusFilter === 'free') list = list.filter(c => c.subscription_tier === 'free')
 
     list.sort((a, b) => {
       // 備賽選手永遠排最前（按比賽日期近的排前面）
-      const aComp = a.competition_enabled && a.competition_date ? new Date(a.competition_date).getTime() : Infinity
-      const bComp = b.competition_enabled && b.competition_date ? new Date(b.competition_date).getTime() : Infinity
-      const aIsComp = a.competition_enabled ? 0 : 1
-      const bIsComp = b.competition_enabled ? 0 : 1
+      const aComp = isCompetitionMode(a.client_mode) && a.competition_date ? new Date(a.competition_date).getTime() : Infinity
+      const bComp = isCompetitionMode(b.client_mode) && b.competition_date ? new Date(b.competition_date).getTime() : Infinity
+      const aIsComp = isCompetitionMode(a.client_mode) ? 0 : 1
+      const bIsComp = isCompetitionMode(b.client_mode) ? 0 : 1
       if (aIsComp !== bIsComp) return aIsComp - bIsComp
-      if (a.competition_enabled && b.competition_enabled && aComp !== bComp) return aComp - bComp
+      if (isCompetitionMode(a.client_mode) && isCompetitionMode(b.client_mode) && aComp !== bComp) return aComp - bComp
 
       let cmp = 0; const sA = clientStats[a.id]; const sB = clientStats[b.id]
       if (sortKey === 'name') cmp = a.name.localeCompare(b.name, 'zh-TW')
@@ -343,7 +345,7 @@ export default function AdminDashboard() {
   const getCheckupLabel = (c: Client) => { if (!c.next_checkup_date) return { text: '未設定', color: 'text-gray-400' }; const t = new Date(); t.setHours(0,0,0,0); const ck = new Date(c.next_checkup_date); ck.setHours(0,0,0,0); const d = Math.floor((ck.getTime()-t.getTime())/86400000); if (d<0) return { text: `逾期 ${Math.abs(d)}天`, color: 'text-red-600 font-medium' }; if (d<=7) return { text: c.next_checkup_date, color: 'text-orange-600 font-medium' }; return { text: c.next_checkup_date, color: 'text-gray-600' } }
   const getTrainingEmoji = (t: string) => ({ push:'🫸',pull:'🫷',legs:'🦵',full_body:'🏋️',cardio:'🏃',rest:'😴',chest:'💪',shoulder:'🏔️',arms:'💪🏼' }[t] || '')
   const getComplianceColor = (r: number) => r >= 80 ? 'text-green-600' : r >= 50 ? 'text-yellow-600' : 'text-red-600'
-  const getPrepPhaseLabel = (p: string | null) => ({ off_season: '非賽季', bulk: '增肌期', cut: '減脂期', peak_week: 'Peak Week', competition: '比賽日', recovery: '賽後恢復' }[p || ''] || p || '')
+  const getPrepPhaseLabel = (p: string | null) => PHASE_LABELS[p || ''] || p || ''
   const getLineStatus = (c: Client) => { if (!c.line_user_id) return { label: '', color: '' }; if (!c.last_line_activity) return { label: 'LINE 已綁定', color: 'text-gray-400' }; const mins = Math.floor((Date.now() - new Date(c.last_line_activity).getTime()) / 60000); if (mins < 5) return { label: '在線', color: 'text-green-500' }; if (mins < 60) return { label: `${mins}分鐘前`, color: 'text-green-400' }; const hrs = Math.floor(mins / 60); if (hrs < 24) return { label: `${hrs}小時前`, color: 'text-gray-400' }; return { label: `${Math.floor(hrs/24)}天前`, color: 'text-gray-400' } }
   const getTierBadge = (tier: string) => {
     if (tier === 'coached') return { label: '2999', color: 'bg-purple-100 text-purple-700', dot: 'bg-purple-500' }
@@ -545,7 +547,7 @@ export default function AdminDashboard() {
             <>
             {/* 手機版卡片 */}
             <div className="sm:hidden divide-y divide-gray-100">
-              {paginatedClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = client.competition_enabled && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); return (
+              {paginatedClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = isCompetitionMode(client.client_mode) && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); return (
                 <div key={client.id} className="px-4 py-4">
                   <Link href={`/admin/clients/${client.id}/overview`} className="block hover:bg-gray-50 active:bg-gray-100 transition-colors rounded-lg -mx-2 px-2 py-1">
                     <div className="flex items-center justify-between mb-2">
@@ -553,7 +555,7 @@ export default function AdminDashboard() {
                         <span className="text-base font-semibold text-gray-900">{client.name}</span>
                         <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${tier.color}`}>{tier.label}</span>
                         {client.line_user_id && <span className={`text-[10px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? '🟢' : '💬'}</span>}
-                        {client.competition_enabled && daysToComp && daysToComp > 0 && (
+                        {isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && (
                           <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                             🏆 {daysToComp}天
                           </span>
@@ -593,9 +595,9 @@ export default function AdminDashboard() {
             </div>
             {/* 桌面版表格 */}
             <div className="hidden sm:block overflow-x-auto"><table className="min-w-full"><thead><tr className="border-b border-gray-100"><th onClick={() => handleSort('name')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">學員 <SortIcon column="name" /></th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">方案</th><th onClick={() => handleSort('status')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">狀態 <SortIcon column="status" /></th><th onClick={() => handleSort('compliance')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">本週服從率 <SortIcon column="compliance" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">今日進度</th><th onClick={() => handleSort('lastActivity')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">最後活動 <SortIcon column="lastActivity" /></th><th onClick={() => handleSort('nextCheckup')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">下次回檢 <SortIcon column="nextCheckup" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th></tr></thead>
-            <tbody className="divide-y divide-gray-50">{paginatedClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = client.competition_enabled && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); return (
+            <tbody className="divide-y divide-gray-50">{paginatedClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = isCompetitionMode(client.client_mode) && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); return (
               <tr key={client.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-blue-600"><div className="text-sm font-medium text-gray-900">{client.name}{client.line_user_id && <span className={`ml-1 text-[10px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? '🟢' : '💬'}</span>}{client.competition_enabled && daysToComp && daysToComp > 0 && <span className={`ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingEmoji(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className="ml-1" title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'🥗':'🍔'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{client.competition_enabled && ` · ${getPrepPhaseLabel(client.prep_phase)}`}<span className="ml-1.5 inline-flex gap-0.5">{client.body_composition_enabled&&<span title="體重/體態">⚖️</span>}{client.wellness_enabled&&<span title="每日感受">😊</span>}{client.nutrition_enabled&&<span title="飲食">🥗</span>}{client.training_enabled&&<span title="訓練">🏋️</span>}{client.supplement_enabled&&<span title="補品">💊</span>}{client.lab_enabled&&<span title="血檢">🩸</span>}</span></div></Link></td>
+                <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-blue-600"><div className="text-sm font-medium text-gray-900">{client.name}{client.line_user_id && <span className={`ml-1 text-[10px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? '🟢' : '💬'}</span>}{isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && <span className={`ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingEmoji(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className="ml-1" title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'🥗':'🍔'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) && ` · ${getPrepPhaseLabel(client.prep_phase)}`}<span className="ml-1.5 inline-flex gap-0.5">{client.body_composition_enabled&&<span title="體重/體態">⚖️</span>}{client.wellness_enabled&&<span title="每日感受">😊</span>}{client.nutrition_enabled&&<span title="飲食">🥗</span>}{client.training_enabled&&<span title="訓練">🏋️</span>}{client.supplement_enabled&&<span title="補品">💊</span>}{client.lab_enabled&&<span title="血檢">🩸</span>}</span></div></Link></td>
                 <td className="px-4 py-4"><div><span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${tier.color}`}>{tier.label}</span>{expiry && <p className={`text-[10px] mt-1 ${expiry.color}`}>{expiry.text}</p>}</div></td>
                 <td className="px-5 py-4"><span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'需要關注'}</span></td>
                 <td className="px-5 py-4">{stat?.supplementCount>0?<span className={`text-sm font-medium ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span>:<span className="text-sm text-gray-400">--</span>}</td>

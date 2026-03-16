@@ -3,6 +3,7 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
 import { isWeightTraining } from '@/components/client/types'
 import { verifyAdminSession } from '@/lib/auth-middleware'
+import { isCompetitionMode } from '@/lib/client-mode'
 
 export const maxDuration = 60
 
@@ -312,7 +313,7 @@ export async function GET(request: NextRequest) {
     let applied = false
     let coachLocked = false
     const isSelfManaged = client.subscription_tier === 'self_managed'
-    const isCompetitionClient = !!client.competition_enabled
+    const isCompetitionClient = isCompetitionMode(client.client_mode)
     // autoApply 模式（頁面自動觸發）不受 TDEE 異常限制 — 引擎已有安全上下限保護
     // TDEE 異常警告仍保留在 warnings 中供教練參考
     // insufficient_data 除外（數據不足不應自動套用）

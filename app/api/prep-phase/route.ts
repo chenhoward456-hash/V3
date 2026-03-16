@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createErrorResponse, createSuccessResponse, rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
+import { isCompetitionMode, validatePrepPhase, getValidPhases } from '@/lib/client-mode'
 
 const supabase = createServiceSupabase()
-
-const VALID_PHASES = ['off_season', 'bulk', 'cut', 'peak_week', 'competition', 'recovery'] as const
 
 export async function PUT(request: NextRequest) {
   const ip = getClientIP(request)
@@ -19,14 +18,10 @@ export async function PUT(request: NextRequest) {
       return createErrorResponse('缺少必要欄位', 400)
     }
 
-    if (!VALID_PHASES.includes(prepPhase)) {
-      return createErrorResponse('無效的備賽階段', 400)
-    }
-
     // 用 unique_code 找到客戶
     const { data: client } = await supabase
       .from('clients')
-      .select('id, competition_enabled')
+      .select('id, client_mode, competition_enabled')
       .eq('unique_code', clientId)
       .single()
 
@@ -34,8 +29,13 @@ export async function PUT(request: NextRequest) {
       return createErrorResponse('找不到客戶', 404)
     }
 
-    if (!client.competition_enabled) {
+    if (!isCompetitionMode(client.client_mode)) {
       return createErrorResponse('此客戶未啟用備賽模式', 400)
+    }
+
+    if (!validatePrepPhase(prepPhase, client.client_mode)) {
+      const validPhases = getValidPhases(client.client_mode)
+      return createErrorResponse(`無效的備賽階段。有效階段：${validPhases.join(', ')}`, 400)
     }
 
     const { error } = await supabase

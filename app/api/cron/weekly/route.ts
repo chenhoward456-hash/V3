@@ -19,6 +19,7 @@ import { isWeightTraining } from '@/components/client/types'
 import { pushMessage } from '@/lib/line'
 import { generateWeeklyAIReport, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
+import { isHealthMode } from '@/lib/client-mode'
 
 export const maxDuration = 300
 
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     // ── 2. Health Mode 90 天季度自動重置 ──
     for (const client of clients) {
-      if (!client.health_mode_enabled || !client.quarterly_cycle_start) continue
+      if (!isHealthMode(client.client_mode) || !client.quarterly_cycle_start) continue
 
       const start = new Date(client.quarterly_cycle_start)
       const elapsed = Math.floor((today.getTime() - start.getTime()) / 86400000)
@@ -363,7 +364,7 @@ export async function GET(request: NextRequest) {
       }
 
       // 季度週期到期
-      if (client.health_mode_enabled && client.quarterly_cycle_start) {
+      if (isHealthMode(client.client_mode) && client.quarterly_cycle_start) {
         const elapsed = Math.floor((today.getTime() - new Date(client.quarterly_cycle_start).getTime()) / 86400000)
         if (elapsed >= 80 && elapsed < 90) {
           alertItems.push(`${client.name}：季度週期剩餘 ${90 - elapsed} 天，提醒安排血檢`)

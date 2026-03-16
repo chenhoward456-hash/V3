@@ -2,7 +2,7 @@
   "name": "Howard Protocol 健康管理",
   "short_name": "Howard",
   "description": "數據驅動的體態與健康管理系統 — 體重趨勢、營養追蹤、AI 分析",
-  "start_url": "/",
+  "start_url": "/?pwa=1",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

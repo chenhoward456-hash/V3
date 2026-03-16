@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { getLabAdvice } from '@/components/client/types'
 import { generateSupplementSuggestions, type SupplementSuggestion } from '@/lib/supplement-engine'
+import { isCompetitionMode, isHealthMode } from '@/lib/client-mode'
 
 // ---------------------------------------------------------------------------
 // Types (inline for standalone page)
@@ -24,6 +25,7 @@ interface ClientData {
   gene_depression_risk?: 'LL' | 'SL' | 'SS' | null
   gene_notes?: string
   competition_enabled?: boolean
+  client_mode?: string
   prep_phase?: string
   goal_type?: string
   health_mode_enabled?: boolean
@@ -212,10 +214,10 @@ export default function HealthReportPage() {
     if (!client) return []
     return generateSupplementSuggestions(latestLabs, {
       gender: client.gender as '男性' | '女性',
-      isCompetitionPrep: !!client.competition_enabled,
+      isCompetitionPrep: isCompetitionMode(client.client_mode),
       hasHighRPE,
       goalType: (client.goal_type as 'cut' | 'bulk' | null) || null,
-      isHealthMode: !!client.health_mode_enabled,
+      isHealthMode: isHealthMode(client.client_mode),
       genetics: {
         mthfr: client.gene_mthfr,
         apoe: client.gene_apoe,

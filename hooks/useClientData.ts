@@ -12,6 +12,7 @@ export interface Client {
   is_active: boolean
   expires_at: string | null
   subscription_tier: string | null
+  client_mode: string
   competition_enabled: boolean
   health_mode_enabled: boolean
   body_composition_enabled: boolean

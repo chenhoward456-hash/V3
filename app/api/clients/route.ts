@@ -3,6 +3,7 @@ import { createServiceSupabase } from '@/lib/supabase'
 import crypto from 'crypto'
 import { validateDate } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP, sanitizeTextField } from '@/lib/auth-middleware'
+import { isCompetitionMode } from '@/lib/client-mode'
 import { calculateInitialTargets } from '@/lib/nutrition-engine'
 import { createLogger } from '@/lib/logger'
 import { writeAuditLog } from '@/lib/audit'
@@ -414,7 +415,7 @@ export async function PUT(request: NextRequest) {
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('id, is_active, competition_enabled')
+      .select('id, is_active, client_mode, competition_enabled')
       .eq(isUUID ? 'id' : 'unique_code', clientId)
       .single()
 
@@ -448,7 +449,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // 備賽模式下允許學員同步更新 competition_date
-    if (competition_date && typeof competition_date === 'string' && client.competition_enabled) {
+    if (competition_date && typeof competition_date === 'string' && isCompetitionMode(client.client_mode)) {
       const parsedCompDate = new Date(competition_date)
       if (!isNaN(parsedCompDate.getTime()) && parsedCompDate > new Date()) {
         updates.competition_date = competition_date

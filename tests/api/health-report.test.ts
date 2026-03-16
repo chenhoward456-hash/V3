@@ -136,6 +136,7 @@ describe('GET /api/health-report', () => {
             data: {
               id: 'c1',
               gender: 'male',
+              client_mode: 'health',
               health_mode_enabled: true,
               quarterly_cycle_start: '2024-01-01',
               unique_code: 'CORRECT_CODE',
@@ -154,7 +155,7 @@ describe('GET /api/health-report', () => {
     expect(json.error).toBeDefined()
   })
 
-  it('returns 403 when health_mode_enabled is false', async () => {
+  it('returns 403 when client_mode is not health', async () => {
     mockFrom.mockImplementation(() => ({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -162,6 +163,7 @@ describe('GET /api/health-report', () => {
             data: {
               id: 'c1',
               gender: 'male',
+              client_mode: 'standard',
               health_mode_enabled: false,
               quarterly_cycle_start: '2024-01-01',
               unique_code: 'CODE123',
@@ -188,6 +190,7 @@ describe('GET /api/health-report', () => {
             data: {
               id: 'c1',
               gender: 'male',
+              client_mode: 'health',
               health_mode_enabled: true,
               quarterly_cycle_start: null,
               unique_code: 'CODE123',
@@ -235,6 +238,7 @@ describe('GET /api/health-report', () => {
                 data: {
                   id: 'c1',
                   gender: 'male',
+                  client_mode: 'health',
                   health_mode_enabled: true,
                   quarterly_cycle_start: '2024-01-01',
                   unique_code: 'CODE123',
@@ -293,6 +297,7 @@ describe('GET /api/health-report', () => {
                 data: {
                   id: 'c1',
                   gender: 'female',
+                  client_mode: 'health',
                   health_mode_enabled: true,
                   quarterly_cycle_start: '2024-01-15',
                   unique_code: 'MY_CODE',

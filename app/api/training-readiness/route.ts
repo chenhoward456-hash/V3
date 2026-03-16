@@ -17,6 +17,7 @@ import {
   extractHormoneLabs,
 } from '@/lib/training-mode-engine'
 import { calculateMetabolicStressScore } from '@/lib/nutrition-engine'
+import { isCompetitionMode } from '@/lib/client-mode'
 
 const supabaseAdmin = createServiceSupabase()
 
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     // 查客戶資料（含基因、目標、備賽階段、減脂起始日）
     const { data: client } = await supabaseAdmin
       .from('clients')
-      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, competition_enabled, diet_start_date, gender')
+      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, client_mode, competition_enabled, diet_start_date, gender')
       .eq('unique_code', clientId)
       .single()
 
@@ -116,7 +117,7 @@ export async function GET(request: NextRequest) {
 
     // ── 判斷是否啟用訓練模式建議 ──
     // 只對備賽模式或有明確目標的客戶顯示（一般客戶信號不足，容易只輸出 moderate）
-    const shouldRecommendMode = !!(client.competition_enabled || client.goal_type)
+    const shouldRecommendMode = !!(isCompetitionMode(client.client_mode) || client.goal_type)
 
     if (!shouldRecommendMode) {
       return NextResponse.json(advice)

@@ -126,6 +126,11 @@ describe('PUT /api/prep-phase', () => {
   })
 
   it('returns 400 for invalid prep phase value', async () => {
+    mockTableCalls['clients'] = {
+      data: { id: 'uuid-1', client_mode: 'bodybuilding', competition_enabled: true },
+      error: null,
+    }
+
     const req = makePutRequest({ clientId: 'ABC123', prepPhase: 'invalid_phase' })
     const res = await PUT(req)
     const json = await res.json()
@@ -145,14 +150,14 @@ describe('PUT /api/prep-phase', () => {
     expect(json.error).toBeDefined()
   })
 
-  it('returns 400 when competition_enabled is false', async () => {
+  it('returns 400 when client_mode is standard (not competition mode)', async () => {
     let clientsCallCount = 0
     mockSupabase.from.mockImplementation((table: string) => {
       if (table === 'clients') {
         clientsCallCount++
         if (clientsCallCount === 1) {
           return createMockQueryBuilder(
-            { id: 'uuid-1', competition_enabled: false },
+            { id: 'uuid-1', client_mode: 'standard', competition_enabled: false },
             null
           )
         }
@@ -169,7 +174,31 @@ describe('PUT /api/prep-phase', () => {
     expect(json.error).toBeDefined()
   })
 
-  it('updates prep phase successfully', async () => {
+  it('returns 400 when client_mode is health (not competition mode)', async () => {
+    let clientsCallCount = 0
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === 'clients') {
+        clientsCallCount++
+        if (clientsCallCount === 1) {
+          return createMockQueryBuilder(
+            { id: 'uuid-1', client_mode: 'health', health_mode_enabled: true, competition_enabled: false },
+            null
+          )
+        }
+        return createMockQueryBuilder(null, null)
+      }
+      return createMockQueryBuilder(null, null)
+    })
+
+    const req = makePutRequest({ clientId: 'ABC123', prepPhase: 'bulk' })
+    const res = await PUT(req)
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toBeDefined()
+  })
+
+  it('updates prep phase successfully for bodybuilding client', async () => {
     let clientsCallCount = 0
     mockSupabase.from.mockImplementation((table: string) => {
       if (table === 'clients') {
@@ -177,7 +206,7 @@ describe('PUT /api/prep-phase', () => {
         if (clientsCallCount === 1) {
           // Lookup
           return createMockQueryBuilder(
-            { id: 'uuid-1', competition_enabled: true },
+            { id: 'uuid-1', client_mode: 'bodybuilding', competition_enabled: true },
             null
           )
         }
@@ -196,7 +225,32 @@ describe('PUT /api/prep-phase', () => {
     expect(json.data.prepPhase).toBe('bulk')
   })
 
-  it('accepts all valid phase values', async () => {
+  it('updates prep phase successfully for athletic client', async () => {
+    let clientsCallCount = 0
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === 'clients') {
+        clientsCallCount++
+        if (clientsCallCount === 1) {
+          return createMockQueryBuilder(
+            { id: 'uuid-1', client_mode: 'athletic', competition_enabled: true },
+            null
+          )
+        }
+        return createMockQueryBuilder(null, null)
+      }
+      return createMockQueryBuilder(null, null)
+    })
+
+    const req = makePutRequest({ clientId: 'ABC123', prepPhase: 'weight_cut' })
+    const res = await PUT(req)
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(json.success).toBe(true)
+    expect(json.data.prepPhase).toBe('weight_cut')
+  })
+
+  it('accepts all valid bodybuilding phase values', async () => {
     const validPhases = ['off_season', 'bulk', 'cut', 'peak_week', 'competition', 'recovery']
 
     for (const phase of validPhases) {
@@ -210,7 +264,7 @@ describe('PUT /api/prep-phase', () => {
           clientsCallCount++
           if (clientsCallCount === 1) {
             return createMockQueryBuilder(
-              { id: 'uuid-1', competition_enabled: true },
+              { id: 'uuid-1', client_mode: 'bodybuilding', competition_enabled: true },
               null
             )
           }
@@ -226,6 +280,96 @@ describe('PUT /api/prep-phase', () => {
     }
   })
 
+  it('accepts all valid athletic phase values', async () => {
+    const validPhases = ['off_season', 'training_camp', 'weight_cut', 'weigh_in', 'rebound', 'competition', 'recovery']
+
+    for (const phase of validPhases) {
+      vi.clearAllMocks()
+      resetFromMock()
+      mockRateLimit.mockReturnValue({ allowed: true, remaining: 9 })
+
+      let clientsCallCount = 0
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'clients') {
+          clientsCallCount++
+          if (clientsCallCount === 1) {
+            return createMockQueryBuilder(
+              { id: 'uuid-1', client_mode: 'athletic', competition_enabled: true },
+              null
+            )
+          }
+          return createMockQueryBuilder(null, null)
+        }
+        return createMockQueryBuilder(null, null)
+      })
+
+      const req = makePutRequest({ clientId: 'ABC123', prepPhase: phase })
+      const res = await PUT(req)
+
+      expect(res.status).toBe(200)
+    }
+  })
+
+  it('rejects bodybuilding-only phases for athletic client', async () => {
+    const bodybuildingOnlyPhases = ['bulk', 'cut', 'peak_week']
+
+    for (const phase of bodybuildingOnlyPhases) {
+      vi.clearAllMocks()
+      resetFromMock()
+      mockRateLimit.mockReturnValue({ allowed: true, remaining: 9 })
+
+      let clientsCallCount = 0
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'clients') {
+          clientsCallCount++
+          if (clientsCallCount === 1) {
+            return createMockQueryBuilder(
+              { id: 'uuid-1', client_mode: 'athletic', competition_enabled: true },
+              null
+            )
+          }
+          return createMockQueryBuilder(null, null)
+        }
+        return createMockQueryBuilder(null, null)
+      })
+
+      const req = makePutRequest({ clientId: 'ABC123', prepPhase: phase })
+      const res = await PUT(req)
+
+      expect(res.status).toBe(400)
+    }
+  })
+
+  it('rejects athletic-only phases for bodybuilding client', async () => {
+    const athleticOnlyPhases = ['training_camp', 'weight_cut', 'weigh_in', 'rebound']
+
+    for (const phase of athleticOnlyPhases) {
+      vi.clearAllMocks()
+      resetFromMock()
+      mockRateLimit.mockReturnValue({ allowed: true, remaining: 9 })
+
+      let clientsCallCount = 0
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'clients') {
+          clientsCallCount++
+          if (clientsCallCount === 1) {
+            return createMockQueryBuilder(
+              { id: 'uuid-1', client_mode: 'bodybuilding', competition_enabled: true },
+              null
+            )
+          }
+          return createMockQueryBuilder(null, null)
+        }
+        return createMockQueryBuilder(null, null)
+      })
+
+      const req = makePutRequest({ clientId: 'ABC123', prepPhase: phase })
+      const res = await PUT(req)
+
+      expect(res.status).toBe(400)
+    }
+  })
+
   it('returns 500 when update fails', async () => {
     let clientsCallCount = 0
     mockSupabase.from.mockImplementation((table: string) => {
@@ -233,7 +377,7 @@ describe('PUT /api/prep-phase', () => {
         clientsCallCount++
         if (clientsCallCount === 1) {
           return createMockQueryBuilder(
-            { id: 'uuid-1', competition_enabled: true },
+            { id: 'uuid-1', client_mode: 'bodybuilding', competition_enabled: true },
             null
           )
         }

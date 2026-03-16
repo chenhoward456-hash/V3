@@ -58,6 +58,7 @@ export type GoalType = 'cut' | 'bulk'
 export type ActivityProfile = 'sedentary' | 'high_energy_flux'
 export type LabStatus = 'normal' | 'attention' | 'alert'
 export type Gender = '男性' | '女性' | '其他'
+export type ClientMode = 'standard' | 'health' | 'bodybuilding' | 'athletic'
 
 export interface Client {
   id: string
@@ -91,7 +92,10 @@ export interface Client {
   body_composition_enabled: boolean
   lab_enabled: boolean
   ai_chat_enabled: boolean
+  client_mode: ClientMode
+  /** @deprecated Use client_mode instead */
   competition_enabled: boolean
+  /** @deprecated Use client_mode instead */
   health_mode_enabled: boolean
   simple_mode: boolean
   coach_weekly_note: string | null

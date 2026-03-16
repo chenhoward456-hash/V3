@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     const { data: client } = await supabase
       .from('clients')
-      .select('id, gender, diet_start_date, prep_phase, competition_enabled')
+      .select('id, gender, diet_start_date, prep_phase, client_mode, competition_enabled')
       .eq('unique_code', clientId)
       .single()
 

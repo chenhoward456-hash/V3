@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { calcRecommendedStageWeight, type RecommendedStageWeightResult } from '@/lib/nutrition-engine'
 import { daysUntilDateTW } from '@/lib/date-utils'
 import { getDefaultFeatures, type SubscriptionTier } from '@/lib/tier-defaults'
+import { isCompetitionMode, isHealthMode, ALL_CLIENT_MODES, MODE_LABELS, MODE_EMOJIS, MODE_CONFIG, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS } from '@/lib/client-mode'
 
 type EditorTab = 'basic' | 'features' | 'notes' | 'lab' | 'supplements'
 
@@ -47,6 +48,7 @@ interface Client {
   wellness_enabled: boolean
   supplement_enabled: boolean
   lab_enabled: boolean
+  client_mode: string
   competition_enabled: boolean
   competition_date: string | null
   prep_phase: string
@@ -129,6 +131,7 @@ export default function ClientEditor() {
         lab_enabled: false,
         ai_chat_enabled: false,
         subscription_tier: 'free',
+        client_mode: 'standard',
         competition_enabled: false,
         competition_date: null,
         prep_phase: 'off_season',
@@ -178,7 +181,7 @@ export default function ClientEditor() {
         return
       }
       const data = await clientRes.json()
-      setClient(data)
+      setClient({ ...data, client_mode: data.client_mode || 'standard' })
 
       if (overviewRes.ok) {
         const overview = await overviewRes.json()
@@ -214,6 +217,7 @@ export default function ClientEditor() {
     try {
       // 組裝 client 欄位（不含 lab_results / supplements）
       const clientFields = {
+        client_mode: client.client_mode || 'standard',
         name: client.name,
         age: client.age,
         gender: client.gender,
@@ -648,53 +652,35 @@ export default function ClientEditor() {
                   </div>
                 ))}
 
-                {/* 模式選擇：健康模式 vs 備賽模式（互斥） */}
+                {/* 客戶模式 — 4 選 1 segmented control */}
                 <div className="border-t border-gray-100 pt-4 mt-2">
-                  <p className="text-xs text-gray-400 mb-3">進階模式（兩者互斥）</p>
-
-                  {/* 健康模式 */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">健康模式 🌿</p>
-                      <p className="text-xs text-gray-500 mt-0.5">季費制、健康分數、四柱追蹤（吃睡練補）、無截止日</p>
-                    </div>
-                    <button
-                      onClick={() => setClient(prev => prev ? ({
-                        ...prev,
-                        health_mode_enabled: !prev.health_mode_enabled,
-                        competition_enabled: false,  // 互斥
-                      }) : prev)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        client.health_mode_enabled ? 'bg-emerald-500' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        client.health_mode_enabled ? 'translate-x-6' : 'translate-x-1'
-                      }`} />
-                    </button>
+                  <label className="text-sm font-medium text-gray-700">客戶模式</label>
+                  <div className="mt-1 grid grid-cols-4 gap-1 p-1 bg-gray-100 rounded-lg">
+                    {ALL_CLIENT_MODES.map(mode => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setClient(prev => prev ? ({
+                          ...prev,
+                          client_mode: mode,
+                          health_mode_enabled: mode === 'health',
+                          competition_enabled: mode === 'bodybuilding' || mode === 'athletic',
+                          // Reset prep_phase when switching away from competition modes
+                          prep_phase: (mode === 'bodybuilding' || mode === 'athletic') ? prev.prep_phase : 'off_season',
+                        }) : prev)}
+                        className={`px-2 py-2 text-xs font-medium rounded-md transition-all ${
+                          client.client_mode === mode
+                            ? 'bg-white shadow text-gray-900'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        {MODE_EMOJIS[mode as keyof typeof MODE_EMOJIS]} {MODE_LABELS[mode as keyof typeof MODE_LABELS]}
+                      </button>
+                    ))}
                   </div>
-
-                  {/* 備賽模式 */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">備賽模式 🏆</p>
-                      <p className="text-xs text-gray-500 mt-0.5">健美備賽倒數、完整巨量營養素、進階感受追蹤</p>
-                    </div>
-                    <button
-                      onClick={() => setClient(prev => prev ? ({
-                        ...prev,
-                        competition_enabled: !prev.competition_enabled,
-                        health_mode_enabled: false,  // 互斥
-                      }) : prev)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        client.competition_enabled ? 'bg-amber-500' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        client.competition_enabled ? 'translate-x-6' : 'translate-x-1'
-                      }`} />
-                    </button>
-                  </div>
+                  <p className="mt-1 text-xs text-gray-400">
+                    {MODE_CONFIG[client.client_mode as keyof typeof MODE_CONFIG]?.description || ''}
+                  </p>
                 </div>
               </div>
             </div>
@@ -808,10 +794,10 @@ export default function ClientEditor() {
             {client.body_composition_enabled && (
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-400">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">
-                  {client.competition_enabled ? '🎯 目標上台體重' : '🎯 目標體重'}
+                  {isCompetitionMode(client.client_mode) ? '🎯 目標上台體重' : '🎯 目標體重'}
                 </h2>
                 <p className="text-xs text-gray-400 mb-4">
-                  {client.competition_enabled ? '設定比賽日目標體重，系統會自動推算建議範圍' : '設定目標體重，系統會依體組成推算健康體重範圍'}
+                  {isCompetitionMode(client.client_mode) ? '設定比賽日目標體重，系統會自動推算建議範圍' : '設定目標體重，系統會依體組成推算健康體重範圍'}
                 </p>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
@@ -821,7 +807,7 @@ export default function ClientEditor() {
                       step="0.1"
                       value={client.target_weight ?? ''}
                       onChange={(e) => updateClient('target_weight', e.target.value ? Number(e.target.value) : null)}
-                      placeholder={client.competition_enabled ? '例如：65.0' : '例如：65.0'}
+                      placeholder={isCompetitionMode(client.client_mode) ? '例如：65.0' : '例如：65.0'}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -836,7 +822,7 @@ export default function ClientEditor() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  {!client.competition_enabled && (
+                  {!isCompetitionMode(client.client_mode) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">目標日期</label>
                       <input
@@ -857,7 +843,7 @@ export default function ClientEditor() {
                       latestBodyComp.body_fat,
                       client.gender,
                       latestBodyComp.height,
-                      !!client.competition_enabled
+                      isCompetitionMode(client.client_mode)
                     )
                     const isBelow = client.target_weight ? client.target_weight < rec.recommendedLow - 0.5 : false
                     const isAbove = client.target_weight ? client.target_weight > rec.recommendedHigh + 0.5 : false
@@ -902,7 +888,7 @@ export default function ClientEditor() {
             )}
 
             {/* 碳循環設定 */}
-            {client.nutrition_enabled && client.competition_enabled && (
+            {client.nutrition_enabled && isCompetitionMode(client.client_mode) && (
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-cyan-400">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">🔄 碳循環設定</h2>
                 <p className="text-xs text-gray-400 mb-4">設定後系統會根據當天有無訓練自動切換碳水目標</p>
@@ -979,7 +965,7 @@ export default function ClientEditor() {
             )}
 
             {/* Health Mode Settings — 健康模式季度週期 */}
-            {client.health_mode_enabled && (
+            {isHealthMode(client.client_mode) && (
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-emerald-400">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">🌿 健康模式設定</h2>
                 <p className="text-xs text-gray-400 mb-4">每 90 天一個季度週期，配合季度血檢追蹤健康進步</p>
@@ -1010,7 +996,7 @@ export default function ClientEditor() {
             )}
 
             {/* Genetic Risk Profile — 基因風險欄位 */}
-            {client.health_mode_enabled && (
+            {isHealthMode(client.client_mode) && (
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-400">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">🧬 基因風險設定</h2>
                 <p className="text-xs text-gray-400 mb-4">根據基因檢測結果設定，系統會自動調整補品建議與 AI 顧問回覆</p>
@@ -1080,9 +1066,11 @@ export default function ClientEditor() {
             )}
 
             {/* Competition Prep Settings — 備賽專屬（比賽日期、備賽階段） */}
-            {client.competition_enabled && (
+            {isCompetitionMode(client.client_mode) && (
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-400">
-                <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽設定</h2>
+                <h2 className="text-lg font-medium text-gray-900 mb-1">
+                  {MODE_EMOJIS[client.client_mode as keyof typeof MODE_EMOJIS] || '🏆'} 備賽設定
+                </h2>
                 <p className="text-xs text-gray-400 mb-4">設定比賽日期與備賽階段</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -1106,12 +1094,9 @@ export default function ClientEditor() {
                       onChange={(e) => updateClient('prep_phase', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="off_season">休賽期</option>
-                      <option value="bulk">增肌期</option>
-                      <option value="cut">減脂期</option>
-                      <option value="peak_week">Peak Week</option>
-                      <option value="competition">比賽日</option>
-                      <option value="recovery">賽後恢復</option>
+                      {(client.client_mode === 'athletic' ? ATHLETIC_PHASE_OPTIONS : BODYBUILDING_PHASE_OPTIONS).map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
                     </select>
                   </div>
                 </div>

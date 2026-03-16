@@ -4,6 +4,7 @@ import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLi
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
 import { createServiceSupabase } from '@/lib/supabase'
 import { isWeightTraining } from '@/components/client/types'
+import { isCompetitionMode } from '@/lib/client-mode'
 
 const supabase = createServiceSupabase()
 
@@ -104,7 +105,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
 
   // Goal-Driven 或備賽客戶只需 1 週數據即可反算赤字
   const hasGoalDrivenData = !!(client.target_weight && (client.competition_date || client.target_date))
-  const isCompetition = !!client.competition_enabled
+  const isCompetition = isCompetitionMode(client.client_mode)
   if (weeklyWeights.length < 2) {
     if (weeklyWeights.length === 1 && (hasGoalDrivenData || isCompetition)) {
       weeklyWeights.push({ week: 1, avgWeight: weeklyWeights[0].avgWeight })

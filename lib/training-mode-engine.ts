@@ -389,7 +389,8 @@ export function extractHormoneLabs(
 export interface TrainingModeInput {
   baseAdvice: TrainingAdvice
   goalType?: 'cut' | 'bulk' | 'recomp' | null
-  prepPhase?: 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | null
+  prepPhase?: 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery'
+    | 'training_camp' | 'weight_cut' | 'weigh_in' | 'rebound' | null
   geneticProfile?: GeneticProfile | null
   recentTrainingPattern?: TrainingPatternAnalysis | null
   hormoneLabs?: HormoneLabValues | null
@@ -443,6 +444,20 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
   if (prepPhase === 'recovery') {
     const config = MODE_CONFIG.active_recovery
     reasons.push({ signal: '備賽階段', emoji: '🏆', description: '目前處於賽後恢復期，以主動恢復為主' })
+    return buildRecommendation('active_recovery', config, reasons, geneticCorrections, 'high')
+  }
+
+  // Athletic: weigh_in → forced rest
+  if (prepPhase === 'weigh_in') {
+    const config = MODE_CONFIG.rest
+    reasons.push({ signal: '競技階段', emoji: '🥊', description: '秤重日：完全休息，秤重後立刻開始回補' })
+    return buildRecommendation('rest', config, reasons, geneticCorrections, 'high')
+  }
+
+  // Athletic: rebound → forced active_recovery
+  if (prepPhase === 'rebound') {
+    const config = MODE_CONFIG.active_recovery
+    reasons.push({ signal: '競技階段', emoji: '🥊', description: '超補償期：主動恢復為主，專注碳水回補與體液恢復' })
     return buildRecommendation('active_recovery', config, reasons, geneticCorrections, 'high')
   }
 
@@ -552,6 +567,14 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
     scores.rest += 30
     scores.active_recovery += 20
     reasons.push({ signal: '備賽階段', emoji: '🏆', description: '比賽日：完全休息或輕度活動' })
+  } else if (prepPhase === 'weight_cut') {
+    scores.reduced_volume += 25
+    scores.high_volume -= 20
+    reasons.push({ signal: '競技階段', emoji: '🥊', description: '降體重期：建議 taper，減少訓練量保留肌力' })
+  } else if (prepPhase === 'training_camp') {
+    scores.high_volume += 20
+    scores.high_intensity += 15
+    reasons.push({ signal: '競技階段', emoji: '🥊', description: '集訓期：加大訓練量和強度' })
   }
 
   // --- Metabolic Stress (45-59 elevated range) ---
@@ -679,8 +702,8 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       }
     }
 
-    // P1: 連續訓練天數 penalty — peak_week/competition 時跳過（備賽期連續訓練屬預期）
-    if (prepPhase !== 'peak_week' && prepPhase !== 'competition') {
+    // P1: 連續訓練天數 penalty — peak_week/competition/weight_cut 時跳過（weigh_in/rebound 已由上方 hard override 處理）
+    if (prepPhase !== 'peak_week' && prepPhase !== 'competition' && prepPhase !== 'weight_cut') {
       if (recentTrainingPattern.consecutiveTrainingDays >= 5) {
         scores.active_recovery += 20
         scores.rest += 15

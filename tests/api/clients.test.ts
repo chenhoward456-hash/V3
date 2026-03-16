@@ -1249,7 +1249,7 @@ describe('PUT /api/clients', () => {
 
   // -- Client lookup by unique_code vs UUID --
   it('looks up client by unique_code for non-UUID clientId', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', goal_type: 'cut' })
     await PUT(req)
@@ -1261,7 +1261,7 @@ describe('PUT /api/clients', () => {
 
   it('looks up client by id for UUID clientId', async () => {
     const uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-    setupClientUpdateMocks({ id: uuid, is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: uuid, is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: uuid, goal_type: 'cut' })
     const res = await PUT(req)
@@ -1290,7 +1290,7 @@ describe('PUT /api/clients', () => {
 
   // -- Inactive client --
   it('returns 403 if client is inactive', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: false, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: false, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', goal_type: 'cut' })
     const res = await PUT(req)
@@ -1302,7 +1302,7 @@ describe('PUT /api/clients', () => {
 
   // -- goal_type --
   it('accepts valid goal_type "cut"', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', goal_type: 'cut' })
     const res = await PUT(req)
@@ -1311,7 +1311,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('accepts valid goal_type "bulk"', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', goal_type: 'bulk' })
     const res = await PUT(req)
@@ -1320,7 +1320,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('accepts valid goal_type "recomp"', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', goal_type: 'recomp' })
     const res = await PUT(req)
@@ -1329,7 +1329,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('ignores invalid goal_type', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', goal_type: 'invalid' })
     const res = await PUT(req)
@@ -1339,7 +1339,7 @@ describe('PUT /api/clients', () => {
 
   // -- target_weight --
   it('accepts valid target_weight', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', target_weight: 75 })
     const res = await PUT(req)
@@ -1348,7 +1348,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('ignores target_weight below 30', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', target_weight: 20 })
     const res = await PUT(req)
@@ -1357,7 +1357,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('ignores target_weight above 300', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', target_weight: 350 })
     const res = await PUT(req)
@@ -1367,7 +1367,7 @@ describe('PUT /api/clients', () => {
 
   // -- target_body_fat --
   it('accepts valid target_body_fat', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', target_body_fat: 15 })
     const res = await PUT(req)
@@ -1376,7 +1376,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('ignores target_body_fat below 3', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', target_body_fat: 2 })
     const res = await PUT(req)
@@ -1385,7 +1385,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('ignores target_body_fat above 60', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', target_body_fat: 65 })
     const res = await PUT(req)
@@ -1395,7 +1395,7 @@ describe('PUT /api/clients', () => {
 
   // -- target_date --
   it('accepts valid future target_date', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', target_date: FUTURE_DATE })
     const res = await PUT(req)
@@ -1404,7 +1404,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('ignores past target_date', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', target_date: '2020-01-01' })
     const res = await PUT(req)
@@ -1413,7 +1413,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('ignores invalid target_date string', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', target_date: 'not-a-date' })
     const res = await PUT(req)
@@ -1422,8 +1422,8 @@ describe('PUT /api/clients', () => {
   })
 
   // -- competition_date --
-  it('accepts competition_date when competition_enabled is true', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: true })
+  it('accepts competition_date when client_mode is bodybuilding', async () => {
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'bodybuilding', competition_enabled: true })
 
     const req = buildPutRequest({ clientId: 'abc123', competition_date: FUTURE_DATE })
     const res = await PUT(req)
@@ -1431,8 +1431,17 @@ describe('PUT /api/clients', () => {
     expect(res.status).toBe(200)
   })
 
-  it('ignores competition_date when competition_enabled is false', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+  it('accepts competition_date when client_mode is athletic', async () => {
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'athletic', competition_enabled: true })
+
+    const req = buildPutRequest({ clientId: 'abc123', competition_date: FUTURE_DATE })
+    const res = await PUT(req)
+
+    expect(res.status).toBe(200)
+  })
+
+  it('ignores competition_date when client_mode is standard', async () => {
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', competition_date: FUTURE_DATE })
     const res = await PUT(req)
@@ -1440,8 +1449,8 @@ describe('PUT /api/clients', () => {
     expect(res.status).toBe(400)
   })
 
-  it('ignores past competition_date even when competition_enabled', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: true })
+  it('ignores past competition_date even in competition mode', async () => {
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'bodybuilding', competition_enabled: true })
 
     const req = buildPutRequest({ clientId: 'abc123', competition_date: '2020-01-01' })
     const res = await PUT(req)
@@ -1453,7 +1462,7 @@ describe('PUT /api/clients', () => {
   it('accepts valid gene_mthfr values', async () => {
     for (const value of ['normal', 'heterozygous', 'homozygous']) {
       vi.clearAllMocks()
-      setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+      setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
       const req = buildPutRequest({ clientId: 'abc123', gene_mthfr: value })
       const res = await PUT(req)
@@ -1463,7 +1472,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('sets gene_mthfr to null for invalid value', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', gene_mthfr: 'invalid' })
     const res = await PUT(req)
@@ -1475,7 +1484,7 @@ describe('PUT /api/clients', () => {
   it('accepts valid gene_apoe values', async () => {
     for (const value of ['e2/e2', 'e2/e3', 'e3/e3', 'e3/e4', 'e4/e4']) {
       vi.clearAllMocks()
-      setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+      setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
       const req = buildPutRequest({ clientId: 'abc123', gene_apoe: value })
       const res = await PUT(req)
@@ -1485,7 +1494,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('sets gene_apoe to null for invalid value', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', gene_apoe: 'invalid' })
     const res = await PUT(req)
@@ -1497,7 +1506,7 @@ describe('PUT /api/clients', () => {
   it('accepts valid gene_depression_risk values', async () => {
     for (const value of ['LL', 'SL', 'SS', 'low', 'moderate', 'high']) {
       vi.clearAllMocks()
-      setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+      setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
       const req = buildPutRequest({ clientId: 'abc123', gene_depression_risk: value })
       const res = await PUT(req)
@@ -1507,7 +1516,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('sets gene_depression_risk to null for invalid value', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', gene_depression_risk: 'invalid' })
     const res = await PUT(req)
@@ -1517,7 +1526,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('accepts gene_notes as string and truncates to 500 chars', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const longNote = 'x'.repeat(600)
     const req = buildPutRequest({ clientId: 'abc123', gene_notes: longNote })
@@ -1530,7 +1539,7 @@ describe('PUT /api/clients', () => {
   })
 
   it('sets gene_notes to null for non-string value', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', gene_notes: 12345 })
     const res = await PUT(req)
@@ -1541,7 +1550,7 @@ describe('PUT /api/clients', () => {
 
   // -- No valid update fields --
   it('returns 400 when no valid update fields are provided', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123' })
     const res = await PUT(req)
@@ -1554,7 +1563,7 @@ describe('PUT /api/clients', () => {
   // -- Update failure --
   it('returns 500 if the update fails with error message', async () => {
     setupClientUpdateMocks(
-      { id: 'uuid-1', is_active: true, competition_enabled: false },
+      { id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false },
       { data: null, error: { message: 'constraint violation' } },
     )
 
@@ -1568,7 +1577,7 @@ describe('PUT /api/clients', () => {
 
   // -- Audit log --
   it('writes audit log on successful update', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const req = buildPutRequest({ clientId: 'abc123', goal_type: 'cut' })
     await PUT(req)
@@ -1596,7 +1605,7 @@ describe('PUT /api/clients', () => {
 
   // -- Multiple fields updated together --
   it('updates multiple fields at once', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: true })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'bodybuilding', competition_enabled: true })
 
     const req = buildPutRequest({
       clientId: 'abc123',
@@ -1628,7 +1637,7 @@ describe('PUT /api/clients', () => {
 
   // -- gene_mthfr null clears the field --
   it('handles gene fields set to null (clearing)', async () => {
-    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, competition_enabled: false })
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard', competition_enabled: false })
 
     const body = { clientId: 'abc123', gene_mthfr: null }
     const req = buildPutRequest(body)

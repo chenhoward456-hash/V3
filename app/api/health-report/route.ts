@@ -15,6 +15,7 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { calculateHealthScore, type HealthScoreInput } from '@/lib/health-score-engine'
 import { generateLabNutritionAdvice, type LabNutritionAdvice } from '@/lib/lab-nutrition-advisor'
 import { verifyAdminSession } from '@/lib/auth-middleware'
+import { isHealthMode } from '@/lib/client-mode'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
     // 1. 取得客戶資料
     const { data: client, error: clientErr } = await supabase
       .from('clients')
-      .select('id, gender, health_mode_enabled, quarterly_cycle_start, unique_code')
+      .select('id, gender, client_mode, health_mode_enabled, quarterly_cycle_start, unique_code')
       .eq('id', clientId)
       .single()
 
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '未授權' }, { status: 401 })
     }
 
-    if (!client.health_mode_enabled) {
+    if (!isHealthMode(client.client_mode)) {
       return NextResponse.json({ error: '非健康模式學員' }, { status: 403 })
     }
 

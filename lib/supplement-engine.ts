@@ -86,7 +86,8 @@ export function generateSupplementSuggestions(
     goalType?: 'cut' | 'bulk' | null
     isHealthMode?: boolean     // 健康模式：長壽導向補品建議
     genetics?: GeneticProfile  // 基因風險資料
-    prepPhase?: 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | null
+    prepPhase?: 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery'
+      | 'training_camp' | 'weight_cut' | 'weigh_in' | 'rebound' | null
   } = {}
 ): SupplementSuggestion[] {
   const suggestions: SupplementSuggestion[] = []
