@@ -32,6 +32,7 @@ const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManag
 import PwaPrompt from '@/components/client/PwaPrompt'
 import { calcRecommendedStageWeight } from '@/lib/stage-weight'
 import { calculateHealthScore } from '@/lib/health-score-engine'
+import { isCompetitionMode, isHealthMode as isHealthModeHelper, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS as ALL_PHASE_LABELS } from '@/lib/client-mode'
 
 // Dynamic imports for code splitting (client-only components)
 const AiChatDrawer = dynamic(() => import('@/components/client/AiChatDrawer'), { ssr: false })
@@ -70,23 +71,9 @@ const PILLAR_TIPS: Record<string, string> = {
   lab: '可考慮安排血檢追蹤',
 }
 
-const PHASE_LABELS: Record<string, string> = {
-  off_season: '休賽期',
-  bulk: '增肌期',
-  cut: '減脂期',
-  peak_week: 'Peak Week',
-  competition: '比賽日',
-  recovery: '賽後恢復',
-}
+const PHASE_LABELS = ALL_PHASE_LABELS
 
-const PHASE_OPTIONS = [
-  { value: 'off_season', label: '休賽期', icon: '🌙' },
-  { value: 'bulk', label: '增肌期', icon: '💪' },
-  { value: 'cut', label: '減脂期', icon: '🔥' },
-  { value: 'peak_week', label: 'Peak Week', icon: '⚡' },
-  { value: 'competition', label: '比賽日', icon: '🏆' },
-  { value: 'recovery', label: '賽後恢復', icon: '🧘' },
-] as const
+// PHASE_OPTIONS removed — now using BODYBUILDING_PHASE_OPTIONS / ATHLETIC_PHASE_OPTIONS from @/lib/client-mode
 
 /** Dismissable retention card — stores dismissed state in localStorage */
 function RetentionCard({ children, onDismiss, id }: { children: React.ReactNode; onDismiss: () => void; id: string }) {
@@ -200,10 +187,12 @@ export default function ClientDashboard() {
   const { clientId } = useParams()
   const { data: clientData, error, isLoading, mutate } = useClientData(clientId as string)
 
-  // 儲存 clientId 到 localStorage，讓 PWA 從主畫面開啟時能跳轉到儀表板
+  // 儲存 clientId 到 localStorage + cookie，讓 PWA 從主畫面開啟時能跳轉到儀表板
   useEffect(() => {
     if (clientId && typeof window !== 'undefined') {
       localStorage.setItem('hp_client_id', clientId as string)
+      // 同時設 cookie，讓 middleware 能讀取（localStorage 在 middleware 不可用）
+      document.cookie = `hp_client_id=${encodeURIComponent(clientId as string)};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`
     }
   }, [clientId])
 
@@ -225,8 +214,8 @@ export default function ClientDashboard() {
     d.setDate(d.getDate() + offset)
     const newDate = getLocalDateStr(d)
     // Peak Week / competition: 最多看到明天；一般模式: 最多到今天
-    const isPeakWeek = clientData?.client?.competition_enabled &&
-      (clientData.client.prep_phase === 'peak_week' || clientData.client.prep_phase === 'competition')
+    const isPeakWeek = isCompetitionMode(clientData?.client?.client_mode) &&
+      (clientData?.client?.prep_phase === 'peak_week' || clientData?.client?.prep_phase === 'competition')
     const maxDate = isPeakWeek ? tomorrow : today
     if (newDate > maxDate) return
     setSelectedDate(newDate)
@@ -474,11 +463,11 @@ export default function ClientDashboard() {
   const supplementSuggestions = useMemo(() => {
     const c = clientData?.client
     if (!c) return []
-    const isHealthMode = c.health_mode_enabled
-    const isCompetition = c.competition_enabled
+    const healthMode = isHealthModeHelper(c.client_mode)
+    const isCompetition = isCompetitionMode(c.client_mode)
     const hasGenetics = !!(c.gene_mthfr || c.gene_apoe || c.gene_depression_risk)
-    if (!isHealthMode && !isCompetition) return []
-    if (!isHealthMode && !hasGenetics) return []
+    if (!healthMode && !isCompetition) return []
+    if (!healthMode && !hasGenetics) return []
     const recentTraining = (clientData.trainingLogs || []).slice(-7)
     const hasHighRPE = recentTraining.filter((t: any) => t.rpe != null && t.rpe >= 9).length >= 3
     return generateSupplementSuggestions(
@@ -490,7 +479,7 @@ export default function ClientDashboard() {
       })),
       {
         gender: c.gender as '男性' | '女性' | undefined,
-        isHealthMode,
+        isHealthMode: healthMode,
         isCompetitionPrep: isCompetition,
         hasHighRPE,
         goalType: (c.goal_type as 'cut' | 'bulk' | null) || null,
@@ -536,7 +525,7 @@ export default function ClientDashboard() {
   useEffect(() => {
     const c = clientData?.client
     if (!c || !c.nutrition_enabled || !c.goal_type) return
-    if (c.competition_enabled) return // 備賽客戶由 GoalDrivenStatus 處理
+    if (isCompetitionMode(c.client_mode)) return // 備賽客戶由 GoalDrivenStatus 處理
     if (autoNutritionTriggered.current) return
     autoNutritionTriggered.current = true
 
@@ -618,8 +607,8 @@ export default function ClientDashboard() {
   }
 
   const c = clientData.client
-  const isCompetition = c.competition_enabled
-  const isHealthMode = c.health_mode_enabled
+  const isCompetition = isCompetitionMode(c.client_mode)
+  const isHealthMode = isHealthModeHelper(c.client_mode)
   const isSelfManaged = c.subscription_tier === 'self_managed'
   const isFree = c.subscription_tier === 'free'
 
@@ -738,10 +727,10 @@ export default function ClientDashboard() {
                         <p className="text-[10px] text-gray-400 mt-0.5">只顯示核心欄位</p>
                       </div>
                       <button
-                        onClick={() => toggleFeature('simple_mode')}
+                        onClick={() => !isFree && toggleFeature('simple_mode')}
                         className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
                           c.simple_mode ? 'bg-blue-500' : 'bg-gray-300'
-                        }`}
+                        } ${isFree ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                           c.simple_mode ? 'translate-x-6' : 'translate-x-1'
@@ -750,7 +739,7 @@ export default function ClientDashboard() {
                     </div>
 
                     <div className="border-t border-gray-100 my-3" />
-                    <p className="text-[10px] text-gray-400 mb-2">不需要的功能可以關掉</p>
+                    <p className="text-[10px] text-gray-400 mb-2">{isFree ? '免費版預設功能' : '不需要的功能可以關掉'}</p>
 
                     {/* 功能開關 */}
                     {([
@@ -761,21 +750,39 @@ export default function ClientDashboard() {
                       { key: 'supplement_enabled', label: '補品管理', icon: '💊' },
                       { key: 'lab_enabled', label: '血檢追蹤', icon: '🩸' },
                       { key: 'ai_chat_enabled', label: 'AI 顧問', icon: '🤖' },
-                    ] as const).map(({ key, label, icon }) => (
-                      <div key={key} className="flex items-center justify-between py-1.5">
-                        <span className="text-sm text-gray-700">{icon} {label}</span>
-                        <button
-                          onClick={() => toggleFeature(key)}
-                          className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
-                            (c as any)[key] ? 'bg-blue-500' : 'bg-gray-300'
-                          }`}
-                        >
-                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            (c as any)[key] ? 'translate-x-6' : 'translate-x-1'
-                          }`} />
-                        </button>
-                      </div>
-                    ))}
+                    ] as const).map(({ key, label, icon }) => {
+                      const FREE_LOCKED_ON = ['body_composition_enabled', 'nutrition_enabled'] as const
+                      const isLockedOn = isFree && (FREE_LOCKED_ON as readonly string[]).includes(key)
+                      const isLockedOff = isFree && !(FREE_LOCKED_ON as readonly string[]).includes(key)
+
+                      return (
+                        <div key={key} className="flex items-center justify-between py-1.5">
+                          <span className="text-sm text-gray-700">
+                            {icon} {label}
+                            {isLockedOn && <span className="text-[10px] text-gray-400 ml-1">預設</span>}
+                            {isLockedOff && <span className="text-[10px] text-gray-400 ml-1">🔒</span>}
+                          </span>
+                          <button
+                            onClick={() => {
+                              if (isLockedOn) return
+                              if (isLockedOff) {
+                                trackEvent('upgrade_cta_clicked', { feature: label, source: 'feature_toggle' })
+                                window.location.href = `/upgrade?from=free&feature=${encodeURIComponent(label)}`
+                                return
+                              }
+                              toggleFeature(key)
+                            }}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+                              (c as any)[key] ? 'bg-blue-500' : 'bg-gray-300'
+                            } ${isLockedOn ? 'opacity-50 cursor-not-allowed' : ''} ${isLockedOff ? 'opacity-40 cursor-pointer' : ''}`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              (c as any)[key] ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                          </button>
+                        </div>
+                      )
+                    })}
 
                     {/* 取消訂閱 */}
                     {c.subscription_tier !== 'free' && (
@@ -1020,7 +1027,7 @@ export default function ClientDashboard() {
                   <div className="mt-3 pt-3 border-t border-gray-200/60">
                     <p className="text-xs text-gray-500 mb-2 font-medium">切換備賽階段</p>
                     <div className="grid grid-cols-3 gap-1.5">
-                      {PHASE_OPTIONS.map(opt => (
+                      {(c.client_mode === 'athletic' ? ATHLETIC_PHASE_OPTIONS : BODYBUILDING_PHASE_OPTIONS).map(opt => (
                         <button
                           key={opt.value}
                           onClick={() => handlePrepPhaseChange(opt.value)}
@@ -1031,7 +1038,6 @@ export default function ClientDashboard() {
                               : 'bg-white/80 text-gray-700 hover:bg-white hover:shadow-sm active:scale-95'
                           } ${updatingPhase ? 'opacity-50' : ''}`}
                         >
-                          <span className="block text-sm mb-0.5">{opt.icon}</span>
                           {opt.label}
                         </button>
                       ))}
@@ -1504,7 +1510,7 @@ export default function ClientDashboard() {
               trendData={trendData}
               bodyData={clientData.bodyData || []}
               clientId={clientId as string}
-              competitionEnabled={clientData.client.competition_enabled}
+              competitionEnabled={isCompetitionMode(clientData.client.client_mode)}
               targetWeight={clientData.client.target_weight}
               competitionDate={clientData.client.competition_date}
               simpleMode={clientData.client.simple_mode}
@@ -1544,7 +1550,7 @@ export default function ClientDashboard() {
               date={selectedDate}
               proteinTarget={c.protein_target}
               waterTarget={c.water_target}
-              competitionEnabled={c.competition_enabled}
+              competitionEnabled={isCompetitionMode(c.client_mode)}
               carbsTarget={c.carbs_training_day && c.carbs_rest_day
                 ? (todayTraining && isWeightTraining(todayTraining.training_type) ? c.carbs_training_day : c.carbs_rest_day)
                 : c.carbs_target}
@@ -1601,7 +1607,7 @@ export default function ClientDashboard() {
               todayWellness={todayWellness}
               clientId={clientId as string}
               date={selectedDate}
-              healthModeEnabled={clientData.client.health_mode_enabled}
+              healthModeEnabled={isHealthModeHelper(clientData.client.client_mode)}
               gender={c.gender ?? undefined}
               onMutate={mutate}
             />
@@ -1714,15 +1720,24 @@ export default function ClientDashboard() {
         })()}
 
         {/* 基因檔案卡片 */}
-        <GeneProfileCard
-          mthfr={c.gene_mthfr as string | null}
-          apoe={c.gene_apoe as string | null}
-          serotonin={c.gene_depression_risk as string | null}
-          notes={c.gene_notes as string | null}
-          geneticCorrections={geneCorrections}
-          clientId={c.unique_code}
-          onMutate={mutate}
-        />
+        {isFree ? (
+          <UpgradeGate
+            feature="基因檔案"
+            description="填寫基因檢測結果，AI 會根據你的基因型調整營養建議"
+            tier="coached"
+            currentTier={c.subscription_tier as 'free' | 'self_managed' | 'coached'}
+          />
+        ) : (
+          <GeneProfileCard
+            mthfr={c.gene_mthfr as string | null}
+            apoe={c.gene_apoe as string | null}
+            serotonin={c.gene_depression_risk as string | null}
+            notes={c.gene_notes as string | null}
+            geneticCorrections={geneCorrections}
+            clientId={c.unique_code}
+            onMutate={mutate}
+          />
+        )}
 
         {/* 目標設定 */}
         {c.calories_target && (
@@ -1734,7 +1749,7 @@ export default function ClientDashboard() {
               currentTargetWeight={c.target_weight}
               currentTargetBodyFat={(c.target_body_fat as number) ?? null}
               currentTargetDate={c.target_date}
-              competitionEnabled={!!c.competition_enabled}
+              competitionEnabled={isCompetitionMode(c.client_mode)}
               competitionDate={c.competition_date || null}
               latestWeight={latestBodyData?.weight || null}
               latestBodyFat={latestBodyData?.body_fat || null}
@@ -1882,7 +1897,7 @@ export default function ClientDashboard() {
           />
         )}
 
-        <PwaPrompt />
+        {!isFree && <PwaPrompt />}
       </div>
 
       <OnboardingGuide
