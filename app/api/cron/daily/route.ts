@@ -834,6 +834,23 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ===== Garmin OAuth 狀態清理（早上執行）=====
+  let garminStatesCleared = 0
+  if (isMorning) {
+    try {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+      const { error: cleanupErr } = await supabase
+        .from('garmin_oauth_states')
+        .delete()
+        .lt('created_at', oneHourAgo)
+      if (!cleanupErr) {
+        logger.info('Cleaned up expired Garmin OAuth states')
+      }
+    } catch (err) {
+      errors.push(`garmin_cleanup: ${(err as Error).message || 'unknown'}`)
+    }
+  }
+
   const responseData = {
     success: errors.length === 0,
     type: isMorning ? 'morning' : 'evening',
@@ -849,7 +866,24 @@ export async function GET(request: NextRequest) {
     smartAlertsSent,
     downgradedCount,
     reengagementSent,
+    garminStatesCleared,
     errors,
+  }
+
+  // 通知教練 cron 錯誤
+  if (errors.length > 0) {
+    const coachLineId = process.env.COACH_LINE_USER_ID
+    if (coachLineId) {
+      const errorSummary = [
+        `⚠️ 排程執行有 ${errors.length} 個錯誤：`,
+        '',
+        ...errors.slice(0, 5).map(e => `• ${e}`),
+        ...(errors.length > 5 ? [`...還有 ${errors.length - 5} 個錯誤`] : []),
+      ].join('\n')
+      pushMessage(coachLineId, [{ type: 'text', text: errorSummary }]).catch(err => {
+        logger.error('Failed to notify coach about cron errors', err)
+      })
+    }
   }
 
   // 寫入 cron_runs

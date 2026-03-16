@@ -41,25 +41,27 @@ export async function POST(request: NextRequest) {
 
     if (rtnCode === 1) {
       // 付款成功 → 自動建立學員帳號
-      const { data: purchase, error: fetchError } = await supabase
+      // Atomically mark as completed (prevents race condition from duplicate webhooks)
+      const { data: updated, error: updateError } = await supabase
         .from('subscription_purchases')
-        .select('*')
+        .update({
+          status: 'completed',
+          ecpay_trade_no: params.TradeNo || null,
+          completed_at: new Date().toISOString(),
+        })
         .eq('merchant_trade_no', merchantTradeNo)
+        .eq('status', 'pending')  // Only update if still pending (atomic check)
+        .select('*')
         .single()
 
-      if (fetchError || !purchase) {
-        log.error('Purchase not found', null, { merchantTradeNo })
-        return new NextResponse('0|ErrorMessage', { status: 200 })
-      }
-
-      // 防止重複處理
-      if (purchase.status === 'completed') {
-        log.info('Already completed', { merchantTradeNo })
+      if (updateError || !updated) {
+        // Either already completed (duplicate webhook) or not found
+        log.info('Already completed or not found', { merchantTradeNo })
         return new NextResponse('1|OK', { status: 200, headers: { 'Content-Type': 'text/plain' } })
       }
 
-      const tier = purchase.subscription_tier as SubscriptionTier
-      const regData = purchase.registration_data || {}
+      const tier = updated.subscription_tier as SubscriptionTier
+      const regData = updated.registration_data || {}
 
       const durationMonths = SUBSCRIPTION_PLANS[tier]?.duration_months || 1
 
@@ -69,7 +71,7 @@ export async function POST(request: NextRequest) {
       const { data: existingClients } = await supabase
         .from('clients')
         .select('id, unique_code, expires_at, subscription_tier')
-        .eq('name', purchase.name)
+        .eq('name', updated.name)
         .limit(10)
 
       // 用 subscription_purchases 的 email 比對已有帳號
@@ -79,7 +81,7 @@ export async function POST(request: NextRequest) {
         const { data: prevPurchases } = await supabase
           .from('subscription_purchases')
           .select('client_id')
-          .eq('email', purchase.email)
+          .eq('email', updated.email)
           .eq('status', 'completed')
           .not('client_id', 'is', null)
           .limit(10)
@@ -111,7 +113,7 @@ export async function POST(request: NextRequest) {
           ...getDefaultFeatures(tier),
         }).eq('id', clientId)
 
-        log.info('Client upgraded', { uniqueCode, tier, previousTier: existingClient.subscription_tier, email: purchase.email })
+        log.info('Client upgraded', { uniqueCode, tier, previousTier: existingClient.subscription_tier, email: updated.email })
       } else {
         // ===== 建立新帳號 =====
         uniqueCode = generateUniqueCode()
@@ -120,7 +122,7 @@ export async function POST(request: NextRequest) {
 
         const clientData = {
           unique_code: uniqueCode,
-          name: purchase.name,
+          name: updated.name,
           age: regData.age || null,
           gender: regData.gender || null,
           goal_type: regData.goalType || 'cut',
@@ -136,22 +138,18 @@ export async function POST(request: NextRequest) {
           .single()
 
         if (clientError) {
-          log.error('Client creation error', clientError, { merchantTradeNo, tier })
-          // 回傳 0|Error 讓 ECPay 重試（用戶已付款但帳號未建立）
+          // Rollback purchase status so ECPay retry can succeed
+          await supabase.from('subscription_purchases').update({ status: 'pending', completed_at: null, ecpay_trade_no: null }).eq('merchant_trade_no', merchantTradeNo)
+          log.error('Client creation error, purchase rolled back', clientError, { merchantTradeNo, tier })
           return new NextResponse('0|ErrorMessage', { status: 200 })
         }
 
         clientId = newClient.id
-        log.info('Client created', { uniqueCode, tier, email: purchase.email })
+        log.info('Client created', { uniqueCode, tier, email: updated.email })
       }
 
-      // 更新購買紀錄
-      await supabase.from('subscription_purchases').update({
-        status: 'completed',
-        ecpay_trade_no: params.TradeNo || null,
-        client_id: clientId,
-        completed_at: new Date().toISOString(),
-      }).eq('merchant_trade_no', merchantTradeNo)
+      // Link client to purchase record (status already updated atomically above)
+      await supabase.from('subscription_purchases').update({ client_id: clientId }).eq('merchant_trade_no', merchantTradeNo)
 
       // 推薦碼追蹤：如果 registration_data 中有 ref 且匹配 referral_codes，建立推薦關係
       if (regData.ref && !existingClient) {
@@ -191,10 +189,10 @@ export async function POST(request: NextRequest) {
       }
 
       // 非同步寄送歡迎信（升級也寄，通知新代碼或確認升級）
-      if (purchase.email) {
+      if (updated.email) {
         sendWelcomeEmail({
-          to: purchase.email,
-          name: purchase.name,
+          to: updated.email,
+          name: updated.name,
           uniqueCode,
           tier,
         }).catch((err) => {
@@ -217,8 +215,8 @@ export async function POST(request: NextRequest) {
         const tierName = tierNames[tier] || tier
         const isUpgrade = !!existingClient
         const msg = isUpgrade
-          ? `${purchase.name}，你的方案已升級為「${tierName}」！\n\n所有新功能已解鎖，直接使用下方按鈕開始 👇`
-          : `${purchase.name}，付款成功！你的「${tierName}」已啟用 🎉\n\n你的學員代碼：${uniqueCode}\n\n直接使用下方按鈕開始記錄 👇`
+          ? `${updated.name}，你的方案已升級為「${tierName}」！\n\n所有新功能已解鎖，直接使用下方按鈕開始 👇`
+          : `${updated.name}，付款成功！你的「${tierName}」已啟用 🎉\n\n你的學員代碼：${uniqueCode}\n\n直接使用下方按鈕開始記錄 👇`
         pushMessage(updatedClient.line_user_id, [{ type: 'text', text: msg }]).catch((err) => {
           log.error('Payment LINE push error (non-blocking)', err)
         })

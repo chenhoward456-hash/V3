@@ -155,12 +155,27 @@ export async function GET(request: NextRequest) {
       result.labComparisons = compareLabResults(labResults)
     }
 
+    // AI 功能每日上限檢查（僅針對耗 API 的功能）
+    if (type === 'weekly-report' || type === 'meal-suggestion' || type === 'lab-comparison-summary') {
+      const todayStr = new Date().toISOString().split('T')[0]
+      const { count: aiDailyCount } = await supabase
+        .from('ai_chat_usage')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', client.id)
+        .gte('created_at', todayStr)
+
+      if ((aiDailyCount ?? 0) >= 10) {
+        return NextResponse.json({ error: '今日 AI 分析次數已達上限（10 次），明天再試' }, { status: 429 })
+      }
+    }
+
     // AI 功能（耗 API call）— 僅在指定時才觸發
     if (type === 'weekly-report') {
       if (!process.env.ANTHROPIC_API_KEY) {
         return NextResponse.json({ error: 'AI 服務未設定' }, { status: 500 })
       }
       result.weeklyReport = await generateWeeklyAIReport(insightData)
+      await supabase.from('ai_chat_usage').insert({ client_id: client.id })
     }
 
     if (type === 'lab-comparison-summary') {
@@ -170,6 +185,7 @@ export async function GET(request: NextRequest) {
       const comparisons = compareLabResults(labResults)
       result.labComparisons = comparisons
       result.labSummary = await generateLabComparisonSummary(comparisons)
+      await supabase.from('ai_chat_usage').insert({ client_id: client.id })
     }
 
     if (type === 'meal-suggestion') {
@@ -193,6 +209,7 @@ export async function GET(request: NextRequest) {
       }
 
       result.mealSuggestion = await generateMealSuggestion(remaining, { isTrainingDay, mealType })
+      await supabase.from('ai_chat_usage').insert({ client_id: client.id })
     }
 
     return NextResponse.json(result)

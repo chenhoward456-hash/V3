@@ -52,20 +52,29 @@ function estimateTokens(text: string): number {
 
 /**
  * 裁剪對話歷史，確保不超過 token 上限
- * 保留最新的訊息，從舊的開始裁剪
+ * 始終保留第一條訊息（通常包含客戶健康數據上下文），從舊的開始裁剪其餘訊息
  */
 function trimMessagesToFit(messages: ChatMessage[], maxTokens: number = 6000): ChatMessage[] {
-  let totalTokens = 0
-  const result: ChatMessage[] = []
+  if (messages.length === 0) return []
 
-  for (let i = messages.length - 1; i >= 0; i--) {
+  // Always keep the first message (usually contains client context)
+  const firstMsg = messages[0]
+  const firstMsgTokens = estimateTokens(firstMsg.content)
+
+  if (messages.length === 1) return [firstMsg]
+
+  // Fill remaining budget from newest messages
+  let totalTokens = firstMsgTokens
+  const tail: ChatMessage[] = []
+
+  for (let i = messages.length - 1; i >= 1; i--) {
     const msgTokens = estimateTokens(messages[i].content)
-    if (totalTokens + msgTokens > maxTokens && result.length > 0) break
+    if (totalTokens + msgTokens > maxTokens && tail.length > 0) break
     totalTokens += msgTokens
-    result.unshift(messages[i])
+    tail.unshift(messages[i])
   }
 
-  return result
+  return [firstMsg, ...tail]
 }
 
 export async function askClaude(

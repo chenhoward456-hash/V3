@@ -509,6 +509,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 通知教練 cron 錯誤
+    if (results.errors.length > 0) {
+      const coachLineId = process.env.COACH_LINE_USER_ID
+      if (coachLineId) {
+        const errorSummary = [
+          `⚠️ 週排程執行有 ${results.errors.length} 個錯誤：`,
+          '',
+          ...results.errors.slice(0, 5).map(e => `• ${e}`),
+          ...(results.errors.length > 5 ? [`...還有 ${results.errors.length - 5} 個錯誤`] : []),
+        ].join('\n')
+        pushMessage(coachLineId, [{ type: 'text', text: errorSummary }]).catch(err => {
+          logger.error('Failed to notify coach about weekly cron errors', err)
+        })
+      }
+    }
+
     return NextResponse.json({
       success: results.errors.length === 0,
       timestamp: today.toISOString(),
