@@ -538,7 +538,7 @@ function buildOnboardingGuide(name: string, tier: string): string {
       '✅ 以上全部功能',
       '✅ CSCS 教練每週審閱你的數據',
       '✅ LINE 一對一諮詢',
-      '✅ 補劑與血檢個人化建議',
+      '✅ 完整補品管理與血檢追蹤',
       '',
       '💡 第一步：現在就輸入今天的體重吧！',
     ].join('\n')

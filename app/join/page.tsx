@@ -58,7 +58,7 @@ const PLANS: Record<Tier, {
       '包含自主管理所有功能',
       'CSCS 教練每週數據審閱',
       'LINE 一對一營養 / 訓練諮詢',
-      '個人化補劑與血檢建議',
+      '完整補品管理與血檢追蹤',
     ],
     highlight: true,
     badge: '全台適用',

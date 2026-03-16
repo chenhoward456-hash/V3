@@ -15,7 +15,7 @@ const PLAN_INFO: Record<string, { name: string; price: number; priceLabel: strin
     name: '教練指導方案',
     price: 2999,
     priceLabel: '2,999',
-    features: ['包含自主管理所有功能', 'CSCS 教練每週數據審閱', 'LINE 一對一營養 / 訓練諮詢', '個人化補劑與血檢建議'],
+    features: ['包含自主管理所有功能', 'CSCS 教練每週數據審閱', 'LINE 一對一營養 / 訓練諮詢', '完整補品管理與血檢追蹤'],
   },
 }
 
