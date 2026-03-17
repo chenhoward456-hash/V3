@@ -155,7 +155,13 @@ export interface NutritionInput {
   trainingDaysPerWeek: number
 
   // 備賽階段（可選）
-  prepPhase?: string  // 'peak_week' | 'cut' | 'bulk' | 'off_season' | etc.
+  prepPhase?: string  // 'peak_week' | 'cut' | 'bulk' | 'off_season' | 'preparation' | etc.
+
+  // 客戶模式（用於區分 athletic vs bodybuilding 的營養策略）
+  clientMode?: 'standard' | 'health' | 'bodybuilding' | 'athletic'
+
+  // 秤重到比賽的間距（小時），用於超補償期計算
+  weighInGapHours?: number | null
 
   // 活動量分型（影響 TDEE 估算與有氧/步數建議）
   // sedentary = 上班族，步數受限，有氧時間少
@@ -202,7 +208,7 @@ export interface NutritionInput {
 }
 
 export interface NutritionSuggestion {
-  status: 'on_track' | 'too_fast' | 'plateau' | 'wrong_direction' | 'insufficient_data' | 'low_compliance' | 'peak_week' | 'goal_driven'
+  status: 'on_track' | 'too_fast' | 'plateau' | 'wrong_direction' | 'insufficient_data' | 'low_compliance' | 'peak_week' | 'goal_driven' | 'athletic_rebound' | 'athletic_weigh_in'
   statusLabel: string
   statusEmoji: string
   message: string
@@ -309,6 +315,16 @@ export interface NutritionSuggestion {
   // 基因修正紀錄（已套用到建議值中，前端可顯示）
   geneticCorrections: GeneticCorrection[]
 
+  // 建議水量 (ml)
+  suggestedWater?: number | null
+
+  // Athletic 超補償期詳情
+  athleticRebound?: {
+    gapHours: number
+    strategy: 'short' | 'medium' | 'long'
+    waterPerHour: number  // mL/hour rehydration rate
+  } | null
+
   // 賽後恢復標記（比賽日期已過時自動啟用）
   postCompetitionRecovery?: boolean
   recoveryWater?: number  // 恢復期建議水量 (ml)
@@ -404,6 +420,38 @@ const GOAL_DRIVEN = {
   MIN_FAT_PER_KG_FEMALE: 0.9,    // 女性備賽最低 0.9 g/kg（低於此月經功能風險增加）
   // [2] Garthe 2011: >1.4% → LBM 顯著損失；[1] Helms 2014: 建議 0.5-1.0%
   MAX_WEEKLY_LOSS_PCT: 1.2,       // goal-driven 放寬到 1.2%（1.0% 理想上限 + 備賽彈性）
+}
+
+// ── Athletic 模式營養常數 ──
+// Reale et al. 2017 — "Fighting Weight" (chronic + acute weight loss protocols)
+// Garthe et al. 2011 — Slow vs fast weight loss in athletes
+// Thomas et al. 2016 — ACSM nutrition for athletes (carb guidelines)
+// Artioli et al. 2016 — Rapid weight loss in combat sports
+// Burke et al. 2011 — Carb loading for performance
+const ATHLETIC_CUT = {
+  // ── 慢性降重（備戰期，離秤重 >5 天）──
+  // Reale 2017: combat sport athletes 0.5-1.0% BW/week
+  // Garthe 2011: slower loss = better LBM preservation
+  MAX_WEEKLY_LOSS_PCT: 1.0,           // 比健美 1.2% 保守（保護運動表現）
+  CARB_FLOOR_TRAINING_PER_KG: 4.0,   // 訓練日碳水下限 g/kg（Thomas 2016: 3-5g/kg for moderate exercise）
+  CARB_FLOOR_REST_PER_KG: 3.0,       // 休息日碳水下限
+
+  // ── 急性降重（備戰期最後 5 天）──
+  // Reale 2017: acute weight loss via low-residue diet + water manipulation
+  ACUTE_DAYS: 5,                      // 進入急性期的天數閾值
+  ACUTE_CARB_PER_KG: 2.0,            // 急性期碳水（最低可執行量）
+  ACUTE_FIBER_MAX_G: 10,             // 低渣飲食（減少腸道殘留重量）
+  ACUTE_WATER_LOADING_ML_KG: 100,    // Day 5-3: 水分超載 mL/kg
+  ACUTE_WATER_CUT_ML_KG: 15,         // Day 1: 限水 mL/kg
+
+  // ── 超補償期（秤重後 → 比賽前）──
+  // Reale 2017 / Artioli 2016: rapid rehydration + glycogen supercompensation
+  REBOUND_WATER_ML_PER_HOUR: 1500,   // 1-1.5L/hour rehydration rate
+  REBOUND_CARB_SHORT_PER_KG_HR: 1.5, // <6h 窗口: g/kg/hour（液態碳水為主）
+  REBOUND_CARB_MEDIUM_PER_KG: 8.0,   // 6-18h 窗口: g/kg total
+  REBOUND_CARB_LONG_PER_KG: 10.0,    // 18-30h 窗口: g/kg total
+  REBOUND_PROTEIN_PER_KG: 1.5,       // 低蛋白（不影響補碳速度）
+  REBOUND_FAT_PER_KG: 0.5,           // 最低脂肪（不佔胃容量）
 }
 
 // 動態能量密度（取代靜態 7700 kcal/kg）
@@ -1260,11 +1308,25 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     }
 
     const daysLeft = Math.max(0, rawDaysLeft)
-    if (daysLeft <= 7) {
-      return { ...generatePeakWeekPlan(input, daysLeft, cycleInfo), ...stateFields }
+
+    // Athletic 模式：秤重日 / 超補償期直接走專用引擎
+    if (input.clientMode === 'athletic') {
+      if (input.prepPhase === 'weigh_in') {
+        return { ...generateAthleticWeighIn(input), ...stateFields }
+      }
+      if (input.prepPhase === 'rebound') {
+        return { ...generateAthleticRebound(input.bodyWeight, input.gender, input.weighInGapHours ?? 24), ...stateFields }
+      }
     }
-    if (daysLeft <= 14) {
-      previewPeakWeekPlan = generatePeakWeekPlan(input, 7, cycleInfo).peakWeekPlan
+
+    // Peak Week 自動偵測 — 僅 bodybuilding，athletic 不適用
+    if (input.clientMode !== 'athletic') {
+      if (daysLeft <= 7) {
+        return { ...generatePeakWeekPlan(input, daysLeft, cycleInfo), ...stateFields }
+      }
+      if (daysLeft <= 14) {
+        previewPeakWeekPlan = generatePeakWeekPlan(input, 7, cycleInfo).peakWeekPlan
+      }
     }
   }
 
@@ -1405,10 +1467,10 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
 
     deadlineInfo = { daysLeft, weeksLeft: Math.round(weeksLeft * 10) / 10, weightToLose: Math.round(weightToLose * 10) / 10, requiredRatePerWeek: Math.round(requiredRatePerWeek * 100) / 100, isAggressive }
 
-    // Peak Week 體重三層拆分（備賽 + 減脂模式）
+    // Peak Week 體重三層拆分（備賽 + 減脂模式）— 僅 bodybuilding，athletic 不適用
     // [14] Homer/Helms 2024: 水分操控可減 ~1.5-3% BW；取 2% 為保守估計
     // [12] Escalante 2021: depletion → loading → taper → show day
-    if (input.prepPhase && input.goalType === 'cut' && daysLeft > 7) {
+    if (input.prepPhase && input.goalType === 'cut' && daysLeft > 7 && input.clientMode !== 'athletic') {
       const waterCutPct = 0.02  // 預設 2%，保守估計 [14]
       const peakWeekExpectedLoss = Math.round(thisWeekAvg * waterCutPct * 10) / 10
       const prePeakEntryWeight = Math.round((input.targetWeight! + peakWeekExpectedLoss) * 10) / 10
@@ -2081,12 +2143,15 @@ function generateGoalDrivenCut(
 
   // 2. 減速上限：cap 赤字在安全範圍（MAX_WEEKLY_LOSS_PCT）
   // 超過此上限 → 不再加深赤字，改標記不可行
-  const maxSafeWeeklyLoss = bw * GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT / 100
+  // Athletic 模式使用更保守的 1.0% BW/week（Reale 2017, Garthe 2011）
+  const isAthleticPrep = input.clientMode === 'athletic' && input.prepPhase === 'preparation'
+  const maxWeeklyLossPct = isAthleticPrep ? ATHLETIC_CUT.MAX_WEEKLY_LOSS_PCT : GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT
+  const maxSafeWeeklyLoss = bw * maxWeeklyLossPct / 100
   const maxSafeDailyDeficit = Math.round((maxSafeWeeklyLoss * energyDensity) / 7)
   let goalInfeasible = false
   if (requiredDailyDeficit > maxSafeDailyDeficit) {
     goalInfeasible = true
-    warnings.push(`🚫 需要每週減 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW），超過安全上限 ${GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT}%。系統已將赤字鎖定在安全上限，建議與教練討論延長時程或調整目標體重`)
+    warnings.push(`🚫 需要每週減 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW），超過安全上限 ${maxWeeklyLossPct}%。系統已將赤字鎖定在安全上限，建議與教練討論延長時程或調整目標體重`)
   }
   // 實際赤字不超過安全上限
   const cappedDailyDeficit = Math.min(requiredDailyDeficit, maxSafeDailyDeficit)
@@ -2443,6 +2508,34 @@ function generateGoalDrivenCut(
     }
     // 碳循環拆分後，休息日碳水也要套用基因下限（5-HTTLPR SL/SS）
     suggestedCarbsRD = applyGeneticCarbFloor(suggestedCarbsRD, input.geneticProfile, geneticCorrections)
+  }
+
+  // 6b. Athletic 備戰期碳水下限保護（Thomas 2016: 3-5g/kg for moderate exercise）
+  if (isAthleticPrep) {
+    const acuteDaysLeft = deadlineInfo?.daysLeft ?? Infinity
+    if (acuteDaysLeft <= ATHLETIC_CUT.ACUTE_DAYS) {
+      // 急性期：碳水降到最低可執行量
+      const acuteCarbFloor = Math.round(bw * ATHLETIC_CUT.ACUTE_CARB_PER_KG)
+      suggestedCarb = Math.max(suggestedCarb, acuteCarbFloor)
+      if (suggestedCarbsTD != null) suggestedCarbsTD = Math.max(suggestedCarbsTD, acuteCarbFloor)
+      if (suggestedCarbsRD != null) suggestedCarbsRD = Math.max(suggestedCarbsRD, acuteCarbFloor)
+      warnings.push(`🥊 急性降重期（距秤重 ${acuteDaysLeft} 天）：低渣飲食（纖維 <${ATHLETIC_CUT.ACUTE_FIBER_MAX_G}g），減少腸道殘留重量`)
+      // 水分操控提示
+      if (acuteDaysLeft >= 3) {
+        warnings.push(`💧 水分超載期：建議水量 ${Math.round(bw * ATHLETIC_CUT.ACUTE_WATER_LOADING_ML_KG)}mL/天（${ATHLETIC_CUT.ACUTE_WATER_LOADING_ML_KG}mL/kg）`)
+      } else if (acuteDaysLeft === 1) {
+        warnings.push(`💧 限水期：建議水量 ${Math.round(bw * ATHLETIC_CUT.ACUTE_WATER_CUT_ML_KG)}mL/天（${ATHLETIC_CUT.ACUTE_WATER_CUT_ML_KG}mL/kg），秤重後立刻補水`)
+      }
+    } else {
+      // 慢性降重期：碳水下限保護（保護運動表現）
+      const trainingCarbFloor = Math.round(bw * ATHLETIC_CUT.CARB_FLOOR_TRAINING_PER_KG)
+      const restCarbFloor = Math.round(bw * ATHLETIC_CUT.CARB_FLOOR_REST_PER_KG)
+      suggestedCarb = Math.max(suggestedCarb, restCarbFloor)
+      if (suggestedCarbsTD != null) suggestedCarbsTD = Math.max(suggestedCarbsTD, trainingCarbFloor)
+      if (suggestedCarbsRD != null) suggestedCarbsRD = Math.max(suggestedCarbsRD, restCarbFloor)
+    }
+    // 重算 actualCalories（碳水可能因 floor 被提高）
+    actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
   }
 
   // 7. 構建狀態訊息
@@ -2867,6 +2960,98 @@ function generateBulkSuggestion(
     perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(suggestedPro)),
     geneticCorrections: bulkGC,
   }
+}
+
+// ===== Athletic 秤重日引擎 =====
+// 秤重日：最小化攝入，秤重後立刻開始回補
+
+function generateAthleticWeighIn(input: NutritionInput): NutritionSuggestion {
+  const bw = input.bodyWeight
+  const isMale = input.gender === '男性'
+  // 最低安全熱量（同備賽極限）
+  const minCal = isMale ? GOAL_DRIVEN.MIN_CALORIES_MALE : GOAL_DRIVEN.MIN_CALORIES_FEMALE
+  const protein = Math.round(bw * 1.5)  // 低蛋白（不佔胃容量）
+  const fat = Math.round(bw * 0.3)
+  const carbs = Math.max(20, Math.round((minCal - protein * 4 - fat * 9) / 4))
+  const calories = Math.round(protein * 4 + carbs * 4 + fat * 9)
+
+  return emptyResult({
+    status: 'athletic_weigh_in',
+    statusLabel: '秤重日',
+    statusEmoji: '⚖️',
+    message: '秤重日：最小化攝入，秤重後立刻開始超補償回補。',
+    suggestedCalories: calories,
+    suggestedProtein: protein,
+    suggestedCarbs: carbs,
+    suggestedFat: fat,
+    autoApply: false,
+    warnings: [
+      '⚖️ 秤重日：最小化攝入直到秤重完成',
+      '🔄 秤重後立刻開始回補：優先液態碳水 + 電解質飲品',
+      '💧 秤重前限制水分，秤重後立刻補水（目標 1-1.5L/小時）',
+    ],
+  })
+}
+
+// ===== Athletic 超補償期引擎 =====
+// Reale 2017 / Artioli 2016: rapid rehydration + glycogen supercompensation
+// Burke 2011: Carb loading for performance
+
+function generateAthleticRebound(
+  bodyWeight: number,
+  gender: string,
+  gapHours: number,
+): NutritionSuggestion {
+  const bw = bodyWeight
+
+  let carbs: number
+  let strategy: 'short' | 'medium' | 'long'
+  let strategyNote: string
+
+  if (gapHours < 6) {
+    // <6h 窗口：液態碳水為主，g/kg/hour × hours × bw
+    carbs = Math.round(ATHLETIC_CUT.REBOUND_CARB_SHORT_PER_KG_HR * gapHours * bw)
+    strategy = 'short'
+    strategyNote = `短窗口（${gapHours}h）：液態碳水為主（運動飲料、果汁、蜂蜜水），每小時 ${ATHLETIC_CUT.REBOUND_CARB_SHORT_PER_KG_HR}g/kg`
+  } else if (gapHours < 18) {
+    // 6-18h 窗口：結構化進食
+    carbs = Math.round(ATHLETIC_CUT.REBOUND_CARB_MEDIUM_PER_KG * bw)
+    strategy = 'medium'
+    strategyNote = `中窗口（${gapHours}h）：結構化進食，目標碳水 ${ATHLETIC_CUT.REBOUND_CARB_MEDIUM_PER_KG}g/kg（${carbs}g）`
+  } else {
+    // ≥18h 窗口：完整飲食
+    carbs = Math.round(ATHLETIC_CUT.REBOUND_CARB_LONG_PER_KG * bw)
+    strategy = 'long'
+    strategyNote = `長窗口（${gapHours}h）：完整碳水超補，目標 ${ATHLETIC_CUT.REBOUND_CARB_LONG_PER_KG}g/kg（${carbs}g）`
+  }
+
+  const protein = Math.round(ATHLETIC_CUT.REBOUND_PROTEIN_PER_KG * bw)
+  const fat = Math.round(ATHLETIC_CUT.REBOUND_FAT_PER_KG * bw)
+  const calories = Math.round(protein * 4 + carbs * 4 + fat * 9)
+  const waterPerHour = ATHLETIC_CUT.REBOUND_WATER_ML_PER_HOUR
+  const totalWater = Math.round(waterPerHour * Math.min(gapHours, 6))  // 前 6 小時最重要
+
+  return emptyResult({
+    status: 'athletic_rebound',
+    statusLabel: '超補償期',
+    statusEmoji: '⚡',
+    message: `秤重到比賽間距 ${gapHours} 小時。${strategyNote}`,
+    suggestedCalories: calories,
+    suggestedProtein: protein,
+    suggestedCarbs: carbs,
+    suggestedFat: fat,
+    suggestedWater: totalWater,
+    autoApply: false,
+    athleticRebound: { gapHours, strategy, waterPerHour },
+    warnings: [
+      `⚡ 超補償策略：${strategyNote}`,
+      `💧 補水目標：前幾小時 ${waterPerHour}mL/小時（含電解質），總計約 ${totalWater}mL`,
+      `🍞 蛋白質 ${protein}g（${ATHLETIC_CUT.REBOUND_PROTEIN_PER_KG}g/kg）、脂肪 ${fat}g（${ATHLETIC_CUT.REBOUND_FAT_PER_KG}g/kg）— 低蛋白低脂，不佔胃容量`,
+      ...(strategy === 'short' ? ['🥤 優先液態碳水：運動飲料、果汁、蜂蜜水、白飯粥'] : []),
+      ...(strategy === 'medium' ? ['🍚 高 GI 碳水為主：白飯、白麵包、馬鈴薯、運動飲料'] : []),
+      ...(strategy === 'long' ? ['🍝 完整進食：白飯、麵食、馬鈴薯、水果、運動飲料'] : []),
+    ],
+  })
 }
 
 // ===== Peak Week 引擎 =====

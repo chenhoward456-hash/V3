@@ -2336,7 +2336,8 @@ describe('edge cases', () => {
         { week: 1, avgWeight: 80.3 },
       ],
     }))
-    expect(result.status).toBe('goal_driven')
+    // daysLeft=1 triggers Peak Week auto-detection (daysLeft <= 7)
+    expect(result.status).toBe('peak_week')
   })
 
   it('should provide refeed trigger when state=struggling and lowCarbDays>=5', () => {

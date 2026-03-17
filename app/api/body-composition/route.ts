@@ -166,6 +166,8 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     avgDailyCalories: avgCal,
     trainingDaysPerWeek,
     prepPhase: client.prep_phase || undefined,
+    clientMode: (client.client_mode as 'standard' | 'health' | 'bodybuilding' | 'athletic') || undefined,
+    weighInGapHours: (client as any).weigh_in_gap_hours ?? undefined,
     activityProfile: (client.activity_profile as 'sedentary' | 'high_energy_flux') || undefined,
     geneticProfile: (client.gene_mthfr || client.gene_apoe || client.gene_depression_risk) ? {
       mthfr: client.gene_mthfr || undefined,

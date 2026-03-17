@@ -488,7 +488,7 @@ export default function ClientDashboard() {
           apoe: c.gene_apoe as any,
           depressionRisk: c.gene_depression_risk as any,
         },
-        prepPhase: (c.prep_phase as 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | null) || null,
+        prepPhase: (c.prep_phase as 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | 'preparation' | 'weigh_in' | 'rebound' | null) || null,
       }
     )
   }, [clientData?.client, clientData?.trainingLogs])
@@ -1843,6 +1843,31 @@ export default function ClientDashboard() {
                 fallback={<span>升級自主管理版 — NT$499/月</span>}
               />
             </Link>
+          </div>
+        )}
+
+        {/* 自主管理用戶升級教練指導提示 */}
+        {isSelfManaged && streakDays >= 7 && (
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-3xl p-5 mb-6">
+            <div className="text-center mb-3">
+              <span className="text-2xl">👑</span>
+              <p className="text-sm font-bold text-gray-800 mt-1">
+                想讓教練幫你看數據？
+              </p>
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                你已經累積了 {streakDays} 天的數據。升級教練指導方案，每週由 CSCS 教練審閱你的進度、調整營養計畫。
+              </p>
+            </div>
+            <a
+              href="https://lin.ee/LP65rCc"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('upgrade_cta_clicked', { source: 'coached_prompt', streak_days: streakDays })}
+              className="block text-center bg-[#06C755] text-white text-sm font-bold py-3 rounded-xl hover:bg-[#05b04d] transition-all"
+            >
+              加 LINE 諮詢升級 — NT$2,999/月
+            </a>
+            <p className="text-[10px] text-gray-400 mt-1.5 text-center">開啟 LINE 後輸入「升級」即可</p>
           </div>
         )}
 

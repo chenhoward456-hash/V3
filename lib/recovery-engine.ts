@@ -140,7 +140,7 @@ export interface RecoveryInput {
   inLutealPhase?: boolean               // 女性黃體期
   inMenstruation?: boolean              // 經期中
   prepPhase?: 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery'
-    | 'training_camp' | 'weight_cut' | 'weigh_in' | 'rebound' | null
+    | 'preparation' | 'weigh_in' | 'rebound' | null
 }
 
 // ═══════════════════════════════════════
@@ -324,7 +324,7 @@ function assessMuscularRecovery(
   const isCompetition = prepPhase === 'competition'
   const isWeighIn = prepPhase === 'weigh_in'
   const isRebound = prepPhase === 'rebound'
-  const isWeightCut = prepPhase === 'weight_cut'
+  const isPreparation = prepPhase === 'preparation'
 
   // weigh_in: skip all penalty (same as competition)
   // rebound: treat like recovery
@@ -339,10 +339,10 @@ function assessMuscularRecovery(
   const highRPE = last7.filter(t => t.rpe != null && t.rpe >= 8).length
 
   // peak_week: 7 天訓練頻率 penalty 減半；competition: 跳過
-  // weight_cut: frequency penalty halved (similar to peak_week but encourages taper)
+  // preparation: frequency penalty halved (similar to peak_week but encourages taper)
   if (!isCompetition) {
-    const freqPenaltyMultiplier = (isPeakWeek || isWeightCut) ? 0.5 : 1
-    if (trainDays >= 6) { score -= Math.round(25 * freqPenaltyMultiplier); if (!isPeakWeek && !isWeightCut) signals.push(`近 7 天訓練 ${trainDays} 天，肌肉恢復不足`); else signals.push(`${isPeakWeek ? 'Peak Week' : '降體重'}期間高頻訓練屬預期（${trainDays} 天/週）`) }
+    const freqPenaltyMultiplier = (isPeakWeek || isPreparation) ? 0.5 : 1
+    if (trainDays >= 6) { score -= Math.round(25 * freqPenaltyMultiplier); if (!isPeakWeek && !isPreparation) signals.push(`近 7 天訓練 ${trainDays} 天，肌肉恢復不足`); else signals.push(`${isPeakWeek ? 'Peak Week' : '備戰期'}期間高頻訓練屬預期（${trainDays} 天/週）`) }
     else if (trainDays >= 5) { score -= Math.round(15 * freqPenaltyMultiplier); signals.push(`近 7 天訓練 ${trainDays} 天`) }
     else if (trainDays <= 2) { score += 15; signals.push(`近 7 天僅訓練 ${trainDays} 天，恢復充足`) }
   }
@@ -350,8 +350,8 @@ function assessMuscularRecovery(
   if (highRPE >= 4) { score -= 20; signals.push(`${highRPE} 次高強度（RPE≥8），肌肉疲勞累積`) }
   else if (highRPE >= 3) { score -= 10; signals.push(`${highRPE} 次高強度訓練`) }
 
-  // 連續訓練天數（不休息）— peak_week/competition/weight_cut/weigh_in/rebound 時跳過
-  if (!isPeakWeek && !isCompetition && !isWeightCut && !isRebound) {
+  // 連續訓練天數（不休息）— peak_week/competition/preparation/weigh_in/rebound 時跳過
+  if (!isPeakWeek && !isCompetition && !isPreparation && !isRebound) {
     const sorted = [...trainingLogs].sort((a, b) => b.date.localeCompare(a.date))
     let consecutiveDays = 0
     for (const t of sorted) {

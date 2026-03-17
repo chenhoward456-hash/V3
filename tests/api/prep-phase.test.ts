@@ -241,13 +241,13 @@ describe('PUT /api/prep-phase', () => {
       return createMockQueryBuilder(null, null)
     })
 
-    const req = makePutRequest({ clientId: 'ABC123', prepPhase: 'weight_cut' })
+    const req = makePutRequest({ clientId: 'ABC123', prepPhase: 'preparation' })
     const res = await PUT(req)
     const json = await res.json()
 
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
-    expect(json.data.prepPhase).toBe('weight_cut')
+    expect(json.data.prepPhase).toBe('preparation')
   })
 
   it('accepts all valid bodybuilding phase values', async () => {
@@ -281,7 +281,7 @@ describe('PUT /api/prep-phase', () => {
   })
 
   it('accepts all valid athletic phase values', async () => {
-    const validPhases = ['off_season', 'training_camp', 'weight_cut', 'weigh_in', 'rebound', 'competition', 'recovery']
+    const validPhases = ['off_season', 'preparation', 'weigh_in', 'rebound', 'competition', 'recovery']
 
     for (const phase of validPhases) {
       vi.clearAllMocks()
@@ -341,7 +341,7 @@ describe('PUT /api/prep-phase', () => {
   })
 
   it('rejects athletic-only phases for bodybuilding client', async () => {
-    const athleticOnlyPhases = ['training_camp', 'weight_cut', 'weigh_in', 'rebound']
+    const athleticOnlyPhases = ['preparation', 'weigh_in', 'rebound']
 
     for (const phase of athleticOnlyPhases) {
       vi.clearAllMocks()

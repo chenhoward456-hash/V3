@@ -93,12 +93,12 @@ describe('generateSupplementSuggestions', () => {
     expect(b12).toBeDefined()
   })
 
-  it('should suggest ZMA for low testosterone in males', () => {
+  it('should suggest zinc+magnesium for low testosterone in males', () => {
     const labs = [makeLab('testosterone', 350, 'ng/dL', 'attention')]
     const result = generateSupplementSuggestions(labs, { gender: '男性' })
-    const zma = result.find(s => s.name.includes('ZMA'))
-    expect(zma).toBeDefined()
-    expect(zma!.category).toBe('hormonal')
+    const znMg = result.find(s => s.name.includes('鋅') && s.name.includes('鎂'))
+    expect(znMg).toBeDefined()
+    expect(znMg!.category).toBe('hormonal')
   })
 
   it('should not suggest ZMA for females', () => {

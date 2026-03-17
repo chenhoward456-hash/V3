@@ -52,6 +52,7 @@ interface Client {
   competition_enabled: boolean
   competition_date: string | null
   prep_phase: string
+  weigh_in_gap_hours: number | null
   protein_target: number | null
   water_target: number | null
   carbs_target: number | null
@@ -96,6 +97,10 @@ export default function ClientEditor() {
   const [successMsg, setSuccessMsg] = useState('')
   const [activeTab, setActiveTab] = useState<EditorTab>('basic')
   const [latestBodyComp, setLatestBodyComp] = useState<{ weight: number | null; body_fat: number | null; height: number | null } | null>(null)
+  const [upgradeLink, setUpgradeLink] = useState('')
+  const [upgradeCopied, setUpgradeCopied] = useState(false)
+  const [cancellingOldSub, setCancellingOldSub] = useState(false)
+  const [showCancelOldConfirm, setShowCancelOldConfirm] = useState(false)
 
   const tabs: { key: EditorTab; label: string; icon: string }[] = useMemo(() => {
     if (!client) return []
@@ -135,6 +140,7 @@ export default function ClientEditor() {
         competition_enabled: false,
         competition_date: null,
         prep_phase: 'off_season',
+        weigh_in_gap_hours: null,
         protein_target: null,
         water_target: null,
         carbs_target: null,
@@ -235,6 +241,7 @@ export default function ClientEditor() {
         competition_enabled: client.competition_enabled,
         competition_date: client.competition_date || null,
         prep_phase: client.prep_phase || 'off_season',
+        weigh_in_gap_hours: client.weigh_in_gap_hours ?? null,
         protein_target: client.protein_target ?? null,
         water_target: client.water_target ?? null,
         carbs_target: client.carbs_target ?? null,
@@ -559,6 +566,94 @@ export default function ClientEditor() {
                     ))}
                   </div>
                   <p className="text-xs text-gray-400">切換方案會自動調整功能開關（仍可手動 override）</p>
+
+                  {/* 升級 / 取消定期定額 */}
+                  {/* 升級至教練指導（僅 self_managed 顯示） */}
+                  {client.id && client.subscription_tier === 'self_managed' && (
+                    <div className="mt-3 p-3 bg-purple-50 rounded-xl border border-purple-200 space-y-2">
+                      <p className="text-xs font-semibold text-purple-700">升級至教練指導 $2999</p>
+                      {!upgradeLink ? (
+                        <button
+                          onClick={() => {
+                            const origin = typeof window !== 'undefined' ? window.location.origin : ''
+                            const params = new URLSearchParams({ tier: 'coached', name: client.name || '' })
+                            setUpgradeLink(`${origin}/pay?${params.toString()}`)
+                          }}
+                          className="w-full py-2 text-xs font-semibold bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                          產生付款連結
+                        </button>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="bg-white rounded-lg px-3 py-2 text-xs text-gray-600 break-all font-mono border border-purple-200">
+                            {upgradeLink}
+                          </div>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(upgradeLink)
+                              setUpgradeCopied(true)
+                              setTimeout(() => setUpgradeCopied(false), 2000)
+                            }}
+                            className="w-full py-2 text-xs font-semibold bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                          >
+                            {upgradeCopied ? '已複製 ✓' : '複製連結（丟 LINE 給客戶）'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 取消定期定額（self_managed 或 coached 都可取消） */}
+                  {client.id && client.subscription_tier !== 'free' && (
+                    <div className="mt-2">
+                      {!showCancelOldConfirm ? (
+                        <button
+                          onClick={() => setShowCancelOldConfirm(true)}
+                          className="text-[11px] text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          取消定期定額（${client.subscription_tier === 'coached' ? '2999' : '499'}）
+                        </button>
+                      ) : (
+                        <div className="p-3 bg-red-50 rounded-xl border border-red-200 space-y-1.5">
+                          <p className="text-[11px] text-red-600 font-medium">
+                            確定取消 ${client.subscription_tier === 'coached' ? '2999' : '499'} 定期定額？綠界會停止自動扣款。
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={async () => {
+                                setCancellingOldSub(true)
+                                try {
+                                  const res = await fetch('/api/subscribe/cancel', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ clientId: client.id, uniqueCode: client.unique_code }),
+                                  })
+                                  const data = await res.json()
+                                  if (!res.ok) throw new Error(data.error || '取消失敗')
+                                  showToast('已取消定期定額', 'success')
+                                  setShowCancelOldConfirm(false)
+                                } catch (err: any) {
+                                  showToast(err.message || '取消失敗', 'error')
+                                } finally {
+                                  setCancellingOldSub(false)
+                                }
+                              }}
+                              disabled={cancellingOldSub}
+                              className="px-3 py-1 bg-red-500 text-white text-[11px] rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                            >
+                              {cancellingOldSub ? '處理中...' : '確認取消'}
+                            </button>
+                            <button
+                              onClick={() => setShowCancelOldConfirm(false)}
+                              className="px-3 py-1 bg-gray-100 text-gray-600 text-[11px] rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                              返回
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -667,6 +762,8 @@ export default function ClientEditor() {
                           competition_enabled: mode === 'bodybuilding' || mode === 'athletic',
                           // Reset prep_phase when switching away from competition modes
                           prep_phase: (mode === 'bodybuilding' || mode === 'athletic') ? prev.prep_phase : 'off_season',
+                          // Auto-upgrade from free when setting non-standard mode
+                          subscription_tier: mode !== 'standard' && prev.subscription_tier === 'free' ? 'self_managed' : prev.subscription_tier,
                         }) : prev)}
                         className={`px-2 py-2 text-xs font-medium rounded-md transition-all ${
                           client.client_mode === mode
@@ -1099,6 +1196,21 @@ export default function ClientEditor() {
                       ))}
                     </select>
                   </div>
+                  {client.client_mode === 'athletic' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">秤重到比賽間距（小時）</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={48}
+                        value={client.weigh_in_gap_hours ?? ''}
+                        onChange={(e) => updateClient('weigh_in_gap_hours', e.target.value ? parseInt(e.target.value) : null)}
+                        placeholder="例如：24"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">影響超補償期的碳水計算策略</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -19,7 +19,7 @@ export type ClientMode = 'standard' | 'health' | 'bodybuilding' | 'athletic'
 
 export type BodybuildingPhase = 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery'
 
-export type AthleticPhase = 'off_season' | 'training_camp' | 'weight_cut' | 'weigh_in' | 'rebound' | 'competition' | 'recovery'
+export type AthleticPhase = 'off_season' | 'preparation' | 'weigh_in' | 'rebound' | 'competition' | 'recovery'
 
 export type PrepPhase = BodybuildingPhase | AthleticPhase
 
@@ -32,7 +32,7 @@ export const BODYBUILDING_PHASES: readonly BodybuildingPhase[] = [
 ] as const
 
 export const ATHLETIC_PHASES: readonly AthleticPhase[] = [
-  'off_season', 'training_camp', 'weight_cut', 'weigh_in', 'rebound', 'competition', 'recovery',
+  'off_season', 'preparation', 'weigh_in', 'rebound', 'competition', 'recovery',
 ] as const
 
 // ═══════════════════════════════════════
@@ -80,8 +80,7 @@ export const PHASE_LABELS: Record<string, string> = {
   competition: '比賽日',
   recovery: '賽後恢復',
   // Athletic-only phases
-  training_camp: '集訓期',
-  weight_cut: '降體重',
+  preparation: '備戰期',
   weigh_in: '秤重日',
   rebound: '超補償期',
 }
@@ -118,8 +117,7 @@ export const BODYBUILDING_PHASE_OPTIONS: { value: BodybuildingPhase; label: stri
 
 export const ATHLETIC_PHASE_OPTIONS: { value: AthleticPhase; label: string }[] = [
   { value: 'off_season', label: '休賽期' },
-  { value: 'training_camp', label: '集訓期' },
-  { value: 'weight_cut', label: '降體重' },
+  { value: 'preparation', label: '備戰期' },
   { value: 'weigh_in', label: '秤重日' },
   { value: 'rebound', label: '超補償期' },
   { value: 'competition', label: '比賽日' },

@@ -85,6 +85,7 @@ export interface Client {
   target_date: string | null
   competition_date: string | null
   prep_phase: string | null
+  weigh_in_gap_hours: number | null
   nutrition_enabled: boolean
   supplement_enabled: boolean
   wellness_enabled: boolean

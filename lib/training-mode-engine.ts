@@ -390,7 +390,7 @@ export interface TrainingModeInput {
   baseAdvice: TrainingAdvice
   goalType?: 'cut' | 'bulk' | 'recomp' | null
   prepPhase?: 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery'
-    | 'training_camp' | 'weight_cut' | 'weigh_in' | 'rebound' | null
+    | 'preparation' | 'weigh_in' | 'rebound' | null
   geneticProfile?: GeneticProfile | null
   recentTrainingPattern?: TrainingPatternAnalysis | null
   hormoneLabs?: HormoneLabValues | null
@@ -567,14 +567,11 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
     scores.rest += 30
     scores.active_recovery += 20
     reasons.push({ signal: '備賽階段', emoji: '🏆', description: '比賽日：完全休息或輕度活動' })
-  } else if (prepPhase === 'weight_cut') {
-    scores.reduced_volume += 25
-    scores.high_volume -= 20
-    reasons.push({ signal: '競技階段', emoji: '🥊', description: '降體重期：建議 taper，減少訓練量保留肌力' })
-  } else if (prepPhase === 'training_camp') {
-    scores.high_volume += 20
-    scores.high_intensity += 15
-    reasons.push({ signal: '競技階段', emoji: '🥊', description: '集訓期：加大訓練量和強度' })
+  } else if (prepPhase === 'preparation') {
+    // 備戰期 = 合併集訓+降體重：前期偏訓練量、後期偏減量
+    scores.high_volume += 10
+    scores.reduced_volume += 15
+    reasons.push({ signal: '競技階段', emoji: '🥊', description: '備戰期：維持訓練量同時逐步降重，保留肌力' })
   }
 
   // --- Metabolic Stress (45-59 elevated range) ---
@@ -702,8 +699,8 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       }
     }
 
-    // P1: 連續訓練天數 penalty — peak_week/competition/weight_cut 時跳過（weigh_in/rebound 已由上方 hard override 處理）
-    if (prepPhase !== 'peak_week' && prepPhase !== 'competition' && prepPhase !== 'weight_cut') {
+    // P1: 連續訓練天數 penalty — peak_week/competition/preparation 時跳過（weigh_in/rebound 已由上方 hard override 處理）
+    if (prepPhase !== 'peak_week' && prepPhase !== 'competition' && prepPhase !== 'preparation') {
       if (recentTrainingPattern.consecutiveTrainingDays >= 5) {
         scores.active_recovery += 20
         scores.rest += 15

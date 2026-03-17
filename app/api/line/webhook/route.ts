@@ -233,6 +233,56 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     return
   }
 
+  // 升級教練方案
+  if (text === '升級' || text === '我要升級' || text === '我要升級教練方案') {
+    if (client && client.subscription_tier === 'self_managed') {
+      const payUrl = `${SITE_URL}/pay?tier=coached&name=${encodeURIComponent(client.name)}`
+      await replyMessage(event.replyToken, [
+        {
+          type: 'text',
+          text: [
+            '👑 升級教練指導方案（NT$2,999/月）',
+            '',
+            '升級後你將獲得：',
+            '✅ CSCS 教練每週審閱你的數據',
+            '✅ LINE 一對一營養 / 訓練諮詢',
+            '✅ 完整補品管理與血檢追蹤',
+            '✅ 客製化營養調整',
+            '',
+            `👉 付款連結：${payUrl}`,
+            '',
+            '⚠️ 付款完成後，記得到儀表板取消舊的 $499 定期定額（設定 → 取消定期定額）',
+          ].join('\n'),
+        },
+      ])
+    } else if (client && client.subscription_tier === 'coached') {
+      await replyMessage(event.replyToken, [
+        { type: 'text', text: '你已經是教練指導方案了 👑\n有任何問題直接跟教練說！' },
+      ])
+    } else if (client && client.subscription_tier === 'free') {
+      await replyMessage(event.replyToken, [
+        {
+          type: 'text',
+          text: `目前你是免費方案，可以先升級自主管理版（$499/月）體驗 AI 功能。\n\n👉 ${SITE_URL}/join?tier=self_managed`,
+        },
+      ])
+    } else {
+      await replyMessage(event.replyToken, [
+        {
+          type: 'text',
+          text: `想升級？先看看我們的方案：\n\n👉 ${SITE_URL}/join`,
+          quickReply: {
+            items: [
+              qr('💰 查看方案', '查看方案'),
+              qr('🔗 我有代碼', '我要綁定'),
+            ],
+          },
+        },
+      ])
+    }
+    return
+  }
+
   if (text === '查看方案') {
     await replyMessage(event.replyToken, [
       {
