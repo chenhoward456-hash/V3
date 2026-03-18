@@ -401,6 +401,7 @@ const SAFETY = {
   MIN_FAT_PER_KG: 0.8,           // 男性 (15-20% calories)
   MIN_FAT_PER_KG_FEMALE: 1.0,    // 女性 [9] Loucks 2003 / [10] RED-S: ≥20-25% calories
   MAX_FAT_PER_KG_BULK: 1.2,
+  MAX_SURPLUS_KCAL: 500,          // 增肌盈餘上限 500kcal（ISSN: lean bulk 10-20% surplus）
   MAX_DEFICIT_KCAL: 500,          // [17] ISSN Position Stand: ≤500 kcal/day deficit
   DIET_BREAK_WEEKS: 8,            // [8] MATADOR: intermittent 2wk on/off 優於連續；8 週為保守閾值
 }
@@ -2913,6 +2914,20 @@ function generateBulkSuggestion(
     }
   }
 
+  // 增肌期熱量安全上限：TDEE + MAX_SURPLUS_KCAL
+  if (estimatedTDEE != null) {
+    const maxBulkCal = estimatedTDEE + SAFETY.MAX_SURPLUS_KCAL
+    if (suggestedCal > maxBulkCal) {
+      suggestedCal = maxBulkCal
+      warnings.push(`增肌期熱量已達上限 ${maxBulkCal}kcal（TDEE ${estimatedTDEE} + ${SAFETY.MAX_SURPLUS_KCAL}），避免過度盈餘`)
+    }
+    // 碳水連動：根據 capped 熱量重算碳水上限
+    const maxCarbFromCal = Math.round((suggestedCal - suggestedPro * 4 - suggestedFat * 9) / 4)
+    if (maxCarbFromCal > 0 && suggestedCarb > maxCarbFromCal) {
+      suggestedCarb = maxCarbFromCal
+    }
+  }
+
   if (status === 'on_track') {
     // 即使進度正常，也驗證巨量營養素安全底線
     let validatedPro = currentPro
@@ -2944,7 +2959,7 @@ function generateBulkSuggestion(
 
     // bulk on_track 也計算基因修正
     const otBulkGC: GeneticCorrection[] = []
-    const validatedCarb = applyGeneticCarbFloor(currentCarb, input.geneticProfile, otBulkGC)
+    let validatedCarb = applyGeneticCarbFloor(currentCarb, input.geneticProfile, otBulkGC)
     getApoe4FatWarnings(input.geneticProfile, otBulkGC, warnings)
 
     // on_track 碳循環也要套用血檢碳水修正（與 cut on_track 一致，不能原封不動 pass through）
@@ -2963,14 +2978,29 @@ function generateBulkSuggestion(
       }
     }
 
-    const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat || validatedCarb !== currentCarb
+    // on_track 也驗證熱量上限（修正歷史錯誤值）
+    let validatedCal = currentCal
+    if (estimatedTDEE != null) {
+      const maxBulkCal = estimatedTDEE + SAFETY.MAX_SURPLUS_KCAL
+      if (validatedCal > maxBulkCal) {
+        validatedCal = maxBulkCal
+        warnings.push(`增肌期熱量超過上限，已修正至 ${maxBulkCal}kcal（TDEE ${estimatedTDEE} + ${SAFETY.MAX_SURPLUS_KCAL}）`)
+      }
+      // 碳水連動
+      const maxCarbFromCal = Math.round((validatedCal - validatedPro * 4 - validatedFat * 9) / 4)
+      if (maxCarbFromCal > 0 && validatedCarb > maxCarbFromCal) {
+        validatedCarb = maxCarbFromCal
+      }
+    }
+
+    const hasCorrections = validatedPro !== currentPro || validatedFat !== currentFat || validatedCarb !== currentCarb || validatedCal !== currentCal
     return {
       status, statusLabel, statusEmoji, message,
-      suggestedCalories: currentCal, suggestedProtein: validatedPro,
+      suggestedCalories: validatedCal, suggestedProtein: validatedPro,
       suggestedCarbs: validatedCarb, suggestedFat: validatedFat,
       suggestedCarbsTrainingDay: otBulkCarbsTD,
       suggestedCarbsRestDay: otBulkCarbsRD,
-      caloriesDelta: 0, proteinDelta: validatedPro - currentPro,
+      caloriesDelta: validatedCal - currentCal, proteinDelta: validatedPro - currentPro,
       carbsDelta: validatedCarb - currentCarb, fatDelta: validatedFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested: false, warnings,
