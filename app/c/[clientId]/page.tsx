@@ -520,19 +520,20 @@ export default function ClientDashboard() {
   const [nutritionEngineSuggestion, setNutritionEngineSuggestion] = useState<any>(null)
 
   // 所有有營養追蹤的學員：頁面載入時自動觸發營養引擎更新目標
-  // 備賽客戶由 GoalDrivenStatus 處理，這裡處理一般學員
+  // 備賽客戶由 GoalDrivenStatus 處理目標套用，但這裡仍需取得引擎數據給 AI Chat
   const autoNutritionTriggered = useRef(false)
   useEffect(() => {
     const c = clientData?.client
     if (!c || !c.nutrition_enabled || !c.goal_type) return
-    if (isCompetitionMode(c.client_mode)) return // 備賽客戶由 GoalDrivenStatus 處理
     if (autoNutritionTriggered.current) return
     autoNutritionTriggered.current = true
 
+    const isComp = isCompetitionMode(c.client_mode)
     const triggerAutoAdjust = async () => {
       try {
         const code = clientId as string
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${code}&autoApply=true&code=${code}`)
+        // 備賽客戶不 autoApply（由 GoalDrivenStatus 處理），但仍需取得完整引擎數據
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${code}${isComp ? '' : '&autoApply=true'}&code=${code}`)
         if (!res.ok) {
           console.error('[AutoNutrition] API 失敗:', res.status)
           return
@@ -549,8 +550,8 @@ export default function ClientDashboard() {
           suggestedCarbs: json.suggestion?.suggestedCarbs,
           suggestedFat: json.suggestion?.suggestedFat,
         })
-        // 無論 applied 是否為 true，都刷新 SWR 確保 UI 顯示最新 DB 值
-        if (mutate) {
+        // 非備賽客戶：刷新 SWR 確保 UI 顯示最新 DB 值
+        if (!isComp && mutate) {
           mutate()
         }
       } catch (err) {
@@ -1514,6 +1515,7 @@ export default function ClientDashboard() {
               targetWeight={clientData.client.target_weight}
               competitionDate={clientData.client.competition_date}
               simpleMode={clientData.client.simple_mode}
+              goalType={clientData.client.goal_type}
               onMutate={mutateWithTargets}
             />
           </CollapsibleSection>
@@ -1561,6 +1563,7 @@ export default function ClientDashboard() {
               fatTarget={c.fat_target}
               caloriesTarget={c.calories_target}
               simpleMode={c.simple_mode}
+              sodiumTarget={c.sodium_target}
               onMutate={mutate}
             />
           </CollapsibleSection>
@@ -2041,7 +2044,30 @@ export default function ClientDashboard() {
             weeklyWeightChangeRate: nutritionEngineSuggestion.weeklyWeightChangeRate,
             dietBreakSuggested: nutritionEngineSuggestion.dietBreakSuggested ?? false,
             warnings: nutritionEngineSuggestion.warnings || [],
+            currentState: nutritionEngineSuggestion.currentState,
+            readinessScore: nutritionEngineSuggestion.readinessScore,
+            statusLabel: nutritionEngineSuggestion.statusLabel,
+            refeedSuggested: nutritionEngineSuggestion.refeedSuggested,
+            refeedReason: nutritionEngineSuggestion.refeedReason,
+            refeedDays: nutritionEngineSuggestion.refeedDays,
+            energyAvailability: nutritionEngineSuggestion.energyAvailability,
+            suggestedCalories: nutritionEngineSuggestion.suggestedCalories,
+            suggestedProtein: nutritionEngineSuggestion.suggestedProtein,
+            suggestedCarbs: nutritionEngineSuggestion.suggestedCarbs,
+            suggestedFat: nutritionEngineSuggestion.suggestedFat,
+            suggestedCarbsTrainingDay: nutritionEngineSuggestion.suggestedCarbsTrainingDay,
+            suggestedCarbsRestDay: nutritionEngineSuggestion.suggestedCarbsRestDay,
+            deadlineInfo: nutritionEngineSuggestion.deadlineInfo,
+            peakWeekPlan: nutritionEngineSuggestion.peakWeekPlan,
+            athleticRebound: nutritionEngineSuggestion.athleticRebound,
+            geneticCorrections: nutritionEngineSuggestion.geneticCorrections,
+            wearableInsight: nutritionEngineSuggestion.wearableInsight,
+            metabolicStress: nutritionEngineSuggestion.metabolicStress ? {
+              score: nutritionEngineSuggestion.metabolicStress.score,
+              level: nutritionEngineSuggestion.metabolicStress.level,
+            } : null,
           } : undefined}
+          recoveryAssessment={nutritionEngineSuggestion?.recoveryAssessment ?? undefined}
           coachSummary={c.coach_summary as string | null}
           coachWeeklyNote={c.coach_weekly_note as string | null}
           streakDays={streakDays}

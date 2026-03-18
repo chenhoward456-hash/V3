@@ -18,11 +18,103 @@ interface BodyCompositionProps {
   targetWeight?: number | null
   competitionDate?: string | null
   simpleMode?: boolean
+  goalType?: string | null
   onMutate: (appliedTargets?: Record<string, number | undefined>) => void
 }
 
+function getWeightFeedback(
+  newWeight: number,
+  bodyData: any[],
+  goalType?: string | null,
+  targetWeight?: number | null,
+): { message: string; emoji: string } {
+  // Priority 1: First record
+  const pastRecords = bodyData.filter((r: any) => r.weight != null)
+  if (pastRecords.length === 0) {
+    return { message: '第一筆紀錄完成！持續記錄是最重要的一步', emoji: '🎉' }
+  }
+
+  // Calculate consecutive days (from today backwards)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dateSet = new Set(pastRecords.map((r: any) => r.date))
+  let consecutiveDays = 0
+  for (let i = 0; i <= pastRecords.length + 30; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const dateStr = d.toISOString().split('T')[0]
+    if (dateSet.has(dateStr) || i === 0) {
+      // i === 0: today's record is being submitted now, count it
+      consecutiveDays++
+    } else {
+      break
+    }
+  }
+
+  // Priority 2 & 3: Consecutive recording streaks
+  if (consecutiveDays >= 7) {
+    return { message: `連續記錄 ${consecutiveDays} 天了！一致性是最大的武器`, emoji: '🔥' }
+  }
+  if (consecutiveDays >= 3) {
+    return { message: `已連續記錄 ${consecutiveDays} 天，養成習慣中`, emoji: '💪' }
+  }
+
+  // Calculate weekly averages for trend-based feedback
+  const sorted = [...pastRecords].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  const thisWeekWeights: number[] = [newWeight]
+  const lastWeekWeights: number[] = []
+
+  for (const r of sorted) {
+    const daysAgo = Math.floor((today.getTime() - new Date(r.date).getTime()) / (1000 * 60 * 60 * 24))
+    if (daysAgo >= 0 && daysAgo < 7) {
+      thisWeekWeights.push(r.weight)
+    } else if (daysAgo >= 7 && daysAgo < 14) {
+      lastWeekWeights.push(r.weight)
+    }
+  }
+
+  const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length
+  const hasWeeklyData = thisWeekWeights.length >= 1 && lastWeekWeights.length >= 1
+  const weeklyChange = hasWeeklyData ? avg(thisWeekWeights) - avg(lastWeekWeights) : null
+
+  // Priority 4-6: Cut (減脂) phase
+  if (goalType === 'cut' && weeklyChange !== null) {
+    if (weeklyChange < -0.1) {
+      return { message: `本週趨勢下降 ${Math.abs(weeklyChange).toFixed(1)}kg，穩定進步中`, emoji: '📉' }
+    }
+    if (weeklyChange >= -0.1 && weeklyChange <= 0.1) {
+      return { message: '體重穩定中，不一定是停滯 — 持續保持', emoji: '⚖️' }
+    }
+    return { message: '短期波動很正常，看週均趨勢比較準', emoji: '📊' }
+  }
+
+  // Priority 7-9: Bulk (增肌) phase
+  if (goalType === 'bulk' && weeklyChange !== null) {
+    if (weeklyChange > 0 && weeklyChange <= 0.5) {
+      return { message: '增重節奏很好，繼續保持', emoji: '💪' }
+    }
+    if (weeklyChange > 0.5) {
+      return { message: '增重速度偏快，注意控制增脂比例', emoji: '⚠️' }
+    }
+    if (weeklyChange < 0) {
+      return { message: '增肌期體重微降，留意熱量是否充足', emoji: '🍽️' }
+    }
+  }
+
+  // Priority 10: Close to target weight
+  if (targetWeight != null) {
+    const gap = Math.abs(newWeight - targetWeight)
+    if (gap < 2) {
+      return { message: `離目標只剩 ${gap.toFixed(1)}kg，快到了！`, emoji: '🎯' }
+    }
+  }
+
+  // Priority 11: Default
+  return { message: '已記錄，保持規律量測', emoji: '✅' }
+}
+
 export default function BodyComposition({
-  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, onMutate
+  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, goalType, onMutate
 }: BodyCompositionProps) {
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
@@ -184,7 +276,8 @@ export default function BodyComposition({
       } else {
         onMutate()
       }
-      showToast('身體數據已記錄！', 'success', '🎉')
+      const feedback = getWeightFeedback(weight, bodyData, goalType, targetWeight)
+      showToast(feedback.message, 'success', feedback.emoji)
       if (na?.adjusted) {
         const t1 = setTimeout(() => {
           setNutritionAdjusted({ message: na.message, calories: na.calories, protein: na.protein, carbs: na.carbs, fat: na.fat, adjusted: true })
