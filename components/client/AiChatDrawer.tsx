@@ -533,7 +533,52 @@ ${ra.recommendations.length > 0 ? `- 建議：${ra.recommendations.slice(0, 3).m
 })()}${coachSummary || coachWeeklyNote ? `## 教練備註
 ${coachWeeklyNote ? `- 本週回饋：${coachWeeklyNote.slice(0, 150)}` : ''}
 ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
-` : ''}## 回答原則
+` : ''}## 文獻資料庫（回答時引用以增加說服力）
+### 減脂與體態
+- Helms 2014: 自然健美備賽建議，減重速率 0.5-1.0% BW/週，蛋白質 2.3-3.1g/kg LBM，脂肪 15-30%
+- Garthe 2011: 慢速減脂（0.7% BW/週）比快速（>1.4%）保留更多肌肉量和力量
+- Roberts 2020: 體態選手營養建議，蛋白質 1.8-2.7g/kg
+- Morton 2018: 蛋白質合成飽和點約 1.6g/kg，性別差異小
+- Alpert 2005: 脂肪動員上限 ~31 kcal/磅脂肪/天
+- Kouri 1995: 自然選手 FFMI 上限約 25（男）/ 22（女）
+### 代謝適應與 Diet Break
+- Trexler 2014: 代謝適應機制，diet break 與 reverse diet 策略
+- Byrne 2018 (MATADOR): 間歇性能量限制（2週限制+2週維持）優於連續限制，更多脂肪流失（12.9% vs 8.4%）
+### Peak Week
+- Escalante 2021: 碳水超補 8-12g/kg、水分操控、鈉控制
+- Barakat 2022: 碳水耗竭→超補效果實證（肌肉厚度+2%, 皮下-2%）
+- Homer & Helms 2024: 水分操控可減 1.5-3% BW，碳水負荷個體差異 3-12g/kg
+- Kistler 2024: 碳水超補敘事回顧
+- Tarnopolsky 1995: 女性肌肉肝醣超補反應約為男性 50-70%
+### 荷爾蒙與 RED-S
+- Loucks 2003: 能量可用性 <30 kcal/kg FFM/天 → 荷爾蒙功能障礙閾值
+- Mountjoy 2018 (IOC): RED-S 診斷需 3+ 個月無月經
+### 蛋白質與營養時機
+- Iraki 2019: 休賽期盈餘 +10-20%，蛋白質 1.6-2.2g/kg，每餐 0.40-0.55g/kg
+- Jäger 2017 (ISSN): 蛋白質與運動立場聲明
+- Thomas 2016 (ACSM): 中等運動碳水 3-5g/kg，賽前 3-4h 高碳低纖維餐
+### 恢復與過度訓練
+- Gabbett 2016: ACWR 安全區間 0.8-1.3
+- Buchheit 2014: HRV 是中樞神經恢復最佳替代指標
+- Meeusen 2013 (ECSS/ACSM): 過度訓練預防與診斷框架
+- Plews 2013: HRV 導向訓練優於預設計畫
+### 訓練量
+- Schoenfeld 2017: 每增加一組 ≈ +0.38% 肌肥大
+- Schoenfeld & Grgic 2025: 更新後每增加一組 ≈ +0.24% 肌肥大
+### 補劑
+- Kreider 2017 (ISSN): 肌酸 — 最高等級證據（Grade A）
+- Chandrasekhar 2012: KSM-66 降低皮質醇 27.9%，改善焦慮量表 44%
+- Bhatt 2019 (NEJM REDUCE-IT): EPA 4g/天減少心血管事件 25%
+- Peeling 2018: Ferritin <30 ng/mL 影響 VO2max 和運動表現
+- Guest 2021: 運動員維生素 D 目標 40-60 ng/mL
+### 基因相關
+- Wurtman 1995: 低碳水 → 色氨酸入腦減少 → 血清素下降 → 5-HTTLPR SL/SS 者情緒風險
+- Gilbody 2007: MTHFR 突變 + 熱量赤字 → 甲基化崩潰 → 憂鬱風險
+- Minihane 2015: APOE4 攜帶者對飽和脂肪敏感度為正常人 2-3 倍
+- Tsang 2015: 5-MTHF 補充顯著降低 MTHFR C677T 純合突變者同半胱胺酸
+- Yassine 2017 (JAMA Neurology): APOE4 攜帶者 DHA 補充改善腦部 DHA 攝取
+**引用規則**：回答涉及以上主題時，自然地提及相關文獻（例如「根據 Garthe 2011 研究…」），增加專業說服力。不需要每句都引用，在關鍵建議處引用即可。
+## 回答原則
 1. 根據「剩餘需求」給出具體的外食建議（711、全家、超商、自助餐、外送等）
 2. 每個建議要附上大約的營養素估算（蛋白質、碳水、脂肪、熱量）
 3. 回答以繁體中文為主，語氣親切實用
