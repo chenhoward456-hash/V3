@@ -972,6 +972,9 @@ export default function ClientOverview() {
                 suggestion.status === 'on_track' ? 'bg-green-100 text-green-700' :
                 suggestion.status === 'low_compliance' ? 'bg-gray-100 text-gray-600' :
                 suggestion.status === 'plateau' ? 'bg-amber-100 text-amber-700' :
+                suggestion.status === 'peak_week' || suggestion.status === 'athletic_competition' ? 'bg-purple-100 text-purple-700' :
+                suggestion.status === 'athletic_rebound' ? 'bg-indigo-100 text-indigo-700' :
+                suggestion.status === 'athletic_weigh_in' ? 'bg-orange-100 text-orange-700' :
                 'bg-red-100 text-red-700'
               }`}>{suggestion.statusLabel}</span>
             </div>

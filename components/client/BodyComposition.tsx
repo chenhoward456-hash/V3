@@ -103,7 +103,7 @@ function getWeightFeedback(
       return { message: '增肌期體重微降，留意熱量是否充足', emoji: '🍽️' }
     }
     // weeklyChange === 0
-    return { message: '增重節奏很好，繼續保持', emoji: '💪' }
+    return { message: '體重持平，確認熱量盈餘是否足夠', emoji: '📊' }
   }
 
   // Priority 10: Close to target weight

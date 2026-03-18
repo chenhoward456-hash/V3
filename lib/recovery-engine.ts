@@ -743,11 +743,11 @@ function generateRecommendations(
   const isRebound = prepPhase === 'rebound'
   const isRecovery = prepPhase === 'recovery'
 
-  // Fix #5: 賽後恢復期：專屬建議，跳過一般訓練/過度訓練警告
+  // Fix #5: 賽後恢復期：專屬建議 + 繼續檢查睡眠/醫療/心理警告
   if (isRecovery) {
     recs.push({ priority: 'high', category: 'nutrition', message: '賽後恢復期：漸進增加熱量（reverse diet），每週增加 100-200 大卡。' })
     recs.push({ priority: 'medium', category: 'training', message: '賽後恢復期：以輕量主動恢復為主，2-4 週後逐漸恢復正常訓練量。' })
-    return recs
+    // 不 return — 繼續往下檢查睡眠、代謝壓力、心理狀態、自律神經、血檢等警告
   }
 
   // weigh_in: force rest recommendation

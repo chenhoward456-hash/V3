@@ -395,7 +395,7 @@ ${(() => {
 ${targetWeight ? `- 目標體重：${targetWeight} kg${latestWeight ? `（還差 ${Math.abs(latestWeight - targetWeight).toFixed(1)} kg）` : ''}` : ''}
 ${targetBodyFat ? `- 目標體脂：${targetBodyFat}%` : ''}
 ${dietStartDate ? `- 飲食計畫開始：${dietStartDate}（已執行 ${Math.max(0, Math.round((Date.now() - new Date(dietStartDate).getTime()) / 86400000))} 天）` : ''}
-${streakDays ? `- 連續記錄：${streakDays} 天` : ''}
+${streakDays ? `- 連續記錄：${streakDays} 天${streakMessage ? `（${streakMessage}）` : ''}` : ''}
 
 ## 今日營養目標
 ${caloriesTarget ? `- 熱量目標：${caloriesTarget} kcal` : ''}

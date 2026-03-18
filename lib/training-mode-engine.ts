@@ -578,13 +578,19 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       scores.high_volume -= 10
       reasons.push({ signal: '備賽階段', emoji: '🏆',
         description: `Peak Week Day ${input.peakWeekDaysOut}：耗竭訓練期，控制訓練量` })
-    } else {
+    } else if (input.peakWeekDaysOut != null && input.peakWeekDaysOut >= 4) {
       // Day 5-4：輕量/休息傾向
       scores.reduced_volume += 30
       scores.rest += 15
       scores.high_volume -= 20
       reasons.push({ signal: '備賽階段', emoji: '🏆',
-        description: `Peak Week Day ${input.peakWeekDaysOut ?? '?'}：訓練漸收，準備碳水超補` })
+        description: `Peak Week Day ${input.peakWeekDaysOut}：訓練漸收，準備碳水超補` })
+    } else {
+      // peakWeekDaysOut 為 null（僅有 prepPhase === 'peak_week'，無天數資訊）→ 寬鬆預設
+      scores.reduced_volume += 20
+      scores.high_volume -= 10
+      reasons.push({ signal: '備賽階段', emoji: '🏆',
+        description: 'Peak Week：控制訓練量，為比賽做準備' })
     }
   } else if (prepPhase === 'cut') {
     scores.high_intensity += 15

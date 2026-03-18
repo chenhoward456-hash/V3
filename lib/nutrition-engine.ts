@@ -3245,7 +3245,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
   }
 
   // ===== Day 2 碳水溢出防護（體重回饋機制）=====
-  // Day 3 超補後體重暴漲超過閾值 → Day 2 碳水自動降低，避免 spill-over（碳水溢出到皮下水分）
+  // Day 3 超補後體重暴漲（Day 2 晨重反映）超過閾值 → Day 2 碳水自動降低，避免 spill-over（碳水溢出到皮下水分）
   // 男性閾值 2.0kg / 女性閾值 1.3kg（65% scaling）
   let day2CarbOverride: number | null = null
   let spillOverWarning: string | null = null
@@ -3258,24 +3258,24 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     day7Date.setDate(compDate.getDate() - 7)
     const day7Str = day7Date.toISOString().split('T')[0]
 
-    // Day 3 日期
-    const day3Date = new Date(compDate)
-    day3Date.setDate(compDate.getDate() - 3)
-    const day3Str = day3Date.toISOString().split('T')[0]
+    // Day 2 晨重日期（反映 Day 3 超補後的體重變化）
+    const day2Date = new Date(compDate)
+    day2Date.setDate(compDate.getDate() - 2)
+    const day2Str = day2Date.toISOString().split('T')[0]
 
     // 找 baseline：優先取 Day 7 當天，否則取 Peak Week 最早的紀錄
     const baselineRecord = pwWeights.find(w => w.date === day7Str)
       || pwWeights.reduce((earliest, w) => (w.date < earliest.date ? w : earliest), pwWeights[0])
-    const day3Record = pwWeights.find(w => w.date === day3Str)
+    const day2Record = pwWeights.find(w => w.date === day2Str)
 
-    if (baselineRecord && day3Record) {
-      const weightGain = day3Record.weight - baselineRecord.weight
+    if (baselineRecord && day2Record) {
+      const weightGain = day2Record.weight - baselineRecord.weight
       const threshold = isFemale ? 1.3 : 2.0
       const reducedCarb = isFemale ? 5.0 : 7.0
 
       if (weightGain > threshold) {
         day2CarbOverride = reducedCarb
-        spillOverWarning = `⚠️ Day 3 晨重 ${day3Record.weight}kg（基線 ${baselineRecord.weight}kg，增幅 +${weightGain.toFixed(1)}kg，超過閾值 ${threshold}kg）→ Day 2 碳水已從 ${loadingCarb}g/kg 自動調降至 ${reducedCarb}g/kg，防止肝醣溢出到皮下水分`
+        spillOverWarning = `⚠️ Day 2 晨重 ${day2Record.weight}kg（基線 ${baselineRecord.weight}kg，增幅 +${weightGain.toFixed(1)}kg，超過閾值 ${threshold}kg）→ Day 2 碳水已從 ${loadingCarb}g/kg 自動調降至 ${reducedCarb}g/kg，防止肝醣溢出到皮下水分`
       }
     }
   }

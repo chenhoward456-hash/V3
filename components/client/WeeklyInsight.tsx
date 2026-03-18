@@ -68,6 +68,10 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
     plateau: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', icon: '🟡' },
     wrong_direction: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: '🔴' },
     goal_driven: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', icon: '🎯' },
+    peak_week: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', icon: '🏆' },
+    athletic_competition: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', icon: '🏆' },
+    athletic_rebound: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', icon: '⚡' },
+    athletic_weigh_in: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', icon: '⚖️' },
   }
   const config = statusConfig[data.status] || statusConfig.on_track
 

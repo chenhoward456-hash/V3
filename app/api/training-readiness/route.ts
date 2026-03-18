@@ -234,19 +234,21 @@ export async function GET(request: NextRequest) {
     // 與營養引擎 daysLeft <= 7 自動偵測對齊
     let peakWeekDaysOut: number | null = null
     if (client.competition_date && isCompetitionMode(client.client_mode) && client.client_mode !== 'athletic') {
-      const now = new Date(Date.now() + 8 * 60 * 60 * 1000)  // UTC+8
+      const nowTW = new Date(Date.now() + 8 * 60 * 60 * 1000)  // UTC+8
+      const nowTWMidnight = new Date(nowTW.toISOString().split('T')[0])  // 截到午夜，與 daysUntilDateTW 一致
       const comp = new Date(client.competition_date)
-      peakWeekDaysOut = Math.round((comp.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+      peakWeekDaysOut = Math.round((comp.getTime() - nowTWMidnight.getTime()) / (24 * 60 * 60 * 1000))
       if (peakWeekDaysOut < 0 || peakWeekDaysOut > 7) peakWeekDaysOut = null
     }
 
     // Fix #4: 比賽已結束 → 自動視為 recovery（與營養引擎 rawDaysLeft<0 對齊）
     let effectivePrepPhase = client.prep_phase
     if (client.competition_date && isCompetitionMode(client.client_mode)) {
-      const now = new Date(Date.now() + 8 * 60 * 60 * 1000)  // UTC+8
+      const nowTW = new Date(Date.now() + 8 * 60 * 60 * 1000)  // UTC+8
+      const nowTWMidnight = new Date(nowTW.toISOString().split('T')[0])  // 截到午夜
       const comp = new Date(client.competition_date)
-      const daysSinceComp = Math.round((now.getTime() - comp.getTime()) / (24 * 60 * 60 * 1000))
-      if (daysSinceComp > 0 && daysSinceComp <= 14 && effectivePrepPhase !== 'recovery') {
+      const daysSinceComp = Math.round((nowTWMidnight.getTime() - comp.getTime()) / (24 * 60 * 60 * 1000))
+      if (daysSinceComp > 0 && daysSinceComp <= 14 && !['recovery', 'rebound', 'competition', 'weigh_in'].includes(effectivePrepPhase)) {
         effectivePrepPhase = 'recovery'
       }
     }
