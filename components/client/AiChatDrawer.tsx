@@ -495,6 +495,7 @@ ${dl.cardioNote ? `- ${dl.cardioNote}` : ''}
   return `## Peak Week 每日計畫（系統已算好的精確數字）
 ${plan.map(d => `${d.date}（${d.label}）：碳水 ${d.carbs}g（${d.carbsGPerKg}g/kg）, 蛋白 ${d.protein}g, 脂肪 ${d.fat}g, 熱量 ${d.calories}kcal, 鈉 ${d.sodiumMg}mg, 水 ${d.water}mL, 訓練：${d.trainingNote}`).join('\n')}
 **嚴格規定**：回答任何 Peak Week 相關問題（包括「明天吃什麼」「碳水要多少」等）時，必須直接引用上面的精確數字。絕對不要自己估算或猜測，計畫裡的數字就是正確答案。
+**碳水溢出防護機制**：系統會比較 Day 2 晨重與基線體重（Day 7 或 Peak Week 最早紀錄）。如果增幅超過閾值（男性 2.0kg / 女性 1.3kg），代表 Day 3 碳水超補導致過多水分滯留在皮下，Day 2 碳水會自動從原始超補量調降至男性 7.0g/kg、女性 5.0g/kg。如果上方計畫中 Day 2 標註「已調降」，就是此機制已觸發。
 `
 })()}${(() => {
   const ra = recoveryAssessment
