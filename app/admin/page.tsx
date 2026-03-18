@@ -64,6 +64,7 @@ export default function AdminDashboard() {
   const [recentNutrition, setRecentNutrition] = useState<NutritionRecord[]>([])
   const [recentWellness, setRecentWellness] = useState<WellnessRecord[]>([])
   const [recentRPE, setRecentRPE] = useState<RPERecord[]>([])
+  const [lastActivityMap, setLastActivityMap] = useState<Record<string, string>>({})
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('lastActivity')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -150,6 +151,15 @@ export default function AdminDashboard() {
       setRecentNutrition(data.recentNutrition || [])
       setRecentWellness(data.recentWellness || [])
       setRecentRPE(data.recentTrainingRPE || [])
+      // 從所有活動類型計算最後活動日期
+      const actMap: Record<string, string> = {}
+      const updateAct = (cid: string, date: string) => { if (!actMap[cid] || date > actMap[cid]) actMap[cid] = date }
+      for (const r of (data.activityBody || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
+      for (const r of (data.activityNutrition || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
+      for (const r of (data.activityWellness || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
+      for (const r of (data.activityTraining || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
+      for (const r of (data.supplementLogs || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
+      setLastActivityMap(actMap)
     } catch { /* silent */ } finally { setLoading(false) }
   }
 
@@ -171,12 +181,11 @@ export default function AdminDashboard() {
       const supplementCount = supCountByClient[client.id] || 0
       let weekRate = 0
       if (supplementCount > 0) { weekRate = Math.round((clientLogs.filter(l => l.completed).length / (supplementCount * 7)) * 100) }
-      const completedLogs = clientLogs.filter(l => l.completed)
-      const lastActivity = completedLogs.length > 0 ? completedLogs.sort((a, b) => b.date.localeCompare(a.date))[0].date : null
+      const lastActivity = lastActivityMap[client.id] || null
       stats[client.id] = { weekRate, lastActivity, supplementCount }
     }
     return stats
-  }, [clients, allLogs, allSupplements])
+  }, [clients, allLogs, allSupplements, lastActivityMap])
 
   const summaryStats = useMemo(() => {
     const totalClients = clients.length

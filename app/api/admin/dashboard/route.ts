@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
     const fourteenDaysAgo = new Date()
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
     const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().split('T')[0]
+    const ninetyDaysAgo = new Date()
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+    const ninetyDaysAgoStr = ninetyDaysAgo.toISOString().split('T')[0]
 
     // 3. 平行查詢所有資料
     const [
@@ -40,6 +43,10 @@ export async function GET(request: NextRequest) {
       recentNutritionResult,
       recentWellnessResult,
       recentTrainingRPEResult,
+      activityBodyResult,
+      activityNutritionResult,
+      activityWellnessResult,
+      activityTrainingResult,
     ] = await Promise.all([
       // 所有學員，按建立時間倒序（只選必要欄位）
       supabase
@@ -120,6 +127,12 @@ export async function GET(request: NextRequest) {
         .gte('date', sevenDaysAgoStr)
         .not('rpe', 'is', null)
         .order('date', { ascending: true }),
+
+      // 最近 90 天各類活動日期（用於計算最後活動，只取 client_id + date）
+      supabase.from('body_composition').select('client_id, date').gte('date', ninetyDaysAgoStr),
+      supabase.from('nutrition_logs').select('client_id, date').gte('date', ninetyDaysAgoStr),
+      supabase.from('daily_wellness').select('client_id, date').gte('date', ninetyDaysAgoStr),
+      supabase.from('training_logs').select('client_id, date').gte('date', ninetyDaysAgoStr),
     ])
 
     // 4. 檢查錯誤（僅 log，不阻擋回應）
@@ -136,6 +149,10 @@ export async function GET(request: NextRequest) {
       { name: 'recentNutrition', result: recentNutritionResult },
       { name: 'recentWellness', result: recentWellnessResult },
       { name: 'recentTrainingRPE', result: recentTrainingRPEResult },
+      { name: 'activityBody', result: activityBodyResult },
+      { name: 'activityNutrition', result: activityNutritionResult },
+      { name: 'activityWellness', result: activityWellnessResult },
+      { name: 'activityTraining', result: activityTrainingResult },
     ]
     for (const q of queries) {
       if (q.result.error) {
@@ -157,6 +174,10 @@ export async function GET(request: NextRequest) {
       recentNutrition: recentNutritionResult.data || [],
       recentWellness: recentWellnessResult.data || [],
       recentTrainingRPE: recentTrainingRPEResult.data || [],
+      activityBody: activityBodyResult.data || [],
+      activityNutrition: activityNutritionResult.data || [],
+      activityWellness: activityWellnessResult.data || [],
+      activityTraining: activityTrainingResult.data || [],
     })
   } catch (error) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
