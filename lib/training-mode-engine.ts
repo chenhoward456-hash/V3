@@ -399,6 +399,8 @@ export interface TrainingModeInput {
   recoveryAssessment?: RecoveryAssessment | null
   // P2: 體重變化率（每週 % 變化，負值 = 下降）
   weeklyWeightChangePercent?: number | null
+  /** Peak Week 距比賽日天數（7=最遠, 0=比賽日），僅 peak_week 階段有值 */
+  peakWeekDaysOut?: number | null
 }
 
 export function getTrainingModeRecommendation(input: TrainingModeInput): TrainingModeRecommendation {
@@ -421,6 +423,19 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
   // ───────────────────────────
   // Phase 1: Hard Overrides
   // ───────────────────────────
+
+  // Peak Week Day 3-0（碳水超補/微調/比賽日）→ 強制完全休息（最高優先）
+  // Fix #1: peakWeekDaysOut 由 API route 根據日期計算，不再依賴 prepPhase === 'peak_week'
+  if (input.peakWeekDaysOut != null && input.peakWeekDaysOut <= 3) {
+    const config = MODE_CONFIG.rest
+    const dayLabel = input.peakWeekDaysOut === 0 ? '比賽日'
+      : input.peakWeekDaysOut === 1 ? '微調日' : '碳水超補期'
+    reasons.push({
+      signal: 'Peak Week', emoji: '🏆',
+      description: `Day ${input.peakWeekDaysOut}（${dayLabel}）：完全休息，任何訓練都會消耗超補的肝醣`
+    })
+    return buildRecommendation('rest', config, reasons, geneticCorrections, 'high')
+  }
 
   if (recovery < 30) {
     const config = MODE_CONFIG.rest
@@ -445,6 +460,13 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
     const config = MODE_CONFIG.active_recovery
     reasons.push({ signal: '備賽階段', emoji: '🏆', description: '目前處於賽後恢復期，以主動恢復為主' })
     return buildRecommendation('active_recovery', config, reasons, geneticCorrections, 'high')
+  }
+
+  // Fix #2: 比賽日 → 強制完全休息（Phase 1 硬覆寫，不再靠 Phase 2 scoring）
+  if (prepPhase === 'competition') {
+    const config = MODE_CONFIG.rest
+    reasons.push({ signal: '比賽日', emoji: '🏆', description: '比賽日：完全休息，專注比賽表現' })
+    return buildRecommendation('rest', config, reasons, geneticCorrections, 'high')
   }
 
   // Athletic: weigh_in → forced rest
@@ -547,10 +569,23 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
   }
 
   // --- Prep Phase ---
-  if (prepPhase === 'peak_week') {
-    scores.reduced_volume += 30
-    scores.high_volume -= 20
-    reasons.push({ signal: '備賽階段', emoji: '🏆', description: 'Peak Week：減少訓練量，避免額外疲勞' })
+  // Fix #1: 同時接受 prepPhase === 'peak_week' 或 peakWeekDaysOut 單獨觸發
+  if (prepPhase === 'peak_week' || input.peakWeekDaysOut != null) {
+    // Day 3-0 已被 Phase 1 攔截，這裡處理 Day 4-7
+    if (input.peakWeekDaysOut != null && input.peakWeekDaysOut >= 6) {
+      // Day 7-6：耗竭訓練，允許但降量
+      scores.reduced_volume += 20
+      scores.high_volume -= 10
+      reasons.push({ signal: '備賽階段', emoji: '🏆',
+        description: `Peak Week Day ${input.peakWeekDaysOut}：耗竭訓練期，控制訓練量` })
+    } else {
+      // Day 5-4：輕量/休息傾向
+      scores.reduced_volume += 30
+      scores.rest += 15
+      scores.high_volume -= 20
+      reasons.push({ signal: '備賽階段', emoji: '🏆',
+        description: `Peak Week Day ${input.peakWeekDaysOut ?? '?'}：訓練漸收，準備碳水超補` })
+    }
   } else if (prepPhase === 'cut') {
     scores.high_intensity += 15
     scores.high_volume -= 10
@@ -563,10 +598,7 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
     scores.high_volume += 15
     scores.high_intensity += 10
     reasons.push({ signal: '備賽階段', emoji: '🏆', description: '休賽期：適合提高訓練量和強度' })
-  } else if (prepPhase === 'competition') {
-    scores.rest += 30
-    scores.active_recovery += 20
-    reasons.push({ signal: '備賽階段', emoji: '🏆', description: '比賽日：完全休息或輕度活動' })
+  // Fix #2: competition 已由 Phase 1 硬覆寫攔截，不會到達此處
   } else if (prepPhase === 'preparation') {
     // 備戰期 = 合併集訓+降體重：前期偏訓練量、後期偏減量
     scores.high_volume += 10
@@ -699,8 +731,8 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       }
     }
 
-    // P1: 連續訓練天數 penalty — peak_week/competition/preparation 時跳過（weigh_in/rebound 已由上方 hard override 處理）
-    if (prepPhase !== 'peak_week' && prepPhase !== 'competition' && prepPhase !== 'preparation') {
+    // P1: 連續訓練天數 penalty — peak_week/preparation 時跳過（competition/weigh_in/rebound/recovery 已由 Phase 1 攔截）
+    if (prepPhase !== 'peak_week' && prepPhase !== 'preparation') {
       if (recentTrainingPattern.consecutiveTrainingDays >= 5) {
         scores.active_recovery += 20
         scores.rest += 15

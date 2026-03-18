@@ -325,11 +325,18 @@ function assessMuscularRecovery(
   const isWeighIn = prepPhase === 'weigh_in'
   const isRebound = prepPhase === 'rebound'
   const isPreparation = prepPhase === 'preparation'
+  const isRecovery = prepPhase === 'recovery'
 
   // weigh_in: skip all penalty (same as competition)
   // rebound: treat like recovery
   if (isWeighIn) {
     signals.push('秤重日：跳過所有肌肉恢復 penalty')
+    return { score: clamp(score, 0, 100), state: scoreToState(clamp(score, 0, 100)), signals }
+  }
+
+  // Fix #5: 賽後恢復期：頻率 penalty 全免，鼓勵輕量活動
+  if (isRecovery) {
+    signals.push('賽後恢復期：跳過訓練頻率 penalty，專注漸進恢復')
     return { score: clamp(score, 0, 100), state: scoreToState(clamp(score, 0, 100)), signals }
   }
 
@@ -734,6 +741,14 @@ function generateRecommendations(
   const isCompetition = prepPhase === 'competition'
   const isWeighIn = prepPhase === 'weigh_in'
   const isRebound = prepPhase === 'rebound'
+  const isRecovery = prepPhase === 'recovery'
+
+  // Fix #5: 賽後恢復期：專屬建議，跳過一般訓練/過度訓練警告
+  if (isRecovery) {
+    recs.push({ priority: 'high', category: 'nutrition', message: '賽後恢復期：漸進增加熱量（reverse diet），每週增加 100-200 大卡。' })
+    recs.push({ priority: 'medium', category: 'training', message: '賽後恢復期：以輕量主動恢復為主，2-4 週後逐漸恢復正常訓練量。' })
+    return recs
+  }
 
   // weigh_in: force rest recommendation
   if (isWeighIn) {

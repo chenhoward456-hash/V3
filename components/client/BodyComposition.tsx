@@ -25,6 +25,7 @@ interface BodyCompositionProps {
 function getWeightFeedback(
   newWeight: number,
   bodyData: any[],
+  submittedDate: string,
   goalType?: string | null,
   targetWeight?: number | null,
 ): { message: string; emoji: string } {
@@ -34,17 +35,17 @@ function getWeightFeedback(
     return { message: '第一筆紀錄完成！持續記錄是最重要的一步', emoji: '🎉' }
   }
 
-  // Calculate consecutive days (from today backwards)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // Calculate consecutive days from submitted date backwards
+  // Include the submitted date itself, and deduplicate against existing bodyData
   const dateSet = new Set(pastRecords.map((r: any) => r.date))
+  dateSet.add(submittedDate) // ensure the just-submitted date is counted
+  const baseDate = new Date(submittedDate + 'T00:00:00')
   let consecutiveDays = 0
-  for (let i = 0; i <= pastRecords.length + 30; i++) {
-    const d = new Date(today)
+  for (let i = 0; i < dateSet.size + 1; i++) {
+    const d = new Date(baseDate)
     d.setDate(d.getDate() - i)
     const dateStr = d.toISOString().split('T')[0]
-    if (dateSet.has(dateStr) || i === 0) {
-      // i === 0: today's record is being submitted now, count it
+    if (dateSet.has(dateStr)) {
       consecutiveDays++
     } else {
       break
@@ -60,12 +61,14 @@ function getWeightFeedback(
   }
 
   // Calculate weekly averages for trend-based feedback
-  const sorted = [...pastRecords].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  // Use submitted date as reference; replace existing same-day record with newWeight
+  const today = new Date(submittedDate + 'T00:00:00')
   const thisWeekWeights: number[] = [newWeight]
   const lastWeekWeights: number[] = []
 
-  for (const r of sorted) {
-    const daysAgo = Math.floor((today.getTime() - new Date(r.date).getTime()) / (1000 * 60 * 60 * 24))
+  for (const r of pastRecords) {
+    if (r.date === submittedDate) continue // skip old record for this date; newWeight already included
+    const daysAgo = Math.floor((today.getTime() - new Date(r.date + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24))
     if (daysAgo >= 0 && daysAgo < 7) {
       thisWeekWeights.push(r.weight)
     } else if (daysAgo >= 7 && daysAgo < 14) {
@@ -90,15 +93,17 @@ function getWeightFeedback(
 
   // Priority 7-9: Bulk (增肌) phase
   if (goalType === 'bulk' && weeklyChange !== null) {
-    if (weeklyChange > 0 && weeklyChange <= 0.5) {
-      return { message: '增重節奏很好，繼續保持', emoji: '💪' }
-    }
     if (weeklyChange > 0.5) {
       return { message: '增重速度偏快，注意控制增脂比例', emoji: '⚠️' }
+    }
+    if (weeklyChange > 0) {
+      return { message: '增重節奏很好，繼續保持', emoji: '💪' }
     }
     if (weeklyChange < 0) {
       return { message: '增肌期體重微降，留意熱量是否充足', emoji: '🍽️' }
     }
+    // weeklyChange === 0
+    return { message: '增重節奏很好，繼續保持', emoji: '💪' }
   }
 
   // Priority 10: Close to target weight
@@ -261,6 +266,7 @@ export default function BodyComposition({
       })
       if (!res.ok) throw new Error('保存失敗')
       const result = await res.json()
+      const submittedDate = form.date
       setShowModal(false)
       setForm({ date: getLocalDateStr(), weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
       // 營養素引擎結果（只在有調整時顯示）
@@ -276,7 +282,7 @@ export default function BodyComposition({
       } else {
         onMutate()
       }
-      const feedback = getWeightFeedback(weight, bodyData, goalType, targetWeight)
+      const feedback = getWeightFeedback(weight, bodyData, submittedDate, goalType, targetWeight)
       showToast(feedback.message, 'success', feedback.emoji)
       if (na?.adjusted) {
         const t1 = setTimeout(() => {

@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     // 查客戶資料（含基因、目標、備賽階段、減脂起始日）
     const { data: client } = await supabaseAdmin
       .from('clients')
-      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, client_mode, competition_enabled, diet_start_date, gender')
+      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, client_mode, competition_enabled, diet_start_date, gender, competition_date')
       .eq('unique_code', clientId)
       .single()
 
@@ -229,17 +229,40 @@ export async function GET(request: NextRequest) {
       metabolicStress = { score: stressResult.score, level: stressResult.level }
     }
 
+    // ── 計算 Peak Week 距比賽日天數 ──
+    // Fix #1: 不再要求 prepPhase === 'peak_week'，只要 competition_date 在 0-7 天內 + 非 athletic 模式即觸發
+    // 與營養引擎 daysLeft <= 7 自動偵測對齊
+    let peakWeekDaysOut: number | null = null
+    if (client.competition_date && isCompetitionMode(client.client_mode) && client.client_mode !== 'athletic') {
+      const now = new Date(Date.now() + 8 * 60 * 60 * 1000)  // UTC+8
+      const comp = new Date(client.competition_date)
+      peakWeekDaysOut = Math.round((comp.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+      if (peakWeekDaysOut < 0 || peakWeekDaysOut > 7) peakWeekDaysOut = null
+    }
+
+    // Fix #4: 比賽已結束 → 自動視為 recovery（與營養引擎 rawDaysLeft<0 對齊）
+    let effectivePrepPhase = client.prep_phase
+    if (client.competition_date && isCompetitionMode(client.client_mode)) {
+      const now = new Date(Date.now() + 8 * 60 * 60 * 1000)  // UTC+8
+      const comp = new Date(client.competition_date)
+      const daysSinceComp = Math.round((now.getTime() - comp.getTime()) / (24 * 60 * 60 * 1000))
+      if (daysSinceComp > 0 && daysSinceComp <= 14 && effectivePrepPhase !== 'recovery') {
+        effectivePrepPhase = 'recovery'
+      }
+    }
+
     // ── 呼叫訓練模式引擎 ──
     const modeRecommendation = getTrainingModeRecommendation({
       baseAdvice: advice,
       goalType: client.goal_type as 'cut' | 'bulk' | 'recomp' | null,
-      prepPhase: client.prep_phase as TrainingModeInput['prepPhase'],
+      prepPhase: effectivePrepPhase as TrainingModeInput['prepPhase'],
       geneticProfile,
       recentTrainingPattern: trainingPattern,
       hormoneLabs,
       metabolicStress,
       recoveryAssessment: advice.recoveryAssessment,
       weeklyWeightChangePercent,
+      peakWeekDaysOut,
     })
 
     return NextResponse.json({ ...advice, modeRecommendation })

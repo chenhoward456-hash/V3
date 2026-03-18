@@ -119,6 +119,7 @@ import {
 import { getLabMacroModifiers, type LabMacroModifier, type LabTrainingModifier } from './lab-nutrition-advisor'
 import { type GeneticProfile, getSerotoninRiskLevel } from './supplement-engine'
 import { generateRecoveryAssessment, type RecoveryAssessment, type RecoveryState as RecoveryEngineState } from './recovery-engine'
+import type { PrepPhase } from './client-mode'
 
 // ===== 類型定義 =====
 
@@ -155,7 +156,7 @@ export interface NutritionInput {
   trainingDaysPerWeek: number
 
   // 備賽階段（可選）
-  prepPhase?: string  // 'peak_week' | 'cut' | 'bulk' | 'off_season' | 'preparation' | etc.
+  prepPhase?: PrepPhase | null
 
   // 客戶模式（用於區分 athletic vs bodybuilding 的營養策略）
   clientMode?: 'standard' | 'health' | 'bodybuilding' | 'athletic'
@@ -205,10 +206,13 @@ export interface NutritionInput {
 
   // 基因資料（用於基因修正層）
   geneticProfile?: GeneticProfile
+
+  // Peak Week 每日實際體重（用於碳水超補溢出回饋機制）
+  peakWeekDailyWeights?: { date: string; weight: number }[]
 }
 
 export interface NutritionSuggestion {
-  status: 'on_track' | 'too_fast' | 'plateau' | 'wrong_direction' | 'insufficient_data' | 'low_compliance' | 'peak_week' | 'goal_driven' | 'athletic_rebound' | 'athletic_weigh_in'
+  status: 'on_track' | 'too_fast' | 'plateau' | 'wrong_direction' | 'insufficient_data' | 'low_compliance' | 'peak_week' | 'goal_driven' | 'athletic_rebound' | 'athletic_weigh_in' | 'athletic_competition'
   statusLabel: string
   statusEmoji: string
   message: string
@@ -1247,6 +1251,49 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   // daysLeft <= 8：完整啟用 Peak Week（autoApply + 回傳 peak_week status）
   // 8 < daysLeft <= 14：產生 peakWeekPlan 供前端預覽，營養建議走正常流程
   // daysLeft < 0：比賽已結束 → 進入賽後恢復模式（不再卡在 Day 0）
+  // Fix #4: prepPhase === 'recovery' 也可觸發賽後恢復，即使沒有 targetDate
+  if (!input.targetDate && input.prepPhase === 'recovery') {
+    const bw = input.bodyWeight
+    const estimatedMaintenance = Math.round(bw * 33)
+    const recoveryCals = estimatedMaintenance  // 1.0x（無法確定天數，預設 Phase 1）
+    const recoveryProtein = Math.round(bw * 2.2)
+    const recoveryFat = Math.round(bw * 1.0)
+    const recoveryCarbs = Math.round((recoveryCals - recoveryProtein * 4 - recoveryFat * 9) / 4)
+    const recoveryWater = Math.round(bw * 40)
+    return {
+      status: 'on_track' as const,
+      statusLabel: '賽後恢復',
+      statusEmoji: '🔄',
+      message: `目前為賽後恢復期（反向飲食 Phase 1）。無比賽日期記錄，使用預設恢復策略：維持量進食，漸進提升熱量。建議教練設定比賽日期以啟用精確恢復計畫。`,
+      warnings: [
+        '🔄 賽後恢復期：優先恢復腸胃功能和荷爾蒙平衡',
+        '⚠️ 避免暴食 — 比賽後 leptin 急降，飢餓感會很強，用高蛋白+高纖維穩定食慾',
+        `📈 目前恢復倍率 ×1.0（維持量 ${estimatedMaintenance} → ${recoveryCals} kcal）`,
+        '🍽️ 以維持量進食，避免高脂高糖，讓腸胃重新適應正常食物量',
+      ],
+      suggestedCalories: recoveryCals,
+      suggestedProtein: recoveryProtein,
+      suggestedCarbs: Math.max(recoveryCarbs, 150),
+      suggestedFat: recoveryFat,
+      suggestedCarbsTrainingDay: null,
+      suggestedCarbsRestDay: null,
+      caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
+      estimatedTDEE: estimatedMaintenance, weeklyWeightChangeRate: 0,
+      dietDurationWeeks: 0, dietBreakSuggested: false,
+      bodyFatZoneInfo: null,
+      labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
+      deadlineInfo: null,
+      autoApply: true, tdeeAnomalyDetected: false,
+      peakWeekPlan: null, metabolicStress: null,
+      menstrualCycleNote: null,
+      perMealProteinGuide: buildPerMealProteinGuide(bw, recoveryProtein),
+      geneticCorrections: [],
+      postCompetitionRecovery: true,
+      recoveryWater,
+      ...stateFields,
+    }
+  }
+
   let previewPeakWeekPlan: PeakWeekDay[] | null = null
   if (input.targetDate) {
     // 統一使用 UTC+8（台北時區）計算天數，與 todayStr 一致
@@ -1316,6 +1363,10 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       }
       if (input.prepPhase === 'rebound') {
         return { ...generateAthleticRebound(input.bodyWeight, input.gender, input.weighInGapHours ?? 24), ...stateFields }
+      }
+      // Fix #3: 運動員比賽日營養處理
+      if (input.prepPhase === 'competition') {
+        return { ...generateAthleticCompetition(input), ...stateFields }
       }
     }
 
@@ -3054,6 +3105,42 @@ function generateAthleticRebound(
   })
 }
 
+// ===== Athletic 比賽日引擎 =====
+// Fix #3: 運動員比賽日營養 — 高碳水、中蛋白、低脂、低纖維易消化
+// Thomas 2016 (ACSM): 賽前 3-4h 高碳水低纖維 meal; Burke 2011: competition day fueling
+
+function generateAthleticCompetition(input: NutritionInput): NutritionSuggestion {
+  const bw = input.bodyWeight
+  const carbs = Math.round(bw * 9)      // 8-10g/kg 中間值
+  const protein = Math.round(bw * 1.8)
+  const fat = Math.round(bw * 0.5)
+  const calories = Math.round(protein * 4 + carbs * 4 + fat * 9)
+  const water = Math.round(bw * 40)
+
+  return emptyResult({
+    status: 'athletic_competition',
+    statusLabel: '比賽日',
+    statusEmoji: '🏆',
+    message: `比賽日燃料策略：高碳水（${carbs}g, ~9g/kg）確保肌醣滿載，中蛋白（${protein}g）、低脂（${fat}g）減少消化負擔。賽前 3-4 小時完成最後一餐。`,
+    suggestedCalories: calories,
+    suggestedProtein: protein,
+    suggestedCarbs: carbs,
+    suggestedFat: fat,
+    suggestedWater: water,
+    autoApply: false,
+    warnings: [
+      '🏆 比賽日：專注表現，營養服務於比賽',
+      `🍚 碳水 ${carbs}g（~9g/kg）：確保肌醣滿載，以高 GI 易消化碳水為主（白飯、白麵包、香蕉）`,
+      `🥩 蛋白質 ${protein}g（1.8g/kg）：維持正常攝取，不增加消化負擔`,
+      `🫒 脂肪 ${fat}g（0.5g/kg）：降至最低，減少消化時間`,
+      '⏰ 賽前 3-4 小時完成最後一餐（低纖維、易消化）',
+      '🥤 比賽中：每 15-20 分鐘補充運動飲料或碳水凝膠（視比賽時長）',
+      '🚫 避免：高纖維、高脂、乳製品、辛辣食物（減少腸胃不適風險）',
+    ],
+    perMealProteinGuide: buildPerMealProteinGuide(bw, protein),
+  })
+}
+
 // ===== Peak Week 引擎 =====
 // 基於 Escalante 2021 [12] + Barakat 2022 [13] + Homer/Helms 2024 [14] + Kistler 2024 [15]
 // [15] 指出：碳水超補有效（肌肉厚度 +2%, 皮下 -2%），但水分 ICW/ECW 轉移的精確機制尚缺嚴格 RCT
@@ -3155,6 +3242,42 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
       const key = Number(k)
       weightDeltaMap[key].delta = Math.round(weightDeltaMap[key].delta * 0.65 * 10) / 10
     })
+  }
+
+  // ===== Day 2 碳水溢出防護（體重回饋機制）=====
+  // Day 3 超補後體重暴漲超過閾值 → Day 2 碳水自動降低，避免 spill-over（碳水溢出到皮下水分）
+  // 男性閾值 2.0kg / 女性閾值 1.3kg（65% scaling）
+  let day2CarbOverride: number | null = null
+  let spillOverWarning: string | null = null
+
+  if (input.peakWeekDailyWeights && input.peakWeekDailyWeights.length > 0) {
+    const pwWeights = input.peakWeekDailyWeights
+
+    // baseline = Day 7 體重（最早的 Peak Week 體重）
+    const day7Date = new Date(compDate)
+    day7Date.setDate(compDate.getDate() - 7)
+    const day7Str = day7Date.toISOString().split('T')[0]
+
+    // Day 3 日期
+    const day3Date = new Date(compDate)
+    day3Date.setDate(compDate.getDate() - 3)
+    const day3Str = day3Date.toISOString().split('T')[0]
+
+    // 找 baseline：優先取 Day 7 當天，否則取 Peak Week 最早的紀錄
+    const baselineRecord = pwWeights.find(w => w.date === day7Str)
+      || pwWeights.reduce((earliest, w) => (w.date < earliest.date ? w : earliest), pwWeights[0])
+    const day3Record = pwWeights.find(w => w.date === day3Str)
+
+    if (baselineRecord && day3Record) {
+      const weightGain = day3Record.weight - baselineRecord.weight
+      const threshold = isFemale ? 1.3 : 2.0
+      const reducedCarb = isFemale ? 5.0 : 7.0
+
+      if (weightGain > threshold) {
+        day2CarbOverride = reducedCarb
+        spillOverWarning = `⚠️ Day 3 晨重 ${day3Record.weight}kg（基線 ${baselineRecord.weight}kg，增幅 +${weightGain.toFixed(1)}kg，超過閾值 ${threshold}kg）→ Day 2 碳水已從 ${loadingCarb}g/kg 自動調降至 ${reducedCarb}g/kg，防止肝醣溢出到皮下水分`
+      }
+    }
   }
 
   // ===== 補劑建議 =====
@@ -3293,11 +3416,15 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
       }
     } else if (d >= 2) {
       // Day 3-2：碳水超補 + 鈉加載 + 鉀加載
+      // Day 2 碳水溢出防護：如果 Day 3 體重增幅超過閾值，自動降低 Day 2 碳水
+      const effectiveCarb = (d === 2 && day2CarbOverride != null) ? day2CarbOverride : loadingCarb
       day = {
         daysOut: d, date: dateStr,
-        label: `Day ${d} — 碳水超補期`,
+        label: (d === 2 && day2CarbOverride != null)
+          ? `Day ${d} — 碳水超補期（已調降）`
+          : `Day ${d} — 碳水超補期`,
         phase: 'carb_load',
-        carbsGPerKg: loadingCarb,
+        carbsGPerKg: effectiveCarb,
         proteinGPerKg: PEAK_WEEK.LOADING_PROTEIN_G_PER_KG,
         fatGPerKg: loadingFat,
         waterMlPerKg: PEAK_WEEK.WATER_LOADING,
@@ -3305,13 +3432,13 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         sodiumNote: `鈉加載（${PEAK_WEEK.SODIUM_LOADING}mg）— 鈉經 SGLT-1 幫助葡萄糖進入肌肉細胞，搭配高碳水最大化肝醣超補`,
         fiberNote: '極低纖維（<10g），避免腹脹影響比賽日外觀',
         trainingNote: '完全休息（任何訓練都會重新消耗肝醣，破壞超補效果）',
-        carbs: Math.round(bw * loadingCarb),
+        carbs: Math.round(bw * effectiveCarb),
         protein: Math.round(bw * PEAK_WEEK.LOADING_PROTEIN_G_PER_KG),
         fat: Math.round(bw * loadingFat),
         calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_LOADING),
         potassiumNote: `鉀加載 ~${PEAK_WEEK.POTASSIUM_LOADING}mg（香蕉、馬鈴薯、椰子水）— 鉀幫助水分進入肌肉細胞`,
         foodNote: isFemale
-          ? `精緻高 GI 碳水為主：白飯、白吐司、年糕、蜂蜜、果醬。分 6-7 餐進食（女性超補量 ${loadingCarb}g/kg，少量多餐更易執行）`
+          ? `精緻高 GI 碳水為主：白飯、白吐司、年糕、蜂蜜、果醬。分 6-7 餐進食（女性超補量 ${effectiveCarb}g/kg，少量多餐更易執行）`
           : '精緻高 GI 碳水為主：白飯、白吐司、年糕、麻糬、蜂蜜、果醬。分 5-6 餐進食，避免單餐過量導致腸胃不適',
         creatineNote: '維持肌酸 5g/天（搭配碳水一起吃，肌酸+碳水超補可增強肝醣儲存）',
         supplementNote: supplementLoading,
@@ -3469,6 +3596,17 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
 
     // 計算熱量
     day.calories = Math.round(day.protein * 4 + day.carbs * 4 + day.fat * 9)
+
+    // 體重回饋：實際 vs 預期比較
+    if (input.peakWeekDailyWeights) {
+      const actualWeight = input.peakWeekDailyWeights.find(w => w.date === dateStr)
+      if (actualWeight && day.expectedWeight) {
+        const diff = actualWeight.weight - day.expectedWeight
+        const diffStr = diff >= 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)
+        day.weightNote = `${wd.note}（實際 ${actualWeight.weight}kg vs 預期 ${day.expectedWeight}kg，差異 ${diffStr}kg）`
+      }
+    }
+
     plan.push(day)
   }
 
@@ -3521,6 +3659,8 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
       ...(isFemale ? [
         `📋 女性碳水超補量已調整為 ${loadingCarb}g/kg（男性基準 ${PEAK_WEEK.LOADING_CARB_G_PER_KG}g/kg）— 女性肌肉肝醣超補反應約為男性 50-70%（Tarnopolsky 1995, James 2001），過量碳水只會增加腸胃不適而非更多肝醣儲存。`,
       ] : []),
+      // 碳水溢出防護警告
+      ...(spillOverWarning ? [spillOverWarning] : []),
       // 基因修正警告
       ...geneticCorrections.map(gc => `🧬 ${gc.adjustment}`),
     ],

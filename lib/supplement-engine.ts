@@ -590,6 +590,63 @@ export function generateSupplementSuggestions(
     }
   }
 
+  // Fix #6: Athletic preparation — 慢性降重期電解質與鐵質監控
+  if (prepPhase === 'preparation') {
+    const hasElectrolytes = suggestions.some(s => s.name.includes('電解質'))
+    if (!hasElectrolytes) {
+      suggestions.push({
+        name: '電解質（鈉鉀鎂配方）',
+        dosage: '訓練中 500-1000ml 電解質水',
+        timing: '訓練前中後',
+        reason: '備戰期降重會增加電解質流失，維持運動表現和避免抽筋。',
+        priority: 'medium',
+        evidence: 'Sawka 2007 (ACSM): 運動期間電解質補充改善耐力表現',
+        triggerTests: [],
+        category: 'performance',
+      })
+    }
+    const hasIron = suggestions.some(s => s.name.includes('鐵'))
+    if (!hasIron) {
+      suggestions.push({
+        name: '鐵質狀態監控',
+        dosage: '建議每 4 週檢查 ferritin',
+        timing: '降重期間持續監控',
+        reason: '慢性熱量赤字+高訓練量會加速鐵質消耗，影響氧氣運輸與運動耐力。',
+        priority: 'low',
+        evidence: 'Peeling 2008 (Sports Med): 運動員鐵質缺乏的篩檢與管理',
+        triggerTests: ['ferritin'],
+        category: 'deficiency',
+      })
+    }
+  }
+
+  // Fix #7: Competition day — 比賽日補劑時機
+  if (prepPhase === 'competition') {
+    suggestions.push({
+      name: '咖啡因',
+      dosage: '3-6mg/kg 體重',
+      timing: '賽前 30-60 分鐘',
+      reason: '比賽日咖啡因可提升運動表現 2-6%。注意：需在備戰期先測試過個人耐受度。',
+      priority: 'medium',
+      evidence: 'Goldstein 2010 (JISSN): 咖啡因增強力量與耐力表現',
+      triggerTests: [],
+      category: 'performance',
+    })
+    const hasElectrolytes = suggestions.some(s => s.name.includes('電解質'))
+    if (!hasElectrolytes) {
+      suggestions.push({
+        name: '電解質預載',
+        dosage: '賽前 2 小時開始補充 500ml',
+        timing: '賽前',
+        reason: '比賽日確保電解質充足，避免脫水影響表現。',
+        priority: 'medium',
+        evidence: 'Shirreffs 2004 (J Sports Sci): 賽前水合策略與電解質預載',
+        triggerTests: [],
+        category: 'performance',
+      })
+    }
+  }
+
   // ── 排序：high → medium → low，同優先級按 category 排序 ──
   const priorityOrder = { high: 0, medium: 1, low: 2 }
   const categoryOrder = { deficiency: 0, hormonal: 1, performance: 2, recovery: 3 }

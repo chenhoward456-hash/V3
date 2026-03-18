@@ -78,7 +78,7 @@ interface AiChatDrawerProps {
   // Health mode context
   healthModeEnabled?: boolean
   healthScore?: { total: number; grade: string; daysInCycle: number | null; daysUntilBloodTest: number | null; labPenalty: number; labBonus: number; pillars: { pillar: string; label: string; score: number; emoji: string }[] } | null
-  supplementSuggestions?: { name: string; dosage: string; reason: string; priority: string }[]
+  supplementSuggestions?: { name: string; dosage: string; reason: string; priority: string; evidence?: string; triggerTests?: string[]; category?: string }[]
   // Genetic profile
   geneticProfile?: {
     mthfr?: string | null
@@ -98,6 +98,72 @@ interface AiChatDrawerProps {
     weeklyWeightChangeRate: number | null
     dietBreakSuggested: boolean
     warnings: string[]
+    // Extended engine data
+    currentState?: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'
+    readinessScore?: number | null
+    statusLabel?: string
+    refeedSuggested?: boolean
+    refeedReason?: string | null
+    refeedDays?: number | null
+    energyAvailability?: { level: string; warning: string | null } | null
+    suggestedCalories?: number | null
+    suggestedProtein?: number | null
+    suggestedCarbs?: number | null
+    suggestedFat?: number | null
+    suggestedCarbsTrainingDay?: number | null
+    suggestedCarbsRestDay?: number | null
+    deadlineInfo?: {
+      daysLeft: number
+      weeksLeft?: number
+      weightToLose: number
+      requiredRatePerWeek: number
+      safetyLevel?: string
+      predictedCompWeight?: number
+      suggestedCardioMinutes?: number
+      cardioNote?: string
+      isAggressive?: boolean
+    } | null
+    peakWeekPlan?: {
+      daysOut: number
+      date: string
+      label: string
+      phase: string
+      carbsGPerKg: number
+      proteinGPerKg: number
+      fatGPerKg: number
+      waterMlPerKg: number
+      sodiumMg: number
+      trainingNote: string
+      carbs: number
+      protein: number
+      fat: number
+      calories: number
+      water: number
+    }[] | null
+    athleticRebound?: {
+      gapHours: number
+      strategy: string
+      waterPerHour: number
+    } | null
+    geneticCorrections?: { gene: string; rule: string; adjustment: string }[]
+    wearableInsight?: string | null
+    metabolicStress?: { score: number; level: string } | null
+  } | null
+  // Recovery assessment (from nutrition engine)
+  recoveryAssessment?: {
+    score: number
+    state: string
+    systems: {
+      neural: { score: number; state: string; signals: string[] }
+      muscular: { score: number; state: string; signals: string[] }
+      metabolic: { score: number; state: string; signals: string[] }
+      hormonal: { score: number; state: string; signals: string[] }
+      psychological: { score: number; state: string; signals: string[] }
+    }
+    overtrainingRisk: { riskLevel: string; acwr: number | null; reasons: string[] }
+    autonomicBalance: { status: string; hrvTrend: string; rhrTrend: string }
+    trajectory: string
+    recommendations: { priority: string; category: string; message: string }[]
   } | null
   // Coach notes
   coachSummary?: string | null
@@ -132,6 +198,7 @@ export default function AiChatDrawer({
   weightTrend,
   bodyFatTrend,
   nutritionEngineStatus,
+  recoveryAssessment,
   coachSummary,
   coachWeeklyNote,
   streakDays,
@@ -379,7 +446,7 @@ ${healthScore.daysInCycle != null ? `- 本季進度：第 ${healthScore.daysInCy
 ${healthScore.daysUntilBloodTest != null && healthScore.daysUntilBloodTest <= 30 ? `- 🩸 距離季度血檢還有 ${healthScore.daysUntilBloodTest} 天` : ''}
 ` : ''}${supplementSuggestions && supplementSuggestions.length > 0 ? `
 ## ${healthModeEnabled ? '健康模式' : '備賽模式'} — 系統建議補品
-${supplementSuggestions.map(s => `- ${s.name}（${s.dosage}）：${s.reason.slice(0, 80)}`).join('\n')}
+${supplementSuggestions.map(s => `- ${s.name}（${s.dosage}，${s.priority === 'high' ? '高優先' : s.priority === 'medium' ? '中優先' : '低優先'}）：${s.reason}${s.evidence ? `（文獻：${s.evidence.slice(0, 50)}）` : ''}${s.triggerTests && s.triggerTests.length > 0 ? `（觸發：${s.triggerTests.join('、')}）` : ''}`).join('\n')}
 ` : ''}${geneticProfile && (geneticProfile.mthfr || geneticProfile.apoe || geneticProfile.serotonin || geneticProfile.depressionRisk) ? `
 ## 🧬 基因風險背景
 ${geneticProfile.mthfr && geneticProfile.mthfr !== 'normal' ? `- **MTHFR 突變**：${geneticProfile.mthfr === 'homozygous' ? '純合突變（C677T）— 葉酸代謝嚴重受損' : '雜合突變 — 葉酸代謝部分受損'}。需使用活性葉酸（5-MTHF）而非一般葉酸。飲食建議多攝取天然葉酸食物（深色蔬菜、肝臟）。注意同半胱胺酸控制。` : ''}
@@ -395,13 +462,74 @@ ${prepPhase === 'peak_week' && (geneticProfile.apoe === 'e3/e4' || geneticProfil
 ${prepPhase === 'peak_week' && (geneticProfile.serotonin === 'SS' || geneticProfile.serotonin === 'SL' || geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high') ? `- **5-HTTLPR ${geneticProfile.serotonin || 'SL/SS'} + Peak Week**：Peak Week 極端飲食操控（碳水耗竭→超補）對神經傳導物質波動大。此基因型選手可能出現劇烈情緒擺盪，屬正常反應。碳水超補日情緒會明顯改善。營養計算機已自動縮短耗竭期並提高耗竭期碳水量。` : ''}
 ` : ''}
 ${nutritionEngineStatus ? `## 營養引擎分析
-- 狀態：${({ on_track: '進度正常', too_fast: '減脂過快', plateau: '停滯期', wrong_direction: '方向偏離', insufficient_data: '數據不足', low_compliance: '合規率低', peak_week: 'Peak Week', goal_driven: '目標導向' } as Record<string, string>)[nutritionEngineStatus.status] || nutritionEngineStatus.status}
+- 狀態：${nutritionEngineStatus.statusLabel || (({ on_track: '進度正常', too_fast: '減脂過快', plateau: '停滯期', wrong_direction: '方向偏離', insufficient_data: '數據不足', low_compliance: '合規率低', peak_week: 'Peak Week', goal_driven: '目標導向' } as Record<string, string>)[nutritionEngineStatus.status] || nutritionEngineStatus.status)}${nutritionEngineStatus.currentState ? `（${nutritionEngineStatus.currentState}）` : ''}
+${nutritionEngineStatus.suggestedCalories ? `- 引擎建議熱量：${nutritionEngineStatus.suggestedCalories} kcal${caloriesTarget ? `（目前目標 ${caloriesTarget}）` : ''}` : ''}
+${nutritionEngineStatus.suggestedProtein || nutritionEngineStatus.suggestedCarbs || nutritionEngineStatus.suggestedFat ? `- 引擎建議蛋白/碳水/脂肪：${nutritionEngineStatus.suggestedProtein ?? '-'}g / ${nutritionEngineStatus.suggestedCarbs ?? '-'}g / ${nutritionEngineStatus.suggestedFat ?? '-'}g` : ''}
+${nutritionEngineStatus.suggestedCarbsTrainingDay != null || nutritionEngineStatus.suggestedCarbsRestDay != null ? `- 碳水循環：訓練日 ${nutritionEngineStatus.suggestedCarbsTrainingDay ?? '-'}g / 休息日 ${nutritionEngineStatus.suggestedCarbsRestDay ?? '-'}g` : ''}
 ${nutritionEngineStatus.estimatedTDEE ? `- 估算 TDEE：${nutritionEngineStatus.estimatedTDEE} kcal` : ''}
 ${nutritionEngineStatus.weeklyWeightChangeRate != null ? `- 週均體重變化：${nutritionEngineStatus.weeklyWeightChangeRate > 0 ? '+' : ''}${nutritionEngineStatus.weeklyWeightChangeRate.toFixed(2)}% BW` : ''}
+${nutritionEngineStatus.refeedSuggested ? `- Refeed 建議：${nutritionEngineStatus.refeedReason || '需要 Refeed'}（${nutritionEngineStatus.refeedDays ?? 1} 天）` : '- Refeed：不需要'}
+${nutritionEngineStatus.energyAvailability ? `- 能量可用性：${nutritionEngineStatus.energyAvailability.level}${nutritionEngineStatus.energyAvailability.warning ? `（${nutritionEngineStatus.energyAvailability.warning}）` : ''}` : ''}
+${nutritionEngineStatus.metabolicStress ? `- 代謝壓力：${nutritionEngineStatus.metabolicStress.score}/100（${nutritionEngineStatus.metabolicStress.level}）` : ''}
+${nutritionEngineStatus.readinessScore != null ? `- 恢復準備度：${nutritionEngineStatus.readinessScore}/100` : ''}
+${nutritionEngineStatus.wearableInsight ? `- ${nutritionEngineStatus.wearableInsight}` : ''}
+${nutritionEngineStatus.geneticCorrections && nutritionEngineStatus.geneticCorrections.length > 0 ? `- 基因修正：${nutritionEngineStatus.geneticCorrections.map(gc => gc.adjustment).join('；')}` : ''}
 ${nutritionEngineStatus.dietBreakSuggested ? '- ⚠️ 系統建議 Diet Break（代謝壓力累積）' : ''}
 ${nutritionEngineStatus.warnings.length > 0 ? `- 注意：${nutritionEngineStatus.warnings.slice(0, 3).map(w => w.replace(/[^\u4e00-\u9fff\w\s,.!?，。！？、：:()（）%+\-→←↑↓/]/g, '')).join('；')}` : ''}
 **重要**：你的回答要跟營養引擎的分析一致。如果引擎說停滯期，不要說進度正常；如果引擎說減脂過快，要建議增加攝取。
-` : ''}${coachSummary || coachWeeklyNote ? `## 教練備註
+` : ''}${(() => {
+  const dl = nutritionEngineStatus?.deadlineInfo
+  if (!dl || dl.daysLeft > 90) return ''
+  return `## 目標進度分析
+- 剩餘 ${dl.daysLeft} 天 / ${dl.weeksLeft ?? Math.round(dl.daysLeft / 7 * 10) / 10} 週
+- 還需${dl.weightToLose > 0 ? '減' : '增'} ${Math.abs(dl.weightToLose).toFixed(1)} kg
+- 每週需${dl.weightToLose > 0 ? '減' : '增'} ${Math.abs(dl.requiredRatePerWeek).toFixed(2)} kg/週
+${dl.safetyLevel ? `- 安全等級：${dl.safetyLevel}` : dl.isAggressive ? '- 安全等級：超過安全範圍' : '- 安全等級：正常'}
+${dl.predictedCompWeight ? `- 預估比賽體重：${dl.predictedCompWeight} kg` : ''}
+${dl.suggestedCardioMinutes ? `- 建議有氧：${dl.suggestedCardioMinutes} 分/天` : ''}
+${dl.cardioNote ? `- ${dl.cardioNote}` : ''}
+`
+})()}${(() => {
+  const plan = nutritionEngineStatus?.peakWeekPlan
+  if (!plan || plan.length === 0) return ''
+  return `## Peak Week 每日計畫（系統已算好的精確數字）
+${plan.map(d => `${d.date}（${d.label}）：碳水 ${d.carbs}g（${d.carbsGPerKg}g/kg）, 蛋白 ${d.protein}g, 脂肪 ${d.fat}g, 熱量 ${d.calories}kcal, 鈉 ${d.sodiumMg}mg, 水 ${d.water}mL, 訓練：${d.trainingNote}`).join('\n')}
+**嚴格規定**：回答任何 Peak Week 相關問題（包括「明天吃什麼」「碳水要多少」等）時，必須直接引用上面的精確數字。絕對不要自己估算或猜測，計畫裡的數字就是正確答案。
+`
+})()}${(() => {
+  const ra = recoveryAssessment
+  if (!ra) return ''
+  const systemEntries = Object.entries(ra.systems) as [string, { score: number; state: string; signals: string[] }][]
+  const systemLabels: Record<string, string> = { neural: '神經系統', muscular: '肌肉系統', metabolic: '代謝系統', hormonal: '荷爾蒙系統', psychological: '心理狀態' }
+  // Token control: only show signals for systems with score ≤ 60
+  const systemLines = systemEntries.map(([key, sys]) => {
+    const label = systemLabels[key] || key
+    return sys.score <= 60
+      ? `- ${label}：${sys.score}/100（${sys.state}）— ${sys.signals.join('、')}`
+      : `- ${label}：${sys.score}/100（${sys.state}）`
+  }).join('\n')
+  const autonomicLabels: Record<string, string> = { parasympathetic_dominant: '副交感主導', balanced: '平衡', sympathetic_dominant: '交感主導', unknown: '未知' }
+  const hrvTrendLabels: Record<string, string> = { rising: '上升', stable: '穩定', declining: '下降', unknown: '未知' }
+  const trajectoryLabels: Record<string, string> = { improving: '改善中', stable: '穩定', declining: '退化中', unknown: '未知' }
+  return `## 多系統恢復評估
+- 總分：${ra.score}/100（${ra.state}）
+- 趨勢：${trajectoryLabels[ra.trajectory] || ra.trajectory}
+${systemLines}
+- 過度訓練風險：${ra.overtrainingRisk.riskLevel}${ra.overtrainingRisk.acwr != null ? `（ACWR ${ra.overtrainingRisk.acwr.toFixed(2)}）` : ''}${ra.overtrainingRisk.reasons.length > 0 ? `（${ra.overtrainingRisk.reasons.join('、')}）` : ''}
+- 自律神經：${autonomicLabels[ra.autonomicBalance.status] || ra.autonomicBalance.status}（HRV ${hrvTrendLabels[ra.autonomicBalance.hrvTrend] || ra.autonomicBalance.hrvTrend}）
+${ra.recommendations.length > 0 ? `- 建議：${ra.recommendations.slice(0, 3).map(r => `[${r.priority}] ${r.message}`).join('；')}` : ''}
+**重要**：回答恢復/訓練/疲勞相關問題時，引用具體系統分數和信號。
+`
+})()}${(() => {
+  const ar = nutritionEngineStatus?.athleticRebound
+  if (!ar || nutritionEngineStatus?.status !== 'athletic_rebound') return ''
+  const strategyLabels: Record<string, string> = { short: '短間距（<4小時）', medium: '中間距（4-12小時）', long: '長間距（>12小時）' }
+  return `## 超補償策略
+- 秤重到比賽間距：${ar.gapHours} 小時
+- 策略：${strategyLabels[ar.strategy] || ar.strategy}
+- 補水速率：${ar.waterPerHour} mL/小時
+`
+})()}${coachSummary || coachWeeklyNote ? `## 教練備註
 ${coachWeeklyNote ? `- 本週回饋：${coachWeeklyNote.slice(0, 150)}` : ''}
 ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
 ` : ''}## 回答原則
@@ -481,7 +609,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
     - 體重掉但體脂不變 → 可能正在 recomp（肌肉量維持/增加，脂肪減少但比例沒變）
     - 體脂掉但體重不變 → 正在增肌減脂，這是好事
     - 建議以鏡子 + 腰圍 + 體重週均值三個維度綜合判斷，不要只看體脂計數字`
-  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, prepPhase, competitionDate, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions, geneticProfile, trainingReadiness, weightTrend, bodyFatTrend, nutritionEngineStatus, coachSummary, coachWeeklyNote, streakDays, targetWeight, targetBodyFat, dietStartDate])
+  }, [clientName, gender, goalType, todayNutrition, caloriesTarget, proteinTarget, carbsTarget, fatTarget, waterTarget, isTrainingDay, competitionEnabled, prepPhase, competitionDate, latestWeight, latestBodyFat, nutritionLogs, wellnessLogs, trainingLogs, supplements, supplementComplianceRate, todayWellness, wearableData, labResults, healthModeEnabled, healthScore, supplementSuggestions, geneticProfile, trainingReadiness, weightTrend, bodyFatTrend, nutritionEngineStatus, recoveryAssessment, coachSummary, coachWeeklyNote, streakDays, targetWeight, targetBodyFat, dietStartDate])
 
   // 壓縮圖片：FileReader → Image → Canvas → base64 JPEG
   // 每一步都有 fallback，即使 Canvas 失敗也會回傳原圖 base64

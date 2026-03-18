@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/Toast'
 const NONCOMPLIANT_REASONS = ['外食', '應酬', '壓力', '沒時間', '其他']
 
 interface NutritionLogProps {
-  todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null; carbs_grams?: number | null; fat_grams?: number | null; calories?: number | null } | null
+  todayNutrition: { id?: string; date: string; compliant: boolean | null; note: string | null; protein_grams: number | null; water_ml: number | null; carbs_grams?: number | null; fat_grams?: number | null; calories?: number | null; sodium_mg?: number | null } | null
   nutritionLogs: any[]
   clientId: string
   date?: string
@@ -23,10 +23,11 @@ interface NutritionLogProps {
   carbsTrainingDay?: number | null
   carbsRestDay?: number | null
   simpleMode?: boolean
+  sodiumTarget?: number | null
   onMutate: () => void
 }
 
-export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, carbsCyclingEnabled, isTrainingDay, carbsTrainingDay, carbsRestDay, simpleMode, onMutate }: NutritionLogProps) {
+export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, date, proteinTarget, waterTarget, competitionEnabled, carbsTarget, fatTarget, caloriesTarget, carbsCyclingEnabled, isTrainingDay, carbsTrainingDay, carbsRestDay, simpleMode, sodiumTarget, onMutate }: NutritionLogProps) {
   const [saving, setSaving] = useState(false)
   const { showToast } = useToast()
   // 簡單模式：展開進階欄位
@@ -43,6 +44,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   const [waterInput, setWaterInput] = useState<string>(todayNutrition?.water_ml?.toString() || '')
   const [carbsInput, setCarbsInput] = useState<string>(todayNutrition?.carbs_grams?.toString() || '')
   const [fatInput, setFatInput] = useState<string>(todayNutrition?.fat_grams?.toString() || '')
+  const [sodiumInput, setSodiumInput] = useState<string>(todayNutrition?.sodium_mg?.toString() || '')
   // 合規性也作為本地 state，一次提交
   const [compliant, setCompliant] = useState<boolean | null>(todayNutrition?.compliant ?? null)
   const [selectedReason, setSelectedReason] = useState<string | null>(null)
@@ -57,6 +59,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     setWaterInput(todayNutrition?.water_ml?.toString() || '')
     setCarbsInput(todayNutrition?.carbs_grams?.toString() || '')
     setFatInput(todayNutrition?.fat_grams?.toString() || '')
+    setSodiumInput(todayNutrition?.sodium_mg?.toString() || '')
     setCompliant(todayNutrition?.compliant ?? null)
     setSelectedReason(null)
   }, [todayNutrition])
@@ -97,6 +100,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           carbs_grams: carbsInput ? Number(carbsInput) : null,
           fat_grams: fatInput ? Number(fatInput) : null,
           calories: computedCalories,
+          sodium_mg: sodiumInput ? Number(sodiumInput) : null,
         })
       })
       if (!res.ok) throw new Error('記錄失敗')
@@ -194,6 +198,11 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     if (effectiveCarbsTarget && carbsPct < 0.8) macroIssues.push('碳水不足')
     if (fatTarget && fatPct > 1.2) macroIssues.push('脂肪偏高')
     if (fatTarget && fatPct < 0.8) macroIssues.push('脂肪不足')
+    if (sodiumTarget && sodiumInput) {
+      const sodiumPct = Number(sodiumInput) / sodiumTarget
+      if (sodiumPct > 1.2) macroIssues.push('鈉偏高')
+      if (sodiumPct < 0.8) macroIssues.push('鈉不足')
+    }
 
     if (calOk && proteinOk && macroIssues.length === 0) {
       return { status: 'compliant' as const, label: '已合規', hint: '營養素接近目標 👍', color: 'green' }
@@ -212,7 +221,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       return { status: 'partial' as const, label: '部分達標', hint: '蛋白質待補', color: 'amber' }
     }
     return { status: 'compliant' as const, label: '已合規', hint: '營養素接近目標 👍', color: 'green' }
-  }, [caloriesTarget, computedCalories, proteinInput, proteinTarget, carbsInput, effectiveCarbsTarget, fatInput, fatTarget])
+  }, [caloriesTarget, computedCalories, proteinInput, proteinTarget, carbsInput, effectiveCarbsTarget, fatInput, fatTarget, sodiumTarget, sodiumInput])
 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
@@ -398,6 +407,15 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
               target={waterTarget} unit="ml"
               max={Math.max(5000, (waterTarget || 2500) * 1.5)} step={100}
               color="cyan"
+            />
+          )}
+          {sodiumTarget && (
+            <NutrientSlider
+              label="鈉" emoji="🧂"
+              value={sodiumInput} onChange={setSodiumInput}
+              target={sodiumTarget} unit="mg"
+              max={Math.max(6000, Math.round(sodiumTarget * 1.5))} step={100}
+              color="amber"
             />
           )}
           {/* 進階巨量營養素（簡單模式下收合） */}

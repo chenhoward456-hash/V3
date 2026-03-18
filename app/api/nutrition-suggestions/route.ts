@@ -301,6 +301,19 @@ export async function GET(request: NextRequest) {
         apoe: client.gene_apoe || undefined,
         ...parseSerotoninField(client.gene_depression_risk),
       } : undefined,
+      // Peak Week 每日體重（碳水溢出回饋機制）
+      peakWeekDailyWeights: client.competition_date
+        ? (() => {
+            const compD = new Date(client.competition_date)
+            const peakStart = new Date(compD)
+            peakStart.setDate(compD.getDate() - 7)
+            const peakStartStr = peakStart.toISOString().split('T')[0]
+            const filtered = bodyData
+              .filter((b: { date: string; weight: number | null }) => b.date >= peakStartStr && b.weight != null)
+              .map((b: { date: string; weight: number }) => ({ date: b.date, weight: b.weight }))
+            return filtered.length > 0 ? filtered : undefined
+          })()
+        : undefined,
     }
 
     // 9. 執行引擎
@@ -353,8 +366,13 @@ export async function GET(request: NextRequest) {
           const todayStr = new Date(nowMs).toISOString().split('T')[0]
           return d.date === todayStr
         })
-        if (todayPlan?.water) {
-          updates.water_target = todayPlan.water
+        // 如果今天沒匹配到，fallback 用最近的一天
+        const effectivePlan = todayPlan || suggestion.peakWeekPlan?.[0]
+        if (effectivePlan?.water) {
+          updates.water_target = effectivePlan.water
+        }
+        if (effectivePlan?.sodiumMg != null) {
+          updates.sodium_target = effectivePlan.sodiumMg
         }
       }
 
@@ -363,6 +381,7 @@ export async function GET(request: NextRequest) {
       if ((suggestion as any).postCompetitionRecovery) {
         updates.carbs_training_day = null
         updates.carbs_rest_day = null
+        updates.sodium_target = null
         if ((suggestion as any).recoveryWater) {
           updates.water_target = (suggestion as any).recoveryWater
         }

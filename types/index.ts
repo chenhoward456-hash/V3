@@ -78,6 +78,7 @@ export interface Client {
   carbs_target: number | null
   fat_target: number | null
   water_target: number | null
+  sodium_target: number | null
   carbs_training_day: number | null
   carbs_rest_day: number | null
   target_weight: number | null
@@ -164,6 +165,7 @@ export interface NutritionLog {
   carbs_grams: number | null
   fat_grams: number | null
   water_ml: number | null
+  sodium_mg: number | null
 }
 
 export interface DailyWellness {
