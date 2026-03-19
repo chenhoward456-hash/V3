@@ -28,10 +28,10 @@ describe('BlogFilter', () => {
     render(<BlogFilter posts={samplePosts} />)
 
     const buttons = screen.getAllByRole('button')
-    expect(buttons).toHaveLength(6)
+    expect(buttons).toHaveLength(9)
 
     const buttonLabels = buttons.map((btn) => btn.textContent)
-    expect(buttonLabels).toEqual(['全部', '血檢優化', '營養科學', '訓練方法', '恢復優化', '個案追蹤'])
+    expect(buttonLabels).toEqual(['全部', '基礎知識', '飲食策略', '進階知識', '血檢優化', '營養科學', '訓練方法', '恢復優化', '個案追蹤'])
   })
 
   it('shows all posts by default (全部 selected)', () => {

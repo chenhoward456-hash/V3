@@ -28,6 +28,7 @@ vi.mock('lucide-react', () => ({
   Pencil: () => React.createElement('span', null, 'edit'),
   Trash2: () => React.createElement('span', null, 'del'),
   X: () => React.createElement('span', null, 'x'),
+  ChevronDown: () => React.createElement('span', null, '▼'),
 }))
 
 // Mock types / lab utilities

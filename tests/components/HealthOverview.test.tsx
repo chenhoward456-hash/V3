@@ -197,9 +197,9 @@ describe('HealthOverview', () => {
   it('shows "--" when todayCalories is null with caloriesTarget', () => {
     renderOverview({ caloriesTarget: 2000, todayCalories: null })
 
-    // Look for the "--" placeholder and target text
+    // Look for the "--" placeholder and subtext
     expect(screen.getByText('--')).toBeInTheDocument()
-    expect(screen.getByText(/目標 2000kcal/)).toBeInTheDocument()
+    expect(screen.getByText(/尚未記錄，點飲食區填寫/)).toBeInTheDocument()
   })
 
   // ---- Wearable data section ----

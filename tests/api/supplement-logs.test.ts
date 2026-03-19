@@ -254,7 +254,7 @@ describe('GET /api/supplement-logs', () => {
 describe('POST /api/supplement-logs', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 29 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 29 })
     mockValidateDate.mockReturnValue({ isValid: true, error: '' })
   })
 
@@ -377,7 +377,7 @@ describe('POST /api/supplement-logs', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = buildPostRequest({
       clientId: 'UNIQUE123',

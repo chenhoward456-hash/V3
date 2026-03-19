@@ -117,7 +117,7 @@ describe('POST /api/subscribe/free-trial', () => {
 
     // Default: rate limit allows requests
     mockGetClientIP.mockReturnValue('127.0.0.1')
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 2 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 2 })
 
     // createErrorResponse returns a proper NextResponse
     mockCreateErrorResponse.mockImplementation((message: string, status: number) => {
@@ -411,7 +411,7 @@ describe('POST /api/subscribe/free-trial', () => {
   // ── Rate Limiting ──
 
   it('should return 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = makeRequest({
       name: 'Test User',

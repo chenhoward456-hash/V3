@@ -131,7 +131,7 @@ describe('GET /api/ai/insights', () => {
     resetFromMock()
 
     mockGetClientIP.mockReturnValue('127.0.0.1')
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 19 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 19 })
 
     // Default AI function mocks
     mockAnalyzeDietaryPatterns.mockReturnValue({ avgCalories: 1800, complianceRate: 0.85 })
@@ -240,7 +240,7 @@ describe('GET /api/ai/insights', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = makeGetRequest({ clientId: 'ABC123' })
     const res = await GET(req)

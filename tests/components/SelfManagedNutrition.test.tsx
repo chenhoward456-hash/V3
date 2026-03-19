@@ -11,6 +11,8 @@ vi.mock('@/lib/date-utils', () => ({
     const date = d || new Date()
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
   },
+  daysUntilDateTW: () => 30,
+  DAY_MS: 86400000,
 }))
 
 const mockFetch = vi.fn()

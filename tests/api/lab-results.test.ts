@@ -216,7 +216,7 @@ describe('GET /api/lab-results', () => {
 describe('POST /api/lab-results', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 9 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 9 })
     mockValidateLabValue.mockReturnValue({ isValid: true, error: '' })
     mockValidateDate.mockReturnValue({ isValid: true, error: '' })
     mockSanitizeInput.mockImplementation((input: string) => input?.trim() || '')
@@ -433,7 +433,7 @@ describe('POST /api/lab-results', () => {
   })
 
   it('returns 429 when rate limited in selfEntry mode', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = buildPostRequest({
       clientId: 'UNIQUE123',

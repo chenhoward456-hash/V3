@@ -263,7 +263,7 @@ describe('POST /api/nutrition-logs', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resetChainMocks()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 29 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 29 })
   })
 
   it('creates new nutrition log', async () => {
@@ -355,7 +355,7 @@ describe('POST /api/nutrition-logs', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = buildPostRequest({
       clientId: 'UNIQUE123',

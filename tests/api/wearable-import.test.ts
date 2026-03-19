@@ -114,11 +114,11 @@ describe('POST /api/wearable-import', () => {
       delete mockTableCalls[key]
     }
     resetFromMock()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 4 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 4 })
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = makePostRequest({ clientId: 'ABC123', format: 'garmin', data: 'csv-data' })
     const res = await POST(req)
@@ -307,7 +307,7 @@ describe('POST /api/wearable-import', () => {
 
     expect(res.status).toBe(400)
     expect(json.error).toContain('解析失敗')
-    expect(json.detail).toBe('Invalid CSV format - no date column')
+    expect(json.detail).toBe('請確認檔案格式為支援的穿戴裝置匯出格式')
   })
 
   it('returns 400 when parser returns empty rows', async () => {

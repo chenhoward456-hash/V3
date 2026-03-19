@@ -87,7 +87,7 @@ describe('GET /api/ebook/download', () => {
     resetFromMock()
 
     mockGetClientIP.mockReturnValue('127.0.0.1')
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 9 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 9 })
     mockReadFile.mockResolvedValue(Buffer.from('fake-pdf-content'))
   })
 
@@ -154,7 +154,7 @@ describe('GET /api/ebook/download', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = makeGetRequest({ token: 'some-token' })
     const res = await GET(req)

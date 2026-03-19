@@ -5,7 +5,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2 } from 'lucide-react'
-import { daysUntilDateTW } from '@/lib/date-utils'
+import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { isCompetitionMode, PHASE_LABELS } from '@/lib/client-mode'
 
 interface Client {
@@ -44,6 +44,14 @@ interface NutritionRecord { client_id: string; date: string; compliant: boolean 
 interface WellnessRecord { client_id: string; date: string; energy_level: number }
 interface RPERecord { client_id: string; date: string; rpe: number }
 
+interface CoachNotification {
+  id: string
+  date: string
+  title: string
+  content: string | null
+  read: boolean
+}
+
 type SortKey = 'name' | 'status' | 'compliance' | 'lastActivity' | 'nextCheckup'
 type SortDir = 'asc' | 'desc'
 type StatusFilter = 'all' | 'normal' | 'attention' | 'competition' | 'coached' | 'self_managed' | 'free'
@@ -75,7 +83,7 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1)
 
   // 通知系統
-  const [notifications, setNotifications] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<CoachNotification[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
   const [runningCron, setRunningCron] = useState(false)
 
@@ -138,15 +146,15 @@ export default function AdminDashboard() {
       setClients(data.clients || [])
       setAllLogs(data.supplementLogs || [])
       setAllSupplements(data.supplements || [])
-      setTodayWellnessIds(new Set((data.todayWellness || []).map((r: any) => r.client_id)))
-      setTodayLogIds(new Set((data.todayLogs || []).map((r: any) => r.client_id)))
+      setTodayWellnessIds(new Set((data.todayWellness || []).map((r: { client_id: string }) => r.client_id)))
+      setTodayLogIds(new Set((data.todayLogs || []).map((r: { client_id: string }) => r.client_id)))
       const tMap: Record<string, string> = {}
       for (const r of (data.todayTraining || []) as TrainingLogRecord[]) tMap[r.client_id] = r.training_type
       setTodayTrainingMap(tMap)
       const nMap: Record<string, boolean> = {}
-      for (const r of (data.todayNutrition || []) as any[]) nMap[r.client_id] = r.compliant
+      for (const r of (data.todayNutrition || []) as { client_id: string; compliant: boolean }[]) nMap[r.client_id] = r.compliant
       setTodayNutritionMap(nMap)
-      setTodayBodyIds(new Set((data.todayBody || []).map((r: any) => r.client_id)))
+      setTodayBodyIds(new Set((data.todayBody || []).map((r: { client_id: string }) => r.client_id)))
       setRecentBody(data.recentBody || [])
       setRecentNutrition(data.recentNutrition || [])
       setRecentWellness(data.recentWellness || [])
@@ -197,7 +205,7 @@ export default function AdminDashboard() {
     const coachedCount = clients.filter(c => c.subscription_tier === 'coached').length
     const selfManagedCount = clients.filter(c => c.subscription_tier === 'self_managed').length
     const freeCount = clients.filter(c => c.subscription_tier === 'free').length
-    const expiringCount = clients.filter(c => { if (!c.expires_at) return false; const d = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / 86400000); return d <= 7 && d >= 0 }).length
+    const expiringCount = clients.filter(c => { if (!c.expires_at) return false; const d = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / DAY_MS); return d <= 7 && d >= 0 }).length
     const expiredCount = clients.filter(c => { if (!c.expires_at) return false; return new Date(c.expires_at).getTime() < Date.now() }).length
     return { totalClients, todayActive, needAttention, avgCompliance, competitionCount, coachedCount, selfManagedCount, freeCount, expiringCount, expiredCount }
   }, [clients, clientStats, todayLogIds, todayWellnessIds, todayTrainingMap, todayNutritionMap, todayBodyIds])
@@ -234,7 +242,7 @@ export default function AdminDashboard() {
       // 需要關注
       if (stat) {
         let daysSince = Infinity
-        if (stat.lastActivity) daysSince = Math.floor((today.getTime() - new Date(stat.lastActivity).getTime()) / 86400000)
+        if (stat.lastActivity) daysSince = Math.floor((today.getTime() - new Date(stat.lastActivity).getTime()) / DAY_MS)
         if (daysSince >= 5 && stat.supplementCount > 0) struggling.push({ id: client.id, name: client.name, reason: daysSince === Infinity ? '從未打卡' : `${daysSince} 天未活動` })
         else if (stat.weekRate < 50 && stat.supplementCount > 0) struggling.push({ id: client.id, name: client.name, reason: `服從率 ${stat.weekRate}%` })
       }
@@ -249,13 +257,13 @@ export default function AdminDashboard() {
       const stat = clientStats[client.id]
       if (stat) {
         let daysSince = Infinity
-        if (stat.lastActivity) daysSince = Math.floor((today.getTime() - new Date(stat.lastActivity).getTime()) / 86400000)
+        if (stat.lastActivity) daysSince = Math.floor((today.getTime() - new Date(stat.lastActivity).getTime()) / DAY_MS)
         if (daysSince >= 5 && stat.supplementCount > 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: daysSince === Infinity ? '從未打卡' : `${daysSince}天未活動`, color: 'text-red-600 bg-red-50', priority: 0 })
         if (stat.weekRate < 50 && stat.supplementCount > 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `本週服從率 ${stat.weekRate}%`, color: 'text-yellow-700 bg-yellow-50', priority: 2 })
       }
       if (client.next_checkup_date) {
         const checkup = new Date(client.next_checkup_date); checkup.setHours(0, 0, 0, 0)
-        const diff = Math.floor((checkup.getTime() - today.getTime()) / 86400000)
+        const diff = Math.floor((checkup.getTime() - today.getTime()) / DAY_MS)
         if (diff < 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `回檢已逾期 ${Math.abs(diff)}天`, color: 'text-red-600 bg-red-50', priority: 0 })
         else if (diff <= 7) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `回檢日 ${client.next_checkup_date}`, color: 'text-orange-600 bg-orange-50', priority: 1 })
       }
@@ -350,8 +358,8 @@ export default function AdminDashboard() {
   const copyClientUrl = (code: string) => { navigator.clipboard.writeText(`${window.location.origin}/c/${code}`).then(() => showToast('已複製學員網址', 'success')) }
   const handleLogout = async () => { await fetch('/api/admin/logout', { method: 'POST' }); router.push('/admin/login') }
   const SortIcon = ({ column }: { column: SortKey }) => sortKey !== column ? <ChevronUp size={14} className="text-gray-300 ml-1 inline" /> : sortDir === 'asc' ? <ChevronUp size={14} className="text-blue-600 ml-1 inline" /> : <ChevronDown size={14} className="text-blue-600 ml-1 inline" />
-  const getActivityLabel = (id: string) => { const s = clientStats[id]; if (!s?.lastActivity) return { text: '無記錄', color: 'text-gray-400' }; const d = Math.floor((Date.now() - new Date(s.lastActivity).getTime()) / 86400000); if (d >= 5) return { text: `${d}天未活動`, color: 'text-red-600 font-medium' }; if (d >= 3) return { text: `${d}天前`, color: 'text-yellow-600' }; if (d === 0) return { text: '今天', color: 'text-green-600' }; return { text: `${d}天前`, color: 'text-gray-600' } }
-  const getCheckupLabel = (c: Client) => { if (!c.next_checkup_date) return { text: '未設定', color: 'text-gray-400' }; const t = new Date(); t.setHours(0,0,0,0); const ck = new Date(c.next_checkup_date); ck.setHours(0,0,0,0); const d = Math.floor((ck.getTime()-t.getTime())/86400000); if (d<0) return { text: `逾期 ${Math.abs(d)}天`, color: 'text-red-600 font-medium' }; if (d<=7) return { text: c.next_checkup_date, color: 'text-orange-600 font-medium' }; return { text: c.next_checkup_date, color: 'text-gray-600' } }
+  const getActivityLabel = (id: string) => { const s = clientStats[id]; if (!s?.lastActivity) return { text: '無記錄', color: 'text-gray-400' }; const d = Math.floor((Date.now() - new Date(s.lastActivity).getTime()) / DAY_MS); if (d >= 5) return { text: `${d}天未活動`, color: 'text-red-600 font-medium' }; if (d >= 3) return { text: `${d}天前`, color: 'text-yellow-600' }; if (d === 0) return { text: '今天', color: 'text-green-600' }; return { text: `${d}天前`, color: 'text-gray-600' } }
+  const getCheckupLabel = (c: Client) => { if (!c.next_checkup_date) return { text: '未設定', color: 'text-gray-400' }; const t = new Date(); t.setHours(0,0,0,0); const ck = new Date(c.next_checkup_date); ck.setHours(0,0,0,0); const d = Math.floor((ck.getTime()-t.getTime())/DAY_MS); if (d<0) return { text: `逾期 ${Math.abs(d)}天`, color: 'text-red-600 font-medium' }; if (d<=7) return { text: c.next_checkup_date, color: 'text-orange-600 font-medium' }; return { text: c.next_checkup_date, color: 'text-gray-600' } }
   const getTrainingEmoji = (t: string) => ({ push:'🫸',pull:'🫷',legs:'🦵',full_body:'🏋️',cardio:'🏃',rest:'😴',chest:'💪',shoulder:'🏔️',arms:'💪🏼' }[t] || '')
   const getComplianceColor = (r: number) => r >= 80 ? 'text-green-600' : r >= 50 ? 'text-yellow-600' : 'text-red-600'
   const getPrepPhaseLabel = (p: string | null) => PHASE_LABELS[p || ''] || p || ''
@@ -363,7 +371,7 @@ export default function AdminDashboard() {
   }
   const getExpiryWarning = (c: Client) => {
     if (!c.expires_at) return null
-    const days = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / 86400000)
+    const days = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / DAY_MS)
     if (days < 0) return { text: `已過期 ${Math.abs(days)} 天`, color: 'text-red-600' }
     if (days <= 7) return { text: `${days} 天到期`, color: 'text-red-500' }
     if (days <= 14) return { text: `${days} 天到期`, color: 'text-orange-500' }
@@ -425,7 +433,7 @@ export default function AdminDashboard() {
                   {showNotifications && (
                     <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto">
                       <div className="p-3 border-b border-gray-100 flex items-center justify-between"><span className="text-sm font-semibold text-gray-900">通知</span><button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button></div>
-                      {notifications.length === 0 ? <p className="p-4 text-sm text-gray-400 text-center">暫無通知</p> : notifications.map((n: any) => (
+                      {notifications.length === 0 ? <p className="p-4 text-sm text-gray-400 text-center">暫無通知</p> : notifications.map((n) => (
                         <div key={n.id} className={`p-3 border-b border-gray-50 ${n.read ? '' : 'bg-blue-50/50'}`}>
                           <div className="text-xs text-gray-400 mb-1">{n.date}</div>
                           <div className="text-sm font-medium text-gray-900 mb-1">{n.title}</div>

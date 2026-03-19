@@ -4,10 +4,10 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { useClientData } from '@/hooks/useClientData'
+import { useClientData, type Client, type ClientDataPayload } from '@/hooks/useClientData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { useCoachMode } from '@/hooks/useCoachMode'
-import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Settings } from 'lucide-react'
+import { Lock, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
 import CollapsibleSection from '@/components/client/CollapsibleSection'
 import QuickActions from '@/components/client/QuickActions'
@@ -30,9 +30,12 @@ import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManagedNutrition'), { ssr: false })
 import PwaPrompt from '@/components/client/PwaPrompt'
-import { calcRecommendedStageWeight } from '@/lib/stage-weight'
+import ClientHeader from '@/components/client/ClientHeader'
+import HealthScoreBanner from '@/components/client/HealthScoreBanner'
+import TodayOverviewCard from '@/components/client/TodayOverviewCard'
+import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
-import { isCompetitionMode, isHealthMode as isHealthModeHelper, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS as ALL_PHASE_LABELS } from '@/lib/client-mode'
+import { isCompetitionMode, isHealthMode as isHealthModeHelper } from '@/lib/client-mode'
 
 // Dynamic imports for code splitting (client-only components)
 const AiChatDrawer = dynamic(() => import('@/components/client/AiChatDrawer'), { ssr: false })
@@ -45,143 +48,14 @@ const HealthModeAdvanced = dynamic(() => import('@/components/client/HealthModeA
 const OnboardingGuide = dynamic(() => import('@/components/client/OnboardingGuide'), { ssr: false })
 const OnboardingChecklist = dynamic(() => import('@/components/client/OnboardingChecklist'), { ssr: false })
 const ReferralCard = dynamic(() => import('@/components/client/ReferralCard'), { ssr: false })
-import { generateSupplementSuggestions } from '@/lib/supplement-engine'
-import { getLocalDateStr, daysUntilDateTW } from '@/lib/date-utils'
+import { generateSupplementSuggestions, type GeneticProfile } from '@/lib/supplement-engine'
+import type { NutritionSuggestion } from '@/lib/nutrition-engine'
+import { getLocalDateStr, daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 import { trackEvent } from '@/lib/analytics'
 import ABTest from '@/components/ABTest'
 import { trackConversion, peekVariant } from '@/lib/ab-testing'
 import ErrorBoundary from '@/components/ErrorBoundary'
-
-// ── Module-level constants (avoid re-creation on every render) ──
-
-const PILLARS_EXPLAIN: Record<string, string> = {
-  wellness: '身心狀態 25%',
-  nutrition: '營養合規 20%',
-  training: '訓練規律 20%',
-  supplement: '補品服從 15%',
-  lab: '血檢結果 20%',
-}
-
-const PILLAR_TIPS: Record<string, string> = {
-  wellness: '多休息、保持正面心態',
-  nutrition: '注意營養目標的執行',
-  training: '保持規律的訓練頻率',
-  supplement: '別忘了每天的補品打卡',
-  lab: '可考慮安排血檢追蹤',
-}
-
-const PHASE_LABELS = ALL_PHASE_LABELS
-
-// PHASE_OPTIONS removed — now using BODYBUILDING_PHASE_OPTIONS / ATHLETIC_PHASE_OPTIONS from @/lib/client-mode
-
-/** Dismissable retention card — stores dismissed state in localStorage */
-function RetentionCard({ children, onDismiss, id }: { children: React.ReactNode; onDismiss: () => void; id: string }) {
-  const [dismissed, setDismissed] = useState(false)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem(`retention_${id}_dismissed`)) {
-      setDismissed(true)
-    }
-  }, [id])
-  if (dismissed) return null
-  return (
-    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-4 mb-3 relative">
-      <button
-        onClick={() => {
-          localStorage.setItem(`retention_${id}_dismissed`, '1')
-          setDismissed(true)
-          onDismiss()
-        }}
-        className="absolute top-2 right-2 text-gray-300 hover:text-gray-500 transition-colors p-1"
-        aria-label="關閉"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-      {children}
-    </div>
-  )
-}
-
-/** Day 14 TDEE Calibration WOW Moment Card */
-function TDEECalibrationCard({ client }: { client: any }) {
-  const [dismissed, setDismissed] = useState(false)
-  const [confirmed, setConfirmed] = useState(false)
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem(`tdee_calibration_${client.id}_seen`)) {
-      setDismissed(true)
-    }
-  }, [client.id])
-
-  if (dismissed) return null
-
-  // Calculate initial vs calibrated TDEE difference
-  const initialTDEE = client.calories_target ? Math.round(client.calories_target / 0.8) : null // rough estimate of original TDEE
-  const currentCalories = client.calories_target
-  if (!currentCalories) return null
-
-  // We show the card as a "report" style
-  return (
-    <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 border-2 border-indigo-200 rounded-2xl p-5 mb-3 shadow-sm">
-      <div className="text-center mb-4">
-        <span className="text-3xl">🧠</span>
-        <h3 className="text-base font-bold text-gray-900 mt-2">14 天智能校正完成</h3>
-      </div>
-
-      <div className="bg-white/70 rounded-xl p-4 mb-4 space-y-3">
-        <p className="text-xs text-gray-500 text-center">
-          根據你過去 14 天的真實體重趨勢，系統已自動校正你的代謝估算。
-        </p>
-        {initialTDEE && (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="text-center">
-              <p className="text-[10px] text-gray-400">初始估算 TDEE</p>
-              <p className="text-lg font-bold text-gray-500">{initialTDEE.toLocaleString()}</p>
-              <p className="text-[10px] text-gray-400">kcal</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-indigo-500">校正後目標熱量</p>
-              <p className="text-lg font-bold text-indigo-700">{currentCalories.toLocaleString()}</p>
-              <p className="text-[10px] text-indigo-500">kcal</p>
-            </div>
-          </div>
-        )}
-        <p className="text-xs text-gray-600 text-center leading-relaxed">
-          你的新目標已自動更新 ✓
-        </p>
-      </div>
-
-      <div className="text-center space-y-2">
-        <p className="text-xs text-gray-500">想知道接下來怎麼調整策略？</p>
-        <a
-          href="https://lin.ee/LP65rCc"
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => trackEvent('tdee_calibration_line_click')}
-          className="inline-block bg-[#06C755] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#05b04d] transition-colors"
-        >
-          💬 加 LINE 找 Howard 分析
-        </a>
-      </div>
-
-      {!confirmed ? (
-        <button
-          onClick={() => {
-            setConfirmed(true)
-            localStorage.setItem(`tdee_calibration_${client.id}_seen`, '1')
-            trackEvent('tdee_calibration_confirmed')
-            setTimeout(() => setDismissed(true), 500)
-          }}
-          className="block w-full mt-3 text-center text-xs text-gray-400 hover:text-gray-600 transition-colors py-1"
-        >
-          我知道了
-        </button>
-      ) : (
-        <p className="text-center text-xs text-green-500 mt-3">✓ 已確認</p>
-      )}
-    </div>
-  )
-}
 
 export default function ClientDashboard() {
   const { clientId } = useParams()
@@ -219,16 +93,6 @@ export default function ClientDashboard() {
     const maxDate = isPeakWeek ? tomorrow : today
     if (newDate > maxDate) return
     setSelectedDate(newDate)
-  }
-
-  const formatSelectedDate = (dateStr: string) => {
-    if (dateStr === today) return '今天'
-    if (dateStr === tomorrow) return '明天'
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    if (dateStr === getLocalDateStr(yesterday)) return '昨天'
-    const d = new Date(dateStr + 'T12:00:00')
-    return d.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })
   }
 
   // 教練模式
@@ -274,7 +138,7 @@ export default function ClientDashboard() {
 
   const toggleFeature = async (key: string) => {
     if (!clientData?.client) return
-    const newVal = !(clientData.client as any)[key]
+    const newVal = !(clientData.client as Record<string, unknown>)[key]
     try {
       const res = await fetch('/api/clients', {
         method: 'PATCH',
@@ -301,8 +165,8 @@ export default function ClientDashboard() {
       showToast('已取消定期定額，帳號可使用至到期日', 'success')
       setShowCancelConfirm(false)
       setShowSettings(false)
-    } catch (err: any) {
-      showToast(err.message || '取消失敗，請重試', 'error')
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : '取消失敗，請重試', 'error')
     } finally {
       setCancellingSubscription(false)
     }
@@ -334,7 +198,7 @@ export default function ClientDashboard() {
   const trackedEventsRef = useRef<Set<string>>(new Set())
   useEffect(() => {
     if (!clientData?.client?.created_at) return
-    const daysSinceSignup = Math.floor((Date.now() - new Date(clientData.client.created_at).getTime()) / 86400000)
+    const daysSinceSignup = Math.floor((Date.now() - new Date(clientData.client.created_at).getTime()) / DAY_MS)
     const track = (event: string) => {
       if (!trackedEventsRef.current.has(event)) {
         trackedEventsRef.current.add(event)
@@ -352,7 +216,7 @@ export default function ClientDashboard() {
   // 共用的 optimistic SWR update：引擎寫入 DB 後，直接同步本地快取
   const mutateWithTargets = useCallback((appliedTargets?: Record<string, number | undefined>) => {
     if (appliedTargets) {
-      mutate((prev: any) => {
+      mutate((prev: ClientDataPayload | undefined) => {
         if (!prev?.client) return prev
         const updates: Record<string, number> = {}
         for (const [k, v] of Object.entries(appliedTargets)) {
@@ -383,19 +247,19 @@ export default function ClientDashboard() {
 
   const handleMarkAllSupplementsComplete = async () => {
     const supplements = clientData?.client?.supplements || []
-    const uncompleted = supplements.filter((s: any) => {
-      const log = selectedDateLogs?.find((l: any) => l.supplement_id === s.id)
+    const uncompleted = supplements.filter((s) => {
+      const log = selectedDateLogs?.find((l: { supplement_id: string; completed?: boolean }) => l.supplement_id === s.id)
       return !log?.completed
     })
     if (uncompleted.length === 0) return
     // 把所有未完成的 supplement 加入 toggling 狀態
     setTogglingSupplements(prev => {
       const next = new Set(prev)
-      uncompleted.forEach((s: any) => next.add(s.id))
+      uncompleted.forEach((s) => next.add(s.id))
       return next
     })
     try {
-      const results = await Promise.all(uncompleted.map((s: any) =>
+      const results = await Promise.all(uncompleted.map((s) =>
         fetch('/api/supplement-logs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -443,20 +307,20 @@ export default function ClientDashboard() {
   // AI Chat 用的體重/體脂趨勢（最近 14 天）
   const weightTrendForAi = useMemo(() => {
     if (!clientData?.bodyData?.length) return []
-    return (clientData.bodyData as any[])
-      .filter((b: any) => b.weight != null)
-      .sort((a: any, b: any) => a.date.localeCompare(b.date))
+    return clientData.bodyData
+      .filter((b) => b.weight != null)
+      .sort((a, b) => a.date.localeCompare(b.date))
       .slice(-14)
-      .map((b: any) => ({ date: b.date, weight: b.weight as number }))
+      .map((b) => ({ date: b.date, weight: b.weight as number }))
   }, [clientData?.bodyData])
 
   const bodyFatTrendForAi = useMemo(() => {
     if (!clientData?.bodyData?.length) return []
-    return (clientData.bodyData as any[])
-      .filter((b: any) => b.body_fat != null)
-      .sort((a: any, b: any) => a.date.localeCompare(b.date))
+    return clientData.bodyData
+      .filter((b) => b.body_fat != null)
+      .sort((a, b) => a.date.localeCompare(b.date))
       .slice(-14)
-      .map((b: any) => ({ date: b.date, bodyFat: b.body_fat as number }))
+      .map((b) => ({ date: b.date, bodyFat: b.body_fat as number }))
   }, [clientData?.bodyData])
 
   // 生成補品建議（必須在所有條件 return 之前，遵守 React Hooks 規則）
@@ -469,9 +333,9 @@ export default function ClientDashboard() {
     if (!healthMode && !isCompetition) return []
     if (!healthMode && !hasGenetics) return []
     const recentTraining = (clientData.trainingLogs || []).slice(-7)
-    const hasHighRPE = recentTraining.filter((t: any) => t.rpe != null && t.rpe >= 9).length >= 3
+    const hasHighRPE = recentTraining.filter((t) => t.rpe != null && t.rpe >= 9).length >= 3
     return generateSupplementSuggestions(
-      (c.lab_results || []).map((r: any) => ({
+      (c.lab_results || []).map((r) => ({
         test_name: r.test_name,
         value: r.value,
         unit: r.unit,
@@ -484,9 +348,9 @@ export default function ClientDashboard() {
         hasHighRPE,
         goalType: (c.goal_type as 'cut' | 'bulk' | null) || null,
         genetics: {
-          mthfr: c.gene_mthfr as any,
-          apoe: c.gene_apoe as any,
-          depressionRisk: c.gene_depression_risk as any,
+          mthfr: c.gene_mthfr as GeneticProfile['mthfr'],
+          apoe: c.gene_apoe as GeneticProfile['apoe'],
+          depressionRisk: c.gene_depression_risk as GeneticProfile['depressionRisk'],
         },
         prepPhase: (c.prep_phase as 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | 'preparation' | 'weigh_in' | 'rebound' | null) || null,
       }
@@ -517,7 +381,7 @@ export default function ClientDashboard() {
   }, [clientData?.client])
 
   // 營養引擎分析結果（傳給 AI Chat 用）
-  const [nutritionEngineSuggestion, setNutritionEngineSuggestion] = useState<any>(null)
+  const [nutritionEngineSuggestion, setNutritionEngineSuggestion] = useState<NutritionSuggestion | null>(null)
 
   // 所有有營養追蹤的學員：頁面載入時自動觸發營養引擎更新目標
   // 備賽客戶由 GoalDrivenStatus 處理目標套用，但這裡仍需取得引擎數據給 AI Chat
@@ -693,556 +557,63 @@ export default function ClientDashboard() {
 
         {/* 標題區 */}
         <div className="bg-white rounded-3xl shadow-sm p-5 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
-                {c.name.charAt(0)}
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 leading-tight">{c.name}</h1>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  c.status === 'normal' ? 'bg-green-100 text-green-700'
-                  : c.status === 'attention' ? 'bg-yellow-100 text-yellow-700'
-                  : 'bg-red-100 text-red-700'
-                }`}>
-                  {c.status === 'normal' ? '● 狀態良好' : '● 需要關注'}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="relative">
-                <button
-                  onClick={() => setShowSettings(!showSettings)}
-                  className="p-2 rounded-full transition-colors text-gray-400 hover:bg-gray-100"
-                >
-                  <Settings size={18} />
-                </button>
-                {showSettings && (
-                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border p-4 z-50 w-64 max-h-[70vh] overflow-y-auto">
-                    <p className="text-xs font-semibold text-gray-500 mb-3">功能設定</p>
+          <ClientHeader
+            client={c}
+            isCoachMode={isCoachMode}
+            selectedDate={selectedDate}
+            isToday={isToday}
+            today={today}
+            tomorrow={tomorrow}
+            isCompetition={isCompetition}
+            isFree={isFree}
+            showSettings={showSettings}
+            setShowSettings={setShowSettings}
+            showPinPopover={showPinPopover}
+            pinInput={pinInput}
+            pinError={pinError}
+            setPinInput={setPinInput}
+            handlePinSubmit={handlePinSubmit}
+            onDateChange={changeDate}
+            onDateSelect={setSelectedDate}
+            onToggleCoachMode={toggleCoachMode}
+            onToggleFeature={toggleFeature}
+            showPhaseSelector={showPhaseSelector}
+            setShowPhaseSelector={setShowPhaseSelector}
+            updatingPhase={updatingPhase}
+            onPrepPhaseChange={handlePrepPhaseChange}
+            showCancelConfirm={showCancelConfirm}
+            setShowCancelConfirm={setShowCancelConfirm}
+            cancellingSubscription={cancellingSubscription}
+            onCancelSubscription={handleCancelSubscription}
+          />
 
-                    {/* 簡單模式 */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">簡單模式</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">只顯示核心欄位</p>
-                      </div>
-                      <button
-                        onClick={() => !isFree && toggleFeature('simple_mode')}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
-                          c.simple_mode ? 'bg-blue-500' : 'bg-gray-300'
-                        } ${isFree ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          c.simple_mode ? 'translate-x-6' : 'translate-x-1'
-                        }`} />
-                      </button>
-                    </div>
-
-                    <div className="border-t border-gray-100 my-3" />
-                    <p className="text-[10px] text-gray-400 mb-2">{isFree ? '免費版預設功能' : '不需要的功能可以關掉'}</p>
-
-                    {/* 功能開關 */}
-                    {([
-                      { key: 'body_composition_enabled', label: '體重/體態', icon: '⚖️' },
-                      { key: 'nutrition_enabled', label: '飲食追蹤', icon: '🥗' },
-                      { key: 'wellness_enabled', label: '每日感受', icon: '😊' },
-                      { key: 'training_enabled', label: '訓練追蹤', icon: '🏋️' },
-                      { key: 'supplement_enabled', label: '補品管理', icon: '💊' },
-                      { key: 'lab_enabled', label: '血檢追蹤', icon: '🩸' },
-                      { key: 'ai_chat_enabled', label: 'AI 顧問', icon: '🤖' },
-                    ] as const).map(({ key, label, icon }) => {
-                      const FREE_LOCKED_ON = ['body_composition_enabled', 'nutrition_enabled'] as const
-                      const isLockedOn = isFree && (FREE_LOCKED_ON as readonly string[]).includes(key)
-                      const isLockedOff = isFree && !(FREE_LOCKED_ON as readonly string[]).includes(key)
-
-                      return (
-                        <div key={key} className="flex items-center justify-between py-1.5">
-                          <span className="text-sm text-gray-700">
-                            {icon} {label}
-                            {isLockedOn && <span className="text-[10px] text-gray-400 ml-1">預設</span>}
-                            {isLockedOff && <span className="text-[10px] text-gray-400 ml-1">🔒</span>}
-                          </span>
-                          <button
-                            onClick={() => {
-                              if (isLockedOn) return
-                              if (isLockedOff) {
-                                trackEvent('upgrade_cta_clicked', { feature: label, source: 'feature_toggle' })
-                                window.location.href = `/upgrade?from=free&feature=${encodeURIComponent(label)}`
-                                return
-                              }
-                              toggleFeature(key)
-                            }}
-                            className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
-                              (c as any)[key] ? 'bg-blue-500' : 'bg-gray-300'
-                            } ${isLockedOn ? 'opacity-50 cursor-not-allowed' : ''} ${isLockedOff ? 'opacity-40 cursor-pointer' : ''}`}
-                          >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              (c as any)[key] ? 'translate-x-6' : 'translate-x-1'
-                            }`} />
-                          </button>
-                        </div>
-                      )
-                    })}
-
-                    {/* 取消訂閱 */}
-                    {c.subscription_tier !== 'free' && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        {!showCancelConfirm ? (
-                          <button
-                            onClick={() => setShowCancelConfirm(true)}
-                            className="text-xs text-gray-400 hover:text-red-500 transition-colors"
-                          >
-                            取消定期定額
-                          </button>
-                        ) : (
-                          <div className="space-y-2">
-                            <p className="text-xs text-red-600 font-medium">確定要取消嗎？</p>
-                            <p className="text-[10px] text-gray-500">取消後不再自動扣款，帳號可使用至到期日。</p>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={handleCancelSubscription}
-                                disabled={cancellingSubscription}
-                                className="px-3 py-1.5 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
-                              >
-                                {cancellingSubscription ? '處理中...' : '確認取消'}
-                              </button>
-                              <button
-                                onClick={() => setShowCancelConfirm(false)}
-                                className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-gray-200 transition-colors"
-                              >
-                                返回
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="relative">
-                <button
-                  onClick={toggleCoachMode}
-                  className={`p-2 rounded-full transition-colors ${isCoachMode ? 'bg-green-100 text-green-700' : 'text-gray-400 hover:bg-gray-100'}`}
-                >
-                  {isCoachMode ? <Unlock size={18} /> : <Lock size={18} />}
-                </button>
-                {showPinPopover && !isCoachMode && (
-                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border p-3 z-50 w-48">
-                    <input
-                      type="password"
-                      value={pinInput}
-                      onChange={(e) => setPinInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
-                      placeholder="輸入教練密碼"
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${pinError ? 'border-red-400' : 'border-gray-300'}`}
-                      autoFocus
-                    />
-                    {pinError && <p className="text-xs text-red-500 mt-1">密碼錯誤</p>}
-                    <button onClick={handlePinSubmit} className="w-full mt-2 bg-blue-600 text-white py-1.5 rounded-lg text-sm hover:bg-blue-700">解鎖</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 日期導航 */}
-          <div className="flex items-center justify-between bg-gray-50 rounded-2xl px-3 py-2 mb-3">
-            <button onClick={() => changeDate(-1)} className="p-1.5 rounded-full hover:bg-gray-200 transition-colors text-gray-500">
-              <ChevronLeft size={18} />
-            </button>
-            <div className="text-center relative">
-              <button
-                onClick={() => {
-                  const picker = document.getElementById('date-picker') as HTMLInputElement
-                  if (picker) { picker.showPicker?.(); picker.focus() }
-                }}
-                className={`text-sm font-semibold px-3 py-1 rounded-full transition-colors ${isToday ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
-              >
-                {formatSelectedDate(selectedDate)}
-              </button>
-              {(() => {
-                const isPeakWeekNav = isCompetition && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition')
-                const maxDate = isPeakWeekNav ? tomorrow : today
-                return (
-                  <input
-                    id="date-picker"
-                    type="date"
-                    value={selectedDate}
-                    max={maxDate}
-                    onChange={(e) => {
-                      if (e.target.value && e.target.value <= maxDate) setSelectedDate(e.target.value)
-                    }}
-                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                  />
-                )
-              })()}
-              {!isToday && (
-                <p className="text-xs text-gray-400 pointer-events-none">{new Date(selectedDate).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}</p>
-              )}
-            </div>
-            <button
-              onClick={() => changeDate(1)}
-              disabled={isCompetition && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition') ? selectedDate >= tomorrow : isToday}
-              className="p-1.5 rounded-full hover:bg-gray-200 transition-colors text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-
-          {/* 明日預覽 Banner */}
-          {selectedDate > today && (
-            <div className="bg-indigo-50 border border-indigo-200 rounded-2xl px-4 py-3 mb-3 flex items-center gap-2">
-              <span className="text-base">🔮</span>
-              <p className="text-sm font-semibold text-indigo-700">明日預覽模式</p>
-              <p className="text-xs text-indigo-500 ml-auto">查看明天的 Peak Week 計畫</p>
-            </div>
-          )}
-
-          {/* 健康模式 Banner */}
-          {isHealthMode && healthScore && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-3">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🌿</span>
-                  <div>
-                    <p className="text-xs font-semibold text-emerald-700">健康優化模式</p>
-                    {healthScore.daysInCycle != null && (
-                      <p className="text-[10px] text-emerald-500">第 {healthScore.daysInCycle} 天 / 90 天季度</p>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-2xl font-black text-emerald-700">{healthScore.total}</span>
-                    <div>
-                      <span className={`inline-block text-xs font-bold px-1.5 py-0.5 rounded ${
-                        healthScore.grade === 'A' ? 'bg-emerald-600 text-white' :
-                        healthScore.grade === 'B' ? 'bg-blue-500 text-white' :
-                        healthScore.grade === 'C' ? 'bg-yellow-500 text-white' :
-                        'bg-red-500 text-white'
-                      }`}>{healthScore.grade}</span>
-                      <p className="text-[10px] text-emerald-600">健康分數</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* 五柱進度條（附解釋） */}
-              <div className="grid grid-cols-5 gap-1">
-                {healthScore.pillars.map(p => {
-                  return (
-                    <div key={p.pillar} className="text-center">
-                      <div className="text-base leading-none mb-1">{p.emoji}</div>
-                      <div className="w-full bg-emerald-100 rounded-full h-1.5 mb-0.5">
-                        <div
-                          className={`h-1.5 rounded-full transition-all ${
-                            p.score >= 80 ? 'bg-emerald-500' : p.score >= 50 ? 'bg-yellow-400' : 'bg-red-400'
-                          }`}
-                          style={{ width: `${p.score}%` }}
-                        />
-                      </div>
-                      <p className={`text-[9px] font-medium ${
-                        p.score >= 80 ? 'text-emerald-600' : p.score >= 50 ? 'text-yellow-600' : 'text-red-500'
-                      }`}>{p.score}</p>
-                      <p className="text-[8px] text-gray-400">{p.label}</p>
-                    </div>
-                  )
-                })}
-              </div>
-              {/* 血檢 & 獎勵加減分 */}
-              {(healthScore.labBonus > 0 || healthScore.labPenalty < 0) && (
-                <div className="flex items-center gap-2 mt-2 text-[10px]">
-                  {healthScore.labBonus > 0 && (
-                    <span className="text-emerald-600 font-medium bg-emerald-100 px-1.5 py-0.5 rounded">
-                      +{healthScore.labBonus} 優秀獎勵
-                    </span>
-                  )}
-                  {healthScore.labPenalty < 0 && (
-                    <span className="text-red-500 font-medium bg-red-50 px-1.5 py-0.5 rounded">
-                      {healthScore.labPenalty} 血檢異常
-                    </span>
-                  )}
-                </div>
-              )}
-              {/* 最低分柱提示 */}
-              {(() => {
-                const lowest = [...healthScore.pillars].sort((a, b) => a.score - b.score)[0]
-                if (lowest && lowest.score < 70) {
-                  return (
-                    <div className="mt-2 pt-2 border-t border-emerald-200">
-                      <p className="text-xs text-amber-600 font-medium">
-                        💡 {lowest.label}分數偏低（{lowest.score}分）— {PILLAR_TIPS[lowest.pillar] || '持續改善中'}
-                      </p>
-                    </div>
-                  )
-                }
-                return null
-              })()}
-              {healthScore.daysUntilBloodTest != null && healthScore.daysUntilBloodTest <= 21 && (
-                <div className="mt-2 pt-2 border-t border-emerald-200">
-                  <p className="text-xs text-emerald-600 font-medium">
-                    🩸 季度血檢倒數 {healthScore.daysUntilBloodTest} 天
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+          {isHealthMode && healthScore && <HealthScoreBanner healthScore={healthScore} />}
 
           {/* 健康模式進階功能：血檢飲食建議 + 季度對比 + 微營養素 */}
           {isHealthMode && (
             <HealthModeAdvanced clientId={c.id} code={c.unique_code} />
           )}
 
-          {/* 備賽倒數 Banner */}
-          {isCompetition && c.competition_date && (() => {
-            const daysLeft = daysUntilDateTW(c.competition_date)
-            const phase = c.prep_phase || 'off_season'
-            const urgencyColor = daysLeft <= 7 ? 'from-red-500 to-red-600' : daysLeft <= 14 ? 'from-amber-500 to-orange-500' : daysLeft <= 30 ? 'from-amber-400 to-yellow-500' : 'from-blue-500 to-blue-600'
-            const urgencyBg = daysLeft <= 7 ? 'bg-red-50 border-red-200' : daysLeft <= 14 ? 'bg-amber-50 border-amber-200' : daysLeft <= 30 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
-            return (
-              <div className={`${urgencyBg} border rounded-2xl p-4 mb-3`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">🏆</span>
-                      <button
-                        onClick={() => setShowPhaseSelector(!showPhaseSelector)}
-                        className={`px-2 py-0.5 text-xs font-bold rounded-full text-white bg-gradient-to-r ${urgencyColor} flex items-center gap-1 transition-all active:scale-95`}
-                      >
-                        {PHASE_LABELS[phase] || phase}
-                        <ChevronDown className={`w-3 h-3 transition-transform ${showPhaseSelector ? 'rotate-180' : ''}`} />
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      {new Date(c.competition_date).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-3xl font-black text-gray-900">{Math.max(0, daysLeft)}</p>
-                    <p className="text-xs text-gray-500 font-medium">{daysLeft > 0 ? '天後比賽' : daysLeft === 0 ? '今天比賽！' : '已結束'}</p>
-                  </div>
-                </div>
-                {/* 階段選擇器 */}
-                {showPhaseSelector && (
-                  <div className="mt-3 pt-3 border-t border-gray-200/60">
-                    <p className="text-xs text-gray-500 mb-2 font-medium">切換備賽階段</p>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {(c.client_mode === 'athletic' ? ATHLETIC_PHASE_OPTIONS : BODYBUILDING_PHASE_OPTIONS).map(opt => (
-                        <button
-                          key={opt.value}
-                          onClick={() => handlePrepPhaseChange(opt.value)}
-                          disabled={updatingPhase || opt.value === phase}
-                          className={`px-2 py-2 rounded-lg text-xs font-medium transition-all ${
-                            opt.value === phase
-                              ? 'bg-gray-900 text-white shadow-sm'
-                              : 'bg-white/80 text-gray-700 hover:bg-white hover:shadow-sm active:scale-95'
-                          } ${updatingPhase ? 'opacity-50' : ''}`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })()}
-
-          {/* 今日概覽卡片 */}
           {isToday && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-4 mb-3">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">📋</span>
-                  <span className="text-sm font-semibold text-gray-700">今日概覽</span>
-                </div>
-                {overallStreak > 0 && (
-                  <div className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1 shadow-sm">
-                    <span className="text-sm">🔥</span>
-                    <span className="text-sm font-bold text-orange-600">{overallStreak}</span>
-                    <span className="text-[10px] text-gray-500">天連續</span>
-                  </div>
-                )}
-              </div>
-
-              {/* 今日完成項目 */}
-              <div className="flex flex-wrap gap-2 mb-2">
-                {todayCompletedItems.length > 0 ? (
-                  todayCompletedItems.map(item => (
-                    <span key={item.label} className="inline-flex items-center gap-1 bg-green-100 text-green-700 rounded-full px-2.5 py-1 text-xs font-medium">
-                      <span>{item.icon}</span> {item.label} ✓
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-xs text-gray-500">👋 今天還沒有紀錄，往下滑開始吧</p>
-                )}
-              </div>
-
-              {/* 備賽模式：今日體重 vs 目標 */}
-              {isCompetition && c.target_weight && latestBodyData?.weight && (
-                <div className="mt-2 pt-2 border-t border-blue-100 space-y-1">
-                  {/* Peak Week 體重拆分 */}
-                  {(() => {
-                    const totalGap = Math.abs(latestBodyData.weight - c.target_weight)
-                    const waterCutPct = 0.02  // 2% BW
-                    const peakWeekLoss = Math.round(latestBodyData.weight * waterCutPct * 10) / 10
-                    const prePeakTarget = Math.round((c.target_weight + peakWeekLoss) * 10) / 10
-                    const dietGap = Math.max(0, Math.round((latestBodyData.weight - prePeakTarget) * 10) / 10)
-                    const daysLeft = c.competition_date ? daysUntilDateTW(c.competition_date) : null
-                    const showSplit = daysLeft != null && daysLeft > 7 && c.prep_phase !== 'peak_week'
-
-                    return (
-                      <>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-gray-500">⚖️ 最新</span>
-                          <span className="text-sm font-bold text-gray-800">{latestBodyData.weight} kg</span>
-                          <span className="text-xs text-gray-400">→</span>
-                          <span className="text-xs text-gray-500">🎯 上台</span>
-                          <span className="text-sm font-bold text-red-500">{c.target_weight} kg</span>
-                          <span className={`text-xs font-medium ml-auto ${totalGap <= 1 ? 'text-green-600' : 'text-amber-600'}`}>
-                            差 {totalGap.toFixed(1)} kg
-                          </span>
-                        </div>
-                        {showSplit && totalGap > peakWeekLoss && (
-                          <div className="flex items-center gap-2 text-[10px] text-indigo-500 bg-indigo-50 rounded-lg px-2 py-1">
-                            <span>💧 飲食目標 {dietGap} kg</span>
-                            <span className="text-gray-300">+</span>
-                            <span>Peak Week 約 {peakWeekLoss} kg</span>
-                          </div>
-                        )}
-                      </>
-                    )
-                  })()}
-                  {/* 體態推算參考範圍（需要體脂率才顯示） */}
-                  {latestBodyData.body_fat && (() => {
-                    const rec = calcRecommendedStageWeight(
-                      latestBodyData.weight!,
-                      latestBodyData.body_fat!,
-                      c.gender ?? '男性',
-                      latestBodyData.height
-                    )
-                    return (
-                      <div className="text-xs text-gray-500 flex items-center gap-1 flex-wrap">
-                        <span>🔬 FFM {rec.ffm} kg</span>
-                        <span className="text-gray-300">｜</span>
-                        <span>參考上台範圍</span>
-                        <span className="font-semibold text-blue-600">{rec.recommendedLow}–{rec.recommendedHigh} kg</span>
-                        <span className="text-gray-400">（體脂 {rec.targetBFLow}–{rec.targetBFHigh}%）</span>
-                      </div>
-                    )
-                  })()}
-                </div>
-              )}
-            </div>
+            <TodayOverviewCard
+              overallStreak={overallStreak}
+              todayCompletedItems={todayCompletedItems}
+              isCompetition={isCompetition}
+              targetWeight={c.target_weight}
+              competitionDate={c.competition_date || null}
+              prepPhase={c.prep_phase || null}
+              gender={c.gender ?? null}
+              latestBodyData={latestBodyData}
+            />
           )}
 
-          {/* Day-based 導流提示（免費 / 自主管理用戶） */}
-          {(isFree || isSelfManaged) && c.created_at && (() => {
-            const daysSinceSignup = Math.floor((Date.now() - new Date(c.created_at).getTime()) / 86400000)
-
-            // 計算蛋白質達標率和熱量合規天數（Day 3 卡片用）
-            const recentNutritionLogs = clientData.nutritionLogs || []
-            const logsWithProtein = recentNutritionLogs.filter((n: any) => n.protein_grams != null)
-            const pTarget = c.protein_target as number | null
-            const proteinHitRate = logsWithProtein.length > 0 && pTarget
-              ? Math.round((logsWithProtein.filter((n: any) => n.protein_grams >= pTarget * 0.9).length / logsWithProtein.length) * 100)
-              : null
-            const logsWithCalories = recentNutritionLogs.filter((n: any) => n.calories != null)
-            const calTarget = c.calories_target as number | null
-            const caloriesCompliantDays = logsWithCalories.length > 0 && calTarget
-              ? logsWithCalories.filter((n: any) => Math.abs(n.calories - calTarget) <= calTarget * 0.1).length
-              : null
-
-            // Day 1-2 — 系統正在學習
-            if (daysSinceSignup < 3) {
-              return (
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 mb-3">
-                  <div className="flex items-start gap-3">
-                    <span className="text-xl flex-shrink-0">🧠</span>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900 mb-1">系統正在學習你的代謝特性</p>
-                      <p className="text-xs text-gray-600 leading-relaxed mb-2">
-                        你剛開始使用 Howard Protocol，系統需要約 14 天的數據才能精準計算你的實際 TDEE。
-                      </p>
-                      <div className="text-xs text-gray-500 leading-relaxed space-y-1">
-                        <p>現階段請：</p>
-                        <p>• 每天記錄體重（越準確越好）</p>
-                        <p>• 正常飲食，不用刻意改變</p>
-                      </div>
-                      <p className="text-[10px] text-blue-500 mt-2">系統會在背景持續分析你的數據趨勢</p>
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-
-            // P0: Day 3 — 第3天留存觸發卡片
-            if (daysSinceSignup >= 3 && daysSinceSignup <= 4) {
-              const totalLogDays = recentNutritionLogs.length
-              return (
-                <RetentionCard onDismiss={() => {}} id="day3">
-                  <div className="flex items-start gap-3">
-                    <span className="text-xl flex-shrink-0">🎯</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-gray-900 mb-2">你已連續記錄 {Math.min(totalLogDays, daysSinceSignup)} 天</p>
-                      <div className="space-y-1.5 mb-3">
-                        {proteinHitRate != null && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-600">蛋白質平均達標率</span>
-                            <span className={`font-bold ${proteinHitRate >= 80 ? 'text-green-600' : 'text-amber-600'}`}>{proteinHitRate}%</span>
-                          </div>
-                        )}
-                        {caloriesCompliantDays != null && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-600">熱量合規天數</span>
-                            <span className="font-bold text-gray-800">{caloriesCompliantDays}/{logsWithCalories.length} 天</span>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 leading-relaxed">
-                        系統正在學習你的代謝特性，繼續記錄到第 14 天，TDEE 會根據你的真實數據自動校正。
-                      </p>
-                    </div>
-                  </div>
-                </RetentionCard>
-              )
-            }
-
-            // P1: Day 7 — AI 顧問預覽
-            if (daysSinceSignup >= 7 && daysSinceSignup <= 10 && c.nutrition_enabled) {
-              return (
-                <div className="bg-gradient-to-br from-violet-50 to-blue-50 border border-violet-200 rounded-2xl p-4 mb-3">
-                  <div className="flex items-start gap-3">
-                    <span className="text-xl flex-shrink-0">🤖</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-gray-900 mb-1">試試 AI 私人顧問</p>
-                      <p className="text-xs text-gray-600 leading-relaxed mb-3">
-                        系統已經收集了一週的數據。AI 顧問知道你的飲食、訓練、睡眠紀錄，可以回答「我的進度正常嗎」「今天剩下的量要怎麼吃」這類問題。
-                      </p>
-                      <button
-                        onClick={() => setShowAiChat(true)}
-                        className="inline-flex items-center gap-1.5 bg-[#2563eb] text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-[#1d4ed8] transition-colors"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                        </svg>
-                        試試看
-                        {!c.ai_chat_enabled && <span className="text-[10px] opacity-80">（每月 3 次免費）</span>}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-
-            // P0: Day 14+ — TDEE 校正完成 WOW Moment
-            if (daysSinceSignup >= 14 && daysSinceSignup <= 21) {
-              return <TDEECalibrationCard client={c} />
-            }
-
-            return null
-          })()}
+          <DayBasedCards
+            client={c}
+            isFree={isFree}
+            isSelfManaged={isSelfManaged}
+            nutritionLogs={clientData.nutritionLogs || []}
+            setShowAiChat={setShowAiChat}
+          />
 
           {/* 教練資訊（合併：查看時間 + 週回饋 + 健康分析） */}
           {(c.coach_last_viewed_at || c.coach_weekly_note || c.coach_summary) && (
@@ -1410,7 +781,7 @@ export default function ClientDashboard() {
           if (checklistDismissed) return null
           if (!c.created_at) return null
           const daysSinceCreation = Math.floor(
-            (Date.now() - new Date(c.created_at).getTime()) / 86400000
+            (Date.now() - new Date(c.created_at).getTime()) / DAY_MS
           )
           if (daysSinceCreation > 14) return null
           const hasWeight = (clientData.bodyData || []).length > 0
@@ -1716,7 +1087,7 @@ export default function ClientDashboard() {
 
         {/* 推薦好友卡片 — 至少使用 7 天以上且非免費用戶才顯示 */}
         {c.created_at && (() => {
-          const daysSinceSignup = Math.floor((Date.now() - new Date(c.created_at).getTime()) / 86400000)
+          const daysSinceSignup = Math.floor((Date.now() - new Date(c.created_at).getTime()) / DAY_MS)
           if (daysSinceSignup < 7) return null
           if (c.subscription_tier === 'free' && streakDays < 7) return null
           return <ReferralCard clientId={c.unique_code} />
@@ -1919,7 +1290,7 @@ export default function ClientDashboard() {
 
         {/* 教練報告（教練模式） */}
         {isCoachMode && (
-          <HealthReport client={c as any} latestBodyData={latestBodyData} bmi={bmi}
+          <HealthReport client={{ name: c.name, age: c.age ?? 0, gender: c.gender ?? '', coach_summary: c.coach_summary ?? undefined, health_goals: c.health_goals ?? undefined, next_checkup_date: c.next_checkup_date ?? undefined, lab_results: c.lab_results, supplements: c.supplements }} latestBodyData={latestBodyData} bmi={bmi}
             weekRate={supplementComplianceStats.weekRate} monthRate={supplementComplianceStats.monthRate}
           />
         )}
@@ -2007,7 +1378,7 @@ export default function ClientDashboard() {
           latestBodyFat={latestBodyData?.body_fat}
           nutritionLogs={clientData.nutritionLogs || []}
           wellnessLogs={clientData.wellness || []}
-          trainingLogs={(clientData.trainingLogs || []) as any[]}
+          trainingLogs={(clientData.trainingLogs || []).map(t => ({ ...t, note: t.note ?? undefined }))}
           supplements={c.supplements || []}
           supplementComplianceRate={supplementComplianceStats.weekRate}
           todayWellness={todayWellness}
@@ -2016,7 +1387,7 @@ export default function ClientDashboard() {
             resting_hr: todayWellness?.resting_hr ?? null,
             device_recovery_score: todayWellness?.device_recovery_score ?? null,
           }}
-          labResults={c.lab_enabled ? (c.lab_results || []).map((r: any) => ({
+          labResults={c.lab_enabled ? (c.lab_results || []).map((r) => ({
             test_name: r.test_name,
             value: r.value,
             unit: r.unit,

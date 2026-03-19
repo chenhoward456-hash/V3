@@ -37,19 +37,19 @@ function getMockGetUser() { return mockGetUser }
 // ===== rateLimit =====
 
 describe('rateLimit', () => {
-  it('should allow requests within limit', () => {
+  it('should allow requests within limit', async () => {
     const key = `test-${Date.now()}`
-    const { allowed, remaining } = rateLimit(key, 5, 60_000)
+    const { allowed, remaining } = await rateLimit(key, 5, 60_000)
     expect(allowed).toBe(true)
     expect(remaining).toBe(4)
   })
 
-  it('should block requests exceeding limit', () => {
+  it('should block requests exceeding limit', async () => {
     const key = `test-block-${Date.now()}`
     for (let i = 0; i < 5; i++) {
-      rateLimit(key, 5, 60_000)
+      await rateLimit(key, 5, 60_000)
     }
-    const { allowed, remaining } = rateLimit(key, 5, 60_000)
+    const { allowed, remaining } = await rateLimit(key, 5, 60_000)
     expect(allowed).toBe(false)
     expect(remaining).toBe(0)
   })
@@ -57,31 +57,31 @@ describe('rateLimit', () => {
   it('should reset after window expires', async () => {
     const key = `test-reset-${Date.now()}`
     for (let i = 0; i < 5; i++) {
-      rateLimit(key, 5, 50)
+      await rateLimit(key, 5, 50)
     }
 
     await new Promise(resolve => setTimeout(resolve, 60))
 
-    const { allowed } = rateLimit(key, 5, 50)
+    const { allowed } = await rateLimit(key, 5, 50)
     expect(allowed).toBe(true)
   })
 
-  it('should track remaining count correctly', () => {
+  it('should track remaining count correctly', async () => {
     const key = `test-remaining-${Date.now()}`
-    expect(rateLimit(key, 3, 60_000).remaining).toBe(2)
-    expect(rateLimit(key, 3, 60_000).remaining).toBe(1)
-    expect(rateLimit(key, 3, 60_000).remaining).toBe(0)
-    const result = rateLimit(key, 3, 60_000)
+    expect((await rateLimit(key, 3, 60_000)).remaining).toBe(2)
+    expect((await rateLimit(key, 3, 60_000)).remaining).toBe(1)
+    expect((await rateLimit(key, 3, 60_000)).remaining).toBe(0)
+    const result = await rateLimit(key, 3, 60_000)
     expect(result.allowed).toBe(false)
     expect(result.remaining).toBe(0)
   })
 
-  it('should clean up expired entries when store exceeds 1000', () => {
+  it('should clean up expired entries when store exceeds 1000', async () => {
     const now = Date.now()
     for (let i = 0; i < 1010; i++) {
-      rateLimit(`cleanup-test-${i}`, 1, 1)
+      await rateLimit(`cleanup-test-${i}`, 1, 1)
     }
-    const { allowed } = rateLimit(`cleanup-final-${now}`, 5, 60_000)
+    const { allowed } = await rateLimit(`cleanup-final-${now}`, 5, 60_000)
     expect(allowed).toBe(true)
   })
 })
@@ -350,31 +350,31 @@ describe('verifyCoachAuth', () => {
 
 describe('isCoach', () => {
   it('should return true for coach role', () => {
-    expect(isCoach({ role: 'coach' })).toBe(true)
+    expect(isCoach({ id: '1', role: 'coach' })).toBe(true)
   })
 
   it('should return false for client role', () => {
-    expect(isCoach({ role: 'client' })).toBe(false)
+    expect(isCoach({ id: '1', role: 'client' })).toBe(false)
   })
 
   it('should return falsy for null/undefined', () => {
     expect(isCoach(null)).toBeFalsy()
-    expect(isCoach(undefined)).toBeFalsy()
+    expect(isCoach(null as any)).toBeFalsy()
   })
 })
 
 describe('isClient', () => {
   it('should return true for client role', () => {
-    expect(isClient({ role: 'client' })).toBe(true)
+    expect(isClient({ id: '1', role: 'client' })).toBe(true)
   })
 
   it('should return falsy for coach role', () => {
-    expect(isClient({ role: 'coach' })).toBeFalsy()
+    expect(isClient({ id: '1', role: 'coach' })).toBeFalsy()
   })
 
   it('should return falsy for null/undefined', () => {
     expect(isClient(null)).toBeFalsy()
-    expect(isClient(undefined)).toBeFalsy()
+    expect(isClient(null as any)).toBeFalsy()
   })
 })
 

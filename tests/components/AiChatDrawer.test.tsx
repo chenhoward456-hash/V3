@@ -69,10 +69,10 @@ describe('AiChatDrawer', () => {
 
   it('populates input when quick question is clicked', () => {
     render(<AiChatDrawer {...baseProps} />)
-    const quickQ = screen.getByText('我今天剩餘的量，去 711 要怎麼買？')
+    const quickQ = screen.getByText('我今天剩下的量，去超商要怎麼買？')
     fireEvent.click(quickQ)
     const textarea = document.querySelector('textarea') as HTMLTextAreaElement
-    expect(textarea.value).toBe('我今天剩餘的量，去 711 要怎麼買？')
+    expect(textarea.value).toBe('我今天剩下的量，去超商要怎麼買？')
   })
 
   it('shows remaining macros in header when targets exist', () => {

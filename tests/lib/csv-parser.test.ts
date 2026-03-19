@@ -192,7 +192,7 @@ describe('parseProgressFromCSV', () => {
   it('should default non-numeric values to 0', () => {
     const csv = 'week,weight,note\nW1,80,good progress'
     const result = parseProgressFromCSV(csv)
-    expect(result[0].weight).toBe(80)
+    expect((result[0] as any).weight).toBe(80)
     expect((result[0] as any).note).toBe(0) // 'good progress' is NaN => 0
   })
 

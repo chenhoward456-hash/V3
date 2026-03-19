@@ -175,8 +175,18 @@ vi.mock('@/lib/auth-middleware', () => ({
       headers: { 'Content-Type': 'application/json' },
     })
   }),
-  rateLimit: vi.fn().mockReturnValue({ allowed: true, remaining: 29 }),
+  rateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 29 }),
   getClientIP: vi.fn().mockReturnValue('127.0.0.1'),
+  sanitizeTextField: vi.fn().mockImplementation((input: string | null | undefined, maxLength: number = 500) => {
+    if (!input || typeof input !== 'string') return null
+    return input.trim().slice(0, maxLength)
+  }),
+}))
+
+vi.mock('@/lib/client-mode', () => ({
+  isCompetitionMode: vi.fn().mockImplementation((mode: string | null | undefined) => {
+    return mode === 'bodybuilding' || mode === 'athletic'
+  }),
 }))
 
 vi.mock('@/utils/validation', () => ({
@@ -446,7 +456,7 @@ describe('GET /api/clients', () => {
 
   it('returns 429 when rate limited', async () => {
     const { rateLimit } = await import('@/lib/auth-middleware')
-    vi.mocked(rateLimit).mockReturnValueOnce({ allowed: false, remaining: 0 })
+    vi.mocked(rateLimit).mockResolvedValueOnce({ allowed: false, remaining: 0 })
 
     const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
     const res = await GET(req)
@@ -696,7 +706,7 @@ describe('PATCH /api/clients', () => {
   // -- Rate limiting --
   it('returns 429 when rate limited', async () => {
     const { rateLimit } = await import('@/lib/auth-middleware')
-    vi.mocked(rateLimit).mockReturnValueOnce({ allowed: false, remaining: 0 })
+    vi.mocked(rateLimit).mockResolvedValueOnce({ allowed: false, remaining: 0 })
 
     const req = buildPatchRequest({ clientId: 'abc123' })
     const res = await PATCH(req)
@@ -1208,7 +1218,7 @@ describe('PUT /api/clients', () => {
   // -- Rate limiting --
   it('returns 429 when rate limited', async () => {
     const { rateLimit } = await import('@/lib/auth-middleware')
-    vi.mocked(rateLimit).mockReturnValueOnce({ allowed: false, remaining: 0 })
+    vi.mocked(rateLimit).mockResolvedValueOnce({ allowed: false, remaining: 0 })
 
     const req = buildPutRequest({ clientId: 'abc123', goal_type: 'cut' })
     const res = await PUT(req)

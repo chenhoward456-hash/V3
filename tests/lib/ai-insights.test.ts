@@ -12,6 +12,7 @@
  *   - generateLabComparisonSummary (async, calls askClaude)
  */
 
+import { vi, describe, it, expect } from 'vitest'
 import {
   analyzeDietaryPatterns,
   predictTrend,

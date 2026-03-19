@@ -94,7 +94,7 @@ describe('POST /api/ebook/create-checkout', () => {
     resetFromMock()
 
     mockGetClientIP.mockReturnValue('127.0.0.1')
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 4 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 4 })
     mockGenerateMerchantTradeNo.mockReturnValue('HP20240101000001')
     mockFormatTradeDate.mockReturnValue('2024/01/01 12:00:00')
     mockBuildCheckoutFormHTML.mockReturnValue('<form>checkout</form>')
@@ -132,7 +132,7 @@ describe('POST /api/ebook/create-checkout', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = makePostRequest({ email: 'test@example.com' })
     const res = await POST(req)

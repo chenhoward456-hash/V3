@@ -353,7 +353,7 @@ describe('GET /api/body-composition', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resetChainMocks()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 19 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 19 })
     mockVerifyAuth.mockResolvedValue({ user: { id: 'coach-1', role: 'coach' }, error: null })
     mockIsCoach.mockReturnValue(true)
     mockValidateBodyComposition.mockReturnValue({ isValid: true, error: '' })
@@ -481,7 +481,7 @@ describe('POST /api/body-composition', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resetChainMocks()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 19 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 19 })
     mockVerifyAuth.mockResolvedValue({ user: { id: 'coach-1', role: 'coach' }, error: null })
     mockIsCoach.mockReturnValue(true)
     mockValidateBodyComposition.mockReturnValue({ isValid: true, error: '' })
@@ -495,7 +495,7 @@ describe('POST /api/body-composition', () => {
   })
 
   it('returns 429 when rate limit is exceeded', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = buildPostRequest({ clientId: 'valid-code', date: '2024-06-15', weight: 75 })
     const res = await POST(req)
@@ -2365,7 +2365,7 @@ describe('PUT /api/body-composition', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resetChainMocks()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 19 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 19 })
     mockVerifyAuth.mockResolvedValue({ user: { id: 'coach-1', role: 'coach' }, error: null })
     mockIsCoach.mockReturnValue(true)
     mockValidateBodyComposition.mockReturnValue({ isValid: true, error: '' })
@@ -2646,7 +2646,7 @@ describe('DELETE /api/body-composition', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resetChainMocks()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 19 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 19 })
     mockVerifyAuth.mockResolvedValue({ user: { id: 'coach-1', role: 'coach' }, error: null })
     mockIsCoach.mockReturnValue(true)
   })
@@ -2744,7 +2744,7 @@ describe('parseSerotoninField edge cases', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resetChainMocks()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 19 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 19 })
     mockVerifyAuth.mockResolvedValue({ user: { id: 'coach-1', role: 'coach' }, error: null })
     mockIsCoach.mockReturnValue(true)
     mockValidateBodyComposition.mockReturnValue({ isValid: true, error: '' })

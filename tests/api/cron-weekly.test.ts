@@ -63,7 +63,7 @@ const {
     suggestedFat: 70,
     weeklyWeightChangeRate: -0.3,
     refeedSuggested: false,
-    warnings: [],
+    warnings: [] as string[],
     tdeeAnomalyDetected: false,
   }))
 

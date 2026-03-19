@@ -69,7 +69,7 @@ vi.mock('@/lib/auth-middleware', () => ({
     if (!input || typeof input !== 'string') return null
     return input.trim().slice(0, 500)
   }),
-  rateLimit: vi.fn().mockReturnValue({ allowed: true, remaining: 29 }),
+  rateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 29 }),
   getClientIP: vi.fn().mockReturnValue('127.0.0.1'),
 }))
 
@@ -387,7 +387,7 @@ describe('POST /api/daily-wellness', () => {
   // ---- Rate limiting ----
   it('returns 429 when rate limited', async () => {
     const { rateLimit } = await import('@/lib/auth-middleware')
-    vi.mocked(rateLimit).mockReturnValueOnce({ allowed: false, remaining: 0 })
+    vi.mocked(rateLimit).mockResolvedValueOnce({ allowed: false, remaining: 0 })
 
     const req = buildPostRequest({
       clientId: 'abc123',

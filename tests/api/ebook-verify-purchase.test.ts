@@ -79,7 +79,7 @@ describe('GET /api/ebook/verify-purchase', () => {
     resetFromMock()
 
     mockGetClientIP.mockReturnValue('127.0.0.1')
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 29 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 29 })
   })
 
   it('returns purchased=true with downloadToken for completed purchase', async () => {
@@ -99,7 +99,7 @@ describe('GET /api/ebook/verify-purchase', () => {
     expect(res.status).toBe(200)
     expect(json.purchased).toBe(true)
     expect(json.downloadToken).toBe('token-abc-123')
-    expect(json.email).toBe('buyer@example.com')
+    expect(json.email).toBe('bu***@example.com')
   })
 
   it('returns purchased=false when order not found', async () => {
@@ -138,7 +138,7 @@ describe('GET /api/ebook/verify-purchase', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = makeGetRequest({ order_id: 'HP20240101000001' })
     const res = await GET(req)

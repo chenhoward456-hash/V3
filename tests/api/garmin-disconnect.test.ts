@@ -76,7 +76,7 @@ describe('POST /api/garmin/disconnect', () => {
     resetFromMock()
 
     mockGetClientIP.mockReturnValue('127.0.0.1')
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 4 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 4 })
   })
 
   it('disconnects successfully when client and connection exist', async () => {
@@ -116,7 +116,7 @@ describe('POST /api/garmin/disconnect', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = makePostRequest({ clientId: 'ABC123' })
     const res = await POST(req)

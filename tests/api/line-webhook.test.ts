@@ -1872,7 +1872,7 @@ describe('POST /api/line/webhook', () => {
         'reply-token',
         expect.arrayContaining([
           expect.objectContaining({
-            text: expect.stringContaining('RPE 必須在 1-10'),
+            text: expect.stringContaining('RPE 需在 1-10'),
           }),
         ]),
       )
@@ -2034,7 +2034,7 @@ describe('POST /api/line/webhook', () => {
         'reply-token',
         expect.arrayContaining([
           expect.objectContaining({
-            text: expect.stringContaining('分數必須在 1-5'),
+            text: expect.stringContaining('數值必須在 1-5'),
           }),
         ]),
       )

@@ -93,11 +93,11 @@ describe('PUT /api/prep-phase', () => {
       delete mockTableCalls[key]
     }
     resetFromMock()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 9 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 9 })
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = makePutRequest({ clientId: 'ABC123', prepPhase: 'bulk' })
     const res = await PUT(req)
@@ -256,7 +256,7 @@ describe('PUT /api/prep-phase', () => {
     for (const phase of validPhases) {
       vi.clearAllMocks()
       resetFromMock()
-      mockRateLimit.mockReturnValue({ allowed: true, remaining: 9 })
+      mockRateLimit.mockResolvedValue({ allowed: true, remaining: 9 })
 
       let clientsCallCount = 0
       mockSupabase.from.mockImplementation((table: string) => {
@@ -286,7 +286,7 @@ describe('PUT /api/prep-phase', () => {
     for (const phase of validPhases) {
       vi.clearAllMocks()
       resetFromMock()
-      mockRateLimit.mockReturnValue({ allowed: true, remaining: 9 })
+      mockRateLimit.mockResolvedValue({ allowed: true, remaining: 9 })
 
       let clientsCallCount = 0
       mockSupabase.from.mockImplementation((table: string) => {
@@ -316,7 +316,7 @@ describe('PUT /api/prep-phase', () => {
     for (const phase of bodybuildingOnlyPhases) {
       vi.clearAllMocks()
       resetFromMock()
-      mockRateLimit.mockReturnValue({ allowed: true, remaining: 9 })
+      mockRateLimit.mockResolvedValue({ allowed: true, remaining: 9 })
 
       let clientsCallCount = 0
       mockSupabase.from.mockImplementation((table: string) => {
@@ -346,7 +346,7 @@ describe('PUT /api/prep-phase', () => {
     for (const phase of athleticOnlyPhases) {
       vi.clearAllMocks()
       resetFromMock()
-      mockRateLimit.mockReturnValue({ allowed: true, remaining: 9 })
+      mockRateLimit.mockResolvedValue({ allowed: true, remaining: 9 })
 
       let clientsCallCount = 0
       mockSupabase.from.mockImplementation((table: string) => {

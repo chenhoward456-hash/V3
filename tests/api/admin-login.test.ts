@@ -42,7 +42,7 @@ describe('POST /api/admin/login', () => {
 
     // Default mock behaviour
     mockGetClientIP.mockReturnValue('127.0.0.1')
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 4 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 4 })
     mockCreateAdminSession.mockReturnValue('1234567890.abcdef123456')
 
     // Set the admin password env var
@@ -132,7 +132,7 @@ describe('POST /api/admin/login', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = makeLoginRequest({ password: 'correct-password-123' })
     const res = await POST(req)

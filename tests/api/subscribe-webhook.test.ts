@@ -185,7 +185,10 @@ describe('POST /api/subscribe/webhook', () => {
 
   // ── Purchase Not Found ──
 
-  it('should return error when purchase record not found', async () => {
+  it('should return 1|OK when purchase record not found (atomic update returns nothing)', async () => {
+    // The route now does an atomic UPDATE...WHERE status='pending' instead of a SELECT.
+    // When no matching row exists, the update returns null/error — the route
+    // treats this the same as "already completed" and responds 1|OK.
     mockTableCalls['subscription_purchases'] = {
       data: null,
       error: { message: 'No rows found' },
@@ -202,23 +205,18 @@ describe('POST /api/subscribe/webhook', () => {
     const text = await res.text()
 
     expect(res.status).toBe(200)
-    expect(text).toBe('0|ErrorMessage')
+    expect(text).toBe('1|OK')
   })
 
   // ── Already Completed (Idempotent) ──
 
   it('should return 1|OK without re-processing for already completed purchase', async () => {
+    // The route now uses an atomic UPDATE...WHERE status='pending'.
+    // For an already-completed purchase the WHERE clause won't match,
+    // so Supabase returns null data with an error — simulate that here.
     mockTableCalls['subscription_purchases'] = {
-      data: {
-        id: 'purchase-1',
-        merchant_trade_no: 'HP12345',
-        name: 'Test User',
-        email: 'test@example.com',
-        subscription_tier: 'self_managed',
-        status: 'completed',
-        registration_data: {},
-      },
-      error: null,
+      data: null,
+      error: { message: 'No rows found' },
     }
 
     const req = makeRequest({

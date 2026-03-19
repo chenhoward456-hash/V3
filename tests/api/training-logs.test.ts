@@ -255,7 +255,7 @@ describe('GET /api/training-logs', () => {
 describe('POST /api/training-logs', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 29 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 29 })
   })
 
   it('creates new training log', async () => {
@@ -519,7 +519,7 @@ describe('POST /api/training-logs', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = buildPostRequest({
       clientId: 'UNIQUE123',
@@ -750,7 +750,7 @@ describe('POST /api/training-logs', () => {
 
     for (const trainingType of validTypes) {
       vi.clearAllMocks()
-      mockRateLimit.mockReturnValue({ allowed: true, remaining: 29 })
+      mockRateLimit.mockResolvedValue({ allowed: true, remaining: 29 })
 
       const isRest = trainingType === 'rest'
       const savedRecord = {

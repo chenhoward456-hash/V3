@@ -9,7 +9,7 @@ vi.mock('@/lib/claude', () => ({
 }))
 
 vi.mock('@/lib/auth-middleware', () => ({
-  rateLimit: vi.fn(() => ({ allowed: true, remaining: 9 })),
+  rateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 9 }),
   getClientIP: vi.fn(() => '127.0.0.1'),
 }))
 
@@ -384,7 +384,7 @@ describe('POST /api/ai/chat', () => {
       data: { id: 'uuid-1', is_active: true, expires_at: null, ai_chat_enabled: false },
       error: null,
     }
-    usageCountResult = { count: 1 }
+    usageCountResult = { count: 3 }
     mockSupabase = createSupabaseMock()
     vi.resetModules()
     const mod = await import('@/app/api/ai/chat/route')

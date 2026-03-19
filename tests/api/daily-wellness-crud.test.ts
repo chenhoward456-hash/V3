@@ -214,7 +214,7 @@ describe('GET /api/daily-wellness', () => {
 describe('POST /api/daily-wellness', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 29 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 29 })
   })
 
   it('creates new wellness log', async () => {
@@ -445,7 +445,7 @@ describe('POST /api/daily-wellness', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = buildPostRequest({
       clientId: 'UNIQUE123',

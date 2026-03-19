@@ -242,13 +242,16 @@ describe('DELETE /api/push/subscribe', () => {
 
   it('deletes subscription successfully', async () => {
     mockSupabase.from.mockImplementation((table: string) => {
+      if (table === 'clients') {
+        return createMockQueryBuilder({ id: 'client-uuid-1' }, null)
+      }
       if (table === 'push_subscriptions') {
         return createMockQueryBuilder(null, null)
       }
       return createMockQueryBuilder(null, null)
     })
 
-    const req = makeDeleteRequest({ endpoint: 'https://example.com/push/abc' })
+    const req = makeDeleteRequest({ endpoint: 'https://example.com/push/abc', clientId: 'ABC123' })
     const res = await DELETE(req)
     const json = await res.json()
 

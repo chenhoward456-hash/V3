@@ -5,7 +5,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { calcRecommendedStageWeight, type RecommendedStageWeightResult } from '@/lib/nutrition-engine'
-import { daysUntilDateTW } from '@/lib/date-utils'
+import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { getDefaultFeatures, type SubscriptionTier } from '@/lib/tier-defaults'
 import { isCompetitionMode, isHealthMode, ALL_CLIENT_MODES, MODE_LABELS, MODE_EMOJIS, MODE_CONFIG, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS } from '@/lib/client-mode'
 
@@ -681,7 +681,7 @@ export default function ClientEditor() {
                   >+1 年</button>
                 </div>
                 {client.expires_at && (() => {
-                  const days = Math.ceil((new Date(client.expires_at).getTime() - Date.now()) / 86400000)
+                  const days = Math.ceil((new Date(client.expires_at).getTime() - Date.now()) / DAY_MS)
                   if (days < 0) return <p className="text-xs text-red-600 mt-1">已過期 {Math.abs(days)} 天</p>
                   if (days <= 7) return <p className="text-xs text-orange-600 mt-1">剩餘 {days} 天</p>
                   return <p className="text-xs text-gray-400 mt-1">剩餘 {days} 天（到 {new Date(client.expires_at).toLocaleDateString('zh-TW')}）</p>
@@ -1077,7 +1077,7 @@ export default function ClientEditor() {
                   {client.quarterly_cycle_start && (() => {
                     const start = new Date(client.quarterly_cycle_start)
                     const today = new Date()
-                    const elapsed = Math.floor((today.getTime() - start.getTime()) / 86400000) + 1
+                    const elapsed = Math.floor((today.getTime() - start.getTime()) / DAY_MS) + 1
                     const daysLeft = Math.max(0, 90 - elapsed)
                     const cycleEnd = new Date(start)
                     cycleEnd.setDate(cycleEnd.getDate() + 89)

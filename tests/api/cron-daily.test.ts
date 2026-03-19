@@ -16,6 +16,7 @@ function createMockQueryBuilder(data: any = null, error: any = null) {
     not: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
     lte: vi.fn().mockReturnThis(),
+    lt: vi.fn().mockReturnThis(),
     in: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
@@ -24,6 +25,7 @@ function createMockQueryBuilder(data: any = null, error: any = null) {
     insert: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
     upsert: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
     then: vi.fn((resolve: any) => resolve({ data, error })),
   }
   // Make it thenable so `await` resolves correctly
@@ -48,7 +50,7 @@ const { mockPushMessage, mockUnlinkRichMenuFromUser, mockSendRoutineReminder, mo
   mockPushMessage: vi.fn().mockResolvedValue(undefined),
   mockUnlinkRichMenuFromUser: vi.fn().mockResolvedValue(undefined),
   mockSendRoutineReminder: vi.fn().mockResolvedValue({ success: true, method: 'web_push' }),
-  mockGenerateSmartAlerts: vi.fn(() => []),
+  mockGenerateSmartAlerts: vi.fn((): Array<{ severity: string; icon: string; title: string; message: string }> => []),
   mockSendPushNotification: vi.fn().mockResolvedValue(true),
 }))
 
@@ -84,6 +86,19 @@ vi.mock('@/lib/logger', () => ({
     error: vi.fn(),
     debug: vi.fn(),
   })),
+}))
+
+vi.mock('@/lib/email', () => ({
+  sendDay3Email: vi.fn().mockResolvedValue({ success: true }),
+  sendDay7Email: vi.fn().mockResolvedValue({ success: true }),
+  sendDay14Email: vi.fn().mockResolvedValue({ success: true }),
+  sendExpiryWarningEmail: vi.fn().mockResolvedValue({ success: true }),
+  sendWinBackEmail: vi.fn().mockResolvedValue({ success: true }),
+}))
+
+vi.mock('@/lib/date-utils', () => ({
+  daysUntilDateTW: vi.fn().mockReturnValue(999),
+  DAY_MS: 86400000,
 }))
 
 const { mockGetDefaultFeatures, mockStartCronRun, mockCompleteCronRun, mockFailCronRun } = vi.hoisted(() => ({
@@ -122,13 +137,13 @@ function mockDateForHour(hour: number) {
   mockHour = hour
   // We override toLocaleString to return a controlled hour
   const origToLocaleString = RealDate.prototype.toLocaleString
-  vi.spyOn(Date.prototype, 'toLocaleString').mockImplementation(function (this: Date, locale?: string, options?: any) {
+  vi.spyOn(Date.prototype, 'toLocaleString').mockImplementation(function (this: Date, locale?: any, options?: any) {
     if (locale === 'en-US' && options?.timeZone === 'Asia/Taipei' && options?.hour === 'numeric') {
       return String(mockHour)
     }
     return origToLocaleString.call(this, locale, options)
   })
-  vi.spyOn(Date.prototype, 'toLocaleDateString').mockImplementation(function (this: Date, locale?: string, options?: any) {
+  vi.spyOn(Date.prototype, 'toLocaleDateString').mockImplementation(function (this: Date, locale?: any, options?: any) {
     if (locale === 'sv-SE' && options?.timeZone === 'Asia/Taipei') {
       return '2025-01-15'
     }
@@ -621,7 +636,7 @@ describe('GET /api/cron/daily', () => {
       })
     )
     // The "other-client" data should be filtered out
-    const callArg = mockGenerateSmartAlerts.mock.calls[0][0]
+    const callArg = (mockGenerateSmartAlerts.mock.calls[0] as any[])[0]
     expect(callArg.nutritionLogs.every((n: any) => n.client_id === 'client-1')).toBe(true)
   })
 

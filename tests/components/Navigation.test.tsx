@@ -26,7 +26,7 @@ describe('Navigation', () => {
   it('renders all nav link labels', () => {
     render(<Navigation />)
 
-    const expectedLabels = ['系統介紹', '免費體驗', 'AI 顧問', '知識分享', '成功案例', '方案說明']
+    const expectedLabels = ['系統介紹', '免費體驗', 'AI 顧問', '知識分享', '我的故事', '方案說明']
     expectedLabels.forEach((label) => {
       expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(1)
     })

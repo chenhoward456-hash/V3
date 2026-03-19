@@ -114,24 +114,24 @@ describe('POST /api/subscribe/cancel', () => {
     })
   })
 
-  // ── Missing clientId ──
+  // ── Missing required parameters ──
 
   it('should return 400 when clientId is missing', async () => {
-    const req = makeRequest({})
+    const req = makeRequest({ uniqueCode: 'abc' })
     const res = await POST(req)
     const body = await res.json()
 
     expect(res.status).toBe(400)
-    expect(body.error).toBe('缺少 clientId')
+    expect(body.error).toBe('缺少必要參數')
   })
 
-  it('should return 400 when clientId is empty string', async () => {
-    const req = makeRequest({ clientId: '' })
+  it('should return 400 when uniqueCode is missing', async () => {
+    const req = makeRequest({ clientId: 'client-1' })
     const res = await POST(req)
     const body = await res.json()
 
     expect(res.status).toBe(400)
-    expect(body.error).toBe('缺少 clientId')
+    expect(body.error).toBe('缺少必要參數')
   })
 
   // ── No Active Subscription Found ──
@@ -142,7 +142,7 @@ describe('POST /api/subscribe/cancel', () => {
       error: { message: 'No rows found' },
     }
 
-    const req = makeRequest({ clientId: 'client-1' })
+    const req = makeRequest({ clientId: 'client-1', uniqueCode: 'abc' })
     const res = await POST(req)
     const body = await res.json()
 
@@ -157,19 +157,18 @@ describe('POST /api/subscribe/cancel', () => {
       text: () => Promise.resolve('RtnCode=0&RtnMsg=交易失敗'),
     })
 
-    const req = makeRequest({ clientId: 'client-1' })
+    const req = makeRequest({ clientId: 'client-1', uniqueCode: 'abc' })
     const res = await POST(req)
     const body = await res.json()
 
     expect(res.status).toBe(400)
-    expect(body.error).toContain('取消失敗')
-    expect(body.error).toContain('交易失敗')
+    expect(body.error).toBe('取消失敗，請稍後再試或聯繫客服')
   })
 
   // ── Successful Cancellation ──
 
   it('should return success when ECPay cancel succeeds', async () => {
-    const req = makeRequest({ clientId: 'client-1' })
+    const req = makeRequest({ clientId: 'client-1', uniqueCode: 'abc' })
     const res = await POST(req)
     const body = await res.json()
 
@@ -182,7 +181,7 @@ describe('POST /api/subscribe/cancel', () => {
   // ── Calls ECPay PeriodAction API ──
 
   it('should call ECPay PeriodAction API with correct parameters', async () => {
-    const req = makeRequest({ clientId: 'client-1' })
+    const req = makeRequest({ clientId: 'client-1', uniqueCode: 'abc' })
     await POST(req)
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -199,7 +198,7 @@ describe('POST /api/subscribe/cancel', () => {
   // ── Sends Cancellation Email ──
 
   it('should send cancellation email when purchase has email', async () => {
-    const req = makeRequest({ clientId: 'client-1' })
+    const req = makeRequest({ clientId: 'client-1', uniqueCode: 'abc' })
     await POST(req)
 
     expect(sendCancellationEmail).toHaveBeenCalledWith(expect.objectContaining({
@@ -213,7 +212,7 @@ describe('POST /api/subscribe/cancel', () => {
   // ── Updates Subscription Purchase Status ──
 
   it('should update purchase status to cancelled after successful ECPay call', async () => {
-    const req = makeRequest({ clientId: 'client-1' })
+    const req = makeRequest({ clientId: 'client-1', uniqueCode: 'abc' })
     await POST(req)
 
     // Verify supabase was called with the subscription_purchases table
@@ -241,7 +240,7 @@ describe('POST /api/subscribe/cancel', () => {
   it('should return 500 when ECPay fetch throws a network error', async () => {
     mockFetch.mockRejectedValue(new Error('Network timeout'))
 
-    const req = makeRequest({ clientId: 'client-1' })
+    const req = makeRequest({ clientId: 'client-1', uniqueCode: 'abc' })
     const res = await POST(req)
     const body = await res.json()
 

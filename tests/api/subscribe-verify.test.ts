@@ -59,7 +59,7 @@ describe('GET /api/subscribe/verify', () => {
     mockFrom.mockReset()
 
     mockGetClientIP.mockReturnValue('127.0.0.1')
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 29 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 29 })
     mockCreateErrorResponse.mockImplementation((message: string, status: number) => {
       const { NextResponse } = require('next/server')
       return NextResponse.json({ error: message }, { status })
@@ -88,7 +88,7 @@ describe('GET /api/subscribe/verify', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = buildRequest({ order_id: 'ORDER123' })
     const res = await GET(req)

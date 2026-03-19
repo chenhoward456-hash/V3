@@ -14,6 +14,11 @@ vi.mock('@/components/ui/Toast', () => ({
 
 vi.mock('@/lib/date-utils', () => ({
   getLocalDateStr: () => '2026-03-12',
+  daysUntilDateTW: (dateStr: string) => {
+    const target = new Date(dateStr + 'T00:00:00')
+    const now = new Date('2026-03-12T00:00:00')
+    return Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  },
 }))
 
 // Mock recharts — expose Tooltip formatter via test render
@@ -489,7 +494,7 @@ describe('BodyComposition', () => {
     expect(callBody.weight).toBe(72)
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith('身體數據已記錄！', 'success', '🎉')
+      expect(mockShowToast).toHaveBeenCalledWith('已記錄，保持規律量測', 'success', '✅')
     })
   })
 

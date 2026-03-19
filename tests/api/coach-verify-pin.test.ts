@@ -41,7 +41,7 @@ describe('POST /api/coach/verify-pin', () => {
 
     // Default mock behaviour
     mockGetClientIP.mockReturnValue('127.0.0.1')
-    mockRateLimit.mockReturnValue({ allowed: true, remaining: 9 })
+    mockRateLimit.mockResolvedValue({ allowed: true, remaining: 9 })
     mockCreateErrorResponse.mockImplementation((message: string, status: number) => {
       const { NextResponse } = require('next/server')
       return NextResponse.json({ error: message }, { status })
@@ -115,7 +115,7 @@ describe('POST /api/coach/verify-pin', () => {
   })
 
   it('returns 429 when rate limited', async () => {
-    mockRateLimit.mockReturnValue({ allowed: false, remaining: 0 })
+    mockRateLimit.mockResolvedValue({ allowed: false, remaining: 0 })
 
     const req = makeRequest({ pin: '123456' })
     const res = await POST(req)

@@ -20,16 +20,21 @@ vi.mock('@/lib/logger', () => ({
   }),
 }))
 
+vi.mock('@/lib/auth-middleware', () => ({
+  rateLimit: vi.fn(async () => ({ allowed: true, remaining: 5 })),
+  getClientIP: vi.fn(() => '127.0.0.1'),
+}))
+
 import { POST } from '@/app/api/subscribe/waitlist/route'
 
 // ── Helpers ──
 
-function makeWaitlistRequest(body: any): Request {
+function makeWaitlistRequest(body: any) {
   return new Request('http://localhost:3000/api/subscribe/waitlist', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  })
+  }) as any
 }
 
 // ── Tests ──
@@ -175,7 +180,7 @@ describe('POST /api/subscribe/waitlist', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: 'not-valid-json{{{',
-    })
+    }) as any
 
     const res = await POST(req)
     const json = await res.json()

@@ -254,7 +254,7 @@ describe('getTrainingModeRecommendation', () => {
       baseAdvice: { recommendedIntensity: 'moderate', recoveryScore: 60, reasons: [], suggestion: '' },
       recoveryAssessment: {
         score: 60,
-        state: 'compromised',
+        state: 'critical',
         readinessScore: null,
         systems: {} as any,
         overtrainingRisk: { riskLevel: 'very_high', acwr: 2.0 } as any,
@@ -470,7 +470,7 @@ describe('getTrainingModeRecommendation', () => {
       baseAdvice: { recommendedIntensity: 'moderate', recoveryScore: 65, reasons: [], suggestion: '' },
       recoveryAssessment: {
         score: 65,
-        state: 'compromised',
+        state: 'critical',
         readinessScore: null,
         systems: {} as any,
         overtrainingRisk: { riskLevel: 'low', acwr: 0.9 } as any,
@@ -489,7 +489,7 @@ describe('getTrainingModeRecommendation', () => {
       baseAdvice: { recommendedIntensity: 'moderate', recoveryScore: 65, reasons: [], suggestion: '' },
       recoveryAssessment: {
         score: 65,
-        state: 'compromised',
+        state: 'critical',
         readinessScore: null,
         systems: {} as any,
         overtrainingRisk: { riskLevel: 'low', acwr: 0.9 } as any,
@@ -521,14 +521,10 @@ describe('getTrainingModeRecommendation', () => {
       prepPhase: 'competition',
     })
     const result = getTrainingModeRecommendation(input)
-    // competition: rest +30, active_recovery +20
-    // recovery 75 (65-79): moderate +15, reduced_volume +10
-    // moderate baseline 50 + 15 = 65 vs rest 30 vs active_recovery 20
-    // moderate still might win. Check the reason is there instead.
-    expect(result.reasons.some(r => r.signal === '備賽階段' && r.description.includes('比賽日'))).toBe(true)
-    // At minimum, high_volume and high_intensity should not be recommended
-    expect(result.recommendedMode).not.toBe('high_volume')
-    expect(result.recommendedMode).not.toBe('high_intensity')
+    // competition is a Phase 1 hard override → forced rest
+    expect(result.recommendedMode).toBe('rest')
+    expect(result.confidence).toBe('high')
+    expect(result.reasons.some(r => r.signal === '比賽日' && r.description.includes('比賽日'))).toBe(true)
   })
 
   // ── Weight Change Rate ──

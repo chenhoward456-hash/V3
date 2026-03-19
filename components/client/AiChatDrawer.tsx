@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { X, Send, Camera } from 'lucide-react'
-import { daysUntilDateTW } from '@/lib/date-utils'
+import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -394,7 +394,7 @@ ${(() => {
     })()}
 ${targetWeight ? `- 目標體重：${targetWeight} kg${latestWeight ? `（還差 ${Math.abs(latestWeight - targetWeight).toFixed(1)} kg）` : ''}` : ''}
 ${targetBodyFat ? `- 目標體脂：${targetBodyFat}%` : ''}
-${dietStartDate ? `- 飲食計畫開始：${dietStartDate}（已執行 ${Math.max(0, Math.round((Date.now() - new Date(dietStartDate).getTime()) / 86400000))} 天）` : ''}
+${dietStartDate ? `- 飲食計畫開始：${dietStartDate}（已執行 ${Math.max(0, Math.round((Date.now() - new Date(dietStartDate).getTime()) / DAY_MS))} 天）` : ''}
 ${streakDays ? `- 連續記錄：${streakDays} 天${streakMessage ? `（${streakMessage}）` : ''}` : ''}
 
 ## 今日營養目標

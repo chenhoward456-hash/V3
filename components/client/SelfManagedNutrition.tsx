@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getLocalDateStr, daysUntilDateTW } from '@/lib/date-utils'
+import { getLocalDateStr, daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 
 interface SelfManagedNutritionProps {
   clientId: string  // UUID (internal ID)
@@ -339,7 +339,7 @@ export default function SelfManagedNutrition({
                     type="date"
                     value={customTargetDate}
                     onChange={(e) => setCustomTargetDate(e.target.value)}
-                    min={getLocalDateStr(new Date(Date.now() + 14 * 86400000))}
+                    min={getLocalDateStr(new Date(Date.now() + 14 * DAY_MS))}
                     className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
                   />
                 )}
@@ -351,7 +351,7 @@ export default function SelfManagedNutrition({
                         const bw = parseFloat(bodyWeight)
                         const diff = bw - tw
                         const months = targetDateOption === 'custom'
-                          ? Math.max(0.5, (new Date(customTargetDate).getTime() - Date.now()) / (30 * 86400000))
+                          ? Math.max(0.5, (new Date(customTargetDate).getTime() - Date.now()) / (30 * DAY_MS))
                           : parseInt(targetDateOption)
                         const weeklyRate = diff / (months * 4.33)
                         const pct = (weeklyRate / bw * 100)

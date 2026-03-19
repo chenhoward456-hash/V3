@@ -8,6 +8,8 @@ import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 // ---------------------------------------------------------------------------
 vi.mock('@/lib/date-utils', () => ({
   getLocalDateStr: () => '2026-03-15',
+  daysUntilDateTW: () => 5,
+  DAY_MS: 86400000,
 }))
 
 const mockFetch = vi.fn()
@@ -105,7 +107,7 @@ describe('PeakWeekPlan', () => {
       <PeakWeekPlan clientId="c1" competitionDate="2026-03-20" bodyWeight={75} />
     )
     await waitFor(() => {
-      expect(screen.getByText('碳水超補')).toBeInTheDocument()
+      expect(screen.getAllByText('碳水超補').length).toBeGreaterThanOrEqual(1)
     })
     // Click the day row button to expand
     const dayButton = screen.getAllByRole('button').find(b => b.textContent?.includes('碳水超補'))
