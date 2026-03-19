@@ -1057,7 +1057,7 @@ export default function ClientDashboard() {
 
         {/* 今日訓練計畫（教練指導用戶 + 有訓練計畫） */}
         {c.training_enabled && c.training_plan && c.subscription_tier === 'coached' && (
-          <TodayWorkout trainingPlan={c.training_plan} />
+          <TodayWorkout trainingPlan={c.training_plan} todayTrainingType={todayTraining?.training_type} />
         )}
 
         {/* 訓練紀錄 */}

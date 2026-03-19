@@ -6,6 +6,7 @@ import type { TrainingPlan, TrainingPlanDay, TrainingPlanExercise } from '@/hook
 
 interface TodayWorkoutProps {
   trainingPlan: TrainingPlan
+  todayTrainingType?: string | null  // 今天實際記錄的訓練類型（有記錄時覆蓋課表）
 }
 
 const DAY_LABELS: Record<number, string> = {
@@ -23,7 +24,7 @@ function getTaipeiDayOfWeek(): number {
   return jsDay === 0 ? 7 : jsDay
 }
 
-export default function TodayWorkout({ trainingPlan }: TodayWorkoutProps) {
+export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayWorkoutProps) {
   const [showFullPlan, setShowFullPlan] = useState(false)
 
   const todayDow = useMemo(() => getTaipeiDayOfWeek(), [])
@@ -32,18 +33,27 @@ export default function TodayWorkout({ trainingPlan }: TodayWorkoutProps) {
     [trainingPlan, todayDow]
   )
 
+  // 如果今天已記錄為「休息」，即使課表有訓練也顯示休息
+  const isActualRest = todayTrainingType === 'rest'
+  const showPlan = todayPlan && !isActualRest
+
   return (
     <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-4 mb-3">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">🏋️</span>
+          <span className="text-lg">{isActualRest ? '😴' : '🏋️'}</span>
           <div>
             <h3 className="text-sm font-bold text-gray-900">
-              {todayPlan
-                ? `今日訓練 — ${todayPlan.label}`
+              {isActualRest
+                ? '今天休息'
+                : showPlan
+                ? `今日訓練 — ${todayPlan!.label}`
                 : '今天是休息日'}
             </h3>
+            {isActualRest && todayPlan && (
+              <p className="text-[10px] text-gray-400 mt-0.5">原定：{todayPlan.label}</p>
+            )}
             {trainingPlan.name && (
               <p className="text-[10px] text-gray-400 mt-0.5">{trainingPlan.name}</p>
             )}
@@ -53,7 +63,7 @@ export default function TodayWorkout({ trainingPlan }: TodayWorkoutProps) {
       </div>
 
       {/* Today's exercises or rest day */}
-      {todayPlan ? (
+      {showPlan ? (
         <div className="bg-white/60 rounded-xl overflow-hidden">
           <table className="w-full text-xs">
             <thead>
