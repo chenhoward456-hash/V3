@@ -1,6 +1,25 @@
 import useSWR, { KeyedMutator } from 'swr'
 import type { LabResult, Supplement, BodyData, WellnessData, TrainingLog, NutritionLog } from '@/components/client/types'
 
+export interface TrainingPlanExercise {
+  name: string
+  sets?: string
+  reps?: string
+  rpe?: string
+  note?: string
+}
+
+export interface TrainingPlanDay {
+  dayOfWeek: number // 1=Monday ... 7=Sunday
+  label: string
+  exercises: TrainingPlanExercise[]
+}
+
+export interface TrainingPlan {
+  name: string
+  days: TrainingPlanDay[]
+}
+
 /** Client data from Supabase. Nullable fields use `| null` (DB convention). */
 export interface Client {
   id: string
@@ -49,6 +68,7 @@ export interface Client {
   gene_apoe: string | null
   gene_depression_risk: string | null
   gene_notes: string | null
+  training_plan: TrainingPlan | null
   line_user_id: string | null
   created_at: string
   height: number | null

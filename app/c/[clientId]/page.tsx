@@ -22,6 +22,7 @@ const SupplementModal = dynamic(() => import('@/components/client/SupplementModa
 import WellnessTrend from '@/components/client/WellnessTrend'
 const HealthReport = dynamic(() => import('@/components/client/HealthReport'), { ssr: false })
 const TrainingLog = dynamic(() => import('@/components/client/TrainingLog'), { ssr: false })
+import TodayWorkout from '@/components/client/TodayWorkout'
 import { isWeightTraining } from '@/components/client/types'
 import NutritionLog from '@/components/client/NutritionLog'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
@@ -1026,6 +1027,11 @@ export default function ClientDashboard() {
               onMutate={mutate}
             />
           </CollapsibleSection>
+        )}
+
+        {/* 今日訓練計畫（教練指導用戶 + 有訓練計畫） */}
+        {c.training_enabled && c.training_plan && c.subscription_tier === 'coached' && (
+          <TodayWorkout trainingPlan={c.training_plan} />
         )}
 
         {/* 訓練紀錄 */}

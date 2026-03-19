@@ -80,6 +80,8 @@ interface Client {
   gene_depression_risk: 'LL' | 'SL' | 'SS' | 'low' | 'moderate' | 'high' | null
   gene_notes: string | null
 
+  training_plan: any | null
+
   lab_results: LabResult[]
   supplements: Supplement[]
 }
@@ -101,6 +103,9 @@ export default function ClientEditor() {
   const [upgradeCopied, setUpgradeCopied] = useState(false)
   const [cancellingOldSub, setCancellingOldSub] = useState(false)
   const [showCancelOldConfirm, setShowCancelOldConfirm] = useState(false)
+  const [trainingPlanText, setTrainingPlanText] = useState('')
+  const [trainingPlanParseError, setTrainingPlanParseError] = useState('')
+  const [showTrainingPlanPreview, setShowTrainingPlanPreview] = useState(true)
 
   const tabs: { key: EditorTab; label: string; icon: string }[] = useMemo(() => {
     if (!client) return []
@@ -164,6 +169,7 @@ export default function ClientEditor() {
         gene_apoe: null,
         gene_depression_risk: null,
         gene_notes: null,
+        training_plan: null,
 
         lab_results: [],
         supplements: []
@@ -266,6 +272,7 @@ export default function ClientEditor() {
         gene_apoe: client.gene_apoe || null,
         gene_depression_risk: client.gene_depression_risk || null,
         gene_notes: client.gene_notes || null,
+        training_plan: client.training_plan || null,
         // coach_macro_override 由後端自動處理（修改 macro 時自動鎖定）
         // 只有教練明確解鎖時才送 null
         ...(client.coach_macro_override === null && clientId !== 'new'
@@ -411,6 +418,133 @@ export default function ClientEditor() {
     const updatedSupplements = client.supplements.filter((_, i) => i !== index)
     setClient({ ...client, supplements: updatedSupplements })
   }
+
+  // === Training Plan Parser ===
+  const DAY_MAP: Record<string, number> = {
+    '週一': 1, '周一': 1, '星期一': 1, 'monday': 1, 'mon': 1,
+    '週二': 2, '周二': 2, '星期二': 2, 'tuesday': 2, 'tue': 2,
+    '週三': 3, '周三': 3, '星期三': 3, 'wednesday': 3, 'wed': 3,
+    '週四': 4, '周四': 4, '星期四': 4, 'thursday': 4, 'thu': 4,
+    '週五': 5, '周五': 5, '星期五': 5, 'friday': 5, 'fri': 5,
+    '週六': 6, '周六': 6, '星期六': 6, 'saturday': 6, 'sat': 6,
+    '週日': 7, '周日': 7, '星期日': 7, 'sunday': 7, 'sun': 7,
+  }
+
+  const DAY_LABELS: Record<number, string> = {
+    1: '週一', 2: '週二', 3: '週三', 4: '週四', 5: '週五', 6: '週六', 7: '週日',
+  }
+
+  const parseTrainingPlanText = (text: string) => {
+    setTrainingPlanParseError('')
+    if (!text.trim()) {
+      updateClient('training_plan', null)
+      return
+    }
+
+    try {
+      const lines = text.split('\n')
+      let planName = ''
+      const days: any[] = []
+      let currentDay: any = null
+
+      for (const rawLine of lines) {
+        const line = rawLine.trim()
+        if (!line) {
+          // blank line ends current day block
+          if (currentDay) {
+            days.push(currentDay)
+            currentDay = null
+          }
+          continue
+        }
+
+        // Check for plan name line
+        const nameMatch = line.match(/^計[畫劃]名[稱称][\s：:]+(.+)$/i)
+        if (nameMatch) {
+          planName = nameMatch[1].trim()
+          continue
+        }
+
+        // Check if line starts a new day
+        let dayFound = false
+        for (const [key, num] of Object.entries(DAY_MAP)) {
+          if (line.toLowerCase().startsWith(key)) {
+            if (currentDay) days.push(currentDay)
+            const label = line.slice(key.length).trim().replace(/^[\s：:]+/, '').trim()
+            currentDay = { dayOfWeek: num, label: label || `Day ${num}`, exercises: [] }
+            dayFound = true
+            break
+          }
+        }
+        if (dayFound) continue
+
+        // Must be an exercise line — parse it
+        if (!currentDay) {
+          // If no day header yet, auto-create one
+          if (days.length === 0 && !currentDay) {
+            currentDay = { dayOfWeek: 1, label: 'Day 1', exercises: [] }
+          } else {
+            continue
+          }
+        }
+
+        // Split by | or 、
+        const parts = line.split(/[|、｜]/).map(p => p.trim()).filter(Boolean)
+        if (parts.length === 0) continue
+
+        const exercise: any = { name: parts[0] }
+        if (parts.length >= 2) exercise.sets = parts[1].replace(/組$/, '').trim()
+        if (parts.length >= 3) exercise.reps = parts[2].replace(/下$/, '').trim()
+        if (parts.length >= 4) exercise.rpe = parts[3].replace(/^RPE\s*/i, '').trim()
+        if (parts.length >= 5) exercise.note = parts.slice(4).join('、').trim()
+
+        currentDay.exercises.push(exercise)
+      }
+
+      if (currentDay) days.push(currentDay)
+
+      if (days.length === 0) {
+        setTrainingPlanParseError('無法解析任何訓練日，請檢查格式')
+        return
+      }
+
+      const plan = {
+        name: planName || '訓練計畫',
+        days,
+      }
+      updateClient('training_plan', plan)
+    } catch (e) {
+      setTrainingPlanParseError('解析失敗，請檢查格式')
+    }
+  }
+
+  const serializeTrainingPlan = (plan: any): string => {
+    if (!plan) return ''
+    const lines: string[] = []
+    if (plan.name) lines.push(`計畫名稱：${plan.name}`)
+    lines.push('')
+    for (const day of plan.days || []) {
+      const dayLabel = DAY_LABELS[day.dayOfWeek] || `Day ${day.dayOfWeek}`
+      lines.push(`${dayLabel} ${day.label || ''}`.trim())
+      for (const ex of day.exercises || []) {
+        const parts = [ex.name || '']
+        if (ex.sets) parts.push(`${ex.sets}組`)
+        if (ex.reps) parts.push(`${ex.reps}下`)
+        if (ex.rpe) parts.push(`RPE ${ex.rpe}`)
+        if (ex.note) parts.push(ex.note)
+        lines.push(parts.join(' | '))
+      }
+      lines.push('')
+    }
+    return lines.join('\n').trim()
+  }
+
+  // Initialize training plan text from existing data
+  useEffect(() => {
+    if (client?.training_plan && !trainingPlanText) {
+      setTrainingPlanText(serializeTrainingPlan(client.training_plan))
+    }
+  }, [client?.training_plan])
 
   if (loading) {
     return (
@@ -1265,6 +1399,119 @@ export default function ClientEditor() {
                 </div>
               </div>
             </div>
+
+            {/* 訓練計畫編輯器 */}
+            {client.training_enabled && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-medium text-gray-900">🏋️ 週間訓練計畫</h2>
+                    <p className="text-xs text-gray-400 mt-1">學員會在首頁看到「今日訓練」卡片</p>
+                  </div>
+                  {client.training_plan && (
+                    <button
+                      onClick={() => {
+                        if (confirm('確定清除訓練計畫？')) {
+                          updateClient('training_plan', null)
+                          setTrainingPlanText('')
+                        }
+                      }}
+                      className="text-xs text-red-500 hover:text-red-700 transition-colors"
+                    >
+                      清除計畫
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      貼上訓練計畫（格式如下方範例）
+                    </label>
+                    <textarea
+                      value={trainingPlanText}
+                      onChange={(e) => {
+                        setTrainingPlanText(e.target.value)
+                        setTrainingPlanParseError('')
+                      }}
+                      rows={12}
+                      placeholder={`計畫名稱：5天分化 — 減脂期\n\n週一 Push Day\n啞鈴臥推 | 4組 | 8-10下 | RPE 8 | 主項\n上斜啞鈴飛鳥 | 3組 | 12-15下 | RPE 7 | 胸肌上部\n\n週二 Pull Day\n引體向上 | 4組 | 6-8下 | RPE 8 | 主項\n坐姿划船 | 3組 | 10-12下 | RPE 7 | 背厚度\n\n週三 Leg Day\n深蹲 | 4組 | 6-8下 | RPE 9 | 主項\n腿推 | 3組 | 10-12下 | RPE 7`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => parseTrainingPlanText(trainingPlanText)}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      解析並套用
+                    </button>
+                    <span className="text-xs text-gray-400">
+                      解析後按最下方「保存」才會存入資料庫
+                    </span>
+                  </div>
+
+                  {trainingPlanParseError && (
+                    <p className="text-sm text-red-600">{trainingPlanParseError}</p>
+                  )}
+
+                  <div className="bg-gray-50 rounded-lg px-3 py-2">
+                    <p className="text-[10px] text-gray-400 leading-relaxed">
+                      格式說明：第一行可寫「計畫名稱：...」。每天以「週X 標籤」開頭（如「週一 Push Day」），
+                      動作格式為「動作名 | 組數 | 次數 | RPE | 備註」，各欄位以 | 分隔。
+                      天與天之間空一行。沒有訓練的日子不用寫（自動視為休息日）。
+                    </p>
+                  </div>
+                </div>
+
+                {/* 預覽目前的訓練計畫 */}
+                {client.training_plan && (
+                  <div className="mt-4 border-t border-gray-100 pt-4">
+                    <button
+                      onClick={() => setShowTrainingPlanPreview(!showTrainingPlanPreview)}
+                      className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-3"
+                    >
+                      <span>{showTrainingPlanPreview ? '▼' : '▶'}</span>
+                      目前計畫預覽：{client.training_plan.name || '訓練計畫'}
+                    </button>
+                    {showTrainingPlanPreview && (
+                      <div className="space-y-3">
+                        {(client.training_plan.days || []).map((day: any, di: number) => (
+                          <div key={di} className="bg-blue-50 rounded-lg p-3">
+                            <p className="text-sm font-semibold text-blue-800 mb-2">
+                              {DAY_LABELS[day.dayOfWeek] || `Day ${day.dayOfWeek}`} — {day.label}
+                            </p>
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-gray-500 border-b border-blue-100">
+                                  <th className="text-left py-1 pr-2">動作</th>
+                                  <th className="text-center py-1 px-1">組x次</th>
+                                  <th className="text-center py-1 px-1">RPE</th>
+                                  <th className="text-left py-1 pl-2">備註</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(day.exercises || []).map((ex: any, ei: number) => (
+                                  <tr key={ei} className="border-b border-blue-50 last:border-b-0">
+                                    <td className="py-1 pr-2 font-medium text-gray-800">{ex.name}</td>
+                                    <td className="py-1 px-1 text-center text-gray-600">
+                                      {ex.sets && ex.reps ? `${ex.sets}x${ex.reps}` : ex.sets || ex.reps || '-'}
+                                    </td>
+                                    <td className="py-1 px-1 text-center text-gray-600">{ex.rpe || '-'}</td>
+                                    <td className="py-1 pl-2 text-gray-500">{ex.note || ''}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
