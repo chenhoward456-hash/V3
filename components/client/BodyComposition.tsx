@@ -19,6 +19,7 @@ interface BodyCompositionProps {
   competitionDate?: string | null
   simpleMode?: boolean
   goalType?: string | null
+  prepPhase?: string | null
   onMutate: (appliedTargets?: Record<string, number | undefined>) => void
 }
 
@@ -28,6 +29,8 @@ function getWeightFeedback(
   submittedDate: string,
   goalType?: string | null,
   targetWeight?: number | null,
+  prepPhase?: string | null,
+  competitionDate?: string | null,
 ): { message: string; emoji: string } {
   // Priority 1: First record
   const pastRecords = bodyData.filter((r: any) => r.weight != null)
@@ -35,10 +38,63 @@ function getWeightFeedback(
     return { message: '第一筆紀錄完成！持續記錄是最重要的一步', emoji: '🎉' }
   }
 
-  // Calculate consecutive days from submitted date backwards
-  // Include the submitted date itself, and deduplicate against existing bodyData
+  // ── Peak Week context-aware feedback (highest priority) ──
+  // 備賽 Peak Week 的體重變化有特殊意義，需要根據階段解讀
+  if (prepPhase === 'peak_week' && competitionDate) {
+    const compDate = new Date(competitionDate + 'T00:00:00')
+    const submitted = new Date(submittedDate + 'T00:00:00')
+    const daysOut = Math.round((compDate.getTime() - submitted.getTime()) / (1000 * 60 * 60 * 24))
+
+    // Find previous weight for comparison
+    const sorted = [...pastRecords].sort((a: any, b: any) => b.date.localeCompare(a.date))
+    const prevRecord = sorted.find((r: any) => r.date < submittedDate && r.weight != null)
+    const prevWeight = prevRecord?.weight
+    const delta = prevWeight != null ? newWeight - prevWeight : null
+
+    if (daysOut >= 4) {
+      // Day 7-4: 耗竭期 — 體重應該下降
+      if (delta != null && delta < -0.2) {
+        return { message: `耗竭期體重下降 ${Math.abs(delta).toFixed(1)}kg，肝醣正在消耗，完全正常`, emoji: '✅' }
+      }
+      if (delta != null && delta > 0.2) {
+        return { message: '耗竭期體重微升，可能是水分波動，不影響後續超補效果', emoji: '💧' }
+      }
+      return { message: '耗竭期進行中，持續記錄體重幫助追蹤肝醣消耗', emoji: '📋' }
+    }
+
+    if (daysOut === 3 || daysOut === 2) {
+      // Day 3-2: 碳水超補期 — 體重上升是好事！
+      if (delta != null && delta > 0) {
+        return { message: `充碳中體重上升 +${delta.toFixed(1)}kg — 肝醣和水分正在回填肌肉，這是你要的效果！`, emoji: '🎯' }
+      }
+      if (delta != null && delta < -0.2) {
+        return { message: '充碳後體重反而下降，這是超棒的訊號 — 代表身體在高效吸收碳水，肌肉飽滿度會很好', emoji: '🔥' }
+      }
+      return { message: '碳水超補進行中，肝醣正在儲存，持續跟著計畫走', emoji: '⚡' }
+    }
+
+    if (daysOut === 1) {
+      // Day 1: Taper — 微調期
+      if (delta != null && delta < 0) {
+        return { message: '微調日體重回落，皮下水分正在排出，肌肉分離度會更清晰', emoji: '💎' }
+      }
+      return { message: '微調日，身體正在做最後調整，明天就是你的舞台', emoji: '🏆' }
+    }
+
+    if (daysOut === 0) {
+      // Show day!
+      return { message: '比賽日！你已經準備好了，去展現你的成果', emoji: '🏆' }
+    }
+  }
+
+  // ── Competition phase (比賽日當天或之後) ──
+  if (prepPhase === 'competition') {
+    return { message: '比賽階段，專注在恢復和享受成果', emoji: '🏆' }
+  }
+
+  // ── Consecutive recording streaks ──
   const dateSet = new Set(pastRecords.map((r: any) => r.date))
-  dateSet.add(submittedDate) // ensure the just-submitted date is counted
+  dateSet.add(submittedDate)
   const baseDate = new Date(submittedDate + 'T00:00:00')
   let consecutiveDays = 0
   for (let i = 0; i < dateSet.size + 1; i++) {
@@ -52,7 +108,6 @@ function getWeightFeedback(
     }
   }
 
-  // Priority 2 & 3: Consecutive recording streaks
   if (consecutiveDays >= 7) {
     return { message: `連續記錄 ${consecutiveDays} 天了！一致性是最大的武器`, emoji: '🔥' }
   }
@@ -60,14 +115,13 @@ function getWeightFeedback(
     return { message: `已連續記錄 ${consecutiveDays} 天，養成習慣中`, emoji: '💪' }
   }
 
-  // Calculate weekly averages for trend-based feedback
-  // Use submitted date as reference; replace existing same-day record with newWeight
+  // ── Weekly trend calculation ──
   const today = new Date(submittedDate + 'T00:00:00')
   const thisWeekWeights: number[] = [newWeight]
   const lastWeekWeights: number[] = []
 
   for (const r of pastRecords) {
-    if (r.date === submittedDate) continue // skip old record for this date; newWeight already included
+    if (r.date === submittedDate) continue
     const daysAgo = Math.floor((today.getTime() - new Date(r.date + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24))
     if (daysAgo >= 0 && daysAgo < 7) {
       thisWeekWeights.push(r.weight)
@@ -80,7 +134,7 @@ function getWeightFeedback(
   const hasWeeklyData = thisWeekWeights.length >= 1 && lastWeekWeights.length >= 1
   const weeklyChange = hasWeeklyData ? avg(thisWeekWeights) - avg(lastWeekWeights) : null
 
-  // Priority 4-6: Cut (減脂) phase
+  // ── Cut (減脂) phase ──
   if (goalType === 'cut' && weeklyChange !== null) {
     if (weeklyChange < -0.1) {
       return { message: `本週趨勢下降 ${Math.abs(weeklyChange).toFixed(1)}kg，穩定進步中`, emoji: '📉' }
@@ -91,7 +145,7 @@ function getWeightFeedback(
     return { message: '短期波動很正常，看週均趨勢比較準', emoji: '📊' }
   }
 
-  // Priority 7-9: Bulk (增肌) phase
+  // ── Bulk (增肌) phase ──
   if (goalType === 'bulk' && weeklyChange !== null) {
     if (weeklyChange > 0.5) {
       return { message: '增重速度偏快，注意控制增脂比例', emoji: '⚠️' }
@@ -102,11 +156,10 @@ function getWeightFeedback(
     if (weeklyChange < 0) {
       return { message: '增肌期體重微降，留意熱量是否充足', emoji: '🍽️' }
     }
-    // weeklyChange === 0
     return { message: '體重持平，確認熱量盈餘是否足夠', emoji: '📊' }
   }
 
-  // Priority 10: Close to target weight
+  // ── Close to target weight ──
   if (targetWeight != null) {
     const gap = Math.abs(newWeight - targetWeight)
     if (gap < 2) {
@@ -114,12 +167,12 @@ function getWeightFeedback(
     }
   }
 
-  // Priority 11: Default
+  // ── Default ──
   return { message: '已記錄，保持規律量測', emoji: '✅' }
 }
 
 export default function BodyComposition({
-  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, goalType, onMutate
+  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, goalType, prepPhase, onMutate
 }: BodyCompositionProps) {
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
@@ -282,7 +335,7 @@ export default function BodyComposition({
       } else {
         onMutate()
       }
-      const feedback = getWeightFeedback(weight, bodyData, submittedDate, goalType, targetWeight)
+      const feedback = getWeightFeedback(weight, bodyData, submittedDate, goalType, targetWeight, prepPhase, competitionDate)
       showToast(feedback.message, 'success', feedback.emoji)
       if (na?.adjusted) {
         const t1 = setTimeout(() => {

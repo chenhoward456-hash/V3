@@ -887,6 +887,7 @@ export default function ClientDashboard() {
               competitionDate={clientData.client.competition_date}
               simpleMode={clientData.client.simple_mode}
               goalType={clientData.client.goal_type}
+              prepPhase={clientData.client.prep_phase}
               onMutate={mutateWithTargets}
             />
           </CollapsibleSection>
