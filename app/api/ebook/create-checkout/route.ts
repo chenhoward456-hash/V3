@@ -14,7 +14,7 @@ const supabase = createServiceSupabase()
 export async function POST(request: NextRequest) {
   // Rate limit: 5 次 / 分鐘 / IP
   const ip = getClientIP(request)
-  const { allowed } = rateLimit(`ebook_checkout_${ip}`, 5, 60_000)
+  const { allowed } = await rateLimit(`ebook_checkout_${ip}`, 5, 60_000)
   if (!allowed) {
     return createErrorResponse('請求過於頻繁，請稍後再試', 429)
   }

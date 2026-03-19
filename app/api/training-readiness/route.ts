@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
 import { getTrainingAdvice } from '@/lib/ai-insights'
 import type { GeneticProfile } from '@/lib/supplement-engine'
@@ -19,6 +20,7 @@ import {
 import { calculateMetabolicStressScore } from '@/lib/nutrition-engine'
 import { isCompetitionMode } from '@/lib/client-mode'
 
+const logger = createLogger('api-training-readiness')
 const supabaseAdmin = createServiceSupabase()
 
 export async function GET(request: NextRequest) {
@@ -268,7 +270,8 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({ ...advice, modeRecommendation })
-  } catch {
+  } catch (error) {
+    logger.error('GET /api/training-readiness unexpected error', error)
     return NextResponse.json({ error: '查詢失敗' }, { status: 500 })
   }
 }

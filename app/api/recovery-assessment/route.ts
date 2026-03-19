@@ -7,8 +7,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
 import { generateRecoveryAssessment, type RecoveryInput } from '@/lib/recovery-engine'
+
+const logger = createLogger('api-recovery-assessment')
 
 export const dynamic = 'force-dynamic'
 
@@ -100,7 +103,8 @@ export async function GET(request: NextRequest) {
     const assessment = generateRecoveryAssessment(input)
 
     return NextResponse.json(assessment)
-  } catch {
+  } catch (error) {
+    logger.error('GET /api/recovery-assessment unexpected error', error)
     return NextResponse.json({ error: '恢復評估失敗' }, { status: 500 })
   }
 }

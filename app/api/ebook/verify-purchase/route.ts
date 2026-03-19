@@ -6,7 +6,7 @@ const supabase = createServiceSupabase()
 
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request)
-  const { allowed } = rateLimit(`ebook_verify_${ip}`, 30, 60_000)
+  const { allowed } = await rateLimit(`ebook_verify_${ip}`, 30, 60_000)
   if (!allowed) {
     return createErrorResponse('請求過於頻繁', 429)
   }

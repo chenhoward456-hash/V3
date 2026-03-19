@@ -6,9 +6,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/auth-middleware'
+import { validateBody } from '@/lib/schemas/validate'
+import { markNotificationReadSchema } from '@/lib/schemas/api'
 
+const logger = createLogger('api-admin-notifications')
 const supabase = createServiceSupabase()
 
 function checkAuth(request: NextRequest): boolean {
@@ -34,7 +38,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ notifications: data || [] })
-  } catch {
+  } catch (error) {
+    logger.error('GET /api/admin/notifications unexpected error', error)
     return NextResponse.json({ notifications: [] })
   }
 }
@@ -46,7 +51,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { notificationId } = body
+    const parsed = validateBody(markNotificationReadSchema, body)
+    if (!parsed.success) return parsed.response
+    const { notificationId } = parsed.data
 
     if (notificationId === 'all') {
       await supabase
@@ -61,7 +68,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (error) {
+    logger.error('POST /api/admin/notifications unexpected error', error)
     return NextResponse.json({ error: '操作失敗' }, { status: 500 })
   }
 }

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { rateLimit, getClientIP, createErrorResponse } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 import crypto from 'crypto'
 
+const logger = createLogger('api-subscribe-verify')
 const supabase = createServiceSupabase()
 
 // 驗證 order_id 簽名（與 return handler 的 signOrderId 一致）
@@ -21,7 +23,7 @@ function verifyOrderSignature(orderId: string, signature: string): boolean {
 // 驗證訂閱付款狀態（前端 polling 用）
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request)
-  const { allowed } = rateLimit(`subscribe_verify_${ip}`, 30, 60_000)
+  const { allowed } = await rateLimit(`subscribe_verify_${ip}`, 30, 60_000)
   if (!allowed) {
     return createErrorResponse('請求過於頻繁', 429)
   }
@@ -77,7 +79,8 @@ export async function GET(request: NextRequest) {
 
     // still pending
     return NextResponse.json({ completed: false, status: 'pending' })
-  } catch {
+  } catch (error) {
+    logger.error('GET /api/subscribe/verify unexpected error', error)
     return createErrorResponse('驗證失敗', 500)
   }
 }

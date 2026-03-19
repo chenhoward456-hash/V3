@@ -4,8 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
 
+const logger = createLogger('api-garmin-status')
 const supabaseAdmin = createServiceSupabase()
 
 export async function GET(request: NextRequest) {
@@ -42,7 +44,8 @@ export async function GET(request: NextRequest) {
       lastSyncAt: connection?.last_sync_at || null,
       connectedAt: connection?.created_at || null,
     })
-  } catch {
+  } catch (error) {
+    logger.error('GET /api/garmin/status unexpected error', error)
     return NextResponse.json({ error: '查詢失敗' }, { status: 500 })
   }
 }

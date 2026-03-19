@@ -7,7 +7,7 @@ const logger = createLogger('diagnosis-email-capture')
 
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request)
-  const { allowed } = rateLimit(`diag_email_${ip}`, 5, 60_000)
+  const { allowed } = await rateLimit(`diag_email_${ip}`, 5, 60_000)
   if (!allowed) {
     return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
   }
@@ -43,7 +43,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (error) {
+    logger.error('POST /api/diagnosis/email-capture unexpected error', error)
     return NextResponse.json({ error: '系統錯誤' }, { status: 500 })
   }
 }

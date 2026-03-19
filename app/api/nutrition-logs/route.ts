@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request)
-  const { allowed } = rateLimit(`nutrition:${ip}`, 30, 60_000)
+  const { allowed } = await rateLimit(`nutrition:${ip}`, 30, 60_000)
   if (!allowed) return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
 
   try {

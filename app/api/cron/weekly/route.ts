@@ -20,6 +20,7 @@ import { pushMessage } from '@/lib/line'
 import { generateWeeklyAIReport, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
 import { isHealthMode } from '@/lib/client-mode'
+import { DAY_MS } from '@/lib/date-utils'
 
 export const maxDuration = 300
 
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
       if (!isHealthMode(client.client_mode) || !client.quarterly_cycle_start) continue
 
       const start = new Date(client.quarterly_cycle_start)
-      const elapsed = Math.floor((today.getTime() - start.getTime()) / 86400000)
+      const elapsed = Math.floor((today.getTime() - start.getTime()) / DAY_MS)
 
       if (elapsed >= 90) {
         // 重置到今天，開始新的 90 天週期
@@ -367,7 +368,7 @@ export async function GET(request: NextRequest) {
 
       // 季度週期到期
       if (isHealthMode(client.client_mode) && client.quarterly_cycle_start) {
-        const elapsed = Math.floor((today.getTime() - new Date(client.quarterly_cycle_start).getTime()) / 86400000)
+        const elapsed = Math.floor((today.getTime() - new Date(client.quarterly_cycle_start).getTime()) / DAY_MS)
         if (elapsed >= 80 && elapsed < 90) {
           alertItems.push(`${client.name}：季度週期剩餘 ${90 - elapsed} 天，提醒安排血檢`)
         }
@@ -401,7 +402,7 @@ export async function GET(request: NextRequest) {
       if (!client.line_user_id) continue
       if (!client.created_at) continue
 
-      const daysSinceCreated = Math.floor((today.getTime() - new Date(client.created_at).getTime()) / 86400000)
+      const daysSinceCreated = Math.floor((today.getTime() - new Date(client.created_at).getTime()) / DAY_MS)
       // 在第 88-92 天之間觸發（只觸發一次）
       if (daysSinceCreated >= 88 && daysSinceCreated <= 92) {
         try {

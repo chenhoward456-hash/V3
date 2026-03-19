@@ -232,13 +232,11 @@ function JoinPageInner() {
       if (!res.ok) throw new Error(data.error || '結帳失敗')
 
       if (data.htmlForm) {
-        // 用隱藏 div + form submit 替代 document.write，避免清掉 React DOM
-        const container = document.createElement('div')
-        container.style.display = 'none'
-        container.innerHTML = data.htmlForm
-        document.body.appendChild(container)
-        const form = container.querySelector('form')
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(data.htmlForm, 'text/html')
+        const form = doc.querySelector('form')
         if (form) {
+          document.body.appendChild(document.adoptNode(form))
           form.submit()
         }
       }

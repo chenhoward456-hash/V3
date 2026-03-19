@@ -5,14 +5,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
 import { rateLimit, getClientIP } from '@/lib/auth-middleware'
 
+const logger = createLogger('api-garmin-disconnect')
 const supabaseAdmin = createServiceSupabase()
 
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request)
-  const { allowed } = rateLimit(`garmin-disconnect:${ip}`, 5, 60_000)
+  const { allowed } = await rateLimit(`garmin-disconnect:${ip}`, 5, 60_000)
   if (!allowed) {
     return NextResponse.json({ error: '請求過於頻繁' }, { status: 429 })
   }
@@ -42,7 +44,8 @@ export async function POST(request: NextRequest) {
       success: true,
       message: '已解除 Garmin 連線',
     })
-  } catch {
+  } catch (error) {
+    logger.error('POST /api/garmin/disconnect unexpected error', error)
     return NextResponse.json({ error: '操作失敗' }, { status: 500 })
   }
 }

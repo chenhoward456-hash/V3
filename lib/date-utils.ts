@@ -1,3 +1,5 @@
+export const DAY_MS = 86400000
+
 /**
  * 取得本地時區的日期字串 (YYYY-MM-DD)
  * 避免 toISOString() 在 UTC+8 時區凌晨 0-8 點回傳前一天的問題
@@ -22,5 +24,5 @@ export function daysUntilDateTW(targetDateStr: string): number {
   const nowTW = new Date(Date.now() + 8 * 60 * 60 * 1000)
   const nowTWMidnight = new Date(nowTW.toISOString().split('T')[0])
   const target = new Date(targetDateStr)
-  return Math.round((target.getTime() - nowTWMidnight.getTime()) / 86400000)
+  return Math.round((target.getTime() - nowTWMidnight.getTime()) / DAY_MS)
 }

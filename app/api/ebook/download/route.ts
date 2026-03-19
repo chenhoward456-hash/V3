@@ -13,7 +13,7 @@ const EBOOK_FILES: Record<string, string> = {
 
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request)
-  const { allowed } = rateLimit(`ebook_download_${ip}`, 10, 60_000)
+  const { allowed } = await rateLimit(`ebook_download_${ip}`, 10, 60_000)
   if (!allowed) {
     return createErrorResponse('下載過於頻繁，請稍後再試', 429)
   }

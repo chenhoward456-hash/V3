@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { sendPushNotification } from '@/lib/web-push'
+import { validateBody } from '@/lib/schemas/validate'
+import { pushSendSchema } from '@/lib/schemas/api'
+
+const logger = createLogger('api-push-send')
 
 /**
  * POST /api/push/send
@@ -21,11 +26,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { clientId, title, body, url } = await request.json()
-
-    if (!title || !body) {
-      return NextResponse.json({ error: '缺少 title 或 body' }, { status: 400 })
-    }
+    const parsed = validateBody(pushSendSchema, await request.json())
+    if (!parsed.success) return parsed.response
+    const { clientId, title, body, url } = parsed.data
 
     // 查詢訂閱者
     const supabase = createServiceSupabase()
@@ -79,7 +82,8 @@ export async function POST(request: NextRequest) {
       expired: expired.length,
       total: subscriptions.length,
     })
-  } catch {
+  } catch (error) {
+    logger.error('POST /api/push/send unexpected error', error)
     return NextResponse.json({ error: '發送失敗' }, { status: 500 })
   }
 }

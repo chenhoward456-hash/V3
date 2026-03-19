@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
+import { validateBody } from '@/lib/schemas/validate'
+import { pushSubscribeSchema } from '@/lib/schemas/api'
+
+const logger = createLogger('api-push-subscribe')
 
 /**
  * POST /api/push/subscribe
@@ -7,16 +12,9 @@ import { createServiceSupabase } from '@/lib/supabase'
  */
 export async function POST(request: NextRequest) {
   try {
-    const { subscription, clientId } = await request.json()
-
-    if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
-      return NextResponse.json({ error: '無效的訂閱資料' }, { status: 400 })
-    }
-
-    // clientId 驗證：必須提供且格式合法
-    if (!clientId || typeof clientId !== 'string' || clientId.length > 36) {
-      return NextResponse.json({ error: '無效的 clientId' }, { status: 400 })
-    }
+    const parsed = validateBody(pushSubscribeSchema, await request.json())
+    if (!parsed.success) return parsed.response
+    const { subscription, clientId } = parsed.data
 
     const supabase = createServiceSupabase()
 
@@ -51,7 +49,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (error) {
+    logger.error('POST /api/push/subscribe unexpected error', error)
     return NextResponse.json({ error: '訂閱失敗' }, { status: 500 })
   }
 }
@@ -92,7 +91,8 @@ export async function DELETE(request: NextRequest) {
       .eq('client_id', client.id)
 
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (error) {
+    logger.error('DELETE /api/push/subscribe unexpected error', error)
     return NextResponse.json({ error: '取消訂閱失敗' }, { status: 500 })
   }
 }

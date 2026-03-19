@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     // Rate limit: 每分鐘 30 次（公開端點）
     const ip = getClientIP(request)
-    const { allowed } = rateLimit(`clients-get:${ip}`, 30, 60_000)
+    const { allowed } = await rateLimit(`clients-get:${ip}`, 30, 60_000)
     if (!allowed) {
       return createErrorResponse('請求過於頻繁，請稍後再試', 429)
     }
@@ -78,11 +78,11 @@ export async function GET(request: NextRequest) {
     if (client.supplement_enabled) {
       queryEntries.push({
         key: 'todayLogs',
-        query: wrap(supabase.from('supplement_logs').select('*').eq('client_id', client.id).eq('date', today)),
+        query: wrap(supabase.from('supplement_logs').select('id, supplement_id, client_id, date, completed').eq('client_id', client.id).eq('date', today)),
       })
       queryEntries.push({
         key: 'recentLogs',
-        query: wrap(supabase.from('supplement_logs').select('*').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
+        query: wrap(supabase.from('supplement_logs').select('id, supplement_id, client_id, date, completed').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
       })
     }
 
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     if (client.body_composition_enabled) {
       queryEntries.push({
         key: 'bodyData',
-        query: wrap(supabase.from('body_composition').select('*').eq('client_id', client.id).order('date', { ascending: false }).limit(90)),
+        query: wrap(supabase.from('body_composition').select('id, client_id, date, weight, height, body_fat').eq('client_id', client.id).order('date', { ascending: false }).limit(90)),
       })
     }
 
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     if (client.training_enabled) {
       queryEntries.push({
         key: 'trainingLogs',
-        query: wrap(supabase.from('training_logs').select('*').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
+        query: wrap(supabase.from('training_logs').select('id, client_id, date, training_type, rpe').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
       })
     }
 
@@ -137,7 +137,8 @@ export async function GET(request: NextRequest) {
       nutritionLogs: resolved.nutritionLogs || [],
     })
     
-  } catch {
+  } catch (error) {
+    logger.error('GET /api/clients unexpected error', error)
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }
@@ -202,7 +203,8 @@ export async function POST(request: NextRequest) {
 
     return createSuccessResponse(data)
 
-  } catch {
+  } catch (error) {
+    logger.error('POST /api/clients unexpected error', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
@@ -212,7 +214,7 @@ export async function PATCH(request: NextRequest) {
   try {
     // Rate limit: 每分鐘 10 次
     const ip = getClientIP(request)
-    const { allowed } = rateLimit(`clients-patch:${ip}`, 10, 60_000)
+    const { allowed } = await rateLimit(`clients-patch:${ip}`, 10, 60_000)
     if (!allowed) {
       return createErrorResponse('請求過於頻繁，請稍後再試', 429)
     }
@@ -385,7 +387,8 @@ export async function PATCH(request: NextRequest) {
     })
 
     return createSuccessResponse({ updated: true })
-  } catch {
+  } catch (error) {
+    logger.error('PATCH /api/clients unexpected error', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
@@ -394,7 +397,7 @@ export async function PATCH(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const ip = getClientIP(request)
-    const { allowed } = rateLimit(`clients-put:${ip}`, 10, 60_000)
+    const { allowed } = await rateLimit(`clients-put:${ip}`, 10, 60_000)
     if (!allowed) {
       return createErrorResponse('請求過於頻繁，請稍後再試', 429)
     }

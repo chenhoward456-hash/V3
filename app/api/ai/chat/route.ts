@@ -12,7 +12,7 @@ const supabase = createServiceSupabase()
 
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request)
-  const { allowed } = rateLimit(`ai-chat:${ip}`, 10, 60_000)
+  const { allowed } = await rateLimit(`ai-chat:${ip}`, 10, 60_000)
   if (!allowed) {
     return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
   }

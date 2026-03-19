@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
-import { sanitizeTextField, validateNumericField, rateLimit, getClientIP } from '@/lib/auth-middleware'
+import { sanitizeTextField, rateLimit, getClientIP } from '@/lib/auth-middleware'
+import { validateBody } from '@/lib/schemas/validate'
+import { trainingLogSchema } from '@/lib/schemas/api'
 
+const logger = createLogger('api-training-logs')
 const supabaseAdmin = createServiceSupabase()
 
 function createErrorResponse(message: string, status: number) {
@@ -15,8 +19,6 @@ function createSuccessResponse(data: Record<string, unknown> | null, message?: s
     ...(message && { message })
   })
 }
-
-const VALID_TRAINING_TYPES = ['push', 'pull', 'legs', 'full_body', 'cardio', 'rest', 'chest', 'shoulder', 'arms']
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,32 +65,27 @@ export async function GET(request: NextRequest) {
     return createSuccessResponse(training)
 
   } catch (error) {
+    logger.error('GET /api/training-logs unexpected error', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
 
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request)
-  const { allowed } = rateLimit(`training:${ip}`, 30, 60_000)
+  const { allowed } = await rateLimit(`training:${ip}`, 30, 60_000)
   if (!allowed) return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
 
   try {
     const body = await request.json()
-    const { clientId, date, training_type, duration, sets, rpe, note } = body
+    const parsed = validateBody(trainingLogSchema, body)
+    if (!parsed.success) return parsed.response
+    const { clientId, date, training_type, duration, sets, rpe, note } = parsed.data
 
-    if (!clientId || !date) {
-      return createErrorResponse('缺少客戶 ID 或日期', 400)
-    }
-
-    if (!training_type || !VALID_TRAINING_TYPES.includes(training_type)) {
-      return createErrorResponse('訓練類型無效', 400)
-    }
-
+    // Post-schema conditional validation
     if (training_type !== 'rest') {
       if (duration == null || duration <= 0) {
         return createErrorResponse('訓練時長必須大於 0', 400)
       }
-      // 有氧 RPE 選填，重訓 RPE 必填
       if (training_type !== 'cardio' && (rpe == null || rpe < 1 || rpe > 10)) {
         return createErrorResponse('RPE 必須在 1-10 之間', 400)
       }
@@ -97,14 +94,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 驗證 sets 欄位
-    const setsValidation = validateNumericField(sets, 0, 100, 'sets')
-    if (!setsValidation.isValid) {
-      return createErrorResponse(setsValidation.error, 400)
-    }
-
     // 清理 note 欄位
-    const sanitizedNote = sanitizeTextField(note)
+    const sanitizedNote = sanitizeTextField(note ?? null)
 
     const { data: client, error: clientError } = await supabaseAdmin
       .from('clients')
@@ -192,9 +183,9 @@ export async function POST(request: NextRequest) {
       upsertData.sets = null
       upsertData.rpe = null
     } else {
-      upsertData.duration = duration
-      upsertData.sets = sets || null
-      upsertData.rpe = rpe
+      upsertData.duration = duration ?? null
+      upsertData.sets = sets ?? null
+      upsertData.rpe = rpe ?? null
     }
 
     const { data: training, error: trainingError } = await supabaseAdmin
@@ -217,6 +208,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
+    logger.error('POST /api/training-logs unexpected error', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }

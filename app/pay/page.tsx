@@ -83,12 +83,13 @@ function PayContent() {
       if (!res.ok) throw new Error(data.error || '結帳失敗')
 
       if (data.htmlForm) {
-        const container = document.createElement('div')
-        container.style.display = 'none'
-        container.innerHTML = data.htmlForm
-        document.body.appendChild(container)
-        const form = container.querySelector('form')
-        if (form) form.submit()
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(data.htmlForm, 'text/html')
+        const form = doc.querySelector('form')
+        if (form) {
+          document.body.appendChild(document.adoptNode(form))
+          form.submit()
+        }
       }
     } catch (err: any) {
       setError(err.message || '結帳失敗，請稍後再試')

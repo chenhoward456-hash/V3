@@ -14,6 +14,7 @@ import { askClaude, ChatMessage } from './claude'
 import { isInOptimalRange } from '@/utils/labStatus'
 import { matchLabName } from '@/utils/labMatch'
 import { generateRecoveryAssessment, getTrainingAdviceFromRecovery, type RecoveryAssessment } from './recovery-engine'
+import { DAY_MS } from '@/lib/date-utils'
 
 // ═══════════════════════════════════════
 // Types
@@ -306,7 +307,7 @@ export function predictTrend(
     const secondHalf = validWeights.slice(mid)
     const avg1 = firstHalf.reduce((s, b) => s + b.weight!, 0) / firstHalf.length
     const avg2 = secondHalf.reduce((s, b) => s + b.weight!, 0) / secondHalf.length
-    const daysBetween = (new Date(secondHalf[0].date).getTime() - new Date(firstHalf[0].date).getTime()) / 86400000
+    const daysBetween = (new Date(secondHalf[0].date).getTime() - new Date(firstHalf[0].date).getTime()) / DAY_MS
     const weeksElapsed = Math.max(1, daysBetween / 7)
 
     weeklyAvgs.length = 0
@@ -331,7 +332,7 @@ export function predictTrend(
   // 計算平均週變化率
   const firstAvg = weeklyAvgs[0].avg
   const lastAvg = weeklyAvgs[weeklyAvgs.length - 1].avg
-  const daysBetween = (new Date(weeklyAvgs[weeklyAvgs.length - 1].weekStart).getTime() - new Date(weeklyAvgs[0].weekStart).getTime()) / 86400000
+  const daysBetween = (new Date(weeklyAvgs[weeklyAvgs.length - 1].weekStart).getTime() - new Date(weeklyAvgs[0].weekStart).getTime()) / DAY_MS
   const weeksElapsed = Math.max(1, daysBetween / 7)
   const weeklyRate = (lastAvg - firstAvg) / weeksElapsed
 

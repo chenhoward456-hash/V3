@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
 import { isWeightTraining } from '@/components/client/types'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isCompetitionMode } from '@/lib/client-mode'
+
+const logger = createLogger('api-nutrition-suggestions')
 
 export const maxDuration = 60
 
@@ -423,7 +426,8 @@ export async function GET(request: NextRequest) {
         targetDate: client.competition_date || client.target_date || null,
       }
     })
-  } catch {
+  } catch (error) {
+    logger.error('GET /api/nutrition-suggestions unexpected error', error)
     return NextResponse.json({ error: '分析失敗' }, { status: 500 })
   }
 }

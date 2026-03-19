@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('api-ebook-return')
 
 // ECPay OrderResultURL handler
 // ECPay 付款完成後用 POST 把用戶導回這裡
@@ -16,8 +19,8 @@ export async function POST(request: NextRequest) {
       `${origin}/diagnosis/success?order_id=${encodeURIComponent(merchantTradeNo)}`,
       { status: 303 } // 303 See Other: POST → GET redirect
     )
-  } catch {
-    // fallback: 導回 diagnosis
+  } catch (error) {
+    logger.error('POST /api/ebook/return unexpected error', error)
     return NextResponse.redirect(
       new URL('/diagnosis?step=3', request.url),
       { status: 303 }

@@ -5,6 +5,7 @@ import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-eng
 import { createServiceSupabase } from '@/lib/supabase'
 import { isWeightTraining } from '@/components/client/types'
 import { isCompetitionMode } from '@/lib/client-mode'
+import { DAY_MS } from '@/lib/date-utils'
 
 const supabase = createServiceSupabase()
 
@@ -115,7 +116,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
   }
 
   // 4. 合規率（近 14 天）
-  const fourteenStr = new Date(today.getTime() - 13 * 86400000).toISOString().split('T')[0]
+  const fourteenStr = new Date(today.getTime() - 13 * DAY_MS).toISOString().split('T')[0]
   const recent = nutritionLogs.filter((l) => l.date >= fourteenStr && l.date <= todayStr)
   const compliance = recent.length > 0 ? Math.round(recent.filter((l) => l.compliant).length / recent.length * 100) : 0
 
@@ -281,7 +282,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request)
-  const { allowed } = rateLimit(`body:${ip}`, 20, 60_000)
+  const { allowed } = await rateLimit(`body:${ip}`, 20, 60_000)
   if (!allowed) return createErrorResponse('請求過於頻繁，請稍後再試', 429)
 
   try {

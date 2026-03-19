@@ -40,10 +40,10 @@ export async function GET(request: NextRequest) {
 
     const [suppRes, logsRes, wellRes, trainRes, bodyRes, labRes, nutritionRes] = await Promise.all([
       supabase.from('supplements').select('*').eq('client_id', realId),
-      supabase.from('supplement_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
+      supabase.from('supplement_logs').select('id, supplement_id, client_id, date, completed').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('daily_wellness').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
-      supabase.from('training_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
-      supabase.from('body_composition').select('*').eq('client_id', realId).order('date', { ascending: true }).limit(365),
+      supabase.from('training_logs').select('id, client_id, date, training_type, rpe').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
+      supabase.from('body_composition').select('id, client_id, date, weight, height, body_fat').eq('client_id', realId).order('date', { ascending: true }).limit(365),
       supabase.from('lab_results').select('*').eq('client_id', realId).order('date', { ascending: false }),
       supabase.from('nutrition_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
     ])

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { verifyCheckMacValue } from '@/lib/ecpay'
 import { createServiceSupabase } from '@/lib/supabase'
 import crypto from 'crypto'
+
+const logger = createLogger('api-subscribe-return')
 
 // 為 order_id 生成 HMAC 簽名，用於驗證 verify endpoint 的請求者身份
 function signOrderId(orderId: string): string {
@@ -57,8 +60,8 @@ export async function POST(request: NextRequest) {
           isUpgrade = true
         }
       }
-    } catch {
-      // Non-blocking: if upgrade detection fails, just proceed without upgrade flag
+    } catch (error) {
+      logger.error('POST /api/subscribe/return upgrade detection failed', error)
     }
 
     // 設定簽名 cookie，讓 verify endpoint 能驗證請求者是付款本人
@@ -77,7 +80,8 @@ export async function POST(request: NextRequest) {
     })
 
     return response
-  } catch {
+  } catch (error) {
+    logger.error('POST /api/subscribe/return unexpected error', error)
     return NextResponse.redirect(
       new URL('/join?error=1', request.url),
       { status: 303 }

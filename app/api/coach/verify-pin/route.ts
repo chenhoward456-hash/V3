@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import crypto from 'crypto'
 import { rateLimit, getClientIP, createErrorResponse } from '@/lib/auth-middleware'
+
+const logger = createLogger('api-coach-verify-pin')
 
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting: 10 attempts per minute per IP
     const ip = getClientIP(request)
-    const { allowed } = rateLimit(`verify-pin:${ip}`, 10, 60_000)
+    const { allowed } = await rateLimit(`verify-pin:${ip}`, 10, 60_000)
     if (!allowed) {
       return createErrorResponse('嘗試次數過多，請稍後再試', 429)
     }
@@ -38,7 +41,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ valid: true })
-  } catch {
+  } catch (error) {
+    logger.error('POST /api/coach/verify-pin unexpected error', error)
     return createErrorResponse('伺服器錯誤', 500)
   }
 }

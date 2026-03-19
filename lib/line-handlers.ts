@@ -8,6 +8,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { replyMessage, pushMessage, qr, switchRichMenuForUser } from '@/lib/line'
 import { createLogger } from '@/lib/logger'
+import { DAY_MS } from '@/lib/date-utils'
 
 const log = createLogger('LINE-Handlers')
 
@@ -647,7 +648,7 @@ export async function handleStatusQuery(replyToken: string, client: LineClient, 
 export async function handleTrendQuery(replyToken: string, client: LineClient, supabase: SupabaseClient) {
 
   const today = getTaiwanDate()
-  const sevenDaysAgo = new Date(new Date().getTime() - 7 * 86400000).toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' })
+  const sevenDaysAgo = new Date(new Date().getTime() - 7 * DAY_MS).toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' })
 
   const [bodyRes, nutritionRes, trainingRes, wellnessRes, summaryRes] = await Promise.all([
     supabase.from('body_composition').select('date, weight')

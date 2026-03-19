@@ -21,7 +21,7 @@ import { sendPushNotification } from '@/lib/web-push'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
-import { daysUntilDateTW } from '@/lib/date-utils'
+import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import {
   sendDay3Email,
   sendDay7Email,
@@ -208,7 +208,7 @@ export async function GET(request: NextRequest) {
         const recentWeightsRes = await supabase
           .from('body_composition')
           .select('client_id, weight, date')
-          .gte('date', new Date(Date.now() - 10 * 86400000).toISOString().split('T')[0])
+          .gte('date', new Date(Date.now() - 10 * DAY_MS).toISOString().split('T')[0])
           .order('date', { ascending: false })
         const weightsByClient: Record<string, number[]> = {}
         for (const w of (recentWeightsRes.data || [])) {

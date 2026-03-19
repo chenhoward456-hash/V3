@@ -37,7 +37,7 @@ export const maxDuration = 60
 
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request)
-  const { allowed } = rateLimit(`ai-insights:${ip}`, 20, 60_000)
+  const { allowed } = await rateLimit(`ai-insights:${ip}`, 20, 60_000)
   if (!allowed) {
     return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
   }

@@ -16,6 +16,7 @@ import { calculateHealthScore, type HealthScoreInput } from '@/lib/health-score-
 import { generateLabNutritionAdvice, type LabNutritionAdvice } from '@/lib/lab-nutrition-advisor'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isHealthMode } from '@/lib/client-mode'
+import { DAY_MS } from '@/lib/date-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,11 +86,11 @@ export async function GET(request: NextRequest) {
 
     const currentQuarter = {
       start: cycleStart.toISOString().split('T')[0],
-      end: new Date(cycleStart.getTime() + 90 * 86400000).toISOString().split('T')[0],
+      end: new Date(cycleStart.getTime() + 90 * DAY_MS).toISOString().split('T')[0],
     }
 
-    const prevQuarterEnd = new Date(cycleStart.getTime() - 86400000)
-    const prevQuarterStart = new Date(prevQuarterEnd.getTime() - 89 * 86400000)
+    const prevQuarterEnd = new Date(cycleStart.getTime() - DAY_MS)
+    const prevQuarterStart = new Date(prevQuarterEnd.getTime() - 89 * DAY_MS)
     const previousQuarter = {
       start: prevQuarterStart.toISOString().split('T')[0],
       end: prevQuarterEnd.toISOString().split('T')[0],
@@ -200,7 +201,7 @@ async function fetchQuarterData(
   const uniqueTrainingDates = [...new Set(trainingDates)]
   const daySpan = uniqueTrainingDates.length >= 2
     ? Math.max(1, Math.ceil(
-        (new Date(uniqueTrainingDates[uniqueTrainingDates.length - 1]).getTime() - new Date(uniqueTrainingDates[0]).getTime()) / 86400000 + 1
+        (new Date(uniqueTrainingDates[uniqueTrainingDates.length - 1]).getTime() - new Date(uniqueTrainingDates[0]).getTime()) / DAY_MS + 1
       ))
     : Math.max(1, uniqueTrainingDates.length)
   const weeks = Math.max(1, daySpan / 7)

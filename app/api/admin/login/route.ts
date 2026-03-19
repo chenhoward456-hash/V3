@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createLogger } from '@/lib/logger'
 import { createAdminSession, rateLimit, getClientIP } from '@/lib/auth-middleware'
 import crypto from 'crypto'
+
+const logger = createLogger('api-admin-login')
 
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIP(request)
 
     // Rate limiting: 登入最多 5 次/分鐘
-    const { allowed } = rateLimit(`admin-login:${ip}`, 5, 60_000)
+    const { allowed } = await rateLimit(`admin-login:${ip}`, 5, 60_000)
     if (!allowed) {
       return NextResponse.json({ error: '嘗試次數過多，請稍後再試' }, { status: 429 })
     }
@@ -47,7 +50,8 @@ export async function POST(request: NextRequest) {
       // 統一錯誤訊息，避免洩漏是否為有效帳號
       return NextResponse.json({ error: '登入失敗' }, { status: 401 })
     }
-  } catch {
+  } catch (error) {
+    logger.error('POST /api/admin/login unexpected error', error)
     return NextResponse.json({ error: '登入失敗' }, { status: 401 })
   }
 }

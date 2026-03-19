@@ -1,3 +1,5 @@
+import { DAY_MS } from '@/lib/date-utils'
+
 /**
  * Health Score Engine
  * 健康分數引擎 — 健康模式（Health Mode）專用
@@ -241,7 +243,7 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
   if (quarterlyStart) {
     const start = new Date(quarterlyStart)
     const today = new Date()
-    const elapsed = Math.floor((today.getTime() - start.getTime()) / 86400000) + 1
+    const elapsed = Math.floor((today.getTime() - start.getTime()) / DAY_MS) + 1
     daysInCycle = Math.min(90, Math.max(1, elapsed))
     daysUntilBloodTest = Math.max(0, 90 - daysInCycle)
   }

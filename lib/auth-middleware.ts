@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
 
 /** Authenticated user returned from verifyAuth */
 export interface AuthUser {
@@ -24,20 +26,40 @@ const supabase = createClient(
   }
 )
 
-// ===== Rate Limiting =====
+// ===== Rate Limiting (Upstash + in-memory fallback) =====
+
+// Upstash Redis（沒有環境變數時為 null，自動 fallback 到 in-memory）
+const upstashRedis = process.env.UPSTASH_REDIS_REST_URL
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    })
+  : null
+
+// 快取不同設定的 limiter，避免重複建立
+const limiterCache = new Map<string, Ratelimit>()
+
+function getUpstashLimiter(maxRequests: number, windowSec: number): Ratelimit {
+  const cacheKey = `${maxRequests}:${windowSec}`
+  let limiter = limiterCache.get(cacheKey)
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis: upstashRedis!,
+      limiter: Ratelimit.slidingWindow(maxRequests, `${windowSec} s`),
+      prefix: `rl:${cacheKey}`,
+    })
+    limiterCache.set(cacheKey, limiter)
+  }
+  return limiter
+}
+
+// In-memory fallback（本地開發 / Upstash 故障時使用）
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
 
-/**
- * 簡易 rate limiter（in-memory，適合單節點部署）
- * @param key 識別鍵（例如 IP + endpoint）
- * @param maxRequests 在時間窗口內最多允許幾次
- * @param windowMs 時間窗口毫秒數
- */
-export function rateLimit(key: string, maxRequests: number = 10, windowMs: number = 60_000): { allowed: boolean; remaining: number } {
+function rateLimitInMemory(key: string, maxRequests: number, windowMs: number): { allowed: boolean; remaining: number } {
   const now = Date.now()
   const entry = rateLimitStore.get(key)
 
-  // 清理過期條目（每 100 次呼叫做一次）
   if (rateLimitStore.size > 1000) {
     for (const [k, v] of rateLimitStore) {
       if (v.resetAt < now) rateLimitStore.delete(k)
@@ -55,6 +77,26 @@ export function rateLimit(key: string, maxRequests: number = 10, windowMs: numbe
   }
 
   return { allowed: true, remaining: maxRequests - entry.count }
+}
+
+/**
+ * Rate limiter（Upstash Redis 優先，fallback 到 in-memory）
+ * @param key 識別鍵（例如 IP + endpoint）
+ * @param maxRequests 在時間窗口內最多允許幾次
+ * @param windowMs 時間窗口毫秒數
+ */
+export async function rateLimit(key: string, maxRequests: number = 10, windowMs: number = 60_000): Promise<{ allowed: boolean; remaining: number }> {
+  if (upstashRedis) {
+    try {
+      const windowSec = Math.ceil(windowMs / 1000)
+      const limiter = getUpstashLimiter(maxRequests, windowSec)
+      const result = await limiter.limit(key)
+      return { allowed: result.success, remaining: result.remaining }
+    } catch {
+      // Upstash 故障 → fallback 到 in-memory
+    }
+  }
+  return rateLimitInMemory(key, maxRequests, windowMs)
 }
 
 // ===== Admin Session (HMAC-signed, stateless) =====
@@ -282,9 +324,7 @@ export function validateNumericField(value: unknown, min: number, max: number, f
  * 取得用戶端 IP（用於 rate limiting）
  */
 export function getClientIP(request: NextRequest): string {
-  // request.ip 由 Vercel 平台提供，不可被 header 偽造；API route 中可能為 undefined
-  return (request as any).ip
-    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     || request.headers.get('x-real-ip')
     || 'unknown'
 }

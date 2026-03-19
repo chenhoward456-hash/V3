@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     if (selfEntry) {
       // selfEntry 需要速率限制，防止濫用
       const ip = getClientIP(request)
-      const { allowed } = rateLimit(`lab-self:${ip}`, 10, 60_000)
+      const { allowed } = await rateLimit(`lab-self:${ip}`, 10, 60_000)
       if (!allowed) {
         return createErrorResponse('請求過於頻繁，請稍後再試', 429)
       }
