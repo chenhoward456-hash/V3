@@ -48,6 +48,8 @@ const HealthModeAdvanced = dynamic(() => import('@/components/client/HealthModeA
 const OnboardingGuide = dynamic(() => import('@/components/client/OnboardingGuide'), { ssr: false })
 const OnboardingChecklist = dynamic(() => import('@/components/client/OnboardingChecklist'), { ssr: false })
 const ReferralCard = dynamic(() => import('@/components/client/ReferralCard'), { ssr: false })
+const FreeInsightTeaser = dynamic(() => import('@/components/client/FreeInsightTeaser'), { ssr: false })
+const UpgradeTrigger = dynamic(() => import('@/components/client/UpgradeTrigger'), { ssr: false })
 import { generateSupplementSuggestions, type GeneticProfile } from '@/lib/supplement-engine'
 import type { NutritionSuggestion } from '@/lib/nutrition-engine'
 import { getLocalDateStr, daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
@@ -322,6 +324,42 @@ export default function ClientDashboard() {
       .slice(-14)
       .map((b) => ({ date: b.date, bodyFat: b.body_fat as number }))
   }, [clientData?.bodyData])
+
+  // Upgrade trigger: weight entries + meals logged during plateau period
+  const weightEntriesForTrigger = useMemo(() => {
+    if (!clientData?.bodyData?.length) return []
+    return clientData.bodyData
+      .filter((b) => b.weight != null)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((b) => ({ date: b.date, weight: b.weight as number }))
+  }, [clientData?.bodyData])
+
+  const upgradeTriggerDaysTracked = useMemo(() => {
+    const dates = new Set<string>()
+    ;(clientData?.bodyData || []).forEach((b) => dates.add(b.date))
+    ;(clientData?.nutritionLogs || []).forEach((n) => { if (n.date) dates.add(n.date) })
+    return dates.size
+  }, [clientData?.bodyData, clientData?.nutritionLogs])
+
+  const mealsLoggedDuringPlateau = useMemo(() => {
+    if (!weightEntriesForTrigger.length || !clientData?.nutritionLogs?.length) return 0
+    // Find earliest plateau date: walk backwards from last entry within 0.5kg
+    const sorted = weightEntriesForTrigger
+    if (sorted.length < 14) return 0
+    const baseWeight = sorted[sorted.length - 1].weight
+    let plateauStartDate = sorted[sorted.length - 1].date
+    for (let i = sorted.length - 2; i >= 0; i--) {
+      if (Math.abs(sorted[i].weight - baseWeight) <= 0.5) {
+        plateauStartDate = sorted[i].date
+      } else {
+        break
+      }
+    }
+    // Count nutrition logs on or after plateauStartDate
+    return clientData.nutritionLogs.filter(
+      (n) => n.date && n.date >= plateauStartDate
+    ).length
+  }, [weightEntriesForTrigger, clientData?.nutritionLogs])
 
   // 生成補品建議（必須在所有條件 return 之前，遵守 React Hooks 規則）
   const supplementSuggestions = useMemo(() => {
@@ -888,6 +926,7 @@ export default function ClientDashboard() {
               simpleMode={clientData.client.simple_mode}
               goalType={clientData.client.goal_type}
               prepPhase={clientData.client.prep_phase}
+              tier={c.subscription_tier || 'free'}
               onMutate={mutateWithTargets}
             />
           </CollapsibleSection>
@@ -1078,6 +1117,21 @@ export default function ClientDashboard() {
         {/* 一般學員（非自主管理、非免費）的每週智能分析 */}
         {!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && c.body_composition_enabled && (
           <WeeklyInsight clientId={c.id} code={c.unique_code} onMutate={mutate} />
+        )}
+
+        {/* 免費學員的 AI 洞察預告 — 顯示真實分析但鎖定詳細建議 */}
+        {!isCompetition && isFree && c.body_composition_enabled && (
+          <FreeInsightTeaser
+            nutritionLogs={(clientData.nutritionLogs || []) as any}
+            bodyData={(clientData.bodyData || []) as any}
+            targets={{
+              calories: c.calories_target,
+              protein: c.protein_target,
+              carbs: c.carbs_target,
+              fat: c.fat_target,
+              water: c.water_target,
+            }}
+          />
         )}
 
         {c.wellness_enabled && <WellnessTrend wellness={clientData.wellness || []} />}
@@ -1324,6 +1378,17 @@ export default function ClientDashboard() {
           targetWeight: c.target_weight ?? null,
         }}
       />
+
+      {/* Contextual upgrade trigger for free-tier users */}
+      {isFree && (
+        <UpgradeTrigger
+          plan={c.subscription_tier || 'free'}
+          daysTracked={upgradeTriggerDaysTracked}
+          mealsLogged={(clientData.nutritionLogs || []).length}
+          weightEntries={weightEntriesForTrigger}
+          mealsLoggedDuringPlateau={mealsLoggedDuringPlateau}
+        />
+      )}
 
       {showSupplementModal && c.supplement_enabled && (
         <SupplementModal

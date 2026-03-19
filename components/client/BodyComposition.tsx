@@ -20,6 +20,7 @@ interface BodyCompositionProps {
   simpleMode?: boolean
   goalType?: string | null
   prepPhase?: string | null
+  tier?: string
   onMutate: (appliedTargets?: Record<string, number | undefined>) => void
 }
 
@@ -31,7 +32,8 @@ function getWeightFeedback(
   targetWeight?: number | null,
   prepPhase?: string | null,
   competitionDate?: string | null,
-): { message: string; emoji: string } {
+  tier?: string,
+): { message: string; emoji: string; teaser?: string } {
   // Priority 1: First record
   const pastRecords = bodyData.filter((r: any) => r.weight != null)
   if (pastRecords.length === 0) {
@@ -134,29 +136,33 @@ function getWeightFeedback(
   const hasWeeklyData = thisWeekWeights.length >= 1 && lastWeekWeights.length >= 1
   const weeklyChange = hasWeeklyData ? avg(thisWeekWeights) - avg(lastWeekWeights) : null
 
+  const freeTeaser = tier === 'free' && pastRecords.length >= 7
+    ? 'AI 偵測到你近期趨勢中的一個模式 — 升級後查看'
+    : undefined
+
   // ── Cut (減脂) phase ──
   if (goalType === 'cut' && weeklyChange !== null) {
     if (weeklyChange < -0.1) {
-      return { message: `本週趨勢下降 ${Math.abs(weeklyChange).toFixed(1)}kg，穩定進步中`, emoji: '📉' }
+      return { message: `本週趨勢下降 ${Math.abs(weeklyChange).toFixed(1)}kg，穩定進步中`, emoji: '📉', teaser: freeTeaser }
     }
     if (weeklyChange >= -0.1 && weeklyChange <= 0.1) {
-      return { message: '體重穩定中，不一定是停滯 — 持續保持', emoji: '⚖️' }
+      return { message: '體重穩定中，不一定是停滯 — 持續保持', emoji: '⚖️', teaser: freeTeaser }
     }
-    return { message: '短期波動很正常，看週均趨勢比較準', emoji: '📊' }
+    return { message: '短期波動很正常，看週均趨勢比較準', emoji: '📊', teaser: freeTeaser }
   }
 
   // ── Bulk (增肌) phase ──
   if (goalType === 'bulk' && weeklyChange !== null) {
     if (weeklyChange > 0.5) {
-      return { message: '增重速度偏快，注意控制增脂比例', emoji: '⚠️' }
+      return { message: '增重速度偏快，注意控制增脂比例', emoji: '⚠️', teaser: freeTeaser }
     }
     if (weeklyChange > 0) {
-      return { message: '增重節奏很好，繼續保持', emoji: '💪' }
+      return { message: '增重節奏很好，繼續保持', emoji: '💪', teaser: freeTeaser }
     }
     if (weeklyChange < 0) {
-      return { message: '增肌期體重微降，留意熱量是否充足', emoji: '🍽️' }
+      return { message: '增肌期體重微降，留意熱量是否充足', emoji: '🍽️', teaser: freeTeaser }
     }
-    return { message: '體重持平，確認熱量盈餘是否足夠', emoji: '📊' }
+    return { message: '體重持平，確認熱量盈餘是否足夠', emoji: '📊', teaser: freeTeaser }
   }
 
   // ── Close to target weight ──
@@ -168,11 +174,11 @@ function getWeightFeedback(
   }
 
   // ── Default ──
-  return { message: '已記錄，保持規律量測', emoji: '✅' }
+  return { message: '已記錄，保持規律量測', emoji: '✅', teaser: freeTeaser }
 }
 
 export default function BodyComposition({
-  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, goalType, prepPhase, onMutate
+  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, goalType, prepPhase, tier, onMutate
 }: BodyCompositionProps) {
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
@@ -335,8 +341,12 @@ export default function BodyComposition({
       } else {
         onMutate()
       }
-      const feedback = getWeightFeedback(weight, bodyData, submittedDate, goalType, targetWeight, prepPhase, competitionDate)
+      const feedback = getWeightFeedback(weight, bodyData, submittedDate, goalType, targetWeight, prepPhase, competitionDate, tier)
       showToast(feedback.message, 'success', feedback.emoji)
+      if (feedback.teaser) {
+        const t = setTimeout(() => showToast(feedback.teaser!, 'info', '🔒'), 2500)
+        timerRefs.current.push(t)
+      }
       if (na?.adjusted) {
         const t1 = setTimeout(() => {
           setNutritionAdjusted({ message: na.message, calories: na.calories, protein: na.protein, carbs: na.carbs, fat: na.fat, adjusted: true })
@@ -491,6 +501,17 @@ export default function BodyComposition({
                 ? '記錄你的第一筆身體數據，開始追蹤變化'
                 : `再記錄 ${7 - bodyData.length} 天就能看到完整的趨勢線`}
             </p>
+          </div>
+        )}
+
+        {/* 免費用戶 AI 分析提示 */}
+        {tier === 'free' && bodyData.filter((r: any) => r.weight != null).length >= 7 && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 flex items-start gap-2">
+            <span className="text-sm mt-0.5">🔒</span>
+            <div>
+              <p className="text-xs text-blue-700 leading-relaxed">AI 已分析你 {bodyData.filter((r: any) => r.weight != null).length} 筆體重數據，偵測到趨勢模式</p>
+              <a href="/upgrade?from=free&feature=weight_analysis" className="text-xs text-blue-600 font-semibold hover:underline mt-1 inline-block">升級查看完整分析 →</a>
+            </div>
           </div>
         )}
 

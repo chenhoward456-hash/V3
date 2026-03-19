@@ -19,6 +19,7 @@ export interface UpgradeTriggerProps {
   mealsLogged?: number
   weightEntries?: Array<{ date: string; weight: number }>
   featureAttempted?: string
+  mealsLoggedDuringPlateau?: number
 }
 
 // ---------------------------------------------------------------------------
@@ -150,6 +151,7 @@ export default function UpgradeTrigger({
   mealsLogged,
   weightEntries,
   featureAttempted,
+  mealsLoggedDuringPlateau,
 }: UpgradeTriggerProps) {
   const [trigger, setTrigger] = useState<TriggerContent | null>(null)
   const [visible, setVisible] = useState(false)
@@ -164,6 +166,7 @@ export default function UpgradeTrigger({
       mealsLogged,
       weightEntries,
       featureAttempted,
+      mealsLoggedDuringPlateau,
     })
 
     if (result) {
@@ -175,7 +178,7 @@ export default function UpgradeTrigger({
       setTrigger(null)
       setVisible(false)
     }
-  }, [plan, daysTracked, mealsLogged, weightEntries, featureAttempted])
+  }, [plan, daysTracked, mealsLogged, weightEntries, featureAttempted, mealsLoggedDuringPlateau])
 
   // Track impression when the trigger becomes visible
   useEffect(() => {

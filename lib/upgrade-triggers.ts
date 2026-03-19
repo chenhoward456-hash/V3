@@ -16,6 +16,10 @@ export interface TriggerProps {
   mealsLogged?: number
   weightEntries?: Array<{ date: string; weight: number }>
   featureAttempted?: string
+  // Plateau metadata (populated internally by getActiveTrigger)
+  plateauDays?: number
+  plateauWeight?: number
+  mealsLoggedDuringPlateau?: number
 }
 
 export interface TriggerContent {
@@ -72,20 +76,46 @@ export function dismissTrigger(type: TriggerType): void {
 /**
  * Detect a weight plateau: weight stays within +/- 0.5 kg for 14+ consecutive
  * days based on the provided weight entries (sorted by date ascending).
+ *
+ * Returns metadata about the plateau instead of a simple boolean so callers
+ * can build data-rich messages.
  */
-function hasWeightPlateau(entries: Array<{ date: string; weight: number }>): boolean {
-  if (!entries || entries.length < 14) return false
+function hasWeightPlateau(
+  entries: Array<{ date: string; weight: number }>
+): { detected: boolean; days?: number; weight?: number } {
+  if (!entries || entries.length < 14) return { detected: false }
 
   // Sort by date ascending
   const sorted = [...entries].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   )
 
-  // Use the last 14 entries
-  const recent = sorted.slice(-14)
-  const baseWeight = recent[0].weight
+  // Walk backwards from the most recent entry to find the longest consecutive
+  // plateau run (within +/- 0.5 kg of the last entry's weight).
+  const lastEntry = sorted[sorted.length - 1]
+  const baseWeight = lastEntry.weight
+  let plateauStart = sorted.length - 1
 
-  return recent.every((e) => Math.abs(e.weight - baseWeight) <= 0.5)
+  for (let i = sorted.length - 2; i >= 0; i--) {
+    if (Math.abs(sorted[i].weight - baseWeight) <= 0.5) {
+      plateauStart = i
+    } else {
+      break
+    }
+  }
+
+  const plateauEntries = sorted.slice(plateauStart)
+  if (plateauEntries.length < 14) return { detected: false }
+
+  // Calculate actual calendar days between first and last plateau entry
+  const firstDate = new Date(plateauEntries[0].date).getTime()
+  const lastDate = new Date(plateauEntries[plateauEntries.length - 1].date).getTime()
+  const calendarDays = Math.round((lastDate - firstDate) / (1000 * 60 * 60 * 24))
+
+  // Round to one decimal for display
+  const displayWeight = Math.round(baseWeight * 10) / 10
+
+  return { detected: true, days: calendarDays, weight: displayWeight }
 }
 
 /**
@@ -102,7 +132,7 @@ export function shouldShowTrigger(type: TriggerType, props: TriggerProps): boole
       return (props.daysTracked ?? 0) >= 7
 
     case 'weight_plateau':
-      return hasWeightPlateau(props.weightEntries ?? [])
+      return hasWeightPlateau(props.weightEntries ?? []).detected
 
     case 'usage_milestone_30':
       return (props.mealsLogged ?? 0) >= 30
@@ -115,15 +145,28 @@ export function shouldShowTrigger(type: TriggerType, props: TriggerProps): boole
   }
 }
 
+/** Optional context for data-rich trigger messages. */
+export interface TriggerContext {
+  featureName?: string
+  plateauDays?: number
+  plateauWeight?: number
+  mealsLoggedDuringPlateau?: number
+}
+
 /**
  * Return the display content for a given trigger type.
  * For `feature_discovery`, the caller can optionally pass the feature name
- * to customise the message.
+ * to customise the message. For `weight_plateau`, plateau metadata produces
+ * a data-rich message with real numbers.
  */
 export function getTriggerContent(
   type: TriggerType,
-  featureName?: string
+  context?: TriggerContext | string
 ): TriggerContent {
+  // Backwards-compatible: if a plain string is passed, treat as featureName
+  const ctx: TriggerContext =
+    typeof context === 'string' ? { featureName: context } : context ?? {}
+
   switch (type) {
     case 'data_milestone_7d':
       return {
@@ -134,7 +177,23 @@ export function getTriggerContent(
         link: '/upgrade?from=free',
       }
 
-    case 'weight_plateau':
+    case 'weight_plateau': {
+      // Build a data-rich message when plateau metadata is available
+      const { plateauDays, plateauWeight, mealsLoggedDuringPlateau } = ctx
+      if (plateauDays && plateauWeight) {
+        const mealsPart =
+          mealsLoggedDuringPlateau && mealsLoggedDuringPlateau > 0
+            ? `AI 分析了你這段期間的 ${mealsLoggedDuringPlateau} 筆飲食紀錄，發現了可能的突破方向。`
+            : 'AI 能根據你的數據找出可能的突破方向。'
+        return {
+          type,
+          title: '體重停滯提醒',
+          message: `你在 ${plateauWeight}kg 已經穩定了 ${plateauDays} 天。${mealsPart}`,
+          cta: '讓 AI 幫你分析原因 →',
+          link: '/upgrade?from=free',
+        }
+      }
+      // Fallback when no metadata
       return {
         type,
         title: '體重停滯提醒',
@@ -142,6 +201,7 @@ export function getTriggerContent(
         cta: '讓 AI 幫你分析原因 →',
         link: '/upgrade?from=free',
       }
+    }
 
     case 'usage_milestone_30':
       return {
@@ -156,8 +216,8 @@ export function getTriggerContent(
       return {
         type,
         title: '進階功能',
-        message: featureName
-          ? `「${featureName}」需要自主管理方案。首月只要 NT$399。`
+        message: ctx.featureName
+          ? `「${ctx.featureName}」需要自主管理方案。首月只要 NT$399。`
           : '這個功能需要自主管理方案。首月只要 NT$399。',
         cta: '了解更多 →',
         link: '/remote',
@@ -187,10 +247,19 @@ export function getActiveTrigger(props: TriggerProps): TriggerContent | null {
 
   for (const type of TRIGGER_PRIORITY) {
     if (shouldShowTrigger(type, props) && !isDismissed(type)) {
-      return getTriggerContent(
-        type,
-        type === 'feature_discovery' ? props.featureAttempted : undefined
-      )
+      // Build context depending on trigger type
+      if (type === 'weight_plateau') {
+        const plateau = hasWeightPlateau(props.weightEntries ?? [])
+        return getTriggerContent(type, {
+          plateauDays: plateau.days ?? props.plateauDays,
+          plateauWeight: plateau.weight ?? props.plateauWeight,
+          mealsLoggedDuringPlateau: props.mealsLoggedDuringPlateau,
+        })
+      }
+      if (type === 'feature_discovery') {
+        return getTriggerContent(type, { featureName: props.featureAttempted })
+      }
+      return getTriggerContent(type)
     }
   }
 
