@@ -80,6 +80,8 @@ export async function POST(request: NextRequest) {
     const parsed = validateBody(trainingLogSchema, body)
     if (!parsed.success) return parsed.response
     const { clientId, date, training_type, duration, sets, rpe, note } = parsed.data
+    const compound_weight = body.compound_weight ?? null
+    const compound_reps = body.compound_reps ?? null
 
     // Post-schema conditional validation
     if (training_type !== 'rest') {
@@ -182,10 +184,14 @@ export async function POST(request: NextRequest) {
       upsertData.duration = null
       upsertData.sets = null
       upsertData.rpe = null
+      upsertData.compound_weight = null
+      upsertData.compound_reps = null
     } else {
       upsertData.duration = duration ?? null
       upsertData.sets = sets ?? null
       upsertData.rpe = rpe ?? null
+      upsertData.compound_weight = typeof compound_weight === 'number' ? compound_weight : null
+      upsertData.compound_reps = typeof compound_reps === 'number' ? compound_reps : null
     }
 
     const { data: training, error: trainingError } = await supabaseAdmin

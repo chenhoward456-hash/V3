@@ -65,9 +65,10 @@ interface TrainingLogProps {
   carbsTrainingDay?: number | null
   carbsRestDay?: number | null
   simpleMode?: boolean
+  todayPlanType?: string | null
 }
 
-export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode }: TrainingLogProps) {
+export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode, todayPlanType }: TrainingLogProps) {
   const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
   const { showToast } = useToast()
@@ -93,10 +94,12 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   }, [clientId])
 
   const [form, setForm] = useState({
-    training_type: todayTraining?.training_type ?? null as string | null,
+    training_type: todayTraining?.training_type ?? todayPlanType ?? null as string | null,
     duration: todayTraining?.duration ?? null as number | null,
     sets: todayTraining?.sets ?? null as number | null,
     rpe: todayTraining?.rpe ?? null as number | null,
+    compound_weight: todayTraining?.compound_weight ?? null as number | null,
+    compound_reps: todayTraining?.compound_reps ?? null as number | null,
     note: todayTraining?.note || ''
   })
 
@@ -107,16 +110,35 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         duration: todayTraining.duration ?? null,
         sets: todayTraining.sets ?? null,
         rpe: todayTraining.rpe ?? null,
+        compound_weight: todayTraining.compound_weight ?? null,
+        compound_reps: todayTraining.compound_reps ?? null,
         note: todayTraining.note || '',
       })
     } else {
-      setForm({ training_type: null, duration: null, sets: null, rpe: null, note: '' })
+      setForm({ training_type: todayPlanType ?? null, duration: null, sets: null, rpe: null, compound_weight: null, compound_reps: null, note: '' })
     }
-  }, [todayTraining])
+  }, [todayTraining, todayPlanType])
 
   const isRest = form.training_type === 'rest'
   const isCardio = form.training_type === 'cardio'
   const hasCarbCycling = !!(carbsTrainingDay && carbsRestDay)
+
+  // 主項名稱對應（根據訓練類型）
+  const COMPOUND_LIFT: Record<string, string> = {
+    push: '臥推', pull: '槓鈴划船', legs: '深蹲',
+    chest: '臥推', shoulder: '肩推', arms: '彎舉',
+    full_body: '深蹲',
+  }
+  const compoundLiftName = form.training_type ? COMPOUND_LIFT[form.training_type] : null
+
+  // 主項歷史紀錄（最近 5 次同類型，有填 compound_weight 的）
+  const compoundHistory = useMemo(() => {
+    if (!form.training_type || !compoundLiftName) return []
+    return (trainingLogs || [])
+      .filter((l: any) => l.training_type === form.training_type && l.compound_weight != null && l.date !== today)
+      .sort((a: any, b: any) => b.date.localeCompare(a.date))
+      .slice(0, 5)
+  }, [form.training_type, trainingLogs, today, compoundLiftName])
 
   // ===== 上次同類型訓練 =====
   const lastSameType = useMemo(() => {
@@ -155,6 +177,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           duration: isRest ? null : form.duration,
           sets: isRest ? null : form.sets,
           rpe: isRest ? null : (form.rpe || null),
+          compound_weight: isRest || isCardio ? null : (form.compound_weight || null),
+          compound_reps: isRest || isCardio ? null : (form.compound_reps || null),
           note: form.note || null
         })
       })
@@ -624,6 +648,50 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 主項重量追蹤（漸進式超負荷） */}
+        {(!simpleMode || showTrainingAdvanced) && !isRest && !isCardio && compoundLiftName && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <p className="text-sm font-semibold text-amber-800 mb-2">🏆 主項：{compoundLiftName}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">重量（kg）</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="2.5"
+                  value={form.compound_weight ?? ''}
+                  onChange={(e) => setForm(prev => ({ ...prev, compound_weight: e.target.value ? Number(e.target.value) : null }))}
+                  className="w-full px-3 py-2.5 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                  placeholder="100"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">次數</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={form.compound_reps ?? ''}
+                  onChange={(e) => setForm(prev => ({ ...prev, compound_reps: e.target.value ? Number(e.target.value) : null }))}
+                  className="w-full px-3 py-2.5 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                  placeholder="8"
+                />
+              </div>
+            </div>
+            {compoundHistory.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-amber-200">
+                <p className="text-[10px] text-amber-600 mb-1">最近紀錄</p>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                  {compoundHistory.map((h: any, i: number) => (
+                    <span key={i} className="text-[11px] text-gray-600">
+                      {h.date.slice(5)} <span className="font-medium">{h.compound_weight}kg×{h.compound_reps}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -362,6 +362,32 @@ export default function ClientDashboard() {
     ).length
   }, [weightEntriesForTrigger, clientData?.nutritionLogs])
 
+  // 訓練計畫 → 今天的 training_type 預設值
+  const todayPlanType = useMemo(() => {
+    const plan = clientData?.client?.training_plan
+    if (!plan?.days?.length) return null
+    const now = new Date()
+    const taipeiStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
+    const taipeiDate = new Date(taipeiStr + 'T12:00:00')
+    const jsDay = taipeiDate.getDay()
+    const dow = jsDay === 0 ? 7 : jsDay
+    const todayPlan = plan.days.find((d: any) => d.dayOfWeek === dow)
+    if (!todayPlan) return 'rest'
+    // 將課表 label 映射到 training_type
+    const label = (todayPlan.label || '').toLowerCase()
+    if (/push|推/.test(label)) return 'push'
+    if (/pull|拉|背/.test(label)) return 'pull'
+    if (/leg|腿|下肢/.test(label)) return 'legs'
+    if (/chest|胸/.test(label)) return 'chest'
+    if (/shoulder|肩/.test(label)) return 'shoulder'
+    if (/arm|手臂|二頭|三頭/.test(label)) return 'arms'
+    if (/full|全身/.test(label)) return 'full_body'
+    if (/cardio|有氧|跑/.test(label)) return 'cardio'
+    if (/rest|休息/.test(label)) return 'rest'
+    if (/upper|上肢/.test(label)) return 'push' // 上肢日預設推
+    return null
+  }, [clientData?.client?.training_plan])
+
   // 生成補品建議（必須在所有條件 return 之前，遵守 React Hooks 規則）
   const supplementSuggestions = useMemo(() => {
     const c = clientData?.client
@@ -1054,6 +1080,7 @@ export default function ClientDashboard() {
               carbsTrainingDay={c.carbs_training_day}
               carbsRestDay={c.carbs_rest_day}
               simpleMode={c.simple_mode}
+              todayPlanType={todayPlanType}
             />
           </CollapsibleSection>
         )}
