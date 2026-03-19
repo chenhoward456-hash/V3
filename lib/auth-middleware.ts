@@ -29,12 +29,16 @@ const supabase = createClient(
 // ===== Rate Limiting (Upstash + in-memory fallback) =====
 
 // Upstash Redis（沒有環境變數時為 null，自動 fallback 到 in-memory）
-const upstashRedis = process.env.UPSTASH_REDIS_REST_URL
-  ? new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-    })
-  : null
+let upstashRedis: Redis | null = null
+try {
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN
+  if (redisUrl && redisToken && redisUrl.startsWith('https')) {
+    upstashRedis = new Redis({ url: redisUrl, token: redisToken })
+  }
+} catch {
+  // Upstash 初始化失敗（例如 build 階段無環境變數），使用 in-memory fallback
+}
 
 // 快取不同設定的 limiter，避免重複建立
 const limiterCache = new Map<string, Ratelimit>()
