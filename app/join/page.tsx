@@ -129,6 +129,7 @@ function JoinPageInner() {
     const weightNum = weight ? parseFloat(weight) : null
     if (weightNum && (weightNum < 30 || weightNum > 300)) { setError('體重請輸入 30-300 kg 之間'); return }
     if (!weightNum) { setError('請輸入目前體重'); return }
+    if (!gender) { setError('請選擇性別'); return }
 
     setError('')
     setIsSubmitting(true)
@@ -508,44 +509,40 @@ function JoinPageInner() {
                 </div>
               )}
 
-              {/* 性別（免費版下放到選填區） */}
-              {!isFree && (
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1.5">性別</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {(['男性', '女性'] as const).map((g) => (
-                      <button
-                        key={g}
-                        type="button"
-                        onClick={() => setGender(g)}
-                        className={`py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
-                          gender === g
-                            ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
-                            : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
-                        }`}
-                      >
-                        {g === '男性' ? '♂ 男性' : '♀ 女性'}
-                      </button>
-                    ))}
-                  </div>
+              {/* 性別（所有方案都在主表單顯示，必填） */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">性別 *</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {(['男性', '女性'] as const).map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGender(g)}
+                      className={`py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
+                        gender === g
+                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      {g === '男性' ? '♂ 男性' : '♀ 女性'}
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
 
-              {/* 年齡（付費版才在主表單顯示） */}
-              {!isFree && (
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                    年齡 <span className="text-gray-400 font-normal">— 選填</span>
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="例如 28"
-                    value={age}
-                    onChange={(e) => setAge(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
-                  />
-                </div>
-              )}
+              {/* 年齡（所有方案都在主表單顯示，選填） */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                  年齡 <span className="text-gray-400 font-normal">— 選填，影響 TDEE 計算</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="例如 28"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                />
+              </div>
 
               {/* 目標 */}
               <div>
@@ -615,47 +612,7 @@ function JoinPageInner() {
                 </button>
               )}
 
-              {/* 免費版折疊區包含：性別、年齡、體脂率、目標體重、目標體脂、活動量、訓練天數 */}
-              {isFree && showOptionalFields && (
-                <>
-                  {/* 性別 */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                      性別 <span className="text-gray-400 font-normal">— 選填</span>
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {(['男性', '女性'] as const).map((g) => (
-                        <button
-                          key={g}
-                          type="button"
-                          onClick={() => setGender(g)}
-                          className={`py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
-                            gender === g
-                              ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
-                              : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
-                          }`}
-                        >
-                          {g === '男性' ? '♂ 男性' : '♀ 女性'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 年齡 */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                      年齡 <span className="text-gray-400 font-normal">— 選填</span>
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="例如 28"
-                      value={age}
-                      onChange={(e) => setAge(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
-                    />
-                  </div>
-                </>
-              )}
+              {/* 免費版折疊區包含：體脂率、目標體重、目標體脂、活動量、訓練天數 */}
 
               {/* 體脂率（付費版顯示 or 免費版展開時顯示） */}
               {(!isFree || showOptionalFields) && (
