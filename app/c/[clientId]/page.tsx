@@ -30,6 +30,7 @@ import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManagedNutrition'), { ssr: false })
+const NutritionStrategyCard = dynamic(() => import('@/components/client/NutritionStrategyCard'), { ssr: false })
 import PwaPrompt from '@/components/client/PwaPrompt'
 import ClientHeader from '@/components/client/ClientHeader'
 import HealthScoreBanner from '@/components/client/HealthScoreBanner'
@@ -970,6 +971,30 @@ export default function ClientDashboard() {
             summaryLine={todayNutrition ? `${todayNutrition.calories ? `${todayNutrition.calories} kcal` : ''}${c.calories_target ? ` / ${c.calories_target} kcal` : ''}${todayNutrition.compliant === true ? ' ✓ 合規' : todayNutrition.compliant === false ? ' ✗ 未合規' : ''}` : undefined}
             isToday={isToday}
           >
+            {/* 飲食策略摘要卡片 */}
+            <NutritionStrategyCard
+              client={{
+                goal_type: c.goal_type,
+                calories_target: c.calories_target,
+                protein_target: c.protein_target,
+                carbs_target: c.carbs_target,
+                fat_target: c.fat_target,
+                carbs_training_day: c.carbs_training_day,
+                carbs_rest_day: c.carbs_rest_day,
+                gene_depression_risk: c.gene_depression_risk as string | null,
+                subscription_tier: c.subscription_tier || 'free',
+              }}
+              labMacroModifiers={
+                nutritionEngineSuggestion?.labMacroModifiers?.length
+                  ? nutritionEngineSuggestion.labMacroModifiers.map((m: { nutrient: string; direction: string; reason: string }) => ({
+                      nutrient: m.nutrient,
+                      direction: m.direction,
+                      reason: m.reason,
+                    }))
+                  : null
+              }
+              weeklyAdjustmentCount={0}
+            />
             {/* 一般學員（非自主管理、非免費）的飲食目標卡片 */}
             {!isCompetition && !isSelfManaged && !isFree && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
               <DailyNutritionTarget
