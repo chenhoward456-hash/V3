@@ -375,9 +375,10 @@ export default function ClientDashboard() {
     if (!todayPlan) return 'rest'
     // 將課表 label 映射到 training_type
     const label = (todayPlan.label || '').toLowerCase()
+    if (/upper|上肢/.test(label)) return 'upper_body'
+    if (/lower|下肢/.test(label)) return 'legs'
     if (/push|推/.test(label)) return 'push'
     if (/pull|拉|背/.test(label)) return 'pull'
-    if (/lower|下肢/.test(label)) return 'lower_body'
     if (/leg|腿/.test(label)) return 'legs'
     if (/chest|胸/.test(label)) return 'chest'
     if (/shoulder|肩/.test(label)) return 'shoulder'
@@ -385,7 +386,6 @@ export default function ClientDashboard() {
     if (/full|全身/.test(label)) return 'full_body'
     if (/cardio|有氧|跑/.test(label)) return 'cardio'
     if (/rest|休息/.test(label)) return 'rest'
-    if (/upper|上肢/.test(label)) return 'upper_body'
     return null
   }, [clientData?.client?.training_plan])
 
