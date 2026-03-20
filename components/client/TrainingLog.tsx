@@ -66,9 +66,10 @@ interface TrainingLogProps {
   carbsRestDay?: number | null
   simpleMode?: boolean
   todayPlanType?: string | null
+  tier?: string
 }
 
-export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode, todayPlanType }: TrainingLogProps) {
+export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode, todayPlanType, tier }: TrainingLogProps) {
   const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
   const { showToast } = useToast()
@@ -489,6 +490,11 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                   <span>容量 {mode.volumeAdjustment > 0 ? '+' : ''}{mode.volumeAdjustment}%</span>
                 )}
               </div>
+              {tier === 'self_managed' && (
+                <p className="text-[10px] text-blue-500 mb-2">
+                  🔒 <a href="/upgrade?from=self_managed&feature=personalized_sets" className="hover:underline">升級教練指導，獲得根據你的經驗、恢復和基因計算的個人化建議 →</a>
+                </p>
+              )}
               <ul className="space-y-1 mb-2">
                 {mode.suggestions.map((s, i) => (
                   <li key={i} className="text-xs opacity-80">- {s}</li>
