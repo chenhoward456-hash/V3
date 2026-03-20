@@ -377,14 +377,15 @@ export default function ClientDashboard() {
     const label = (todayPlan.label || '').toLowerCase()
     if (/push|推/.test(label)) return 'push'
     if (/pull|拉|背/.test(label)) return 'pull'
-    if (/leg|腿|下肢/.test(label)) return 'legs'
+    if (/lower|下肢/.test(label)) return 'lower_body'
+    if (/leg|腿/.test(label)) return 'legs'
     if (/chest|胸/.test(label)) return 'chest'
     if (/shoulder|肩/.test(label)) return 'shoulder'
     if (/arm|手臂|二頭|三頭/.test(label)) return 'arms'
     if (/full|全身/.test(label)) return 'full_body'
     if (/cardio|有氧|跑/.test(label)) return 'cardio'
     if (/rest|休息/.test(label)) return 'rest'
-    if (/upper|上肢/.test(label)) return 'push' // 上肢日預設推
+    if (/upper|上肢/.test(label)) return 'upper_body'
     return null
   }, [clientData?.client?.training_plan])
 

@@ -127,7 +127,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   const COMPOUND_LIFT: Record<string, string> = {
     push: '臥推', pull: '槓鈴划船', legs: '深蹲',
     chest: '臥推', shoulder: '肩推', arms: '彎舉',
-    full_body: '深蹲',
+    full_body: '深蹲', upper_body: '臥推', lower_body: '深蹲',
   }
   const compoundLiftName = form.training_type ? COMPOUND_LIFT[form.training_type] : null
 

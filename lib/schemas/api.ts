@@ -12,7 +12,7 @@ export const trainingLogSchema = z.object({
   clientId: uniqueCodeSchema,
   date: dateSchema,
   training_type: z.enum(
-    ['push', 'pull', 'legs', 'full_body', 'cardio', 'rest', 'chest', 'shoulder', 'arms'],
+    ['push', 'pull', 'legs', 'full_body', 'upper_body', 'lower_body', 'cardio', 'rest', 'chest', 'shoulder', 'arms'],
     { error: '訓練類型無效' }
   ),
   duration: z.number().positive('訓練時長必須大於 0').nullable().optional(),
