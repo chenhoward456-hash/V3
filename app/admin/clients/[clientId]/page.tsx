@@ -81,6 +81,7 @@ interface Client {
   gene_notes: string | null
 
   training_plan: any | null
+  training_experience: 'beginner' | 'intermediate' | 'advanced' | null
 
   lab_results: LabResult[]
   supplements: Supplement[]
@@ -170,6 +171,7 @@ export default function ClientEditor() {
         gene_depression_risk: null,
         gene_notes: null,
         training_plan: null,
+        training_experience: 'intermediate',
 
         lab_results: [],
         supplements: []
@@ -273,6 +275,7 @@ export default function ClientEditor() {
         gene_depression_risk: client.gene_depression_risk || null,
         gene_notes: client.gene_notes || null,
         training_plan: client.training_plan || null,
+        training_experience: client.training_experience || 'intermediate',
         // coach_macro_override 由後端自動處理（修改 macro 時自動鎖定）
         // 只有教練明確解鎖時才送 null
         ...(client.coach_macro_override === null && clientId !== 'new'
@@ -1399,6 +1402,34 @@ export default function ClientEditor() {
                 </div>
               </div>
             </div>
+
+            {/* 訓練經驗等級 */}
+            {client.training_enabled && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-lg font-medium text-gray-900 mb-2">📊 訓練經驗</h2>
+                <p className="text-xs text-gray-400 mb-3">影響建議組數：新手多練動作、進階少量高強度</p>
+                <div className="flex gap-2">
+                  {([
+                    { value: 'beginner', label: '新手（<1年）', desc: '組數 +15%' },
+                    { value: 'intermediate', label: '中階（1-3年）', desc: '正常量' },
+                    { value: 'advanced', label: '進階（3年+）', desc: '組數 -15%' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => updateClient('training_experience', opt.value)}
+                      className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                        client.training_experience === opt.value
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      <div>{opt.label}</div>
+                      <div className="text-[10px] mt-0.5 opacity-75">{opt.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 訓練計畫編輯器 */}
             {client.training_enabled && (

@@ -69,6 +69,7 @@ export interface Client {
   gene_depression_risk: string | null
   gene_notes: string | null
   training_plan: TrainingPlan | null
+  training_experience: 'beginner' | 'intermediate' | 'advanced' | null
   line_user_id: string | null
   created_at: string
   height: number | null

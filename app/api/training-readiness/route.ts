@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     // 查客戶資料（含基因、目標、備賽階段、減脂起始日）
     const { data: client } = await supabaseAdmin
       .from('clients')
-      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, client_mode, competition_enabled, diet_start_date, gender, competition_date')
+      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, client_mode, competition_enabled, diet_start_date, gender, competition_date, training_experience, training_plan')
       .eq('unique_code', clientId)
       .single()
 
@@ -256,6 +256,23 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 呼叫訓練模式引擎 ──
+    // 計算今日課表總組數（用於動態建議組數）
+    let planTotalSets: number | null = null
+    if (client.training_plan?.days?.length) {
+      const now = new Date()
+      const taipeiStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
+      const taipeiDate = new Date(taipeiStr + 'T12:00:00')
+      const jsDay = taipeiDate.getDay()
+      const dow = jsDay === 0 ? 7 : jsDay
+      const todayPlan = client.training_plan.days.find((d: any) => d.dayOfWeek === dow)
+      if (todayPlan?.exercises?.length) {
+        planTotalSets = todayPlan.exercises.reduce((sum: number, ex: any) => {
+          const sets = parseInt(ex.sets)
+          return sum + (isNaN(sets) ? 0 : sets)
+        }, 0)
+      }
+    }
+
     const modeRecommendation = getTrainingModeRecommendation({
       baseAdvice: advice,
       goalType: client.goal_type as 'cut' | 'bulk' | 'recomp' | null,
@@ -267,6 +284,8 @@ export async function GET(request: NextRequest) {
       recoveryAssessment: advice.recoveryAssessment,
       weeklyWeightChangePercent,
       peakWeekDaysOut,
+      trainingExperience: client.training_experience as 'beginner' | 'intermediate' | 'advanced' | null,
+      planTotalSets,
     })
 
     return NextResponse.json({ ...advice, modeRecommendation })

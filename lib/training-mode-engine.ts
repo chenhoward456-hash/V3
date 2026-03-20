@@ -401,6 +401,10 @@ export interface TrainingModeInput {
   weeklyWeightChangePercent?: number | null
   /** Peak Week 距比賽日天數（7=最遠, 0=比賽日），僅 peak_week 階段有值 */
   peakWeekDaysOut?: number | null
+  /** 學員訓練經驗（影響建議組數）*/
+  trainingExperience?: 'beginner' | 'intermediate' | 'advanced' | null
+  /** 今日課表總組數（有課表時由前端計算傳入）*/
+  planTotalSets?: number | null
 }
 
 export function getTrainingModeRecommendation(input: TrainingModeInput): TrainingModeRecommendation {
@@ -859,7 +863,41 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
     }
   }
 
-  return buildRecommendation(bestMode, config, reasons, geneticCorrections, confidence, sameSplitWarning)
+  return buildRecommendation(bestMode, config, reasons, geneticCorrections, confidence, sameSplitWarning, input)
+}
+
+/**
+ * 動態計算建議組數：課表組數 × 經驗修正 × 恢復修正 × 基因修正
+ * 沒有課表時 fallback 到 MODE_CONFIG 的固定值
+ */
+function calculateDynamicSets(
+  config: ModeConfig,
+  input?: TrainingModeInput,
+): string {
+  const planSets = input?.planTotalSets
+  if (!planSets || planSets <= 0) return config.suggestedSets // fallback
+
+  // 1. 經驗修正：新手多練動作，進階少量高強度
+  const expMultiplier = input.trainingExperience === 'beginner' ? 1.15
+    : input.trainingExperience === 'advanced' ? 0.85
+    : 1.0
+
+  // 2. 恢復修正（用 volumeAdjustment）
+  const recoveryMultiplier = 1 + (config.volumeAdjustment / 100)
+
+  // 3. 基因修正（5-HTTLPR 血清素轉運體）
+  const serotoninRisk = input.geneticProfile ? getSerotoninRiskLevel(input.geneticProfile) : 'low'
+  const isCutting = input.goalType === 'cut'
+  const geneMultiplier = serotoninRisk === 'high' ? (isCutting ? 0.80 : 0.85)
+    : serotoninRisk === 'moderate' ? (isCutting ? 0.90 : 0.95)
+    : 1.0
+
+  const adjusted = Math.round(planSets * expMultiplier * recoveryMultiplier * geneMultiplier)
+  const low = Math.max(0, adjusted - 2)
+  const high = adjusted + 2
+
+  if (low <= 0) return `${high} 組以內`
+  return `${low}-${high} 組`
 }
 
 function buildRecommendation(
@@ -869,6 +907,7 @@ function buildRecommendation(
   geneticCorrections: GeneticTrainingCorrection[],
   confidence: 'high' | 'medium' | 'low',
   sameSplitWarning?: string | null,
+  input?: TrainingModeInput,
 ): TrainingModeRecommendation {
   return {
     recommendedMode: mode,
@@ -877,7 +916,7 @@ function buildRecommendation(
     modeColor: config.color,
     volumeAdjustment: config.volumeAdjustment,
     targetRpeRange: config.rpeRange,
-    suggestedSets: config.suggestedSets,
+    suggestedSets: calculateDynamicSets(config, input),
     suggestions: config.suggestions,
     focusAreas: config.focusAreas,
     reasons,
