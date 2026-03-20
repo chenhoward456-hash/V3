@@ -171,7 +171,7 @@ describe('UpgradeGate', () => {
     )
 
     // Default self_managed benefits include these
-    expect(screen.getByText('AI 根據你的真實數據回答，不是通用建議')).toBeInTheDocument()
+    expect(screen.getByText('卡住時 AI 告訴你原因，不用自己猜')).toBeInTheDocument()
     expect(screen.getByText('訓練 + 身心狀態完整追蹤')).toBeInTheDocument()
   })
 

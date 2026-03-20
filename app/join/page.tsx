@@ -24,12 +24,11 @@ const PLANS: Record<Tier, {
     price: 0,
     priceLabel: '0',
     unit: '',
-    description: '先體驗系統，滿意再升級',
+    description: '你一直想改變，但不知道從哪開始',
     features: [
-      '體重 / 體態紀錄與趨勢圖表',
-      '每日飲食追蹤',
-      'TDEE + 巨量營養素自動計算',
-      '升級解鎖訓練追蹤、感受紀錄等',
+      '記錄體重，看 7 天趨勢有沒有在動',
+      '記錄飲食，系統算出你該吃多少',
+      '不綁卡、不推銷，純粹讓你體驗',
     ],
     badge: '推薦先試',
   },
@@ -40,12 +39,12 @@ const PLANS: Record<Tier, {
     unit: '/月',
     promoPrice: 399,
     promoLabel: '首月 $399',
-    description: 'AI 系統完整存取，自動追蹤與分析',
+    description: '你會記錄，但不知道記完之後要幹嘛',
     features: [
-      'AI 私人顧問 + 訓練 / 感受追蹤',
-      '自適應 TDEE 每週自動校正',
-      '碳水循環 & Refeed 智能排程',
-      '停滯期自動偵測 + 突破建議',
+      '卡住時 AI 告訴你原因，不用自己猜',
+      '每週自動調整熱量，不用重新算',
+      '訓練日多吃、休息日少吃，系統自動排',
+      '你只管執行，判斷的事交給系統',
     ],
   },
   coached: {
@@ -53,12 +52,12 @@ const PLANS: Record<Tier, {
     price: 2999,
     priceLabel: '2,999',
     unit: '/月',
-    description: 'AI 系統 + CSCS 教練每週指導',
+    description: '你不缺努力，缺的是有人確認方向對不對',
     features: [
-      '包含自主管理所有功能',
-      'CSCS 教練每週數據審閱',
-      'LINE 一對一營養 / 訓練諮詢',
-      '完整補品管理與血檢追蹤',
+      '教練每週看你的數據，告訴你哪裡要調',
+      '根據你的血檢和基因，給只屬於你的建議',
+      'LINE 隨時問，不用等、不用猜、不用自己扛',
+      '你負責執行，教練負責確保方向正確',
     ],
     highlight: true,
     badge: '全台適用',
@@ -297,10 +296,10 @@ function JoinPageInner() {
           自助加入
         </div>
         <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: '#1e3a5f' }}>
-          選擇你的方案
+          找到適合你的方式
         </h1>
         <p className="text-gray-500 text-sm md:text-base max-w-xl mx-auto">
-          免費體驗系統功能，不需信用卡。滿意再升級付費方案。
+          不確定的話，先從免費開始。不綁卡，隨時升級。
         </p>
       </div>
 
