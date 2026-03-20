@@ -27,6 +27,7 @@ interface ModeRecommendation {
   volumeAdjustment: number
   targetRpeRange: [number, number]
   suggestedSets: string
+  clientMessage: string
   suggestions: string[]
   focusAreas: string[]
   reasons: ModeReason[]
@@ -475,60 +476,60 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           const totalReasons = mode.reasons.length + mode.geneticTrainingCorrections.length
           return (
             <div className={`rounded-xl border px-4 py-3 text-sm ${colors.bg} ${colors.text} ${colors.border}`}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-medium">
-                  {mode.modeEmoji} 建議模式：{mode.modeLabel}
-                </span>
-                <span className="text-xs opacity-70">
-                  {mode.confidence === 'high' ? '信心高' : mode.confidence === 'medium' ? '信心中' : '信心低'}
-                </span>
+              {/* 主訊息：一句話告訴學員今天怎麼練 */}
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">{mode.modeEmoji}</span>
+                <p className="font-medium">{mode.clientMessage}</p>
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs opacity-80 mb-2">
-                <span>目標 RPE {mode.targetRpeRange[0]}-{mode.targetRpeRange[1]}</span>
-                <span>建議 {mode.suggestedSets}</span>
-                {mode.volumeAdjustment !== 0 && (
-                  <span>容量 {mode.volumeAdjustment > 0 ? '+' : ''}{mode.volumeAdjustment}%</span>
-                )}
+
+              {/* 建議組數 */}
+              <div className="flex flex-wrap gap-1 mb-2">
+                <span className={`text-[10px] ${colors.tagBg} rounded px-1.5 py-0.5`}>建議 {mode.suggestedSets}</span>
+                {mode.focusAreas.map((area, i) => (
+                  <span key={i} className={`text-[10px] ${colors.tagBg} rounded px-1.5 py-0.5`}>{area}</span>
+                ))}
               </div>
+
               {tier === 'self_managed' && (
                 <p className="text-[10px] text-blue-500 mb-2">
                   🔒 <a href="/upgrade?from=self_managed&feature=personalized_sets" className="hover:underline">升級教練指導，獲得根據你的經驗、恢復和基因計算的個人化建議 →</a>
                 </p>
               )}
-              <ul className="space-y-1 mb-2">
-                {mode.suggestions.map((s, i) => (
-                  <li key={i} className="text-xs opacity-80">- {s}</li>
-                ))}
-              </ul>
+
               {mode.sameSplitWarning && (
                 <div className="text-xs bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-3 py-2 mb-2">
                   ⚠️ {mode.sameSplitWarning}
                 </div>
               )}
-              <div className="flex flex-wrap gap-1 mb-2">
-                {mode.focusAreas.map((area, i) => (
-                  <span key={i} className={`text-[10px] ${colors.tagBg} rounded px-1.5 py-0.5`}>{area}</span>
-                ))}
-              </div>
-              {totalReasons > 0 && (
-                <details className="text-xs">
-                  <summary className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity">
-                    查看分析依據（{totalReasons} 項信號）
-                  </summary>
-                  <div className="mt-2 space-y-1">
-                    {mode.reasons.map((r, i) => (
-                      <div key={i} className="opacity-80">
-                        {r.emoji} {r.description}
-                      </div>
-                    ))}
-                    {mode.geneticTrainingCorrections.map((g, i) => (
-                      <div key={`g-${i}`} className="text-purple-700">
-                        {g.emoji} {g.gene} {g.variant}：{g.effect}
-                      </div>
-                    ))}
+              <details className="text-xs">
+                <summary className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity">
+                  ▶ 查看分析依據（{totalReasons} 項信號）
+                </summary>
+                <div className="mt-2 space-y-2">
+                  {/* 技術參數 */}
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 opacity-70">
+                    <span>RPE {mode.targetRpeRange[0]}-{mode.targetRpeRange[1]}</span>
+                    {mode.volumeAdjustment !== 0 && (
+                      <span>容量 {mode.volumeAdjustment > 0 ? '+' : ''}{mode.volumeAdjustment}%</span>
+                    )}
                   </div>
-                </details>
-              )}
+                  {/* 技術建議 */}
+                  {mode.suggestions.map((s, i) => (
+                    <div key={i} className="opacity-80">- {s}</div>
+                  ))}
+                  {/* 信號依據 */}
+                  {mode.reasons.map((r, i) => (
+                    <div key={`r-${i}`} className="opacity-80">
+                      {r.emoji} {r.description}
+                    </div>
+                  ))}
+                  {mode.geneticTrainingCorrections.map((g, i) => (
+                    <div key={`g-${i}`} className="text-purple-700">
+                      {g.emoji} {g.gene} {g.variant}：{g.effect}
+                    </div>
+                  ))}
+                </div>
+              </details>
             </div>
           )
         })()}

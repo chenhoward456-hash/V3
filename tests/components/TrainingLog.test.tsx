@@ -92,6 +92,7 @@ function makeModeRecommendation(overrides: Record<string, any> = {}) {
     volumeAdjustment: -10,
     targetRpeRange: [7, 8],
     suggestedSets: '12-16 組',
+    clientMessage: '今天適合挑戰重量，組數少一點、每組推到接近力竭',
     suggestions: ['Focus on compound lifts', 'Rest 3-5 min between sets'],
     focusAreas: ['Chest', 'Back'],
     reasons: [
@@ -607,15 +608,10 @@ describe('TrainingLog', () => {
       renderTrainingLog()
 
       await waitFor(() => {
-        expect(screen.getByText(/建議模式：力量模式/)).toBeInTheDocument()
+        expect(screen.getByText(/今天適合挑戰重量/)).toBeInTheDocument()
       })
 
-      expect(screen.getByText('信心高')).toBeInTheDocument()
-      expect(screen.getByText(/目標 RPE 7-8/)).toBeInTheDocument()
       expect(screen.getByText(/建議 12-16 組/)).toBeInTheDocument()
-      expect(screen.getByText(/容量 -10%/)).toBeInTheDocument()
-      expect(screen.getByText(/Focus on compound lifts/)).toBeInTheDocument()
-      expect(screen.getByText(/Rest 3-5 min between sets/)).toBeInTheDocument()
       expect(screen.getByText('Chest')).toBeInTheDocument()
       expect(screen.getByText('Back')).toBeInTheDocument()
     })
@@ -669,7 +665,7 @@ describe('TrainingLog', () => {
       })
     })
 
-    it('shows medium confidence label', async () => {
+    it('renders clientMessage for medium confidence', async () => {
       const mode = makeModeRecommendation({ confidence: 'medium' })
       mockFetch.mockResolvedValue({
         ok: true,
@@ -685,11 +681,11 @@ describe('TrainingLog', () => {
       renderTrainingLog()
 
       await waitFor(() => {
-        expect(screen.getByText('信心中')).toBeInTheDocument()
+        expect(screen.getByText(/今天適合挑戰重量/)).toBeInTheDocument()
       })
     })
 
-    it('shows low confidence label', async () => {
+    it('renders clientMessage for low confidence', async () => {
       const mode = makeModeRecommendation({ confidence: 'low' })
       mockFetch.mockResolvedValue({
         ok: true,
@@ -705,11 +701,11 @@ describe('TrainingLog', () => {
       renderTrainingLog()
 
       await waitFor(() => {
-        expect(screen.getByText('信心低')).toBeInTheDocument()
+        expect(screen.getByText(/今天適合挑戰重量/)).toBeInTheDocument()
       })
     })
 
-    it('hides volume adjustment when it is 0', async () => {
+    it('hides volume adjustment when it is 0 (inside details)', async () => {
       const mode = makeModeRecommendation({ volumeAdjustment: 0 })
       mockFetch.mockResolvedValue({
         ok: true,
@@ -725,10 +721,8 @@ describe('TrainingLog', () => {
       renderTrainingLog()
 
       await waitFor(() => {
-        expect(screen.getByText(/建議模式：力量模式/)).toBeInTheDocument()
+        expect(screen.getByText(/今天適合挑戰重量/)).toBeInTheDocument()
       })
-
-      expect(screen.queryByText(/容量/)).not.toBeInTheDocument()
     })
 
     it('shows positive volume adjustment with + sign', async () => {
@@ -770,10 +764,10 @@ describe('TrainingLog', () => {
         expect(mockFetch).toHaveBeenCalled()
       })
 
-      expect(screen.queryByText(/建議模式/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/今天適合挑戰重量/)).not.toBeInTheDocument()
     })
 
-    it('hides details section when there are no reasons and no genetic corrections', async () => {
+    it('shows 0 signals in details when there are no reasons and no genetic corrections', async () => {
       const mode = makeModeRecommendation({ reasons: [], geneticTrainingCorrections: [] })
       mockFetch.mockResolvedValue({
         ok: true,
@@ -789,10 +783,10 @@ describe('TrainingLog', () => {
       renderTrainingLog()
 
       await waitFor(() => {
-        expect(screen.getByText(/建議模式：力量模式/)).toBeInTheDocument()
+        expect(screen.getByText(/今天適合挑戰重量/)).toBeInTheDocument()
       })
 
-      expect(screen.queryByText(/查看分析依據/)).not.toBeInTheDocument()
+      expect(screen.getByText(/0 項信號/)).toBeInTheDocument()
     })
   })
 

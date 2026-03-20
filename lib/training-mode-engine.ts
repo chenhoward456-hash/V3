@@ -57,7 +57,8 @@ export interface TrainingModeRecommendation {
   volumeAdjustment: number    // -100 ~ +20%
   targetRpeRange: [number, number]
   suggestedSets: string       // "18-24 組"
-  suggestions: string[]       // 可執行建議
+  clientMessage: string       // 給學員看的一句話摘要
+  suggestions: string[]       // 收進折疊區的技術建議
   focusAreas: string[]        // 標籤
   reasons: TrainingModeReason[]
   geneticTrainingCorrections: GeneticTrainingCorrection[]
@@ -76,7 +77,8 @@ interface ModeConfig {
   volumeAdjustment: number
   rpeRange: [number, number]
   suggestedSets: string
-  suggestions: string[]
+  clientMessage: string          // 給學員看的一句話摘要
+  suggestions: string[]          // 收進折疊區的技術建議
   focusAreas: string[]
 }
 
@@ -88,6 +90,7 @@ const MODE_CONFIG: Record<TrainingMode, ModeConfig> = {
     volumeAdjustment: 20,
     rpeRange: [6, 8],
     suggestedSets: '18-24 組',
+    clientMessage: '今天恢復得很好，可以多做幾組、把量堆上去',
     suggestions: [
       '專注肌肥大，每組 8-12 次',
       '使用多關節 + 單關節動作搭配',
@@ -103,6 +106,7 @@ const MODE_CONFIG: Record<TrainingMode, ModeConfig> = {
     volumeAdjustment: -10,
     rpeRange: [8, 10],
     suggestedSets: '10-14 組',
+    clientMessage: '今天適合挑戰重量，組數少一點、每組推到接近力竭',
     suggestions: [
       '專注複合動作（深蹲、硬舉、臥推）',
       '每組接近力竭 RPE 8-10',
@@ -118,6 +122,7 @@ const MODE_CONFIG: Record<TrainingMode, ModeConfig> = {
     volumeAdjustment: 0,
     rpeRange: [7, 8],
     suggestedSets: '14-18 組',
+    clientMessage: '今天狀態不錯，照課表練就好',
     suggestions: [
       '維持正常訓練量和強度',
       '專注在動作品質和控制',
@@ -132,6 +137,7 @@ const MODE_CONFIG: Record<TrainingMode, ModeConfig> = {
     volumeAdjustment: -25,
     rpeRange: [6, 8],
     suggestedSets: '10-14 組',
+    clientMessage: '今天稍微累，主項照做、輔助動作各砍一組',
     suggestions: [
       '維持強度但減少總組數（-25%）',
       '保留複合動作，減少輔助動作',
@@ -140,12 +146,13 @@ const MODE_CONFIG: Record<TrainingMode, ModeConfig> = {
     focusAreas: ['減量', '維持強度', '疲勞管理'],
   },
   deload: {
-    label: 'Deload 減負荷',
+    label: 'Deload',
     emoji: '🔄',
     color: 'teal',
     volumeAdjustment: -50,
     rpeRange: [5, 6],
     suggestedSets: '8-10 組',
+    clientMessage: '身體在喊休息，今天砍半、用輕重量專注動作品質',
     suggestions: [
       '訓練量減半，強度降至 RPE 5-6',
       '專注動作模式和活動度',
@@ -160,6 +167,7 @@ const MODE_CONFIG: Record<TrainingMode, ModeConfig> = {
     volumeAdjustment: -80,
     rpeRange: [3, 5],
     suggestedSets: '0-6 組（輕量）',
+    clientMessage: '做 20 分鐘散步或伸展就好，今天不要碰槓',
     suggestions: [
       '以伸展和活動度訓練為主',
       '可做 20-30 分鐘散步',
@@ -175,6 +183,7 @@ const MODE_CONFIG: Record<TrainingMode, ModeConfig> = {
     volumeAdjustment: -40,
     rpeRange: [5, 7],
     suggestedSets: '6-10 組（輕量重訓）',
+    clientMessage: '今天做有氧就好，重訓可以少量帶過維持肌力',
     suggestions: [
       '以有氧訓練為主（30-45 分鐘）',
       '可搭配少量重訓維持肌力',
@@ -189,6 +198,7 @@ const MODE_CONFIG: Record<TrainingMode, ModeConfig> = {
     volumeAdjustment: -100,
     rpeRange: [0, 0],
     suggestedSets: '0 組',
+    clientMessage: '今天不要練，好好睡一覺比練一場更有用',
     suggestions: [
       '今天完全休息，專注睡眠和營養',
       '確保充足水分攝取',
@@ -917,6 +927,7 @@ function buildRecommendation(
     volumeAdjustment: config.volumeAdjustment,
     targetRpeRange: config.rpeRange,
     suggestedSets: calculateDynamicSets(config, input),
+    clientMessage: config.clientMessage,
     suggestions: config.suggestions,
     focusAreas: config.focusAreas,
     reasons,
