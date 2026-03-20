@@ -527,17 +527,18 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   }
 
   // ── Training step 1: select type -> ask duration ──
-  const trainingMatch = text.match(/^訓練\s+(push|pull|legs|chest|shoulder|arms|cardio|rest|推|拉|腿|胸|肩|手臂|有氧|休息)$/i)
+  const trainingMatch = text.match(/^訓練\s+(push|pull|legs|chest|shoulder|arms|cardio|rest|full_body|upper_body|推|拉|腿|胸|肩|手臂|有氧|休息|全身|上肢)$/i)
   if (trainingMatch) {
     const typeMap: Record<string, string> = {
       '推': 'push', '拉': 'pull', '腿': 'legs', '胸': 'chest',
       '肩': 'shoulder', '手臂': 'arms', '有氧': 'cardio', '休息': 'rest',
+      '全身': 'full_body', '上肢': 'upper_body',
     }
     const rawType = trainingMatch[1].toLowerCase()
     const trainingType = typeMap[rawType] || rawType
     const typeLabel: Record<string, string> = {
       push: '推', pull: '拉', legs: '腿', chest: '胸', shoulder: '肩',
-      arms: '手臂', cardio: '有氧', rest: '休息',
+      arms: '手臂', cardio: '有氧', rest: '休息', full_body: '全身', upper_body: '上肢',
     }
     const label = typeLabel[trainingType] || trainingType
     await replyMessage(event.replyToken, [
@@ -658,6 +659,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     const typeMap: Record<string, string> = {
       '推': 'push', '拉': 'pull', '腿': 'legs', '胸': 'chest',
       '肩': 'shoulder', '手臂': 'arms', '有氧': 'cardio', '休息': 'rest',
+      '全身': 'full_body', '上肢': 'upper_body',
     }
     const rawType = trainingFullMatch[1].toLowerCase()
     const trainingType = typeMap[rawType] || rawType

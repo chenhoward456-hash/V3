@@ -334,7 +334,7 @@ export async function handleQuickTraining(
 
   const typeLabel: Record<string, string> = {
     push: '推', pull: '拉', legs: '腿', chest: '胸', shoulder: '肩',
-    arms: '手臂', cardio: '有氧', rest: '休息', full_body: '全身',
+    arms: '手臂', cardio: '有氧', rest: '休息', full_body: '全身', upper_body: '上肢',
   }
 
   let msg = `🏋️ 已記錄訓練：${typeLabel[trainingType] || trainingType}`
@@ -714,7 +714,7 @@ export async function handleTrendQuery(replyToken: string, client: LineClient, s
     }
     const typeLabel: Record<string, string> = {
       push: '推', pull: '拉', legs: '腿', chest: '胸', shoulder: '肩',
-      arms: '手臂', cardio: '有氧', rest: '休息', full_body: '全身',
+      arms: '手臂', cardio: '有氧', rest: '休息', full_body: '全身', upper_body: '上肢',
     }
     const typeSummary = Object.entries(typeCount).map(([k, v]) => `${typeLabel[k] || k}×${v}`).join(' ')
     lines.push(`\n🏋️ 訓練 ${training.length} 天：${typeSummary}`)
