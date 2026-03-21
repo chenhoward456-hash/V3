@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Target, ChevronDown, ChevronUp, Check } from 'lucide-react'
+import { Target, ChevronDown, ChevronUp, Check, Calendar } from 'lucide-react'
 
 interface GoalSettingsProps {
   clientId: string
@@ -12,6 +12,7 @@ interface GoalSettingsProps {
   currentTargetDate: string | null
   competitionEnabled?: boolean
   competitionDate?: string | null
+  prepPhase?: string | null
   latestWeight: number | null
   latestBodyFat: number | null
   onMutate: () => void
@@ -32,6 +33,7 @@ export default function GoalSettings({
   currentTargetDate,
   competitionEnabled,
   competitionDate,
+  prepPhase,
   latestWeight,
   latestBodyFat,
   onMutate,
@@ -211,6 +213,23 @@ export default function GoalSettings({
                 <strong>體態重組</strong>：適合體重 OK 但想降體脂、增肌肉的人。
                 系統會用接近 TDEE 的熱量 + 高蛋白策略，幫你同時減脂增肌。
                 建議填寫目標體脂率。
+              </p>
+            </div>
+          )}
+
+          {/* 備賽客戶快速設定比賽日期提示 */}
+          {competitionEnabled && (prepPhase === 'recovery' || !competitionDate) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar size={14} className="text-amber-600" />
+                <p className="text-xs font-semibold text-amber-700">
+                  {prepPhase === 'recovery' ? '準備下一場比賽？' : '尚未設定比賽日期'}
+                </p>
+              </div>
+              <p className="text-[11px] text-amber-600 leading-relaxed">
+                {prepPhase === 'recovery'
+                  ? '在上方比賽日期欄位設定新日期，儲存後系統會自動切換到備賽模式。'
+                  : '設定比賽日期後，系統會自動計算倒數天數和每週需要的進度。'}
               </p>
             </div>
           )}

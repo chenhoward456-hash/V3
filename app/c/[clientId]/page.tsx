@@ -27,6 +27,7 @@ import { isWeightTraining } from '@/components/client/types'
 import NutritionLog from '@/components/client/NutritionLog'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
+import PostCompetitionRecovery from '@/components/client/PostCompetitionRecovery'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManagedNutrition'), { ssr: false })
@@ -296,6 +297,44 @@ export default function ClientDashboard() {
       setUpdatingPhase(false)
     }
   }
+
+  // 設定下一場比賽日期（從 PostCompetitionRecovery 元件觸發）
+  const handleSetNextCompetition = useCallback(async (date: string) => {
+    try {
+      // 1. 更新 competition_date
+      const res = await fetch('/api/clients', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, competition_date: date }),
+      })
+      if (!res.ok) throw new Error('更新比賽日期失敗')
+
+      // 2. 切換 prep_phase 到 cut
+      const res2 = await fetch('/api/prep-phase', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, prepPhase: 'cut' }),
+      })
+      if (!res2.ok) throw new Error('更新階段失敗')
+
+      mutate()
+      showToast('已設定新比賽日期，切換到減脂期', 'success')
+    } catch {
+      showToast('設定失敗，請重試', 'error')
+    }
+  }, [clientId, mutate, showToast])
+
+  // 監聽 PostCompetitionRecovery 的 custom event
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail?.date) {
+        handleSetNextCompetition(detail.date)
+      }
+    }
+    window.addEventListener('set-next-competition', handler)
+    return () => window.removeEventListener('set-next-competition', handler)
+  }, [handleSetNextCompetition])
 
   // 所有統計數據從 hook 取得
   const {
@@ -661,6 +700,45 @@ export default function ClientDashboard() {
             <HealthModeAdvanced clientId={c.id} code={c.unique_code} />
           )}
 
+          {/* 賽後恢復提示：比賽日期已過但階段仍為 peak_week/competition */}
+          {isCompetition && c.competition_date && (() => {
+            const daysPast = daysUntilDateTW(c.competition_date)
+            const needsRecoveryPrompt = daysPast < 0 && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition')
+            if (!needsRecoveryPrompt) return null
+            return (
+              <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-5 mb-4">
+                <div className="text-center mb-3">
+                  <span className="text-3xl">🏆</span>
+                  <h3 className="text-lg font-bold text-gray-900 mt-2">比賽結束了！辛苦了！</h3>
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                  接下來進入賽後恢復期，系統會幫你：
+                </p>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="text-emerald-500">→</span>
+                    <span>每週漸進增加熱量（reverse diet）</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="text-emerald-500">→</span>
+                    <span>前 2 週以輕量活動為主，第 3 週開始恢復訓練</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="text-emerald-500">→</span>
+                    <span>追蹤體重回升速度，控制在合理範圍</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handlePrepPhaseChange('recovery')}
+                  disabled={updatingPhase}
+                  className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                >
+                  {updatingPhase ? '切換中...' : '開始賽後恢復'}
+                </button>
+              </div>
+            )
+          })()}
+
           {isToday && (
             <TodayOverviewCard
               overallStreak={overallStreak}
@@ -842,6 +920,25 @@ export default function ClientDashboard() {
             />
           )}
         </div>
+
+        {/* 賽後恢復期計畫卡片（獨立於主卡片容器） */}
+        {isCompetition && c.prep_phase === 'recovery' && c.competition_date && (() => {
+          const daysPast = daysUntilDateTW(c.competition_date)
+          const daysPostCompetition = Math.abs(Math.min(daysPast, 0))
+          if (daysPostCompetition === 0) return null
+          return (
+            <PostCompetitionRecovery
+              daysPostCompetition={daysPostCompetition}
+              onSetNextCompetition={() => {
+                // 滾動到 GoalSettings 區域讓用戶設定
+                const goalSettings = document.querySelector('[data-section="goal-settings"]')
+                if (goalSettings) {
+                  goalSettings.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+              }}
+            />
+          )
+        })()}
 
         {/* === Onboarding Checklist: persistent task checklist for new users (first 14 days) === */}
         {(() => {
@@ -1229,7 +1326,7 @@ export default function ClientDashboard() {
 
         {/* 目標設定 */}
         {c.calories_target && (
-          <div className="mb-3">
+          <div className="mb-3" data-section="goal-settings">
             <GoalSettings
               clientId={c.id}
               uniqueCode={c.unique_code}
@@ -1239,6 +1336,7 @@ export default function ClientDashboard() {
               currentTargetDate={c.target_date}
               competitionEnabled={isCompetitionMode(c.client_mode)}
               competitionDate={c.competition_date || null}
+              prepPhase={c.prep_phase || null}
               latestWeight={latestBodyData?.weight || null}
               latestBodyFat={latestBodyData?.body_fat || null}
               onMutate={mutate}
