@@ -107,6 +107,9 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
   useEffect(() => {
     if (todayTraining) {
+      const rawNote = todayTraining.note || ''
+      const cardioMatch = rawNote.match(/^\[有氧:(.*?)\]\s*/)
+      setCardioSubtype(cardioMatch ? cardioMatch[1] : null)
       setForm({
         training_type: todayTraining.training_type ?? null,
         duration: todayTraining.duration ?? null,
@@ -114,9 +117,10 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         rpe: todayTraining.rpe ?? null,
         compound_weight: todayTraining.compound_weight ?? null,
         compound_reps: todayTraining.compound_reps ?? null,
-        note: todayTraining.note || '',
+        note: cardioMatch ? rawNote.replace(cardioMatch[0], '') : rawNote,
       })
     } else {
+      setCardioSubtype(null)
       setForm({ training_type: todayPlanType ?? null, duration: null, sets: null, rpe: null, compound_weight: null, compound_reps: null, note: '' })
     }
   }, [todayTraining, todayPlanType])
@@ -124,6 +128,21 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   const isRest = form.training_type === 'rest'
   const isCardio = form.training_type === 'cardio'
   const hasCarbCycling = !!(carbsTrainingDay && carbsRestDay)
+
+  // 有氧子類型
+  const CARDIO_SUBTYPES = [
+    { value: '登階機', emoji: '🪜' },
+    { value: '走路', emoji: '🚶' },
+    { value: '跑步', emoji: '🏃' },
+    { value: '單車', emoji: '🚴' },
+    { value: '其他', emoji: '⚡' },
+  ]
+  const [cardioSubtype, setCardioSubtype] = useState<string | null>(() => {
+    // 從 note 裡解析已存的有氧類型
+    const note = todayTraining?.note || ''
+    const match = note.match(/^\[有氧:(.*?)\]/)
+    return match ? match[1] : null
+  })
 
   // 主項名稱對應（根據訓練類型）
   const COMPOUND_LIFT: Record<string, string> = {
@@ -181,7 +200,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           rpe: isRest ? null : (form.rpe || null),
           compound_weight: isRest || isCardio ? null : (form.compound_weight || null),
           compound_reps: isRest || isCardio ? null : (form.compound_reps || null),
-          note: form.note || null
+          note: (isCardio && cardioSubtype ? `[有氧:${cardioSubtype}] ` : '') + (form.note || '') || null
         })
       })
       if (!response.ok) throw new Error('提交失敗')
@@ -568,6 +587,28 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
             ))}
           </div>
         </div>
+
+        {/* 有氧子類型選擇 */}
+        {isCardio && (
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">有氧類型</p>
+            <div className="flex gap-2 flex-wrap">
+              {CARDIO_SUBTYPES.map(({ value, emoji }) => (
+                <button
+                  key={value}
+                  onClick={() => setCardioSubtype(cardioSubtype === value ? null : value)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    cardioSubtype === value
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {emoji} {value}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 碳循環提示（簡單模式隱藏） */}
         {!simpleMode && hasCarbCycling && form.training_type && (
