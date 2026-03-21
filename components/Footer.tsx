@@ -33,6 +33,7 @@ export default function Footer() {
               <li><Link href="/blog" className="hover:text-white transition-colors">文章</Link></li>
               <li><Link href="/training" className="hover:text-white transition-colors">訓練工程</Link></li>
               <li><Link href="/nutrition" className="hover:text-white transition-colors">營養與恢復</Link></li>
+              <li><Link href="/tools/tdee" className="hover:text-white transition-colors">TDEE 計算機</Link></li>
               <li><Link href="/faq" className="hover:text-white transition-colors">常見問題</Link></li>
             </ul>
           </div>

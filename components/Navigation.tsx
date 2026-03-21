@@ -12,6 +12,7 @@ const navItems = [
   { label: '知識分享', href: '/blog' },
   { label: '我的故事', href: '/case' },
   { label: '方案說明', href: '/remote' },
+  { label: 'TDEE 計算', href: '/tools/tdee' },
 ]
 
 export default function Navigation() {
