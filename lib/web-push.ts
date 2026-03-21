@@ -18,7 +18,7 @@ function ensureVapid() {
       throw new Error('VAPID keys (NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY) 未設定')
     }
     webPush.setVapidDetails(
-      process.env.VAPID_EMAIL || 'mailto:admin@howardprotocol.com',
+      process.env.VAPID_EMAIL || 'mailto:admin@howard456.vercel.app',
       publicKey,
       privateKey
     )

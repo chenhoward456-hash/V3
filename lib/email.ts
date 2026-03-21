@@ -39,7 +39,7 @@ export async function sendPurchaseEmail({
   downloadToken,
   merchantTradeNo,
 }: SendPurchaseEmailParams): Promise<{ success: boolean; error?: string }> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
   const downloadUrl = `${siteUrl}/api/ebook/download?token=${encodeURIComponent(downloadToken)}`
   const successUrl = `${siteUrl}/diagnosis/success?order_id=${merchantTradeNo}`
 
@@ -82,7 +82,7 @@ export async function sendWelcomeEmail({
   uniqueCode,
   tier,
 }: SendWelcomeEmailParams): Promise<{ success: boolean; error?: string }> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
   const dashboardUrl = `${siteUrl}/c/${uniqueCode}`
 
   const tierNames: Record<string, string> = {
@@ -186,7 +186,7 @@ function buildWelcomeEmailHTML({
     <tr>
       <td style="padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align:center;">
         <p style="font-size:11px; color:#94a3b8; margin:0;">
-          &copy; Howard Protocol &middot; howardprotocol.com
+          &copy; Howard Protocol &middot; howard456.vercel.app
         </p>
       </td>
     </tr>
@@ -291,7 +291,7 @@ function buildPurchaseEmailHTML({
           此為系統自動發送的信件，請勿直接回覆。
         </p>
         <p style="font-size:11px; color:#94a3b8; margin:0;">
-          © Howard Protocol · howardprotocol.com
+          © Howard Protocol · howard456.vercel.app
         </p>
       </td>
     </tr>
@@ -316,7 +316,7 @@ export async function sendDay3Email({
   name,
   uniqueCode,
 }: SendDay3EmailParams): Promise<{ success: boolean; error?: string }> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
   const dashboardUrl = `${siteUrl}/c/${uniqueCode}`
 
   try {
@@ -412,7 +412,7 @@ function buildDay3EmailHTML({
     <tr>
       <td style="padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align:center;">
         <p style="font-size:11px; color:#94a3b8; margin:0;">
-          &copy; Howard Protocol &middot; howardprotocol.com
+          &copy; Howard Protocol &middot; howard456.vercel.app
         </p>
       </td>
     </tr>
@@ -437,7 +437,7 @@ export async function sendDay7Email({
   name,
   uniqueCode,
 }: SendDay7EmailParams): Promise<{ success: boolean; error?: string }> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
   const dashboardUrl = `${siteUrl}/c/${uniqueCode}`
 
   try {
@@ -553,7 +553,7 @@ function buildDay7EmailHTML({
     <tr>
       <td style="padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align:center;">
         <p style="font-size:11px; color:#94a3b8; margin:0;">
-          &copy; Howard Protocol &middot; howardprotocol.com
+          &copy; Howard Protocol &middot; howard456.vercel.app
         </p>
       </td>
     </tr>
@@ -578,7 +578,7 @@ export async function sendDay14Email({
   name,
   uniqueCode,
 }: SendDay14EmailParams): Promise<{ success: boolean; error?: string }> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
   const dashboardUrl = `${siteUrl}/c/${uniqueCode}`
   const pricingUrl = `${siteUrl}/pricing`
 
@@ -722,7 +722,7 @@ function buildDay14EmailHTML({
     <tr>
       <td style="padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align:center;">
         <p style="font-size:11px; color:#94a3b8; margin:0;">
-          &copy; Howard Protocol &middot; howardprotocol.com
+          &copy; Howard Protocol &middot; howard456.vercel.app
         </p>
       </td>
     </tr>
@@ -850,7 +850,7 @@ function buildExpiryWarningEmailHTML({
     <tr>
       <td style="padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align:center;">
         <p style="font-size:11px; color:#94a3b8; margin:0;">
-          &copy; Howard Protocol &middot; howardprotocol.com
+          &copy; Howard Protocol &middot; howard456.vercel.app
         </p>
       </td>
     </tr>
@@ -976,7 +976,7 @@ function buildCancellationEmailHTML({
     <tr>
       <td style="padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align:center;">
         <p style="font-size:11px; color:#94a3b8; margin:0;">
-          &copy; Howard Protocol &middot; howardprotocol.com
+          &copy; Howard Protocol &middot; howard456.vercel.app
         </p>
       </td>
     </tr>
@@ -999,7 +999,7 @@ export async function sendWinBackEmail({
   to,
   name,
 }: SendWinBackEmailParams): Promise<{ success: boolean; error?: string }> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
   const pricingUrl = `${siteUrl}/pricing`
 
   try {
@@ -1118,7 +1118,7 @@ function buildWinBackEmailHTML({
     <tr>
       <td style="padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align:center;">
         <p style="font-size:11px; color:#94a3b8; margin:0;">
-          &copy; Howard Protocol &middot; howardprotocol.com
+          &copy; Howard Protocol &middot; howard456.vercel.app
         </p>
       </td>
     </tr>

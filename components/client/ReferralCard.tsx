@@ -57,7 +57,7 @@ export default function ReferralCard({ clientId }: ReferralCardProps) {
 
   const siteUrl = typeof window !== 'undefined'
     ? window.location.origin
-    : 'https://howardprotocol.com'
+    : 'https://howard456.vercel.app'
 
   const shareMessage = code
     ? `我在用 Howard Protocol 追蹤健康數據，很推薦你也試試！用我的推薦碼 ${code} 註冊：${siteUrl}/join?ref=${code}`

@@ -139,7 +139,7 @@ export default function DiagnosisPage() {
   }
 
   const handleCopyShareLink = async () => {
-    const url = 'https://howardprotocol.com/diagnosis?ref=share'
+    const url = 'https://howard456.vercel.app/diagnosis?ref=share'
     try {
       await navigator.clipboard.writeText(url)
       setLinkCopied(true)
@@ -163,7 +163,7 @@ export default function DiagnosisPage() {
 
   const handleLineShare = () => {
     trackEvent('diagnosis_share_line')
-    const text = encodeURIComponent('我剛做了免費體態分析，你也來試試！ https://howardprotocol.com/diagnosis?ref=line_share')
+    const text = encodeURIComponent('我剛做了免費體態分析，你也來試試！ https://howard456.vercel.app/diagnosis?ref=line_share')
     window.open(`https://line.me/R/msg/text/?${text}`, '_blank', 'noopener,noreferrer')
   }
 

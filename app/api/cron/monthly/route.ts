@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
 
   let reportsSent = 0
   const errors: string[] = []
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
 
   for (const client of clients) {
     const clientBody = allBody.filter((b: { client_id: string }) => b.client_id === client.id)

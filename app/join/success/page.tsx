@@ -505,7 +505,7 @@ function JoinSuccessContent() {
               下次登入只需訪問：
             </p>
             <code className="text-sm bg-gray-100 px-3 py-1.5 rounded-lg text-gray-600">
-              howardprotocol.com/c/{uniqueCode}
+              howard456.vercel.app/c/{uniqueCode}
             </code>
           </div>
 

@@ -480,7 +480,7 @@ export async function handleBind(replyToken: string, lineUserId: string, code: s
 }
 
 function buildOnboardingGuide(name: string, tier: string): string {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
 
   const common = [
     `📋 ${name} 的系統使用指南`,

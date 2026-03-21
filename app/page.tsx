@@ -8,7 +8,7 @@ import FaqAccordion from '@/components/FaqAccordion'
 import StickyMobileCta from '@/components/StickyMobileCta'
 import ABTest from '@/components/ABTest'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
 
 // Shared constants to avoid duplication across schemas
 const SHARED_ADDRESS = {

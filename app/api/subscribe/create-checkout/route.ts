@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     const plan = SUBSCRIPTION_PLANS[tier as SubscriptionTier]
-    const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
     const merchantTradeNo = generateMerchantTradeNo()
 
     // ECPay 定期定額付款參數（信用卡）

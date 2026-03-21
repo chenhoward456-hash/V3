@@ -448,7 +448,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   }
   if (text === '記訓練') {
     if (!client?.training_enabled) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
       await replyMessage(event.replyToken, [
         { type: 'text', text: `訓練記錄是自主管理方案（$499/月）以上的功能 🔒\n\n升級後解鎖訓練追蹤、AI 分析等完整功能。\n\n👉 ${siteUrl}/remote` },
       ])
@@ -472,7 +472,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   }
   if (text === '記身心') {
     if (!client?.wellness_enabled) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
       await replyMessage(event.replyToken, [
         { type: 'text', text: `身心狀態記錄是自主管理方案（$499/月）以上的功能 🔒\n\n升級後解鎖身心追蹤、AI 分析等完整功能。\n\n👉 ${siteUrl}/remote` },
       ])

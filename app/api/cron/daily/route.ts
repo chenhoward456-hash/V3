@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
 
   // 判斷早上或晚上
   const isMorning = isMorningRun
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
 
   if (isMorning) {
     // ── 早上提醒：量體重（僅 Web Push，不消耗 LINE 額度）──
@@ -371,7 +371,7 @@ export async function GET(request: NextRequest) {
       .not('line_user_id', 'is', null)
 
     if (freeClients) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
       const now = new Date()
 
       for (const c of freeClients) {
@@ -773,7 +773,7 @@ export async function GET(request: NextRequest) {
 
             // 通知用戶 + 切回行銷版 Rich Menu
             if (c.line_user_id) {
-              const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+              const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
               try {
                 await unlinkRichMenuFromUser(c.line_user_id)
                 await pushMessage(c.line_user_id, [{

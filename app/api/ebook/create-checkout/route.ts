@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const product = EBOOK_PRODUCTS['system-reboot-v1']
-    const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://howardprotocol.com'
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
     const merchantTradeNo = generateMerchantTradeNo()
 
     // ECPay 付款參數
