@@ -1344,7 +1344,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 目標設定 */}
-        {c.calories_target && (
+        {(
           <div className="mb-3" data-section="goal-settings">
             <GoalSettings
               clientId={c.id}

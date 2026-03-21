@@ -244,12 +244,33 @@ export default function PostCompetitionRecovery({
         </div>
       )}
 
+      {/* Quick actions — 不用等 28 天就能操作 */}
+      {!isRecoveryComplete && !showDatePicker && (
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={() => setShowDatePicker(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold py-2.5 rounded-xl hover:bg-blue-100 transition-colors"
+          >
+            <Calendar size={14} />
+            設定下一場比賽
+          </button>
+          <button
+            onClick={() => {
+              const el = document.querySelector('[data-section="goal-settings"]')
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold py-2.5 rounded-xl hover:bg-gray-100 transition-colors"
+          >
+            修改目標體重/體脂
+          </button>
+        </div>
+      )}
+
       {/* Encouragement note */}
       {!isRecoveryComplete && (
-        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3">
+        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
           <p className="text-xs text-amber-700 leading-relaxed">
             💡 賽後恢復是下一場比賽的起點。體重上升是正常的（糖原 + 水分回填），不要急著限制飲食。
-            系統會幫你追蹤恢復進度，確保身體準備好迎接下一個目標。
           </p>
         </div>
       )}
