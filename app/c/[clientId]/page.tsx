@@ -710,31 +710,48 @@ export default function ClientDashboard() {
                 <div className="text-center mb-3">
                   <span className="text-3xl">🏆</span>
                   <h3 className="text-lg font-bold text-gray-900 mt-2">比賽結束了！辛苦了！</h3>
+                  <p className="text-sm text-gray-500 mt-1">接下來你想怎麼做？</p>
                 </div>
-                <p className="text-sm text-gray-700 leading-relaxed mb-4">
-                  接下來進入賽後恢復期，系統會幫你：
-                </p>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="text-emerald-500">→</span>
-                    <span>每週漸進增加熱量（reverse diet）</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="text-emerald-500">→</span>
-                    <span>前 2 週以輕量活動為主，第 3 週開始恢復訓練</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="text-emerald-500">→</span>
-                    <span>追蹤體重回升速度，控制在合理範圍</span>
-                  </div>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handlePrepPhaseChange('recovery')}
+                    disabled={updatingPhase}
+                    className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50 text-left px-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">🧘</span>
+                      <div>
+                        <p className="text-sm font-bold">進入賽後恢復期</p>
+                        <p className="text-xs font-normal opacity-80">2-4 週 reverse diet + 漸進恢復訓練</p>
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const dateStr = prompt('下一場比賽日期（YYYY-MM-DD）')
+                      if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                        handleSetNextCompetition(dateStr)
+                      }
+                    }}
+                    disabled={updatingPhase}
+                    className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 text-left px-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">🎯</span>
+                      <div>
+                        <p className="text-sm font-bold">直接備下一場比賽</p>
+                        <p className="text-xs font-normal opacity-80">設定日期，系統自動開始備賽倒數</p>
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handlePrepPhaseChange('off_season')}
+                    disabled={updatingPhase}
+                    className="w-full bg-gray-100 text-gray-700 font-medium py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 text-sm"
+                  >
+                    先回到一般模式（增肌/減脂）
+                  </button>
                 </div>
-                <button
-                  onClick={() => handlePrepPhaseChange('recovery')}
-                  disabled={updatingPhase}
-                  className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                >
-                  {updatingPhase ? '切換中...' : '開始賽後恢復'}
-                </button>
               </div>
             )
           })()}
