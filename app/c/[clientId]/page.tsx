@@ -702,8 +702,9 @@ export default function ClientDashboard() {
 
           {/* 賽後恢復提示：比賽日期已過但階段仍為 peak_week/competition */}
           {isCompetition && c.competition_date && (() => {
-            const daysPast = daysUntilDateTW(c.competition_date)
-            const needsRecoveryPrompt = daysPast < 0 && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition')
+            const daysLeft = daysUntilDateTW(c.competition_date)
+            // 比賽日當天(0)或之後(<0)，且還沒選擇下一步
+            const needsRecoveryPrompt = daysLeft <= 0 && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition')
             if (!needsRecoveryPrompt) return null
             return (
               <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-5 mb-4">
@@ -940,8 +941,9 @@ export default function ClientDashboard() {
 
         {/* 賽後恢復期計畫卡片（獨立於主卡片容器） */}
         {isCompetition && c.prep_phase === 'recovery' && c.competition_date && (() => {
-          const daysPast = daysUntilDateTW(c.competition_date)
-          const daysPostCompetition = Math.abs(Math.min(daysPast, 0))
+          const daysLeft = daysUntilDateTW(c.competition_date)
+          // 比賽日當天算 Day 1，之後遞增
+          const daysPostCompetition = daysLeft <= 0 ? Math.abs(daysLeft) + 1 : 0
           if (daysPostCompetition === 0) return null
           return (
             <PostCompetitionRecovery
