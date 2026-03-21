@@ -421,22 +421,16 @@ describe('TrainingLog', () => {
   })
 
   it('shows weekly stats when training logs exist', () => {
-    // Use dynamic dates relative to the real system date to ensure logs fall within the current week.
-    // Also pass `date` prop to match so the component's `today` filter includes these logs.
+    // Use today and yesterday to guarantee logs fall within the current week
     const now = new Date()
-    const dayOfWeek = now.getDay()
-    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-    const monday = new Date(now)
-    monday.setDate(now.getDate() - mondayOffset)
     const fmt = (d: Date) => d.toISOString().split('T')[0]
-    const tue = new Date(monday); tue.setDate(monday.getDate() + 1)
-    const wed = new Date(monday); wed.setDate(monday.getDate() + 2)
-    const todayStr = fmt(now)
+    const today = new Date(now)
+    const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1)
+    const todayStr = fmt(today)
 
     const logs = [
-      { date: fmt(monday), training_type: 'push', duration: 60, sets: 20, rpe: 8 },
-      { date: fmt(tue), training_type: 'pull', duration: 55, sets: 18, rpe: 7 },
-      { date: fmt(wed), training_type: 'rest', duration: null, sets: null, rpe: null },
+      { date: fmt(yesterday), training_type: 'push', duration: 60, sets: 20, rpe: 8 },
+      { date: todayStr, training_type: 'pull', duration: 55, sets: 18, rpe: 7 },
     ]
 
     renderTrainingLog({ trainingLogs: logs, date: todayStr })
@@ -1036,20 +1030,15 @@ describe('TrainingLog', () => {
     })
 
     it('shows total sets when weight training sets exist', () => {
-      // Use dynamic dates relative to the real system date to ensure logs fall within the current week.
-      // Also pass `date` prop to match so the component's `today` filter includes these logs.
       const now = new Date()
-      const dayOfWeek = now.getDay()
-      const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-      const monday = new Date(now)
-      monday.setDate(now.getDate() - mondayOffset)
       const fmt = (d: Date) => d.toISOString().split('T')[0]
-      const tue = new Date(monday); tue.setDate(monday.getDate() + 1)
-      const todayStr = fmt(now)
+      const today = new Date(now)
+      const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1)
+      const todayStr = fmt(today)
 
       const logs = [
-        { date: fmt(monday), training_type: 'push', duration: 60, sets: 20, rpe: 8 },
-        { date: fmt(tue), training_type: 'pull', duration: 55, sets: 18, rpe: 7 },
+        { date: fmt(yesterday), training_type: 'push', duration: 60, sets: 20, rpe: 8 },
+        { date: todayStr, training_type: 'pull', duration: 55, sets: 18, rpe: 7 },
       ]
 
       renderTrainingLog({ trainingLogs: logs, date: todayStr })
