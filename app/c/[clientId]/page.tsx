@@ -1253,6 +1253,23 @@ export default function ClientDashboard() {
                   onMutate={mutateWithTargets}
                 />
               )}
+              {/* 備賽模式：目標設定放在倒數旁邊，方便隨時調整 */}
+              <div className="mb-3" data-section="goal-settings">
+                <GoalSettings
+                  clientId={c.id}
+                  uniqueCode={c.unique_code}
+                  currentGoalType={c.goal_type}
+                  currentTargetWeight={c.target_weight}
+                  currentTargetBodyFat={(c.target_body_fat as number) ?? null}
+                  currentTargetDate={c.target_date}
+                  competitionEnabled={isCompetitionMode(c.client_mode)}
+                  competitionDate={c.competition_date || null}
+                  prepPhase={c.prep_phase || null}
+                  latestWeight={latestBodyData?.weight || null}
+                  latestBodyFat={latestBodyData?.body_fat || null}
+                  onMutate={mutate}
+                />
+              </div>
               {showPeakWeek && (
                 <PeakWeekPlan
                   clientId={c.id}
@@ -1343,8 +1360,8 @@ export default function ClientDashboard() {
           />
         )}
 
-        {/* 目標設定 */}
-        {(
+        {/* 目標設定（非備賽模式才在這裡顯示，備賽模式已在 GoalDrivenStatus 旁邊） */}
+        {!isCompetition && (
           <div className="mb-3" data-section="goal-settings">
             <GoalSettings
               clientId={c.id}
