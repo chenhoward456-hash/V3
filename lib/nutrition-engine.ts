@@ -1481,9 +1481,12 @@ function checkCuttingReadiness(
     }
   }
 
-  // --- 6. 血檢時效衰減：舊數據不該永遠影響你（好壞都會過期）---
-  // 血檢超過 8 週 → 所有血檢影響（加分和扣分）都向 100 分靠攏
-  // 避免 3 個月前的爛數據永遠鎖住減脂，也避免半年前的好數據永遠加分
+  // --- 6. 血檢時效衰減（分類處理）---
+  // 不同類別的指標穩定性不同，衰減速率也不同：
+  //   荷爾蒙（T/E2/SHBG/皮質醇）→ 波動大，8/16 週衰減（備賽前後變化劇烈）
+  //   代謝（HOMA-IR/ApoB/胰島素）→ 穩定，24/48 週衰減（一年驗 2 次夠）
+  //   基因 → 永不衰減（寫在 clients 表，不在 lab_results）
+  // 扣分衰減 = 身體可能已恢復；加分衰減 = 好指標可能已改變
   if (labs.length > 0 && labs.some(l => l.date)) {
     const latestLabDate = labs
       .filter(l => l.date)
@@ -1495,17 +1498,26 @@ function checkCuttingReadiness(
       const labDate = new Date(latestLabDate)
       const weeksSinceLab = Math.floor((now.getTime() - labDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
 
-      // 計算血檢對分數的總影響（正負都算）
-      const labImpact = score - 100  // 負值=被扣分, 正值=被加分（超過100）
-      // 衰減：把影響力向 0 拉（分數向 100 靠攏）
-      if (weeksSinceLab >= 16) {
-        const decayedImpact = Math.round(labImpact * 0.25)  // 只保留 25% 影響力
+      // 判斷最近的血檢是荷爾蒙面板還是代謝面板
+      // 用最近的驗血日期做統一衰減（簡化版：不拆單項計算）
+      const hasHormoneRecent = labs.some(l =>
+        l.date && l.date === latestLabDate &&
+        ['testosterone', '睪固酮', 'free t', '游離', 'e2', 'estradiol', '雌二醇',
+         'cortisol', '皮質醇', 'shbg', '性荷爾蒙'].some(k => l.test_name.toLowerCase().includes(k))
+      )
+      // 荷爾蒙面板：8/16 週衰減；代謝面板：24/48 週衰減
+      const fastDecayStart = hasHormoneRecent ? 8 : 24
+      const fullDecayStart = hasHormoneRecent ? 16 : 48
+
+      const labImpact = score - 100
+      if (weeksSinceLab >= fullDecayStart) {
+        const decayedImpact = Math.round(labImpact * 0.25)
         score = 100 + decayedImpact
-        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，所有血檢影響降低 75%（好壞都會過期，建議重新驗血）`)
-      } else if (weeksSinceLab >= 8) {
-        const decayedImpact = Math.round(labImpact * 0.50)  // 只保留 50% 影響力
+        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週（${hasHormoneRecent ? '荷爾蒙' : '代謝'}面板），影響降低 75%（建議重新驗血）`)
+      } else if (weeksSinceLab >= fastDecayStart) {
+        const decayedImpact = Math.round(labImpact * 0.50)
         score = 100 + decayedImpact
-        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，所有血檢影響降低 50%（建議重新驗血）`)
+        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，影響降低 50%（建議重新驗血）`)
       }
     }
   }
