@@ -1367,6 +1367,52 @@ function checkCuttingReadiness(
     }
   }
 
+  // --- 2b. 正向血檢加分：好的指標 = 身體有本錢減脂 ---
+  // 同樣受時效衰減影響（好數據也會過期）
+  {
+    // 胰島素敏感度優秀
+    const homaIr = findLab(['homa-ir', 'homair', 'homa'])
+    if (homaIr && homaIr.value != null && homaIr.value < 1.5) {
+      score += 8
+      reasons.push(`🟢 胰島素敏感度${homaIr.value < 1.0 ? '頂尖' : '良好'}（HOMA-IR ${homaIr.value}）— 碳水利用率高，減脂效率好`)
+    }
+    const fastingInsulin = findLab(['空腹胰島素', 'fasting insulin', 'insulin'])
+    if (fastingInsulin && fastingInsulin.value != null && fastingInsulin.value < 5) {
+      score += 5
+      reasons.push(`🟢 空腹胰島素優秀（${fastingInsulin.value} μIU/mL）— 代謝靈活度高`)
+    }
+
+    // ApoB 優秀（心血管風險低，脂肪代謝彈性大）
+    const apoB = findLab(['apob', 'apo b', 'apo-b'])
+    if (apoB && apoB.value != null && apoB.value < 80) {
+      score += 5
+      reasons.push(`🟢 ApoB 優秀（${apoB.value} mg/dL）— 心血管風險低，脂肪攝取彈性大`)
+    }
+
+    // 睪固酮高（男性）— 荷爾蒙環境好，適合減脂
+    if (isMale) {
+      const testoGood = findLab(['testosterone', '睪固酮', '睪酮'], ['free', '游離', 'bioavailable'])
+      if (testoGood && testoGood.value != null && testoGood.value >= 550) {
+        score += 8
+        reasons.push(`🟢 睪固酮充足（${testoGood.value} ng/dL）— 荷爾蒙環境適合減脂`)
+      }
+    }
+
+    // 鐵蛋白充足 — 攜氧能力好，有氧和恢復有保障
+    const ferritinGood = findLab(['ferritin', '鐵蛋白'])
+    if (ferritinGood && ferritinGood.value != null && ferritinGood.value >= 80) {
+      score += 4
+      reasons.push(`🟢 鐵蛋白充足（${ferritinGood.value} ng/mL）— 攜氧和恢復能力正常`)
+    }
+
+    // 維生素 D 充足 — 免疫、荷爾蒙、骨骼
+    const vitD = findLab(['維生素d', 'vitamin d', '25-oh'])
+    if (vitD && vitD.value != null && vitD.value >= 50) {
+      score += 4
+      reasons.push(`🟢 維生素 D 充足（${vitD.value} ng/mL）— 免疫和荷爾蒙支持`)
+    }
+  }
+
   // --- 3. 穿戴裝置恢復狀態 ---
   if (deviceReadiness != null && deviceReadiness < 40) {
     score -= 15
@@ -1435,9 +1481,9 @@ function checkCuttingReadiness(
     }
   }
 
-  // --- 6. 血檢時效衰減：舊數據不該永遠擋住你 ---
-  // 血檢超過 8 週 → 扣分減半，超過 16 週 → 扣分剩 25%
-  // 避免 3 個月前的爛數據永遠鎖住減脂
+  // --- 6. 血檢時效衰減：舊數據不該永遠影響你（好壞都會過期）---
+  // 血檢超過 8 週 → 所有血檢影響（加分和扣分）都向 100 分靠攏
+  // 避免 3 個月前的爛數據永遠鎖住減脂，也避免半年前的好數據永遠加分
   if (labs.length > 0 && labs.some(l => l.date)) {
     const latestLabDate = labs
       .filter(l => l.date)
@@ -1449,16 +1495,17 @@ function checkCuttingReadiness(
       const labDate = new Date(latestLabDate)
       const weeksSinceLab = Math.floor((now.getTime() - labDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
 
+      // 計算血檢對分數的總影響（正負都算）
+      const labImpact = score - 100  // 負值=被扣分, 正值=被加分（超過100）
+      // 衰減：把影響力向 0 拉（分數向 100 靠攏）
       if (weeksSinceLab >= 16) {
-        // 血檢超過 4 個月：扣分恢復 75%（只保留 25% 的扣分效力）
-        const recovered = Math.round((100 - score) * 0.75)
-        score += recovered
-        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，扣分效力降低 75%（建議重新驗血確認恢復狀況）`)
+        const decayedImpact = Math.round(labImpact * 0.25)  // 只保留 25% 影響力
+        score = 100 + decayedImpact
+        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，所有血檢影響降低 75%（好壞都會過期，建議重新驗血）`)
       } else if (weeksSinceLab >= 8) {
-        // 血檢超過 2 個月：扣分恢復 50%
-        const recovered = Math.round((100 - score) * 0.50)
-        score += recovered
-        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，扣分效力降低 50%（建議重新驗血）`)
+        const decayedImpact = Math.round(labImpact * 0.50)  // 只保留 50% 影響力
+        score = 100 + decayedImpact
+        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，所有血檢影響降低 50%（建議重新驗血）`)
       }
     }
   }
