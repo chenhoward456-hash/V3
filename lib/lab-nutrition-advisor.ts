@@ -56,9 +56,16 @@ export function generateLabNutritionAdvice(
   const advice: LabNutritionAdvice[] = []
   const { gender, goalType } = options
 
-  // 每個指標只取最新一筆（按 date 降序，API 已排序）
+  // 每個指標只取最新一筆：先按 date 降序排序，再去重
+  // 不依賴 API 排序（relation query 可能沒排序）
+  const sorted = [...labs].sort((a, b) => {
+    if (a.date && b.date) return b.date > a.date ? 1 : b.date < a.date ? -1 : 0
+    if (a.date) return -1
+    if (b.date) return 1
+    return 0
+  })
   const latestByName = new Map<string, LabInput>()
-  for (const lab of labs) {
+  for (const lab of sorted) {
     const key = getLabCanonicalId(lab.test_name) || lab.test_name.toLowerCase()
     if (!latestByName.has(key)) {
       latestByName.set(key, lab)
