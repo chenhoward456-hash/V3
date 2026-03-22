@@ -103,10 +103,10 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true }),
       supabase
         .from('lab_results')
-        .select('test_name, value, unit, status')
+        .select('test_name, value, unit, status, date')
         .eq('client_id', client.id)
         .order('date', { ascending: false })
-        .limit(30),
+        .limit(50),
       // 月經週期：最近 60 天內最後一次經期標記
       client.gender === '女性'
         ? supabase
@@ -283,11 +283,12 @@ export async function GET(request: NextRequest) {
           carbs: n.carbs_grams ?? null,
         })),
       lastPeriodDate,
-      labResults: labResults.map((l: { test_name: string; value: number; unit: string; status: string }) => ({
+      labResults: labResults.map((l: { test_name: string; value: number; unit: string; status: string; date: string }) => ({
         test_name: l.test_name,
         value: l.value,
         unit: l.unit,
         status: l.status as 'normal' | 'attention' | 'alert',
+        date: l.date,
       })),
       recentTrainingVolume: recentTrainingWithRPE.length > 0 ? {
         avgRPE,

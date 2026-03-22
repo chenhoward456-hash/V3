@@ -187,8 +187,8 @@ export interface NutritionInput {
   // 月經週期（女性專用，用於排除黃體期體重浮動）
   lastPeriodDate?: string | null  // 最近一次經期開始日 (ISO)
 
-  // 血檢結果（用於 lab → macro 調整）
-  labResults?: Array<{ test_name: string; value: number | null; unit: string; status: 'normal' | 'attention' | 'alert' }>
+  // 血檢結果（用於 lab → macro 調整 + 趨勢分析）
+  labResults?: Array<{ test_name: string; value: number | null; unit: string; status: 'normal' | 'attention' | 'alert'; date?: string }>
 
   // 訓練量數據（RPE × duration × frequency → 影響 TDEE）
   recentTrainingVolume?: {
@@ -1366,6 +1366,48 @@ function checkCuttingReadiness(
   if (metabolicStress && metabolicStress.score >= 60) {
     score -= 15
     reasons.push(`🟡 代謝壓力分數偏高（${metabolicStress.score}/100）— 荷爾蒙和代謝率可能已受壓`)
+  }
+
+  // --- 5. 血檢趨勢分析：跟自己之前的數據比 ---
+  // 絕對值在範圍內不代表沒問題，大幅下降才是真正的紅旗
+  if (labs.length > 0 && labs.some(l => l.date)) {
+    const trendKeywords: { keywords: string[]; label: string; worsening: 'decrease' | 'increase' }[] = [
+      { keywords: ['testosterone', '睪固酮', '睪酮'], label: '睪固酮', worsening: 'decrease' },
+      { keywords: ['free t', 'free testosterone', '游離睪固酮'], label: '游離睪固酮', worsening: 'decrease' },
+      { keywords: ['shbg', '性荷爾蒙結合球蛋白'], label: 'SHBG', worsening: 'increase' },
+      { keywords: ['e2', 'estradiol', '雌二醇'], label: 'E2', worsening: 'increase' },
+      { keywords: ['cortisol', '皮質醇', '可體松'], label: '皮質醇', worsening: 'increase' },
+      { keywords: ['tsh', '促甲狀腺'], label: 'TSH', worsening: 'increase' },
+    ]
+
+    for (const trend of trendKeywords) {
+      // 找同一個指標的多筆記錄（按日期排序，最新在前）
+      const matches = labs
+        .filter(l => trend.keywords.some(k => l.test_name.toLowerCase().includes(k)) && l.value != null && l.date)
+        .sort((a, b) => (b.date! > a.date! ? 1 : -1))
+
+      if (matches.length >= 2) {
+        const latest = matches[0].value!
+        const previous = matches[1].value!
+        if (previous === 0) continue
+
+        const changePct = ((latest - previous) / previous) * 100
+        const isWorsening = trend.worsening === 'decrease' ? changePct < 0 : changePct > 0
+        const absChange = Math.abs(changePct)
+
+        if (isWorsening && absChange >= 20) {
+          const arrow = trend.worsening === 'decrease' ? '↓' : '↑'
+          const severity = absChange >= 35 ? 20 : 12
+          score -= severity
+          reasons.push(
+            `📉 ${trend.label}大幅${trend.worsening === 'decrease' ? '下降' : '上升'}：` +
+            `${previous} → ${latest}（${changePct > 0 ? '+' : ''}${Math.round(changePct)}%${arrow}）` +
+            `${absChange >= 35 ? ' — 備賽壓迫明顯，必須先恢復' : ' — 建議觀察並優先恢復'}`
+          )
+          labFlags.push(`${trend.label} ${Math.round(changePct)}%${arrow}`)
+        }
+      }
+    }
   }
 
   score = Math.max(0, Math.min(100, score))
