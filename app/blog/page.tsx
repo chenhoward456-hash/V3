@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '17',
+    title: 'TDEE 是什麼？最完整的 TDEE 計算指南｜為什麼公式算出來的都不準',
+    description: 'TDEE 是什麼？用最白話的方式解釋 TDEE 計算公式、BMR 基礎代謝率的差別，並告訴你為什麼網路上的 TDEE 計算器都不準。',
+    date: '2026-03-22',
+    category: '基礎知識',
+    readTime: '15 分鐘',
+    slug: 'what-is-tdee',
+  },
+  {
     id: '16',
     title: '蛋白質攝取完整指南：一天要吃多少？怎麼吃？台灣食物實測全整理',
     description: '蛋白質一天到底要吃多少？整理不同目標的建議量、台灣常見高蛋白食物實測數據、餐間分配策略，以及常見迷思破解。',
