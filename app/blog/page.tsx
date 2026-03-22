@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '15',
+    title: '減脂停滯期完全攻略：為什麼體重不動了？5 個科學方法幫你突破卡關',
+    description: '減脂停滯期是幾乎每個人都會遇到的瓶頸。從代謝適應、NEAT 下降、水分滯留三大原因切入，教你判斷真假停滯，並提供 5 個有科學根據的突破方法。',
+    date: '2026-03-22',
+    category: '飲食策略',
+    readTime: '10 分鐘',
+    slug: 'fat-loss-plateau-guide',
+  },
+  {
     id: '14',
     title: 'TDEE 計算全攻略：為什麼計算器都不準？',
     description: '網路上的 TDEE 計算器誤差可能高達 500 大卡。了解背後的原因，以及如何更精準地計算你的每日熱量消耗。',
