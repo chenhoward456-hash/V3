@@ -757,6 +757,71 @@ export default function ClientDashboard() {
             )
           })()}
 
+          {/* Goal-Driven + Peak Week（備賽客戶）— moved up for competition mode */}
+          {isCompetition && (() => {
+            const compDaysLeft = c.competition_date ? daysUntilDateTW(c.competition_date) : null
+            const showPeakWeek = compDaysLeft != null && compDaysLeft >= 0 && compDaysLeft <= 14 && latestBodyData?.weight
+            return (
+              <>
+                {(!showPeakWeek || compDaysLeft! > 7) && (
+                  <GoalDrivenStatus
+                    clientId={c.id}
+                    code={c.unique_code}
+                    isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+                    onMutate={mutateWithTargets}
+                  />
+                )}
+                {/* 備賽模式：目標設定放在倒數旁邊，方便隨時調整 */}
+                <div className="mb-3" data-section="goal-settings">
+                  <GoalSettings
+                    clientId={c.id}
+                    uniqueCode={c.unique_code}
+                    currentGoalType={c.goal_type}
+                    currentTargetWeight={c.target_weight}
+                    currentTargetBodyFat={(c.target_body_fat as number) ?? null}
+                    currentTargetDate={c.target_date}
+                    competitionEnabled={isCompetitionMode(c.client_mode)}
+                    competitionDate={c.competition_date || null}
+                    prepPhase={c.prep_phase || null}
+                    latestWeight={latestBodyData?.weight || null}
+                    latestBodyFat={latestBodyData?.body_fat || null}
+                    onMutate={mutate}
+                  />
+                </div>
+                {showPeakWeek && (
+                  <PeakWeekPlan
+                    clientId={c.id}
+                    code={c.unique_code}
+                    competitionDate={c.competition_date!}
+                    bodyWeight={latestBodyData!.weight}
+                    previewDate={selectedDate > today ? selectedDate : undefined}
+                    onMutate={mutateWithTargets}
+                  />
+                )}
+              </>
+            )
+          })()}
+
+          {/* 賽後恢復期計畫卡片（備賽模式 recovery 階段） */}
+          {isCompetition && c.prep_phase === 'recovery' && c.competition_date && (() => {
+            const daysLeft = daysUntilDateTW(c.competition_date)
+            // 比賽日當天算 Day 1，之後遞增
+            const daysPostCompetition = daysLeft <= 0 ? Math.abs(daysLeft) + 1 : 0
+            if (daysPostCompetition === 0) return null
+            return (
+              <PostCompetitionRecovery
+                daysPostCompetition={daysPostCompetition}
+                onSetNextCompetition={() => {
+                  // 滾動到 GoalSettings 區域讓用戶設定
+                  const goalSettings = document.querySelector('[data-section="goal-settings"]')
+                  if (goalSettings) {
+                    goalSettings.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }
+                }}
+              />
+            )
+          })()}
+
           {isToday && (
             <TodayOverviewCard
               overallStreak={overallStreak}
@@ -938,26 +1003,6 @@ export default function ClientDashboard() {
             />
           )}
         </div>
-
-        {/* 賽後恢復期計畫卡片（獨立於主卡片容器） */}
-        {isCompetition && c.prep_phase === 'recovery' && c.competition_date && (() => {
-          const daysLeft = daysUntilDateTW(c.competition_date)
-          // 比賽日當天算 Day 1，之後遞增
-          const daysPostCompetition = daysLeft <= 0 ? Math.abs(daysLeft) + 1 : 0
-          if (daysPostCompetition === 0) return null
-          return (
-            <PostCompetitionRecovery
-              daysPostCompetition={daysPostCompetition}
-              onSetNextCompetition={() => {
-                // 滾動到 GoalSettings 區域讓用戶設定
-                const goalSettings = document.querySelector('[data-section="goal-settings"]')
-                if (goalSettings) {
-                  goalSettings.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }
-              }}
-            />
-          )
-        })()}
 
         {/* === Onboarding Checklist: persistent task checklist for new users (first 14 days) === */}
         {(() => {
@@ -1238,51 +1283,6 @@ export default function ClientDashboard() {
             <RecoveryDashboard clientId={c.unique_code} />
           </div>
         )}
-
-        {/* Goal-Driven + Peak Week（備賽客戶）*/}
-        {isCompetition && (() => {
-          const compDaysLeft = c.competition_date ? daysUntilDateTW(c.competition_date) : null
-          const showPeakWeek = compDaysLeft != null && compDaysLeft >= 0 && compDaysLeft <= 14 && latestBodyData?.weight
-          return (
-            <>
-              {(!showPeakWeek || compDaysLeft! > 7) && (
-                <GoalDrivenStatus
-                  clientId={c.id}
-                  code={c.unique_code}
-                  isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
-                  onMutate={mutateWithTargets}
-                />
-              )}
-              {/* 備賽模式：目標設定放在倒數旁邊，方便隨時調整 */}
-              <div className="mb-3" data-section="goal-settings">
-                <GoalSettings
-                  clientId={c.id}
-                  uniqueCode={c.unique_code}
-                  currentGoalType={c.goal_type}
-                  currentTargetWeight={c.target_weight}
-                  currentTargetBodyFat={(c.target_body_fat as number) ?? null}
-                  currentTargetDate={c.target_date}
-                  competitionEnabled={isCompetitionMode(c.client_mode)}
-                  competitionDate={c.competition_date || null}
-                  prepPhase={c.prep_phase || null}
-                  latestWeight={latestBodyData?.weight || null}
-                  latestBodyFat={latestBodyData?.body_fat || null}
-                  onMutate={mutate}
-                />
-              </div>
-              {showPeakWeek && (
-                <PeakWeekPlan
-                  clientId={c.id}
-                  code={c.unique_code}
-                  competitionDate={c.competition_date!}
-                  bodyWeight={latestBodyData!.weight}
-                  previewDate={selectedDate > today ? selectedDate : undefined}
-                  onMutate={mutateWithTargets}
-                />
-              )}
-            </>
-          )
-        })()}
 
         {/* 自主管理 / 免費學員的智能營養計算（已完成 onboarding 才顯示，避免跟頂部重複） */}
         {!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target && (
