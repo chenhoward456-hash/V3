@@ -93,7 +93,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           <p className="text-xs text-red-700 leading-relaxed">{gate.recommendation}</p>
         </div>
 
-        {gate.labFlags.length > 0 && (
+        {(gate.labFlags ?? []).length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
             <p className="text-xs font-semibold text-amber-700 mb-2">🩸 異常血檢指標</p>
             <div className="flex flex-wrap gap-2">
@@ -106,7 +106,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           </div>
         )}
 
-        {gate.reasons.length > 0 && (
+        {(gate.reasons ?? []).length > 0 && (
           <div className="space-y-1 mb-3">
             {gate.reasons.slice(0, 5).map((reason: string, i: number) => (
               <p key={i} className="text-[11px] text-gray-600 leading-relaxed">{reason}</p>

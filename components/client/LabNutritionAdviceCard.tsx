@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { generateLabNutritionAdvice, type LabNutritionAdvice } from '@/lib/lab-nutrition-advisor'
 
 interface LabNutritionAdviceCardProps {
-  labResults: Array<{ test_name: string; value: number | null; unit: string; status: 'normal' | 'attention' | 'alert' }>
+  labResults: Array<{ test_name: string; value: number | null; unit: string; status: 'normal' | 'attention' | 'alert'; date?: string }>
   gender?: '男性' | '女性'
   goalType?: 'cut' | 'bulk' | null
 }

@@ -2651,7 +2651,20 @@ export function getLabMacroModifiers(
   // 差的胰島素敏感度 → 訓練日碳水集中但不要太高（1.3x）
   let carbCycleMultiplier = 1.5
 
-  for (const lab of labs) {
+  // 每個指標只取最新一筆，避免重複計算 macro modifiers
+  const sortedLabs = [...labs].sort((a, b) => {
+    if (a.date && b.date) return b.date > a.date ? 1 : b.date < a.date ? -1 : 0
+    if (a.date) return -1
+    if (b.date) return 1
+    return 0
+  })
+  const dedupedLabs = new Map<string, LabInput>()
+  for (const lab of sortedLabs) {
+    const key = (getLabCanonicalId(lab.test_name) || lab.test_name.toLowerCase()).trim()
+    if (!dedupedLabs.has(key)) dedupedLabs.set(key, lab)
+  }
+
+  for (const lab of dedupedLabs.values()) {
     if (lab.value == null) continue
 
     // ═══ 優勢指標正向調配（Positive Modifiers）═══
