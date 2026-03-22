@@ -1410,6 +1410,69 @@ function checkCuttingReadiness(
     }
   }
 
+  // --- 6. 血檢時效衰減：舊數據不該永遠擋住你 ---
+  // 血檢超過 8 週 → 扣分減半，超過 16 週 → 扣分剩 25%
+  // 避免 3 個月前的爛數據永遠鎖住減脂
+  if (labs.length > 0 && labs.some(l => l.date)) {
+    const latestLabDate = labs
+      .filter(l => l.date)
+      .map(l => l.date!)
+      .sort((a, b) => (b > a ? 1 : -1))[0]
+
+    if (latestLabDate) {
+      const now = new Date()
+      const labDate = new Date(latestLabDate)
+      const weeksSinceLab = Math.floor((now.getTime() - labDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
+
+      if (weeksSinceLab >= 16) {
+        // 血檢超過 4 個月：扣分恢復 75%（只保留 25% 的扣分效力）
+        const recovered = Math.round((100 - score) * 0.75)
+        score += recovered
+        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，扣分效力降低 75%（建議重新驗血確認恢復狀況）`)
+      } else if (weeksSinceLab >= 8) {
+        // 血檢超過 2 個月：扣分恢復 50%
+        const recovered = Math.round((100 - score) * 0.50)
+        score += recovered
+        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，扣分效力降低 50%（建議重新驗血）`)
+      }
+    }
+  }
+
+  // --- 7. 身體恢復加分：用穿戴裝置 + 每日狀態當替代指標 ---
+  // 即使沒有新血檢，如果身體信號持續好轉，代表可能已恢復
+  const wellness = input.recentWellness || []
+  if (wellness.length >= 7) {
+    // 取最近 7 天的平均
+    const recentWellness = wellness.slice(-7)
+    const avgEnergy = recentWellness
+      .filter(w => w.energy_level != null)
+      .reduce((s, w) => s + w.energy_level!, 0) / Math.max(1, recentWellness.filter(w => w.energy_level != null).length)
+    const avgTrainingDrive = recentWellness
+      .filter(w => w.training_drive != null)
+      .reduce((s, w) => s + w.training_drive!, 0) / Math.max(1, recentWellness.filter(w => w.training_drive != null).length)
+
+    // 精力 + 訓練動力都 ≥ 7（滿分 10）= 身體感覺恢復良好
+    if (avgEnergy >= 7 && avgTrainingDrive >= 7) {
+      score += 12
+      reasons.push(`💪 近 7 天身體感覺良好（精力 ${avgEnergy.toFixed(1)} / 訓練動力 ${avgTrainingDrive.toFixed(1)}）— 恢復加分 +12`)
+    } else if (avgEnergy >= 6 && avgTrainingDrive >= 6) {
+      score += 6
+      reasons.push(`👍 近 7 天身體感覺尚可（精力 ${avgEnergy.toFixed(1)} / 訓練動力 ${avgTrainingDrive.toFixed(1)}）— 恢復加分 +6`)
+    }
+
+    // 穿戴裝置恢復分數持續 >70
+    const deviceScores = recentWellness
+      .filter(w => w.device_recovery_score != null)
+      .map(w => w.device_recovery_score!)
+    if (deviceScores.length >= 5) {
+      const avgDevice = deviceScores.reduce((s, v) => s + v, 0) / deviceScores.length
+      if (avgDevice >= 70) {
+        score += 8
+        reasons.push(`⌚ 穿戴裝置恢復分數持續良好（平均 ${Math.round(avgDevice)}/100）— 恢復加分 +8`)
+      }
+    }
+  }
+
   score = Math.max(0, Math.min(100, score))
 
   // 閘門判定：分數 < 50 → 擋住
@@ -1418,7 +1481,11 @@ function checkCuttingReadiness(
   let recommendation = ''
   if (blocked) {
     if (labFlags.length > 0) {
-      recommendation = `建議先以維持量 + 微盈餘進食 2-4 週，等荷爾蒙指標改善後再開始減脂。異常指標：${labFlags.join('、')}。`
+      // 檢查是否有舊血檢提示
+      const hasOldLabNote = reasons.some(r => r.includes('⏰'))
+      recommendation = hasOldLabNote
+        ? `你的血檢指標之前不理想，但已超過一段時間。建議重新驗血確認恢復狀況，或持續恢復飲食直到身體感覺穩定。異常指標：${labFlags.join('、')}。`
+        : `建議先以維持量 + 微盈餘進食 2-4 週，等荷爾蒙指標改善後再開始減脂。異常指標：${labFlags.join('、')}。`
     } else {
       recommendation = '建議先以維持量進食 1-2 週，讓身體從上一階段恢復，再開始新的減脂週期。'
     }
