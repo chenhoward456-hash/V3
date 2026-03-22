@@ -107,25 +107,34 @@ function sanitizeHref(url: string): string {
 }
 
 function renderMarkdown(content: string) {
+  // 行內 markdown 處理：先 escape 純文字，再套用 inline markup
+  function processInline(text: string): string {
+    let result = escapeHtml(text)
+    // **粗體**
+    result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // [連結文字](url)
+    result = result.replace(/\[(.*?)\]\((.*?)\)/g, (_, linkText, url) =>
+      `<a href="${sanitizeHref(url)}" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">${linkText}</a>`)
+    // > 引用
+    if (result.startsWith('&gt; ')) {
+      result = `<blockquote style="border-left: 3px solid #D4A853; padding-left: 1rem; margin: 1rem 0; color: #666;">${result.slice(5)}</blockquote>`
+    }
+    return result
+  }
+
   return content
     .split('\n')
     .map(line => {
       if (line.startsWith('## ')) {
-        return `<h2 style="font-size: 1.8rem; font-weight: bold; margin-top: 2rem; margin-bottom: 1rem; color: #2D2D2D;">${escapeHtml(line.replace('## ', ''))}</h2>`
+        return `<h2 style="font-size: 1.8rem; font-weight: bold; margin-top: 2rem; margin-bottom: 1rem; color: #2D2D2D;">${processInline(line.replace('## ', ''))}</h2>`
       }
       if (line.startsWith('### ')) {
-        return `<h3 style="font-size: 1.4rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #2D2D2D;">${escapeHtml(line.replace('### ', ''))}</h3>`
-      }
-      if (line.includes('**')) {
-        line = line.replace(/\*\*(.*?)\*\*/g, (_, p1) => `<strong>${escapeHtml(p1)}</strong>`)
-      }
-      if (line.includes('[') && line.includes('](')) {
-        line = line.replace(/\[(.*?)\]\((.*?)\)/g, (_, text, url) => `<a href="${sanitizeHref(url)}" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`)
+        return `<h3 style="font-size: 1.4rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #2D2D2D;">${processInline(line.replace('### ', ''))}</h3>`
       }
       if (line === '---') return '<hr style="margin: 2rem 0; border-color: #E5E5E5;" />'
-      if (line.startsWith('- ')) return `<li style="margin-bottom: 0.5rem;">${escapeHtml(line.replace('- ', ''))}</li>`
+      if (line.startsWith('- ')) return `<li style="margin-bottom: 0.5rem;">${processInline(line.replace('- ', ''))}</li>`
       if (line.startsWith('|')) return escapeHtml(line)
-      if (line.trim()) return `<p style="margin-bottom: 1rem;">${escapeHtml(line)}</p>`
+      if (line.trim()) return `<p style="margin-bottom: 1rem;">${processInline(line)}</p>`
       return ''
     })
     .join('')
