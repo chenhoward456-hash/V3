@@ -2,7 +2,9 @@
  * Service Worker — 離線快取 + 推播通知
  */
 
-const CACHE_NAME = 'hp-v4'
+// 每次部署自動更新：cache name 含 build timestamp，舊快取自動失效
+// Vercel 每次 build 會重新部署 sw.js，timestamp 就會變
+const CACHE_NAME = 'hp-v5-' + '20260322'
 const PRECACHE_URLS = [
   '/icon-192.png',
   '/icon-512.png',
