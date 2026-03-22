@@ -13,7 +13,7 @@ interface BlogPost {
   slug: string
 }
 
-const categories = ['全部', '基礎知識', '飲食策略', '進階知識', '血檢優化', '營養科學', '訓練方法', '恢復優化', '個案追蹤'] as const
+const categories = ['全部', '飲食營養', '訓練恢復', '健康數據'] as const
 
 export default function BlogFilter({ posts }: { posts: BlogPost[] }) {
   const [selectedCategory, setSelectedCategory] = useState<string>('全部')

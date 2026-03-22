@@ -1188,7 +1188,7 @@ export default function ClientDashboard() {
               fatTarget={c.fat_target}
               caloriesTarget={c.calories_target}
               simpleMode={c.simple_mode}
-              sodiumTarget={c.sodium_target}
+              sodiumTarget={c.prep_phase === 'peak_week' ? c.sodium_target : null}
               onMutate={mutate}
             />
           </CollapsibleSection>
