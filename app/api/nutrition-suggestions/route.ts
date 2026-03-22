@@ -355,8 +355,9 @@ export async function GET(request: NextRequest) {
       if (suggestion.suggestedProtein != null) updates.protein_target = suggestion.suggestedProtein
       if (suggestion.suggestedCarbs != null) updates.carbs_target = suggestion.suggestedCarbs
       if (suggestion.suggestedFat != null) updates.fat_target = suggestion.suggestedFat
-      if (suggestion.suggestedCarbsTrainingDay != null) updates.carbs_training_day = suggestion.suggestedCarbsTrainingDay
-      if (suggestion.suggestedCarbsRestDay != null) updates.carbs_rest_day = suggestion.suggestedCarbsRestDay
+      // 碳水循環：不論引擎回傳 null 或數值，都需同步 DB（避免舊值殘留造成顯示不一致）
+      updates.carbs_training_day = suggestion.suggestedCarbsTrainingDay ?? null
+      updates.carbs_rest_day = suggestion.suggestedCarbsRestDay ?? null
 
       // Peak Week 期間：每日營養素不同，清掉碳水循環值讓 NutritionLog 使用 carbs_target
       // 否則 NutritionLog 會優先顯示舊的 carbs_training_day / carbs_rest_day
