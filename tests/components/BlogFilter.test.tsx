@@ -15,9 +15,9 @@ vi.mock('next/link', () => ({
 // Fixtures
 // ---------------------------------------------------------------------------
 const samplePosts = [
-  { id: '1', title: '血檢文章', description: 'desc1', date: '2026-01-01', category: '血檢優化', readTime: '5 min', slug: 'blood-test' },
-  { id: '2', title: '營養文章', description: 'desc2', date: '2026-01-02', category: '營養科學', readTime: '8 min', slug: 'nutrition' },
-  { id: '3', title: '訓練文章', description: 'desc3', date: '2026-01-03', category: '訓練方法', readTime: '6 min', slug: 'training' },
+  { id: '1', title: '血檢文章', description: 'desc1', date: '2026-01-01', category: '健康數據', readTime: '5 min', slug: 'blood-test' },
+  { id: '2', title: '營養文章', description: 'desc2', date: '2026-01-02', category: '飲食營養', readTime: '8 min', slug: 'nutrition' },
+  { id: '3', title: '訓練文章', description: 'desc3', date: '2026-01-03', category: '訓練恢復', readTime: '6 min', slug: 'training' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -28,10 +28,10 @@ describe('BlogFilter', () => {
     render(<BlogFilter posts={samplePosts} />)
 
     const buttons = screen.getAllByRole('button')
-    expect(buttons).toHaveLength(9)
+    expect(buttons).toHaveLength(4)
 
     const buttonLabels = buttons.map((btn) => btn.textContent)
-    expect(buttonLabels).toEqual(['全部', '基礎知識', '飲食策略', '進階知識', '血檢優化', '營養科學', '訓練方法', '恢復優化', '個案追蹤'])
+    expect(buttonLabels).toEqual(['全部', '飲食營養', '訓練恢復', '健康數據'])
   })
 
   it('shows all posts by default (全部 selected)', () => {
@@ -45,7 +45,7 @@ describe('BlogFilter', () => {
   it('filters posts when a category is clicked', () => {
     render(<BlogFilter posts={samplePosts} />)
 
-    fireEvent.click(screen.getByRole('button', { name: '篩選血檢優化分類' }))
+    fireEvent.click(screen.getByRole('button', { name: '篩選健康數據分類' }))
 
     expect(screen.getByText('血檢文章')).toBeInTheDocument()
     expect(screen.queryByText('營養文章')).not.toBeInTheDocument()
@@ -53,9 +53,12 @@ describe('BlogFilter', () => {
   })
 
   it('shows empty state when no posts match the selected category', () => {
-    render(<BlogFilter posts={samplePosts} />)
+    const postsWithoutHealth = [
+      { id: '2', title: '營養文章', description: 'desc2', date: '2026-01-02', category: '飲食營養', readTime: '8 min', slug: 'nutrition' },
+    ]
+    render(<BlogFilter posts={postsWithoutHealth} />)
 
-    fireEvent.click(screen.getByText('恢復優化'))
+    fireEvent.click(screen.getByText('健康數據'))
 
     expect(screen.getByText('此分類暫無文章')).toBeInTheDocument()
   })

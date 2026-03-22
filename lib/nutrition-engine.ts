@@ -2317,6 +2317,12 @@ function generateGoalDrivenCut(
     : fallbackFatPerKg
 
   let suggestedPro = Math.round(bw * proteinPerKg)
+  // 減脂/備賽期間：保護現有蛋白質不被引擎降低（教練設定或先前計算的值）
+  // 上限 3.3g/kg 避免異常高值永久鎖定；卡路里壓縮仍可在下方降低蛋白質
+  if ((input.goalType === 'cut' || input.goalType === 'recomp') && input.currentProtein && input.currentProtein > suggestedPro) {
+    const maxReasonable = Math.round(bw * 3.3)
+    suggestedPro = Math.min(input.currentProtein, maxReasonable)
+  }
   let suggestedFat = Math.round(bw * minFatPerKg)
 
   // 血檢驅動巨量營養素修正（ApoB、鐵蛋白、胰島素等）
