@@ -1203,6 +1203,48 @@ function checkCuttingReadiness(
       reasons.push(`🟡 游離睪固酮偏低（${freeT.value} pg/mL）`)
       labFlags.push(`游離睪固酮 ${freeT.value} pg/mL`)
     }
+
+    // SHBG（性荷爾蒙結合球蛋白）— 備賽低碳後常飆高，綁住游離睪固酮
+    const shbg = findLab(['shbg', '性荷爾蒙結合球蛋白'])
+    if (shbg && shbg.value != null && shbg.value > 55) {
+      score -= 10
+      reasons.push(`🟡 SHBG 偏高（${shbg.value} nmol/L）— 綁住游離睪固酮，長期低碳常見`)
+      labFlags.push(`SHBG ${shbg.value} nmol/L`)
+    }
+
+    // E2 雌二醇（男性）— 備賽低體脂 + 低碳後 E2 可能過低，影響關節、情緒、性慾
+    const e2 = findLab(['e2', 'estradiol', '雌二醇'])
+    if (e2 && e2.value != null) {
+      if (e2.value < 15) {
+        score -= 15
+        reasons.push(`🔴 雌二醇過低（${e2.value} pg/mL，建議 ≥20）— 關節疼痛、情緒低落、恢復差`)
+        labFlags.push(`E2 ${e2.value} pg/mL`)
+      } else if (e2.value < 20) {
+        score -= 8
+        reasons.push(`🟡 雌二醇偏低（${e2.value} pg/mL）— 可能影響關節和恢復`)
+        labFlags.push(`E2 ${e2.value} pg/mL`)
+      }
+    }
+
+    // 聯合判斷：睪固酮↓ + 游離T↓ + SHBG↑ = 荷爾蒙軸崩潰（備賽後典型模式）
+    const testoLow = testo && testo.value != null && testo.value < 450
+    const freeTLow = freeT && freeT.value != null && freeT.value < 60
+    const shbgHigh = shbg && shbg.value != null && shbg.value > 45
+    const androgenFlagsCount = [testoLow, freeTLow, shbgHigh].filter(Boolean).length
+    if (androgenFlagsCount >= 2) {
+      score -= 15  // 額外扣分（多指標同時異常 = 系統性問題）
+      reasons.push('🚨 雄性激素軸多指標異常（睪固酮↓ + 游離T↓ + SHBG↑）— 典型備賽後荷爾蒙壓迫，必須先恢復碳水和脂肪攝取')
+    }
+  }
+
+  // 女性 E2 — 過低可能是 RED-S 或過度減脂
+  if (!isMale) {
+    const e2f = findLab(['e2', 'estradiol', '雌二醇'])
+    if (e2f && e2f.value != null && e2f.value < 30) {
+      score -= 15
+      reasons.push(`🔴 雌二醇過低（${e2f.value} pg/mL）— 可能是 RED-S 或過度減脂的訊號`)
+      labFlags.push(`E2 ${e2f.value} pg/mL`)
+    }
   }
 
   // 皮質醇
