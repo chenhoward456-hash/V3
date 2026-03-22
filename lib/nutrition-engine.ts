@@ -116,7 +116,7 @@ import {
   type BodyFatZoneId,
 } from './body-fat-zone-table'
 
-import { getLabMacroModifiers, type LabMacroModifier, type LabTrainingModifier } from './lab-nutrition-advisor'
+import { getLabMacroModifiers, detectLabCrossPatterns, type LabMacroModifier, type LabTrainingModifier } from './lab-nutrition-advisor'
 import { type GeneticProfile, getSerotoninRiskLevel } from './supplement-engine'
 import { generateRecoveryAssessment, type RecoveryAssessment, type RecoveryState as RecoveryEngineState } from './recovery-engine'
 import type { PrepPhase } from './client-mode'
@@ -332,6 +332,15 @@ export interface NutritionSuggestion {
   // 賽後恢復標記（比賽日期已過時自動啟用）
   postCompetitionRecovery?: boolean
   recoveryWater?: number  // 恢復期建議水量 (ml)
+
+  // 減脂閘門：血檢 + 穿戴裝置 + 恢復狀態不合格時強制恢復
+  cuttingReadinessGate?: {
+    blocked: boolean              // true = 閘門擋住，不允許減脂
+    reasons: string[]             // 每個擋住的原因
+    labFlags: string[]            // 異常的血檢指標
+    recommendation: string        // 給用戶的建議
+    readinessScore: number        // 0-100 綜合就緒分數
+  } | null
 }
 
 // 基因修正紀錄
@@ -1144,6 +1153,161 @@ export function calculateMetabolicStressScore(params: {
   }
 }
 
+// ===== 減脂就緒閘門 =====
+// 綜合血檢（荷爾蒙）+ 穿戴裝置 + 恢復狀態，判斷是否適合開始/繼續減脂
+// 閘門擋住時，引擎強制恢復飲食而非減脂
+
+interface CuttingReadinessResult {
+  blocked: boolean
+  reasons: string[]
+  labFlags: string[]
+  recommendation: string
+  readinessScore: number  // 0-100
+}
+
+function checkCuttingReadiness(
+  input: NutritionInput,
+  recoveryState: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown',
+  deviceReadiness: number | null,
+  metabolicStress: MetabolicStressResult | null,
+): CuttingReadinessResult {
+  const reasons: string[] = []
+  const labFlags: string[] = []
+  let score = 100 // 從滿分開始扣
+
+  const isMale = input.gender === '男性'
+  const labs = input.labResults || []
+
+  // --- 1. 血檢荷爾蒙指標 ---
+  const findLab = (keywords: string[]) =>
+    labs.find(l => keywords.some(k => l.test_name.toLowerCase().includes(k)) && l.value != null)
+
+  // 睪固酮（男性）
+  if (isMale) {
+    const testo = findLab(['testosterone', '睪固酮', '睪酮'])
+    if (testo && testo.value != null) {
+      if (testo.value < 300) {
+        score -= 30
+        reasons.push(`🔴 睪固酮極低（${testo.value} ng/dL，安全值 ≥400）— 不適合減脂`)
+        labFlags.push(`睪固酮 ${testo.value} ng/dL`)
+      } else if (testo.value < 400) {
+        score -= 15
+        reasons.push(`🟡 睪固酮偏低（${testo.value} ng/dL，建議 ≥400 再開始減脂）`)
+        labFlags.push(`睪固酮 ${testo.value} ng/dL`)
+      }
+    }
+
+    const freeT = findLab(['free t', 'free testosterone', '游離睪固酮'])
+    if (freeT && freeT.value != null && freeT.value < 47) {
+      score -= 10
+      reasons.push(`🟡 游離睪固酮偏低（${freeT.value} pg/mL）`)
+      labFlags.push(`游離睪固酮 ${freeT.value} pg/mL`)
+    }
+  }
+
+  // 皮質醇
+  const cortisol = findLab(['cortisol', '皮質醇', '可體松'])
+  if (cortisol && cortisol.value != null) {
+    if (cortisol.value > 25) {
+      score -= 20
+      reasons.push(`🔴 皮質醇過高（${cortisol.value} μg/dL，安全值 ≤18）— 身體處於高壓狀態，減脂會加劇肌肉流失`)
+      labFlags.push(`皮質醇 ${cortisol.value} μg/dL`)
+    } else if (cortisol.value > 20) {
+      score -= 10
+      reasons.push(`🟡 皮質醇偏高（${cortisol.value} μg/dL）— 建議先恢復再減脂`)
+      labFlags.push(`皮質醇 ${cortisol.value} μg/dL`)
+    }
+  }
+
+  // 甲狀腺（TSH + Free T4 聯合判斷）
+  const tsh = findLab(['tsh', '促甲狀腺'])
+  const freeT4 = findLab(['free t4', 'ft4', '游離甲狀腺素'])
+  if (tsh && tsh.value != null && tsh.value > 4.0) {
+    score -= 15
+    reasons.push(`🟡 TSH 偏高（${tsh.value}）— 甲狀腺功能低下，代謝率降低，不適合加深赤字`)
+    labFlags.push(`TSH ${tsh.value}`)
+  }
+  if (freeT4 && freeT4.value != null && freeT4.value < 1.0) {
+    score -= 10
+    reasons.push(`🟡 Free T4 偏低（${freeT4.value}）— 甲狀腺輸出不足`)
+    labFlags.push(`Free T4 ${freeT4.value}`)
+  }
+  // TSH + Free T4 聯合：代謝低下模式
+  if (tsh?.value != null && tsh.value > 3.5 && freeT4?.value != null && freeT4.value < 1.0) {
+    score -= 10  // 額外扣分
+    reasons.push('🔴 TSH↑ + Free T4↓ = 甲狀腺代謝低下模式，必須先恢復碳水攝取')
+  }
+
+  // CRP（發炎指標）
+  const crp = findLab(['crp', 'c-reactive', 'c反應蛋白'])
+  if (crp && crp.value != null && crp.value > 3.0) {
+    score -= 10
+    reasons.push(`🟡 CRP 偏高（${crp.value}）— 系統性發炎，需先消炎再減脂`)
+    labFlags.push(`CRP ${crp.value}`)
+  }
+
+  // 鐵蛋白
+  const ferritin = findLab(['ferritin', '鐵蛋白'])
+  if (ferritin && ferritin.value != null && ferritin.value < 30) {
+    score -= 10
+    reasons.push(`🟡 鐵蛋白偏低（${ferritin.value}）— 攜氧能力下降，有氧表現和恢復受影響`)
+    labFlags.push(`鐵蛋白 ${ferritin.value}`)
+  }
+
+  // --- 2. 交叉模式偵測（RED-S / 過度訓練）---
+  if (labs.length > 0) {
+    const crossPatterns = detectLabCrossPatterns(
+      labs.map(l => ({ test_name: l.test_name, value: l.value ?? 0, unit: l.unit, status: l.status })),
+      { gender: input.gender as '男性' | '女性', bodyFatPct: input.bodyFatPct }
+    )
+    for (const pattern of crossPatterns) {
+      if (pattern.pattern === 'red_s_risk') {
+        score -= 25
+        reasons.push(`🚨 RED-S 風險偵測 — ${pattern.description}`)
+      }
+      if (pattern.pattern === 'overtraining_risk') {
+        score -= 20
+        reasons.push(`🚨 過度訓練風險 — ${pattern.description}`)
+      }
+    }
+  }
+
+  // --- 3. 穿戴裝置恢復狀態 ---
+  if (deviceReadiness != null && deviceReadiness < 40) {
+    score -= 15
+    reasons.push(`🟡 穿戴裝置恢復分數偏低（${deviceReadiness}/100）— 身體尚未恢復`)
+  }
+  if (recoveryState === 'critical') {
+    score -= 20
+    reasons.push('🔴 恢復狀態：危險 — 神經/肌肉/代謝系統尚未恢復')
+  } else if (recoveryState === 'struggling') {
+    score -= 10
+    reasons.push('🟡 恢復狀態：偏差 — 建議先恢復 1-2 週再開始減脂')
+  }
+
+  // --- 4. 代謝壓力 ---
+  if (metabolicStress && metabolicStress.score >= 60) {
+    score -= 15
+    reasons.push(`🟡 代謝壓力分數偏高（${metabolicStress.score}/100）— 荷爾蒙和代謝率可能已受壓`)
+  }
+
+  score = Math.max(0, Math.min(100, score))
+
+  // 閘門判定：分數 < 50 → 擋住
+  const blocked = score < 50
+
+  let recommendation = ''
+  if (blocked) {
+    if (labFlags.length > 0) {
+      recommendation = `建議先以維持量 + 微盈餘進食 2-4 週，等荷爾蒙指標改善後再開始減脂。異常指標：${labFlags.join('、')}。`
+    } else {
+      recommendation = '建議先以維持量進食 1-2 週，讓身體從上一階段恢復，再開始新的減脂週期。'
+    }
+  }
+
+  return { blocked, reasons, labFlags, recommendation, readinessScore: score }
+}
+
 // ===== Refeed 觸發判斷 =====
 // 向後相容：原有 refeed 判斷（仍用於 reactive 模式）
 // Goal-Driven 模式改用 calculateMetabolicStressScore()
@@ -1699,8 +1863,57 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     }
   }
 
+  // 8c. 減脂就緒閘門：血檢 + 穿戴裝置 + 恢復狀態綜合評估
+  // 如果荷爾蒙指標太差，強制進入恢復模式而非減脂
+  const cuttingGate = checkCuttingReadiness(input, currentState, readinessScore, metabolicStress)
+
+  if (cuttingGate.blocked && (input.goalType === 'cut' || input.goalType === 'recomp')) {
+    // 閘門擋住 → 強制恢復飲食，不走減脂引擎
+    const bw = input.bodyWeight
+    const estimatedMaintenance = estimatedTDEE || Math.round(bw * 33)
+    const recoveryCals = Math.round(estimatedMaintenance * 1.05) // 微盈餘幫助荷爾蒙恢復
+    const recoveryProtein = Math.round(bw * 2.2)
+    const recoveryFat = Math.round(bw * 1.0)
+    const recoveryCarbs = Math.max(150, Math.round((recoveryCals - recoveryProtein * 4 - recoveryFat * 9) / 4))
+
+    warnings.push(...cuttingGate.reasons)
+    return {
+      status: 'on_track' as const,
+      statusLabel: '荷爾蒙恢復期',
+      statusEmoji: '🛡️',
+      message: `系統偵測到你的身體指標尚未從上一階段恢復。${cuttingGate.recommendation}`,
+      warnings,
+      suggestedCalories: recoveryCals,
+      suggestedProtein: recoveryProtein,
+      suggestedCarbs: recoveryCarbs,
+      suggestedFat: recoveryFat,
+      suggestedCarbsTrainingDay: null,
+      suggestedCarbsRestDay: null,
+      caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
+      estimatedTDEE: estimatedMaintenance, weeklyWeightChangeRate: weeklyChangeRate,
+      dietDurationWeeks: 0, dietBreakSuggested: false,
+      bodyFatZoneInfo: zoneInfo,
+      labMacroModifiers: labModResult.macroModifiers,
+      labTrainingModifiers: labModResult.trainingModifiers,
+      energyAvailability,
+      deadlineInfo: null,
+      autoApply: true, tdeeAnomalyDetected: false,
+      peakWeekPlan: null, metabolicStress,
+      menstrualCycleNote: cycleInfo.note,
+      perMealProteinGuide: buildPerMealProteinGuide(bw, recoveryProtein),
+      geneticCorrections: [],
+      cuttingReadinessGate: cuttingGate,
+      ...stateFields,
+    }
+  }
+
   // 9. 根據目標類型分流
-  const extraFields = { metabolicStress, tdeeAnomalyDetected, labMacroModifiers: labModResult.macroModifiers, labTrainingModifiers: labModResult.trainingModifiers, energyAvailability }
+  const extraFields = {
+    metabolicStress, tdeeAnomalyDetected,
+    labMacroModifiers: labModResult.macroModifiers, labTrainingModifiers: labModResult.trainingModifiers,
+    energyAvailability,
+    cuttingReadinessGate: cuttingGate.blocked ? cuttingGate : null,
+  }
   let result: NutritionSuggestion
   if (input.goalType === 'cut' || input.goalType === 'recomp') {
     // recomp 用 cut 引擎（微赤字 + 高蛋白），但赤字幅度較小

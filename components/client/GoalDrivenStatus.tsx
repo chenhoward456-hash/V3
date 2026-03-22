@@ -70,6 +70,71 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
 
   const dl = data.deadlineInfo
   const isGoalDriven = dl?.isGoalDriven
+  const gate = data.cuttingReadinessGate
+
+  // 減脂閘門擋住：顯示荷爾蒙恢復卡片
+  if (gate?.blocked) {
+    return (
+      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🛡️</span>
+            <h2 className="text-lg font-bold text-gray-900">荷爾蒙恢復期</h2>
+          </div>
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-700">
+            就緒分數 {gate.readinessScore}/100
+          </span>
+        </div>
+
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-3">
+          <p className="text-sm font-medium text-red-800 mb-2">
+            系統偵測到你的身體指標尚未恢復，暫時不建議進入減脂
+          </p>
+          <p className="text-xs text-red-700 leading-relaxed">{gate.recommendation}</p>
+        </div>
+
+        {gate.labFlags.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
+            <p className="text-xs font-semibold text-amber-700 mb-2">🩸 異常血檢指標</p>
+            <div className="flex flex-wrap gap-2">
+              {gate.labFlags.map((flag: string, i: number) => (
+                <span key={i} className="text-[11px] bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-medium">
+                  {flag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {gate.reasons.length > 0 && (
+          <div className="space-y-1 mb-3">
+            {gate.reasons.slice(0, 5).map((reason: string, i: number) => (
+              <p key={i} className="text-[11px] text-gray-600 leading-relaxed">{reason}</p>
+            ))}
+          </div>
+        )}
+
+        {/* 仍然顯示恢復期的營養目標 */}
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+          <p className="text-xs font-semibold text-green-700 mb-2">📋 恢復期飲食目標（微盈餘）</p>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label: '熱量', value: data.suggestedCalories, unit: 'kcal', emoji: '🔥' },
+              { label: '蛋白質', value: data.suggestedProtein, unit: 'g', emoji: '🥩' },
+              { label: '碳水', value: data.suggestedCarbs, unit: 'g', emoji: '🍚' },
+              { label: '脂肪', value: data.suggestedFat, unit: 'g', emoji: '🥑' },
+            ].map(({ label, value, unit, emoji }) => (
+              <div key={label} className="text-center bg-white bg-opacity-70 rounded-xl py-2 px-1">
+                <p className="text-[10px] text-gray-500">{emoji} {label}</p>
+                <p className="text-lg font-bold text-gray-900">{value || '--'}</p>
+                <p className="text-[10px] text-gray-400">{unit}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // 穿戴裝置恢復狀態回饋（所有狀態都顯示）
   const wearableInsightCard = (() => {
