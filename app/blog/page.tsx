@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '16',
+    title: '蛋白質攝取完整指南：一天要吃多少？怎麼吃？台灣食物實測全整理',
+    description: '蛋白質一天到底要吃多少？整理不同目標的建議量、台灣常見高蛋白食物實測數據、餐間分配策略，以及常見迷思破解。',
+    date: '2026-03-22',
+    category: '飲食策略',
+    readTime: '12 分鐘',
+    slug: 'protein-intake-guide',
+  },
+  {
     id: '15',
     title: '減脂停滯期完全攻略：為什麼體重不動了？5 個科學方法幫你突破卡關',
     description: '減脂停滯期是幾乎每個人都會遇到的瓶頸。從代謝適應、NEAT 下降、水分滯留三大原因切入，教你判斷真假停滯，並提供 5 個有科學根據的突破方法。',
