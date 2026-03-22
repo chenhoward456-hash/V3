@@ -2458,34 +2458,34 @@ function generateGoalDrivenCut(
   const shortfall = effectiveDailyDeficit - realDietDeficit
 
   if (shortfall > 50) {
-    // 飲食面赤字不夠（差距 > 50 kcal）→ 需要額外活動補，全部換算成步數
+    // 飲食面赤字不夠（差距 > 50 kcal）→ 需要額外活動補，換算為有氧分鐘數
     const rawExtraBurn = shortfall
     extraBurnPerDay = Math.min(rawExtraBurn, CARDIO.MAX_EXTRA_BURN_PER_DAY)
     extraCardioNeeded = true
-    suggestedCardioMinutes = 0  // 不顯示有氧分鐘，全轉步數
 
-    // 全部換算成步數（不分有氧/NEAT，統一由步數追蹤）
-    const extraSteps = Math.ceil(extraBurnPerDay / kcalPerStep)
-    suggestedDailySteps = Math.min(cardioProfile.MAX_DAILY_STEPS, cardioProfile.BASELINE_STEPS + extraSteps)
+    // 計算有氧分鐘（中等強度），受 activityProfile 上限限制
+    const rawMinutes = Math.round(extraBurnPerDay / kcalPerMinCardio)
+    suggestedCardioMinutes = Math.min(cardioProfile.MAX_CARDIO_MINUTES, rawMinutes)
+    // suggestedDailySteps 維持基礎值（有氧分鐘已涵蓋額外消耗，不重複計算步數）
 
-    // 預測體重（飲食 + 步數）
-    const actualExtraSteps = suggestedDailySteps - cardioProfile.BASELINE_STEPS
-    const totalDailyBurn = realDietDeficit + actualExtraSteps * kcalPerStep
+    // 預測體重（飲食 + 有氧）
+    const actualCardioburn = suggestedCardioMinutes * kcalPerMinCardio
+    const totalDailyBurn = realDietDeficit + actualCardioburn
     const totalLoss = (totalDailyBurn * daysLeft) / energyDensity
     predictedCompWeight = Math.round((bw - totalLoss) * 10) / 10
 
     // 判斷能否達標（Peak Week 拆分時比較 PW 入場目標）
     if (predictedCompWeight <= effectiveTarget + 0.3) {
-      cardioNote = `飲食 + 步數可達標！今日目標 ${suggestedDailySteps.toLocaleString()} 步（需額外消耗 ${Math.round(extraBurnPerDay)}kcal）`
+      cardioNote = `飲食 + 有氧 ${suggestedCardioMinutes} 分鐘可達標！（需額外消耗 ${Math.round(extraBurnPerDay)}kcal）`
     } else {
       const targetLabel = deadlineInfo.prePeakEntryWeight ? `PW 入場 ${effectiveTarget}kg` : `目標 ${targetWeight}kg`
       cardioNote = `預測 ${predictedCompWeight}kg（${targetLabel}），差 ${(predictedCompWeight - effectiveTarget).toFixed(1)}kg。可與教練討論調整量級或目標`
     }
 
     if (rawExtraBurn > CARDIO.MAX_EXTRA_BURN_PER_DAY) {
-      warnings.push(`🏃 理論需額外消耗 ${Math.round(rawExtraBurn)}kcal/天，但步數合理上限約 ${CARDIO.MAX_EXTRA_BURN_PER_DAY}kcal/天`)
+      warnings.push(`🏃 理論需額外消耗 ${Math.round(rawExtraBurn)}kcal/天，但每日有氧合理上限約 ${CARDIO.MAX_EXTRA_BURN_PER_DAY}kcal/天`)
     }
-    warnings.push(`👟 今日步數目標 ${suggestedDailySteps.toLocaleString()} 步（需額外消耗 ${Math.round(extraBurnPerDay)}kcal 彌補飲食缺口）`)
+    warnings.push(`🚴 今日有氧目標 ${suggestedCardioMinutes} 分鐘（中等強度，需額外消耗 ${Math.round(extraBurnPerDay)}kcal 彌補飲食缺口）`)
   } else {
     // 飲食面赤字足夠（shortfall ≤ 50 kcal）
     predictedCompWeight = effectiveTarget  // Peak Week 拆分時 = PW 入場體重
@@ -2496,7 +2496,7 @@ function generateGoalDrivenCut(
     // 有氧分鐘在此路徑完全移除，只用步數目標表達活動量（簡單、可被動追蹤）
     // 注意：不設 extraCardioNeeded = true，因為飲食赤字已足夠
     if (safetyLevel !== 'normal' || input.activityProfile === 'high_energy_flux') {
-      suggestedCardioMinutes = 0  // 此路徑不顯示有氧分鐘
+      // 飲食赤字足夠，無需額外有氧；suggestedCardioMinutes 維持 0
 
       if (input.activityProfile === 'sedentary') {
         suggestedDailySteps = safetyLevel === 'extreme' ? 9000 : 7000
