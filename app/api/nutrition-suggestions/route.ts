@@ -392,6 +392,13 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // 非 Peak Week 時：如果 water_target 殘留極端值（<1500ml），重設為正常水量
+      // 防止跳過恢復期直接進入下一輪減脂時，水量卡在 Peak Week 的 800ml
+      if (suggestion.status !== 'peak_week' && client.water_target && client.water_target < 1500) {
+        const normalWater = Math.round(latestWeight * 35)  // 35ml/kg 正常水量
+        updates.water_target = normalWater
+      }
+
       if (Object.keys(updates).length > 0) {
         const { error: updateErr } = await supabase
           .from('clients')
