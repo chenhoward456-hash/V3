@@ -114,6 +114,12 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           </div>
         )}
 
+        {gate.labRetestReminder && (
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 mb-3">
+            <p className="text-xs text-blue-700 leading-relaxed">{gate.labRetestReminder}</p>
+          </div>
+        )}
+
         {/* 仍然顯示恢復期的營養目標 */}
         <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
           <p className="text-xs font-semibold text-green-700 mb-2">📋 恢復期飲食目標（微盈餘）</p>
@@ -531,6 +537,13 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           {data.warnings.slice(0, 5).map((w: string, i: number) => (
             <p key={i} className="text-[11px] text-gray-500">{w}</p>
           ))}
+        </div>
+      )}
+
+      {/* 血檢複檢提醒 */}
+      {data.cuttingReadinessGate?.labRetestReminder && (
+        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-2xl p-3">
+          <p className="text-xs text-blue-700 leading-relaxed">{data.cuttingReadinessGate.labRetestReminder}</p>
         </div>
       )}
     </div>

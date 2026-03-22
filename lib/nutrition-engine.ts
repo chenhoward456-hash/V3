@@ -1163,6 +1163,7 @@ interface CuttingReadinessResult {
   labFlags: string[]
   recommendation: string
   readinessScore: number  // 0-100
+  labRetestReminder: string | null  // 建議複檢提醒
 }
 
 function checkCuttingReadiness(
@@ -1515,7 +1516,31 @@ function checkCuttingReadiness(
     }
   }
 
-  return { blocked, reasons, labFlags, recommendation, readinessScore: score }
+  // --- 8. 血檢複檢提醒 ---
+  let labRetestReminder: string | null = null
+  const labDates = labs.filter(l => l.date).map(l => l.date!).sort((a, b) => (b > a ? 1 : -1))
+  const latestDate = labDates[0] || null
+
+  if (!latestDate) {
+    labRetestReminder = '🩸 尚無血檢記錄 — 建議安排一次基礎荷爾蒙 + 代謝面板檢查，作為你的個人基線數據'
+  } else {
+    const now = new Date()
+    const lastLab = new Date(latestDate)
+    const weeksSince = Math.floor((now.getTime() - lastLab.getTime()) / (7 * 24 * 60 * 60 * 1000))
+
+    if (blocked && weeksSince >= 8) {
+      // 閘門擋住 + 血檢舊了 → 驗血可以確認恢復、解鎖減脂
+      labRetestReminder = `🩸 距上次血檢已 ${weeksSince} 週 — 建議回檢確認荷爾蒙恢復狀況，數據改善後系統會自動解鎖減脂`
+    } else if (weeksSince >= 24) {
+      // 超過 6 個月
+      labRetestReminder = `🩸 距上次血檢已 ${weeksSince} 週（約 ${Math.round(weeksSince / 4)} 個月）— 建議安排回檢，維持每年 2-3 次的追蹤頻率`
+    } else if (weeksSince >= 16) {
+      // 超過 4 個月
+      labRetestReminder = `🩸 距上次血檢已 ${weeksSince} 週 — 可以開始規劃下一次血檢了`
+    }
+  }
+
+  return { blocked, reasons, labFlags, recommendation, readinessScore: score, labRetestReminder }
 }
 
 // ===== Refeed 觸發判斷 =====
