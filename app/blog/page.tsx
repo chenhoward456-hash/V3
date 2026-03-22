@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '18',
+    title: 'Peak Week 實戰紀錄：12 天體脂 -2.2%、肌肉量反增 0.5kg 的操作細節',
+    description: '大多數人拍照前餓自己，結果掉肌肉、皮下更腫。我用完全相反的方法：斷碳→超補→降訓練量，12 天體脂從 10.7% 降到 8.5%。完整操作邏輯分享。',
+    date: '2026-03-22',
+    category: '備賽實戰',
+    readTime: '6 分鐘',
+    slug: 'peak-week-case-study',
+  },
+  {
     id: '17',
     title: 'TDEE 是什麼？最完整的 TDEE 計算指南｜為什麼公式算出來的都不準',
     description: 'TDEE 是什麼？用最白話的方式解釋 TDEE 計算公式、BMR 基礎代謝率的差別，並告訴你為什麼網路上的 TDEE 計算器都不準。',
