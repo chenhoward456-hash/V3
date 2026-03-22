@@ -1197,11 +1197,27 @@ function checkCuttingReadiness(
       }
     }
 
+    // 游離睪固酮 — 單位可能是 ng/dL（台灣常見）或 pg/mL
+    // ng/dL 參考範圍：5.70-17.83（20-49歲男性）
+    // pg/mL 參考範圍：47-244（20-49歲男性）
+    // 用 status 欄位輔助判斷，並以值的量級判斷單位
     const freeT = findLab(['free t', 'free testosterone', '游離睪固酮'])
-    if (freeT && freeT.value != null && freeT.value < 47) {
-      score -= 10
-      reasons.push(`🟡 游離睪固酮偏低（${freeT.value} pg/mL）`)
-      labFlags.push(`游離睪固酮 ${freeT.value} pg/mL`)
+    if (freeT && freeT.value != null) {
+      // 判斷單位：ng/dL 通常 < 25，pg/mL 通常 > 30
+      const isNgDL = freeT.unit?.toLowerCase().includes('ng/dl') || freeT.value < 25
+      const freeTOptimalFloor = isNgDL ? 10.0 : 80  // ng/dL : pg/mL
+      const freeTLowFloor = isNgDL ? 7.0 : 55       // ng/dL : pg/mL
+      const unitLabel = isNgDL ? 'ng/dL' : 'pg/mL'
+
+      if (freeT.value < freeTLowFloor) {
+        score -= 15
+        reasons.push(`🔴 游離睪固酮偏低（${freeT.value} ${unitLabel}）— 肌肉恢復和合成受限`)
+        labFlags.push(`游離睪固酮 ${freeT.value} ${unitLabel}`)
+      } else if (freeT.value < freeTOptimalFloor) {
+        score -= 8
+        reasons.push(`🟡 游離睪固酮次優（${freeT.value} ${unitLabel}，26歲建議 ≥${freeTOptimalFloor}）`)
+        labFlags.push(`游離睪固酮 ${freeT.value} ${unitLabel}`)
+      }
     }
 
     // SHBG（性荷爾蒙結合球蛋白）— 備賽低碳後常飆高，綁住游離睪固酮
@@ -1212,9 +1228,10 @@ function checkCuttingReadiness(
       labFlags.push(`SHBG ${shbg.value} nmol/L`)
     }
 
-    // E2 雌二醇（男性）— 備賽低體脂 + 低碳後 E2 可能過低，影響關節、情緒、性慾
+    // E2 雌二醇（男性）
     const e2 = findLab(['e2', 'estradiol', '雌二醇'])
     if (e2 && e2.value != null) {
+      // 男性 E2 過低：關節疼痛、情緒低落
       if (e2.value < 15) {
         score -= 15
         reasons.push(`🔴 雌二醇過低（${e2.value} pg/mL，建議 ≥20）— 關節疼痛、情緒低落、恢復差`)
@@ -1224,16 +1241,34 @@ function checkCuttingReadiness(
         reasons.push(`🟡 雌二醇偏低（${e2.value} pg/mL）— 可能影響關節和恢復`)
         labFlags.push(`E2 ${e2.value} pg/mL`)
       }
+      // 男性 E2 過高：芳香化酶活性增加，備賽後體脂回升 + 荷爾蒙反彈常見
+      // 水腫、脂肪重新分佈、情緒波動
+      if (e2.value > 39.8) {
+        score -= 12
+        reasons.push(`🟡 雌二醇偏高（${e2.value} pg/mL，參考值 <39.8）— 芳香化酶活性增加，可能導致水腫和脂肪重新分佈`)
+        labFlags.push(`E2 ${e2.value} pg/mL (H)`)
+      }
     }
 
-    // 聯合判斷：睪固酮↓ + 游離T↓ + SHBG↑ = 荷爾蒙軸崩潰（備賽後典型模式）
+    // 聯合判斷：睪固酮↓ + 游離T↓ + SHBG↑ + E2↑ = 荷爾蒙軸崩潰（備賽後典型模式）
+    // 用更寬鬆的門檻抓「次優」而非「異常」— 26歲不該在這些水準
     const testoLow = testo && testo.value != null && testo.value < 450
-    const freeTLow = freeT && freeT.value != null && freeT.value < 60
-    const shbgHigh = shbg && shbg.value != null && shbg.value > 45
-    const androgenFlagsCount = [testoLow, freeTLow, shbgHigh].filter(Boolean).length
-    if (androgenFlagsCount >= 2) {
+    const freeTSuboptimal = freeT && freeT.value != null && (
+      (freeT.value < 25 && freeT.value < 10.0) || // ng/dL
+      (freeT.value >= 25 && freeT.value < 80)      // pg/mL
+    )
+    const shbgElevated = shbg && shbg.value != null && shbg.value > 45
+    const e2Elevated = e2 && e2.value != null && e2.value > 35
+    const androgenFlags = [testoLow, freeTSuboptimal, shbgElevated, e2Elevated].filter(Boolean).length
+    if (androgenFlags >= 2) {
       score -= 15  // 額外扣分（多指標同時異常 = 系統性問題）
-      reasons.push('🚨 雄性激素軸多指標異常（睪固酮↓ + 游離T↓ + SHBG↑）— 典型備賽後荷爾蒙壓迫，必須先恢復碳水和脂肪攝取')
+      const flagDetails = [
+        testoLow ? 'T↓' : null,
+        freeTSuboptimal ? 'Free T↓' : null,
+        shbgElevated ? 'SHBG↑' : null,
+        e2Elevated ? 'E2↑' : null,
+      ].filter(Boolean).join(' + ')
+      reasons.push(`🚨 荷爾蒙軸多指標異常（${flagDetails}）— 備賽後典型模式，須先恢復碳水和脂肪攝取再考慮減脂`)
     }
   }
 
