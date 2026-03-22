@@ -233,16 +233,20 @@ const structuredData = {
 }
 
 export const metadata: Metadata = {
-  title: 'Howard Protocol - 數據驅動的體態與健康管理 | CSCS 教練監督',
-  description: '不只是教練服務，是一套數據驅動的體態與健康管理系統。自適應 TDEE 校正、每週智能分析、Refeed 自動觸發、月經週期濾鏡。CSCS 認證教練監督，運動醫學背景。台中實體 / 全台遠端。',
-  keywords: ['數據化體態管理', '自適應TDEE', '智能營養系統', 'CSCS教練', '數據化訓練', '遠端訓練', '科學化減脂', '台中教練', '健康管理'],
-  alternates: { canonical: SITE_URL },
+  title: 'Howard Protocol — 用數據減脂，不用猜 | AI 體態管理系統',
+  description: 'CSCS 認證教練 × AI 數據系統，全台遠端服務。體重趨勢自動追蹤、TDEE 每週校正、停滯期即時偵測。免費開始，30 秒建立帳號。',
+  keywords: ['線上減脂教練', '線上健身教練', 'TDEE 計算', 'AI 營養師', '體重追蹤', '減脂停滯期', 'CSCS教練', '遠端健身教練', '體態管理'],
+  alternates: {
+    canonical: SITE_URL,
+    languages: { 'zh-TW': SITE_URL },
+  },
   openGraph: {
-    title: 'Howard Protocol - 數據驅動的體態與健康管理',
-    description: '智能系統 24 小時分析 × CSCS 教練即時監督',
+    title: 'Howard Protocol — 用數據減脂，不用猜',
+    description: 'CSCS 認證教練 × AI 數據系統。體重趨勢追蹤、TDEE 自動校正、停滯期偵測。免費開始。',
     type: 'website',
     url: SITE_URL,
-    images: [{ url: '/howard-profile.jpg', width: 1200, height: 630, alt: 'Howard Protocol - 數據驅動的體態與健康管理' }],
+    locale: 'zh_TW',
+    images: [{ url: '/howard-profile.jpg', width: 1200, height: 630, alt: 'Howard Protocol — 用數據減脂，不用猜' }],
   },
 }
 
@@ -747,19 +751,13 @@ export default function HomePage() {
               href="/join"
               className="inline-block bg-green-500 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-green-600 transition-colors min-h-[48px] shadow-lg shadow-green-500/25"
             >
-              免費體驗 →
+              免費開始 →
             </Link>
             <Link
               href="/join?tier=self_managed&promo=first399"
               className="inline-block bg-white text-navy px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors min-h-[48px]"
             >
-              NT$399/月 開始 →
-            </Link>
-            <Link
-              href="/diagnosis"
-              className="inline-block bg-transparent text-white border-2 border-white/50 px-10 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-colors min-h-[48px]"
-            >
-              先免費體驗分析
+              NT$399 限時體驗 →
             </Link>
           </div>
 
