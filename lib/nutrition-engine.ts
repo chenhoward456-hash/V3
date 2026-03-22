@@ -1179,12 +1179,19 @@ function checkCuttingReadiness(
   const labs = input.labResults || []
 
   // --- 1. 血檢荷爾蒙指標 ---
-  const findLab = (keywords: string[]) =>
-    labs.find(l => keywords.some(k => l.test_name.toLowerCase().includes(k)) && l.value != null)
+  // exclude: 排除包含這些關鍵字的項目（避免 testosterone 同時匹配 free/bioavailable）
+  const findLab = (keywords: string[], exclude?: string[]) =>
+    labs.find(l => {
+      const name = l.test_name.toLowerCase()
+      const matched = keywords.some(k => name.includes(k))
+      if (!matched || l.value == null) return false
+      if (exclude && exclude.some(ex => name.includes(ex))) return false
+      return true
+    })
 
-  // 睪固酮（男性）
+  // 睪固酮（男性）— 排除 free/bioavailable/游離 避免誤匹配
   if (isMale) {
-    const testo = findLab(['testosterone', '睪固酮', '睪酮'])
+    const testo = findLab(['testosterone', '睪固酮', '睪酮'], ['free', '游離', 'bioavailable'])
     if (testo && testo.value != null) {
       if (testo.value < 300) {
         score -= 30
@@ -1250,7 +1257,15 @@ function checkCuttingReadiness(
       }
     }
 
-    // 聯合判斷：睪固酮↓ + 游離T↓ + SHBG↑ + E2↑ = 荷爾蒙軸崩潰（備賽後典型模式）
+    // Bioavailable Testosterone — 備賽後常見大幅下降
+    const bioT = findLab(['bioavailable testosterone'])
+    if (bioT && bioT.value != null && bioT.value < 150) {
+      score -= 10
+      reasons.push(`🟡 Bioavailable Testosterone 偏低（${bioT.value} ng/dL，建議 ≥150）`)
+      labFlags.push(`Bio T ${bioT.value} ng/dL`)
+    }
+
+    // 聯合判斷：睪固酮↓ + 游離T↓ + SHBG↑ + E2↑ + BioT↓ = 荷爾蒙軸崩潰
     // 用更寬鬆的門檻抓「次優」而非「異常」— 26歲不該在這些水準
     const testoLow = testo && testo.value != null && testo.value < 450
     const freeTSuboptimal = freeT && freeT.value != null && (
@@ -1259,7 +1274,8 @@ function checkCuttingReadiness(
     )
     const shbgElevated = shbg && shbg.value != null && shbg.value > 45
     const e2Elevated = e2 && e2.value != null && e2.value > 35
-    const androgenFlags = [testoLow, freeTSuboptimal, shbgElevated, e2Elevated].filter(Boolean).length
+    const bioTLow = bioT && bioT.value != null && bioT.value < 200
+    const androgenFlags = [testoLow, freeTSuboptimal, shbgElevated, e2Elevated, bioTLow].filter(Boolean).length
     if (androgenFlags >= 2) {
       score -= 15  // 額外扣分（多指標同時異常 = 系統性問題）
       const flagDetails = [
@@ -1267,6 +1283,7 @@ function checkCuttingReadiness(
         freeTSuboptimal ? 'Free T↓' : null,
         shbgElevated ? 'SHBG↑' : null,
         e2Elevated ? 'E2↑' : null,
+        bioTLow ? 'Bio T↓' : null,
       ].filter(Boolean).join(' + ')
       reasons.push(`🚨 荷爾蒙軸多指標異常（${flagDetails}）— 備賽後典型模式，須先恢復碳水和脂肪攝取再考慮減脂`)
     }
@@ -1371,9 +1388,10 @@ function checkCuttingReadiness(
   // --- 5. 血檢趨勢分析：跟自己之前的數據比 ---
   // 絕對值在範圍內不代表沒問題，大幅下降才是真正的紅旗
   if (labs.length > 0 && labs.some(l => l.date)) {
-    const trendKeywords: { keywords: string[]; label: string; worsening: 'decrease' | 'increase' }[] = [
-      { keywords: ['testosterone', '睪固酮', '睪酮'], label: '睪固酮', worsening: 'decrease' },
+    const trendKeywords: { keywords: string[]; exclude?: string[]; label: string; worsening: 'decrease' | 'increase' }[] = [
+      { keywords: ['testosterone', '睪固酮', '睪酮'], exclude: ['free', '游離', 'bioavailable'], label: '睪固酮', worsening: 'decrease' },
       { keywords: ['free t', 'free testosterone', '游離睪固酮'], label: '游離睪固酮', worsening: 'decrease' },
+      { keywords: ['bioavailable testosterone'], label: 'Bioavailable T', worsening: 'decrease' },
       { keywords: ['shbg', '性荷爾蒙結合球蛋白'], label: 'SHBG', worsening: 'increase' },
       { keywords: ['e2', 'estradiol', '雌二醇'], label: 'E2', worsening: 'increase' },
       { keywords: ['cortisol', '皮質醇', '可體松'], label: '皮質醇', worsening: 'increase' },
@@ -1383,7 +1401,13 @@ function checkCuttingReadiness(
     for (const trend of trendKeywords) {
       // 找同一個指標的多筆記錄（按日期排序，最新在前）
       const matches = labs
-        .filter(l => trend.keywords.some(k => l.test_name.toLowerCase().includes(k)) && l.value != null && l.date)
+        .filter(l => {
+          const name = l.test_name.toLowerCase()
+          const matched = trend.keywords.some(k => name.includes(k))
+          if (!matched || l.value == null || !l.date) return false
+          if (trend.exclude && trend.exclude.some(ex => name.includes(ex))) return false
+          return true
+        })
         .sort((a, b) => (b.date! > a.date! ? 1 : -1))
 
       if (matches.length >= 2) {
