@@ -2127,7 +2127,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
       estimatedTDEE: estimatedMaintenance, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks: 0, dietBreakSuggested: false,
-      bodyFatZoneInfo: zoneInfo,
+      bodyFatZoneInfo: null,
       labMacroModifiers: labModResult.macroModifiers,
       labTrainingModifiers: labModResult.trainingModifiers,
       energyAvailability,
