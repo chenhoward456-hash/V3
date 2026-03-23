@@ -112,8 +112,54 @@ async function handleEvent(event: LineWebhookEvent) {
             type: 'text',
             text: '歡迎來到 Howard Protocol！💪\n\n' +
               '我是 Howard，CSCS 認證教練。\n' +
-              '這裡提供科學化的線上體態管理，幫你用數據達成目標。\n\n' +
-              '👇 你可以先：',
+              '這裡提供科學化的線上體態管理，幫你用數據達成目標。',
+          },
+          {
+            type: 'flex',
+            altText: '📋 方案介紹 — 點擊查看完整內容',
+            contents: {
+              type: 'bubble',
+              body: {
+                type: 'box',
+                layout: 'vertical',
+                contents: [
+                  {
+                    type: 'text',
+                    text: '📋 方案介紹',
+                    weight: 'bold',
+                    size: 'xl',
+                  },
+                  {
+                    type: 'text',
+                    text: '了解 Howard Protocol 的服務內容、方案比較與價格',
+                    size: 'sm',
+                    color: '#888888',
+                    margin: 'md',
+                    wrap: true,
+                  },
+                ],
+              },
+              footer: {
+                type: 'box',
+                layout: 'vertical',
+                contents: [
+                  {
+                    type: 'button',
+                    action: {
+                      type: 'uri',
+                      label: '查看完整方案介紹',
+                      uri: 'https://www.notion.so/Howard-Protocol-32beef85c08f813286f8d3aefedaf3b6',
+                    },
+                    style: 'primary',
+                    color: '#1a1a2e',
+                  },
+                ],
+              },
+            },
+          },
+          {
+            type: 'text',
+            text: '👇 你也可以先：',
             quickReply: {
               items: [
                 qr('🧪 免費體態評估', '免費評估'),

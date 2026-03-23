@@ -2162,7 +2162,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   const cuttingGate = checkCuttingReadiness(input, currentState, readinessScore, metabolicStress)
 
   if (cuttingGate.blocked && (input.goalType === 'cut' || input.goalType === 'recomp')) {
-    // 閘門擋住 → 強制恢復飲食，不走減脂引擎
+    // 閘門擋住 → 強制恢復飲食，但仍保留 deadlineInfo 讓前端顯示備賽進度
     const bw = input.bodyWeight
     const estimatedMaintenance = estimatedTDEE || Math.round(bw * 33)
     const recoveryCals = Math.round(estimatedMaintenance * 1.05) // 微盈餘幫助荷爾蒙恢復
@@ -2190,7 +2190,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       labMacroModifiers: labModResult.macroModifiers,
       labTrainingModifiers: labModResult.trainingModifiers,
       energyAvailability,
-      deadlineInfo: null,
+      deadlineInfo,  // 保留 deadlineInfo，讓前端仍能顯示備賽倒數和進度
       autoApply: true, tdeeAnomalyDetected: false,
       peakWeekPlan: null, metabolicStress,
       menstrualCycleNote: cycleInfo.note,
