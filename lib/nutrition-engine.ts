@@ -341,6 +341,13 @@ export interface NutritionSuggestion {
     recommendation: string        // 給用戶的建議
     readinessScore: number        // 0-100 綜合就緒分數
   } | null
+
+  // 恢復期活動量指引（閘門擋住時提供）
+  recoveryActivityGuide?: {
+    suggestedSteps: number                                  // 建議每日步數
+    cardioOptions: { type: string; label: string; duration: string; emoji: string }[]
+    note: string                                            // 注意事項
+  } | null
 }
 
 // 基因修正紀錄
@@ -2171,6 +2178,20 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     const recoveryCarbs = Math.max(150, Math.round((recoveryCals - recoveryProtein * 4 - recoveryFat * 9) / 4))
 
     warnings.push(...cuttingGate.reasons)
+
+    // 恢復期活動量指引：LISS 為主，避免 HIIT 壓荷爾蒙
+    const recoveryActivityGuide = {
+      suggestedSteps: 10000,
+      cardioOptions: [
+        { type: 'walking', label: '快走', duration: '30-45 分鐘', emoji: '🚶' },
+        { type: 'cycling', label: '輕鬆騎車', duration: '20-30 分鐘', emoji: '🚴' },
+        { type: 'swimming', label: '游泳', duration: '20-30 分鐘', emoji: '🏊' },
+        { type: 'elliptical', label: '橢圓機', duration: '20-30 分鐘', emoji: '🏃' },
+        { type: 'yoga', label: '瑜伽 / 伸展', duration: '30-45 分鐘', emoji: '🧘' },
+      ],
+      note: '恢復期以低強度有氧（LISS）為主，維持代謝和心肺功能。避免 HIIT 和高強度間歇，以免拉高皮質醇延緩荷爾蒙恢復。',
+    }
+
     return {
       status: 'on_track' as const,
       statusLabel: '荷爾蒙恢復期',
@@ -2197,6 +2218,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       perMealProteinGuide: buildPerMealProteinGuide(bw, recoveryProtein),
       geneticCorrections: [],
       cuttingReadinessGate: cuttingGate,
+      recoveryActivityGuide,
       ...stateFields,
     }
   }

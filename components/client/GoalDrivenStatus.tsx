@@ -122,7 +122,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           )}
 
           {/* 恢復期的營養目標 */}
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-3">
             <p className="text-xs font-semibold text-green-700 mb-2">📋 恢復期飲食目標（微盈餘）</p>
             <div className="grid grid-cols-4 gap-2">
               {[
@@ -139,6 +139,28 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
               ))}
             </div>
           </div>
+
+          {/* 恢復期活動量指引 */}
+          {data.recoveryActivityGuide && (
+            <div className="bg-cyan-50 border border-cyan-200 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-cyan-700">🏃 恢復期活動量指引</p>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700">
+                  👟 {data.recoveryActivityGuide.suggestedSteps.toLocaleString()} 步/天
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                {data.recoveryActivityGuide.cardioOptions.map((opt: { type: string; label: string; duration: string; emoji: string }) => (
+                  <div key={opt.type} className="bg-white bg-opacity-70 rounded-xl py-2 px-1 text-center">
+                    <p className="text-base">{opt.emoji}</p>
+                    <p className="text-[11px] font-medium text-gray-700">{opt.label}</p>
+                    <p className="text-[10px] text-gray-400">{opt.duration}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-cyan-600 leading-relaxed">{data.recoveryActivityGuide.note}</p>
+            </div>
+          )}
         </div>
 
         {/* 即使在恢復期，仍顯示備賽倒數進度 */}
