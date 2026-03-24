@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { trackLineClick } from '@/lib/analytics'
@@ -10,6 +10,14 @@ const LINE_URL = 'https://lin.ee/LP65rCc'
 type Intent = 'fat_loss' | 'recovery' | 'muscle_gain'
 
 export default function LineEntryPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <LineEntryPageInner />
+    </Suspense>
+  )
+}
+
+function LineEntryPageInner() {
   const searchParams = useSearchParams()
   const prefillMsg = searchParams.get('msg')
   const prefillSrc = searchParams.get('src') || 'direct'
