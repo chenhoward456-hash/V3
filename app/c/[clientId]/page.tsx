@@ -822,6 +822,35 @@ export default function ClientDashboard() {
             )
           })()}
 
+          {/* 身體數據記錄 — 最優先，每日量體重放最上面 */}
+          {c.body_composition_enabled && (
+            <CollapsibleSection
+              id="section-body"
+              icon="⚖️"
+              title="身體數據"
+              isCompleted={!!latestBodyData && latestBodyData.date === selectedDate}
+              summaryLine={latestBodyData ? `體重 ${latestBodyData.weight ?? '--'} kg${latestBodyData.body_fat ? ` | 體脂 ${latestBodyData.body_fat}%` : ''}` : undefined}
+              isToday={isToday}
+            >
+              <BodyComposition
+                latestBodyData={latestBodyData}
+                prevBodyData={prevBodyData}
+                bmi={bmi}
+                trendData={trendData}
+                bodyData={clientData.bodyData || []}
+                clientId={clientId as string}
+                competitionEnabled={isCompetitionMode(clientData.client.client_mode)}
+                targetWeight={clientData.client.target_weight}
+                competitionDate={clientData.client.competition_date}
+                simpleMode={clientData.client.simple_mode}
+                goalType={clientData.client.goal_type}
+                prepPhase={clientData.client.prep_phase}
+                tier={c.subscription_tier || 'free'}
+                onMutate={mutateWithTargets}
+              />
+            </CollapsibleSection>
+          )}
+
           {isToday && (
             <TodayOverviewCard
               overallStreak={overallStreak}
@@ -1092,35 +1121,6 @@ export default function ClientDashboard() {
         {/* ================================================================ */}
         {/* === DO section: 每日記錄（wrapped in CollapsibleSection） === */}
         {/* ================================================================ */}
-
-        {/* 身體數據記錄（ALL modes — 每日量體重最優先） */}
-        {c.body_composition_enabled && (
-          <CollapsibleSection
-            id="section-body"
-            icon="⚖️"
-            title="身體數據"
-            isCompleted={!!latestBodyData && latestBodyData.date === selectedDate}
-            summaryLine={latestBodyData ? `體重 ${latestBodyData.weight ?? '--'} kg${latestBodyData.body_fat ? ` | 體脂 ${latestBodyData.body_fat}%` : ''}` : undefined}
-            isToday={isToday}
-          >
-            <BodyComposition
-              latestBodyData={latestBodyData}
-              prevBodyData={prevBodyData}
-              bmi={bmi}
-              trendData={trendData}
-              bodyData={clientData.bodyData || []}
-              clientId={clientId as string}
-              competitionEnabled={isCompetitionMode(clientData.client.client_mode)}
-              targetWeight={clientData.client.target_weight}
-              competitionDate={clientData.client.competition_date}
-              simpleMode={clientData.client.simple_mode}
-              goalType={clientData.client.goal_type}
-              prepPhase={clientData.client.prep_phase}
-              tier={c.subscription_tier || 'free'}
-              onMutate={mutateWithTargets}
-            />
-          </CollapsibleSection>
-        )}
 
         {/* 飲食目標 + 飲食紀錄 */}
         {c.nutrition_enabled && (
