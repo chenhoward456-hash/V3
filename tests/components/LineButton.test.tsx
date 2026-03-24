@@ -15,25 +15,38 @@ vi.mock('@/lib/analytics', () => ({
 // Tests
 // ---------------------------------------------------------------------------
 describe('LineButton', () => {
-  it('renders an anchor element with the LINE URL', () => {
-    render(<LineButton source="test">Click me</LineButton>)
+  it('renders an anchor with /line route containing prefill message', () => {
+    render(<LineButton source="nav_cta">Click me</LineButton>)
 
-    const link = screen.getByText('Click me')
-    expect(link.closest('a')).toHaveAttribute('href', 'https://lin.ee/LP65rCc')
+    const link = screen.getByText('Click me').closest('a')
+    const href = link?.getAttribute('href') || ''
+    expect(href).toMatch(/^\/line\?msg=/)
+    expect(href).toContain('src=nav_cta')
   })
 
-  it('has target="_blank" for external link', () => {
-    render(<LineButton source="test">LINE</LineButton>)
+  it('generates context-aware default message based on intent', () => {
+    render(<LineButton source="test" intent="fat_loss">LINE</LineButton>)
 
     const link = screen.getByText('LINE').closest('a')
-    expect(link).toHaveAttribute('target', '_blank')
+    const href = link?.getAttribute('href') || ''
+    // fat_loss intent should include 減脂 message
+    expect(decodeURIComponent(href)).toContain('減脂')
   })
 
-  it('has rel="noopener noreferrer" for security', () => {
-    render(<LineButton source="test">LINE</LineButton>)
+  it('generates message with article title when provided', () => {
+    render(<LineButton source="blog_post" articleTitle="三層脂肪策略">LINE</LineButton>)
 
     const link = screen.getByText('LINE').closest('a')
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    const href = link?.getAttribute('href') || ''
+    expect(decodeURIComponent(href)).toContain('三層脂肪策略')
+  })
+
+  it('uses custom message prop when provided', () => {
+    render(<LineButton source="test" message="自訂訊息內容">LINE</LineButton>)
+
+    const link = screen.getByText('LINE').closest('a')
+    const href = link?.getAttribute('href') || ''
+    expect(decodeURIComponent(href)).toContain('自訂訊息內容')
   })
 
   it('calls trackLineClick with source and options on click', () => {
@@ -70,5 +83,17 @@ describe('LineButton', () => {
     )
 
     expect(screen.getByTestId('child')).toBeInTheDocument()
+  })
+
+  it('generates different messages for different sources', () => {
+    const { unmount: u1 } = render(<LineButton source="homepage_hero">A</LineButton>)
+    const href1 = screen.getByText('A').closest('a')?.getAttribute('href') || ''
+    u1()
+
+    const { unmount: u2 } = render(<LineButton source="remote_page">B</LineButton>)
+    const href2 = screen.getByText('B').closest('a')?.getAttribute('href') || ''
+    u2()
+
+    expect(href1).not.toEqual(href2)
   })
 })

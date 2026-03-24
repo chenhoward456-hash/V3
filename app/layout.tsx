@@ -90,6 +90,91 @@ export default function RootLayout({
   return (
     <html lang="zh-TW" className={`scroll-smooth ${inter.variable} ${notoSansTC.variable} ${playfairDisplay.variable}`}>
       <head>
+        {/* Structured Data: Organization + Person + LocalBusiness */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                "name": "Howard Protocol",
+                "url": "https://howard456.vercel.app",
+                "logo": "https://howard456.vercel.app/icon-192.png",
+                "description": "數據驅動的體態與健康管理系統。智能引擎 24 小時自動分析 × CSCS 教練即時監督。",
+                "founder": {
+                  "@type": "Person",
+                  "name": "Howard Chen",
+                  "jobTitle": "CSCS 認證教練 / 運動醫學背景",
+                  "url": "https://howard456.vercel.app/case",
+                  "sameAs": [
+                    "https://www.instagram.com/chenhoward/"
+                  ]
+                },
+                "sameAs": [
+                  "https://www.instagram.com/chenhoward/",
+                  "https://lin.ee/LP65rCc"
+                ],
+                "contactPoint": {
+                  "@type": "ContactPoint",
+                  "contactType": "customer service",
+                  "url": "https://lin.ee/LP65rCc",
+                  "availableLanguage": "zh-TW"
+                }
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "LocalBusiness",
+                "name": "Howard Protocol 實體訓練 - Coolday Fitness",
+                "description": "一對一實體訓練課程，CSCS 教練指導，結合數據化體態管理系統。",
+                "url": "https://howard456.vercel.app/action",
+                "address": {
+                  "@type": "PostalAddress",
+                  "addressLocality": "台中市",
+                  "addressRegion": "北屯區",
+                  "addressCountry": "TW"
+                },
+                "geo": {
+                  "@type": "GeoCoordinates",
+                  "latitude": 24.182,
+                  "longitude": 120.686
+                },
+                "priceRange": "$$",
+                "openingHoursSpecification": {
+                  "@type": "OpeningHoursSpecification",
+                  "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                  "opens": "09:00",
+                  "closes": "21:00"
+                }
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "WebApplication",
+                "name": "Howard Protocol 智能管理系統",
+                "applicationCategory": "HealthApplication",
+                "operatingSystem": "Web",
+                "offers": [
+                  {
+                    "@type": "Offer",
+                    "name": "自主管理版",
+                    "price": "499",
+                    "priceCurrency": "TWD",
+                    "description": "智能引擎 24 小時自動分析、自適應 TDEE、碳循環自動分配",
+                    "url": "https://howard456.vercel.app/remote"
+                  },
+                  {
+                    "@type": "Offer",
+                    "name": "教練指導版",
+                    "price": "2999",
+                    "priceCurrency": "TWD",
+                    "description": "包含自主管理所有功能 + CSCS 教練每週 review + LINE 即時諮詢",
+                    "url": "https://howard456.vercel.app/remote"
+                  }
+                ]
+              }
+            ])
+          }}
+        />
         {/* PWA */}
         <ManifestLink />
         <meta name="theme-color" content="#2563eb" />

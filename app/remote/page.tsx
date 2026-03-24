@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import LineButton from '@/components/LineButton'
 import ScrollReveal from '@/components/ScrollReveal'
+import ABTest from '@/components/ABTest'
 
 export const metadata: Metadata = {
   title: '方案與定價 - Howard Protocol 智能管理系統 | 全台遠端 / 台中實體',
@@ -116,15 +117,63 @@ export default function RemotePage() {
                   <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>HRV 個人基線 + 恢復狀態調整</li>
                   <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>減脂速度動態控制</li>
                 </ul>
-                <Link
-                  href="/join"
-                  className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
-                >
-                  免費體驗 &rarr;
-                </Link>
-                <p className="text-center text-xs text-gray-400 mt-3">
-                  免費試用，不需綁卡
-                </p>
+                <ABTest
+                  experimentId="pricing_cta"
+                  variants={{
+                    original: (
+                      <>
+                        <Link
+                          href="/join"
+                          className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
+                        >
+                          免費體驗 &rarr;
+                        </Link>
+                        <p className="text-center text-xs text-gray-400 mt-3">
+                          免費試用，不需綁卡
+                        </p>
+                      </>
+                    ),
+                    urgency: (
+                      <>
+                        <Link
+                          href="/join"
+                          className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
+                        >
+                          立即免費開始 — 名額有限 &rarr;
+                        </Link>
+                        <p className="text-center text-xs text-gray-400 mt-3">
+                          每月限量開放，不需綁卡
+                        </p>
+                      </>
+                    ),
+                    social_proof: (
+                      <>
+                        <Link
+                          href="/join"
+                          className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
+                        >
+                          加入使用者行列 &rarr;
+                        </Link>
+                        <p className="text-center text-xs text-gray-400 mt-3">
+                          免費試用，和其他用戶一起開始
+                        </p>
+                      </>
+                    ),
+                  }}
+                  fallback={
+                    <>
+                      <Link
+                        href="/join"
+                        className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
+                      >
+                        免費體驗 &rarr;
+                      </Link>
+                      <p className="text-center text-xs text-gray-400 mt-3">
+                        免費試用，不需綁卡
+                      </p>
+                    </>
+                  }
+                />
               </div>
 
               {/* 方案 2：教練指導 NT$2,999 — Recommended / Highlighted */}

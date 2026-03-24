@@ -111,6 +111,64 @@ function JoinPageInner() {
   const [waitlistSubmitted, setWaitlistSubmitted] = useState(false)
   const [showOptionalFields, setShowOptionalFields] = useState(false)
 
+  // Per-field validation errors (shown on blur)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set())
+
+  const validateField = (field: string, value: string): string => {
+    switch (field) {
+      case 'name':
+        if (!value.trim()) return '請輸入姓名'
+        if (value.trim().length < 2) return '姓名至少 2 個字'
+        return ''
+      case 'email':
+        if (!value) return '請輸入 Email'
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return '請輸入有效的 Email 格式'
+        return ''
+      case 'weight': {
+        if (!value) return '請輸入目前體重'
+        const w = parseFloat(value)
+        if (isNaN(w) || w < 30 || w > 300) return '體重請輸入 30-300 kg'
+        return ''
+      }
+      case 'height': {
+        if (!value) return '' // optional
+        const h = parseFloat(value)
+        if (isNaN(h) || h < 100 || h > 250) return '身高請輸入 100-250 cm'
+        return ''
+      }
+      case 'age': {
+        if (!value) return '' // optional
+        const a = parseInt(value)
+        if (isNaN(a) || a < 10 || a > 100) return '年齡請輸入 10-100 歲'
+        return ''
+      }
+      case 'bodyFatPct': {
+        if (!value) return '' // optional
+        const bf = parseFloat(value)
+        if (isNaN(bf) || bf < 3 || bf > 60) return '體脂率請輸入 3-60%'
+        return ''
+      }
+      default:
+        return ''
+    }
+  }
+
+  const handleBlur = (field: string, value: string) => {
+    setTouchedFields(prev => new Set(prev).add(field))
+    const err = validateField(field, value)
+    setFieldErrors(prev => ({ ...prev, [field]: err }))
+  }
+
+  const getInputClassName = (field: string, base?: string) => {
+    const hasError = touchedFields.has(field) && fieldErrors[field]
+    return `w-full px-4 py-3 border-2 rounded-xl text-base focus:outline-none transition-colors ${
+      hasError
+        ? 'border-red-400 bg-red-50/30 focus:border-red-500'
+        : 'border-gray-200 focus:border-[#2563eb]'
+    } ${base || ''}`
+  }
+
   const handleSelectPlan = (tier: Tier) => {
     setSelectedTier(tier)
     setFormStep('form')
@@ -121,14 +179,31 @@ function JoinPageInner() {
   }
 
   const handleSubmit = async () => {
+    // Run all field validations and show errors
+    const fieldsToValidate = { name, email, weight, height, age, bodyFatPct }
+    const newErrors: Record<string, string> = {}
+    const newTouched = new Set(touchedFields)
+    for (const [field, value] of Object.entries(fieldsToValidate)) {
+      newTouched.add(field)
+      const err = validateField(field, value)
+      if (err) newErrors[field] = err
+    }
+    setTouchedFields(newTouched)
+    setFieldErrors(prev => ({ ...prev, ...newErrors }))
+
+    // Check required fields with specific messages
     if (!agreedToTerms) { setError('請先同意服務條款與隱私政策'); return }
-    if (!name.trim()) { setError('請輸入姓名'); return }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('請輸入有效的 Email'); return }
+    if (newErrors.name) { setError(newErrors.name); return }
+    if (newErrors.email) { setError(newErrors.email); return }
     if (!selectedTier) { setError('請選擇方案'); return }
-    const weightNum = weight ? parseFloat(weight) : null
-    if (weightNum && (weightNum < 30 || weightNum > 300)) { setError('體重請輸入 30-300 kg 之間'); return }
-    if (!weightNum) { setError('請輸入目前體重'); return }
-    if (!gender) { setError('請選擇性別'); return }
+    if (newErrors.weight) { setError(newErrors.weight); return }
+    if (!gender) { setError('請選擇性別（系統需要此資訊計算 TDEE）'); return }
+    // Check optional field errors
+    if (newErrors.height || newErrors.age || newErrors.bodyFatPct) {
+      setError('請修正標記為紅色的欄位')
+      return
+    }
+    const weightNum = parseFloat(weight)
 
     setError('')
     setIsSubmitting(true)
@@ -474,9 +549,13 @@ function JoinPageInner() {
                   type="text"
                   placeholder="你的名字"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                  onChange={(e) => { setName(e.target.value); if (touchedFields.has('name')) handleBlur('name', e.target.value) }}
+                  onBlur={() => handleBlur('name', name)}
+                  className={getInputClassName('name')}
                 />
+                {touchedFields.has('name') && fieldErrors.name && (
+                  <p className="text-xs text-red-500 mt-1">{fieldErrors.name}</p>
+                )}
               </div>
 
               {/* Email */}
@@ -486,10 +565,15 @@ function JoinPageInner() {
                   type="email"
                   placeholder="your@email.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                  onChange={(e) => { setEmail(e.target.value); if (touchedFields.has('email')) handleBlur('email', e.target.value) }}
+                  onBlur={() => handleBlur('email', email)}
+                  className={getInputClassName('email')}
                 />
-                <p className="text-xs text-gray-400 mt-1">帳號資訊會寄到這裡</p>
+                {touchedFields.has('email') && fieldErrors.email ? (
+                  <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-1">帳號資訊會寄到這裡</p>
+                )}
               </div>
 
               {/* 電話（付費才顯示） */}
@@ -538,9 +622,13 @@ function JoinPageInner() {
                   type="number"
                   placeholder="例如 28"
                   value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                  onChange={(e) => { setAge(e.target.value); if (touchedFields.has('age')) handleBlur('age', e.target.value) }}
+                  onBlur={() => handleBlur('age', age)}
+                  className={getInputClassName('age')}
                 />
+                {touchedFields.has('age') && fieldErrors.age && (
+                  <p className="text-xs text-red-500 mt-1">{fieldErrors.age}</p>
+                )}
               </div>
 
               {/* 目標 */}
@@ -577,12 +665,16 @@ function JoinPageInner() {
                     inputMode="decimal"
                     placeholder="例如 65"
                     value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
+                    onChange={(e) => { setWeight(e.target.value); if (touchedFields.has('weight')) handleBlur('weight', e.target.value) }}
+                    onBlur={() => handleBlur('weight', weight)}
                     min="30"
                     max="300"
                     step="0.1"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                    className={getInputClassName('weight')}
                   />
+                  {touchedFields.has('weight') && fieldErrors.weight && (
+                    <p className="text-xs text-red-500 mt-1">{fieldErrors.weight}</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-1.5">身高 (cm)</label>
@@ -591,12 +683,16 @@ function JoinPageInner() {
                     inputMode="decimal"
                     placeholder="例如 170"
                     value={height}
-                    onChange={(e) => setHeight(e.target.value)}
+                    onChange={(e) => { setHeight(e.target.value); if (touchedFields.has('height')) handleBlur('height', e.target.value) }}
+                    onBlur={() => handleBlur('height', height)}
                     min="100"
                     max="250"
                     step="0.1"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                    className={getInputClassName('height')}
                   />
+                  {touchedFields.has('height') && fieldErrors.height && (
+                    <p className="text-xs text-red-500 mt-1">{fieldErrors.height}</p>
+                  )}
                 </div>
               </div>
 
@@ -624,13 +720,18 @@ function JoinPageInner() {
                   inputMode="decimal"
                   placeholder="例如 20"
                   value={bodyFatPct}
-                  onChange={(e) => setBodyFatPct(e.target.value)}
+                  onChange={(e) => { setBodyFatPct(e.target.value); if (touchedFields.has('bodyFatPct')) handleBlur('bodyFatPct', e.target.value) }}
+                  onBlur={() => handleBlur('bodyFatPct', bodyFatPct)}
                   min="3"
                   max="60"
                   step="0.1"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                  className={getInputClassName('bodyFatPct')}
                 />
-                <p className="text-xs text-gray-400 mt-1">InBody、體脂計或健身房量測的數字。沒有也沒關係，系統會用體重估算。</p>
+                {touchedFields.has('bodyFatPct') && fieldErrors.bodyFatPct ? (
+                  <p className="text-xs text-red-500 mt-1">{fieldErrors.bodyFatPct}</p>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-1">InBody、體脂計或健身房量測的數字。沒有也沒關係，系統會用體重估算。</p>
+                )}
               </div>
               )}
 
@@ -731,8 +832,11 @@ function JoinPageInner() {
 
               {/* Error */}
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
-                  <p className="text-sm text-red-600">{error}</p>
+                <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
+                  <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <p className="text-sm text-red-600 font-medium">{error}</p>
                 </div>
               )}
 
@@ -757,12 +861,18 @@ function JoinPageInner() {
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className={`w-full py-4 rounded-xl font-bold text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2 ${
+                className={`w-full py-4 rounded-xl font-bold text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2 flex items-center justify-center gap-2 ${
                   isFree
                     ? 'bg-green-500 text-white hover:bg-green-600'
                     : 'bg-[#2563eb] text-white hover:bg-[#1d4ed8]'
                 }`}
               >
+                {isSubmitting && (
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
                 {isSubmitting
                   ? isFree ? '正在建立帳號...' : '正在跳轉至付款頁面...'
                   : isFree ? '立即開始免費體驗' : `前往付款 — NT$${PLANS[selectedTier].priceLabel}`

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { trackLineClick } from '@/lib/analytics'
 
@@ -9,8 +10,12 @@ const LINE_URL = 'https://lin.ee/LP65rCc'
 type Intent = 'fat_loss' | 'recovery' | 'muscle_gain'
 
 export default function LineEntryPage() {
-  
+  const searchParams = useSearchParams()
+  const prefillMsg = searchParams.get('msg')
+  const prefillSrc = searchParams.get('src') || 'direct'
+
   const [copied, setCopied] = useState<Intent | null>(null)
+  const [quickCopied, setQuickCopied] = useState(false)
 
   const presets = useMemo(() => {
     return [
@@ -66,6 +71,84 @@ export default function LineEntryPage() {
 
     trackLineClick('line_entry', { intent })
     window.open(LINE_URL, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleQuickCopy = async () => {
+    if (!prefillMsg) return
+    try {
+      await navigator.clipboard.writeText(prefillMsg)
+    } catch {
+      // clipboard API 可能不支援
+    }
+    setQuickCopied(true)
+    trackLineClick('line_entry', { intent: 'prefill', variant: prefillSrc })
+    window.open(LINE_URL, '_blank', 'noopener,noreferrer')
+  }
+
+  // 如果有預填訊息，顯示精簡的「快速複製 + 開啟 LINE」流程
+  if (prefillMsg) {
+    return (
+      <section className="section-container">
+        <div className="max-w-lg mx-auto text-center">
+          <div className="text-6xl mb-6">💬</div>
+          <h2 className="text-2xl font-bold mb-3" style={{ color: '#2D2D2D' }}>
+            加 LINE 跟我聊
+          </h2>
+          <p className="text-gray-600 mb-8">
+            按下面的按鈕會自動複製訊息，接著開啟 LINE 貼上就好
+          </p>
+
+          {/* 訊息預覽 */}
+          <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-6 mb-6 text-left">
+            <div className="text-xs text-gray-500 mb-2">你會發送的訊息：</div>
+            <p className="text-gray-800 text-sm leading-relaxed">{prefillMsg}</p>
+          </div>
+
+          {/* 主要 CTA */}
+          <button
+            onClick={handleQuickCopy}
+            className="w-full bg-[#06C755] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#05b34d] transition-colors shadow-lg shadow-[#06C755]/25 mb-4"
+          >
+            {quickCopied ? '已複製！請在 LINE 貼上 ✓' : '複製訊息 + 開啟 LINE'}
+          </button>
+
+          {quickCopied && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+              <p className="text-green-800 text-sm font-medium">
+                訊息已複製！請在 LINE 聊天室中長按貼上。
+              </p>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-400 mb-8">
+            還沒加好友？點擊後會先引導你加入
+          </p>
+
+          {/* 備選：直接開 LINE（不複製） */}
+          <div className="border-t border-gray-200 pt-6">
+            <a
+              href={LINE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-gray-500 hover:text-primary transition-colors"
+              onClick={() => trackLineClick('line_entry', { intent: 'prefill_direct', variant: prefillSrc })}
+            >
+              或直接開啟 LINE（不複製訊息）→
+            </a>
+          </div>
+
+          {/* 引導到其他選項 */}
+          <div className="mt-8 flex flex-col gap-3">
+            <Link href="/line" className="text-sm text-primary hover:underline">
+              想選不同的諮詢方向？看所有選項 →
+            </Link>
+            <Link href="/diagnosis" className="text-sm text-gray-500 hover:text-primary transition-colors">
+              或先免費體驗系統分析 →
+            </Link>
+          </div>
+        </div>
+      </section>
+    )
   }
 
   return (
