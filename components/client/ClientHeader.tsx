@@ -185,7 +185,9 @@ export default function ClientHeader({
                     ) : (
                       <div className="space-y-2">
                         <p className="text-xs text-red-600 font-medium">確定要取消嗎？</p>
-                        <p className="text-[10px] text-gray-500">取消後不再自動扣款，帳號可使用至到期日。</p>
+                        <p className="text-[10px] text-gray-500">
+                          取消後不再自動扣款{c.expires_at ? `，帳號可使用至 ${new Date(c.expires_at).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}` : ''}。所有數據會保留。
+                        </p>
                         <div className="flex gap-2">
                           <button
                             onClick={onCancelSubscription}

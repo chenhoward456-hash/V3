@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyCheckMacValue, SUBSCRIPTION_PLANS, type SubscriptionTier } from '@/lib/ecpay'
+import { verifyCheckMacValue, ECPAY_CONFIG, generateCheckMacValue, SUBSCRIPTION_PLANS, type SubscriptionTier } from '@/lib/ecpay'
 import { createServiceSupabase } from '@/lib/supabase'
 import { sendWelcomeEmail } from '@/lib/email'
 import { pushMessage, switchRichMenuForUser } from '@/lib/line'
@@ -114,6 +114,50 @@ export async function POST(request: NextRequest) {
         }).eq('id', clientId)
 
         log.info('Client upgraded', { uniqueCode, tier, previousTier: existingClient.subscription_tier, email: updated.email })
+
+        // ===== 自動取消舊方案的定期定額（防止雙重扣款）=====
+        // 例如：$499 → $2999 時，自動取消舊的 $499 ECPay 定期定額
+        if (existingClient.subscription_tier !== tier) {
+          const { data: oldPurchases } = await supabase
+            .from('subscription_purchases')
+            .select('merchant_trade_no, subscription_tier')
+            .eq('client_id', clientId)
+            .eq('status', 'completed')
+            .neq('merchant_trade_no', merchantTradeNo) // 排除本次新訂單
+            .order('completed_at', { ascending: false })
+
+          for (const oldPurchase of (oldPurchases || [])) {
+            try {
+              const actionParams: Record<string, string> = {
+                MerchantID: ECPAY_CONFIG.MerchantID,
+                MerchantTradeNo: oldPurchase.merchant_trade_no,
+                Action: 'Cancel',
+              }
+              actionParams.CheckMacValue = generateCheckMacValue(actionParams)
+
+              const formBody = Object.entries(actionParams)
+                .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+                .join('&')
+
+              const ecpayRes = await fetch(ECPAY_CONFIG.PeriodActionURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formBody,
+              })
+              const resText = await ecpayRes.text()
+              const resParams = new URLSearchParams(resText)
+
+              if (resParams.get('RtnCode') === '1') {
+                await supabase.from('subscription_purchases').update({ status: 'cancelled' }).eq('merchant_trade_no', oldPurchase.merchant_trade_no)
+                log.info('Auto-cancelled old subscription on upgrade', { oldTradeNo: oldPurchase.merchant_trade_no, oldTier: oldPurchase.subscription_tier, newTier: tier })
+              } else {
+                log.warn('Failed to auto-cancel old subscription', { oldTradeNo: oldPurchase.merchant_trade_no, response: resText })
+              }
+            } catch (cancelErr) {
+              log.error('Auto-cancel old subscription error (non-blocking)', cancelErr, { oldTradeNo: oldPurchase.merchant_trade_no })
+            }
+          }
+        }
       } else {
         // ===== 建立新帳號 =====
         uniqueCode = generateUniqueCode()
