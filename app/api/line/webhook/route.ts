@@ -332,13 +332,47 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   if (text === '查看方案') {
     await replyMessage(event.replyToken, [
       {
-        type: 'text',
-        text: '💰 線上方案介紹\n\n' +
-          '🆓 免費：體重追蹤 + 飲食紀錄\n' +
-          '💎 NT$499/月：AI 自動分析 + 自適應 TDEE\n' +
-          '👑 NT$2,999/月：CSCS 教練每週審閱 + LINE 諮詢\n\n' +
-          `👉 ${SITE_URL}/join\n\n` +
-          '所有方案無綁約，隨時取消！',
+        type: 'flex',
+        altText: '📋 方案介紹 — 點擊查看完整內容',
+        contents: {
+          type: 'bubble',
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: '📋 方案介紹',
+                weight: 'bold',
+                size: 'xl',
+              },
+              {
+                type: 'text',
+                text: '了解 Howard Protocol 的服務內容、方案比較與價格',
+                size: 'sm',
+                color: '#888888',
+                margin: 'md',
+                wrap: true,
+              },
+            ],
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'button',
+                action: {
+                  type: 'uri',
+                  label: '查看完整方案介紹',
+                  uri: 'https://www.notion.so/Howard-Protocol-32beef85c08f813286f8d3aefedaf3b6',
+                },
+                style: 'primary',
+                color: '#1a1a2e',
+              },
+            ],
+          },
+        },
       },
     ])
     return
