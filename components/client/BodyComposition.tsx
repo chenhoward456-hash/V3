@@ -191,6 +191,11 @@ export default function BodyComposition({
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
   const { showToast } = useToast()
+  const [nudgeDismissed, setNudgeDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const ts = localStorage.getItem('hp_upgrade_nudge_dismissed')
+    return !!ts && Date.now() - parseInt(ts) < 7 * 86400000
+  })
   const [nutritionAdjusted, setNutritionAdjusted] = useState<{ message?: string; calories?: number; protein?: number; carbs?: number; fat?: number; adjusted?: boolean } | null>(null)
   const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([])
   useEffect(() => {
@@ -512,8 +517,10 @@ export default function BodyComposition({
           </div>
         )}
 
-        {/* 免費用戶情境升級提示 — 在痛點時刻出現 */}
+        {/* 免費用戶情境升級提示 — 在痛點時刻出現，關掉後 7 天不再顯示 */}
         {tier === 'free' && (() => {
+          if (nudgeDismissed) return null
+
           const weightRecords = bodyData.filter((r: any) => r.weight != null).sort((a: any, b: any) => b.date.localeCompare(a.date))
           if (weightRecords.length < 7) return null
 
@@ -556,7 +563,7 @@ export default function BodyComposition({
             nudgeDesc = '升級後系統每週自動分析趨勢、校正 TDEE、調整巨量營養素，你只需要繼續記錄'
             nudgeFeature = 'ai_engine'
           } else {
-            return null // 沒有觸發條件，不顯示
+            return null
           }
 
           return (
@@ -570,6 +577,13 @@ export default function BodyComposition({
                     了解自主管理方案（$499/月）→
                   </a>
                 </div>
+                <button
+                  onClick={() => { localStorage.setItem('hp_upgrade_nudge_dismissed', Date.now().toString()); setNudgeDismissed(true) }}
+                  className="text-gray-400 hover:text-gray-600 text-xs p-1 shrink-0"
+                  aria-label="關閉提示"
+                >
+                  ✕
+                </button>
               </div>
             </div>
           )
