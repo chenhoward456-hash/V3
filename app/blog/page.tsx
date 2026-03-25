@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '19',
+    title: '睡眠不夠，真的會白練？運動科學告訴你睡眠如何影響增肌效率',
+    description: '訓練認真、蛋白質也吃夠了，但肌肉就是長得慢？睡眠不足會從荷爾蒙、蛋白質合成、生理時鐘三個層面削減增肌效率。附 4 個今晚就能做的改善方法。',
+    date: '2026-03-25',
+    category: '訓練恢復',
+    readTime: '7 分鐘',
+    slug: 'sleep-muscle-growth',
+  },
+  {
     id: '18',
     title: 'Peak Week 實戰紀錄：12 天體脂 -2.2%、肌肉量反增 0.5kg 的操作細節',
     description: '大多數人拍照前餓自己，結果掉肌肉、皮下更腫。我用完全相反的方法：斷碳→超補→降訓練量，12 天體脂從 10.7% 降到 8.5%。完整操作邏輯分享。',
