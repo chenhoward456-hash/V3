@@ -265,21 +265,52 @@ export async function GET(request: NextRequest) {
       }
     }
   } else {
-    // ── 晚上提醒：填寫今日紀錄（Web Push 優先）──
-    const [wellnessRes, nutritionRes, trainingRes] = await Promise.all([
+    // ── 晚上提醒：聰明推播（只推活躍用戶，節省 LINE 額度）──
+
+    // 1. 查今天已記錄的數據
+    const [todayWeightRes, wellnessRes, nutritionRes, trainingRes] = await Promise.all([
+      supabase.from('body_composition').select('client_id, weight').eq('date', today),
       supabase.from('daily_wellness').select('client_id').eq('date', today),
       supabase.from('nutrition_logs').select('client_id').eq('date', today),
       supabase.from('training_logs').select('client_id').eq('date', today),
     ])
 
+    const hasWeight = new Set((todayWeightRes.data || []).map((w: { client_id: string }) => w.client_id))
     const hasWellness = new Set((wellnessRes.data || []).map((w: { client_id: string }) => w.client_id))
     const hasNutrition = new Set((nutritionRes.data || []).map((n: { client_id: string }) => n.client_id))
     const hasTraining = new Set((trainingRes.data || []).map((t: { client_id: string }) => t.client_id))
 
+    // 2. 查過去 7 天有記錄過的人（活躍用戶）
+    const sevenDaysAgo = new Date(Date.now() - 7 * DAY_MS).toISOString().split('T')[0]
+    const { data: recentRecords } = await supabase
+      .from('body_composition')
+      .select('client_id')
+      .gte('date', sevenDaysAgo)
+    const activeClientIds = new Set((recentRecords || []).map((r: { client_id: string }) => r.client_id))
+
+    // 3. 查每位活躍用戶的最近體重（用於 Quick Reply 選項）
+    const { data: latestWeights } = await supabase
+      .from('body_composition')
+      .select('client_id, weight')
+      .not('weight', 'is', null)
+      .order('date', { ascending: false })
+    const lastWeightByClient: Record<string, number> = {}
+    for (const w of (latestWeights || []) as { client_id: string; weight: number }[]) {
+      if (!lastWeightByClient[w.client_id]) lastWeightByClient[w.client_id] = w.weight
+    }
+
+    // 4. 分兩組：Web Push 組（所有缺記錄的人）+ LINE Push 組（活躍但今天沒記體重）
     const eveningTargets: { client: typeof clients[0]; missing: string[]; missingShort: string[] }[] = []
+    const lineWeightTargets: { client: typeof clients[0]; lastWeight: number }[] = []
+
     for (const client of clients) {
+      // Web Push 提醒（所有缺記錄的人，免費無限）
       const missing: string[] = []
       const missingShort: string[] = []
+      if (client.body_composition_enabled && !hasWeight.has(client.id)) {
+        missing.push('• 體重 → 輸入「體重 72.5」')
+        missingShort.push('體重')
+      }
       if (client.wellness_enabled && !hasWellness.has(client.id)) {
         missing.push('• 身心狀態 → 輸入「身心 4 3 4」')
         missingShort.push('身心狀態')
@@ -293,37 +324,67 @@ export async function GET(request: NextRequest) {
         missingShort.push('訓練紀錄')
       }
       if (missing.length > 0) eveningTargets.push({ client, missing, missingShort })
+
+      // LINE Push 體重提醒（只給活躍 + 今天沒記體重的人，帶 Quick Reply）
+      if (
+        client.body_composition_enabled &&
+        !hasWeight.has(client.id) &&
+        activeClientIds.has(client.id) &&
+        lastWeightByClient[client.id]
+      ) {
+        lineWeightTargets.push({ client, lastWeight: lastWeightByClient[client.id] })
+      }
     }
 
+    // 5a. Web Push 提醒（免費，照常送）
     for (let i = 0; i < eveningTargets.length; i += 5) {
       const batch = eveningTargets.slice(i, i + 5)
       const results = await Promise.allSettled(
         batch.map(({ client, missing, missingShort }) =>
-          sendRoutineReminder(client.id, client.line_user_id, {
+          sendWebPushOnly(client.id, {
             title: `🌙 還有 ${missing.length} 項沒記錄`,
             body: `缺少：${missingShort.join('、')}`,
-            lineText: [
-              `🌙 ${client.name}，今天還有 ${missing.length} 項沒記錄：\n`,
-              ...missing,
-              '\n回覆指令就能快速完成 ✌️',
-            ].join('\n'),
             url: `${siteUrl}/dashboard`,
           })
         )
       )
-      results.forEach((result, idx) => {
-        if (result.status === 'fulfilled') {
-          const r = result.value
-          if (r.success) {
-            sent++
-            if (r.method === 'web_push') webPushUsed++
-            else linePushUsed++
-          }
-        } else {
-          errors.push(`${batch[idx].client.name}: ${result.reason?.message || 'unknown'}`)
+      results.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value) {
+          sent++
+          webPushUsed++
         }
       })
     }
+
+    // 5b. LINE Push 體重提醒（只給活躍用戶，帶 Quick Reply 一鍵記錄）
+    for (let i = 0; i < lineWeightTargets.length; i += 5) {
+      const batch = lineWeightTargets.slice(i, i + 5)
+      const results = await Promise.allSettled(
+        batch.map(({ client, lastWeight }) => {
+          const w = lastWeight
+          const quickReplyItems = [
+            { type: 'action' as const, action: { type: 'message' as const, label: `${(w - 0.5).toFixed(1)}`, text: `體重 ${(w - 0.5).toFixed(1)}` } },
+            { type: 'action' as const, action: { type: 'message' as const, label: `${w.toFixed(1)}（不變）`, text: `體重 ${w.toFixed(1)}` } },
+            { type: 'action' as const, action: { type: 'message' as const, label: `${(w + 0.5).toFixed(1)}`, text: `體重 ${(w + 0.5).toFixed(1)}` } },
+            { type: 'action' as const, action: { type: 'message' as const, label: '自己輸入', text: '記體重' } },
+          ]
+          return pushMessage(client.line_user_id, [{
+            type: 'text',
+            text: `🌙 ${client.name}，今天體重記了嗎？\n上次 ${w.toFixed(1)} kg，點一下就記好了 👇`,
+            quickReply: { items: quickReplyItems },
+          }])
+        })
+      )
+      results.forEach((result, idx) => {
+        if (result.status === 'fulfilled') {
+          sent++
+          linePushUsed++
+        } else {
+          errors.push(`LINE weight push ${batch[idx].client.name}: ${(result.reason as Error)?.message || 'unknown'}`)
+        }
+      })
+    }
+    logger.info(`Evening push: ${webPushUsed} web, ${linePushUsed} LINE (${lineWeightTargets.length} weight targets)`)
   }
 
   // ===== 到期提醒（每日檢查，早上執行一次就好）=====
