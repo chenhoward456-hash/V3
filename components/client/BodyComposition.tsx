@@ -136,9 +136,17 @@ function getWeightFeedback(
   const hasWeeklyData = thisWeekWeights.length >= 1 && lastWeekWeights.length >= 1
   const weeklyChange = hasWeeklyData ? avg(thisWeekWeights) - avg(lastWeekWeights) : null
 
-  const freeTeaser = tier === 'free' && pastRecords.length >= 7
-    ? 'AI 偵測到你近期趨勢中的一個模式 — 升級後查看'
-    : undefined
+  // 情境化 teaser：停滯時比平時更有說服力
+  let freeTeaser: string | undefined
+  if (tier === 'free' && pastRecords.length >= 7) {
+    if (weeklyChange !== null && Math.abs(weeklyChange) <= 0.1) {
+      freeTeaser = '體重卡住了？升級後系統會自動幫你調整熱量突破停滯'
+    } else if (weeklyChange !== null && goalType === 'cut' && weeklyChange > 0.1) {
+      freeTeaser = '減脂期體重上升？升級後系統會根據趨勢自動校正你的目標'
+    } else {
+      freeTeaser = '升級後系統會自動分析你的趨勢，每週調整飲食目標'
+    }
+  }
 
   // ── Cut (減脂) phase ──
   if (goalType === 'cut' && weeklyChange !== null) {
@@ -504,16 +512,68 @@ export default function BodyComposition({
           </div>
         )}
 
-        {/* 免費用戶 AI 分析提示 */}
-        {tier === 'free' && bodyData.filter((r: any) => r.weight != null).length >= 7 && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 flex items-start gap-2">
-            <span className="text-sm mt-0.5">🔒</span>
-            <div>
-              <p className="text-xs text-blue-700 leading-relaxed">AI 已分析你 {bodyData.filter((r: any) => r.weight != null).length} 筆體重數據，偵測到趨勢模式</p>
-              <a href="/upgrade?from=free&feature=weight_analysis" className="text-xs text-blue-600 font-semibold hover:underline mt-1 inline-block">升級查看完整分析 →</a>
+        {/* 免費用戶情境升級提示 — 在痛點時刻出現 */}
+        {tier === 'free' && (() => {
+          const weightRecords = bodyData.filter((r: any) => r.weight != null).sort((a: any, b: any) => b.date.localeCompare(a.date))
+          if (weightRecords.length < 7) return null
+
+          // 偵測停滯：最近 7 筆體重高低差 < 0.3kg
+          const recent7 = weightRecords.slice(0, 7).map((r: any) => r.weight as number)
+          const range = Math.max(...recent7) - Math.min(...recent7)
+          const isPlateau = range <= 0.3
+
+          // 偵測方向錯誤：目標減脂但週均在上升
+          const thisWeek = weightRecords.filter((r: any) => {
+            const daysAgo = Math.floor((Date.now() - new Date(r.date + 'T00:00:00').getTime()) / 86400000)
+            return daysAgo < 7
+          }).map((r: any) => r.weight as number)
+          const lastWeek = weightRecords.filter((r: any) => {
+            const daysAgo = Math.floor((Date.now() - new Date(r.date + 'T00:00:00').getTime()) / 86400000)
+            return daysAgo >= 7 && daysAgo < 14
+          }).map((r: any) => r.weight as number)
+          const thisAvg = thisWeek.length > 0 ? thisWeek.reduce((a, b) => a + b, 0) / thisWeek.length : null
+          const lastAvg = lastWeek.length > 0 ? lastWeek.reduce((a, b) => a + b, 0) / lastWeek.length : null
+          const isWrongDirection = goalType === 'cut' && thisAvg != null && lastAvg != null && thisAvg > lastAvg + 0.1
+
+          let nudgeEmoji = '📊'
+          let nudgeTitle = ''
+          let nudgeDesc = ''
+          let nudgeFeature = 'weight_analysis'
+
+          if (isPlateau) {
+            nudgeEmoji = '⚖️'
+            nudgeTitle = `體重停滯中 — 最近 7 筆波動僅 ${range.toFixed(1)}kg`
+            nudgeDesc = '升級後系統會自動偵測停滯，並調整你的每日熱量目標突破瓶頸'
+            nudgeFeature = 'plateau_break'
+          } else if (isWrongDirection) {
+            nudgeEmoji = '⚠️'
+            nudgeTitle = '體重趨勢往上，跟減脂目標不一致'
+            nudgeDesc = '升級後系統會根據你的真實 TDEE 自動校正熱量，不用自己猜該吃多少'
+            nudgeFeature = 'auto_adjust'
+          } else if (weightRecords.length >= 14) {
+            nudgeEmoji = '🧠'
+            nudgeTitle = `已累積 ${weightRecords.length} 筆數據，足夠啟動 AI 自動調整`
+            nudgeDesc = '升級後系統每週自動分析趨勢、校正 TDEE、調整巨量營養素，你只需要繼續記錄'
+            nudgeFeature = 'ai_engine'
+          } else {
+            return null // 沒有觸發條件，不顯示
+          }
+
+          return (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
+              <div className="flex items-start gap-2">
+                <span className="text-sm mt-0.5">{nudgeEmoji}</span>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-gray-800">{nudgeTitle}</p>
+                  <p className="text-xs text-blue-700 leading-relaxed mt-0.5">{nudgeDesc}</p>
+                  <a href={`/join?tier=self_managed&from=free&trigger=${nudgeFeature}`} className="text-xs text-blue-600 font-semibold hover:underline mt-1.5 inline-block">
+                    了解自主管理方案（$499/月）→
+                  </a>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* 趨勢切換（簡單模式只看體重，不顯示切換） */}
         {!simpleMode && (
