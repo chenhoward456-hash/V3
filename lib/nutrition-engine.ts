@@ -402,16 +402,103 @@ export interface ShowDayMeal {
   emoji: string         // 時段 emoji
 }
 
+// ===== 胰島素敏感度分層（血檢驅動）=====
+// 文獻依據：
+// Cornier 2005：胰島素敏感者高碳水減脂效果更好
+// McClain 2013（POUNDS LOST）：胰島素阻抗者高蛋白組表現更好
+// Bandegan 2017（IAAO）：赤字下蛋白質需求上限 ~2.0 g/kg
+
+export type InsulinSensitivityTier = 'sensitive' | 'moderate' | 'resistant'
+
+/**
+ * 從血檢結果判定胰島素敏感度分層
+ * - sensitive: HOMA-IR < 1.5 or fasting insulin < 7
+ * - moderate: HOMA-IR 1.5-2.5 or fasting insulin 7-12
+ * - resistant: HOMA-IR > 2.5 or fasting insulin > 12
+ * - 無血檢：預設 moderate
+ */
+export function getInsulinSensitivityTier(
+  labResults?: Array<{ test_name: string; value: number | null; unit: string; status: string; date?: string }>
+): InsulinSensitivityTier {
+  if (!labResults || labResults.length === 0) return 'moderate'
+
+  // 搜尋 HOMA-IR
+  const homaIR = labResults.find(r =>
+    r.value != null && /^homa[- ]?ir$/i.test(r.test_name)
+  )
+  if (homaIR && homaIR.value != null) {
+    if (homaIR.value < 1.5) return 'sensitive'
+    if (homaIR.value <= 2.5) return 'moderate'
+    return 'resistant'
+  }
+
+  // 搜尋空腹胰島素（Fasting Insulin / 空腹胰島素）
+  const fastingInsulin = labResults.find(r =>
+    r.value != null && /空腹胰島素|fasting\s*insulin|^insulin$/i.test(r.test_name)
+  )
+  if (fastingInsulin && fastingInsulin.value != null) {
+    if (fastingInsulin.value < 7) return 'sensitive'
+    if (fastingInsulin.value <= 12) return 'moderate'
+    return 'resistant'
+  }
+
+  return 'moderate'
+}
+
+/**
+ * 根據胰島素敏感度分層和性別返回目標蛋白質/脂肪 g/kg
+ * 取代固定的 GOAL_DRIVEN.PROTEIN_PER_KG_* 常數
+ *
+ * 男性：
+ *   sensitive: normal=2.0, aggressive=2.1, extreme=2.2; fat=0.7
+ *   moderate:  normal=2.1, aggressive=2.2, extreme=2.3; fat=0.75
+ *   resistant: normal=2.2, aggressive=2.3, extreme=2.4; fat=0.8
+ *
+ * 女性（各 -0.4）：
+ *   sensitive: normal=1.6, aggressive=1.7, extreme=1.8; fat=0.8
+ *   moderate:  normal=1.7, aggressive=1.8, extreme=1.9; fat=0.85
+ *   resistant: normal=1.8, aggressive=1.9, extreme=2.0; fat=0.9
+ */
+function getInsulinDrivenMacros(
+  tier: InsulinSensitivityTier,
+  isMale: boolean
+): {
+  proteinNormal: number
+  proteinAggressive: number
+  proteinExtreme: number
+  fatPerKg: number
+} {
+  if (isMale) {
+    switch (tier) {
+      case 'sensitive':
+        return { proteinNormal: 2.0, proteinAggressive: 2.1, proteinExtreme: 2.2, fatPerKg: 0.7 }
+      case 'moderate':
+        return { proteinNormal: 2.1, proteinAggressive: 2.2, proteinExtreme: 2.3, fatPerKg: 0.75 }
+      case 'resistant':
+        return { proteinNormal: 2.2, proteinAggressive: 2.3, proteinExtreme: 2.4, fatPerKg: 0.8 }
+    }
+  } else {
+    switch (tier) {
+      case 'sensitive':
+        return { proteinNormal: 1.6, proteinAggressive: 1.7, proteinExtreme: 1.8, fatPerKg: 0.8 }
+      case 'moderate':
+        return { proteinNormal: 1.7, proteinAggressive: 1.8, proteinExtreme: 1.9, fatPerKg: 0.85 }
+      case 'resistant':
+        return { proteinNormal: 1.8, proteinAggressive: 1.9, proteinExtreme: 2.0, fatPerKg: 0.9 }
+    }
+  }
+}
+
 // ===== 常數 (基於文獻，編號對應檔案頂部 References) =====
 
 const SAFETY = {
   MIN_CALORIES_MALE: 1500,
   MIN_CALORIES_FEMALE: 1200,
-  // 男性蛋白質下限 [1] Helms 2014: 2.3-3.1 g/kg LBM → 體重近似取下限
-  MIN_PROTEIN_PER_KG_CUT: 2.3,
+  // 男性蛋白質下限：自然選手優化 [Bandegan 2017 IAAO: ~2.0 g/kg 赤字上限]
+  MIN_PROTEIN_PER_KG_CUT: 2.0,
   MIN_PROTEIN_PER_KG_BULK: 1.8,
-  // 女性蛋白質下限 [5] Morton 2018 / [6] Stokes 2018: 1.6-2.0 g/kg 即達最大合成效果
-  MIN_PROTEIN_PER_KG_CUT_FEMALE: 1.8,
+  // 女性蛋白質下限 [5] Morton 2018 / [6] Stokes 2018: 1.6 g/kg 即達最大合成效果
+  MIN_PROTEIN_PER_KG_CUT_FEMALE: 1.6,
   MIN_PROTEIN_PER_KG_BULK_FEMALE: 1.6,
   // 脂肪下限：男性荷爾蒙需求較低，女性 (雌激素合成) 需更高
   MIN_FAT_PER_KG: 0.8,           // 男性 (15-20% calories)
@@ -663,7 +750,7 @@ function getApoe4FatWarnings(
 const PEAK_WEEK = {
   // 碳水耗竭期 (Day 7-4)：低碳 + 高脂補充肌內三酸甘油酯 (IMT)
   DEPLETION_CARB_G_PER_KG: 1.1,    // Barakat 2022: 1.0-1.2 g/kg
-  DEPLETION_PROTEIN_G_PER_KG: 3.2,  // Barakat 2022: ~3.16 g/kg；高蛋白保護 LBM
+  DEPLETION_PROTEIN_G_PER_KG: 2.5,  // 自然選手優化（原 3.2 → 2.5）：MPS 天花板低，多吃無益
   DEPLETION_FAT_G_PER_KG: 1.5,     // Barakat 2022: ~1.56 g/kg；高脂補 IMT（1.2-1.8 range）
 
   // 碳水超補期 (Day 3-2)
@@ -679,12 +766,12 @@ const PEAK_WEEK = {
   // Taper (Day 1)
   TAPER_CARB_G_PER_KG: 5.5,        // Barakat 2022: 5.46 g/kg（基準值，會隨 loadingCarb 等比調整）
   TAPER_CARB_G_PER_KG_FEMALE: 4.0, // 女性按超補比例等比縮減（6.5/9.0 × 5.5 ≈ 4.0）
-  TAPER_PROTEIN_G_PER_KG: 2.8,
+  TAPER_PROTEIN_G_PER_KG: 2.3,     // 自然選手優化（原 2.8 → 2.3）
   TAPER_FAT_G_PER_KG: 1.1,         // 中等脂肪防止 IMT 流失
 
   // 比賽日
   SHOW_CARB_G_PER_KG: 2.0,         // 小餐維持；依視覺評估彈性調整
-  SHOW_PROTEIN_G_PER_KG: 3.0,
+  SHOW_PROTEIN_G_PER_KG: 2.2,      // 自然選手優化（原 3.0 → 2.2）：賽日重點是碳水 pump
   SHOW_FAT_G_PER_KG: 0.5,
 
   // 水分操控 — 多數自然選手策略：一開始中度灌水壓 ADH → 超補期拉到最高 → Day 1 驟降
@@ -2497,7 +2584,7 @@ function generateCutSuggestion(
   const fatPerKgFloor = zoneInfo
     ? zoneInfo.fatPerKg
     : (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)
-  const minFat = Math.round(bw * fatPerKgFloor)
+  const minFat = Math.max(Math.round(bw * fatPerKgFloor), isMale ? 50 : 45)
   if (suggestedFat < minFat) {
     suggestedFat = minFat
     warnings.push(`脂肪不可低於 ${minFat}g（${fatPerKgFloor}g/kg${isMale ? '' : '，女性荷爾蒙保護需求'}），已調整至安全底線`)
@@ -2569,8 +2656,8 @@ function generateCutSuggestion(
 
     // 重算蛋白質：取 per-kg 底線和現有值的較大值
     let recalcPro = Math.max(Math.round(bw * proteinPerKgOT), currentPro)
-    // 重算脂肪：取 per-kg 底線和現有值的較大值
-    let recalcFat = Math.max(Math.round(bw * fatPerKgOT), currentFat)
+    // 重算脂肪：取 per-kg 底線、絕對底線和現有值的較大值
+    let recalcFat = Math.max(Math.round(bw * fatPerKgOT), isMale ? 50 : 45, currentFat)
 
     // 如果有 TDEE，根據目標卡路里重算碳水（卡路里 - 蛋白質 - 脂肪 = 碳水）
     let recalcCarb = currentCarb
@@ -2600,7 +2687,7 @@ function generateCutSuggestion(
         if (mod.nutrient === 'protein' && mod.direction === 'increase') recalcPro += mod.delta
         if (mod.nutrient === 'carbs' && mod.direction === 'decrease') recalcCarb = Math.max(50, recalcCarb - mod.delta)
         if (mod.nutrient === 'carbs' && mod.direction === 'increase') recalcCarb += mod.delta
-        if (mod.nutrient === 'fat' && mod.direction === 'decrease') recalcFat = Math.max(Math.round(bw * (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)), recalcFat - mod.delta)
+        if (mod.nutrient === 'fat' && mod.direction === 'decrease') recalcFat = Math.max(Math.round(bw * (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)), isMale ? 50 : 45, recalcFat - mod.delta)
         if (mod.nutrient === 'fat' && mod.direction === 'increase') recalcFat += mod.delta
       }
     }
@@ -2661,7 +2748,7 @@ function generateCutSuggestion(
         if (suggestedCarbsTD != null) suggestedCarbsTD += mod.delta
         if (suggestedCarbsRD != null) suggestedCarbsRD += mod.delta
       }
-      if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)), suggestedFat - mod.delta)
+      if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)), isMale ? 50 : 45, suggestedFat - mod.delta)
       if (mod.nutrient === 'fat' && mod.direction === 'increase') suggestedFat += mod.delta
       if (mod.nutrient === 'calories' && mod.direction === 'increase') suggestedCal += mod.delta
     }
@@ -2675,6 +2762,11 @@ function generateCutSuggestion(
     suggestedCarbsRD = applyGeneticCarbFloor(suggestedCarbsRD, input.geneticProfile, geneticCorrections)
   }
   getApoe4FatWarnings(input.geneticProfile, geneticCorrections, warnings)
+
+  // 碳水底線警告：碳水 < 2.0 g/kg 可能影響訓練品質
+  if (input.goalType === 'cut' && suggestedCarb < 2.0 * bw) {
+    warnings.push(`⚠️ 碳水偏低（${(suggestedCarb / bw).toFixed(1)} g/kg），可能影響訓練品質。建議與教練討論是否延長時程或調整目標。`)
+  }
 
   return {
     status, statusLabel, statusEmoji, message,
@@ -2830,25 +2922,20 @@ function generateGoalDrivenCut(
     : (isCompetitionPrep ? GOAL_DRIVEN.MIN_CALORIES_FEMALE : SAFETY.MIN_CALORIES_FEMALE)
   const softMinCal = isMale ? SAFETY.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_FEMALE
 
-  // 巨量營養素分配
-  // 有體脂區間 → 用 zone table 的蛋白質值作為 baseline（取 zone 與 safety level 較高者）
-  // 無體脂區間 → fallback 到原本的 性別 + 赤字深度 分級
-  const fallbackProteinPerKg = isMale
-    ? (safetyLevel === 'extreme' ? GOAL_DRIVEN.PROTEIN_PER_KG_EXTREME
-        : safetyLevel === 'aggressive' ? GOAL_DRIVEN.PROTEIN_PER_KG_AGGRESSIVE
-        : GOAL_DRIVEN.PROTEIN_PER_KG_NORMAL)
-    : (safetyLevel === 'extreme' ? GOAL_DRIVEN.PROTEIN_PER_KG_EXTREME_FEMALE
-        : safetyLevel === 'aggressive' ? GOAL_DRIVEN.PROTEIN_PER_KG_AGGRESSIVE_FEMALE
-        : GOAL_DRIVEN.PROTEIN_PER_KG_NORMAL_FEMALE)
-  // 有體脂區間時：取 zone 建議和 safety-level fallback 的較高者
+  // 巨量營養素分配（胰島素敏感度驅動）
+  // 根據血檢 HOMA-IR / 空腹胰島素判定分層，取代固定常數
+  const insulinTier = getInsulinSensitivityTier(input.labResults)
+  const insulinMacros = getInsulinDrivenMacros(insulinTier, isMale)
+  const fallbackProteinPerKg = safetyLevel === 'extreme' ? insulinMacros.proteinExtreme
+    : safetyLevel === 'aggressive' ? insulinMacros.proteinAggressive
+    : insulinMacros.proteinNormal
+  // 有體脂區間時：取 zone 建議和 insulin-driven fallback 的較高者
   const proteinPerKg = zoneInfo
     ? Math.max(zoneInfo.proteinPerKg, fallbackProteinPerKg)
     : fallbackProteinPerKg
 
-  // 脂肪：有體脂區間 → zone 值，否則 fallback
-  const fallbackFatPerKg = isMale
-    ? (safetyLevel === 'extreme' ? GOAL_DRIVEN.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG)
-    : (safetyLevel === 'extreme' ? GOAL_DRIVEN.MIN_FAT_PER_KG_FEMALE : SAFETY.MIN_FAT_PER_KG_FEMALE)
+  // 脂肪：胰島素敏感度驅動 + 絕對底線（男 50g / 女 45g）
+  const fallbackFatPerKg = insulinMacros.fatPerKg
   const minFatPerKg = zoneInfo
     ? Math.max(zoneInfo.fatPerKg, fallbackFatPerKg)
     : fallbackFatPerKg
@@ -2860,7 +2947,7 @@ function generateGoalDrivenCut(
     const maxReasonable = Math.round(bw * 3.3)
     suggestedPro = Math.min(input.currentProtein, maxReasonable)
   }
-  let suggestedFat = Math.round(bw * minFatPerKg)
+  let suggestedFat = Math.max(Math.round(bw * minFatPerKg), isMale ? 50 : 45)
 
   // 血檢驅動巨量營養素修正（ApoB、鐵蛋白、胰島素等）
   // Goal-Driven 也需要套用，不能只靠 reactive 路徑
@@ -2873,7 +2960,7 @@ function generateGoalDrivenCut(
   let gdProDeltaFromLab = 0
   for (const mod of gdMacroMods) {
     if (mod.nutrient === 'protein' && mod.direction === 'increase') { suggestedPro += mod.delta; gdProDeltaFromLab += mod.delta }
-    if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * (isMale ? GOAL_DRIVEN.MIN_FAT_PER_KG : GOAL_DRIVEN.MIN_FAT_PER_KG_FEMALE)), suggestedFat - mod.delta)
+    if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * insulinMacros.fatPerKg), isMale ? 50 : 45, suggestedFat - mod.delta)
     if (mod.nutrient === 'fat' && mod.direction === 'increase') suggestedFat += mod.delta
     if (mod.nutrient === 'carbs' && mod.direction === 'decrease') gdCarbDeltaFromLab -= mod.delta
     if (mod.nutrient === 'carbs' && mod.direction === 'increase') gdCarbDeltaFromLab += mod.delta
@@ -2898,7 +2985,7 @@ function generateGoalDrivenCut(
     const labFatIncrease = gdMacroMods
       .filter(m => m.nutrient === 'fat' && m.direction === 'increase')
       .reduce((sum, m) => sum + m.delta, 0)
-    const absoluteMinFat = Math.round(bw * (isMale ? GOAL_DRIVEN.MIN_FAT_PER_KG : GOAL_DRIVEN.MIN_FAT_PER_KG_FEMALE)) + labFatIncrease
+    const absoluteMinFat = Math.max(Math.round(bw * insulinMacros.fatPerKg), isMale ? 50 : 45) + labFatIncrease
     suggestedFat = absoluteMinFat
     proFatCal = suggestedPro * 4 + suggestedFat * 9
 
@@ -2975,6 +3062,11 @@ function generateGoalDrivenCut(
     actualCalories += (suggestedCarb - prevCarb) * 4
   }
   getApoe4FatWarnings(input.geneticProfile, geneticCorrections, warnings)
+
+  // 碳水底線警告：碳水 < 2.0 g/kg 可能影響訓練品質
+  if (suggestedCarb < 2.0 * bw) {
+    warnings.push(`⚠️ 碳水偏低（${(suggestedCarb / bw).toFixed(1)} g/kg），可能影響訓練品質。建議與教練討論是否延長時程或調整目標。`)
+  }
 
   // 掉重率安全檢查（保留資訊性警告，赤字已在前面 cap 過）
   if (actualCalories < softMinCal) {
@@ -3405,7 +3497,7 @@ function generateBulkSuggestion(
     if (mod.nutrient === 'protein' && mod.direction === 'increase') suggestedPro += mod.delta
     if (mod.nutrient === 'carbs' && mod.direction === 'decrease') suggestedCarb = Math.max(50, suggestedCarb - mod.delta)
     if (mod.nutrient === 'carbs' && mod.direction === 'increase') suggestedCarb += mod.delta
-    if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)), suggestedFat - mod.delta)
+    if (mod.nutrient === 'fat' && mod.direction === 'decrease') suggestedFat = Math.max(Math.round(bw * (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)), isMale ? 50 : 45, suggestedFat - mod.delta)
     if (mod.nutrient === 'fat' && mod.direction === 'increase') suggestedFat += mod.delta
     if (mod.nutrient === 'calories' && mod.direction === 'increase') suggestedCal += mod.delta
   }
@@ -3423,7 +3515,7 @@ function generateBulkSuggestion(
   const bulkFatFloor = zoneInfo
     ? zoneInfo.fatPerKg
     : (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)
-  const minFat = Math.round(bw * bulkFatFloor)
+  const minFat = Math.max(Math.round(bw * bulkFatFloor), isMale ? 50 : 45)
   if (suggestedFat < minFat) {
     suggestedFat = minFat
     warnings.push(`脂肪不可低於 ${minFat}g（${bulkFatFloor}g/kg），已調整`)
@@ -3482,7 +3574,7 @@ function generateBulkSuggestion(
       ? zoneInfo.fatPerKg
       : (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)
     const minProteinBulk = Math.round(bw * bulkProteinFloorOT)
-    const minFatBulk = Math.round(bw * bulkFatFloorOT)
+    const minFatBulk = Math.max(Math.round(bw * bulkFatFloorOT), isMale ? 50 : 45)
 
     // Bug 7 fix: on_track 也套用血檢 modifier
     for (const mod of bulkLabMacroMods) {
@@ -4369,7 +4461,7 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
     protein = Math.round(bw * proteinPerKg)
 
     const fatPerKg = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
-    fat = Math.round(bw * fatPerKg)
+    fat = Math.max(Math.round(bw * fatPerKg), isMale ? 50 : 45)
 
     const remainingCal = finalCalories - (protein * 4) - (fat * 9)
     carbs = Math.max(50, Math.round(remainingCal / 4))
@@ -4510,7 +4602,7 @@ export function generateDemoAnalysis(input: DemoAnalysisInput): DemoAnalysisResu
       : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
     const fatPerKg = isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE
     suggestedProtein = Math.round(bw * proteinPerKg)
-    suggestedFat = Math.round(bw * fatPerKg)
+    suggestedFat = Math.max(Math.round(bw * fatPerKg), isMale ? 50 : 45)
     const remainingCals = suggestedCalories - (suggestedProtein * 4) - (suggestedFat * 9)
     suggestedCarbs = Math.max(30, Math.round(remainingCals / 4))
   }

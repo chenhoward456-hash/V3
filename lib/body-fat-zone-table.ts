@@ -119,12 +119,11 @@ const MALE_ZONES: BodyFatZone[] = [
     bfMin: 0,
     bfMax: 8,
     cut: {
-      // Helms 2014: 2.3-3.1 g/kg LBM; at this leanness ≈ 3.0 g/kg total BW
-      // Systematic review (Helms 2014): scale protein upward with leanness & deficit severity
-      proteinGPerKg: 3.0,
-      proteinGPerKgLBM: 3.1,
-      // Helms 2014: 15-30% cal from fat; at low BF, floor is ~0.9 g/kg to protect testosterone
-      fatGPerKg: 0.9,
+      // 自然選手優化：Bandegan 2017 IAAO ~2.0 g/kg 赤字上限；原 3.0 → 2.2
+      proteinGPerKg: 2.2,
+      proteinGPerKgLBM: 2.4,
+      // 自然選手優化：降低脂肪讓位給碳水（+ 50g 絕對底線）
+      fatGPerKg: 0.7,
       fatMaxPctCal: 30,
       carbApproach: 'Remainder of calories after protein + fat. Prioritize around training. Carb cycling strongly recommended (higher on training days, lower on rest days).',
       carbEstGPerKg: 2.0,
@@ -199,10 +198,10 @@ const MALE_ZONES: BodyFatZone[] = [
     bfMin: 8,
     bfMax: 12,
     cut: {
-      // Helms 2014: upper range protein for lean athletes in deficit
-      proteinGPerKg: 2.6,
-      proteinGPerKgLBM: 2.8,
-      fatGPerKg: 0.8,
+      // 自然選手優化：原 2.6 → 2.1（MPS 天花板低，多吃無益）
+      proteinGPerKg: 2.1,
+      proteinGPerKgLBM: 2.3,
+      fatGPerKg: 0.7,
       fatMaxPctCal: 25,
       carbApproach: 'Remainder after protein + fat. Carb cycling recommended. Prioritize peri-workout carbs.',
       carbEstGPerKg: 3.0,
@@ -275,10 +274,10 @@ const MALE_ZONES: BodyFatZone[] = [
     bfMin: 12,
     bfMax: 17,
     cut: {
-      // ISSN 2017: 1.4-2.0 g/kg for exercising individuals; in deficit, upper range
-      proteinGPerKg: 2.3,
-      proteinGPerKgLBM: 2.6,
-      fatGPerKg: 0.8,
+      // 自然選手優化：原 2.3 → 2.0（ISSN 2017: 1.4-2.0 g/kg）
+      proteinGPerKg: 2.0,
+      proteinGPerKgLBM: 2.3,
+      fatGPerKg: 0.7,
       fatMaxPctCal: 25,
       carbApproach: 'Remainder after protein + fat. Standard carb distribution or mild cycling optional.',
       carbEstGPerKg: 3.5,
@@ -512,14 +511,12 @@ const FEMALE_ZONES: BodyFatZone[] = [
     bfMin: 0,
     bfMax: 15,
     cut: {
-      // Stokes 2018: female MPS saturates at lower absolute protein doses
-      // Helms 2014 adapted for females: 2.3-2.6 g/kg total BW
-      proteinGPerKg: 2.6,
-      proteinGPerKgLBM: 2.8,
-      // Female fat floor higher: estrogen synthesis, menstrual function
+      // 自然選手優化：原 2.6 → 2.0（女性 MPS 在較低劑量即飽和，Stokes 2018）
+      proteinGPerKg: 2.0,
+      proteinGPerKgLBM: 2.2,
+      // Female fat floor: estrogen synthesis, menstrual function（+ 45g 絕對底線）
       // Loucks 2004: EA < 30 kcal/kg FFM → menstrual disruption
-      // Mountjoy 2018 RED-S: protect endocrine function
-      fatGPerKg: 1.1,
+      fatGPerKg: 0.8,
       fatMaxPctCal: 30,
       carbApproach: 'Remainder of calories. Carb cycling recommended. Prioritize training-day carbs. Monitor menstrual function as primary safety signal.',
       carbEstGPerKg: 2.0,
@@ -593,9 +590,10 @@ const FEMALE_ZONES: BodyFatZone[] = [
     bfMin: 15,
     bfMax: 20,
     cut: {
-      proteinGPerKg: 2.2,
-      proteinGPerKgLBM: 2.5,
-      fatGPerKg: 1.0,
+      // 自然選手優化：原 2.2 → 1.8
+      proteinGPerKg: 1.8,
+      proteinGPerKgLBM: 2.1,
+      fatGPerKg: 0.9,
       fatMaxPctCal: 28,
       carbApproach: 'Remainder after protein + fat. Carb cycling optional. Peri-workout carbs prioritized.',
       carbEstGPerKg: 2.5,
@@ -666,10 +664,9 @@ const FEMALE_ZONES: BodyFatZone[] = [
     bfMin: 20,
     bfMax: 25,
     cut: {
-      // Morton 2018: 1.6 g/kg suffices for lean mass in most populations
-      // In deficit, slight upward adjustment to ~2.0 g/kg
-      proteinGPerKg: 2.0,
-      proteinGPerKgLBM: 2.4,
+      // 自然選手優化：原 2.0 → 1.8（Morton 2018: 1.6 g/kg 即飽和）
+      proteinGPerKg: 1.8,
+      proteinGPerKgLBM: 2.2,
       fatGPerKg: 0.9,
       fatMaxPctCal: 28,
       carbApproach: 'Remainder after protein + fat. Standard distribution. Mild carb cycling optional.',

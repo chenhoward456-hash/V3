@@ -291,10 +291,10 @@ describe('getZoneMacros (cutting)', () => {
       estimatedTDEE: 2500,
     })
 
-    // Zone: athletic, cut proteinGPerKg = 2.3
+    // Zone: athletic, cut proteinGPerKg = 2.0 (自然選手優化)
     // With good recovery (default, no indicators), proteinAdjust = 0
-    expect(result.proteinPerKg).toBeCloseTo(2.3, 1)
-    expect(result.protein).toBeCloseTo(80 * 2.3, 5) // ~184g
+    expect(result.proteinPerKg).toBeCloseTo(2.0, 1)
+    expect(result.protein).toBeCloseTo(80 * 2.0, 5) // ~160g
   })
 
   it('fat is at least the zone minimum', () => {
@@ -306,8 +306,8 @@ describe('getZoneMacros (cutting)', () => {
       estimatedTDEE: 2500,
     })
 
-    // Athletic male cut fatGPerKg = 0.8
-    expect(result.fat).toBeGreaterThanOrEqual(Math.round(80 * 0.8) - 1)
+    // Athletic male cut fatGPerKg = 0.7 (自然選手優化)
+    expect(result.fat).toBeGreaterThanOrEqual(Math.round(80 * 0.7) - 1)
   })
 
   it('carbs are at least 30g (minimum floor)', () => {
@@ -597,8 +597,8 @@ describe('getZoneMacros (overweight — adjusted body weight)', () => {
     })
 
     expect(result.zone.id).toBe('athletic')
-    // athletic cut proteinGPerKg = 2.3
-    expect(result.protein).toBe(Math.round(80 * 2.3))
+    // athletic cut proteinGPerKg = 2.0 (自然選手優化)
+    expect(result.protein).toBe(Math.round(80 * 2.0))
   })
 })
 
