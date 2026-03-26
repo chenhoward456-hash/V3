@@ -1775,12 +1775,16 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       // 第 1-3 天：維持量 ×1.0（腸胃重新適應）
       // 第 4-7 天：維持量 ×1.1（逐步提升）
       // 第 8+ 天：維持量 ×1.2（正常反向飲食起點）
-      const recoveryMultiplier = daysSinceComp <= 3 ? 1.0 : daysSinceComp <= 7 ? 1.1 : 1.2
+      // 賽後恢復：起始 +10%，漸進到 +20% [Trexler 2017]
+      // 蛋白質 1.8 g/kg（盈餘下不需高蛋白）[Helms 2014, Morton 2018]
+      // 碳水最大化驅動 leptin 恢復 [Dirlewanger 2000, Fagerberg 2018]
+      const recoveryMultiplier = daysSinceComp <= 3 ? 1.10 : daysSinceComp <= 7 ? 1.15 : 1.20
       const bw = input.bodyWeight
+      const isMaleRecovery = input.gender !== '女性'
       const estimatedMaintenance = Math.round(bw * 33) // 粗估維持量
       const recoveryCals = Math.round(estimatedMaintenance * recoveryMultiplier)
-      const recoveryProtein = Math.round(bw * 2.2)
-      const recoveryFat = Math.round(bw * 1.0)
+      const recoveryProtein = Math.round(bw * (isMaleRecovery ? 1.8 : 1.6))
+      const recoveryFat = Math.max(isMaleRecovery ? 50 : 45, Math.round(bw * 0.9))
       const recoveryCarbs = Math.round((recoveryCals - recoveryProtein * 4 - recoveryFat * 9) / 4)
 
       const recoveryWater = Math.round(bw * 40) // 恢復期正常水量 40ml/kg
@@ -2172,9 +2176,13 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     // 閘門擋住 → 強制恢復飲食，但仍保留 deadlineInfo 讓前端顯示備賽進度
     const bw = input.bodyWeight
     const estimatedMaintenance = estimatedTDEE || Math.round(bw * 33)
-    const recoveryCals = Math.round(estimatedMaintenance * 1.05) // 微盈餘幫助荷爾蒙恢復
-    const recoveryProtein = Math.round(bw * 2.2)
-    const recoveryFat = Math.round(bw * 1.0)
+    // 恢復期：+10% 盈餘加速 leptin 回升 [Trexler 2017]
+    // 蛋白質 1.8 g/kg 即足夠（非赤字下 MPS 天花板低）[Helms 2014, Morton 2018]
+    // 脂肪 0.9 g/kg 維持荷爾蒙合成，剩餘全灌碳水驅動 leptin [Dirlewanger 2000]
+    const recoveryCals = Math.round(estimatedMaintenance * 1.10)
+    const isMaleRecovery = input.gender !== '女性'
+    const recoveryProtein = Math.round(bw * (isMaleRecovery ? 1.8 : 1.6))
+    const recoveryFat = Math.max(isMaleRecovery ? 50 : 45, Math.round(bw * 0.9))
     const recoveryCarbs = Math.max(150, Math.round((recoveryCals - recoveryProtein * 4 - recoveryFat * 9) / 4))
 
     warnings.push(...cuttingGate.reasons)
