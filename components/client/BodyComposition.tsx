@@ -21,6 +21,9 @@ interface BodyCompositionProps {
   goalType?: string | null
   prepPhase?: string | null
   tier?: string
+  caloriesTarget?: number | null
+  proteinTarget?: number | null
+  height?: number | null
   onMutate: (appliedTargets?: Record<string, number | undefined>) => void
 }
 
@@ -186,7 +189,7 @@ function getWeightFeedback(
 }
 
 export default function BodyComposition({
-  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, goalType, prepPhase, tier, onMutate
+  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, goalType, prepPhase, tier, caloriesTarget, proteinTarget, height, onMutate
 }: BodyCompositionProps) {
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
@@ -196,6 +199,7 @@ export default function BodyComposition({
     const ts = localStorage.getItem('hp_upgrade_nudge_dismissed')
     return !!ts && Date.now() - parseInt(ts) < 7 * 86400000
   })
+  const [firstRecordInsight, setFirstRecordInsight] = useState<{ weight: number; bmiVal: string; targetGap: number | null; weeksToGoal: number | null; calories: number | null; protein: number | null } | null>(null)
   const [nutritionAdjusted, setNutritionAdjusted] = useState<{ message?: string; calories?: number; protein?: number; carbs?: number; fat?: number; adjusted?: boolean } | null>(null)
   const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([])
   useEffect(() => {
@@ -354,11 +358,30 @@ export default function BodyComposition({
       } else {
         onMutate()
       }
-      const feedback = getWeightFeedback(weight, bodyData, submittedDate, goalType, targetWeight, prepPhase, competitionDate, tier)
-      showToast(feedback.message, 'success', feedback.emoji)
-      if (feedback.teaser) {
-        const t = setTimeout(() => showToast(feedback.teaser!, 'info', '🔒'), 2500)
-        timerRefs.current.push(t)
+      const isFirstRecord = bodyData.filter((r: any) => r.weight != null).length === 0
+      if (isFirstRecord) {
+        // First weight: show insight card instead of generic toast
+        const h = height || 170
+        const bmiCalc = (weight / ((h / 100) ** 2)).toFixed(1)
+        const gap = targetWeight ? Math.abs(weight - targetWeight) : null
+        const rate = goalType === 'bulk' ? 0.25 : 0.5
+        const weeks = gap ? Math.ceil(gap / rate) : null
+        setFirstRecordInsight({
+          weight,
+          bmiVal: bmiCalc,
+          targetGap: gap ? Math.round(gap * 10) / 10 : null,
+          weeksToGoal: weeks,
+          calories: caloriesTarget ?? null,
+          protein: proteinTarget ?? null,
+        })
+        showToast('第一筆體重記錄完成！', 'success', '🎉')
+      } else {
+        const feedback = getWeightFeedback(weight, bodyData, submittedDate, goalType, targetWeight, prepPhase, competitionDate, tier)
+        showToast(feedback.message, 'success', feedback.emoji)
+        if (feedback.teaser) {
+          const t = setTimeout(() => showToast(feedback.teaser!, 'info', '🔒'), 2500)
+          timerRefs.current.push(t)
+        }
       }
       if (na?.adjusted) {
         const t1 = setTimeout(() => {
@@ -410,6 +433,56 @@ export default function BodyComposition({
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 第一筆體重洞察卡片 — 記完第一筆後立刻顯示有價值的分析 */}
+      {firstRecordInsight && (
+        <div className="bg-gradient-to-br from-emerald-50 via-blue-50 to-indigo-50 border border-emerald-200 rounded-2xl p-5 mb-4 animate-fade-in">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-2xl">🎯</span>
+            <h3 className="text-base font-bold text-gray-900">你的起點分析</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="bg-white/70 rounded-xl p-3 text-center">
+              <p className="text-[10px] text-gray-500">目前體重</p>
+              <p className="text-xl font-bold text-gray-900">{firstRecordInsight.weight} <span className="text-sm font-normal">kg</span></p>
+            </div>
+            <div className="bg-white/70 rounded-xl p-3 text-center">
+              <p className="text-[10px] text-gray-500">BMI</p>
+              <p className="text-xl font-bold text-gray-900">{firstRecordInsight.bmiVal}</p>
+            </div>
+            {firstRecordInsight.calories && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-[10px] text-gray-500">每日熱量預算</p>
+                <p className="text-xl font-bold text-blue-600">{firstRecordInsight.calories} <span className="text-sm font-normal">kcal</span></p>
+              </div>
+            )}
+            {firstRecordInsight.protein && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-[10px] text-gray-500">蛋白質目標</p>
+                <p className="text-xl font-bold text-red-500">{firstRecordInsight.protein} <span className="text-sm font-normal">g</span></p>
+              </div>
+            )}
+          </div>
+          {firstRecordInsight.targetGap != null && firstRecordInsight.weeksToGoal != null && (
+            <div className="bg-white/70 rounded-xl p-3 mb-3">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                距離目標還有 <span className="font-bold text-blue-600">{firstRecordInsight.targetGap} kg</span>，
+                以每週 {goalType === 'bulk' ? '0.25' : '0.5'} kg 的速度，
+                預估 <span className="font-bold text-blue-600">{firstRecordInsight.weeksToGoal <= 4 ? `${firstRecordInsight.weeksToGoal} 週` : `約 ${Math.round(firstRecordInsight.weeksToGoal / 4.3)} 個月`}</span>可達成。
+              </p>
+            </div>
+          )}
+          <div className="bg-blue-600 text-white rounded-xl p-3 text-center">
+            <p className="text-sm font-bold">明天再量一次，系統就能開始追蹤你的減脂進度</p>
+          </div>
+          <button
+            onClick={() => setFirstRecordInsight(null)}
+            className="w-full mt-2 text-xs text-gray-400 hover:text-gray-600"
+          >
+            收起
+          </button>
         </div>
       )}
       <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">

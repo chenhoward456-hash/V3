@@ -892,6 +892,9 @@ export default function ClientDashboard() {
                 goalType={clientData.client.goal_type}
                 prepPhase={clientData.client.prep_phase}
                 tier={c.subscription_tier || 'free'}
+                caloriesTarget={c.calories_target}
+                proteinTarget={c.protein_target}
+                height={latestByField.height?.height ?? null}
                 onMutate={mutateWithTargets}
               />
             </CollapsibleSection>
