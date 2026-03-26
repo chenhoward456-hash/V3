@@ -64,6 +64,15 @@ import ErrorBoundary, { SectionErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function ClientDashboard() {
   const { clientId } = useParams()
+
+  // LINE 內建瀏覽器記憶體不足會崩潰，偵測後提示用 Safari 開啟
+  const [isLineBrowser, setIsLineBrowser] = useState(false)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && /Line/i.test(navigator.userAgent)) {
+      setIsLineBrowser(true)
+    }
+  }, [])
+
   const { data: clientData, error, isLoading, mutate } = useClientData(clientId as string)
 
   // 儲存 clientId 到 localStorage + cookie，讓 PWA 從主畫面開啟時能跳轉到儀表板
@@ -530,6 +539,42 @@ export default function ClientDashboard() {
     }
     triggerAutoAdjust()
   }, [clientData?.client, clientId, mutate])
+
+  // LINE 瀏覽器：顯示引導頁面，不載入完整儀表板（避免記憶體崩潰）
+  if (isLineBrowser) {
+    const url = typeof window !== 'undefined' ? window.location.href : ''
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
+        <div className="text-center max-w-sm">
+          <div className="text-5xl mb-4">🔗</div>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">請用 Safari 開啟</h1>
+          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+            LINE 內建瀏覽器不支援完整功能。<br />
+            請點下方按鈕用 Safari 開啟，體驗更順暢。
+          </p>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 transition-colors mb-3"
+          >
+            用 Safari 開啟
+          </a>
+          <button
+            onClick={() => {
+              if (navigator.clipboard) navigator.clipboard.writeText(url)
+            }}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            複製網址
+          </button>
+          <p className="text-xs text-gray-400 mt-4">
+            開啟後建議「加入主畫面」，下次一鍵進入
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
