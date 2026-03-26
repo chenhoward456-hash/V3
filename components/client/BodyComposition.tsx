@@ -24,6 +24,8 @@ interface BodyCompositionProps {
   caloriesTarget?: number | null
   proteinTarget?: number | null
   height?: number | null
+  hasLineBinding?: boolean
+  uniqueCode?: string
   onMutate: (appliedTargets?: Record<string, number | undefined>) => void
 }
 
@@ -189,7 +191,7 @@ function getWeightFeedback(
 }
 
 export default function BodyComposition({
-  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, goalType, prepPhase, tier, caloriesTarget, proteinTarget, height, onMutate
+  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, goalType, prepPhase, tier, caloriesTarget, proteinTarget, height, hasLineBinding, uniqueCode, onMutate
 }: BodyCompositionProps) {
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
@@ -475,8 +477,38 @@ export default function BodyComposition({
             </div>
           )}
           <div className="bg-blue-600 text-white rounded-xl p-3 text-center">
-            <p className="text-sm font-bold">明天再量一次，系統就能開始追蹤你的減脂進度</p>
+            <p className="text-sm font-bold">明天再量一次，系統就能開始追蹤你的{goalType === 'bulk' ? '增肌' : '減脂'}進度</p>
           </div>
+
+          {/* LINE 綁定 — 嵌入洞察卡片作為「下一步」 */}
+          {!hasLineBinding && uniqueCode && (
+            <div className="mt-3 bg-[#06C755]/10 border-2 border-[#06C755]/40 rounded-xl p-4">
+              <p className="text-sm font-bold text-gray-800 mb-1">下一步：綁定 LINE</p>
+              <p className="text-xs text-gray-600 mb-3">綁定後明天會自動提醒你量體重，用訊息就能記錄。</p>
+              <div className="flex gap-2">
+                <a
+                  href="https://lin.ee/LP65rCc"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 bg-[#06C755] text-white text-sm font-bold py-2.5 rounded-lg text-center hover:bg-[#05a84a] transition-colors"
+                >
+                  1. 加好友
+                </a>
+                <button
+                  onClick={() => {
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(`綁定 ${uniqueCode}`)
+                      showToast('已複製！貼到 LINE 對話送出即可', 'success')
+                    }
+                  }}
+                  className="flex-1 bg-white border-2 border-[#06C755] text-[#06C755] text-sm font-bold py-2.5 rounded-lg text-center hover:bg-[#06C755]/5 transition-colors"
+                >
+                  2. 複製指令
+                </button>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={() => setFirstRecordInsight(null)}
             className="w-full mt-2 text-xs text-gray-400 hover:text-gray-600"

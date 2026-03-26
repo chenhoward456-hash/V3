@@ -895,6 +895,8 @@ export default function ClientDashboard() {
                 caloriesTarget={c.calories_target}
                 proteinTarget={c.protein_target}
                 height={latestByField.height?.height ?? null}
+                hasLineBinding={!!c.line_user_id}
+                uniqueCode={c.unique_code}
                 onMutate={mutateWithTargets}
               />
             </CollapsibleSection>
