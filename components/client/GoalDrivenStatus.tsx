@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface GoalDrivenStatusProps {
   clientId: string
@@ -13,12 +13,15 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
   const [data, setData] = useState<any>(null)
   const [targetWeightValue, setTargetWeightValue] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const onMutateRef = useRef(onMutate)
+  onMutateRef.current = onMutate
+  const fetchedRef = useRef(false)
 
   useEffect(() => {
+    if (fetchedRef.current) return
+    fetchedRef.current = true
     const fetchSuggestion = async () => {
       try {
-        // 帶 autoApply=true 讓引擎結果寫回 DB，飲食紀錄才能同步
-        // API 用 unique_code 查詢學員，所以 clientId 參數用 code（unique_code）
         const lookupId = code || clientId
         const res = await fetch(`/api/nutrition-suggestions?clientId=${lookupId}&autoApply=true${code ? `&code=${code}` : ''}`)
         if (!res.ok) {
@@ -26,27 +29,13 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           return
         }
         const json = await res.json()
-        console.log('[GoalDrivenStatus] API 回應:', {
-          status: json.suggestion?.status,
-          autoApply: json.suggestion?.autoApply,
-          applied: json.applied,
-          coachLocked: json.coachLocked,
-          suggestedCalories: json.suggestion?.suggestedCalories,
-          suggestedProtein: json.suggestion?.suggestedProtein,
-          suggestedCarbs: json.suggestion?.suggestedCarbs,
-          suggestedFat: json.suggestion?.suggestedFat,
-          weeklyWeights: json.meta?.weeklyWeights?.length,
-          targetWeight: json.meta?.targetWeight,
-          targetDate: json.meta?.targetDate,
-        })
         if (json.suggestion) {
           setData(json.suggestion)
           setTargetWeightValue(json.meta?.targetWeight || null)
-          // applied = DB 已更新，帶上新值讓父元件做 optimistic update
-          if (onMutate) {
+          if (onMutateRef.current) {
             if (json.applied) {
               const s = json.suggestion
-              onMutate({
+              onMutateRef.current({
                 calories_target: s.suggestedCalories,
                 protein_target: s.suggestedProtein,
                 carbs_target: s.suggestedCarbs,
@@ -55,7 +44,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
                 carbs_rest_day: s.suggestedCarbsRestDay,
               })
             } else {
-              onMutate()
+              onMutateRef.current()
             }
           }
         }
@@ -64,7 +53,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       } finally { setLoading(false) }
     }
     fetchSuggestion()
-  }, [clientId, code, onMutate])
+  }, [clientId, code])
 
   if (loading || !data) return null
 

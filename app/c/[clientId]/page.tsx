@@ -60,7 +60,7 @@ import { useToast } from '@/components/ui/Toast'
 import { trackEvent } from '@/lib/analytics'
 import ABTest from '@/components/ABTest'
 import { trackConversion, peekVariant } from '@/lib/ab-testing'
-import ErrorBoundary from '@/components/ErrorBoundary'
+import ErrorBoundary, { SectionErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function ClientDashboard() {
   const { clientId } = useParams()
@@ -762,7 +762,7 @@ export default function ClientDashboard() {
             const compDaysLeft = c.competition_date ? daysUntilDateTW(c.competition_date) : null
             const showPeakWeek = compDaysLeft != null && compDaysLeft >= 0 && compDaysLeft <= 14 && latestBodyData?.weight
             return (
-              <>
+              <SectionErrorBoundary name="goal-driven">
                 {(!showPeakWeek || compDaysLeft! > 7) && (
                   <GoalDrivenStatus
                     clientId={c.id}
@@ -798,7 +798,7 @@ export default function ClientDashboard() {
                     onMutate={mutateWithTargets}
                   />
                 )}
-              </>
+              </SectionErrorBoundary>
             )
           })()}
 
@@ -824,6 +824,7 @@ export default function ClientDashboard() {
 
           {/* 身體數據記錄 — 最優先，每日量體重放最上面 */}
           {c.body_composition_enabled && (
+            <SectionErrorBoundary name="body-composition">
             <CollapsibleSection
               id="section-body"
               icon="⚖️"
@@ -849,9 +850,11 @@ export default function ClientDashboard() {
                 onMutate={mutateWithTargets}
               />
             </CollapsibleSection>
+            </SectionErrorBoundary>
           )}
 
           {isToday && (
+            <SectionErrorBoundary name="today-overview">
             <TodayOverviewCard
               overallStreak={overallStreak}
               todayCompletedItems={todayCompletedItems}
@@ -862,6 +865,7 @@ export default function ClientDashboard() {
               gender={c.gender ?? null}
               latestBodyData={latestBodyData}
             />
+            </SectionErrorBoundary>
           )}
 
           <DayBasedCards
@@ -1005,6 +1009,7 @@ export default function ClientDashboard() {
               </div>
             </div>
           ) : (
+            <SectionErrorBoundary name="health-overview">
             <HealthOverview
               weekRate={supplementComplianceStats.weekRate}
               monthRate={supplementComplianceStats.monthRate}
@@ -1030,6 +1035,7 @@ export default function ClientDashboard() {
                 respiratory_rate: todayWellness.respiratory_rate,
               } : null}
             />
+            </SectionErrorBoundary>
           )}
         </div>
 
@@ -1124,6 +1130,7 @@ export default function ClientDashboard() {
 
         {/* 飲食目標 + 飲食紀錄 */}
         {c.nutrition_enabled && (
+          <SectionErrorBoundary name="nutrition">
           <CollapsibleSection
             id={isCompetition ? 'section-nutrition' : 'section-nutrition-general'}
             icon="🥗"
@@ -1192,10 +1199,12 @@ export default function ClientDashboard() {
               onMutate={mutate}
             />
           </CollapsibleSection>
+          </SectionErrorBoundary>
         )}
 
         {/* 補品打卡 */}
         {c.supplement_enabled && (
+          <SectionErrorBoundary name="supplements">
           <CollapsibleSection
             id="section-supplements"
             icon="💊"
@@ -1219,10 +1228,12 @@ export default function ClientDashboard() {
               onManageSupplements={() => setShowSupplementModal(true)}
             />
           </CollapsibleSection>
+          </SectionErrorBoundary>
         )}
 
         {/* 每日感受 */}
         {c.wellness_enabled && (
+          <SectionErrorBoundary name="wellness">
           <CollapsibleSection
             id="section-wellness"
             icon="😊"
@@ -1240,15 +1251,19 @@ export default function ClientDashboard() {
               onMutate={mutate}
             />
           </CollapsibleSection>
+          </SectionErrorBoundary>
         )}
 
         {/* 今日訓練計畫（教練指導用戶 + 有訓練計畫） */}
         {c.training_enabled && c.training_plan && c.subscription_tier === 'coached' && (
+          <SectionErrorBoundary name="today-workout">
           <TodayWorkout trainingPlan={c.training_plan} todayTrainingType={todayTraining?.training_type} />
+          </SectionErrorBoundary>
         )}
 
         {/* 訓練紀錄 */}
         {c.training_enabled && (
+          <SectionErrorBoundary name="training">
           <CollapsibleSection
             id="section-training"
             icon="🏋️"
@@ -1271,6 +1286,7 @@ export default function ClientDashboard() {
               tier={c.subscription_tier || 'free'}
             />
           </CollapsibleSection>
+          </SectionErrorBoundary>
         )}
 
         {/* ================================================================ */}
@@ -1279,9 +1295,11 @@ export default function ClientDashboard() {
 
         {/* 恢復評估儀表板 */}
         {c.wellness_enabled && (
+          <SectionErrorBoundary name="recovery">
           <div className="mb-3">
             <RecoveryDashboard clientId={c.unique_code} />
           </div>
+          </SectionErrorBoundary>
         )}
 
         {/* 自主管理 / 免費學員的智能營養計算（已完成 onboarding 才顯示，避免跟頂部重複） */}
@@ -1396,7 +1414,7 @@ export default function ClientDashboard() {
           const hasAi = c.ai_chat_enabled
           if (!hasLabAnalysis && !hasAi) return null
           return (
-            <>
+            <SectionErrorBoundary name="advanced-analysis">
               <button
                 onClick={() => setShowMoreAnalysis(prev => !prev)}
                 className="w-full flex items-center justify-center gap-2 py-3 mb-3 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-colors border border-gray-100"
@@ -1432,7 +1450,7 @@ export default function ClientDashboard() {
                   )}
                 </>
               )}
-            </>
+            </SectionErrorBoundary>
           )
         })()}
 

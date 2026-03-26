@@ -60,3 +60,39 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
     return this.props.children
   }
 }
+
+/** Lightweight error boundary for individual dashboard sections */
+interface SectionErrorBoundaryProps {
+  children: React.ReactNode
+  name?: string
+}
+
+interface SectionErrorBoundaryState {
+  hasError: boolean
+}
+
+export class SectionErrorBoundary extends React.Component<SectionErrorBoundaryProps, SectionErrorBoundaryState> {
+  constructor(props: SectionErrorBoundaryProps) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(): SectionErrorBoundaryState {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    console.error(`[SectionError:${this.props.name || 'unknown'}]`, error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-3 text-center">
+          <p className="text-xs text-gray-400">此區塊暫時無法顯示</p>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
