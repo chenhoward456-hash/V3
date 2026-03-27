@@ -3355,7 +3355,7 @@ export function generateLabChangeReport(
     const current = sorted[0]
     // 找到距離最近日期至少 14 天以上的前一筆（避免同次檢測的重複紀錄互相比較）
     const currentDate = new Date(current.date)
-    let previous = sorted[1]
+    let previous: typeof sorted[0] | null = null
     for (let i = 1; i < sorted.length; i++) {
       const daysDiff = (currentDate.getTime() - new Date(sorted[i].date).getTime()) / (1000 * 60 * 60 * 24)
       if (daysDiff >= 14) {
@@ -3363,6 +3363,10 @@ export function generateLabChangeReport(
         break
       }
     }
+    // 沒有找到間距 ≥ 14 天的前一筆 → 沒有可比較的數據，跳過
+    if (!previous) continue
+    // 數值完全相同 → 沒有變化，不顯示
+    if (current.value === previous.value) continue
 
     const changeAbs = current.value! - previous.value!
     const changePct = previous.value! !== 0 ? (changeAbs / previous.value!) * 100 : 0
