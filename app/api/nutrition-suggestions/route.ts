@@ -342,13 +342,39 @@ export async function GET(request: NextRequest) {
     const canAutoApply = wantsAutoApply && effectiveAutoApply && (isAdmin || suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)
 
     // 教練覆寫鎖定：教練手動調整過營養目標
-    // 自動調整引擎（autoApply）不受 coach lock 限制 — 動態調整是核心功能
-    // coach lock 只在手動 API 呼叫（非 autoApply）時生效
-    const coachOverride = client.coach_macro_override as { locked_at: string; locked_fields: string[] } | null
-    if (coachOverride && !isAdmin && !wantsAutoApply) {
+    // Timed Coach Override: 覆寫期間（含 autoApply）都鎖定，確保教練設定值不被覆蓋
+    let coachOverride = client.coach_macro_override as {
+      locked_at: string
+      expires_at?: string | null
+      locked_fields: string[]
+      override_values?: Record<string, number | null>
+      previous_values?: Record<string, number | null>
+      reason?: string | null
+    } | null
+
+    // Check if coach override has expired
+    if (coachOverride && coachOverride.expires_at) {
+      const now = new Date()
+      if (new Date(coachOverride.expires_at) <= now) {
+        // Override expired — clear it (fire-and-forget)
+        supabase.from('clients').update({ coach_macro_override: null }).eq('id', client.id).then(() => {})
+        coachOverride = null
+      }
+    }
+
+    if (coachOverride && !isAdmin) {
       coachLocked = true
       suggestion.message += '\n\n🔒 教練已手動設定你的營養目標，系統建議僅供參考，不會自動調整。'
     }
+
+    const coachOverrideInfo = coachOverride ? {
+      expiresAt: coachOverride.expires_at || null,
+      reason: coachOverride.reason || null,
+      daysRemaining: coachOverride.expires_at
+        ? Math.max(0, Math.ceil((new Date(coachOverride.expires_at).getTime() - Date.now()) / 86400000))
+        : null,
+      overrideValues: coachOverride.override_values || null,
+    } : null
 
     if (canAutoApply && !coachLocked) {
       const updates: Record<string, number | null> = {}
@@ -422,6 +448,7 @@ export async function GET(request: NextRequest) {
       suggestion,
       applied,
       coachLocked,
+      coachOverrideInfo,
       isNewUser,
       meta: {
         latestWeight,

@@ -73,7 +73,14 @@ interface Client {
   health_mode_enabled: boolean
   simple_mode: boolean
   quarterly_cycle_start: string | null
-  coach_macro_override: { locked_at: string; locked_fields: string[]; previous_values?: Record<string, number | null> } | null
+  coach_macro_override: {
+    locked_at: string
+    expires_at?: string | null
+    locked_fields: string[]
+    override_values?: Record<string, number | null>
+    previous_values?: Record<string, number | null>
+    reason?: string | null
+  } | null
   // 基因風險欄位
   gene_mthfr: 'normal' | 'heterozygous' | 'homozygous' | null
   gene_apoe: 'e2/e2' | 'e2/e3' | 'e3/e3' | 'e3/e4' | 'e4/e4' | null
@@ -107,6 +114,16 @@ export default function ClientEditor() {
   const [trainingPlanText, setTrainingPlanText] = useState('')
   const [trainingPlanParseError, setTrainingPlanParseError] = useState('')
   const [showTrainingPlanPreview, setShowTrainingPlanPreview] = useState(true)
+
+  // Timed Coach Override state
+  const [overrideDurationDays, setOverrideDurationDays] = useState<number | null>(null)
+  const [overrideReason, setOverrideReason] = useState('')
+  const [systemSuggestion, setSystemSuggestion] = useState<{
+    suggestedCalories?: number | null
+    suggestedProtein?: number | null
+    suggestedCarbs?: number | null
+    suggestedFat?: number | null
+  } | null>(null)
 
   const tabs: { key: EditorTab; label: string; icon: string }[] = useMemo(() => {
     if (!client) return []
@@ -329,6 +346,8 @@ export default function ClientEditor() {
             clientData: clientFields,
             labResults: client.lab_results,
             supplements: client.supplements,
+            override_duration_days: overrideDurationDays,
+            override_reason: overrideReason || null,
           }),
         })
 
@@ -548,6 +567,27 @@ export default function ClientEditor() {
       setTrainingPlanText(serializeTrainingPlan(client.training_plan))
     }
   }, [client?.training_plan])
+
+  // Fetch system nutrition suggestions for displaying alongside override
+  useEffect(() => {
+    if (!client?.unique_code || !client.nutrition_enabled || clientId === 'new') return
+    const fetchSuggestion = async () => {
+      try {
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${client.unique_code}&code=${client.unique_code}`)
+        if (!res.ok) return
+        const json = await res.json()
+        if (json.suggestion) {
+          setSystemSuggestion({
+            suggestedCalories: json.suggestion.suggestedCalories ?? null,
+            suggestedProtein: json.suggestion.suggestedProtein ?? null,
+            suggestedCarbs: json.suggestion.suggestedCarbs ?? null,
+            suggestedFat: json.suggestion.suggestedFat ?? null,
+          })
+        }
+      } catch { /* silent */ }
+    }
+    fetchSuggestion()
+  }, [client?.unique_code, client?.nutrition_enabled, clientId])
 
   if (loading) {
     return (
@@ -930,25 +970,50 @@ export default function ClientEditor() {
                 </div>
                 {/* 教練覆寫鎖定狀態 */}
                 {client.coach_macro_override && (
-                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">🔒</span>
-                      <div>
-                        <p className="text-sm font-medium text-amber-800">教練覆寫模式啟動中</p>
-                        <p className="text-xs text-amber-600">
-                          系統自動調整已暫停。上次鎖定：{new Date(client.coach_macro_override.locked_at).toLocaleDateString('zh-TW')}
-                          {client.coach_macro_override.locked_fields && (
-                            <span>（{client.coach_macro_override.locked_fields.join('、').replace(/calories_target/g, '熱量').replace(/protein_target/g, '蛋白質').replace(/carbs_target/g, '碳水').replace(/fat_target/g, '脂肪').replace(/carbs_training_day/g, '訓練日碳水').replace(/carbs_rest_day/g, '休息日碳水')}）</span>
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🔒</span>
+                        <div>
+                          <p className="text-sm font-medium text-amber-800">教練覆寫模式啟動中</p>
+                          <p className="text-xs text-amber-600">
+                            鎖定日：{new Date(client.coach_macro_override.locked_at).toLocaleDateString('zh-TW')}
+                            {client.coach_macro_override.locked_fields && (
+                              <span>（{client.coach_macro_override.locked_fields.join('、').replace(/calories_target/g, '熱量').replace(/protein_target/g, '蛋白質').replace(/carbs_target/g, '碳水').replace(/fat_target/g, '脂肪').replace(/carbs_training_day/g, '訓練日碳水').replace(/carbs_rest_day/g, '休息日碳水')}）</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-amber-600 mt-0.5">
+                            覆寫期限：{client.coach_macro_override.expires_at
+                              ? `剩 ${Math.max(0, Math.ceil((new Date(client.coach_macro_override.expires_at).getTime() - Date.now()) / 86400000))} 天（${new Date(client.coach_macro_override.expires_at).toLocaleDateString('zh-TW')} 到期）`
+                              : '永久覆寫'}
+                          </p>
+                          {client.coach_macro_override.reason && (
+                            <p className="text-xs text-amber-500 mt-0.5">原因：{client.coach_macro_override.reason}</p>
                           )}
-                        </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {client.coach_macro_override.expires_at && (
+                          <button
+                            onClick={() => {
+                              const current = client.coach_macro_override
+                              if (!current || !current.expires_at) return
+                              const newExpiry = new Date(new Date(current.expires_at).getTime() + 7 * 86400000).toISOString()
+                              setClient({ ...client, coach_macro_override: { ...current, expires_at: newExpiry } })
+                            }}
+                            className="px-3 py-1.5 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg transition-colors"
+                          >
+                            延長 7 天
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setClient({ ...client, coach_macro_override: null })}
+                          className="px-3 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
+                        >
+                          解除
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => setClient({ ...client, coach_macro_override: null })}
-                      className="px-3 py-1.5 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg transition-colors"
-                    >
-                      解除鎖定
-                    </button>
                   </div>
                 )}
                 <p className="text-[10px] text-gray-400 mb-3">修改營養目標後會自動鎖定，防止系統覆蓋你的設定。可隨時解除鎖定恢復自動調整。</p>
@@ -1173,6 +1238,9 @@ export default function ClientEditor() {
                       placeholder="2200"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    {client.coach_macro_override && systemSuggestion?.suggestedCalories != null && (
+                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCalories.toLocaleString()} kcal</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">碳水 (g)</label>
@@ -1183,6 +1251,9 @@ export default function ClientEditor() {
                       placeholder="250"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    {client.coach_macro_override && systemSuggestion?.suggestedCarbs != null && (
+                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCarbs}g</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">脂肪 (g)</label>
@@ -1192,6 +1263,45 @@ export default function ClientEditor() {
                       onChange={(e) => updateClient('fat_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="60"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {client.coach_macro_override && systemSuggestion?.suggestedFat != null && (
+                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedFat}g</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Override Duration & Reason Selector */}
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <p className="text-xs text-gray-500 mb-2">覆寫設定（儲存時生效）</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-gray-400">持續時間：</span>
+                    {[
+                      { label: '7 天', value: 7 },
+                      { label: '14 天', value: 14 },
+                      { label: '30 天', value: 30 },
+                      { label: '永久', value: null as number | null },
+                    ].map(opt => (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => setOverrideDurationDays(opt.value)}
+                        className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                          overrideDurationDays === opt.value
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      value={overrideReason}
+                      onChange={(e) => setOverrideReason(e.target.value)}
+                      placeholder="覆寫原因（選填，例如：備賽最後衝刺）"
+                      className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>
                 </div>

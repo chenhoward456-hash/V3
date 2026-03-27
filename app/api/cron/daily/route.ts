@@ -92,6 +92,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, skipped: true, reason: '今日已執行過' })
   }
 
+  // Clean up expired coach overrides
+  try {
+    const { data: overrideClients } = await supabase
+      .from('clients')
+      .select('id, name, coach_macro_override')
+      .not('coach_macro_override', 'is', null)
+
+    if (overrideClients?.length) {
+      const now = new Date()
+      for (const c of overrideClients) {
+        const override = c.coach_macro_override as any
+        if (override?.expires_at && new Date(override.expires_at) <= now) {
+          await supabase.from('clients').update({ coach_macro_override: null }).eq('id', c.id)
+          console.log(`[Cron] Coach override expired for ${c.name}, cleared.`)
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[Cron] Coach override cleanup error:', e)
+  }
+
   // 取得所有已綁定 LINE 的活躍學員
   const { data: clients, error } = await supabase
     .from('clients')

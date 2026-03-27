@@ -104,8 +104,11 @@ export interface Client {
   coach_summary: string | null
   coach_macro_override: {
     locked_at: string
+    expires_at?: string | null
     locked_fields: string[]
+    override_values?: Record<string, number | null>
     previous_values?: Record<string, number | null>
+    reason?: string | null
   } | null
   next_checkup_date: string | null
   quarterly_cycle_start: string | null

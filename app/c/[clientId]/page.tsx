@@ -497,6 +497,12 @@ export default function ClientDashboard() {
 
   // 營養引擎分析結果（傳給 AI Chat 用）
   const [nutritionEngineSuggestion, setNutritionEngineSuggestion] = useState<NutritionSuggestion | null>(null)
+  const [coachOverrideInfo, setCoachOverrideInfo] = useState<{
+    expiresAt: string | null
+    reason: string | null
+    daysRemaining: number | null
+    overrideValues: Record<string, number | null> | null
+  } | null>(null)
 
   // 所有有營養追蹤的學員：頁面載入時自動觸發營養引擎更新目標
   // 備賽客戶由 GoalDrivenStatus 處理目標套用，但這裡仍需取得引擎數據給 AI Chat
@@ -519,6 +525,7 @@ export default function ClientDashboard() {
         }
         const json = await res.json()
         if (json.suggestion) setNutritionEngineSuggestion(json.suggestion)
+        if (json.coachOverrideInfo) setCoachOverrideInfo(json.coachOverrideInfo)
         console.log('[AutoNutrition] 引擎結果:', {
           status: json.suggestion?.status,
           autoApply: json.suggestion?.autoApply,
@@ -1189,6 +1196,30 @@ export default function ClientDashboard() {
             summaryLine={todayNutrition ? `${todayNutrition.calories ? `${todayNutrition.calories} kcal` : ''}${c.calories_target ? ` / ${c.calories_target} kcal` : ''}${todayNutrition.compliant === true ? ' ✓ 合規' : todayNutrition.compliant === false ? ' ✗ 未合規' : ''}` : undefined}
             isToday={isToday}
           >
+            {/* 教練覆寫提示 */}
+            {coachOverrideInfo && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🔒</span>
+                  <span className="text-xs text-amber-700">
+                    教練手動設定中{coachOverrideInfo.daysRemaining != null ? `（剩 ${coachOverrideInfo.daysRemaining} 天）` : ''}
+                  </span>
+                </div>
+                {coachOverrideInfo.reason && (
+                  <span className="text-[10px] text-amber-500">{coachOverrideInfo.reason}</span>
+                )}
+              </div>
+            )}
+            {/* 教練模式：顯示系統建議值 */}
+            {isCoachMode && coachOverrideInfo && nutritionEngineSuggestion && (
+              nutritionEngineSuggestion.suggestedCalories != null || nutritionEngineSuggestion.suggestedProtein != null
+            ) && (
+              <div className="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 mb-2">
+                <p className="text-[10px] text-blue-500">
+                  系統建議：{nutritionEngineSuggestion.suggestedCalories?.toLocaleString() ?? '—'} kcal / P {nutritionEngineSuggestion.suggestedProtein ?? '—'}g / C {nutritionEngineSuggestion.suggestedCarbs ?? '—'}g / F {nutritionEngineSuggestion.suggestedFat ?? '—'}g
+                </p>
+              </div>
+            )}
             {/* 飲食策略摘要卡片 */}
             <NutritionStrategyCard
               client={{

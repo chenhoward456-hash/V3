@@ -122,7 +122,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { clientId, clientData, labResults, supplements } = body
+    const { clientId, clientData, labResults, supplements, override_duration_days, override_reason } = body
 
     if (!clientId) {
       return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
@@ -225,10 +225,19 @@ export async function PUT(request: NextRequest) {
         if (actuallyChanged.length > 0) {
           overrideValue = {
             locked_at: new Date().toISOString(),
+            expires_at: (typeof override_duration_days === 'number' && override_duration_days > 0)
+              ? new Date(Date.now() + override_duration_days * 86400000).toISOString()
+              : null,
             locked_fields: actuallyChanged,
+            override_values: Object.fromEntries(
+              actuallyChanged.map(f => [f, sanitizedClientData[f] ?? null])
+            ),
             previous_values: cc
               ? Object.fromEntries(actuallyChanged.map(f => [f, cc[f]]))
               : {},
+            reason: (typeof override_reason === 'string' && override_reason.trim())
+              ? override_reason.trim()
+              : null,
           }
         }
       }
