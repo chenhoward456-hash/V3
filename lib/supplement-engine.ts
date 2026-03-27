@@ -107,6 +107,17 @@ export function generateSupplementSuggestions(
         triggerTests: [ferritin.test_name],
         category: 'deficiency',
       })
+    } else if (ferritin.value > 200) {
+      suggestions.push({
+        name: '⚠️ 停止鐵劑補充',
+        dosage: '立即停止所有含鐵補品',
+        timing: '—',
+        reason: `鐵蛋白 ${ferritin.value} ng/mL，顯著偏高（參考值 50-150）。高鐵蛋白增加氧化壓力與器官鐵沉積風險。${ferritin.value > 300 ? '建議諮詢醫師評估是否需要捐血或放血治療。' : '建議減少紅肉攝取、避免維生素 C 與含鐵食物同時服用。'}`,
+        priority: ferritin.value > 300 ? 'high' : 'medium',
+        evidence: 'Kell & Pretorius 2014 (Metallomics)：高鐵蛋白 > 200 與氧化壓力及代謝症候群相關',
+        triggerTests: [ferritin.test_name],
+        category: 'deficiency',
+      })
     }
   }
 
@@ -135,6 +146,17 @@ export function generateSupplementSuggestions(
         triggerTests: [vitd.test_name],
         category: 'deficiency',
       })
+    } else if (vitd.value > 100) {
+      suggestions.push({
+        name: '⚠️ 停止維生素 D 補充',
+        dosage: '立即停止 D3 補品',
+        timing: '—',
+        reason: `維生素 D ${vitd.value} ng/mL，超過安全上限（100 ng/mL）。過高的維生素 D 會導致高血鈣症，引起噁心、腎結石、甚至腎損傷。${vitd.value > 150 ? '數值嚴重偏高，請立即諮詢醫師。' : '停止補充後通常 2-3 個月會自然回降。'}`,
+        priority: vitd.value > 150 ? 'high' : 'medium',
+        evidence: 'Holick 2011 (NEJM)：25(OH)D > 100 ng/mL 為潛在毒性範圍，>150 有高血鈣風險',
+        triggerTests: [vitd.test_name],
+        category: 'deficiency',
+      })
     }
   }
 
@@ -155,17 +177,30 @@ export function generateSupplementSuggestions(
 
   // ── 4. 鋅 ──
   const zinc = findLabValue(labs, 'zinc')
-  if (zinc?.value != null && zinc.value < 80) {
-    suggestions.push({
-      name: '鋅（Zinc）',
-      dosage: '25-30mg（葡萄糖酸鋅或甲硫胺酸鋅）',
-      timing: '睡前空腹',
-      reason: `鋅 ${zinc.value} mcg/dL，偏低。鋅是睪固酮合成、免疫功能與蛋白質代謝的關鍵礦物質。`,
-      priority: 'medium',
-      evidence: 'Lukaszuk et al. 2012：鋅補充改善運動員睪固酮水平與恢復',
-      triggerTests: [zinc.test_name],
-      category: 'hormonal',
-    })
+  if (zinc?.value != null) {
+    if (zinc.value < 80) {
+      suggestions.push({
+        name: '鋅（Zinc）',
+        dosage: '25-30mg（葡萄糖酸鋅或甲硫胺酸鋅）',
+        timing: '睡前空腹',
+        reason: `鋅 ${zinc.value} mcg/dL，偏低。鋅是睪固酮合成、免疫功能與蛋白質代謝的關鍵礦物質。`,
+        priority: 'medium',
+        evidence: 'Lukaszuk et al. 2012：鋅補充改善運動員睪固酮水平與恢復',
+        triggerTests: [zinc.test_name],
+        category: 'hormonal',
+      })
+    } else if (zinc.value > 150) {
+      suggestions.push({
+        name: '⚠️ 停止鋅補充',
+        dosage: '立即停止含鋅補品',
+        timing: '—',
+        reason: `鋅 ${zinc.value} μg/dL，嚴重偏高（參考值 70-120）。長期過量鋅會抑制銅吸收，導致銅缺乏性貧血、免疫下降與神經損傷。${zinc.value > 200 ? '建議立即諮詢醫師檢測血清銅。' : '停止補充後 4-6 週應回檢確認。'}`,
+        priority: zinc.value > 200 ? 'high' : 'medium',
+        evidence: 'Plum et al. 2010 (Int J Environ Res Public Health)：長期鋅過量（>40mg/day）抑制銅吸收',
+        triggerTests: [zinc.test_name],
+        category: 'deficiency',
+      })
+    }
   }
 
   // ── 5. 鎂 ──
@@ -251,6 +286,45 @@ export function generateSupplementSuggestions(
           category: 'deficiency',
         })
       }
+    }
+  }
+
+  // ── 7b. 雌二醇偏高（男性）──
+  if (gender === '男性') {
+    const e2 = labs.find(l => matchLabName(l.test_name, ['雌二醇', 'estradiol', 'e2']))
+    if (e2?.value != null && e2.value > 40) {
+      suggestions.push({
+        name: 'DIM（二吲哚甲烷）',
+        dosage: '200-300mg',
+        timing: '隨餐服用',
+        reason: `雌二醇 ${e2.value} pg/mL，偏高（男性參考值 10-40）。高雌二醇可能導致水腫、脂肪囤積、情緒波動。DIM 促進雌激素代謝為較無活性的代謝物。建議同時減少酒精、增加十字花科蔬菜攝取。`,
+        priority: e2.value > 50 ? 'high' : 'medium',
+        evidence: 'Thomson et al. 2016 (Nutr Rev)：DIM 促進 2-hydroxyestrone 代謝路徑，降低活性雌激素',
+        triggerTests: [e2.test_name],
+        category: 'hormonal',
+      })
+    }
+  }
+
+  // ── 7c. ApoB 偏高 → Omega-3 ──
+  const apoB = labs.find(l => matchLabName(l.test_name, ['apob', 'apo b', 'apolipoprotein b']))
+  if (apoB?.value != null && apoB.value > 80) {
+    const alreadyHasOmega3 = suggestions.some(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))
+    if (alreadyHasOmega3) {
+      const existing = suggestions.find(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))!
+      existing.reason += ` ApoB ${apoB.value} mg/dL 偏高，Omega-3 有助降低致動脈粥狀硬化脂蛋白。`
+      existing.priority = 'high'
+    } else {
+      suggestions.push({
+        name: 'Omega-3 魚油',
+        dosage: 'EPA+DHA 合計 2-3g',
+        timing: '隨餐服用',
+        reason: `ApoB ${apoB.value} mg/dL，偏高（理想值 <80）。ApoB 是心血管風險的最佳單一指標。建議搭配飲食調整：增加可溶性纖維、減少飽和脂肪。`,
+        priority: apoB.value > 100 ? 'high' : 'medium',
+        evidence: 'Sniderman et al. 2019 (Lancet)：ApoB 是預測心血管事件的最準指標',
+        triggerTests: [apoB.test_name],
+        category: 'recovery',
+      })
     }
   }
 
