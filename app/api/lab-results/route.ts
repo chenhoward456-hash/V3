@@ -5,6 +5,73 @@ import { verifyCoachAuth, createErrorResponse, createSuccessResponse, sanitizeTe
 
 const supabase = createServiceSupabase()
 
+/**
+ * 根據數值和參考範圍自動判斷 status
+ * 參考範圍格式支援：
+ *   "70-120"      → min=70, max=120
+ *   "<1.4"        → max=1.4
+ *   ">30"         → min=30
+ *   "80"          → max=80 (單一上限)
+ *   "3.5"         → min=3.5 (單一下限，搭配 test_name 推斷)
+ */
+function determineLabStatus(value: number, referenceRange: string | null): 'normal' | 'attention' | 'alert' {
+  if (!referenceRange || !referenceRange.trim()) return 'normal'
+  const ref = referenceRange.trim()
+
+  let min: number | null = null
+  let max: number | null = null
+
+  // 格式："70-120" 或 "0.4-4.0"
+  const rangeMatch = ref.match(/^(\d+\.?\d*)\s*[-–~]\s*(\d+\.?\d*)$/)
+  if (rangeMatch) {
+    min = parseFloat(rangeMatch[1])
+    max = parseFloat(rangeMatch[2])
+  }
+  // 格式："<1.4" 或 "< 80"
+  else if (/^[<＜≤]\s*(\d+\.?\d*)/.test(ref)) {
+    const m = ref.match(/[<＜≤]\s*(\d+\.?\d*)/)
+    if (m) max = parseFloat(m[1])
+  }
+  // 格式：">30" 或 "> 3.5"
+  else if (/^[>＞≥]\s*(\d+\.?\d*)/.test(ref)) {
+    const m = ref.match(/[>＞≥]\s*(\d+\.?\d*)/)
+    if (m) min = parseFloat(m[1])
+  }
+  // 單一數值："80" → 當作上限
+  else {
+    const single = parseFloat(ref)
+    if (!isNaN(single)) max = single
+  }
+
+  if (min === null && max === null) return 'normal'
+
+  // 判斷邏輯
+  if (min !== null && max !== null) {
+    // 範圍型：超出範圍 10% 以上 = alert，剛超出 = attention
+    const range = max - min
+    const margin = range * 0.1 || 1 // 至少 1 的 margin
+    if (value < min - margin || value > max + margin) return 'alert'
+    if (value < min || value > max) return 'attention'
+    return 'normal'
+  }
+  if (max !== null) {
+    // 只有上限
+    const margin = max * 0.1 || 1
+    if (value > max + margin) return 'alert'
+    if (value > max) return 'attention'
+    return 'normal'
+  }
+  if (min !== null) {
+    // 只有下限
+    const margin = min * 0.1 || 1
+    if (value < min - margin) return 'alert'
+    if (value < min) return 'attention'
+    return 'normal'
+  }
+
+  return 'normal'
+}
+
 export async function GET(request: NextRequest) {
   try {
     // GET 方法允許公開存取，學員可以用連結查看自己的資料
@@ -126,7 +193,7 @@ export async function POST(request: NextRequest) {
         unit: sanitizedUnit,
         reference_range: sanitizedReference,
         date,
-        status: 'normal',
+        status: determineLabStatus(value, sanitizedReference),
         custom_advice: selfEntry ? null : sanitizedAdvice,
         custom_target: selfEntry ? null : sanitizedTarget
       })
@@ -190,6 +257,7 @@ export async function PUT(request: NextRequest) {
         unit: sanitizedUnit,
         reference_range: sanitizedReference,
         date,
+        status: determineLabStatus(value, sanitizedReference),
         custom_advice: sanitizedAdvice,
         custom_target: sanitizedTarget
       })
