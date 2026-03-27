@@ -399,9 +399,12 @@ export default function AdminDashboard() {
       })
       if (res.ok) {
         setClients(prev => prev.map(c => c.id === feedbackClient.id ? { ...c, coach_weekly_note: feedbackText || null } : c))
+        showToast(`${feedbackClient.name} 的回饋已更新`, 'success')
         setFeedbackClient(null)
+      } else {
+        showToast('儲存失敗，請重試', 'error')
       }
-    } catch { /* silent */ } finally { setFeedbackSaving(false) }
+    } catch { showToast('儲存失敗', 'error') } finally { setFeedbackSaving(false) }
   }
 
   const deleteClient = async (client: Client) => {

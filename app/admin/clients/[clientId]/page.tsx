@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -115,6 +115,20 @@ export default function ClientEditor() {
   const [trainingPlanParseError, setTrainingPlanParseError] = useState('')
   const [showTrainingPlanPreview, setShowTrainingPlanPreview] = useState(true)
 
+  // Issue 1: Unsaved changes tracking
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const initialClientRef = useRef<string>('')
+
+  // Issue 4: Tier downgrade confirmation
+  const [pendingDowngrade, setPendingDowngrade] = useState<'free' | 'self_managed' | null>(null)
+  const [downgradeFeatureLoss, setDowngradeFeatureLoss] = useState<string[]>([])
+
+  // Issue 5: Competition prep quick setup
+  const [compQuickSetupDate, setCompQuickSetupDate] = useState('')
+  const [compQuickSetupWeight, setCompQuickSetupWeight] = useState('')
+  const [compQuickSetupGoalType, setCompQuickSetupGoalType] = useState<'cut' | 'bulk'>('cut')
+  const [compQuickSetupSuccess, setCompQuickSetupSuccess] = useState('')
+
   // Timed Coach Override state
   const [overrideDurationDays, setOverrideDurationDays] = useState<number | null>(null)
   const [overrideReason, setOverrideReason] = useState('')
@@ -140,7 +154,7 @@ export default function ClientEditor() {
   useEffect(() => {
     if (clientId === 'new') {
       // 新增學員
-      setClient({
+      const newClient: Client = {
         id: '',
         unique_code: '',
         name: '',
@@ -192,7 +206,9 @@ export default function ClientEditor() {
 
         lab_results: [],
         supplements: []
-      })
+      }
+      setClient(newClient)
+      initialClientRef.current = JSON.stringify(newClient)
       setLoading(false)
     } else {
       // 編輯現有學員
@@ -212,7 +228,9 @@ export default function ClientEditor() {
         return
       }
       const data = await clientRes.json()
-      setClient({ ...data, client_mode: data.client_mode || 'standard' })
+      const loadedClient = { ...data, client_mode: data.client_mode || 'standard' }
+      setClient(loadedClient)
+      initialClientRef.current = JSON.stringify(loadedClient)
 
       if (overviewRes.ok) {
         const overview = await overviewRes.json()
@@ -367,6 +385,9 @@ export default function ClientEditor() {
         // 留在原頁，顯示成功提示
         setSuccessMsg('已保存')
         setTimeout(() => setSuccessMsg(''), 2500)
+        // Issue 1: Reset unsaved changes tracking
+        if (client) initialClientRef.current = JSON.stringify(client)
+        setHasUnsavedChanges(false)
       }
     } catch (error) {
       setError('保存失敗，請重試')
@@ -381,6 +402,25 @@ export default function ClientEditor() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
     return Array.from(array, (byte) => chars[byte % chars.length]).join('')
   }
+
+  // Issue 1: Track unsaved changes by comparing current state to initial snapshot
+  useEffect(() => {
+    if (!client || !initialClientRef.current) return
+    const currentSnapshot = JSON.stringify(client)
+    setHasUnsavedChanges(currentSnapshot !== initialClientRef.current)
+  }, [client])
+
+  // Issue 1: beforeunload warning
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasUnsavedChanges])
 
   const updateClient = (field: string, value: any) => {
     if (!client) return
@@ -669,6 +709,12 @@ export default function ClientEditor() {
               <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
+          {/* Issue 1: Unsaved changes indicator in tab bar */}
+          {hasUnsavedChanges && (
+            <div className="flex items-center px-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="有未儲存的變更"></span>
+            </div>
+          )}
         </div>
 
         {/* ===== Tab: 基本資料 ===== */}
@@ -728,6 +774,30 @@ export default function ClientEditor() {
                       <button
                         key={tier}
                         onClick={() => {
+                          // Issue 4: Check for downgrade
+                          const tierRank = { free: 0, self_managed: 1, coached: 2 }
+                          const currentRank = tierRank[client.subscription_tier]
+                          const targetRank = tierRank[tier]
+                          if (targetRank < currentRank) {
+                            // Downgrade: show confirmation
+                            const lostFeatures: string[] = []
+                            if (tier === 'free') {
+                              if (client.training_enabled) lostFeatures.push('訓練追蹤')
+                              if (client.supplement_enabled) lostFeatures.push('補品管理')
+                              if (client.lab_enabled) lostFeatures.push('血檢追蹤')
+                              if (client.ai_chat_enabled) lostFeatures.push('AI 聊天')
+                              if (client.wellness_enabled) lostFeatures.push('每日感受')
+                            } else if (tier === 'self_managed') {
+                              if (client.supplement_enabled) lostFeatures.push('補品管理')
+                              if (client.lab_enabled) lostFeatures.push('血檢追蹤')
+                            }
+                            if (lostFeatures.length > 0) {
+                              setPendingDowngrade(tier as 'free' | 'self_managed')
+                              setDowngradeFeatureLoss(lostFeatures)
+                              return
+                            }
+                          }
+                          setPendingDowngrade(null)
                           const defaults = getDefaultFeatures(tier)
                           setClient(prev => prev ? ({ ...prev, subscription_tier: tier, ...defaults }) : prev)
                         }}
@@ -742,6 +812,38 @@ export default function ClientEditor() {
                       </button>
                     ))}
                   </div>
+                  {/* Issue 4: Downgrade confirmation */}
+                  {pendingDowngrade && (
+                    <div className="mb-3 p-3 bg-amber-50 border border-amber-300 rounded-xl">
+                      <div className="flex items-start gap-2">
+                        <span className="text-lg">&#9888;&#65039;</span>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-amber-800">
+                            降級為{pendingDowngrade === 'free' ? '免費版' : '自主管理'}會關閉：
+                          </p>
+                          <p className="text-sm text-amber-700 mt-1">{downgradeFeatureLoss.join('、')}</p>
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={() => {
+                                const defaults = getDefaultFeatures(pendingDowngrade)
+                                setClient(prev => prev ? ({ ...prev, subscription_tier: pendingDowngrade, ...defaults }) : prev)
+                                setPendingDowngrade(null)
+                              }}
+                              className="px-3 py-1.5 text-xs font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                            >
+                              確認降級
+                            </button>
+                            <button
+                              onClick={() => setPendingDowngrade(null)}
+                              className="px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                              取消
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <p className="text-xs text-gray-400">切換方案會自動調整功能開關（仍可手動 override）</p>
 
                   {/* 升級 / 取消定期定額 */}
@@ -959,16 +1061,85 @@ export default function ClientEditor() {
               </div>
             </div>
 
-            {/* Nutrition Targets */}
-            {client.nutrition_enabled && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-4">
+            {/* ===== Issue 5: Competition Prep Quick Setup ===== */}
+            {isCompetitionMode(client.client_mode) && !client.calories_target && !client.protein_target && (
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow p-6 border border-amber-200">
+                <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽快速設定</h2>
+                <p className="text-xs text-gray-400 mb-4">一鍵開啟所有備賽功能並設定基礎參數</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div>
-                    <h2 className="text-lg font-medium text-gray-900">飲食目標設定</h2>
-                    <p className="text-xs text-gray-400">設定後學員記錄飲食時會看到目標對比</p>
+                    <label className="block text-xs text-gray-500 mb-1">比賽日期</label>
+                    <input
+                      type="date"
+                      value={compQuickSetupDate}
+                      onChange={(e) => setCompQuickSetupDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">目標上台體重 (kg)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={compQuickSetupWeight}
+                      onChange={(e) => setCompQuickSetupWeight(e.target.value)}
+                      placeholder="例如：65.0"
+                      className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">目標類型</label>
+                    <select
+                      value={compQuickSetupGoalType}
+                      onChange={(e) => setCompQuickSetupGoalType(e.target.value as 'cut' | 'bulk')}
+                      className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                    >
+                      <option value="cut">🔻 減脂</option>
+                      <option value="bulk">🔺 增肌</option>
+                    </select>
                   </div>
                 </div>
-                {/* 教練覆寫鎖定狀態 */}
+                <button
+                  onClick={() => {
+                    setClient(prev => {
+                      if (!prev) return prev
+                      return {
+                        ...prev,
+                        nutrition_enabled: true,
+                        body_composition_enabled: true,
+                        training_enabled: true,
+                        wellness_enabled: true,
+                        supplement_enabled: true,
+                        lab_enabled: true,
+                        goal_type: compQuickSetupGoalType,
+                        activity_profile: 'high_energy_flux',
+                        competition_date: compQuickSetupDate || prev.competition_date,
+                        target_weight: compQuickSetupWeight ? Number(compQuickSetupWeight) : prev.target_weight,
+                      }
+                    })
+                    const enabled = ['飲食追蹤', '體組成', '訓練追蹤', '每日感受', '補品管理', '血檢追蹤']
+                    setCompQuickSetupSuccess(`已啟用：${enabled.join('、')}，目標類型：${compQuickSetupGoalType === 'cut' ? '減脂' : '增肌'}，活動型態：高能量通量`)
+                    setTimeout(() => setCompQuickSetupSuccess(''), 5000)
+                  }}
+                  className="w-full py-2.5 bg-amber-500 text-white rounded-lg text-sm font-semibold hover:bg-amber-600 transition-colors"
+                >
+                  一鍵套用備賽預設
+                </button>
+                {compQuickSetupSuccess && (
+                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700">
+                    {compQuickSetupSuccess}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ===== Issue 3: Unified Nutrition Settings ===== */}
+            {client.nutrition_enabled && (
+              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-400">
+                <h2 className="text-lg font-medium text-gray-900 mb-1">🥗 營養設定</h2>
+                <p className="text-xs text-gray-400 mb-4">所有營養相關設定集中在此，設定後學員會看到目標對比</p>
+
+                {/* Override Banner */}
                 {client.coach_macro_override && (
                   <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <div className="flex items-center justify-between">
@@ -1016,80 +1187,200 @@ export default function ClientEditor() {
                     </div>
                   </div>
                 )}
-                <p className="text-[10px] text-gray-400 mb-3">修改營養目標後會自動鎖定，防止系統覆蓋你的設定。可隨時解除鎖定恢復自動調整。</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">每日蛋白質目標（g）</label>
-                    <input
-                      type="number"
-                      value={client.protein_target ?? ''}
-                      onChange={(e) => updateClient('protein_target', e.target.value ? Number(e.target.value) : null)}
-                      placeholder="例如：120"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">每日飲水目標（ml）</label>
-                    <input
-                      type="number"
-                      value={client.water_target ?? ''}
-                      onChange={(e) => updateClient('water_target', e.target.value ? Number(e.target.value) : null)}
-                      placeholder="例如：2500"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
 
-            {/* 營養分析引擎 */}
-            {client.nutrition_enabled && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="border-t border-gray-100 pt-4 mt-4">
-                  <p className="text-sm font-semibold text-gray-700 mb-3">🧮 營養分析引擎</p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">目標類型</label>
-                      <select
-                        value={client.goal_type || ''}
-                        onChange={(e) => setClient({ ...client, goal_type: e.target.value as 'cut' | 'bulk' || null })}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                      >
-                        <option value="">未設定</option>
-                        <option value="cut">🔻 減脂</option>
-                        <option value="bulk">🔺 增肌</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">營養目標開始日</label>
-                      <input
-                        type="date"
-                        value={client.diet_start_date || ''}
-                        onChange={(e) => setClient({ ...client, diet_start_date: e.target.value || null })}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                      />
-                    </div>
+                {/* Row 1: Goal Type, Activity Profile, Start Date */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">目標類型</label>
+                    <select
+                      value={client.goal_type || ''}
+                      onChange={(e) => setClient({ ...client, goal_type: e.target.value as 'cut' | 'bulk' || null })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    >
+                      <option value="">未設定</option>
+                      <option value="cut">🔻 減脂</option>
+                      <option value="bulk">🔺 增肌</option>
+                    </select>
                   </div>
-                  <div className="mt-3">
-                    <label className="block text-xs text-gray-500 mb-1">活動量分型（影響 TDEE 估算與有氧/步數參考）</label>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">活動型態</label>
                     <select
                       value={client.activity_profile || ''}
                       onChange={(e) => setClient({ ...client, activity_profile: e.target.value as 'sedentary' | 'high_energy_flux' || null })}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                     >
                       <option value="">預設（中等活動量）</option>
-                      <option value="sedentary">🪑 上班族 — 步數受限，以飲食控制為主</option>
-                      <option value="high_energy_flux">⚡ 高能量通量 — 主動提高活動消耗，多吃多動</option>
+                      <option value="sedentary">🪑 上班族</option>
+                      <option value="high_energy_flux">⚡ 高能量通量</option>
                     </select>
-                    <p className="text-xs text-gray-400 mt-1">
-                      上班族：TDEE 係數低、步數目標低（3,000→8,000步）｜高能量通量：TDEE 係數高、步數目標高（8,000→15,000步）
-                    </p>
                   </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">開始日期</label>
+                    <input
+                      type="date"
+                      value={client.diet_start_date || ''}
+                      onChange={(e) => setClient({ ...client, diet_start_date: e.target.value || null })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1 mb-4">
+                  上班族：TDEE 低、步數 3K-8K｜高能量通量：TDEE 高、步數 8K-15K
+                </p>
+
+                {/* Divider: Daily Targets */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-px bg-gray-200 flex-1"></div>
+                  <span className="text-xs font-semibold text-gray-500">每日目標</span>
+                  <div className="h-px bg-gray-200 flex-1"></div>
+                </div>
+                <p className="text-[10px] text-gray-400 mb-3">修改營養目標後會自動鎖定，防止系統覆蓋你的設定。可隨時解除鎖定恢復自動調整。</p>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">熱量 (kcal)</label>
+                    <input
+                      type="number"
+                      value={client.calories_target ?? ''}
+                      onChange={(e) => updateClient('calories_target', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="2200"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                    {client.coach_macro_override && systemSuggestion?.suggestedCalories != null && (
+                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCalories.toLocaleString()} kcal</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">蛋白質 (g)</label>
+                    <input
+                      type="number"
+                      value={client.protein_target ?? ''}
+                      onChange={(e) => updateClient('protein_target', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="120"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                    {client.coach_macro_override && systemSuggestion?.suggestedProtein != null && (
+                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedProtein}g</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">碳水 (g)</label>
+                    <input
+                      type="number"
+                      value={client.carbs_target ?? ''}
+                      onChange={(e) => updateClient('carbs_target', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="250"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                    {client.coach_macro_override && systemSuggestion?.suggestedCarbs != null && (
+                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCarbs}g</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">脂肪 (g)</label>
+                    <input
+                      type="number"
+                      value={client.fat_target ?? ''}
+                      onChange={(e) => updateClient('fat_target', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="60"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                    {client.coach_macro_override && systemSuggestion?.suggestedFat != null && (
+                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedFat}g</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">水分 (mL)</label>
+                    <input
+                      type="number"
+                      value={client.water_target ?? ''}
+                      onChange={(e) => updateClient('water_target', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="2500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Carb Cycling (optional, shown for competition modes) */}
+                {isCompetitionMode(client.client_mode) && (
+                  <>
+                    <div className="flex items-center gap-3 mt-5 mb-3">
+                      <div className="h-px bg-gray-200 flex-1"></div>
+                      <span className="text-xs font-semibold text-gray-500">碳水循環（選填）</span>
+                      <div className="h-px bg-gray-200 flex-1"></div>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mb-3">設定後系統會根據當天有無訓練自動切換碳水目標</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">訓練日碳水 (g)</label>
+                        <input
+                          type="number"
+                          value={client.carbs_training_day ?? ''}
+                          onChange={(e) => updateClient('carbs_training_day', e.target.value ? Number(e.target.value) : null)}
+                          placeholder="300"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">休息日碳水 (g)</label>
+                        <input
+                          type="number"
+                          value={client.carbs_rest_day ?? ''}
+                          onChange={(e) => updateClient('carbs_rest_day', e.target.value ? Number(e.target.value) : null)}
+                          placeholder="100"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </div>
+                    </div>
+                    {client.carbs_training_day && client.carbs_rest_day && (
+                      <div className="mt-2 bg-cyan-50 rounded-lg px-3 py-2 text-xs text-cyan-700">
+                        訓練日 {client.carbs_training_day}g → 休息日 {client.carbs_rest_day}g（差距 {client.carbs_training_day - client.carbs_rest_day}g）
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Override Duration & Reason Selector */}
+                <div className="flex items-center gap-3 mt-5 mb-3">
+                  <div className="h-px bg-gray-200 flex-1"></div>
+                  <span className="text-xs font-semibold text-gray-500">覆寫設定</span>
+                  <div className="h-px bg-gray-200 flex-1"></div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-gray-400">期限：</span>
+                  {[
+                    { label: '7 天', value: 7 },
+                    { label: '14 天', value: 14 },
+                    { label: '30 天', value: 30 },
+                    { label: '永久', value: null as number | null },
+                  ].map(opt => (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => setOverrideDurationDays(opt.value)}
+                      className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                        overrideDurationDays === opt.value
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    value={overrideReason}
+                    onChange={(e) => setOverrideReason(e.target.value)}
+                    placeholder="備註（選填，例如：備賽最後衝刺）"
+                    className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
                 </div>
               </div>
             )}
 
-            {/* 目標體重與體態推算 — 所有學員都可看到 */}
+            {/* 目標體重與體態推算 -- 所有學員都可看到 */}
             {client.body_composition_enabled && (
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-400">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">
@@ -1186,129 +1477,7 @@ export default function ClientEditor() {
               </div>
             )}
 
-            {/* 碳循環設定 */}
-            {client.nutrition_enabled && isCompetitionMode(client.client_mode) && (
-              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-cyan-400">
-                <h2 className="text-lg font-medium text-gray-900 mb-1">🔄 碳循環設定</h2>
-                <p className="text-xs text-gray-400 mb-4">設定後系統會根據當天有無訓練自動切換碳水目標</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">訓練日碳水（g）</label>
-                    <input
-                      type="number"
-                      value={client.carbs_training_day ?? ''}
-                      onChange={(e) => updateClient('carbs_training_day', e.target.value ? Number(e.target.value) : null)}
-                      placeholder="例如：300"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">有記錄訓練（非休息日）時使用</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">休息日碳水（g）</label>
-                    <input
-                      type="number"
-                      value={client.carbs_rest_day ?? ''}
-                      onChange={(e) => updateClient('carbs_rest_day', e.target.value ? Number(e.target.value) : null)}
-                      placeholder="例如：100"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">休息日 / 未記錄訓練時使用</p>
-                  </div>
-                </div>
-                {client.carbs_training_day && client.carbs_rest_day && (
-                  <div className="mt-3 bg-cyan-50 rounded-lg px-3 py-2 text-xs text-cyan-700">
-                    訓練日 {client.carbs_training_day}g → 休息日 {client.carbs_rest_day}g（差距 {client.carbs_training_day - client.carbs_rest_day}g）
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 每日巨量營養素目標 — 有開飲食追蹤就顯示 */}
-            {client.nutrition_enabled && (
-              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-400">
-                <h2 className="text-lg font-medium text-gray-900 mb-1">🍽️ 每日巨量營養素目標</h2>
-                <p className="text-xs text-gray-400 mb-4">手動設定熱量與巨量營養素，引擎也會自動建議調整</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">熱量 (kcal)</label>
-                    <input
-                      type="number"
-                      value={client.calories_target ?? ''}
-                      onChange={(e) => updateClient('calories_target', e.target.value ? Number(e.target.value) : null)}
-                      placeholder="2200"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {client.coach_macro_override && systemSuggestion?.suggestedCalories != null && (
-                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCalories.toLocaleString()} kcal</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">碳水 (g)</label>
-                    <input
-                      type="number"
-                      value={client.carbs_target ?? ''}
-                      onChange={(e) => updateClient('carbs_target', e.target.value ? Number(e.target.value) : null)}
-                      placeholder="250"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {client.coach_macro_override && systemSuggestion?.suggestedCarbs != null && (
-                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCarbs}g</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">脂肪 (g)</label>
-                    <input
-                      type="number"
-                      value={client.fat_target ?? ''}
-                      onChange={(e) => updateClient('fat_target', e.target.value ? Number(e.target.value) : null)}
-                      placeholder="60"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {client.coach_macro_override && systemSuggestion?.suggestedFat != null && (
-                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedFat}g</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Override Duration & Reason Selector */}
-                <div className="mt-4 pt-3 border-t border-gray-100">
-                  <p className="text-xs text-gray-500 mb-2">覆寫設定（儲存時生效）</p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-gray-400">持續時間：</span>
-                    {[
-                      { label: '7 天', value: 7 },
-                      { label: '14 天', value: 14 },
-                      { label: '30 天', value: 30 },
-                      { label: '永久', value: null as number | null },
-                    ].map(opt => (
-                      <button
-                        key={opt.label}
-                        type="button"
-                        onClick={() => setOverrideDurationDays(opt.value)}
-                        className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                          overrideDurationDays === opt.value
-                            ? 'bg-green-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-2">
-                    <input
-                      type="text"
-                      value={overrideReason}
-                      onChange={(e) => setOverrideReason(e.target.value)}
-                      placeholder="覆寫原因（選填，例如：備賽最後衝刺）"
-                      className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Health Mode Settings — 健康模式季度週期 */}
+            {/* Health Mode Settings -- 健康模式季度週期 */}
             {isHealthMode(client.client_mode) && (
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-emerald-400">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">🌿 健康模式設定</h2>
@@ -1847,8 +2016,13 @@ export default function ClientEditor() {
           </div>
         )}
 
-        {/* Actions — 固定在底部，所有 tab 都看得到 */}
-        <div className="flex justify-end space-x-4 mt-6 sticky bottom-4">
+        {/* Actions -- fixed at bottom, visible on all tabs */}
+        <div className="flex items-center justify-end space-x-4 mt-6 sticky bottom-4">
+          {hasUnsavedChanges && (
+            <span className="text-xs text-red-500 font-medium bg-red-50 px-3 py-1.5 rounded-full border border-red-200 animate-pulse">
+              有未儲存的變更
+            </span>
+          )}
           <Link
             href="/admin"
             className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors bg-white shadow-sm"
@@ -1858,9 +2032,17 @@ export default function ClientEditor() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-sm"
+            className={`relative px-6 py-2 text-white rounded-lg transition-colors disabled:opacity-50 shadow-sm ${
+              hasUnsavedChanges ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
-            {saving ? '保存中...' : '保存'}
+            {hasUnsavedChanges && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              </span>
+            )}
+            {saving ? '保存中...' : hasUnsavedChanges ? '保存 *' : '保存'}
           </button>
         </div>
       </div>
