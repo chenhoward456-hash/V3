@@ -340,6 +340,7 @@ export interface NutritionSuggestion {
     labFlags: string[]            // 異常的血檢指標
     recommendation: string        // 給用戶的建議
     readinessScore: number        // 0-100 綜合就緒分數
+    labRetestReminder?: string | null  // 建議複檢提醒
   } | null
 
   // 恢復期活動量指引（閘門擋住時提供）
@@ -433,9 +434,13 @@ export function getInsulinSensitivityTier(
   }
 
   // 搜尋空腹胰島素（Fasting Insulin / 空腹胰島素）
-  const fastingInsulin = labResults.find(r =>
-    r.value != null && /空腹胰島素|fasting\s*insulin|^insulin$/i.test(r.test_name)
-  )
+  // 排除含 growth factor / igf 的項目（避免匹配 insulin-like growth factor / IGF-1）
+  const fastingInsulin = labResults.find(r => {
+    if (r.value == null) return false
+    const name = r.test_name.toLowerCase()
+    if (/growth\s*factor|igf/i.test(name)) return false
+    return /空腹胰島素|fasting[\s_]*insulin|^insulin$/i.test(name)
+  })
   if (fastingInsulin && fastingInsulin.value != null) {
     if (fastingInsulin.value < 7) return 'sensitive'
     if (fastingInsulin.value <= 12) return 'moderate'
@@ -1470,7 +1475,7 @@ function checkCuttingReadiness(
       score += 8
       reasons.push(`🟢 胰島素敏感度${homaIr.value < 1.0 ? '頂尖' : '良好'}（HOMA-IR ${homaIr.value}）— 碳水利用率高，減脂效率好`)
     }
-    const fastingInsulin = findLab(['空腹胰島素', 'fasting insulin', 'insulin'])
+    const fastingInsulin = findLab(['空腹胰島素', 'fasting insulin', 'insulin'], ['growth factor', 'igf'])
     if (fastingInsulin && fastingInsulin.value != null && fastingInsulin.value < 5) {
       score += 5
       reasons.push(`🟢 空腹胰島素優秀（${fastingInsulin.value} μIU/mL）— 代謝靈活度高`)
@@ -1813,17 +1818,25 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     const recoveryFat = Math.round(bw * 1.0)
     const recoveryCarbs = Math.round((recoveryCals - recoveryProtein * 4 - recoveryFat * 9) / 4)
     const recoveryWater = Math.round(bw * 40)
+
+    // 在恢復期早回前先跑 cutting gate，提供血檢異常資訊（不阻擋恢復策略）
+    const recoveryGateInfo = checkCuttingReadiness(input, currentState, readinessScore, null)
+    const recoveryWarnings = [
+      '🔄 賽後恢復期：優先恢復腸胃功能和荷爾蒙平衡',
+      '⚠️ 避免暴食 — 比賽後 leptin 急降，飢餓感會很強，用高蛋白+高纖維穩定食慾',
+      `📈 目前恢復倍率 ×1.0（維持量 ${estimatedMaintenance} → ${recoveryCals} kcal）`,
+      '🍽️ 以維持量進食，避免高脂高糖，讓腸胃重新適應正常食物量',
+    ]
+    if (recoveryGateInfo.blocked) {
+      recoveryWarnings.push(...recoveryGateInfo.reasons)
+    }
+
     return {
       status: 'on_track' as const,
       statusLabel: '賽後恢復',
       statusEmoji: '🔄',
       message: `目前為賽後恢復期（反向飲食 Phase 1）。無比賽日期記錄，使用預設恢復策略：維持量進食，漸進提升熱量。建議教練設定比賽日期以啟用精確恢復計畫。`,
-      warnings: [
-        '🔄 賽後恢復期：優先恢復腸胃功能和荷爾蒙平衡',
-        '⚠️ 避免暴食 — 比賽後 leptin 急降，飢餓感會很強，用高蛋白+高纖維穩定食慾',
-        `📈 目前恢復倍率 ×1.0（維持量 ${estimatedMaintenance} → ${recoveryCals} kcal）`,
-        '🍽️ 以維持量進食，避免高脂高糖，讓腸胃重新適應正常食物量',
-      ],
+      warnings: recoveryWarnings,
       suggestedCalories: recoveryCals,
       suggestedProtein: recoveryProtein,
       suggestedCarbs: Math.max(recoveryCarbs, 150),
@@ -1843,6 +1856,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       geneticCorrections: [],
       postCompetitionRecovery: true,
       recoveryWater,
+      cuttingReadinessGate: recoveryGateInfo.blocked ? recoveryGateInfo : null,
       ...stateFields,
     }
   }
@@ -1875,19 +1889,27 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       const recoveryCarbs = Math.round((recoveryCals - recoveryProtein * 4 - recoveryFat * 9) / 4)
 
       const recoveryWater = Math.round(bw * 40) // 恢復期正常水量 40ml/kg
+
+      // 在恢復期早回前先跑 cutting gate，提供血檢異常資訊（不阻擋恢復策略）
+      const recoveryGateInfo = checkCuttingReadiness(input, currentState, readinessScore, null)
+      const recoveryWarnings = [
+        '🔄 賽後恢復期：優先恢復腸胃功能和荷爾蒙平衡',
+        '⚠️ 避免暴食 — 比賽後 leptin 急降，飢餓感會很強，用高蛋白+高纖維穩定食慾',
+        `📈 目前恢復倍率 ×${recoveryMultiplier}（維持量 ${estimatedMaintenance} → ${recoveryCals} kcal）`,
+        ...(daysSinceComp <= 3 ? ['🍽️ 第 1-3 天：以維持量進食，避免高脂高糖，讓腸胃重新適應正常食物量'] : []),
+        ...(daysSinceComp > 3 && daysSinceComp <= 7 ? ['🍽️ 第 4-7 天：每日增加 100-150kcal，以碳水為主（恢復肝醣和代謝率）'] : []),
+        ...(daysSinceComp > 7 ? ['🍽️ 第 8+ 天：進入正式反向飲食，每週增加 100-200kcal 直到新維持量'] : []),
+      ]
+      if (recoveryGateInfo.blocked) {
+        recoveryWarnings.push(...recoveryGateInfo.reasons)
+      }
+
       return {
         status: 'on_track' as const,
         statusLabel: '賽後恢復',
         statusEmoji: '🔄',
         message: `比賽已結束 ${daysSinceComp} 天。目前為賽後恢復期（反向飲食 Phase ${daysSinceComp <= 3 ? 1 : daysSinceComp <= 7 ? 2 : 3}），漸進提升熱量避免暴食反彈。建議教練設定新的目標或清除比賽日期。`,
-        warnings: [
-          '🔄 賽後恢復期：優先恢復腸胃功能和荷爾蒙平衡',
-          '⚠️ 避免暴食 — 比賽後 leptin 急降，飢餓感會很強，用高蛋白+高纖維穩定食慾',
-          `📈 目前恢復倍率 ×${recoveryMultiplier}（維持量 ${estimatedMaintenance} → ${recoveryCals} kcal）`,
-          ...(daysSinceComp <= 3 ? ['🍽️ 第 1-3 天：以維持量進食，避免高脂高糖，讓腸胃重新適應正常食物量'] : []),
-          ...(daysSinceComp > 3 && daysSinceComp <= 7 ? ['🍽️ 第 4-7 天：每日增加 100-150kcal，以碳水為主（恢復肝醣和代謝率）'] : []),
-          ...(daysSinceComp > 7 ? ['🍽️ 第 8+ 天：進入正式反向飲食，每週增加 100-200kcal 直到新維持量'] : []),
-        ],
+        warnings: recoveryWarnings,
         suggestedCalories: recoveryCals,
         suggestedProtein: recoveryProtein,
         suggestedCarbs: Math.max(recoveryCarbs, 150), // 恢復期碳水不低於 150g
@@ -1907,6 +1929,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
         geneticCorrections: [],
         postCompetitionRecovery: true, // 標記讓 API route 重設 water_target
         recoveryWater,
+        cuttingReadinessGate: recoveryGateInfo.blocked ? recoveryGateInfo : null,
         ...stateFields, // 包含 refeedSuggested, refeedReason, refeedDays, currentState, readinessScore 等
       }
     }
@@ -1983,11 +2006,13 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   }
 
   // 5. 計算目標日距（提前算，TDEE 需要能量密度）
+  // 使用 UTC+8（台北時區）計算，與 Peak Week rawDaysLeft 保持一致
   let daysToTarget: number | null = null
   if (input.targetDate) {
-    const now = new Date()
-    const target = new Date(input.targetDate)
-    daysToTarget = Math.max(1, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+    const nowTW = new Date(Date.now() + 8 * 60 * 60 * 1000)
+    const nowTWDate = new Date(nowTW.toISOString().split('T')[0]) // UTC+8 的午夜
+    const target = new Date(input.targetDate) // DB DATE 欄位 = UTC midnight
+    daysToTarget = Math.max(1, Math.ceil((target.getTime() - nowTWDate.getTime()) / (1000 * 60 * 60 * 24)))
   }
 
   // 6. 估算 TDEE
