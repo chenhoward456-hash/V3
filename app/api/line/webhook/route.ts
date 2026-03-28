@@ -459,6 +459,29 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     return
   }
 
+  // Dashboard link — 回傳個人化連結，用外部瀏覽器開啟
+  if (text === '我的儀表板' || text === '儀表板') {
+    const dashboardUrl = `https://howard456.vercel.app/c/${client!.unique_code}`
+    await replyMessage(event.replyToken, [
+      {
+        type: 'template',
+        altText: `你的儀表板：${dashboardUrl}`,
+        template: {
+          type: 'buttons',
+          text: '點下方按鈕用瀏覽器開啟你的儀表板',
+          actions: [
+            {
+              type: 'uri',
+              label: '開啟我的儀表板',
+              uri: `${dashboardUrl}?openExternalBrowser=1`,
+            },
+          ],
+        },
+      },
+    ])
+    return
+  }
+
   // Status query
   if (text === '狀態' || text === '今天狀態') {
     await handleStatusQuery(event.replyToken, client!, supabase)

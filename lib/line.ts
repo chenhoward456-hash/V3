@@ -155,11 +155,7 @@ export function getMemberRichMenuObject() {
       },
       {
         bounds: { x: 1667, y: 0, width: 833, height: 843 },
-        action: {
-          type: 'uri',
-          label: '我的儀表板',
-          uri: 'https://howard456.vercel.app/?pwa=1&openExternalBrowser=1',
-        },
+        action: { type: 'message', label: '我的儀表板', text: '我的儀表板' },
       },
       // Row 2: 狀態 + 趨勢 + 客服
       {
