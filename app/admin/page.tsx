@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2 } from 'lucide-react'
+import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2, Clock } from 'lucide-react'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { isCompetitionMode, PHASE_LABELS } from '@/lib/client-mode'
 
@@ -73,10 +73,11 @@ export default function AdminDashboard() {
   const [recentWellness, setRecentWellness] = useState<WellnessRecord[]>([])
   const [recentRPE, setRecentRPE] = useState<RPERecord[]>([])
   const [lastActivityMap, setLastActivityMap] = useState<Record<string, string>>({})
-  const [search, setSearch] = useState('')
-  const [sortKey, setSortKey] = useState<SortKey>('lastActivity')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  // 從 URL 讀取初始篩選狀態
+  const [search, setSearch] = useState(() => { if (typeof window === 'undefined') return ''; return new URLSearchParams(window.location.search).get('q') || '' })
+  const [sortKey, setSortKey] = useState<SortKey>(() => { if (typeof window === 'undefined') return 'lastActivity'; return (new URLSearchParams(window.location.search).get('sort') as SortKey) || 'lastActivity' })
+  const [sortDir, setSortDir] = useState<SortDir>(() => { if (typeof window === 'undefined') return 'desc'; return (new URLSearchParams(window.location.search).get('dir') as SortDir) || 'desc' })
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => { if (typeof window === 'undefined') return 'all'; return (new URLSearchParams(window.location.search).get('status') as StatusFilter) || 'all' })
 
   // 分頁
   const PAGE_SIZE = 20
@@ -91,7 +92,12 @@ export default function AdminDashboard() {
   const [feedbackClient, setFeedbackClient] = useState<Client | null>(null)
   const [feedbackText, setFeedbackText] = useState('')
   const [feedbackSaving, setFeedbackSaving] = useState(false)
+  const [feedbackOriginal, setFeedbackOriginal] = useState('')
   const feedbackRef = useRef<HTMLTextAreaElement>(null)
+
+  // 錯誤處理 & 最後更新時間
+  const [error, setError] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
     fetch('/api/admin/verify')
@@ -168,7 +174,12 @@ export default function AdminDashboard() {
       for (const r of (data.activityTraining || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
       for (const r of (data.supplementLogs || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
       setLastActivityMap(actMap)
-    } catch { /* silent */ } finally { setLoading(false) }
+      setError(null)
+      setLastUpdated(new Date())
+    } catch (err) {
+      setError('資料載入失敗，請檢查網路後重試')
+      console.error('[Dashboard] fetchData error:', err)
+    } finally { setLoading(false) }
   }
 
   const clientStats = useMemo(() => {
@@ -350,8 +361,17 @@ export default function AdminDashboard() {
     return list
   }, [clients, search, statusFilter, sortKey, sortDir, clientStats])
 
-  // 搜尋/篩選/排序變更時重設分頁
-  useEffect(() => { setCurrentPage(1) }, [search, statusFilter, sortKey, sortDir])
+  // 搜尋/篩選/排序變更時重設分頁 + 同步 URL
+  useEffect(() => {
+    setCurrentPage(1)
+    const params = new URLSearchParams()
+    if (search) params.set('q', search)
+    if (statusFilter !== 'all') params.set('status', statusFilter)
+    if (sortKey !== 'lastActivity') params.set('sort', sortKey)
+    if (sortDir !== 'desc') params.set('dir', sortDir)
+    const qs = params.toString()
+    window.history.replaceState({}, '', qs ? `?${qs}` : window.location.pathname)
+  }, [search, statusFilter, sortKey, sortDir])
 
   const paginatedClients = filteredClients.slice(0, currentPage * PAGE_SIZE)
 
@@ -380,9 +400,18 @@ export default function AdminDashboard() {
 
   // 快速回饋功能
   const openFeedback = (client: Client) => {
+    const original = client.coach_weekly_note || ''
     setFeedbackClient(client)
-    setFeedbackText(client.coach_weekly_note || '')
+    setFeedbackText(original)
+    setFeedbackOriginal(original)
     setTimeout(() => feedbackRef.current?.focus(), 100)
+  }
+
+  const closeFeedback = () => {
+    if (feedbackText !== feedbackOriginal) {
+      if (!confirm('回饋內容尚未儲存，確定要關閉嗎？')) return
+    }
+    setFeedbackClient(null)
   }
 
   const saveFeedback = async () => {
@@ -420,7 +449,38 @@ export default function AdminDashboard() {
     } catch { showToast('刪除失敗，請稍後再試', 'error') }
   }
 
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" /><p className="text-gray-600">載入中...</p></div></div>
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow-sm border-b"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center"><div className="h-5 w-32 bg-gray-200 rounded animate-pulse" /></div></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* KPI 骨架 */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="bg-white rounded-2xl shadow-sm p-5 animate-pulse">
+              <div className="flex items-center justify-between mb-3"><div className="h-3 w-16 bg-gray-200 rounded" /><div className="h-5 w-5 bg-gray-200 rounded" /></div>
+              <div className="h-8 w-20 bg-gray-200 rounded mb-2" />
+              <div className="h-2 w-24 bg-gray-100 rounded" />
+            </div>
+          ))}
+        </div>
+        {/* 學員列表骨架 */}
+        <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-4" />
+          <div className="space-y-4">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="flex items-center gap-4 animate-pulse">
+                <div className="h-4 w-20 bg-gray-200 rounded" />
+                <div className="h-4 w-12 bg-gray-100 rounded" />
+                <div className="h-4 w-16 bg-gray-200 rounded" />
+                <div className="flex-1" />
+                <div className="h-4 w-10 bg-gray-100 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -446,8 +506,17 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
+                {lastUpdated && <span className="text-[10px] text-gray-400 flex items-center gap-1"><Clock size={10} />{lastUpdated.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })} 更新</span>}
                 <Link href="/admin/blog" className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors">文章管理</Link><Link href="/admin/clients/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">新增學員</Link><button onClick={handleLogout} className="text-gray-500 hover:text-gray-700 text-sm">登出</button></div></div></div></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        {/* ===== 錯誤提示 ===== */}
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-red-700">{error}</span>
+            <button onClick={() => { setError(null); setLoading(true); fetchData() }} className="text-sm font-medium text-red-600 hover:text-red-800 px-3 py-1 bg-red-100 rounded-lg hover:bg-red-200 transition-colors">重試</button>
+          </div>
+        )}
 
         {/* ===== 頂部：一眼看重點 ===== */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -487,7 +556,7 @@ export default function AdminDashboard() {
                 const urgencyColor = c.daysLeft <= 7 ? 'text-red-600' : c.daysLeft <= 14 ? 'text-orange-600' : c.daysLeft <= 30 ? 'text-amber-600' : 'text-gray-700'
                 return (
                   <Link key={c.id} href={`/admin/clients/${c.id}/overview`}
-                    className="bg-white rounded-xl p-4 hover:shadow-md transition-shadow block">
+                    className={`bg-white rounded-xl p-4 hover:shadow-md transition-shadow block ${c.daysLeft <= 3 ? 'ring-2 ring-red-400 animate-pulse' : ''}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-semibold text-gray-900">{c.name}</span>
                       <span className={`text-2xl font-bold ${urgencyColor}`}>{c.daysLeft}<span className="text-xs font-normal ml-0.5">天</span></span>
@@ -620,11 +689,11 @@ export default function AdminDashboard() {
                 <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-blue-600"><div className="text-sm font-medium text-gray-900">{client.name}{client.line_user_id && <span className={`ml-1 text-[10px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? '🟢' : '💬'}</span>}{isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && <span className={`ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingEmoji(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className="ml-1" title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'🥗':'🍔'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) && ` · ${getPrepPhaseLabel(client.prep_phase)}`}<span className="ml-1.5 inline-flex gap-0.5">{client.body_composition_enabled&&<span title="體重/體態">⚖️</span>}{client.wellness_enabled&&<span title="每日感受">😊</span>}{client.nutrition_enabled&&<span title="飲食">🥗</span>}{client.training_enabled&&<span title="訓練">🏋️</span>}{client.supplement_enabled&&<span title="補品">💊</span>}{client.lab_enabled&&<span title="血檢">🩸</span>}</span></div></Link></td>
                 <td className="px-4 py-4"><div><span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${tier.color}`}>{tier.label}</span>{expiry && <p className={`text-[10px] mt-1 ${expiry.color}`}>{expiry.text}</p>}</div></td>
                 <td className="px-5 py-4"><span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'需要關注'}</span></td>
-                <td className="px-5 py-4">{stat?.supplementCount>0?<span className={`text-sm font-medium ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span>:<span className="text-sm text-gray-400">--</span>}</td>
+                <td className="px-5 py-4">{stat?.supplementCount>0?<span className={`text-sm font-medium ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span>:<span className="text-sm text-gray-500" title="此學員未設定補品">N/A</span>}</td>
                 <td className="px-5 py-4"><div className="flex flex-wrap gap-1">{client.body_composition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayBodyIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="體重">⚖️</span>}{client.wellness_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayWellnessIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="感受">😊</span>}{client.nutrition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayNutritionMap[client.id]!==undefined?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="飲食">🥗</span>}{client.training_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayTrainingMap[client.id]?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="訓練">🏋️</span>}{client.supplement_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayLogIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="補品">💊</span>}</div></td>
                 <td className="px-5 py-4"><span className={`text-sm ${act.color}`}>{act.text}</span></td>
                 <td className="px-5 py-4"><span className={`text-sm ${ckup.color}`}>{ckup.text}</span></td>
-                <td className="px-5 py-4"><div className="flex items-center gap-1.5"><button onClick={() => openFeedback(client)} className="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors" title="快速回饋"><MessageSquare size={15} /></button><button onClick={(e) => { e.preventDefault(); copyClientUrl(client.unique_code) }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="複製學員連結"><Copy size={15} /></button><Link href={`/admin/clients/${client.id}`} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="編輯"><ExternalLink size={15} /></Link><button onClick={() => deleteClient(client)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="刪除學員"><Trash2 size={15} /></button></div></td>
+                <td className="px-5 py-4"><div className="flex items-center gap-1.5"><button onClick={() => openFeedback(client)} className="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors" title="快速回饋" aria-label={`寫回饋給 ${client.name}`}><MessageSquare size={15} /></button><button onClick={(e) => { e.preventDefault(); copyClientUrl(client.unique_code) }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="複製學員連結" aria-label={`複製 ${client.name} 的連結`}><Copy size={15} /></button><Link href={`/admin/clients/${client.id}`} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="編輯" aria-label={`編輯 ${client.name}`}><ExternalLink size={15} /></Link><button onClick={() => deleteClient(client)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="刪除學員" aria-label={`刪除 ${client.name}`}><Trash2 size={15} /></button></div></td>
               </tr>) })}</tbody></table></div>
             {currentPage * PAGE_SIZE < filteredClients.length && (
               <div className="px-5 py-3 border-t border-gray-100">
@@ -643,14 +712,14 @@ export default function AdminDashboard() {
 
       {/* ===== 快速回饋 Modal ===== */}
       {feedbackClient && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50" onClick={() => setFeedbackClient(null)}>
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50" onClick={closeFeedback} onKeyDown={e => { if (e.key === 'Escape') closeFeedback() }}>
           <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-6 shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">快速回饋</h3>
                 <p className="text-sm text-gray-500">{feedbackClient.name}</p>
               </div>
-              <button onClick={() => setFeedbackClient(null)} className="p-1 text-gray-400 hover:text-gray-600"><X size={20} /></button>
+              <button onClick={closeFeedback} className="p-1 text-gray-400 hover:text-gray-600" aria-label="關閉回饋"><X size={20} /></button>
             </div>
             <textarea
               ref={feedbackRef}

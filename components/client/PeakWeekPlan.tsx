@@ -54,6 +54,8 @@ interface PeakWeekPlanProps {
   previewDate?: string
   /** 成功套用 Peak Week 營養目標後，刷新 client 資料 */
   onMutate?: () => void
+  /** 基因憂鬱風險（5-HTTLPR）— 如為 SS/SL，Peak Week 計畫已自動調整 */
+  geneDepressionRisk?: string | null
 }
 
 const phaseColors: Record<string, { bg: string; text: string; border: string; badge: string }> = {
@@ -72,10 +74,13 @@ const phaseLabels: Record<string, string> = {
   show_day: '比賽日',
 }
 
-export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeight, previewDate, onMutate }: PeakWeekPlanProps) {
+export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeight, previewDate, onMutate, geneDepressionRisk }: PeakWeekPlanProps) {
   const [plan, setPlan] = useState<PeakWeekDay[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [expandedDay, setExpandedDay] = useState<number | null>(null)
+  const [expandAll, setExpandAll] = useState(false)
+  const [dailyWeights, setDailyWeights] = useState<Record<string, string>>({})
+  const [spilloverNote, setSpilloverNote] = useState<string | null>(null)
 
   const todayStr = getLocalDateStr()
   const focusDate = previewDate || todayStr
@@ -127,10 +132,30 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
           <span className="text-2xl">🏆</span>
           <h2 className="text-lg font-bold text-gray-900">Peak Week 計畫</h2>
         </div>
-        <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
-          倒數 {daysLeft} 天
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setExpandAll(!expandAll); if (!expandAll) setExpandedDay(null) }}
+            className="text-[10px] text-gray-500 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            {expandAll ? '收合全部' : '展開全部'}
+          </button>
+          <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+            倒數 {daysLeft} 天
+          </span>
+        </div>
       </div>
+
+      {/* 基因風險提示 */}
+      {geneDepressionRisk && (geneDepressionRisk === 'high' || geneDepressionRisk === 'moderate') && (
+        <div className={`mb-4 px-3 py-2 rounded-xl text-xs flex items-center gap-2 ${geneDepressionRisk === 'high' ? 'bg-purple-50 border border-purple-200 text-purple-700' : 'bg-indigo-50 border border-indigo-200 text-indigo-700'}`}>
+          <span>🧬</span>
+          <span>
+            因 5-HTTLPR {geneDepressionRisk === 'high' ? 'SS' : 'SL'} 基因型，碳水耗竭期已
+            {geneDepressionRisk === 'high' ? '縮短至 2 天並增加碳水 +1-2g/kg' : '縮短至 3 天並增加碳水 +0.5g/kg'}
+            ，以保護情緒穩定與血清素水平。
+          </span>
+        </div>
+      )}
 
       {/* ===== 焦點日重點卡片 ===== */}
       {focusPlan && (
@@ -405,12 +430,66 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
         </table>
       </div>
 
+      {/* ===== Peak Week 每日體重追蹤（Spillover 偵測）===== */}
+      <div className="mb-4 bg-gray-50 border border-gray-200 rounded-xl p-3">
+        <p className="text-xs font-semibold text-gray-600 mb-2">⚖️ 每日實際體重（用於 Spillover 偵測）</p>
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+          {plan.map((day) => {
+            const dateObj = new Date(day.date + 'T12:00:00')
+            const dateLabel = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`
+            const inputVal = dailyWeights[day.date] || ''
+            const isCarb = day.phase === 'carb_load'
+            const prevDayWeight = (() => {
+              const prevDate = new Date(dateObj); prevDate.setDate(prevDate.getDate() - 1)
+              const prevKey = prevDate.toISOString().split('T')[0]
+              return dailyWeights[prevKey] ? parseFloat(dailyWeights[prevKey]) : null
+            })()
+            const currentW = inputVal ? parseFloat(inputVal) : null
+            const gain = prevDayWeight && currentW ? (currentW - prevDayWeight) : null
+            const isSpillover = isCarb && gain !== null && gain > (bodyWeight > 90 ? 2.5 : 2.0)
+
+            return (
+              <div key={day.date} className="text-center">
+                <p className="text-[10px] text-gray-400 mb-1">{dateLabel}</p>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={inputVal}
+                  onChange={e => {
+                    const val = e.target.value
+                    setDailyWeights(prev => ({ ...prev, [day.date]: val }))
+                    if (isCarb && val) {
+                      const w = parseFloat(val)
+                      const threshold = bodyWeight > 90 ? 2.5 : 2.0
+                      if (prevDayWeight && w - prevDayWeight > threshold) {
+                        setSpilloverNote(`Day ${day.daysOut}：體重增幅 ${(w - prevDayWeight).toFixed(1)}kg 超過閾值 ${threshold}kg，建議降碳水至 5-7g/kg`)
+                      } else {
+                        setSpilloverNote(null)
+                      }
+                    }
+                  }}
+                  placeholder="--"
+                  className={`w-full text-center text-xs px-1 py-1.5 rounded-lg border ${isSpillover ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'} focus:outline-none focus:ring-1 focus:ring-blue-400`}
+                />
+                {gain !== null && <p className={`text-[9px] mt-0.5 ${gain > 0 ? 'text-orange-500' : 'text-green-500'}`}>{gain > 0 ? '+' : ''}{gain.toFixed(1)}</p>}
+              </div>
+            )
+          })}
+        </div>
+        {spilloverNote && (
+          <div className="mt-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 flex items-start gap-1.5">
+            <span className="shrink-0">⚠️</span>
+            <span>{spilloverNote}</span>
+          </div>
+        )}
+      </div>
+
       {/* ===== 各天展開詳情 ===== */}
       <div className="space-y-2">
         {plan.map((day, idx) => {
           const isFocus = day.date === focusDate
           const isPast = day.date < todayStr
-          const isExpanded = expandedDay === idx
+          const isExpanded = expandAll || expandedDay === idx
           const colors = phaseColors[day.phase] || phaseColors.depletion
           const dateObj = new Date(day.date + 'T12:00:00')
           const dateLabel = dateObj.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })

@@ -28,6 +28,7 @@ import NutritionLog from '@/components/client/NutritionLog'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import PostCompetitionRecovery from '@/components/client/PostCompetitionRecovery'
+import AthleticReboundTimeline from '@/components/client/AthleticReboundTimeline'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManagedNutrition'), { ssr: false })
@@ -848,11 +849,22 @@ export default function ClientDashboard() {
                     bodyWeight={latestBodyData!.weight}
                     previewDate={selectedDate > today ? selectedDate : undefined}
                     onMutate={mutateWithTargets}
+                    geneDepressionRisk={c.gene_depression_risk as string | null}
                   />
                 )}
               </SectionErrorBoundary>
             )
           })()}
+
+          {/* Athletic 超補償期時間軸（秤重 → 比賽） */}
+          {c.client_mode === 'athletic' && c.prep_phase === 'rebound' && nutritionEngineSuggestion?.athleticRebound && latestBodyData && (
+            <AthleticReboundTimeline
+              gapHours={nutritionEngineSuggestion.athleticRebound.gapHours}
+              strategy={nutritionEngineSuggestion.athleticRebound.strategy}
+              waterPerHour={nutritionEngineSuggestion.athleticRebound.waterPerHour}
+              bodyWeight={latestBodyData.weight}
+            />
+          )}
 
           {/* 賽後恢復期計畫卡片（備賽模式 recovery 階段） */}
           {isCompetition && c.prep_phase === 'recovery' && c.competition_date && (() => {
