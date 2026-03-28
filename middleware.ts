@@ -45,6 +45,19 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const ip = getIP(request)
 
+  // ===== LINE 內建瀏覽器偵測（server-side，在頁面載入前攔截）=====
+  if (pathname.startsWith('/c/') && /Line\//i.test(request.headers.get('user-agent') || '')) {
+    const clientId = pathname.split('/c/')[1]
+    const url = `https://howard456.vercel.app/c/${clientId}`
+    return new NextResponse(
+      `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Howard Protocol</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f9fafb;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}.card{text-align:center;max-width:340px}.emoji{font-size:48px;margin-bottom:16px}h1{font-size:20px;font-weight:700;color:#111;margin-bottom:8px}p{font-size:14px;color:#6b7280;line-height:1.6;margin-bottom:24px}.btn{display:block;background:#2563eb;color:#fff;font-weight:700;padding:14px 24px;border-radius:12px;text-decoration:none;font-size:15px;margin-bottom:12px}.btn:hover{background:#1d4ed8}.copy{background:none;border:none;color:#2563eb;font-size:14px;cursor:pointer}.hint{font-size:11px;color:#9ca3af;margin-top:16px}</style></head><body><div class="card"><div class="emoji">🔗</div><h1>請用 Safari 開啟</h1><p>LINE 內建瀏覽器不支援完整功能。<br>請點下方按鈕用瀏覽器開啟。</p><a class="btn" href="${url}" target="_blank" rel="noopener noreferrer">用瀏覽器開啟</a><button class="copy" onclick="navigator.clipboard&&navigator.clipboard.writeText('${url}');this.textContent='已複製 ✓'">複製網址</button><p class="hint">開啟後建議「加入主畫面」，下次一鍵進入</p></div></body></html>`,
+      {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      }
+    )
+  }
+
   // ===== PWA 啟動重導 =====
   // 當 PWA 從主畫面開啟時（start_url: "/?pwa=1"），
   // 讀取 cookie 中的 clientId，直接 302 到他的儀表板，零閃爍
@@ -173,5 +186,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/admin/:path*', '/api/:path*'],
+  matcher: ['/', '/c/:path*', '/admin/:path*', '/api/:path*'],
 }
