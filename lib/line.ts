@@ -144,7 +144,7 @@ export function getMemberRichMenuObject() {
     name: 'Howard Protocol — 學員版',
     chatBarText: '📋 快速記錄',
     areas: [
-      // Row 1: 記錄動作
+      // Row 1: 記錄動作 + 儀表板
       {
         bounds: { x: 0, y: 0, width: 833, height: 843 },
         action: { type: 'message', label: '記體重', text: '記體重' },
@@ -155,7 +155,11 @@ export function getMemberRichMenuObject() {
       },
       {
         bounds: { x: 1667, y: 0, width: 833, height: 843 },
-        action: { type: 'message', label: '記訓練', text: '記訓練' },
+        action: {
+          type: 'uri',
+          label: '我的儀表板',
+          uri: 'https://howard456.vercel.app/?pwa=1&openExternalBrowser=1',
+        },
       },
       // Row 2: 狀態 + 趨勢 + 客服
       {
