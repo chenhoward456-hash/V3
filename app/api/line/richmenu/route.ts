@@ -10,9 +10,12 @@ import {
   setDefaultRichMenu,
   listRichMenus,
   deleteRichMenu,
+  linkRichMenuToUser,
 } from '@/lib/line'
+import { createServiceSupabase } from '@/lib/supabase'
 
 const logger = createLogger('line-richmenu')
+const supabase = createServiceSupabase()
 
 function getAdminSession(request: NextRequest): boolean {
   const token = request.cookies.get('admin_session')?.value
@@ -152,6 +155,29 @@ export async function POST(request: NextRequest) {
       results.message = 'Rich Menu 結構已建立，請上傳圖片後才能啟用。'
     } else {
       results.message = 'Rich Menu 設定完成！'
+    }
+
+    // 學員版上傳後，自動重新指派所有已綁定的付費用戶
+    if (memberImage && results.memberMenuId) {
+      try {
+        const { data: users } = await supabase
+          .from('clients')
+          .select('line_user_id, subscription_tier')
+          .not('line_user_id', 'is', null)
+          .in('subscription_tier', ['coached', 'self_managed'])
+
+        let reassigned = 0
+        for (const user of (users || [])) {
+          try {
+            await linkRichMenuToUser(user.line_user_id, results.memberMenuId as string)
+            reassigned++
+          } catch { /* skip failed */ }
+        }
+        results.reassigned = reassigned
+        results.message += ` 已重新指派 ${reassigned} 位學員。`
+      } catch (err) {
+        logger.warn('Rich menu reassignment failed', { error: err })
+      }
     }
 
     return NextResponse.json(results)
