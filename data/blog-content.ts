@@ -79,10 +79,16 @@ export const blogContent: Record<string, BlogPost> = {
 
 ---
 
+## 把睡眠也列入追蹤項目
+
+> Howard Protocol 的每日健康追蹤包含睡眠品質評分，系統會自動分析你的睡眠趨勢與訓練表現的關聯——哪些天睡得好、隔天 RPE 就低？數據會告訴你。[免費開始追蹤 →](https://howard456.vercel.app/join)
+
+---
+
 ## 參考文獻
 
-1. Morrison, M., et al. (2022). Sleep and skeletal muscle: Impact on metabolism, performance, and recovery. *Sleep Medicine Reviews*, 63, 101700.
-2. Cunha, L. A., et al. (2023). Effects of sleep deprivation on resistance training: A systematic review. *Sports Medicine Open*, 9(1), 47.
+1. Morrison, M., et al. (2022). Sleep and skeletal muscle: Impact on metabolism, performance, and recovery. *Sleep Medicine Reviews*, 63, 101700. [DOI: 10.1016/j.smrv.2022.101700](https://doi.org/10.1016/j.smrv.2022.101700) (PMID: 36272396)
+2. Cunha, L. A., et al. (2023). Effects of sleep deprivation on resistance training: A systematic review. *Sports Medicine Open*, 9(1), 47. [DOI: 10.1186/s40798-023-00599-z](https://doi.org/10.1186/s40798-023-00599-z) (PMID: 37462808)
     `,
   },
   'peak-week-case-study': {
