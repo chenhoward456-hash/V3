@@ -331,16 +331,27 @@ export function generateSupplementSuggestions(
   // ── 8. 發炎指數（CRP 偏高 + 高 RPE）──
   const crp = findLabValue(labs, 'crp')
   if (crp?.value != null && crp.value > 5) {
-    suggestions.push({
-      name: 'Omega-3 魚油',
-      dosage: 'EPA+DHA 合計 2-3g',
-      timing: '隨餐服用',
-      reason: `CRP ${crp.value} mg/L，發炎指數偏高。Omega-3 有助於降低系統性發炎，改善訓練恢復。`,
-      priority: crp.value > 10 ? 'high' : 'medium',
-      evidence: 'Calder 2017 (J Nutr)：EPA+DHA 2-4g/day 顯著降低 CRP 與 IL-6',
-      triggerTests: [crp.test_name],
-      category: 'recovery',
-    })
+    const alreadyHasOmega3ForCRP = suggestions.some(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))
+    if (alreadyHasOmega3ForCRP) {
+      // 已有 Omega-3（可能來自 ApoB 路徑），升級優先級並補充 CRP 原因
+      const existing = suggestions.find(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))
+      if (existing) {
+        existing.reason += ` 同時 CRP ${crp.value} mg/L 偏高，更需要 Omega-3 抗發炎。`
+        if (crp.value > 10 && existing.priority !== 'high') existing.priority = 'high'
+        if (!existing.triggerTests.includes(crp.test_name)) existing.triggerTests.push(crp.test_name)
+      }
+    } else {
+      suggestions.push({
+        name: 'Omega-3 魚油',
+        dosage: 'EPA+DHA 合計 2-3g',
+        timing: '隨餐服用',
+        reason: `CRP ${crp.value} mg/L，發炎指數偏高。Omega-3 有助於降低系統性發炎，改善訓練恢復。`,
+        priority: crp.value > 10 ? 'high' : 'medium',
+        evidence: 'Calder 2017 (J Nutr)：EPA+DHA 2-4g/day 顯著降低 CRP 與 IL-6',
+        triggerTests: [crp.test_name],
+        category: 'recovery',
+      })
+    }
   }
 
   // ── 9. 肌酸（備賽/增肌，無論血檢）──

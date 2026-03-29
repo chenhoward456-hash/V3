@@ -286,6 +286,7 @@ export async function GET(request: NextRequest) {
       peakWeekDaysOut,
       trainingExperience: client.training_experience as 'beginner' | 'intermediate' | 'advanced' | null,
       planTotalSets,
+      gender: client.gender as string | null,
     })
 
     return NextResponse.json({ ...advice, modeRecommendation })

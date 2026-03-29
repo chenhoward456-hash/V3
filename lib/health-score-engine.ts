@@ -33,7 +33,7 @@ export interface HealthScore {
   grade: 'A' | 'B' | 'C' | 'D'  // A≥80, B≥65, C≥50, D<50
   pillars: HealthPillarScore[]
   labPenalty: number       // 負值，血檢異常扣分
-  labBonus: number         // 正值，血檢全正常 / 優秀行為獎勵
+  labBonus: number         // 0-10，血檢全正常 / 優秀行為獎勵（不會為負值）
   daysInCycle: number | null     // 本季第幾天（1-90）
   daysUntilBloodTest: number | null  // 距下次血檢（季末）
 }
@@ -216,8 +216,8 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
     }
   }
 
-  // 上限 +10 分（下限不設，允許懲罰）
-  labBonus = Math.min(10, labBonus)
+  // 上下限：0 ~ 10（labBonus 語義為「獎勵」，懲罰應歸入其他支柱扣分）
+  labBonus = Math.max(0, Math.min(10, labBonus))
 
   // ── 加權合計（v2 權重：睡眠提升、補品降低、訓練含品質）──
   // 睡眠 25%（Grandner 2024：健康行為中影響最大）

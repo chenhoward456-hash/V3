@@ -531,8 +531,10 @@ function assessOvertrainingRisk(trainingLogs: TrainingLogEntry[]): OvertrainingR
   }
 
   const allDates = [...dailyLoads.keys()].sort()
-  if (allDates.length < 14) {
-    return { acwr: null, monotony: null, strain: null, riskLevel: 'low', reasons: ['訓練數據不足 14 天，無法評估'] }
+  // Bug fix: 原本 allDates.length 永遠 = 28（因為預填了 0），改用實際訓練筆數判斷
+  const actualTrainingEntries = sorted.filter(t => t.training_type !== 'rest').length
+  if (actualTrainingEntries < 5) {
+    return { acwr: null, monotony: null, strain: null, riskLevel: 'low', reasons: ['訓練數據不足（需至少 5 筆非休息日記錄），無法評估'] }
   }
 
   const loads = allDates.map(d => dailyLoads.get(d) ?? 0)

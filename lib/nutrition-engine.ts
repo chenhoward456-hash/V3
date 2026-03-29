@@ -634,7 +634,7 @@ const BULK_TARGETS = {
 
 // 碳循環分配比例：訓練日 60%，休息日 40%
 const CARB_CYCLE_TRAINING_RATIO = 0.6
-const CARB_CYCLE_REST_RATIO = 0.4
+// CARB_CYCLE_REST_RATIO 已移除 — rest day 碳水由 carbDelta - tdChange 計算，不使用固定比例
 
 // ===== 基因修正層常數 =====
 // 在計算完基礎巨量營養素後，依基因風險調整安全邊界
@@ -2996,9 +2996,9 @@ function generateGoalDrivenCut(
     targetCalories += gdCalDeltaFromLab
   }
 
-  // 計算蛋白質+脂肪的最低卡路里（碳水底線 30g = 120kcal）
+  // 計算蛋白質+脂肪的最低卡路里（碳水底線 50g = 200kcal，與 reactive 路徑一致）
   let proFatCal = suggestedPro * 4 + suggestedFat * 9
-  const carbFloorCal = 30 * 4  // 120 kcal
+  const carbFloorCal = 50 * 4  // 200 kcal — 統一碳水地板為 50g
 
   // 如果蛋白質+脂肪+碳水底線 > targetCalories → 需要砍巨量營養素
   // 優先級：碳水先壓底線 → 降脂肪 → 最後降蛋白質

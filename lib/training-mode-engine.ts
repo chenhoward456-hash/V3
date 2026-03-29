@@ -415,6 +415,8 @@ export interface TrainingModeInput {
   trainingExperience?: 'beginner' | 'intermediate' | 'advanced' | null
   /** 今日課表總組數（有課表時由前端計算傳入）*/
   planTotalSets?: number | null
+  /** 性別（用於 T/C ratio 閾值區分）*/
+  gender?: string | null
 }
 
 export function getTrainingModeRecommendation(input: TrainingModeInput): TrainingModeRecommendation {
@@ -704,12 +706,19 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       reasons.push({ signal: '血檢', emoji: '🩸', description: `皮質醇偏高（${hormoneLabs.cortisol}），壓力荷爾蒙升高，建議減少訓練壓力` })
     }
     // T/C 比值（睪固酮/皮質醇）— 過度訓練黃金指標
+    // 女性正常 T 值 15-70 ng/dL，T/C ratio 正常就遠低於 15，需用不同閾值
     if (hormoneLabs.testosterone != null && hormoneLabs.cortisol != null && hormoneLabs.cortisol > 0) {
       const tcRatio = hormoneLabs.testosterone / hormoneLabs.cortisol
-      if (tcRatio < 15) {
+      const isFemale = input.gender === '女' || input.gender === 'female' || input.gender === 'F'
+      const tcThreshold = isFemale ? 1 : 15
+      if (!isFemale && tcRatio < tcThreshold) {
         scores.deload += 15
         scores.high_volume -= 10
         reasons.push({ signal: '血檢', emoji: '🩸', description: `睪固酮/皮質醇比值偏低（${tcRatio.toFixed(1)}），過度訓練風險高` })
+      } else if (isFemale && tcRatio < tcThreshold) {
+        scores.deload += 10
+        scores.high_volume -= 5
+        reasons.push({ signal: '血檢', emoji: '🩸', description: `睪固酮/皮質醇比值偏低（${tcRatio.toFixed(1)}，女性閾值 <${tcThreshold}），建議減量` })
       }
     }
 
