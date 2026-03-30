@@ -832,14 +832,20 @@ function getActivityMultiplier(activityProfile: string | undefined, trainingDays
 
 // 無體脂率時的 fallback TDEE 係數（kcal/kg）
 // 來源：Harris-Benedict / Mifflin-St Jeor 修正，依性別和活動量調整
-function getFallbackTDEEMultiplier(activityProfile: string | undefined, isMale: boolean): number {
+// Bug fix: fallback TDEE 加入 trainingDaysPerWeek 修正，避免有訓練的用戶被低估
+function getFallbackTDEEMultiplier(activityProfile: string | undefined, isMale: boolean, trainingDaysPerWeek?: number): number {
+  let base: number
   if (activityProfile === 'sedentary') {
-    return isMale ? 26 : 24   // 上班族：低 NEAT，少量有氧
+    base = isMale ? 26 : 24   // 上班族：低 NEAT，少量有氧
   } else if (activityProfile === 'high_energy_flux') {
-    return isMale ? 35 : 31   // 高能量通量：高 NEAT + 有氧
+    base = isMale ? 35 : 31   // 高能量通量：高 NEAT + 有氧
   } else {
-    return isMale ? 30 : 27   // 預設（中等活動量）
+    base = isMale ? 30 : 27   // 預設（中等活動量）
   }
+  // 有訓練記錄時往上修正：每週 ≥4 天 +2，≥6 天 +3
+  if (trainingDaysPerWeek != null && trainingDaysPerWeek >= 6) base += 3
+  else if (trainingDaysPerWeek != null && trainingDaysPerWeek >= 4) base += 2
+  return base
 }
 
 // ===== 空結果模板 =====
@@ -2049,7 +2055,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     formulaTDEE = Math.round(bmr * activityMultiplier * metabolicAdaptation)
   } else {
     // 無體脂率 → 依性別 + 活動量分型的簡化公式
-    formulaTDEE = Math.round(input.bodyWeight * getFallbackTDEEMultiplier(input.activityProfile, isMale))
+    formulaTDEE = Math.round(input.bodyWeight * getFallbackTDEEMultiplier(input.activityProfile, isMale, input.trainingDaysPerWeek))
   }
 
   // B) Adaptive TDEE（飲食記錄 + 體重變化反推）
@@ -2637,6 +2643,12 @@ function generateCutSuggestion(
   if (suggestedCarb < 50) {
     suggestedCarb = 50
     warnings.push('碳水已觸及最低值 50g，不宜再降')
+  }
+
+  // Bug fix: macro 底線可能推高實際熱量超過 suggestedCal，同步修正
+  const actualMacroCal = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
+  if (actualMacroCal > suggestedCal) {
+    suggestedCal = actualMacroCal
   }
 
   // Diet break 偵測
