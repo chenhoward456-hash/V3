@@ -50,8 +50,8 @@ export default function SelfManagedNutrition({
   const [selectedGoal, setSelectedGoal] = useState<'cut' | 'bulk' | 'recomp' | null>(
     goalType === 'cut' || goalType === 'bulk' || goalType === 'recomp' ? goalType : null
   )
-  const [selectedActivity, setSelectedActivity] = useState<'sedentary' | 'high_energy_flux'>(
-    activityProfile === 'high_energy_flux' ? 'high_energy_flux' : 'sedentary'
+  const [selectedActivity, setSelectedActivity] = useState<'sedentary' | 'moderate' | 'high_energy_flux'>(
+    activityProfile === 'high_energy_flux' ? 'high_energy_flux' : activityProfile === 'sedentary' ? 'sedentary' : 'moderate'
   )
   const [bodyWeight, setBodyWeight] = useState(latestWeight ? String(latestWeight) : '')
   const [bodyFatPct, setBodyFatPct] = useState(latestBodyFat ? String(latestBodyFat) : '')
@@ -111,7 +111,7 @@ export default function SelfManagedNutrition({
         clientId: uniqueCode,
         gender: gender || '男性',
         goal_type: selectedGoal,
-        activity_profile: selectedActivity,
+        activity_profile: selectedActivity === 'moderate' ? null : selectedActivity,  // moderate = 預設（null），引擎走中間值
         body_weight: parseFloat(bodyWeight),
         body_fat_pct: bodyFatPct ? parseFloat(bodyFatPct) : undefined,
         height: height ? parseFloat(height) : undefined,
@@ -199,7 +199,7 @@ export default function SelfManagedNutrition({
         {selectedGoal && (
           <>
             <div className="mb-4">
-              <p className="text-xs font-semibold text-gray-700 mb-2">InBody / 身體數據</p>
+              <p className="text-xs font-semibold text-gray-700 mb-2">身體數據</p>
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="text-[10px] text-gray-500 block mb-1">體重 (kg) *</label>
@@ -213,37 +213,49 @@ export default function SelfManagedNutrition({
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-500 block mb-1">體脂率 (%)</label>
+                  <label className="text-[10px] text-gray-700 font-medium block mb-1">體脂率 (%) <span className="text-blue-500">推薦</span></label>
                   <input
                     type="number"
                     inputMode="decimal"
                     value={bodyFatPct}
                     onChange={(e) => setBodyFatPct(e.target.value)}
                     placeholder="20"
-                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                    className={`w-full px-3 py-2.5 border rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 ${bodyFatPct ? 'bg-gray-50 border-gray-200' : 'bg-blue-50/50 border-blue-200'}`}
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-500 block mb-1">身高 (cm)</label>
+                  <label className="text-[10px] text-gray-700 font-medium block mb-1">身高 (cm) <span className="text-blue-500">推薦</span></label>
                   <input
                     type="number"
                     inputMode="decimal"
                     value={height}
                     onChange={(e) => setHeight(e.target.value)}
                     placeholder="170"
-                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                    className={`w-full px-3 py-2.5 border rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 ${height ? 'bg-gray-50 border-gray-200' : 'bg-blue-50/50 border-blue-200'}`}
                   />
                 </div>
               </div>
-              <p className="text-[10px] text-gray-400 mt-1.5">
-                有體脂率數據（InBody）可以更精準計算 TDEE
-              </p>
+              {!bodyFatPct && !height ? (
+                <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  <p className="text-[11px] text-amber-700">
+                    <strong>填寫體脂率和身高可提升準確度 40%+</strong> — 沒有的話系統會用粗略公式估算，熱量目標可能偏低。InBody、體脂秤、或健身房量測的數據都可以。
+                  </p>
+                </div>
+              ) : !bodyFatPct ? (
+                <p className="text-[10px] text-amber-600 mt-1.5">
+                  有體脂率數據可啟用更精準的 Katch-McArdle 公式計算 TDEE
+                </p>
+              ) : (
+                <p className="text-[10px] text-green-600 mt-1.5">
+                  已填寫體脂率，系統將使用 Katch-McArdle 精準公式
+                </p>
+              )}
             </div>
 
             {/* 活動量 + 訓練頻率 */}
             <div className="mb-4">
-              <p className="text-xs font-semibold text-gray-700 mb-2">日常活動量</p>
-              <div className="grid grid-cols-2 gap-3">
+              <p className="text-xs font-semibold text-gray-700 mb-2">日常活動量（不含訓練）</p>
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setSelectedActivity('sedentary')}
                   className={`p-3 rounded-2xl border-2 transition-all text-left ${
@@ -252,8 +264,21 @@ export default function SelfManagedNutrition({
                       : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                   }`}
                 >
-                  <p className="text-sm font-bold text-gray-900">🖥️ 上班族</p>
-                  <p className="text-[11px] text-gray-500">久坐為主</p>
+                  <p className="text-sm font-bold text-gray-900">🖥️</p>
+                  <p className="text-xs font-bold text-gray-900">久坐</p>
+                  <p className="text-[10px] text-gray-500">辦公室為主</p>
+                </button>
+                <button
+                  onClick={() => setSelectedActivity('moderate')}
+                  className={`p-3 rounded-2xl border-2 transition-all text-left ${
+                    selectedActivity === 'moderate'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                  }`}
+                >
+                  <p className="text-sm font-bold text-gray-900">🚶</p>
+                  <p className="text-xs font-bold text-gray-900">一般活動</p>
+                  <p className="text-[10px] text-gray-500">日常走動、通勤</p>
                 </button>
                 <button
                   onClick={() => setSelectedActivity('high_energy_flux')}
@@ -263,8 +288,9 @@ export default function SelfManagedNutrition({
                       : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                   }`}
                 >
-                  <p className="text-sm font-bold text-gray-900">🚶 高活動量</p>
-                  <p className="text-[11px] text-gray-500">步數多、體力勞動</p>
+                  <p className="text-sm font-bold text-gray-900">🏃</p>
+                  <p className="text-xs font-bold text-gray-900">高活動量</p>
+                  <p className="text-[10px] text-gray-500">步數多、體力活</p>
                 </button>
               </div>
             </div>
