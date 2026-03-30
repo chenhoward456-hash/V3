@@ -340,10 +340,13 @@ function assessMuscularRecovery(
     return { score: clamp(score, 0, 100), state: scoreToState(clamp(score, 0, 100)), signals }
   }
 
-  // 近 7 天訓練負荷
-  const last7 = trainingLogs.slice(-7)
-  const trainDays = last7.filter(t => t.training_type && t.training_type !== 'rest').length
-  const highRPE = last7.filter(t => t.rpe != null && t.rpe >= 8).length
+  // 近 7 天訓練負荷（Bug fix: 按日期去重，避免多 session/天灌水計數）
+  const today7 = new Date(); today7.setDate(today7.getDate() - 7)
+  const last7DayLogs = trainingLogs.filter(t => new Date(t.date) >= today7)
+  const uniqueTrainDates = new Set(last7DayLogs.filter(t => t.training_type && t.training_type !== 'rest').map(t => t.date))
+  const trainDays = uniqueTrainDates.size
+  const highRPEDates = new Set(last7DayLogs.filter(t => t.rpe != null && t.rpe >= 8).map(t => t.date))
+  const highRPE = highRPEDates.size
 
   // peak_week: 7 天訓練頻率 penalty 減半；competition: 跳過
   // preparation: frequency penalty halved (similar to peak_week but encourages taper)
@@ -359,11 +362,18 @@ function assessMuscularRecovery(
 
   // 連續訓練天數（不休息）— peak_week/competition/preparation/weigh_in/rebound 時跳過
   if (!isPeakWeek && !isCompetition && !isPreparation && !isRebound) {
-    const sorted = [...trainingLogs].sort((a, b) => b.date.localeCompare(a.date))
+    // Bug fix: 按日期去重 + 檢查日曆連續性
+    const sortedUnique = [...new Map(trainingLogs.map(t => [t.date, t])).values()].sort((a, b) => b.date.localeCompare(a.date))
     let consecutiveDays = 0
-    for (const t of sorted) {
-      if (t.training_type && t.training_type !== 'rest') consecutiveDays++
-      else break
+    let expectedDate: string | null = null
+    for (const t of sortedUnique) {
+      if (expectedDate && t.date !== expectedDate) break
+      if (t.training_type && t.training_type !== 'rest') {
+        consecutiveDays++
+        const prev = new Date(t.date + 'T12:00:00')
+        prev.setDate(prev.getDate() - 1)
+        expectedDate = prev.toISOString().split('T')[0]
+      } else break
     }
     if (consecutiveDays >= 5) { score -= 15; signals.push(`已連續訓練 ${consecutiveDays} 天未休息`) }
     else if (consecutiveDays >= 4) { score -= 5; signals.push(`連續訓練 ${consecutiveDays} 天`) }
@@ -524,7 +534,7 @@ function assessOvertrainingRisk(trainingLogs: TrainingLogEntry[]): OvertrainingR
   // 再把有訓練紀錄的日期覆蓋上去
   for (const t of sorted) {
     if (!dailyLoads.has(t.date)) continue // 超出 28 天範圍
-    if (t.training_type === 'rest') continue // 明確標為休息日 → 保持 0
+    if (!t.training_type || t.training_type === 'rest') continue // Bug fix: null/undefined 也視為休息，避免空資料得到 225 AU 預設負荷
     const load = (t.rpe ?? 5) * (t.duration ?? 45)
     const existing = dailyLoads.get(t.date) ?? 0
     dailyLoads.set(t.date, existing + load)

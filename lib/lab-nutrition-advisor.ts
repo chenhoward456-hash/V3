@@ -213,7 +213,8 @@ export function generateLabNutritionAdvice(
       }
     }
 
-    if (matchName(lab.test_name, ['homa-ir', 'homair'])) {
+    if (matchName(lab.test_name, ['homa-ir', 'homair']) && lab.value > 1.4) {
+      // Bug fix: 加閾值門檻，避免 HOMA-IR 1.2-1.4 的 attention 狀態誤觸發
       advice.push({
         category: 'glucose',
         title: '胰島素阻抗偏高',
@@ -1107,7 +1108,8 @@ export function generateLabNutritionAdvice(
           ],
           caveat: mgCaveat,
         })
-      } else {
+      } else if (lab.value < 2.0) {
+        // Bug fix: 加下限門檻，避免正常範圍內（2.0-2.4）的 attention 值誤觸發
         advice.push({
           category: 'mineral',
           title: '鎂偏低',
@@ -1161,7 +1163,8 @@ export function generateLabNutritionAdvice(
           ],
           caveat: znCaveat,
         })
-      } else {
+      } else if (lab.value < 70) {
+        // Bug fix: 加下限門檻，避免正常範圍內（70-120）的 attention 值誤觸發
         advice.push({
           category: 'mineral',
           title: '鋅偏低',
@@ -1544,7 +1547,7 @@ export function generateLabOptimizationTips(
   const latestByName = new Map<string, LabInput>()
   for (const lab of labs) {
     if (lab.value == null) continue
-    const key = lab.test_name.toLowerCase().trim()
+    const key = getLabCanonicalId(lab.test_name) || lab.test_name.toLowerCase().trim()  // Bug fix: 用 canonical ID 避免別名重複
     const existing = latestByName.get(key)
     if (!existing || (lab.date && (!existing.date || lab.date > existing.date))) {
       latestByName.set(key, lab)
@@ -2821,13 +2824,17 @@ export function getLabMacroModifiers(
 
     if (matchName(lab.test_name, ['homa-ir', 'homair'])) {
       if (lab.value > 2.0) {
-        macroModifiers.push({
-          nutrient: 'carbs',
-          direction: 'decrease',
-          delta: Math.round(bw * 0.5),
-          reason: `HOMA-IR 偏高（${lab.value}），減少碳水攝取`,
-          labMarker: lab.test_name,
-        })
+        // Bug fix: 防止 HOMA-IR + fasting insulin 雙重扣碳水
+        const hasInsulinCarbMod = macroModifiers.some(m => m.nutrient === 'carbs' && m.direction === 'decrease' && m.labMarker && matchName(m.labMarker, ['空腹胰島素', 'fasting insulin', 'insulin']))
+        if (!hasInsulinCarbMod) {
+          macroModifiers.push({
+            nutrient: 'carbs',
+            direction: 'decrease',
+            delta: Math.round(bw * 0.5),
+            reason: `HOMA-IR 偏高（${lab.value}），減少碳水攝取`,
+            labMarker: lab.test_name,
+          })
+        }
         warnings.push(`📊 HOMA-IR ${lab.value}（目標 <2.0）：建議啟用碳循環，訓練日 4-5g/kg、休息日 2-3g/kg`)
         carbCycleMultiplier = 1.3 // 胰島素阻抗偏高，訓練日碳水不宜拉太高
       }
@@ -2883,7 +2890,8 @@ export function getLabMacroModifiers(
 
     // ── 低游離睪固酮（男性）→ 增加脂肪 ──
     if (matchName(lab.test_name, ['游離睪固酮', 'free testosterone', 'freetestosterone'])) {
-      if (options.gender === '男性' && lab.value < 5) {
+      if (options.gender === '男性' && lab.value < 47) {
+        // Bug fix: 閾值從 <5 改為 <47（正常範圍 47-244 pg/mL）
         // 只在沒有總睪固酮 modifier 時才加，避免重複
         const hasTestoMod = macroModifiers.some(m => m.labMarker && matchName(m.labMarker, ['睪固酮', 'testosterone', '總睪固酮', 'total testosterone']))
         if (!hasTestoMod) {
@@ -3185,9 +3193,10 @@ export function generateRetestReminders(
   const latestByTest = new Map<string, typeof labs[0]>()
   for (const lab of labs) {
     if (lab.value == null) continue
-    const existing = latestByTest.get(lab.test_name)
+    const canonKey = getLabCanonicalId(lab.test_name) || lab.test_name  // Bug fix: 用 canonical ID
+    const existing = latestByTest.get(canonKey)
     if (!existing || lab.date > existing.date) {
-      latestByTest.set(lab.test_name, lab)
+      latestByTest.set(canonKey, lab)
     }
   }
 
@@ -3296,9 +3305,10 @@ export function generateLabChangeReport(
   const byTest = new Map<string, typeof labs>()
   for (const lab of labs) {
     if (lab.value == null) continue
-    const group = byTest.get(lab.test_name) || []
+    const canonKey = getLabCanonicalId(lab.test_name) || lab.test_name  // Bug fix: 用 canonical ID 跨別名比較
+    const group = byTest.get(canonKey) || []
     group.push(lab)
-    byTest.set(lab.test_name, group)
+    byTest.set(canonKey, group)
   }
 
   // 指標方向定義：value 升高是好還是壞
@@ -3315,11 +3325,11 @@ export function generateLabChangeReport(
     'ast': true, 'alt': true, 'ggt': true, '丙麩氨酸轉肽酶': true,
     '肌酸酐': true, 'creatinine': true,
     'bun': true, '血尿素氮': true,
-    'tsh': true, '促甲狀腺': true,
+    // Bug fix: TSH 和 cortisol 是雙向指標，移到 bidirectional 處理
+    // TSH 過高=甲減、過低=甲亢；cortisol 過高=壓力、過低=腎上腺不足
     'crp': true, 'hscrp': true, 'c反應蛋白': true,
     '同半胱胺酸': true, 'homocysteine': true,
-    '皮質醇': true, 'cortisol': true,
-    '雌二醇': true, 'estradiol': true,  // 男性偏高是壞的
+    // 雌二醇只有男性偏高才是壞的，女性偏低才是壞的，移到 bidirectional
   }
 
   const higherIsGood: Record<string, boolean> = {
@@ -3345,6 +3355,10 @@ export function generateLabChangeReport(
     '鈣': true, 'calcium': true,             // 偏低=低血鈣, 偏高=高血鈣
     'mcv': true, '平均紅血球體積': true,       // 偏低=小球性, 偏高=巨球性
     'shbg': true, '性荷爾蒙結合球蛋白': true,  // 偏低偏高都不好
+    // Bug fix: TSH/cortisol/estradiol 從 higherIsBad 移過來
+    'tsh': true, '促甲狀腺': true,            // 偏高=甲減, 偏低=甲亢
+    '皮質醇': true, 'cortisol': true,          // 偏高=壓力, 偏低=腎上腺不足
+    '雌二醇': true, 'estradiol': true,         // 男性偏高壞, 女性偏低壞
   }
 
   for (const [testName, results] of byTest) {

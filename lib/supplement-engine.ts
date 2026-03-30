@@ -189,7 +189,8 @@ export function generateSupplementSuggestions(
         triggerTests: [zinc.test_name],
         category: 'hormonal',
       })
-    } else if (zinc.value > 150) {
+    } else if (zinc.value > 120) {
+      // Bug fix: 從 >150 降到 >120，與 labStatus（attention >140）和 lab-nutrition-advisor（>120）對齊
       suggestions.push({
         name: '⚠️ 停止鋅補充',
         dosage: '立即停止含鋅補品',
@@ -222,16 +223,36 @@ export function generateSupplementSuggestions(
   if (gender === '男性') {
     const testosterone = findLabValue(labs, 'testosterone')
     if (testosterone?.value != null && testosterone.value < 400) {
-      suggestions.push({
-        name: '鋅 + 鎂（分開補充）',
-        dosage: '鋅 30mg + 鎂甘胺酸鹽 400mg',
-        timing: '鋅隨餐、鎂睡前',
-        reason: `睪固酮 ${testosterone.value} ng/dL，低於男性理想範圍（400-700 ng/dL）。鋅鎂不足會影響睪固酮合成，建議分開補充以提高吸收率。`,
-        priority: testosterone.value < 300 ? 'high' : 'medium',
-        evidence: 'Abbasi 2012 + Zhang 2017（鎂與睡眠）；Prasad 1996（鋅與睪固酮）。注意：ZMA 複合配方的專利研究（Brilla 2000）由配方持有者資助，2024 獨立研究未能複製睪固酮提升效果（PMC 2024）',
-        triggerTests: [testosterone.test_name],
-        category: 'hormonal',
-      })
+      // Bug fix: 如果已有獨立鋅推薦（來自血檢鋅低），升級為鋅+鎂而非重複
+      const existingZinc = suggestions.find(s => s.name.includes('鋅') && !s.name.includes('鎂'))
+      if (existingZinc) {
+        existingZinc.name = '鋅 + 鎂（分開補充）'
+        existingZinc.dosage = '鋅 30mg + 鎂甘胺酸鹽 400mg'
+        existingZinc.timing = '鋅隨餐、鎂睡前'
+        existingZinc.reason += ` 同時睪固酮 ${testosterone.value} ng/dL 偏低，鋅鎂支持荷爾蒙合成。`
+        if (!existingZinc.triggerTests.includes(testosterone.test_name)) existingZinc.triggerTests.push(testosterone.test_name)
+      } else {
+        // 也檢查是否已有鎂推薦
+        const existingMag = suggestions.find(s => s.name.includes('鎂') && !s.name.includes('鋅'))
+        if (existingMag) {
+          existingMag.name = '鋅 + 鎂（分開補充）'
+          existingMag.dosage = '鋅 30mg + 鎂甘胺酸鹽 400mg'
+          existingMag.timing = '鋅隨餐、鎂睡前'
+          existingMag.reason += ` 同時睪固酮 ${testosterone.value} ng/dL 偏低，鋅鎂支持荷爾蒙合成。`
+          if (!existingMag.triggerTests.includes(testosterone.test_name)) existingMag.triggerTests.push(testosterone.test_name)
+        } else {
+          suggestions.push({
+            name: '鋅 + 鎂（分開補充）',
+            dosage: '鋅 30mg + 鎂甘胺酸鹽 400mg',
+            timing: '鋅隨餐、鎂睡前',
+            reason: `睪固酮 ${testosterone.value} ng/dL，低於男性理想範圍（400-700 ng/dL）。鋅鎂不足會影響睪固酮合成，建議分開補充以提高吸收率。`,
+            priority: testosterone.value < 300 ? 'high' : 'medium',
+            evidence: 'Abbasi 2012 + Zhang 2017（鎂與睡眠）；Prasad 1996（鋅與睪固酮）。注意：ZMA 複合配方的專利研究（Brilla 2000）由配方持有者資助，2024 獨立研究未能複製睪固酮提升效果（PMC 2024）',
+            triggerTests: [testosterone.test_name],
+            category: 'hormonal',
+          })
+        }
+      }
     }
   }
 
@@ -239,9 +260,9 @@ export function generateSupplementSuggestions(
   if (gender === '男性') {
     const freeT = findLabValue(labs, 'freetestosterone')
     if (freeT?.value != null && freeT.value < 47) {
-      // 只有在尚未因總 T 偏低推薦 ZMA 時才推薦
-      const alreadyHasZMA = suggestions.some(s => s.name.includes('ZMA'))
-      if (!alreadyHasZMA) {
+      // Bug fix: 用正確的 dedup 字串（原本找 'ZMA'，但推薦名是 '鋅 + 鎂'）
+      const alreadyHasZnMg = suggestions.some(s => s.name.includes('鋅') && s.name.includes('鎂'))
+      if (!alreadyHasZnMg) {
         suggestions.push({
           name: '鋅 + 鎂（分開補充）',
           dosage: '鋅 30mg + 鎂甘胺酸鹽 400mg',

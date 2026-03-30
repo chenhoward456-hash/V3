@@ -257,9 +257,12 @@ export function analyzeTrainingPattern(
   const highRpeCount = last7dActive.filter(l => l.rpe != null && l.rpe >= 8).length
 
   // Consecutive training days (from today backwards)
+  // Bug fix: 如果今天尚無紀錄，從昨天開始算，避免安全警報失效
   let consecutiveTrainingDays = 0
   const allDates = new Set(activeLogs.map(l => l.date))
-  for (let i = 0; i < 14; i++) {
+  const todayStr = getLocalDateStr(today)
+  const startOffset = allDates.has(todayStr) ? 0 : 1
+  for (let i = startOffset; i < 14; i++) {
     const d = new Date(today)
     d.setDate(today.getDate() - i)
     const dateStr = getLocalDateStr(d)
@@ -692,11 +695,14 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
   // --- Hormone Labs ---
   if (hormoneLabs) {
     // Bug 1 fix: 睪固酮/皮質醇作為過度訓練指標
-    if (hormoneLabs.testosterone != null && hormoneLabs.testosterone < 300) {
+    // Bug fix: 睪固酮閾值需區分性別（女性正常 15-70 ng/dL）
+    const isFemaleT = input.gender === '女' || input.gender === 'female' || input.gender === 'F'
+    const lowTestoThreshold = isFemaleT ? 15 : 300
+    if (hormoneLabs.testosterone != null && hormoneLabs.testosterone < lowTestoThreshold) {
       scores.high_intensity -= 15
       scores.high_volume -= 15
       scores.reduced_volume += 15
-      reasons.push({ signal: '血檢', emoji: '🩸', description: `睪固酮偏低（${hormoneLabs.testosterone}），可能處於過度訓練或恢復不足，建議減量` })
+      reasons.push({ signal: '血檢', emoji: '🩸', description: `睪固酮偏低（${hormoneLabs.testosterone}${isFemaleT ? '，女性閾值 <' + lowTestoThreshold : ''}），可能處於過度訓練或恢復不足，建議減量` })
     }
     if (hormoneLabs.cortisol != null && hormoneLabs.cortisol > 25) {
       scores.high_intensity -= 10
@@ -728,7 +734,9 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
       scores.high_intensity -= 10
       reasons.push({ signal: '血檢', emoji: '🩸', description: `鐵蛋白偏低（${hormoneLabs.ferritin}），氧氣運輸受限，避免高組數/高強度訓練` })
     }
-    if (hormoneLabs.hemoglobin != null && hormoneLabs.hemoglobin < 12) {
+    // Bug fix: 血紅素閾值區分性別（男性 <13.5，女性 <12）
+    const hbThreshold = isFemaleT ? 12 : 13.5
+    if (hormoneLabs.hemoglobin != null && hormoneLabs.hemoglobin < hbThreshold) {
       scores.reduced_volume += 10
       reasons.push({ signal: '血檢', emoji: '🩸', description: `血紅素偏低（${hormoneLabs.hemoglobin}），運動耐力下降，建議減量` })
     }
