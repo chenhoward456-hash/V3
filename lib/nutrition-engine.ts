@@ -1069,7 +1069,7 @@ function countConsecutiveLowCarbDays(
   const sorted = [...recentCarbsPerDay].sort((a, b) => b.date.localeCompare(a.date))
   let count = 0
   for (const day of sorted) {
-    if (day.carbs == null) continue  // 沒記錄的日子跳過
+    if (day.carbs == null) break  // Bug fix M2: 未記錄的日子視為中斷連續計數
     if (day.carbs < threshold) {
       count++
     } else {
@@ -1193,7 +1193,7 @@ export function calculateMetabolicStressScore(params: {
     reasons.push('黃體期碳水需求增加（孕酮升高 → 碳水氧化率 +15-20%），適合安排 Refeed')
   }
 
-  const score = dietDuration + recovery + plateau + lowCarb + wellnessTrend + lutealBoost
+  const score = Math.min(100, dietDuration + recovery + plateau + lowCarb + wellnessTrend + lutealBoost)  // Bug fix L1: clamp 到 100
 
   // 判斷等級和建議
   let level: MetabolicStressResult['level']
@@ -1278,6 +1278,7 @@ function checkCuttingReadiness(
   const isMale = input.gender === '男性'
   const labs = input.labResults || []
 
+  const scoreBeforeLab = score  // Bug fix H3: 記錄血檢扣分前的分數，用於後面的時效衰減
   // --- 1. 血檢荷爾蒙指標 ---
   // exclude: 排除包含這些關鍵字的項目（避免 testosterone 同時匹配 free/bioavailable）
   const findLab = (keywords: string[], exclude?: string[]) =>
@@ -1369,8 +1370,8 @@ function checkCuttingReadiness(
     // 用更寬鬆的門檻抓「次優」而非「異常」— 26歲不該在這些水準
     const testoLow = testo && testo.value != null && testo.value < 450
     const freeTSuboptimal = freeT && freeT.value != null && (
-      (freeT.value < 25 && freeT.value < 10.0) || // ng/dL
-      (freeT.value >= 25 && freeT.value < 80)      // pg/mL
+      freeT.value < 10.0 ||                         // ng/dL（值 <25 推定此單位）
+      (freeT.value >= 25 && freeT.value < 80)        // pg/mL
     )
     const shbgElevated = shbg && shbg.value != null && shbg.value > 45
     const e2Elevated = e2 && e2.value != null && e2.value > 35
@@ -1451,7 +1452,7 @@ function checkCuttingReadiness(
   // --- 2. 交叉模式偵測（RED-S / 過度訓練）---
   if (labs.length > 0) {
     const crossPatterns = detectLabCrossPatterns(
-      labs.map(l => ({ test_name: l.test_name, value: l.value ?? 0, unit: l.unit, status: l.status })),
+      labs.map(l => ({ test_name: l.test_name, value: l.value, unit: l.unit, status: l.status })),
       { gender: input.gender as '男性' | '女性', bodyFatPct: input.bodyFatPct }
     )
     for (const pattern of crossPatterns) {
@@ -1511,6 +1512,8 @@ function checkCuttingReadiness(
       reasons.push(`🟢 維生素 D 充足（${vitD.value} ng/mL）— 免疫和荷爾蒙支持`)
     }
   }
+
+  const scoreAfterLab = score  // Bug fix H3: 血檢（含交叉模式+正向加分）結算後的分數
 
   // --- 3. 穿戴裝置恢復狀態 ---
   if (deviceReadiness != null && deviceReadiness < 40) {
@@ -1608,15 +1611,17 @@ function checkCuttingReadiness(
       const fastDecayStart = hasHormoneRecent ? 8 : 24
       const fullDecayStart = hasHormoneRecent ? 16 : 48
 
-      const labImpact = score - 100
+      // Bug fix H3: 只衰減血檢相關的扣分/加分，不影響裝置恢復和代謝壓力的扣分
+      const labOnlyImpact = scoreAfterLab - scoreBeforeLab  // 純血檢影響（可正可負）
+      const nonLabImpact = score - scoreAfterLab            // 裝置/代謝/趨勢影響
       if (weeksSinceLab >= fullDecayStart) {
-        const decayedImpact = Math.round(labImpact * 0.25)
-        score = 100 + decayedImpact
-        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週（${hasHormoneRecent ? '荷爾蒙' : '代謝'}面板），影響降低 75%（建議重新驗血）`)
+        const decayedLabImpact = Math.round(labOnlyImpact * 0.25)
+        score = scoreBeforeLab + decayedLabImpact + nonLabImpact
+        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週（${hasHormoneRecent ? '荷爾蒙' : '代謝'}面板），血檢影響降低 75%（建議重新驗血）`)
       } else if (weeksSinceLab >= fastDecayStart) {
-        const decayedImpact = Math.round(labImpact * 0.50)
-        score = 100 + decayedImpact
-        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，影響降低 50%（建議重新驗血）`)
+        const decayedLabImpact = Math.round(labOnlyImpact * 0.50)
+        score = scoreBeforeLab + decayedLabImpact + nonLabImpact
+        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，血檢影響降低 50%（建議重新驗血）`)
       }
     }
   }
@@ -1626,7 +1631,7 @@ function checkCuttingReadiness(
   const wellness = input.recentWellness || []
   if (wellness.length >= 7) {
     // 取最近 7 天的平均
-    const recentWellness = wellness.slice(-7)
+    const recentWellness = wellness.slice(0, 7)  // Bug fix: 資料是新→舊排序，取前 7 筆才是最近的
     const avgEnergy = recentWellness
       .filter(w => w.energy_level != null)
       .reduce((s, w) => s + w.energy_level!, 0) / Math.max(1, recentWellness.filter(w => w.energy_level != null).length)
@@ -1634,13 +1639,14 @@ function checkCuttingReadiness(
       .filter(w => w.training_drive != null)
       .reduce((s, w) => s + w.training_drive!, 0) / Math.max(1, recentWellness.filter(w => w.training_drive != null).length)
 
-    // 精力 + 訓練動力都 ≥ 7（滿分 10）= 身體感覺恢復良好
-    if (avgEnergy >= 7 && avgTrainingDrive >= 7) {
+    // 精力 + 訓練動力都 ≥ 4（滿分 5）= 身體感覺恢復良好
+    // Bug fix: 原本閾值 7/6 是 1-10 量表，實際量表為 1-5
+    if (avgEnergy >= 4 && avgTrainingDrive >= 4) {
       score += 12
-      reasons.push(`💪 近 7 天身體感覺良好（精力 ${avgEnergy.toFixed(1)} / 訓練動力 ${avgTrainingDrive.toFixed(1)}）— 恢復加分 +12`)
-    } else if (avgEnergy >= 6 && avgTrainingDrive >= 6) {
+      reasons.push(`💪 近 7 天身體感覺良好（精力 ${avgEnergy.toFixed(1)}/5 · 訓練動力 ${avgTrainingDrive.toFixed(1)}/5）— 恢復加分 +12`)
+    } else if (avgEnergy >= 3.5 && avgTrainingDrive >= 3.5) {
       score += 6
-      reasons.push(`👍 近 7 天身體感覺尚可（精力 ${avgEnergy.toFixed(1)} / 訓練動力 ${avgTrainingDrive.toFixed(1)}）— 恢復加分 +6`)
+      reasons.push(`👍 近 7 天身體感覺尚可（精力 ${avgEnergy.toFixed(1)}/5 · 訓練動力 ${avgTrainingDrive.toFixed(1)}/5）— 恢復加分 +6`)
     }
 
     // 穿戴裝置恢復分數持續 >70
@@ -1813,9 +1819,11 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   if (!input.targetDate && input.prepPhase === 'recovery') {
     const bw = input.bodyWeight
     const estimatedMaintenance = Math.round(bw * 33)
-    const recoveryCals = estimatedMaintenance  // 1.0x（無法確定天數，預設 Phase 1）
-    const recoveryProtein = Math.round(bw * 2.2)
-    const recoveryFat = Math.round(bw * 1.0)
+    // Bug fix M4: 與有 targetDate 的恢復路徑對齊（+10%，蛋白質 1.8/1.6，脂肪有 floor）
+    const isMaleRecovery = input.gender === '男性'
+    const recoveryCals = Math.round(estimatedMaintenance * 1.10)
+    const recoveryProtein = Math.round(bw * (isMaleRecovery ? 1.8 : 1.6))
+    const recoveryFat = Math.max(isMaleRecovery ? 50 : 45, Math.round(bw * 0.9))
     const recoveryCarbs = Math.round((recoveryCals - recoveryProtein * 4 - recoveryFat * 9) / 4)
     const recoveryWater = Math.round(bw * 40)
 
@@ -1967,7 +1975,8 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   const hasGoalOrPrep = !!(input.targetWeight && input.targetDate) || !!input.prepPhase
   if (input.weeklyWeights.length < 2) {
     if (input.weeklyWeights.length === 1 && hasGoalOrPrep) {
-      input.weeklyWeights.push({ week: 1, avgWeight: input.weeklyWeights[0].avgWeight })
+      // Bug fix M3: 不直接 mutate input，改用淺拷貝
+      input = { ...input, weeklyWeights: [...input.weeklyWeights, { week: 1, avgWeight: input.weeklyWeights[0].avgWeight }] }
     } else {
       return emptyResult({
         status: 'insufficient_data', statusLabel: '數據不足', statusEmoji: '📊',
@@ -2143,7 +2152,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       const wAvg = input.weeklyWeights[i].avgWeight
       const wPrev = input.weeklyWeights[i + 1].avgWeight
       const rate = ((wAvg - wPrev) / wPrev) * 100
-      if (input.goalType === 'cut' && rate >= CUT_TARGETS.MAX_RATE) {
+      if ((input.goalType === 'cut' || input.goalType === 'recomp') && rate >= CUT_TARGETS.MAX_RATE) {
         consecutivePlateauWeeks++
       } else if (input.goalType === 'bulk' && rate <= BULK_TARGETS.MIN_RATE) {
         consecutivePlateauWeeks++
@@ -2498,10 +2507,11 @@ function generateCutSuggestion(
     }
   } else if (weeklyChangeRate >= CUT_TARGETS.MAX_RATE) {
     // 體重下降不夠快（-0.3% ~ 0%），檢查是否停滯
-    if (input.weeklyWeights.length >= 2) {
-      const lastWeek = input.weeklyWeights[1].avgWeight
-      const lastWeekChange = ((input.weeklyWeights[0].avgWeight - lastWeek) / lastWeek) * 100
-      if (lastWeekChange >= CUT_TARGETS.MAX_RATE) {
+    if (input.weeklyWeights.length >= 3) {
+      // Bug fix H5: 需要前一週也慢（連續 2 週停滯）才判定為 plateau
+      // 原本比較 [0] vs [1]（跟 weeklyChangeRate 一樣），改為比較 [1] vs [2]
+      const prevWeekChange = ((input.weeklyWeights[1].avgWeight - input.weeklyWeights[2].avgWeight) / input.weeklyWeights[2].avgWeight) * 100
+      if (prevWeekChange >= CUT_TARGETS.MAX_RATE) {
         // 體重卡關
         // 恢復好 + 卡關 → 身體撐得住，可以更積極減卡
         // 恢復差 + 卡關 → 身體已經很累，不應再減卡，改 Refeed 策略
@@ -2659,7 +2669,8 @@ function generateCutSuggestion(
       if (recoveryState === 'optimal') ccm = 1.7
       else if (recoveryState === 'struggling' || recoveryState === 'critical') ccm = 1.3
     }
-    const T = Math.min(Math.max(input.trainingDaysPerWeek, 4), 6)
+    // Bug fix H6: 只在 0 時 default 到 4，否則用實際值（上限 7）
+    const T = input.trainingDaysPerWeek === 0 ? 4 : Math.min(input.trainingDaysPerWeek, 7)
     const R = 7 - T
     suggestedCarbsRD = Math.round((suggestedCarb * 7) / (ccm * T + R))
     suggestedCarbsTD = Math.round(suggestedCarbsRD * ccm)
@@ -2695,13 +2706,8 @@ function generateCutSuggestion(
       }
     }
 
-    // 基因修正
-    const otGeneticCorrections: GeneticCorrection[] = []
-    getGeneticDeficitReduction(input.geneticProfile, otGeneticCorrections)
-    recalcCarb = applyGeneticCarbFloor(recalcCarb, input.geneticProfile, otGeneticCorrections)
-    getApoe4FatWarnings(input.geneticProfile, otGeneticCorrections, warnings)
-
-    // 血檢修正
+    // 血檢修正（先於基因修正，讓基因碳水下限成為最後防線）
+    // Bug fix M13: 原本基因修正在 lab 之前，lab 可能把碳水壓到基因安全線以下
     let otLabMacroModifiers: LabMacroModifier[] = []
     let otLabTrainingModifiers: LabTrainingModifier[] = []
     if (input.labResults) {
@@ -2716,6 +2722,12 @@ function generateCutSuggestion(
         if (mod.nutrient === 'fat' && mod.direction === 'increase') recalcFat += mod.delta
       }
     }
+
+    // 基因修正（在 lab 之後，確保基因碳水下限不被覆蓋）
+    const otGeneticCorrections: GeneticCorrection[] = []
+    getGeneticDeficitReduction(input.geneticProfile, otGeneticCorrections)
+    recalcCarb = applyGeneticCarbFloor(recalcCarb, input.geneticProfile, otGeneticCorrections)
+    getApoe4FatWarnings(input.geneticProfile, otGeneticCorrections, warnings)
 
     // on_track 碳循環也要套用血檢碳水修正（不能原封不動 pass through）
     let otCarbsTD = input.currentCarbsTrainingDay ?? null
@@ -2854,9 +2866,7 @@ function generateGoalDrivenCut(
   const maxWeeklyLossPct = isAthleticPrep ? ATHLETIC_CUT.MAX_WEEKLY_LOSS_PCT : GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT
   const maxSafeWeeklyLoss = bw * maxWeeklyLossPct / 100
   const maxSafeDailyDeficit = Math.round((maxSafeWeeklyLoss * energyDensity) / 7)
-  let goalInfeasible = false
   if (requiredDailyDeficit > maxSafeDailyDeficit) {
-    goalInfeasible = true
     warnings.push(`🚫 需要每週減 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW），超過安全上限 ${maxWeeklyLossPct}%。系統已將赤字鎖定在安全上限，建議與教練討論延長時程或調整目標體重`)
   }
   // 實際赤字不超過安全上限
@@ -3032,7 +3042,7 @@ function generateGoalDrivenCut(
 
   // 碳水 = 剩餘卡路里（若 proFatCal > targetCalories，剩餘為負，碳水壓底線 30g）
   const remainingCalForCarb = targetCalories - proFatCal
-  let suggestedCarb = Math.max(30, Math.round(remainingCalForCarb / 4))
+  let suggestedCarb = Math.max(50, Math.round(remainingCalForCarb / 4))  // Bug fix M6: 與 carbFloorCal 和 reactive 路徑統一為 50g
 
   // Bug 1 fix: 套用血檢碳水修正（HOMA-IR、胰島素、三酸甘油脂等）
   if (gdCarbDeltaFromLab !== 0) {
@@ -3073,7 +3083,6 @@ function generateGoalDrivenCut(
       const extraCal = minCalForEA - actualCalories
       suggestedCarb += Math.round(extraCal / 4)
       actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
-      goalInfeasible = true
       warnings.push(`🚨 EA 安全閥：建議熱量 ${prevCalories}kcal 會導致 EA < 30 kcal/kg FFM/day（RED-S 風險）。已上調至 ${actualCalories}kcal（EA ≈ 30），多出的 ${Math.round(extraCal)}kcal 給碳水`)
     }
   }
@@ -3197,17 +3206,16 @@ function generateGoalDrivenCut(
       // 恢復極佳（≥85）= 身體代謝適應良好，碳水利用效率高 → 1.7x
       // 恢復差（≤50）= 身體壓力大，碳水分配保守 → 1.3x
       const avgDailyCarb = suggestedCarb
-      const gdLabMods = input.labResults
-        ? getLabMacroModifiers(input.labResults, { gender: input.gender as '男性' | '女性', bodyWeight: bw })
-        : null
-      let gdCcm = gdLabMods?.carbCycleMultiplier ?? 1.5
+      // Bug fix L4: 重用已計算的 gdLabModResult，避免重複呼叫
+      let gdCcm = gdLabModResult?.carbCycleMultiplier ?? 1.5
       // 沒有代謝相關血檢時，用恢復分數當 fallback
       if (gdCcm === 1.5 && recoveryState !== 'unknown') {
         if (recoveryState === 'optimal') gdCcm = 1.7
         else if (recoveryState === 'struggling' || recoveryState === 'critical') gdCcm = 1.3
       }
       // 訓練天數為 0 時（紀錄空白），預設 4 天以產生有意義的碳循環分配
-      const T = Math.min(Math.max(input.trainingDaysPerWeek, 4), 6)
+      // Bug fix H6: 只在 0 時 default 到 4，否則用實際值（上限 7）
+    const T = input.trainingDaysPerWeek === 0 ? 4 : Math.min(input.trainingDaysPerWeek, 7)
       const R = 7 - T
       if (T > 0 && R > 0) {
         suggestedCarbsRD = Math.round((avgDailyCarb * 7) / (gdCcm * T + R))
@@ -3235,6 +3243,9 @@ function generateGoalDrivenCut(
       // 水分操控提示
       if (acuteDaysLeft >= 3) {
         warnings.push(`💧 水分超載期：建議水量 ${Math.round(bw * ATHLETIC_CUT.ACUTE_WATER_LOADING_ML_KG)}mL/天（${ATHLETIC_CUT.ACUTE_WATER_LOADING_ML_KG}mL/kg）`)
+      } else if (acuteDaysLeft === 2) {
+        // Bug fix M7: Day 2 過渡日指引
+        warnings.push(`💧 水分漸減期：建議水量 ${Math.round(bw * ATHLETIC_CUT.ACUTE_WATER_LOADING_ML_KG * 0.5)}mL/天（超載量的 50%），開始逐步減少`)
       } else if (acuteDaysLeft === 1) {
         warnings.push(`💧 限水期：建議水量 ${Math.round(bw * ATHLETIC_CUT.ACUTE_WATER_CUT_ML_KG)}mL/天（${ATHLETIC_CUT.ACUTE_WATER_CUT_ML_KG}mL/kg），秤重後立刻補水`)
       }
@@ -3266,7 +3277,8 @@ function generateGoalDrivenCut(
     // safetyLevel 已在前面用 effectiveDailyDeficit 重算過
     message = `進度超前！赤字已從 ${requiredDailyDeficit} 放鬆至 ${effectiveDailyDeficit}kcal/天。增加碳水保護肌肉與代謝。`
     message += ` 距比賽 ${daysLeft} 天，目標卡路里 ${actualCalories}kcal。穩穩達標。`
-  } else if (shortfall > 0) {
+  } else if (shortfall > 50) {
+    // Bug fix M5: 只有 shortfall > 50 才顯示「需靠活動補」，避免 1-50 kcal 時說需要活動卻沒給建議
     statusEmoji = '⚠️'
     statusLabel = '底線限制'
     const targetLabel = deadlineInfo.prePeakEntryWeight ? `PW 入場 ${effectiveTarget}kg` : `${targetWeight}kg`
@@ -3568,8 +3580,16 @@ function generateBulkSuggestion(
       const urgencyMultiplier = Math.min(1.5, 1 + (1 - deadlineInfo.daysLeft / 28) * 0.5)
       calDelta = Math.round(calDelta * urgencyMultiplier)
       carbDelta = Math.round(carbDelta * urgencyMultiplier)
-      suggestedCal = currentCal + calDelta
-      suggestedCarb = currentCarb + carbDelta
+      // Bug fix H8: 用已含 lab modifier 的 suggestedCal/suggestedCarb 做乘法，而非從 currentXxx 重算
+      suggestedCal = Math.round(suggestedCal * urgencyMultiplier)
+      suggestedCarb = Math.round(suggestedCarb * urgencyMultiplier)
+      // Bug fix H7: 同步更新碳循環值
+      if (suggestedCarbsTD != null && suggestedCarbsRD != null && input.currentCarbsTrainingDay != null && input.currentCarbsRestDay != null) {
+        const tdChange = Math.round(carbDelta * CARB_CYCLE_TRAINING_RATIO)
+        const rdChange = carbDelta - tdChange
+        suggestedCarbsTD = input.currentCarbsTrainingDay + tdChange
+        suggestedCarbsRD = input.currentCarbsRestDay + rdChange
+      }
       message += ` ⏰ 距離目標僅剩 ${deadlineInfo.daysLeft} 天，需加速增量。`
     }
   }
@@ -3581,10 +3601,18 @@ function generateBulkSuggestion(
       suggestedCal = maxBulkCal
       warnings.push(`增肌期熱量已達上限 ${maxBulkCal}kcal（TDEE ${estimatedTDEE} + ${SAFETY.MAX_SURPLUS_KCAL}），避免過度盈餘`)
     }
-    // 碳水連動：根據 capped 熱量重算碳水上限
-    const maxCarbFromCal = Math.round((suggestedCal - suggestedPro * 4 - suggestedFat * 9) / 4)
-    if (maxCarbFromCal > 0 && suggestedCarb > maxCarbFromCal) {
-      suggestedCarb = maxCarbFromCal
+    // Bug fix M15: 確保 macro 總和與 suggestedCal 一致
+    // 先用 macro 總和同步 suggestedCal（lab modifier 可能獨立修改 macro）
+    const macroCalSum = suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9
+    if (macroCalSum > suggestedCal) {
+      // macro 超過熱量上限，從碳水扣回
+      const maxCarbFromCal = Math.round((suggestedCal - suggestedPro * 4 - suggestedFat * 9) / 4)
+      if (maxCarbFromCal > 0) {
+        suggestedCarb = maxCarbFromCal
+      } else {
+        // 蛋白質+脂肪已超過熱量上限，上調 suggestedCal 到實際值
+        suggestedCal = Math.round(suggestedPro * 4 + Math.max(50, suggestedCarb) * 4 + suggestedFat * 9)
+      }
     }
   }
 
@@ -3615,6 +3643,12 @@ function generateBulkSuggestion(
     if (currentFat > 0 && validatedFat < minFatBulk) {
       validatedFat = minFatBulk
       warnings.push(`⚠️ 目前脂肪 ${currentFat}g 低於安全底線 ${minFatBulk}g（${bulkFatFloorOT}g/kg），系統已自動調高`)
+    }
+    // Bug fix M14: on_track 也套用脂肪上限
+    const maxFatOT = Math.round(bw * SAFETY.MAX_FAT_PER_KG_BULK)
+    if (validatedFat > maxFatOT) {
+      validatedFat = maxFatOT
+      warnings.push(`增肌期脂肪參考上限 ${maxFatOT}g（${SAFETY.MAX_FAT_PER_KG_BULK}g/kg）`)
     }
 
     // bulk on_track 也計算基因修正
@@ -3744,6 +3778,8 @@ function generateAthleticRebound(
   gapHours: number,
 ): NutritionSuggestion {
   const bw = bodyWeight
+  const safeGapHours = Math.max(gapHours, 1)  // Bug fix M10: 防止 0 或負值產生 0/負碳水
+  gapHours = safeGapHours
 
   let carbs: number
   let strategy: 'short' | 'medium' | 'long'
@@ -3925,6 +3961,12 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     2: { delta: 0.8, note: '肝醣超補高峰，體重顯著增加（正常！）' },
     1: { delta: 1.2, note: '肝醣飽和 + 細胞內水分最大化' },
     0: { delta: 0.5, note: '水分微調後，肌肉飽滿但皮下水分減少' },
+  }
+  // Bug fix M11: 基因縮短 depletion 時，過渡日不會完全耗竭肝醣
+  if (depletionCutoffDay > 4) {
+    for (let d = depletionCutoffDay - 1; d >= 4; d--) {
+      weightDeltaMap[d] = { delta: -0.3, note: '過渡期：碳水中等（3.5g/kg），肝醣部分回填' }
+    }
   }
   // 女性體重變化較小（肝醣超補反應約男性 50-70%）
   if (isFemale) {
@@ -4258,7 +4300,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         carbsGPerKg: Math.round(totalShowCarbs / bw * 10) / 10,
         proteinGPerKg: Math.round(totalShowProtein / bw * 10) / 10,
         fatGPerKg: Math.round(totalShowFat / bw * 10) / 10,
-        waterMlPerKg: Math.round(800 / bw * 10) / 10,  // ~800ml 總計
+        waterMlPerKg: 10,  // Bug fix M9: 比賽日固定 10 mL/kg（不反算），與其他天的語義一致
         sodiumMg: 1000,  // 總計 ~1000mg，大部分在最後 1.5 小時
         sodiumNote: '鈉集中在最後 1.5 小時 — 前半段不加鈉，上台前 dump 鹽+蜂蜜+運動飲料，最大化 SGLT-1 效果和血管充盈',
         fiberNote: '幾乎零纖維（全部吃精緻碳水）',
@@ -4361,7 +4403,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     labMacroModifiers: pwLabMacroMods, labTrainingModifiers: pwLabTrainingMods, energyAvailability: null,
     peakWeekPlan: plan, metabolicStress: null,
     menstrualCycleNote: cycleInfo?.note ?? null,
-    perMealProteinGuide: buildPerMealProteinGuide(bw, Math.round(bw * PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG)),
+    perMealProteinGuide: buildPerMealProteinGuide(bw, todayPlan.protein),  // Bug fix M8: 用當天實際蛋白質，非固定 depletion 值
     geneticCorrections,
   }
 }
