@@ -36,6 +36,7 @@ const NutritionStrategyCard = dynamic(() => import('@/components/client/Nutritio
 import PwaPrompt from '@/components/client/PwaPrompt'
 import ClientHeader from '@/components/client/ClientHeader'
 import HealthScoreBanner from '@/components/client/HealthScoreBanner'
+import BehaviorInsights from '@/components/client/BehaviorInsights'
 import TodayOverviewCard from '@/components/client/TodayOverviewCard'
 import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
@@ -747,6 +748,13 @@ export default function ClientDashboard() {
           />
 
           {isHealthMode && healthScore && <HealthScoreBanner healthScore={healthScore} />}
+
+          {/* 行為洞察：跨維度數據分析 */}
+          <BehaviorInsights
+            clientId={c.unique_code}
+            code={c.unique_code}
+            isFree={c.subscription_tier === 'free'}
+          />
 
           {/* 健康模式進階功能：血檢飲食建議 + 季度對比 + 微營養素 */}
           {isHealthMode && (
