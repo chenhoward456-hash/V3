@@ -69,7 +69,7 @@ export default function ProgressJourney({
 
     // 1. 體重趨勢
     const bodyWeek = splitByWeek(bodyData.filter(b => b.weight != null))
-    if (bodyWeek.thisWeek.length >= 2 && bodyWeek.lastWeek.length >= 2) {
+    if (bodyWeek.thisWeek.length >= 1 && bodyWeek.lastWeek.length >= 1) {
       const thisAvg = avg(bodyWeek.thisWeek.map(b => b.weight!))
       const lastAvg = avg(bodyWeek.lastWeek.map(b => b.weight!))
       const change = thisAvg - lastAvg
@@ -87,7 +87,7 @@ export default function ProgressJourney({
 
     // 2. 飲食合規率
     const nutWeek = splitByWeek(nutritionLogs.filter(n => n.compliant != null))
-    if (nutWeek.thisWeek.length >= 3 && nutWeek.lastWeek.length >= 3) {
+    if (nutWeek.thisWeek.length >= 2 && nutWeek.lastWeek.length >= 2) {
       const thisRate = Math.round(nutWeek.thisWeek.filter(n => n.compliant).length / nutWeek.thisWeek.length * 100)
       const lastRate = Math.round(nutWeek.lastWeek.filter(n => n.compliant).length / nutWeek.lastWeek.length * 100)
       const change = thisRate - lastRate
@@ -105,7 +105,7 @@ export default function ProgressJourney({
     // 3. 蛋白質達標
     const proteinLogs = nutritionLogs.filter(n => n.protein_grams != null)
     const proWeek = splitByWeek(proteinLogs)
-    if (proWeek.thisWeek.length >= 3 && proWeek.lastWeek.length >= 3) {
+    if (proWeek.thisWeek.length >= 2 && proWeek.lastWeek.length >= 2) {
       const thisAvg = Math.round(avg(proWeek.thisWeek.map(n => n.protein_grams!)))
       const lastAvg = Math.round(avg(proWeek.lastWeek.map(n => n.protein_grams!)))
       const change = thisAvg - lastAvg
@@ -123,7 +123,7 @@ export default function ProgressJourney({
     // 4. 睡眠品質
     const sleepLogs = wellness.filter(w => w.sleep_quality != null)
     const sleepWeek = splitByWeek(sleepLogs)
-    if (sleepWeek.thisWeek.length >= 3 && sleepWeek.lastWeek.length >= 3) {
+    if (sleepWeek.thisWeek.length >= 2 && sleepWeek.lastWeek.length >= 2) {
       const thisAvg = avg(sleepWeek.thisWeek.map(w => w.sleep_quality!))
       const lastAvg = avg(sleepWeek.lastWeek.map(w => w.sleep_quality!))
       const change = thisAvg - lastAvg
@@ -141,7 +141,7 @@ export default function ProgressJourney({
     // 5. 精力
     const energyLogs = wellness.filter(w => w.energy_level != null)
     const energyWeek = splitByWeek(energyLogs)
-    if (energyWeek.thisWeek.length >= 3 && energyWeek.lastWeek.length >= 3) {
+    if (energyWeek.thisWeek.length >= 2 && energyWeek.lastWeek.length >= 2) {
       const thisAvg = avg(energyWeek.thisWeek.map(w => w.energy_level!))
       const lastAvg = avg(energyWeek.lastWeek.map(w => w.energy_level!))
       const change = thisAvg - lastAvg
@@ -180,8 +180,8 @@ export default function ProgressJourney({
     return { metrics, streak, improvingCount, totalWithTrend }
   }, [bodyData, wellness, nutritionLogs, trainingLogs, bodyWeight, goalType])
 
-  // 至少需要 2 個指標才值得顯示
-  if (progress.metrics.length < 2) return null
+  // 至少需要 1 個指標才顯示（降低門檻，讓用戶更早看到進度）
+  if (progress.metrics.length < 1) return null
 
   const { metrics, streak, improvingCount, totalWithTrend } = progress
 
