@@ -190,8 +190,19 @@ export default function ProgressJourney({
     return { metrics, streak, improvingCount, totalWithTrend }
   }, [bodyData, wellness, nutritionLogs, trainingLogs, bodyWeight, goalType])
 
-  // 至少需要 1 個指標才顯示（降低門檻，讓用戶更早看到進度）
-  if (progress.metrics.length < 1) return null
+  // DEBUG: 暫時顯示數據狀態，確認 component 有被渲染
+  if (progress.metrics.length < 1) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-3xl p-4 mb-4 text-xs text-yellow-800">
+        <p className="font-bold mb-1">📈 進度（Debug）</p>
+        <p>bodyData: {bodyData.length} 筆 | wellness: {wellness.length} 筆 | nutrition: {nutritionLogs.length} 筆 | training: {trainingLogs.length} 筆</p>
+        <p>bodyWeight: {bodyWeight} | goalType: {goalType}</p>
+        <p>metrics 產出: {progress.metrics.length} 個 | streak: {progress.streak}</p>
+        {bodyData.length > 0 && <p>最新體重日期: {bodyData[0]?.date} | 最舊: {bodyData[bodyData.length-1]?.date}</p>}
+        {wellness.length > 0 && <p>最新感受日期: {wellness[0]?.date} | 最舊: {wellness[wellness.length-1]?.date}</p>}
+      </div>
+    )
+  }
 
   const { metrics, streak, improvingCount, totalWithTrend } = progress
 
