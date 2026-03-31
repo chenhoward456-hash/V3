@@ -51,6 +51,9 @@ export interface InsightInput {
   }>
 
   supplementCount: number // total supplements prescribed
+
+  // 體重歷史（14 天，用於停滯偵測）
+  weightHistory?: Array<{ date: string; weight: number }>
 }
 
 export interface BehaviorInsight {
@@ -89,6 +92,16 @@ function maxConsecutiveRun<T>(arr: T[], pred: (item: T) => boolean): number {
     }
   }
   return max
+}
+
+/** Get the next calendar day as YYYY-MM-DD string. */
+function nextCalendarDay(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00')
+  d.setDate(d.getDate() + 1)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 /** Build a date-keyed lookup from an array with { date } entries. */
@@ -153,7 +166,7 @@ const rulePoorSleepStreak: RuleFn = ({ wellness }) => {
 /**
  * Rule 2: Next-day RPE after poor sleep vs good sleep — show correlation
  */
-const ruleSleepeRPECorrelation: RuleFn = ({ wellness, training }) => {
+const ruleSleepRPECorrelation: RuleFn = ({ wellness, training }) => {
   const wellnessMap = byDate(wellness)
   const trainingMap = byDate(training)
   const dates = wellness.map(w => w.date).sort() // chronological
@@ -163,7 +176,8 @@ const ruleSleepeRPECorrelation: RuleFn = ({ wellness, training }) => {
 
   for (let i = 0; i < dates.length - 1; i++) {
     const sleepDay = wellnessMap.get(dates[i])
-    const nextDate = dates[i + 1]
+    // Bug fix: 確認 dates[i+1] 是真正的隔天，不是跳天
+    const nextDate = nextCalendarDay(dates[i])
     const nextTraining = trainingMap.get(nextDate)
 
     if (!sleepDay || !notNull(sleepDay.sleep_quality) || !nextTraining || !notNull(nextTraining.rpe)) continue
@@ -196,19 +210,27 @@ const ruleSleepeRPECorrelation: RuleFn = ({ wellness, training }) => {
  * Rule 3: 5+ consecutive training days + declining sleep → suggest rest day
  */
 const ruleOvertrainingNoRest: RuleFn = ({ wellness, training }) => {
-  // Find max consecutive training days (newest-first → reverse for chronological)
-  const trainingDates = new Set(training.map(t => t.date))
-  const allDates = wellness.map(w => w.date).sort() // chronological
+  // Bug fix: 用所有日期（wellness + training 聯集）算連續訓練天數
+  // 避免只有訓練沒有 wellness 記錄的天被遺漏
+  const trainingDates = new Set(training.filter(t => t.training_type && t.training_type !== 'rest').map(t => t.date))
+  const allDatesSet = new Set([...wellness.map(w => w.date), ...training.map(t => t.date)])
+  const allDates = [...allDatesSet].sort() // chronological
 
   let maxStreak = 0
   let currentStreak = 0
+  let expectedDate: string | null = null
   for (const date of allDates) {
-    if (trainingDates.has(date)) {
+    // 確認日曆連續性
+    if (expectedDate && date !== expectedDate) {
+      // 跳天了，如果中間的天有訓練記錄也要算
+      currentStreak = trainingDates.has(date) ? 1 : 0
+    } else if (trainingDates.has(date)) {
       currentStreak++
       maxStreak = Math.max(maxStreak, currentStreak)
     } else {
       currentStreak = 0
     }
+    expectedDate = nextCalendarDay(date)
   }
 
   if (maxStreak < 5) return null
@@ -352,7 +374,8 @@ const ruleHighRPEHRVDrop: RuleFn = ({ wellness, training }) => {
     highRPETotal++
 
     const todayW = wellnessMap.get(dates[i])
-    const nextW = wellnessMap.get(dates[i + 1])
+    // Bug fix: 確認隔天是真正的日曆隔天
+    const nextW = wellnessMap.get(nextCalendarDay(dates[i]))
     if (!todayW || !nextW || !notNull(todayW.hrv) || !notNull(nextW.hrv)) continue
 
     if (nextW.hrv < todayW.hrv * 0.9) highRPEWithDrop++
@@ -458,15 +481,28 @@ const ruleSupplementSleepEffect: RuleFn = ({ wellness, supplementLogs, supplemen
   const sleepTaken: number[] = []
   const sleepSkipped: number[] = []
 
+  // Bug fix: 一天可能有多筆 supplement log（每顆一筆），用 Map 去重
+  // 一天中只要有任何一顆沒吃就算 skipped
+  const dailyCompletion = new Map<string, boolean>()
   for (const log of supplementLogs) {
-    const w = wellnessMap.get(log.date)
+    const existing = dailyCompletion.get(log.date)
+    if (existing === undefined) {
+      dailyCompletion.set(log.date, log.completed)
+    } else {
+      // 只要有一顆沒吃，整天算 skipped
+      if (!log.completed) dailyCompletion.set(log.date, false)
+    }
+  }
+
+  for (const [date, allCompleted] of dailyCompletion) {
+    const w = wellnessMap.get(date)
     if (!w) continue
 
     // Use wearable sleep score if available, fallback to subjective * 20
     const sleepScore = w.wearable_sleep_score ?? (notNull(w.sleep_quality) ? w.sleep_quality * 20 : null)
     if (!notNull(sleepScore)) continue
 
-    if (log.completed) sleepTaken.push(sleepScore)
+    if (allCompleted) sleepTaken.push(sleepScore)
     else sleepSkipped.push(sleepScore)
   }
 
@@ -535,46 +571,50 @@ const ruleCompositeMentalDecline: RuleFn = ({ wellness }) => {
 /**
  * Rule 12: Weight plateau (<0.3kg change in 14 days) + compliant diet → suggest refeed/diet break
  */
-const ruleWeightPlateau: RuleFn = ({ wellness, nutrition, bodyWeight, goalType }) => {
+const ruleWeightPlateau: RuleFn = ({ nutrition, goalType, weightHistory }) => {
   // Only relevant for cut or bulk
   if (goalType === 'recomp') return null
 
-  // Check weight variance from bodyWeight (which is current)
-  // We don't have daily weight in wellness, so use bodyWeight as current reference
-  // and look at compliance. If consistently compliant but goal not progressing,
-  // the coach should know.
-
+  // Bug fix: 使用實際體重歷史判斷停滯，而非只看熱量穩定性
+  const weights = weightHistory?.map(w => w.weight) ?? []
   const compliantDays = nutrition.filter(n => n.compliant === true)
   const totalDaysWithData = nutrition.filter(n => notNull(n.compliant))
 
   if (totalDaysWithData.length < 10) return null
-
   const complianceRate = compliantDays.length / totalDaysWithData.length
-  if (complianceRate < 0.7) return null // not compliant enough to diagnose plateau
+  if (complianceRate < 0.7) return null
 
-  // Use calorie consistency as proxy for plateau (if calories are very consistent but no progress)
-  const calories = nutrition.map(n => n.calories).filter(notNull)
-  if (calories.length < 10) return null
-
-  const calRange = Math.max(...calories) - Math.min(...calories)
-  const avgCal = avg(calories)
-
-  // If calorie variance is low (< 15% of average) and compliance is high,
-  // there might be metabolic adaptation
-  if (calRange / avgCal > 0.15) return null
+  // 有體重數據：用實際體重波動判斷
+  if (weights.length >= 4) {
+    const maxW = Math.max(...weights)
+    const minW = Math.min(...weights)
+    const range = maxW - minW
+    // 體重波動 < 0.5kg = 停滯
+    if (range >= 0.5) return null
+  } else {
+    // 沒有體重數據：fallback 用熱量穩定性當代理
+    const calories = nutrition.map(n => n.calories).filter(notNull)
+    if (calories.length < 10) return null
+    const calRange = Math.max(...calories) - Math.min(...calories)
+    const avgCal = avg(calories)
+    if (calRange / avgCal > 0.15) return null
+  }
 
   const goalLabel = goalType === 'cut' ? '減脂' : '增肌'
+  const weightInfo = weights.length >= 4
+    ? `體重近 14 天波動僅 ${(Math.max(...weights) - Math.min(...weights)).toFixed(1)}kg`
+    : '熱量攝取穩定但進度可能未如預期'
 
   return {
     id: 'weight-plateau',
     emoji: '⚖️',
     title: `${goalLabel}進度可能停滯`,
-    description: `根據你的數據，過去 14 天飲食合規率 ${Math.round(complianceRate * 100)}% 且熱量攝取穩定（平均 ${Math.round(avgCal)} kcal），但目標進度可能需要調整。`,
+    description: `根據你的數據，過去 14 天飲食合規率 ${Math.round(complianceRate * 100)}%，${weightInfo}。`,
     suggestion: goalType === 'cut'
       ? '可考慮安排 1-2 天 Refeed（提高碳水至維持熱量），或與教練討論是否需要 Diet Break。'
       : '可考慮微幅增加熱量盈餘（+100-200 kcal），或與教練討論訓練變項調整。',
     category: 'trend',
-    confidence: complianceRate >= 0.85 ? 'high' : 'medium',
+    confidence: weights.length >= 4 && complianceRate >= 0.85 ? 'high' : 'medium',
     priority: 3,
   }
 }
@@ -583,7 +623,7 @@ const ruleWeightPlateau: RuleFn = ({ wellness, nutrition, bodyWeight, goalType }
 
 const ALL_RULES: RuleFn[] = [
   rulePoorSleepStreak,       // Rule 1
-  ruleSleepeRPECorrelation,  // Rule 2
+  ruleSleepRPECorrelation,   // Rule 2
   ruleOvertrainingNoRest,    // Rule 3
   ruleLowCarbMood,           // Rule 4
   ruleComplianceDrop,        // Rule 5

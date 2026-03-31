@@ -116,6 +116,7 @@ export async function GET(request: NextRequest) {
         completed: s.completed,
       })),
       supplementCount: suppCountRes.data?.length || 0,
+      weightHistory: bodyData.map((b: any) => ({ date: b.date, weight: b.weight })),
     }
 
     // 4. 執行引擎
