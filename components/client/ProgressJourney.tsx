@@ -34,6 +34,9 @@ export default function ProgressJourney({
   bodyWeight,
   goalType,
 }: ProgressJourneyProps) {
+  // DEBUG: 強制渲染測試 — 確認 component 有被 mount
+  console.log('[ProgressJourney] mounted', { bodyData: bodyData.length, wellness: wellness.length, nutritionLogs: nutritionLogs.length, trainingLogs: trainingLogs.length })
+
   const progress = useMemo(() => {
     // 計算連續記錄天數（streak）
     const allDates = new Set([

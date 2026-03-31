@@ -751,21 +751,25 @@ export default function ClientDashboard() {
           {isHealthMode && healthScore && <HealthScoreBanner healthScore={healthScore} />}
 
           {/* 行為洞察：跨維度數據分析 */}
-          <BehaviorInsights
-            clientId={c.unique_code}
-            code={c.unique_code}
-            isFree={c.subscription_tier === 'free'}
-          />
+          <SectionErrorBoundary name="behavior-insights">
+            <BehaviorInsights
+              clientId={c.unique_code}
+              code={c.unique_code}
+              isFree={c.subscription_tier === 'free'}
+            />
+          </SectionErrorBoundary>
 
           {/* 進度可視化：本週 vs 上週比較 */}
-          <ProgressJourney
-            bodyData={(clientData.bodyData || []).map((b: any) => ({ date: b.date, weight: b.weight, body_fat: b.body_fat }))}
-            wellness={(clientData.wellness || []).map((w: any) => ({ date: w.date, sleep_quality: w.sleep_quality, energy_level: w.energy_level, mood: w.mood }))}
-            nutritionLogs={(clientData.nutritionLogs || []).map((n: any) => ({ date: n.date, compliant: n.compliant, protein_grams: n.protein_grams }))}
-            trainingLogs={(clientData.trainingLogs || []).map((t: any) => ({ date: t.date, training_type: t.training_type }))}
-            bodyWeight={latestBodyData?.weight ?? c.target_weight ?? 70}
-            goalType={c.goal_type as string | null}
-          />
+          <SectionErrorBoundary name="progress-journey">
+            <ProgressJourney
+              bodyData={(clientData.bodyData || []).map((b: any) => ({ date: b.date, weight: b.weight, body_fat: b.body_fat }))}
+              wellness={(clientData.wellness || []).map((w: any) => ({ date: w.date, sleep_quality: w.sleep_quality, energy_level: w.energy_level, mood: w.mood }))}
+              nutritionLogs={(clientData.nutritionLogs || []).map((n: any) => ({ date: n.date, compliant: n.compliant, protein_grams: n.protein_grams }))}
+              trainingLogs={(clientData.trainingLogs || []).map((t: any) => ({ date: t.date, training_type: t.training_type }))}
+              bodyWeight={latestBodyData?.weight ?? c.target_weight ?? 70}
+              goalType={c.goal_type as string | null}
+            />
+          </SectionErrorBoundary>
 
           {/* 健康模式進階功能：血檢飲食建議 + 季度對比 + 微營養素 */}
           {isHealthMode && (
