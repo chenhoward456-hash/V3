@@ -56,12 +56,22 @@ export default function ProgressJourney({
       }
     }
 
-    // 拆分：最近 7 天 vs 前 7 天（第 8-14 天）
+    // 拆分：最近 7 個日曆天 vs 前 7 個日曆天（用日期判斷，不是 index）
     const splitByWeek = <T extends { date: string }>(arr: T[]) => {
-      const sorted = [...arr].sort((a, b) => b.date.localeCompare(a.date))
+      const now = new Date()
+      const thisWeekStart = new Date(now)
+      thisWeekStart.setDate(now.getDate() - 6) // 今天往前 6 天 = 本週 7 天
+      const lastWeekStart = new Date(now)
+      lastWeekStart.setDate(now.getDate() - 13) // 再往前 7 天 = 上週 7 天
+
+      const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const thisWeekStr = fmt(thisWeekStart)
+      const lastWeekStr = fmt(lastWeekStart)
+      const todayStr = fmt(now)
+
       return {
-        thisWeek: sorted.filter((_, i) => i < 7),
-        lastWeek: sorted.filter((_, i) => i >= 7 && i < 14),
+        thisWeek: arr.filter(item => item.date >= thisWeekStr && item.date <= todayStr),
+        lastWeek: arr.filter(item => item.date >= lastWeekStr && item.date < thisWeekStr),
       }
     }
 
