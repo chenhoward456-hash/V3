@@ -768,6 +768,7 @@ export default function ClientDashboard() {
               trainingLogs={(clientData.trainingLogs || []).map((t: any) => ({ date: t.date, training_type: t.training_type }))}
               bodyWeight={latestBodyData?.weight ?? c.target_weight ?? 70}
               goalType={c.goal_type as string | null}
+              prepPhase={c.prep_phase as string | null}
             />
           </SectionErrorBoundary>
 
