@@ -34,9 +34,6 @@ export default function ProgressJourney({
   bodyWeight,
   goalType,
 }: ProgressJourneyProps) {
-  // DEBUG: 強制渲染測試 — 確認 component 有被 mount
-  console.log('[ProgressJourney] mounted', { bodyData: bodyData.length, wellness: wellness.length, nutritionLogs: nutritionLogs.length, trainingLogs: trainingLogs.length })
-
   const progress = useMemo(() => {
     // 計算連續記錄天數（streak）
     const allDates = new Set([
@@ -193,19 +190,21 @@ export default function ProgressJourney({
     return { metrics, streak, improvingCount, totalWithTrend }
   }, [bodyData, wellness, nutritionLogs, trainingLogs, bodyWeight, goalType])
 
-  // DEBUG: 暫時顯示數據狀態，確認 component 有被渲染
-  if (progress.metrics.length < 1) {
-    return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-3xl p-4 mb-4 text-xs text-yellow-800">
-        <p className="font-bold mb-1">📈 進度（Debug）</p>
-        <p>bodyData: {bodyData.length} 筆 | wellness: {wellness.length} 筆 | nutrition: {nutritionLogs.length} 筆 | training: {trainingLogs.length} 筆</p>
-        <p>bodyWeight: {bodyWeight} | goalType: {goalType}</p>
-        <p>metrics 產出: {progress.metrics.length} 個 | streak: {progress.streak}</p>
-        {bodyData.length > 0 && <p>最新體重日期: {bodyData[0]?.date} | 最舊: {bodyData[bodyData.length-1]?.date}</p>}
-        {wellness.length > 0 && <p>最新感受日期: {wellness[0]?.date} | 最舊: {wellness[wellness.length-1]?.date}</p>}
-      </div>
-    )
-  }
+  // DEBUG: 永遠顯示，不管有沒有 metrics
+  const debugInfo = (
+    <div className="bg-yellow-50 border border-yellow-200 rounded-3xl p-4 mb-4 text-xs text-yellow-800">
+      <p className="font-bold mb-1">📈 DEBUG — ProgressJourney</p>
+      <p>bodyData: {bodyData.length} 筆 | wellness: {wellness.length} 筆 | nutrition: {nutritionLogs.length} 筆 | training: {trainingLogs.length} 筆</p>
+      <p>bodyWeight: {bodyWeight} | goalType: {goalType}</p>
+      <p>metrics 產出: {progress.metrics.length} 個 | streak: {progress.streak}</p>
+      {bodyData.length > 0 && <p>最新體重: {bodyData[0]?.date} ({bodyData[0]?.weight}kg) | 最舊: {bodyData[bodyData.length-1]?.date}</p>}
+      {wellness.length > 0 && <p>最新感受: {wellness[0]?.date} | 最舊: {wellness[wellness.length-1]?.date}</p>}
+      {nutritionLogs.length > 0 && <p>最新飲食: {nutritionLogs[0]?.date} | 最舊: {nutritionLogs[nutritionLogs.length-1]?.date}</p>}
+      {progress.metrics.length > 0 && <p>指標: {progress.metrics.map(m => `${m.emoji}${m.label}=${m.current}`).join(' | ')}</p>}
+    </div>
+  )
+
+  if (progress.metrics.length < 1) return debugInfo
 
   const { metrics, streak, improvingCount, totalWithTrend } = progress
 
