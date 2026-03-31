@@ -22,6 +22,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.a
 export interface LineClient {
   id: string
   name: string
+  unique_code: string
   protein_target: number | null
   water_target: number | null
   calories_target: number | null
@@ -77,7 +78,7 @@ export function getTaiwanDate(): string {
 export async function getClientByLineId(lineUserId: string, supabase: SupabaseClient): Promise<LineClient | null> {
   const { data } = await supabase
     .from('clients')
-    .select('id, name, protein_target, water_target, calories_target, subscription_tier, training_enabled, wellness_enabled')
+    .select('id, name, unique_code, protein_target, water_target, calories_target, subscription_tier, training_enabled, wellness_enabled')
     .eq('line_user_id', lineUserId)
     .maybeSingle()
   return data

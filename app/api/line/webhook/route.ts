@@ -464,20 +464,26 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     const dashboardUrl = `https://howard456.vercel.app/c/${client!.unique_code}`
     await replyMessage(event.replyToken, [
       {
-        type: 'template',
+        type: 'flex',
         altText: `你的儀表板：${dashboardUrl}`,
-        template: {
-          type: 'buttons',
-          text: '點下方按鈕用瀏覽器開啟你的儀表板',
-          actions: [
-            {
-              type: 'uri',
-              label: '開啟我的儀表板',
-              uri: `${dashboardUrl}?openExternalBrowser=1`,
-            },
-          ],
+        contents: {
+          type: 'bubble',
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              { type: 'text', text: '點下方按鈕開啟你的儀表板', size: 'sm', color: '#555555' },
+            ],
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              { type: 'button', style: 'primary', action: { type: 'uri', label: '開啟我的儀表板', uri: `${dashboardUrl}?openExternalBrowser=1` } },
+            ],
+          },
         },
-      },
+      } as any,
     ])
     return
   }
