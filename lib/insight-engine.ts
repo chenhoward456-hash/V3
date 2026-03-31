@@ -619,9 +619,129 @@ const ruleWeightPlateau: RuleFn = ({ nutrition, goalType, weightHistory }) => {
   }
 }
 
+// ── Early Rules (3 天數據即可觸發，解決新用戶空白期) ──
+
+/**
+ * Early Rule 1: 首次記錄體重 + 飲食 → 正向回饋 + 引導持續
+ */
+const ruleEarlyFirstSteps: RuleFn = ({ nutrition, weightHistory }) => {
+  const hasWeight = (weightHistory?.length ?? 0) >= 1
+  const hasNutrition = nutrition.length >= 1
+
+  if (!hasWeight || !hasNutrition) return null
+  // 只在前 5 天觸發（之後有更有價值的 insight）
+  if (nutrition.length > 5) return null
+
+  return {
+    id: 'early-first-steps',
+    emoji: '🎉',
+    title: '開始追蹤了！',
+    description: `你已記錄 ${nutrition.length} 天飲食和體重。持續記錄 7 天後，系統就能分析你的飲食與身體狀態之間的關聯。`,
+    suggestion: '目標：連續 7 天記錄飲食 + 體重，解鎖個人化分析。',
+    category: 'trend',
+    confidence: 'low',
+    priority: 2,
+  }
+}
+
+/**
+ * Early Rule 2: 前 3 天的飲食蛋白質是否達標
+ */
+const ruleEarlyProteinCheck: RuleFn = ({ nutrition, bodyWeight }) => {
+  const withProtein = nutrition.filter(n => notNull(n.protein_grams))
+  if (withProtein.length < 2 || withProtein.length > 7) return null
+
+  const avgProtein = avg(withProtein.map(n => n.protein_grams!))
+  const proteinPerKg = avgProtein / bodyWeight
+  const target = 1.6 // 最低建議值
+
+  if (proteinPerKg >= target) {
+    return {
+      id: 'early-protein-good',
+      emoji: '💪',
+      title: '蛋白質攝取充足',
+      description: `根據你的數據，近 ${withProtein.length} 天平均蛋白質 ${Math.round(avgProtein)}g（${proteinPerKg.toFixed(1)}g/kg），達到建議量。`,
+      suggestion: '繼續保持！蛋白質是增肌減脂的基石，你目前的攝取量很棒。',
+      category: 'nutrition_mood',
+      confidence: 'medium',
+      priority: 4,
+    }
+  }
+
+  return {
+    id: 'early-protein-low',
+    emoji: '🥩',
+    title: '蛋白質可能不足',
+    description: `根據你的數據，近 ${withProtein.length} 天平均蛋白質 ${Math.round(avgProtein)}g（${proteinPerKg.toFixed(1)}g/kg），低於建議的 ${target}g/kg。`,
+    suggestion: `試著每餐加入一份掌心大小的蛋白質來源（雞胸、蛋、豆腐），目標 ${Math.round(bodyWeight * target)}g/天。`,
+    category: 'nutrition_mood',
+    confidence: 'medium',
+    priority: 2,
+  }
+}
+
+/**
+ * Early Rule 3: 前 3 天的睡眠品質回饋
+ */
+const ruleEarlySleepFeedback: RuleFn = ({ wellness }) => {
+  const withSleep = wellness.filter(w => notNull(w.sleep_quality))
+  if (withSleep.length < 2 || withSleep.length > 7) return null
+
+  const avgSleep = avg(withSleep.map(w => w.sleep_quality!))
+
+  if (avgSleep >= 4) return null // 睡得好不需要提醒
+
+  return {
+    id: 'early-sleep-feedback',
+    emoji: '😴',
+    title: '睡眠品質偏低',
+    description: `根據你的數據，近 ${withSleep.length} 天平均睡眠品質 ${avgSleep.toFixed(1)}/5。睡眠是恢復的基礎，直接影響訓練效果和體態進展。`,
+    suggestion: '試試固定起床時間、睡前 1 小時不看手機、臥室溫度調到 18-20°C。',
+    category: 'sleep_training',
+    confidence: 'low',
+    priority: 2,
+  }
+}
+
+/**
+ * Early Rule 4: 記錄了但沒有每天記 → 鼓勵持續
+ */
+const ruleEarlyConsistency: RuleFn = ({ nutrition, wellness }) => {
+  const totalDays = Math.max(nutrition.length, wellness.length)
+  if (totalDays < 3 || totalDays > 10) return null
+
+  // 算「有記錄的天數」佔總天數的比例
+  const nutritionDates = new Set(nutrition.map(n => n.date))
+  const wellnessDates = new Set(wellness.map(w => w.date))
+  const allDates = new Set([...nutritionDates, ...wellnessDates])
+
+  // 如果記錄天數 >= 實際天數的 80%，不需要提醒
+  if (allDates.size >= totalDays * 0.8) return null
+
+  const missedDays = totalDays - allDates.size
+  if (missedDays < 2) return null
+
+  return {
+    id: 'early-consistency',
+    emoji: '📝',
+    title: '持續記錄讓分析更準',
+    description: `近 ${totalDays} 天中有 ${missedDays} 天沒有記錄。數據越完整，系統能給你的個人化建議就越準確。`,
+    suggestion: '不需要完美記錄，每天花 30 秒填體重 + 飲食合規就夠了。',
+    category: 'trend',
+    confidence: 'low',
+    priority: 3,
+  }
+}
+
 // ── Main Engine ─────────────────────────────
 
 const ALL_RULES: RuleFn[] = [
+  // 早期規則（3 天數據即可，新用戶前 7 天觸發）
+  ruleEarlyFirstSteps,       // Early 1
+  ruleEarlyProteinCheck,     // Early 2
+  ruleEarlySleepFeedback,    // Early 3
+  ruleEarlyConsistency,      // Early 4
+  // 標準規則（需 7-14 天數據）
   rulePoorSleepStreak,       // Rule 1
   ruleSleepRPECorrelation,   // Rule 2
   ruleOvertrainingNoRest,    // Rule 3
