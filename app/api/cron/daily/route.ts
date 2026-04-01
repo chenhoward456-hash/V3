@@ -30,6 +30,7 @@ import {
   sendWinBackEmail,
 } from '@/lib/email'
 import { getDefaultFeatures } from '@/lib/tier-defaults'
+import { generateBehaviorInsights, type InsightInput } from '@/lib/insight-engine'
 import { startCronRun, completeCronRun, failCronRun } from '@/lib/cron-utils'
 
 export const maxDuration = 300
@@ -872,6 +873,61 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ===== Insight 驅動推播（晚上，每週一次）=====
+  // 週日晚上推一條最重要的 insight，讓用戶知道「系統有在幫你看數據」
+  let insightPushSent = 0
+  if (!isMorning && new Date().getDay() === 0) { // 週日
+    const { data: insightClients } = await supabase
+      .from('clients')
+      .select('id, unique_code, name, line_user_id, gender, goal_type, subscription_tier')
+      .eq('is_active', true)
+      .not('line_user_id', 'is', null)
+      .not('subscription_tier', 'eq', 'free') // 只推給付費用戶
+
+    if (insightClients) {
+      const fourteenDaysAgo = new Date()
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
+      const sinceStr = fourteenDaysAgo.toISOString().split('T')[0]
+
+      for (const c of insightClients) {
+        try {
+          const [wellRes, nutRes, trainRes, bodyRes] = await Promise.all([
+            supabase.from('daily_wellness').select('date, sleep_quality, energy_level, mood, stress_level, cognitive_clarity, training_drive, device_recovery_score, resting_hr, hrv, wearable_sleep_score').eq('client_id', c.id).gte('date', sinceStr).order('date', { ascending: false }),
+            supabase.from('nutrition_logs').select('date, calories, carbs_grams, protein_grams, compliant').eq('client_id', c.id).gte('date', sinceStr).order('date', { ascending: false }),
+            supabase.from('training_logs').select('date, training_type, rpe, duration').eq('client_id', c.id).gte('date', sinceStr).order('date', { ascending: false }),
+            supabase.from('body_composition').select('date, weight').eq('client_id', c.id).gte('date', sinceStr).not('weight', 'is', null).order('date', { ascending: false }).limit(14),
+          ])
+
+          if ((wellRes.data?.length ?? 0) < 5 && (nutRes.data?.length ?? 0) < 5) continue // 數據不夠
+
+          const input: InsightInput = {
+            gender: c.gender || '男性',
+            bodyWeight: bodyRes.data?.[0]?.weight ?? 70,
+            goalType: (c.goal_type as 'cut' | 'bulk' | 'recomp') || 'cut',
+            wellness: (wellRes.data || []).map((w: any) => ({ ...w })),
+            nutrition: (nutRes.data || []).map((n: any) => ({ ...n })),
+            training: (trainRes.data || []).map((t: any) => ({ ...t })),
+            supplementLogs: [],
+            supplementCount: 0,
+            weightHistory: (bodyRes.data || []).map((b: any) => ({ date: b.date, weight: b.weight })),
+          }
+
+          const insights = generateBehaviorInsights(input)
+          // 只推第一條（最重要的），且不推 early rules 和 low confidence
+          const topInsight = insights.find(i => !i.id.startsWith('early-') && i.confidence !== 'low')
+          if (!topInsight) continue
+
+          const msg = `${topInsight.emoji} ${c.name}，本週分析：\n\n${topInsight.title}\n${topInsight.description}\n\n💡 ${topInsight.suggestion}`
+
+          await pushMessage(c.line_user_id, [{ type: 'text', text: msg }])
+          insightPushSent++
+        } catch (err: unknown) {
+          errors.push(`insight_push_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
+        }
+      }
+    }
+  }
+
   // ===== 沉默用戶偵測 + 再喚醒（晚上執行）=====
   let reengagementSent = 0
   if (!isMorning) {
@@ -948,6 +1004,7 @@ export async function GET(request: NextRequest) {
     smartAlertsSent,
     downgradedCount,
     reengagementSent,
+    insightPushSent,
     garminStatesCleared,
     errors,
   }

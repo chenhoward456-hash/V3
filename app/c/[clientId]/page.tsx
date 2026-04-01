@@ -38,6 +38,7 @@ import ClientHeader from '@/components/client/ClientHeader'
 import HealthScoreBanner from '@/components/client/HealthScoreBanner'
 import BehaviorInsights from '@/components/client/BehaviorInsights'
 import ProgressJourney from '@/components/client/ProgressJourney'
+import SystemActions from '@/components/client/SystemActions'
 import TodayOverviewCard from '@/components/client/TodayOverviewCard'
 import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
@@ -1399,7 +1400,14 @@ export default function ClientDashboard() {
           </SectionErrorBoundary>
         )}
 
-        {/* 進度可視化 + 行為洞察（做完再看） */}
+        {/* 系統動態 + 進度可視化 + 行為洞察（做完再看） */}
+        <SectionErrorBoundary name="system-actions">
+          <SystemActions
+            suggestion={nutritionEngineSuggestion}
+            prepPhase={c.prep_phase as string | null}
+          />
+        </SectionErrorBoundary>
+
         <SectionErrorBoundary name="progress-journey">
           <ProgressJourney
             bodyData={(clientData.bodyData || []).map((b: any) => ({ date: b.date, weight: b.weight, body_fat: b.body_fat }))}
