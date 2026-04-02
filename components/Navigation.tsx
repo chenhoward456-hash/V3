@@ -121,7 +121,7 @@ export default function Navigation() {
               <LineButton
                 source="nav_cta"
                 intent="general"
-                className="hidden lg:inline-block bg-primary text-white px-5 py-2.5 rounded-full font-medium text-sm hover:bg-primary-dark transition-colors"
+                className="hidden lg:inline-block bg-primary text-white px-5 py-3 rounded-full font-medium text-sm hover:bg-primary-dark transition-colors"
               >
                 加 LINE 諮詢
               </LineButton>
