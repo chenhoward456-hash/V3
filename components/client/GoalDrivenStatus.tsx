@@ -13,6 +13,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
   const [data, setData] = useState<any>(null)
   const [targetWeightValue, setTargetWeightValue] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const [overriding, setOverriding] = useState(false)
   const onMutateRef = useRef(onMutate)
   onMutateRef.current = onMutate
   const fetchedRef = useRef(false)
@@ -54,6 +55,34 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
     }
     fetchSuggestion()
   }, [clientId, code])
+
+  const handleGateOverride = async () => {
+    if (overriding) return
+    setOverriding(true)
+    try {
+      const lookupId = code || clientId
+      const res = await fetch('/api/clients', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: lookupId, cutting_gate_override: true }),
+      })
+      if (res.ok) {
+        // 重新載入營養建議
+        fetchedRef.current = false
+        setLoading(true)
+        const sugRes = await fetch(`/api/nutrition-suggestions?clientId=${lookupId}&autoApply=true${code ? `&code=${code}` : ''}`)
+        if (sugRes.ok) {
+          const json = await sugRes.json()
+          setData(json.data || json)
+        }
+      }
+    } catch (e) {
+      console.error('[GoalDrivenStatus] override failed:', e)
+    } finally {
+      setOverriding(false)
+      setLoading(false)
+    }
+  }
 
   if (loading || !data) return null
 
@@ -109,6 +138,15 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
               <p className="text-xs text-blue-700 leading-relaxed">{gate.labRetestReminder}</p>
             </div>
           )}
+
+          {/* 手動覆寫閘門 */}
+          <button
+            onClick={handleGateOverride}
+            disabled={overriding}
+            className="w-full py-3 px-4 mb-3 rounded-2xl border-2 border-dashed border-gray-300 text-sm font-medium text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
+          >
+            {overriding ? '切換中...' : '我了解風險，繼續原計畫'}
+          </button>
 
           {/* 恢復期的營養目標 */}
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-3">

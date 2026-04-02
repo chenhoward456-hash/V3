@@ -169,6 +169,9 @@ export interface NutritionInput {
   // high_energy_flux = 高能量通量，主動增加活動消耗
   activityProfile?: 'sedentary' | 'high_energy_flux'
 
+  // 客戶手動覆寫減脂閘門（了解風險後繼續原計畫）
+  cuttingGateOverride?: boolean
+
   // 近 30 天狀態監控（近 3 天 = 當前狀態, 第 4-30 天 = 個人基線）
   recentWellness?: {
     date: string
@@ -2318,7 +2321,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   // 如果荷爾蒙指標太差，強制進入恢復模式而非減脂
   const cuttingGate = checkCuttingReadiness(input, currentState, readinessScore, metabolicStress)
 
-  if (cuttingGate.blocked && (input.goalType === 'cut' || input.goalType === 'recomp')) {
+  if (cuttingGate.blocked && !input.cuttingGateOverride && (input.goalType === 'cut' || input.goalType === 'recomp')) {
     // 閘門擋住 → 強制恢復飲食，但仍保留 deadlineInfo 讓前端顯示備賽進度
     const bw = input.bodyWeight
     const estimatedMaintenance = estimatedTDEE || Math.round(bw * 33)

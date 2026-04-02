@@ -260,6 +260,7 @@ export async function GET(request: NextRequest) {
       clientMode: (client.client_mode as 'standard' | 'health' | 'bodybuilding' | 'athletic') || undefined,
       weighInGapHours: (client as any).weigh_in_gap_hours ?? undefined,
       activityProfile: (client.activity_profile as 'sedentary' | 'high_energy_flux') || undefined,
+      cuttingGateOverride: !!client.cutting_gate_override,
       recentWellness: wellnessLogs.map((w: { date: string; energy_level: number | null; training_drive: number | null; device_recovery_score: number | null; resting_hr: number | null; hrv: number | null; wearable_sleep_score: number | null; respiratory_rate: number | null }) => ({
         date: w.date,
         energy_level: w.energy_level ?? null,
