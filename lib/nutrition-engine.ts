@@ -1648,11 +1648,11 @@ function checkCuttingReadiness(
     // 精力 + 訓練動力都 ≥ 4（滿分 5）= 身體感覺恢復良好
     // Bug fix: 原本閾值 7/6 是 1-10 量表，實際量表為 1-5
     if (avgEnergy >= 4 && avgTrainingDrive >= 4) {
-      score += 12
-      reasons.push(`💪 近 7 天身體感覺良好（精力 ${avgEnergy.toFixed(1)}/5 · 訓練動力 ${avgTrainingDrive.toFixed(1)}/5）— 恢復加分 +12`)
+      score += 20
+      reasons.push(`💪 近 7 天身體感覺良好（精力 ${avgEnergy.toFixed(1)}/5 · 訓練動力 ${avgTrainingDrive.toFixed(1)}/5）— 恢復加分 +20`)
     } else if (avgEnergy >= 3.5 && avgTrainingDrive >= 3.5) {
-      score += 6
-      reasons.push(`👍 近 7 天身體感覺尚可（精力 ${avgEnergy.toFixed(1)}/5 · 訓練動力 ${avgTrainingDrive.toFixed(1)}/5）— 恢復加分 +6`)
+      score += 10
+      reasons.push(`👍 近 7 天身體感覺尚可（精力 ${avgEnergy.toFixed(1)}/5 · 訓練動力 ${avgTrainingDrive.toFixed(1)}/5）— 恢復加分 +10`)
     }
 
     // 穿戴裝置恢復分數持續 >70
@@ -1662,16 +1662,35 @@ function checkCuttingReadiness(
     if (deviceScores.length >= 5) {
       const avgDevice = deviceScores.reduce((s, v) => s + v, 0) / deviceScores.length
       if (avgDevice >= 70) {
-        score += 8
-        reasons.push(`⌚ 穿戴裝置恢復分數持續良好（平均 ${Math.round(avgDevice)}/100）— 恢復加分 +8`)
+        score += 15
+        reasons.push(`⌚ 穿戴裝置恢復分數持續良好（平均 ${Math.round(avgDevice)}/100）— 恢復加分 +15`)
       }
+    }
+
+    // 睡眠品質持續良好
+    const avgSleep = recentWellness
+      .filter(w => w.sleep_quality != null)
+      .reduce((s, w) => s + w.sleep_quality!, 0) / Math.max(1, recentWellness.filter(w => w.sleep_quality != null).length)
+    if (avgSleep >= 4) {
+      score += 8
+      reasons.push(`😴 近 7 天睡眠品質良好（${avgSleep.toFixed(1)}/5）— 恢復加分 +8`)
     }
   }
 
   score = Math.max(0, Math.min(100, score))
 
-  // 閘門判定：分數 < 50 → 擋住
-  const blocked = score < 50
+  // --- 8b. 備賽覆寫：比賽 16 週內 + 教練明確設 cut → 門檻降為 35 ---
+  let gateThreshold = 50
+  if (input.targetDate && input.prepPhase && input.prepPhase !== 'recovery' && input.prepPhase !== 'off_season') {
+    const daysUntilComp = Math.floor((new Date(input.targetDate).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+    if (daysUntilComp > 0 && daysUntilComp <= 112) { // 16 weeks
+      gateThreshold = 35
+      reasons.push(`🏆 備賽覆寫：距比賽 ${daysUntilComp} 天（<16 週），閘門門檻降為 35`)
+    }
+  }
+
+  // 閘門判定
+  const blocked = score < gateThreshold
 
   let recommendation = ''
   if (blocked) {
