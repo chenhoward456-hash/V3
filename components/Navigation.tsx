@@ -21,6 +21,11 @@ export default function Navigation() {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const hamburgerButtonRef = useRef<HTMLButtonElement>(null)
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
+
   useEffect(() => {
     if (mobileMenuOpen) {
       // Focus close button when menu opens
