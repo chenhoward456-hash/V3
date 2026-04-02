@@ -4462,7 +4462,7 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
     estimatedTDEE = Math.round(bmr * multiplier)
     method = 'katch_mcardle'
   } else {
-    const multiplier = getFallbackTDEEMultiplier(input.activityProfile, isMale)
+    const multiplier = getFallbackTDEEMultiplier(input.activityProfile, isMale, trainingDays)
     estimatedTDEE = Math.round(bw * multiplier)
     method = 'fallback'
   }
@@ -4470,9 +4470,9 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
   // 2. 根據目標計算赤字/盈餘
   let deficit: number
   if (input.goalType === 'cut') {
-    // 保守赤字 300-400kcal（非備賽不需激進）
+    // 保守赤字，上限 400kcal（非備賽不需激進）
+    // 不強制最低赤字：TDEE 本來就低的人不需要額外的赤字下限，讓 floor 保護即可
     deficit = Math.min(400, Math.round(estimatedTDEE * 0.18))
-    deficit = Math.max(200, deficit)  // 至少 200
   } else if (input.goalType === 'recomp') {
     // 體態重組：維持 TDEE 或微赤字 (0~-150 kcal)
     // 目標是降體脂 + 增肌，體重可能不變
@@ -4500,8 +4500,10 @@ export function calculateInitialTargets(input: InitialTargetInput): InitialTarge
 
   const targetCalories = estimatedTDEE - deficit
 
-  // 3. 安全下限
-  const minCal = isMale ? SAFETY.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_FEMALE
+  // 3. 安全下限（Onboarding 初始目標用獨立 floor，比 SAFETY 更寬鬆）
+  // SAFETY.MIN_CALORIES_FEMALE = 1200 是長期備賽/極端減脂的絕對底線
+  // 初始目標基於估算 TDEE，應更保守，避免新用戶一開始就被壓到極限
+  const minCal = isMale ? 1600 : 1400
   const finalCalories = Math.max(targetCalories, minCal)
 
   // 4. 巨量營養素分配
