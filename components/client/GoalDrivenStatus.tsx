@@ -90,143 +90,32 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
   const isGoalDriven = dl?.isGoalDriven
   const gate = data.cuttingReadinessGate
 
-  // 減脂閘門擋住：顯示荷爾蒙恢復卡片 + 備賽進度（如有 deadlineInfo）
-  if (gate?.blocked) {
-    return (
-      <>
-        <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🛡️</span>
-              <h2 className="text-lg font-bold text-gray-900">荷爾蒙恢復期</h2>
-            </div>
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-700">
-              就緒分數 {gate.readinessScore}/100
-            </span>
-          </div>
-
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-3">
-            <p className="text-sm font-medium text-red-800 mb-2">
-              系統偵測到你的身體指標尚未恢復，目前以恢復期飲食為主
-            </p>
-            <p className="text-xs text-red-700 leading-relaxed">{gate.recommendation}</p>
-          </div>
-
-          {(gate.labFlags ?? []).length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
-              <p className="text-xs font-semibold text-amber-700 mb-2">🩸 異常血檢指標</p>
-              <div className="flex flex-wrap gap-2">
-                {gate.labFlags.map((flag: string, i: number) => (
-                  <span key={i} className="text-[11px] bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-medium">
-                    {flag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {(gate.reasons ?? []).length > 0 && (
-            <div className="space-y-1 mb-3">
-              {gate.reasons.slice(0, 5).map((reason: string, i: number) => (
-                <p key={i} className="text-[11px] text-gray-600 leading-relaxed">{reason}</p>
-              ))}
-            </div>
-          )}
-
-          {gate.labRetestReminder && (
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 mb-3">
-              <p className="text-xs text-blue-700 leading-relaxed">{gate.labRetestReminder}</p>
-            </div>
-          )}
-
-          {/* 手動覆寫閘門 */}
-          <button
-            onClick={handleGateOverride}
-            disabled={overriding}
-            className="w-full py-3 px-4 mb-3 rounded-2xl border-2 border-dashed border-gray-300 text-sm font-medium text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
-          >
-            {overriding ? '切換中...' : '我了解風險，繼續原計畫'}
-          </button>
-
-          {/* 恢復期的營養目標 */}
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-3">
-            <p className="text-xs font-semibold text-green-700 mb-2">📋 恢復期飲食目標（微盈餘）</p>
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { label: '熱量', value: data.suggestedCalories, unit: 'kcal', emoji: '🔥' },
-                { label: '蛋白質', value: data.suggestedProtein, unit: 'g', emoji: '🥩' },
-                { label: '碳水', value: data.suggestedCarbs, unit: 'g', emoji: '🍚' },
-                { label: '脂肪', value: data.suggestedFat, unit: 'g', emoji: '🥑' },
-              ].map(({ label, value, unit, emoji }) => (
-                <div key={label} className="text-center bg-white bg-opacity-70 rounded-xl py-2 px-1">
-                  <p className="text-[10px] text-gray-500">{emoji} {label}</p>
-                  <p className="text-lg font-bold text-gray-900">{value || '--'}</p>
-                  <p className="text-[10px] text-gray-400">{unit}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 恢復期活動量指引 */}
-          {data.recoveryActivityGuide && (
-            <div className="bg-cyan-50 border border-cyan-200 rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-cyan-700">🏃 恢復期活動量指引</p>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700">
-                  👟 {data.recoveryActivityGuide.suggestedSteps.toLocaleString()} 步/天
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                {data.recoveryActivityGuide.cardioOptions.map((opt: { type: string; label: string; duration: string; emoji: string }) => (
-                  <div key={opt.type} className="bg-white bg-opacity-70 rounded-xl py-2 px-1 text-center">
-                    <p className="text-base">{opt.emoji}</p>
-                    <p className="text-[11px] font-medium text-gray-700">{opt.label}</p>
-                    <p className="text-[10px] text-gray-400">{opt.duration}</p>
-                  </div>
-                ))}
-              </div>
-              <p className="text-[10px] text-cyan-600 leading-relaxed">{data.recoveryActivityGuide.note}</p>
-            </div>
-          )}
+  // 血檢警告橫幅（不擋住正常建議，只顯示提醒）
+  const gateWarningBanner = gate?.blocked ? (
+    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span>🩸</span>
+          <p className="text-sm font-semibold text-amber-800">血檢指標異常</p>
         </div>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+          就緒 {gate.readinessScore}/100
+        </span>
+      </div>
+      {(gate.labFlags ?? []).length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {gate.labFlags.map((flag: string, i: number) => (
+            <span key={i} className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
+              {flag}
+            </span>
+          ))}
+        </div>
+      )}
+      <p className="text-xs text-amber-700 leading-relaxed">{gate.recommendation}</p>
+    </div>
+  ) : null
 
-        {/* 即使在恢復期，仍顯示備賽倒數進度 */}
-        {dl && (
-          <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🎯</span>
-                <h2 className="text-lg font-bold text-gray-900">目標體重計畫</h2>
-              </div>
-              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
-                🛡️ 恢復期中
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              <div className="bg-gray-50 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-gray-400">{dl.prePeakEntryWeight ? '飲食需減' : '還需減'}</p>
-                <p className="text-xl font-bold text-gray-900">{dl.dietWeightToLose ?? dl.weightToLose}</p>
-                <p className="text-[10px] text-gray-400">kg</p>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-gray-400">剩餘天數</p>
-                <p className="text-xl font-bold text-gray-900">{dl.daysLeft}</p>
-                <p className="text-[10px] text-gray-400">天</p>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-gray-400">TDEE</p>
-                <p className="text-xl font-bold text-gray-900">{data.estimatedTDEE || '--'}</p>
-                <p className="text-[10px] text-gray-400">kcal</p>
-              </div>
-            </div>
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700">
-              目前處於荷爾蒙恢復期，備賽倒數僅供參考。待血檢指標改善後，系統會自動切回 Goal-Driven 減脂模式。
-            </div>
-          </div>
-        )}
-      </>
-    )
-  }
+  // 舊的強制恢復 UI 已移除 — 閘門改為純警告模式
 
   // 穿戴裝置恢復狀態回饋（所有狀態都顯示）
   const wearableInsightCard = (() => {
@@ -350,6 +239,8 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
     : data.suggestedCarbs
 
   return (
+    <>
+    {gateWarningBanner}
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
       {/* 標題 */}
       <div className="flex items-center justify-between mb-4">
@@ -633,5 +524,6 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         </div>
       )}
     </div>
+    </>
   )
 }

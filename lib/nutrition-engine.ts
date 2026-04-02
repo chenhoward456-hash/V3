@@ -2322,7 +2322,10 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   // 如果荷爾蒙指標太差，強制進入恢復模式而非減脂
   const cuttingGate = checkCuttingReadiness(input, currentState, readinessScore, metabolicStress)
 
-  if (cuttingGate.blocked && !input.cuttingGateOverride && (input.goalType === 'cut' || input.goalType === 'recomp')) {
+  // 閘門改為純警告模式：不再自動強制恢復飲食
+  // cuttingGate.blocked + 警告資訊會傳到前端，讓客戶/教練自行決定
+  // 唯一進入恢復飲食的方式：客戶在前端主動選擇「我想先恢復」
+  if (false && (input.goalType === 'cut' || input.goalType === 'recomp')) {
     // 閘門擋住 → 強制恢復飲食，但仍保留 deadlineInfo 讓前端顯示備賽進度
     const bw = input.bodyWeight
     const estimatedMaintenance = estimatedTDEE || Math.round(bw * 33)
