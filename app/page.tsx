@@ -503,9 +503,9 @@ export default function HomePage() {
             <div className="space-y-0">
               {[
                 { day: '第 1 天', text: '填入基本資料，系統算出你的起點和每日目標', color: 'bg-blue-500' },
-                { day: '第 14 天', text: '系統根據你的真實體重趨勢，自動校正 TDEE', color: 'bg-indigo-500' },
-                { day: '第 30 天', text: '第一份月報出爐，看到趨勢線的方向', color: 'bg-purple-500' },
-                { day: '第 90 天', text: '回頭看三個月的數據，你會知道每一步是怎麼走過來的', color: 'bg-green-500' },
+                { day: '第 14 天', text: '系統根據你的真實體重趨勢，自動校正 TDEE', color: 'bg-blue-500' },
+                { day: '第 30 天', text: '第一份月報出爐，看到趨勢線的方向', color: 'bg-blue-500' },
+                { day: '第 90 天', text: '回頭看三個月的數據，你會知道每一步是怎麼走過來的', color: 'bg-blue-500' },
               ].map(({ day, text, color }, i) => (
                 <div key={day} className="flex gap-4 items-start">
                   <div className="flex flex-col items-center">
