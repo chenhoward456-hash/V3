@@ -24,7 +24,7 @@ const nextConfig = {
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
           "font-src 'self' https://fonts.gstatic.com",
           "img-src 'self' data: https:",
-          "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://*.sentry.io",
+          "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://www.google.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.sentry.io",
           "frame-src 'self'",
           "form-action 'self' https://payment.ecpay.com.tw https://payment-stage.ecpay.com.tw",
           "frame-ancestors 'none'",
