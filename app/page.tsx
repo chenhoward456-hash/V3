@@ -483,9 +483,9 @@ export default function HomePage() {
             ].map(({ icon, title, anchor, desc }) => (
               <div key={title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                 <div className="text-3xl mb-3 text-center">{icon}</div>
-                <h3 className="font-bold mb-1 text-sm text-center text-navy">{title}</h3>
-                <p className="text-[10px] text-primary font-semibold text-center mb-2">{anchor}</p>
-                <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
+                <h3 className="font-bold mb-1 text-lg text-center text-navy">{title}</h3>
+                <p className="text-xs text-primary font-semibold text-center mb-2">{anchor}</p>
+                <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
