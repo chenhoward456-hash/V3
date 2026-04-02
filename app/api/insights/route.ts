@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
+import { rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { generateBehaviorInsights, type InsightInput } from '@/lib/insight-engine'
 
 const supabase = createServiceSupabase()
 
 export async function GET(request: NextRequest) {
+  // Rate limiting：防止暴力枚舉 unique_code
+  const ip = getClientIP(request)
+  const { allowed } = await rateLimit(`insights:${ip}`, 10, 60_000)
+  if (!allowed) {
+    return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
+  }
+
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('clientId')
-  const code = searchParams.get('code')
   if (!clientId) {
     return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
   }
@@ -22,11 +29,6 @@ export async function GET(request: NextRequest) {
 
     if (clientErr || !client) {
       return NextResponse.json({ error: '找不到學員' }, { status: 404 })
-    }
-
-    // 驗證 code
-    if (code && client.unique_code !== code) {
-      return NextResponse.json({ error: '未授權' }, { status: 401 })
     }
 
     // 2. 拉 14 天數據

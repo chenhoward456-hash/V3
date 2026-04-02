@@ -107,15 +107,9 @@ export async function rateLimit(key: string, maxRequests: number = 10, windowMs:
 const ADMIN_SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
 function getSessionSecret(): string {
-  // 使用獨立的 SESSION_SECRET，不再 fallback 到 ADMIN_PASSWORD
-  // 避免密碼洩漏時連帶影響 session 簽名安全性
   const secret = process.env.SESSION_SECRET
   if (!secret) {
-    // 向下相容：如果 SESSION_SECRET 未設定，使用 ADMIN_PASSWORD 並記錄警告
-    const fallback = process.env.ADMIN_PASSWORD
-    if (!fallback) throw new Error('SESSION_SECRET 環境變數未設定')
-    console.warn('[安全警告] 建議設定獨立的 SESSION_SECRET 環境變數，而非使用 ADMIN_PASSWORD')
-    return fallback
+    throw new Error('SESSION_SECRET 環境變數未設定，請在 .env.local 中設定獨立的 SESSION_SECRET')
   }
   return secret
 }

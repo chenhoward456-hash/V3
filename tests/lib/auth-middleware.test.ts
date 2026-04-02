@@ -135,9 +135,8 @@ describe('adminSession', () => {
 
 // ===== getSessionSecret fallback (line 62) =====
 
-describe('getSessionSecret fallback', () => {
-  it('should fall back to ADMIN_PASSWORD when SESSION_SECRET is not set', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+describe('getSessionSecret requires SESSION_SECRET', () => {
+  it('should throw when SESSION_SECRET is not set (no fallback to ADMIN_PASSWORD)', async () => {
     const originalSessionSecret = process.env.SESSION_SECRET
     const originalAdminPassword = process.env.ADMIN_PASSWORD
 
@@ -150,16 +149,13 @@ describe('getSessionSecret fallback', () => {
     }))
 
     const freshModule = await import('@/lib/auth-middleware')
-    const token = freshModule.createAdminSession()
-    expect(token).toBeTruthy()
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('SESSION_SECRET'))
+    expect(() => freshModule.createAdminSession()).toThrow('SESSION_SECRET')
 
     process.env.SESSION_SECRET = originalSessionSecret
     process.env.ADMIN_PASSWORD = originalAdminPassword
-    warnSpy.mockRestore()
   })
 
-  it('should throw when neither SESSION_SECRET nor ADMIN_PASSWORD is set', async () => {
+  it('should throw when SESSION_SECRET is not set and ADMIN_PASSWORD is also not set', async () => {
     const originalSessionSecret = process.env.SESSION_SECRET
     const originalAdminPassword = process.env.ADMIN_PASSWORD
 
