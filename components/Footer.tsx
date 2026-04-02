@@ -18,37 +18,37 @@ export default function Footer() {
           {/* 欄位二 */}
           <div>
             <h4 className="text-white font-semibold mb-4">服務內容</h4>
-            <ul className="space-y-2.5 text-sm">
-              <li><Link href="/remote" className="hover:text-white transition-colors">遠端追蹤方案</Link></li>
-              <li><Link href="/action" className="hover:text-white transition-colors">實體訓練方案</Link></li>
-              <li><Link href="/diagnosis" className="hover:text-white transition-colors">免費系統分析</Link></li>
-              <li><Link href="/case" className="hover:text-white transition-colors">個案追蹤</Link></li>
+            <ul className="space-y-1 text-sm">
+              <li><Link href="/remote" className="hover:text-white transition-colors inline-block py-1.5">遠端追蹤方案</Link></li>
+              <li><Link href="/action" className="hover:text-white transition-colors inline-block py-1.5">實體訓練方案</Link></li>
+              <li><Link href="/diagnosis" className="hover:text-white transition-colors inline-block py-1.5">免費系統分析</Link></li>
+              <li><Link href="/case" className="hover:text-white transition-colors inline-block py-1.5">個案追蹤</Link></li>
             </ul>
           </div>
 
           {/* 欄位三 */}
           <div>
             <h4 className="text-white font-semibold mb-4">學習資源</h4>
-            <ul className="space-y-2.5 text-sm">
-              <li><Link href="/blog" className="hover:text-white transition-colors">文章</Link></li>
-              <li><Link href="/training" className="hover:text-white transition-colors">訓練工程</Link></li>
-              <li><Link href="/nutrition" className="hover:text-white transition-colors">營養與恢復</Link></li>
-              <li><Link href="/tools/tdee" className="hover:text-white transition-colors">TDEE 計算機</Link></li>
-              <li><Link href="/faq" className="hover:text-white transition-colors">常見問題</Link></li>
+            <ul className="space-y-1 text-sm">
+              <li><Link href="/blog" className="hover:text-white transition-colors inline-block py-1.5">文章</Link></li>
+              <li><Link href="/training" className="hover:text-white transition-colors inline-block py-1.5">訓練工程</Link></li>
+              <li><Link href="/nutrition" className="hover:text-white transition-colors inline-block py-1.5">營養與恢復</Link></li>
+              <li><Link href="/tools/tdee" className="hover:text-white transition-colors inline-block py-1.5">TDEE 計算機</Link></li>
+              <li><Link href="/faq" className="hover:text-white transition-colors inline-block py-1.5">常見問題</Link></li>
             </ul>
           </div>
 
           {/* 欄位四 */}
           <div>
             <h4 className="text-white font-semibold mb-4">聯絡方式</h4>
-            <ul className="space-y-2.5 text-sm">
+            <ul className="space-y-1 text-sm">
               <li>
-                <a href="https://instagram.com/chenhoward" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                <a href="https://instagram.com/chenhoward" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors inline-block py-1.5">
                   📷 @chenhoward
                 </a>
               </li>
               <li>
-                <Link href="/line" className="hover:text-white transition-colors">
+                <Link href="/line" className="hover:text-white transition-colors inline-block py-1.5">
                   💬 LINE 官方帳號
                 </Link>
               </li>
@@ -60,15 +60,15 @@ export default function Footer() {
         </div>
 
         {/* 版權 */}
-        <div className="border-t border-gray-700 mt-10 pt-6 text-center text-xs text-gray-500">
+        <div className="border-t border-gray-700 mt-10 pt-6 text-center text-sm text-gray-500">
           <div className="flex items-center justify-center gap-3 mb-2">
-            <Link href="/privacy" className="hover:text-gray-300 transition-colors">隱私政策</Link>
+            <Link href="/privacy" className="hover:text-gray-300 transition-colors inline-block py-1.5">隱私政策</Link>
             <span className="text-gray-600">|</span>
-            <Link href="/terms" className="hover:text-gray-300 transition-colors">服務條款</Link>
+            <Link href="/terms" className="hover:text-gray-300 transition-colors inline-block py-1.5">服務條款</Link>
             <span className="text-gray-600">|</span>
-            <Link href="/medical-disclaimer" className="hover:text-gray-300 transition-colors">醫療免責聲明</Link>
+            <Link href="/medical-disclaimer" className="hover:text-gray-300 transition-colors inline-block py-1.5">醫療免責聲明</Link>
             <span className="text-gray-600">|</span>
-            <Link href="/refund-policy" className="hover:text-gray-300 transition-colors">退費政策</Link>
+            <Link href="/refund-policy" className="hover:text-gray-300 transition-colors inline-block py-1.5">退費政策</Link>
           </div>
           <p>&copy; 2026 The Howard Protocol. All rights reserved.</p>
         </div>
