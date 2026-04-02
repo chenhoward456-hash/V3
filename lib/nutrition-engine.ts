@@ -177,6 +177,7 @@ export interface NutritionInput {
     date: string
     energy_level: number | null
     training_drive: number | null
+    sleep_quality?: number | null    // 睡眠品質 1-5
     // 穿戴裝置生理指標（Apple Watch / Garmin / Whoop）
     device_recovery_score?: number | null  // 裝置恢復分數 0-100（WHOOP Recovery / Oura Readiness / Garmin Body Battery）
     resting_hr?: number | null       // 靜息心率 bpm

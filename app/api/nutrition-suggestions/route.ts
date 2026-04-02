@@ -261,10 +261,11 @@ export async function GET(request: NextRequest) {
       weighInGapHours: (client as any).weigh_in_gap_hours ?? undefined,
       activityProfile: (client.activity_profile as 'sedentary' | 'high_energy_flux') || undefined,
       cuttingGateOverride: !!client.cutting_gate_override,
-      recentWellness: wellnessLogs.map((w: { date: string; energy_level: number | null; training_drive: number | null; device_recovery_score: number | null; resting_hr: number | null; hrv: number | null; wearable_sleep_score: number | null; respiratory_rate: number | null }) => ({
+      recentWellness: wellnessLogs.map((w: { date: string; sleep_quality: number | null; energy_level: number | null; training_drive: number | null; device_recovery_score: number | null; resting_hr: number | null; hrv: number | null; wearable_sleep_score: number | null; respiratory_rate: number | null }) => ({
         date: w.date,
         energy_level: w.energy_level ?? null,
         training_drive: w.training_drive ?? null,
+        sleep_quality: w.sleep_quality ?? null,
         device_recovery_score: w.device_recovery_score ?? null,
         resting_hr: w.resting_hr ?? null,
         hrv: w.hrv ?? null,
