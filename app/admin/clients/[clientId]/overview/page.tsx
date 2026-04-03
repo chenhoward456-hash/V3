@@ -173,11 +173,31 @@ export default function ClientOverview() {
     const avgProtein = weekNutritionWithProtein.length > 0 ? Math.round(weekNutritionWithProtein.reduce((s, l) => s + l.protein_grams, 0) / weekNutritionWithProtein.length) : null
     const proteinDeltaPct = avgProtein && proteinTarget ? Math.round(((avgProtein - proteinTarget) / proteinTarget) * 100) : null
 
+    // 蛋白質連續未達標天數（從最近一天往回數）
+    const sortedProteinDays = [...weekNutritionWithProtein].sort((a, b) => b.date.localeCompare(a.date))
+    let proteinMissStreak = 0
+    for (const day of sortedProteinDays) {
+      if (day.protein_grams < proteinTarget * 0.9) { proteinMissStreak++ } else break
+    }
+
     // 體重變化 %BW
     const latestWeight = recentBody.length > 0 ? recentBody[recentBody.length - 1].weight : null
     const weightChangePct = latestWeight && weightChange ? ((Number(weightChange) / latestWeight) * 100).toFixed(1) : null
 
-    return { weekCompliance, monthCompliance, weekTrainingDays, avgEnergy, weightChange, weightChangePct, latestWeight, weekNutritionRate, monthNutritionRate, proteinHitRate, avgProtein, proteinDeltaPct, proteinTarget }
+    // 14 天體重移動平均趨勢
+    const fourteenDayBody = recentBody.filter(b => b.date >= weekStart)
+    let weightTrend: 'down' | 'up' | 'flat' | null = null
+    if (fourteenDayBody.length >= 4) {
+      const half = Math.floor(fourteenDayBody.length / 2)
+      const firstHalf = fourteenDayBody.slice(0, half)
+      const secondHalf = fourteenDayBody.slice(half)
+      const avgFirst = firstHalf.reduce((s: number, b: any) => s + b.weight, 0) / firstHalf.length
+      const avgSecond = secondHalf.reduce((s: number, b: any) => s + b.weight, 0) / secondHalf.length
+      const diff = avgSecond - avgFirst
+      weightTrend = diff > 0.3 ? 'up' : diff < -0.3 ? 'down' : 'flat'
+    }
+
+    return { weekCompliance, monthCompliance, weekTrainingDays, avgEnergy, weightChange, weightChangePct, latestWeight, weekNutritionRate, monthNutritionRate, proteinHitRate, avgProtein, proteinDeltaPct, proteinTarget, proteinMissStreak, weightTrend }
   }, [supplements, supplementLogs, wellness, trainingLogs, bodyData, nutritionLogs, dateRange])
 
   // ===== 補品服從率趨勢（每日） =====
@@ -329,15 +349,17 @@ export default function ClientOverview() {
       return d.toISOString().split('T')[0]
     }
 
-    const typeStats: Record<string, { count: number; energy: number[]; sleep: number[] }> = {}
+    const typeStats: Record<string, { count: number; energy: number[]; sleep: number[]; mood: number[]; rpe: number[] }> = {}
     for (const log of trainingLogs.filter(l => l.training_type !== 'rest')) {
       const t = log.training_type
-      if (!typeStats[t]) typeStats[t] = { count: 0, energy: [], sleep: [] }
+      if (!typeStats[t]) typeStats[t] = { count: 0, energy: [], sleep: [], mood: [], rpe: [] }
       typeStats[t].count++
+      if (log.rpe != null) typeStats[t].rpe.push(log.rpe)
       const nextW = wellnessMap[nextDay(log.date)]
       if (nextW) {
         if (nextW.energy_level != null) typeStats[t].energy.push(nextW.energy_level)
         if (nextW.sleep_quality != null) typeStats[t].sleep.push(nextW.sleep_quality)
+        if (nextW.mood != null) typeStats[t].mood.push(nextW.mood)
       }
     }
 
@@ -347,8 +369,10 @@ export default function ClientOverview() {
         type: TRAINING_TYPES.find(t => t.value === type)?.label || type,
         emoji: TRAINING_TYPES.find(t => t.value === type)?.emoji || '',
         count: s.count,
+        avgRpe: avg(s.rpe),
         avgEnergy: avg(s.energy),
         avgSleep: avg(s.sleep),
+        avgMood: avg(s.mood),
       }
     }).sort((a, b) => b.count - a.count)
   }, [trainingLogs, wellness])
@@ -791,9 +815,18 @@ export default function ClientOverview() {
 
     // 蛋白質嚴重不足（最高優先級）
     if (keyMetrics.proteinDeltaPct != null && keyMetrics.proteinDeltaPct <= -20) {
-      items.push(`🥩 蛋白質嚴重不足（平均 ${keyMetrics.avgProtein}g / 目標 ${keyMetrics.proteinTarget}g，偏差 ${keyMetrics.proteinDeltaPct}%）`)
+      const streak = keyMetrics.proteinMissStreak > 1 ? `，連續 ${keyMetrics.proteinMissStreak} 天未達標` : ''
+      items.push(`🥩 蛋白質嚴重不足（平均 ${keyMetrics.avgProtein}g / 目標 ${keyMetrics.proteinTarget}g，偏差 ${keyMetrics.proteinDeltaPct}%${streak}）`)
     } else if (keyMetrics.proteinDeltaPct != null && keyMetrics.proteinDeltaPct <= -10) {
-      items.push(`🥩 蛋白質偏低（平均 ${keyMetrics.avgProtein}g / 目標 ${keyMetrics.proteinTarget}g，偏差 ${keyMetrics.proteinDeltaPct}%）`)
+      const streak = keyMetrics.proteinMissStreak > 1 ? `，連續 ${keyMetrics.proteinMissStreak} 天未達標` : ''
+      items.push(`🥩 蛋白質偏低（平均 ${keyMetrics.avgProtein}g / 目標 ${keyMetrics.proteinTarget}g，偏差 ${keyMetrics.proteinDeltaPct}%${streak}）`)
+    }
+
+    // 體重趨勢與目標方向不符
+    if (keyMetrics.weightTrend && client?.goal_type === 'cut' && keyMetrics.weightTrend === 'up') {
+      items.push(`⚖️ 體重 14 天趨勢上升，與減脂目標方向相反`)
+    } else if (keyMetrics.weightTrend && client?.goal_type === 'bulk' && keyMetrics.weightTrend === 'down') {
+      items.push(`⚖️ 體重 14 天趨勢下降，與增肌目標方向相反`)
     }
 
     // 荷爾蒙變化追蹤（從血檢數據抓）
@@ -991,10 +1024,25 @@ export default function ClientOverview() {
                 </p>
               </div>
             )}
+            {keyMetrics.weightTrend && (
+              <div className="bg-white/70 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-gray-500">14天趨勢</p>
+                <p className={`text-lg font-bold ${
+                  keyMetrics.weightTrend === 'down' ? (client.goal_type === 'cut' ? 'text-green-600' : 'text-red-600')
+                  : keyMetrics.weightTrend === 'up' ? (client.goal_type === 'bulk' ? 'text-green-600' : 'text-red-600')
+                  : 'text-gray-500'
+                }`}>
+                  {keyMetrics.weightTrend === 'down' ? '↓' : keyMetrics.weightTrend === 'up' ? '↑' : '→'}
+                </p>
+              </div>
+            )}
             {client.nutrition_enabled && keyMetrics.proteinHitRate != null && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
                 <p className="text-[10px] text-gray-500">蛋白質達標</p>
                 <p className={`text-lg font-bold ${keyMetrics.proteinHitRate >= 80 ? 'text-green-600' : keyMetrics.proteinHitRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>{keyMetrics.proteinHitRate}%</p>
+                {keyMetrics.proteinMissStreak >= 3 && (
+                  <p className="text-[9px] text-red-500">連{keyMetrics.proteinMissStreak}天</p>
+                )}
               </div>
             )}
           </div>
@@ -1682,8 +1730,15 @@ export default function ClientOverview() {
                     <div key={d} className="text-center text-xs text-gray-400 font-medium">{d}</div>
                   ))}
                 </div>
-                {calendarWeeks.map((week, wi) => (
-                  <div key={wi} className="grid grid-cols-7 gap-1">
+                {calendarWeeks.map((week, wi) => {
+                  // Deload 偵測：該週所有有 RPE 的訓練都 ≤ 6.5
+                  const weekLogs = week.filter(d => d.log && d.log.training_type !== 'rest' && d.log.rpe != null)
+                  const isDeloadWeek = weekLogs.length >= 2 && weekLogs.every(d => d.log.rpe <= 6.5)
+                  return (
+                  <div key={wi} className="grid grid-cols-7 gap-1 relative">
+                    {isDeloadWeek && (
+                      <div className="absolute -left-1 top-1/2 -translate-y-1/2 text-[8px] font-bold text-teal-600 bg-teal-50 px-1 py-0.5 rounded -rotate-90 origin-center whitespace-nowrap" style={{ transform: 'translateX(-100%) translateY(-50%) rotate(-90deg)' }}>DELOAD</div>
+                    )}
                     {week.map(({ date, label, log, isToday, isFuture }) => (
                       <div
                         key={date}
@@ -1691,6 +1746,7 @@ export default function ClientOverview() {
                           isToday ? 'ring-2 ring-blue-400' : ''
                         } ${
                           isFuture ? 'bg-gray-50 text-gray-300'
+                            : isDeloadWeek && log ? 'bg-teal-50 border border-teal-200'
                             : log ? getTypeBgColor(log.training_type)
                             : 'bg-gray-50 text-gray-400'
                         }`}
@@ -1701,7 +1757,8 @@ export default function ClientOverview() {
                       </div>
                     ))}
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
@@ -1783,33 +1840,41 @@ export default function ClientOverview() {
                   <tr className="border-b border-gray-100">
                     <th className="text-left py-2 px-3 text-xs text-gray-500">訓練類型</th>
                     <th className="text-center py-2 px-3 text-xs text-gray-500">次數</th>
+                    <th className="text-center py-2 px-3 text-xs text-gray-500">平均RPE</th>
                     <th className="text-center py-2 px-3 text-xs text-gray-500">隔天精力</th>
                     <th className="text-center py-2 px-3 text-xs text-gray-500">隔天睡眠</th>
+                    <th className="text-center py-2 px-3 text-xs text-gray-500">隔天心情</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recoveryAnalysis.map((r, i) => (
+                  {recoveryAnalysis.map((r, i) => {
+                    const rpeColor = r.avgRpe !== '--' && Number(r.avgRpe) >= 9 ? 'bg-red-100 text-red-700'
+                      : r.avgRpe !== '--' && Number(r.avgRpe) >= 7.5 ? 'bg-yellow-100 text-yellow-700'
+                      : r.avgRpe !== '--' ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-500'
+                    const cellColor = (val: string) => val !== '--' && Number(val) >= 4 ? 'bg-green-100 text-green-700'
+                      : val !== '--' && Number(val) >= 3 ? 'bg-yellow-100 text-yellow-700'
+                      : val !== '--' ? 'bg-red-100 text-red-700'
+                      : 'bg-gray-100 text-gray-500'
+                    return (
                     <tr key={i} className="border-b border-gray-50">
                       <td className="py-2 px-3 font-medium">{r.emoji} {r.type}</td>
                       <td className="py-2 px-3 text-center text-gray-600">{r.count}</td>
                       <td className="py-2 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          r.avgEnergy !== '--' && Number(r.avgEnergy) >= 4 ? 'bg-green-100 text-green-700'
-                            : r.avgEnergy !== '--' && Number(r.avgEnergy) >= 3 ? 'bg-yellow-100 text-yellow-700'
-                            : r.avgEnergy !== '--' ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-100 text-gray-500'
-                        }`}>{r.avgEnergy}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${rpeColor}`}>{r.avgRpe}</span>
                       </td>
                       <td className="py-2 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          r.avgSleep !== '--' && Number(r.avgSleep) >= 4 ? 'bg-green-100 text-green-700'
-                            : r.avgSleep !== '--' && Number(r.avgSleep) >= 3 ? 'bg-yellow-100 text-yellow-700'
-                            : r.avgSleep !== '--' ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-100 text-gray-500'
-                        }`}>{r.avgSleep}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cellColor(r.avgEnergy)}`}>{r.avgEnergy}</span>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cellColor(r.avgSleep)}`}>{r.avgSleep}</span>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cellColor(r.avgMood)}`}>{r.avgMood}</span>
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
