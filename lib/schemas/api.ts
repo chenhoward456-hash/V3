@@ -53,6 +53,22 @@ export const prepPhaseSchema = z.object({
   prepPhase: z.string().min(1, '缺少備賽階段'),
 })
 
+/** POST /api/training-sets */
+export const trainingSetsSchema = z.object({
+  clientId: uniqueCodeSchema,
+  date: dateSchema,
+  sets: z.array(z.object({
+    exercise_name: z.string().min(1, '缺少動作名稱').max(100),
+    muscle_group: z.string().max(50).nullable().optional(),
+    set_number: z.number().int().min(1).max(100),
+    weight: z.number().min(0).max(9999).nullable().optional(),
+    reps: z.number().int().min(0).max(999).nullable().optional(),
+    rpe: z.number().min(1).max(10).nullable().optional(),
+    is_main_lift: z.boolean().optional(),
+    note: z.string().nullable().optional(),
+  })).max(200, '單次最多 200 組'),
+})
+
 /** POST /api/admin/notifications (mark read) */
 export const markNotificationReadSchema = z.object({
   notificationId: z.union([z.literal('all'), z.string().min(1)]).optional(),

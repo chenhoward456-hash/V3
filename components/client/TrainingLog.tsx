@@ -105,6 +105,90 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     note: todayTraining?.note || ''
   })
 
+  // ===== 動作明細 =====
+  interface ExerciseSet {
+    exercise_name: string
+    muscle_group: string
+    set_number: number
+    weight: number | null
+    reps: number | null
+    rpe: number | null
+    is_main_lift: boolean
+  }
+  const [detailedSets, setDetailedSets] = useState<ExerciseSet[]>([])
+  const [showDetailedSets, setShowDetailedSets] = useState(false)
+  const [lastTypeSets, setLastTypeSets] = useState<ExerciseSet[]>([])
+  const [detailedLoaded, setDetailedLoaded] = useState(false)
+
+  // 載入今日已存的動作明細 + 上次同類型
+  useEffect(() => {
+    if (!showDetailedSets || detailedLoaded || !form.training_type) return
+    setDetailedLoaded(true)
+    const loadSets = async () => {
+      try {
+        const params = new URLSearchParams({ clientId, date: today })
+        if (form.training_type) params.set('trainingType', form.training_type)
+        const res = await fetch(`/api/training-sets?${params}`)
+        if (!res.ok) return
+        const data = await res.json()
+        const todaySets = (data.data?.sets || []).map((s: any) => ({
+          exercise_name: s.exercise_name,
+          muscle_group: s.muscle_group || '',
+          set_number: s.set_number,
+          weight: s.weight,
+          reps: s.reps,
+          rpe: s.rpe,
+          is_main_lift: s.is_main_lift || false,
+        }))
+        if (todaySets.length > 0) {
+          setDetailedSets(todaySets)
+        } else if (data.data?.lastSameType?.length > 0) {
+          // 帶入上次同類型的數據作為預設
+          setDetailedSets(data.data.lastSameType.map((s: any) => ({
+            exercise_name: s.exercise_name,
+            muscle_group: s.muscle_group || '',
+            set_number: s.set_number,
+            weight: s.weight,
+            reps: s.reps,
+            rpe: s.rpe,
+            is_main_lift: s.is_main_lift || false,
+          })))
+        }
+        setLastTypeSets((data.data?.lastSameType || []).map((s: any) => ({
+          exercise_name: s.exercise_name,
+          muscle_group: s.muscle_group || '',
+          set_number: s.set_number,
+          weight: s.weight,
+          reps: s.reps,
+          rpe: null,
+          is_main_lift: s.is_main_lift || false,
+        })))
+      } catch { /* silent */ }
+    }
+    loadSets()
+  }, [showDetailedSets, detailedLoaded, form.training_type, clientId, today])
+
+  // 重置 detailedLoaded when training type changes
+  useEffect(() => { setDetailedLoaded(false); setDetailedSets([]); setLastTypeSets([]) }, [form.training_type])
+
+  const addExercise = (name: string = '', muscleGroup: string = '') => {
+    const nextSet = detailedSets.length > 0 ? Math.max(...detailedSets.map(s => s.set_number)) + 1 : 1
+    setDetailedSets(prev => [...prev, { exercise_name: name, muscle_group: muscleGroup, set_number: nextSet, weight: null, reps: null, rpe: null, is_main_lift: false }])
+  }
+
+  const updateSet = (index: number, field: keyof ExerciseSet, value: any) => {
+    setDetailedSets(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s))
+  }
+
+  const removeSet = (index: number) => {
+    setDetailedSets(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const duplicateSet = (index: number) => {
+    const src = detailedSets[index]
+    setDetailedSets(prev => [...prev.slice(0, index + 1), { ...src, set_number: src.set_number + 1 }, ...prev.slice(index + 1)])
+  }
+
   useEffect(() => {
     if (todayTraining) {
       const rawNote = todayTraining.note || ''
@@ -205,6 +289,25 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
       })
       if (!response.ok) throw new Error('提交失敗')
       const result = await response.json()
+      // 儲存動作明細（如果有填）
+      if (detailedSets.length > 0) {
+        await fetch('/api/training-sets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientId, date: today,
+            sets: detailedSets.filter(s => s.exercise_name.trim()).map((s, i) => ({
+              exercise_name: s.exercise_name.trim(),
+              muscle_group: s.muscle_group || null,
+              set_number: i + 1,
+              weight: s.weight,
+              reps: s.reps,
+              rpe: s.rpe,
+              is_main_lift: s.is_main_lift,
+            })),
+          }),
+        }).catch(() => {})
+      }
       onMutate()
       showToast('訓練已記錄！', 'success', '🎉')
       // 顯示恢復警告（如果有）
@@ -738,6 +841,127 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                     </span>
                   ))}
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 動作明細（展開式） */}
+        {(!simpleMode || showTrainingAdvanced) && !isRest && !isCardio && (
+          <div>
+            {!showDetailedSets ? (
+              <button
+                onClick={() => setShowDetailedSets(true)}
+                className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              >
+                + 記錄動作明細（組/次/重量）
+              </button>
+            ) : (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm font-semibold text-gray-700">動作明細</p>
+                  <button onClick={() => setShowDetailedSets(false)} className="text-xs text-gray-400 hover:text-gray-600">收起</button>
+                </div>
+
+                {/* 上次紀錄提示 */}
+                {lastTypeSets.length > 0 && detailedSets.length === 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2">
+                    <p className="text-xs text-blue-700 mb-1">上次{form.training_type ? ` ${TRAINING_TYPES.find(t => t.value === form.training_type)?.label || form.training_type} ` : ''}紀錄：</p>
+                    <div className="space-y-0.5">
+                      {Array.from(new Set(lastTypeSets.map(s => s.exercise_name))).map(name => {
+                        const sets = lastTypeSets.filter(s => s.exercise_name === name)
+                        const first = sets[0]
+                        return (
+                          <p key={name} className="text-[11px] text-blue-600">
+                            {name}: {first.weight}kg x {first.reps} x {sets.length}組
+                          </p>
+                        )
+                      })}
+                    </div>
+                    <button
+                      onClick={() => setDetailedSets(lastTypeSets.map((s, i) => ({ ...s, set_number: i + 1 })))}
+                      className="mt-1.5 text-xs font-medium text-blue-700 bg-blue-100 px-2.5 py-1 rounded-lg hover:bg-blue-200 transition-colors"
+                    >
+                      複製上次紀錄
+                    </button>
+                  </div>
+                )}
+
+                {/* 動作列表 */}
+                {detailedSets.map((set, i) => {
+                  const prevSame = lastTypeSets.find(s => s.exercise_name === set.exercise_name && s.set_number === set.set_number)
+                  return (
+                    <div key={i} className="bg-white rounded-lg p-2.5 border border-gray-100 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={set.exercise_name}
+                          onChange={(e) => updateSet(i, 'exercise_name', e.target.value)}
+                          className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                          placeholder="動作名稱"
+                        />
+                        <span className="text-xs text-gray-400 whitespace-nowrap">#{set.set_number}</span>
+                        <button onClick={() => duplicateSet(i)} className="text-gray-400 hover:text-blue-500 text-xs" title="複製這組">+</button>
+                        <button onClick={() => removeSet(i)} className="text-gray-400 hover:text-red-500 text-xs" title="刪除">x</button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-[10px] text-gray-400 block">重量(kg)</label>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            step="2.5"
+                            value={set.weight ?? ''}
+                            onChange={(e) => updateSet(i, 'weight', e.target.value ? Number(e.target.value) : null)}
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            placeholder={prevSame?.weight ? String(prevSame.weight) : ''}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-gray-400 block">次數</label>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            value={set.reps ?? ''}
+                            onChange={(e) => updateSet(i, 'reps', e.target.value ? Number(e.target.value) : null)}
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            placeholder={prevSame?.reps ? String(prevSame.reps) : ''}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-gray-400 block">RPE</label>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min="1"
+                            max="10"
+                            value={set.rpe ?? ''}
+                            onChange={(e) => updateSet(i, 'rpe', e.target.value ? Number(e.target.value) : null)}
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            placeholder="8"
+                          />
+                        </div>
+                      </div>
+                      {prevSame && (
+                        <p className="text-[10px] text-gray-400">上次：{prevSame.weight}kg x {prevSame.reps}</p>
+                      )}
+                    </div>
+                  )
+                })}
+
+                <button
+                  onClick={() => addExercise()}
+                  className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                >
+                  + 新增動作
+                </button>
+
+                {/* Tonnage 摘要 */}
+                {detailedSets.some(s => s.weight && s.reps) && (
+                  <div className="bg-blue-50 rounded-lg px-3 py-2 text-xs text-blue-700">
+                    總訓練量：{Math.round(detailedSets.reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0), 0)).toLocaleString()} kg
+                  </div>
+                )}
               </div>
             )}
           </div>
