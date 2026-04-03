@@ -381,8 +381,10 @@ describe('GET /api/cron/daily', () => {
     mockFromResults['daily_wellness'] = { data: [], error: null }
     mockFromResults['nutrition_logs'] = { data: [], error: null }
     mockFromResults['training_logs'] = { data: [], error: null }
+    mockFromResults['body_composition'] = { data: [], error: null }
+    mockFromResults['push_subscriptions'] = { data: [{ endpoint: 'https://push.example.com', p256dh: 'key', auth: 'auth' }], error: null }
 
-    mockSendRoutineReminder.mockResolvedValue({ success: true, method: 'web_push' })
+    mockSendPushNotification.mockResolvedValue(true)
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
@@ -390,8 +392,10 @@ describe('GET /api/cron/daily', () => {
 
     expect(res.status).toBe(200)
     expect(body.type).toBe('evening')
-    expect(mockSendRoutineReminder).toHaveBeenCalledTimes(1)
+    // Evening now uses Web Push (sendWebPushOnly) instead of sendRoutineReminder
+    expect(mockSendPushNotification).toHaveBeenCalled()
     expect(body.sent).toBe(1)
+    expect(body.webPushUsed).toBe(1)
   })
 
   it('should not send evening reminder when all records are filled', async () => {
@@ -418,29 +422,50 @@ describe('GET /api/cron/daily', () => {
     expect(body.sent).toBe(0)
   })
 
-  it('should handle failed sendRoutineReminder in evening batch', async () => {
+  it('should handle failed LINE weight push in evening batch', async () => {
     mockDateForHour(22)
     const eveningClient = {
       id: 'client-1',
       name: 'Alice',
       line_user_id: 'U001',
-      body_composition_enabled: false,
-      nutrition_enabled: true,
+      body_composition_enabled: true,
+      nutrition_enabled: false,
       training_enabled: false,
-      wellness_enabled: true,
+      wellness_enabled: false,
     }
     mockFromResults['clients'] = { data: [eveningClient], error: null }
     mockFromResults['daily_wellness'] = { data: [], error: null }
     mockFromResults['nutrition_logs'] = { data: [], error: null }
     mockFromResults['training_logs'] = { data: [], error: null }
+    mockFromResults['push_subscriptions'] = { data: [], error: null }
 
-    mockSendRoutineReminder.mockRejectedValue(new Error('evening push failed'))
+    // Override from() to differentiate body_composition queries
+    let bcCallCount = 0
+    const originalFrom = mockSupabase.from
+    mockSupabase.from = vi.fn((table: string) => {
+      if (table === 'body_composition') {
+        bcCallCount++
+        if (bcCallCount === 1) {
+          return createMockQueryBuilder([], null) // todayWeights — empty
+        } else {
+          return createMockQueryBuilder([{ client_id: 'client-1', weight: 70 }], null)
+        }
+      }
+      const result = mockFromResults[table] || { data: null, error: null }
+      return createMockQueryBuilder(result.data, result.error)
+    })
+
+    mockPushMessage.mockRejectedValue(new Error('evening push failed'))
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
     const body = await res.json()
 
-    expect(body.errors).toContain('Alice: evening push failed')
+    // Evening now uses pushMessage for LINE weight reminders; errors are captured
+    expect(body.errors).toContain('LINE weight push Alice: evening push failed')
+
+    // Restore original from
+    mockSupabase.from = originalFrom
   })
 
   it('should count LINE push method in evening reminders', async () => {
@@ -449,8 +474,8 @@ describe('GET /api/cron/daily', () => {
       id: 'client-1',
       name: 'Alice',
       line_user_id: 'U001',
-      body_composition_enabled: false,
-      nutrition_enabled: true,
+      body_composition_enabled: true,
+      nutrition_enabled: false,
       training_enabled: false,
       wellness_enabled: false,
     }
@@ -458,15 +483,41 @@ describe('GET /api/cron/daily', () => {
     mockFromResults['daily_wellness'] = { data: [], error: null }
     mockFromResults['nutrition_logs'] = { data: [], error: null }
     mockFromResults['training_logs'] = { data: [], error: null }
+    mockFromResults['push_subscriptions'] = { data: [], error: null }
 
-    mockSendRoutineReminder.mockResolvedValue({ success: true, method: 'line_push' })
+    // Override from() to return different body_composition data per call:
+    // 1st call: todayWeights (empty — no weight today)
+    // 2nd call: recentRecords (active in last 7 days)
+    // 3rd call: latestWeights (has a previous weight)
+    let bcCallCount = 0
+    const originalFrom = mockSupabase.from
+    mockSupabase.from = vi.fn((table: string) => {
+      if (table === 'body_composition') {
+        bcCallCount++
+        if (bcCallCount === 1) {
+          // todayWeights — empty (no weight logged today)
+          return createMockQueryBuilder([], null)
+        } else {
+          // recentRecords + latestWeights — has data
+          return createMockQueryBuilder([{ client_id: 'client-1', weight: 70 }], null)
+        }
+      }
+      const result = mockFromResults[table] || { data: null, error: null }
+      return createMockQueryBuilder(result.data, result.error)
+    })
+
+    mockPushMessage.mockResolvedValue(undefined)
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
     const body = await res.json()
 
+    // Evening LINE push is now used only for weight reminders to active users
     expect(body.linePushUsed).toBe(1)
     expect(body.webPushUsed).toBe(0)
+
+    // Restore original from
+    mockSupabase.from = originalFrom
   })
 
   // ── Smart Alerts (evening, lines 253-326) ──

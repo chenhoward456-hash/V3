@@ -570,11 +570,13 @@ describe('POST /api/line/webhook', () => {
       const req = makeWebhookRequest({ events: [textEvent('查看方案')] })
       const res = await POST(req)
       expect(res.status).toBe(200)
+      // Now sends a flex message (bubble card) with a Notion link
       expect(mockReplyMessage).toHaveBeenCalledWith(
         'reply-token',
         expect.arrayContaining([
           expect.objectContaining({
-            text: expect.stringContaining('線上方案介紹'),
+            type: 'flex',
+            altText: expect.stringContaining('方案介紹'),
           }),
         ]),
       )

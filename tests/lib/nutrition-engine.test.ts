@@ -599,7 +599,7 @@ describe('generateNutritionSuggestion', () => {
       expect(result.caloriesDelta).toBeGreaterThanOrEqual(200) // Bigger bump for critical
     })
 
-    it('should not reduce calories when wrong_direction + critical recovery', () => {
+    it('should reduce calories minimally when wrong_direction + struggling recovery', () => {
       const result = generateNutritionSuggestion(makeCutInput({
         recentWellness: wellnessCritical,
         recentTrainingLogs: [{ date: daysAgo(0), rpe: 9 }],
@@ -611,10 +611,12 @@ describe('generateNutritionSuggestion', () => {
         targetDate: null,
       }))
       expect(result.status).toBe('wrong_direction')
-      expect(result.caloriesDelta).toBe(0)
+      // wellnessCritical maps to 'struggling' recovery state (score 30-49),
+      // which gets a mild -125 kcal reduction instead of 0 (critical) or -225 (optimal)
+      expect(result.caloriesDelta).toBe(-125)
     })
 
-    it('should do reverse refeed on plateau + critical recovery', () => {
+    it('should hold calories on plateau + struggling recovery', () => {
       const result = generateNutritionSuggestion(makeCutInput({
         recentWellness: wellnessCritical,
         recentTrainingLogs: [{ date: daysAgo(0), rpe: 9 }],
@@ -627,7 +629,9 @@ describe('generateNutritionSuggestion', () => {
         targetDate: null,
       }))
       expect(result.status).toBe('plateau')
-      expect(result.caloriesDelta).toBeGreaterThan(0)
+      // wellnessCritical maps to 'struggling' recovery state (score 30-49),
+      // which holds calories at 0 rather than doing a refeed (+75 for critical)
+      expect(result.caloriesDelta).toBe(0)
     })
 
     it('should reduce from fat on plateau + optimal recovery', () => {

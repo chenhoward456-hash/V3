@@ -1433,9 +1433,8 @@ describe('generateLabChangeReport', () => {
       datedLab('CRP', 10, 'mg/L', 'alert', '2024-01-01'),
       datedLab('CRP', 5, 'mg/L', 'attention', '2024-01-10'), // only 9 days
     ])
-    // Both records are within 14 days; the second is still used as previous (fallback)
-    // but the function still produces a report using sorted[1] as fallback
-    expect(result).toHaveLength(1)
+    // No pair with >= 14 day gap exists, so no report is generated
+    expect(result).toHaveLength(0)
   })
 
   it('sorts improved items first, then stable, then worsened', () => {

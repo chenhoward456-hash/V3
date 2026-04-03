@@ -50,6 +50,7 @@ vi.mock('@/lib/line', () => ({
   setDefaultRichMenu: mockSetDefaultRichMenu,
   listRichMenus: mockListRichMenus,
   deleteRichMenu: mockDeleteRichMenu,
+  linkRichMenuToUser: vi.fn(),
 }))
 
 vi.mock('sharp', () => ({
@@ -58,6 +59,17 @@ vi.mock('sharp', () => ({
 
 vi.mock('@/lib/logger', () => ({
   createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() }),
+}))
+
+vi.mock('@/lib/supabase', () => ({
+  createServiceSupabase: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      not: vi.fn().mockReturnThis(),
+      then: vi.fn((resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)),
+    })),
+  })),
 }))
 
 import { GET, POST } from '@/app/api/line/richmenu/route'
