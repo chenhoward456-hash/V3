@@ -21,6 +21,7 @@ export default function ClientOverview() {
   const { clientId } = useParams()
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [copiedTraining, setCopiedTraining] = useState(false)
   const [dateRange, setDateRange] = useState<'7' | '14' | '30'>('14')
   const [suggestion, setSuggestion] = useState<any>(null)
   const [suggestionMeta, setSuggestionMeta] = useState<any>(null)
@@ -809,6 +810,106 @@ export default function ClientOverview() {
     }
   }, [trainingLogs, wellness, supplements, supplementLogs, bodyData, nutritionLogs, dateRange])
 
+  // ===== 訓練端週摘要（給 CONQUER / 外部教練團隊） =====
+  const generateTrainingSummary = () => {
+    const wr = weeklyReport
+    const km = keyMetrics
+    const lines: string[] = []
+
+    // Header
+    lines.push(`【訓練端週摘要】${wr.weekLabel}`)
+    lines.push(`學員：${client.name}${isCompetitionMode(client.client_mode) ? ` ｜ ${PHASE_LABELS[client.prep_phase || ''] || ''}` : ''}${
+      client.competition_date ? ` ｜ 距比賽 ${daysUntilDateTW(client.competition_date)} 天` : ''
+    }`)
+    lines.push('')
+
+    // 體重
+    if (km.latestWeight) {
+      let weightLine = `■ 體重：${km.latestWeight} kg`
+      if (km.weightChange) weightLine += `（週 ${Number(km.weightChange) > 0 ? '+' : ''}${km.weightChange} kg`
+      if (km.weightChangePct) weightLine += ` / ${Number(km.weightChangePct) > 0 ? '+' : ''}${km.weightChangePct}%`
+      if (km.weightChange) weightLine += '）'
+      if (km.weightTrend) weightLine += ` 趨勢${km.weightTrend === 'up' ? '↑' : km.weightTrend === 'down' ? '↓' : '→'}`
+      lines.push(weightLine)
+    }
+
+    // 體脂
+    const latestBf = bodyData.filter(b => b.body_fat != null).slice(-1)[0]
+    if (latestBf) {
+      lines.push(`■ 體脂：${latestBf.body_fat}%（量測 ${latestBf.date}）`)
+    }
+    lines.push('')
+
+    // 營養達標率
+    lines.push('■ 營養達標率：')
+    if (km.avgProtein != null && km.proteinTarget) {
+      const pctDiff = km.proteinDeltaPct || 0
+      lines.push(`  蛋白質：${km.proteinHitRate}%（平均 ${km.avgProtein}g / 目標 ${km.proteinTarget}g，偏差 ${pctDiff > 0 ? '+' : ''}${pctDiff}%）${pctDiff <= -15 ? ' ⚠️' : ''}`)
+    }
+    if (wr.avgCalories != null && client.calories_target) {
+      const calDiff = Math.round(((wr.avgCalories - client.calories_target) / client.calories_target) * 100)
+      lines.push(`  熱量：${calDiff > 0 ? '+' : ''}${calDiff}%（${wr.avgCalories} / ${client.calories_target} kcal）`)
+    }
+    if (wr.avgCarbs != null && client.carbs_target) {
+      const carbDiff = Math.round(((wr.avgCarbs - client.carbs_target) / client.carbs_target) * 100)
+      lines.push(`  碳水：${carbDiff > 0 ? '+' : ''}${carbDiff}%（${wr.avgCarbs} / ${client.carbs_target}g）`)
+    }
+    if (wr.avgFat != null && client.fat_target) {
+      const fatDiff = Math.round(((wr.avgFat - client.fat_target) / client.fat_target) * 100)
+      lines.push(`  脂肪：${fatDiff > 0 ? '+' : ''}${fatDiff}%（${wr.avgFat} / ${client.fat_target}g）`)
+    }
+    lines.push('')
+
+    // 恢復指標
+    lines.push('■ 恢復指標：')
+    const wellParts: string[] = []
+    if (wr.avgSleep != null) wellParts.push(`睡眠 ${wr.avgSleep.toFixed(1)}`)
+    if (wr.avgEnergy != null) wellParts.push(`精力 ${wr.avgEnergy.toFixed(1)}`)
+    if (wr.avgMood != null) wellParts.push(`心情 ${wr.avgMood.toFixed(1)}`)
+    if (wellParts.length > 0) lines.push(`  ${wellParts.join(' / ')}`)
+    // 找隔天恢復最差的訓練類型
+    const worstRecovery = recoveryAnalysis.filter(r => r.avgEnergy !== '--').sort((a, b) => Number(a.avgEnergy) - Number(b.avgEnergy))[0]
+    if (worstRecovery && Number(worstRecovery.avgEnergy) < 4.5) {
+      lines.push(`  ${worstRecovery.type}日隔天精力最低（${worstRecovery.avgEnergy}）⚠️`)
+    }
+    lines.push('')
+
+    // 訓練概況
+    lines.push('■ 訓練概況：')
+    lines.push(`  ${dateRange}天訓練 ${wr.trainingDays} 天${wr.topTypes.length > 0 ? `（${wr.topTypes.join('、')}）` : ''}`)
+    if (wr.avgRpe) lines.push(`  平均 RPE ${wr.avgRpe}${alerts.some(a => a.includes('RPE')) ? '｜多次 RPE ≥ 9 ⚠️' : ''}`)
+    lines.push('')
+
+    // 荷爾蒙警報（從 alerts 抓）
+    const hormoneAlert = alerts.find(a => a.includes('荷爾蒙'))
+    if (hormoneAlert) {
+      lines.push('■ 荷爾蒙警報：')
+      // 列出具體數值
+      const hormoneLabNames = ['testosterone', '睪固酮', 'free_testosterone', '游離睪固酮', 'bioavailable']
+      const latestHormones = labResults.filter(l =>
+        hormoneLabNames.some(n => l.test_name.toLowerCase().includes(n))
+      ).sort((a: any, b: any) => b.date?.localeCompare(a.date || '') || 0)
+      const seen = new Set<string>()
+      for (const lab of latestHormones) {
+        if (seen.has(lab.test_name)) continue
+        seen.add(lab.test_name)
+        lines.push(`  ${lab.test_name} ${lab.value} ${lab.unit || ''}`)
+      }
+      lines.push('')
+    }
+
+    // 教練備註（從 alerts 抓重點）
+    const noteAlerts = alerts.filter(a => !a.includes('荷爾蒙'))
+    if (noteAlerts.length > 0) {
+      lines.push('■ 系統備註：')
+      for (const a of noteAlerts) {
+        lines.push(`  ${a}`)
+      }
+    }
+
+    return lines.join('\n')
+  }
+
   // ===== 需注意事項 =====
   const alerts = useMemo(() => {
     const items: string[] = []
@@ -1116,6 +1217,20 @@ export default function ClientOverview() {
                 }`}
               >
                 {copied ? '已複製 ✓' : '複製文字'}
+              </button>
+              <button
+                onClick={() => {
+                  const text = generateTrainingSummary()
+                  navigator.clipboard.writeText(text).then(() => {
+                    setCopiedTraining(true)
+                    setTimeout(() => setCopiedTraining(false), 2000)
+                  })
+                }}
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  copiedTraining ? 'bg-green-500 text-white' : 'bg-amber-500 text-white hover:bg-amber-600'
+                }`}
+              >
+                {copiedTraining ? '已複製 ✓' : '訓練端摘要'}
               </button>
             </div>
           </div>
