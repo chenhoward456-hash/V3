@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '20',
+    title: '打瘦瘦針會流失肌肉嗎？2026 年最新研究這樣說',
+    description: 'GLP-1 藥物（Ozempic、Mounjaro）減重時最多 35% 流失的是肌肉。2026 年追蹤 15,782 人的最新統合分析告訴你：阻力訓練是唯一能將肌肉流失砍半的方法。',
+    date: '2026-04-04',
+    category: '營養與恢復',
+    readTime: '8 分鐘',
+    slug: 'glp1-muscle-loss-research-2026',
+  },
+  {
     id: '19',
     title: '睡眠不夠，真的會白練？運動科學告訴你睡眠如何影響增肌效率',
     description: '訓練認真、蛋白質也吃夠了，但肌肉就是長得慢？睡眠不足會從荷爾蒙、蛋白質合成、生理時鐘三個層面削減增肌效率。附 4 個今晚就能做的改善方法。',
