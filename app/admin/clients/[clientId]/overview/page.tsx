@@ -34,6 +34,9 @@ export default function ClientOverview() {
   const [bodyData, setBodyData] = useState<any[]>([])
   const [labResults, setLabResults] = useState<any[]>([])
   const [nutritionLogs, setNutritionLogs] = useState<any[]>([])
+  const [trainingSets, setTrainingSets] = useState<any[]>([])
+  const [coachSummary, setCoachSummary] = useState<string | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
 
   useEffect(() => {
     fetchAllData()
@@ -53,6 +56,7 @@ export default function ClientOverview() {
       setBodyData(data.bodyData || [])
       setLabResults(data.labResults || [])
       setNutritionLogs(data.nutritionLogs || [])
+      setTrainingSets(data.trainingSets || [])
       // 同時抓取營養分析
       if (data.client?.goal_type && data.client?.nutrition_enabled) {
         fetch(`/api/nutrition-suggestions?clientId=${data.client.id}`)
@@ -97,6 +101,22 @@ export default function ClientOverview() {
       console.error('套用建議失敗:', err)
     } finally {
       setApplyingsuggestion(false)
+    }
+  }
+
+  const fetchCoachSummary = async () => {
+    setSummaryLoading(true)
+    setCoachSummary(null)
+    try {
+      const res = await fetch(`/api/admin/coach-summary?clientId=${clientId}`)
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      setCoachSummary(data.summary)
+    } catch (err) {
+      console.error('生成教練建議失敗:', err)
+      setCoachSummary('生成失敗，請稍後再試。')
+    } finally {
+      setSummaryLoading(false)
     }
   }
 
@@ -332,6 +352,118 @@ export default function ClientOverview() {
       }
     }).sort((a, b) => b.count - a.count)
   }, [trainingLogs, wellness])
+
+  // ===== E1RM 趨勢（主項力量）=====
+  const e1rmTrend = useMemo(() => {
+    if (!trainingSets.length) return { exercises: [], chartData: [], changes: {} as Record<string, string> }
+    const mainLiftNames = ['深蹲', '臥推', '硬舉', '肩推']
+    const mainSets = trainingSets.filter(
+      (s: any) => s.is_main_lift || mainLiftNames.some(n => s.exercise_name?.includes(n))
+    )
+    if (!mainSets.length) return { exercises: [], chartData: [], changes: {} as Record<string, string> }
+
+    // Group by exercise and date, pick best E1RM per exercise per date
+    const byExercise: Record<string, Record<string, number>> = {}
+    for (const s of mainSets) {
+      if (!s.weight || !s.reps || s.reps > 10 || s.reps < 1) continue
+      const e1rm = s.weight * (36 / (37 - s.reps))
+      const name = s.exercise_name
+      if (!byExercise[name]) byExercise[name] = {}
+      if (!byExercise[name][s.date] || e1rm > byExercise[name][s.date]) {
+        byExercise[name][s.date] = Math.round(e1rm * 10) / 10
+      }
+    }
+
+    const exercises = Object.keys(byExercise)
+    if (!exercises.length) return { exercises: [], chartData: [], changes: {} as Record<string, string> }
+
+    // Collect all dates
+    const allDates = new Set<string>()
+    for (const ex of exercises) {
+      for (const d of Object.keys(byExercise[ex])) allDates.add(d)
+    }
+    const sortedDates = Array.from(allDates).sort()
+
+    const chartData = sortedDates.map(date => {
+      const point: any = { date: new Date(date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }) }
+      for (const ex of exercises) {
+        if (byExercise[ex][date]) point[ex] = byExercise[ex][date]
+      }
+      return point
+    })
+
+    // % change from first to last
+    const changes: Record<string, string> = {}
+    for (const ex of exercises) {
+      const dates = Object.keys(byExercise[ex]).sort()
+      if (dates.length >= 2) {
+        const first = byExercise[ex][dates[0]]
+        const last = byExercise[ex][dates[dates.length - 1]]
+        const pct = ((last - first) / first) * 100
+        changes[ex] = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%'
+      }
+    }
+
+    return { exercises, chartData, changes }
+  }, [trainingSets])
+
+  // ===== 每週訓練量（Tonnage）趨勢 =====
+  const weeklyTonnage = useMemo(() => {
+    if (!trainingSets.length) return []
+    // Group sets into ISO weeks (Mon-Sun)
+    const weekMap: Record<string, number> = {}
+    for (const s of trainingSets) {
+      if (!s.weight || !s.reps) continue
+      const d = new Date(s.date)
+      const day = d.getDay()
+      const diff = day === 0 ? 6 : day - 1
+      const monday = new Date(d)
+      monday.setDate(d.getDate() - diff)
+      const key = monday.toISOString().split('T')[0]
+      weekMap[key] = (weekMap[key] || 0) + (s.weight * s.reps)
+    }
+    const sorted = Object.entries(weekMap).sort(([a], [b]) => a.localeCompare(b))
+    return sorted.map(([weekStart, tonnage], i) => {
+      const prevTonnage = i > 0 ? sorted[i - 1][1] : tonnage
+      return {
+        week: new Date(weekStart).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
+        訓練量: Math.round(tonnage),
+        increased: tonnage >= prevTonnage,
+      }
+    })
+  }, [trainingSets])
+
+  // ===== 每肌群週組數 =====
+  const muscleGroupSets = useMemo(() => {
+    if (!trainingSets.length) return []
+    // Get current week (Mon-Sun)
+    const now = new Date()
+    const day = now.getDay()
+    const diff = day === 0 ? 6 : day - 1
+    const monday = new Date(now)
+    monday.setDate(now.getDate() - diff)
+    const mondayStr = monday.toISOString().split('T')[0]
+    const todayStr = now.toISOString().split('T')[0]
+
+    // Count distinct sets per muscle group this week
+    const groupCounts: Record<string, number> = {}
+    for (const s of trainingSets) {
+      if (!s.muscle_group || s.date < mondayStr || s.date > todayStr) continue
+      groupCounts[s.muscle_group] = (groupCounts[s.muscle_group] || 0) + 1
+    }
+
+    const labelMap: Record<string, string> = {
+      chest: '胸', back: '背', shoulders: '肩', legs: '腿', arms: '手臂', core: '核心',
+      glutes: '臀', hamstrings: '腿後', quads: '腿前', calves: '小腿',
+    }
+
+    return Object.entries(groupCounts)
+      .map(([group, sets]) => ({
+        muscle: labelMap[group] || group,
+        組數: sets,
+      }))
+      .sort((a, b) => b.組數 - a.組數)
+  }, [trainingSets])
 
   // ===== 飲食合規趨勢 =====
   const nutritionTrend = useMemo(() => {
@@ -878,6 +1010,44 @@ export default function ClientOverview() {
         </div>
 
         {/* 原有警示區塊已整合到頂部摘要 */}
+
+        {/* ===== AI 教練建議 ===== */}
+        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🤖</span>
+              <h3 className="text-sm font-semibold text-indigo-900">本週建議調整</h3>
+            </div>
+            <button
+              onClick={fetchCoachSummary}
+              disabled={summaryLoading}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                summaryLoading
+                  ? 'bg-indigo-300 text-white cursor-not-allowed'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+            >
+              {summaryLoading ? '生成中...' : coachSummary ? '重新生成' : '生成教練建議'}
+            </button>
+          </div>
+
+          {summaryLoading && (
+            <div className="flex items-center gap-3 py-4">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+              <p className="text-sm text-indigo-700">AI 正在分析學員數據...</p>
+            </div>
+          )}
+
+          {!summaryLoading && coachSummary && (
+            <div className="bg-white/70 rounded-xl p-4">
+              <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{coachSummary}</div>
+            </div>
+          )}
+
+          {!summaryLoading && !coachSummary && (
+            <p className="text-xs text-indigo-600/70">點擊「生成教練建議」，AI 將根據近 14 天數據產出具體建議。</p>
+          )}
+        </div>
 
         {/* ===== 本週報告 ===== */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
@@ -1643,6 +1813,94 @@ export default function ClientOverview() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* ===== E1RM 趨勢（主項力量）===== */}
+        {client.training_enabled && e1rmTrend.exercises.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">💪 主項力量趨勢（E1RM）</h3>
+            <div className="flex flex-wrap gap-3 mb-3">
+              {e1rmTrend.exercises.map((ex: string) => {
+                const change = e1rmTrend.changes[ex]
+                return (
+                  <span key={ex} className="text-xs text-gray-600">
+                    {ex}
+                    {change && (
+                      <span className={`ml-1 font-semibold ${change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                        {change}
+                      </span>
+                    )}
+                  </span>
+                )
+              })}
+            </div>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={e1rmTrend.chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" fontSize={11} />
+                <YAxis fontSize={11} domain={['auto', 'auto']} unit="kg" />
+                <Tooltip formatter={(v: any) => [`${v} kg`, '']} />
+                <Legend />
+                {e1rmTrend.exercises.map((ex: string, i: number) => {
+                  const colors: Record<string, string> = { '深蹲': '#3b82f6', '臥推': '#ef4444', '硬舉': '#22c55e', '肩推': '#f59e0b' }
+                  const fallbackColors = ['#6366f1', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6']
+                  const color = Object.entries(colors).find(([k]) => ex.includes(k))?.[1] || fallbackColors[i % fallbackColors.length]
+                  return (
+                    <Line
+                      key={ex}
+                      type="monotone"
+                      dataKey={ex}
+                      stroke={color}
+                      strokeWidth={2}
+                      dot={{ r: 3, fill: color }}
+                      connectNulls
+                    />
+                  )
+                })}
+              </LineChart>
+            </ResponsiveContainer>
+            <p className="text-[10px] text-gray-400 mt-2">Brzycki E1RM = weight x 36/(37-reps)，僅取 reps &le; 10 的組數</p>
+          </div>
+        )}
+
+        {/* ===== 每週訓練量趨勢 ===== */}
+        {client.training_enabled && weeklyTonnage.length >= 2 && (
+          <div className="bg-white rounded-2xl shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">📈 每週訓練量趨勢</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={weeklyTonnage}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="week" fontSize={11} />
+                <YAxis fontSize={11} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                <Tooltip formatter={(v: any) => [`${Number(v).toLocaleString()} kg`, '訓練量']} />
+                <Bar dataKey="訓練量" radius={[4, 4, 0, 0]}>
+                  {weeklyTonnage.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.increased ? '#22c55e' : '#ef4444'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <p className="text-[10px] text-gray-400 mt-2">訓練量 = 所有組數的 weight x reps 加總（綠色 = 較上週增加，紅色 = 減少）</p>
+          </div>
+        )}
+
+        {/* ===== 每肌群週組數 ===== */}
+        {client.training_enabled && muscleGroupSets.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">🎯 每肌群週組數</h3>
+            <ResponsiveContainer width="100%" height={Math.max(180, muscleGroupSets.length * 36)}>
+              <BarChart data={muscleGroupSets} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" fontSize={11} domain={[0, 'auto']} />
+                <YAxis type="category" dataKey="muscle" fontSize={12} width={45} />
+                <Tooltip formatter={(v: any) => [`${v} 組`, '']} />
+                <ReferenceLine x={10} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: 'MEV', position: 'top', fontSize: 10, fill: '#f59e0b' }} />
+                <ReferenceLine x={20} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'MRV', position: 'top', fontSize: 10, fill: '#ef4444' }} />
+                <Bar dataKey="組數" fill="#6366f1" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <p className="text-[10px] text-gray-400 mt-2">本週（週一至今）各肌群組數，MEV=最小有效量（10組）、MRV=最大恢復量（20組）</p>
           </div>
         )}
 
