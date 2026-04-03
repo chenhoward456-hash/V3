@@ -145,7 +145,19 @@ export default function ClientOverview() {
     const monthNutritionCompliant = monthNutrition.filter(l => l.compliant).length
     const monthNutritionRate = monthNutrition.length > 0 ? Math.round((monthNutritionCompliant / monthNutrition.length) * 100) : null
 
-    return { weekCompliance, monthCompliance, weekTrainingDays, avgEnergy, weightChange, latestWeight: recentBody.length > 0 ? recentBody[recentBody.length - 1].weight : null, weekNutritionRate, monthNutritionRate }
+    // 蛋白質達標率 + 平均偏差
+    const proteinTarget = client?.protein_target
+    const weekNutritionWithProtein = weekNutrition.filter(l => l.protein_grams != null && proteinTarget)
+    const proteinHitDays = weekNutritionWithProtein.filter(l => l.protein_grams >= proteinTarget * 0.9).length
+    const proteinHitRate = weekNutritionWithProtein.length > 0 ? Math.round((proteinHitDays / weekNutritionWithProtein.length) * 100) : null
+    const avgProtein = weekNutritionWithProtein.length > 0 ? Math.round(weekNutritionWithProtein.reduce((s, l) => s + l.protein_grams, 0) / weekNutritionWithProtein.length) : null
+    const proteinDeltaPct = avgProtein && proteinTarget ? Math.round(((avgProtein - proteinTarget) / proteinTarget) * 100) : null
+
+    // 體重變化 %BW
+    const latestWeight = recentBody.length > 0 ? recentBody[recentBody.length - 1].weight : null
+    const weightChangePct = latestWeight && weightChange ? ((Number(weightChange) / latestWeight) * 100).toFixed(1) : null
+
+    return { weekCompliance, monthCompliance, weekTrainingDays, avgEnergy, weightChange, weightChangePct, latestWeight, weekNutritionRate, monthNutritionRate, proteinHitRate, avgProtein, proteinDeltaPct, proteinTarget }
   }, [supplements, supplementLogs, wellness, trainingLogs, bodyData, nutritionLogs, dateRange])
 
   // ===== 補品服從率趨勢（每日） =====
@@ -644,6 +656,39 @@ export default function ClientOverview() {
   // ===== 需注意事項 =====
   const alerts = useMemo(() => {
     const items: string[] = []
+
+    // 蛋白質嚴重不足（最高優先級）
+    if (keyMetrics.proteinDeltaPct != null && keyMetrics.proteinDeltaPct <= -20) {
+      items.push(`🥩 蛋白質嚴重不足（平均 ${keyMetrics.avgProtein}g / 目標 ${keyMetrics.proteinTarget}g，偏差 ${keyMetrics.proteinDeltaPct}%）`)
+    } else if (keyMetrics.proteinDeltaPct != null && keyMetrics.proteinDeltaPct <= -10) {
+      items.push(`🥩 蛋白質偏低（平均 ${keyMetrics.avgProtein}g / 目標 ${keyMetrics.proteinTarget}g，偏差 ${keyMetrics.proteinDeltaPct}%）`)
+    }
+
+    // 荷爾蒙變化追蹤（從血檢數據抓）
+    const hormoneAlerts: string[] = []
+    const recentLabs = labResults.filter(l => l.date)
+    const labsByName = new Map<string, any[]>()
+    for (const lab of recentLabs) {
+      const name = lab.test_name.toLowerCase()
+      if (!labsByName.has(name)) labsByName.set(name, [])
+      labsByName.get(name)!.push(lab)
+    }
+    for (const [name, labs] of labsByName) {
+      if (labs.length < 2) continue
+      const sorted = [...labs].sort((a, b) => a.date.localeCompare(b.date))
+      const oldest = sorted[0].value
+      const latest = sorted[sorted.length - 1].value
+      if (oldest <= 0) continue
+      const changePct = Math.round(((latest - oldest) / oldest) * 100)
+      if (/testosterone|睪固酮/.test(name) && changePct <= -20) {
+        const label = name.includes('free') || name.includes('游離') ? '游離睪固酮' : name.includes('bioavail') ? 'Bioavailable T' : '睪固酮'
+        hormoneAlerts.push(`${label} ${changePct}%`)
+      }
+    }
+    if (hormoneAlerts.length > 0) {
+      items.push(`🩸 荷爾蒙下滑：${hormoneAlerts.join('、')}`)
+    }
+
     if (keyMetrics.weekCompliance < 50 && supplements.length > 0) items.push(`本週補品服從率僅 ${keyMetrics.weekCompliance}%`)
     const recentWellness = wellness.slice(-7)
     const lowEnergy = recentWellness.filter(w => w.energy_level != null && w.energy_level <= 2)
@@ -656,7 +701,7 @@ export default function ClientOverview() {
       else if (diff <= 7) items.push(`回檢日期在 ${diff} 天後`)
     }
     return items
-  }, [keyMetrics, wellness, trainingLogs, supplements, client])
+  }, [keyMetrics, wellness, trainingLogs, supplements, client, labResults])
 
   const getTypeBgColor = (type: string) => {
     const colors: Record<string, string> = {
@@ -774,7 +819,7 @@ export default function ClientOverview() {
           </div>
 
           {/* 關鍵指標一排 */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-3">
             {client.supplement_enabled && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
                 <p className="text-[10px] text-gray-500">補品</p>
@@ -808,7 +853,16 @@ export default function ClientOverview() {
             {client.body_composition_enabled && keyMetrics.weightChange && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
                 <p className="text-[10px] text-gray-500">週變化</p>
-                <p className={`text-lg font-bold ${Number(keyMetrics.weightChange) > 0 ? 'text-red-500' : Number(keyMetrics.weightChange) < 0 ? 'text-green-500' : 'text-gray-500'}`}>{Number(keyMetrics.weightChange) > 0 ? '+' : ''}{keyMetrics.weightChange}</p>
+                <p className={`text-lg font-bold ${Number(keyMetrics.weightChange) > 0 ? (client.goal_type === 'bulk' ? 'text-green-500' : 'text-red-500') : Number(keyMetrics.weightChange) < 0 ? (client.goal_type === 'cut' ? 'text-green-500' : 'text-red-500') : 'text-gray-500'}`}>
+                  {Number(keyMetrics.weightChange) > 0 ? '+' : ''}{keyMetrics.weightChange}
+                  {keyMetrics.weightChangePct && <span className="text-[10px] font-normal text-gray-400 ml-0.5">({Number(keyMetrics.weightChangePct) > 0 ? '+' : ''}{keyMetrics.weightChangePct}%)</span>}
+                </p>
+              </div>
+            )}
+            {client.nutrition_enabled && keyMetrics.proteinHitRate != null && (
+              <div className="bg-white/70 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-gray-500">蛋白質達標</p>
+                <p className={`text-lg font-bold ${keyMetrics.proteinHitRate >= 80 ? 'text-green-600' : keyMetrics.proteinHitRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>{keyMetrics.proteinHitRate}%</p>
               </div>
             )}
           </div>
