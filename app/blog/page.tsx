@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '21',
+    title: '打瘦瘦針期間，阻力訓練要怎麼介入？頻率、訓練量、動作選擇完整指南',
+    description: 'GLP-1 治療期間平均流失 6 公斤肌肉。研究顯示阻力訓練可回補 +3kg 肌肉、+25% 肌力。完整指南：頻率、訓練量、動作選擇、蛋白質策略、8 週介入計畫。',
+    date: '2026-04-05',
+    category: '訓練恢復',
+    readTime: '9 分鐘',
+    slug: 'glp1-resistance-training-guide',
+  },
+  {
     id: '20',
     title: '打瘦瘦針會流失肌肉嗎？2026 年最新研究這樣說',
     description: 'GLP-1 藥物（Ozempic、Mounjaro）減重時最多 35% 流失的是肌肉。2026 年追蹤 15,782 人的最新統合分析告訴你：阻力訓練是唯一能將肌肉流失砍半的方法。',
