@@ -32,11 +32,16 @@ export default function DailyNutritionTarget({
     ? (effectiveIsTraining ? carbsTrainingDay : carbsRestDay)
     : carbsTarget
 
+  // 根據當日碳水重算熱量
+  const effectiveCalories = (effectiveCarbsTarget && proteinTarget && fatTarget)
+    ? Math.round(proteinTarget * 4 + effectiveCarbsTarget * 4 + fatTarget * 9)
+    : caloriesTarget
+
   // 沒有任何目標值時不顯示
-  if (!caloriesTarget && !proteinTarget && !effectiveCarbsTarget && !fatTarget) return null
+  if (!effectiveCalories && !proteinTarget && !effectiveCarbsTarget && !fatTarget) return null
 
   const items = [
-    { label: '熱量', value: caloriesTarget, unit: 'kcal', emoji: '🔥' },
+    { label: '熱量', value: effectiveCalories, unit: 'kcal', emoji: '🔥' },
     { label: '蛋白質', value: proteinTarget, unit: 'g', emoji: '🥩' },
     { label: '碳水', value: effectiveCarbsTarget, unit: 'g', emoji: '🍚' },
     { label: '脂肪', value: fatTarget, unit: 'g', emoji: '🥑' },
