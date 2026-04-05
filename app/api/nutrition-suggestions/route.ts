@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
       currentFat: client.fat_target ?? null,
       currentCarbsTrainingDay: client.carbs_training_day ?? null,
       currentCarbsRestDay: client.carbs_rest_day ?? null,
-      carbsCyclingEnabled: !!(client.carbs_training_day && client.carbs_rest_day),
+      carbsCyclingEnabled: !!(client.carbs_training_day && client.carbs_rest_day) || (isCompetitionMode(client.client_mode) && client.goal_type === 'cut'),
       weeklyWeights,
       nutritionCompliance,
       avgDailyCalories,
