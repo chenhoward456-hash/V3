@@ -172,7 +172,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
   const addExercise = (name: string = '', muscleGroup: string = '') => {
     const nextSet = detailedSets.length > 0 ? Math.max(...detailedSets.map(s => s.set_number)) + 1 : 1
-    setDetailedSets(prev => [...prev, { exercise_name: name, muscle_group: muscleGroup, set_number: nextSet, num_sets: 4, weight: null, reps: null, rpe: null, is_main_lift: false }])
+    setDetailedSets(prev => [...prev, { exercise_name: name, muscle_group: muscleGroup, set_number: nextSet, num_sets: 3, weight: null, reps: null, rpe: null, is_main_lift: false }])
   }
 
   const updateSet = (index: number, field: keyof ExerciseSet, value: any) => {
