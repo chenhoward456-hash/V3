@@ -140,11 +140,13 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           rpe: s.rpe,
           is_main_lift: s.is_main_lift || false,
         }))
+        // API 回傳 lastSameType: { date, sets } 物件，取 .sets 陣列
+        const prevSets = data.data?.lastSameType?.sets || []
         if (todaySets.length > 0) {
           setDetailedSets(todaySets)
-        } else if (data.data?.lastSameType?.length > 0) {
+        } else if (prevSets.length > 0) {
           // 帶入上次同類型的數據作為預設
-          setDetailedSets(data.data.lastSameType.map((s: any) => ({
+          setDetailedSets(prevSets.map((s: any) => ({
             exercise_name: s.exercise_name,
             muscle_group: s.muscle_group || '',
             set_number: s.set_number,
@@ -154,7 +156,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
             is_main_lift: s.is_main_lift || false,
           })))
         }
-        setLastTypeSets((data.data?.lastSameType || []).map((s: any) => ({
+        setLastTypeSets(prevSets.map((s: any) => ({
           exercise_name: s.exercise_name,
           muscle_group: s.muscle_group || '',
           set_number: s.set_number,
