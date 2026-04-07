@@ -51,6 +51,25 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
 
   const today = date || getLocalDateStr()
 
+  // 「跟昨天一樣」：找最近一天有記錄的飲食
+  const lastNutrition = useMemo(() => {
+    if (!nutritionLogs?.length) return null
+    return nutritionLogs
+      .filter((l: any) => l.date < today && (l.protein_grams != null || l.carbs_grams != null))
+      .sort((a: any, b: any) => b.date.localeCompare(a.date))[0] || null
+  }, [nutritionLogs, today])
+
+  const copyLastNutrition = () => {
+    if (!lastNutrition) return
+    if (lastNutrition.protein_grams != null) setProteinInput(String(lastNutrition.protein_grams))
+    if (lastNutrition.water_ml != null) setWaterInput(String(lastNutrition.water_ml))
+    if (lastNutrition.carbs_grams != null) setCarbsInput(String(lastNutrition.carbs_grams))
+    if (lastNutrition.fat_grams != null) setFatInput(String(lastNutrition.fat_grams))
+    if (lastNutrition.sodium_mg != null) setSodiumInput(String(lastNutrition.sodium_mg))
+    if (lastNutrition.compliant != null) setCompliant(lastNutrition.compliant)
+    showToast('已帶入上次飲食紀錄', 'success')
+  }
+
   // 當 todayNutrition 變動時同步表單狀態（切換日期）
   useEffect(() => {
     setNote(todayNutrition?.note || '')
@@ -226,7 +245,17 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-gray-900">🍽️ 飲食紀錄</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-gray-900">🍽️ 飲食紀錄</h2>
+          {!hasRecorded && lastNutrition && (
+            <button
+              onClick={copyLastNutrition}
+              className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full hover:bg-blue-100 transition-colors"
+            >
+              跟昨天一樣
+            </button>
+          )}
+        </div>
         {hasRecorded && (
           <div className="flex items-center gap-1.5">
             {/* 手動回報：用戶主觀感受 */}

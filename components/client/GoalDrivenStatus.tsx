@@ -232,11 +232,14 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
   const isAheadOfSchedule = data.statusLabel === '進度超前'
   const safetyLabels: Record<string, string> = { normal: '安全範圍', aggressive: '積極模式', extreme: '極限模式' }
 
-  // 碳循環：根據訓練日/休息日顯示不同碳水
+  // 碳循環：根據訓練日/休息日顯示不同碳水 + 重算熱量
   const hasCarbCycling = data.suggestedCarbsTrainingDay != null && data.suggestedCarbsRestDay != null
   const todayCarbs = hasCarbCycling
     ? (isTrainingDay ? data.suggestedCarbsTrainingDay : data.suggestedCarbsRestDay)
     : data.suggestedCarbs
+  const todayCalories = (todayCarbs && data.suggestedProtein && data.suggestedFat)
+    ? Math.round(data.suggestedProtein * 4 + todayCarbs * 4 + data.suggestedFat * 9)
+    : data.suggestedCalories
 
   return (
     <>
@@ -366,7 +369,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         </div>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { label: '熱量', value: data.suggestedCalories, unit: 'kcal', emoji: '🔥' },
+            { label: '熱量', value: todayCalories, unit: 'kcal', emoji: '🔥' },
             { label: '蛋白質', value: data.suggestedProtein, unit: 'g', emoji: '🥩' },
             { label: '碳水', value: todayCarbs, unit: 'g', emoji: '🍚' },
             { label: '脂肪', value: data.suggestedFat, unit: 'g', emoji: '🥑' },
