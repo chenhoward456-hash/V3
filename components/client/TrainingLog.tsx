@@ -110,6 +110,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     exercise_name: string
     muscle_group: string
     set_number: number
+    num_sets: number  // 該重量做幾組
     weight: number | null
     reps: number | null
     rpe: number | null
@@ -131,40 +132,36 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         const res = await fetch(`/api/training-sets?${params}`)
         if (!res.ok) return
         const data = await res.json()
-        const todaySets = (data.data?.sets || []).map((s: any) => ({
-          exercise_name: s.exercise_name,
-          muscle_group: s.muscle_group || '',
-          set_number: s.set_number,
-          weight: s.weight,
-          reps: s.reps,
-          rpe: s.rpe,
-          is_main_lift: s.is_main_lift || false,
-        }))
-        // API 回傳 lastSameType: { date, sets } 物件，取 .sets 陣列
-        const prevSets = data.data?.lastSameType?.sets || []
+        // 從 DB 的多筆 rows 合併成每個動作一行 + num_sets
+        const groupSets = (rows: any[]) => {
+          const grouped: Record<string, ExerciseSet> = {}
+          for (const s of rows) {
+            const key = s.exercise_name
+            if (!grouped[key]) {
+              grouped[key] = {
+                exercise_name: s.exercise_name,
+                muscle_group: s.muscle_group || '',
+                set_number: s.set_number,
+                num_sets: 1,
+                weight: s.weight,
+                reps: s.reps,
+                rpe: s.rpe,
+                is_main_lift: s.is_main_lift || false,
+              }
+            } else {
+              grouped[key].num_sets++
+            }
+          }
+          return Object.values(grouped)
+        }
+        const todaySets = groupSets(data.data?.sets || [])
+        const prevSets = groupSets(data.data?.lastSameType?.sets || [])
         if (todaySets.length > 0) {
           setDetailedSets(todaySets)
         } else if (prevSets.length > 0) {
-          // 帶入上次同類型的數據作為預設
-          setDetailedSets(prevSets.map((s: any) => ({
-            exercise_name: s.exercise_name,
-            muscle_group: s.muscle_group || '',
-            set_number: s.set_number,
-            weight: s.weight,
-            reps: s.reps,
-            rpe: s.rpe,
-            is_main_lift: s.is_main_lift || false,
-          })))
+          setDetailedSets(prevSets.map(s => ({ ...s, rpe: null })))
         }
-        setLastTypeSets(prevSets.map((s: any) => ({
-          exercise_name: s.exercise_name,
-          muscle_group: s.muscle_group || '',
-          set_number: s.set_number,
-          weight: s.weight,
-          reps: s.reps,
-          rpe: null,
-          is_main_lift: s.is_main_lift || false,
-        })))
+        setLastTypeSets(prevSets.map(s => ({ ...s, rpe: null })))
       } catch { /* silent */ }
     }
     loadSets()
@@ -175,7 +172,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
   const addExercise = (name: string = '', muscleGroup: string = '') => {
     const nextSet = detailedSets.length > 0 ? Math.max(...detailedSets.map(s => s.set_number)) + 1 : 1
-    setDetailedSets(prev => [...prev, { exercise_name: name, muscle_group: muscleGroup, set_number: nextSet, weight: null, reps: null, rpe: null, is_main_lift: false }])
+    setDetailedSets(prev => [...prev, { exercise_name: name, muscle_group: muscleGroup, set_number: nextSet, num_sets: 4, weight: null, reps: null, rpe: null, is_main_lift: false }])
   }
 
   const updateSet = (index: number, field: keyof ExerciseSet, value: any) => {
@@ -188,7 +185,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
   const duplicateSet = (index: number) => {
     const src = detailedSets[index]
-    setDetailedSets(prev => [...prev.slice(0, index + 1), { ...src, set_number: src.set_number + 1 }, ...prev.slice(index + 1)])
+    setDetailedSets(prev => [...prev.slice(0, index + 1), { ...src, set_number: src.set_number + 1, num_sets: 4 }, ...prev.slice(index + 1)])
   }
 
   useEffect(() => {
@@ -298,15 +295,18 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             clientId, date: today,
-            sets: detailedSets.filter(s => s.exercise_name.trim()).map((s, i) => ({
-              exercise_name: s.exercise_name.trim(),
-              muscle_group: s.muscle_group || null,
-              set_number: i + 1,
-              weight: s.weight,
-              reps: s.reps,
-              rpe: s.rpe,
-              is_main_lift: s.is_main_lift,
-            })),
+            sets: detailedSets.filter(s => s.exercise_name.trim()).flatMap((s) => {
+              const count = Math.max(1, s.num_sets || 1)
+              return Array.from({ length: count }, (_, j) => ({
+                exercise_name: s.exercise_name.trim(),
+                muscle_group: s.muscle_group || null,
+                set_number: j + 1,
+                weight: s.weight,
+                reps: s.reps,
+                rpe: s.rpe,
+                is_main_lift: s.is_main_lift,
+              }))
+            }),
           }),
         }).catch(() => {})
       }
@@ -875,7 +875,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                         const first = sets[0]
                         return (
                           <p key={name} className="text-[11px] text-blue-600">
-                            {name}: {first.weight}kg x {first.reps} x {sets.length}組
+                            {name}: {first.weight}kg x {first.reps} x {first.num_sets || 1}組
                           </p>
                         )
                       })}
@@ -906,7 +906,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                         <button onClick={() => duplicateSet(i)} className="text-gray-400 hover:text-blue-500 text-xs" title="複製這組">+</button>
                         <button onClick={() => removeSet(i)} className="text-gray-400 hover:text-red-500 text-xs" title="刪除">x</button>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-4 gap-2">
                         <div>
                           <label className="text-[10px] text-gray-400 block">重量(kg)</label>
                           <input
@@ -931,6 +931,19 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                           />
                         </div>
                         <div>
+                          <label className="text-[10px] text-gray-400 block">組數</label>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            min="1"
+                            max="20"
+                            value={set.num_sets || ''}
+                            onChange={(e) => updateSet(i, 'num_sets', e.target.value ? Number(e.target.value) : 1)}
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            placeholder="4"
+                          />
+                        </div>
+                        <div>
                           <label className="text-[10px] text-gray-400 block">RPE</label>
                           <input
                             type="number"
@@ -945,7 +958,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                         </div>
                       </div>
                       {prevSame && (
-                        <p className="text-[10px] text-gray-400">上次：{prevSame.weight}kg x {prevSame.reps}</p>
+                        <p className="text-[10px] text-gray-400">上次：{prevSame.weight}kg x {prevSame.reps} x {prevSame.num_sets || 1}組</p>
                       )}
                     </div>
                   )
@@ -961,7 +974,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 {/* Tonnage 摘要 */}
                 {detailedSets.some(s => s.weight && s.reps) && (
                   <div className="bg-blue-50 rounded-lg px-3 py-2 text-xs text-blue-700">
-                    總訓練量：{Math.round(detailedSets.reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0), 0)).toLocaleString()} kg
+                    總訓練量：{Math.round(detailedSets.reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0) * (s.num_sets || 1), 0)).toLocaleString()} kg
                   </div>
                 )}
               </div>
