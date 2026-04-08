@@ -382,7 +382,8 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     await replyMessage(event.replyToken, [
       {
         type: 'text',
-        text: '請輸入你的學員代碼（8碼）來綁定帳號，例如：\n綁定 k8f3m2n5\n\n' +
+        text: '請輸入你的學員代碼來綁定帳號，例如：\n綁定 k8f3m2n5\n\n' +
+          '或直接貼上代碼就好，不用打「綁定」兩個字。\n\n' +
           '還沒有代碼？先到方案頁面加入 👇',
         quickReply: {
           items: [
@@ -425,9 +426,9 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     return
   }
 
-  // Unbound user sending bare 8-char code -> auto-bind
+  // Unbound user sending bare code -> auto-bind (4-20 碼英數字)
   if (!client) {
-    const bareCodeMatch = text.match(/^[a-zA-Z0-9_-]{8}$/)
+    const bareCodeMatch = text.match(/^[a-zA-Z0-9_-]{4,20}$/)
     if (bareCodeMatch) {
       await handleBind(event.replyToken, userId, text, supabase)
       return
@@ -788,5 +789,24 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     }
   }
 
-  // Non-command messages: no auto-reply, let coach reply manually in LINE OA backend
+  // 未綁定用戶發送無法辨識的文字 → 引導選單
+  if (!client) {
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '嗨！我是 Howard 💪\n\n看看你想做什麼 👇',
+        quickReply: {
+          items: [
+            qr('🧪 免費體態評估', '免費評估'),
+            qr('📖 健身知識文章', '免費教學'),
+            qr('💰 查看方案', '查看方案'),
+            qr('🔗 我有學員代碼', '我要綁定'),
+          ],
+        },
+      },
+    ])
+    return
+  }
+
+  // 已綁定用戶的非指令訊息：不自動回覆，讓教練在 LINE OA 後台手動回
 }
