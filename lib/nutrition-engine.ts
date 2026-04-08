@@ -847,8 +847,11 @@ function getFallbackTDEEMultiplier(activityProfile: string | undefined, isMale: 
     base = isMale ? 30 : 27   // 預設（中等活動量）
   }
   // 有訓練記錄時往上修正：每週 ≥4 天 +2，≥6 天 +3
-  if (trainingDaysPerWeek != null && trainingDaysPerWeek >= 6) base += 3
-  else if (trainingDaysPerWeek != null && trainingDaysPerWeek >= 4) base += 2
+  // 新用戶沒有訓練記錄（0 天）時，預設假設每週 3 天（避免 TDEE 被低估）
+  const effectiveTraining = (trainingDaysPerWeek == null || trainingDaysPerWeek === 0) ? 3 : trainingDaysPerWeek
+  if (effectiveTraining >= 6) base += 3
+  else if (effectiveTraining >= 4) base += 2
+  else if (effectiveTraining >= 3) base += 1
   return base
 }
 
