@@ -804,8 +804,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           </div>
         )}
 
-        {/* 主項重量追蹤（漸進式超負荷） */}
-        {(!simpleMode || showTrainingAdvanced) && !isRest && !isCardio && compoundLiftName && (
+        {/* 主項重量追蹤（展開動作明細時隱藏，避免重複填） */}
+        {(!simpleMode || showTrainingAdvanced) && !isRest && !isCardio && compoundLiftName && !showDetailedSets && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
             <p className="text-sm font-semibold text-amber-800 mb-2">🏆 主項：{compoundLiftName}</p>
             <div className="grid grid-cols-2 gap-3">
@@ -854,9 +854,9 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
             {!showDetailedSets ? (
               <button
                 onClick={() => setShowDetailedSets(true)}
-                className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                className="w-full py-3 bg-blue-50 border border-blue-200 rounded-xl text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
               >
-                + 記錄動作明細（組/次/重量）
+                📝 記錄每個動作（重量/次數/組數）
               </button>
             ) : (
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
@@ -906,7 +906,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                         <button onClick={() => duplicateSet(i)} className="text-gray-400 hover:text-blue-500 text-xs" title="複製這組">+</button>
                         <button onClick={() => removeSet(i)} className="text-gray-400 hover:text-red-500 text-xs" title="刪除">x</button>
                       </div>
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         <div>
                           <label className="text-[10px] text-gray-400 block">重量(kg)</label>
                           <input
@@ -915,7 +915,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                             step="2.5"
                             value={set.weight ?? ''}
                             onChange={(e) => updateSet(i, 'weight', e.target.value ? Number(e.target.value) : null)}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                             placeholder={prevSame?.weight ? String(prevSame.weight) : ''}
                           />
                         </div>
@@ -926,7 +926,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                             inputMode="numeric"
                             value={set.reps ?? ''}
                             onChange={(e) => updateSet(i, 'reps', e.target.value ? Number(e.target.value) : null)}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                             placeholder={prevSame?.reps ? String(prevSame.reps) : ''}
                           />
                         </div>
@@ -939,21 +939,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                             max="20"
                             value={set.num_sets || ''}
                             onChange={(e) => updateSet(i, 'num_sets', e.target.value ? Number(e.target.value) : 1)}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-                            placeholder="4"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-gray-400 block">RPE</label>
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            min="1"
-                            max="10"
-                            value={set.rpe ?? ''}
-                            onChange={(e) => updateSet(i, 'rpe', e.target.value ? Number(e.target.value) : null)}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-                            placeholder="8"
+                            className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            placeholder="3"
                           />
                         </div>
                       </div>
