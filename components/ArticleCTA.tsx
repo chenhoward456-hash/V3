@@ -48,19 +48,33 @@ export default function ArticleCTA({ articleTitle, slug, relatedArticles, freeRe
         </div>
       )}
       
-      {/* 主要 CTA */}
-      <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-10 text-center border-2 border-primary/20">
-        <h3 className="text-2xl font-bold mb-4" style={{color: '#2D2D2D'}}>
-          想了解個人化的健康優化方案？
+      {/* 主要 CTA — 導向免費體驗 */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-10 text-center border-2 border-blue-200">
+        <h3 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
+          想知道你目前的身體狀態？
         </h3>
         <p className="text-gray-600 mb-6">
-          透過 LINE 預約免費諮詢，分享更多實驗心得與數據追蹤經驗。
+          免費系統分析，30 秒輸入基本資料，馬上看到你的營養目標和建議。
         </p>
-        <LineButton 
-          source="blog_post"
-          className="inline-block bg-success text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+        <Link
+          href="/diagnosis"
+          className="inline-block bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:bg-blue-700 hover:-translate-y-1 transition-all"
         >
-          預約免費諮詢
+          免費體驗系統分析
+        </Link>
+        <p className="text-sm text-gray-400 mt-4">
+          不用註冊，不用付費，直接看結果
+        </p>
+      </div>
+
+      {/* 次要 CTA — LINE 諮詢 */}
+      <div className="text-center">
+        <p className="text-sm text-gray-500 mb-2">想直接跟教練聊？</p>
+        <LineButton
+          source="blog_post"
+          className="inline-block text-blue-600 font-medium hover:underline"
+        >
+          透過 LINE 預約免費諮詢 →
         </LineButton>
       </div>
 
