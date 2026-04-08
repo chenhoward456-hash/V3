@@ -177,16 +177,6 @@ async function handleEvent(event: LineWebhookEvent) {
     case 'message':
       if (event.message?.type === 'text') {
         await handleTextMessage(event, userId, supabase)
-      } else if (event.message?.type === 'image') {
-        await replyMessage(event.replyToken, [
-          {
-            type: 'text',
-            text: '目前 LINE 不支援圖片分析 📷\n\n' +
-              '如需 AI 分析食物營養素，請到儀表板使用 AI 聊天功能拍照分析。\n\n' +
-              '在 LINE 可以用文字快速記錄 👇',
-            quickReply: QR_MAIN,
-          },
-        ])
       }
       break
 
