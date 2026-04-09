@@ -67,10 +67,11 @@ interface TrainingLogProps {
   carbsRestDay?: number | null
   simpleMode?: boolean
   todayPlanType?: string | null
+  trainingPlan?: any
   tier?: string
 }
 
-export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode, todayPlanType, tier }: TrainingLogProps) {
+export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode, todayPlanType, trainingPlan, tier }: TrainingLogProps) {
   const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
   const { showToast } = useToast()
@@ -160,6 +161,30 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           setDetailedSets(todaySets)
         } else if (prevSets.length > 0) {
           setDetailedSets(prevSets.map(s => ({ ...s, rpe: null })))
+        } else if (trainingPlan?.days?.length > 0) {
+          // Fallback: 從課表帶入今天的動作
+          const now = new Date()
+          const taipeiStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
+          const taipeiDate = new Date(taipeiStr + 'T12:00:00')
+          const jsDay = taipeiDate.getDay()
+          const dow = jsDay === 0 ? 7 : jsDay
+          const todayPlan = trainingPlan.days.find((d: any) => d.dayOfWeek === dow)
+          if (todayPlan?.exercises?.length > 0) {
+            setDetailedSets(todayPlan.exercises.map((ex: any, i: number) => {
+              const setsMatch = ex.sets?.match(/(\d+)/)
+              const repsMatch = ex.reps?.match(/(\d+)/)
+              return {
+                exercise_name: ex.name,
+                muscle_group: '',
+                set_number: i + 1,
+                num_sets: setsMatch ? parseInt(setsMatch[1]) : 3,
+                weight: null,  // 重量留空讓客戶填
+                reps: repsMatch ? parseInt(repsMatch[1]) : null,
+                rpe: null,
+                is_main_lift: i === 0,
+              }
+            }))
+          }
         }
         setLastTypeSets(prevSets.map(s => ({ ...s, rpe: null })))
       } catch { /* silent */ }

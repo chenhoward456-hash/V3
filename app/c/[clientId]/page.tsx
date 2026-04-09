@@ -1381,6 +1381,7 @@ export default function ClientDashboard() {
               carbsRestDay={c.carbs_rest_day}
               simpleMode={c.simple_mode}
               todayPlanType={todayPlanType}
+              trainingPlan={c.training_plan}
               tier={c.subscription_tier || 'free'}
             />
           </CollapsibleSection>
