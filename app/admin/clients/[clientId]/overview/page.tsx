@@ -22,6 +22,7 @@ export default function ClientOverview() {
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [copiedTraining, setCopiedTraining] = useState(false)
+  const [copiedAi, setCopiedAi] = useState(false)
   const [dateRange, setDateRange] = useState<'7' | '14' | '30'>('14')
   const [suggestion, setSuggestion] = useState<any>(null)
   const [suggestionMeta, setSuggestionMeta] = useState<any>(null)
@@ -910,6 +911,156 @@ export default function ClientOverview() {
     return lines.join('\n')
   }
 
+  // ===== AI 完整摘要（教練用，含血檢/補品/基因） =====
+  const generateAiFullSummary = () => {
+    const wr = weeklyReport
+    const km = keyMetrics
+    const lines: string[] = []
+    const today = new Date().toISOString().split('T')[0]
+
+    lines.push(`【${client.name} 完整健康數據】${today}`)
+    lines.push('')
+
+    // 基本資料
+    lines.push('■ 基本資料')
+    const infoParts = [client.age ? `${client.age}歲` : null, client.gender, km.latestWeight ? `${km.latestWeight}kg` : null].filter(Boolean)
+    if (client.goal_type) infoParts.push(`目標：${client.goal_type}`)
+    if (isCompetitionMode(client.client_mode) && client.competition_date) {
+      const d = daysUntilDateTW(client.competition_date)
+      infoParts.push(`${PHASE_LABELS[client.prep_phase || ''] || ''}（距比賽 ${d} 天）`)
+    }
+    lines.push(infoParts.join(' / '))
+    if (client.coach_summary) lines.push(`教練備註：${client.coach_summary}`)
+    lines.push('')
+
+    // 營養
+    if (wr.avgProtein != null || wr.avgCalories != null) {
+      lines.push('■ 近 14 天營養')
+      if (wr.avgCalories != null) lines.push(`  熱量 ${wr.avgCalories} kcal${client.calories_target ? ` / 目標 ${client.calories_target}` : ''}`)
+      if (wr.avgProtein != null) {
+        const diff = client.protein_target ? Math.round(((wr.avgProtein - client.protein_target) / client.protein_target) * 100) : null
+        lines.push(`  蛋白質 ${wr.avgProtein}g${client.protein_target ? ` / 目標 ${client.protein_target}g（${diff != null ? `${diff > 0 ? '+' : ''}${diff}%` : ''}）` : ''}${diff != null && diff <= -15 ? ' ⚠️' : ''}`)
+      }
+      if (wr.avgCarbs != null) lines.push(`  碳水 ${wr.avgCarbs}g${client.carbs_target ? ` / 目標 ${client.carbs_target}g` : ''}`)
+      if (wr.avgFat != null) lines.push(`  脂肪 ${wr.avgFat}g${client.fat_target ? ` / 目標 ${client.fat_target}g` : ''}`)
+      if (wr.avgWater != null) lines.push(`  飲水 ${wr.avgWater}ml${client.water_target ? ` / 目標 ${client.water_target}ml` : ''}`)
+      if (km.proteinHitRate != null) lines.push(`  蛋白質達標率 ${km.proteinHitRate}%${km.proteinMissStreak >= 3 ? `（連續 ${km.proteinMissStreak} 天未達標）` : ''}`)
+      lines.push('')
+    }
+
+    // 體重
+    if (km.latestWeight) {
+      lines.push('■ 體重趨勢')
+      lines.push(`  最新 ${km.latestWeight}kg`)
+      if (km.weightChange) lines.push(`  週變化 ${Number(km.weightChange) > 0 ? '+' : ''}${km.weightChange}kg（${km.weightChangePct ? `${Number(km.weightChangePct) > 0 ? '+' : ''}${km.weightChangePct}%` : ''}）`)
+      if (km.weightTrend) lines.push(`  14天趨勢：${km.weightTrend === 'up' ? '上升↑' : km.weightTrend === 'down' ? '下降↓' : '持平→'}`)
+      const latestBf = bodyData.filter(b => b.body_fat != null).slice(-1)[0]
+      if (latestBf) lines.push(`  體脂 ${latestBf.body_fat}%（${latestBf.date}）`)
+      lines.push('')
+    }
+
+    // 訓練
+    if (wr.trainingDays > 0) {
+      lines.push('■ 訓練（近 14 天）')
+      lines.push(`  ${wr.trainingDays} 天${wr.topTypes.length > 0 ? `（${wr.topTypes.join('、')}）` : ''}`)
+      if (wr.avgRpe) lines.push(`  平均 RPE ${wr.avgRpe}`)
+      // 恢復分析
+      if (recoveryAnalysis.length > 0) {
+        const worst = recoveryAnalysis.filter(r => r.avgEnergy !== '--').sort((a, b) => Number(a.avgEnergy) - Number(b.avgEnergy))[0]
+        if (worst && Number(worst.avgEnergy) < 4.5) lines.push(`  ⚠️ ${worst.type}日隔天精力最低（${worst.avgEnergy}）`)
+      }
+      lines.push('')
+    }
+
+    // 身心
+    if (wr.avgSleep != null || wr.avgEnergy != null) {
+      lines.push('■ 身心狀態（近 7 天）')
+      const parts = []
+      if (wr.avgSleep != null) parts.push(`睡眠 ${wr.avgSleep.toFixed(1)}/5`)
+      if (wr.avgEnergy != null) parts.push(`精力 ${wr.avgEnergy.toFixed(1)}/5`)
+      if (wr.avgMood != null) parts.push(`心情 ${wr.avgMood.toFixed(1)}/5`)
+      lines.push(`  ${parts.join(' / ')}`)
+      lines.push('')
+    }
+
+    // 血檢
+    if (labResults.length > 0) {
+      lines.push('■ 血檢指標（最新值）')
+      const seen = new Set<string>()
+      const sorted = [...labResults].sort((a: any, b: any) => (b.date || '').localeCompare(a.date || ''))
+      for (const lab of sorted) {
+        if (seen.has(lab.test_name)) continue
+        seen.add(lab.test_name)
+        const s = lab.status === 'alert' ? ' ⚠️' : lab.status === 'attention' ? ' ⚡' : ''
+        lines.push(`  ${lab.test_name}: ${lab.value} ${lab.unit || ''}${s}（${lab.date}）`)
+      }
+
+      // 變化追蹤
+      const labsByName = new Map<string, any[]>()
+      for (const lab of sorted) {
+        if (!labsByName.has(lab.test_name)) labsByName.set(lab.test_name, [])
+        labsByName.get(lab.test_name)!.push(lab)
+      }
+      const changes: string[] = []
+      for (const [name, labs] of labsByName) {
+        if (labs.length < 2) continue
+        const latest = labs[0].value
+        const oldest = labs[labs.length - 1].value
+        if (oldest <= 0) continue
+        const pct = Math.round(((latest - oldest) / oldest) * 100)
+        if (Math.abs(pct) >= 15) changes.push(`${name} ${pct > 0 ? '+' : ''}${pct}%`)
+      }
+      if (changes.length > 0) {
+        lines.push(`  趨勢變化：${changes.join('、')}`)
+      }
+      lines.push('')
+    }
+
+    // 補品
+    if (supplements.length > 0) {
+      lines.push('■ 目前補品')
+      for (const s of supplements) {
+        lines.push(`  ${s.name}${s.dosage ? ` ${s.dosage}` : ''}${s.timing ? `（${s.timing}）` : ''}`)
+      }
+      if (km.weekCompliance != null) lines.push(`  服從率 ${km.weekCompliance}%`)
+      lines.push('')
+    }
+
+    // 基因
+    if (client.gene_mthfr || client.gene_apoe || client.gene_depression_risk) {
+      lines.push('■ 基因資料')
+      if (client.gene_mthfr) lines.push(`  MTHFR: ${client.gene_mthfr}`)
+      if (client.gene_apoe) lines.push(`  APOE: ${client.gene_apoe}`)
+      if (client.gene_depression_risk) lines.push(`  5-HTTLPR: ${client.gene_depression_risk}`)
+      if (client.gene_notes) lines.push(`  備註：${client.gene_notes}`)
+      lines.push('')
+    }
+
+    // 系統建議
+    if (suggestion) {
+      lines.push('■ 系統目前建議')
+      if (suggestion.suggestedCalories) lines.push(`  每日熱量 ${suggestion.suggestedCalories} kcal`)
+      if (suggestion.suggestedProtein) lines.push(`  蛋白質 ${suggestion.suggestedProtein}g`)
+      if (suggestion.suggestedCarbsTrainingDay && suggestion.suggestedCarbsRestDay) {
+        lines.push(`  碳循環：訓練日 ${suggestion.suggestedCarbsTrainingDay}g / 休息日 ${suggestion.suggestedCarbsRestDay}g`)
+      }
+      if (suggestion.statusLabel) lines.push(`  狀態：${suggestion.statusLabel}`)
+      lines.push('')
+    }
+
+    // 警報
+    if (alerts.length > 0) {
+      lines.push('■ 系統警報')
+      for (const a of alerts) lines.push(`  ${a}`)
+      lines.push('')
+    }
+
+    lines.push('---')
+    lines.push('此數據由 Howard Protocol 系統自動產出。')
+
+    return lines.join('\n')
+  }
+
   // ===== 需注意事項 =====
   const alerts = useMemo(() => {
     const items: string[] = []
@@ -1231,6 +1382,20 @@ export default function ClientOverview() {
                 }`}
               >
                 {copiedTraining ? '已複製 ✓' : '訓練端摘要'}
+              </button>
+              <button
+                onClick={() => {
+                  const text = generateAiFullSummary()
+                  navigator.clipboard.writeText(text).then(() => {
+                    setCopiedAi(true)
+                    setTimeout(() => setCopiedAi(false), 2000)
+                  })
+                }}
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  copiedAi ? 'bg-green-500 text-white' : 'bg-violet-500 text-white hover:bg-violet-600'
+                }`}
+              >
+                {copiedAi ? '已複製 ✓' : 'AI 完整摘要'}
               </button>
             </div>
           </div>
