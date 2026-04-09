@@ -59,25 +59,23 @@ export default function StickyCTA({ articleTitle, slug, intent = 'performance', 
   }, [intent])
 
   const dynamicCopy = useMemo(() => {
-    if (scrollDepth < 25) {
+    if (scrollDepth < 40) {
       return {
-        title: '繼續看，下面有實測數據',
-        subtitle: '我會用結果頁幫你分級引導下一步'
+        title: '想知道你一天該吃多少？',
+        subtitle: '10 秒填完，馬上看到你的每日熱量和營養素目標',
+        buttonText: '免費算我的營養目標',
       }
-    } else if (scrollDepth < 50) {
+    } else if (scrollDepth < 70) {
       return {
-        title: resource ? '看到這裡了？拿免費計畫表更快' : '看到這裡了？要不要體驗系統分析？',
-        subtitle: resource ? '立即下載開始執行' : '30 秒算出你的 TDEE 和營養素'
-      }
-    } else if (scrollDepth < 75) {
-      return {
-        title: '快看完了，下一步要不要直接加 LINE？',
-        subtitle: '我會先給你免費資源 + 分流引導'
+        title: resource ? '拿免費計畫表，直接開始執行' : '你的營養目標，10 秒就能算出來',
+        subtitle: resource ? '12 週完整計畫，立即下載' : '不用註冊、不用付費',
+        buttonText: resource ? '下載計畫表' : '免費算我的營養目標',
       }
     } else {
       return {
-        title: resource ? '看完了！現在就拿計畫表開始' : '看完了！要不要直接跟我聊？',
-        subtitle: resource ? '立即下載 12 週完整計畫' : '我會先幫你分流到對的路徑'
+        title: resource ? '計畫表準備好了，拿走開始' : '看完了，算一下你的數字吧',
+        subtitle: resource ? '立即下載' : '已有 200+ 人完成分析',
+        buttonText: resource ? '免費下載' : '10 秒算出我的目標',
       }
     }
   }, [scrollDepth, resource])
@@ -111,33 +109,23 @@ export default function StickyCTA({ articleTitle, slug, intent = 'performance', 
           </button>
         </div>
 
-        <div className="mt-3 flex flex-col md:flex-row gap-2">
+        <div className="mt-3">
           {resource ? (
             <ResourceDownloadButton
               fileUrl={resource.fileUrl}
               source="sticky_cta"
               articleTitle={articleTitle}
               slug={slug}
-              className="inline-block bg-success text-white px-5 py-3 rounded-xl font-bold text-center hover:opacity-90 transition-all"
+              className="w-full inline-block bg-blue-600 text-white px-5 py-3.5 rounded-xl font-bold text-center text-base hover:bg-blue-700 transition-all"
             />
           ) : (
             <Link
               href="/diagnosis"
-              className="inline-block bg-primary text-white px-5 py-3 rounded-xl font-bold text-center hover:opacity-90 transition-all"
+              className="w-full inline-block bg-blue-600 text-white px-5 py-3.5 rounded-xl font-bold text-center text-base hover:bg-blue-700 transition-all"
             >
-              免費體驗系統分析
+              {dynamicCopy.buttonText}
             </Link>
           )}
-
-          <LineButton
-            source="sticky_cta"
-            intent={intent}
-            slug={slug}
-            articleTitle={articleTitle}
-            className="inline-block bg-gray-900 text-white px-5 py-3 rounded-xl font-bold text-center hover:opacity-90 transition-all"
-          >
-            直接加 LINE（我想說：{copy}）
-          </LineButton>
         </div>
       </div>
     </div>
