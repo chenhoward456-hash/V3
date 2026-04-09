@@ -75,7 +75,13 @@ export async function GET(request: NextRequest) {
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
     const sixtyDaysStr = sixtyDaysAgo.toISOString().split('T')[0]
 
-    const [bodyRes, nutritionRes, trainingRes, wellnessRes, labRes, periodRes] = await Promise.all([
+    // 2.6 查詢補品依從率（近 8 週）
+    const eightWeeksAgo = new Date()
+    eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
+    const eightWeeksStr = eightWeeksAgo.toISOString().split('T')[0]
+
+    // 所有查詢合併到一個 Promise.all，避免序列等待
+    const [bodyRes, nutritionRes, trainingRes, wellnessRes, labRes, periodRes, suppLogsRes, suppListRes] = await Promise.all([
       supabase
         .from('body_composition')
         .select('date, weight, height, body_fat')
@@ -107,7 +113,6 @@ export async function GET(request: NextRequest) {
         .eq('client_id', client.id)
         .order('date', { ascending: false })
         .limit(50),
-      // 月經週期：最近 60 天內最後一次經期標記
       client.gender === '女性'
         ? supabase
             .from('daily_wellness')
@@ -118,26 +123,6 @@ export async function GET(request: NextRequest) {
             .order('date', { ascending: false })
             .limit(1)
         : Promise.resolve({ data: null, error: null }),
-    ])
-
-    const bodyData = bodyRes.data || []
-    const nutritionLogs = nutritionRes.data || []
-    const trainingLogs = trainingRes.data || []
-    const wellnessLogs = wellnessRes.data || []
-    const labResults = labRes.data || []
-
-    // 月經週期結果（已合併到上方 Promise.all）
-    let lastPeriodDate: string | null = null
-    if (periodRes.data && periodRes.data.length > 0) {
-      lastPeriodDate = periodRes.data[0].date
-    }
-
-    // 2.6 查詢補品依從率（近 8 週）
-    const eightWeeksAgo = new Date()
-    eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
-    const eightWeeksStr = eightWeeksAgo.toISOString().split('T')[0]
-
-    const [suppLogsRes, suppListRes] = await Promise.all([
       supabase
         .from('supplement_logs')
         .select('date, completed')
@@ -148,6 +133,17 @@ export async function GET(request: NextRequest) {
         .select('name')
         .eq('client_id', client.id),
     ])
+
+    const bodyData = bodyRes.data || []
+    const nutritionLogs = nutritionRes.data || []
+    const trainingLogs = trainingRes.data || []
+    const wellnessLogs = wellnessRes.data || []
+    const labResults = labRes.data || []
+
+    let lastPeriodDate: string | null = null
+    if (periodRes.data && periodRes.data.length > 0) {
+      lastPeriodDate = (periodRes.data[0] as any).date
+    }
 
     const suppLogs = suppLogsRes.data || []
     const suppList = suppListRes.data || []
