@@ -162,7 +162,7 @@ async function handleEvent(event: LineWebhookEvent) {
             text: '👇 你也可以先：',
             quickReply: {
               items: [
-                qr('🧪 免費體態評估', '免費評估'),
+                qr('🔍 免費體態評估', '免費評估'),
                 qr('📖 健身知識文章', '免費教學'),
                 qr('💰 查看方案', '查看方案'),
                 qr('🔗 我有學員代碼', '我要綁定'),
@@ -248,7 +248,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     await replyMessage(event.replyToken, [
       {
         type: 'text',
-        text: '🧪 免費體態評估\n\n' +
+        text: '🔍 免費體態評估\n\n' +
           '輸入基本資料，系統會即時算出你的 TDEE、建議熱量和巨量營養素。\n\n' +
           `👉 ${SITE_URL}/diagnosis\n\n` +
           '做完後回來告訴我「評估結果」，我幫你解讀！',
@@ -391,7 +391,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     await replyMessage(event.replyToken, [
       {
         type: 'text',
-        text: '看到你的評估結果了嗎？🧪\n\n' +
+        text: '看到你的評估結果了嗎？🔍\n\n' +
           '系統給出的是基於公式的估算值，實際執行時會因個人差異需要調整。\n\n' +
           '如果你想要：\n' +
           '✅ 每天自動追蹤體重變化\n' +
@@ -439,7 +439,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
           '先做免費評估，了解自己的狀態 👇',
         quickReply: {
           items: [
-            qr('🧪 免費評估', '免費評估'),
+            qr('🔍 免費評估', '免費評估'),
             qr('💰 查看方案', '查看方案'),
             qr('🔗 我有代碼', '我要綁定'),
             qr('❓ FAQ', 'FAQ'),
@@ -787,7 +787,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
         text: '嗨！我是 Howard 💪\n\n看看你想做什麼 👇',
         quickReply: {
           items: [
-            qr('🧪 免費體態評估', '免費評估'),
+            qr('🔍 免費體態評估', '免費評估'),
             qr('📖 健身知識文章', '免費教學'),
             qr('💰 查看方案', '查看方案'),
             qr('🔗 我有學員代碼', '我要綁定'),
