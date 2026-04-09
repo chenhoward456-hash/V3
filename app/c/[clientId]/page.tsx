@@ -827,6 +827,7 @@ export default function ClientDashboard() {
                     code={c.unique_code}
                     isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
                     onMutate={mutateWithTargets}
+                    initialData={nutritionEngineSuggestion}
                   />
                 )}
                 {/* 備賽模式：目標設定放在倒數旁邊，方便隨時調整 */}

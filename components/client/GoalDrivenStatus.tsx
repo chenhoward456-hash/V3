@@ -7,16 +7,26 @@ interface GoalDrivenStatusProps {
   code?: string
   isTrainingDay?: boolean
   onMutate?: (appliedTargets?: Record<string, number | undefined>) => void
+  initialData?: any
 }
 
-export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMutate }: GoalDrivenStatusProps) {
-  const [data, setData] = useState<any>(null)
+export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMutate, initialData }: GoalDrivenStatusProps) {
+  const [data, setData] = useState<any>(initialData || null)
   const [targetWeightValue, setTargetWeightValue] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!initialData)
   const [overriding, setOverriding] = useState(false)
   const onMutateRef = useRef(onMutate)
   onMutateRef.current = onMutate
-  const fetchedRef = useRef(false)
+  const fetchedRef = useRef(!!initialData)
+
+  // 如果 initialData 從 parent 更新了，同步
+  useEffect(() => {
+    if (initialData && !data) {
+      setData(initialData)
+      setLoading(false)
+      fetchedRef.current = true
+    }
+  }, [initialData, data])
 
   useEffect(() => {
     if (fetchedRef.current) return
