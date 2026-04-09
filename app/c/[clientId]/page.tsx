@@ -39,6 +39,7 @@ import HealthScoreBanner from '@/components/client/HealthScoreBanner'
 import BehaviorInsights from '@/components/client/BehaviorInsights'
 import ProgressJourney from '@/components/client/ProgressJourney'
 import SystemActions from '@/components/client/SystemActions'
+import ExportAiSummary from '@/components/client/ExportAiSummary'
 import TodayOverviewCard from '@/components/client/TodayOverviewCard'
 import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
@@ -1400,6 +1401,19 @@ export default function ClientDashboard() {
             <RecoveryDashboard clientId={c.unique_code} />
           </div>
           </SectionErrorBoundary>
+        )}
+
+        {/* AI 摘要匯出（付費用戶限定） */}
+        {!isFree && (
+          <ExportAiSummary
+            client={c}
+            bodyData={clientData.bodyData || []}
+            nutritionLogs={clientData.nutritionLogs || []}
+            wellness={clientData.wellness || []}
+            trainingLogs={clientData.trainingLogs || []}
+            labResults={c.lab_results || []}
+            suggestion={nutritionEngineSuggestion}
+          />
         )}
 
         {/* 系統動態 + 進度可視化 + 行為洞察（做完再看） */}
