@@ -17,13 +17,25 @@ const categories = ['全部', '飲食營養', '訓練恢復', '健康數據'] as
 
 export default function BlogFilter({ posts }: { posts: BlogPost[] }) {
   const [selectedCategory, setSelectedCategory] = useState<string>('全部')
+  const [search, setSearch] = useState('')
 
-  const filteredPosts = selectedCategory === '全部'
-    ? posts
-    : posts.filter(post => post.category === selectedCategory)
+  const filteredPosts = posts.filter(post => {
+    const matchCategory = selectedCategory === '全部' || post.category === selectedCategory
+    const matchSearch = !search || post.title.toLowerCase().includes(search.toLowerCase()) || post.description.toLowerCase().includes(search.toLowerCase())
+    return matchCategory && matchSearch
+  })
 
   return (
     <>
+      <div className="max-w-md mx-auto mb-6">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="搜尋文章..."
+          className="w-full px-5 py-3 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white"
+        />
+      </div>
       <div className="flex flex-wrap justify-center gap-3 mb-12">
         {categories.map((category) => (
           <button
