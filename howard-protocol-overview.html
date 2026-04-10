@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Howard Protocol — 系統能力總覽</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8D5A0;
+    --gold-dim: rgba(201,168,76,0.15);
+    --bg: #0D0D0D;
+    --bg2: #1A1A1A;
+    --bg3: #242424;
+    --text: #E8E8E8;
+    --text-dim: #999;
+    --green: #4ADE80;
+    --red: #F87171;
+    --blue: #60A5FA;
+    --purple: #A78BFA;
+    --orange: #FB923C;
+  }
+
+  body {
+    font-family: 'Noto Sans TC', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 24px 40px;
+    background: linear-gradient(180deg, rgba(201,168,76,0.08) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(201,168,76,0.2);
+  }
+  .hero-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border: 1px solid var(--gold);
+    border-radius: 20px;
+    color: var(--gold);
+    font-size: 13px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+  .hero h1 span { color: var(--gold); }
+  .hero .subtitle {
+    font-size: 18px;
+    color: var(--text-dim);
+    font-weight: 300;
+  }
+  .hero .tech-stack {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .tech-tag {
+    padding: 4px 12px;
+    background: var(--bg3);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 800px;
+    margin: -20px auto 0;
+    position: relative;
+    z-index: 2;
+    background: var(--bg2);
+    border-radius: 12px;
+    border: 1px solid rgba(201,168,76,0.2);
+    overflow: hidden;
+  }
+  .stat-item {
+    text-align: center;
+    padding: 20px 12px;
+    border-right: 1px solid rgba(255,255,255,0.06);
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* Section */
+  .section {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+  .section-header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  .section-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .section-header p {
+    color: var(--text-dim);
+    font-size: 15px;
+  }
+
+  /* Capability cards */
+  .cap-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 768px) {
+    .cap-grid { grid-template-columns: 1fr; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .cap-card {
+    background: var(--bg2);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .cap-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+  }
+  .cap-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 14px;
+  }
+  .cap-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .cap-card p {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+  .cap-tag {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .tag-live { background: rgba(74,222,128,0.15); color: var(--green); }
+  .tag-ai { background: rgba(167,139,250,0.15); color: var(--purple); }
+  .tag-auto { background: rgba(96,165,250,0.15); color: var(--blue); }
+
+  /* Data flow */
+  .flow-container {
+    background: var(--bg2);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 36px 24px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .flow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    position: relative;
+    padding-bottom: 28px;
+  }
+  .flow-step:last-child { padding-bottom: 0; }
+  .flow-dot-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 40px;
+    flex-shrink: 0;
+  }
+  .flow-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    border: 2px solid var(--gold);
+    background: var(--bg);
+  }
+  .flow-line {
+    width: 2px;
+    flex: 1;
+    background: linear-gradient(180deg, var(--gold), rgba(201,168,76,0.2));
+    margin-top: 4px;
+    min-height: 20px;
+  }
+  .flow-content h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .flow-content p {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .flow-owner {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .owner-howard { background: rgba(201,168,76,0.2); color: var(--gold); }
+  .owner-conquer { background: rgba(251,146,60,0.2); color: var(--orange); }
+  .owner-student { background: rgba(74,222,128,0.2); color: var(--green); }
+
+  /* Comparison table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .compare-table th {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 13px;
+    color: var(--text-dim);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-weight: 500;
+  }
+  .compare-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .compare-table tr:hover td { background: rgba(201,168,76,0.04); }
+  .check { color: var(--green); font-weight: 700; }
+  .cross { color: rgba(255,255,255,0.15); }
+  .compare-table .feature-name { color: var(--text); font-weight: 500; }
+
+  /* Pricing tiers */
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  @media (max-width: 768px) { .tier-grid { grid-template-columns: 1fr; } }
+  .tier-card {
+    background: var(--bg2);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+  }
+  .tier-card.featured {
+    border-color: var(--gold);
+    background: linear-gradient(180deg, rgba(201,168,76,0.08) 0%, var(--bg2) 100%);
+  }
+  .tier-name { font-size: 14px; color: var(--text-dim); margin-bottom: 8px; }
+  .tier-price { font-size: 32px; font-weight: 900; color: var(--gold); }
+  .tier-price span { font-size: 14px; font-weight: 400; color: var(--text-dim); }
+  .tier-features {
+    list-style: none;
+    margin-top: 16px;
+    text-align: left;
+  }
+  .tier-features li {
+    font-size: 13px;
+    color: var(--text-dim);
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .tier-features li::before {
+    content: '✓ ';
+    color: var(--green);
+    font-weight: 700;
+  }
+  .tier-features li.locked::before {
+    content: '🔒 ';
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 24px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .footer a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.3), transparent);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">CSCS CERTIFIED • DATA-DRIVEN</div>
+  <h1>The <span>Howard</span> Protocol</h1>
+  <p class="subtitle">數據驅動的體態與健康管理平台</p>
+  <div class="tech-stack">
+    <span class="tech-tag">Next.js 14</span>
+    <span class="tech-tag">Supabase</span>
+    <span class="tech-tag">Vercel</span>
+    <span class="tech-tag">AI 分析引擎</span>
+    <span class="tech-tag">LINE Messaging API</span>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-num">22</div>
+    <div class="stat-label">血檢追蹤指標</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">20</div>
+    <div class="stat-label">SEO 優化文章</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">3</div>
+    <div class="stat-label">訂閱方案</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">14天</div>
+    <div class="stat-label">自動報告週期</div>
+  </div>
+</div>
+
+<!-- 核心能力 -->
+<div class="section">
+  <div class="section-header">
+    <h2>核心能力模組</h2>
+    <p>學員每日回報 → 系統自動統整 → 教練精準決策</p>
+  </div>
+  <div class="cap-grid">
+    <div class="cap-card">
+      <div class="cap-icon" style="background:rgba(74,222,128,0.12)">🍽️</div>
+      <h3>營養追蹤與偏差分析</h3>
+      <p>每日巨量營養素（熱量/蛋白質/碳水/脂肪）追蹤，自動計算 vs 目標偏差百分比。13 天偏差圖表，一眼看出哪幾天超標。</p>
+      <span class="cap-tag tag-live">已上線</span>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon" style="background:rgba(248,113,113,0.12)">🩸</div>
+      <h3>血檢深度分析</h3>
+      <p>追蹤 22 項血檢指標（荷爾蒙、血脂、血糖、甲狀腺、肝功能等）。自動偵測異常、計算變化趨勢、識別正常範圍內的優化空間。</p>
+      <span class="cap-tag tag-ai">AI 分析</span>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon" style="background:rgba(201,168,76,0.12)">💊</div>
+      <h3>補品建議引擎</h3>
+      <p>根據血檢結果自動產出補品建議，附劑量、服用時機、觸發指標、學術文獻引用。包含停用警告（如鐵蛋白過高→停鐵劑）。</p>
+      <span class="cap-tag tag-ai">AI 生成</span>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon" style="background:rgba(96,165,250,0.12)">📊</div>
+      <h3>訓練 × 恢復交叉分析</h3>
+      <p>自動交叉比對訓練類型 vs 隔天睡眠/精力/心情。識別哪種訓練對恢復影響最大，協助安排 split 和 deload。</p>
+      <span class="cap-tag tag-live">已上線</span>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon" style="background:rgba(167,139,250,0.12)">🤖</div>
+      <h3>AI 教練建議</h3>
+      <p>一鍵根據近 14 天數據（營養、訓練、恢復、血檢）產出具體調整建議。教練可作為決策起點，再用經驗微調。</p>
+      <span class="cap-tag tag-ai">AI 生成</span>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon" style="background:rgba(251,146,60,0.12)">📋</div>
+      <h3>自動週報告</h3>
+      <p>14 天數據自動彙整成結構化報告，含一鍵複製按鈕。可產出教練完整版 + 訓練端精簡版兩種格式。</p>
+      <span class="cap-tag tag-auto">自動化</span>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon" style="background:rgba(74,222,128,0.12)">⚖️</div>
+      <h3>體重/體脂趨勢追蹤</h3>
+      <p>每日體重記錄，自動算週變化（kg + %BW）。體脂趨勢圖。備賽期間可追蹤減重速率是否在安全範圍。</p>
+      <span class="cap-tag tag-live">已上線</span>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon" style="background:rgba(248,113,113,0.12)">⚠️</div>
+      <h3>智慧警報系統</h3>
+      <p>蛋白質連續低於目標、荷爾蒙顯著下滑（睪固酮 -35%）、RPE 過高、複檢逾期——自動在快速摘要頂部顯示警報。</p>
+      <span class="cap-tag tag-auto">自動化</span>
+    </div>
+    <div class="cap-card">
+      <div class="cap-icon" style="background:rgba(96,165,250,0.12)">😊</div>
+      <h3>身心狀態追蹤</h3>
+      <p>每日心情/睡眠/精力評分（1-5），自動繪製趨勢圖。結合訓練數據可識別過度訓練徵兆。</p>
+      <span class="cap-tag tag-live">已上線</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 資料流 -->
+<div class="section">
+  <div class="section-header">
+    <h2>Howard Protocol × CONQUER 配合流程</h2>
+    <p>兩個獨立系統，透過標準化週報告配合</p>
+  </div>
+  <div class="flow-container">
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-dot-col">
+          <div class="flow-dot">📱</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <h4>學員每日回報 <span class="flow-owner owner-student">學員</span></h4>
+          <p>透過 LINE 官方帳號或網頁回報：飲食內容、體重、心情/睡眠/精力、補品服從、飲水量</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot-col">
+          <div class="flow-dot">⚙️</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <h4>Howard Protocol 自動統整 <span class="flow-owner owner-howard">Howard Protocol</span></h4>
+          <p>數據進入 Supabase → 自動計算偏差、趨勢、警報 → 生成教練 Dashboard + 訓練端週摘要</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot-col">
+          <div class="flow-dot">📋</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <h4>週摘要交給訓練端 <span class="flow-owner owner-howard">Howard Protocol</span></h4>
+          <p>一鍵複製訓練端摘要：體重趨勢、營養達標率、恢復指標、荷爾蒙警報、RPE 概況</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot-col">
+          <div class="flow-dot">🏋️</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <h4>CONQUER 產出訓練 + 營養計畫 <span class="flow-owner owner-conquer">CONQUER</span></h4>
+          <p>結合體態照片 + 週摘要數據 → 設計訓練課表、備賽營養計畫（消耗/低碳/碳載/高峰期）、補品時程</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot-col">
+          <div class="flow-dot">💬</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <h4>LINE 推播計畫給學員 <span class="flow-owner owner-conquer">CONQUER</span></h4>
+          <p>新計畫 + 週回饋透過 LINE 官方帳號發送。學員可即時查看進度、提問、獲得回覆</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot-col">
+          <div class="flow-dot">🔄</div>
+        </div>
+        <div class="flow-content">
+          <h4>循環 <span class="flow-owner owner-student">學員</span></h4>
+          <p>學員根據新計畫執行 → 繼續每日回報 → 下一週循環。數據越多，AI 建議越精準</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 互補對照 -->
+<div class="section">
+  <div class="section-header">
+    <h2>系統互補對照</h2>
+    <p>各自專精，不重疊、不衝突</p>
+  </div>
+  <div style="background:var(--bg2);border-radius:12px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th style="width:40%">功能</th>
+          <th style="width:30%;text-align:center;color:var(--gold)">Howard Protocol</th>
+          <th style="width:30%;text-align:center;color:var(--orange)">CONQUER</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="feature-name">每日營養追蹤 + 偏差分析</td><td style="text-align:center"><span class="check">✓</span></td><td style="text-align:center"><span class="cross">—</span></td></tr>
+        <tr><td class="feature-name">血檢 22 項指標追蹤</td><td style="text-align:center"><span class="check">✓</span></td><td style="text-align:center"><span class="cross">—</span></td></tr>
+        <tr><td class="feature-name">荷爾蒙趨勢 + 警報</td><td style="text-align:center"><span class="check">✓</span></td><td style="text-align:center"><span class="cross">—</span></td></tr>
+        <tr><td class="feature-name">補品建議（附文獻）</td><td style="text-align:center"><span class="check">✓</span></td><td style="text-align:center"><span class="cross">—</span></td></tr>
+        <tr><td class="feature-name">身心狀態追蹤（睡眠/精力/心情）</td><td style="text-align:center"><span class="check">✓</span></td><td style="text-align:center"><span class="cross">—</span></td></tr>
+        <tr><td class="feature-name">訓練 × 恢復交叉分析</td><td style="text-align:center"><span class="check">✓</span></td><td style="text-align:center"><span class="cross">—</span></td></tr>
+        <tr><td class="feature-name">AI 教練建議生成</td><td style="text-align:center"><span class="check">✓</span></td><td style="text-align:center"><span class="cross">—</span></td></tr>
+        <tr><td class="feature-name">自動週報告（訓練端格式）</td><td style="text-align:center"><span class="check">✓</span></td><td style="text-align:center"><span class="cross">—</span></td></tr>
+        <tr style="border-top:2px solid rgba(255,255,255,0.1)"><td class="feature-name">備賽階段巨量自動切換</td><td style="text-align:center"><span class="cross">—</span></td><td style="text-align:center"><span class="check">✓</span></td></tr>
+        <tr><td class="feature-name">每餐食物內容規劃</td><td style="text-align:center"><span class="cross">—</span></td><td style="text-align:center"><span class="check">✓</span></td></tr>
+        <tr><td class="feature-name">水分 + 鈉精細控制（備賽）</td><td style="text-align:center"><span class="cross">—</span></td><td style="text-align:center"><span class="check">✓</span></td></tr>
+        <tr><td class="feature-name">體態照片 → 訓練課表</td><td style="text-align:center"><span class="cross">—</span></td><td style="text-align:center"><span class="check">✓</span></td></tr>
+        <tr><td class="feature-name">訓練課表設計</td><td style="text-align:center"><span class="cross">—</span></td><td style="text-align:center"><span class="check">✓</span></td></tr>
+        <tr><td class="feature-name">補品時程表（每時段）</td><td style="text-align:center"><span class="cross">—</span></td><td style="text-align:center"><span class="check">✓</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- 商業模式 -->
+<div class="section">
+  <div class="section-header">
+    <h2>訂閱方案</h2>
+    <p>營養追蹤複雜度是核心，訓練紀錄鎖在付費方案</p>
+  </div>
+  <div class="tier-grid">
+    <div class="tier-card">
+      <div class="tier-name">FREE</div>
+      <div class="tier-price">$0 <span>/月</span></div>
+      <ul class="tier-features">
+        <li>每日營養追蹤</li>
+        <li>AI 營養聊天助手</li>
+        <li>基礎體重記錄</li>
+        <li class="locked">訓練紀錄</li>
+        <li class="locked">血檢追蹤</li>
+      </ul>
+    </div>
+    <div class="tier-card">
+      <div class="tier-name">STANDARD</div>
+      <div class="tier-price">$499 <span>/月</span></div>
+      <ul class="tier-features">
+        <li>所有 Free 功能</li>
+        <li>完整訓練紀錄</li>
+        <li>進階趨勢分析</li>
+        <li>週報告自動產出</li>
+        <li class="locked">血檢深度分析</li>
+      </ul>
+    </div>
+    <div class="tier-card featured">
+      <div class="tier-name">PRO COACH</div>
+      <div class="tier-price">$2,999 <span>/月</span></div>
+      <ul class="tier-features">
+        <li>所有 Standard 功能</li>
+        <li>血檢 22 項深度分析</li>
+        <li>AI 教練建議</li>
+        <li>補品建議引擎</li>
+        <li>教練 Dashboard 全功能</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <p><strong>Howard Protocol</strong> — howard456.vercel.app</p>
+  <p style="margin-top:8px;">CSCS 認證教練 · 數據驅動 · 科學化備賽支持</p>
+  <p style="margin-top:16px;font-size:12px;color:rgba(255,255,255,0.3);">2026.04 會議簡報用</p>
+</div>
+
+</body>
+</html>

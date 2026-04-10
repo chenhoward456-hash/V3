@@ -77,6 +77,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   const { showToast } = useToast()
   const [readiness, setReadiness] = useState<TrainingReadiness | null>(null)
   const [showTrainingAdvanced, setShowTrainingAdvanced] = useState(false)
+  const [showRestForm, setShowRestForm] = useState(false)
 
   // 載入今日訓練準備度
   useEffect(() => {
@@ -718,6 +719,19 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           </div>
         </div>
 
+        {/* 休息日已儲存：顯示簡潔訊息 */}
+        {isRest && todayTraining && todayTraining.training_type === 'rest' && !showRestForm ? (
+          <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+            <span className="text-gray-600">今天休息 😴</span>
+            <button
+              onClick={() => setShowRestForm(true)}
+              className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
+            >
+              修改
+            </button>
+          </div>
+        ) : (<>
+
         {/* 有氧子類型選擇 */}
         {isCardio && (
           <div>
@@ -1025,6 +1039,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           {submitting ? '提交中...' : todayTraining ? '更新訓練' : '記錄訓練'}
         </button>
 
+        </>)}
+
         {/* ===== 本週摘要 ===== */}
         <div className="pt-4 border-t border-gray-100">
           <p className="text-sm font-medium text-gray-700 mb-3">本週訓練</p>
@@ -1098,7 +1114,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         {!simpleMode && rpeChartData.length >= 2 && (
           <div className="pt-4 border-t border-gray-100">
             <p className="text-sm font-medium text-gray-700 mb-3">RPE 趨勢</p>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={200} minWidth={0}>
               <LineChart data={rpeChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" fontSize={11} />

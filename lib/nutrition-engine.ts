@@ -2020,7 +2020,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
 
   // 2. 合規率低時加入警告，但不阻擋引擎運作（體重是最真實的指標）
   if (input.nutritionCompliance < 70) {
-    warnings.push(`飲食合規率 ${input.nutritionCompliance}%，提高記錄完整度可提升分析準確性`)
+    warnings.push(`📊 飲食記錄完整度 ${input.nutritionCompliance}%，記錄越完整分析越準確`)
   }
 
   // 3. 計算週均體重變化率
@@ -2102,18 +2102,18 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     const minTDEE = Math.round(formulaTDEE * 0.80)
     if (adaptiveTDEE < minTDEE) {
       estimatedTDEE = minTDEE
-      warnings.push(`⚠️ 飲食記錄反推 TDEE ${adaptiveTDEE}kcal 明顯偏低（公式估算 ${formulaTDEE}kcal），已修正至 ${minTDEE}kcal。可能是記錄不完整`)
+      warnings.push(`📊 系統根據你的飲食記錄和體重變化估算 TDEE 為 ${minTDEE}kcal，持續記錄可讓數值更準確`)
     } else {
       estimatedTDEE = adaptiveTDEE
     }
   } else if (adaptiveTDEE != null) {
     // 有飲食記錄但合規率低 → 不信任 adaptive，用公式值
     estimatedTDEE = formulaTDEE
-    warnings.push(`⚠️ 飲食合規率 ${input.nutritionCompliance}% 偏低，TDEE 改用${input.bodyFatPct != null ? 'Katch-McArdle 公式' : '體重公式'}估算（${estimatedTDEE}kcal）。提高記錄完整度可讓系統自動校正`)
+    warnings.push(`📊 目前飲食記錄較少，TDEE 以公式估算為 ${estimatedTDEE}kcal。多記錄幾天可讓數值更準確`)
   } else {
     // 完全沒有飲食記錄 → 用公式值
     estimatedTDEE = formulaTDEE
-    warnings.push(`⚠️ 無飲食記錄，TDEE 以${input.bodyFatPct != null ? 'Katch-McArdle 公式' : '體重公式'}估算（${estimatedTDEE}kcal），記錄每日飲食可讓系統自動校正`)
+    warnings.push(`📊 尚未有飲食記錄，TDEE 以公式估算為 ${estimatedTDEE}kcal。開始記錄飲食後系統會自動校正`)
   }
 
   // 6b. 異常值安全檢查：校正幅度超過 15% 時標記需人工確認

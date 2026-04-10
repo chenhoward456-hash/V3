@@ -1699,7 +1699,7 @@ export default function ClientOverview() {
               <div className="bg-white rounded-2xl shadow-sm p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">💊 補品服從率趨勢</h3>
                 {complianceTrend.length >= 2 ? (
-                  <ResponsiveContainer width="100%" height={200}>
+                  <ResponsiveContainer width="100%" height={200} minWidth={0}>
                     <LineChart data={complianceTrend}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" fontSize={11} />
@@ -1719,7 +1719,7 @@ export default function ClientOverview() {
               <div className="bg-white rounded-2xl shadow-sm p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">😊 感受趨勢</h3>
                 {wellnessTrend.length >= 2 ? (
-                  <ResponsiveContainer width="100%" height={200}>
+                  <ResponsiveContainer width="100%" height={200} minWidth={0}>
                     <LineChart data={wellnessTrend}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" fontSize={11} />
@@ -1743,7 +1743,7 @@ export default function ClientOverview() {
         {client.nutrition_enabled && nutritionTrend.length >= 2 && (
           <div className="bg-white rounded-2xl shadow-sm p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">🍽️ 飲食合規趨勢（週）</h3>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={200} minWidth={0}>
               <BarChart data={nutritionTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" fontSize={11} />
@@ -1761,7 +1761,7 @@ export default function ClientOverview() {
             {proteinWaterTrend.some(d => d.蛋白質 != null) && (
               <div className="bg-white rounded-2xl shadow-sm p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">🥩 蛋白質攝取趨勢</h3>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={200} minWidth={0}>
                   <BarChart data={proteinWaterTrend.filter(d => d.蛋白質 != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" fontSize={11} />
@@ -1781,7 +1781,7 @@ export default function ClientOverview() {
             {proteinWaterTrend.some(d => d.飲水量 != null) && (
               <div className="bg-white rounded-2xl shadow-sm p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">💧 飲水量趨勢</h3>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={200} minWidth={0}>
                   <BarChart data={proteinWaterTrend.filter(d => d.飲水量 != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" fontSize={11} />
@@ -1806,7 +1806,7 @@ export default function ClientOverview() {
               {macroTrend.calories.length >= 2 && (
                 <div>
                   <p className="text-xs text-gray-500 mb-2 font-medium">🔥 熱量 (kcal)</p>
-                  <ResponsiveContainer width="100%" height={160}>
+                  <ResponsiveContainer width="100%" height={160} minWidth={0}>
                     <LineChart data={macroTrend.calories}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" fontSize={10} />
@@ -1821,7 +1821,7 @@ export default function ClientOverview() {
               {macroTrend.carbs.length >= 2 && (
                 <div>
                   <p className="text-xs text-gray-500 mb-2 font-medium">🍚 碳水 (g)</p>
-                  <ResponsiveContainer width="100%" height={160}>
+                  <ResponsiveContainer width="100%" height={160} minWidth={0}>
                     <LineChart data={macroTrend.carbs}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" fontSize={10} />
@@ -1836,7 +1836,7 @@ export default function ClientOverview() {
               {macroTrend.fat.length >= 2 && (
                 <div>
                   <p className="text-xs text-gray-500 mb-2 font-medium">🥑 脂肪 (g)</p>
-                  <ResponsiveContainer width="100%" height={160}>
+                  <ResponsiveContainer width="100%" height={160} minWidth={0}>
                     <LineChart data={macroTrend.fat}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" fontSize={10} />
@@ -1902,7 +1902,7 @@ export default function ClientOverview() {
             {macroDeviation.dailyData.some((d: any) => d.calDev != null) && (
               <div className="mb-4">
                 <p className="text-xs text-gray-500 mb-2 font-medium">🔥 每日熱量偏差 (%)（目標 {client.calories_target} kcal）</p>
-                <ResponsiveContainer width="100%" height={140}>
+                <ResponsiveContainer width="100%" height={140} minWidth={0}>
                   <BarChart data={macroDeviation.dailyData.filter((d: any) => d.calDev != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" fontSize={10} />
@@ -1925,7 +1925,7 @@ export default function ClientOverview() {
             {macroDeviation.dailyData.some((d: any) => d.proDev != null) && (
               <div className="mb-4">
                 <p className="text-xs text-gray-500 mb-2 font-medium">🥩 每日蛋白質偏差 (%)（目標 {client.protein_target}g）</p>
-                <ResponsiveContainer width="100%" height={140}>
+                <ResponsiveContainer width="100%" height={140} minWidth={0}>
                   <BarChart data={macroDeviation.dailyData.filter((d: any) => d.proDev != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" fontSize={10} />
@@ -1954,7 +1954,7 @@ export default function ClientOverview() {
                     : `（目標 ${client.carbs_target}g）`
                   }
                 </p>
-                <ResponsiveContainer width="100%" height={140}>
+                <ResponsiveContainer width="100%" height={140} minWidth={0}>
                   <BarChart data={macroDeviation.dailyData.filter((d: any) => d.carbDev != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" fontSize={10} />
@@ -1977,7 +1977,7 @@ export default function ClientOverview() {
             {macroDeviation.dailyData.some((d: any) => d.fatDev != null) && (
               <div>
                 <p className="text-xs text-gray-500 mb-2 font-medium">🥑 每日脂肪偏差 (%)（目標 {client.fat_target}g）</p>
-                <ResponsiveContainer width="100%" height={140}>
+                <ResponsiveContainer width="100%" height={140} minWidth={0}>
                   <BarChart data={macroDeviation.dailyData.filter((d: any) => d.fatDev != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" fontSize={10} />
@@ -2046,7 +2046,7 @@ export default function ClientOverview() {
             <div className="bg-white rounded-2xl shadow-sm p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">📊 訓練分佈</h3>
               {trainingDistribution.length > 0 ? (
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={200} minWidth={0}>
                   <BarChart data={trainingDistribution} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" fontSize={11} />
@@ -2066,7 +2066,7 @@ export default function ClientOverview() {
         {client.training_enabled && rpeTrend.length >= 2 && (
           <div className="bg-white rounded-2xl shadow-sm p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">💥 RPE 趨勢</h3>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={200} minWidth={0}>
               <LineChart data={rpeTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" fontSize={11} />
@@ -2083,7 +2083,7 @@ export default function ClientOverview() {
           {bodyTrend.weight.length >= 2 && (
             <div className="bg-white rounded-2xl shadow-sm p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">⚖️ 體重趨勢</h3>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={200} minWidth={0}>
                 <LineChart data={bodyTrend.weight}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" fontSize={11} />
@@ -2097,7 +2097,7 @@ export default function ClientOverview() {
           {bodyTrend.bodyFat.length >= 2 && (
             <div className="bg-white rounded-2xl shadow-sm p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">📉 體脂趨勢</h3>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={200} minWidth={0}>
                 <LineChart data={bodyTrend.bodyFat}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" fontSize={11} />
@@ -2180,7 +2180,7 @@ export default function ClientOverview() {
                 )
               })}
             </div>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={250} minWidth={0}>
               <LineChart data={e1rmTrend.chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" fontSize={11} />
@@ -2213,7 +2213,7 @@ export default function ClientOverview() {
         {client.training_enabled && weeklyTonnage.length >= 2 && (
           <div className="bg-white rounded-2xl shadow-sm p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">📈 每週訓練量趨勢</h3>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={220} minWidth={0}>
               <BarChart data={weeklyTonnage}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="week" fontSize={11} />
@@ -2234,7 +2234,7 @@ export default function ClientOverview() {
         {client.training_enabled && muscleGroupSets.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">🎯 每肌群週組數</h3>
-            <ResponsiveContainer width="100%" height={Math.max(180, muscleGroupSets.length * 36)}>
+            <ResponsiveContainer width="100%" height={Math.max(180, muscleGroupSets.length * 36)} minWidth={0}>
               <BarChart data={muscleGroupSets} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" fontSize={11} domain={[0, 'auto']} />

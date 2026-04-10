@@ -590,10 +590,42 @@ export default function ClientDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">載入中...</p>
+      <div className="min-h-screen bg-gray-50">
+        {/* Skeleton header bar */}
+        <div className="bg-white shadow-sm px-4 py-4">
+          <div className="max-w-md mx-auto flex items-center justify-between">
+            <div className="h-6 w-32 bg-gray-200 rounded-lg animate-pulse" />
+            <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse" />
+          </div>
+        </div>
+        <div className="max-w-md mx-auto px-4 py-6 space-y-4">
+          {/* Skeleton card 1 - main stats */}
+          <div className="bg-white rounded-3xl shadow-sm p-6 space-y-4">
+            <div className="h-5 w-24 bg-gray-200 rounded animate-pulse" />
+            <div className="grid grid-cols-3 gap-3">
+              <div className="h-16 bg-gray-100 rounded-2xl animate-pulse" />
+              <div className="h-16 bg-gray-100 rounded-2xl animate-pulse" />
+              <div className="h-16 bg-gray-100 rounded-2xl animate-pulse" />
+            </div>
+            <div className="h-4 w-3/4 bg-gray-100 rounded animate-pulse" />
+          </div>
+          {/* Skeleton card 2 - training */}
+          <div className="bg-white rounded-3xl shadow-sm p-6 space-y-4">
+            <div className="h-5 w-20 bg-gray-200 rounded animate-pulse" />
+            <div className="grid grid-cols-4 gap-2">
+              <div className="h-11 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="h-11 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="h-11 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="h-11 bg-gray-100 rounded-lg animate-pulse" />
+            </div>
+            <div className="h-12 bg-gray-100 rounded-xl animate-pulse" />
+          </div>
+          {/* Skeleton card 3 - nutrition */}
+          <div className="bg-white rounded-3xl shadow-sm p-6 space-y-4">
+            <div className="h-5 w-28 bg-gray-200 rounded animate-pulse" />
+            <div className="h-20 bg-gray-100 rounded-2xl animate-pulse" />
+            <div className="h-4 w-1/2 bg-gray-100 rounded animate-pulse" />
+          </div>
         </div>
       </div>
     )
