@@ -849,82 +849,8 @@ export default function ClientDashboard() {
             )
           })()}
 
-          {/* Goal-Driven + Peak Week（備賽客戶）— moved up for competition mode */}
-          {isCompetition && (() => {
-            const compDaysLeft = c.competition_date ? daysUntilDateTW(c.competition_date) : null
-            const showPeakWeek = compDaysLeft != null && compDaysLeft >= 0 && compDaysLeft <= 14 && latestBodyData?.weight
-            return (
-              <SectionErrorBoundary name="goal-driven">
-                {(!showPeakWeek || compDaysLeft! > 7) && (
-                  <GoalDrivenStatus
-                    clientId={c.id}
-                    code={c.unique_code}
-                    isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
-                    onMutate={mutateWithTargets}
-                    initialData={nutritionEngineSuggestion}
-                  />
-                )}
-                {/* 備賽模式：目標設定放在倒數旁邊，方便隨時調整 */}
-                <div className="mb-3" data-section="goal-settings">
-                  <GoalSettings
-                    clientId={c.id}
-                    uniqueCode={c.unique_code}
-                    currentGoalType={c.goal_type}
-                    currentTargetWeight={c.target_weight}
-                    currentTargetBodyFat={(c.target_body_fat as number) ?? null}
-                    currentTargetDate={c.target_date}
-                    competitionEnabled={isCompetitionMode(c.client_mode)}
-                    competitionDate={c.competition_date || null}
-                    prepPhase={c.prep_phase || null}
-                    latestWeight={latestBodyData?.weight || null}
-                    latestBodyFat={latestBodyData?.body_fat || null}
-                    onMutate={mutate}
-                  />
-                </div>
-                {showPeakWeek && (
-                  <PeakWeekPlan
-                    clientId={c.id}
-                    code={c.unique_code}
-                    competitionDate={c.competition_date!}
-                    bodyWeight={latestBodyData!.weight}
-                    previewDate={selectedDate > today ? selectedDate : undefined}
-                    onMutate={mutateWithTargets}
-                    geneDepressionRisk={c.gene_depression_risk as string | null}
-                  />
-                )}
-              </SectionErrorBoundary>
-            )
-          })()}
-
-          {/* Athletic 超補償期時間軸（秤重 → 比賽） */}
-          {c.client_mode === 'athletic' && c.prep_phase === 'rebound' && nutritionEngineSuggestion?.athleticRebound && latestBodyData && (
-            <AthleticReboundTimeline
-              gapHours={nutritionEngineSuggestion.athleticRebound.gapHours}
-              strategy={nutritionEngineSuggestion.athleticRebound.strategy}
-              waterPerHour={nutritionEngineSuggestion.athleticRebound.waterPerHour}
-              bodyWeight={latestBodyData.weight}
-            />
-          )}
-
-          {/* 賽後恢復期計畫卡片（備賽模式 recovery 階段） */}
-          {isCompetition && c.prep_phase === 'recovery' && c.competition_date && (() => {
-            const daysLeft = daysUntilDateTW(c.competition_date)
-            // 比賽日當天算 Day 1，之後遞增
-            const daysPostCompetition = daysLeft <= 0 ? Math.abs(daysLeft) + 1 : 0
-            if (daysPostCompetition === 0) return null
-            return (
-              <PostCompetitionRecovery
-                daysPostCompetition={daysPostCompetition}
-                onSetNextCompetition={() => {
-                  // 滾動到 GoalSettings 區域讓用戶設定
-                  const goalSettings = document.querySelector('[data-section="goal-settings"]')
-                  if (goalSettings) {
-                    goalSettings.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  }
-                }}
-              />
-            )
-          })()}
+          {/* ===== DO section 開始：每日記錄直接從這裡開始 ===== */}
+          {/* GoalDrivenStatus / PeakWeek / 分析元件已移至 SeeTabSection 的「分析」tab */}
 
           {/* 身體數據記錄 — 最優先，每日量體重放最上面 */}
           {c.body_composition_enabled && (
@@ -1444,6 +1370,12 @@ export default function ClientDashboard() {
           latestBodyData={latestBodyData}
           nutritionEngineSuggestion={nutritionEngineSuggestion}
           geneCorrections={geneCorrections}
+          todayTraining={todayTraining}
+          isCompetition={isCompetition}
+          mutate={mutate}
+          mutateWithTargets={mutateWithTargets}
+          selectedDate={selectedDate}
+          today={today}
         />
 
         {/* 自主管理 / 免費學員的智能營養計算（已完成 onboarding 才顯示，避免跟頂部重複） */}

@@ -8,8 +8,14 @@ import SystemActions from '@/components/client/SystemActions'
 import ProgressJourney from '@/components/client/ProgressJourney'
 import BehaviorInsights from '@/components/client/BehaviorInsights'
 import WellnessTrend from '@/components/client/WellnessTrend'
+import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
+import GoalSettings from '@/components/client/GoalSettings'
+import { isCompetitionMode } from '@/lib/client-mode'
+import { daysUntilDateTW } from '@/lib/date-utils'
+import { isWeightTraining } from '@/components/client/types'
 
 const RecoveryDashboard = dynamic(() => import('@/components/client/RecoveryDashboard'), { ssr: false })
+const PeakWeekPlan = dynamic(() => import('@/components/client/PeakWeekPlan'), { ssr: false })
 
 interface SeeTabSectionProps {
   c: any
@@ -18,6 +24,12 @@ interface SeeTabSectionProps {
   latestBodyData: any
   nutritionEngineSuggestion: any
   geneCorrections: any[]
+  todayTraining?: any
+  isCompetition?: boolean
+  mutate?: () => void
+  mutateWithTargets?: (targets?: Record<string, number | undefined>) => void
+  selectedDate?: string
+  today?: string
 }
 
 const TABS = [
@@ -28,8 +40,10 @@ const TABS = [
 
 type TabKey = typeof TABS[number]['key']
 
-export default function SeeTabSection({ c, clientData, isFree, latestBodyData, nutritionEngineSuggestion, geneCorrections }: SeeTabSectionProps) {
+export default function SeeTabSection({ c, clientData, isFree, latestBodyData, nutritionEngineSuggestion, geneCorrections, todayTraining, isCompetition, mutate, mutateWithTargets, selectedDate, today }: SeeTabSectionProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('analysis')
+  const compDaysLeft = c.competition_date ? daysUntilDateTW(c.competition_date) : null
+  const showPeakWeek = compDaysLeft != null && compDaysLeft >= 0 && compDaysLeft <= 14 && latestBodyData?.weight
 
   return (
     <div className="mb-3">
@@ -53,6 +67,48 @@ export default function SeeTabSection({ c, clientData, isFree, latestBodyData, n
       {/* Tab 內容 */}
       {activeTab === 'analysis' && (
         <div className="space-y-3">
+          {/* 備賽目標計畫 + Peak Week */}
+          {isCompetition && (
+            <SectionErrorBoundary name="goal-driven">
+              {(!showPeakWeek || (compDaysLeft != null && compDaysLeft > 7)) && (
+                <GoalDrivenStatus
+                  clientId={c.id}
+                  code={c.unique_code}
+                  isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+                  onMutate={mutateWithTargets}
+                  initialData={nutritionEngineSuggestion}
+                />
+              )}
+              <div className="mb-3" data-section="goal-settings">
+                <GoalSettings
+                  clientId={c.id}
+                  uniqueCode={c.unique_code}
+                  currentGoalType={c.goal_type}
+                  currentTargetWeight={c.target_weight}
+                  currentTargetBodyFat={(c.target_body_fat as number) ?? null}
+                  currentTargetDate={c.target_date}
+                  competitionEnabled={isCompetitionMode(c.client_mode)}
+                  competitionDate={c.competition_date || null}
+                  prepPhase={c.prep_phase || null}
+                  latestWeight={latestBodyData?.weight || null}
+                  latestBodyFat={latestBodyData?.body_fat || null}
+                  onMutate={mutate || (() => {})}
+                />
+              </div>
+              {showPeakWeek && latestBodyData && (
+                <PeakWeekPlan
+                  clientId={c.id}
+                  code={c.unique_code}
+                  competitionDate={c.competition_date!}
+                  bodyWeight={latestBodyData.weight}
+                  previewDate={selectedDate && today && selectedDate > today ? selectedDate : undefined}
+                  onMutate={mutateWithTargets}
+                  geneDepressionRisk={c.gene_depression_risk as string | null}
+                />
+              )}
+            </SectionErrorBoundary>
+          )}
+
           {/* 恢復評估 */}
           {c.wellness_enabled && (
             <SectionErrorBoundary name="recovery">
