@@ -1190,12 +1190,23 @@ export default function ClientDashboard() {
         {isToday && (
           <QuickActions
             enabledSections={[
-              ...(c.body_composition_enabled ? [{ id: 'section-body', icon: '⚖️', label: '記錄體重', completed: !!latestBodyData && latestBodyData.date === selectedDate }] : []),
-              ...(c.nutrition_enabled ? [{ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: '🥗', label: '記錄飲食', completed: !!todayNutrition }] : []),
-              ...(c.supplement_enabled ? [{ id: 'section-supplements', icon: '💊', label: '補品打卡', completed: todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total }] : []),
-              ...(c.wellness_enabled ? [{ id: 'section-wellness', icon: '😊', label: '記錄感受', completed: !!todayWellness }] : []),
-              ...(c.training_enabled ? [{ id: 'section-training', icon: '🏋️', label: '記錄訓練', completed: !!todayTraining }] : []),
+              ...(c.body_composition_enabled ? [{ id: 'section-body', icon: '⚖️', label: '體重', completed: !!latestBodyData && latestBodyData.date === selectedDate }] : []),
+              ...(c.nutrition_enabled ? [{ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: '🥗', label: '飲食', completed: !!todayNutrition }] : []),
+              ...(c.supplement_enabled ? [{ id: 'section-supplements', icon: '💊', label: '補品', completed: todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total }] : []),
+              ...(c.wellness_enabled ? [{ id: 'section-wellness', icon: '😊', label: '感受', completed: !!todayWellness }] : []),
+              ...(c.training_enabled ? [{ id: 'section-training', icon: '🏋️', label: '訓練', completed: !!todayTraining }] : []),
             ]}
+            topSummary={{
+              weight: latestBodyData?.weight,
+              daysLeft: c.competition_date ? daysUntilDateTW(c.competition_date) : null,
+              todayCarbs: nutritionEngineSuggestion?.suggestedCarbsTrainingDay != null
+                ? (todayTraining && isWeightTraining(todayTraining.training_type)
+                  ? nutritionEngineSuggestion.suggestedCarbsTrainingDay
+                  : nutritionEngineSuggestion.suggestedCarbsRestDay)
+                : nutritionEngineSuggestion?.suggestedCarbs ?? c.carbs_target,
+              isTrainingDay: !!(todayTraining && isWeightTraining(todayTraining.training_type)),
+              streak: overallStreak,
+            }}
             onNavigate={(sectionId) => {
               setActiveTab(sectionId)
               document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
