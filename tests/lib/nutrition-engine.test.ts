@@ -315,7 +315,7 @@ describe('generateNutritionSuggestion', () => {
         nutritionCompliance: 50,
       }))
       expect(result.status).not.toBe('insufficient_data')
-      expect(result.warnings.some(w => w.includes('合規率'))).toBe(true)
+      expect(result.warnings.some(w => w.includes('目前飲食記錄較少'))).toBe(true)
     })
 
     it('should use formula TDEE when compliance is very low', () => {
@@ -350,7 +350,7 @@ describe('generateNutritionSuggestion', () => {
         currentCalories: null,
       }))
       expect(result.estimatedTDEE).toBeGreaterThan(0)
-      expect(result.warnings.some(w => w.includes('無飲食記錄'))).toBe(true)
+      expect(result.warnings.some(w => w.includes('尚未有飲食記錄'))).toBe(true)
     })
 
     it('should use currentCalories as fallback for adaptive TDEE', () => {
@@ -390,7 +390,7 @@ describe('generateNutritionSuggestion', () => {
         ],
       }))
       expect(result.estimatedTDEE).toBeGreaterThan(800)
-      expect(result.warnings.some(w => w.includes('偏低'))).toBe(true)
+      expect(result.warnings.some(w => w.includes('系統根據你的飲食記錄和體重變化估算'))).toBe(true)
     })
   })
 

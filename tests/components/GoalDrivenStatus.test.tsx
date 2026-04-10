@@ -256,7 +256,8 @@ describe('GoalDrivenStatus', () => {
     renderComponent()
 
     await waitFor(() => {
-      expect(screen.getByText('1800')).toBeInTheDocument() // suggestedCalories
+      // GoalDrivenStatus recalculates: protein*4 + carbs*4 + fat*9 = 150*4+200*4+60*9 = 1940
+      expect(screen.getByText('1940')).toBeInTheDocument() // todayCalories (recalculated)
       expect(screen.getByText('150')).toBeInTheDocument() // suggestedProtein
       expect(screen.getByText('200')).toBeInTheDocument() // suggestedCarbs
       expect(screen.getByText('60')).toBeInTheDocument() // suggestedFat

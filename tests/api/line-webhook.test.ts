@@ -394,7 +394,7 @@ describe('POST /api/line/webhook', () => {
   // ═══════════════════════════════════════
 
   describe('Image message', () => {
-    it('replies with unsupported image message', async () => {
+    it('does not reply to image messages (image auto-reply removed)', async () => {
       const req = makeWebhookRequest({
         events: [{
           type: 'message',
@@ -406,14 +406,7 @@ describe('POST /api/line/webhook', () => {
 
       const res = await POST(req)
       expect(res.status).toBe(200)
-      expect(mockReplyMessage).toHaveBeenCalledWith(
-        'reply-img',
-        expect.arrayContaining([
-          expect.objectContaining({
-            text: expect.stringContaining('不支援圖片'),
-          }),
-        ]),
-      )
+      expect(mockReplyMessage).not.toHaveBeenCalled()
     })
   })
 
@@ -2148,7 +2141,7 @@ describe('POST /api/line/webhook', () => {
       expect(mockReplyMessage).not.toHaveBeenCalled()
     })
 
-    it('ignores bare number for unbound user (does not try handleQuickWeight)', async () => {
+    it('replies with fallback quick menu for unbound user sending bare number', async () => {
       mockSupabase = createSupabaseMock(null)
       vi.resetModules()
       const mod = await import('@/app/api/line/webhook/route')
@@ -2156,8 +2149,16 @@ describe('POST /api/line/webhook', () => {
       const req = makeWebhookRequest({ events: [textEvent('72')] })
       const res = await mod.POST(req)
       expect(res.status).toBe(200)
-      // Unbound user sending 72 (not 8 chars) -> falls through to no reply
-      expect(mockReplyMessage).not.toHaveBeenCalled()
+      // Unbound user now gets fallback quick menu reply
+      expect(mockReplyMessage).toHaveBeenCalledWith(
+        'reply-token',
+        expect.arrayContaining([
+          expect.objectContaining({
+            text: expect.stringContaining('嗨'),
+            quickReply: expect.any(Object),
+          }),
+        ]),
+      )
     })
   })
 
@@ -2427,7 +2428,7 @@ describe('POST /api/line/webhook', () => {
       expect(mockReplyMessage).not.toHaveBeenCalled()
     })
 
-    it('does not reply to unrecognized text for unbound user', async () => {
+    it('replies with fallback quick menu for unrecognized text from unbound user', async () => {
       mockSupabase = createSupabaseMock(null)
       vi.resetModules()
       const mod = await import('@/app/api/line/webhook/route')
@@ -2435,7 +2436,16 @@ describe('POST /api/line/webhook', () => {
       const req = makeWebhookRequest({ events: [textEvent('hello world how are you')] })
       const res = await mod.POST(req)
       expect(res.status).toBe(200)
-      expect(mockReplyMessage).not.toHaveBeenCalled()
+      // Unbound user now gets fallback quick menu reply
+      expect(mockReplyMessage).toHaveBeenCalledWith(
+        'reply-token',
+        expect.arrayContaining([
+          expect.objectContaining({
+            text: expect.stringContaining('嗨'),
+            quickReply: expect.any(Object),
+          }),
+        ]),
+      )
     })
   })
 
