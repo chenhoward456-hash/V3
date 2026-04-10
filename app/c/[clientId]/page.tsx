@@ -40,6 +40,7 @@ import BehaviorInsights from '@/components/client/BehaviorInsights'
 import ProgressJourney from '@/components/client/ProgressJourney'
 import SystemActions from '@/components/client/SystemActions'
 import ExportAiSummary from '@/components/client/ExportAiSummary'
+import SeeTabSection from '@/components/client/SeeTabSection'
 import TodayOverviewCard from '@/components/client/TodayOverviewCard'
 import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
@@ -1423,58 +1424,16 @@ export default function ClientDashboard() {
         )}
 
         {/* ================================================================ */}
-        {/* === SEE section: 狀態與趨勢（唯讀分析） === */}
+        {/* === SEE section: Tab 切換（分析 / 進度 / 工具） === */}
         {/* ================================================================ */}
-
-        {/* 恢復評估儀表板 */}
-        {c.wellness_enabled && (
-          <SectionErrorBoundary name="recovery">
-          <div className="mb-3">
-            <RecoveryDashboard clientId={c.unique_code} />
-          </div>
-          </SectionErrorBoundary>
-        )}
-
-        {/* AI 摘要匯出（付費用戶限定） */}
-        {!isFree && (
-          <ExportAiSummary
-            client={c}
-            bodyData={clientData.bodyData || []}
-            nutritionLogs={clientData.nutritionLogs || []}
-            wellness={clientData.wellness || []}
-            trainingLogs={clientData.trainingLogs || []}
-            labResults={c.lab_results || []}
-            suggestion={nutritionEngineSuggestion}
-          />
-        )}
-
-        {/* 系統動態 + 進度可視化 + 行為洞察（做完再看） */}
-        <SectionErrorBoundary name="system-actions">
-          <SystemActions
-            suggestion={nutritionEngineSuggestion}
-            prepPhase={c.prep_phase as string | null}
-          />
-        </SectionErrorBoundary>
-
-        <SectionErrorBoundary name="progress-journey">
-          <ProgressJourney
-            bodyData={(clientData.bodyData || []).map((b: any) => ({ date: b.date, weight: b.weight, body_fat: b.body_fat }))}
-            wellness={(clientData.wellness || []).map((w: any) => ({ date: w.date, sleep_quality: w.sleep_quality, energy_level: w.energy_level, mood: w.mood }))}
-            nutritionLogs={(clientData.nutritionLogs || []).map((n: any) => ({ date: n.date, compliant: n.compliant, protein_grams: n.protein_grams }))}
-            trainingLogs={(clientData.trainingLogs || []).map((t: any) => ({ date: t.date, training_type: t.training_type }))}
-            bodyWeight={latestBodyData?.weight ?? c.target_weight ?? 70}
-            goalType={c.goal_type as string | null}
-            prepPhase={c.prep_phase as string | null}
-          />
-        </SectionErrorBoundary>
-
-        <SectionErrorBoundary name="behavior-insights">
-          <BehaviorInsights
-            clientId={c.unique_code}
-            code={c.unique_code}
-            isFree={c.subscription_tier === 'free'}
-          />
-        </SectionErrorBoundary>
+        <SeeTabSection
+          c={c}
+          clientData={clientData}
+          isFree={isFree}
+          latestBodyData={latestBodyData}
+          nutritionEngineSuggestion={nutritionEngineSuggestion}
+          geneCorrections={geneCorrections}
+        />
 
         {/* 自主管理 / 免費學員的智能營養計算（已完成 onboarding 才顯示，避免跟頂部重複） */}
         {!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target && (
@@ -1519,7 +1478,7 @@ export default function ClientDashboard() {
           />
         )}
 
-        {c.wellness_enabled && <WellnessTrend wellness={clientData.wellness || []} />}
+        {/* WellnessTrend 已移至 SeeTabSection 的分析 tab */}
 
         {/* ================================================================ */}
         {/* === REFERENCE section: 參考資料（少變動） === */}
