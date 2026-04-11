@@ -17,14 +17,14 @@ const sections = [
 // Tests
 // ---------------------------------------------------------------------------
 describe('QuickActions', () => {
-  it('renders only uncompleted action chips', () => {
+  it('renders all actions (completed and uncompleted)', () => {
     render(<QuickActions enabledSections={sections} onNavigate={vi.fn()} />)
 
     expect(screen.getByText('Weight')).toBeInTheDocument()
     expect(screen.getByText('Nutrition')).toBeInTheDocument()
     expect(screen.getByText('Wellness')).toBeInTheDocument()
-    // Training is completed, should not appear
-    expect(screen.queryByText('Training')).not.toBeInTheDocument()
+    // Training is completed but still shown (with ✅)
+    expect(screen.getByText('Training')).toBeInTheDocument()
   })
 
   it('calls onNavigate with the correct section id when clicked', () => {
@@ -44,7 +44,7 @@ describe('QuickActions', () => {
     const allDone = sections.map(s => ({ ...s, completed: true }))
     render(<QuickActions enabledSections={allDone} onNavigate={vi.fn()} />)
 
-    expect(screen.getByText('All done for today!')).toBeInTheDocument()
+    expect(screen.getByText('今天全部完成 💪')).toBeInTheDocument()
   })
 
   it('renders nothing when enabledSections is empty', () => {
