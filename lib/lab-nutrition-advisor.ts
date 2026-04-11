@@ -996,12 +996,12 @@ export function generateLabNutritionAdvice(
     // 維生素
     // ════════════════════════════════════════
 
-    if (matchName(lab.test_name, ['維生素d', 'vitamin d', '25-ohd', '25ohd', 'vit d'])) {
+    if (matchName(lab.test_name, ['維生素d', 'vitamin d', '25-ohd', '25ohd', 'vit d']) && lab.value < 60) {
       advice.push({
         category: 'vitamin',
-        title: '維生素 D 不足',
+        title: lab.value < 40 ? '維生素 D 不足' : '維生素 D 可再提升',
         icon: '☀️',
-        severity: lab.value < 20 ? 'high' : 'medium',
+        severity: lab.value < 20 ? 'high' : lab.value < 40 ? 'medium' : 'low',
         dietaryChanges: [
           '每週吃 2-3 次高油脂魚類（鮭魚、鯖魚各含 400-600 IU/100g）',
           '雞蛋選全蛋（蛋黃含 40 IU/顆）',
