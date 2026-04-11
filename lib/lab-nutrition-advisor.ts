@@ -245,7 +245,7 @@ export function generateLabNutritionAdvice(
       })
     }
 
-    if (matchName(lab.test_name, ['hba1c', '糖化血色素', '糖化血紅素'])) {
+    if (matchName(lab.test_name, ['hba1c', '糖化血色素', '糖化血紅素']) && lab.value > 5.5) {
       advice.push({
         category: 'glucose',
         title: '糖化血色素偏高',
@@ -312,7 +312,7 @@ export function generateLabNutritionAdvice(
     // 血脂
     // ════════════════════════════════════════
 
-    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg'])) {
+    if (matchName(lab.test_name, ['三酸甘油酯', 'triglyceride', 'tg']) && lab.value > 100) {
       advice.push({
         category: 'lipid',
         title: '三酸甘油酯偏高',
@@ -344,7 +344,7 @@ export function generateLabNutritionAdvice(
       })
     }
 
-    if (matchName(lab.test_name, ['apob', 'apolipoproteinb'])) {
+    if (matchName(lab.test_name, ['apob', 'apolipoproteinb']) && lab.value > 80) {
       advice.push({
         category: 'lipid',
         title: 'ApoB 偏高（心血管風險）',
@@ -374,7 +374,7 @@ export function generateLabNutritionAdvice(
       })
     }
 
-    if (matchName(lab.test_name, ['lp(a)', 'lpa', 'lipoprotein(a)', 'lipoprotein a'])) {
+    if (matchName(lab.test_name, ['lp(a)', 'lpa', 'lipoprotein(a)', 'lipoprotein a']) && lab.value > 30) {
       advice.push({
         category: 'lipid',
         title: 'Lp(a) 偏高',
@@ -400,7 +400,7 @@ export function generateLabNutritionAdvice(
       })
     }
 
-    if (matchName(lab.test_name, ['ldl-c', 'ldl', '低密度脂蛋白', '低密度膽固醇'])) {
+    if (matchName(lab.test_name, ['ldl-c', 'ldl', '低密度脂蛋白', '低密度膽固醇']) && lab.value > 100) {
       advice.push({
         category: 'lipid',
         title: 'LDL-C 偏高',
@@ -492,7 +492,7 @@ export function generateLabNutritionAdvice(
     // 肝功能
     // ════════════════════════════════════════
 
-    if (matchName(lab.test_name, ['ast', 'got', 'sgot', '麩草酸轉胺酶'])) {
+    if (matchName(lab.test_name, ['ast', 'got', 'sgot', '麩草酸轉胺酶']) && lab.value > 40) {
       advice.push({
         category: 'liver',
         title: 'AST（GOT）偏高',
@@ -519,7 +519,7 @@ export function generateLabNutritionAdvice(
       })
     }
 
-    if (matchName(lab.test_name, ['alt', 'gpt', 'sgpt', '麩丙酮酸轉胺酶'])) {
+    if (matchName(lab.test_name, ['alt', 'gpt', 'sgpt', '麩丙酮酸轉胺酶']) && lab.value > 40) {
       advice.push({
         category: 'liver',
         title: 'ALT（GPT）偏高',
@@ -547,7 +547,7 @@ export function generateLabNutritionAdvice(
       })
     }
 
-    if (matchName(lab.test_name, ['ggt', 'γ-gt', 'gamma-gt', '丙麩氨酸轉肽酶'])) {
+    if (matchName(lab.test_name, ['ggt', 'γ-gt', 'gamma-gt', '丙麩氨酸轉肽酶']) && lab.value > 50) {
       advice.push({
         category: 'liver',
         title: 'GGT 偏高',
@@ -932,7 +932,7 @@ export function generateLabNutritionAdvice(
     // 發炎
     // ════════════════════════════════════════
 
-    if (matchName(lab.test_name, ['crp', 'c反應蛋白', 'hs-crp', 'hscrp'])) {
+    if (matchName(lab.test_name, ['crp', 'c反應蛋白', 'hs-crp', 'hscrp']) && lab.value > 1.0) {
       advice.push({
         category: 'inflammation',
         title: '發炎指數偏高',
@@ -965,7 +965,7 @@ export function generateLabNutritionAdvice(
       })
     }
 
-    if (matchName(lab.test_name, ['同半胱胺酸', 'homocysteine'])) {
+    if (matchName(lab.test_name, ['同半胱胺酸', 'homocysteine']) && lab.value > 8) {
       advice.push({
         category: 'inflammation',
         title: '同半胱胺酸偏高',

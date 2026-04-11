@@ -136,7 +136,7 @@ describe('generateLabNutritionAdvice', () => {
 
     it('flags HbA1c with correct severity thresholds', () => {
       const medium = generateLabNutritionAdvice([
-        lab('HbA1c', 5.5, '%', 'attention'),
+        lab('HbA1c', 5.6, '%', 'attention'),
       ])
       expect(medium[0].severity).toBe('medium')
 
@@ -294,7 +294,7 @@ describe('generateLabNutritionAdvice', () => {
       expect(male[0].targetRange).toContain('<60')
 
       const female = generateLabNutritionAdvice(
-        [lab('GGT', 45, 'U/L', 'attention')],
+        [lab('GGT', 55, 'U/L', 'attention')],
         { gender: '女性' },
       )
       expect(female[0].targetRange).toContain('<40')
