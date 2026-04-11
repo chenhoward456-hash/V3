@@ -1001,7 +1001,7 @@ export function generateLabNutritionAdvice(
         category: 'vitamin',
         title: lab.value < 40 ? '維生素 D 不足' : '維生素 D 可再提升',
         icon: '☀️',
-        severity: lab.value < 20 ? 'high' : lab.value < 40 ? 'medium' : 'low',
+        severity: lab.value < 20 ? 'high' : 'medium',
         dietaryChanges: [
           '每週吃 2-3 次高油脂魚類（鮭魚、鯖魚各含 400-600 IU/100g）',
           '雞蛋選全蛋（蛋黃含 40 IU/顆）',
