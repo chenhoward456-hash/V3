@@ -7,6 +7,9 @@ import { calculateInitialTargets } from '@/lib/nutrition-engine'
 import { createLogger } from '@/lib/logger'
 import { writeAuditLog } from '@/lib/audit'
 import crypto from 'crypto'
+import { pushMessage } from '@/lib/line'
+
+const COACH_LINE_ID = process.env.COACH_LINE_USER_ID || 'U3b425b2d1572d197d0992945323881e5'
 
 const log = createLogger('free-trial')
 
@@ -68,6 +71,10 @@ export async function POST(request: NextRequest) {
 
     if (clientError) {
       log.error('Client creation error', clientError)
+      pushMessage(COACH_LINE_ID, [{
+        type: 'text',
+        text: `❌ 註冊失敗！\n\n姓名：${name.trim()}\nEmail：${email}\n錯誤：${clientError.message || '未知'}`,
+      }]).catch(() => {})
       return createErrorResponse('建立帳號失敗，請稍後再試', 500)
     }
 
@@ -240,6 +247,17 @@ export async function POST(request: NextRequest) {
         log.error('Email error (non-blocking)', err)
       })
     }
+
+    // 通知教練：新用戶註冊
+    pushMessage(COACH_LINE_ID, [{
+      type: 'text',
+      text: `🆕 新用戶註冊！\n\n` +
+        `姓名：${name.trim()}\n` +
+        `目標：${goalType === 'cut' ? '減脂' : goalType === 'bulk' ? '增肌' : '體態重組'}\n` +
+        `體重：${effectiveWeight ? effectiveWeight + 'kg' : '未填'}\n` +
+        `${ref ? `來源：${ref}\n` : ''}` +
+        `代碼：${uniqueCode}`,
+    }]).catch(() => {})
 
     // 讀取已計算的營養目標回傳給前端
     const { data: clientData } = await supabase
