@@ -57,7 +57,7 @@ export default function ArticleCTA({ articleTitle, slug, relatedArticles, freeRe
           免費系統分析，30 秒輸入基本資料，馬上看到你的營養目標和建議。
         </p>
         <Link
-          href="/diagnosis"
+          href="/join"
           className="inline-block bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:bg-blue-700 hover:-translate-y-1 transition-all"
         >
           免費體驗系統分析
@@ -104,7 +104,7 @@ export default function ArticleCTA({ articleTitle, slug, relatedArticles, freeRe
             <h5 className="font-semibold mb-2" style={{color: '#2D2D2D'}}>快速診斷</h5>
             <p className="text-sm text-gray-600 mb-4">30 秒評估你的身體狀態</p>
             <Link 
-              href="/diagnosis"
+              href="/join"
               className="text-primary hover:underline text-sm font-medium"
             >
               開始診斷 →

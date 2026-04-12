@@ -120,7 +120,7 @@ export default function StickyCTA({ articleTitle, slug, intent = 'performance', 
             />
           ) : (
             <Link
-              href="/diagnosis"
+              href="/join"
               className="w-full inline-block bg-blue-600 text-white px-5 py-3.5 rounded-xl font-bold text-center text-base hover:bg-blue-700 transition-all"
             >
               {dynamicCopy.buttonText}
