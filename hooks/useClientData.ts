@@ -121,7 +121,7 @@ export function useClientData(
   options: UseClientDataOptions = {}
 ): UseClientDataResult {
   const {
-    revalidateOnFocus = false,
+    revalidateOnFocus = true,
     dedupingInterval = 10000 // 10秒內相同請求不重複發
   } = options
 
@@ -145,7 +145,7 @@ export function useClientData(
     {
       revalidateOnFocus,
       dedupingInterval,
-      refreshInterval: 60000, // 60秒自動刷新（降低 API 負載，教練修改仍能及時反映）
+      refreshInterval: 30000, // 30秒自動刷新（教練修改 tier 後能更快反映）
       errorRetryCount: 3,
       onError: (error) => {
         console.error('客戶資料獲取失敗:', error)

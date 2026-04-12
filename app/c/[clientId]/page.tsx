@@ -12,6 +12,7 @@ import BottomNav from '@/components/client/BottomNav'
 import CollapsibleSection from '@/components/client/CollapsibleSection'
 import QuickActions from '@/components/client/QuickActions'
 import UpgradeGate from '@/components/client/UpgradeGate'
+import UpgradeWelcome from '@/components/client/UpgradeWelcome'
 import HealthOverview from '@/components/client/HealthOverview'
 import RecoveryDashboard from '@/components/client/RecoveryDashboard'
 import DailyCheckIn from '@/components/client/DailyCheckIn'
@@ -1111,6 +1112,8 @@ export default function ClientDashboard() {
             />
           )
         })()}
+
+        <UpgradeWelcome clientId={c.unique_code} tier={c.subscription_tier} />
 
         {/* === QuickActions: 未完成項目快速導航 === */}
         {isToday && (
