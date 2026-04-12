@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
+import { pushMessage } from '@/lib/line'
 
 const supabase = createServiceSupabase()
 
@@ -192,6 +193,17 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // 升級偵測：更新前先讀舊 tier
+    let oldTier: string | null = null
+    if (sanitizedClientData.subscription_tier) {
+      const { data: before } = await supabase
+        .from('clients')
+        .select('subscription_tier, line_user_id, name')
+        .eq('id', clientId)
+        .single()
+      oldTier = before?.subscription_tier || null
+    }
+
     // 先更新主要欄位（不含 coach_macro_override，避免欄位不存在時整個更新失敗）
     const { error: clientError } = await supabase
       .from('clients')
@@ -201,6 +213,44 @@ export async function PUT(request: NextRequest) {
     if (clientError) {
       console.error('[admin/clients PUT] 更新失敗:', clientError)
       return NextResponse.json({ error: '更新學員失敗' }, { status: 500 })
+    }
+
+    // 升級成功：發 LINE 歡迎訊息給客戶
+    if (sanitizedClientData.subscription_tier && oldTier && sanitizedClientData.subscription_tier !== oldTier) {
+      const { data: upgraded } = await supabase
+        .from('clients')
+        .select('line_user_id, name, subscription_tier')
+        .eq('id', clientId)
+        .single()
+
+      if (upgraded?.line_user_id) {
+        const tier = upgraded.subscription_tier
+        const features = tier === 'coached'
+          ? '🎉 你的教練方案已啟用！\n\n解鎖功能：\n' +
+            '✅ 每日營養追蹤（碳水/蛋白質/脂肪）\n' +
+            '✅ 訓練記錄 + 動作重量追蹤\n' +
+            '✅ 每日身心狀態監測\n' +
+            '✅ 補品服從追蹤\n' +
+            '✅ AI 智能分析（每日 30 次）\n' +
+            '✅ 血檢深度分析 + 飲食建議\n' +
+            '✅ 教練每週審閱 + LINE 諮詢\n' +
+            '✅ 碳循環自動調整\n' +
+            '✅ 數據匯出（給 AI 討論）\n\n' +
+            '從今天開始記錄吧 👇'
+          : tier === 'self_managed'
+          ? '🎉 自主管理方案已啟用！\n\n解鎖功能：\n' +
+            '✅ 每日營養追蹤\n' +
+            '✅ AI 自動分析（TDEE 校正 + Refeed 觸發）\n' +
+            '✅ 訓練記錄\n' +
+            '✅ 身心狀態監測\n' +
+            '✅ 碳循環自動調整\n\n' +
+            '從今天開始記錄吧 👇'
+          : null
+
+        if (features) {
+          pushMessage(upgraded.line_user_id, [{ type: 'text', text: features }]).catch(() => {})
+        }
+      }
     }
 
     // 教練覆寫鎖定：如果教練修改了營養目標欄位，自動設定鎖定
