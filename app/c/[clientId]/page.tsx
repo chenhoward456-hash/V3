@@ -1113,7 +1113,18 @@ export default function ClientDashboard() {
           )
         })()}
 
-        <UpgradeWelcome clientId={c.unique_code} tier={c.subscription_tier} />
+        <UpgradeWelcome
+          clientId={c.unique_code}
+          tier={c.subscription_tier}
+          todayBody={!!latestBodyData && latestBodyData.date === today}
+          todayNutrition={!!todayNutrition}
+          todayTraining={!!todayTraining}
+          todayWellness={!!todayWellness}
+          supplementCount={(c.supplements || []).length}
+          labResultCount={(c.lab_results || []).length}
+          hasGeneData={!!c.gene_mthfr}
+          onOpenAiChat={() => setShowAiChat(true)}
+        />
 
         {/* === QuickActions: 未完成項目快速導航 === */}
         {isToday && (
@@ -1296,9 +1307,11 @@ export default function ClientDashboard() {
               togglingSupplements={togglingSupplements}
               recentLogs={clientData.recentLogs || []}
               selectedDate={selectedDate}
+              clientId={clientId as string}
               onToggleSupplement={handleToggleSupplement}
               onMarkAllComplete={handleMarkAllSupplementsComplete}
               onManageSupplements={() => setShowSupplementModal(true)}
+              onMutate={mutate}
             />
           </CollapsibleSection>
           </SectionErrorBoundary>
