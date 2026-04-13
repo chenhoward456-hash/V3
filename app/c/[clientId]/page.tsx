@@ -1247,8 +1247,8 @@ export default function ClientDashboard() {
               }
               weeklyAdjustmentCount={0}
             />
-            {/* 一般學員（非自主管理、非免費）的飲食目標卡片 */}
-            {!isCompetition && !isSelfManaged && !isFree && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
+            {/* 一般學員（非免費）的飲食目標卡片 */}
+            {!isCompetition && !isFree && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
               <DailyNutritionTarget
                 caloriesTarget={c.calories_target}
                 proteinTarget={c.protein_target}
@@ -1345,6 +1345,12 @@ export default function ClientDashboard() {
           <SectionErrorBoundary name="today-workout">
           <TodayWorkout trainingPlan={c.training_plan} todayTrainingType={todayTraining?.training_type} />
           </SectionErrorBoundary>
+        )}
+        {c.training_enabled && !c.training_plan && c.subscription_tier === 'coached' && (
+          <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-3 text-center">
+            <p className="text-sm text-indigo-700">📋 教練將為你製作個人化訓練計畫</p>
+            <p className="text-[10px] text-indigo-500 mt-1">設定完成後會顯示在這裡</p>
+          </div>
         )}
 
         {/* 訓練紀錄 */}
@@ -1452,10 +1458,10 @@ export default function ClientDashboard() {
         })()}
 
         {/* 基因檔案卡片 */}
-        {isFree ? (
+        {(isFree || isSelfManaged) ? (
           <UpgradeGate
             feature="基因檔案"
-            description="升級後可填寫基因檢測結果，獲得個人化營養建議"
+            description="升級教練方案後可填寫基因檢測結果，獲得個人化營養建議"
             tier="coached"
           />
         ) : (
@@ -1640,6 +1646,16 @@ export default function ClientDashboard() {
                     加 LINE 找 Howard
                   </a>
                 </div>
+              ) : isSelfManaged ? (
+                <div className="mt-4 space-y-2">
+                  <Link
+                    href={`/upgrade?from=self_managed`}
+                    onClick={() => trackEvent('upgrade_cta_clicked', { source: 'locked_features_self_managed' })}
+                    className="block text-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all"
+                  >
+                    升級教練方案解鎖 →
+                  </Link>
+                </div>
               ) : (
                 <p className="text-xs text-gray-400 mt-3 text-center">和教練討論開啟更多追蹤功能</p>
               )}
@@ -1706,6 +1722,7 @@ export default function ClientDashboard() {
 
       {/* AI 飲食顧問浮動按鈕 */}
       {c.nutrition_enabled && (
+        <>
         <button
           onClick={() => setShowAiChat(true)}
           className="fixed z-40 bg-[#2563eb] text-white rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 px-4 py-3"
@@ -1719,6 +1736,15 @@ export default function ClientDashboard() {
             <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">3次免費</span>
           )}
         </button>
+        {!c.ai_chat_enabled && (
+          <span
+            className="fixed z-40 text-[9px] text-blue-400 whitespace-nowrap pointer-events-none"
+            style={{ bottom: 'calc(56px + env(safe-area-inset-bottom))', right: '16px' }}
+          >
+            免費每月 3 次，升級後無限使用
+          </span>
+        )}
+        </>
       )}
 
 
