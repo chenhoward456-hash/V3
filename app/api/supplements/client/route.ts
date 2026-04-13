@@ -88,8 +88,8 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('[supplements/client] Insert error:', error)
-      return createErrorResponse('建立補品失敗', 500)
+      console.error('[supplements/client] Insert error:', JSON.stringify(error), { client_id: client.id, name: sanitizedName, dosage: sanitizedDosage || null, timing: sanitizedTiming, sort_order: (count ?? 0) + 1 })
+      return createErrorResponse(`建立補品失敗：${error.message || error.code || '未知錯誤'}`, 500)
     }
 
     return createSuccessResponse(data)
