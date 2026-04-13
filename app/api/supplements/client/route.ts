@@ -80,9 +80,8 @@ export async function POST(request: NextRequest) {
       .insert({
         client_id: client.id,
         name: sanitizedName,
-        dosage: sanitizedDosage,
+        dosage: sanitizedDosage || null,
         timing: sanitizedTiming,
-        is_active: true,
         sort_order: (count ?? 0) + 1,
       })
       .select()
