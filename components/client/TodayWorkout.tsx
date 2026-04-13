@@ -107,6 +107,14 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
         </div>
       )}
 
+      {/* 提示 */}
+      {showPlan && (
+        <p className="text-[10px] text-gray-400 mt-2 text-center">
+          這是教練安排的參考課表。實際訓練可在下方「記錄動作明細」自由調整。
+          {'\n'}想修改課表？在 LINE 跟教練說一聲 💬
+        </p>
+      )}
+
       {/* Toggle full weekly plan */}
       <button
         onClick={() => setShowFullPlan(!showFullPlan)}
