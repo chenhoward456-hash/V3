@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
   // 取得所有已綁定 LINE 的活躍學員
   const { data: clients, error } = await supabase
     .from('clients')
-    .select('id, name, line_user_id, body_composition_enabled, nutrition_enabled, training_enabled, wellness_enabled')
+    .select('id, name, line_user_id, subscription_tier, body_composition_enabled, nutrition_enabled, training_enabled, wellness_enabled')
     .eq('is_active', true)
     .not('line_user_id', 'is', null)
 
@@ -347,11 +347,14 @@ export async function GET(request: NextRequest) {
       }
       if (missing.length > 0) eveningTargets.push({ client, missing, missingShort })
 
-      // LINE Push 體重提醒（只給活躍 + 今天沒記體重的人，帶 Quick Reply）
+      // LINE Push 提醒：付費用戶 + 今天完全沒記錄 → 推一則（省 LINE 額度）
+      // 免費版 LINE 每月 200 則，6 個付費 × 30 天 = 最多 180 則
+      const isPaid = client.subscription_tier === 'coached' || client.subscription_tier === 'self_managed'
+      const hasAnyRecord = hasWeight.has(client.id) || hasWellness.has(client.id) || hasNutrition.has(client.id) || hasTraining.has(client.id)
       if (
-        client.body_composition_enabled &&
-        !hasWeight.has(client.id) &&
-        activeClientIds.has(client.id) &&
+        isPaid &&
+        client.line_user_id &&
+        !hasAnyRecord &&
         lastWeightByClient[client.id]
       ) {
         lineWeightTargets.push({ client, lastWeight: lastWeightByClient[client.id] })
@@ -392,7 +395,7 @@ export async function GET(request: NextRequest) {
           ]
           return pushMessage(client.line_user_id, [{
             type: 'text',
-            text: `🌙 ${client.name}，今天體重記了嗎？\n上次 ${w.toFixed(1)} kg，點一下就記好了 👇`,
+            text: `🌙 ${client.name}，今天還沒記錄唷！\n體重上次 ${w.toFixed(1)} kg，點一下就好 👇`,
             quickReply: { items: quickReplyItems },
           }])
         })
