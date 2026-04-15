@@ -100,7 +100,8 @@ export async function POST(request: NextRequest) {
         bodyRecord.body_fat = diagnosisData.bodyFatPct
       }
 
-      await supabase.from('body_composition').insert(bodyRecord)
+      const { error: bodyError } = await supabase.from('body_composition').insert(bodyRecord)
+      if (bodyError) log.error('Body composition insert failed (non-blocking)', bodyError)
 
       // 計算初始營養目標
       try {
@@ -143,7 +144,7 @@ export async function POST(request: NextRequest) {
           estimatedWeeks = Math.ceil(bfDiff / weeklyBfRate)
         }
 
-        await supabase.from('clients').update({
+        const { error: targetError } = await supabase.from('clients').update({
           calories_target: targets.calories,
           protein_target: targets.protein,
           carbs_target: targets.carbs,
@@ -152,6 +153,7 @@ export async function POST(request: NextRequest) {
           ...(tgtWeight ? { target_weight: tgtWeight } : {}),
           ...(tgtBodyFat ? { target_body_fat: tgtBodyFat } : {}),
         }).eq('id', newClient.id)
+        if (targetError) log.error('Nutrition target update failed', targetError)
 
         // 把時程預估也回傳給前端（用 registration_data 存）
         if (estimatedWeeks) {

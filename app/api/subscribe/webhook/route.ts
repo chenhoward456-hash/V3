@@ -183,7 +183,8 @@ export async function POST(request: NextRequest) {
 
         if (clientError) {
           // Rollback purchase status so ECPay retry can succeed
-          await supabase.from('subscription_purchases').update({ status: 'pending', completed_at: null, ecpay_trade_no: null }).eq('merchant_trade_no', merchantTradeNo)
+          const { error: rollbackError } = await supabase.from('subscription_purchases').update({ status: 'pending', completed_at: null, ecpay_trade_no: null }).eq('merchant_trade_no', merchantTradeNo)
+          if (rollbackError) log.error('CRITICAL: Rollback failed - manual intervention required', rollbackError, { merchantTradeNo })
           log.error('Client creation error, purchase rolled back', clientError, { merchantTradeNo, tier })
           return new NextResponse('0|ErrorMessage', { status: 200 })
         }
