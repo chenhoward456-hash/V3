@@ -48,6 +48,15 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   // 合規性也作為本地 state，一次提交
   const [compliant, setCompliant] = useState<boolean | null>(todayNutrition?.compliant ?? null)
   const [selectedReason, setSelectedReason] = useState<string | null>(null)
+  const [roughEstimate, setRoughEstimate] = useState<string | null>(null)
+
+  // 粗估熱量：未照計畫但沒填克數時，用這個代替 null
+  const ROUGH_ESTIMATES: { key: string; label: string; multiplier: number }[] = [
+    { key: 'under', label: '少吃一點', multiplier: 0.85 },
+    { key: 'ok', label: '差不多照計畫', multiplier: 1.0 },
+    { key: 'over', label: '小超', multiplier: 1.15 },
+    { key: 'way_over', label: '大超', multiplier: 1.35 },
+  ]
 
   const today = date || getLocalDateStr()
 
@@ -324,6 +333,39 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                   </button>
                 ))}
               </div>
+
+              {/* 粗估攝取量 */}
+              <p className="text-xs text-gray-400 mt-3 mb-2">大概吃了多少？</p>
+              <div className="grid grid-cols-2 gap-2">
+                {ROUGH_ESTIMATES.map((est) => (
+                  <button
+                    key={est.key}
+                    onClick={() => {
+                      setRoughEstimate(roughEstimate === est.key ? null : est.key)
+                      // 自動填入粗估值
+                      if (roughEstimate !== est.key && caloriesTarget) {
+                        const estCal = Math.round(caloriesTarget * est.multiplier)
+                        const estPro = proteinTarget ? Math.round(proteinTarget * est.multiplier) : null
+                        const estCarb = effectiveCarbsTarget ? Math.round(effectiveCarbsTarget * est.multiplier) : null
+                        const estFat = fatTarget ? Math.round(fatTarget * est.multiplier) : null
+                        if (!carbsInput && !proteinInput && !fatInput) {
+                          if (estPro) setProteinInput(String(estPro))
+                          if (estCarb) setCarbsInput(String(estCarb))
+                          if (estFat) setFatInput(String(estFat))
+                        }
+                      }
+                    }}
+                    className={`py-2 rounded-xl text-xs font-medium transition-all ${
+                      roughEstimate === est.key
+                        ? 'bg-amber-100 border-2 border-amber-400 text-amber-700'
+                        : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {est.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">選了會自動估算巨量營養素，不用手填</p>
             </div>
           )}
         </div>
