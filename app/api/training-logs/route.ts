@@ -200,7 +200,8 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (trainingError) {
-      return createErrorResponse('新增/更新訓練紀錄失敗', 500)
+      logger.error('Upsert training_logs failed', { error: trainingError, upsertData })
+      return createErrorResponse(`新增/更新訓練紀錄失敗: ${trainingError.message}`, 500)
     }
 
     return NextResponse.json({

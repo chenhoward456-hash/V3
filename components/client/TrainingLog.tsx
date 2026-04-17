@@ -312,7 +312,10 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           note: (isCardio && cardioSubtype ? `[有氧:${cardioSubtype}] ` : '') + (form.note || '') || null
         })
       })
-      if (!response.ok) throw new Error('提交失敗')
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}))
+        throw new Error(errBody.error || '提交失敗')
+      }
       const result = await response.json()
       // 儲存動作明細（如果有填）
       if (detailedSets.length > 0) {
@@ -342,8 +345,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
       if (result.recoveryWarning) {
         setTimeout(() => showToast(result.recoveryWarning, 'error'), 500)
       }
-    } catch {
-      showToast('提交失敗，請重試', 'error')
+    } catch (err: any) {
+      showToast(err?.message || '提交失敗，請重試', 'error')
     } finally {
       setSubmitting(false)
     }
