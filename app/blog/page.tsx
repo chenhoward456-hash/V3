@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '22',
+    title: '重訓會讓你禿頭嗎？教練親身走過，用研究告訴你真正的答案',
+    description: '重訓拉高睪固酮會掉髮？2022 年統合分析顯示長期靜息睪固酮無顯著改變。真正的關鍵是 DHT 受體敏感度、抽菸、代謝症候群。教練親身經歷脂漏性皮膚炎落髮，分享正確判斷與介入方式。',
+    date: '2026-04-17',
+    category: '健康數據',
+    readTime: '8 分鐘',
+    slug: 'weight-training-hair-loss',
+  },
+  {
     id: '21',
     title: '打瘦瘦針期間，阻力訓練要怎麼介入？頻率、訓練量、動作選擇完整指南',
     description: 'GLP-1 治療期間平均流失 6 公斤肌肉。研究顯示阻力訓練可回補 +3kg 肌肉、+25% 肌力。完整指南：頻率、訓練量、動作選擇、蛋白質策略、8 週介入計畫。',
