@@ -18,6 +18,7 @@ import RecoveryDashboard from '@/components/client/RecoveryDashboard'
 import DailyCheckIn from '@/components/client/DailyCheckIn'
 import DailyWellness from '@/components/client/DailyWellness'
 import BodyComposition from '@/components/client/BodyComposition'
+import StageWeightEstimator from '@/components/client/StageWeightEstimator'
 const LabResults = dynamic(() => import('@/components/client/LabResults'), { ssr: false })
 const SupplementModal = dynamic(() => import('@/components/client/SupplementModal'), { ssr: false })
 import WellnessTrend from '@/components/client/WellnessTrend'
@@ -885,6 +886,15 @@ export default function ClientDashboard() {
                 uniqueCode={c.unique_code}
                 onMutate={mutateWithTargets}
               />
+              {isCompetition && latestBodyData?.body_fat && (
+                <StageWeightEstimator
+                  currentWeight={latestBodyData.weight}
+                  currentBodyFat={latestBodyData.body_fat}
+                  targetWeight={c.target_weight}
+                  targetBodyFat={c.target_body_fat}
+                  competitionDate={c.competition_date}
+                />
+              )}
             </CollapsibleSection>
             </SectionErrorBoundary>
           )}
