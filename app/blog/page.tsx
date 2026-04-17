@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '23',
+    title: '上胸練不大？你的上斜板角度可能設錯了',
+    description: '上斜推角度越陡、上胸越有感？EMG 研究顯示 30 度才是上胸鎖骨頭啟動最大的角度，超過 45 度前三角肌就接管了。附 3 個今天就能改的訓練調整。',
+    date: '2026-04-17',
+    category: '訓練恢復',
+    readTime: '5 分鐘',
+    slug: 'incline-bench-angle-upper-chest',
+  },
+  {
     id: '22',
     title: '重訓會讓你禿頭嗎？教練親身走過，用研究告訴你真正的答案',
     description: '重訓拉高睪固酮會掉髮？2022 年統合分析顯示長期靜息睪固酮無顯著改變。真正的關鍵是 DHT 受體敏感度、抽菸、代謝症候群。教練親身經歷脂漏性皮膚炎落髮，分享正確判斷與介入方式。',
