@@ -298,6 +298,12 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     }
     setSubmitting(true)
     try {
+      // 從動作明細自動計算 sets（如果 form.sets 沒填）
+      const filledSets = detailedSets.filter(s => s.exercise_name.trim())
+      const autoSets = form.sets ?? (filledSets.length > 0
+        ? filledSets.reduce((sum, s) => sum + Math.max(1, s.num_sets || 1), 0)
+        : null)
+
       const response = await fetch('/api/training-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -305,7 +311,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           clientId, date: today,
           training_type: form.training_type,
           duration: isRest ? null : form.duration,
-          sets: isRest ? null : form.sets,
+          sets: isRest ? null : autoSets,
           rpe: isRest ? null : (form.rpe || null),
           compound_weight: isRest || isCardio ? null : (form.compound_weight || null),
           compound_reps: isRest || isCardio ? null : (form.compound_reps || null),
@@ -317,14 +323,15 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         throw new Error(errBody.error || '提交失敗')
       }
       const result = await response.json()
+
       // 儲存動作明細（如果有填）
-      if (detailedSets.length > 0) {
-        await fetch('/api/training-sets', {
+      if (filledSets.length > 0) {
+        const setsRes = await fetch('/api/training-sets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             clientId, date: today,
-            sets: detailedSets.filter(s => s.exercise_name.trim()).flatMap((s) => {
+            sets: filledSets.flatMap((s) => {
               const count = Math.max(1, s.num_sets || 1)
               return Array.from({ length: count }, (_, j) => ({
                 exercise_name: s.exercise_name.trim(),
@@ -337,10 +344,48 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
               }))
             }),
           }),
-        }).catch(() => {})
+        })
+        if (!setsRes.ok) {
+          const setsErr = await setsRes.json().catch(() => ({}))
+          console.warn('training-sets save failed:', setsErr.error)
+        }
       }
+
       onMutate()
-      showToast('訓練已記錄！', 'success', '🎉')
+
+      // ── 提交後回饋：進步提示 ──
+      const tonnage = filledSets.reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0) * (s.num_sets || 1), 0)
+      const weekActiveDays = (trainingLogs || []).filter((l: any) => {
+        const now = new Date()
+        const dow = now.getDay()
+        const mondayOffset = dow === 0 ? 6 : dow - 1
+        const monday = new Date(now)
+        monday.setDate(now.getDate() - mondayOffset)
+        const mondayStr = getLocalDateStr(monday)
+        return l.date >= mondayStr && l.date <= today && l.training_type !== 'rest'
+      }).length + (isRest ? 0 : 1) // +1 for today's submission
+
+      // 跟上次同類型比較訓練量
+      let progressMsg = ''
+      if (tonnage > 0 && lastSameType) {
+        // 取上次同類型的動作明細計算 tonnage
+        const prevTonnage = lastTypeSets.reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0) * (s.num_sets || 1), 0)
+        if (prevTonnage > 0) {
+          const diff = tonnage - prevTonnage
+          const pct = Math.round((diff / prevTonnage) * 100)
+          if (diff > 0) {
+            progressMsg = ` 📈 比上次多 ${Math.round(diff).toLocaleString()}kg（+${pct}%）`
+          } else if (diff === 0) {
+            progressMsg = ' 🔒 跟上次一樣穩'
+          }
+        }
+      }
+
+      const streakMsg = weekActiveDays >= 4 ? ` 🔥 本週第 ${weekActiveDays} 天！` : weekActiveDays >= 2 ? ` 💪 本週第 ${weekActiveDays} 天` : ''
+      const tonnageMsg = tonnage > 0 ? ` · ${Math.round(tonnage).toLocaleString()}kg` : ''
+
+      showToast(`訓練已記錄！${tonnageMsg}${progressMsg}${streakMsg}`, 'success', '🎉')
+
       // 顯示恢復警告（如果有）
       if (result.recoveryWarning) {
         setTimeout(() => showToast(result.recoveryWarning, 'error'), 500)
