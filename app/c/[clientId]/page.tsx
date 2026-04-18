@@ -910,6 +910,9 @@ export default function ClientDashboard() {
               prepPhase={c.prep_phase || null}
               gender={c.gender ?? null}
               latestBodyData={latestBodyData}
+              trainingLogs={clientData.trainingLogs || []}
+              wellness={clientData.wellness || []}
+              bodyData={clientData.bodyData || []}
             />
             </SectionErrorBoundary>
           )}
