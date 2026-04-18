@@ -785,13 +785,23 @@ export default function ClientDashboard() {
             onCancelSubscription={handleCancelSubscription}
           />
 
-          {isHealthMode && healthScore && <HealthScoreBanner healthScore={healthScore} />}
-
-          {/* BehaviorInsights + ProgressJourney 移到 SEE section */}
-
-          {/* 健康模式進階功能：血檢飲食建議 + 季度對比 + 微營養素 */}
-          {isHealthMode && (
-            <HealthModeAdvanced clientId={c.id} code={c.unique_code} />
+          {/* ===== INSIGHT: 每日洞察 + 完成進度（第一眼看到） ===== */}
+          {isToday && (
+            <SectionErrorBoundary name="today-overview">
+            <TodayOverviewCard
+              overallStreak={overallStreak}
+              todayCompletedItems={todayCompletedItems}
+              isCompetition={isCompetition}
+              targetWeight={c.target_weight}
+              competitionDate={c.competition_date || null}
+              prepPhase={c.prep_phase || null}
+              gender={c.gender ?? null}
+              latestBodyData={latestBodyData}
+              trainingLogs={clientData.trainingLogs || []}
+              wellness={clientData.wellness || []}
+              bodyData={clientData.bodyData || []}
+            />
+            </SectionErrorBoundary>
           )}
 
           {/* 賽後恢復提示：比賽日期已過但階段仍為 peak_week/competition */}
@@ -897,84 +907,6 @@ export default function ClientDashboard() {
               )}
             </CollapsibleSection>
             </SectionErrorBoundary>
-          )}
-
-          {isToday && (
-            <SectionErrorBoundary name="today-overview">
-            <TodayOverviewCard
-              overallStreak={overallStreak}
-              todayCompletedItems={todayCompletedItems}
-              isCompetition={isCompetition}
-              targetWeight={c.target_weight}
-              competitionDate={c.competition_date || null}
-              prepPhase={c.prep_phase || null}
-              gender={c.gender ?? null}
-              latestBodyData={latestBodyData}
-              trainingLogs={clientData.trainingLogs || []}
-              wellness={clientData.wellness || []}
-              bodyData={clientData.bodyData || []}
-            />
-            </SectionErrorBoundary>
-          )}
-
-          <DayBasedCards
-            client={c}
-            isFree={isFree}
-            isSelfManaged={isSelfManaged}
-            nutritionLogs={clientData.nutritionLogs || []}
-            setShowAiChat={setShowAiChat}
-          />
-
-          {/* 教練資訊（合併：查看時間 + 週回饋 + 健康分析） */}
-          {(c.coach_last_viewed_at || c.coach_weekly_note || c.coach_summary) && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">💬</span>
-                  <span className="text-xs font-semibold text-amber-700">教練回饋</span>
-                </div>
-                {c.coach_last_viewed_at && (
-                  <span className="text-[10px] text-gray-400">
-                    ✓ {(() => {
-                      const viewed = new Date(c.coach_last_viewed_at)
-                      const now = new Date()
-                      const diffH = Math.floor((now.getTime() - viewed.getTime()) / 3600000)
-                      if (diffH < 1) return '剛剛查看'
-                      if (diffH < 24) return `${diffH}小時前查看`
-                      const diffD = Math.floor(diffH / 24)
-                      if (diffD === 1) return '昨天查看'
-                      if (diffD < 7) return `${diffD}天前查看`
-                      return viewed.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' }) + '查看'
-                    })()}
-                  </span>
-                )}
-              </div>
-              {c.coach_weekly_note && (
-                <p className="text-sm text-gray-700 leading-relaxed mb-2">{c.coach_weekly_note}</p>
-              )}
-              {c.coach_summary && (
-                <>
-                  <button
-                    onClick={() => setShowCoachSummary(!showCoachSummary)}
-                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
-                  >
-                    <ChevronDown size={12} className={`transition-transform ${showCoachSummary ? 'rotate-180' : ''}`} />
-                    {showCoachSummary ? '收起健康分析' : '查看健康分析'}
-                  </button>
-                  {showCoachSummary && (
-                    <div className="bg-white/60 rounded-xl p-3 mt-2">
-                      <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{c.coach_summary}</p>
-                      {(c.next_checkup_date || c.health_goals) && (
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 pt-2 border-t border-amber-200/50">
-                          {c.next_checkup_date && <span className="text-xs text-blue-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
-                          {c.health_goals && <span className="text-xs text-blue-600">🎯 {c.health_goals}</span>}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
           )}
 
           {/* 新手引導 — 免費用戶未設定營養目標時，直接顯示營養計算器 */}
@@ -1088,58 +1020,7 @@ export default function ClientDashboard() {
           )}
         </div>
 
-        {/* === Onboarding Checklist: persistent task checklist for new users (first 14 days) === */}
-        {(() => {
-          if (checklistDismissed) return null
-          if (!c.created_at) return null
-          const daysSinceCreation = Math.floor(
-            (Date.now() - new Date(c.created_at).getTime()) / DAY_MS
-          )
-          if (daysSinceCreation > 14) return null
-          const hasWeight = (clientData.bodyData || []).length > 0
-          const hasNutrition = (clientData.nutritionLogs || []).length > 0
-          const hasTraining = (clientData.trainingLogs || []).length > 0
-          const hasWellness = (clientData.wellness || []).length > 0
-          const hasLineBinding = !!c.line_user_id
-          const trainingEnabled = !!c.training_enabled
-          const wellnessEnabled = !!c.wellness_enabled
-          // Build items to check if all are already complete
-          const checkItems = [hasWeight, hasNutrition, hasLineBinding]
-          if (trainingEnabled) checkItems.push(hasTraining)
-          if (wellnessEnabled) checkItems.push(hasWellness)
-          const allComplete = checkItems.every(Boolean)
-          if (allComplete) return null
-          return (
-            <OnboardingChecklist
-              clientId={clientId as string}
-              clientName={c.name}
-              tier={c.subscription_tier || 'free'}
-              hasWeight={hasWeight}
-              hasNutrition={hasNutrition}
-              hasTraining={hasTraining}
-              hasWellness={hasWellness}
-              hasLineBinding={hasLineBinding}
-              trainingEnabled={trainingEnabled}
-              wellnessEnabled={wellnessEnabled}
-              onDismiss={() => setChecklistDismissed(true)}
-            />
-          )
-        })()}
-
-        <UpgradeWelcome
-          clientId={c.unique_code}
-          tier={c.subscription_tier}
-          todayBody={!!latestBodyData && latestBodyData.date === today}
-          todayNutrition={!!todayNutrition}
-          todayTraining={!!todayTraining}
-          todayWellness={!!todayWellness}
-          supplementCount={(c.supplements || []).length}
-          labResultCount={(c.lab_results || []).length}
-          hasGeneData={!!c.gene_mthfr}
-          onOpenAiChat={() => setShowAiChat(true)}
-        />
-
-        {/* === QuickActions: 未完成項目快速導航 === */}
+        {/* === QuickActions: 未完成項目快速導航（緊接在概覽下方） === */}
         {isToday && (
           <QuickActions
             enabledSections={[
@@ -1395,9 +1276,126 @@ export default function ClientDashboard() {
           </SectionErrorBoundary>
         )}
 
+        {/* === Onboarding & Upgrade（DO section 之後） === */}
+        {(() => {
+          if (checklistDismissed) return null
+          if (!c.created_at) return null
+          const daysSinceCreation = Math.floor(
+            (Date.now() - new Date(c.created_at).getTime()) / DAY_MS
+          )
+          if (daysSinceCreation > 14) return null
+          const hasWeight = (clientData.bodyData || []).length > 0
+          const hasNutrition = (clientData.nutritionLogs || []).length > 0
+          const hasTraining = (clientData.trainingLogs || []).length > 0
+          const hasWellness = (clientData.wellness || []).length > 0
+          const hasLineBinding = !!c.line_user_id
+          const trainingEnabled = !!c.training_enabled
+          const wellnessEnabled = !!c.wellness_enabled
+          const checkItems = [hasWeight, hasNutrition, hasLineBinding]
+          if (trainingEnabled) checkItems.push(hasTraining)
+          if (wellnessEnabled) checkItems.push(hasWellness)
+          const allComplete = checkItems.every(Boolean)
+          if (allComplete) return null
+          return (
+            <OnboardingChecklist
+              clientId={clientId as string}
+              clientName={c.name}
+              tier={c.subscription_tier || 'free'}
+              hasWeight={hasWeight}
+              hasNutrition={hasNutrition}
+              hasTraining={hasTraining}
+              hasWellness={hasWellness}
+              hasLineBinding={hasLineBinding}
+              trainingEnabled={trainingEnabled}
+              wellnessEnabled={wellnessEnabled}
+              onDismiss={() => setChecklistDismissed(true)}
+            />
+          )
+        })()}
+
+        <UpgradeWelcome
+          clientId={c.unique_code}
+          tier={c.subscription_tier}
+          todayBody={!!latestBodyData && latestBodyData.date === today}
+          todayNutrition={!!todayNutrition}
+          todayTraining={!!todayTraining}
+          todayWellness={!!todayWellness}
+          supplementCount={(c.supplements || []).length}
+          labResultCount={(c.lab_results || []).length}
+          hasGeneData={!!c.gene_mthfr}
+          onOpenAiChat={() => setShowAiChat(true)}
+        />
+
         {/* ================================================================ */}
-        {/* === SEE section: Tab 切換（分析 / 進度 / 工具） === */}
+        {/* === SEE section: 被動資訊（記錄完再看） === */}
         {/* ================================================================ */}
+
+        {/* 健康分數 + 健康模式進階（從頂部移到這裡） */}
+        {isHealthMode && healthScore && <HealthScoreBanner healthScore={healthScore} />}
+        {isHealthMode && (
+          <HealthModeAdvanced clientId={c.id} code={c.unique_code} />
+        )}
+
+        {/* 教練資訊（從頂部移到這裡） */}
+        {(c.coach_last_viewed_at || c.coach_weekly_note || c.coach_summary) && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">💬</span>
+                <span className="text-xs font-semibold text-amber-700">教練回饋</span>
+              </div>
+              {c.coach_last_viewed_at && (
+                <span className="text-[10px] text-gray-400">
+                  ✓ {(() => {
+                    const viewed = new Date(c.coach_last_viewed_at)
+                    const now = new Date()
+                    const diffH = Math.floor((now.getTime() - viewed.getTime()) / 3600000)
+                    if (diffH < 1) return '剛剛查看'
+                    if (diffH < 24) return `${diffH}小時前查看`
+                    const diffD = Math.floor(diffH / 24)
+                    if (diffD === 1) return '昨天查看'
+                    if (diffD < 7) return `${diffD}天前查看`
+                    return viewed.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' }) + '查看'
+                  })()}
+                </span>
+              )}
+            </div>
+            {c.coach_weekly_note && (
+              <p className="text-sm text-gray-700 leading-relaxed mb-2">{c.coach_weekly_note}</p>
+            )}
+            {c.coach_summary && (
+              <>
+                <button
+                  onClick={() => setShowCoachSummary(!showCoachSummary)}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  <ChevronDown size={12} className={`transition-transform ${showCoachSummary ? 'rotate-180' : ''}`} />
+                  {showCoachSummary ? '收起健康分析' : '查看健康分析'}
+                </button>
+                {showCoachSummary && (
+                  <div className="bg-white/60 rounded-xl p-3 mt-2">
+                    <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{c.coach_summary}</p>
+                    {(c.next_checkup_date || c.health_goals) && (
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 pt-2 border-t border-amber-200/50">
+                        {c.next_checkup_date && <span className="text-xs text-blue-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
+                        {c.health_goals && <span className="text-xs text-blue-600">🎯 {c.health_goals}</span>}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        <DayBasedCards
+          client={c}
+          isFree={isFree}
+          isSelfManaged={isSelfManaged}
+          nutritionLogs={clientData.nutritionLogs || []}
+          setShowAiChat={setShowAiChat}
+        />
+
         <SeeTabSection
           c={c}
           clientData={clientData}
