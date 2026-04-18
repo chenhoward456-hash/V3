@@ -861,114 +861,11 @@ export default function ClientDashboard() {
             )
           })()}
 
-          {/* 新手引導 — 免費用戶未設定營養目標時，直接顯示營養計算器 */}
-          {(isFree || isSelfManaged) && !c.calories_target && c.body_composition_enabled ? (
-            <SelfManagedNutrition
-              clientId={c.id}
-              uniqueCode={c.unique_code}
-              goalType={c.goal_type || null}
-              activityProfile={c.activity_profile || null}
-              gender={c.gender || null}
-              caloriesTarget={c.calories_target}
-              proteinTarget={c.protein_target}
-              carbsTarget={c.carbs_target}
-              fatTarget={c.fat_target}
-              targetWeight={c.target_weight || null}
-              targetDate={c.target_date || null}
-              isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
-              latestWeight={latestBodyData?.weight || null}
-              latestBodyFat={latestBodyData?.body_fat || null}
-              clientHeight={null}
-              onMutate={mutate}
-            />
-          ) : !latestBodyData && (!clientData.nutritionLogs || clientData.nutritionLogs.length === 0) ? (
-            <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-5 border border-blue-100">
-              <div className="text-center mb-4">
-                <div className="text-3xl mb-2">👋</div>
-                <h2 className="text-lg font-bold text-gray-900 mb-1">歡迎使用 Howard Protocol！</h2>
-                <p className="text-xs text-gray-500">跟著以下步驟，開始你的健康追蹤旅程</p>
-              </div>
-
-              <div className="space-y-2.5">
-                {c.body_composition_enabled && (
-                  <button
-                    onClick={() => document.getElementById('section-body')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                    className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow text-left"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl shrink-0">⚖️</div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">步驟 1：記錄你的體重</p>
-                      <p className="text-xs text-gray-500 mt-0.5">點擊下方「身體數據」區塊，輸入今天的體重</p>
-                    </div>
-                    <ChevronRight size={18} className="text-gray-300" />
-                  </button>
-                )}
-
-                {c.nutrition_enabled && (
-                  <button
-                    onClick={() => (document.getElementById('section-nutrition') || document.getElementById('section-nutrition-general'))?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                    className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow text-left"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl shrink-0">🍽️</div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">步驟 2：記錄你的飲食</p>
-                      <p className="text-xs text-gray-500 mt-0.5">拍照或手動輸入，追蹤每天的營養攝取</p>
-                    </div>
-                    <ChevronRight size={18} className="text-gray-300" />
-                  </button>
-                )}
-
-                {c.ai_chat_enabled && (
-                  <button
-                    onClick={() => setShowAiChat(true)}
-                    className="w-full bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow text-left"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-xl shrink-0">🤖</div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">步驟 3：問 AI 顧問任何問題</p>
-                      <p className="text-xs text-gray-500 mt-0.5">不知道吃什麼？告訴 AI 你剛吃了什麼，它幫你估算營養素</p>
-                    </div>
-                    <ChevronRight size={18} className="text-gray-300" />
-                  </button>
-                )}
-
-                <div className="bg-white/60 rounded-2xl p-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-xl shrink-0">📊</div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">持續追蹤，看見改變</p>
-                    <p className="text-xs text-gray-500 mt-0.5">每天記錄，系統會自動分析你的趨勢和進步</p>
-                  </div>
-                </div>
-              </div>
+          {/* 新手引導 — 只有完全沒數據的新用戶才看到（營養設定移到 DO section 後） */}
+          {!latestBodyData && (!clientData.nutritionLogs || clientData.nutritionLogs.length === 0) && (
+            <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+              <p className="text-sm text-blue-700 font-medium">👋 歡迎！往下滑開始記錄你的第一筆數據</p>
             </div>
-          ) : (
-            <SectionErrorBoundary name="health-overview">
-            <HealthOverview
-              weekRate={supplementComplianceStats.weekRate}
-              monthRate={supplementComplianceStats.monthRate}
-              weekDelta={supplementComplianceStats.weekDelta}
-              labNormal={labStats.normal}
-              labTotal={labStats.total}
-              bodyFat={latestByField.body_fat?.body_fat ?? null}
-              bodyFatTrend={bodyFatTrend}
-              todayMood={todayWellness?.mood}
-              hasWellness={!!todayWellness}
-              supplementEnabled={c.supplement_enabled}
-              labEnabled={!isCompetition && c.lab_enabled}
-              bodyCompositionEnabled={c.body_composition_enabled}
-              wellnessEnabled={c.wellness_enabled}
-              competitionEnabled={isCompetition}
-              todayCalories={todayNutrition?.calories}
-              caloriesTarget={c.calories_target}
-              wearable={todayWellness ? {
-                device_recovery_score: todayWellness.device_recovery_score,
-                resting_hr: todayWellness.resting_hr,
-                hrv: todayWellness.hrv,
-                wearable_sleep_score: todayWellness.wearable_sleep_score,
-                respiratory_rate: todayWellness.respiratory_rate,
-              } : null}
-            />
-            </SectionErrorBoundary>
           )}
         </div>
 
@@ -1077,6 +974,28 @@ export default function ClientDashboard() {
             )}
           </CollapsibleSection>
           </SectionErrorBoundary>
+        )}
+
+        {/* 營養目標設定 — 免費/自主管理用戶還沒設定目標時顯示 */}
+        {(isFree || isSelfManaged) && !c.calories_target && c.body_composition_enabled && (
+          <SelfManagedNutrition
+            clientId={c.id}
+            uniqueCode={c.unique_code}
+            goalType={c.goal_type || null}
+            activityProfile={c.activity_profile || null}
+            gender={c.gender || null}
+            caloriesTarget={c.calories_target}
+            proteinTarget={c.protein_target}
+            carbsTarget={c.carbs_target}
+            fatTarget={c.fat_target}
+            targetWeight={c.target_weight || null}
+            targetDate={c.target_date || null}
+            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+            latestWeight={latestBodyData?.weight || null}
+            latestBodyFat={latestBodyData?.body_fat || null}
+            clientHeight={null}
+            onMutate={mutate}
+          />
         )}
 
         {/* 飲食目標 + 飲食紀錄 */}
@@ -1327,7 +1246,36 @@ export default function ClientDashboard() {
         {/* === SEE section: 被動資訊（記錄完再看） === */}
         {/* ================================================================ */}
 
-        {/* 健康分數 + 健康模式進階（從頂部移到這裡） */}
+        {/* HealthOverview 概覽（從白卡移到這裡） */}
+        <SectionErrorBoundary name="health-overview">
+        <HealthOverview
+          weekRate={supplementComplianceStats.weekRate}
+          monthRate={supplementComplianceStats.monthRate}
+          weekDelta={supplementComplianceStats.weekDelta}
+          labNormal={labStats.normal}
+          labTotal={labStats.total}
+          bodyFat={latestByField.body_fat?.body_fat ?? null}
+          bodyFatTrend={bodyFatTrend}
+          todayMood={todayWellness?.mood}
+          hasWellness={!!todayWellness}
+          supplementEnabled={c.supplement_enabled}
+          labEnabled={!isCompetition && c.lab_enabled}
+          bodyCompositionEnabled={c.body_composition_enabled}
+          wellnessEnabled={c.wellness_enabled}
+          competitionEnabled={isCompetition}
+          todayCalories={todayNutrition?.calories}
+          caloriesTarget={c.calories_target}
+          wearable={todayWellness ? {
+            device_recovery_score: todayWellness.device_recovery_score,
+            resting_hr: todayWellness.resting_hr,
+            hrv: todayWellness.hrv,
+            wearable_sleep_score: todayWellness.wearable_sleep_score,
+            respiratory_rate: todayWellness.respiratory_rate,
+          } : null}
+        />
+        </SectionErrorBoundary>
+
+        {/* 健康分數 + 健康模式進階 */}
         {isHealthMode && healthScore && <HealthScoreBanner healthScore={healthScore} />}
         {isHealthMode && (
           <HealthModeAdvanced clientId={c.id} code={c.unique_code} />
