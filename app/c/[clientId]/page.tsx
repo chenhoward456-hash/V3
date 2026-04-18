@@ -861,54 +861,6 @@ export default function ClientDashboard() {
             )
           })()}
 
-          {/* ===== DO section 開始：每日記錄直接從這裡開始 ===== */}
-          {/* GoalDrivenStatus / PeakWeek / 分析元件已移至 SeeTabSection 的「分析」tab */}
-
-          {/* 身體數據記錄 — 最優先，每日量體重放最上面 */}
-          {c.body_composition_enabled && (
-            <SectionErrorBoundary name="body-composition">
-            <CollapsibleSection
-              id="section-body"
-              icon="⚖️"
-              title="身體數據"
-              isCompleted={!!latestBodyData && latestBodyData.date === selectedDate}
-              summaryLine={latestBodyData ? `體重 ${latestBodyData.weight ?? '--'} kg${latestBodyData.body_fat ? ` | 體脂 ${latestBodyData.body_fat}%` : ''}` : undefined}
-              isToday={isToday}
-            >
-              <BodyComposition
-                latestBodyData={latestBodyData}
-                prevBodyData={prevBodyData}
-                bmi={bmi}
-                trendData={trendData}
-                bodyData={clientData.bodyData || []}
-                clientId={clientId as string}
-                competitionEnabled={isCompetitionMode(clientData.client.client_mode)}
-                targetWeight={clientData.client.target_weight}
-                competitionDate={clientData.client.competition_date}
-                simpleMode={clientData.client.simple_mode}
-                goalType={clientData.client.goal_type}
-                prepPhase={clientData.client.prep_phase}
-                tier={c.subscription_tier || 'free'}
-                caloriesTarget={c.calories_target}
-                proteinTarget={c.protein_target}
-                height={latestByField.height?.height ?? null}
-                hasLineBinding={!!c.line_user_id}
-                uniqueCode={c.unique_code}
-                onMutate={mutateWithTargets}
-              />
-              {isCompetition && latestBodyData?.body_fat && (
-                <StageWeightEstimator
-                  currentWeight={latestBodyData.weight}
-                  currentBodyFat={latestBodyData.body_fat}
-                  targetWeight={c.target_weight}
-                  targetBodyFat={c.target_body_fat}
-                  competitionDate={c.competition_date}
-                />
-              )}
-            </CollapsibleSection>
-            </SectionErrorBoundary>
-          )}
-
           {/* 新手引導 — 免費用戶未設定營養目標時，直接顯示營養計算器 */}
           {(isFree || isSelfManaged) && !c.calories_target && c.body_composition_enabled ? (
             <SelfManagedNutrition
@@ -1081,6 +1033,51 @@ export default function ClientDashboard() {
         {/* ================================================================ */}
         {/* === DO section: 每日記錄（wrapped in CollapsibleSection） === */}
         {/* ================================================================ */}
+
+        {/* 身體數據記錄 — DO section 第一項 */}
+        {c.body_composition_enabled && (
+          <SectionErrorBoundary name="body-composition">
+          <CollapsibleSection
+            id="section-body"
+            icon="⚖️"
+            title="身體數據"
+            isCompleted={!!latestBodyData && latestBodyData.date === selectedDate}
+            summaryLine={latestBodyData ? `體重 ${latestBodyData.weight ?? '--'} kg${latestBodyData.body_fat ? ` | 體脂 ${latestBodyData.body_fat}%` : ''}` : undefined}
+            isToday={isToday}
+          >
+            <BodyComposition
+              latestBodyData={latestBodyData}
+              prevBodyData={prevBodyData}
+              bmi={bmi}
+              trendData={trendData}
+              bodyData={clientData.bodyData || []}
+              clientId={clientId as string}
+              competitionEnabled={isCompetitionMode(clientData.client.client_mode)}
+              targetWeight={clientData.client.target_weight}
+              competitionDate={clientData.client.competition_date}
+              simpleMode={clientData.client.simple_mode}
+              goalType={clientData.client.goal_type}
+              prepPhase={clientData.client.prep_phase}
+              tier={c.subscription_tier || 'free'}
+              caloriesTarget={c.calories_target}
+              proteinTarget={c.protein_target}
+              height={latestByField.height?.height ?? null}
+              hasLineBinding={!!c.line_user_id}
+              uniqueCode={c.unique_code}
+              onMutate={mutateWithTargets}
+            />
+            {isCompetition && latestBodyData?.body_fat && (
+              <StageWeightEstimator
+                currentWeight={latestBodyData.weight}
+                currentBodyFat={latestBodyData.body_fat}
+                targetWeight={c.target_weight}
+                targetBodyFat={c.target_body_fat}
+                competitionDate={c.competition_date}
+              />
+            )}
+          </CollapsibleSection>
+          </SectionErrorBoundary>
+        )}
 
         {/* 飲食目標 + 飲食紀錄 */}
         {c.nutrition_enabled && (
