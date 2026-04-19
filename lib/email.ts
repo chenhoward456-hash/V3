@@ -173,10 +173,10 @@ function buildWelcomeEmailHTML({
           <tr>
             <td style="padding: 20px 24px; text-align:center;">
               <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">
-                有任何問題？加 LINE 直接聊
+                追蹤 IG 獲得更多訓練與營養內容
               </p>
-              <p style="font-size:12px; color:#4ade80; margin:0;">
-                LINE ID: @chenhoward
+              <p style="font-size:12px; margin:0;">
+                <a href="https://instagram.com/chenhoward" style="color:#4ade80; text-decoration:none; font-weight:500;">@chenhoward →</a>
               </p>
             </td>
           </tr>
@@ -266,17 +266,17 @@ function buildPurchaseEmailHTML({
       </td>
     </tr>
 
-    <!-- LINE Upsell -->
+    <!-- IG Follow -->
     <tr>
       <td style="padding: 0 30px 40px;">
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;">
           <tr>
             <td style="padding: 20px 24px; text-align:center;">
               <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">
-                想讓數據每週自動校正？
+                追蹤 IG 獲得更多訓練與營養內容
               </p>
-              <p style="font-size:12px; color:#4ade80; margin:0;">
-                加 LINE 了解訂閱方案，搭配 CSCS 教練每週監督 💬
+              <p style="font-size:12px; margin:0;">
+                <a href="https://instagram.com/chenhoward" style="color:#4ade80; text-decoration:none; font-weight:500;">@chenhoward →</a>
               </p>
             </td>
           </tr>
@@ -399,10 +399,10 @@ function buildDay3EmailHTML({
           <tr>
             <td style="padding: 20px 24px; text-align:center;">
               <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">
-                有任何問題？加 LINE 直接聊
+                追蹤 IG 獲得更多訓練與營養內容
               </p>
-              <p style="font-size:12px; color:#4ade80; margin:0;">
-                LINE ID: @chenhoward
+              <p style="font-size:12px; margin:0;">
+                <a href="https://instagram.com/chenhoward" style="color:#4ade80; text-decoration:none; font-weight:500;">@chenhoward →</a>
               </p>
             </td>
           </tr>
@@ -540,10 +540,10 @@ function buildDay7EmailHTML({
           <tr>
             <td style="padding: 20px 24px; text-align:center;">
               <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">
-                有任何問題？加 LINE 直接聊
+                追蹤 IG 獲得更多訓練與營養內容
               </p>
-              <p style="font-size:12px; color:#4ade80; margin:0;">
-                LINE ID: @chenhoward
+              <p style="font-size:12px; margin:0;">
+                <a href="https://instagram.com/chenhoward" style="color:#4ade80; text-decoration:none; font-weight:500;">@chenhoward →</a>
               </p>
             </td>
           </tr>
@@ -709,10 +709,10 @@ function buildDay14EmailHTML({
           <tr>
             <td style="padding: 20px 24px; text-align:center;">
               <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">
-                有任何問題？加 LINE 直接聊
+                追蹤 IG 獲得更多訓練與營養內容
               </p>
-              <p style="font-size:12px; color:#4ade80; margin:0;">
-                LINE ID: @chenhoward
+              <p style="font-size:12px; margin:0;">
+                <a href="https://instagram.com/chenhoward" style="color:#4ade80; text-decoration:none; font-weight:500;">@chenhoward →</a>
               </p>
             </td>
           </tr>
@@ -837,10 +837,10 @@ function buildExpiryWarningEmailHTML({
           <tr>
             <td style="padding: 20px 24px; text-align:center;">
               <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">
-                有任何問題？加 LINE 直接聊
+                追蹤 IG 獲得更多訓練與營養內容
               </p>
-              <p style="font-size:12px; color:#4ade80; margin:0;">
-                LINE ID: @chenhoward
+              <p style="font-size:12px; margin:0;">
+                <a href="https://instagram.com/chenhoward" style="color:#4ade80; text-decoration:none; font-weight:500;">@chenhoward →</a>
               </p>
             </td>
           </tr>
@@ -963,10 +963,10 @@ function buildCancellationEmailHTML({
           <tr>
             <td style="padding: 20px 24px; text-align:center;">
               <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">
-                有任何問題？加 LINE 直接聊
+                追蹤 IG 獲得更多訓練與營養內容
               </p>
-              <p style="font-size:12px; color:#4ade80; margin:0;">
-                LINE ID: @chenhoward
+              <p style="font-size:12px; margin:0;">
+                <a href="https://instagram.com/chenhoward" style="color:#4ade80; text-decoration:none; font-weight:500;">@chenhoward →</a>
               </p>
             </td>
           </tr>
@@ -1105,10 +1105,10 @@ function buildWinBackEmailHTML({
           <tr>
             <td style="padding: 20px 24px; text-align:center;">
               <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">
-                有任何問題？加 LINE 直接聊
+                追蹤 IG 獲得更多訓練與營養內容
               </p>
-              <p style="font-size:12px; color:#4ade80; margin:0;">
-                LINE ID: @chenhoward
+              <p style="font-size:12px; margin:0;">
+                <a href="https://instagram.com/chenhoward" style="color:#4ade80; text-decoration:none; font-weight:500;">@chenhoward →</a>
               </p>
             </td>
           </tr>
@@ -1231,8 +1231,8 @@ function buildNewsletterEmailHTML({
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;">
           <tr>
             <td style="padding: 20px 24px; text-align:center;">
-              <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">有任何問題？加 LINE 直接聊</p>
-              <p style="font-size:12px; color:#4ade80; margin:0;">LINE ID: @chenhoward</p>
+              <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">追蹤 IG 獲得更多訓練與營養內容</p>
+              <p style="font-size:12px; margin:0;"><a href="https://instagram.com/chenhoward" style="color:#4ade80; text-decoration:none; font-weight:500;">@chenhoward →</a></p>
             </td>
           </tr>
         </table>
