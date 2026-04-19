@@ -2085,11 +2085,10 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   }
 
   // B) Adaptive TDEE（飲食記錄 + 體重變化反推）
+  // avgDailyCalories 只在記錄率 ≥ 50%（7/14 天）時才有值（在 API route 過濾）
   let adaptiveTDEE: number | null = null
   if (input.avgDailyCalories != null) {
     adaptiveTDEE = Math.round(input.avgDailyCalories - (weeklyChange * tdeeDensity / 7))
-  } else if (input.currentCalories != null) {
-    adaptiveTDEE = Math.round(input.currentCalories - (weeklyChange * tdeeDensity / 7))
   }
 
   // C) 決定最終 TDEE

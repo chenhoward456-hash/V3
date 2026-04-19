@@ -186,13 +186,17 @@ export async function GET(request: NextRequest) {
 
     const recentNutrition = nutritionLogs.filter((l: { date: string }) => l.date >= fourteenStr && l.date <= todayStr)
     const compliantCount = recentNutrition.filter((l: { compliant: boolean | null }) => l.compliant).length
-    const nutritionCompliance = recentNutrition.length > 0
-      ? Math.round((compliantCount / recentNutrition.length) * 100)
-      : 0
+    // 合規率以 14 天為分母，沒記錄的天數視為未合規
+    // 這樣只記了 3 天全合規 = 21%，不會被當成 100% 合規
+    const nutritionCompliance = Math.round((compliantCount / 14) * 100)
 
-    // 5. 計算平均每日攝取熱量 (近 14 天有記錄的日子)
+    // 5. 計算平均每日攝取熱量 (近 14 天)
+    // 重要：只平均「有記錄的天數」會高估稀疏記錄者的攝取量
+    // 例如只記了 3 天的 2000kcal，平均是 2000，但真實 14 天平均可能差很多
+    // 解法：記錄率 < 50%（少於 7 天/14 天）→ 不信任 adaptive TDEE
     const recentWithCalories = recentNutrition.filter((l: { calories: number | null }) => l.calories != null)
-    const avgDailyCalories = recentWithCalories.length > 0
+    const loggingRate = recentWithCalories.length / 14  // 0~1，14 天中有幾天有記錄
+    const avgDailyCalories = recentWithCalories.length >= 7  // 至少 7 天才算
       ? Math.round(recentWithCalories.reduce((s: number, l: { calories: number | null }) => s + (l.calories ?? 0), 0) / recentWithCalories.length)
       : null
 
