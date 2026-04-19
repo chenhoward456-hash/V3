@@ -18,6 +18,9 @@ import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isWeightTraining } from '@/components/client/types'
 import { pushMessage } from '@/lib/line'
 import { generateWeeklyAIReport, type InsightData, type ClientProfile } from '@/lib/ai-insights'
+import crypto from 'crypto'
+import { sendNewsletterEmail } from '@/lib/email'
+import { getClientEmail } from '@/lib/get-client-email'
 import { createLogger } from '@/lib/logger'
 import { isHealthMode } from '@/lib/client-mode'
 import { DAY_MS } from '@/lib/date-utils'
@@ -513,6 +516,57 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── Section: 每週電子報 ──
+    let newsletterSent = 0
+    let newsletterFailed = 0
+    try {
+      // 查本週新文章
+      const sevenDaysAgo = new Date(today)
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      const sevenDaysStr = sevenDaysAgo.toISOString().slice(0, 10)
+
+      const { data: recentPosts } = await supabase
+        .from('blog_posts')
+        .select('title, description, slug, category, read_time')
+        .gte('date', sevenDaysStr)
+        .order('date', { ascending: false })
+        .limit(3)
+
+      const posts = (recentPosts || []).map((p: { title: string; description: string; slug: string; category: string; read_time: string }) => ({
+        title: p.title,
+        description: p.description,
+        slug: p.slug,
+        category: p.category,
+        readTime: p.read_time,
+      }))
+
+      if (posts.length > 0) {
+        // 查 opt-in 的活躍用戶
+        const { data: optedIn } = await supabase
+          .from('clients')
+          .select('id, name, unique_code')
+          .eq('is_active', true)
+          .eq('email_newsletter_opt_in', true)
+
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+        const cronSecret = process.env.CRON_SECRET || ''
+
+        for (const client of optedIn || []) {
+          const email = await getClientEmail(supabase, client.id)
+          if (!email) continue
+
+          const token = crypto.createHmac('sha256', cronSecret).update(client.unique_code).digest('hex')
+          const unsubscribeUrl = `${siteUrl}/api/unsubscribe?clientId=${encodeURIComponent(client.unique_code)}&token=${token}`
+
+          const result = await sendNewsletterEmail({ to: email, name: client.name, posts, unsubscribeUrl })
+          if (result.success) newsletterSent++
+          else newsletterFailed++
+        }
+      }
+    } catch (err: unknown) {
+      results.errors.push(`電子報寄送失敗: ${err instanceof Error ? err.message : String(err)}`)
+    }
+
     // 通知教練 cron 錯誤
     if (results.errors.length > 0) {
       const coachLineId = process.env.COACH_LINE_USER_ID
@@ -532,7 +586,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: results.errors.length === 0,
       timestamp: today.toISOString(),
-      results: { ...results, linePushCount, aiReportCount, reviewTriggered },
+      results: { ...results, linePushCount, aiReportCount, reviewTriggered, newsletterSent, newsletterFailed },
       alerts: alertItems,
     })
   } catch (err: unknown) {

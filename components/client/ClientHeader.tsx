@@ -172,6 +172,25 @@ export default function ClientHeader({
                   )
                 })}
 
+                {/* 電子報訂閱 */}
+                <div className="border-t border-gray-100 my-3" />
+                <div className="flex items-center justify-between py-1.5">
+                  <div>
+                    <p className="text-sm text-gray-700">📬 每週電子報</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">每週收到最新訓練與營養文章</p>
+                  </div>
+                  <button
+                    onClick={() => onToggleFeature('email_newsletter_opt_in')}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+                      c.email_newsletter_opt_in ? 'bg-blue-500' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      c.email_newsletter_opt_in ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+
                 {/* 取消訂閱 */}
                 {c.subscription_tier !== 'free' && (
                   <div className="mt-3 pt-3 border-t border-gray-100">

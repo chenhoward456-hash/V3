@@ -1126,3 +1126,125 @@ function buildWinBackEmailHTML({
 </body>
 </html>`
 }
+
+// ===== 每週電子報 =====
+
+interface NewsletterPost {
+  title: string
+  description: string
+  slug: string
+  category: string
+  readTime: string
+}
+
+interface SendNewsletterEmailParams {
+  to: string
+  name: string
+  posts: NewsletterPost[]
+  unsubscribeUrl: string
+}
+
+export async function sendNewsletterEmail({
+  to,
+  name,
+  posts,
+  unsubscribeUrl,
+}: SendNewsletterEmailParams): Promise<{ success: boolean; error?: string }> {
+  try {
+    const resend = getResend()
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Howard Protocol <onboarding@resend.dev>'
+
+    const { error } = await resend.emails.send({
+      from: fromEmail,
+      to,
+      subject: `${name}，本週精選：${posts[0]?.title || '新文章上線'}`,
+      html: buildNewsletterEmailHTML({ name, posts, unsubscribeUrl }),
+    })
+
+    if (error) {
+      log.error('Newsletter send error', error)
+      return { success: false, error: error.message }
+    }
+
+    log.info('Newsletter email sent', { to })
+    return { success: true }
+  } catch (err: unknown) {
+    log.error('Newsletter send failed', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+  }
+}
+
+function buildNewsletterEmailHTML({
+  name,
+  posts,
+  unsubscribeUrl,
+}: {
+  name: string
+  posts: NewsletterPost[]
+  unsubscribeUrl: string
+}): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+
+  const postCards = posts.map(p => `
+    <tr>
+      <td style="padding: 0 0 20px 0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
+          <tr>
+            <td style="padding: 20px 24px;">
+              <p style="font-size:11px; color:#2563eb; font-weight:600; margin:0 0 6px 0; text-transform:uppercase; letter-spacing:0.5px;">${escapeHTML(p.category)} · ${escapeHTML(p.readTime)}</p>
+              <p style="font-size:17px; color:#1e3a5f; font-weight:bold; margin:0 0 8px 0; line-height:1.4;">${escapeHTML(p.title)}</p>
+              <p style="font-size:13px; color:#64748b; margin:0 0 16px 0; line-height:1.6;">${escapeHTML(p.description.slice(0, 120))}${p.description.length > 120 ? '...' : ''}</p>
+              <a href="${siteUrl}/blog/${encodeURIComponent(p.slug)}"
+                 style="display:inline-block; background:#2563eb; color:#ffffff; padding:8px 20px; border-radius:8px; text-decoration:none; font-weight:600; font-size:13px;">
+                閱讀全文 →
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`).join('')
+
+  return `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>本週精選文章</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
+    <tr>
+      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+        <h1 style="color:#ffffff; font-size:22px; margin:0 0 8px 0;">本週精選文章</h1>
+        <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">嗨 ${escapeHTML(name)}，這週有新的訓練與營養知識</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 30px 30px 10px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          ${postCards}
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0 30px 30px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;">
+          <tr>
+            <td style="padding: 20px 24px; text-align:center;">
+              <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">有任何問題？加 LINE 直接聊</p>
+              <p style="font-size:12px; color:#4ade80; margin:0;">LINE ID: @chenhoward</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align:center;">
+        <p style="font-size:11px; color:#94a3b8; margin:0 0 4px 0;">&copy; Howard Protocol &middot; howard456.vercel.app</p>
+        <p style="font-size:11px; margin:0;"><a href="${escapeHTML(unsubscribeUrl)}" style="color:#94a3b8; text-decoration:underline;">取消訂閱電子報</a></p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}

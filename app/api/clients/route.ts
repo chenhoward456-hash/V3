@@ -247,7 +247,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 功能開關切換：所有方案用戶皆可自行開關
-    const FEATURE_TOGGLES = ['simple_mode', 'body_composition_enabled', 'wellness_enabled', 'nutrition_enabled', 'training_enabled', 'supplement_enabled', 'lab_enabled', 'ai_chat_enabled', 'cutting_gate_override'] as const
+    const FEATURE_TOGGLES = ['simple_mode', 'body_composition_enabled', 'wellness_enabled', 'nutrition_enabled', 'training_enabled', 'supplement_enabled', 'lab_enabled', 'ai_chat_enabled', 'cutting_gate_override', 'email_newsletter_opt_in'] as const
     const toggleUpdates: Record<string, boolean> = {}
     for (const key of FEATURE_TOGGLES) {
       if (typeof body[key] === 'boolean') {
