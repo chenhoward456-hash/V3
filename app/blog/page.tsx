@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '24',
+    title: '腹肌一直練不大？研究告訴你為什麼 Plank 和高次數捲腹沒用',
+    description: '腹肌也是肌肉，跟胸肌沒有差別——但多數人用 Plank 和高次數捲腹練，只練到耐力不練到肌肥大。EMG 研究證實負荷越大啟動越高，附 8 週加重課表。',
+    date: '2026-04-22',
+    category: '訓練恢復',
+    readTime: '12 分鐘',
+    slug: 'abs-hypertrophy-training-guide-2026',
+  },
+  {
     id: '23',
     title: '上胸練不大？你的上斜板角度可能設錯了',
     description: '上斜推角度越陡、上胸越有感？EMG 研究顯示 30 度才是上胸鎖骨頭啟動最大的角度，超過 45 度前三角肌就接管了。附 3 個今天就能改的訓練調整。',
