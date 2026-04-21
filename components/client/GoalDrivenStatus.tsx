@@ -8,9 +8,17 @@ interface GoalDrivenStatusProps {
   isTrainingDay?: boolean
   onMutate?: (appliedTargets?: Record<string, number | undefined>) => void
   initialData?: any
+  // DB 教練設定值 — 有的話優先顯示（跟 NutritionLog 一致）
+  dbTargets?: {
+    calories?: number | null
+    protein?: number | null
+    fat?: number | null
+    carbsTrainingDay?: number | null
+    carbsRestDay?: number | null
+  } | null
 }
 
-export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMutate, initialData }: GoalDrivenStatusProps) {
+export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMutate, initialData, dbTargets }: GoalDrivenStatusProps) {
   const [data, setData] = useState<any>(initialData || null)
   const [targetWeightValue, setTargetWeightValue] = useState<number | null>(null)
   const [loading, setLoading] = useState(!initialData)
@@ -242,14 +250,16 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
   const isAheadOfSchedule = data.statusLabel === '進度超前'
   const safetyLabels: Record<string, string> = { normal: '安全範圍', aggressive: '積極模式', extreme: '極限模式' }
 
-  // 碳循環：根據訓練日/休息日顯示不同碳水 + 重算熱量
-  const hasCarbCycling = data.suggestedCarbsTrainingDay != null && data.suggestedCarbsRestDay != null
-  const todayCarbs = hasCarbCycling
-    ? (isTrainingDay ? data.suggestedCarbsTrainingDay : data.suggestedCarbsRestDay)
-    : data.suggestedCarbs
-  const todayCalories = (todayCarbs && data.suggestedProtein && data.suggestedFat)
-    ? Math.round(data.suggestedProtein * 4 + todayCarbs * 4 + data.suggestedFat * 9)
-    : data.suggestedCalories
+  // 碳循環：根據訓練日/休息日顯示不同碳水
+  // 優先用 DB 教練設定值（跟 NutritionLog slider 一致），沒有才 fallback 到 engine 建議
+  const dbCarbCycling = dbTargets?.carbsTrainingDay != null && dbTargets?.carbsRestDay != null
+  const hasCarbCycling = dbCarbCycling || (data.suggestedCarbsTrainingDay != null && data.suggestedCarbsRestDay != null)
+  const todayCarbs = dbCarbCycling
+    ? (isTrainingDay ? dbTargets!.carbsTrainingDay! : dbTargets!.carbsRestDay!)
+    : hasCarbCycling
+      ? (isTrainingDay ? data.suggestedCarbsTrainingDay : data.suggestedCarbsRestDay)
+      : data.suggestedCarbs
+  const todayCalories = dbTargets?.calories ?? data.suggestedCalories
 
   return (
     <>
@@ -380,9 +390,9 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         <div className="grid grid-cols-4 gap-2">
           {[
             { label: '熱量', value: todayCalories, unit: 'kcal', emoji: '🔥' },
-            { label: '蛋白質', value: data.suggestedProtein, unit: 'g', emoji: '🥩' },
+            { label: '蛋白質', value: dbTargets?.protein ?? data.suggestedProtein, unit: 'g', emoji: '🥩' },
             { label: '碳水', value: todayCarbs, unit: 'g', emoji: '🍚' },
-            { label: '脂肪', value: data.suggestedFat, unit: 'g', emoji: '🥑' },
+            { label: '脂肪', value: dbTargets?.fat ?? data.suggestedFat, unit: 'g', emoji: '🥑' },
           ].map(({ label, value, unit, emoji }) => (
             <div key={label} className="text-center bg-white bg-opacity-70 rounded-xl py-2 px-1">
               <p className="text-[10px] text-gray-500">{emoji} {label}</p>
@@ -393,10 +403,13 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         </div>
         {hasCarbCycling && (
           <p className="text-[10px] text-gray-400 mt-2 text-center">
-            {data.suggestedCarbsTrainingDay === data.suggestedCarbsRestDay
-              ? `⏸️ 碳水 ${data.suggestedCarbsTrainingDay}g（碳水偏低，暫停碳循環）`
-              : `碳水循環：訓練日 ${data.suggestedCarbsTrainingDay}g ／ 休息日 ${data.suggestedCarbsRestDay}g`
-            }
+            {(() => {
+              const tDay = dbCarbCycling ? dbTargets!.carbsTrainingDay! : data.suggestedCarbsTrainingDay
+              const rDay = dbCarbCycling ? dbTargets!.carbsRestDay! : data.suggestedCarbsRestDay
+              return tDay === rDay
+                ? `⏸️ 碳水 ${tDay}g（碳水偏低，暫停碳循環）`
+                : `碳水循環：訓練日 ${tDay}g ／ 休息日 ${rDay}g`
+            })()}
           </p>
         )}
       </div>

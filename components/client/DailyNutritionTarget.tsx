@@ -32,10 +32,8 @@ export default function DailyNutritionTarget({
     ? (effectiveIsTraining ? carbsTrainingDay : carbsRestDay)
     : carbsTarget
 
-  // 根據當日碳水重算熱量
-  const effectiveCalories = (effectiveCarbsTarget && proteinTarget && fatTarget)
-    ? Math.round(proteinTarget * 4 + effectiveCarbsTarget * 4 + fatTarget * 9)
-    : caloriesTarget
+  // 直接使用 DB 的 calories_target，不從 macro 反算（避免跟 NutritionLog 不一致）
+  const effectiveCalories = caloriesTarget
 
   // 沒有任何目標值時不顯示
   if (!effectiveCalories && !proteinTarget && !effectiveCarbsTarget && !fatTarget) return null

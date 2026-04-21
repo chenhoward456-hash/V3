@@ -77,6 +77,13 @@ export default function SeeTabSection({ c, clientData, isFree, latestBodyData, n
                   isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
                   onMutate={mutateWithTargets}
                   initialData={nutritionEngineSuggestion}
+                  dbTargets={{
+                    calories: c.calories_target,
+                    protein: c.protein_target,
+                    fat: c.fat_target,
+                    carbsTrainingDay: c.carbs_training_day,
+                    carbsRestDay: c.carbs_rest_day,
+                  }}
                 />
               )}
               <div className="mb-3" data-section="goal-settings">
