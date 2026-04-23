@@ -310,15 +310,20 @@ export async function GET(request: NextRequest) {
       .gte('date', sevenDaysAgo)
     const activeClientIds = new Set((recentRecords || []).map((r: { client_id: string }) => r.client_id))
 
-    // 3. 查每位活躍用戶的最近體重（用於 Quick Reply 選項）
+    // 3. 查每位活躍用戶的最近兩筆體重（用於 Quick Reply + delta 比較）
     const { data: latestWeights } = await supabase
       .from('body_composition')
-      .select('client_id, weight')
+      .select('client_id, weight, date')
       .not('weight', 'is', null)
       .order('date', { ascending: false })
     const lastWeightByClient: Record<string, number> = {}
-    for (const w of (latestWeights || []) as { client_id: string; weight: number }[]) {
-      if (!lastWeightByClient[w.client_id]) lastWeightByClient[w.client_id] = w.weight
+    const prevWeightByClient: Record<string, number> = {}
+    for (const w of (latestWeights || []) as { client_id: string; weight: number; date: string }[]) {
+      if (!lastWeightByClient[w.client_id]) {
+        lastWeightByClient[w.client_id] = w.weight
+      } else if (!prevWeightByClient[w.client_id]) {
+        prevWeightByClient[w.client_id] = w.weight
+      }
     }
 
     // 4. 分兩組：Web Push 組（所有缺記錄的人）+ LINE Push 組（活躍但今天沒記體重）
@@ -393,9 +398,16 @@ export async function GET(request: NextRequest) {
             { type: 'action' as const, action: { type: 'message' as const, label: `${(w + 0.5).toFixed(1)}`, text: `體重 ${(w + 0.5).toFixed(1)}` } },
             { type: 'action' as const, action: { type: 'message' as const, label: '自己輸入', text: '記體重' } },
           ]
+          const prev = prevWeightByClient[client.id]
+          const deltaText = prev != null
+            ? (() => { const d = w - prev; return d === 0 ? '持平' : `${d > 0 ? '+' : ''}${d.toFixed(1)}` })()
+            : null
+          const msgText = deltaText
+            ? `🌙 ${client.name}，上次 ${w.toFixed(1)}kg（${deltaText}），今天呢？\n回覆數字即可記錄 👇`
+            : `🌙 ${client.name}，上次 ${w.toFixed(1)}kg，今天呢？\n回覆數字即可記錄 👇`
           return pushMessage(client.line_user_id, [{
             type: 'text',
-            text: `🌙 ${client.name}，今天還沒記錄唷！\n體重上次 ${w.toFixed(1)} kg，點一下就好 👇`,
+            text: msgText,
             quickReply: { items: quickReplyItems },
           }])
         })

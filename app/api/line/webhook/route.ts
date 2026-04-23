@@ -15,6 +15,7 @@ import {
   handleStatusQuery,
   handleTrendQuery,
   handlePostback,
+  handleNaturalNutrition,
 } from '@/lib/line-handlers'
 
 const log = createLogger('LINE-Webhook')
@@ -623,6 +624,14 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   }
   if (text === '未達標' || text === '飲食未達標') {
     await handleQuickCompliance(event.replyToken, client, false, supabase)
+    return
+  }
+
+  // ── Natural language nutrition (AI estimation) ──
+  const foodPrefixes = ['吃了', '吃', '早餐', '午餐', '晚餐', '宵夜', '點心']
+  const foodMatch = foodPrefixes.find(p => text.startsWith(p))
+  if (foodMatch && client && text.length > foodMatch.length) {
+    await handleNaturalNutrition(event.replyToken, client, text, supabase)
     return
   }
 

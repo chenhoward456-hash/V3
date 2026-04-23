@@ -843,3 +843,120 @@ async function handleContactSupport(replyToken: string) {
     },
   ])
 }
+
+// ═══════════════════════════════════════
+// Quick record: Natural language nutrition (AI estimation)
+// ═══════════════════════════════════════
+
+export async function handleNaturalNutrition(
+  replyToken: string,
+  client: LineClient | null,
+  foodDescription: string,
+  supabase: SupabaseClient
+) {
+  if (!client) {
+    await replyMessage(replyToken, [
+      {
+        type: 'text',
+        text: '此功能需綁定帳號 🔒\n輸入「綁定 [學員代碼]」或查看方案加入 👇',
+        quickReply: { items: [qr('💰 查看方案', '查看方案'), qr('🔗 我有代碼', '我要綁定')] },
+      },
+    ])
+    return
+  }
+
+  try {
+    // 1. 用 Claude Haiku 估算熱量
+    const Anthropic = (await import('@anthropic-ai/sdk')).default
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) {
+      await replyMessage(replyToken, [{ type: 'text', text: '營養估算功能暫時不可用，請稍後再試' }])
+      return
+    }
+    const anthropic = new Anthropic({ apiKey })
+
+    const aiResponse = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 200,
+      messages: [
+        {
+          role: 'user',
+          content: `你是營養估算工具。根據以下食物描述，估算熱量和巨量營養素。
+回傳嚴格 JSON 格式：{"calories":數字,"protein":數字,"carbs":數字,"fat":數字,"items":"食物摘要"}
+如果無法判斷份量，用台灣常見份量估算。不要解釋，只回 JSON。
+
+食物描述：${foodDescription}`,
+        },
+      ],
+    })
+
+    const aiText = aiResponse.content[0].type === 'text' ? aiResponse.content[0].text : ''
+    const jsonMatch = aiText.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      await replyMessage(replyToken, [{ type: 'text', text: '無法辨識食物內容，請描述更具體一點，例如：\n「吃了雞胸 200g 白飯一碗」' }])
+      return
+    }
+
+    const parsed = JSON.parse(jsonMatch[0])
+    const calories = Math.round(parsed.calories || 0)
+    const protein = Math.round(parsed.protein || 0)
+    const carbs = Math.round(parsed.carbs || 0)
+    const fat = Math.round(parsed.fat || 0)
+    const items = parsed.items || foodDescription
+
+    if (calories <= 0) {
+      await replyMessage(replyToken, [{ type: 'text', text: '無法估算熱量，請描述更具體一點，例如：\n「雞胸 200g + 白飯一碗 + 燙青菜」' }])
+      return
+    }
+
+    // 2. 寫入或累加 nutrition_logs
+    const today = getTaiwanDate()
+    const { data: existing } = await supabase
+      .from('nutrition_logs')
+      .select('id, calories, protein, carbs, fat, note')
+      .eq('client_id', client.id)
+      .eq('date', today)
+      .maybeSingle()
+
+    if (existing) {
+      // 累加
+      const newCal = (existing.calories || 0) + calories
+      const newPro = (existing.protein || 0) + protein
+      const newCarbs = (existing.carbs || 0) + carbs
+      const newFat = (existing.fat || 0) + fat
+      const newNote = existing.note ? `${existing.note}\n${items}` : items
+
+      await supabase
+        .from('nutrition_logs')
+        .update({ calories: newCal, protein: newPro, carbs: newCarbs, fat: newFat, note: newNote })
+        .eq('id', existing.id)
+
+      const target = client.calories_target
+      const pctText = target ? ` (${Math.round(newCal / target * 100)}%)` : ''
+
+      await replyMessage(replyToken, [
+        {
+          type: 'text',
+          text: `✅ 已記錄：${items}\n約 ${calories} kcal（P ${protein}g / C ${carbs}g / F ${fat}g）\n\n📊 今日累計 ${newCal} kcal${pctText}`,
+          quickReply: QR_AFTER_RECORD,
+        },
+      ])
+    } else {
+      // 新增
+      await supabase
+        .from('nutrition_logs')
+        .insert({ client_id: client.id, date: today, calories, protein, carbs, fat, compliant: true, note: items })
+
+      await replyMessage(replyToken, [
+        {
+          type: 'text',
+          text: `✅ 已記錄：${items}\n約 ${calories} kcal（P ${protein}g / C ${carbs}g / F ${fat}g）`,
+          quickReply: QR_AFTER_RECORD,
+        },
+      ])
+    }
+  } catch (err: unknown) {
+    log.error('Natural nutrition error:', err)
+    await replyMessage(replyToken, [{ type: 'text', text: '記錄失敗，請稍後再試' }])
+  }
+}
