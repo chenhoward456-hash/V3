@@ -234,11 +234,11 @@ export async function GET(request: NextRequest) {
       // 飲食合規率
       const recentNutrition = clientNutrition.filter((l: { date: string }) => l.date >= fourteenStr && l.date <= todayStr)
       const compliantCount = recentNutrition.filter((l: { compliant: boolean | null }) => l.compliant).length
-      const nutritionCompliance = recentNutrition.length > 0
-        ? Math.round((compliantCount / recentNutrition.length) * 100) : 0
+      // 合規率以 14 天為分母（跟 nutrition-suggestions 一致）
+      const nutritionCompliance = Math.round((compliantCount / 14) * 100)
 
       const recentWithCalories = recentNutrition.filter((l: { calories: number | null }) => l.calories != null)
-      const avgDailyCalories = recentWithCalories.length > 0
+      const avgDailyCalories = recentWithCalories.length >= 7
         ? Math.round(recentWithCalories.reduce((s: number, l: { calories: number }) => s + l.calories, 0) / recentWithCalories.length)
         : null
 

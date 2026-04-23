@@ -356,11 +356,11 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
       // ── 提交後回饋：進步提示 ──
       const tonnage = filledSets.reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0) * (s.num_sets || 1), 0)
       const weekActiveDays = (trainingLogs || []).filter((l: any) => {
-        const now = new Date()
-        const dow = now.getDay()
+        const targetDate = new Date(today + 'T12:00:00')
+        const dow = targetDate.getDay()
         const mondayOffset = dow === 0 ? 6 : dow - 1
-        const monday = new Date(now)
-        monday.setDate(now.getDate() - mondayOffset)
+        const monday = new Date(targetDate)
+        monday.setDate(targetDate.getDate() - mondayOffset)
         const mondayStr = getLocalDateStr(monday)
         return l.date >= mondayStr && l.date <= today && l.training_type !== 'rest'
       }).length + (isRest ? 0 : 1) // +1 for today's submission
