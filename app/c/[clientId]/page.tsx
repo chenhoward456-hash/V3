@@ -446,6 +446,18 @@ export default function ClientDashboard() {
     return null
   }, [clientData?.client?.training_plan])
 
+  // 統一判斷今天是否為訓練日：已填記錄優先，沒填就看課表
+  // 這樣碳水循環在你還沒填記錄時就能正確顯示訓練日碳水
+  const isTrainingDayResolved = useMemo(() => {
+    // 1. 已填訓練記錄 → 用記錄判斷
+    if (todayTraining) return isWeightTraining(todayTraining.training_type)
+    // 2. 沒填 → 看課表今天排什麼
+    if (todayPlanType && todayPlanType !== 'rest') return true
+    if (todayPlanType === 'rest') return false
+    // 3. 都沒有 → 預設休息日
+    return false
+  }, [todayTraining, todayPlanType])
+
   // 生成補品建議（必須在所有條件 return 之前，遵守 React Hooks 規則）
   const supplementSuggestions = useMemo(() => {
     const c = clientData?.client
@@ -883,11 +895,11 @@ export default function ClientDashboard() {
               weight: latestBodyData?.weight,
               daysLeft: c.competition_date ? daysUntilDateTW(c.competition_date) : null,
               todayCarbs: nutritionEngineSuggestion?.suggestedCarbsTrainingDay != null
-                ? (todayTraining && isWeightTraining(todayTraining.training_type)
+                ? (isTrainingDayResolved
                   ? nutritionEngineSuggestion.suggestedCarbsTrainingDay
                   : nutritionEngineSuggestion.suggestedCarbsRestDay)
                 : nutritionEngineSuggestion?.suggestedCarbs ?? c.carbs_target,
-              isTrainingDay: !!(todayTraining && isWeightTraining(todayTraining.training_type)),
+              isTrainingDay: isTrainingDayResolved,
               streak: overallStreak,
             }}
             onNavigate={(sectionId) => {
@@ -990,7 +1002,7 @@ export default function ClientDashboard() {
             fatTarget={c.fat_target}
             targetWeight={c.target_weight || null}
             targetDate={c.target_date || null}
-            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+            isTrainingDay={isTrainingDayResolved}
             latestWeight={latestBodyData?.weight || null}
             latestBodyFat={latestBodyData?.body_fat || null}
             clientHeight={null}
@@ -1065,7 +1077,7 @@ export default function ClientDashboard() {
                 carbsTarget={c.carbs_target}
                 fatTarget={c.fat_target}
                 carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
-                isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+                isTrainingDay={isTrainingDayResolved}
                 carbsTrainingDay={c.carbs_training_day}
                 carbsRestDay={c.carbs_rest_day}
                 geneticCorrections={geneCorrections}
@@ -1080,10 +1092,10 @@ export default function ClientDashboard() {
               waterTarget={c.water_target}
               competitionEnabled={isCompetitionMode(c.client_mode)}
               carbsTarget={c.carbs_training_day && c.carbs_rest_day
-                ? (todayTraining && isWeightTraining(todayTraining.training_type) ? c.carbs_training_day : c.carbs_rest_day)
+                ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day)
                 : c.carbs_target}
               carbsCyclingEnabled={!!(c.carbs_training_day && c.carbs_rest_day)}
-              isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+              isTrainingDay={isTrainingDayResolved}
               carbsTrainingDay={c.carbs_training_day}
               carbsRestDay={c.carbs_rest_day}
               fatTarget={c.fat_target}
@@ -1370,7 +1382,7 @@ export default function ClientDashboard() {
             fatTarget={c.fat_target}
             targetWeight={c.target_weight || null}
             targetDate={c.target_date || null}
-            isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+            isTrainingDay={isTrainingDayResolved}
             latestWeight={latestBodyData?.weight || null}
             latestBodyFat={latestBodyData?.body_fat || null}
             clientHeight={c.height || null}
@@ -1498,7 +1510,7 @@ export default function ClientDashboard() {
                     <div id="section-ai" className="scroll-mt-4">
                       <AiInsightsPanel
                         clientId={c.unique_code}
-                        isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+                        isTrainingDay={isTrainingDayResolved}
                       />
                     </div>
                   )}
@@ -1718,11 +1730,11 @@ export default function ClientDashboard() {
           caloriesTarget={c.calories_target}
           proteinTarget={c.protein_target}
           carbsTarget={c.carbs_training_day && c.carbs_rest_day
-            ? (todayTraining && isWeightTraining(todayTraining.training_type) ? c.carbs_training_day : c.carbs_rest_day)
+            ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day)
             : c.carbs_target}
           fatTarget={c.fat_target}
           waterTarget={c.water_target}
-          isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
+          isTrainingDay={isTrainingDayResolved}
           competitionEnabled={isCompetition}
           prepPhase={c.prep_phase as string | null}
           competitionDate={c.competition_date as string | null}

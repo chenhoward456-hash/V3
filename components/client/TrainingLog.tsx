@@ -288,14 +288,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
       showToast('請選擇訓練類型', 'error')
       return
     }
-    if (!simpleMode && !isRest && (!form.duration || form.duration <= 0)) {
-      showToast('請填寫訓練時長', 'error')
-      return
-    }
-    if (!simpleMode && !isRest && !isCardio && !form.rpe) {
-      showToast('請選擇 RPE', 'error')
-      return
-    }
+    // duration 和 RPE 不強制必填 — 有填更準，沒填不擋送出
+    // 引擎有 fallback（duration 預設 45min、RPE 預設 6）
     setSubmitting(true)
     try {
       // 從動作明細自動計算 sets（如果 form.sets 沒填）

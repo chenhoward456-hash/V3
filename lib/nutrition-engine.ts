@@ -513,6 +513,8 @@ const SAFETY = {
   MIN_FAT_PER_KG: 0.8,           // 男性 (15-20% calories)
   MIN_FAT_PER_KG_FEMALE: 1.0,    // 女性 [9] Loucks 2003 / [10] RED-S: ≥20-25% calories
   MAX_FAT_PER_KG_BULK: 1.2,
+  MAX_CARB_PER_KG_BULK: 7.0,     // 增肌碳水上限 7g/kg（Burke 2011: 高碳水運動員 8-12g/kg，非運動員取保守值）
+  MAX_CARB_PER_KG_CUT: 6.0,      // 減脂碳水上限 6g/kg（Thomas 2016: moderate exercise 3-5g/kg + flux 回補彈性）
   MAX_SURPLUS_KCAL: 500,          // 增肌盈餘上限 500kcal（ISSN: lean bulk 10-20% surplus）
   MAX_DEFICIT_KCAL: 500,          // [17] ISSN Position Stand: ≤500 kcal/day deficit
   DIET_BREAK_WEEKS: 8,            // [8] MATADOR: intermittent 2wk on/off 優於連續；8 週為保守閾值
@@ -2673,6 +2675,13 @@ function generateCutSuggestion(
     warnings.push('碳水已觸及最低值 50g，不宜再降')
   }
 
+  // 碳水上限檢查（防止累加 delta 或殘差計算導致碳水異常高）
+  const maxCarbCut = Math.round(bw * SAFETY.MAX_CARB_PER_KG_CUT)
+  if (suggestedCarb > maxCarbCut) {
+    warnings.push(`碳水已達上限 ${maxCarbCut}g（${SAFETY.MAX_CARB_PER_KG_CUT}g/kg），已封頂`)
+    suggestedCarb = maxCarbCut
+  }
+
   // Bug fix: macro 底線可能推高實際熱量超過 suggestedCal，同步修正
   const actualMacroCal = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
   if (actualMacroCal > suggestedCal) {
@@ -2698,6 +2707,12 @@ function generateCutSuggestion(
       suggestedCarbsRD = 30
       warnings.push('休息日碳水已觸及最低值 30g')
     }
+    // 訓練日碳水上限
+    const maxCarbTDExisting = Math.round(bw * SAFETY.MAX_CARB_PER_KG_CUT)
+    if (suggestedCarbsTD > maxCarbTDExisting) {
+      suggestedCarbsTD = maxCarbTDExisting
+      warnings.push(`碳水循環訓練日已達上限 ${maxCarbTDExisting}g（${SAFETY.MAX_CARB_PER_KG_CUT}g/kg），已封頂`)
+    }
   } else if (input.carbsCyclingEnabled && suggestedCarb >= 50) {
     // 碳循環啟用但尚無分配值 → 首次從平均碳水分配
     // 優先用血檢 → 沒血檢時用恢復分數當代理指標
@@ -2715,6 +2730,14 @@ function generateCutSuggestion(
     suggestedCarbsRD = Math.round((suggestedCarb * 7) / (ccm * T + R))
     suggestedCarbsTD = Math.round(suggestedCarbsRD * ccm)
     if (suggestedCarbsRD < 30) suggestedCarbsRD = 30
+    // 訓練日碳水上限（訓練天數少時分配會過度集中）
+    const maxCarbTDReactive = Math.round(bw * SAFETY.MAX_CARB_PER_KG_CUT)
+    if (suggestedCarbsTD > maxCarbTDReactive) {
+      suggestedCarbsTD = maxCarbTDReactive
+      const weeklyTotal = suggestedCarb * 7
+      suggestedCarbsRD = Math.max(30, Math.round((weeklyTotal - suggestedCarbsTD * T) / R))
+      warnings.push(`碳水循環訓練日已達上限 ${maxCarbTDReactive}g（${SAFETY.MAX_CARB_PER_KG_CUT}g/kg），已重新分配`)
+    }
   }
 
   // 注意：Deadline-aware 的緊急加速已由 Goal-Driven 引擎處理（weightToLose > 0 時自動進入）
@@ -2768,6 +2791,13 @@ function generateCutSuggestion(
     getGeneticDeficitReduction(input.geneticProfile, otGeneticCorrections)
     recalcCarb = applyGeneticCarbFloor(recalcCarb, input.geneticProfile, otGeneticCorrections)
     getApoe4FatWarnings(input.geneticProfile, otGeneticCorrections, warnings)
+
+    // 碳水上限檢查（on_track 殘差計算也可能偏高）
+    const maxCarbOT = Math.round(bw * SAFETY.MAX_CARB_PER_KG_CUT)
+    if (recalcCarb > maxCarbOT) {
+      warnings.push(`碳水已達上限 ${maxCarbOT}g（${SAFETY.MAX_CARB_PER_KG_CUT}g/kg），已封頂`)
+      recalcCarb = maxCarbOT
+    }
 
     // on_track 碳循環也要套用血檢碳水修正（不能原封不動 pass through）
     let otCarbsTD = input.currentCarbsTrainingDay ?? null
@@ -3230,6 +3260,14 @@ function generateGoalDrivenCut(
     }
   }
 
+  // 5.5 碳水上限檢查（殘差計算 + flux 回補都可能推高碳水）
+  const maxCarbGD = Math.round(bw * SAFETY.MAX_CARB_PER_KG_CUT)
+  if (suggestedCarb > maxCarbGD) {
+    warnings.push(`碳水已達上限 ${maxCarbGD}g（${SAFETY.MAX_CARB_PER_KG_CUT}g/kg），已封頂`)
+    suggestedCarb = maxCarbGD
+    actualCalories = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
+  }
+
   // 6. 碳循環分配
   let suggestedCarbsTD: number | null = null
   let suggestedCarbsRD: number | null = null
@@ -3265,6 +3303,15 @@ function generateGoalDrivenCut(
         suggestedCarbsRD = avgDailyCarb
       }
       if (suggestedCarbsRD < 20) suggestedCarbsRD = 20
+      // 訓練日碳水上限：訓練天數少時碳循環會把碳水壓縮到少數天，導致單日碳水過高
+      const maxCarbTD = Math.round(bw * SAFETY.MAX_CARB_PER_KG_CUT)
+      if (suggestedCarbsTD > maxCarbTD) {
+        suggestedCarbsTD = maxCarbTD
+        // 重算休息日：保持週總碳水不變
+        const weeklyTotal = avgDailyCarb * 7
+        suggestedCarbsRD = Math.max(20, Math.round((weeklyTotal - suggestedCarbsTD * T) / R))
+        warnings.push(`碳水循環訓練日已達上限 ${maxCarbTD}g（${SAFETY.MAX_CARB_PER_KG_CUT}g/kg），已重新分配`)
+      }
     }
     // 碳循環拆分後，休息日碳水也要套用基因下限（5-HTTLPR SL/SS）
     suggestedCarbsRD = applyGeneticCarbFloor(suggestedCarbsRD, input.geneticProfile, geneticCorrections)
@@ -3601,6 +3648,13 @@ function generateBulkSuggestion(
   if (suggestedFat > maxFat) {
     suggestedFat = maxFat
     warnings.push(`增肌期脂肪參考上限 ${maxFat}g（${SAFETY.MAX_FAT_PER_KG_BULK}g/kg）`)
+  }
+
+  // 碳水上限檢查（防止累加 delta 導致碳水無限增長）
+  const maxCarbBulk = Math.round(bw * SAFETY.MAX_CARB_PER_KG_BULK)
+  if (suggestedCarb > maxCarbBulk) {
+    warnings.push(`碳水已達上限 ${maxCarbBulk}g（${SAFETY.MAX_CARB_PER_KG_BULK}g/kg），已封頂`)
+    suggestedCarb = maxCarbBulk
   }
 
   // 碳循環分配

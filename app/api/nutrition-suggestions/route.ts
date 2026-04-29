@@ -200,9 +200,13 @@ export async function GET(request: NextRequest) {
       ? Math.round(recentWithCalories.reduce((s: number, l: { calories: number | null }) => s + (l.calories ?? 0), 0) / recentWithCalories.length)
       : null
 
-    // 6. 計算每週訓練天數 (近 14 天)
-    const recentTraining = trainingLogs.filter((l: { date: string; training_type: string }) => l.date >= fourteenStr && l.date <= todayStr && isWeightTraining(l.training_type))
-    const trainingDaysPerWeek = Math.round(recentTraining.length / 2)  // 14 天 ÷ 2
+    // 6. 計算每週訓練天數
+    // 同時看 14 天和 30 天，取較高值 — 避免漏填幾天就把訓練頻率拉低
+    const recentTraining14 = trainingLogs.filter((l: { date: string; training_type: string }) => l.date >= fourteenStr && l.date <= todayStr && isWeightTraining(l.training_type))
+    const trainingDays14 = Math.round(recentTraining14.length / 2)
+    const recentTraining30 = trainingLogs.filter((l: { date: string; training_type: string }) => l.date >= sinceDate && l.date <= todayStr && isWeightTraining(l.training_type))
+    const trainingDays30 = Math.round(recentTraining30.length / 4.3)  // 30 天 ≈ 4.3 週
+    const trainingDaysPerWeek = Math.max(trainingDays14, trainingDays30)
 
     // 7. 當前體重 + 身體組成 (最新紀錄)
     const latestWeight = bodyData.length > 0 ? bodyData[bodyData.length - 1].weight : null

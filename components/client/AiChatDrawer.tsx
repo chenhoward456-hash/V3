@@ -476,7 +476,7 @@ ${nutritionEngineStatus.wearableInsight ? `- ${nutritionEngineStatus.wearableIns
 ${nutritionEngineStatus.geneticCorrections && nutritionEngineStatus.geneticCorrections.length > 0 ? `- 基因修正：${nutritionEngineStatus.geneticCorrections.map(gc => gc.adjustment).join('；')}` : ''}
 ${nutritionEngineStatus.dietBreakSuggested ? '- ⚠️ 系統建議 Diet Break（代謝壓力累積）' : ''}
 ${nutritionEngineStatus.warnings.length > 0 ? `- 注意：${nutritionEngineStatus.warnings.slice(0, 3).map(w => w.replace(/[^\u4e00-\u9fff\w\s,.!?，。！？、：:()（）%+\-→←↑↓/]/g, '')).join('；')}` : ''}
-**重要**：你的回答要跟營養引擎的分析一致。如果引擎說停滯期，不要說進度正常；如果引擎說減脂過快，要建議增加攝取。
+**重要**：你的回答必須跟營養引擎的分析一致，包括具體數字。引擎的碳水值是從「總熱量 - 蛋白質×4 - 脂肪×9」殘差計算得出的，加上步數活動回補的碳水（走越多、吃回越多碳水，赤字不變）。不要用通用的 g/kg 建議去質疑引擎的數字——引擎已經根據此學員的 TDEE、赤字、蛋白質、脂肪底線精確計算過了。如果引擎說停滯期，不要說進度正常；如果引擎說減脂過快，要建議增加攝取。
 ` : ''}${(() => {
   const dl = nutritionEngineStatus?.deadlineInfo
   if (!dl || dl.daysLeft > 90) return ''
