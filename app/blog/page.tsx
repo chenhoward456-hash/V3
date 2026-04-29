@@ -226,7 +226,10 @@ async function getSupabasePosts() {
 export default async function BlogPage() {
   const supabasePosts = await getSupabasePosts()
 
-  const allPosts = [...supabasePosts, ...hardcodedPosts].sort(
+  // Supabase 文章優先，hardcoded 只補 DB 沒有的（用 slug 去重）
+  const dbSlugs = new Set(supabasePosts.map((p: any) => p.slug))
+  const uniqueHardcoded = hardcodedPosts.filter(p => !dbSlugs.has(p.slug))
+  const allPosts = [...supabasePosts, ...uniqueHardcoded].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
