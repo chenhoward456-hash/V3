@@ -115,22 +115,50 @@ function renderMarkdown(content: string) {
     return result
   }
 
-  return content
-    .split('\n')
-    .map(line => {
-      if (line.startsWith('## ')) {
-        return `<h2 style="font-size: 1.8rem; font-weight: bold; margin-top: 2rem; margin-bottom: 1rem; color: #2D2D2D;">${processInline(line.replace('## ', ''))}</h2>`
+  // 先把 markdown 表格轉成 HTML table
+  function renderTable(lines: string[]): string {
+    const rows = lines
+      .filter(l => !l.match(/^\|\s*[-:]+/)) // 去掉分隔行 |---|---|
+      .map(l => l.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim()))
+    if (rows.length === 0) return ''
+    const [header, ...body] = rows
+    return `<div style="overflow-x: auto; margin: 1.5rem 0;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+        <thead><tr>${header.map(h => `<th style="text-align: left; padding: 0.75rem 1rem; background: #f5f5f3; border-bottom: 2px solid #e0e0e0; font-weight: 600; color: #2D2D2D; white-space: nowrap;">${processInline(h)}</th>`).join('')}</tr></thead>
+        <tbody>${body.map(row => `<tr>${row.map(cell => `<td style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; color: #444; vertical-align: top;">${processInline(cell)}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>
+    </div>`
+  }
+
+  const lines = content.split('\n')
+  const result: string[] = []
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    // 收集連續的表格行
+    if (line.startsWith('|')) {
+      const tableLines: string[] = []
+      while (i < lines.length && lines[i].startsWith('|')) {
+        tableLines.push(lines[i])
+        i++
       }
-      if (line.startsWith('### ')) {
-        return `<h3 style="font-size: 1.4rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #2D2D2D;">${processInline(line.replace('### ', ''))}</h3>`
-      }
-      if (line === '---') return '<hr style="margin: 2rem 0; border-color: #E5E5E5;" />'
-      if (line.startsWith('- ')) return `<li style="margin-bottom: 0.5rem;">${processInline(line.replace('- ', ''))}</li>`
-      if (line.startsWith('|')) return escapeHtml(line)
-      if (line.trim()) return `<p style="margin-bottom: 1rem;">${processInline(line)}</p>`
-      return ''
-    })
-    .join('')
+      result.push(renderTable(tableLines))
+      continue
+    }
+    if (line.startsWith('## ')) {
+      result.push(`<h2 style="font-size: 1.8rem; font-weight: bold; margin-top: 2rem; margin-bottom: 1rem; color: #2D2D2D;">${processInline(line.replace('## ', ''))}</h2>`)
+    } else if (line.startsWith('### ')) {
+      result.push(`<h3 style="font-size: 1.4rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #2D2D2D;">${processInline(line.replace('### ', ''))}</h3>`)
+    } else if (line === '---') {
+      result.push('<hr style="margin: 2rem 0; border-color: #E5E5E5;" />')
+    } else if (line.startsWith('- ')) {
+      result.push(`<li style="margin-bottom: 0.5rem;">${processInline(line.replace('- ', ''))}</li>`)
+    } else if (line.trim()) {
+      result.push(`<p style="margin-bottom: 1rem;">${processInline(line)}</p>`)
+    }
+    i++
+  }
+  return result.join('')
 }
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
