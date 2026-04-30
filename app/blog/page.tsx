@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '25',
+    title: '咖啡因對訓練有沒有用？三個常見錯誤讓你的 7% 歸零',
+    description: '咖啡因能提升肌力 3-7%，但劑量太少、時機太晚、喝太頻繁會讓效果歸零。從機制到實作，三個常見錯誤一次修正。',
+    date: '2026-04-30',
+    category: '訓練方法',
+    readTime: '10 分鐘',
+    slug: 'caffeine-training-protocol-2026',
+  },
+  {
     id: '24',
     title: '腹肌一直練不大？研究告訴你為什麼 Plank 和高次數捲腹沒用',
     description: '腹肌也是肌肉，跟胸肌沒有差別——但多數人用 Plank 和高次數捲腹練，只練到耐力不練到肌肥大。EMG 研究證實負荷越大啟動越高，附 8 週加重課表。',
