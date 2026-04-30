@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '26',
+    title: '三頭肌長頭怎麼練？Maeo 2023 RCT 證實：overhead extension 比 pushdown 多長近兩倍',
+    description: '三頭肌長頭佔 60-65% 體積，但 pushdown 練不到它。Maeo 2023 用同一人左右手對照，overhead extension 長頭肥大效果是 pushdown 的近兩倍。附 8 週漸進課表。',
+    date: '2026-04-30',
+    category: '訓練方法',
+    readTime: '10 分鐘',
+    slug: 'triceps-long-head-overhead-extension',
+  },
+  {
     id: '25',
     title: '咖啡因對訓練有沒有用？三個常見錯誤讓你的 7% 歸零',
     description: '咖啡因能提升肌力 3-7%，但劑量太少、時機太晚、喝太頻繁會讓效果歸零。從機制到實作，三個常見錯誤一次修正。',

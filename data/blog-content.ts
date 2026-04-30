@@ -7,6 +7,170 @@ export interface BlogPost {
 }
 
 export const blogContent: Record<string, BlogPost> = {
+  'triceps-long-head-overhead-extension': {
+    title: '三頭肌長頭怎麼練？Maeo 2023 RCT 證實：overhead extension 比 pushdown 多長近兩倍',
+    date: '2026-04-30',
+    category: '訓練方法',
+    readTime: '10 分鐘',
+    content: `
+5 年前我認真練三頭練了快兩年，做的全是教科書動作——繩索下拉、kickback、窄握臥推，組數重量都吃滿。結果手臂從側面看還是平的，沒有那塊大家在講的 horseshoe（馬蹄形）。
+
+當時我以為是訓練量不夠，把每週三頭組數從 12 組加到 18 組。沒用。再加到 24 組。還是沒用。直到我去翻文獻，才發現問題不在「練得不夠」，而是在「沒練到該練的部位」。
+
+如果你也有同樣的困擾——三頭練很久但側面看就是平的——那這篇文章可能會解決你的卡關。核心結論寫在前面：**三頭肌的長頭佔了快 2/3 體積，但它是雙關節肌，大部分人常做的動作根本沒讓它完全伸展**。要練長頭，你需要把手臂舉過頭。
+
+## 三頭肌不是一塊肌肉，是三個
+
+很多人以為三頭就是一塊肌肉。實際上它由三個「頭」組成，各自從不同位置長出來、各自有不同的功能：
+
+- **長頭（Long head）**——起點在肩胛骨（scapula）的盂下結節，是三個頭裡唯一跨過肩關節的。同時負責「伸肘」+「肩關節伸展與內收」。
+- **外側頭（Lateral head）**——起點在肱骨後外側，只跨過肘關節，單純負責伸肘。
+- **內側頭（Medial head）**——起點在肱骨後內側，藏在長頭和外側頭下方，也只負責伸肘。
+
+關鍵的數字：**長頭的橫截面積佔三頭肌總體積約 60-65%**（Lieber & Fridén, 2000）。也就是說，你想要視覺上有那塊「馬蹄」，絕大部分要靠長頭的肥大撐起來。外側頭和內側頭加起來才佔 1/3 多一點。
+
+但這就是矛盾的地方：大部分人最常做的三頭動作——繩索下拉、dip、窄握臥推、kickback——練到的主要是外側頭和內側頭。長頭被嚴重低估。
+
+## 為什麼長頭這麼特別？關鍵在「跨關節」
+
+長頭從肩胛骨長下來，跨過肩關節，再連到尺骨鷹嘴突（elbow）。這個解剖結構意味著：它的長度同時受到「肩關節位置」和「肘關節位置」兩個變數影響。
+
+用一個具體場景：
+
+- **手臂在體側、做繩索下拉時**——肩關節中立，長頭起點與止點的距離適中，長頭只在「半伸展」狀態。它有出力，但從未被完全拉長。
+- **手臂高舉過頭、做 overhead extension 時**——肩關節屈曲到最高，長頭起點被往上拉、止點隨手肘彎曲往下，長頭兩端被同時拉到極限。這時它才真正被「完全伸展」。
+
+肌肉只有在**被完全伸展的狀態下收縮**，才會啟動最強的肥大訊號——這就是近年運動科學最火的話題之一：**stretch-mediated hypertrophy（伸展介導性肌肥大）**。
+
+## Stretch-mediated hypertrophy：為什麼「拉長」這麼重要？
+
+過去十年的研究越來越明確地指出：同樣訓練量下，**在肌肉被拉長的位置（stretched position）做反覆收縮，肌肥大效果顯著大於在縮短位置（shortened position）做**（Wolf et al., 2023 meta-analysis, Sports Med）。
+
+機轉目前主流假說有三個：
+
+1. **機械張力（mechanical tension）在 stretched position 達到最大**——肌節被拉長時，actin 和 myosin 的拉力臂變長，單位收縮張力升高，觸發 mTOR 路徑的訊號更強。
+2. **新增肌節（sarcomerogenesis）**——在 stretched position 訓練會誘導肌肉「縱向」增長，增加肌節串連數量，讓肌肉在解剖上實質變長變大。
+3. **代謝壓力 + 細胞腫脹**——stretched position 通常 time-under-tension 較長，代謝副產物累積，進一步刺激肥大訊號。
+
+對長頭來說，這意味著：你不能只「練到」它（讓它有出力），你要「拉到」它（讓它在伸展狀態下出力）。前者是繩索下拉，後者是 overhead extension。
+
+## Maeo 2023：同一批人的左右手對照，結論很硬
+
+這是目前長頭訓練最關鍵的一篇 RCT。我把設計拆給你看，你會懂為什麼這篇比一般的「分組對照」更有說服力。
+
+**研究設計**（Maeo S, Wu Y, Huang M, et al., *Eur J Sport Sci*, 2023）：
+
+- **受試者**：21 位有訓練經驗的成人
+- **分配方式**：**Unilateral within-subject**——同一個人，一邊手做 overhead cable extension，另一邊手做 pushdown（neutral arm position）。隨機分配哪邊做哪個。
+- **訓練期程**：12 週，每週 2 次
+- **訓練量**：兩邊組數、次數、強度完全配對（5 組 × 8-12 RM 練到力竭）
+- **量測**：用 MRI 測訓練前後三頭三個頭的肌肉橫截面積變化
+
+這個設計最強的地方：**控制掉了所有「人與人之間」的差異**（基因、營養、睡眠、壓力）。同一個人，左右手吃一樣的飯、睡一樣的覺、訓練量完全相同，差別只有「手臂位置」。
+
+**結果**：
+
+- **長頭厚度增加**——Overhead 組：**+28.5%**；Neutral（pushdown）組：**+14.9%**
+- **外側頭厚度增加**——Overhead 組：+11.0%；Neutral 組：+9.8%（差異不顯著）
+- **內側頭厚度增加**——Overhead 組：+12.6%；Neutral 組：+10.1%（差異不顯著）
+
+換句話說，兩種動作對外側頭和內側頭的效果差不多，但**對長頭，overhead 組的肥大效果幾乎是 pushdown 組的兩倍**。
+
+---
+
+> 想知道你目前的訓練量、頻率和肌肉成長趨勢搭配起來合不合理？The Howard Protocol 的 AI 系統會根據你的訓練日、體重變化和營養攝取，幫你判斷現在是該加量、減量，還是換動作。[**免費開始追蹤 →**](https://howard456.vercel.app)
+
+---
+
+## 我推薦的三個長頭動作
+
+不是所有 overhead 動作都一樣好。挑動作要看兩件事：**能否讓長頭真的拉到底端**、以及**底端是否有阻力**（這是繩索 > 啞鈴的原因）。
+
+**1. 繩索 overhead rope extension（首選）**
+
+站姿背對滑輪，把繩索拉到後腦勺後方，手肘維持在耳朵旁邊不動，只有前臂上下。
+
+- 優點：整個動作弧度都有阻力，底端 stretch 位置張力最大（完全符合 stretch-mediated hypertrophy 的條件）
+- 重點：**手肘不要往外開**，夾緊耳朵旁邊；**底端停 1-2 秒**讓長頭真的被拉到
+
+**2. 雙手啞鈴 overhead extension（次選）**
+
+雙手抱一顆啞鈴（或 EZ bar）舉過頭，手肘彎曲讓啞鈴下到後腦勺後方。
+
+- 優點：不需要器材，在家或小型健身房都能做
+- 缺點：啞鈴重力是垂直向下，所以**只有底端**有真正的 stretch 張力，中段和頂端阻力減弱
+- 重點：選擇你能做 8-12 RM 的重量，別太重否則底端容易代償（脖子會下沉、肩膀會聳）
+
+**3. Incline skull crusher（EZ bar）**
+
+在 30-45 度上斜板上做 skull crusher，讓 EZ bar 下到頭頂後方而不是額頭前方。
+
+- 優點：角度讓肩屈曲度增加，長頭被拉得比平躺更開
+- 重點：手肘指向天花板不要外開，bar 要過頭頂（下到耳朵後方），不是停在額頭
+
+避開的：純 pushdown、kickback、窄握臥推——這三個對外側頭和內側頭有效，但對長頭是浪費組數。
+
+## 8 週漸進課表（可以直接用）
+
+把 overhead 當主力，pushdown 降為輔助或拿掉。每週 2 次三頭日：
+
+| 週次 | 動作 | 組數 × 次數 | 強度 / 備註 |
+|------|------|------------|------------|
+| 1-2 週 | A. 繩索 overhead extension / B. 雙手啞鈴 overhead extension | A: 3 × 10-12, B: 2 × 10-12 | 中強度，熟悉動作軌跡；底端停 1 秒 |
+| 3-4 週 | A. 繩索 overhead extension / B. Incline skull crusher | A: 4 × 8-10, B: 2 × 10-12 | 開始加重，A 動作做到力竭前 1-2 下；底端停 1-2 秒 |
+| 5-6 週 | A. 繩索 overhead extension / B. 雙手啞鈴 overhead extension / C. Pushdown（輔助） | A: 4 × 8, B: 3 × 10, C: 2 × 12-15 | A 加重到 RPE 8-9；C 純粹 pump，輕重量 |
+| 7-8 週 | A. 繩索 overhead extension（drop set 結尾） / B. Incline skull crusher | A: 4 × 6-8 + 1 × drop, B: 3 × 8-10 | 強度週，最後一組 A drop set 兩次 |
+
+每個動作底端 stretch 位置都停 1-2 秒，這是讓 stretch-mediated hypertrophy 完整啟動的關鍵小細節。
+
+## 常見錯誤（我自己踩過的）
+
+**1. 手肘往外開**——做 overhead extension 時，如果手肘往外飛，負荷會跑到肩膀和胸，長頭參與度下降。手肘要夾緊耳朵旁邊。
+
+**2. 重量太重、軌跡走樣**——為了舉得起來，身體會代償（挺腰、聳肩、脖子前伸）。寧可降 5 公斤，把動作做完整，長頭才會吃到。
+
+**3. 沒做到底端就回升**——很多人做到一半，離 stretch 位置還有 30 度就上拉。Stretch-mediated hypertrophy 的關鍵就是「拉到底」，沒拉到等於沒做這個動作的精華。
+
+**4. Pushdown 還是當主力**——不少人加了 overhead 進課表，但 pushdown 的組數和重量沒變。結果三頭日總組數爆量，長頭的相對訓練量還是不夠。**該做的是把 pushdown 從 4 組降到 1-2 組，或乾脆拿掉**，把節省下來的精力投資在 overhead。
+
+**5. 只做啞鈴版，沒用繩索**——啞鈴 overhead 只有底端有 stretch 張力，中段和頂端阻力很弱。如果有滑輪可用，繩索版的訓練品質遠勝啞鈴。
+
+## 三個月後的差別
+
+把這套訓練導入後，我手臂從側面看終於有那條馬蹄的線了。不是一夜之間，是大約 10-12 週開始明顯。
+
+如果你三頭已經卡了一年以上，大概率不是訓練量問題，是動作選擇問題。把 pushdown 換成 overhead extension，每週 2 次、每次 3-4 組、每組 8-12 下，底端停 1-2 秒。給它 12 週。
+
+---
+
+## 想知道你目前的身體狀態？
+
+免費系統分析，30 秒輸入基本資料，馬上看到你的營養目標和建議。
+
+[**免費體驗系統分析 →**](https://howard456.vercel.app)（不用註冊，不用付費，直接看結果）
+
+想直接跟教練聊？[**透過 LINE 預約免費諮詢 →**](https://lin.ee/LP65rCc)
+
+還沒準備好預約？
+
+- [**閱讀更多文章 → 前往部落格**](https://howard456.vercel.app/blog)
+- [**快速診斷 → 30 秒評估你的身體狀態**](https://howard456.vercel.app)
+- **追蹤 IG → 獲得每日訓練與營養內容 [@chenhoward](https://instagram.com/chenhoward)**
+
+---
+
+## 參考文獻
+
+1. Maeo S, Wu Y, Huang M, et al. **Triceps brachii hypertrophy is substantially greater after elbow extension training performed in the overhead versus neutral arm position**. *European Journal of Sport Science*. 2023;23(7):1240-1250. DOI: 10.1080/17461391.2022.2100279
+2. Wolf M, et al. **Partial vs full range of motion resistance training: A systematic review and meta-analysis**. *Sports Medicine*. 2023. DOI: 10.1007/s40279-023-01851-y
+3. Lieber RL, Fridén J. **Functional and clinical significance of skeletal muscle architecture**. *Muscle & Nerve*. 2000;23(11):1647-1666.
+4. Wackerhage H, et al. **Stimuli and sensors that initiate skeletal muscle hypertrophy following resistance exercise**. *J Appl Physiol*. 2019;126(1):30-43. DOI: 10.1152/japplphysiol.00685.2018
+
+---
+
+> 本文為個人經驗與知識分享，不構成醫療、營養或運動處方建議。如有健康疑慮請諮詢專業醫療人員。
+    `,
+  },
   'caffeine-training-protocol-2026': {
     title: '咖啡因對訓練有沒有用？三個常見錯誤讓你的 7% 歸零',
     date: '2026-04-30',
