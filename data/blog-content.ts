@@ -7,6 +7,133 @@ export interface BlogPost {
 }
 
 export const blogContent: Record<string, BlogPost> = {
+  'biceps-brachialis-rom-arm-thickness-2026': {
+    title: '練二頭沒粗？Sato 2021 RCT 證實：上臂厚的真主角是肱肌，而且不是握法、是 ROM',
+    date: '2026-04-30',
+    category: '訓練恢復',
+    readTime: '10 分鐘',
+    content: `
+五年前，我練二頭練了大概兩年。每週兩次手臂日、每次 12-16 組、組組到力竭、各種 grip 都試過——hammer curl、reverse curl、supinated dumbbell curl、cable curl、preacher curl 全部跑過。但訓練感受上，二頭一直「沒什麼感覺」，上臂也一直沒長到我想要的厚度。
+
+當時我以為是訓練量不夠、或者重量不夠。直到我去翻文獻，才發現問題從第一天就在兩個地方：
+
+1. **我以為「上臂厚 = 二頭厚」**——但其實上臂屈肘肌群裡，**肱肌（brachialis）才是真正最強、最大的那塊**
+2. **我以為「換 grip 就能練到不同肌肉」**——但對肱肌來說，**握法不重要，ROM（動作幅度）才重要**
+
+## 上臂屈肘肌群有三塊，二頭不是最強的那塊
+
+上臂正面（屈肘負責）有三塊主要肌肉：
+
+- **二頭肌（biceps brachii）**：長頭跨肩肘兩個關節，短頭只跨肘。負責屈肘 + 前臂旋後
+- **肱肌（brachialis）**：藏在二頭下方，只負責屈肘，不參與前臂旋轉。是上臂屈肘肌群裡 cross-section 最大的肌肉
+- **肱橈肌（brachioradialis）**：位於前臂（不是上臂）。協助屈肘，中性握（hammer）啟動最強
+
+Holzbaur 2007 MRI 量測 + 力學模擬：**肱肌 47% > 二頭 34% > 肱橈肌 19%**。最強的不是二頭，是藏在二頭下面的肱肌。它長大會把二頭從下方往外頂——這也是為什麼健美選手「二頭看起來特別飽滿、特別有立體感」的關鍵。
+
+## 「Hammer curl 練肱肌最強」這個說法，沒有強 EMG 證據
+
+為什麼？**肱肌藏在二頭下面，surface EMG 量不到**。要量肱肌肌電訊號必須用 wire electrode（侵入式針電極）。所以絕大多數 EMG 研究比較不同 curl 動作時，沒辦法直接告訴你某動作對肱肌的啟動。
+
+那大家拿來支持「hammer 練肱肌」的 EMG 數據是哪來的？**是 surface EMG 測 brachioradialis（肱橈肌）的結果**，被誤讀成 brachialis（肱肌）。兩個英文太像，業界廣泛混用：
+
+- **Brachialis** = 肱肌（上臂、藏在二頭下方）
+- **Brachioradialis** = 肱橈肌（前臂、外側）
+
+Hammer curl 確實會讓 brachioradialis 啟動增加，但 brachioradialis 是**前臂肌**，長大粗的是前臂、不是上臂厚。整個方向就錯了。
+
+## 那 hammer curl 對肱肌完全沒影響嗎？
+
+從解剖力學推論，hammer curl 確實**可能**讓肱肌相對承擔更多力（因為 neutral grip 二頭力臂變短）。但「相對承擔更多」不等於「肌肥大效應顯著大」。從目前文獻來看，**沒有任何 RCT 直接顯示「hammer curl 練 X 週後肱肌增厚比 standard curl 多 Y%」**。所以 hammer curl 練肱肌的論述，只能停留在「可能有幫助、沒被否定、但沒被驗證」的程度。
+
+---
+
+> 想知道你目前的訓練量和肌肉成長趨勢搭配起來合不合理？The Howard Protocol 的 AI 系統會根據你的訓練日、體重變化和營養攝取，幫你判斷是該加量、減量、還是換動作。[**免費開始追蹤 →**](https://howard456.vercel.app)
+
+---
+
+## 真正 verified 的是 ROM，不是握法
+
+Sato 2021 RCT（PMID 34616309）：
+
+- 32 位非阻力訓練青年，5 週、每週 2 次、共 10 個 session
+- EXT（0-50° 長肌長度）vs FLE（80-130° 短肌長度）vs Control
+- 同樣 ROM 區間（都是 50°）、同樣訓練量、只有起始角度不同
+
+結果：**EXT +8.9% vs FLE +3.4%**，差 2.6 倍（p<0.05）。
+
+而 MT 量的是「二頭 + 肱肌總和」沒分開測，但學界推論增加部分主要是肱肌：
+
+1. Brachialis cross-section 比二頭大——本來就有更多空間長
+2. 長肌長度收縮對 stretch-mediated hypertrophy 訊號最強（Wolf 2023 meta）
+3. 二頭跨肩肘兩關節，光改變肘關節對二頭長度影響相對小；但對肱肌（只跨肘）影響最大
+
+## 三個動作換上，讓肱肌真的長
+
+選動作只看一件事：**能不能在底端讓二頭+肱肌完全拉長**（肩後伸 + 手肘伸直）。
+
+**1. Incline Dumbbell Curl（主力）**——斜板上仰躺，雙手垂下握啞鈴 curl 上來。底端肩後伸 + 手肘伸直 → 二頭+肱肌完全拉長。任何握法都可以。8-12 RM。
+
+**2. Preacher Curl 全 ROM**——preacher bench 上，手肘卡墊子。**從手肘 0°（完全伸直）開始**，不是從 50° 半距開始。Sato 2021 用的就是 EXT（0-50°）版本。8-12 RM。
+
+**3. Bayesian Cable Curl（進階）**——身體背對滑輪、單手做 curl，手臂在身體後側。整段都有阻力，底端 stretch 不會丟。10-12 RM。
+
+避開：**只做半距的 standing curl**（Sato 2021 FLE 組就是這個邏輯，差 2.6 倍）。
+
+## 8 週漸進課表
+
+| 週次 | 動作 | 組數 × 次數 | 強度 / 備註 |
+|------|------|------------|------------|
+| 1-2 週 | A. Incline DB curl / B. Preacher curl 全 ROM | A: 3 × 10-12, B: 2 × 10-12 | 中強度，熟悉底端全伸展；底端停 1 秒 |
+| 3-4 週 | A. Incline DB curl / B. Bayesian cable curl | A: 4 × 8-10, B: 2 × 10 | 開始加重，A 動作做到力竭前 1-2 下 |
+| 5-6 週 | A. Incline DB curl / B. Preacher curl 全 ROM / C. Hammer curl（輔助） | A: 4 × 8, B: 3 × 10, C: 2 × 12-15 | A 加重到 RPE 8-9；C 純粹前臂 pump |
+| 7-8 週 | A. Bayesian cable（drop set 結尾） / B. Preacher curl 全 ROM | A: 4 × 6-8 + 1 × drop, B: 3 × 8-10 | 強度週，最後一組 A drop set 兩次 |
+
+## 常見錯誤（我自己踩過的）
+
+**1. 站姿 curl 從半距開始**——Sato 2021 證實 5 週只增厚 3.4%，改成全 ROM 增厚 8.9%。
+
+**2. 重量太重，底端不敢完全伸直**——寧可降 5 公斤把 ROM 做完。
+
+**3. 一直換 grip 找「對的肌肉感受」**——肱肌沒有像二頭那種明顯 mind-muscle connection，正確訓練的 marker 是「上臂從正面看慢慢變厚」。
+
+**4. 用 hammer / reverse curl 當主力**——效果在前臂，當輔助可以但不要當主力。
+
+**5. 一週只練一次手臂**——屈肘肌群恢復快，週訓練量加總對肥大很重要。
+
+## 肱二頭肌腱炎族群提醒
+
+如果你有肱二頭肌腱炎、慢性肘痛、肘關節術後復健期 → 請先諮詢物理治療師。Incline curl 在底端肩後伸 + 手肘完全伸直，對肌腱的拉伸力較強。
+
+---
+
+## 想知道你目前的身體狀態？
+
+免費系統分析，30 秒輸入基本資料，馬上看到你的營養目標和建議。
+
+[**免費體驗系統分析 →**](https://howard456.vercel.app)（不用註冊，不用付費，直接看結果）
+
+想直接跟教練聊？[**透過 LINE 預約免費諮詢 →**](https://lin.ee/LP65rCc)
+
+還沒準備好預約？
+
+- [**閱讀更多文章 → 前往部落格**](https://howard456.vercel.app/blog)
+- [**快速診斷 → 30 秒評估你的身體狀態**](https://howard456.vercel.app)
+- **追蹤 IG → 獲得每日訓練與營養內容 [@chenhoward](https://instagram.com/chenhoward)**
+
+---
+
+## 參考文獻
+
+1. Sato S, Yoshida R, Kiyono R, et al. **Elbow joint angles in elbow flexor unilateral resistance exercise training determine its effects on muscle strength and thickness of trained and non-trained arms**. *Front Physiol*. 2021;12:734509. DOI: 10.3389/fphys.2021.734509
+2. Wolf M, et al. **Partial vs full range of motion resistance training: A systematic review and meta-analysis**. *Sports Medicine*. 2023. DOI: 10.1007/s40279-023-01851-y
+3. Holzbaur KR, Murray WM, Gold GE, Delp SL. **Upper limb muscle volumes in adult subjects**. *J Biomech*. 2007;40(4):742-749. DOI: 10.1016/j.jbiomech.2006.11.011
+4. Wackerhage H, et al. **Stimuli and sensors that initiate skeletal muscle hypertrophy following resistance exercise**. *J Appl Physiol*. 2019;126(1):30-43. DOI: 10.1152/japplphysiol.00685.2018
+
+---
+
+> 本文為個人經驗與知識分享，不構成醫療、營養或運動處方建議。如有健康疑慮、肱二頭肌腱炎、或慢性肘部疼痛，請先諮詢專業醫療人員或物理治療師。
+    `,
+  },
   'triceps-long-head-overhead-extension': {
     title: '三頭肌長頭怎麼練？Maeo 2023 RCT 證實：overhead extension 比 pushdown 多長近兩倍',
     date: '2026-04-30',

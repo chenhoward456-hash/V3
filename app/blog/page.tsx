@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '27',
+    title: '練二頭沒粗？Sato 2021 RCT 證實：上臂厚的真主角是肱肌，而且不是握法、是 ROM',
+    description: '上臂屈肘最強的不是二頭，是藏在下面的肱肌（佔 47%）。Sato 2021 RCT 證實全 ROM 訓練增厚 8.9%，半距只有 3.4%。附 8 週漸進課表。',
+    date: '2026-04-30',
+    category: '訓練恢復',
+    readTime: '10 分鐘',
+    slug: 'biceps-brachialis-rom-arm-thickness-2026',
+  },
+  {
     id: '26',
     title: '三頭肌長頭怎麼練？Maeo 2023 RCT 證實：overhead extension 比 pushdown 多長近兩倍',
     description: '三頭肌長頭佔 60-65% 體積，但 pushdown 練不到它。Maeo 2023 用同一人左右手對照，overhead extension 長頭肥大效果是 pushdown 的近兩倍。附 8 週漸進課表。',
