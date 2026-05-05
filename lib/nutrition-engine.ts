@@ -1803,6 +1803,19 @@ function generateWearableInsight(
 // ===== 主要引擎 =====
 
 export function generateNutritionSuggestion(input: NutritionInput): NutritionSuggestion {
+  // 體重 sanity guard — 0 或負值會讓所有 per-kg 計算崩潰
+  if (!input.bodyWeight || input.bodyWeight <= 0) {
+    return emptyResult({
+      status: 'insufficient_data', statusLabel: '數據異常', statusEmoji: '⚠️',
+      message: '體重數據異常，請確認記錄。',
+    })
+  }
+
+  // 體脂率 clamp — 防止極端值（0% 或 100%）讓 TDEE 崩潰
+  if (input.bodyFatPct != null) {
+    input = { ...input, bodyFatPct: Math.min(Math.max(input.bodyFatPct, 3), 60) }
+  }
+
   const warnings: string[] = []
 
   // 狀態監控：在所有分支前先計算，後面 spread 進每個 return
@@ -1854,7 +1867,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     const bw = input.bodyWeight
     const estimatedMaintenance = Math.round(bw * 33)
     // Bug fix M4: 與有 targetDate 的恢復路徑對齊（+10%，蛋白質 1.8/1.6，脂肪有 floor）
-    const isMaleRecovery = input.gender === '男性'
+    const isMaleRecovery = input.gender !== '女性'
     const recoveryCals = Math.round(estimatedMaintenance * 1.10)
     const recoveryProtein = Math.round(bw * (isMaleRecovery ? 1.8 : 1.6))
     const recoveryFat = Math.max(isMaleRecovery ? 50 : 45, Math.round(bw * 0.9))
@@ -2091,6 +2104,8 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   let adaptiveTDEE: number | null = null
   if (input.avgDailyCalories != null) {
     adaptiveTDEE = Math.round(input.avgDailyCalories - (weeklyChange * tdeeDensity / 7))
+    // 防止極端體重波動導致 adaptiveTDEE 負數或離譜高
+    adaptiveTDEE = Math.max(800, Math.min(adaptiveTDEE, 8000))
   }
 
   // C) 決定最終 TDEE
@@ -2701,12 +2716,8 @@ function generateCutSuggestion(
     // 已有碳循環值 → 增量調整
     const tdChange = Math.round(carbDelta * CARB_CYCLE_TRAINING_RATIO)
     const rdChange = carbDelta - tdChange
-    suggestedCarbsTD = input.currentCarbsTrainingDay + tdChange
-    suggestedCarbsRD = input.currentCarbsRestDay + rdChange
-    if (suggestedCarbsRD < 30) {
-      suggestedCarbsRD = 30
-      warnings.push('休息日碳水已觸及最低值 30g')
-    }
+    suggestedCarbsTD = Math.max(30, input.currentCarbsTrainingDay + tdChange)
+    suggestedCarbsRD = Math.max(30, input.currentCarbsRestDay + rdChange)
     // 訓練日碳水上限
     const maxCarbTDExisting = Math.round(bw * SAFETY.MAX_CARB_PER_KG_CUT)
     if (suggestedCarbsTD > maxCarbTDExisting) {
@@ -2727,16 +2738,22 @@ function generateCutSuggestion(
     // Bug fix H6: 只在 0 時 default 到 4，否則用實際值（上限 7）
     const T = input.trainingDaysPerWeek === 0 ? 4 : Math.min(input.trainingDaysPerWeek, 7)
     const R = 7 - T
-    suggestedCarbsRD = Math.round((suggestedCarb * 7) / (ccm * T + R))
-    suggestedCarbsTD = Math.round(suggestedCarbsRD * ccm)
-    if (suggestedCarbsRD < 30) suggestedCarbsRD = 30
-    // 訓練日碳水上限（訓練天數少時分配會過度集中）
-    const maxCarbTDReactive = Math.round(bw * SAFETY.MAX_CARB_PER_KG_CUT)
-    if (suggestedCarbsTD > maxCarbTDReactive) {
-      suggestedCarbsTD = maxCarbTDReactive
-      const weeklyTotal = suggestedCarb * 7
-      suggestedCarbsRD = Math.max(30, Math.round((weeklyTotal - suggestedCarbsTD * T) / R))
-      warnings.push(`碳水循環訓練日已達上限 ${maxCarbTDReactive}g（${SAFETY.MAX_CARB_PER_KG_CUT}g/kg），已重新分配`)
+    if (T > 0 && R > 0) {
+      suggestedCarbsRD = Math.round((suggestedCarb * 7) / (ccm * T + R))
+      suggestedCarbsTD = Math.round(suggestedCarbsRD * ccm)
+      if (suggestedCarbsRD < 30) suggestedCarbsRD = 30
+      if (suggestedCarbsTD < 30) suggestedCarbsTD = 30
+      // 訓練日碳水上限（訓練天數少時分配會過度集中）
+      const maxCarbTDReactive = Math.round(bw * SAFETY.MAX_CARB_PER_KG_CUT)
+      if (suggestedCarbsTD > maxCarbTDReactive) {
+        suggestedCarbsTD = maxCarbTDReactive
+        const weeklyTotal = suggestedCarb * 7
+        suggestedCarbsRD = Math.max(30, Math.round((weeklyTotal - suggestedCarbsTD * T) / Math.max(1, R)))
+        warnings.push(`碳水循環訓練日已達上限 ${maxCarbTDReactive}g（${SAFETY.MAX_CARB_PER_KG_CUT}g/kg），已重新分配`)
+      }
+    } else {
+      suggestedCarbsTD = suggestedCarb
+      suggestedCarbsRD = suggestedCarb
     }
   }
 
@@ -2802,22 +2819,30 @@ function generateCutSuggestion(
     // on_track 碳循環也要套用血檢碳水修正（不能原封不動 pass through）
     let otCarbsTD = input.currentCarbsTrainingDay ?? null
     let otCarbsRD = input.currentCarbsRestDay ?? null
+    // Fix: lab modifier 按比例分配到 TD/RD，不是兩邊都扣全額
     if (otLabMacroModifiers.length > 0 && otCarbsTD != null && otCarbsRD != null) {
       for (const mod of otLabMacroModifiers) {
-        if (mod.nutrient === 'carbs' && mod.direction === 'decrease') {
-          otCarbsTD = Math.max(30, otCarbsTD - mod.delta)
-          otCarbsRD = Math.max(30, otCarbsRD - mod.delta)
-        }
-        if (mod.nutrient === 'carbs' && mod.direction === 'increase') {
-          otCarbsTD += mod.delta
-          otCarbsRD += mod.delta
+        if (mod.nutrient === 'carbs') {
+          const tdDelta = Math.round(mod.delta * CARB_CYCLE_TRAINING_RATIO)
+          const rdDelta = mod.delta - tdDelta
+          if (mod.direction === 'decrease') {
+            otCarbsTD = Math.max(30, otCarbsTD - tdDelta)
+            otCarbsRD = Math.max(30, otCarbsRD - rdDelta)
+          } else {
+            otCarbsTD += tdDelta
+            otCarbsRD += rdDelta
+          }
         }
       }
     }
 
+    // on_track 卡路里 floor + macro 一致性
+    const otMacroCal = Math.round(recalcPro * 4 + recalcCarb * 4 + recalcFat * 9)
+    const otSuggestedCal = Math.max(currentCal, otMacroCal, minCal)
+
     return {
       status, statusLabel, statusEmoji, message,
-      suggestedCalories: currentCal, suggestedProtein: recalcPro,
+      suggestedCalories: otSuggestedCal, suggestedProtein: recalcPro,
       suggestedCarbs: recalcCarb, suggestedFat: recalcFat,
       suggestedCarbsTrainingDay: otCarbsTD,
       suggestedCarbsRestDay: otCarbsRD,
@@ -3305,12 +3330,14 @@ function generateGoalDrivenCut(
       if (suggestedCarbsRD < 20) suggestedCarbsRD = 20
       // 訓練日碳水上限：訓練天數少時碳循環會把碳水壓縮到少數天，導致單日碳水過高
       const maxCarbTD = Math.round(bw * SAFETY.MAX_CARB_PER_KG_CUT)
-      if (suggestedCarbsTD > maxCarbTD) {
-        suggestedCarbsTD = maxCarbTD
-        // 重算休息日：保持週總碳水不變
-        const weeklyTotal = avgDailyCarb * 7
-        suggestedCarbsRD = Math.max(20, Math.round((weeklyTotal - suggestedCarbsTD * T) / R))
-        warnings.push(`碳水循環訓練日已達上限 ${maxCarbTD}g（${SAFETY.MAX_CARB_PER_KG_CUT}g/kg），已重新分配`)
+      const weeklyTotal = avgDailyCarb * 7
+      // 確保 TD * T 不超過週總碳水（保持週預算守恆）
+      const maxTDFromBudget = R > 0 ? Math.floor((weeklyTotal - 20 * R) / Math.max(1, T)) : avgDailyCarb
+      const effectiveMaxTD = Math.min(maxCarbTD, maxTDFromBudget)
+      if (suggestedCarbsTD > effectiveMaxTD) {
+        suggestedCarbsTD = effectiveMaxTD
+        suggestedCarbsRD = Math.max(20, Math.round((weeklyTotal - suggestedCarbsTD * T) / Math.max(1, R)))
+        warnings.push(`碳水循環訓練日已達上限 ${effectiveMaxTD}g，已重新分配（週預算守恆）`)
       }
     }
     // 碳循環拆分後，休息日碳水也要套用基因下限（5-HTTLPR SL/SS）
@@ -3693,21 +3720,19 @@ function generateBulkSuggestion(
   }
 
   // 增肌期 Deadline-aware（目標體重 > 當前體重時）
+  // Fix: 只放大 delta，不乘整個值（避免 1500kcal 暴增）
   if (deadlineInfo && status !== 'on_track' && status !== 'too_fast') {
     if (deadlineInfo.daysLeft < 28 && deadlineInfo.weightToLose < -1) {
-      // 還差 >1kg 要增，加大盈餘
       const urgencyMultiplier = Math.min(1.5, 1 + (1 - deadlineInfo.daysLeft / 28) * 0.5)
-      calDelta = Math.round(calDelta * urgencyMultiplier)
-      carbDelta = Math.round(carbDelta * urgencyMultiplier)
-      // Bug fix H8: 用已含 lab modifier 的 suggestedCal/suggestedCarb 做乘法，而非從 currentXxx 重算
-      suggestedCal = Math.round(suggestedCal * urgencyMultiplier)
-      suggestedCarb = Math.round(suggestedCarb * urgencyMultiplier)
-      // Bug fix H7: 同步更新碳循環值
-      if (suggestedCarbsTD != null && suggestedCarbsRD != null && input.currentCarbsTrainingDay != null && input.currentCarbsRestDay != null) {
-        const tdChange = Math.round(carbDelta * CARB_CYCLE_TRAINING_RATIO)
-        const rdChange = carbDelta - tdChange
-        suggestedCarbsTD = input.currentCarbsTrainingDay + tdChange
-        suggestedCarbsRD = input.currentCarbsRestDay + rdChange
+      const extraCal = Math.round(calDelta * (urgencyMultiplier - 1))
+      const extraCarb = Math.round(carbDelta * (urgencyMultiplier - 1))
+      suggestedCal += extraCal
+      suggestedCarb += extraCarb
+      // 同步更新碳循環
+      if (suggestedCarbsTD != null && suggestedCarbsRD != null) {
+        const tdExtra = Math.round(extraCarb * CARB_CYCLE_TRAINING_RATIO)
+        suggestedCarbsTD += tdExtra
+        suggestedCarbsRD += (extraCarb - tdExtra)
       }
       message += ` ⏰ 距離目標僅剩 ${deadlineInfo.daysLeft} 天，需加速增量。`
     }
@@ -3720,18 +3745,21 @@ function generateBulkSuggestion(
       suggestedCal = maxBulkCal
       warnings.push(`增肌期熱量已達上限 ${maxBulkCal}kcal（TDEE ${estimatedTDEE} + ${SAFETY.MAX_SURPLUS_KCAL}），避免過度盈餘`)
     }
-    // Bug fix M15: 確保 macro 總和與 suggestedCal 一致
-    // 先用 macro 總和同步 suggestedCal（lab modifier 可能獨立修改 macro）
-    const macroCalSum = suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9
-    if (macroCalSum > suggestedCal) {
-      // macro 超過熱量上限，從碳水扣回
-      const maxCarbFromCal = Math.round((suggestedCal - suggestedPro * 4 - suggestedFat * 9) / 4)
-      if (maxCarbFromCal > 0) {
-        suggestedCarb = maxCarbFromCal
-      } else {
-        // 蛋白質+脂肪已超過熱量上限，上調 suggestedCal 到實際值
-        suggestedCal = Math.round(suggestedPro * 4 + Math.max(50, suggestedCarb) * 4 + suggestedFat * 9)
-      }
+  }
+
+  // 碳水 re-check（urgency / cap 後可能突破上下限）
+  if (suggestedCarb < 50) suggestedCarb = 50
+  const maxCarbBulkFinal = Math.round(bw * SAFETY.MAX_CARB_PER_KG_BULK)
+  if (suggestedCarb > maxCarbBulkFinal) suggestedCarb = maxCarbBulkFinal
+
+  // 確保 macro 總和與 suggestedCal 一致
+  const macroCalSum = suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9
+  if (macroCalSum > suggestedCal) {
+    const maxCarbFromCal = Math.round((suggestedCal - suggestedPro * 4 - suggestedFat * 9) / 4)
+    if (maxCarbFromCal >= 50) {
+      suggestedCarb = maxCarbFromCal
+    } else {
+      suggestedCal = Math.round(suggestedPro * 4 + Math.max(50, suggestedCarb) * 4 + suggestedFat * 9)
     }
   }
 
@@ -3778,15 +3806,19 @@ function generateBulkSuggestion(
     // on_track 碳循環也要套用血檢碳水修正（與 cut on_track 一致，不能原封不動 pass through）
     let otBulkCarbsTD = input.currentCarbsTrainingDay ?? null
     let otBulkCarbsRD = input.currentCarbsRestDay ?? null
+    // Fix: lab modifier 要按比例分配到 TD/RD，不是兩邊都扣全額（否則雙倍扣）
     if (bulkLabMacroMods.length > 0 && otBulkCarbsTD != null && otBulkCarbsRD != null) {
       for (const mod of bulkLabMacroMods) {
-        if (mod.nutrient === 'carbs' && mod.direction === 'decrease') {
-          otBulkCarbsTD = Math.max(30, otBulkCarbsTD - mod.delta)
-          otBulkCarbsRD = Math.max(30, otBulkCarbsRD - mod.delta)
-        }
-        if (mod.nutrient === 'carbs' && mod.direction === 'increase') {
-          otBulkCarbsTD += mod.delta
-          otBulkCarbsRD += mod.delta
+        if (mod.nutrient === 'carbs') {
+          const tdDelta = Math.round(mod.delta * CARB_CYCLE_TRAINING_RATIO)
+          const rdDelta = mod.delta - tdDelta
+          if (mod.direction === 'decrease') {
+            otBulkCarbsTD = Math.max(30, otBulkCarbsTD - tdDelta)
+            otBulkCarbsRD = Math.max(30, otBulkCarbsRD - rdDelta)
+          } else {
+            otBulkCarbsTD += tdDelta
+            otBulkCarbsRD += rdDelta
+          }
         }
       }
     }

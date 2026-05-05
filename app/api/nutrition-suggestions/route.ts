@@ -10,6 +10,11 @@ const logger = createLogger('api-nutrition-suggestions')
 
 export const maxDuration = 60
 
+/** 取得台北時區的今天日期字串 (YYYY-MM-DD)，避免 UTC 偏移問題 */
+function getTaiwanToday(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
+}
+
 const supabase = createServiceSupabase()
 
 // DB 欄位 gene_depression_risk 可能是新格式 (LL/SL/SS) 或舊格式 (low/moderate/high)
@@ -289,13 +294,15 @@ export async function GET(request: NextRequest) {
           carbs: n.carbs_grams ?? null,
         })),
       lastPeriodDate,
-      labResults: labResults.map((l: { test_name: string; value: number; unit: string; status: string; date: string }) => ({
-        test_name: l.test_name,
-        value: l.value,
-        unit: l.unit,
-        status: l.status as 'normal' | 'attention' | 'alert',
-        date: l.date,
-      })),
+      labResults: labResults
+        .filter((l: { value: number | null }) => l.value != null)  // 過濾掉 null value 避免 NaN 傳播
+        .map((l: { test_name: string; value: number; unit: string; status: string; date: string }) => ({
+          test_name: l.test_name,
+          value: l.value,
+          unit: l.unit,
+          status: l.status as 'normal' | 'attention' | 'alert',
+          date: l.date,
+        })),
       recentTrainingVolume: recentTrainingWithRPE.length > 0 ? {
         avgRPE,
         avgDurationMin,
@@ -400,13 +407,10 @@ export async function GET(request: NextRequest) {
         updates.carbs_training_day = null
         updates.carbs_rest_day = null
         // 同步更新 water_target（Peak Week 每日水量不同）
-        const todayPlan = suggestion.peakWeekPlan?.find((d: { date: string }) => {
-          const nowMs = Date.now() + 8 * 60 * 60 * 1000
-          const todayStr = new Date(nowMs).toISOString().split('T')[0]
-          return d.date === todayStr
-        })
-        // 如果今天沒匹配到，fallback 用最近的一天
-        const effectivePlan = todayPlan || suggestion.peakWeekPlan?.[0]
+        const peakTodayStr = getTaiwanToday()
+        const todayPlan = suggestion.peakWeekPlan?.find((d: { date: string }) => d.date === peakTodayStr)
+        // 如果今天沒匹配到（還沒進入 Peak Week），不要 fallback 到第一天的極端值
+        const effectivePlan = todayPlan ?? null
         if (effectivePlan?.water) {
           updates.water_target = effectivePlan.water
         }
