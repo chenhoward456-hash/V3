@@ -3606,10 +3606,29 @@ function generateBulkSuggestion(
   const currentCarb = input.currentCarbs || 0
   const currentFat = input.currentFat || 0
 
-  let suggestedCal = currentCal + calDelta
-  let suggestedPro = currentPro
-  let suggestedCarb = currentCarb + carbDelta
-  let suggestedFat = currentFat + fatDelta
+  // 增肌 sanity check：如果現有熱量低於 TDEE 或碳水為負，代表資料異常
+  // 從 TDEE + 盈餘重算，不用 delta 累加（累加爛資料只會越來越爛）
+  const bulkTDEE = estimatedTDEE ?? Math.round(bw * (isMale ? 33 : 30))
+  const needsRecalc = currentCal < bulkTDEE || currentCarb <= 0
+  let suggestedCal: number
+  let suggestedPro: number
+  let suggestedCarb: number
+  let suggestedFat: number
+
+  if (needsRecalc) {
+    // 從 TDEE + 10% 盈餘重算全部巨量營養素
+    suggestedCal = Math.round(bulkTDEE * 1.10) + calDelta
+    const bulkProPerKg = zoneInfo ? zoneInfo.proteinPerKg : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
+    suggestedPro = Math.max(Math.round(bw * bulkProPerKg), currentPro)
+    suggestedFat = Math.max(Math.round(bw * (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)), isMale ? 50 : 45)
+    suggestedCarb = Math.max(50, Math.round((suggestedCal - suggestedPro * 4 - suggestedFat * 9) / 4))
+    warnings.push(`增肌期熱量或碳水異常（${currentCal}kcal / ${currentCarb}g），已從 TDEE ${bulkTDEE}kcal 重新計算`)
+  } else {
+    suggestedCal = currentCal + calDelta
+    suggestedPro = currentPro
+    suggestedCarb = currentCarb + carbDelta
+    suggestedFat = currentFat + fatDelta
+  }
 
   // Bug 7 fix: 增肌路徑也套用血檢 modifier
   const bulkLabModResult = input.labResults
@@ -3648,6 +3667,12 @@ function generateBulkSuggestion(
   if (suggestedFat > maxFat) {
     suggestedFat = maxFat
     warnings.push(`增肌期脂肪參考上限 ${maxFat}g（${SAFETY.MAX_FAT_PER_KG_BULK}g/kg）`)
+  }
+
+  // 碳水下限（防止負數或極低碳水）
+  if (suggestedCarb < 50) {
+    suggestedCarb = 50
+    warnings.push('增肌期碳水已觸及最低值 50g，已調整')
   }
 
   // 碳水上限檢查（防止累加 delta 導致碳水無限增長）
