@@ -211,6 +211,7 @@ export default function AiChatDrawer({
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [quotaExceeded, setQuotaExceeded] = useState(false)
+  const [freeUsage, setFreeUsage] = useState<{ used: number; limit: number } | null>(null)
   const [pendingImage, setPendingImage] = useState<string | null>(null) // base64 JPEG
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null) // object URL for preview
   const [trainingReadiness, setTrainingReadiness] = useState<{
@@ -790,6 +791,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
         if (res.ok) {
           const data = await res.json()
           setMessages([...newMessages, { role: 'assistant', content: data.reply }])
+          if (data.freeUsage) setFreeUsage(data.freeUsage)
           return
         }
 
@@ -856,16 +858,41 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
 
   if (!open) return null
 
-  const quickQuestions = [
-    '我的減脂進度正常嗎？',
-    '根據我的恢復狀態，今天適合練什麼？',
-    '我今天剩下的量，去超商要怎麼買？',
-    '幫我算這餐：一個雞腿便當加一杯豆漿',
-    '這週我的睡眠跟訓練有什麼需要注意的？',
-    '幫我分析我最近的飲食模式',
-    '我的血檢有什麼需要透過飲食改善的？',
-    '幫我預測還要多久能達到目標體重',
-  ]
+  const quickQuestions = useMemo(() => {
+    const eaten = todayNutrition
+    const pLeft = proteinTarget ? Math.max(0, proteinTarget - (eaten?.protein_grams ?? 0)) : null
+    const cLeft = carbsTarget ? Math.max(0, carbsTarget - (eaten?.carbs_grams ?? 0)) : null
+    const hour = new Date().getHours()
+
+    const dynamic: string[] = []
+
+    // 情境驅動的問題（最多 3 個，放最前面）
+    if (cLeft != null && cLeft < 20 && (eaten?.carbs_grams ?? 0) > 0) {
+      dynamic.push('碳水快用完了，晚餐怎麼吃比較安全？')
+    }
+    if (pLeft != null && pLeft > 40 && hour >= 17) {
+      dynamic.push(`蛋白質還缺 ${pLeft}g，去超商能買什麼？`)
+    }
+    if (isTrainingDay) {
+      dynamic.push('今天有訓練，練後這餐怎麼分配？')
+    }
+    if (cLeft != null && cLeft > 100 && hour < 14) {
+      dynamic.push('碳水還很充裕，中午可以怎麼吃？')
+    }
+
+    // 固定問題（補足到 6-8 個）
+    const base = [
+      '我的減脂進度正常嗎？',
+      '我今天剩下的量，去超商要怎麼買？',
+      '幫我算這餐：一個雞腿便當加一杯豆漿',
+      '這週我的睡眠跟訓練有什麼需要注意的？',
+      '幫我預測還要多久能達到目標體重',
+    ]
+
+    // 去重後合併，動態排前面
+    const all = [...dynamic, ...base.filter(q => !dynamic.includes(q))]
+    return all.slice(0, 6)
+  }, [todayNutrition, proteinTarget, carbsTarget, isTrainingDay])
 
   return (
     <>
@@ -899,9 +926,22 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
           </button>
         </div>
 
-        {/* AI Disclaimer */}
+        {/* AI Disclaimer + 免費額度進度 */}
         <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 shrink-0">
           <p className="text-[11px] text-gray-400 text-center">AI 建議僅供參考，不構成醫療診斷或治療建議</p>
+          {freeUsage && (
+            <p className={`text-[11px] text-center mt-1 font-medium ${
+              freeUsage.used >= freeUsage.limit ? 'text-red-500'
+              : freeUsage.used === freeUsage.limit - 1 ? 'text-amber-600'
+              : 'text-gray-400'
+            }`}>
+              {freeUsage.used >= freeUsage.limit
+                ? '⚠️ 本月免費額度已用完'
+                : freeUsage.used === freeUsage.limit - 1
+                ? `⚠️ 這是本月最後一次免費分析（${freeUsage.used}/${freeUsage.limit}）`
+                : `⚡ 免費 AI 顧問額度：${freeUsage.used}/${freeUsage.limit}`}
+            </p>
+          )}
         </div>
 
         {/* Messages */}
@@ -944,27 +984,29 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
 
           {quotaExceeded && (
             <div className="max-w-[90%] ml-1">
-              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-2">
-                <p className="text-sm font-semibold text-gray-800 mb-1">本月 3 次免費額度已用完</p>
-                <p className="text-xs text-gray-500 leading-relaxed mb-3">
-                  剛才的對話你應該有感覺到——AI 回答的是你的真實數據，不是網路上的通用建議。升級後可以隨時問，不限次數。
+              <div className="bg-gradient-to-b from-blue-50 to-white border border-blue-200 rounded-2xl p-5 mb-2">
+                <p className="text-sm font-bold text-gray-900 mb-2">本月 3 次免費分析已達上限</p>
+                <p className="text-[13px] text-gray-600 leading-relaxed mb-4">
+                  你應該有發現，AI 剛剛是根據你「今天的剩餘熱量」與「這週的減脂進度」在幫你算——這不是外面網路上查得到的通用答案。
+                </p>
+                <p className="text-[13px] text-gray-600 leading-relaxed mb-4">
+                  系統已經掌握了你的生理節奏。每個月 NT$499，讓專屬 AI 隨時幫你盯著每一餐的碳水和蛋白質，不用再自己苦苦計算。
                 </p>
                 <div className="space-y-2">
                   <a
                     href={`/pay?tier=self_managed&name=${encodeURIComponent(clientName)}`}
-                    className="block w-full text-center bg-blue-600 text-white font-semibold py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors text-sm"
+                    className="block w-full text-center bg-blue-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-blue-700 transition-colors text-sm"
                   >
-                    升級自主管理版 NT$499/月
-                    <span className="block text-[10px] font-normal opacity-80 mt-0.5">AI 顧問無限次 + 完整訓練追蹤</span>
+                    解鎖無上限 AI 顧問 — NT$499/月
+                    <span className="block text-[10px] font-normal opacity-80 mt-0.5">讓系統繼續幫你推進進度</span>
                   </a>
                   <a
                     href="https://lin.ee/LP65rCc"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block w-full text-center bg-[#06C755] text-white font-semibold py-3 px-4 rounded-xl hover:bg-[#05b04d] transition-colors text-sm"
+                    className="block w-full text-center text-gray-500 font-medium py-2.5 px-4 rounded-xl hover:bg-gray-100 transition-colors text-sm border border-gray-200"
                   >
-                    或加 LINE 直接問 Howard
-                    <span className="block text-[10px] font-normal opacity-80 mt-0.5">真人回覆，免費諮詢</span>
+                    或加 LINE 與 Howard 討論方案
                   </a>
                 </div>
               </div>

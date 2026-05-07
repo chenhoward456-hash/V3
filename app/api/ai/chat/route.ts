@@ -147,7 +147,25 @@ export async function POST(request: NextRequest) {
       if (insertError) logger.error('插入使用記錄失敗', insertError)
     })
 
-    return NextResponse.json({ reply })
+    // 免費用戶：回傳用量進度（前端顯示進度條）
+    const freeUsage = isFreeQuotaUse ? {
+      used: ((dailyCount ?? 0) > 0 ? Math.min((dailyCount ?? 0) + 1, 3) : 1),
+      limit: 3,
+    } : null
+
+    // 重新查一次本月用量（insert 後）以取得精確數字
+    if (freeUsage) {
+      const now = new Date()
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+      const { count: freshCount } = await supabase
+        .from('ai_chat_usage')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', client.id)
+        .gte('created_at', monthStart)
+      freeUsage.used = Math.min(freshCount ?? 1, 3)
+    }
+
+    return NextResponse.json({ reply, freeUsage })
   } catch (err: unknown) {
     const errObj = err as Record<string, unknown> | undefined
     const errError = errObj?.error as Record<string, unknown> | undefined
