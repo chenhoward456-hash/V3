@@ -1081,6 +1081,11 @@ export default function ClientDashboard() {
                 carbsTrainingDay={c.carbs_training_day}
                 carbsRestDay={c.carbs_rest_day}
                 geneticCorrections={geneCorrections}
+                engineStatus={nutritionEngineSuggestion ? {
+                  status: nutritionEngineSuggestion.status,
+                  statusLabel: nutritionEngineSuggestion.statusLabel || '',
+                  message: nutritionEngineSuggestion.message || '',
+                } : null}
               />
             )}
             <NutritionLog

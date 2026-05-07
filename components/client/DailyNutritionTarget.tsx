@@ -2,6 +2,12 @@
 
 import { useState } from 'react'
 
+interface EngineStatus {
+  status: string
+  statusLabel: string
+  message: string
+}
+
 interface DailyNutritionTargetProps {
   caloriesTarget?: number | null
   proteinTarget?: number | null
@@ -12,6 +18,7 @@ interface DailyNutritionTargetProps {
   carbsTrainingDay?: number | null
   carbsRestDay?: number | null
   geneticCorrections?: { gene: string; rule: string; adjustment: string }[]
+  engineStatus?: EngineStatus | null
 }
 
 export default function DailyNutritionTarget({
@@ -24,8 +31,10 @@ export default function DailyNutritionTarget({
   carbsTrainingDay,
   carbsRestDay,
   geneticCorrections,
+  engineStatus,
 }: DailyNutritionTargetProps) {
   const [manualDayType, setManualDayType] = useState<'training' | 'rest' | null>(null)
+  const [showExplanation, setShowExplanation] = useState(false)
   const effectiveIsTraining = manualDayType != null ? manualDayType === 'training' : !!isTrainingDay
 
   const effectiveCarbsTarget = carbsCyclingEnabled && carbsTrainingDay != null && carbsRestDay != null
@@ -49,12 +58,63 @@ export default function DailyNutritionTarget({
 
   const hasCarbCycling = carbsCyclingEnabled && carbsTrainingDay != null && carbsRestDay != null
 
+  // 狀態徽章：有動作感的標籤
+  const statusBadge = engineStatus ? (() => {
+    const map: Record<string, { label: string; color: string }> = {
+      on_track: { label: '穩步執行中', color: 'bg-green-100 text-green-700' },
+      goal_driven: { label: '目標導向模式', color: 'bg-blue-100 text-blue-700' },
+      too_fast: { label: '啟動護肌模式', color: 'bg-amber-100 text-amber-700' },
+      plateau: { label: '突破停滯調整', color: 'bg-amber-100 text-amber-700' },
+      wrong_direction: { label: '策略修正中', color: 'bg-red-100 text-red-700' },
+      peak_week: { label: 'Peak Week 執行中', color: 'bg-purple-100 text-purple-700' },
+    }
+    return map[engineStatus.status] || null
+  })() : null
+
+  // 非「進度正常」的狀態 = 有策略調整，顯示 Protocol Update
+  const hasProtocolUpdate = engineStatus && engineStatus.status !== 'on_track' && engineStatus.status !== 'insufficient_data'
+
   return (
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+      {/* Protocol Update 卡片 — 策略調整時才出現 */}
+      {hasProtocolUpdate && engineStatus && (
+        <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm">💡</span>
+              <span className="text-xs font-bold text-blue-800">系統調整通知</span>
+            </div>
+            {statusBadge && (
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadge.color}`}>
+                {statusBadge.label}
+              </span>
+            )}
+          </div>
+          <p className="text-[13px] text-gray-700 leading-relaxed">{engineStatus.message}</p>
+          <button
+            onClick={() => setShowExplanation(!showExplanation)}
+            className="mt-2 text-[11px] text-blue-500 hover:text-blue-700 transition-colors"
+          >
+            {showExplanation ? '收起詳情 ▲' : '查看底層計算邏輯 ▼'}
+          </button>
+          {showExplanation && (
+            <div className="mt-2 pt-2 border-t border-blue-100 text-[11px] text-gray-500 space-y-0.5">
+              <p>狀態：{engineStatus.status}（{engineStatus.statusLabel}）</p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-lg">📋</span>
           <h2 className="text-base font-bold text-gray-900">今日飲食目標</h2>
+          {/* 狀態徽章 — 常駐顯示 */}
+          {statusBadge && !hasProtocolUpdate && (
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${statusBadge.color}`}>
+              {statusBadge.label}
+            </span>
+          )}
         </div>
         {hasCarbCycling && (
           <button
