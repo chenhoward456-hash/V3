@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '28',
+    title: '體毛旺盛 = 容易禿？雄激素受體的矛盾，和你能做的 6 件事',
+    description: '體毛旺盛和雄性禿是同一個 AR 敏感度體質的兩面。研究發現 6 個常同步偏差的血液指標，以及你在訓練和生活層面能做的事。',
+    date: '2026-05-07',
+    category: '健康數據',
+    readTime: '10 分鐘',
+    slug: 'body-hair-baldness-ar-sensitivity',
+  },
+  {
     id: '27',
     title: '練二頭沒粗？Sato 2021 RCT 證實：上臂厚的真主角是肱肌，而且不是握法、是 ROM',
     description: '上臂屈肘最強的不是二頭，是藏在下面的肱肌（佔 47%）。Sato 2021 RCT 證實全 ROM 訓練增厚 8.9%，半距只有 3.4%。附 8 週漸進課表。',
