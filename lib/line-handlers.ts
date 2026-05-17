@@ -9,6 +9,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { replyMessage, pushMessage, qr, switchRichMenuForUser } from '@/lib/line'
 import { createLogger } from '@/lib/logger'
 import { DAY_MS } from '@/lib/date-utils'
+import { markConverted } from '@/lib/nurture-sequence'
 
 const log = createLogger('LINE-Handlers')
 
@@ -460,6 +461,9 @@ export async function handleBind(replyToken: string, lineUserId: string, code: s
 
   // Switch Rich Menu based on subscription tier
   await switchRichMenuForUser(lineUserId, client.subscription_tier || 'free')
+
+  // 標記 nurture 序列為「已轉換」（停止後續訊息）
+  await markConverted(lineUserId, supabase)
 
   await replyMessage(replyToken, [
     {

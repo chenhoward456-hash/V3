@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF 預覽 — 12 個常見訓練動作錯誤對照圖</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1a3a5c;
+    --navy-dark: #0e2740;
+    --blue: #3756d8;
+    --blue-soft: #eef1fb;
+    --paper: #fafaf7;
+    --ink: #2a2a35;
+    --gray: #7a7a85;
+    --line: #e0e0e5;
+  }
+
+  body {
+    font-family: "Noto Sans TC", -apple-system, "PingFang TC", sans-serif;
+    background: #1a1a22;
+    color: var(--ink);
+    line-height: 1.7;
+    padding: 60px 24px 120px;
+    min-height: 100vh;
+  }
+
+  .wrapper { max-width: 1100px; margin: 0 auto; }
+
+  /* Header */
+  .preview-header {
+    text-align: center;
+    color: #e8e8ed;
+    margin-bottom: 60px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .preview-header .label {
+    display: inline-block;
+    padding: 6px 14px;
+    background: rgba(55, 86, 216, 0.15);
+    color: #6b85e8;
+    border-radius: 999px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    margin-bottom: 20px;
+    font-weight: 600;
+  }
+  .preview-header h1 {
+    font-family: "Noto Serif TC", serif;
+    font-size: 38px;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 12px;
+    letter-spacing: 0.02em;
+  }
+  .preview-header p {
+    color: #8a8a95;
+    font-size: 15px;
+  }
+
+  /* Page */
+  .page {
+    background: var(--paper);
+    width: 100%;
+    aspect-ratio: 210 / 297;
+    margin: 0 auto 40px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+    border-radius: 4px;
+    padding: 60px 64px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page-tag {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  /* ============ COVER ============ */
+  .cover {
+    justify-content: space-between;
+    background: var(--paper);
+  }
+  .cover-top { }
+  .cover-brand {
+    font-family: "Noto Serif TC", serif;
+    font-size: 16px;
+    color: var(--navy);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-bottom: 60px;
+  }
+  .cover-brand::before {
+    content: "";
+    display: inline-block;
+    width: 30px;
+    height: 2px;
+    background: var(--blue);
+    vertical-align: middle;
+    margin-right: 12px;
+  }
+  .cover-eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.3em;
+    color: var(--blue);
+    margin-bottom: 24px;
+    font-weight: 600;
+  }
+  .cover h1 {
+    font-family: "Noto Serif TC", serif;
+    font-size: 64px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+    margin-bottom: 32px;
+  }
+  .cover h1 .num {
+    color: var(--blue);
+    font-style: italic;
+  }
+  .cover-sub {
+    font-size: 17px;
+    color: var(--gray);
+    line-height: 1.7;
+    max-width: 480px;
+  }
+  .cover-bottom {
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-size: 12px;
+    color: var(--gray);
+    letter-spacing: 0.05em;
+  }
+  .cover-bottom .author {
+    font-family: "Noto Serif TC", serif;
+    color: var(--navy);
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .cover-deco {
+    position: absolute;
+    top: 60px;
+    right: 64px;
+    width: 180px;
+    height: 180px;
+    border: 1px solid var(--blue);
+    border-radius: 50%;
+    opacity: 0.3;
+  }
+  .cover-deco-2 {
+    position: absolute;
+    top: 100px;
+    right: 104px;
+    width: 100px;
+    height: 100px;
+    border: 1px solid var(--blue);
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+
+  /* ============ EXERCISE PAGE ============ */
+  .ex-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--navy);
+    margin-bottom: 32px;
+  }
+  .ex-num {
+    font-family: "Noto Serif TC", serif;
+    font-size: 14px;
+    color: var(--navy);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+  .ex-cat {
+    font-size: 11px;
+    color: var(--gray);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .ex-title {
+    font-family: "Noto Serif TC", serif;
+    font-size: 56px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1;
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+  }
+  .ex-subtitle {
+    font-size: 16px;
+    color: var(--gray);
+    margin-bottom: 32px;
+  }
+  .ex-subtitle .red {
+    color: #c0392b;
+    font-weight: 700;
+  }
+
+  .photos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .photo-box {
+    aspect-ratio: 3 / 4;
+    background: #f0f0eb;
+    border-radius: 6px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .photo-box.error { background: #faf0ee; }
+  .photo-box.correct { background: #eef5ee; }
+  .photo-box .placeholder-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    opacity: 0.3;
+  }
+  .photo-box .placeholder-text {
+    font-size: 12px;
+    color: var(--gray);
+    letter-spacing: 0.1em;
+    text-align: center;
+    padding: 0 20px;
+  }
+  .photo-label {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+  .photo-label.err {
+    background: #c0392b;
+    color: #fff;
+  }
+  .photo-label.ok {
+    background: #2a8a4a;
+    color: #fff;
+  }
+
+  .ex-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    flex: 1;
+  }
+  .ex-block { }
+  .ex-block.full { grid-column: 1 / -1; }
+  .ex-block-label {
+    font-family: "Noto Serif TC", serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ex-block-label .num {
+    font-size: 11px;
+    background: var(--navy);
+    color: #fff;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Noto Sans TC", sans-serif;
+  }
+  .ex-block-text {
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.7;
+  }
+  .ex-block-text strong {
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .ex-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .ex-step {
+    background: #f5f5f0;
+    border-left: 3px solid var(--blue);
+    padding: 10px 12px;
+    border-radius: 0 4px 4px 0;
+  }
+  .ex-step .step-num {
+    font-family: "Noto Serif TC", serif;
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--blue);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .ex-step .step-text {
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .self-check {
+    background: #fffbe8;
+    border: 1px dashed #d4a017;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-top: 6px;
+  }
+  .self-check .check-label {
+    font-size: 10px;
+    color: #b8860b;
+    letter-spacing: 0.15em;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .self-check p {
+    font-size: 12.5px;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+
+  .ex-footer {
+    margin-top: auto;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--gray);
+    letter-spacing: 0.1em;
+  }
+  .ex-footer .brand {
+    font-family: "Noto Serif TC", serif;
+    color: var(--navy);
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  /* ============ INTRO PAGE ============ */
+  .intro h2 {
+    font-family: "Noto Serif TC", serif;
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 40px;
+    letter-spacing: 0.02em;
+  }
+  .intro .lead {
+    font-family: "Noto Serif TC", serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--navy);
+    line-height: 1.6;
+    margin-bottom: 32px;
+    padding-left: 20px;
+    border-left: 3px solid var(--blue);
+  }
+  .intro p {
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.9;
+    margin-bottom: 20px;
+  }
+  .intro .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 40px;
+    padding: 24px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .intro .stats .stat { text-align: center; }
+  .intro .stats .num {
+    font-family: "Noto Serif TC", serif;
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--blue);
+    line-height: 1;
+  }
+  .intro .stats .label {
+    font-size: 11px;
+    color: var(--gray);
+    letter-spacing: 0.15em;
+    margin-top: 8px;
+  }
+
+  /* ============ CTA PAGE ============ */
+  .cta {
+    justify-content: space-between;
+  }
+  .cta-eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.3em;
+    color: var(--blue);
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+  .cta h2 {
+    font-family: "Noto Serif TC", serif;
+    font-size: 52px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 24px;
+    letter-spacing: 0.02em;
+  }
+  .cta-lead {
+    font-size: 17px;
+    color: var(--ink);
+    line-height: 1.8;
+    margin-bottom: 40px;
+    max-width: 520px;
+  }
+  .cta-card {
+    background: var(--navy);
+    color: #fff;
+    padding: 32px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+  .cta-card .step {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.2em;
+    margin-bottom: 8px;
+  }
+  .cta-card h3 {
+    font-family: "Noto Serif TC", serif;
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+  .cta-card p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+  .cta-button {
+    display: inline-block;
+    background: var(--blue);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+  }
+  .cta-footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--gray);
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    letter-spacing: 0.1em;
+  }
+
+  /* Section title between pages */
+  .page-divider {
+    text-align: center;
+    color: #6a6a75;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    margin: 24px 0 16px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* Page strip layout */
+  .pages-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px;
+  }
+
+  /* Comments overlay on right side */
+  .annotations {
+    background: linear-gradient(135deg, rgba(55,86,216,0.08), rgba(55,86,216,0.02));
+    border: 1px solid rgba(55,86,216,0.2);
+    border-radius: 16px;
+    padding: 32px;
+    margin-top: 80px;
+    color: #e8e8ed;
+  }
+  .annotations h2 {
+    font-family: "Noto Serif TC", serif;
+    font-size: 22px;
+    margin-bottom: 16px;
+    color: #fff;
+  }
+  .annotations ul {
+    list-style: none;
+    padding: 0;
+  }
+  .annotations li {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 14px;
+    color: #c0c0c8;
+    line-height: 1.6;
+  }
+  .annotations li::before {
+    content: "✓";
+    color: #6b85e8;
+    margin-right: 12px;
+    font-weight: 700;
+  }
+  .annotations li:last-child { border-bottom: none; }
+
+  @media (max-width: 880px) {
+    .pages-grid { grid-template-columns: 1fr; }
+    .page { padding: 32px 28px; }
+    .ex-title, .cover h1, .cta h2 { font-size: 36px; }
+    .ex-content { grid-template-columns: 1fr; gap: 20px; }
+    .intro h2 { font-size: 30px; }
+    .intro .stats { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <header class="preview-header">
+    <span class="label">PDF 預覽 · 專業版 v3</span>
+    <h1>12 個常見訓練動作錯誤對照圖</h1>
+    <p>CSCS 等級內容 · 解剖學根因 + 自我檢測 + 4 步修正方案</p>
+  </header>
+
+  <!-- Page 1: Cover -->
+  <div class="page-divider">P. 01 — 封面</div>
+  <div class="page cover">
+    <div class="cover-deco"></div>
+    <div class="cover-deco-2"></div>
+    <div class="cover-top">
+      <div class="cover-brand">HOWARD PROTOCOL</div>
+      <div class="cover-eyebrow">FREE GUIDE · 健身入門</div>
+      <h1>
+        <span class="num">12</span> 個<br>
+        常見訓練<br>
+        動作錯誤
+      </h1>
+      <p class="cover-sub">
+        90% 的人都做錯,
+        每下漏掉 30% 刺激,
+        10 年累積下來差很多。
+      </p>
+    </div>
+    <div class="cover-bottom">
+      <div>
+        <div class="author">Howard｜CSCS 認證教練</div>
+        <div style="margin-top: 4px;">howardprotocol.com</div>
+      </div>
+      <div>VOL. 01 · 2026</div>
+    </div>
+  </div>
+
+  <!-- Page 2: Intro -->
+  <div class="page-divider">P. 02 — 序</div>
+  <div class="page intro">
+    <div class="page-tag">序</div>
+    <h2>為什麼<br>動作品質<br>比重量重要</h2>
+    <p class="lead">
+      練了 1-2 年沒進步,99% 不是天賦,是動作品質。
+    </p>
+    <p>
+      帶學員幾年,我看過太多人卡在同樣的瓶頸 — 重量一直加不上去、肌肉一直長不出來,然後開始懷疑自己「沒運動細胞」。
+    </p>
+    <p>
+      但每次我親自看他們訓練,問題幾乎都一樣:動作模式錯誤。膝蓋內夾、圓背、聳肩、用腰不用髖。每一下都漏掉 30% 該有的刺激。
+    </p>
+    <p>
+      接下來 12 頁,是我整理出健身房 90% 的人都會犯的錯。你不用做完全部 — 只要修掉其中 2-3 個,接下來 6 個月會看到很明顯的差別。
+    </p>
+    <div class="stats">
+      <div class="stat">
+        <div class="num">12</div>
+        <div class="label">關鍵動作</div>
+      </div>
+      <div class="stat">
+        <div class="num">90%</div>
+        <div class="label">健身房常見率</div>
+      </div>
+      <div class="stat">
+        <div class="num">10 分鐘</div>
+        <div class="label">看完所需</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 3: Exercise sample - 深蹲 -->
+  <div class="page-divider">P. 03 — 動作範例 1</div>
+  <div class="page">
+    <div class="ex-header">
+      <span class="ex-num">— 01 / 12</span>
+      <span class="ex-cat">LOWER BODY · 下肢</span>
+    </div>
+
+    <h2 class="ex-title">深蹲</h2>
+    <p class="ex-subtitle">常見錯誤｜<span class="red">膝蓋內夾</span>（動態膝外翻 · Dynamic Knee Valgus）</p>
+
+    <div class="photos">
+      <div class="photo-box error">
+        <span class="photo-label err">❌ 錯誤</span>
+        <div class="placeholder-icon">📷</div>
+        <div class="placeholder-text">膝關節向內偏移<br>（你的照片）</div>
+      </div>
+      <div class="photo-box correct">
+        <span class="photo-label ok">✓ 正確</span>
+        <div class="placeholder-icon">📷</div>
+        <div class="placeholder-text">膝蓋對齊蹠骨<br>（你的照片）</div>
+      </div>
+    </div>
+
+    <div class="ex-content">
+      <div class="ex-block">
+        <div class="ex-block-label"><span class="num">1</span>根因分析</div>
+        <p class="ex-block-text">
+          動態膝外翻並非「不知道」,而是身體尋找代償路徑。主因為 <strong>髖外展/外旋肌群</strong>（臀中肌、深層髖外旋肌群）肌力不足,合併 <strong>踝關節背屈</strong> 範圍受限。膝關節被迫於冠狀面向內偏移以完成下蹲,ACL 長期承受側向剪力,2-3 年內顯著提高半月板磨損與髕股關節疼痛風險。
+        </p>
+      </div>
+      <div class="ex-block">
+        <div class="ex-block-label"><span class="num">2</span>自我檢測</div>
+        <div class="self-check">
+          <div class="check-label">📍 30 秒自測</div>
+          <p>正面架設手機,徒手深蹲 10 下。膝關節於下降階段於冠狀面向內偏移即為陽性。</p>
+        </div>
+      </div>
+      <div class="ex-block full">
+        <div class="ex-block-label"><span class="num">3</span>修正方案</div>
+        <div class="ex-steps">
+          <div class="ex-step">
+            <div class="step-num">①</div>
+            <div class="step-text">訓練前進行髖外展激活（側臥蚌式 2 × 12）</div>
+          </div>
+          <div class="ex-step">
+            <div class="step-num">②</div>
+            <div class="step-text">動作中維持膝關節對齊第 2-3 蹠骨</div>
+          </div>
+          <div class="ex-step">
+            <div class="step-num">③</div>
+            <div class="step-text">牆面背屈測試 ≥ 35°,不足者優先處理踝活動度</div>
+          </div>
+          <div class="ex-step">
+            <div class="step-num">④</div>
+            <div class="step-text">徒手版本未通過前不進行負重深蹲</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ex-footer">
+      <span>HOWARD PROTOCOL</span>
+      <span class="brand">howardprotocol.com</span>
+    </div>
+  </div>
+
+  <!-- Page 4: Exercise sample - 臀推 -->
+  <div class="page-divider">P. 06 — 動作範例 2</div>
+  <div class="page">
+    <div class="ex-header">
+      <span class="ex-num">— 04 / 12</span>
+      <span class="ex-cat">LOWER BODY · 下肢</span>
+    </div>
+
+    <h2 class="ex-title">臀推</h2>
+    <p class="ex-subtitle">常見錯誤｜<span class="red">腰過度伸展</span>（腰椎過度伸展 · Lumbar Hyperextension）</p>
+
+    <div class="photos">
+      <div class="photo-box error">
+        <span class="photo-label err">❌ 錯誤</span>
+        <div class="placeholder-icon">📷</div>
+        <div class="placeholder-text">腰椎代償伸展<br>（你的照片）</div>
+      </div>
+      <div class="photo-box correct">
+        <span class="photo-label ok">✓ 正確</span>
+        <div class="placeholder-icon">📷</div>
+        <div class="placeholder-text">髖伸展中立脊椎<br>（你的照片）</div>
+      </div>
+    </div>
+
+    <div class="ex-content">
+      <div class="ex-block">
+        <div class="ex-block-label"><span class="num">1</span>根因分析</div>
+        <p class="ex-block-text">
+          以腰椎伸展取代髖伸展時,張力從臀大肌轉移至下背豎脊肌群。主因為 <strong>核心穩定性不足</strong>,合併 <strong>髖伸末端神經肌肉控制未建立</strong> — 動作者無法區分髖關節伸展與腰椎伸展。長期累積導致下背疼痛,且臀大肌徵召不足,訓練效益顯著降低。
+        </p>
+      </div>
+      <div class="ex-block">
+        <div class="ex-block-label"><span class="num">2</span>自我檢測</div>
+        <div class="self-check">
+          <div class="check-label">📍 30 秒自測</div>
+          <p>頂端鎖定時觸摸腰椎處,可摸到明顯凹陷弧度即為過伸展。</p>
+        </div>
+      </div>
+      <div class="ex-block full">
+        <div class="ex-block-label"><span class="num">3</span>修正方案</div>
+        <div class="ex-steps">
+          <div class="ex-step">
+            <div class="step-num">①</div>
+            <div class="step-text">頂端維持骨盆中立與腹內壓建立(肋骨與骨盆對齊)</div>
+          </div>
+          <div class="ex-step">
+            <div class="step-num">②</div>
+            <div class="step-text">頸椎維持中立,視線朝向恥骨方向</div>
+          </div>
+          <div class="ex-step">
+            <div class="step-num">③</div>
+            <div class="step-text">區分髖伸展與腰椎伸展,兩者不可混為一談</div>
+          </div>
+          <div class="ex-step">
+            <div class="step-num">④</div>
+            <div class="step-text">主導肌群為臀大肌,下背僅維持等長穩定</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ex-footer">
+      <span>HOWARD PROTOCOL</span>
+      <span class="brand">howardprotocol.com</span>
+    </div>
+  </div>
+
+  <!-- Page 5: CTA Page -->
+  <div class="page-divider">P. 15 — 結尾 CTA</div>
+  <div class="page cta">
+    <div>
+      <span class="cta-eyebrow">下一步</span>
+      <h2>想知道<br>你卡在哪嗎?</h2>
+      <p class="cta-lead">
+        動作品質只是第一步。
+        你的訓練量、恢復狀態、營養配比,
+        每一塊都可能是讓你停滯的瓶頸。
+      </p>
+
+      <div class="cta-card">
+        <div class="step">STEP 01 · 免費</div>
+        <h3>5 分鐘智能診斷</h3>
+        <p>5 分鐘填完,看你目前的訓練/恢復/營養狀態,以及最該優先優化的環節。</p>
+        <a href="#" class="cta-button">開始診斷 →</a>
+      </div>
+
+      <div class="cta-card" style="background: #2a4a6a;">
+        <div class="step">STEP 02 · NT$499/月</div>
+        <h3>自主管理版系統</h3>
+        <p>24 小時智能引擎自動追蹤體重、HRV、訓練狀態,自動調整熱量與碳水分配。</p>
+        <a href="#" class="cta-button" style="background: #fff; color: var(--navy);">了解方案 →</a>
+      </div>
+    </div>
+
+    <div class="cta-footer">
+      © 2026 HOWARD PROTOCOL · 內容僅供參考,不構成醫療建議
+    </div>
+  </div>
+
+  <!-- All 12 exercises content outline -->
+  <section style="margin-top: 80px;">
+    <h2 style="font-family: 'Noto Serif TC', serif; font-size: 28px; color: #fff; margin-bottom: 8px;">📚 全部 12 個動作 — 專業版內容</h2>
+    <p style="color: #8a8a95; margin-bottom: 32px;">每個動作:根因分析（解剖學）· 自我檢測 · 4 步修正方案</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px;">
+
+      <!-- 01 深蹲 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 01 / 12 · 下肢</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">深蹲 — 動態膝外翻</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:髖外展/外旋肌群肌力不足 + 踝背屈活動度受限</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:正面拍徒手深蹲,膝關節於冠狀面內移 = 陽性</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:髖外展激活(蚌式 2×12) → 膝對齊第 2-3 蹠骨 → 牆面背屈測試 ≥ 35° → 徒手未通過前不負重</div>
+      </div>
+
+      <!-- 02 硬舉 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 02 / 12 · 下肢</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">硬舉 — 脊椎屈曲</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:髖鉸鏈動作模式建立不足 + 闊背肌等長張力缺失</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:側拍 5 下,胸腰段呈屈曲弧度 = 陽性</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:中立脊椎 + 闊背收緊 → 槓鈴貼小腿垂直軌跡 → 分段:腿推→髖伸 → 重量降至 1RM 65% 重建模式</div>
+      </div>
+
+      <!-- 03 弓步 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 03 / 12 · 下肢</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">弓步 — 前膝過度前移</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:步距不足 + 重心過度前移至前足</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:下降時前膝脛骨明顯前傾(非垂直地面) = 陽性</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:步距 ≥ 大腿長 1.5 倍 → 後膝垂直下沉主導 → 前足壓力 6:4(跟:中段) → 雙膝末端角度均接近 90°</div>
+      </div>
+
+      <!-- 04 臀推 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 04 / 12 · 下肢</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">臀推 — 腰椎過度伸展</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:核心穩定不足 + 髖伸末端神經肌肉控制未建立</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:頂端觸摸腰椎,可摸到明顯凹陷弧度 = 陽性</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:骨盆中立 + 腹內壓 → 頸椎中立看恥骨方向 → 區分髖伸 vs 腰伸 → 臀大肌主導,下背等長穩定</div>
+      </div>
+
+      <!-- 05 臥推 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 05 / 12 · 上肢推</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">臥推 — 肩胛前傾</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:肩胛後收下壓建立不足,張力轉移至肩關節盂前緣</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:躺下時肩胛未貼凳面、肩關節呈現前突 = 陽性</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:躺下前肩胛後收下壓 → 上背 + 下肢推地整合張力 → 手肘 45-60° → 胸肌維持向心張力</div>
+      </div>
+
+      <!-- 06 肩推 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 06 / 12 · 上肢推</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">肩推 — 腰椎代償伸展</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:核心張力不足,以脊椎伸展代償肩屈曲不足</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:側拍動作,耳-肩-髖-膝-踝五點未呈一直線 = 陽性</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:臀肌等長 + 腹內壓 → 軀幹冠狀面中立 → 重量降至 RPE 7 內完整幅度 → 推上時頸椎略後縮</div>
+      </div>
+
+      <!-- 07 伏地挺身 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 07 / 12 · 上肢推</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">伏地挺身 — 骨盆前傾</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:核心抗伸展能力不足,腰椎承受張力先於肌肉收縮失敗</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:側拍,頭頂至腳跟未呈直線 = 陽性</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:臀肌等長 + 腹橫肌啟動 + 骨盆略後傾 → 縱向延展張力 → 控制不足者改膝撐建立感受 → 離心 2 秒/向心 1 秒</div>
+      </div>
+
+      <!-- 08 滑輪下拉 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 08 / 12 · 上肢拉</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">滑輪下拉 — 肩胛上提</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:肩胛下壓未啟動 + 胸椎伸展不足,闊背肌徵召失敗</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:下拉時肩膀向耳朵方向位移 = 陽性</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:起始建立肩胛下壓 → 拉動以肘關節屈曲意圖主導 → 維持胸椎伸展 → 降重 30% 建立神經肌肉控制</div>
+      </div>
+
+      <!-- 09 划船 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 09 / 12 · 上肢拉</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">划船 — 上斜方肌主導</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:肩胛動作順序錯誤(拉動先於肩胛後收)+ 中下斜方肌徵召不足</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:拉至末端肩膀靠近耳朵 = 陽性</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:順序:肩胛後收下壓→肘屈曲 → 全程肩胛下壓優先 → 末端頸椎中立 → 降重 25% 建立感受度</div>
+      </div>
+
+      <!-- 10 棒式 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 10 / 12 · 核心</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">棒式 — 腰椎下沉</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:核心抗伸展耐力不足 + 訓練時間過長導致姿勢崩解</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:側拍,頭頂至腳跟未呈直線 = 陽性</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:RKC plank 全身張力 → 骨盆略後傾維持腰椎中立 → 20 秒 × 5 組優於 60 秒崩解 → 退階膝撐建立感受</div>
+      </div>
+
+      <!-- 11 死蟲 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 11 / 12 · 核心</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">死蟲 — 腰椎伸展失控</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:對側肢體運動時抗伸展控制能力不足</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:手指可置於腰椎與地板間(有空隙) = 陽性</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:骨盆後傾 + 腰椎主動壓地 → 4 秒離心/2 秒回返 → 腰椎離地立即縮小範圍 → 完成 10 下零失誤再進階</div>
+      </div>
+
+      <!-- 12 壺鈴擺盪 -->
+      <div class="ex-card" style="background: #fafaf7; color: #2a2a35; padding: 24px; border-radius: 8px;">
+        <div style="font-size: 11px; color: #6b85e8; letter-spacing: 0.1em; font-weight: 700;">— 12 / 12 · 全身</div>
+        <h3 style="font-family: 'Noto Serif TC', serif; font-size: 22px; color: #1a3a5c; margin: 8px 0;">壺鈴擺盪 — 蹲推主導</h3>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">根因</strong>:以膝主導的蹲推取代髖鉸鏈動作模式</div>
+        <div style="font-size: 12px; color: #6a6a75; margin-bottom: 8px;"><strong style="color: #3756d8;">自測</strong>:擺盪時膝關節屈曲角度 > 45° = 已轉為蹲推</div>
+        <div style="font-size: 12px; color: #6a6a75;"><strong style="color: #3756d8;">4 步</strong>:雙腳略寬於肩腳尖微外開 → 髖向後位移 70% + 膝微屈 < 30° → 髖伸爆發臀大肌主導 → 上肢被動傳遞</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Annotations -->
+  <section class="annotations">
+    <h2>📝 專業版 v3 — 改了什麼</h2>
+    <ul>
+      <li>移除所有口語 cue（夾屁股/撕地板/塞口袋/折斷凳子/橘子）→ 改用解剖學名詞</li>
+      <li>每個動作標題加上專業學名（動態膝外翻 · Dynamic Knee Valgus 等）— 強化權威感</li>
+      <li>「根因分析」改寫為解剖 + 生物力學描述（髖外展/外旋肌群、肩胛後收下壓、骨盆中立）</li>
+      <li>「修正方案」具體可執行（蚌式 2×12、牆面背屈測試 ≥ 35°、1RM 65%、RPE 7、離心 2 秒）</li>
+      <li>保留「自我檢測」黃色 dashed 框 — 讀者可立即驗證自己是否陽性</li>
+      <li>沿用品牌色：白底 / 深藍 serif 標題 / 鮮藍 accent — 與 howardprotocol.com 視覺一致</li>
+    </ul>
+    <p style="margin-top: 24px; padding: 16px; background: rgba(255,180,0,0.08); border: 1px solid rgba(255,180,0,0.2); border-radius: 8px; font-size: 13px; color: #ffd277;">
+      ⚠️ <strong>請特別檢查專業描述</strong>:你是 CSCS,有任何解剖學或生物力學上的描述不精確、或要再強化的地方,標出來我修正。
+    </p>
+  </section>
+
+</div>
+</body>
+</html>

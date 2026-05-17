@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SupabaseClient } from '@supabase/supabase-js'
-import { verifyLineSignature, replyMessage, qr, unlinkRichMenuFromUser, switchRichMenuForUser } from '@/lib/line'
+import { verifyLineSignature, replyMessage, qr, unlinkRichMenuFromUser, switchRichMenuForUser, getUserProfile } from '@/lib/line'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
 import {
@@ -17,6 +17,7 @@ import {
   handlePostback,
   handleNaturalNutrition,
 } from '@/lib/line-handlers'
+import { buildDay0Messages, enrollSubscriber, unenrollSubscriber } from '@/lib/nurture-sequence'
 
 const log = createLogger('LINE-Webhook')
 
@@ -99,6 +100,7 @@ async function handleEvent(event: LineWebhookEvent) {
       log.info(`New follower: ${userId}`)
       const existingClient = await getClientByLineId(userId, supabase)
       if (existingClient) {
+        // 已綁定學員 — 不進入 nurture 序列，直接歡迎回來
         await switchRichMenuForUser(userId, existingClient.subscription_tier || 'free')
         await replyMessage(event.replyToken, [
           {
@@ -108,69 +110,14 @@ async function handleEvent(event: LineWebhookEvent) {
           },
         ])
       } else {
-        await replyMessage(event.replyToken, [
-          {
-            type: 'text',
-            text: '歡迎來到 Howard Protocol！💪\n\n' +
-              '我是 Howard，CSCS 認證教練。\n' +
-              '這裡提供科學化的線上體態管理，幫你用數據達成目標。',
-          },
-          {
-            type: 'flex',
-            altText: '📋 方案介紹 — 點擊查看完整內容',
-            contents: {
-              type: 'bubble',
-              body: {
-                type: 'box',
-                layout: 'vertical',
-                contents: [
-                  {
-                    type: 'text',
-                    text: '📋 方案介紹',
-                    weight: 'bold',
-                    size: 'xl',
-                  },
-                  {
-                    type: 'text',
-                    text: '了解 Howard Protocol 的服務內容、方案比較與價格',
-                    size: 'sm',
-                    color: '#888888',
-                    margin: 'md',
-                    wrap: true,
-                  },
-                ],
-              },
-              footer: {
-                type: 'box',
-                layout: 'vertical',
-                contents: [
-                  {
-                    type: 'button',
-                    action: {
-                      type: 'uri',
-                      label: '查看完整方案介紹',
-                      uri: 'https://www.notion.so/Howard-Protocol-32beef85c08f813286f8d3aefedaf3b6',
-                    },
-                    style: 'primary',
-                    color: '#1a1a2e',
-                  },
-                ],
-              },
-            },
-          },
-          {
-            type: 'text',
-            text: '👇 你也可以先：',
-            quickReply: {
-              items: [
-                qr('🔍 免費體態評估', '免費評估'),
-                qr('📖 健身知識文章', '免費教學'),
-                qr('💰 查看方案', '查看方案'),
-                qr('🔗 我有學員代碼', '我要綁定'),
-              ],
-            },
-          },
-        ])
+        // 新 follower — 啟動 12 天 nurture 序列
+        // 1. 先 reply Day 0 訊息（PDF + 歡迎）
+        const day0Messages = buildDay0Messages()
+        await replyMessage(event.replyToken, day0Messages)
+
+        // 2. 記錄到 nurture_subscribers（拿 profile 增強識別）
+        const profile = await getUserProfile(userId).catch(() => null)
+        await enrollSubscriber(userId, supabase, profile || undefined)
       }
       break
     }
@@ -192,6 +139,8 @@ async function handleEvent(event: LineWebhookEvent) {
         .from('clients')
         .update({ last_line_activity: null })
         .eq('line_user_id', userId)
+      // 停止 nurture 序列（如果在序列中）
+      await unenrollSubscriber(userId, supabase)
       break
   }
 }

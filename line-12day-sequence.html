@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LINE 12 天養客序列 — Howard Protocol</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: #0a0a0f;
+    color: #e8e8ed;
+    line-height: 1.7;
+    min-height: 100vh;
+    padding: 60px 24px 120px;
+  }
+  .container { max-width: 1280px; margin: 0 auto; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    margin-bottom: 80px;
+    padding-bottom: 60px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .hero .eyebrow {
+    display: inline-block;
+    padding: 6px 14px;
+    background: rgba(0, 195, 100, 0.1);
+    color: #00c364;
+    border-radius: 999px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    font-weight: 600;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 800;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #ffffff 0%, #a0a0b0 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 20px;
+    letter-spacing: -0.02em;
+  }
+  .hero .subtitle {
+    font-size: 18px;
+    color: #8a8a95;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 48px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 40px;
+  }
+  .stat { text-align: center; }
+  .stat .num {
+    font-size: 36px;
+    font-weight: 800;
+    color: #00c364;
+    display: block;
+    line-height: 1;
+  }
+  .stat .label {
+    font-size: 13px;
+    color: #6a6a75;
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+  .version-badge {
+    display: inline-block;
+    margin-top: 24px;
+    padding: 6px 14px;
+    background: rgba(255, 180, 0, 0.1);
+    color: #ffb400;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  /* Funnel diagram */
+  .funnel {
+    background: linear-gradient(135deg, rgba(0,195,100,0.05), rgba(0,195,100,0.02));
+    border: 1px solid rgba(0,195,100,0.15);
+    border-radius: 20px;
+    padding: 40px;
+    margin-bottom: 80px;
+  }
+  .funnel h2 {
+    font-size: 22px;
+    margin-bottom: 24px;
+    color: #fff;
+  }
+  .funnel-stages {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    align-items: stretch;
+  }
+  .stage {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+  }
+  .stage .day {
+    font-size: 11px;
+    color: #00c364;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .stage .title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .stage .goal {
+    font-size: 13px;
+    color: #8a8a95;
+  }
+  .stage.cta { border-color: rgba(0,195,100,0.4); background: rgba(0,195,100,0.08); }
+
+  /* Day cards */
+  .days { display: flex; flex-direction: column; gap: 80px; }
+  .day-card {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 48px;
+    align-items: start;
+  }
+  .day-card.reverse { grid-template-columns: 380px 1fr; }
+  .day-card.reverse .day-info { order: 2; }
+
+  .day-info { padding-top: 20px; }
+  .day-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,195,100,0.12);
+    color: #00c364;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+  .day-label .dot {
+    width: 6px; height: 6px;
+    background: #00c364;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #00c364;
+  }
+  .day-title {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #fff;
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+  .day-purpose {
+    font-size: 15px;
+    color: #8a8a95;
+    margin-bottom: 24px;
+  }
+  .day-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 4px 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    color: #a0a0b0;
+    letter-spacing: 0.05em;
+  }
+  .word-count {
+    font-size: 11px;
+    color: #00c364;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+  .day-strategy {
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid #00c364;
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 24px;
+  }
+  .day-strategy .label {
+    font-size: 11px;
+    color: #00c364;
+    letter-spacing: 0.15em;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .day-strategy p { font-size: 14px; color: #c0c0c8; }
+
+  /* LINE Phone */
+  .phone {
+    background: #1a1a22;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 32px;
+    padding: 16px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .phone-header {
+    background: #4a5b6e;
+    margin: -16px -16px 0;
+    border-radius: 24px 24px 0 0;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00c364, #00a855);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #fff;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .phone-header .info { flex: 1; min-width: 0; }
+  .phone-header .name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 2px;
+  }
+  .phone-header .status {
+    color: rgba(255,255,255,0.6);
+    font-size: 11px;
+  }
+  .chat {
+    background: #8aa2b8;
+    margin: 0 -16px -16px;
+    padding: 20px 16px;
+    border-radius: 0 0 24px 24px;
+    min-height: 200px;
+  }
+  .timestamp {
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    margin: 8px 0 16px;
+  }
+  .bubble {
+    background: #fff;
+    color: #2a2a30;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border-top-left-radius: 4px;
+    max-width: 90%;
+    font-size: 13.5px;
+    line-height: 1.6;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .bubble .link-card {
+    margin-top: 4px;
+    padding: 10px 12px;
+    background: #f0f4f8;
+    border-radius: 8px;
+    border-left: 3px solid #00c364;
+    font-size: 12.5px;
+    color: #2a2a30;
+  }
+  .bubble .link-card .title {
+    font-weight: 700;
+    color: #1a1a22;
+    margin-bottom: 2px;
+  }
+  .bubble .link-card .url {
+    font-size: 11px;
+    color: #6a6a75;
+  }
+  .bubble strong { color: #00a855; font-weight: 700; }
+  .bubble .price-box {
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 8px;
+  }
+  .bubble .price-box.basic { background: #e3f2fd; }
+  .bubble .price-box.pro { background: #e8f5e9; }
+  .bubble .price-box .label { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+  .bubble .price-box ul { padding-left: 18px; font-size: 12px; }
+  .bubble .price-box li { margin: 2px 0; }
+
+  /* Footer */
+  .footer-cta {
+    margin-top: 100px;
+    text-align: center;
+    padding: 60px 40px;
+    background: linear-gradient(135deg, rgba(0,195,100,0.1), rgba(0,195,100,0.02));
+    border: 1px solid rgba(0,195,100,0.2);
+    border-radius: 24px;
+  }
+  .footer-cta h2 {
+    font-size: 28px;
+    margin-bottom: 16px;
+    color: #fff;
+  }
+  .footer-cta p {
+    color: #a0a0b0;
+    max-width: 560px;
+    margin: 0 auto 12px;
+  }
+  .footer-cta .note {
+    font-size: 13px;
+    color: #6a6a75;
+    margin-top: 24px;
+  }
+
+  /* Responsive */
+  @media (max-width: 880px) {
+    body { padding: 40px 16px 80px; }
+    .day-card, .day-card.reverse {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+    .day-card.reverse .day-info { order: 1; }
+    .phone { max-width: 380px; margin: 0 auto; }
+    .hero-stats { gap: 24px; }
+    .funnel { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Hero -->
+  <section class="hero">
+    <span class="eyebrow">LINE OA · 12 天養客序列</span>
+    <h1>從健身動作 IG 觀眾<br>到 499 訂閱用戶</h1>
+    <p class="subtitle">不靠單篇爆款，靠 12 天的信任累積。每封訊息像朋友傳訊息 — 短、有重點、不囉唆。</p>
+    <div class="version-badge">v2 · 精簡版 · 全部訊息 ≤ 80 字</div>
+    <div class="hero-stats">
+      <div class="stat"><span class="num">7</span><div class="label">封訊息</div></div>
+      <div class="stat"><span class="num">12</span><div class="label">天節奏</div></div>
+      <div class="stat"><span class="num">≤80</span><div class="label">字 / 封</div></div>
+      <div class="stat"><span class="num">0</span><div class="label">學員案例</div></div>
+    </div>
+  </section>
+
+  <!-- Funnel overview -->
+  <section class="funnel">
+    <h2>📍 序列地圖</h2>
+    <div class="funnel-stages">
+      <div class="stage">
+        <div class="day">DAY 0</div>
+        <div class="title">交付 PDF</div>
+        <div class="goal">兌現承諾</div>
+      </div>
+      <div class="stage">
+        <div class="day">DAY 2</div>
+        <div class="title">動作品質</div>
+        <div class="goal">挑戰認知</div>
+      </div>
+      <div class="stage">
+        <div class="day">DAY 4</div>
+        <div class="title">恢復觀念</div>
+        <div class="goal">擴張主題</div>
+      </div>
+      <div class="stage">
+        <div class="day">DAY 6</div>
+        <div class="title">3 個共通點</div>
+        <div class="goal">建立模式</div>
+      </div>
+      <div class="stage cta">
+        <div class="day">DAY 8</div>
+        <div class="title">免費診斷</div>
+        <div class="goal">軟轉換</div>
+      </div>
+      <div class="stage">
+        <div class="day">DAY 10</div>
+        <div class="title">為什麼做這個</div>
+        <div class="goal">差異化</div>
+      </div>
+      <div class="stage cta">
+        <div class="day">DAY 12</div>
+        <div class="title">介紹 499</div>
+        <div class="goal">正式銷售</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Days -->
+  <section class="days">
+
+    <!-- DAY 0 -->
+    <article class="day-card">
+      <div class="day-info">
+        <div class="day-label"><span class="dot"></span>DAY 0 · 加入立即發送</div>
+        <h2 class="day-title">兌現承諾<br>埋下後續期待</h2>
+        <p class="day-purpose">30 秒內讓他知道：① PDF 到手 ② 你是誰 ③ 後續有什麼。</p>
+        <div class="day-tags">
+          <span class="tag">交付</span>
+          <span class="tag">自介</span>
+          <span class="tag">設定預期</span>
+        </div>
+        <div class="word-count">📝 約 50 字 · 4 個 bubble</div>
+        <div class="day-strategy">
+          <div class="label">策略點</div>
+          <p>主動給「靜音」出口反而降低封鎖率，讓人覺得你不糾纏。</p>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="phone-header">
+          <div class="avatar">H</div>
+          <div class="info">
+            <div class="name">Howard｜CSCS 教練</div>
+            <div class="status">官方帳號</div>
+          </div>
+        </div>
+        <div class="chat">
+          <div class="timestamp">今天 14:32</div>
+          <div class="bubble">嘿,謝謝你加入 👊
+我是 Howard,CSCS 教練。
+
+先把 PDF 給你 👇</div>
+          <div class="bubble">
+            <div class="link-card">
+              <div class="title">📘 12 個常見訓練動作錯誤對照圖</div>
+              <div class="url">howardprotocol.com/pdf</div>
+            </div>
+          </div>
+          <div class="bubble">10 分鐘看完,比瞎練 1 小時還有效。</div>
+          <div class="bubble">接下來 12 天我會分享幾個讓人真的進步的關鍵。
+
+不想收就左上角靜音,不用刪好友 🙏</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- DAY 2 -->
+    <article class="day-card reverse">
+      <div class="phone">
+        <div class="phone-header">
+          <div class="avatar">H</div>
+          <div class="info">
+            <div class="name">Howard｜CSCS 教練</div>
+            <div class="status">官方帳號</div>
+          </div>
+        </div>
+        <div class="chat">
+          <div class="timestamp">10/17 (週四) 19:00</div>
+          <div class="bubble">昨天 PDF 翻了嗎?</div>
+          <div class="bubble">很多人練 1-2 年沒進步,以為是天賦。
+
+99% 不是。是<strong>動作品質</strong>。
+
+每下漏 30% 刺激,10 年累積下來就差很多。</div>
+          <div class="bubble">PDF 第 3 個錯誤(深蹲膝蓋內夾),90% 男生都中,你檢查看看 🦵
+
+明天聊「練越多反而沒進步」。</div>
+        </div>
+      </div>
+      <div class="day-info">
+        <div class="day-label"><span class="dot"></span>DAY 2 · 晚上 7 點</div>
+        <h2 class="day-title">挑戰認知<br>讓他翻 PDF</h2>
+        <p class="day-purpose">用「90% 都做錯」製造警覺，回扣 PDF 內容讓他真的去翻。</p>
+        <div class="day-tags">
+          <span class="tag">建立權威</span>
+          <span class="tag">回扣 PDF</span>
+          <span class="tag">預告</span>
+        </div>
+        <div class="word-count">📝 約 55 字 · 3 個 bubble</div>
+        <div class="day-strategy">
+          <div class="label">策略點</div>
+          <p>晚上 7 點 · 週四發 — 下班滑手機尖峰，為週末訓練埋伏筆。</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- DAY 4 -->
+    <article class="day-card">
+      <div class="day-info">
+        <div class="day-label"><span class="dot"></span>DAY 4 · 主題轉折</div>
+        <h2 class="day-title">從「動作」<br>擴張到「系統」</h2>
+        <p class="day-purpose">整個序列的轉折點。觀眾來看動作的，悄悄把注意力轉到「整體系統」— 因為這是 499 系統的價值核心。</p>
+        <div class="day-tags">
+          <span class="tag">反直覺</span>
+          <span class="tag">主題擴張</span>
+          <span class="tag">為系統鋪墊</span>
+        </div>
+        <div class="word-count">📝 約 50 字 · 3 個 bubble</div>
+        <div class="day-strategy">
+          <div class="label">策略點</div>
+          <p>用「？」+「❌」一行帶過，比講道理直接。最後埋「3 個共通點」鉤子。</p>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="phone-header">
+          <div class="avatar">H</div>
+          <div class="info">
+            <div class="name">Howard｜CSCS 教練</div>
+            <div class="status">官方帳號</div>
+          </div>
+        </div>
+        <div class="chat">
+          <div class="timestamp">10/19 (週六) 10:00</div>
+          <div class="bubble">反直覺問題:
+練越多 = 進步越快嗎?
+
+❌</div>
+          <div class="bubble">肌肉不是在健身房長的。
+是你<strong>睡覺、吃飯、休息</strong>的時候長的。
+
+訓練只是給訊號,恢復才是合成。</div>
+          <div class="bubble">明天分享「進步最快的人,都有的 3 個共通點」🎯</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- DAY 6 -->
+    <article class="day-card reverse">
+      <div class="phone">
+        <div class="phone-header">
+          <div class="avatar">H</div>
+          <div class="info">
+            <div class="name">Howard｜CSCS 教練</div>
+            <div class="status">官方帳號</div>
+          </div>
+        </div>
+        <div class="chat">
+          <div class="timestamp">10/21 (週一) 19:00</div>
+          <div class="bubble">帶學員幾年,進步最快的人都有<strong>3 個共通點</strong>:
+
+1️⃣ 訓練減量(6 天 → 4 天)
+2️⃣ 每週看趨勢,不看單天體重
+3️⃣ 訓練日/休息日吃不一樣的碳水</div>
+          <div class="bubble">不是練更多,是<strong>有系統地調整</strong>。
+
+—
+
+明天給你一個免費工具,看你卡在哪 🎯</div>
+        </div>
+      </div>
+      <div class="day-info">
+        <div class="day-label"><span class="dot"></span>DAY 6 · 3 個共通點</div>
+        <h2 class="day-title">用模式<br>取代學員具名故事</h2>
+        <p class="day-purpose">不用具體誰、不用具體數字。「我帶學員幾年看到」就是社會證明。把「系統思維」植入他腦中，為 499 鋪墊。</p>
+        <div class="day-tags">
+          <span class="tag">模式式證明</span>
+          <span class="tag">系統思維</span>
+          <span class="tag">預告診斷</span>
+        </div>
+        <div class="word-count">📝 約 60 字 · 2 個 bubble</div>
+        <div class="day-strategy">
+          <div class="label">策略點</div>
+          <p>沒有具名學員 → 沒有授權問題、不會被截圖質疑。「3 個共通點」這種模式語比個案更好套用到讀者自己身上。</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- DAY 8 -->
+    <article class="day-card">
+      <div class="day-info">
+        <div class="day-label" style="background: rgba(255,180,0,0.15); color: #ffb400;"><span class="dot" style="background: #ffb400; box-shadow: 0 0 8px #ffb400;"></span>DAY 8 · 第一次軟轉換</div>
+        <h2 class="day-title">免費診斷<br>讓他自己發現問題</h2>
+        <p class="day-purpose">不賣產品，先讓他自我診斷。結果頁是真正的銷售場 — 因為他看到的是自己的弱點，不是你的廣告。</p>
+        <div class="day-tags">
+          <span class="tag">軟轉換</span>
+          <span class="tag">自我發現</span>
+          <span class="tag">低門檻</span>
+        </div>
+        <div class="word-count">📝 約 55 字 · 3 個 bubble</div>
+        <div class="day-strategy">
+          <div class="label">策略點</div>
+          <p>「截圖傳我」這句把「高意圖」用戶釣出來 — 主動回訊息的是 2,999 教練版的潛在客戶。</p>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="phone-header">
+          <div class="avatar">H</div>
+          <div class="info">
+            <div class="name">Howard｜CSCS 教練</div>
+            <div class="status">官方帳號</div>
+          </div>
+        </div>
+        <div class="chat">
+          <div class="timestamp">10/23 (週三) 19:00</div>
+          <div class="bubble">卡關不是不夠努力,
+是<strong>不知道卡在哪</strong>。
+
+我做了個免費診斷,5 分鐘填完 👇</div>
+          <div class="bubble">
+            <div class="link-card">
+              <div class="title">🎯 免費診斷 · 5 分鐘</div>
+              <div class="url">howardprotocol.com/diagnosis</div>
+            </div>
+          </div>
+          <div class="bubble">會告訴你:
+✅ 目前狀態
+✅ 該優先優化什麼
+✅ 3-6 個月可能的變化
+
+填完截圖傳我,我親自幫你看 👀</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- DAY 10 -->
+    <article class="day-card reverse">
+      <div class="phone">
+        <div class="phone-header">
+          <div class="avatar">H</div>
+          <div class="info">
+            <div class="name">Howard｜CSCS 教練</div>
+            <div class="status">官方帳號</div>
+          </div>
+        </div>
+        <div class="chat">
+          <div class="timestamp">10/25 (週五) 20:00</div>
+          <div class="bubble">為什麼我做這個系統?
+
+老實說 — 傳統教練模式太爛。
+
+上課 1 小時,剩下 167 小時沒人管。學員回家睡多久、吃什麼,全黑箱。</div>
+          <div class="bubble">所以我做了個系統,24 小時自動追蹤。
+
+<strong>我不賣教練時間,賣讓你自己進步的工具。</strong>
+
+明天細講 ⚙️</div>
+        </div>
+      </div>
+      <div class="day-info">
+        <div class="day-label"><span class="dot"></span>DAY 10 · 品牌故事</div>
+        <h2 class="day-title">用 Why<br>建立差異化</h2>
+        <p class="day-purpose">最後 sales pitch 前，讓他明白你跟「賣 PT 課的教練」不一樣。人不為 What 買單，為 Why 買單。</p>
+        <div class="day-tags">
+          <span class="tag">品牌故事</span>
+          <span class="tag">差異化</span>
+          <span class="tag">情感連結</span>
+        </div>
+        <div class="word-count">📝 約 60 字 · 2 個 bubble</div>
+        <div class="day-strategy">
+          <div class="label">策略點</div>
+          <p>週五晚上發 — 預備他週末有時間細看明天(Day 12)的訂閱訊息。</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- DAY 12 -->
+    <article class="day-card">
+      <div class="day-info">
+        <div class="day-label" style="background: rgba(255,180,0,0.15); color: #ffb400;"><span class="dot" style="background: #ffb400; box-shadow: 0 0 8px #ffb400;"></span>DAY 12 · 正式銷售</div>
+        <h2 class="day-title">兩個選擇<br>不是壓力</h2>
+        <p class="day-purpose">硬推 1 個產品的轉換率 &lt; 給 2 個選擇。讓他從「要不要買」變「買哪一個」。99% 選 499，1% 直上 2,999（高價值客戶自己浮出來）。</p>
+        <div class="day-tags">
+          <span class="tag">雙選擇</span>
+          <span class="tag">無風險</span>
+          <span class="tag">親自回覆</span>
+        </div>
+        <div class="word-count">📝 約 90 字 · 4 個 bubble（含價格表）</div>
+        <div class="day-strategy">
+          <div class="label">策略點</div>
+          <p>結尾「不管訂不訂 PDF 都是你的」反而提高轉換 — 感覺到的不是推銷，是被尊重。</p>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="phone-header">
+          <div class="avatar">H</div>
+          <div class="info">
+            <div class="name">Howard｜CSCS 教練</div>
+            <div class="status">官方帳號</div>
+          </div>
+        </div>
+        <div class="chat">
+          <div class="timestamp">10/27 (週日) 20:00</div>
+          <div class="bubble">講到這你應該猜到了。
+我的系統有兩個版本 👇</div>
+          <div class="bubble">
+            <div class="price-box basic">
+              <div class="label">🔵 自主管理版 · NT$499/月</div>
+              <ul>
+                <li>24 小時智能引擎自動分析</li>
+                <li>自適應 TDEE、停滯期偵測</li>
+                <li>碳水自動分配</li>
+                <li>HRV 追蹤</li>
+              </ul>
+            </div>
+            <div class="price-box pro">
+              <div class="label">🟢 教練指導版 · NT$2,999/月</div>
+              <ul>
+                <li>上面全部 + 我每週 review 數據</li>
+                <li>LINE 即時諮詢</li>
+                <li>每月 1 次視訊</li>
+                <li><strong>限收 20 人</strong></li>
+              </ul>
+            </div>
+          </div>
+          <div class="bubble">99% 從 <strong>499 開始</strong>就夠。
+不綁約,隨時取消。</div>
+          <div class="bubble">
+            <div class="link-card">
+              <div class="title">🚀 開始訂閱</div>
+              <div class="url">howardprotocol.com/remote</div>
+            </div>
+          </div>
+          <div class="bubble">有問題直接回這訊息,我親自回 🙌
+
+謝謝你看完 12 天的訊息。
+不管訂不訂,PDF 都是你的。
+
+— Howard</div>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- Footer CTA -->
+  <section class="footer-cta">
+    <h2>v2 改了什麼</h2>
+    <p>✅ 每封訊息精簡 50%（從 150-200 字 → 50-80 字）</p>
+    <p>✅ Day 6 拿掉學員具名案例 → 改成「3 個共通點」模式</p>
+    <p>✅ 拆多個 bubble，讓 LINE 看起來像聊天，不像廣告</p>
+    <p class="note">設計者:Howard Protocol × Claude · v2 精簡版</p>
+  </section>
+
+</div>
+</body>
+</html>

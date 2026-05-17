@@ -319,7 +319,7 @@ describe('POST /api/line/webhook', () => {
   // ═══════════════════════════════════════
 
   describe('Follow event', () => {
-    it('sends welcome message for new user', async () => {
+    it('sends Day 0 nurture welcome (lead magnet PDF) for new user', async () => {
       const req = makeWebhookRequest({
         events: [{
           type: 'follow',
@@ -330,12 +330,13 @@ describe('POST /api/line/webhook', () => {
 
       const res = await POST(req)
       expect(res.status).toBe(200)
+      // Day 0 第一則是「嘿，謝謝你加入」開頭
       expect(mockReplyMessage).toHaveBeenCalledWith(
         'reply-follow',
         expect.arrayContaining([
           expect.objectContaining({
             type: 'text',
-            text: expect.stringContaining('Howard Protocol'),
+            text: expect.stringContaining('謝謝你加入'),
           }),
         ]),
       )
