@@ -112,7 +112,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     exercise_name: string
     muscle_group: string
     set_number: number
-    num_sets: number  // 該重量做幾組
+    num_sets: number | null  // 該重量做幾組（null = 編輯中暫時清空狀態）
     weight: number | null
     reps: number | null
     rpe: number | null
@@ -151,7 +151,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 is_main_lift: s.is_main_lift || false,
               }
             } else {
-              grouped[key].num_sets++
+              grouped[key].num_sets = (grouped[key].num_sets ?? 0) + 1
             }
           }
           return Object.values(grouped)
@@ -1018,8 +1018,18 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                             inputMode="numeric"
                             min="1"
                             max="20"
-                            value={set.num_sets || ''}
-                            onChange={(e) => updateSet(i, 'num_sets', e.target.value ? Number(e.target.value) : 1)}
+                            value={set.num_sets ?? ''}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              // 允許暫時清空（編輯中），onBlur 時補回最低 1
+                              updateSet(i, 'num_sets', v === '' ? null : Number(v))
+                            }}
+                            onBlur={(e) => {
+                              const v = e.target.value
+                              // 失焦時：空值或 < 1 補回 1，> 20 截到 20
+                              if (v === '' || Number(v) < 1) updateSet(i, 'num_sets', 1)
+                              else if (Number(v) > 20) updateSet(i, 'num_sets', 20)
+                            }}
                             className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                             placeholder="3"
                           />
