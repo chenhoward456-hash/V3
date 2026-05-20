@@ -856,8 +856,6 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
     return parts
   }, [todayNutrition, proteinTarget, carbsTarget, fatTarget])
 
-  if (!open) return null
-
   const quickQuestions = useMemo(() => {
     const eaten = todayNutrition
     const pLeft = proteinTarget ? Math.max(0, proteinTarget - (eaten?.protein_grams ?? 0)) : null
@@ -893,6 +891,8 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
     const all = [...dynamic, ...base.filter(q => !dynamic.includes(q))]
     return all.slice(0, 6)
   }, [todayNutrition, proteinTarget, carbsTarget, isTrainingDay])
+
+  if (!open) return null
 
   return (
     <>
