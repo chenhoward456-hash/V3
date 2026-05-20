@@ -286,7 +286,40 @@ export default function ClientOverview() {
     const weightToGo = (targetWeightNum && latestWeight) ? +(latestWeight - targetWeightNum).toFixed(1) : null
     const bfToGo = (targetBfNum && latestBodyFat != null) ? +(latestBodyFat - targetBfNum).toFixed(1) : null
 
-    return { weekCompliance, monthCompliance, weekTrainingDays, avgEnergy, weightChange, weightChangePct, latestWeight, weekNutritionRate, monthNutritionRate, proteinHitRate, avgProtein, proteinDeltaPct, proteinTarget, proteinMissStreak, weightTrend, avgHrv, hrvBaseline, hrvLowStreak, latestRhr, daysToGoal, targetWeightNum, targetBfNum, latestBodyFat, weightToGo, bfToGo }
+    // 進度條：用最早一筆數據當起點
+    const startingWeight = recentBody.length > 0 ? recentBody[0].weight : null
+    const startingBodyFat = recentBody.find((b: any) => b.body_fat != null)?.body_fat ?? null
+    const startingDate = recentBody.length > 0 ? recentBody[0].date : null
+
+    // 體重進度（達成度 %）
+    let weightProgress: number | null = null
+    if (startingWeight && targetWeightNum && latestWeight && Math.abs(startingWeight - targetWeightNum) > 0.1) {
+      const total = startingWeight - targetWeightNum
+      const done = startingWeight - latestWeight
+      // 不論 cut/bulk 都用同向度量
+      weightProgress = Math.max(0, Math.min(100, Math.round((done / total) * 100)))
+    }
+
+    // 體脂進度
+    let bfProgress: number | null = null
+    if (startingBodyFat && targetBfNum && latestBodyFat != null && Math.abs(startingBodyFat - targetBfNum) > 0.5) {
+      const total = startingBodyFat - targetBfNum
+      const done = startingBodyFat - latestBodyFat
+      bfProgress = Math.max(0, Math.min(100, Math.round((done / total) * 100)))
+    }
+
+    // 時間進度（從起始到目標日的百分比）
+    let timeProgress: number | null = null
+    if (startingDate && goalDateStr) {
+      const startMs = new Date(startingDate).getTime()
+      const goalMs = new Date(goalDateStr).getTime()
+      const nowMs = Date.now()
+      if (goalMs > startMs) {
+        timeProgress = Math.max(0, Math.min(100, Math.round(((nowMs - startMs) / (goalMs - startMs)) * 100)))
+      }
+    }
+
+    return { weekCompliance, monthCompliance, weekTrainingDays, avgEnergy, weightChange, weightChangePct, latestWeight, weekNutritionRate, monthNutritionRate, proteinHitRate, avgProtein, proteinDeltaPct, proteinTarget, proteinMissStreak, weightTrend, avgHrv, hrvBaseline, hrvLowStreak, latestRhr, daysToGoal, targetWeightNum, targetBfNum, latestBodyFat, weightToGo, bfToGo, startingWeight, startingBodyFat, startingDate, weightProgress, bfProgress, timeProgress }
   }, [supplements, supplementLogs, wellness, trainingLogs, bodyData, nutritionLogs, dateRange, client])
 
   // ===== 補品服從率趨勢（每日） =====
@@ -1206,13 +1239,22 @@ export default function ClientOverview() {
     } else if (keyMetrics.hrvLowStreak >= 2 && keyMetrics.hrvBaseline) {
       items.push(`💓 HRV 連 ${keyMetrics.hrvLowStreak} 天低於基線，留意是否需 deload`)
     }
+
+    // 訓練×恢復：找出隔天精力最低的訓練類型
+    const validRecovery = recoveryAnalysis.filter(r => r.avgEnergy !== '--' && r.count >= 2)
+    if (validRecovery.length > 0) {
+      const worst = [...validRecovery].sort((a, b) => Number(a.avgEnergy) - Number(b.avgEnergy))[0]
+      if (worst && Number(worst.avgEnergy) <= 2.5) {
+        items.push(`🏋️ ${worst.type}日隔天精力僅 ${worst.avgEnergy}/5（${worst.count} 次平均），考慮降強度`)
+      }
+    }
     if (client?.next_checkup_date) {
       const diff = Math.floor((new Date(client.next_checkup_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
       if (diff < 0) items.push(`回檢已逾期 ${Math.abs(diff)} 天`)
       else if (diff <= 7) items.push(`回檢日期在 ${diff} 天後`)
     }
     return items
-  }, [keyMetrics, wellness, trainingLogs, supplements, client, labResults])
+  }, [keyMetrics, wellness, trainingLogs, supplements, client, labResults, recoveryAnalysis])
 
   const getTypeBgColor = (type: string) => {
     const colors: Record<string, string> = {
@@ -1459,6 +1501,17 @@ export default function ClientOverview() {
                   <p className="text-[10px] text-gray-500 mt-0.5">
                     {client.competition_date || client.target_date}
                   </p>
+                  {keyMetrics.timeProgress != null && (
+                    <div className="mt-2">
+                      <div className="h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full transition-all"
+                          style={{ width: `${keyMetrics.timeProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-[9px] text-gray-500 mt-1">時程已過 {keyMetrics.timeProgress}%</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1480,6 +1533,20 @@ export default function ClientOverview() {
                   <p className="text-[10px] text-gray-500 mt-0.5">
                     {keyMetrics.latestWeight}kg → 目標 {keyMetrics.targetWeightNum}kg
                   </p>
+                  {keyMetrics.weightProgress != null && (
+                    <div className="mt-2">
+                      <div className="h-1.5 bg-green-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-green-500 rounded-full transition-all"
+                          style={{ width: `${keyMetrics.weightProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-[9px] text-gray-500 mt-1">
+                        進度 {keyMetrics.weightProgress}%
+                        {keyMetrics.startingWeight && ` · 起點 ${keyMetrics.startingWeight}kg`}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1500,6 +1567,20 @@ export default function ClientOverview() {
                   <p className="text-[10px] text-gray-500 mt-0.5">
                     {keyMetrics.latestBodyFat}% → 目標 {keyMetrics.targetBfNum}%
                   </p>
+                  {keyMetrics.bfProgress != null && (
+                    <div className="mt-2">
+                      <div className="h-1.5 bg-purple-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-purple-500 rounded-full transition-all"
+                          style={{ width: `${keyMetrics.bfProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-[9px] text-gray-500 mt-1">
+                        進度 {keyMetrics.bfProgress}%
+                        {keyMetrics.startingBodyFat && ` · 起點 ${keyMetrics.startingBodyFat}%`}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
