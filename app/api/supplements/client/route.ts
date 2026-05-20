@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Look up client by unique_code
     const { data: client } = await supabase
       .from('clients')
-      .select('id, expires_at, supplement_enabled')
+      .select('id, expires_at, supplement_enabled, subscription_tier')
       .eq('unique_code', clientId)
       .single()
 
@@ -57,6 +57,11 @@ export async function POST(request: NextRequest) {
     // Check if expired
     if (client.expires_at && new Date(client.expires_at) < new Date()) {
       return createErrorResponse('帳號已過期', 403)
+    }
+
+    // 補品功能僅限教練指導版（NT$2,999）
+    if (client.subscription_tier !== 'coached') {
+      return createErrorResponse('補品功能僅限教練指導版（NT$2,999）', 403)
     }
 
     // Check if supplement feature is enabled

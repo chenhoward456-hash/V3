@@ -1026,6 +1026,15 @@ export async function GET(request: NextRequest) {
 
   // 通知教練 cron 錯誤
   if (errors.length > 0) {
+    // Sentry：把整批 cron 錯誤丟到 Sentry（不依賴 LINE push，雙保險）
+    try {
+      const Sentry = await import('@sentry/nextjs')
+      Sentry.captureMessage(`Daily cron errors (${errors.length})`, {
+        level: 'error',
+        extra: { type: isMorning ? 'morning' : 'evening', errors, date: today },
+      })
+    } catch { /* Sentry 不存在不該擋 cron */ }
+
     const coachLineId = process.env.COACH_LINE_USER_ID
     if (coachLineId) {
       const errorSummary = [

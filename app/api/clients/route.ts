@@ -246,11 +246,23 @@ export async function PATCH(request: NextRequest) {
       return createErrorResponse('帳號已暫停', 403)
     }
 
-    // 功能開關切換：所有方案用戶皆可自行開關
-    const FEATURE_TOGGLES = ['simple_mode', 'body_composition_enabled', 'wellness_enabled', 'nutrition_enabled', 'training_enabled', 'supplement_enabled', 'lab_enabled', 'ai_chat_enabled', 'cutting_gate_override', 'email_newsletter_opt_in'] as const
+    // 功能開關切換：所有方案皆可自行開關的「通用」開關
+    const COMMON_TOGGLES = ['simple_mode', 'body_composition_enabled', 'wellness_enabled', 'nutrition_enabled', 'training_enabled', 'ai_chat_enabled', 'cutting_gate_override', 'email_newsletter_opt_in'] as const
+    // 僅 coached（NT$2,999）方案可開啟的進階功能
+    const COACHED_ONLY_TOGGLES = ['supplement_enabled', 'lab_enabled'] as const
+
     const toggleUpdates: Record<string, boolean> = {}
-    for (const key of FEATURE_TOGGLES) {
+    for (const key of COMMON_TOGGLES) {
       if (typeof body[key] === 'boolean') {
+        toggleUpdates[key] = body[key]
+      }
+    }
+    // Coached-only：只有 coached 方案能開啟，其他方案只能關閉（避免 escalation）
+    for (const key of COACHED_ONLY_TOGGLES) {
+      if (typeof body[key] === 'boolean') {
+        if (body[key] === true && client.subscription_tier !== 'coached') {
+          return createErrorResponse(`「${key}」僅限教練指導版（NT$2,999）可開啟`, 403)
+        }
         toggleUpdates[key] = body[key]
       }
     }
