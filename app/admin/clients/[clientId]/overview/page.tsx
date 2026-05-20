@@ -199,8 +199,50 @@ export default function ClientOverview() {
       weightTrend = diff > 0.3 ? 'up' : diff < -0.3 ? 'down' : 'flat'
     }
 
-    return { weekCompliance, monthCompliance, weekTrainingDays, avgEnergy, weightChange, weightChangePct, latestWeight, weekNutritionRate, monthNutritionRate, proteinHitRate, avgProtein, proteinDeltaPct, proteinTarget, proteinMissStreak, weightTrend }
-  }, [supplements, supplementLogs, wellness, trainingLogs, bodyData, nutritionLogs, dateRange])
+    // ===== HRV 個人基線 + 異常偵測 =====
+    // 取最近 14 天有 HRV 的資料，去除最近 3 天作為基線
+    const hrvData = wellness.filter(w => w.hrv != null && w.hrv > 0).sort((a, b) => a.date.localeCompare(b.date))
+    let avgHrv: number | null = null
+    let hrvBaseline: number | null = null
+    let hrvLowStreak = 0
+    if (hrvData.length >= 1) {
+      const last3 = hrvData.slice(-3)
+      avgHrv = Math.round(last3.reduce((s, w) => s + w.hrv, 0) / last3.length)
+    }
+    // 基線需要 7 天以上資料（不含最近 3 天）
+    const baselineSample = hrvData.slice(0, -3)
+    if (baselineSample.length >= 7) {
+      const sorted = [...baselineSample].map(w => w.hrv).sort((a, b) => a - b)
+      hrvBaseline = sorted[Math.floor(sorted.length / 2)]
+    }
+    // 計算連續低於基線 10% 的天數（從最近往回）
+    if (hrvBaseline) {
+      const threshold = hrvBaseline * 0.9
+      const recent = [...hrvData].sort((a, b) => b.date.localeCompare(a.date))
+      for (const day of recent) {
+        if (day.hrv < threshold) hrvLowStreak++
+        else break
+      }
+    }
+
+    // ===== Resting HR（最新值） =====
+    const rhrData = wellness.filter(w => w.resting_hr != null && w.resting_hr > 0).sort((a, b) => b.date.localeCompare(a.date))
+    const latestRhr: number | null = rhrData.length > 0 ? rhrData[0].resting_hr : null
+
+    // ===== 目標進度 =====
+    // 目標日期（優先用 competition_date，其次 target_date）
+    const goalDateStr = client?.competition_date || client?.target_date || null
+    const daysToGoal = goalDateStr ? Math.floor((new Date(goalDateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null
+
+    // 距離目標體重 / 體脂
+    const targetWeightNum = client?.target_weight ? parseFloat(client.target_weight) : null
+    const targetBfNum = client?.target_body_fat || client?.body_fat_target ? parseFloat(client?.target_body_fat || client?.body_fat_target) : null
+    const latestBodyFat = recentBody.length > 0 ? recentBody[recentBody.length - 1].body_fat : null
+    const weightToGo = (targetWeightNum && latestWeight) ? +(latestWeight - targetWeightNum).toFixed(1) : null
+    const bfToGo = (targetBfNum && latestBodyFat != null) ? +(latestBodyFat - targetBfNum).toFixed(1) : null
+
+    return { weekCompliance, monthCompliance, weekTrainingDays, avgEnergy, weightChange, weightChangePct, latestWeight, weekNutritionRate, monthNutritionRate, proteinHitRate, avgProtein, proteinDeltaPct, proteinTarget, proteinMissStreak, weightTrend, avgHrv, hrvBaseline, hrvLowStreak, latestRhr, daysToGoal, targetWeightNum, targetBfNum, latestBodyFat, weightToGo, bfToGo }
+  }, [supplements, supplementLogs, wellness, trainingLogs, bodyData, nutritionLogs, dateRange, client])
 
   // ===== 補品服從率趨勢（每日） =====
   const complianceTrend = useMemo(() => {
@@ -1112,6 +1154,13 @@ export default function ClientOverview() {
     if (lowEnergy.length >= 3) items.push(`近 7 天有 ${lowEnergy.length} 天精力偏低`)
     const highRpe = trainingLogs.filter(l => l.rpe >= 9).slice(-3)
     if (highRpe.length >= 2) items.push(`近期多次 RPE ≥ 9，注意過度訓練`)
+
+    // HRV 異常：連 3 天低於基線 10% → 強烈過度訓練訊號
+    if (keyMetrics.hrvLowStreak >= 3 && keyMetrics.hrvBaseline) {
+      items.push(`💓 HRV 連 ${keyMetrics.hrvLowStreak} 天低於基線 10%（基線 ${keyMetrics.hrvBaseline}ms），恢復不足`)
+    } else if (keyMetrics.hrvLowStreak >= 2 && keyMetrics.hrvBaseline) {
+      items.push(`💓 HRV 連 ${keyMetrics.hrvLowStreak} 天低於基線，留意是否需 deload`)
+    }
     if (client?.next_checkup_date) {
       const diff = Math.floor((new Date(client.next_checkup_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
       if (diff < 0) items.push(`回檢已逾期 ${Math.abs(diff)} 天`)
@@ -1297,6 +1346,29 @@ export default function ClientOverview() {
                 )}
               </div>
             )}
+            {keyMetrics.avgHrv != null && (
+              <div className="bg-white/70 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-gray-500">HRV</p>
+                <p className={`text-lg font-bold ${
+                  keyMetrics.hrvLowStreak >= 3 ? 'text-red-600' :
+                  keyMetrics.hrvLowStreak >= 2 ? 'text-yellow-600' :
+                  'text-green-600'
+                }`}>
+                  {keyMetrics.avgHrv}<span className="text-[10px] font-normal text-gray-400 ml-0.5">ms</span>
+                </p>
+                {keyMetrics.hrvBaseline && (
+                  <p className="text-[9px] text-gray-400">基線 {keyMetrics.hrvBaseline}</p>
+                )}
+              </div>
+            )}
+            {keyMetrics.latestRhr != null && (
+              <div className="bg-white/70 rounded-lg p-2 text-center">
+                <p className="text-[10px] text-gray-500">RHR</p>
+                <p className="text-lg font-bold text-pink-600">
+                  {keyMetrics.latestRhr}<span className="text-[10px] font-normal text-gray-400 ml-0.5">bpm</span>
+                </p>
+              </div>
+            )}
           </div>
 
           {/* 警報文字 */}
@@ -1310,6 +1382,84 @@ export default function ClientOverview() {
         </div>
 
         {/* 原有警示區塊已整合到頂部摘要 */}
+
+        {/* ===== 目標進度卡（時間/體重/體脂） ===== */}
+        {(keyMetrics.daysToGoal != null || keyMetrics.weightToGo != null || keyMetrics.bfToGo != null) && (
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🎯</span>
+                <h3 className="text-sm font-semibold text-gray-900">目標進度</h3>
+              </div>
+              <Link href={`/admin/clients/${clientId}`} className="text-xs text-gray-500 hover:text-gray-700">
+                編輯目標 →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* 距目標日 */}
+              {keyMetrics.daysToGoal != null && (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
+                  <p className="text-[10px] text-blue-600 font-semibold tracking-wider uppercase mb-1">
+                    {client.competition_date ? '距比賽日' : '距目標日'}
+                  </p>
+                  <p className={`text-2xl font-bold ${
+                    keyMetrics.daysToGoal <= 0 ? 'text-gray-400' :
+                    keyMetrics.daysToGoal <= 14 ? 'text-red-600' :
+                    keyMetrics.daysToGoal <= 30 ? 'text-amber-600' :
+                    'text-blue-700'
+                  }`}>
+                    {keyMetrics.daysToGoal <= 0 ? '已過' : `${keyMetrics.daysToGoal} 天`}
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    {client.competition_date || client.target_date}
+                  </p>
+                </div>
+              )}
+
+              {/* 距目標體重 */}
+              {keyMetrics.weightToGo != null && keyMetrics.targetWeightNum && (
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl p-3">
+                  <p className="text-[10px] text-green-700 font-semibold tracking-wider uppercase mb-1">距目標體重</p>
+                  <div className="flex items-baseline gap-1">
+                    <p className={`text-2xl font-bold ${
+                      Math.abs(keyMetrics.weightToGo) <= 0.5 ? 'text-green-700' :
+                      client.goal_type === 'cut' && keyMetrics.weightToGo > 0 ? 'text-amber-600' :
+                      client.goal_type === 'bulk' && keyMetrics.weightToGo < 0 ? 'text-amber-600' :
+                      'text-green-600'
+                    }`}>
+                      {keyMetrics.weightToGo > 0 ? '+' : ''}{keyMetrics.weightToGo}
+                    </p>
+                    <span className="text-xs font-normal text-gray-500">kg</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    {keyMetrics.latestWeight}kg → 目標 {keyMetrics.targetWeightNum}kg
+                  </p>
+                </div>
+              )}
+
+              {/* 距目標體脂 */}
+              {keyMetrics.bfToGo != null && keyMetrics.targetBfNum && (
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100 rounded-xl p-3">
+                  <p className="text-[10px] text-purple-700 font-semibold tracking-wider uppercase mb-1">距目標體脂</p>
+                  <div className="flex items-baseline gap-1">
+                    <p className={`text-2xl font-bold ${
+                      Math.abs(keyMetrics.bfToGo) <= 1 ? 'text-purple-700' :
+                      keyMetrics.bfToGo > 3 ? 'text-amber-600' :
+                      'text-purple-600'
+                    }`}>
+                      {keyMetrics.bfToGo > 0 ? '+' : ''}{keyMetrics.bfToGo}
+                    </p>
+                    <span className="text-xs font-normal text-gray-500">%</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    {keyMetrics.latestBodyFat}% → 目標 {keyMetrics.targetBfNum}%
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ===== AI 教練建議 ===== */}
         <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5">
