@@ -12,7 +12,7 @@ import { FileText } from 'lucide-react'
 import { daysUntilDateTW } from '@/lib/date-utils'
 import { TRAINING_TYPES, isWeightTraining } from '@/components/client/types'
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
-import { isCompetitionMode, isHealthMode, PHASE_LABELS } from '@/lib/client-mode'
+import { isCompetitionMode, isHealthMode, PHASE_LABELS, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS } from '@/lib/client-mode'
 
 const LabNutritionAdviceCard = dynamic(() => import('@/components/client/LabNutritionAdviceCard'), { ssr: false })
 const LabInsightsCard = dynamic(() => import('@/components/client/LabInsightsCard'), { ssr: false })
@@ -39,6 +39,13 @@ export default function ClientOverview() {
   const [trainingSets, setTrainingSets] = useState<any[]>([])
   const [coachSummary, setCoachSummary] = useState<string | null>(null)
   const [summaryLoading, setSummaryLoading] = useState(false)
+  // ===== 快速操作 state =====
+  const [quickAction, setQuickAction] = useState<'calories' | 'phase' | 'note' | null>(null)
+  const [quickSaving, setQuickSaving] = useState(false)
+  const [quickToast, setQuickToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+  const [caloriesDraft, setCaloriesDraft] = useState<number | null>(null)
+  const [phaseDraft, setPhaseDraft] = useState<string>('')
+  const [noteDraft, setNoteDraft] = useState<string>('')
 
   useEffect(() => {
     fetchAllData()
@@ -120,6 +127,44 @@ export default function ClientOverview() {
     } finally {
       setSummaryLoading(false)
     }
+  }
+
+  // ===== 快速操作：儲存學員資料更新 =====
+  const saveQuickAction = async (updates: Record<string, unknown>, successMsg: string) => {
+    if (!client?.id) return
+    setQuickSaving(true)
+    try {
+      const res = await fetch('/api/admin/clients', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id, clientData: updates }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      // 本地 state 同步更新（避免重新 fetch 整頁）
+      setClient((prev: any) => ({ ...prev, ...updates }))
+      setQuickToast({ type: 'success', msg: successMsg })
+      setQuickAction(null)
+      setTimeout(() => setQuickToast(null), 2500)
+    } catch (err) {
+      console.error('快速操作儲存失敗:', err)
+      setQuickToast({ type: 'error', msg: '儲存失敗，請稍後再試' })
+      setTimeout(() => setQuickToast(null), 3500)
+    } finally {
+      setQuickSaving(false)
+    }
+  }
+
+  // 開啟快速操作面板時，把當前值帶進 draft
+  const openQuickAction = (action: 'calories' | 'phase' | 'note') => {
+    if (action === 'calories') {
+      const cur = client?.calories_target ? parseInt(client.calories_target) : null
+      setCaloriesDraft(cur)
+    } else if (action === 'phase') {
+      setPhaseDraft(client?.prep_phase || '')
+    } else if (action === 'note') {
+      setNoteDraft(client?.coach_weekly_note || '')
+    }
+    setQuickAction(action)
   }
 
   // ===== 核心指標 =====
@@ -1460,6 +1505,180 @@ export default function ClientOverview() {
             </div>
           </div>
         )}
+
+        {/* ===== 教練快速操作 ===== */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚡</span>
+              <h3 className="text-sm font-semibold text-gray-900">教練快速操作</h3>
+              {client?.calories_target && (
+                <span className="text-xs text-gray-400 ml-2">
+                  熱量 {client.calories_target} · {PHASE_LABELS[client.prep_phase || ''] || client.prep_phase || '未設階段'}
+                </span>
+              )}
+            </div>
+            {quickToast && (
+              <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                quickToast.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              }`}>
+                {quickToast.type === 'success' ? '✅' : '❌'} {quickToast.msg}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => openQuickAction(quickAction === 'calories' ? null as any : 'calories')}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                quickAction === 'calories' ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+              }`}
+            >
+              🔥 改熱量
+            </button>
+            <button
+              onClick={() => openQuickAction(quickAction === 'phase' ? null as any : 'phase')}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                quickAction === 'phase' ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+              }`}
+            >
+              📅 切階段
+            </button>
+            <button
+              onClick={() => openQuickAction(quickAction === 'note' ? null as any : 'note')}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                quickAction === 'note' ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+              }`}
+            >
+              📝 加備註
+            </button>
+          </div>
+
+          {/* 改熱量 inline editor */}
+          {quickAction === 'calories' && (
+            <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-blue-700 font-semibold">調整每日總熱量目標（kcal）</p>
+                <button onClick={() => setQuickAction(null)} className="text-xs text-gray-500 hover:text-gray-700">取消</button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCaloriesDraft(prev => Math.max(1000, (prev || 2000) - 100))}
+                  className="px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-bold text-blue-700 hover:bg-blue-100"
+                >−100</button>
+                <button
+                  onClick={() => setCaloriesDraft(prev => Math.max(1000, (prev || 2000) - 50))}
+                  className="px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-bold text-blue-700 hover:bg-blue-100"
+                >−50</button>
+                <input
+                  type="number"
+                  value={caloriesDraft ?? ''}
+                  onChange={e => setCaloriesDraft(e.target.value ? parseInt(e.target.value) : null)}
+                  className="flex-1 px-3 py-2 border border-blue-300 rounded-lg text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="例如 2000"
+                />
+                <button
+                  onClick={() => setCaloriesDraft(prev => Math.min(5000, (prev || 2000) + 50))}
+                  className="px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-bold text-blue-700 hover:bg-blue-100"
+                >+50</button>
+                <button
+                  onClick={() => setCaloriesDraft(prev => Math.min(5000, (prev || 2000) + 100))}
+                  className="px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-bold text-blue-700 hover:bg-blue-100"
+                >+100</button>
+              </div>
+              <div className="flex items-center justify-between mt-3">
+                <p className="text-[11px] text-gray-500">
+                  目前：{client?.calories_target || '—'} kcal
+                  {caloriesDraft && client?.calories_target && (
+                    <span className={`ml-2 font-semibold ${
+                      caloriesDraft - parseInt(client.calories_target) > 0 ? 'text-green-700' : 'text-red-700'
+                    }`}>
+                      ({caloriesDraft - parseInt(client.calories_target) > 0 ? '+' : ''}{caloriesDraft - parseInt(client.calories_target)})
+                    </span>
+                  )}
+                </p>
+                <button
+                  disabled={quickSaving || !caloriesDraft || caloriesDraft < 1000 || caloriesDraft > 5000}
+                  onClick={() => saveQuickAction({ calories_target: String(caloriesDraft) }, `熱量改為 ${caloriesDraft} kcal`)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {quickSaving ? '儲存中...' : '✓ 儲存'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 切 prep_phase inline editor */}
+          {quickAction === 'phase' && (
+            <div className="mt-3 p-4 bg-purple-50 border border-purple-200 rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-purple-700 font-semibold">切換訓練階段（prep_phase）</p>
+                <button onClick={() => setQuickAction(null)} className="text-xs text-gray-500 hover:text-gray-700">取消</button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                {(client?.client_mode === 'athletic' ? ATHLETIC_PHASE_OPTIONS : BODYBUILDING_PHASE_OPTIONS).map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setPhaseDraft(opt.value)}
+                    className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                      phaseDraft === opt.value
+                        ? 'bg-purple-600 text-white border-purple-600'
+                        : 'bg-white text-gray-700 border-purple-200 hover:bg-purple-100'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-gray-500">
+                  目前：{PHASE_LABELS[client?.prep_phase || ''] || client?.prep_phase || '—'}
+                </p>
+                <button
+                  disabled={quickSaving || !phaseDraft || phaseDraft === client?.prep_phase}
+                  onClick={() => saveQuickAction({ prep_phase: phaseDraft }, `階段改為 ${PHASE_LABELS[phaseDraft] || phaseDraft}`)}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {quickSaving ? '儲存中...' : '✓ 儲存'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 加 coach_weekly_note inline editor */}
+          {quickAction === 'note' && (
+            <div className="mt-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-amber-800 font-semibold">本週教練備註</p>
+                <button onClick={() => setQuickAction(null)} className="text-xs text-gray-500 hover:text-gray-700">取消</button>
+              </div>
+              <textarea
+                value={noteDraft}
+                onChange={e => setNoteDraft(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                placeholder="例：本週 HRV 偏低，建議降強度 20%；下週起改成減脂期收 200kcal"
+              />
+              <div className="flex items-center justify-between mt-3">
+                <p className="text-[11px] text-gray-500">
+                  {noteDraft.length} / 500 字
+                </p>
+                <button
+                  disabled={quickSaving || noteDraft.length > 500 || noteDraft === (client?.coach_weekly_note || '')}
+                  onClick={() => saveQuickAction({ coach_weekly_note: noteDraft || null }, '教練備註已更新')}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {quickSaving ? '儲存中...' : '✓ 儲存'}
+                </button>
+              </div>
+              {client?.coach_weekly_note && noteDraft !== client.coach_weekly_note && (
+                <p className="text-[11px] text-gray-500 mt-2 italic">
+                  原備註：「{client.coach_weekly_note}」
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* ===== AI 教練建議 ===== */}
         <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5">
