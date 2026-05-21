@@ -54,8 +54,34 @@ export default function AiAuditPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="text-gray-500">載入中...</div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200 px-4 py-4">
+          <div className="max-w-6xl mx-auto animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-56 mb-2"></div>
+            <div className="h-3 bg-gray-100 rounded w-72"></div>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto px-4 py-6 animate-pulse">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-3">
+                <div className="h-3 bg-gray-100 rounded w-20 mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-16"></div>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-5 bg-gray-200 rounded-full w-16"></div>
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                  <div className="h-3 bg-gray-100 rounded w-32"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }

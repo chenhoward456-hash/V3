@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Trash2, Plus, Upload, FileText, Camera, Pencil } from 'lucide-react'
@@ -128,6 +128,17 @@ export default function UploadLabsPage() {
   // --- ocr ---
   const ocrInputRef = useRef<HTMLInputElement>(null)
   const [ocrLoading, setOcrLoading] = useState(false)
+  const [ocrElapsedSec, setOcrElapsedSec] = useState(0)
+  const [ocrFileCount, setOcrFileCount] = useState(0)
+  const [ocrDragActive, setOcrDragActive] = useState(false)
+
+  // OCR 計時器
+  useEffect(() => {
+    if (!ocrLoading) { setOcrElapsedSec(0); return }
+    const start = Date.now()
+    const t = setInterval(() => setOcrElapsedSec(Math.floor((Date.now() - start) / 1000)), 500)
+    return () => clearInterval(t)
+  }, [ocrLoading])
 
   async function handleOcrFiles(fileList: FileList) {
     if (fileList.length === 0) return
@@ -135,6 +146,7 @@ export default function UploadLabsPage() {
       setResultMsg({ kind: 'err', text: '一次最多 5 個檔案' })
       return
     }
+    setOcrFileCount(fileList.length)
     setOcrLoading(true)
     setResultMsg(null)
     try {
@@ -367,40 +379,73 @@ export default function UploadLabsPage() {
 
         {/* OCR */}
         {tab === 'ocr' && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-            <div className="text-center">
-              <Camera className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-sm text-gray-600 mb-2">
-                上傳健檢報告 PDF 或照片（JPG/PNG）
-              </p>
-              <p className="text-xs text-gray-500 mb-4">
-                AI 會自動辨識血檢項目與數值 · 一次最多 5 個檔案<br />
-                辨識結果在下方確認後才會寫入
-              </p>
-              <input
-                ref={ocrInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,application/pdf"
-                multiple
-                onChange={async e => {
-                  const fs = e.target.files
-                  if (fs && fs.length > 0) await handleOcrFiles(fs)
-                  if (e.target) e.target.value = ''
-                }}
-                className="hidden"
-              />
-              <button
-                onClick={() => ocrInputRef.current?.click()}
-                disabled={ocrLoading}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded inline-flex items-center gap-1 disabled:opacity-50"
-              >
-                <Upload className="w-4 h-4" />
-                {ocrLoading ? 'AI 辨識中（約 10-30 秒）...' : '選擇檔案'}
-              </button>
-              <p className="mt-3 text-[11px] text-amber-700">
-                ⚠️ AI 辨識可能有誤差，請務必在下方確認每一筆數值後再儲存
-              </p>
-            </div>
+          <div
+            className={`rounded-xl border-2 border-dashed p-6 mb-6 transition-colors ${
+              ocrDragActive ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300 bg-white'
+            }`}
+            onDragEnter={e => { e.preventDefault(); setOcrDragActive(true) }}
+            onDragOver={e => { e.preventDefault(); setOcrDragActive(true) }}
+            onDragLeave={e => { e.preventDefault(); setOcrDragActive(false) }}
+            onDrop={async e => {
+              e.preventDefault()
+              setOcrDragActive(false)
+              if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                await handleOcrFiles(e.dataTransfer.files)
+              }
+            }}
+          >
+            {ocrLoading ? (
+              <div className="text-center py-4">
+                {/* Animated progress */}
+                <div className="relative inline-flex items-center justify-center w-16 h-16 mb-3">
+                  <div className="absolute inset-0 rounded-full border-4 border-emerald-200"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin"></div>
+                  <span className="relative text-xs font-medium text-emerald-700">{ocrElapsedSec}s</span>
+                </div>
+                <p className="text-sm font-medium text-gray-800">
+                  AI 正在辨識 {ocrFileCount} 個檔案...
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  通常 15-30 秒完成，請勿關閉頁面
+                </p>
+                {ocrElapsedSec > 30 && (
+                  <p className="text-xs text-amber-600 mt-2">
+                    比較大的 PDF 可能需要 40-60 秒，再等等...
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="text-center">
+                <Camera className={`w-12 h-12 mx-auto mb-3 ${ocrDragActive ? 'text-emerald-600' : 'text-gray-400'}`} />
+                <p className="text-sm font-medium text-gray-800 mb-1">
+                  {ocrDragActive ? '放開即可上傳' : '拖曳檔案到這裡 或點下方按鈕'}
+                </p>
+                <p className="text-xs text-gray-500 mb-4">
+                  PDF / JPG / PNG · 最多 5 個檔案 · 圖檔 5MB / PDF 10MB 上限
+                </p>
+                <input
+                  ref={ocrInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  multiple
+                  onChange={async e => {
+                    const fs = e.target.files
+                    if (fs && fs.length > 0) await handleOcrFiles(fs)
+                    if (e.target) e.target.value = ''
+                  }}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => ocrInputRef.current?.click()}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded inline-flex items-center gap-1"
+                >
+                  <Upload className="w-4 h-4" /> 選擇檔案
+                </button>
+                <p className="mt-3 text-[11px] text-amber-700">
+                  ⚠️ AI 辨識可能有誤差，請務必在下方確認每一筆數值後再儲存
+                </p>
+              </div>
+            )}
           </div>
         )}
 

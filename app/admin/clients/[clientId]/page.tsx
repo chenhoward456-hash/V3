@@ -2107,37 +2107,51 @@ export default function ClientEditor() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">開始日期</label>
-                        <input
-                          type="date"
-                          value={supplement.started_at || ''}
-                          onChange={(e) => updateSupplement(index, 'started_at', e.target.value || null)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                    </div>
+
+                    {/* 子區塊：版本管理 */}
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                        📅 版本管理
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">當時 mode</label>
-                        <input
-                          type="text"
-                          value={supplement.mode_context || ''}
-                          onChange={(e) => updateSupplement(index, 'mode_context', e.target.value || null)}
-                          placeholder={client.client_mode || '自動帶入目前 mode'}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">開始日期</label>
+                          <input
+                            type="date"
+                            value={supplement.started_at || ''}
+                            onChange={(e) => updateSupplement(index, 'started_at', e.target.value || null)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">當時 mode（自動帶入）</label>
+                          <input
+                            type="text"
+                            value={supplement.mode_context || ''}
+                            onChange={(e) => updateSupplement(index, 'mode_context', e.target.value || null)}
+                            placeholder={client.client_mode || '自動帶入目前 mode'}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          />
+                        </div>
                       </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-emerald-700 mb-2">
-                          🧬 教練 rationale（為什麼開這個 — 連結哪個血檢指標）
-                        </label>
-                        <textarea
-                          value={supplement.coach_rationale || ''}
-                          onChange={(e) => updateSupplement(index, 'coach_rationale', e.target.value)}
-                          rows={2}
-                          placeholder="例：游離睪固酮 72.8（最佳 150-220）偏低 + 鋅是 aromatase 抑制 + 雌二醇 42 偏高，雙效介入"
-                          className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30"
-                        />
+                    </div>
+
+                    {/* 子區塊：教練筆記 */}
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide mb-2">
+                        🧬 教練 Rationale
                       </div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        為什麼開這個 — 連結哪個血檢指標
+                      </label>
+                      <textarea
+                        value={supplement.coach_rationale || ''}
+                        onChange={(e) => updateSupplement(index, 'coach_rationale', e.target.value)}
+                        rows={2}
+                        placeholder="例：游離睪固酮 72.8（最佳 150-220）偏低 + 鋅是 aromatase 抑制 + 雌二醇 42 偏高，雙效介入"
+                        className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30 text-sm"
+                      />
                     </div>
                     <div className="mt-4 flex items-center justify-between">
                       <div className="text-xs text-gray-500">
