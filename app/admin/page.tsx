@@ -61,6 +61,7 @@ export default function AdminDashboard() {
   const { showToast } = useToast()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
+  const [pendingDraftCount, setPendingDraftCount] = useState(0)
   const [allLogs, setAllLogs] = useState<SupplementLog[]>([])
   const [allSupplements, setAllSupplements] = useState<SupplementRecord[]>([])
   const [todayWellnessIds, setTodayWellnessIds] = useState<Set<string>>(new Set())
@@ -98,6 +99,21 @@ export default function AdminDashboard() {
   // 錯誤處理 & 最後更新時間
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+
+  // Poll pending AI draft count
+  useEffect(() => {
+    let cancelled = false
+    async function fetchPending() {
+      try {
+        const res = await fetch('/api/admin/ai-audit/pending')
+        const json = await res.json()
+        if (!cancelled && json?.success) setPendingDraftCount(json.data.count ?? 0)
+      } catch { /* ignore */ }
+    }
+    fetchPending()
+    const t = setInterval(fetchPending, 30_000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [])
 
   useEffect(() => {
     fetch('/api/admin/verify')
@@ -507,7 +523,14 @@ export default function AdminDashboard() {
                   )}
                 </div>
                 {lastUpdated && <span className="text-[10px] text-gray-400 flex items-center gap-1"><Clock size={10} />{lastUpdated.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })} 更新</span>}
-                <Link href="/admin/blog" className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors">文章管理</Link><Link href="/admin/clients/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">新增學員</Link><button onClick={handleLogout} className="text-gray-500 hover:text-gray-700 text-sm">登出</button></div></div></div></div>
+                <Link href="/admin/ai-audit" className="relative bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition-colors">
+                  ✨ AI Audit
+                  {pendingDraftCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] inline-flex items-center justify-center px-1">
+                      {pendingDraftCount > 99 ? '99+' : pendingDraftCount}
+                    </span>
+                  )}
+                </Link><Link href="/admin/blog" className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors">文章管理</Link><Link href="/admin/clients/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">新增學員</Link><button onClick={handleLogout} className="text-gray-500 hover:text-gray-700 text-sm">登出</button></div></div></div></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         {/* ===== 錯誤提示 ===== */}

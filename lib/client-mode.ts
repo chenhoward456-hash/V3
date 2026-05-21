@@ -4,11 +4,14 @@
  * Replaces the dual-boolean system (competition_enabled / health_mode_enabled)
  * with a single `client_mode` enum field that is inherently mutually exclusive.
  *
- * Modes:
+ * Modes (= 哲學)：
  *   - standard: Default mode, no special features
- *   - health: Health-focused mode with quarterly cycles
- *   - bodybuilding: Competition prep (bodybuilding/physique)
+ *   - health: 長期健康導向，永續不犧牲。**長壽 Protocol 客戶就是 health mode + subscription_tier='protocol'**
+ *   - bodybuilding: Competition prep (bodybuilding/physique) — 短期目標，可接受代價
  *   - athletic: Competition prep (weight-class sports: boxing, wrestling, etc.)
+ *
+ * 服務深度（NT$ 等級）放在 subscription_tier 不在這裡：
+ *   free / self_managed (NT$499) / coached (NT$2,999) / protocol (NT$4,999) / concierge (未來)
  */
 
 // ═══════════════════════════════════════
@@ -47,6 +50,16 @@ export function isCompetitionMode(mode: string | null | undefined): boolean {
 /** Returns true for health mode (replaces `health_mode_enabled`) */
 export function isHealthMode(mode: string | null | undefined): boolean {
   return mode === 'health'
+}
+
+/** Returns true for "long-term health" 哲學 — opposite of 備賽腦 */
+export function isLongTermHealthMode(mode: string | null | undefined): boolean {
+  return mode === 'health' || mode === 'standard'
+}
+
+/** Returns true if the client is on the NT$4,999 Protocol tier (= 進階深度服務) */
+export function isProtocolTier(tier: string | null | undefined): boolean {
+  return tier === 'protocol' || tier === 'concierge'
 }
 
 /** Validate a prep phase against the given client mode */
@@ -94,7 +107,7 @@ export const MODE_LABELS: Record<ClientMode, string> = {
 
 export const MODE_DESCRIPTIONS: Record<ClientMode, string> = {
   standard: '一般體態管理',
-  health: '季度健康追蹤',
+  health: '長期健康導向：永續、不犧牲（Protocol tier 即此模式的深度服務版本）',
   bodybuilding: '健美/健體/比基尼',
   athletic: '拔河/拳擊/角力等量級運動',
 }
@@ -142,7 +155,7 @@ export const MODE_CONFIG: Record<ClientMode, {
   health: {
     label: '健康模式',
     emoji: '🌿',
-    description: '季度健康追蹤',
+    description: '長期健康導向，永續不犧牲（Protocol tier = 此模式的深度服務）',
     hasPhases: false,
   },
   bodybuilding: {

@@ -21,7 +21,7 @@ const SELF_MANAGED_FEATURES = [
 
 const COACHED_EXTRA_FEATURES = [
   { icon: '💊', label: '補充品建議', desc: '個人化補充品方案' },
-  { icon: '🔬', label: '血液檢驗分析', desc: '上傳報告 AI 解讀' },
+  { icon: '🔬', label: '血液檢驗追蹤', desc: '上傳報告自動趨勢觀察' },
   { icon: '🧬', label: '基因體質分析', desc: '基因報告整合建議' },
   { icon: '💬', label: '教練回饋', desc: '專業教練定期檢視' },
   { icon: '📋', label: '週報分析', desc: '每週自動產出進度報告' },

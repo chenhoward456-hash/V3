@@ -201,7 +201,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
         text: '🔍 免費體態評估\n\n' +
           '輸入基本資料，系統會即時算出你的 TDEE、建議熱量和巨量營養素。\n\n' +
           `👉 ${SITE_URL}/diagnosis\n\n` +
-          '做完後回來告訴我「評估結果」，我幫你解讀！',
+          '做完後回來告訴我「評估結果」，我幫你看趨勢！',
       },
     ])
     return
@@ -346,7 +346,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
           '如果你想要：\n' +
           '✅ 每天自動追蹤體重變化\n' +
           '✅ AI 根據真實數據校正你的 TDEE\n' +
-          '✅ 教練幫你解讀報告、調整策略\n\n' +
+          '✅ 教練幫你看數據趨勢、調整訓練營養策略\n\n' +
           '可以考慮加入我們的線上方案 👇',
         quickReply: {
           items: [

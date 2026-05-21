@@ -127,8 +127,17 @@ export async function GET(request: NextRequest) {
       resolved[queryEntries[i].key] = data || []
     }
 
+    // 過濾出 active 的補品（未封存）— 學員端打卡、計算依據都只看 active
+    // 封存的補品仍在 DB，由 /api/supplements/history 端點專門查詢用於 timeline 顯示
+    const clientWithActiveSupplements = {
+      ...client,
+      supplements: Array.isArray(client.supplements)
+        ? client.supplements.filter((s: { archived_at?: string | null }) => !s.archived_at)
+        : [],
+    }
+
     return createSuccessResponse({
-      client,
+      client: clientWithActiveSupplements,
       todayLogs: resolved.todayLogs || [],
       bodyData: resolved.bodyData || [],
       wellness: resolved.wellness || [],

@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('id, is_active, expires_at, ai_chat_enabled')
+      .select('id, is_active, expires_at, ai_chat_enabled, client_mode, subscription_tier')
       .eq('unique_code', clientId)
       .single()
 
@@ -123,7 +123,12 @@ export async function POST(request: NextRequest) {
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
-        reply = await askClaude(trimmedMessages, clientContext)
+        reply = await askClaude(
+          trimmedMessages,
+          clientContext,
+          client.client_mode as string | null | undefined,
+          client.subscription_tier as string | null | undefined,
+        )
         break
       } catch (e: unknown) {
         lastErr = e

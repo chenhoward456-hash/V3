@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { clientId, testName, value, unit, referenceRange, date, customAdvice, customTarget, selfEntry } = body
+    const { clientId, testName, value, unit, referenceRange, date, customAdvice, customTarget, coachInterpretation, selfEntry } = body
 
     // 驗證輸入
     if (!clientId || !testName || value === undefined || !date) {
@@ -143,9 +143,10 @@ export async function POST(request: NextRequest) {
     const sanitizedUnit = sanitizeInput(unit || '')
     const sanitizedReference = sanitizeInput(referenceRange || '')
 
-    // 清理 customAdvice 和 customTarget
+    // 清理 customAdvice、customTarget 和 coachInterpretation
     const sanitizedAdvice = sanitizeTextField(customAdvice, 1000)
     const sanitizedTarget = sanitizeTextField(customTarget, 500)
+    const sanitizedInterpretation = sanitizeTextField(coachInterpretation, 2000)
 
     // 驗證血檢數值
     const valueValidation = validateLabValue(sanitizedName, value)
@@ -195,7 +196,8 @@ export async function POST(request: NextRequest) {
         date,
         status: determineLabStatus(value, sanitizedReference),
         custom_advice: selfEntry ? null : sanitizedAdvice,
-        custom_target: selfEntry ? null : sanitizedTarget
+        custom_target: selfEntry ? null : sanitizedTarget,
+        coach_interpretation: selfEntry ? null : sanitizedInterpretation,
       })
       .select()
       .single()
@@ -220,7 +222,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, testName, value, unit, referenceRange, date, customAdvice, customTarget } = body
+    const { id, testName, value, unit, referenceRange, date, customAdvice, customTarget, coachInterpretation } = body
 
     // 驗證輸入
     if (!id || !testName || value === undefined || !date) {
@@ -232,9 +234,10 @@ export async function PUT(request: NextRequest) {
     const sanitizedUnit = sanitizeInput(unit || '')
     const sanitizedReference = sanitizeInput(referenceRange || '')
 
-    // 清理 customAdvice 和 customTarget
+    // 清理 customAdvice、customTarget 和 coachInterpretation
     const sanitizedAdvice = sanitizeTextField(customAdvice, 1000)
     const sanitizedTarget = sanitizeTextField(customTarget, 500)
+    const sanitizedInterpretation = sanitizeTextField(coachInterpretation, 2000)
 
     // 驗證血檢數值
     const valueValidation = validateLabValue(sanitizedName, value)
@@ -259,7 +262,8 @@ export async function PUT(request: NextRequest) {
         date,
         status: determineLabStatus(value, sanitizedReference),
         custom_advice: sanitizedAdvice,
-        custom_target: sanitizedTarget
+        custom_target: sanitizedTarget,
+        coach_interpretation: sanitizedInterpretation,
       })
       .eq('id', id)
       .select()

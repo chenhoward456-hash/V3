@@ -8,6 +8,9 @@ import { calcRecommendedStageWeight, type RecommendedStageWeightResult } from '@
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { getDefaultFeatures, type SubscriptionTier } from '@/lib/tier-defaults'
 import { isCompetitionMode, isHealthMode, ALL_CLIENT_MODES, MODE_LABELS, MODE_EMOJIS, MODE_CONFIG, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS } from '@/lib/client-mode'
+import LabPanelNotesEditor from './components/LabPanelNotesEditor'
+import ArchivedSupplementsList from './components/ArchivedSupplementsList'
+import { SUPPLEMENT_NAMES, findSuggestion } from '@/lib/supplement-catalog'
 
 type EditorTab = 'basic' | 'features' | 'notes' | 'lab' | 'supplements'
 
@@ -21,6 +24,7 @@ interface LabResult {
   date: string
   custom_advice?: string
   custom_target?: string
+  coach_interpretation?: string
 }
 
 interface Supplement {
@@ -29,6 +33,12 @@ interface Supplement {
   dosage: string
   timing: string
   why?: string
+  started_at?: string | null
+  archived_at?: string | null
+  archive_reason?: string | null
+  replaced_by_id?: string | null
+  coach_rationale?: string | null
+  mode_context?: string | null
 }
 
 interface Client {
@@ -457,15 +467,59 @@ export default function ClientEditor() {
 
   const addSupplement = () => {
     if (!client) return
+    const today = new Date().toISOString().slice(0, 10)
     setClient({
       ...client,
       supplements: [...client.supplements, {
         name: '',
         dosage: '',
         timing: '早餐',
-        why: ''
+        why: '',
+        started_at: today,
+        mode_context: client.client_mode ?? null,
+        coach_rationale: '',
       }]
     })
+  }
+
+  /**
+   * 封存補品（不刪除）— 透過 API call 標記 archived_at + reason。
+   * 已存的補品才能封存（需要 id）；未存的會 fallback 到舊的 remove 邏輯。
+   */
+  const archiveSupplement = async (index: number) => {
+    if (!client) return
+    const supp = client.supplements[index]
+    if (!supp?.id) {
+      // 還沒存進 DB 的 row → 直接從 state 移除
+      const updated = client.supplements.filter((_, i) => i !== index)
+      setClient({ ...client, supplements: updated })
+      return
+    }
+    const reason = window.prompt(
+      `要封存「${supp.name}」嗎？\n\n為什麼停掉？（例：指標到位 / 換成 Bergamot / 副作用 / 預算）`,
+      ''
+    )
+    if (reason === null) return  // 取消
+    try {
+      const res = await fetch('/api/supplements/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supplementId: supp.id,
+          reason: reason.trim() || null,
+        }),
+      })
+      const json = await res.json()
+      if (json?.success) {
+        // 從目前 active 列表移除（會在「過去 protocol」區塊另外顯示）
+        const updated = client.supplements.filter((_, i) => i !== index)
+        setClient({ ...client, supplements: updated })
+      } else {
+        alert(`封存失敗：${json?.error || '未知錯誤'}`)
+      }
+    } catch {
+      alert('封存失敗，網路或伺服器錯誤')
+    }
   }
 
   const updateSupplement = (index: number, field: string, value: any) => {
@@ -1925,6 +1979,18 @@ export default function ClientEditor() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
+                      <div className="lg:col-span-3">
+                        <label className="block text-sm font-medium text-emerald-700 mb-2">
+                          🔬 教練觀察筆記（Longevity Protocol）
+                        </label>
+                        <textarea
+                          value={result.coach_interpretation || ''}
+                          onChange={(e) => updateLabResult(index, 'coach_interpretation', e.target.value)}
+                          rows={3}
+                          placeholder="這個指標的趨勢觀察、與其他指標的關聯、生活方式調整建議（教練筆記非醫療診斷）"
+                          className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30"
+                        />
+                      </div>
                     </div>
                     <button
                       onClick={() => removeLabResult(index)}
@@ -1936,6 +2002,12 @@ export default function ClientEditor() {
                 ))}
               </div>
             </div>
+
+            {/* Longevity Protocol: 整組血檢綜合解讀 */}
+            <LabPanelNotesEditor
+              clientUniqueCode={client.unique_code}
+              labResults={client.lab_results}
+            />
           </div>
         )}
 
@@ -1962,13 +2034,46 @@ export default function ClientEditor() {
                   <div key={index} className="border border-gray-200 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">補品名稱</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          補品名稱
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const s = findSuggestion(supplement.name)
+                              if (!s) {
+                                alert('沒有找到匹配的建議。輸入「Omega-3」「Berberine」「Magnesium」等常見名稱再按。')
+                                return
+                              }
+                              if (!window.confirm(
+                                `套用「${s.name}」建議：\n` +
+                                `劑量：${s.dosage}\n` +
+                                `時間：${s.timing}\n\n` +
+                                `Rationale 起手式：\n${s.rationaleStarter}\n\n` +
+                                `會覆蓋現有的劑量、時間、rationale 欄位。確定？`
+                              )) return
+                              updateSupplement(index, 'name', s.name)
+                              updateSupplement(index, 'dosage', s.dosage)
+                              updateSupplement(index, 'timing', s.timing)
+                              if (!supplement.coach_rationale || supplement.coach_rationale.trim() === '') {
+                                updateSupplement(index, 'coach_rationale', s.rationaleStarter)
+                              }
+                            }}
+                            className="ml-2 text-xs text-indigo-600 hover:text-indigo-800 font-normal"
+                            title="從名稱自動填入劑量、時間、rationale 起手式"
+                          >
+                            ✨ 套用建議
+                          </button>
+                        </label>
                         <input
                           type="text"
                           value={supplement.name}
                           onChange={(e) => updateSupplement(index, 'name', e.target.value)}
+                          list={`supplement-names-${index}`}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
+                        <datalist id={`supplement-names-${index}`}>
+                          {SUPPLEMENT_NAMES.map(n => <option key={n} value={n} />)}
+                        </datalist>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">劑量</label>
@@ -2002,17 +2107,66 @@ export default function ClientEditor() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">開始日期</label>
+                        <input
+                          type="date"
+                          value={supplement.started_at || ''}
+                          onChange={(e) => updateSupplement(index, 'started_at', e.target.value || null)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">當時 mode</label>
+                        <input
+                          type="text"
+                          value={supplement.mode_context || ''}
+                          onChange={(e) => updateSupplement(index, 'mode_context', e.target.value || null)}
+                          placeholder={client.client_mode || '自動帶入目前 mode'}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-emerald-700 mb-2">
+                          🧬 教練 rationale（為什麼開這個 — 連結哪個血檢指標）
+                        </label>
+                        <textarea
+                          value={supplement.coach_rationale || ''}
+                          onChange={(e) => updateSupplement(index, 'coach_rationale', e.target.value)}
+                          rows={2}
+                          placeholder="例：游離睪固酮 72.8（最佳 150-220）偏低 + 鋅是 aromatase 抑制 + 雌二醇 42 偏高，雙效介入"
+                          className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30"
+                        />
+                      </div>
                     </div>
-                    <button
-                      onClick={() => removeSupplement(index)}
-                      className="mt-4 text-red-600 hover:text-red-800 text-sm"
-                    >
-                      刪除
-                    </button>
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="text-xs text-gray-500">
+                        {supplement.id ? (
+                          <>
+                            開始：{supplement.started_at || '—'}
+                            {supplement.mode_context && (
+                              <span className="ml-2">· mode: {supplement.mode_context}</span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-amber-600">（新增中 · 儲存後才會建立歷史紀錄）</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => archiveSupplement(index)}
+                        className="text-amber-700 hover:text-amber-900 text-sm border border-amber-300 px-3 py-1 rounded"
+                        title="封存（保留歷史，不從 DB 刪除）"
+                      >
+                        {supplement.id ? '📦 封存' : '取消新增'}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* 過去 protocol（已封存）— Longevity 版本化交付 */}
+            <ArchivedSupplementsList clientUniqueCode={client.unique_code} />
           </div>
         )}
 

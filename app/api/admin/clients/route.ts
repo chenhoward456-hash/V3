@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 新增血檢（白名單過濾）
-    const ALLOWED_LAB_FIELDS = ['test_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
+    const ALLOWED_LAB_FIELDS = ['test_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category', 'custom_advice', 'custom_target', 'coach_interpretation']
     if (labResults?.length > 0) {
       const withId = labResults.map((r: Record<string, unknown>) => {
         const sanitized: Record<string, unknown> = { client_id: newClient.id }
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 新增補品（白名單過濾）
-    const ALLOWED_SUPP_FIELDS = ['name', 'dosage', 'timing', 'frequency', 'notes', 'is_active', 'category']
+    const ALLOWED_SUPP_FIELDS = ['name', 'dosage', 'timing', 'why', 'sort_order', 'started_at', 'archived_at', 'archive_reason', 'replaced_by_id', 'coach_rationale', 'mode_context']
     if (supplements?.length > 0) {
       const withId = supplements.map((s: Record<string, unknown>) => {
         const sanitized: Record<string, unknown> = { client_id: newClient.id }
@@ -130,8 +130,8 @@ export async function PUT(request: NextRequest) {
     }
 
     // 白名單過濾 lab/supplement 欄位
-    const ALLOWED_LAB_FIELDS = ['test_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category']
-    const ALLOWED_SUPP_FIELDS = ['name', 'dosage', 'timing', 'frequency', 'notes', 'is_active', 'category']
+    const ALLOWED_LAB_FIELDS = ['test_name', 'value', 'unit', 'date', 'status', 'reference_range', 'category', 'custom_advice', 'custom_target', 'coach_interpretation']
+    const ALLOWED_SUPP_FIELDS = ['name', 'dosage', 'timing', 'why', 'sort_order', 'started_at', 'archived_at', 'archive_reason', 'replaced_by_id', 'coach_rationale', 'mode_context']
 
     function sanitizeFields(obj: Record<string, unknown>, allowedFields: string[]): Record<string, unknown> {
       const result: Record<string, unknown> = {}

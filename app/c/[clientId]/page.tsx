@@ -1479,6 +1479,25 @@ export default function ClientDashboard() {
           /></div>
         )}
 
+        {c.lab_enabled && (c.lab_results || []).length > 0 && (
+          <Link
+            href={`/c/${clientId}/health/timeline`}
+            className="block mb-4 bg-gradient-to-r from-emerald-50 to-emerald-100/60 border border-emerald-200 hover:border-emerald-300 rounded-2xl p-4 transition-colors"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-emerald-900">
+                  健康趨勢儀表板
+                </div>
+                <div className="text-xs text-emerald-700 mt-0.5">
+                  6 大類追蹤 · Howard 最佳化範圍 · 連續趨勢
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-emerald-700" />
+            </div>
+          </Link>
+        )}
+
         {/* 更多分析 — 預設收合以減少滑動長度 */}
         {(() => {
           const hasLabAnalysis = c.lab_enabled && c.lab_results && c.lab_results.length > 0
