@@ -38,6 +38,7 @@ export async function buildClientContextSnapshot(clientInternalId: string): Prom
       { data: supplements },
       { data: body },
       { data: wellness },
+      { data: modeHistory },
     ] = await Promise.all([
       supabase
         .from('clients')
@@ -78,6 +79,12 @@ export async function buildClientContextSnapshot(clientInternalId: string): Prom
         .order('date', { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabase
+        .from('client_mode_history')
+        .select('from_mode, to_mode, from_tier, to_tier, changed_at')
+        .eq('client_id', clientInternalId)
+        .order('changed_at', { ascending: false })
+        .limit(5),
     ])
 
     if (!client) return ''
@@ -93,6 +100,20 @@ export async function buildClientContextSnapshot(clientInternalId: string): Prom
     }
     if (client.next_checkup_date) lines.push(`下次抽血：${client.next_checkup_date}`)
     if (client.health_goals) lines.push(`健康目標：${client.health_goals.replace(/\n/g, '; ')}`)
+
+    // Mode + tier 變更歷史（讓 AI 寫跨期敘事）
+    if (modeHistory && modeHistory.length > 1) {
+      lines.push('')
+      lines.push('### Mode / Tier 變更歷史（新到舊）')
+      type ModeRow = { from_mode: string | null; to_mode: string | null; from_tier: string | null; to_tier: string | null; changed_at: string }
+      ;(modeHistory as ModeRow[]).slice(0, 4).forEach((h) => {
+        const date = h.changed_at ? new Date(h.changed_at).toLocaleDateString('zh-TW') : '?'
+        const parts: string[] = []
+        if (h.from_mode !== h.to_mode) parts.push(`mode: ${h.from_mode ?? '(空)'} → ${h.to_mode ?? '(空)'}`)
+        if (h.from_tier !== h.to_tier) parts.push(`tier: ${h.from_tier ?? '(空)'} → ${h.to_tier ?? '(空)'}`)
+        if (parts.length > 0) lines.push(`- ${date}: ${parts.join(' / ')}`)
+      })
+    }
     lines.push('')
 
     // 血檢摘要（用 trend analyzer 找重點）
