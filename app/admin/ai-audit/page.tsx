@@ -31,6 +31,8 @@ export default function AiAuditPage() {
   const [err, setErr] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [showFilter, setShowFilter] = useState<'all' | 'saved' | 'pending'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [tierFilter, setTierFilter] = useState<'all' | 'protocol' | 'coached' | 'free' | 'self_managed' | 'concierge'>('all')
 
   useEffect(() => {
     let cancelled = false
@@ -94,9 +96,20 @@ export default function AiAuditPage() {
     )
   }
 
-  const filtered = data.entries.filter(e =>
-    showFilter === 'all' ? true : showFilter === 'saved' ? e.saved : !e.saved
-  )
+  const q = searchQuery.trim().toLowerCase()
+  const filtered = data.entries.filter(e => {
+    // saved/pending filter
+    if (showFilter === 'saved' && !e.saved) return false
+    if (showFilter === 'pending' && e.saved) return false
+    // tier filter
+    if (tierFilter !== 'all' && e.client.subscription_tier !== tierFilter) return false
+    // search by client name / panel_date / mode
+    if (q) {
+      const hay = `${e.client.name} ${e.panel_date} ${e.client_mode ?? ''} ${e.client.unique_code ?? ''}`.toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    return true
+  })
 
   function fmtDate(s: string | null) {
     if (!s) return '—'
@@ -154,25 +167,66 @@ export default function AiAuditPage() {
           </div>
         </div>
 
-        {/* 篩選 */}
-        <div className="flex gap-2 mb-4">
-          {([
-            { key: 'all', label: `全部 (${data.counts.total})` },
-            { key: 'saved', label: `已儲存 (${data.counts.saved})` },
-            { key: 'pending', label: `未儲存 (${data.counts.pending})` },
-          ] as const).map(f => (
-            <button
-              key={f.key}
-              onClick={() => setShowFilter(f.key)}
-              className={`text-sm px-3 py-1.5 rounded ${
-                showFilter === f.key
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+        {/* 搜尋 + 篩選 */}
+        <div className="bg-white border border-gray-200 rounded-xl p-3 mb-4 space-y-2">
+          {/* 搜尋框 */}
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="🔍 搜尋客戶名 / panel 日期 / mode / unique code..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+          {/* 篩選 row */}
+          <div className="flex flex-wrap gap-2 items-center text-xs">
+            <span className="text-gray-500">狀態：</span>
+            {([
+              { key: 'all', label: `全部 (${data.counts.total})` },
+              { key: 'saved', label: `已儲存 (${data.counts.saved})` },
+              { key: 'pending', label: `未儲存 (${data.counts.pending})` },
+            ] as const).map(f => (
+              <button
+                key={f.key}
+                onClick={() => setShowFilter(f.key)}
+                className={`px-2.5 py-1 rounded ${
+                  showFilter === f.key
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+
+            <span className="text-gray-500 ml-2">Tier：</span>
+            {(['all', 'protocol', 'concierge', 'coached', 'self_managed', 'free'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setTierFilter(t)}
+                className={`px-2.5 py-1 rounded ${
+                  tierFilter === t
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+
+            {(searchQuery || tierFilter !== 'all' || showFilter !== 'all') && (
+              <button
+                onClick={() => { setSearchQuery(''); setTierFilter('all'); setShowFilter('all') }}
+                className="ml-auto px-2.5 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
+              >
+                清除全部
+              </button>
+            )}
+          </div>
+          {filtered.length !== data.entries.length && (
+            <div className="text-[11px] text-gray-500">
+              顯示 {filtered.length} / {data.entries.length} 筆
+            </div>
+          )}
         </div>
 
         {/* 列表 */}
