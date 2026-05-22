@@ -747,8 +747,8 @@ export default function ClientEditor() {
           </div>
         )}
 
-        {/* Tab Navigation */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 overflow-x-auto">
+        {/* Tab Navigation — sticky 跟著滾動 */}
+        <div className="sticky top-0 z-30 -mx-4 sm:mx-0 sm:rounded-xl bg-gray-100/95 backdrop-blur-sm shadow-sm px-2 sm:px-1 py-1 mb-6 flex gap-1 overflow-x-auto">
           {tabs.map(tab => (
             <button
               key={tab.key}

@@ -1373,48 +1373,68 @@ export default function ClientDashboard() {
           today={today}
         />
 
-        {/* 自主管理 / 免費學員的智能營養計算（已完成 onboarding 才顯示，避免跟頂部重複） */}
-        {!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target && (
-          <SelfManagedNutrition
-            clientId={c.id}
-            uniqueCode={c.unique_code}
-            goalType={c.goal_type || null}
-            activityProfile={c.activity_profile || null}
-            gender={c.gender || null}
-            caloriesTarget={c.calories_target}
-            proteinTarget={c.protein_target}
-            carbsTarget={c.carbs_target}
-            fatTarget={c.fat_target}
-            targetWeight={c.target_weight || null}
-            targetDate={c.target_date || null}
-            isTrainingDay={isTrainingDayResolved}
-            latestWeight={latestBodyData?.weight || null}
-            latestBodyFat={latestBodyData?.body_fat || null}
-            clientHeight={c.height || null}
-            geneticCorrections={geneCorrections}
-            onMutate={mutate}
-          />
-        )}
+        {/* ============================================================
+            📊 進階分析（預設折疊：智能營養 / 每週分析 / AI 洞察）
+            ============================================================ */}
+        {(() => {
+          const hasAdvanced =
+            (!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target) ||
+            (!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && c.body_composition_enabled) ||
+            (!isCompetition && isFree && c.body_composition_enabled)
+          if (!hasAdvanced) return null
 
-        {/* 一般學員（非自主管理、非免費）的每週智能分析 */}
-        {!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && c.body_composition_enabled && (
-          <WeeklyInsight clientId={c.id} code={c.unique_code} onMutate={mutate} />
-        )}
-
-        {/* 免費學員的 AI 洞察預告 — 顯示真實分析但鎖定詳細建議 */}
-        {!isCompetition && isFree && c.body_composition_enabled && (
-          <FreeInsightTeaser
-            nutritionLogs={(clientData.nutritionLogs || []) as any}
-            bodyData={(clientData.bodyData || []) as any}
-            targets={{
-              calories: c.calories_target,
-              protein: c.protein_target,
-              carbs: c.carbs_target,
-              fat: c.fat_target,
-              water: c.water_target,
-            }}
-          />
-        )}
+          return (
+            <details className="group bg-white border border-gray-200 rounded-2xl mb-3 overflow-hidden">
+              <summary className="cursor-pointer px-4 py-3 list-none flex items-center justify-between hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📊</span>
+                  <span className="text-sm font-medium text-gray-900">進階分析</span>
+                  <span className="text-[10px] text-gray-400">智能營養 / 每週洞察</span>
+                </div>
+                <ChevronDown size={16} className="text-gray-400 group-open:rotate-180 transition-transform" />
+              </summary>
+              <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
+                {!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target && (
+                  <SelfManagedNutrition
+                    clientId={c.id}
+                    uniqueCode={c.unique_code}
+                    goalType={c.goal_type || null}
+                    activityProfile={c.activity_profile || null}
+                    gender={c.gender || null}
+                    caloriesTarget={c.calories_target}
+                    proteinTarget={c.protein_target}
+                    carbsTarget={c.carbs_target}
+                    fatTarget={c.fat_target}
+                    targetWeight={c.target_weight || null}
+                    targetDate={c.target_date || null}
+                    isTrainingDay={isTrainingDayResolved}
+                    latestWeight={latestBodyData?.weight || null}
+                    latestBodyFat={latestBodyData?.body_fat || null}
+                    clientHeight={c.height || null}
+                    geneticCorrections={geneCorrections}
+                    onMutate={mutate}
+                  />
+                )}
+                {!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && c.body_composition_enabled && (
+                  <WeeklyInsight clientId={c.id} code={c.unique_code} onMutate={mutate} />
+                )}
+                {!isCompetition && isFree && c.body_composition_enabled && (
+                  <FreeInsightTeaser
+                    nutritionLogs={(clientData.nutritionLogs || []) as any}
+                    bodyData={(clientData.bodyData || []) as any}
+                    targets={{
+                      calories: c.calories_target,
+                      protein: c.protein_target,
+                      carbs: c.carbs_target,
+                      fat: c.fat_target,
+                      water: c.water_target,
+                    }}
+                  />
+                )}
+              </div>
+            </details>
+          )
+        })()}
 
         {/* WellnessTrend 已移至 SeeTabSection 的分析 tab */}
 
@@ -1430,44 +1450,59 @@ export default function ClientDashboard() {
           return <ReferralCard clientId={c.unique_code} />
         })()}
 
-        {/* 基因檔案卡片 */}
-        {(isFree || isSelfManaged) ? (
-          <UpgradeGate
-            feature="基因檔案"
-            description="升級教練方案後可填寫基因檢測結果，獲得個人化營養建議"
-            tier="coached"
-          />
-        ) : (
-          <GeneProfileCard
-            mthfr={c.gene_mthfr as string | null}
-            apoe={c.gene_apoe as string | null}
-            serotonin={c.gene_depression_risk as string | null}
-            notes={c.gene_notes as string | null}
-            geneticCorrections={geneCorrections}
-            clientId={c.unique_code}
-            onMutate={mutate}
-          />
-        )}
+        {/* ============================================================
+            ⚙️ 設定 / 工具（預設折疊：基因檔案 / 目標設定）
+            ============================================================ */}
+        <details className="group bg-white border border-gray-200 rounded-2xl mb-3 overflow-hidden">
+          <summary className="cursor-pointer px-4 py-3 list-none flex items-center justify-between hover:bg-gray-50 transition-colors">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚙️</span>
+              <span className="text-sm font-medium text-gray-900">設定 / 工具</span>
+              <span className="text-[10px] text-gray-400">基因檔案 · 目標設定</span>
+            </div>
+            <ChevronDown size={16} className="text-gray-400 group-open:rotate-180 transition-transform" />
+          </summary>
+          <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
+            {/* 基因檔案卡片 */}
+            {(isFree || isSelfManaged) ? (
+              <UpgradeGate
+                feature="基因檔案"
+                description="升級教練方案後可填寫基因檢測結果，獲得個人化營養建議"
+                tier="coached"
+              />
+            ) : (
+              <GeneProfileCard
+                mthfr={c.gene_mthfr as string | null}
+                apoe={c.gene_apoe as string | null}
+                serotonin={c.gene_depression_risk as string | null}
+                notes={c.gene_notes as string | null}
+                geneticCorrections={geneCorrections}
+                clientId={c.unique_code}
+                onMutate={mutate}
+              />
+            )}
 
-        {/* 目標設定（非備賽模式才在這裡顯示，備賽模式已在 GoalDrivenStatus 旁邊） */}
-        {!isCompetition && (
-          <div className="mb-3" data-section="goal-settings">
-            <GoalSettings
-              clientId={c.id}
-              uniqueCode={c.unique_code}
-              currentGoalType={c.goal_type}
-              currentTargetWeight={c.target_weight}
-              currentTargetBodyFat={(c.target_body_fat as number) ?? null}
-              currentTargetDate={c.target_date}
-              competitionEnabled={isCompetitionMode(c.client_mode)}
-              competitionDate={c.competition_date || null}
-              prepPhase={c.prep_phase || null}
-              latestWeight={latestBodyData?.weight || null}
-              latestBodyFat={latestBodyData?.body_fat || null}
-              onMutate={mutate}
-            />
+            {/* 目標設定（非備賽模式才在這裡顯示，備賽模式已在 GoalDrivenStatus 旁邊） */}
+            {!isCompetition && (
+              <div data-section="goal-settings">
+                <GoalSettings
+                  clientId={c.id}
+                  uniqueCode={c.unique_code}
+                  currentGoalType={c.goal_type}
+                  currentTargetWeight={c.target_weight}
+                  currentTargetBodyFat={(c.target_body_fat as number) ?? null}
+                  currentTargetDate={c.target_date}
+                  competitionEnabled={isCompetitionMode(c.client_mode)}
+                  competitionDate={c.competition_date || null}
+                  prepPhase={c.prep_phase || null}
+                  latestWeight={latestBodyData?.weight || null}
+                  latestBodyFat={latestBodyData?.body_fat || null}
+                  onMutate={mutate}
+                />
+              </div>
+            )}
           </div>
-        )}
+        </details>
 
         {c.lab_enabled && (
           <div id="section-lab" className="scroll-mt-4 mb-4">
