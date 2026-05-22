@@ -37,6 +37,7 @@ const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManag
 const NutritionStrategyCard = dynamic(() => import('@/components/client/NutritionStrategyCard'), { ssr: false })
 import PwaPrompt from '@/components/client/PwaPrompt'
 import ClientHeader from '@/components/client/ClientHeader'
+import WelcomeBanner from '@/components/client/WelcomeBanner'
 import HealthScoreBanner from '@/components/client/HealthScoreBanner'
 import BehaviorInsights from '@/components/client/BehaviorInsights'
 import ProgressJourney from '@/components/client/ProgressJourney'
@@ -764,6 +765,9 @@ export default function ClientDashboard() {
             </div>
           </div>
         )}
+
+        {/* 首次來訪導覽 banner（dismissible）*/}
+        {isToday && <WelcomeBanner clientId={clientId as string} />}
 
         {/* 標題區 */}
         <div className="bg-white rounded-3xl shadow-sm p-5 mb-6">

@@ -14,8 +14,49 @@
 import { createServiceSupabase } from './supabase'
 import { analyzeLabs, type LabResultRow } from './lab-trend-analyzer'
 import { generatePanelNoteDraft } from './lab-draft-engine'
+import { pushMessage } from './line'
 
 const supabase = createServiceSupabase()
+
+/**
+ * 推送 LINE 通知給教練（學員上傳完血檢 + AI 草稿生成完）
+ * 環境變數 `COACH_LINE_USER_ID` 沒設就跳過、不報錯
+ */
+async function notifyCoachOnLine(opts: {
+  clientName: string
+  clientUniqueCode: string | null
+  panelDate: string
+  triggerLabCount: number
+  findingsBriefTop: { testName: string; severity: string }[]
+}): Promise<void> {
+  const coachLineId = process.env.COACH_LINE_USER_ID
+  if (!coachLineId) return  // 未設定就跳過
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+  const criticalNames = opts.findingsBriefTop
+    .filter(f => f.severity === 'critical')
+    .slice(0, 3)
+    .map(f => f.testName)
+    .join('、')
+  const summary = criticalNames
+    ? `⚠️ Critical: ${criticalNames}`
+    : '✅ 無 critical / attention 警示'
+
+  const text = [
+    `🩸 ${opts.clientName} 上傳了 ${opts.triggerLabCount} 筆血檢`,
+    `日期：${opts.panelDate}`,
+    summary,
+    '',
+    'AI 草稿已自動生成，點下方連結審核 → 儲存：',
+    `${siteUrl}/admin/ai-audit`,
+  ].join('\n')
+
+  try {
+    await pushMessage(coachLineId, [{ type: 'text', text }])
+  } catch (err) {
+    console.error('[auto-draft] LINE push failed:', err)
+  }
+}
 
 type ClientRow = {
   id: string
@@ -127,6 +168,21 @@ export async function runAutoDraft(job: AutoDraftJob): Promise<void> {
       .is('coach_saved_at', null)
       .is('superseded_by_id', null)
       .neq('id', inserted.id)
+
+    // LINE 通知教練（學員 unique_code 之後另外查）
+    const { data: clientCode } = await supabase
+      .from('clients')
+      .select('unique_code')
+      .eq('id', client.id)
+      .maybeSingle<{ unique_code: string | null }>()
+
+    await notifyCoachOnLine({
+      clientName: client.name ?? '(未知學員)',
+      clientUniqueCode: clientCode?.unique_code ?? null,
+      panelDate: job.panelDate,
+      triggerLabCount: job.triggerLabCount,
+      findingsBriefTop: findingsBrief.slice(0, 5),
+    })
   } catch (err) {
     console.error('[auto-draft] exception:', err)
   }
