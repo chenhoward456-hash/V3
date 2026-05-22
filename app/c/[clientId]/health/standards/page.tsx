@@ -117,12 +117,39 @@ export default function StandardsComparisonPage() {
             <strong>為什麼會有「兩套標準」？</strong>
             <br />
             一般醫院檢驗報告上的「正常範圍」是基於人群統計的<strong>疾病門檻</strong> — 過了線才算病。
-            但「沒病」≠「最佳健康狀態」。Howard Protocol 採用的「最佳化追蹤範圍」參考國際長壽研究（Peter Attia, Dr. Mark Hyman 等）以
-            <strong>長期健康、預防、表現優化</strong>為導向。
+            但「沒病」≠「最佳健康狀態」。Howard Protocol 採用的「最佳化追蹤範圍」參考<strong>長壽研究派立場</strong>
+            （Peter Attia「Outlive」、IFM 功能醫學等）以長期健康、預防、表現優化為導向。
             <br />
             <br />
             <strong>連續追蹤趨勢 &gt; 單一數字</strong>。同一個指標，從 X 變化到 Y 比「目前在多少」更值得關注。
           </p>
+        </div>
+
+        {/* 標準來源說明（更客觀的雙軌呈現）*/}
+        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 text-xs leading-relaxed">
+          <div className="font-semibold text-gray-900 mb-2">📚 標準來源說明</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <div className="font-medium text-gray-700 mb-1">「醫院正常」（警示閾值）</div>
+              <ul className="text-gray-600 list-disc list-inside space-y-0.5">
+                <li>hsCRP：AHA/CDC 工作組</li>
+                <li>HbA1c / 空腹血糖：ADA</li>
+                <li>維生素 D：Endocrine Society</li>
+                <li>ApoB / LDL：Canadian CCS / AHA 2021</li>
+                <li>TSH / 甲狀腺：Endocrine Society</li>
+              </ul>
+            </div>
+            <div>
+              <div className="font-medium text-emerald-700 mb-1">「Howard 最佳」（長壽派目標）</div>
+              <ul className="text-gray-600 list-disc list-inside space-y-0.5">
+                <li>主要參考：Peter Attia「Outlive」(2023)</li>
+                <li>IFM / 功能醫學共識（hsCRP, Vit D）</li>
+                <li>方向：「沒病門檻 → 最佳化目標」</li>
+                <li><strong>非醫學共識診斷標準</strong></li>
+                <li>適合搭配教練 + 整合醫學醫師執行</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         {CATEGORIES.map(cat => {

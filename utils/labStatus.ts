@@ -88,20 +88,27 @@ export const LAB_THRESHOLDS = {
 // ── 最佳化範圍（在 normal 範圍內的理想目標）──
 // 用於辨別「正常但可優化」vs「已達最佳」
 // 範圍型：{ min, max }，越低越好型：上限數值，越高越好型：下限數值
+//
+// ⚠️ 重要說明（請對學員清楚溝通）：
+//   • LAB_THRESHOLDS（normal / attention 警示閾值）= 主流共識指引
+//     參考來源：AHA/CDC（hsCRP）、Endocrine Society（Vit D）、IDF/ADA（HbA1c）等
+//   • LAB_OPTIMAL_RANGES（最佳化目標）= **長壽研究派立場**（非醫學共識）
+//     主要參考：Peter Attia「Outlive」(2023)、IFM/功能醫學 + 部分隨機對照試驗
+//     這些是「個人化健康優化目標」，**不是診斷標準**
 export const LAB_OPTIMAL_RANGES: Record<string, number | { min: number; max: number }> = {
-  // 代謝 / 血糖（追求極致控制）
-  'HOMA-IR': 0.8,                    // <0.8 = 胰島素敏感度頂尖
-  '空腹胰島素': 2.5,                  // <2.5 = 胰島素效率極高
-  '空腹血糖': 80,                     // <80 = 血糖調節頂尖
-  'HbA1c': 5.0,                      // <5.0 = 長期血糖控制頂尖
-  '尿酸': 5.0,                        // <5.0 = 代謝效率極佳
+  // ── 代謝 / 血糖（長壽派激進目標）──
+  'HOMA-IR': 0.8,                    // <0.8（共識最佳 <1.5; Attia 派 <1.0）
+  '空腹胰島素': 2.5,                  // Attia「Outlive」立場；共識最佳 <5
+  '空腹血糖': 80,                     // 共識 ADA 正常 <100；長壽派 <80
+  'HbA1c': 5.0,                      // <5.0（ADA 糖尿病前期 5.7+；長壽派目標 <5.0）
+  '尿酸': 5.0,
   '尿酸_female': 4.0,
 
-  // 血脂（心血管長壽目標）
-  '三酸甘油酯': 60,                   // <60 = 脂質代謝頂尖
-  'ApoB': 50,                        // <50 = 心血管風險極低（Peter Attia 推薦）
-  'LDL-C': 60,                       // <60 = LDL 頂尖
-  'HDL-C': 65,                       // >65 = HDL 理想（越高越好）
+  // ── 血脂（長壽研究派 / Peter Attia）──
+  '三酸甘油酯': 60,                   // <60 Attia 立場；AHA 正常 <150
+  'ApoB': 50,                        // Peter Attia「Outlive」(2023) longevity target；AHA / Canadian CCS 警示 ~80-100
+  'LDL-C': 60,                       // <60 Attia；AHA 正常 <100
+  'HDL-C': 65,                       // >65 越高越好（共識 >40 男 / >50 女）
   'HDL-C_female': 75,
   '總膽固醇': 170,
 
@@ -124,13 +131,13 @@ export const LAB_OPTIMAL_RANGES: Record<string, number | { min: number; max: num
   '鐵蛋白': { min: 70, max: 120 },
   '鐵蛋白_female': { min: 40, max: 120 },
 
-  // 發炎
-  'CRP': 0.5,                         // <0.5 = 發炎極低
-  'hs-CRP': 0.5,
-  '同半胱胺酸': 6.0,                   // <6 = 甲基化效率極佳
+  // ── 發炎（AHA/CDC 共識: <1 低風險 / 1-3 中 / >3 高；長壽派 <0.5）──
+  'CRP': 0.5,
+  'hs-CRP': 0.5,                      // <0.5 Attia 長壽派；AHA/CDC 共識「低風險」<1
+  '同半胱胺酸': 6.0,                   // <6 較激進；功能醫學共識 6-9（Kresser/Lamkin）
 
-  // 維生素
-  '維生素D': { min: 60, max: 80 },     // 功能醫學最佳區間
+  // ── 維生素（Endocrine Society + 功能醫學派）──
+  '維生素D': { min: 60, max: 80 },     // Endocrine Society 偏好 40-60；長壽派 50-80
   '維生素B12': { min: 500, max: 800 },
   '葉酸': { min: 10, max: 18 },
 
