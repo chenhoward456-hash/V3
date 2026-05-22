@@ -134,22 +134,50 @@ export async function askClaude(
   messages: ChatMessage[],
   clientContext?: string,
   clientMode?: string | null,
-  subscriptionTier?: string | null
+  subscriptionTier?: string | null,
+  cacheableClientSnapshot?: string  // 伺服器自動生成的 client snapshot（會用 prompt caching）
 ): Promise<string> {
   const trimmedMessages = trimMessagesToFit(messages, 6000)
 
   const model = process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001'
 
-  // Always use hardcoded SYSTEM_PROMPT as the base to prevent prompt injection.
-  // Client-provided context is appended as supplementary data only.
-  // mode + tier 注入 — 從伺服器端控制，不從前端
+  // Build system prompt:
+  // - SYSTEM_PROMPT + mode/tier philosophy = stable, cacheable
+  // - cacheableClientSnapshot = stable for a single session, also cacheable
+  // - clientContext (legacy) = appended last，不快取
   const modePhilosophy = modePhilosophyFor(clientMode, subscriptionTier)
   const baseSystem = modePhilosophy
     ? `${SYSTEM_PROMPT}\n\n${modePhilosophy}`
     : SYSTEM_PROMPT
-  const system = clientContext
-    ? `${baseSystem}\n\n---\n\n<client_data>\n${clientContext}\n</client_data>`
-    : baseSystem
+
+  // 用 array system 來支援 cache_control breakpoints（Anthropic prompt caching）
+  // ref: https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+  type SystemBlock = { type: 'text'; text: string; cache_control?: { type: 'ephemeral' } }
+  const systemBlocks: SystemBlock[] = []
+
+  // Block 1: base system + mode/tier — 大部分對話一樣，可快取
+  systemBlocks.push({
+    type: 'text',
+    text: baseSystem,
+    cache_control: { type: 'ephemeral' },
+  })
+
+  // Block 2: server-built client snapshot — 同一 session 內穩定，可快取
+  if (cacheableClientSnapshot) {
+    systemBlocks.push({
+      type: 'text',
+      text: `<client_snapshot>\n${cacheableClientSnapshot}\n</client_snapshot>`,
+      cache_control: { type: 'ephemeral' },
+    })
+  }
+
+  // Block 3: 前端傳的 clientContext — legacy 路徑，不快取（每次可能不同）
+  if (clientContext) {
+    systemBlocks.push({
+      type: 'text',
+      text: `<client_data>\n${clientContext}\n</client_data>`,
+    })
+  }
 
   // Convert ChatMessage[] to Anthropic API format (support images)
   const apiMessages = trimmedMessages.map((msg) => {
@@ -176,7 +204,7 @@ export async function askClaude(
   const response = await getClient().messages.create({
     model,
     max_tokens: 1024,
-    system,
+    system: systemBlocks,
     messages: apiMessages,
   })
 

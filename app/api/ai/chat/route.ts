@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { askClaude, ChatMessage } from '@/lib/claude'
+import { buildClientContextSnapshot } from '@/lib/client-context'
 import { rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
@@ -117,6 +118,13 @@ export async function POST(request: NextRequest) {
     // 限制對話長度避免 token 爆炸
     const trimmedMessages = messages.slice(-20)
 
+    // 伺服器端建立 client snapshot（最新血檢摘要 / 教練筆記 / 補品 / 體組成 / wellness）
+    // 這個 block 會用 prompt caching，重複對話只算 10% input cost
+    const cacheableSnapshot = await buildClientContextSnapshot(client.id).catch(err => {
+      console.warn('[ai/chat] snapshot build failed, fallback to legacy context:', err)
+      return ''
+    })
+
     let reply: string | null = null
     let lastErr: unknown = null
     const MAX_RETRIES = 5
@@ -128,6 +136,7 @@ export async function POST(request: NextRequest) {
           clientContext,
           client.client_mode as string | null | undefined,
           client.subscription_tier as string | null | undefined,
+          cacheableSnapshot || undefined,
         )
         break
       } catch (e: unknown) {
