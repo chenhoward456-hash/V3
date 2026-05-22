@@ -790,8 +790,158 @@ export default function HealthTimelinePage() {
           </div>
         )}
 
+        {/* A. 下次抽血規劃 */}
+        {client?.next_checkup_date && labs.length > 0 && (() => {
+          const today = new Date(); today.setHours(0,0,0,0)
+          const nextDate = new Date(client.next_checkup_date); nextDate.setHours(0,0,0,0)
+          const days = Math.floor((nextDate.getTime() - today.getTime()) / (1000*60*60*24))
+          if (days < -7) return null  // 太久以前不顯示
+
+          // 從 findings 拉 critical / attention 項目（必驗）
+          const mustRecheck = findingsData
+            ? findingsData.findings.filter(f => f.severity === 'critical' || f.severity === 'attention').slice(0, 8)
+            : []
+
+          // 學員 panel 裡「過去 1 年沒驗的常見指標」
+          const recentTestNames = new Set(labs.filter((r: LabRow) => {
+            const d = new Date(r.date); d.setHours(0,0,0,0)
+            return (today.getTime() - d.getTime()) / (1000*60*60*24) <= 365
+          }).map((r: LabRow) => r.test_name))
+          const recommendCore = ['ApoB', 'Lp(a)', 'hs-CRP', '同半胱胺酸', '空腹胰島素', 'HbA1c', '維生素D', '睪固酮', '游離睪固酮', '雌二醇', 'SHBG', 'TSH', 'Free T4', '鐵蛋白', 'ALT']
+          const suggestNew = recommendCore.filter(t => !recentTestNames.has(t))
+
+          return (
+            <section className="mt-10 bg-white border border-gray-200 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  🩸 下次抽血規劃（{client.next_checkup_date}）
+                </h3>
+                <span className="text-[11px] text-gray-500">
+                  {days > 0 ? `倒數 ${days} 天` : days === 0 ? '今天' : `已過 ${Math.abs(days)} 天`}
+                </span>
+              </div>
+
+              {mustRecheck.length > 0 && (
+                <div className="mb-3">
+                  <div className="text-[11px] font-medium text-rose-700 mb-1">⚠️ 必須複驗（前次有警示 / 注意）</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {mustRecheck.map(f => (
+                      <span
+                        key={f.testName}
+                        className={`text-[11px] px-2 py-0.5 rounded ${
+                          f.severity === 'critical'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}
+                      >
+                        {f.testName}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {suggestNew.length > 0 && (
+                <div className="mb-3">
+                  <div className="text-[11px] font-medium text-indigo-700 mb-1">💡 建議加驗（近 1 年未驗的核心指標）</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {suggestNew.slice(0, 12).map(t => (
+                      <span key={t} className="text-[11px] px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[11px] text-gray-500 leading-relaxed pt-3 border-t border-gray-100">
+                抽血前空腹 8 小時、前一天降低訓練量、選上午抽。抽完拿到報告就到「📥 上傳血檢」自動生成觀察筆記。
+              </p>
+            </section>
+          )
+        })()}
+
+        {/* B. 快速導航 */}
+        <section className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Link
+            href={`/c/${clientId}/health/upload`}
+            className="bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
+          >
+            <div className="text-2xl mb-1">📥</div>
+            <div className="text-sm font-medium text-gray-900">上傳血檢</div>
+            <div className="text-[10px] text-gray-500 mt-0.5">手打 / CSV / 照片</div>
+          </Link>
+          <Link
+            href={`/c/${clientId}/health/standards`}
+            className="bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
+          >
+            <div className="text-2xl mb-1">📏</div>
+            <div className="text-sm font-medium text-gray-900">標準對照</div>
+            <div className="text-[10px] text-gray-500 mt-0.5">醫院 vs Howard 最佳</div>
+          </Link>
+          <Link
+            href={`/c/${clientId}#section-supplements`}
+            className="bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
+          >
+            <div className="text-2xl mb-1">💊</div>
+            <div className="text-sm font-medium text-gray-900">補品 protocol</div>
+            <div className="text-[10px] text-gray-500 mt-0.5">目前在吃 + 歷史版本</div>
+          </Link>
+          <Link
+            href={`/c/${clientId}`}
+            className="bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
+          >
+            <div className="text-2xl mb-1">🏠</div>
+            <div className="text-sm font-medium text-gray-900">回主頁</div>
+            <div className="text-[10px] text-gray-500 mt-0.5">每日打卡 + 訓練</div>
+          </Link>
+        </section>
+
+        {/* C. 常見問題 FAQ */}
+        <section className="mt-6 bg-white border border-gray-200 rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">常見問題</h3>
+          <div className="space-y-2">
+            {[
+              {
+                q: '為什麼 ApoB 比 LDL-C 更重要？',
+                a: 'LDL-C 測的是「壞膽固醇的總含量」，但 ApoB 測的是「致動脈粥狀硬化顆粒的數量」。心血管事件是由「顆粒撞擊血管壁」造成，不是膽固醇含量本身。Peter Attia 的長壽研究指出 ApoB 是更精準的心血管風險預測指標，所以追蹤 ApoB 比 LDL-C 更有意義。',
+              },
+              {
+                q: '為什麼 Howard 標準 ApoB <50 才是最佳？',
+                a: '一般醫院 <130 算正常、<100 算理想，但這只是「沒病」門檻。長壽研究觀察到 ApoB <50 的人，30 年後心血管事件率比 <100 的人再低 30-50%。對長壽優化目標來說，<50 才是「無風險」位置。',
+              },
+              {
+                q: '空腹胰島素為什麼比血糖更早顯示問題？',
+                a: '胰島素阻抗的進程是：胰島素分泌增加 → 維持血糖正常（你看不到問題）→ 撐 10-20 年後 → 胰島素也撐不住 → 血糖才升高 → 醫院才看得到。所以空腹血糖 / HbA1c 還正常但空腹胰島素已升高，是代謝病最早的警訊。Howard 標準 <2.5 µIU/mL。',
+              },
+              {
+                q: '同半胱胺酸是什麼？為什麼要追蹤？',
+                a: '同半胱胺酸（Homocysteine）是甲基化代謝的中間產物。過高 (>10) 與心血管疾病、失智症、骨質疏鬆相關。它的升高通常代表 B12 / 葉酸 / B6 缺乏，或 MTHFR 基因變異。降它最有效：甲基化形式 B12 + 葉酸補充。Howard 標準 <6。',
+              },
+              {
+                q: '為什麼追蹤趨勢比單一數字重要？',
+                a: '一年一次的健檢只給你「快照」。但你的 ApoB 從 80 → 60 跟 ApoB 從 40 → 60 一樣都是 60，意義完全不同（前者進步，後者退步）。連續追蹤可以看「方向」和「速度」，這比絕對數值更能預測未來健康狀態。',
+              },
+              {
+                q: '我可以自己抽血嗎？',
+                a: '台灣法規下，血液檢驗需醫師處方。你可以到聯安、美兆、汎美等健檢中心做完整 panel，或請家醫科 / 整合醫學醫師開立檢驗單。拿到報告後上傳到系統就能自動生成觀察筆記。',
+              },
+            ].map((item, i) => (
+              <details key={i} className="group border border-gray-100 rounded-lg">
+                <summary className="cursor-pointer px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 rounded-lg list-none flex items-center justify-between">
+                  <span className="font-medium">{item.q}</span>
+                  <span className="text-gray-400 group-open:rotate-180 transition-transform">▾</span>
+                </summary>
+                <p className="px-3 pb-3 pt-1 text-xs text-gray-700 leading-relaxed">
+                  {item.a}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+
         {/* 教育性說明 */}
-        <div className="mt-10 bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-sm font-semibold text-blue-900 mb-2">
               為什麼 Howard 標準和你醫院的「正常範圍」不一樣？
