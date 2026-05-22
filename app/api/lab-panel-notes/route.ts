@@ -6,6 +6,7 @@ import {
   createSuccessResponse,
   sanitizeTextField,
 } from '@/lib/auth-middleware'
+import { pushMessage } from '@/lib/line'
 
 const supabase = createServiceSupabase()
 
@@ -138,10 +139,84 @@ export async function PUT(request: NextRequest) {
           })
       })
 
+    // 學員 LINE 通知（fire-and-forget，不阻擋儲存 response）
+    notifyLearnerOfPanelNote({
+      panelNoteId: data.id,
+      clientInternalId: internalId,
+      panelDate,
+      summary: sanitizedSummary || '',
+      priorities: sanitizedPriorities || '',
+    }).catch(err => console.error('[lab-panel-notes PUT] notify error:', err))
+
     return createSuccessResponse(data)
   } catch (err) {
     console.error('[lab-panel-notes PUT] exception:', err)
     return createErrorResponse('伺服器錯誤', 500)
+  }
+}
+
+/**
+ * 學員 LINE 通知：教練儲存 panel note → 推學員 LINE
+ * 防呆：
+ *   - summary + priorities 都空 → 跳過
+ *   - 學員沒綁 LINE → 跳過
+ *   - 同一筆 5 分鐘內已通知過 → 跳過（debounce 連續微調）
+ */
+async function notifyLearnerOfPanelNote(opts: {
+  panelNoteId: string
+  clientInternalId: string
+  panelDate: string
+  summary: string
+  priorities: string
+}): Promise<void> {
+  if (!opts.summary.trim() && !opts.priorities.trim()) {
+    return  // 都空，沒值得通知的東西
+  }
+
+  // 撈 panel note 的 learner_notified_at + 學員資訊
+  const [{ data: note }, { data: client }] = await Promise.all([
+    supabase
+      .from('lab_panel_notes')
+      .select('learner_notified_at')
+      .eq('id', opts.panelNoteId)
+      .maybeSingle<{ learner_notified_at: string | null }>(),
+    supabase
+      .from('clients')
+      .select('name, unique_code, line_user_id')
+      .eq('id', opts.clientInternalId)
+      .maybeSingle<{ name: string; unique_code: string; line_user_id: string | null }>(),
+  ])
+
+  if (!client?.line_user_id) return  // 沒綁 LINE
+
+  // Debounce: 5 分鐘內已通知過就跳過
+  if (note?.learner_notified_at) {
+    const last = new Date(note.learner_notified_at).getTime()
+    if (Date.now() - last < 5 * 60 * 1000) return
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+  const summaryPreview = opts.summary.trim().slice(0, 80).replace(/\n/g, ' ')
+
+  const text = [
+    `💬 Howard 寫了新的觀察筆記`,
+    `📅 血檢日期：${opts.panelDate}`,
+    '',
+    summaryPreview ? `${summaryPreview}${opts.summary.length > 80 ? '...' : ''}` : '',
+    '',
+    '點下方看完整筆記：',
+    `${siteUrl}/c/${client.unique_code}/health/timeline`,
+  ].filter(l => l !== undefined).join('\n')
+
+  try {
+    await pushMessage(client.line_user_id, [{ type: 'text', text }])
+    // 標記已通知
+    await supabase
+      .from('lab_panel_notes')
+      .update({ learner_notified_at: new Date().toISOString() })
+      .eq('id', opts.panelNoteId)
+  } catch (err) {
+    console.error('[lab-panel-notes] LINE push failed:', err)
   }
 }
 
