@@ -64,6 +64,8 @@ interface AiChatDrawerProps {
   competitionDate?: string | null
   latestWeight?: number | null
   latestBodyFat?: number | null
+  // Coach mode（影響 quick prompts 內容）
+  isCoachMode?: boolean
   // Extended context
   nutritionLogs?: NutritionEntry[]
   wellnessLogs?: WellnessEntry[]
@@ -191,6 +193,7 @@ export default function AiChatDrawer({
   labResults,
   onFirstMessage,
   initialPrompt,
+  isCoachMode = false,
   healthModeEnabled,
   healthScore,
   supplementSuggestions,
@@ -857,6 +860,33 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
   }, [todayNutrition, proteinTarget, carbsTarget, fatTarget])
 
   const quickQuestions = useMemo(() => {
+    // === 教練模式：完全不同的 prompt 集合 ===
+    if (isCoachMode) {
+      const isComp = competitionEnabled
+      const coachPrompts: string[] = []
+
+      // 情境化（賽前 / 賽後）
+      if (isComp && competitionDate) {
+        const days = Math.floor((new Date(competitionDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        if (days > 0 && days <= 56) coachPrompts.push(`賽前還 ${days} 天，4 週還能調哪些指標？`)
+        else if (days < 0 && days > -84) coachPrompts.push(`賽後 ${Math.abs(days)} 天，reverse 計畫該怎麼設？`)
+      }
+
+      // 通用教練 prompts（針對 client context）
+      coachPrompts.push(
+        '上次到這次最關鍵的變化是什麼？',
+        '他補品 protocol 該怎麼調整？',
+        '下次抽血該加驗什麼？',
+        '接下來 4 週介入優先序？',
+        '有什麼紅旗我該注意？',
+        '幫我寫一段給他的鼓勵訊息',
+        '他這 mode + tier 配置 AI 草稿要強調哪幾點？',
+      )
+
+      return coachPrompts.slice(0, 8)
+    }
+
+    // === 學員模式（原本邏輯）===
     const eaten = todayNutrition
     const pLeft = proteinTarget ? Math.max(0, proteinTarget - (eaten?.protein_grams ?? 0)) : null
     const cLeft = carbsTarget ? Math.max(0, carbsTarget - (eaten?.carbs_grams ?? 0)) : null
@@ -890,7 +920,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
     // 去重後合併，動態排前面
     const all = [...dynamic, ...base.filter(q => !dynamic.includes(q))]
     return all.slice(0, 6)
-  }, [todayNutrition, proteinTarget, carbsTarget, isTrainingDay])
+  }, [isCoachMode, competitionEnabled, competitionDate, todayNutrition, proteinTarget, carbsTarget, isTrainingDay])
 
   if (!open) return null
 
@@ -1030,6 +1060,20 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
 
         {/* Input */}
         <div className="border-t border-gray-100 px-3 py-2.5 shrink-0">
+          {/* Coach quick prompts — 永遠顯示（不只是 empty state）*/}
+          {isCoachMode && messages.length > 0 && quickQuestions.length > 0 && (
+            <div className="mb-2 -mx-1 px-1 flex gap-1.5 overflow-x-auto pb-1">
+              {quickQuestions.map(q => (
+                <button
+                  key={q}
+                  onClick={() => { setInput(q); inputRef.current?.focus() }}
+                  className="text-[11px] bg-indigo-50 hover:bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full whitespace-nowrap border border-indigo-200 shrink-0"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
           {/* Image preview */}
           {pendingImagePreview && (
             <div className="relative inline-block mb-2">

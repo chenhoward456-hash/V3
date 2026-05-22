@@ -1832,6 +1832,7 @@ export default function ClientDashboard() {
           open={showAiChat}
           onClose={() => { setShowAiChat(false); setAiChatInitialPrompt(undefined) }}
           initialPrompt={aiChatInitialPrompt}
+          isCoachMode={isCoachMode}
           clientId={c.unique_code}
           clientName={c.name}
           gender={c.gender}
