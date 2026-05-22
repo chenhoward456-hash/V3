@@ -19,7 +19,7 @@ import DailyCheckIn from '@/components/client/DailyCheckIn'
 import DailyWellness from '@/components/client/DailyWellness'
 import BodyComposition from '@/components/client/BodyComposition'
 import StageWeightEstimator from '@/components/client/StageWeightEstimator'
-const LabResults = dynamic(() => import('@/components/client/LabResults'), { ssr: false })
+// LabResults inline removed in B integration — main page now shows compact summary card linking to /health/timeline
 const SupplementModal = dynamic(() => import('@/components/client/SupplementModal'), { ssr: false })
 import WellnessTrend from '@/components/client/WellnessTrend'
 const HealthReport = dynamic(() => import('@/components/client/HealthReport'), { ssr: false })
@@ -1470,32 +1470,79 @@ export default function ClientDashboard() {
         )}
 
         {c.lab_enabled && (
-          <div id="section-lab" className="scroll-mt-4"><LabResults
-            labResults={c.lab_results || []}
-            isCoachMode={isCoachMode}
-            clientId={clientId as string}
-            coachHeaders={coachHeaders}
-            onMutate={mutate}
-          /></div>
-        )}
+          <div id="section-lab" className="scroll-mt-4 mb-4">
+            {(() => {
+              const labs = c.lab_results || []
+              if (labs.length === 0) {
+                // 空狀態：直接導向上傳
+                return (
+                  <div className="bg-white border border-dashed border-gray-300 rounded-2xl p-6 text-center">
+                    <div className="text-sm text-gray-700 font-medium mb-1">🩸 還沒有血檢資料</div>
+                    <div className="text-xs text-gray-500 mb-4">上傳一份健檢報告就能開始追蹤</div>
+                    <Link
+                      href={`/c/${clientId}/health/upload`}
+                      className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded"
+                    >
+                      📥 上傳血檢
+                    </Link>
+                  </div>
+                )
+              }
+              // 計算最近一筆抽血日期 + 該日有幾筆指標
+              const latestDate = labs.reduce(
+                (max: string, r: { date: string }) => (r.date > max ? r.date : max),
+                labs[0].date as string,
+              )
+              const latestCount = labs.filter((r: { date: string }) => r.date === latestDate).length
+              // 該日異常 / 注意項數量
+              const latestRows = labs.filter((r: { date: string }) => r.date === latestDate)
+              const alertCount = latestRows.filter((r: { status?: string }) => r.status === 'alert').length
+              const attnCount = latestRows.filter((r: { status?: string }) => r.status === 'attention').length
 
-        {c.lab_enabled && (c.lab_results || []).length > 0 && (
-          <Link
-            href={`/c/${clientId}/health/timeline`}
-            className="block mb-4 bg-gradient-to-r from-emerald-50 to-emerald-100/60 border border-emerald-200 hover:border-emerald-300 rounded-2xl p-4 transition-colors"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold text-emerald-900">
-                  健康趨勢儀表板
-                </div>
-                <div className="text-xs text-emerald-700 mt-0.5">
-                  6 大類追蹤 · Howard 最佳化範圍 · 連續趨勢
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-emerald-700" />
-            </div>
-          </Link>
+              return (
+                <>
+                  <Link
+                    href={`/c/${clientId}/health/timeline`}
+                    className="block bg-gradient-to-r from-emerald-50 to-emerald-100/60 border border-emerald-200 hover:border-emerald-300 rounded-2xl p-4 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-semibold text-emerald-900">📊 健康趨勢儀表板</span>
+                          {(alertCount > 0 || attnCount > 0) && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-700">
+                              {alertCount > 0 ? `${alertCount} 警示` : `${attnCount} 注意`}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-emerald-800">
+                          最近抽血：{latestDate}（{latestCount} 項，共 {labs.length} 筆紀錄）
+                        </div>
+                        <div className="text-[11px] text-emerald-700 mt-0.5">
+                          6 大類連續追蹤 · Howard 最佳化範圍 · AI 觀察筆記
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-emerald-700 shrink-0" />
+                    </div>
+                  </Link>
+                  <div className="mt-2 flex items-center gap-4 text-[11px] px-2">
+                    <Link
+                      href={`/c/${clientId}/health/upload`}
+                      className="text-emerald-700 hover:text-emerald-900 underline"
+                    >
+                      📥 上傳更多血檢
+                    </Link>
+                    <Link
+                      href={`/c/${clientId}/health/standards`}
+                      className="text-emerald-700 hover:text-emerald-900 underline"
+                    >
+                      📏 看標準對照
+                    </Link>
+                  </div>
+                </>
+              )
+            })()}
+          </div>
         )}
 
         {/* 更多分析 — 預設收合以減少滑動長度 */}
@@ -1507,12 +1554,12 @@ export default function ClientDashboard() {
             <SectionErrorBoundary name="advanced-analysis">
               <button
                 onClick={() => setShowMoreAnalysis(prev => !prev)}
-                className="w-full flex items-center justify-center gap-2 py-3 mb-3 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-colors border border-gray-100"
+                className="w-full flex items-center justify-center gap-2 py-2.5 mb-3 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-colors border border-gray-100"
               >
-                <span className="text-sm font-medium text-gray-500">
-                  {showMoreAnalysis ? '收合進階分析' : '展開進階分析'}
+                <span className="text-xs text-gray-400">
+                  {showMoreAnalysis ? '收合' : '展開'} 過往分析報告（規則式建議 + AI 洞察 — 建議優先看上方儀表板）
                 </span>
-                <ChevronDown size={16} className={`text-gray-400 transition-transform ${showMoreAnalysis ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`text-gray-400 transition-transform ${showMoreAnalysis ? 'rotate-180' : ''}`} />
               </button>
               {showMoreAnalysis && (
                 <>
