@@ -563,8 +563,12 @@ export default function UploadLabsPage() {
         )}
 
         {rows.length === 0 && (
-          <div className="bg-white rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
-            從上方選一個方式新增資料 — 加進來後會顯示在這裡讓你確認
+          <div className="bg-white rounded-xl border border-dashed border-gray-300 p-8 text-center">
+            <div className="text-4xl mb-2 opacity-50">📋</div>
+            <div className="text-sm text-gray-600 font-medium mb-1">待確認清單是空的</div>
+            <div className="text-xs text-gray-400">
+              從上方選一個方式（{tab === 'manual' ? '手打' : tab === 'csv' ? 'CSV 上傳' : '照片 / PDF'}）新增資料
+            </div>
           </div>
         )}
 

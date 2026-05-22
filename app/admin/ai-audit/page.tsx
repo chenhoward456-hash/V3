@@ -178,8 +178,24 @@ export default function AiAuditPage() {
         {/* 列表 */}
         <div className="space-y-3">
           {filtered.length === 0 && (
-            <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center text-sm text-gray-500">
-              沒有符合條件的紀錄
+            <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
+              {data.counts.total === 0 ? (
+                <>
+                  <div className="text-5xl mb-3 opacity-60">✨</div>
+                  <div className="text-sm font-medium text-gray-700 mb-1">
+                    還沒有任何 AI 草稿紀錄
+                  </div>
+                  <div className="text-xs text-gray-500 mb-3 max-w-sm mx-auto leading-relaxed">
+                    去學員血檢 tab 按「✨ AI 草稿」，或讓學員上傳血檢自動觸發草稿，紀錄會出現在這裡。
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-3xl mb-2 opacity-60">🔍</div>
+                  <div className="text-sm text-gray-600">沒有符合條件的紀錄</div>
+                  <div className="text-xs text-gray-400 mt-1">切換上方篩選器看看</div>
+                </>
+              )}
             </div>
           )}
 

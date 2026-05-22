@@ -197,7 +197,10 @@ function LabCard({
           })()}
         </>
       ) : (
-        <div className="text-xs text-gray-400 py-6 text-center">尚無數據</div>
+        <div className="text-xs text-gray-400 py-6 text-center">
+          <div className="text-2xl mb-1 opacity-40">—</div>
+          尚無數據
+        </div>
       )}
     </div>
   )
@@ -765,16 +768,38 @@ export default function HealthTimelinePage() {
           )
         })}
 
-        {/* 沒有任何分類有資料時 */}
+        {/* 沒有任何分類有資料時 — 富有引導感的空狀態 */}
         {summary.total === 0 && (
-          <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
-            <p className="text-gray-500 mb-3">尚未輸入任何血檢資料</p>
-            <Link
-              href={`/c/${clientId}/health/upload`}
-              className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded"
-            >
-              📥 上傳血檢資料（手打 / CSV / PDF / 照片）
-            </Link>
+          <div className="bg-gradient-to-br from-emerald-50 via-white to-blue-50 border border-emerald-200 rounded-2xl p-8 text-center">
+            <div className="text-6xl mb-4">🩸</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              還沒有血檢資料
+            </h3>
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed max-w-md mx-auto">
+              上傳一份健檢報告（PDF / 照片 / CSV / 手打皆可），系統會自動萃取數值、分類、做趨勢分析，並生成第一份觀察筆記。
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-6">
+              <Link
+                href={`/c/${clientId}/health/upload`}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-5 py-2.5 rounded-lg"
+              >
+                📥 立刻上傳血檢
+              </Link>
+              <Link
+                href={`/c/${clientId}/welcome`}
+                className="text-sm text-gray-600 hover:text-emerald-700 underline px-3"
+              >
+                先看 2 分鐘導覽 →
+              </Link>
+            </div>
+            <div className="inline-block text-left bg-white/70 rounded-lg p-3 text-xs text-gray-600">
+              <div className="font-medium text-gray-700 mb-1">📋 沒抽過血怎麼辦？</div>
+              <ol className="list-decimal list-inside space-y-0.5">
+                <li>聯安、美兆、汎美等健檢中心做完整 panel</li>
+                <li>或請家醫科 / 整合醫學醫師開檢驗單</li>
+                <li>拿到報告拍照丟上來就行</li>
+              </ol>
+            </div>
           </div>
         )}
 
