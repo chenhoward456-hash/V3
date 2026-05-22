@@ -15,6 +15,7 @@ import {
   LAB_THRESHOLDS,
 } from '@/utils/labStatus'
 import { MODE_LABELS, MODE_EMOJIS, MODE_DESCRIPTIONS, type ClientMode } from '@/lib/client-mode'
+import { calculateHealthScore } from '@/lib/health-score-engine'
 
 interface LabPoint {
   date: string
@@ -294,6 +295,38 @@ export default function HealthTimelinePage() {
     ? client.gender
     : undefined
 
+  // 健康總分（用近 7 天 wellness / nutrition / training + lab）
+  const healthScore = useMemo(() => {
+    if (!data) return null
+    try {
+      const wellness = (data.wellness || []) as Array<{
+        sleep_quality: number | null; energy_level: number | null; mood: number | null
+        cognitive_clarity?: number | null; stress_level?: number | null
+        wearable_sleep_score?: number | null; device_recovery_score?: number | null
+        hrv?: number | null; resting_hr?: number | null
+      }>
+      const nutrition = (data.nutritionLogs || []) as Array<{ compliant: boolean | null }>
+      const training = (data.trainingLogs || []) as Array<{ training_type: string; rpe?: number | null }>
+      const recentLogs = (data.recentLogs || []) as Array<{ taken?: boolean; completed?: boolean }>
+      // 簡單估算近 7 天補品打卡率（compat: taken 或 completed 都吃）
+      const recent7 = recentLogs.slice(-50)
+      const supplementRate = recent7.length > 0
+        ? recent7.filter(l => l.taken === true || l.completed === true).length / recent7.length
+        : 0.8 // 預設 80% 避免完全沒打卡時拖低分數
+      return calculateHealthScore({
+        wellnessLast7: wellness.slice(-7),
+        nutritionLast7: nutrition.slice(-7),
+        trainingLast7: training.slice(-7),
+        supplementComplianceRate: supplementRate,
+        labResults: labs.map(l => ({ status: (l.status as 'normal' | 'attention' | 'alert') ?? 'normal' })),
+        quarterlyStart: (client?.quarterly_cycle_start as string) ?? null,
+      })
+    } catch (err) {
+      console.warn('[timeline] health score calc failed:', err)
+      return null
+    }
+  }, [data, labs, client?.quarterly_cycle_start])
+
   // 將所有 lab_results 依 test_name 分組成歷史時間序列
   const byTest = useMemo(() => {
     const map = new Map<string, LabPoint[]>()
@@ -481,6 +514,55 @@ export default function HealthTimelinePage() {
             </div>
           )
         })()}
+
+        {/* Health Score（整體健康分數）*/}
+        {healthScore && (
+          <div className="mb-6 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 border border-indigo-200 rounded-2xl p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-4 mb-3">
+              <div>
+                <div className="text-xs font-medium text-indigo-700 mb-0.5">整體健康分數</div>
+                <div className="text-[10px] text-gray-500">睡眠 + 營養 + 訓練 + 補品 + 血檢 加權</div>
+              </div>
+              <div className="text-right">
+                <div className="text-4xl sm:text-5xl font-bold text-gray-900 leading-none">
+                  {Math.round(healthScore.total)}
+                  <span className="text-base font-medium text-gray-400 ml-1">/100</span>
+                </div>
+                <div className={`text-xs font-medium mt-0.5 ${
+                  healthScore.grade === 'A' ? 'text-emerald-700' :
+                  healthScore.grade === 'B' ? 'text-blue-700' :
+                  healthScore.grade === 'C' ? 'text-amber-700' : 'text-rose-700'
+                }`}>
+                  Grade {healthScore.grade}
+                </div>
+              </div>
+            </div>
+            {/* Pillar 細項 */}
+            <div className="grid grid-cols-5 gap-1.5">
+              {healthScore.pillars.map(p => (
+                <div key={p.pillar} className="text-center bg-white rounded-lg p-2 border border-gray-100">
+                  <div className="text-base sm:text-lg">{p.emoji}</div>
+                  <div className="text-[9px] text-gray-500 mt-0.5">{p.label}</div>
+                  <div className={`text-sm font-semibold mt-0.5 ${
+                    p.score >= 80 ? 'text-emerald-700' :
+                    p.score >= 65 ? 'text-blue-700' :
+                    p.score >= 50 ? 'text-amber-700' : 'text-rose-700'
+                  }`}>
+                    {Math.round(p.score)}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* 血檢加減分提示 */}
+            {(healthScore.labPenalty !== 0 || healthScore.labBonus > 0) && (
+              <div className="mt-2 text-[11px] text-gray-600">
+                血檢調整：
+                {healthScore.labBonus > 0 && <span className="text-emerald-700 ml-1">+{healthScore.labBonus.toFixed(1)}</span>}
+                {healthScore.labPenalty !== 0 && <span className="text-rose-700 ml-1">{healthScore.labPenalty.toFixed(1)}</span>}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 摘要列 */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
