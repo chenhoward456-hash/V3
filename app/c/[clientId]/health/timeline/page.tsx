@@ -42,7 +42,7 @@ const CATEGORIES: Array<{ title: string; subtitle: string; tests: string[] }> = 
   },
   {
     title: '心血管風險',
-    subtitle: 'Peter Attia Medicine 3.0 核心 — ApoB 是新的 LDL',
+    subtitle: '心血管真實風險指標 — ApoB 比 LDL-C 更精準',
     tests: ['ApoB', 'Lp(a)', 'LDL-C', 'HDL-C', '三酸甘油酯', '總膽固醇'],
   },
   {
@@ -1029,8 +1029,8 @@ export default function HealthTimelinePage() {
           <p className="text-xs text-blue-800 leading-relaxed">
             一般醫院的參考範圍是「疾病門檻」 — 過了線才算病。
             <br />
-            <strong>Howard 採用的是「最佳化追蹤範圍」</strong>，參考國際長壽研究文獻（Peter Attia 等）以長期健康、預防、表現優化為導向。
-            例如 ApoB：醫院 &lt; 130 都算正常，但研究指出 &lt; 80（最佳 &lt; 50）的人長期心血管風險更低。
+            <strong>Howard 採用的是「最佳化追蹤範圍」</strong>，參考國際長壽研究文獻，以長期健康、預防、表現優化為導向。
+            例如 ApoB：醫院 &lt; 130 都算正常，但長壽研究指出 &lt; 80（最佳 &lt; 50）的人長期心血管風險更低。
             <br />
             <strong>連續追蹤趨勢比單一數字更重要</strong> — 一年一次的健檢無法做到這件事。
           </p>

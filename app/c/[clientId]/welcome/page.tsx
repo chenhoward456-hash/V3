@@ -51,8 +51,8 @@ const STEPS: Step[] = [
     desc: '一般醫院 ApoB < 130 算「正常」，但長壽研究指出 < 80（最佳 < 50）才是真正低風險。\n\n你的 dashboard 雙軌呈現「沒病門檻」+「最佳化目標」。',
     cta: { label: '📏 看完整對照', href: (id) => `/c/${id}/health/standards` },
     tips: [
-      '警示閾值參考 AHA / Endocrine Society',
-      '最佳化閾值參考 Peter Attia「Outlive」',
+      '警示閾值參考國際醫學共識（AHA / Endocrine Society 等）',
+      '最佳化閾值參考國際長壽研究文獻',
       '兩套標準都看才完整',
     ],
   },
@@ -65,7 +65,7 @@ const STEPS: Step[] = [
   {
     icon: '📖',
     title: '常見問題 / 文獻參考',
-    desc: 'FAQ 涵蓋 18 個常見問題：基礎觀念、補品策略、進階追蹤、實務操作。\n\n所有 claim 都附主要文獻來源（AHA / Endocrine Society / Peter Attia 等）。',
+    desc: 'FAQ 涵蓋 18 個常見問題：基礎觀念、補品策略、進階追蹤、實務操作。\n\n所有 claim 都附主要文獻來源（國際醫學共識 + 長壽研究文獻）。',
     cta: { label: '📖 開 FAQ 頁面', href: (id) => `/c/${id}/health/learn` },
   },
   {

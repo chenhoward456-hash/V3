@@ -33,7 +33,7 @@ const COMPARISONS: CompareRow[] = [
     testName: 'ApoB', unit: 'mg/dL', category: '心血管風險',
     hospitalNormal: rangeToText((LAB_THRESHOLDS as any)['ApoB']?.normal),
     howardOptimal: rangeToText(LAB_OPTIMAL_RANGES['ApoB']),
-    why: 'ApoB 是脂蛋白「顆粒數」— 比 LDL-C 更準確預測心血管風險。Peter Attia 主張長壽目標應在 80 以下，最佳 50 以下。'
+    why: 'ApoB 是脂蛋白「顆粒數」— 比 LDL-C 更準確預測心血管風險。國際長壽研究指出 < 80 為較低風險區，< 50 為最佳優化目標。'
   },
   {
     testName: 'Lp(a)', unit: 'mg/dL', category: '心血管風險',
@@ -117,8 +117,8 @@ export default function StandardsComparisonPage() {
             <strong>為什麼會有「兩套標準」？</strong>
             <br />
             一般醫院檢驗報告上的「正常範圍」是基於人群統計的<strong>疾病門檻</strong> — 過了線才算病。
-            但「沒病」≠「最佳健康狀態」。Howard Protocol 採用的「最佳化追蹤範圍」參考<strong>長壽研究派立場</strong>
-            （Peter Attia「Outlive」、IFM 功能醫學等）以長期健康、預防、表現優化為導向。
+            但「沒病」≠「最佳健康狀態」。Howard Protocol 採用的「最佳化追蹤範圍」參考<strong>國際長壽研究 + 功能醫學文獻</strong>，
+            以長期健康、預防、表現優化為導向。
             <br />
             <br />
             <strong>連續追蹤趨勢 &gt; 單一數字</strong>。同一個指標，從 X 變化到 Y 比「目前在多少」更值得關注。
@@ -140,10 +140,10 @@ export default function StandardsComparisonPage() {
               </ul>
             </div>
             <div>
-              <div className="font-medium text-emerald-700 mb-1">「Howard 最佳」（長壽派目標）</div>
+              <div className="font-medium text-emerald-700 mb-1">「Howard 最佳」（長壽優化目標）</div>
               <ul className="text-gray-600 list-disc list-inside space-y-0.5">
-                <li>主要參考：Peter Attia「Outlive」(2023)</li>
-                <li>IFM / 功能醫學共識（hsCRP, Vit D）</li>
+                <li>參考國際長壽研究文獻</li>
+                <li>功能醫學「最佳化範圍」共識</li>
                 <li>方向：「沒病門檻 → 最佳化目標」</li>
                 <li><strong>非醫學共識診斷標準</strong></li>
                 <li>適合搭配教練 + 整合醫學醫師執行</li>
