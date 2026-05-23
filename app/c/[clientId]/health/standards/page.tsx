@@ -140,7 +140,7 @@ export default function StandardsComparisonPage() {
               </ul>
             </div>
             <div>
-              <div className="font-medium text-emerald-700 mb-1">「Howard 最佳」（長壽優化目標）</div>
+              <div className="font-medium text-emerald-700 mb-1">「Howard 進階追蹤」（個人優化目標）</div>
               <ul className="text-gray-600 list-disc list-inside space-y-0.5">
                 <li>參考國際長壽研究文獻</li>
                 <li>功能醫學「最佳化範圍」共識</li>

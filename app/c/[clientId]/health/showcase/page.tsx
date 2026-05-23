@@ -31,13 +31,13 @@ const HIGHLIGHT_STORIES: Array<{ test: string; medical: string; howardOptimal: s
     test: 'ApoB',
     medical: '< 130 mg/dL',
     howardOptimal: '< 50 mg/dL',
-    why: '心血管真正風險預測指標。國際長壽研究指出 < 50 才是低風險最佳區，比醫院 <130「沒病」嚴格很多。',
+    why: '心血管真正風險預測指標。國際研究指出 < 50 進入較低風險區間，比醫院 <130「沒病門檻」嚴格。',
   },
   {
     test: '空腹胰島素',
     medical: '< 25 µIU/mL',
     howardOptimal: '< 2.5 µIU/mL',
-    why: '代謝病最早信號，比血糖早 10-20 年顯示問題。長壽優化目標 < 2.5。',
+    why: '代謝健康早期信號，比血糖更早顯示代謝壓力。進階追蹤範圍 < 2.5。',
   },
   {
     test: 'hs-CRP',
@@ -136,7 +136,7 @@ export default function ShowcasePage() {
         <p className="text-sm text-gray-600 leading-relaxed">
           連續追蹤健檢數據 + AI 教練筆記
           <br />
-          台灣第一個用功能醫學標準的長壽優化系統
+          CSCS 教練諮詢 + 個人化數據儀表板
         </p>
       </section>
 
@@ -181,8 +181,8 @@ export default function ShowcasePage() {
       {topOptimalStats.length > 0 && (
         <section className="px-5 max-w-md mx-auto mb-6">
           <div className="text-center mb-3">
-            <div className="text-xs text-gray-500 mb-1">超越功能醫學最佳目標</div>
-            <div className="text-base font-semibold text-gray-900">3 個指標都贏</div>
+            <div className="text-xs text-gray-500 mb-1">數據追蹤亮點</div>
+            <div className="text-base font-semibold text-gray-900">3 項已達進階追蹤範圍</div>
           </div>
           <div className="space-y-2">
             {topOptimalStats.map(({ row, optimalText }) => (
@@ -195,9 +195,9 @@ export default function ShowcasePage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[10px] text-emerald-700 font-medium">Howard 標準</div>
+                  <div className="text-[10px] text-emerald-700 font-medium">進階追蹤範圍</div>
                   <div className="text-sm text-gray-600">{optimalText}</div>
-                  <div className="text-[10px] text-emerald-700 font-bold mt-1">✓ 超越</div>
+                  <div className="text-[10px] text-emerald-700 font-bold mt-1">✓ 已達</div>
                 </div>
               </div>
             ))}
@@ -222,9 +222,9 @@ export default function ShowcasePage() {
                   <div className="text-[10px] text-gray-400 mt-1">「沒病」門檻</div>
                 </div>
                 <div className="bg-emerald-50 rounded-lg p-2 text-center border border-emerald-200">
-                  <div className="text-[10px] text-emerald-700 mb-0.5">Howard 標準</div>
+                  <div className="text-[10px] text-emerald-700 mb-0.5">進階追蹤範圍</div>
                   <div className="text-sm font-bold text-emerald-800">{s.howardOptimal}</div>
-                  <div className="text-[10px] text-emerald-600 mt-1">長壽優化</div>
+                  <div className="text-[10px] text-emerald-600 mt-1">參考國際研究</div>
                 </div>
               </div>
               <p className="text-[11px] text-gray-600 leading-relaxed">{s.why}</p>
@@ -273,7 +273,7 @@ export default function ShowcasePage() {
             { emoji: '📥', t: '健檢報告', d: '拍照丟系統 AI 自動萃取' },
             { emoji: '📊', t: '連續追蹤', d: '6 大類指標趨勢視覺化' },
             { emoji: '🧬', t: 'AI 教練筆記', d: '每次抽血自動生成深度觀察' },
-            { emoji: '💊', t: '補品 Protocol', d: '為什麼開、為什麼停都記錄' },
+            { emoji: '💊', t: '補品紀錄', d: '飲食輔助方案歷史紀錄' },
             { emoji: '🩸', t: '抽血提醒', d: '季度自動排程 + 必驗清單' },
             { emoji: '💬', t: 'LINE 整合', d: '教練即時通知 + AI 對話' },
           ].map(f => (
@@ -290,10 +290,11 @@ export default function ShowcasePage() {
       <section className="px-5 max-w-md mx-auto mb-8">
         <div className="bg-gray-900 rounded-3xl p-6 text-center text-white shadow-xl">
           <div className="text-2xl mb-2">🎯</div>
-          <div className="text-lg font-semibold mb-2">想要這套系統追蹤你的健康？</div>
+          <div className="text-lg font-semibold mb-2">想試試這套追蹤系統？</div>
           <p className="text-xs text-gray-300 mb-5 leading-relaxed">
-            目前限收 5 位 Beta 客戶，月費 NT$4,999<br />
-            含 AI 教練筆記 / 連續追蹤 / 補品 protocol / LINE 即時通知
+            CSCS 教練諮詢 + 數據追蹤工具<br />
+            月費 NT$4,999（首批限 5 位）<br />
+            含教練觀察筆記 / AI 對話 / LINE 即時通知
           </p>
           <a
             href="https://line.me/R/ti/p/@howard"
@@ -303,8 +304,9 @@ export default function ShowcasePage() {
           >
             💬 加 LINE 聊聊
           </a>
-          <div className="mt-3 text-[10px] text-gray-400">
-            或直接傳訊息給 Howard
+          <div className="mt-3 text-[10px] text-gray-400 leading-relaxed">
+            本服務為健康管理諮詢 + 工具，<br />
+            不構成醫療診斷或治療
           </div>
         </div>
       </section>

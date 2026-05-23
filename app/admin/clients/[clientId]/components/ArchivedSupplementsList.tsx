@@ -102,7 +102,7 @@ export default function ArchivedSupplementsList({ clientUniqueCode, refreshKey }
             📦 過去 protocol（已封存）
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            {items.length} 個歷史補品 — 為什麼開、為什麼停、被誰取代
+            {items.length} 筆歷史紀錄 — 開始 / 停止日期 / 取代關係
           </p>
         </div>
         <span className="text-sm text-gray-400">{expanded ? '收合 ▴' : '展開 ▾'}</span>
