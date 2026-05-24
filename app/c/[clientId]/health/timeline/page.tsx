@@ -253,6 +253,7 @@ export default function HealthTimelinePage() {
   const [activeSupps, setActiveSupps] = useState<SupplementHistoryItem[]>([])
   const [archivedSupps, setArchivedSupps] = useState<SupplementHistoryItem[]>([])
   const [showArchivedSupps, setShowArchivedSupps] = useState(false)
+  const [pendingDraftStatus, setPendingDraftStatus] = useState<{ pendingCount: number; panelDates: string[] } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -284,6 +285,34 @@ export default function HealthTimelinePage() {
     }
     load()
     return () => { cancelled = true }
+  }, [clientId])
+
+  // 輪詢 AI 草稿生成 / 待教練審狀態
+  useEffect(() => {
+    if (!clientId) return
+    let cancelled = false
+    let intervalId: ReturnType<typeof setInterval> | null = null
+
+    async function fetchStatus() {
+      try {
+        const res = await fetch(`/api/auto-draft-status?clientId=${encodeURIComponent(clientId)}`)
+        const json = await res.json()
+        if (cancelled) return
+        if (json?.success && json.data) {
+          setPendingDraftStatus({
+            pendingCount: json.data.pendingCount ?? 0,
+            panelDates: json.data.panelDates ?? [],
+          })
+        }
+      } catch { /* ignore */ }
+    }
+
+    fetchStatus()
+    intervalId = setInterval(fetchStatus, 15_000)  // 15 秒輪一次
+    return () => {
+      cancelled = true
+      if (intervalId) clearInterval(intervalId)
+    }
   }, [clientId])
 
   const client = data?.client
@@ -372,6 +401,15 @@ export default function HealthTimelinePage() {
       if (t > d) d = t
     }
     return d ? new Date(d).toLocaleDateString('zh-TW') : null
+  }, [labs])
+
+  // 不同 panel_date 數量（決定是否有「趨勢」可看）
+  const uniquePanelDateCount = useMemo(() => {
+    const set = new Set<string>()
+    for (const r of labs) {
+      if (r.date) set.add(r.date)
+    }
+    return set.size
   }, [labs])
 
   if (isLoading) {
@@ -594,6 +632,37 @@ export default function HealthTimelinePage() {
         {latestDate && (
           <div className="text-xs text-gray-500 mb-4">
             最近一次血檢：{latestDate}
+            {uniquePanelDateCount === 1 && (
+              <span className="ml-2 text-blue-600">（僅 1 次紀錄）</span>
+            )}
+          </div>
+        )}
+
+        {/* 第一次上傳：解釋為什麼還看不到趨勢線 */}
+        {uniquePanelDateCount === 1 && labs.length > 0 && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-2xl p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl shrink-0">📈</span>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-blue-900 mb-1">
+                  你的趨勢線會在下次抽血後出現
+                </div>
+                <p className="text-xs text-blue-800 leading-relaxed">
+                  每張 sparkline 卡目前只有 1 個點 — 那就是你剛上傳的數據。
+                  <br />
+                  系統的核心價值是「連續追蹤」 — <strong>下次抽血上傳後，每張卡就會出現曲線</strong>，
+                  讓你看到 3 個月、6 個月、12 個月的進步軌跡。
+                </p>
+                <div className="mt-3 text-[11px] text-blue-700">
+                  💡 建議追蹤節奏：每季 1 次（每 3 個月）。
+                  {client?.next_checkup_date && (
+                    <span className="ml-1">
+                      你下次抽血預定：<strong>{client.next_checkup_date}</strong>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -665,6 +734,32 @@ export default function HealthTimelinePage() {
                     ))}
                 </div>
               )}
+            </div>
+          </section>
+        )}
+
+        {/* 🤖 AI 草稿生成 / 教練審核中 狀態 */}
+        {pendingDraftStatus && pendingDraftStatus.pendingCount > 0 && (
+          <section className="mb-6 bg-indigo-50 border border-indigo-200 rounded-2xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="relative shrink-0">
+                <span className="text-2xl">🤖</span>
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold text-indigo-900 mb-1">
+                  AI 草稿生成完成，等待教練審核
+                </div>
+                <p className="text-xs text-indigo-800 leading-relaxed">
+                  你近期上傳的 <strong>{pendingDraftStatus.pendingCount} 份</strong>血檢已自動生成觀察筆記初稿。
+                  Howard 審核 + 個人化調整後（通常 24 小時內），完整筆記會出現在下方「Howard 觀察筆記」區塊，
+                  你會收到 LINE 通知。
+                </p>
+                <div className="mt-2 text-[11px] text-indigo-600">
+                  待審日期：
+                  <span className="font-mono ml-1">{pendingDraftStatus.panelDates.join(', ')}</span>
+                </div>
+              </div>
             </div>
           </section>
         )}

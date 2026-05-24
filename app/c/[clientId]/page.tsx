@@ -1579,18 +1579,18 @@ export default function ClientDashboard() {
                       <ChevronRight className="w-5 h-5 text-emerald-700 shrink-0" />
                     </div>
                   </Link>
-                  <div className="mt-2 flex items-center gap-4 text-[11px] px-2">
+                  <div className="mt-2 flex items-center gap-2 text-xs px-1">
                     <Link
                       href={`/c/${clientId}/health/upload`}
-                      className="text-emerald-700 hover:text-emerald-900 underline"
+                      className="bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-700 font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 flex-1 justify-center"
                     >
-                      📥 上傳更多血檢
+                      📥 上傳新血檢
                     </Link>
                     <Link
                       href={`/c/${clientId}/health/standards`}
-                      className="text-emerald-700 hover:text-emerald-900 underline"
+                      className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg flex items-center gap-1.5"
                     >
-                      📏 看標準對照
+                      📏 標準對照
                     </Link>
                   </div>
                 </>

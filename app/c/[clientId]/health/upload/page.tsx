@@ -85,6 +85,8 @@ export default function UploadLabsPage() {
     queuedDates: string[]
   } | null>(null)
   const [countdown, setCountdown] = useState(0)
+  // 既有血檢的「每個指標最新數值」— 用於確認 OCR / 手打資料時對比
+  const [previousValues, setPreviousValues] = useState<Map<string, { value: number; unit: string; date: string }>>(new Map())
 
   // --- manual ---
   const [m, setM] = useState({ test_name: '', value: '', unit: '', reference_range: '', date: todayStr() })
@@ -146,6 +148,33 @@ export default function UploadLabsPage() {
     const t = setInterval(() => setOcrElapsedSec(Math.floor((Date.now() - start) / 1000)), 500)
     return () => clearInterval(t)
   }, [ocrLoading])
+
+  // 載入既有血檢的「每個指標最新數值」— 供 preview 對比
+  useEffect(() => {
+    if (!clientId) return
+    let cancelled = false
+    async function load() {
+      try {
+        const res = await fetch(`/api/lab-results?clientId=${encodeURIComponent(clientId)}`)
+        const json = await res.json()
+        if (cancelled) return
+        if (json?.success && Array.isArray(json.data)) {
+          const map = new Map<string, { value: number; unit: string; date: string }>()
+          for (const r of json.data as Array<{ test_name: string; value: string | number; unit: string | null; date: string }>) {
+            const v = typeof r.value === 'string' ? parseFloat(r.value) : r.value
+            if (!Number.isFinite(v)) continue
+            const existing = map.get(r.test_name)
+            if (!existing || r.date > existing.date) {
+              map.set(r.test_name, { value: v, unit: r.unit || '', date: r.date })
+            }
+          }
+          setPreviousValues(map)
+        }
+      } catch { /* ignore */ }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [clientId])
 
   // 儲存成功後倒數 → 跳到 timeline
   useEffect(() => {
@@ -587,13 +616,44 @@ export default function UploadLabsPage() {
                         />
                       </td>
                       <td className="px-2 py-1">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={r.value}
-                          onChange={e => updateRow(r.id, 'value', e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        />
+                        {(() => {
+                          const prev = previousValues.get(r.test_name)
+                          const currentNum = parseFloat(r.value)
+                          // 計算變化百分比（若兩者都有效）
+                          let diffBadge: { color: string; text: string } | null = null
+                          if (prev && Number.isFinite(currentNum) && prev.value !== 0) {
+                            const pct = ((currentNum - prev.value) / prev.value) * 100
+                            const absPct = Math.abs(pct)
+                            if (absPct >= 50) {
+                              diffBadge = { color: 'bg-rose-100 text-rose-700', text: `⚠️ ${pct > 0 ? '+' : ''}${pct.toFixed(0)}%` }
+                            } else if (absPct >= 15) {
+                              diffBadge = { color: 'bg-amber-100 text-amber-700', text: `${pct > 0 ? '+' : ''}${pct.toFixed(0)}%` }
+                            } else if (absPct > 0) {
+                              diffBadge = { color: 'bg-emerald-50 text-emerald-700', text: `${pct > 0 ? '+' : ''}${pct.toFixed(0)}%` }
+                            }
+                          }
+                          return (
+                            <>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={r.value}
+                                onChange={e => updateRow(r.id, 'value', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                              />
+                              {prev && (
+                                <div className="text-[10px] mt-0.5 flex items-center gap-1">
+                                  <span className="text-gray-500">上次: {prev.value}</span>
+                                  {diffBadge && (
+                                    <span className={`px-1 rounded ${diffBadge.color} font-medium`}>
+                                      {diffBadge.text}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          )
+                        })()}
                       </td>
                       <td className="px-2 py-1">
                         <input
