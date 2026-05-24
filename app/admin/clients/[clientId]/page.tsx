@@ -117,6 +117,7 @@ export default function ClientEditor() {
   const [successMsg, setSuccessMsg] = useState('')
   const [activeTab, setActiveTab] = useState<EditorTab>('basic')
   const [latestBodyComp, setLatestBodyComp] = useState<{ weight: number | null; body_fat: number | null; height: number | null } | null>(null)
+  const [bodyDataEntries, setBodyDataEntries] = useState<Array<{ date: string; weight: number | null; body_fat: number | null }>>([])
   const [upgradeLink, setUpgradeLink] = useState('')
   const [upgradeCopied, setUpgradeCopied] = useState(false)
   const [cancellingOldSub, setCancellingOldSub] = useState(false)
@@ -139,6 +140,22 @@ export default function ClientEditor() {
   const [compQuickSetupGoalType, setCompQuickSetupGoalType] = useState<'cut' | 'bulk'>('cut')
   const [compQuickSetupSuccess, setCompQuickSetupSuccess] = useState('')
 
+  // 近 30 天訓練紀錄（學員回報）
+  interface TrainingLogRow {
+    id: string
+    date: string
+    training_type: string | null
+    duration: number | null
+    rpe: number | null
+    sets: number | null
+    compound_weight: number | null
+    compound_reps: number | null
+    note: string | null
+    created_at: string
+  }
+  const [trainingHistory, setTrainingHistory] = useState<TrainingLogRow[]>([])
+  const [trainingHistoryLoading, setTrainingHistoryLoading] = useState(false)
+
   // Timed Coach Override state
   const [overrideDurationDays, setOverrideDurationDays] = useState<number | null>(null)
   const [overrideReason, setOverrideReason] = useState('')
@@ -148,6 +165,58 @@ export default function ClientEditor() {
     suggestedCarbs?: number | null
     suggestedFat?: number | null
   } | null>(null)
+
+  // 週平均體重（用滾動 7 天視窗，最近 8 週）
+  const weeklyWeightStats = useMemo(() => {
+    const withWeight = bodyDataEntries
+      .filter(e => e.weight != null && !Number.isNaN(Number(e.weight)))
+      .map(e => ({ date: e.date, weight: Number(e.weight), body_fat: e.body_fat != null ? Number(e.body_fat) : null }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+
+    if (withWeight.length === 0) return null
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const weeks: Array<{
+      label: string
+      startDate: string
+      endDate: string
+      avg: number | null
+      count: number
+      bfAvg: number | null
+    }> = []
+
+    for (let i = 7; i >= 0; i--) {
+      const end = new Date(today)
+      end.setDate(today.getDate() - i * 7)
+      const start = new Date(end)
+      start.setDate(end.getDate() - 6)
+      const startStr = start.toISOString().split('T')[0]
+      const endStr = end.toISOString().split('T')[0]
+      const inWeek = withWeight.filter(e => e.date >= startStr && e.date <= endStr)
+      const avg = inWeek.length > 0 ? inWeek.reduce((s, e) => s + e.weight, 0) / inWeek.length : null
+      const bfList = inWeek.filter(e => e.body_fat != null).map(e => e.body_fat as number)
+      const bfAvg = bfList.length > 0 ? bfList.reduce((s, v) => s + v, 0) / bfList.length : null
+      weeks.push({
+        label: i === 0 ? '本週' : `${i} 週前`,
+        startDate: startStr,
+        endDate: endStr,
+        avg,
+        count: inWeek.length,
+        bfAvg,
+      })
+    }
+
+    const filled = weeks.filter(w => w.avg != null)
+    const current = filled[filled.length - 1] ?? null
+    const previous = filled[filled.length - 2] ?? null
+    const fourWeeksAgo = filled.length >= 5 ? filled[filled.length - 5] : null
+
+    const delta1w = current && previous ? current.avg! - previous.avg! : null
+    const delta4w = current && fourWeeksAgo ? current.avg! - fourWeeksAgo.avg! : null
+
+    return { weeks, current, previous, delta1w, delta4w, totalEntries: withWeight.length }
+  }, [bodyDataEntries])
 
   const tabs: { key: EditorTab; label: string; icon: string }[] = useMemo(() => {
     if (!client) return []
@@ -252,6 +321,15 @@ export default function ClientEditor() {
           body_fat: findLatest('body_fat'),
           height: findLatest('height'),
         })
+        setBodyDataEntries(
+          entries
+            .filter((e: any) => e?.date)
+            .map((e: any) => ({
+              date: e.date,
+              weight: e.weight ?? null,
+              body_fat: e.body_fat ?? null,
+            }))
+        )
       }
     } catch (error) {
       setError('載入學員資料失敗')
@@ -683,6 +761,24 @@ export default function ClientEditor() {
     fetchSuggestion()
   }, [client?.unique_code, client?.nutrition_enabled, clientId])
 
+  // 抓取近 30 天訓練紀錄（含學員 note）
+  useEffect(() => {
+    if (!client?.id || !client.training_enabled || clientId === 'new') return
+    let cancelled = false
+    const run = async () => {
+      setTrainingHistoryLoading(true)
+      try {
+        const res = await fetch(`/api/admin/training-history?clientId=${client.id}&days=30`)
+        if (!res.ok) return
+        const json = await res.json()
+        if (!cancelled && json.success) setTrainingHistory(json.data || [])
+      } catch { /* silent */ }
+      finally { if (!cancelled) setTrainingHistoryLoading(false) }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [client?.id, client?.training_enabled, clientId])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -746,6 +842,141 @@ export default function ClientEditor() {
             <span className="text-sm font-medium">{successMsg}</span>
           </div>
         )}
+
+        {/* 📈 週平均體重摘要（任何 tab 都看得到） */}
+        {clientId !== 'new' && client.body_composition_enabled && weeklyWeightStats?.current && (() => {
+          const { current, delta1w, delta4w, weeks } = weeklyWeightStats
+          const target = client.target_weight
+          const goal = client.goal_type
+          const targetDate = client.target_date
+          const remainingDays = targetDate ? daysUntilDateTW(targetDate) : null
+          const remainingToTarget = target != null && current.avg != null ? current.avg - target : null
+
+          // 進度方向判斷
+          let progressTag: { text: string; color: string } | null = null
+          if (goal === 'cut' && delta1w != null) {
+            if (delta1w < -0.1) progressTag = { text: '✅ 減重中', color: 'text-emerald-600' }
+            else if (delta1w > 0.2) progressTag = { text: '⚠️ 體重上升', color: 'text-rose-600' }
+            else progressTag = { text: '⏸ 停滯', color: 'text-amber-600' }
+          } else if (goal === 'bulk' && delta1w != null) {
+            if (delta1w > 0.1) progressTag = { text: '✅ 增重中', color: 'text-emerald-600' }
+            else if (delta1w < -0.2) progressTag = { text: '⚠️ 體重下降', color: 'text-rose-600' }
+            else progressTag = { text: '⏸ 停滯', color: 'text-amber-600' }
+          }
+
+          // 預期達標日（用 4 週速度推算）
+          let projectedDays: number | null = null
+          if (delta4w != null && remainingToTarget != null && Math.abs(delta4w) > 0.05) {
+            const weeklyRate = delta4w / 4 // kg/week
+            const weeksNeeded = -remainingToTarget / weeklyRate
+            if (weeksNeeded > 0 && weeksNeeded < 200) {
+              projectedDays = Math.round(weeksNeeded * 7)
+            }
+          }
+
+          const maxAvg = Math.max(...weeks.filter(w => w.avg != null).map(w => w.avg as number))
+          const minAvg = Math.min(...weeks.filter(w => w.avg != null).map(w => w.avg as number))
+          const range = Math.max(maxAvg - minAvg, 0.5)
+
+          return (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900">📈 週平均體重</h2>
+                  <p className="text-[11px] text-gray-400">滾動 7 天平均，最近 8 週</p>
+                </div>
+                {progressTag && (
+                  <span className={`text-xs font-semibold ${progressTag.color}`}>{progressTag.text}</span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase">本週平均</p>
+                  <p className="text-2xl font-bold text-gray-900">{current.avg!.toFixed(1)}<span className="text-sm font-normal text-gray-500 ml-1">kg</span></p>
+                  <p className="text-[10px] text-gray-400">{current.count} 筆紀錄</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase">vs 上週</p>
+                  <p className={`text-lg font-semibold ${
+                    delta1w == null ? 'text-gray-400'
+                      : delta1w > 0 ? 'text-rose-600'
+                      : delta1w < 0 ? 'text-emerald-600'
+                      : 'text-gray-600'
+                  }`}>
+                    {delta1w == null ? '—' : `${delta1w > 0 ? '+' : ''}${delta1w.toFixed(2)} kg`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase">vs 4 週前</p>
+                  <p className={`text-lg font-semibold ${
+                    delta4w == null ? 'text-gray-400'
+                      : delta4w > 0 ? 'text-rose-600'
+                      : delta4w < 0 ? 'text-emerald-600'
+                      : 'text-gray-600'
+                  }`}>
+                    {delta4w == null ? '—' : `${delta4w > 0 ? '+' : ''}${delta4w.toFixed(2)} kg`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase">目標</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {target != null ? `${target} kg` : '未設定'}
+                  </p>
+                  {remainingToTarget != null && (
+                    <p className="text-[10px] text-gray-500">
+                      距 {remainingToTarget > 0 ? `−${remainingToTarget.toFixed(1)}` : `+${Math.abs(remainingToTarget).toFixed(1)}`} kg
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* 8 週 sparkline */}
+              <div className="flex items-end gap-1 h-12 mb-2">
+                {weeks.map((w, i) => {
+                  if (w.avg == null) {
+                    return <div key={i} className="flex-1 bg-gray-100 rounded" style={{ height: '8%' }} title={`${w.label} 無紀錄`} />
+                  }
+                  const pct = ((w.avg - minAvg) / range) * 80 + 20
+                  const isCurrent = i === weeks.length - 1
+                  return (
+                    <div
+                      key={i}
+                      className={`flex-1 rounded transition-all ${isCurrent ? 'bg-blue-500' : 'bg-blue-200'}`}
+                      style={{ height: `${pct}%` }}
+                      title={`${w.label}（${w.startDate} ~ ${w.endDate}）: ${w.avg.toFixed(1)} kg（${w.count} 筆）`}
+                    />
+                  )
+                })}
+              </div>
+              <div className="flex justify-between text-[10px] text-gray-400">
+                <span>7 週前</span>
+                <span>本週</span>
+              </div>
+
+              {/* 進度判讀 */}
+              {(remainingDays != null || projectedDays != null) && (
+                <div className="mt-3 pt-3 border-t border-gray-100 text-xs">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
+                    {targetDate && remainingDays != null && (
+                      <span>📅 目標日期：{targetDate}（剩 {remainingDays} 天）</span>
+                    )}
+                    {projectedDays != null && (
+                      <span className={
+                        remainingDays != null && projectedDays > remainingDays
+                          ? 'text-rose-600 font-semibold'
+                          : 'text-emerald-700 font-semibold'
+                      }>
+                        🎯 預估達標：{projectedDays} 天後
+                        {remainingDays != null && projectedDays > remainingDays && '（趕不上）'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Tab Navigation — sticky 跟著滾動 */}
         <div className="sticky top-0 z-30 -mx-4 sm:mx-0 sm:rounded-xl bg-gray-100/95 backdrop-blur-sm shadow-sm px-2 sm:px-1 py-1 mb-6 flex gap-1 overflow-x-auto">
@@ -1735,6 +1966,112 @@ export default function ClientEditor() {
                 </div>
               </div>
             </div>
+
+            {/* 🏋️ 近 30 天訓練紀錄（學員回報） */}
+            {client.training_enabled && (() => {
+              const PAIN_KEYWORDS = ['痛', '不適', '受傷', '酸', '痠', '麻', '緊', '拉傷', '扭', '刺痛']
+              const hasFlag = (n: string | null) => !!n && PAIN_KEYWORDS.some(k => n.includes(k))
+              const flagged = trainingHistory.filter(r => hasFlag(r.note))
+              const withNotes = trainingHistory.filter(r => r.note && !hasFlag(r.note))
+              const noNotes = trainingHistory.filter(r => !r.note)
+              const fmtType = (t: string | null) => {
+                if (!t) return '—'
+                const map: Record<string, string> = {
+                  cardio: '🏃 有氧', strength: '💪 重訓', mixed: '🔀 混合',
+                  rest: '😴 休息', flexibility: '🧘 柔軟度', sports: '⚽ 運動',
+                }
+                return map[t] || t
+              }
+              return (
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h2 className="text-lg font-medium text-gray-900">🏋️ 近 30 天訓練紀錄（學員回報）</h2>
+                      <p className="text-xs text-gray-400 mt-0.5">學員打卡時填寫的 note 會顯示在這裡；含「痛 / 不適 / 受傷」等字會被標紅</p>
+                    </div>
+                    {trainingHistoryLoading && <span className="text-xs text-gray-400">載入中…</span>}
+                  </div>
+
+                  {flagged.length > 0 && (
+                    <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
+                      <p className="text-sm font-semibold text-rose-700 mb-2">
+                        ⚠️ {flagged.length} 筆紀錄含疼痛/不適關鍵字，建議優先處理
+                      </p>
+                      <div className="space-y-2">
+                        {flagged.map(r => (
+                          <div key={r.id} className="bg-white border border-rose-200 rounded p-2 text-sm">
+                            <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                              <span className="font-mono">{r.date}</span>
+                              <span>{fmtType(r.training_type)}</span>
+                              {r.rpe != null && <span>RPE {r.rpe}</span>}
+                              {r.duration != null && <span>{r.duration} 分鐘</span>}
+                            </div>
+                            <p className="text-rose-900">{r.note}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {withNotes.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-gray-500 mb-2">📝 其他學員備註（{withNotes.length} 筆）</p>
+                      <div className="space-y-1.5">
+                        {withNotes.map(r => (
+                          <div key={r.id} className="border border-gray-100 rounded p-2 text-sm bg-gray-50">
+                            <div className="flex items-center gap-2 text-xs text-gray-500 mb-0.5">
+                              <span className="font-mono">{r.date}</span>
+                              <span>{fmtType(r.training_type)}</span>
+                              {r.rpe != null && <span>RPE {r.rpe}</span>}
+                            </div>
+                            <p className="text-gray-700">{r.note}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {trainingHistory.length > 0 && (
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+                        ▶ 全部 {trainingHistory.length} 筆訓練紀錄（含無備註的打卡）
+                      </summary>
+                      <table className="w-full text-xs mt-2">
+                        <thead>
+                          <tr className="text-gray-500 border-b">
+                            <th className="text-left py-1 pr-2">日期</th>
+                            <th className="text-left py-1 pr-2">類型</th>
+                            <th className="text-center py-1 px-1">RPE</th>
+                            <th className="text-center py-1 px-1">時長</th>
+                            <th className="text-left py-1 pl-2">備註</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {trainingHistory.map(r => (
+                            <tr key={r.id} className={`border-b border-gray-50 ${hasFlag(r.note) ? 'bg-rose-50' : ''}`}>
+                              <td className="py-1 pr-2 font-mono text-gray-600">{r.date}</td>
+                              <td className="py-1 pr-2 text-gray-700">{fmtType(r.training_type)}</td>
+                              <td className="py-1 px-1 text-center text-gray-600">{r.rpe ?? '-'}</td>
+                              <td className="py-1 px-1 text-center text-gray-600">{r.duration ?? '-'}</td>
+                              <td className={`py-1 pl-2 ${hasFlag(r.note) ? 'text-rose-700 font-medium' : 'text-gray-500'}`}>
+                                {r.note || ''}
+                              </td>
+                            </tr>
+                          ))}
+                          {noNotes.length === trainingHistory.length && trainingHistory.length === 0 && (
+                            <tr><td colSpan={5} className="py-3 text-center text-gray-400">近 30 天無訓練紀錄</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </details>
+                  )}
+
+                  {!trainingHistoryLoading && trainingHistory.length === 0 && (
+                    <p className="text-sm text-gray-400 text-center py-4">近 30 天尚無訓練紀錄</p>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* 訓練經驗等級 */}
             {client.training_enabled && (
