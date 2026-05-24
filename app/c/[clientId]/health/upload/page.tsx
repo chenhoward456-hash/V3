@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Trash2, Plus, Upload, FileText, Camera, Pencil } from 'lucide-react'
 import { LAB_THRESHOLDS } from '@/utils/labStatus'
@@ -73,11 +73,18 @@ async function fileToBase64(file: File): Promise<string> {
 
 export default function UploadLabsPage() {
   const params = useParams()
+  const router = useRouter()
   const clientId = (params?.clientId as string) ?? ''
   const [tab, setTab] = useState<'manual' | 'csv' | 'ocr'>('manual')
   const [rows, setRows] = useState<DraftRow[]>([])
   const [saving, setSaving] = useState(false)
   const [resultMsg, setResultMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState<{
+    inserted: number
+    skipped: number
+    queuedDates: string[]
+  } | null>(null)
+  const [countdown, setCountdown] = useState(0)
 
   // --- manual ---
   const [m, setM] = useState({ test_name: '', value: '', unit: '', reference_range: '', date: todayStr() })
@@ -139,6 +146,18 @@ export default function UploadLabsPage() {
     const t = setInterval(() => setOcrElapsedSec(Math.floor((Date.now() - start) / 1000)), 500)
     return () => clearInterval(t)
   }, [ocrLoading])
+
+  // 儲存成功後倒數 → 跳到 timeline
+  useEffect(() => {
+    if (countdown <= 0) return
+    if (countdown === 1) {
+      // 最後一秒到 → 跳轉
+      const t = setTimeout(() => router.push(`/c/${clientId}/health/timeline`), 1000)
+      return () => clearTimeout(t)
+    }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [countdown, router, clientId])
 
   async function handleOcrFiles(fileList: FileList) {
     if (fileList.length === 0) return
@@ -222,11 +241,11 @@ export default function UploadLabsPage() {
       if (json.success) {
         const n = json.data?.inserted ?? 0
         const skipped = json.data?.skipped ?? []
+        const queuedDates = (json.data?.autoDraftQueued ?? []) as string[]
         setRows([])
-        setResultMsg({
-          kind: 'ok',
-          text: `✅ 已寫入 ${n} 筆${skipped.length ? `；${skipped.length} 筆未通過驗證` : ''}`,
-        })
+        setSaveSuccess({ inserted: n, skipped: skipped.length, queuedDates })
+        setResultMsg(null)
+        setCountdown(15)  // 15 秒倒數，給人時間讀
       } else {
         setResultMsg({ kind: 'err', text: json.error || '寫入失敗' })
       }
@@ -450,6 +469,64 @@ export default function UploadLabsPage() {
         )}
 
         {/* 訊息 */}
+        {/* 儲存成功 — 大 success card + 自動跳轉倒數 */}
+        {saveSuccess && (
+          <div className="mb-4 bg-gradient-to-br from-emerald-50 to-blue-50 border border-emerald-300 rounded-2xl p-5">
+            <div className="text-center mb-4">
+              <div className="text-5xl mb-2">✅</div>
+              <div className="text-lg font-bold text-emerald-900 mb-1">
+                已寫入 {saveSuccess.inserted} 筆血檢資料
+              </div>
+              {saveSuccess.skipped > 0 && (
+                <div className="text-xs text-amber-700">
+                  （{saveSuccess.skipped} 筆未通過驗證）
+                </div>
+              )}
+            </div>
+
+            {saveSuccess.queuedDates.length > 0 && (
+              <div className="bg-white rounded-xl p-3 mb-4 border border-emerald-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-medium text-emerald-800">
+                    🤖 AI 教練筆記生成中（約 15-30 秒）
+                  </span>
+                </div>
+                <div className="text-[11px] text-gray-600">
+                  系統正在為以下日期生成個人化觀察筆記：
+                  <span className="font-mono ml-1">
+                    {saveSuccess.queuedDates.join(', ')}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={() => router.push(`/c/${clientId}/health/timeline`)}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-3 rounded-lg"
+              >
+                📊 立刻看健康趨勢儀表板
+              </button>
+              <button
+                onClick={() => {
+                  setSaveSuccess(null)
+                  setCountdown(0)
+                }}
+                className="px-4 py-3 bg-white border border-gray-300 hover:bg-gray-50 text-sm text-gray-700 rounded-lg"
+              >
+                繼續上傳
+              </button>
+            </div>
+
+            {countdown > 0 && (
+              <div className="text-center mt-3 text-[11px] text-gray-500">
+                ⏱ {countdown} 秒後自動跳到儀表板
+              </div>
+            )}
+          </div>
+        )}
+
         {resultMsg && (
           <div className={`mb-4 p-3 rounded text-sm ${
             resultMsg.kind === 'ok' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
