@@ -33,6 +33,15 @@ import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { generateBehaviorInsights, type InsightInput } from '@/lib/insight-engine'
 import { startCronRun, completeCronRun, failCronRun } from '@/lib/cron-utils'
 import { computeTrajectoryAdjustment, type MacroBounds } from '@/lib/trajectory-adjust'
+import { generateNutritionSuggestion, type NutritionInput } from '@/lib/nutrition-engine'
+import { isWeightTraining } from '@/components/client/types'
+
+function parseSerotoninField(value: string | null): { serotonin?: 'LL' | 'SL' | 'SS'; depressionRisk?: 'low' | 'moderate' | 'high' } {
+  if (!value) return {}
+  if (value === 'LL' || value === 'SL' || value === 'SS') return { serotonin: value }
+  if (value === 'low' || value === 'moderate' || value === 'high') return { depressionRisk: value }
+  return {}
+}
 
 export const maxDuration = 300
 
@@ -116,16 +125,23 @@ export async function GET(request: NextRequest) {
   }
 
   // ===== 軌跡式 macros 自動調整（每天執行，所有 tier） =====
-  // 系統依週平均體重 vs 目標軌跡，在 macro_bounds 邊界內自動調整 macros
-  let autoAdjustResults = { evaluated: 0, applied: 0, boundaryHit: 0, errors: [] as string[] }
+  // 架構：軌跡數學算缺口 → nutrition-engine 安全層 gate → 通過才套用
+  // 安全層包含：checkCuttingReadiness（賀爾蒙、TSH、cortisol、SHBG cross-pattern）、
+  //           metabolicStress score、energyAvailability、tdeeAnomalyDetected
+  let autoAdjustResults = {
+    evaluated: 0, applied: 0, boundaryHit: 0,
+    gatedByCuttingReadiness: 0, gatedByMetabolicStress: 0, gatedByTdeeAnomaly: 0, gatedByEngineAutoApply: 0,
+    errors: [] as string[],
+  }
   try {
     const { data: eligibleClients } = await supabase
       .from('clients')
       .select(`
-        id, name, line_user_id, gender, subscription_tier,
-        goal_type, target_weight, target_date,
+        id, name, line_user_id, gender, subscription_tier, client_mode, prep_phase,
+        goal_type, target_weight, target_date, competition_date, diet_start_date,
         calories_target, protein_target, carbs_target, fat_target,
-        carbs_training_day, carbs_rest_day,
+        carbs_training_day, carbs_rest_day, activity_profile, weigh_in_gap_hours,
+        gene_mthfr, gene_apoe, gene_depression_risk,
         macro_bounds, auto_adjust_enabled, last_auto_adjust_at,
         coach_macro_override, nutrition_enabled
       `)
@@ -137,21 +153,32 @@ export async function GET(request: NextRequest) {
       .not('target_date', 'is', null)
       .not('calories_target', 'is', null)
 
+    const fourteenDaysAgo = new Date(); fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
+    const fourteenStr = fourteenDaysAgo.toISOString().split('T')[0]
+    const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
+
     for (const c of (eligibleClients ?? [])) {
       autoAdjustResults.evaluated++
       try {
-        // 教練手動鎖定的不動（coached/protocol 教練設了 override）
+        // 教練手動鎖定的完全不動
         if (c.coach_macro_override) continue
 
-        const { data: bodyData } = await supabase
-          .from('body_composition')
-          .select('date, weight')
-          .eq('client_id', c.id)
-          .order('date', { ascending: true })
-          .limit(90)
+        // 一次抓齊安全層需要的所有資料
+        const [bodyRes, wellnessRes, trainingRes, nutritionRes, labRes] = await Promise.all([
+          supabase.from('body_composition').select('date, weight, height, body_fat').eq('client_id', c.id).order('date', { ascending: true }).limit(180),
+          supabase.from('daily_wellness').select('date, energy_level, training_drive, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate').eq('client_id', c.id).gte('date', fourteenStr),
+          supabase.from('training_logs').select('date, training_type, rpe').eq('client_id', c.id).gte('date', fourteenStr),
+          supabase.from('nutrition_logs').select('date, calories, carbs_grams, compliant').eq('client_id', c.id).gte('date', fourteenStr),
+          supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', c.id).order('date', { ascending: false }).limit(50),
+        ])
 
-        const result = computeTrajectoryAdjustment({
-          bodyDataEntries: (bodyData ?? []).map((b: any) => ({ date: b.date, weight: b.weight })),
+        const bodyData = bodyRes.data ?? []
+        if (bodyData.length === 0) continue
+
+        // 1. 軌跡數學
+        const trajResult = computeTrajectoryAdjustment({
+          bodyDataEntries: bodyData.map((b: any) => ({ date: b.date, weight: b.weight })),
           goalType: c.goal_type as 'cut' | 'bulk' | 'recomp',
           targetWeight: c.target_weight ? Number(c.target_weight) : null,
           targetDate: c.target_date,
@@ -166,8 +193,135 @@ export async function GET(request: NextRequest) {
           lastAdjustAt: c.last_auto_adjust_at,
         })
 
-        if (!result.shouldAdjust) continue
+        if (!trajResult.shouldAdjust) continue
 
+        // 2. 跑 nutrition-engine 拿安全層判定
+        const latestWeight = (bodyData as any[]).filter(b => b.weight != null).slice(-1)[0]?.weight ?? null
+        if (!latestWeight) continue
+        const latestHeight = [...(bodyData as any[])].reverse().find(b => b.height != null)?.height ?? null
+        const latestBf = [...(bodyData as any[])].reverse().find(b => b.body_fat != null)?.body_fat ?? null
+
+        const wellness = wellnessRes.data ?? []
+        const trainingLogs = trainingRes.data ?? []
+        const nutrition = nutritionRes.data ?? []
+        const labs = labRes.data ?? []
+
+        const weeklyWeights: { week: number; avgWeight: number }[] = []
+        for (let w = 0; w < 4; w++) {
+          const we = new Date(); we.setDate(we.getDate() - w * 7)
+          const ws = new Date(we); ws.setDate(we.getDate() - 6)
+          const wsStr = ws.toISOString().split('T')[0]
+          const weStr = we.toISOString().split('T')[0]
+          const ww = (bodyData as any[]).filter(b => b.date >= wsStr && b.date <= weStr && b.weight != null).map(b => Number(b.weight))
+          if (ww.length > 0) weeklyWeights.push({ week: w, avgWeight: Math.round((ww.reduce((s, x) => s + x, 0) / ww.length) * 100) / 100 })
+        }
+
+        const compliantCount = nutrition.filter((n: any) => n.compliant).length
+        const nutritionCompliance = Math.round((compliantCount / 14) * 100)
+        const withCal = nutrition.filter((n: any) => n.calories != null)
+        const avgDailyCalories = withCal.length >= 7 ? Math.round(withCal.reduce((s: number, n: any) => s + Number(n.calories), 0) / withCal.length) : null
+        const recentTraining = trainingLogs.filter((t: any) => isWeightTraining(t.training_type))
+        const trainingDaysPerWeek = Math.round(recentTraining.length / 2)
+
+        const engineInput: NutritionInput = {
+          gender: c.gender || '男性',
+          bodyWeight: Number(latestWeight),
+          goalType: (c.goal_type || 'cut') as 'cut' | 'bulk' | 'recomp',
+          dietStartDate: c.diet_start_date || null,
+          height: latestHeight ? Number(latestHeight) : null,
+          bodyFatPct: latestBf ? Number(latestBf) : null,
+          targetWeight: c.target_weight ? Number(c.target_weight) : null,
+          targetDate: c.competition_date || c.target_date || null,
+          currentCalories: c.calories_target ? Number(c.calories_target) : null,
+          currentProtein: c.protein_target ? Number(c.protein_target) : null,
+          currentCarbs: c.carbs_target ? Number(c.carbs_target) : null,
+          currentFat: c.fat_target ? Number(c.fat_target) : null,
+          currentCarbsTrainingDay: c.carbs_training_day ? Number(c.carbs_training_day) : null,
+          currentCarbsRestDay: c.carbs_rest_day ? Number(c.carbs_rest_day) : null,
+          carbsCyclingEnabled: !!(c.carbs_training_day && c.carbs_rest_day),
+          weeklyWeights,
+          nutritionCompliance,
+          avgDailyCalories,
+          trainingDaysPerWeek,
+          prepPhase: c.prep_phase || undefined,
+          clientMode: (c.client_mode as any) || undefined,
+          weighInGapHours: c.weigh_in_gap_hours ?? undefined,
+          activityProfile: c.activity_profile || undefined,
+          labResults: labs.map((l: any) => ({ test_name: String(l.test_name), value: l.value != null ? Number(l.value) : null, unit: String(l.unit ?? ''), status: 'normal' as const, date: l.date })),
+          recentWellness: wellness.map((w: any) => ({
+            date: w.date,
+            energy_level: w.energy_level ?? null,
+            training_drive: w.training_drive ?? null,
+            device_recovery_score: w.device_recovery_score ?? null,
+            resting_hr: w.resting_hr ?? null,
+            hrv: w.hrv ?? null,
+            wearable_sleep_score: w.wearable_sleep_score ?? null,
+            respiratory_rate: w.respiratory_rate ?? null,
+          })),
+          recentTrainingLogs: trainingLogs.filter((t: any) => t.date >= sevenDaysStr).map((t: any) => ({ date: t.date, rpe: t.rpe ?? null })),
+          recentCarbsPerDay: nutrition.filter((n: any) => n.date >= sevenDaysStr).map((n: any) => ({ date: n.date, carbs: n.carbs_grams ?? null })),
+          geneticProfile: (c.gene_mthfr || c.gene_apoe || c.gene_depression_risk) ? {
+            mthfr: c.gene_mthfr || undefined,
+            apoe: c.gene_apoe || undefined,
+            ...parseSerotoninField(c.gene_depression_risk),
+          } : undefined,
+        }
+
+        const engineResult = generateNutritionSuggestion(engineInput)
+
+        // 3. 安全層 gate — 任何一層 block 都不套用
+        const cuttingBlocked = engineResult.cuttingReadinessGate?.blocked === true
+        const metabolicHighStress = (engineResult.metabolicStress?.score ?? 0) >= 60
+        const tdeeAnomaly = engineResult.tdeeAnomalyDetected === true
+        const engineNoAutoApply = engineResult.autoApply === false
+
+        const gates = {
+          cuttingBlocked, metabolicHighStress, tdeeAnomaly, engineNoAutoApply,
+        }
+
+        if (cuttingBlocked || metabolicHighStress || tdeeAnomaly || engineNoAutoApply) {
+          if (cuttingBlocked) autoAdjustResults.gatedByCuttingReadiness++
+          if (metabolicHighStress) autoAdjustResults.gatedByMetabolicStress++
+          if (tdeeAnomaly) autoAdjustResults.gatedByTdeeAnomaly++
+          if (engineNoAutoApply) autoAdjustResults.gatedByEngineAutoApply++
+
+          // 寫 audit log（安全層擋住的決策也要留紀錄）
+          const blockReasons: string[] = []
+          if (cuttingBlocked) blockReasons.push(`Cutting gate blocked (score ${engineResult.cuttingReadinessGate?.readinessScore}): ${engineResult.cuttingReadinessGate?.reasons.join('；')}`)
+          if (metabolicHighStress) blockReasons.push(`Metabolic stress score ${engineResult.metabolicStress?.score} ≥ 60 — 建議 refeed/diet break`)
+          if (tdeeAnomaly) blockReasons.push('TDEE 校正異常，引擎已暫停自動套用')
+          if (engineNoAutoApply) blockReasons.push('Engine autoApply=false')
+
+          await supabase.from('macro_adjustment_log').insert({
+            client_id: c.id,
+            applied_by: 'system',
+            trigger_source: 'trajectory',
+            old_macros: {
+              calories_target: c.calories_target ? Number(c.calories_target) : null,
+              carbs_target: c.carbs_target ? Number(c.carbs_target) : null,
+              carbs_training_day: c.carbs_training_day ? Number(c.carbs_training_day) : null,
+              carbs_rest_day: c.carbs_rest_day ? Number(c.carbs_rest_day) : null,
+            },
+            new_macros: { _blocked: true, would_have_been: trajResult.newMacros },
+            reason: `軌跡建議調整但被安全層 gate：${blockReasons.join('｜')}`,
+            trajectory_data: { ...trajResult.trajectoryData, gates },
+            hit_boundary: false,
+            boundary_detail: null,
+          })
+
+          // 教練 LINE alert（注意：學員不收 push，避免恐慌；只有教練收）
+          // 教練 line_user_id 從 ADMIN_LINE_USER_ID 環境變數抓
+          const coachLineId = process.env.ADMIN_LINE_USER_ID
+          if (coachLineId) {
+            const labFlags = engineResult.cuttingReadinessGate?.labFlags?.join('、') || ''
+            const alertMsg = `⚠️ ${c.name} 軌跡需要砍 ${Math.abs(trajResult.kcalAdjustment || 0)} kcal，但安全層擋住\n\n${blockReasons.join('\n')}\n\n${labFlags ? `異常項目：${labFlags}\n\n` : ''}→ 進後台手動處理：延比賽日 / 改目標體重 / 加 NEAT / refeed`
+            await pushMessage(coachLineId, [{ type: 'text', text: alertMsg }]).catch(() => {})
+          }
+
+          continue
+        }
+
+        // 4. 所有 gate 都通過 → 套用軌跡建議
         const oldMacros = {
           calories_target: c.calories_target ? Number(c.calories_target) : null,
           protein_target: c.protein_target ? Number(c.protein_target) : null,
@@ -180,7 +334,7 @@ export async function GET(request: NextRequest) {
         const now = new Date().toISOString()
         const { error: updErr } = await supabase
           .from('clients')
-          .update({ ...result.newMacros, last_auto_adjust_at: now })
+          .update({ ...trajResult.newMacros, last_auto_adjust_at: now })
           .eq('id', c.id)
         if (updErr) throw updErr
 
@@ -189,33 +343,32 @@ export async function GET(request: NextRequest) {
           applied_by: 'system',
           trigger_source: 'trajectory',
           old_macros: oldMacros,
-          new_macros: result.newMacros,
-          reason: result.reason,
-          trajectory_data: result.trajectoryData,
-          hit_boundary: result.hitBoundary,
-          boundary_detail: result.boundaryDetail,
+          new_macros: trajResult.newMacros,
+          reason: trajResult.reason,
+          trajectory_data: { ...trajResult.trajectoryData, gatesChecked: true, engineReadinessScore: engineResult.cuttingReadinessGate?.readinessScore ?? null, metabolicStressScore: engineResult.metabolicStress?.score ?? null },
+          hit_boundary: trajResult.hitBoundary,
+          boundary_detail: trajResult.boundaryDetail,
         })
 
         autoAdjustResults.applied++
-        if (result.hitBoundary) autoAdjustResults.boundaryHit++
+        if (trajResult.hitBoundary) autoAdjustResults.boundaryHit++
 
-        // 學員通知（撞邊界更急，正常調整每天執行不重發太多）
         if (c.line_user_id) {
-          const carbLine = result.newMacros?.carbs_training_day != null
-            ? `訓練日碳水 ${oldMacros.carbs_training_day} → ${result.newMacros.carbs_training_day}g\n非訓練日 ${oldMacros.carbs_rest_day} → ${result.newMacros.carbs_rest_day}g`
-            : result.newMacros?.carbs_target != null
-              ? `碳水 ${oldMacros.carbs_target} → ${result.newMacros.carbs_target}g`
+          const carbLine = trajResult.newMacros?.carbs_training_day != null
+            ? `訓練日碳水 ${oldMacros.carbs_training_day} → ${trajResult.newMacros.carbs_training_day}g\n非訓練日 ${oldMacros.carbs_rest_day} → ${trajResult.newMacros.carbs_rest_day}g`
+            : trajResult.newMacros?.carbs_target != null
+              ? `碳水 ${oldMacros.carbs_target} → ${trajResult.newMacros.carbs_target}g`
               : ''
-          const msg = result.hitBoundary
-            ? `⚠️ 系統依進度自動調整 macros\n\n熱量 ${oldMacros.calories_target} → ${result.newMacros?.calories_target} kcal\n${carbLine}\n\n${result.reason}\n\n${result.boundaryDetail}\n\n→ LINE 諮詢教練決定下一步`
-            : `🤖 系統依進度調整今日 macros\n\n熱量 ${oldMacros.calories_target} → ${result.newMacros?.calories_target} kcal\n${carbLine}\n\n${result.reason}`
+          const msg = trajResult.hitBoundary
+            ? `⚠️ 系統依進度自動調整 macros\n\n熱量 ${oldMacros.calories_target} → ${trajResult.newMacros?.calories_target} kcal\n${carbLine}\n\n${trajResult.reason}\n\n${trajResult.boundaryDetail}\n\n→ LINE 諮詢教練決定下一步`
+            : `🤖 系統依進度調整今日 macros\n\n熱量 ${oldMacros.calories_target} → ${trajResult.newMacros?.calories_target} kcal\n${carbLine}\n\n${trajResult.reason}`
           await pushMessage(c.line_user_id, [{ type: 'text', text: msg }]).catch(() => {})
         }
       } catch (e) {
         autoAdjustResults.errors.push(`${c.name}: ${(e as Error).message}`)
       }
     }
-    logger.info(`Auto-adjust: ${autoAdjustResults.applied}/${autoAdjustResults.evaluated} applied, ${autoAdjustResults.boundaryHit} hit boundary`)
+    logger.info(`Auto-adjust: ${autoAdjustResults.applied}/${autoAdjustResults.evaluated} applied, ${autoAdjustResults.boundaryHit} boundary, gated by [cutting:${autoAdjustResults.gatedByCuttingReadiness} stress:${autoAdjustResults.gatedByMetabolicStress} tdee:${autoAdjustResults.gatedByTdeeAnomaly} engine:${autoAdjustResults.gatedByEngineAutoApply}]`)
   } catch (e) {
     console.warn('[Cron] Auto-adjust block error:', e)
   }
