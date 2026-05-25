@@ -373,6 +373,114 @@ export async function GET(request: NextRequest) {
     console.warn('[Cron] Auto-adjust block error:', e)
   }
 
+  // ===== Wellness 漂移 → 觸發 retest 提醒（每週日早上跑一次） =====
+  // 不按時間表強制驗血（學員花費考量），而是當 wellness 訊號惡化 4 週時提醒
+  // 條件：近 2 週平均 vs 前 2 週平均，至少 2 個指標下降 >25%
+  //       AND 距上次荷爾蒙血檢 ≥ 12 週
+  // 24 小時 dedupe：同一學員 7 天內只 push 一次
+  let retestReminderCount = 0
+  const dayOfWeek = new Date().getDay() // 0 = Sunday
+  if (isMorningRun && dayOfWeek === 0) {
+    try {
+      const { data: wellnessClients } = await supabase
+        .from('clients')
+        .select('id, name, line_user_id, gender')
+        .eq('is_active', true)
+        .eq('wellness_enabled', true)
+        .not('line_user_id', 'is', null)
+
+      const twentyEightDaysAgo = new Date(); twentyEightDaysAgo.setDate(twentyEightDaysAgo.getDate() - 28)
+      const twentyEightStr = twentyEightDaysAgo.toISOString().split('T')[0]
+      const fourteenDaysAgo2 = new Date(); fourteenDaysAgo2.setDate(fourteenDaysAgo2.getDate() - 14)
+      const fourteenStr2 = fourteenDaysAgo2.toISOString().split('T')[0]
+      const twelveWeeksAgo = new Date(); twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 12 * 7)
+      const twelveWeeksStr = twelveWeeksAgo.toISOString().split('T')[0]
+
+      for (const c of (wellnessClients ?? [])) {
+        try {
+          // 抓近 28 天 wellness
+          const { data: wellnessData } = await supabase
+            .from('daily_wellness')
+            .select('date, energy_level, training_drive, sleep_quality, mood')
+            .eq('client_id', c.id)
+            .gte('date', twentyEightStr)
+            .order('date', { ascending: true })
+
+          const all = wellnessData ?? []
+          const recent = all.filter((w: any) => w.date >= fourteenStr2)
+          const previous = all.filter((w: any) => w.date < fourteenStr2)
+          if (recent.length < 7 || previous.length < 7) continue
+
+          const avg = (arr: any[], field: string) => {
+            const vals = arr.map(x => x[field]).filter((v: any) => v != null) as number[]
+            return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : null
+          }
+
+          type Drop = { metric: string; prev: number; recent: number; dropPct: number }
+          const drops: Drop[] = []
+          for (const metric of ['energy_level', 'training_drive', 'sleep_quality', 'mood']) {
+            const prev = avg(previous, metric)
+            const cur = avg(recent, metric)
+            if (prev == null || cur == null || prev < 2) continue
+            const dropPct = (prev - cur) / prev
+            if (dropPct > 0.25) drops.push({ metric, prev, recent: cur, dropPct })
+          }
+          if (drops.length < 2) continue
+
+          // 檢查上次荷爾蒙血檢
+          const { data: lastHormoneLab } = await supabase
+            .from('lab_results')
+            .select('test_name, date')
+            .eq('client_id', c.id)
+            .or('test_name.ilike.%testosterone%,test_name.ilike.%睪固酮%,test_name.ilike.%cortisol%,test_name.ilike.%皮質%,test_name.ilike.%TSH%,test_name.ilike.%甲狀腺%,test_name.ilike.%SHBG%,test_name.ilike.%estradiol%,test_name.ilike.%雌二醇%')
+            .order('date', { ascending: false })
+            .limit(1)
+
+          const latestLabDate = lastHormoneLab?.[0]?.date
+          if (latestLabDate && latestLabDate >= twelveWeeksStr) continue // 還在 12 週內
+
+          // 24h dedupe：用 macro_adjustment_log 簡易檢查（避免新表）
+          const { data: recentRetest } = await supabase
+            .from('macro_adjustment_log')
+            .select('id, applied_at')
+            .eq('client_id', c.id)
+            .eq('trigger_source', 'tdee_weekly')
+            .gte('applied_at', new Date(Date.now() - 7 * 86_400_000).toISOString())
+            .limit(1)
+          if (recentRetest && recentRetest.length > 0) continue
+
+          // 推 LINE
+          const labelMap: Record<string, string> = { energy_level: '精力', training_drive: '訓練動力', sleep_quality: '睡眠品質', mood: '心情' }
+          const dropLines = drops.map(d => `・${labelMap[d.metric] || d.metric}：${d.prev.toFixed(1)} → ${d.recent.toFixed(1)} (-${Math.round(d.dropPct * 100)}%)`).join('\n')
+          const labContext = latestLabDate
+            ? `上次荷爾蒙驗血 ${Math.floor((Date.now() - new Date(latestLabDate).getTime()) / (7 * 86_400_000))} 週前`
+            : '尚無荷爾蒙血檢紀錄'
+
+          const msg = `🩸 建議安排一次血檢\n\n你近 4 週身體訊號明顯下滑：\n${dropLines}\n\n${labContext}。可能原因：\n・荷爾蒙（睪固酮、甲狀腺）\n・恢復不足（皮質醇、發炎）\n・營養缺乏（鐵、維他命 D、B 群）\n\n驗一次荷爾蒙 + 代謝面板就能定位。`
+
+          await pushMessage(c.line_user_id, [{ type: 'text', text: msg }]).catch(() => {})
+
+          // 寫 log 做 dedupe 標記（用既有表，trigger_source 'tdee_weekly' 暫借）
+          await supabase.from('macro_adjustment_log').insert({
+            client_id: c.id,
+            applied_by: 'system',
+            trigger_source: 'tdee_weekly',
+            old_macros: {},
+            new_macros: { _retest_reminder: true },
+            reason: `Wellness 漂移觸發 retest 提醒：${drops.map(d => `${labelMap[d.metric]} -${Math.round(d.dropPct * 100)}%`).join('、')}`,
+          })
+
+          retestReminderCount++
+        } catch (e) {
+          console.warn(`[Cron] Wellness retest check failed for ${c.name}:`, e)
+        }
+      }
+      logger.info(`Retest reminders pushed: ${retestReminderCount}`)
+    } catch (e) {
+      console.warn('[Cron] Wellness retest block error:', e)
+    }
+  }
+
   // 取得所有已綁定 LINE 的活躍學員
   const { data: clients, error } = await supabase
     .from('clients')

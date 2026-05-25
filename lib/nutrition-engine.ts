@@ -1294,6 +1294,10 @@ function checkCuttingReadiness(
   const labs = input.labResults || []
 
   const scoreBeforeLab = score  // Bug fix H3: 記錄血檢扣分前的分數，用於後面的時效衰減
+  // 嚴重程度地板（Severity Floor）：極端異常的血檢即使老舊也不該完全衰減
+  // 累計「嚴重級扣分」的 magnitude，後面衰減時會保留至少 60%
+  // 設計理由：T<300、皮質醇>25、E2 過低等是「結構性異常」，身體不會半年自己修好
+  let severePenaltyMagnitude = 0
   // --- 1. 血檢荷爾蒙指標 ---
   // exclude: 排除包含這些關鍵字的項目（避免 testosterone 同時匹配 free/bioavailable）
   const findLab = (keywords: string[], exclude?: string[]) =>
@@ -1311,6 +1315,7 @@ function checkCuttingReadiness(
     if (testo && testo.value != null) {
       if (testo.value < 300) {
         score -= 30
+        severePenaltyMagnitude += 30  // 結構性異常，衰減保留地板
         reasons.push(`🔴 睪固酮極低（${testo.value} ng/dL，安全值 ≥400）— 不適合減脂`)
         labFlags.push(`睪固酮 ${testo.value} ng/dL`)
       } else if (testo.value < 400) {
@@ -1334,6 +1339,7 @@ function checkCuttingReadiness(
 
       if (freeT.value < freeTLowFloor) {
         score -= 15
+        severePenaltyMagnitude += 15
         reasons.push(`🔴 游離睪固酮偏低（${freeT.value} ${unitLabel}）— 肌肉恢復和合成受限`)
         labFlags.push(`游離睪固酮 ${freeT.value} ${unitLabel}`)
       } else if (freeT.value < freeTOptimalFloor) {
@@ -1357,6 +1363,7 @@ function checkCuttingReadiness(
       // 男性 E2 過低：關節疼痛、情緒低落
       if (e2.value < 15) {
         score -= 15
+        severePenaltyMagnitude += 15
         reasons.push(`🔴 雌二醇過低（${e2.value} pg/mL，建議 ≥20）— 關節疼痛、情緒低落、恢復差`)
         labFlags.push(`E2 ${e2.value} pg/mL`)
       } else if (e2.value < 20) {
@@ -1394,6 +1401,7 @@ function checkCuttingReadiness(
     const androgenFlags = [testoLow, freeTSuboptimal, shbgElevated, e2Elevated, bioTLow].filter(Boolean).length
     if (androgenFlags >= 2) {
       score -= 15  // 額外扣分（多指標同時異常 = 系統性問題）
+      severePenaltyMagnitude += 15  // 系統性 = 結構性異常，地板保留
       const flagDetails = [
         testoLow ? 'T↓' : null,
         freeTSuboptimal ? 'Free T↓' : null,
@@ -1410,6 +1418,7 @@ function checkCuttingReadiness(
     const e2f = findLab(['e2', 'estradiol', '雌二醇'])
     if (e2f && e2f.value != null && e2f.value < 30) {
       score -= 15
+      severePenaltyMagnitude += 15
       reasons.push(`🔴 雌二醇過低（${e2f.value} pg/mL）— 可能是 RED-S 或過度減脂的訊號`)
       labFlags.push(`E2 ${e2f.value} pg/mL`)
     }
@@ -1420,6 +1429,7 @@ function checkCuttingReadiness(
   if (cortisol && cortisol.value != null) {
     if (cortisol.value > 25) {
       score -= 20
+      severePenaltyMagnitude += 20
       reasons.push(`🔴 皮質醇過高（${cortisol.value} μg/dL，安全值 ≤18）— 身體處於高壓狀態，減脂會加劇肌肉流失`)
       labFlags.push(`皮質醇 ${cortisol.value} μg/dL`)
     } else if (cortisol.value > 20) {
@@ -1445,6 +1455,7 @@ function checkCuttingReadiness(
   // TSH + Free T4 聯合：代謝低下模式
   if (tsh?.value != null && tsh.value > 3.5 && freeT4?.value != null && freeT4.value < 1.0) {
     score -= 10  // 額外扣分
+    severePenaltyMagnitude += 10  // 雙指標代謝低下 = 結構性問題
     reasons.push('🔴 TSH↑ + Free T4↓ = 甲狀腺代謝低下模式，必須先恢復碳水攝取')
   }
 
@@ -1629,14 +1640,26 @@ function checkCuttingReadiness(
       // Bug fix H3: 只衰減血檢相關的扣分/加分，不影響裝置恢復和代謝壓力的扣分
       const labOnlyImpact = scoreAfterLab - scoreBeforeLab  // 純血檢影響（可正可負）
       const nonLabImpact = score - scoreAfterLab            // 裝置/代謝/趨勢影響
+
+      // 嚴重程度地板：T<300、皮質醇>25、E2 過低、多賀爾蒙崩塌等結構性異常
+      // 即使衰減也保留 60% 扣分（這些不會自己半年修好）
+      const severeFloor = -Math.round(severePenaltyMagnitude * 0.6)
+
       if (weeksSinceLab >= fullDecayStart) {
-        const decayedLabImpact = Math.round(labOnlyImpact * 0.25)
+        let decayedLabImpact = Math.round(labOnlyImpact * 0.25)
+        // 取較負（嚴格）的：避免嚴重異常被衰減成接近 0
+        if (severeFloor < decayedLabImpact) decayedLabImpact = severeFloor
         score = scoreBeforeLab + decayedLabImpact + nonLabImpact
-        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週（${hasHormoneRecent ? '荷爾蒙' : '代謝'}面板），血檢影響降低 75%（建議重新驗血）`)
+        const floorNote = severePenaltyMagnitude > 0 && severeFloor < Math.round(labOnlyImpact * 0.25)
+          ? `（含嚴重異常地板 -${Math.abs(severeFloor)}）` : ''
+        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週（${hasHormoneRecent ? '荷爾蒙' : '代謝'}面板），血檢影響降低 75%${floorNote}（建議重新驗血）`)
       } else if (weeksSinceLab >= fastDecayStart) {
-        const decayedLabImpact = Math.round(labOnlyImpact * 0.50)
+        let decayedLabImpact = Math.round(labOnlyImpact * 0.50)
+        if (severeFloor < decayedLabImpact) decayedLabImpact = severeFloor
         score = scoreBeforeLab + decayedLabImpact + nonLabImpact
-        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，血檢影響降低 50%（建議重新驗血）`)
+        const floorNote = severePenaltyMagnitude > 0 && severeFloor < Math.round(labOnlyImpact * 0.50)
+          ? `（含嚴重異常地板 -${Math.abs(severeFloor)}）` : ''
+        reasons.push(`⏰ 血檢已超過 ${weeksSinceLab} 週，血檢影響降低 50%${floorNote}（建議重新驗血）`)
       }
     }
   }
