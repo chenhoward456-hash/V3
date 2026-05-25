@@ -1856,11 +1856,34 @@ export default function ClientOverview() {
                               currentCarbRest != null && newCarbRest != null ? `非訓練日碳水：${currentCarbRest}g → ${newCarbRest}g` : null,
                             ].filter(Boolean).join('\n')
                             if (!confirm(`確定套用？\n\n${summary}\n\n（蛋白質、脂肪不變；可隨時再改）`)) return
-                            const updates: Record<string, number> = { calories_target: newCal }
+                            const updates: Record<string, number | string> = {
+                              calories_target: newCal,
+                              last_auto_adjust_at: new Date().toISOString(),
+                            }
                             if (currentCarbTarget != null && newCarb != null) updates.carbs_target = newCarb
                             if (currentCarbTrain != null && newCarbTrain != null) updates.carbs_training_day = newCarbTrain
                             if (currentCarbRest != null && newCarbRest != null) updates.carbs_rest_day = newCarbRest
                             await saveQuickAction(updates, '✓ macros 已調整')
+                            // Audit log
+                            try {
+                              await fetch('/api/admin/macro-adjustment-log', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  clientId: client.id,
+                                  applied_by: 'coach',
+                                  trigger_source: 'manual',
+                                  old_macros: {
+                                    calories_target: currentCalTarget,
+                                    carbs_target: currentCarbTarget,
+                                    carbs_training_day: currentCarbTrain,
+                                    carbs_rest_day: currentCarbRest,
+                                  },
+                                  new_macros: updates,
+                                  reason: `教練手動套用建議：${currentRate?.toFixed(2)} → ${neededRate?.toFixed(2)} kg/週`,
+                                }),
+                              })
+                            } catch {/* silent */}
                           }}
                           disabled={quickSaving}
                           className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"

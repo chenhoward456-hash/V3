@@ -32,6 +32,7 @@ import {
 import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { generateBehaviorInsights, type InsightInput } from '@/lib/insight-engine'
 import { startCronRun, completeCronRun, failCronRun } from '@/lib/cron-utils'
+import { computeTrajectoryAdjustment, type MacroBounds } from '@/lib/trajectory-adjust'
 
 export const maxDuration = 300
 
@@ -112,6 +113,111 @@ export async function GET(request: NextRequest) {
     }
   } catch (e) {
     console.warn('[Cron] Coach override cleanup error:', e)
+  }
+
+  // ===== 軌跡式 macros 自動調整（每天執行，所有 tier） =====
+  // 系統依週平均體重 vs 目標軌跡，在 macro_bounds 邊界內自動調整 macros
+  let autoAdjustResults = { evaluated: 0, applied: 0, boundaryHit: 0, errors: [] as string[] }
+  try {
+    const { data: eligibleClients } = await supabase
+      .from('clients')
+      .select(`
+        id, name, line_user_id, gender, subscription_tier,
+        goal_type, target_weight, target_date,
+        calories_target, protein_target, carbs_target, fat_target,
+        carbs_training_day, carbs_rest_day,
+        macro_bounds, auto_adjust_enabled, last_auto_adjust_at,
+        coach_macro_override, nutrition_enabled
+      `)
+      .eq('is_active', true)
+      .eq('auto_adjust_enabled', true)
+      .eq('nutrition_enabled', true)
+      .not('goal_type', 'is', null)
+      .not('target_weight', 'is', null)
+      .not('target_date', 'is', null)
+      .not('calories_target', 'is', null)
+
+    for (const c of (eligibleClients ?? [])) {
+      autoAdjustResults.evaluated++
+      try {
+        // 教練手動鎖定的不動（coached/protocol 教練設了 override）
+        if (c.coach_macro_override) continue
+
+        const { data: bodyData } = await supabase
+          .from('body_composition')
+          .select('date, weight')
+          .eq('client_id', c.id)
+          .order('date', { ascending: true })
+          .limit(90)
+
+        const result = computeTrajectoryAdjustment({
+          bodyDataEntries: (bodyData ?? []).map((b: any) => ({ date: b.date, weight: b.weight })),
+          goalType: c.goal_type as 'cut' | 'bulk' | 'recomp',
+          targetWeight: c.target_weight ? Number(c.target_weight) : null,
+          targetDate: c.target_date,
+          currentCalories: c.calories_target ? Number(c.calories_target) : null,
+          currentProtein: c.protein_target ? Number(c.protein_target) : null,
+          currentFat: c.fat_target ? Number(c.fat_target) : null,
+          currentCarbs: c.carbs_target ? Number(c.carbs_target) : null,
+          currentCarbsTrainingDay: c.carbs_training_day ? Number(c.carbs_training_day) : null,
+          currentCarbsRestDay: c.carbs_rest_day ? Number(c.carbs_rest_day) : null,
+          gender: c.gender,
+          bounds: (c.macro_bounds as MacroBounds | null) ?? null,
+          lastAdjustAt: c.last_auto_adjust_at,
+        })
+
+        if (!result.shouldAdjust) continue
+
+        const oldMacros = {
+          calories_target: c.calories_target ? Number(c.calories_target) : null,
+          protein_target: c.protein_target ? Number(c.protein_target) : null,
+          carbs_target: c.carbs_target ? Number(c.carbs_target) : null,
+          fat_target: c.fat_target ? Number(c.fat_target) : null,
+          carbs_training_day: c.carbs_training_day ? Number(c.carbs_training_day) : null,
+          carbs_rest_day: c.carbs_rest_day ? Number(c.carbs_rest_day) : null,
+        }
+
+        const now = new Date().toISOString()
+        const { error: updErr } = await supabase
+          .from('clients')
+          .update({ ...result.newMacros, last_auto_adjust_at: now })
+          .eq('id', c.id)
+        if (updErr) throw updErr
+
+        await supabase.from('macro_adjustment_log').insert({
+          client_id: c.id,
+          applied_by: 'system',
+          trigger_source: 'trajectory',
+          old_macros: oldMacros,
+          new_macros: result.newMacros,
+          reason: result.reason,
+          trajectory_data: result.trajectoryData,
+          hit_boundary: result.hitBoundary,
+          boundary_detail: result.boundaryDetail,
+        })
+
+        autoAdjustResults.applied++
+        if (result.hitBoundary) autoAdjustResults.boundaryHit++
+
+        // 學員通知（撞邊界更急，正常調整每天執行不重發太多）
+        if (c.line_user_id) {
+          const carbLine = result.newMacros?.carbs_training_day != null
+            ? `訓練日碳水 ${oldMacros.carbs_training_day} → ${result.newMacros.carbs_training_day}g\n非訓練日 ${oldMacros.carbs_rest_day} → ${result.newMacros.carbs_rest_day}g`
+            : result.newMacros?.carbs_target != null
+              ? `碳水 ${oldMacros.carbs_target} → ${result.newMacros.carbs_target}g`
+              : ''
+          const msg = result.hitBoundary
+            ? `⚠️ 系統依進度自動調整 macros\n\n熱量 ${oldMacros.calories_target} → ${result.newMacros?.calories_target} kcal\n${carbLine}\n\n${result.reason}\n\n${result.boundaryDetail}\n\n→ LINE 諮詢教練決定下一步`
+            : `🤖 系統依進度調整今日 macros\n\n熱量 ${oldMacros.calories_target} → ${result.newMacros?.calories_target} kcal\n${carbLine}\n\n${result.reason}`
+          await pushMessage(c.line_user_id, [{ type: 'text', text: msg }]).catch(() => {})
+        }
+      } catch (e) {
+        autoAdjustResults.errors.push(`${c.name}: ${(e as Error).message}`)
+      }
+    }
+    logger.info(`Auto-adjust: ${autoAdjustResults.applied}/${autoAdjustResults.evaluated} applied, ${autoAdjustResults.boundaryHit} hit boundary`)
+  } catch (e) {
+    console.warn('[Cron] Auto-adjust block error:', e)
   }
 
   // 取得所有已綁定 LINE 的活躍學員
