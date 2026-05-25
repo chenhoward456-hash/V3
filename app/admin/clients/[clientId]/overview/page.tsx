@@ -417,6 +417,60 @@ export default function ClientOverview() {
       }))
   }, [trainingLogs])
 
+  // ===== 週平均體重（滾動 7 天 × 8 週） =====
+  const weeklyWeightStats = useMemo(() => {
+    const withWeight = bodyData
+      .filter(b => b.weight != null && !Number.isNaN(Number(b.weight)))
+      .map(b => ({ date: b.date as string, weight: Number(b.weight) }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+
+    if (withWeight.length === 0) return null
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const weeks: Array<{ label: string; startDate: string; endDate: string; avg: number | null; count: number }> = []
+
+    for (let i = 7; i >= 0; i--) {
+      const end = new Date(today); end.setDate(today.getDate() - i * 7)
+      const start = new Date(end); start.setDate(end.getDate() - 6)
+      const startStr = start.toISOString().split('T')[0]
+      const endStr = end.toISOString().split('T')[0]
+      const inWeek = withWeight.filter(e => e.date >= startStr && e.date <= endStr)
+      const avg = inWeek.length > 0 ? inWeek.reduce((s, e) => s + e.weight, 0) / inWeek.length : null
+      weeks.push({ label: i === 0 ? '本週' : `${i} 週前`, startDate: startStr, endDate: endStr, avg, count: inWeek.length })
+    }
+
+    const filled = weeks.filter(w => w.avg != null)
+    const current = filled[filled.length - 1] ?? null
+    const previous = filled[filled.length - 2] ?? null
+    const fourWeeksAgo = filled.length >= 5 ? filled[filled.length - 5] : null
+    const delta1w = current && previous ? current.avg! - previous.avg! : null
+    const delta4w = current && fourWeeksAgo ? current.avg! - fourWeeksAgo.avg! : null
+
+    // 線性回歸斜率（kg/週）— 比 delta4w/4 穩定
+    let regressionSlope: number | null = null
+    const points = weeks
+      .map((w, idx) => ({ x: idx, y: w.avg }))
+      .filter(p => p.y != null) as Array<{ x: number; y: number }>
+    if (points.length >= 3) {
+      const n = points.length
+      const meanX = points.reduce((s, p) => s + p.x, 0) / n
+      const meanY = points.reduce((s, p) => s + p.y, 0) / n
+      let num = 0, den = 0
+      for (const p of points) {
+        num += (p.x - meanX) * (p.y - meanY)
+        den += (p.x - meanX) ** 2
+      }
+      if (den > 0) regressionSlope = num / den
+    }
+
+    const trendReversed = delta1w != null && delta4w != null &&
+      Math.sign(delta1w) !== Math.sign(delta4w) &&
+      Math.abs(delta1w) > 0.15
+
+    return { weeks, current, delta1w, delta4w, regressionSlope, trendReversed }
+  }, [bodyData])
+
   // ===== 體組成趨勢 =====
   const bodyTrend = useMemo(() => {
     if (!bodyData.length) return { weight: [], bodyFat: [] }
@@ -1586,6 +1640,244 @@ export default function ClientOverview() {
             </div>
           </div>
         )}
+
+        {/* ===== 週平均體重（滾動 7 天 × 8 週） ===== */}
+        {weeklyWeightStats?.current && (() => {
+          const { weeks, current, delta1w, delta4w, regressionSlope, trendReversed } = weeklyWeightStats
+          const target = keyMetrics.targetWeightNum
+          const remaining = target != null ? current.avg! - target : null
+          const remainingDays = keyMetrics.daysToGoal
+          const goalType = client?.goal_type
+
+          let progressTag: { text: string; color: string } | null = null
+          if (goalType === 'cut' && delta1w != null) {
+            if (delta1w < -0.1) progressTag = { text: '✅ 減重中', color: 'text-emerald-600' }
+            else if (delta1w > 0.2) progressTag = { text: '⚠️ 體重上升', color: 'text-rose-600' }
+            else progressTag = { text: '⏸ 停滯', color: 'text-amber-600' }
+          } else if (goalType === 'bulk' && delta1w != null) {
+            if (delta1w > 0.1) progressTag = { text: '✅ 增重中', color: 'text-emerald-600' }
+            else if (delta1w < -0.2) progressTag = { text: '⚠️ 體重下降', color: 'text-rose-600' }
+            else progressTag = { text: '⏸ 停滯', color: 'text-amber-600' }
+          }
+
+          // 預估達標：用線性回歸斜率，並偵測趨勢反轉
+          let projectedDays: number | null = null
+          if (!trendReversed && regressionSlope != null && remaining != null && Math.abs(regressionSlope) > 0.05) {
+            const weeksNeeded = -remaining / regressionSlope
+            if (weeksNeeded > 0 && weeksNeeded < 200) projectedDays = Math.round(weeksNeeded * 7)
+          }
+
+          // 熱量缺口建議
+          let kcalAdjustment: number | null = null
+          let neededRate: number | null = null
+          let currentRate: number | null = null
+          if (remaining != null && remainingDays != null && remainingDays > 0) {
+            neededRate = -remaining / (remainingDays / 7)
+            currentRate = regressionSlope ?? delta1w ?? 0
+            const gap = neededRate - currentRate
+            if (Math.abs(gap) > 0.05) {
+              kcalAdjustment = Math.round(gap * 7700 / 7)
+            }
+          }
+
+          const currentCalTarget = client?.calories_target ? Number(client.calories_target) : null
+          const currentCarbTarget = client?.carbs_target ? Number(client.carbs_target) : null
+          const currentCarbTrain = client?.carbs_training_day ? Number(client.carbs_training_day) : null
+          const currentCarbRest = client?.carbs_rest_day ? Number(client.carbs_rest_day) : null
+
+          // 套用建議計算（碳水吸收熱量缺口）
+          const minCal = client?.gender === 'female' ? 1200 : 1500
+          const newCal = currentCalTarget != null && kcalAdjustment != null
+            ? Math.max(minCal, Math.round((currentCalTarget + kcalAdjustment) / 10) * 10)
+            : null
+          const actualKcalShift = newCal != null && currentCalTarget != null ? newCal - currentCalTarget : null
+          const carbShift = actualKcalShift != null ? Math.round((actualKcalShift / 4) / 5) * 5 : null
+          const newCarb = currentCarbTarget != null && carbShift != null ? Math.max(50, currentCarbTarget + carbShift) : null
+          const newCarbTrain = currentCarbTrain != null && carbShift != null ? Math.max(50, currentCarbTrain + carbShift) : null
+          const newCarbRest = currentCarbRest != null && carbShift != null ? Math.max(50, currentCarbRest + carbShift) : null
+
+          const filledWeeks = weeks.filter(w => w.avg != null)
+          const maxAvg = filledWeeks.length > 0 ? Math.max(...filledWeeks.map(w => w.avg as number)) : 0
+          const minAvg = filledWeeks.length > 0 ? Math.min(...filledWeeks.map(w => w.avg as number)) : 0
+          const range = Math.max(maxAvg - minAvg, 0.5)
+
+          const projectedOverdue = remainingDays != null && projectedDays != null && projectedDays > remainingDays
+
+          return (
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📈</span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">週平均體重</h3>
+                    <p className="text-[10px] text-gray-400">滾動 7 天平均 · 最近 8 週 · 用來判斷有沒有在進度上</p>
+                  </div>
+                </div>
+                {progressTag && <span className={`text-xs font-semibold ${progressTag.color}`}>{progressTag.text}</span>}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
+                  <p className="text-[10px] text-blue-700 font-semibold tracking-wider uppercase mb-1">本週平均</p>
+                  <p className="text-2xl font-bold text-blue-900">{current.avg!.toFixed(1)}<span className="text-xs font-normal text-gray-500 ml-1">kg</span></p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">{current.count} 筆紀錄</p>
+                </div>
+                <div className="bg-gray-50 border border-gray-100 rounded-xl p-3">
+                  <p className="text-[10px] text-gray-600 font-semibold tracking-wider uppercase mb-1">vs 上週</p>
+                  <p className={`text-xl font-bold ${
+                    delta1w == null ? 'text-gray-400'
+                      : delta1w > 0 ? 'text-rose-600'
+                      : delta1w < 0 ? 'text-emerald-600'
+                      : 'text-gray-600'
+                  }`}>
+                    {delta1w == null ? '—' : `${delta1w > 0 ? '+' : ''}${delta1w.toFixed(2)}`}
+                  </p>
+                  {delta1w != null && <p className="text-[10px] text-gray-500 mt-0.5">kg / 週</p>}
+                </div>
+                <div className="bg-gray-50 border border-gray-100 rounded-xl p-3">
+                  <p className="text-[10px] text-gray-600 font-semibold tracking-wider uppercase mb-1">vs 4 週前</p>
+                  <p className={`text-xl font-bold ${
+                    delta4w == null ? 'text-gray-400'
+                      : delta4w > 0 ? 'text-rose-600'
+                      : delta4w < 0 ? 'text-emerald-600'
+                      : 'text-gray-600'
+                  }`}>
+                    {delta4w == null ? '—' : `${delta4w > 0 ? '+' : ''}${delta4w.toFixed(2)}`}
+                  </p>
+                  {delta4w != null && <p className="text-[10px] text-gray-500 mt-0.5">kg / 月</p>}
+                </div>
+                <div className={`border rounded-xl p-3 ${
+                  trendReversed ? 'bg-amber-50 border-amber-200'
+                    : projectedOverdue ? 'bg-rose-50 border-rose-200'
+                    : 'bg-emerald-50 border-emerald-100'
+                }`}>
+                  <p className={`text-[10px] font-semibold tracking-wider uppercase mb-1 ${
+                    trendReversed ? 'text-amber-700'
+                      : projectedOverdue ? 'text-rose-700'
+                      : 'text-emerald-700'
+                  }`}>預估達標</p>
+                  {trendReversed ? (
+                    <>
+                      <p className="text-base font-bold text-amber-700">趨勢反轉</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">本週與 4 週前方向相反，先看 2-3 週</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className={`text-xl font-bold ${projectedOverdue ? 'text-rose-700' : 'text-emerald-700'}`}>
+                        {projectedDays != null ? `${projectedDays} 天` : '—'}
+                      </p>
+                      {projectedDays != null && remainingDays != null && (
+                        <p className="text-[10px] text-gray-500 mt-0.5">
+                          {projectedOverdue ? `⚠️ 比目標慢 ${projectedDays - remainingDays} 天` : `比目標快 ${remainingDays - projectedDays} 天`}
+                        </p>
+                      )}
+                      {projectedDays == null && (
+                        <p className="text-[10px] text-gray-500 mt-0.5">速度不足以推算</p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-end gap-1 h-14 mb-1">
+                {weeks.map((w, i) => {
+                  if (w.avg == null) {
+                    return <div key={i} className="flex-1 bg-gray-100 rounded" style={{ height: '6%' }} title={`${w.label} 無紀錄`} />
+                  }
+                  const pct = ((w.avg - minAvg) / range) * 75 + 25
+                  const isCurrent = i === weeks.length - 1
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                      <span className="text-[9px] text-gray-500">{w.avg.toFixed(1)}</span>
+                      <div
+                        className={`w-full rounded transition-all ${isCurrent ? 'bg-blue-500' : 'bg-blue-200'}`}
+                        style={{ height: `${pct}%` }}
+                        title={`${w.label}（${w.startDate} ~ ${w.endDate}）：${w.avg.toFixed(1)} kg · ${w.count} 筆`}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="flex justify-between text-[10px] text-gray-400">
+                <span>7 週前</span>
+                <span>本週</span>
+              </div>
+
+              {/* 動態調整建議 + 一鍵套用 */}
+              {kcalAdjustment != null && remainingDays != null && remainingDays > 0 && remaining != null && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex items-start gap-2">
+                    <span className="text-base mt-0.5">💡</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900 mb-1">動態調整建議</p>
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        距目標 <strong className="text-gray-900">{Math.abs(remaining).toFixed(1)} kg</strong>、剩 <strong className="text-gray-900">{remainingDays} 天</strong>。
+                        {currentRate != null && (
+                          <>目前速率 <strong className={currentRate < 0 ? 'text-emerald-700' : 'text-rose-700'}>{currentRate >= 0 ? '+' : ''}{currentRate.toFixed(2)} kg/週</strong>，</>
+                        )}
+                        {neededRate != null && (
+                          <>需 <strong className="text-gray-900">{neededRate >= 0 ? '+' : ''}{neededRate.toFixed(2)} kg/週</strong> 才會準時。</>
+                        )}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <span className={`text-2xl font-bold ${kcalAdjustment < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                          {kcalAdjustment > 0 ? '+' : ''}{kcalAdjustment} kcal/天
+                        </span>
+                        {currentCalTarget != null && newCal != null && (
+                          <span className="text-xs text-gray-500">
+                            熱量 {currentCalTarget} → <strong className="text-gray-700">{newCal}</strong>
+                          </span>
+                        )}
+                        {currentCarbTarget != null && newCarb != null && (
+                          <span className="text-xs text-gray-500">
+                            · 碳水 {currentCarbTarget}g → <strong className="text-gray-700">{newCarb}g</strong>
+                          </span>
+                        )}
+                      </div>
+                      {(currentCarbTrain != null || currentCarbRest != null) && (
+                        <p className="text-[11px] text-gray-500 mt-1">
+                          {currentCarbTrain != null && newCarbTrain != null && (
+                            <>訓練日：{currentCarbTrain}g → <strong>{newCarbTrain}g</strong></>
+                          )}
+                          {currentCarbTrain != null && currentCarbRest != null && '　·　'}
+                          {currentCarbRest != null && newCarbRest != null && (
+                            <>非訓練日：{currentCarbRest}g → <strong>{newCarbRest}g</strong></>
+                          )}
+                        </p>
+                      )}
+
+                      {currentCalTarget != null && newCal != null && newCal !== currentCalTarget && (
+                        <button
+                          onClick={async () => {
+                            const summary = [
+                              `熱量：${currentCalTarget} → ${newCal} kcal`,
+                              currentCarbTarget != null && newCarb != null ? `碳水：${currentCarbTarget}g → ${newCarb}g` : null,
+                              currentCarbTrain != null && newCarbTrain != null ? `訓練日碳水：${currentCarbTrain}g → ${newCarbTrain}g` : null,
+                              currentCarbRest != null && newCarbRest != null ? `非訓練日碳水：${currentCarbRest}g → ${newCarbRest}g` : null,
+                            ].filter(Boolean).join('\n')
+                            if (!confirm(`確定套用？\n\n${summary}\n\n（蛋白質、脂肪不變；可隨時再改）`)) return
+                            const updates: Record<string, number> = { calories_target: newCal }
+                            if (currentCarbTarget != null && newCarb != null) updates.carbs_target = newCarb
+                            if (currentCarbTrain != null && newCarbTrain != null) updates.carbs_training_day = newCarbTrain
+                            if (currentCarbRest != null && newCarbRest != null) updates.carbs_rest_day = newCarbRest
+                            await saveQuickAction(updates, '✓ macros 已調整')
+                          }}
+                          disabled={quickSaving}
+                          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        >
+                          {quickSaving ? '套用中…' : '🎯 一鍵套用建議'}
+                        </button>
+                      )}
+                      <p className="text-[10px] text-gray-400 mt-2 leading-snug">
+                        7700 kcal ≈ 1 kg 純脂肪推算（未區分肌脂、未含 NEAT 變化）。建議搭配 1-2 週體重驗證後再進一步調。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* ===== 教練快速操作 ===== */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5">
