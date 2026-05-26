@@ -78,9 +78,13 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentRunResult> {
 
   for (let turn = 0; turn < maxTurns; turn++) {
     const response = await client.messages.create({
-      model: 'claude-opus-4-7',
+      model: 'claude-sonnet-4-6',
       max_tokens: 4096,
-      system: SYSTEM_PROMPT,
+      // System prompt + tools 用 prompt caching（5 分鐘 TTL）
+      // 5 分鐘內重複呼叫只收 10% 的 input cost
+      system: [
+        { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+      ] as any,
       tools: AGENT_TOOLS as any,
       messages,
     })
