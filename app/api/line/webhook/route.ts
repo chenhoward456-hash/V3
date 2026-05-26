@@ -18,6 +18,7 @@ import {
   handleNaturalNutrition,
 } from '@/lib/line-handlers'
 import { buildDay0Messages, enrollSubscriber, unenrollSubscriber } from '@/lib/nurture-sequence'
+import { handleAdminAgentMessage, handleAgentProposalPostback } from '@/lib/agent-line'
 
 const log = createLogger('LINE-Webhook')
 
@@ -128,9 +129,16 @@ async function handleEvent(event: LineWebhookEvent) {
       }
       break
 
-    case 'postback':
+    case 'postback': {
+      const data = event.postback?.data ?? ''
+      // 教練端 AI Agent proposal 審核 postback
+      if (userId === process.env.ADMIN_LINE_USER_ID && data.startsWith('agent_proposal:')) {
+        const handled = await handleAgentProposalPostback(data, event.replyToken, supabase)
+        if (handled) break
+      }
       await handlePostback(event, userId, supabase)
       break
+    }
 
     case 'unfollow':
       log.info(`Unfollowed: ${userId}`)
@@ -151,6 +159,17 @@ async function handleEvent(event: LineWebhookEvent) {
 
 async function handleTextMessage(event: LineWebhookEvent, userId: string, supabase: SupabaseClient) {
   const text = (event.message?.text || '').trim()
+
+  // 教練端 AI Agent 攔截（Phase 2a）
+  // Howard 直接在 LINE 跟 AI 對話。前綴 @ai 或 @a 觸發，避免吃掉舊指令
+  if (userId === process.env.ADMIN_LINE_USER_ID && /^@(ai|a)\s+/i.test(text)) {
+    const stripped = text.replace(/^@(ai|a)\s+/i, '').trim()
+    await handleAdminAgentMessage(
+      { replyToken: event.replyToken, message: { text: stripped } },
+      supabase,
+    )
+    return
+  }
 
   // Single client lookup shared by all handlers
   const client = await getClientByLineId(userId, supabase)
