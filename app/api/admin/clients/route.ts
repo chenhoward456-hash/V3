@@ -206,7 +206,20 @@ export async function PUT(request: NextRequest) {
       oldTier = before?.subscription_tier || null
     }
 
-    // 先更新主要欄位（不含 coach_macro_override，避免欄位不存在時整個更新失敗）
+    // Audit gap fix：UPDATE 前先快照當前 macros（PUT 後對比要用）
+    const MACRO_FIELDS = ['calories_target', 'protein_target', 'carbs_target', 'fat_target', 'carbs_training_day', 'carbs_rest_day']
+    const incomingMacroFields = MACRO_FIELDS.filter(f => f in sanitizedClientData && sanitizedClientData[f] != null)
+    let preUpdateMacros: Record<string, unknown> | null = null
+    if (incomingMacroFields.length > 0) {
+      const { data: snap } = await supabase
+        .from('clients')
+        .select(MACRO_FIELDS.join(', '))
+        .eq('id', clientId)
+        .single()
+      preUpdateMacros = (snap as Record<string, unknown> | null) ?? null
+    }
+
+    // 更新主要欄位
     const { error: clientError } = await supabase
       .from('clients')
       .update(sanitizedClientData)
@@ -255,42 +268,64 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // 教練覆寫鎖定：如果教練修改了營養目標欄位，自動設定鎖定
-    // 獨立更新 coach_macro_override，即使欄位不存在也不影響主要資料儲存
+    // 教練覆寫鎖定 + macro_adjustment_log audit（修 bug：對比 UPDATE 前快照而非後快照）
     try {
-      const MACRO_FIELDS = ['calories_target', 'protein_target', 'carbs_target', 'fat_target', 'carbs_training_day', 'carbs_rest_day']
-      const changedMacroFields = MACRO_FIELDS.filter(f => f in sanitizedClientData && sanitizedClientData[f] != null)
       let overrideValue: Record<string, unknown> | null | undefined = undefined
 
-      if (changedMacroFields.length > 0) {
-        const { data: currentClient } = await supabase
+      // 用 UPDATE 前的快照對比，找出真正變動的 macro 欄位
+      const actuallyChanged = preUpdateMacros
+        ? incomingMacroFields.filter(f => {
+            const oldV = preUpdateMacros![f]
+            const newV = sanitizedClientData[f]
+            // numeric comparison (string-stored numbers from supabase)
+            return (oldV == null ? null : Number(oldV)) !== (newV == null ? null : Number(newV))
+          })
+        : incomingMacroFields
+
+      if (actuallyChanged.length > 0 && preUpdateMacros) {
+        // 1. 寫 macro_adjustment_log（修 audit gap：admin manual edit 也要進 log）
+        const oldMacros: Record<string, number | null> = {}
+        const newMacros: Record<string, number | null> = {}
+        for (const f of MACRO_FIELDS) {
+          const ov = preUpdateMacros[f]
+          oldMacros[f] = ov != null ? Number(ov) : null
+          const nv = sanitizedClientData[f]
+          newMacros[f] = nv != null ? Number(nv) : (ov != null ? Number(ov) : null)
+        }
+        const { error: logErr } = await supabase.from('macro_adjustment_log').insert({
+          client_id: clientId,
+          applied_by: 'coach',
+          trigger_source: 'manual',
+          old_macros: oldMacros,
+          new_macros: newMacros,
+          reason: `教練後台手動編輯（admin UI）：${actuallyChanged.join('、')}`,
+          trajectory_data: null,
+          hit_boundary: false,
+        })
+        if (logErr) console.warn('[admin/clients PUT] macro_adjustment_log 寫入失敗:', logErr.message)
+
+        // 2. 同步寫 last_auto_adjust_at（cooldown 邏輯需要）
+        await supabase
           .from('clients')
-          .select(MACRO_FIELDS.join(', '))
+          .update({ last_auto_adjust_at: new Date().toISOString() })
           .eq('id', clientId)
-          .single()
 
-        const cc = currentClient as Record<string, unknown> | null
-        const actuallyChanged = cc
-          ? changedMacroFields.filter(f => sanitizedClientData[f] !== cc[f])
-          : changedMacroFields
-
-        if (actuallyChanged.length > 0) {
-          overrideValue = {
-            locked_at: new Date().toISOString(),
-            expires_at: (typeof override_duration_days === 'number' && override_duration_days > 0)
-              ? new Date(Date.now() + override_duration_days * 86400000).toISOString()
-              : null,
-            locked_fields: actuallyChanged,
-            override_values: Object.fromEntries(
-              actuallyChanged.map(f => [f, sanitizedClientData[f] ?? null])
-            ),
-            previous_values: cc
-              ? Object.fromEntries(actuallyChanged.map(f => [f, cc[f]]))
-              : {},
-            reason: (typeof override_reason === 'string' && override_reason.trim())
-              ? override_reason.trim()
-              : null,
-          }
+        // 3. 建立 override
+        overrideValue = {
+          locked_at: new Date().toISOString(),
+          expires_at: (typeof override_duration_days === 'number' && override_duration_days > 0)
+            ? new Date(Date.now() + override_duration_days * 86400000).toISOString()
+            : null,
+          locked_fields: actuallyChanged,
+          override_values: Object.fromEntries(
+            actuallyChanged.map(f => [f, sanitizedClientData[f] ?? null])
+          ),
+          previous_values: Object.fromEntries(
+            actuallyChanged.map(f => [f, preUpdateMacros![f]])
+          ),
+          reason: (typeof override_reason === 'string' && override_reason.trim())
+            ? override_reason.trim()
+            : null,
         }
       }
 
