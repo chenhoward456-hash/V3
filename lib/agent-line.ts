@@ -9,6 +9,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { replyMessage, pushMessage } from '@/lib/line'
 import { runAgent } from '@/lib/agent-runner'
+import { createServiceSupabase } from '@/lib/supabase'
+
+async function dbg(action: string, error?: string) {
+  try {
+    await createServiceSupabase().from('line_webhook_debug_log').insert({
+      user_id: 'agent_line',
+      event_type: 'agent_step',
+      action_taken: action,
+      error_msg: error ?? null,
+    })
+  } catch {}
+}
 
 const ADMIN_DEFAULT_CONTEXT = '陳胤豪 (client_id=2b7e3242-d325-4c1c-bf66-c7fd5e56cac4)'
 
@@ -33,8 +45,9 @@ export async function handleAdminAgentMessage(
   event: { replyToken: string; message?: { text?: string } },
   supabase: SupabaseClient,
 ) {
+  await dbg('handler_entry')
   const userText = event.message?.text?.trim() ?? ''
-  if (!userText) return
+  if (!userText) { await dbg('empty_text_skip'); return }
 
   // Pre-route：admin 用快速指令時不走 AI
   if (/^(list|proposals|待審|清單)$/i.test(userText)) {
@@ -43,28 +56,41 @@ export async function handleAdminAgentMessage(
   }
 
   // 顯示「處理中」避免 LINE 等太久 timeout
-  await replyMessage(event.replyToken, [
-    { type: 'text', text: '🧠 AI 思考中...（10-30 秒）' },
-  ]).catch(() => {})
+  try {
+    await replyMessage(event.replyToken, [
+      { type: 'text', text: '🧠 AI 思考中...（10-30 秒）' },
+    ])
+    await dbg('reply_thinking_ok')
+  } catch (e) {
+    await dbg('reply_thinking_fail', (e as Error).message)
+  }
 
   try {
+    await dbg('runAgent_start')
     const result = await runAgent({
       userMessage: userText,
       contextHint: `(教練端 LINE 對話)\n${ADMIN_DEFAULT_CONTEXT}`,
       maxTurns: 6,
     })
+    await dbg('runAgent_done', `text_len=${result.finalText.length} toolCalls=${result.toolCalls.length}`)
 
     const adminLineId = process.env.ADMIN_LINE_USER_ID
     if (!adminLineId) {
-      console.error('[agent-line] ADMIN_LINE_USER_ID 未設定，無法 push 後續訊息')
+      await dbg('admin_env_missing')
       return
     }
 
     // 1. AI 回應本文（chunk）
     const textChunks = chunkText(result.finalText)
+    await dbg('push_text_start', `chunks=${textChunks.length}`)
     for (const chunk of textChunks) {
-      await pushMessage(adminLineId, [{ type: 'text', text: chunk }]).catch(() => {})
+      try {
+        await pushMessage(adminLineId, [{ type: 'text', text: chunk }])
+      } catch (e) {
+        await dbg('push_text_fail', (e as Error).message)
+      }
     }
+    await dbg('push_text_done')
 
     // 2. 如果有新建立的 proposal，後接審核 quick reply
     const createdProposals = result.toolCalls
@@ -110,11 +136,12 @@ export async function handleAdminAgentMessage(
       { type: 'text', text: `🔧 ${result.toolCalls.length} tool calls · in ${result.totalTokens.input}t / out ${result.totalTokens.output}t · NT$${cost}` },
     ]).catch(() => {})
   } catch (err) {
-    console.error('[agent-line] runAgent failed:', err)
+    const msg = (err as Error).message || 'unknown'
+    await dbg('agent_exception', msg)
     const adminLineId = process.env.ADMIN_LINE_USER_ID
     if (adminLineId) {
       await pushMessage(adminLineId, [
-        { type: 'text', text: '❌ AI 處理失敗: ' + ((err as Error).message || 'unknown') },
+        { type: 'text', text: '❌ AI 處理失敗: ' + msg.slice(0, 200) },
       ]).catch(() => {})
     }
   }
