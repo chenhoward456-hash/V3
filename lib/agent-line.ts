@@ -229,7 +229,7 @@ export async function handleAgentProposalPostback(
   // approve
   const changes = (proposal.proposed_changes ?? {}) as Record<string, number>
   const clientUpdates: Record<string, any> = { last_auto_adjust_at: now }
-  const macroFields = ['calories_target', 'protein_target', 'carbs_target', 'fat_target', 'carbs_training_day', 'carbs_rest_day']
+  const macroFields = ['calories_target', 'protein_target', 'carbs_target', 'fat_target', 'carbs_training_day', 'carbs_rest_day', 'cardio_minutes_per_day']
   for (const f of macroFields) if (changes[f] != null) clientUpdates[f] = changes[f]
 
   if (Object.keys(clientUpdates).length > 1) {

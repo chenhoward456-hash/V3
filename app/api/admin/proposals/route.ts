@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     // approve: apply changes + write to macro_adjustment_log + update clients
     const changes = proposal.proposed_changes as Record<string, number>
     const clientUpdates: Record<string, any> = { last_auto_adjust_at: now }
-    const trackedFields = ['calories_target', 'protein_target', 'carbs_target', 'fat_target', 'carbs_training_day', 'carbs_rest_day']
+    const trackedFields = ['calories_target', 'protein_target', 'carbs_target', 'fat_target', 'carbs_training_day', 'carbs_rest_day', 'cardio_minutes_per_day']
     for (const f of trackedFields) {
       if (changes[f] != null) clientUpdates[f] = changes[f]
     }

@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>健身的另外 2/3 — Howard Protocol</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700;900&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  /* ═══════ PRINT SETUP ═══════ */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  @media print {
+    body { background: white !important; }
+    .no-print { display: none !important; }
+    .page { box-shadow: none !important; margin: 0 !important; }
+  }
+
+  /* ═══════ BASE ═══════ */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #1a3a5c;
+    --navy-dark: #0e2740;
+    --blue: #3756d8;
+    --blue-soft: #eef1fb;
+    --paper: #fafaf7;
+    --ink: #2a2a35;
+    --gray: #6a6a75;
+    --gray-light: #a0a0a8;
+    --line: #e0e0e5;
+    --red: #c0392b;
+    --green: #2a8a4a;
+  }
+  body {
+    font-family: "Noto Sans TC", -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: #1a1a22;
+    color: var(--ink);
+    line-height: 1.75;
+    padding: 40px 0;
+  }
+  .container { max-width: 210mm; margin: 0 auto; }
+
+  /* ═══════ PRINT GUIDE BANNER ═══════ */
+  .guide {
+    max-width: 210mm;
+    margin: 0 auto 40px;
+    padding: 24px 32px;
+    background: rgba(55,86,216,0.1);
+    border: 1px solid rgba(55,86,216,0.3);
+    border-radius: 12px;
+    color: #e8e8ed;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .guide h2 { font-size: 16px; color: #fff; margin-bottom: 8px; font-family: "Noto Serif TC", serif; }
+  .guide kbd {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #fff;
+    margin: 0 2px;
+  }
+
+  /* ═══════ PAGE ═══════ */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    background: var(--paper);
+    margin: 0 auto 24px;
+    padding: 22mm 20mm;
+    page-break-after: always;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+  }
+  .page:last-of-type { page-break-after: auto; }
+
+  /* Page header tag */
+  .page-tag {
+    position: absolute;
+    top: 12mm;
+    right: 12mm;
+    background: var(--navy);
+    color: #fff;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    padding: 4px 10px;
+    border-radius: 2px;
+    font-weight: 700;
+  }
+  .page-num {
+    position: absolute;
+    bottom: 12mm;
+    right: 20mm;
+    font-size: 10px;
+    color: var(--gray-light);
+    letter-spacing: 0.2em;
+    font-family: "Noto Serif TC", serif;
+  }
+  .page-footer {
+    position: absolute;
+    bottom: 12mm;
+    left: 20mm;
+    font-size: 10px;
+    color: var(--gray-light);
+    letter-spacing: 0.15em;
+    font-family: "Noto Serif TC", serif;
+    font-weight: 700;
+  }
+
+  /* ═══════ TYPOGRAPHY ═══════ */
+  h1, h2, h3, .serif { font-family: "Noto Serif TC", serif; }
+
+  /* ═══════ COVER ═══════ */
+  .cover {
+    justify-content: space-between;
+    background: var(--paper);
+    padding: 30mm 22mm;
+  }
+  .cover-brand {
+    font-family: "Noto Serif TC", serif;
+    font-size: 14px;
+    color: var(--navy);
+    font-weight: 700;
+    letter-spacing: 0.15em;
+  }
+  .cover-brand::before {
+    content: "";
+    display: inline-block;
+    width: 30px;
+    height: 2px;
+    background: var(--blue);
+    vertical-align: middle;
+    margin-right: 12px;
+  }
+  .cover-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--blue);
+    font-weight: 700;
+    margin-top: 50mm;
+    margin-bottom: 8mm;
+  }
+  .cover h1 {
+    font-size: 64px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+    margin-bottom: 12mm;
+  }
+  .cover .frac {
+    color: var(--blue);
+    font-style: italic;
+  }
+  .cover-sub {
+    font-family: "Noto Serif TC", serif;
+    font-size: 22px;
+    color: var(--navy);
+    line-height: 1.6;
+    font-weight: 500;
+    margin-bottom: 8mm;
+  }
+  .cover-tagline {
+    font-size: 15px;
+    color: var(--gray);
+    line-height: 1.8;
+    max-width: 120mm;
+  }
+  .cover-deco {
+    position: absolute;
+    top: 30mm;
+    right: 22mm;
+    width: 80mm;
+    height: 80mm;
+    border: 1px solid var(--blue);
+    border-radius: 50%;
+    opacity: 0.2;
+  }
+  .cover-deco-2 {
+    position: absolute;
+    top: 50mm;
+    right: 42mm;
+    width: 40mm;
+    height: 40mm;
+    border: 1px solid var(--blue);
+    border-radius: 50%;
+    opacity: 0.4;
+  }
+  .cover-bottom {
+    border-top: 1px solid var(--line);
+    padding-top: 6mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-size: 11px;
+    color: var(--gray);
+    letter-spacing: 0.05em;
+  }
+  .cover-bottom .author {
+    font-family: "Noto Serif TC", serif;
+    color: var(--navy);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  /* ═══════ INTRO PAGE ═══════ */
+  .intro h2 {
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 8mm;
+    letter-spacing: 0.02em;
+  }
+  .intro .lead {
+    font-family: "Noto Serif TC", serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--navy);
+    line-height: 1.6;
+    margin-bottom: 8mm;
+    padding-left: 6mm;
+    border-left: 3px solid var(--blue);
+  }
+  .intro p {
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.9;
+    margin-bottom: 5mm;
+  }
+  .intro ul {
+    list-style: none;
+    padding: 0;
+    margin: 4mm 0;
+  }
+  .intro ul li {
+    padding: 5mm 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  .intro ul li:last-child { border-bottom: none; }
+  .intro ul li strong { color: var(--navy); font-weight: 700; }
+  .intro .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 4mm;
+    margin: 8mm 0 4mm;
+    padding: 6mm 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .intro .stats .stat { text-align: center; }
+  .intro .stats .num {
+    font-family: "Noto Serif TC", serif;
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--blue);
+    line-height: 1;
+  }
+  .intro .stats .label {
+    font-size: 10px;
+    color: var(--gray);
+    letter-spacing: 0.15em;
+    margin-top: 2mm;
+  }
+  .intro blockquote {
+    margin-top: 8mm;
+    padding: 4mm 6mm;
+    background: #fffbe8;
+    border-left: 3px solid #d4a017;
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.7;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* ═══════ PART DIVIDER PAGE ═══════ */
+  .part-divider {
+    justify-content: center;
+    align-items: flex-start;
+    text-align: left;
+  }
+  .part-divider .label {
+    font-size: 11px;
+    color: var(--blue);
+    letter-spacing: 0.4em;
+    font-weight: 700;
+    margin-bottom: 4mm;
+  }
+  .part-divider .part-num {
+    font-family: "Noto Serif TC", serif;
+    font-size: 200px;
+    font-weight: 900;
+    color: var(--blue);
+    line-height: 1;
+    margin-bottom: 8mm;
+    opacity: 0.15;
+  }
+  .part-divider h2 {
+    font-size: 56px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.15;
+    margin-bottom: 6mm;
+  }
+  .part-divider .desc {
+    font-size: 14px;
+    color: var(--gray);
+    line-height: 1.8;
+    max-width: 130mm;
+  }
+
+  /* ═══════ TOPIC PAGE ═══════ */
+  .topic-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 4mm;
+    border-bottom: 2px solid var(--navy);
+    margin-bottom: 8mm;
+  }
+  .topic-num {
+    font-family: "Noto Serif TC", serif;
+    font-size: 13px;
+    color: var(--navy);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+  .topic-cat {
+    font-size: 10px;
+    color: var(--gray);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+  }
+  .topic-title {
+    font-size: 44px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1;
+    margin-bottom: 4mm;
+  }
+  .topic-subtitle {
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 8mm;
+    font-family: "Noto Serif TC", serif;
+  }
+  .topic-subtitle .en {
+    color: var(--blue);
+    font-weight: 500;
+  }
+
+  .block { margin-bottom: 6mm; }
+  .block-label {
+    font-family: "Noto Serif TC", serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 3mm;
+    padding-bottom: 2mm;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+  }
+  .block-label .num {
+    font-size: 10px;
+    background: var(--navy);
+    color: #fff;
+    width: 5mm;
+    height: 5mm;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Noto Sans TC", sans-serif;
+    font-weight: 700;
+  }
+  .block p {
+    font-size: 12.5px;
+    color: var(--ink);
+    line-height: 1.85;
+  }
+  .block p strong { color: var(--blue); font-weight: 700; }
+  .block ul {
+    list-style: none;
+    padding: 0;
+    margin: 2mm 0;
+  }
+  .block ul li {
+    font-size: 12.5px;
+    line-height: 1.85;
+    padding: 1mm 0 1mm 6mm;
+    position: relative;
+    color: var(--ink);
+  }
+  .block ul li::before {
+    content: "•";
+    color: var(--blue);
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+  }
+  .block ul.checks li::before { content: ""; }
+  .block ul.checks li.ok::before { content: "✓"; color: var(--green); font-weight: 700; }
+  .block ul.checks li.no::before { content: "✗"; color: var(--red); font-weight: 700; }
+
+  /* Steps grid */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3mm;
+    margin-top: 2mm;
+  }
+  .step {
+    background: #f5f5f0;
+    border-left: 3px solid var(--blue);
+    padding: 3mm 4mm;
+    border-radius: 0 4px 4px 0;
+  }
+  .step .step-num {
+    font-family: "Noto Serif TC", serif;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--blue);
+    line-height: 1;
+    margin-bottom: 1mm;
+  }
+  .step .step-text {
+    font-size: 11.5px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 3mm 0;
+    font-size: 12px;
+  }
+  table th {
+    background: var(--navy);
+    color: #fff;
+    padding: 3mm 3mm;
+    text-align: left;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+  table td {
+    padding: 3mm 3mm;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  table tr:nth-child(even) td { background: #f8f8f4; }
+  table strong { color: var(--blue); font-weight: 700; }
+
+  /* Self-check box */
+  .self-check {
+    background: #fffbe8;
+    border: 1px dashed #d4a017;
+    border-radius: 4px;
+    padding: 4mm 5mm;
+    margin: 2mm 0;
+  }
+  .self-check .check-label {
+    font-size: 9px;
+    color: #b8860b;
+    letter-spacing: 0.2em;
+    font-weight: 700;
+    margin-bottom: 2mm;
+  }
+  .self-check p { font-size: 12.5px; color: var(--ink); }
+
+  /* Highlight arrow */
+  .arrow-note {
+    margin: 2mm 0;
+    padding: 2mm 4mm;
+    background: var(--blue-soft);
+    border-left: 3px solid var(--blue);
+    font-size: 12.5px;
+    color: var(--navy);
+    font-weight: 500;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.7;
+  }
+  .arrow-note strong { color: var(--blue); }
+
+  /* Big number / Tool list */
+  .tool-list {
+    font-size: 11.5px;
+    color: var(--gray);
+    line-height: 1.7;
+    margin-top: 2mm;
+  }
+  .tool-list strong { color: var(--navy); }
+
+  /* Formula box */
+  .formula {
+    background: var(--navy);
+    color: #fff;
+    padding: 5mm;
+    border-radius: 4px;
+    font-family: "Noto Serif TC", monospace;
+    font-size: 13px;
+    text-align: center;
+    margin: 3mm 0;
+    line-height: 1.6;
+  }
+
+  /* Example callout */
+  .example {
+    background: var(--blue-soft);
+    padding: 4mm 5mm;
+    border-radius: 4px;
+    margin: 3mm 0;
+  }
+  .example .example-label {
+    font-size: 10px;
+    color: var(--blue);
+    letter-spacing: 0.15em;
+    font-weight: 700;
+    margin-bottom: 2mm;
+  }
+  .example p, .example li { font-size: 11.5px; line-height: 1.7; }
+
+  /* Story page (P.16) */
+  .story h2 {
+    font-size: 36px;
+    color: var(--navy);
+    margin-bottom: 4mm;
+    line-height: 1.2;
+  }
+  .story .lead {
+    font-family: "Noto Serif TC", serif;
+    font-size: 16px;
+    color: var(--ink);
+    margin-bottom: 5mm;
+    line-height: 1.7;
+  }
+  .story p {
+    font-size: 12.5px;
+    line-height: 1.85;
+    margin-bottom: 4mm;
+    color: var(--ink);
+  }
+  .story p strong { color: var(--navy); font-weight: 700; }
+  .story .symptoms {
+    background: #faf0ee;
+    border-left: 3px solid var(--red);
+    padding: 4mm 5mm;
+    margin: 4mm 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .story .symptoms li {
+    padding: 1.5mm 0;
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  .story .symptoms strong { color: var(--red); }
+  .story .doctor-quote {
+    font-family: "Noto Serif TC", serif;
+    font-size: 15px;
+    font-style: italic;
+    color: var(--navy);
+    border-left: 3px solid var(--navy);
+    padding: 3mm 5mm;
+    margin: 5mm 0;
+    line-height: 1.6;
+  }
+  .story .separator {
+    text-align: center;
+    color: var(--gray-light);
+    margin: 5mm 0;
+    letter-spacing: 0.5em;
+  }
+
+  /* Principles page (P.17) */
+  .principles h2 {
+    font-size: 36px;
+    color: var(--navy);
+    margin-bottom: 3mm;
+  }
+  .principles .lead {
+    font-size: 12.5px;
+    color: var(--gray);
+    margin-bottom: 6mm;
+  }
+  .principle {
+    border-top: 2px solid var(--blue);
+    padding: 4mm 0;
+    margin-bottom: 5mm;
+  }
+  .principle h3 {
+    font-size: 20px;
+    color: var(--navy);
+    margin-bottom: 3mm;
+  }
+  .principle h3 .num {
+    color: var(--blue);
+    font-style: italic;
+    font-weight: 900;
+    margin-right: 2mm;
+  }
+  .principle p {
+    font-size: 12.5px;
+    color: var(--ink);
+    line-height: 1.85;
+  }
+  .principle p strong { color: var(--blue); font-weight: 700; }
+
+  /* CTA page (P.18) */
+  .cta {
+    justify-content: space-between;
+  }
+  .cta-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--blue);
+    font-weight: 700;
+    margin-bottom: 4mm;
+  }
+  .cta h2 {
+    font-size: 44px;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 6mm;
+  }
+  .cta-lead {
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.85;
+    margin-bottom: 8mm;
+  }
+  .cta-card {
+    background: var(--navy);
+    color: #fff;
+    padding: 6mm 7mm;
+    border-radius: 6px;
+    margin-bottom: 5mm;
+  }
+  .cta-card .step {
+    font-size: 10px;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.25em;
+    margin-bottom: 2mm;
+  }
+  .cta-card h3 {
+    font-size: 20px;
+    margin-bottom: 3mm;
+  }
+  .cta-card p {
+    font-size: 12px;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.7;
+    margin-bottom: 4mm;
+  }
+  .cta-button {
+    display: inline-block;
+    background: var(--blue);
+    color: #fff;
+    padding: 3mm 6mm;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+  }
+  .cta-signature {
+    font-family: "Noto Serif TC", serif;
+    font-size: 14px;
+    color: var(--navy);
+    margin-top: 5mm;
+    font-weight: 700;
+  }
+
+  /* About / Disclaimer */
+  .about h2 {
+    font-size: 32px;
+    color: var(--navy);
+    margin-bottom: 5mm;
+  }
+  .about h3 {
+    font-size: 16px;
+    color: var(--navy);
+    margin: 6mm 0 3mm;
+    padding-bottom: 1mm;
+    border-bottom: 1px solid var(--line);
+  }
+  .about p, .about li {
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.85;
+  }
+  .about ul {
+    list-style: none;
+    padding: 0;
+  }
+  .about ul li {
+    padding: 1mm 0 1mm 5mm;
+    position: relative;
+  }
+  .about ul li::before {
+    content: "•";
+    color: var(--blue);
+    position: absolute;
+    left: 0;
+  }
+  .about .upcoming {
+    background: var(--blue-soft);
+    padding: 4mm 5mm;
+    border-radius: 4px;
+    margin: 4mm 0;
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.7;
+  }
+  .about .upcoming strong { color: var(--blue); }
+  .about .disclaimer {
+    font-size: 10.5px;
+    color: var(--gray);
+    line-height: 1.7;
+    margin-top: 3mm;
+  }
+
+  /* Visual sparkline */
+  .sparkline {
+    margin: 4mm 0;
+    padding: 4mm;
+    background: #f5f5f0;
+    border-radius: 4px;
+    text-align: center;
+  }
+  .sparkline svg { width: 100%; height: auto; max-height: 60px; }
+  .sparkline .caption {
+    font-size: 10px;
+    color: var(--gray);
+    margin-top: 2mm;
+    letter-spacing: 0.1em;
+  }
+</style>
+</head>
+<body>
+
+<!-- Print guide (hidden in PDF) -->
+<div class="guide no-print">
+  <h2>📄 列印成 PDF 步驟</h2>
+  <p>1. 按 <kbd>Cmd</kbd>+<kbd>P</kbd>（或 Chrome 右上角選列印）<br>
+  2. 目的地選 <strong>「儲存為 PDF」</strong><br>
+  3. 紙張：<strong>A4</strong>　邊界：<strong>無</strong>　縮放：<strong>預設</strong><br>
+  4. 勾選「<strong>背景圖形</strong>」（讓深藍色標籤印出來）<br>
+  5. 儲存 → 完成 ✅</p>
+</div>
+
+<div class="container">
+
+  <!-- ═══════ P.01 COVER ═══════ -->
+  <div class="page cover">
+    <div class="cover-deco"></div>
+    <div class="cover-deco-2"></div>
+    <div>
+      <div class="cover-brand">HOWARD PROTOCOL</div>
+      <div class="cover-eyebrow">FREE GUIDE</div>
+      <h1>健身的<br>另外 <span class="frac">2/3</span></h1>
+      <div class="cover-sub">你忽略的<br>恢復、營養、系統真相</div>
+      <p class="cover-tagline">
+        練了沒進步？<br>
+        90% 的人只練了 1/3。
+      </p>
+    </div>
+    <div class="cover-bottom">
+      <div>
+        <div class="author">Howard｜CSCS 認證教練</div>
+        <div style="margin-top: 2mm;">howardprotocol.com</div>
+      </div>
+      <div>VOL. 01 · 2026</div>
+    </div>
+  </div>
+
+  <!-- ═══════ P.02 序 ═══════ -->
+  <div class="page intro">
+    <div class="page-tag">序</div>
+    <h2>為什麼你<br>「練很久」<br>卻沒進步</h2>
+    <p class="lead">練了 1-2 年沒進步，99% 不是天賦，是「只練了 1/3」。</p>
+    <p>帶學員幾年，我看過太多人卡在「我已經很認真練了，為什麼還是沒結果」。</p>
+    <p>每次我親自看，問題幾乎都一樣：<strong style="color: var(--navy);">只管了訓練本身、忽略恢復與營養</strong>。</p>
+    <p>訓練、恢復、營養 — 這 3 塊任何一塊弱，整體效益歸零。</p>
+    <p style="margin-top: 5mm;">這份指南分 3 部分：</p>
+    <ul>
+      <li><strong>Part 1 · 恢復篇</strong> — HRV / 睡眠 / Deload / 過度訓練訊號</li>
+      <li><strong>Part 2 · 營養篇</strong> — TDEE / 自適應計算 / 碳水循環 / Refeed</li>
+      <li><strong>Part 3 · 系統篇</strong> — 為什麼這 3 塊靠人腦管不來</li>
+    </ul>
+    <p>看完這份指南，你會明白為什麼<strong style="color: var(--navy);">「練得更勤 + 吃得更少」往往沒用</strong>。</p>
+    <div class="stats">
+      <div class="stat"><div class="num">19</div><div class="label">頁精華地圖</div></div>
+      <div class="stat"><div class="num">2/3</div><div class="label">你忽略的部分</div></div>
+      <div class="stat"><div class="num">12</div><div class="label">分鐘看完</div></div>
+    </div>
+    <blockquote>
+      動作篇（12 個常見訓練動作錯誤）即將上線。<br>
+      加 LINE 第一時間通知 → @howardprotocol
+    </blockquote>
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">02</div>
+  </div>
+
+  <!-- ═══════ PART 1 DIVIDER ═══════ -->
+  <div class="page part-divider">
+    <div class="label">PART 01</div>
+    <div class="part-num">01</div>
+    <h2>恢復篇</h2>
+    <p class="desc">
+      HRV、睡眠、Deload、過度訓練訊號、主動恢復 —<br>
+      你身體真正在意的 5 件事，多數人連 1 件都沒做對。
+    </p>
+    <div class="page-footer">HOWARD PROTOCOL</div>
+  </div>
+
+  <!-- ═══════ P.03 HRV ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 01 / RECOVERY</span>
+      <span class="topic-cat">恢復篇</span>
+    </div>
+    <h2 class="topic-title">HRV 是什麼</h2>
+    <p class="topic-subtitle">心率變異度 · <span class="en">Heart Rate Variability</span></p>
+
+    <div class="block">
+      <div class="block-label"><span class="num">1</span>核心觀念</div>
+      <p>HRV 不是「心跳快慢」，是<strong>心跳之間時間間隔的變化幅度</strong>。反映自律神經系統（交感 vs 副交感）的即時平衡，是目前最可靠的「恢復程度」量化指標。HRV 越高 = 副交感主導 = 修復狀態良好。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">2</span>為什麼比體感更準</div>
+      <p>身體疲勞訊號常被主觀感受蒙蔽。等你「累到不想動」時，往往已進入過度訓練早期 1-2 週。<strong>HRV 是身體最早期的語言</strong>。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">3</span>個人化的真相</div>
+      <p>20 歲運動員可能 80ms、50 歲坐辦公室 30ms 都正常。<strong>真正有意義的是你跟自己滾動基線的比較。</strong></p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">4</span>4 步應用法</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">①</div><div class="step-text">每天起床 5 分鐘內測量（同姿勢、同時段）</div></div>
+        <div class="step"><div class="step-num">②</div><div class="step-text">建立個人 7-14 天滾動基線</div></div>
+        <div class="step"><div class="step-num">③</div><div class="step-text">連續 3 天低於基線 10% → 降強度或多睡 1 小時</div></div>
+        <div class="step"><div class="step-num">④</div><div class="step-text">連續 1 週低於基線 → 安排 deload 週</div></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">量測工具</div>
+      <p class="tool-list">
+        <strong>入門</strong>：Apple Watch / Garmin<br>
+        <strong>性價比首選</strong>：Polar H10 + HRV4Training（醫療級）<br>
+        <strong>進階</strong>：Whoop / Oura（24h 監測）
+      </p>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">03</div>
+  </div>
+
+  <!-- ═══════ P.04 睡眠 ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 02 / RECOVERY</span>
+      <span class="topic-cat">恢復篇</span>
+    </div>
+    <h2 class="topic-title">睡眠的真實成本</h2>
+    <p class="topic-subtitle">睡眠剝奪與肌力表現 · <span class="en">Sleep Debt & Performance</span></p>
+
+    <div class="block">
+      <div class="block-label"><span class="num">1</span>核心觀念</div>
+      <p>睡眠不是「休息時間」，是<strong>肌肉合成、賀爾蒙分泌、中樞神經修復</strong>的關鍵窗口。生長激素（GH）90% 在深睡期分泌；睪固酮在 REM 期合成；皮質醇在睡眠不足時失控上升。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">2</span>少睡 1 小時的代價</div>
+      <ul>
+        <li>力量輸出降 <strong>11%</strong>（連續 4 天睡 &lt; 6 小時）</li>
+        <li>睪固酮下降 <strong>10-15%</strong>（連續 1 週睡 &lt; 5 小時）</li>
+        <li>皮質醇上升 <strong>37%</strong></li>
+        <li>胰島素敏感性下降 <strong>30%</strong></li>
+      </ul>
+      <div class="arrow-note">→ 你練再認真，睡眠不足等於每天主動丟掉 <strong>30% 訓練效益</strong>。</div>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">3</span>4 步應用法</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">①</div><div class="step-text">每日同時段就寢/起床（誤差 &lt; 30 分鐘）</div></div>
+        <div class="step"><div class="step-num">②</div><div class="step-text">睡前 8 小時後不攝取咖啡因</div></div>
+        <div class="step"><div class="step-num">③</div><div class="step-text">睡前 1 小時降低 90% 藍光暴露</div></div>
+        <div class="step"><div class="step-num">④</div><div class="step-text">房間溫度 18-20°C、完全黑暗</div></div>
+      </div>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">04</div>
+  </div>
+
+  <!-- ═══════ P.05 Deload ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 03 / RECOVERY</span>
+      <span class="topic-cat">恢復篇</span>
+    </div>
+    <h2 class="topic-title">Deload 週的必要性</h2>
+    <p class="topic-subtitle">訓練週期與中樞神經疲勞 · <span class="en">Periodization & CNS Fatigue</span></p>
+
+    <div class="block">
+      <div class="block-label"><span class="num">1</span>核心觀念</div>
+      <p>肌肉的修復可在 48-72 小時內完成，但<strong>中樞神經系統（CNS）的疲勞累積週期是 4-6 週</strong>。99% 的訓練者不安排 deload，結果在第 6-8 週撞牆 — 力量退步、HRV 持續低、情緒低落。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">2</span>為什麼一定要主動降量</div>
+      <p>身體不會主動告訴你「該降量了」。它會用「進步停滯 → 受傷 → 失眠」一連串訊號慢慢消耗你。<strong>主動 deload 是讓你未來 6 個月持續進步的關鍵</strong>。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">3</span>Deload 怎麼安排</div>
+      <ul>
+        <li>訓練量降低 <strong>40-50%</strong>（次數減半、重量不變）</li>
+        <li>強度降低 <strong>20%</strong>（重量降 20%、次數可維持）</li>
+        <li>時長：<strong>1 整週</strong></li>
+        <li>頻率：<strong>每 4-6 週一次</strong>（依個人恢復能力）</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">4</span>4 步應用法</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">①</div><div class="step-text">訓練週期規劃 4-6 週累積 + 1 週 deload</div></div>
+        <div class="step"><div class="step-num">②</div><div class="step-text">Deload 週做主動恢復（散步、瑜伽、輕度有氧）</div></div>
+        <div class="step"><div class="step-num">③</div><div class="step-text">監測 HRV — 若 1 週後仍低於基線，延長 deload</div></div>
+        <div class="step"><div class="step-num">④</div><div class="step-text">不把 deload 等同「躺平」— 仍維持規律生活與營養</div></div>
+      </div>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">05</div>
+  </div>
+
+  <!-- ═══════ P.06 過度訓練訊號 ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 04 / RECOVERY</span>
+      <span class="topic-cat">恢復篇</span>
+    </div>
+    <h2 class="topic-title">過度訓練的 5 個訊號</h2>
+    <p class="topic-subtitle">過度訓練症候群 · <span class="en">Overtraining Syndrome (OTS)</span></p>
+
+    <div class="block">
+      <div class="block-label"><span class="num">1</span>核心觀念</div>
+      <p>過度訓練是<strong>內分泌系統、自律神經、免疫系統的全面失衡</strong>。早期偵測比晚期治療有效 10 倍 — 晚期可能需 3-6 個月才能恢復。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">2</span>5 個早期訊號（按出現順序）</div>
+      <table>
+        <thead>
+          <tr><th style="width: 8mm;">#</th><th>訊號</th><th>為什麼出現</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>1</strong></td><td>HRV 連 3 天低於基線</td><td>自律神經失衡（最早期）</td></tr>
+          <tr><td><strong>2</strong></td><td>休息心率（RHR）上升 5+ bpm</td><td>心血管系統壓力</td></tr>
+          <tr><td><strong>3</strong></td><td>睡眠品質下降（深睡 &lt; 1.5h）</td><td>皮質醇失控</td></tr>
+          <tr><td><strong>4</strong></td><td>力量輸出退步 5-10%</td><td>CNS 疲勞顯化</td></tr>
+          <tr><td><strong>5</strong></td><td>情緒低落、性慾下降、感冒</td><td>內分泌失衡末期</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">3</span>你目前在哪一階段？</div>
+      <ul>
+        <li><strong>1-2 個訊號</strong> = 早期 → 降強度 1 週可恢復</li>
+        <li><strong>3-4 個訊號</strong> = 中期 → 安排 deload 2 週</li>
+        <li><strong>5 個訊號全中</strong> = 晚期 → 完全休息 4-6 週 + 看醫師</li>
+      </ul>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">06</div>
+  </div>
+
+  <!-- ═══════ P.07 主動恢復 ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 05 / RECOVERY</span>
+      <span class="topic-cat">恢復篇</span>
+    </div>
+    <h2 class="topic-title">主動恢復 ≠ 躺著不動</h2>
+    <p class="topic-subtitle">主動恢復生理學 · <span class="en">Active Recovery Physiology</span></p>
+
+    <div class="block">
+      <div class="block-label"><span class="num">1</span>核心觀念</div>
+      <p>「恢復」常被誤解為「停止活動」。事實上，<strong>低強度活動的恢復效率高於完全靜止 30-50%</strong>。原因：低強度運動促進血液循環、淋巴流動、副交感神經啟動 — 這些是修復的關鍵動力。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">2</span>主動 vs 被動恢復數據對比</div>
+      <ul>
+        <li>乳酸清除速率：主動 <strong>0.7 mmol/L/min</strong> · 被動 <strong>0.4 mmol/L/min</strong></li>
+        <li>DOMS（延遲性肌肉痠痛）持續時間：主動恢復<strong>縮短 24-36 小時</strong></li>
+        <li>副交感啟動效率：低強度有氧 &gt; 完全靜止</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">3</span>什麼算「主動恢復」</div>
+      <ul class="checks">
+        <li class="ok">散步 30-60 分鐘（心率 &lt; 110）</li>
+        <li class="ok">輕度瑜伽、太極</li>
+        <li class="ok">游泳（自由式輕鬆游）</li>
+        <li class="no">跑步、HIIT、重訓（這些是訓練，不是恢復）</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">4</span>4 步應用法</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">①</div><div class="step-text">訓練日後 24 小時內安排 30-60 分鐘低強度活動</div></div>
+        <div class="step"><div class="step-num">②</div><div class="step-text">心率控制在最大心率 50-60%（鼻子能完整呼吸）</div></div>
+        <div class="step"><div class="step-num">③</div><div class="step-text">Deload 週用主動恢復取代訓練</div></div>
+        <div class="step"><div class="step-num">④</div><div class="step-text">用 HRV 驗證：主動恢復後 HRV 上升 = 有效</div></div>
+      </div>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">07</div>
+  </div>
+
+  <!-- ═══════ P.08 恢復章末 ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 章末 / RECOVERY</span>
+      <span class="topic-cat">恢復篇</span>
+    </div>
+    <h2 class="topic-title">恢復篇 章末</h2>
+    <p class="topic-subtitle">每天追蹤的 5 個數據 · <span class="en">Daily Recovery Metrics</span></p>
+
+    <div class="block">
+      <div class="block-label">恢復需要每天追蹤的 5 個數據</div>
+      <table>
+        <thead>
+          <tr><th style="width: 8mm;">#</th><th>數據</th><th>工具</th><th>判讀標準</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>1</strong></td><td>HRV</td><td>Apple Watch / Polar H10</td><td>跟個人基線比</td></tr>
+          <tr><td><strong>2</strong></td><td>RHR（休息心率）</td><td>同上</td><td>高於基線 5 bpm = 警訊</td></tr>
+          <tr><td><strong>3</strong></td><td>深睡時數</td><td>Apple Watch / Oura</td><td>&lt; 1.5 小時 = 警訊</td></tr>
+          <tr><td><strong>4</strong></td><td>主觀疲勞 RPE</td><td>自己評 1-10</td><td>連 3 天 &gt; 7 = 警訊</td></tr>
+          <tr><td><strong>5</strong></td><td>訓練輸出</td><td>訓練日誌</td><td>力量退步 5% = 警訊</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="block">
+      <div class="block-label">老實問自己</div>
+      <ul>
+        <li>你有在每天追蹤這 5 個維度嗎？</li>
+        <li>你有跨日跨週看趨勢嗎？</li>
+        <li>你能在訊號出現時立即調整嗎？</li>
+      </ul>
+      <div class="arrow-note">
+        如果沒有，沒關係 — 大多數人都沒有。重點是<strong>現在開始追蹤其中 1 個</strong>，6 個月後回頭看會很有感。
+      </div>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">08</div>
+  </div>
+
+  <!-- ═══════ PART 2 DIVIDER ═══════ -->
+  <div class="page part-divider">
+    <div class="label">PART 02</div>
+    <div class="part-num">02</div>
+    <h2>營養篇</h2>
+    <p class="desc">
+      TDEE 不是固定值、碳水循環、Refeed 科學、蛋白質真相 —<br>
+      網路 TDEE 計算機為什麼用 3 個月就失效。
+    </p>
+    <div class="page-footer">HOWARD PROTOCOL</div>
+  </div>
+
+  <!-- ═══════ P.09 TDEE 不固定 ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 01 / NUTRITION</span>
+      <span class="topic-cat">營養篇</span>
+    </div>
+    <h2 class="topic-title">TDEE 不是固定值</h2>
+    <p class="topic-subtitle">適應性熱量消耗 · <span class="en">Adaptive Thermogenesis</span></p>
+
+    <div class="block">
+      <div class="block-label"><span class="num">1</span>核心觀念</div>
+      <p>你在網路 TDEE 計算機算出來的數字，<strong>只在算的當下有效</strong>。實際上，TDEE 會隨體重、體脂率、訓練量、睡眠、壓力、月經週期持續變動，且減脂期間會<strong>主動下降</strong>（適應性熱量消耗）。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">2</span>減脂時 TDEE 會降多少</div>
+      <ul>
+        <li>短期赤字（2-4 週）：TDEE 降 <strong>5-10%</strong></li>
+        <li>中期赤字（8-12 週）：TDEE 降 <strong>15-25%</strong></li>
+        <li>長期赤字（&gt; 12 週無 refeed）：TDEE 降 <strong>25-40%</strong></li>
+      </ul>
+      <div class="arrow-note">
+        → 你以為的「赤字 500 大卡」，3 個月後實際只剩「赤字 100 大卡」。<strong>這就是減脂卡關的真相</strong>。
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">3</span>4 步應用法</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">①</div><div class="step-text">不要用「網路 TDEE 計算機」當金科玉律</div></div>
+        <div class="step"><div class="step-num">②</div><div class="step-text">用「7 天熱量平均 + 7 天體重變化」反推真實 TDEE</div></div>
+        <div class="step"><div class="step-num">③</div><div class="step-text">每週重算一次（不是每月）</div></div>
+        <div class="step"><div class="step-num">④</div><div class="step-text">體重 2 週沒變 → TDEE 已適應，需重新計算</div></div>
+      </div>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">09</div>
+  </div>
+
+  <!-- ═══════ P.10 自適應 TDEE ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 02 / NUTRITION</span>
+      <span class="topic-cat">營養篇</span>
+    </div>
+    <h2 class="topic-title">自適應 TDEE 怎麼算</h2>
+    <p class="topic-subtitle">滾動回歸計算法 · <span class="en">Rolling Regression Method</span></p>
+
+    <div class="block">
+      <div class="block-label"><span class="num">1</span>核心觀念</div>
+      <p>真實 TDEE 不能用「年齡 + 身高 + 體重 + 活動量」靜態計算 — 那是 1990 年代的方法。<strong>現代運動科學用「輸入熱量 vs 體重變化」反推真實 TDEE</strong>。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">2</span>數學原理</div>
+      <div class="formula">
+        真實 TDEE = 7 天平均攝取 − (7 天體重變化 × 7700 ÷ 7)
+      </div>
+      <div class="example">
+        <div class="example-label">範例計算</div>
+        <p>7 天平均攝取 <strong>2,200 大卡</strong></p>
+        <p>體重 7 天下降 <strong>0.3 公斤</strong></p>
+        <p style="margin-top: 2mm;">反推 TDEE = 2,200 − (−0.3 × 7700 ÷ 7) = 2,200 + 330 = <strong style="color: var(--blue);">2,530 大卡</strong></p>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">3</span>為什麼比靜態計算準</div>
+      <p>靜態公式（Mifflin-St Jeor、Harris-Benedict）對個體誤差可達 ±300 大卡。對減脂尤其致命 — 你以為赤字 500，實際可能是赤字 200 或 800。<strong>用反推法，誤差降到 ±50 大卡</strong>。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">4</span>4 步應用法</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">①</div><div class="step-text">每天紀錄熱量攝取（± 50 即可）</div></div>
+        <div class="step"><div class="step-num">②</div><div class="step-text">每天同時段量體重（早起空腹排尿後）</div></div>
+        <div class="step"><div class="step-num">③</div><div class="step-text">用 7 天滾動平均（消除單日波動）</div></div>
+        <div class="step"><div class="step-num">④</div><div class="step-text">每週末用上述公式反推 TDEE</div></div>
+      </div>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">10</div>
+  </div>
+
+  <!-- ═══════ P.11 碳水循環 ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 03 / NUTRITION</span>
+      <span class="topic-cat">營養篇</span>
+    </div>
+    <h2 class="topic-title">碳水循環</h2>
+    <p class="topic-subtitle">訓練日與休息日碳水分配 · <span class="en">Carb Cycling</span></p>
+
+    <div class="block">
+      <div class="block-label"><span class="num">1</span>核心觀念</div>
+      <p>碳水化合物的代謝路徑會根據<strong>訓練狀態</strong>與<strong>胰島素敏感性</strong>變動。訓練後 30-90 分鐘，肌肉胰島素敏感性提升 40-50%，是補充肝醣與啟動肌肉合成的黃金窗口。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">2</span>為什麼不是「每天吃一樣」就好</div>
+      <p>每天均勻分配碳水 = 訓練日<strong>不足</strong>影響表現、休息日<strong>過量</strong>累積為脂肪。<strong>訓練日與休息日的代謝環境不同，營養策略也該不同</strong>。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">3</span>簡化版分配建議</div>
+      <table>
+        <thead>
+          <tr><th>日別</th><th>碳水 g/kg</th><th>蛋白 g/kg</th><th>脂肪 g/kg</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>訓練日</strong></td><td>3-5</td><td>1.8-2.2</td><td>0.6-0.8</td></tr>
+          <tr><td><strong>休息日</strong></td><td>1-2</td><td>1.8-2.2</td><td>1.0-1.2</td></tr>
+        </tbody>
+      </table>
+      <div class="arrow-note">→ 總熱量大致相同，但<strong>碳水/脂肪比例對調</strong>。</div>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">4</span>4 步應用法</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">①</div><div class="step-text">訓練日：訓練前 1h + 後 1h 各補 0.5g/kg 碳水</div></div>
+        <div class="step"><div class="step-num">②</div><div class="step-text">休息日：減半碳水、提高脂肪維持總熱量</div></div>
+        <div class="step"><div class="step-num">③</div><div class="step-text">高強度訓練週可短暫拉高碳水</div></div>
+        <div class="step"><div class="step-num">④</div><div class="step-text">月經週期黃體期（女）可拉高碳水 + 蛋白</div></div>
+      </div>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">11</div>
+  </div>
+
+  <!-- ═══════ P.12 Refeed ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 04 / NUTRITION</span>
+      <span class="topic-cat">營養篇</span>
+    </div>
+    <h2 class="topic-title">Refeed / Diet Break</h2>
+    <p class="topic-subtitle">荷爾蒙週期重置 · <span class="en">Hormonal Reset Cycle</span></p>
+
+    <div class="block">
+      <div class="block-label"><span class="num">1</span>核心觀念</div>
+      <p>長期熱量赤字會導致<strong>瘦素（Leptin）下降、甲狀腺素（T3）下降、皮質醇上升</strong> — 這就是「減脂卡關」的真實機制。<strong>Refeed</strong>（短期熱量回升至維持量或略高）是重置這些荷爾蒙的關鍵策略。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">2</span>不 Refeed 的代價</div>
+      <ul>
+        <li>TDEE 永久下降（<strong>5-15%</strong>）</li>
+        <li>肌肉流失加速</li>
+        <li>賀爾蒙紊亂（女性可能停經）</li>
+        <li>情緒問題、暴食循環</li>
+      </ul>
+      <div class="arrow-note">→ 你以為「咬牙撐過去」就會瘦，但<strong>身體會主動停損</strong>。</div>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">3</span>Refeed 怎麼做</div>
+      <ul>
+        <li><strong>Refeed Day</strong>：1 天熱量回升至維持量 + 拉高碳水</li>
+        <li><strong>Diet Break</strong>：1 週熱量回升至維持量</li>
+        <li><strong>頻率</strong>：每 8-12 週主動安排一次</li>
+        <li><strong>重點</strong>：不是「放縱」，是「策略性回升」</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">4</span>4 步應用法</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">①</div><div class="step-text">體重連 2 週沒下降 → 啟動 1 週 Diet Break</div></div>
+        <div class="step"><div class="step-num">②</div><div class="step-text">體重連 4 週沒下降 + HRV 持續低 → 2 週 Diet Break</div></div>
+        <div class="step"><div class="step-num">③</div><div class="step-text">女性月經紊亂 → 立即 Diet Break + 評估熱量</div></div>
+        <div class="step"><div class="step-num">④</div><div class="step-text">Refeed 期維持訓練（不是停練）</div></div>
+      </div>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">12</div>
+  </div>
+
+  <!-- ═══════ P.13 蛋白質 ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 05 / NUTRITION</span>
+      <span class="topic-cat">營養篇</span>
+    </div>
+    <h2 class="topic-title">蛋白質的真相</h2>
+    <p class="topic-subtitle">肌肉蛋白合成最大化 · <span class="en">MPS Optimization</span></p>
+
+    <div class="block">
+      <div class="block-label"><span class="num">1</span>核心觀念</div>
+      <p><strong>1.6-2.2 g/kg 體重</strong>是建立肌肉的底線，不是上限。多數人攝取不足、且分配集中在晚餐 — 兩個錯誤都會限制肌肉蛋白合成（MPS）。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">2</span>為什麼分配比總量更重要</div>
+      <ul>
+        <li>單次攝取 &gt; <strong>0.4 g/kg</strong> → 最大化 MPS</li>
+        <li>兩次攝取間隔 &lt; 3 小時 → MPS 無法重啟</li>
+        <li>兩次攝取間隔 &gt; 5 小時 → 啟動蛋白分解（catabolism）</li>
+      </ul>
+      <div class="arrow-note">→ 一天吃 150g 蛋白質，分 5 餐 vs 集中 1 餐，<strong>肌肉合成效率差 30-40%</strong>。</div>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">3</span>個人化</div>
+      <ul>
+        <li>增肌期：<strong>2.0-2.4 g/kg</strong>（含訓練後 0.4 g/kg）</li>
+        <li>減脂期：<strong>2.2-2.6 g/kg</strong>（保肌優先）</li>
+        <li>50 歲以上：拉高 10-20%（對抗肌少症）</li>
+        <li>純素飲食：拉高 20-30%（補償不完整胺基酸）</li>
+      </ul>
+    </div>
+
+    <div class="block">
+      <div class="block-label"><span class="num">4</span>4 步應用法</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">①</div><div class="step-text">一天分 4-5 餐，每餐 ≥ 0.4 g/kg 體重</div></div>
+        <div class="step"><div class="step-num">②</div><div class="step-text">訓練後 1 小時內補一餐含 30-40g 蛋白質</div></div>
+        <div class="step"><div class="step-num">③</div><div class="step-text">睡前補一份酪蛋白對抗夜間分解</div></div>
+        <div class="step"><div class="step-num">④</div><div class="step-text">動物蛋白 + 植物蛋白搭配（胺基酸互補）</div></div>
+      </div>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">13</div>
+  </div>
+
+  <!-- ═══════ P.14 營養章末 ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 章末 / NUTRITION</span>
+      <span class="topic-cat">營養篇</span>
+    </div>
+    <h2 class="topic-title">營養篇 章末</h2>
+    <p class="topic-subtitle">每天追蹤的 6 個變數 · <span class="en">Daily Nutrition Metrics</span></p>
+
+    <div class="block">
+      <div class="block-label">營養需要每天追蹤的 6 個變數</div>
+      <table>
+        <thead>
+          <tr><th style="width: 8mm;">#</th><th>維度</th><th>為什麼重要</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>1</strong></td><td>總熱量攝取</td><td>反推真實 TDEE</td></tr>
+          <tr><td><strong>2</strong></td><td>蛋白質分配</td><td>MPS 最大化</td></tr>
+          <tr><td><strong>3</strong></td><td>碳水（訓練/休息日）</td><td>胰島素 + 肝醣</td></tr>
+          <tr><td><strong>4</strong></td><td>體重趨勢（7 天滾動平均）</td><td>判讀代謝適應</td></tr>
+          <tr><td><strong>5</strong></td><td>月經週期（女性）</td><td>黃體期/濾泡期策略</td></tr>
+          <tr><td><strong>6</strong></td><td>Refeed 時機</td><td>防止荷爾蒙崩潰</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="block">
+      <div class="block-label">老實問自己</div>
+      <ul>
+        <li>你有在每天記錄熱量 + 蛋白質分配嗎？</li>
+        <li>你有每週反推真實 TDEE 嗎？</li>
+        <li>你能判讀「現在該 Refeed」的時機嗎？</li>
+      </ul>
+      <div class="arrow-note">
+        如果這些聽起來很複雜 — 是真的複雜。建議先從<strong>「每天量體重 + 每週算平均」</strong>這一件事開始，做穩了再加下一個。
+      </div>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">14</div>
+  </div>
+
+  <!-- ═══════ PART 3 DIVIDER ═══════ -->
+  <div class="page part-divider">
+    <div class="label">PART 03</div>
+    <div class="part-num">03</div>
+    <h2>系統篇</h2>
+    <p class="desc">
+      三塊真相、我自己的 5 年彎路、整理出的 3 條原則 —<br>
+      為什麼這 3 塊靠人腦管不來，以及我怎麼走出來的。
+    </p>
+    <div class="page-footer">HOWARD PROTOCOL</div>
+  </div>
+
+  <!-- ═══════ P.15 三塊真相 ═══════ -->
+  <div class="page">
+    <div class="topic-header">
+      <span class="topic-num">— 01 / SYSTEM</span>
+      <span class="topic-cat">系統篇</span>
+    </div>
+    <h2 class="topic-title">三塊真相</h2>
+    <p class="topic-subtitle">訓練 ✕ 恢復 ✕ 營養 = 27 種狀態組合</p>
+
+    <div class="block">
+      <div class="block-label">為什麼單一管理沒用</div>
+      <ul>
+        <li><strong>只管訓練</strong> → 練得勤但沒進步</li>
+        <li><strong>只管營養</strong> → 吃得對但沒結果</li>
+        <li><strong>只管恢復</strong> → 睡得好但沒刺激</li>
+      </ul>
+      <div class="arrow-note">任何一塊弱，整體效益歸零。<strong>這是健身界 90% 的人練 5 年沒結果的原因。</strong></div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">為什麼 3 塊同時管「難爆」</div>
+      <p>每塊各 3 種狀態（不足/適中/過度），<strong>3 × 3 × 3 = 27 種組合</strong>。每個組合對應不同的調整策略。</p>
+      <div class="example" style="margin-top: 3mm;">
+        <div class="example-label">舉例</div>
+        <p>• 訓練量 ↑ + 睡眠 ↓ + 熱量 ↓ → <strong>該休息</strong>（不是練更多）</p>
+        <p>• 訓練量 ↓ + 睡眠 ↑ + 熱量 → → <strong>該加強度</strong></p>
+        <p>• 訓練量 → + 睡眠 → + 熱量 ↑ → <strong>該檢查身體成分</strong></p>
+      </div>
+      <p style="margin-top: 3mm;">每天判斷你在 27 格的哪一格 + 該做什麼 — 這是<strong>人腦處理極限</strong>。</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label">沒有捷徑</div>
+      <p>沒有「練 3 個月就翻身」這種事。但有「<strong>用對的方法做 6-12 個月會看到變化</strong>」這件事。</p>
+      <p style="margin-top: 3mm; color: var(--gray); font-size: 11.5px;">下一頁分享我自己怎麼摸索出這條路。</p>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">15</div>
+  </div>
+
+  <!-- ═══════ P.16 5 年故事 ═══════ -->
+  <div class="page story">
+    <div class="topic-header">
+      <span class="topic-num">— 02 / SYSTEM</span>
+      <span class="topic-cat">系統篇</span>
+    </div>
+    <h2>我自己的 5 年</h2>
+    <p class="topic-subtitle" style="margin-bottom: 6mm;">從「只練不管其他」到系統化的真實過程</p>
+
+    <p class="lead"><strong>20 歲</strong>那年，我是「只練、不管其他」的典型。</p>
+
+    <p>我以為「<strong>越練越多 = 越壯</strong>」，於是天天訓練、加重量、吃更多 — 完全沒在管睡眠、HRV、賀爾蒙、恢復。</p>
+
+    <p>代價慢慢浮出來：</p>
+
+    <ul class="symptoms" style="list-style: none; padding-left: 6mm;">
+      <li><strong>全身發炎疼痛</strong> — 起床膝蓋、肩膀、下背像被打過</li>
+      <li><strong>免疫系統崩潰</strong> — 反覆生病、小傷小病不斷、不管睡多久都累</li>
+      <li><strong>甚至引發細菌感染、開始禿頭</strong> — 過度訓練 → 免疫力垮 → 頭皮細菌感染 → 落髮</li>
+    </ul>
+
+    <div class="doctor-quote">「你的身體在求救，你卻一直加碼。」<br><span style="font-size: 11px; color: var(--gray); font-style: normal;">— 醫生</span></div>
+
+    <p>那一刻我才明白：<strong>訓練量再大、知識再正確，沒有同時管恢復跟營養，最後是身體先垮。</strong></p>
+
+    <div class="separator">— · —</div>
+
+    <p>完全恢復花了我 <strong style="color: var(--blue); font-size: 14px;">8 個月</strong>。</p>
+
+    <p>從那之後我開始追蹤 HRV、改睡眠、調碳水循環 — 一切才開始好轉。但手動追蹤太累，Excel 撐了 2 年又放棄。最後我決定自己寫一個系統，讓追蹤這件事<strong>自動化</strong>。</p>
+
+    <p style="margin-top: 5mm; padding-top: 4mm; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--gray);">這個故事我從來沒在 IG 講過。寫在這裡是因為 — 如果你現在也在「只練不管其他」，我希望你不要走我 20 歲那年的彎路。</p>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">16</div>
+  </div>
+
+  <!-- ═══════ P.17 3 條原則 ═══════ -->
+  <div class="page principles">
+    <div class="topic-header">
+      <span class="topic-num">— 03 / SYSTEM</span>
+      <span class="topic-cat">系統篇</span>
+    </div>
+    <h2>我整理出的 3 條原則</h2>
+    <p class="lead">不論你用什麼工具（Excel 也好、App 也好、其他系統也好），這 3 條原則都成立。</p>
+
+    <div class="principle">
+      <h3><span class="num">01</span>追蹤 &gt; 記憶</h3>
+      <p>你身體 3 天前的狀態，你完全記不得。<br>
+      <strong>沒有數據就沒有判讀，沒有判讀就沒有調整。</strong></p>
+    </div>
+
+    <div class="principle">
+      <h3><span class="num">02</span>趨勢 &gt; 單點</h3>
+      <p>單日體重、單次 HRV、單次力量都沒意義。<br>
+      <strong>7 天滾動平均才是真實趨勢。</strong></p>
+    </div>
+
+    <div class="principle">
+      <h3><span class="num">03</span>自動化 &gt; 意志力</h3>
+      <p>意志力是有限資源。能自動化的東西就自動化。<br>
+      把意志力留給<strong>真正需要決定</strong>的事 — 例如：今天該不該休息。</p>
+    </div>
+
+    <div class="arrow-note" style="margin-top: 8mm;">
+      → 這 3 條是我這 5 年的全部心得。不管你用什麼方式執行，希望對你有幫助。
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">17</div>
+  </div>
+
+  <!-- ═══════ P.18 結尾 CTA ═══════ -->
+  <div class="page cta">
+    <div>
+      <div class="topic-header" style="border: none; padding: 0; margin-bottom: 4mm;">
+        <span class="topic-num">— 結尾</span>
+        <span class="topic-cat">END</span>
+      </div>
+      <div class="cta-eyebrow">下一步</div>
+      <h2>看完了。<br>現在呢？</h2>
+      <p class="cta-lead">
+        看完這 18 頁，你已經有完整的<br>
+        「恢復 + 營養 + 系統」地圖了。
+      </p>
+
+      <div class="cta-card">
+        <div class="step">STEP 01 · 從免費開始</div>
+        <h3>找到適合你的方式</h3>
+        <p>免費體驗 vs 自主管理方案 — 不綁卡、隨時升級。<br>從你能負擔的層級開始。</p>
+        <a href="https://howard456.vercel.app/join" class="cta-button">查看方案 →</a>
+      </div>
+
+      <p class="cta-lead" style="margin-top: 5mm; font-size: 12px;">
+        不管你下一步是什麼 —<br>
+        這份 PDF 是你的，希望它能幫你少走幾年彎路。
+      </p>
+
+      <div class="cta-signature">—— Howard｜CSCS 認證教練</div>
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">18</div>
+  </div>
+
+  <!-- ═══════ P.19 關於 / 法律 ═══════ -->
+  <div class="page about">
+    <div class="topic-header">
+      <span class="topic-num">— 關於</span>
+      <span class="topic-cat">ABOUT</span>
+    </div>
+    <h2>關於 Howard</h2>
+    <ul>
+      <li>CSCS（美國肌力與體能訓練協會）認證教練</li>
+      <li>6+ 年系統開發經驗</li>
+      <li>帶過數百名學員從新手到進階</li>
+      <li>網站：howardprotocol.com</li>
+      <li>LINE：@howardprotocol</li>
+    </ul>
+
+    <h3>動作篇即將上線</h3>
+    <div class="upcoming">
+      這份地圖只涵蓋<strong>你忽略的 2/3</strong>（恢復 + 營養 + 系統）。<br>
+      <strong>動作篇</strong>（12 個常見訓練動作錯誤對照）即將推出。<br>
+      加 LINE 第一時間收到通知。
+    </div>
+
+    <h3>免責聲明</h3>
+    <p class="disclaimer">
+      本指南內容僅供教育與資訊參考用途，不構成醫療診斷或治療建議。<br>
+      進行任何訓練前，請評估自身健康狀況，必要時諮詢專業醫療人員。<br>
+      作者不承擔讀者依本內容自行訓練所產生之任何身體損傷責任。
+    </p>
+
+    <div style="margin-top: 12mm; padding-top: 5mm; border-top: 1px solid var(--line); text-align: center; font-family: 'Noto Serif TC', serif; font-size: 11px; color: var(--gray); letter-spacing: 0.15em;">
+      © 2026 HOWARD PROTOCOL · howardprotocol.com
+    </div>
+
+    <div class="page-footer">HOWARD PROTOCOL</div>
+    <div class="page-num">19</div>
+  </div>
+
+</div>
+
+</body>
+</html>

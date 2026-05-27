@@ -32,6 +32,9 @@ export default function AgentPlayground() {
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [proposalsLoading, setProposalsLoading] = useState(false)
   const [reviewNote, setReviewNote] = useState('')
+  const [history, setHistory] = useState<any[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending')
 
   const loadProposals = async () => {
     setProposalsLoading(true)
@@ -43,7 +46,20 @@ export default function AgentPlayground() {
     finally { setProposalsLoading(false) }
   }
 
-  useEffect(() => { loadProposals() }, [])
+  const loadHistory = async () => {
+    setHistoryLoading(true)
+    try {
+      const res = await fetch('/api/admin/macro-adjustment-log?clientId=2b7e3242-d325-4c1c-bf66-c7fd5e56cac4')
+      const json = await res.json()
+      if (json.success) setHistory(json.data)
+    } catch {}
+    finally { setHistoryLoading(false) }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'pending') loadProposals()
+    else loadHistory()
+  }, [activeTab])
 
   const runAgent = async () => {
     if (!userMessage.trim()) return
@@ -159,14 +175,31 @@ export default function AgentPlayground() {
           </div>
         )}
 
-        {/* Pending Proposals */}
+        {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold">⏳ Pending Proposals ({proposals.length})</h2>
-            <button onClick={loadProposals} className="text-xs text-blue-600 hover:underline">↻ 重新整理</button>
+          <div className="flex items-center gap-1 mb-4 border-b border-gray-100 pb-2">
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'pending' ? 'bg-amber-100 text-amber-800' : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              ⏳ Pending ({proposals.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'history' ? 'bg-emerald-100 text-emerald-800' : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              📜 歷史調整 ({history.length})
+            </button>
+            <div className="ml-auto">
+              <button onClick={activeTab === 'pending' ? loadProposals : loadHistory} className="text-xs text-blue-600 hover:underline">↻ 重新整理</button>
+            </div>
           </div>
 
-          {proposalsLoading ? (
+        {activeTab === 'pending' && (proposalsLoading ? (
             <p className="text-sm text-gray-400 text-center py-6">載入中…</p>
           ) : proposals.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-6">沒有 pending 提案</p>
@@ -216,7 +249,55 @@ export default function AgentPlayground() {
                 </div>
               ))}
             </div>
-          )}
+          ))}
+
+          {activeTab === 'history' && (historyLoading ? (
+            <p className="text-sm text-gray-400 text-center py-6">載入中…</p>
+          ) : history.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">尚無歷史紀錄</p>
+          ) : (
+            <div className="space-y-3">
+              {history.map((h: any) => {
+                const isAi = (h.reason || '').includes('AI 提案')
+                return (
+                  <div key={h.id} className={`border rounded-lg p-4 ${isAi ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-xs font-semibold ${isAi ? 'text-blue-800' : 'text-gray-800'}`}>
+                        {isAi ? '🤖 AI 提案 → 教練核准' : '👤 教練手動'}
+                        {' · '}
+                        {h.applied_by} · {h.trigger_source}
+                      </span>
+                      <span className="text-[10px] text-gray-500">{new Date(h.applied_at).toLocaleString('zh-TW')}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-2 text-xs">
+                      <div>
+                        <p className="font-semibold text-gray-600 mb-1">舊值</p>
+                        <pre className="bg-white p-2 rounded text-[10px] max-h-32 overflow-auto">{JSON.stringify(h.old_macros, null, 2)}</pre>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-600 mb-1">新值</p>
+                        <pre className="bg-white p-2 rounded text-[10px] max-h-32 overflow-auto">{JSON.stringify(h.new_macros, null, 2)}</pre>
+                      </div>
+                    </div>
+
+                    {h.reason && (
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-gray-600 font-semibold">查看完整理由</summary>
+                        <p className="mt-1 whitespace-pre-wrap bg-white p-2 rounded">{h.reason}</p>
+                      </details>
+                    )}
+
+                    {h.hit_boundary && (
+                      <div className="bg-rose-100 rounded p-2 mt-2 text-xs text-rose-800">
+                        ⚠️ 撞邊界：{h.boundary_detail}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
         </div>
       </div>
     </div>
