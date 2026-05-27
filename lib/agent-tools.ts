@@ -312,21 +312,33 @@ export async function addPersonalNote(input: {
   const clientId = await resolveClientId(input.client_id)
   if (!clientId) return { error: 'client not found' }
 
-  const { data, error } = await supabase
-    .from('personal_notes')
+  // AI 寫筆記改成「提案」而非直接寫入，等教練核准
+  // 避免 AI 把假設性對話誤判為真實事實
+  const { data: proposal, error } = await supabase
+    .from('pending_proposals')
     .insert({
       client_id: clientId,
-      added_by: 'ai_agent',
-      category: input.category,
-      note: input.note,
-      weight: input.weight,
-      relevant_until: input.relevant_until ?? null,
+      proposed_by: 'ai_agent',
+      proposal_type: 'personal_note',
+      current_state: {},
+      proposed_changes: {
+        category: input.category,
+        note: input.note,
+        weight: input.weight,
+        relevant_until: input.relevant_until ?? null,
+      },
+      reasoning: `AI 想記錄一筆「${input.category}」個人筆記（weight=${input.weight}）`,
+      safety_check_result: null,
     })
     .select()
     .single()
 
   if (error) return { error: 'DB 寫入失敗: ' + error.message }
-  return { success: true, note_id: data.id, message: '已寫入個人筆記，後續提案會自動讀取。' }
+  return {
+    success: true,
+    proposal_id: proposal.id,
+    message: '已建立筆記提案，等教練審核後才會寫入永久記憶。',
+  }
 }
 
 // ========== Tool dispatcher ==========

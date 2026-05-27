@@ -205,25 +205,39 @@ export default function AgentPlayground() {
             <p className="text-sm text-gray-400 text-center py-6">沒有 pending 提案</p>
           ) : (
             <div className="space-y-3">
-              {proposals.map(p => (
-                <div key={p.id} className="border border-amber-200 bg-amber-50 rounded-lg p-4">
+              {proposals.map(p => {
+                const isNote = p.proposal_type === 'personal_note'
+                const ch: any = p.proposed_changes ?? {}
+                return (
+                <div key={p.id} className={`border rounded-lg p-4 ${isNote ? 'border-purple-200 bg-purple-50' : 'border-amber-200 bg-amber-50'}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-amber-800">
-                      {p.clients?.name ?? p.client_id} · {p.proposal_type} · by {p.proposed_by}
+                    <span className={`text-xs font-semibold ${isNote ? 'text-purple-800' : 'text-amber-800'}`}>
+                      {p.clients?.name ?? p.client_id} · {isNote ? '📝 個人筆記提案' : 'macros 調整提案'} · by {p.proposed_by}
                     </span>
                     <span className="text-[10px] text-gray-500">{new Date(p.proposed_at).toLocaleString('zh-TW')}</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
-                    <div>
-                      <p className="font-semibold text-gray-600 mb-1">目前</p>
-                      <pre className="bg-white p-2 rounded text-[10px]">{JSON.stringify(p.current_state, null, 2)}</pre>
+                  {isNote ? (
+                    <div className="bg-white rounded p-3 mb-3 text-sm">
+                      <div className="flex items-center gap-2 text-xs mb-2">
+                        <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-700">{ch.category}</span>
+                        <span className="text-gray-500">weight: {ch.weight}/10</span>
+                        {ch.relevant_until && <span className="text-gray-500">有效到: {ch.relevant_until}</span>}
+                      </div>
+                      <p className="text-gray-800 whitespace-pre-wrap">{ch.note}</p>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-600 mb-1">提議</p>
-                      <pre className="bg-white p-2 rounded text-[10px]">{JSON.stringify(p.proposed_changes, null, 2)}</pre>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
+                      <div>
+                        <p className="font-semibold text-gray-600 mb-1">目前</p>
+                        <pre className="bg-white p-2 rounded text-[10px]">{JSON.stringify(p.current_state, null, 2)}</pre>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-600 mb-1">提議</p>
+                        <pre className="bg-white p-2 rounded text-[10px]">{JSON.stringify(p.proposed_changes, null, 2)}</pre>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <p className="text-xs font-semibold text-gray-700 mb-1">理由</p>
                   <p className="text-xs text-gray-700 mb-3 whitespace-pre-wrap bg-white p-2 rounded">{p.reasoning}</p>
@@ -247,7 +261,7 @@ export default function AgentPlayground() {
                     <button onClick={() => actOnProposal(p.id, 'discuss')} className="px-3 py-1.5 bg-amber-600 text-white text-xs font-semibold rounded hover:bg-amber-700">💬 再聊</button>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           ))}
 

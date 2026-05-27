@@ -73,6 +73,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, status: newStatus })
     }
 
+    // 兩種 proposal type 分別處理：personal_note 寫進 personal_notes、其他寫進 clients + log
+    if (proposal.proposal_type === 'personal_note') {
+      const ch = (proposal.proposed_changes ?? {}) as any
+      const { error: insErr } = await supabase.from('personal_notes').insert({
+        client_id: proposal.client_id,
+        added_by: 'ai_agent',
+        category: ch.category,
+        note: ch.note,
+        weight: ch.weight ?? 5,
+        relevant_until: ch.relevant_until ?? null,
+        source_proposal_id: proposal.id,
+      })
+      if (insErr) return NextResponse.json({ error: 'personal_notes 寫入失敗: ' + insErr.message }, { status: 500 })
+
+      await supabase
+        .from('pending_proposals')
+        .update({
+          status: 'approved',
+          reviewed_by: 'coach',
+          reviewed_at: now,
+          review_note: review_note ?? null,
+        })
+        .eq('id', proposal_id)
+      return NextResponse.json({ success: true, status: 'approved', type: 'personal_note' })
+    }
+
     // approve: apply changes + write to macro_adjustment_log + update clients
     const changes = proposal.proposed_changes as Record<string, number>
     const clientUpdates: Record<string, any> = { last_auto_adjust_at: now }
