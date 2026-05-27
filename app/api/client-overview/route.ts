@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
     // 教練查看時，更新 last viewed 時間戳（fire-and-forget）
     supabase.from('clients').update({ coach_last_viewed_at: new Date().toISOString() }).eq('id', realId).then(() => {})
 
-    const [suppRes, logsRes, wellRes, trainRes, bodyRes, labRes, nutritionRes, trainingSetsRes] = await Promise.all([
+    const today = new Date().toISOString().split('T')[0]
+    const [suppRes, logsRes, wellRes, trainRes, bodyRes, labRes, nutritionRes, trainingSetsRes, notesRes] = await Promise.all([
       supabase.from('supplements').select('*').eq('client_id', realId),
       supabase.from('supplement_logs').select('id, supplement_id, client_id, date, completed').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('daily_wellness').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
@@ -51,6 +52,8 @@ export async function GET(request: NextRequest) {
       supabase.from('lab_results').select('*').eq('client_id', realId).order('date', { ascending: false }),
       supabase.from('nutrition_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('training_sets').select('id, client_id, date, exercise_name, muscle_group, set_number, weight, reps, rpe, is_main_lift').eq('client_id', realId).gte('date', sinceDate90).order('date', { ascending: true }),
+      // personal_notes weight ≥ 7 + 還在有效期內 — 給「動態調整建議」做個人化保護
+      supabase.from('personal_notes').select('id, category, note, weight, relevant_until').eq('client_id', realId).gte('weight', 7).or(`relevant_until.is.null,relevant_until.gte.${today}`).order('weight', { ascending: false }),
     ])
 
     return NextResponse.json({
@@ -63,6 +66,7 @@ export async function GET(request: NextRequest) {
       labResults: labRes.data || [],
       nutritionLogs: nutritionRes.data || [],
       trainingSets: trainingSetsRes.data || [],
+      personalNotes: notesRes.data || [],
     })
   } catch (err) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })

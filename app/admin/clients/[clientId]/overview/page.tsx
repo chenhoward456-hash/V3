@@ -33,6 +33,7 @@ export default function ClientOverview() {
   const [supplementLogs, setSupplementLogs] = useState<any[]>([])
   const [wellness, setWellness] = useState<any[]>([])
   const [trainingLogs, setTrainingLogs] = useState<any[]>([])
+  const [personalNotes, setPersonalNotes] = useState<any[]>([])
   const [bodyData, setBodyData] = useState<any[]>([])
   const [labResults, setLabResults] = useState<any[]>([])
   const [nutritionLogs, setNutritionLogs] = useState<any[]>([])
@@ -66,6 +67,7 @@ export default function ClientOverview() {
       setLabResults(data.labResults || [])
       setNutritionLogs(data.nutritionLogs || [])
       setTrainingSets(data.trainingSets || [])
+      setPersonalNotes(data.personalNotes || [])
       // 同時抓取營養分析
       if (data.client?.goal_type && data.client?.nutrition_enabled) {
         fetch(`/api/nutrition-suggestions?clientId=${data.client.id}`)
@@ -1681,20 +1683,107 @@ export default function ClientOverview() {
           }
 
           const currentCalTarget = client?.calories_target ? Number(client.calories_target) : null
+          const currentProtein = client?.protein_target ? Number(client.protein_target) : null
+          const currentFat = client?.fat_target ? Number(client.fat_target) : null
           const currentCarbTarget = client?.carbs_target ? Number(client.carbs_target) : null
           const currentCarbTrain = client?.carbs_training_day ? Number(client.carbs_training_day) : null
           const currentCarbRest = client?.carbs_rest_day ? Number(client.carbs_rest_day) : null
 
-          // 套用建議計算（碳水吸收熱量缺口）
+          // 從 personal_notes 解析個人化下限（weight ≥ 8）
+          // 規則：note 含「低碳」「碳水必須 ≥」「SHBG」等關鍵字 → 提高碳水下限
+          //       note 含「脂肪不能 ≤」→ 提高脂肪下限
+          const noteFloors = (() => {
+            const floors = {
+              minCarbsTraining: 50,
+              minCarbsRest: 50,
+              minCarbsAvg: 50,
+              minFat: Math.round(0.4 * (current.avg ?? 70)),  // T 合成下限（0.4 g/kg）
+              avoidCarbCut: false,
+              triggeredNotes: [] as Array<{ note: string; weight: number; rule: string }>,
+            }
+            for (const n of personalNotes) {
+              if (n.weight < 8) continue
+              const text: string = n.note || ''
+              // 抓「訓練日 ≥ X」「非訓 ≥ Y」具體數字
+              const trainMatch = text.match(/訓練日?[^\d]{0,8}≥\s*(\d+)\s*g/)
+              if (trainMatch) {
+                floors.minCarbsTraining = Math.max(floors.minCarbsTraining, parseInt(trainMatch[1]))
+                floors.triggeredNotes.push({ note: text.slice(0, 80), weight: n.weight, rule: `訓練日碳水 ≥ ${trainMatch[1]}g` })
+              }
+              const restMatch = text.match(/非訓[練日]*[^\d]{0,8}≥\s*(\d+)\s*g/)
+              if (restMatch) {
+                floors.minCarbsRest = Math.max(floors.minCarbsRest, parseInt(restMatch[1]))
+                floors.triggeredNotes.push({ note: text.slice(0, 80), weight: n.weight, rule: `非訓碳水 ≥ ${restMatch[1]}g` })
+              }
+              // 模糊抓「低碳」「200g 失敗」「SHBG」→ 標記避開砍碳
+              if (/低碳.*失敗|SHBG.*敏感|碳水.*雷區|碳水必須維持/.test(text)) {
+                floors.avoidCarbCut = true
+                if (!floors.triggeredNotes.some(t => t.rule === '避免砍碳水')) {
+                  floors.triggeredNotes.push({ note: text.slice(0, 80), weight: n.weight, rule: '避免砍碳水（優先砍脂肪 + cardio）' })
+                }
+              }
+              // 脂肪下限
+              const fatMatch = text.match(/脂肪[^\d]{0,8}(?:不能|不可|≥|大於)[^\d]{0,4}(\d+)\s*g/)
+              if (fatMatch) {
+                floors.minFat = Math.max(floors.minFat, parseInt(fatMatch[1]))
+                floors.triggeredNotes.push({ note: text.slice(0, 80), weight: n.weight, rule: `脂肪 ≥ ${fatMatch[1]}g` })
+              }
+            }
+            return floors
+          })()
+
+          // 套用建議計算（含個人化保護）
           const minCal = client?.gender === 'female' ? 1200 : 1500
-          const newCal = currentCalTarget != null && kcalAdjustment != null
+          let newCal = currentCalTarget != null && kcalAdjustment != null
             ? Math.max(minCal, Math.round((currentCalTarget + kcalAdjustment) / 10) * 10)
             : null
-          const actualKcalShift = newCal != null && currentCalTarget != null ? newCal - currentCalTarget : null
-          const carbShift = actualKcalShift != null ? Math.round((actualKcalShift / 4) / 5) * 5 : null
-          const newCarb = currentCarbTarget != null && carbShift != null ? Math.max(50, currentCarbTarget + carbShift) : null
-          const newCarbTrain = currentCarbTrain != null && carbShift != null ? Math.max(50, currentCarbTrain + carbShift) : null
-          const newCarbRest = currentCarbRest != null && carbShift != null ? Math.max(50, currentCarbRest + carbShift) : null
+          let actualKcalShift = newCal != null && currentCalTarget != null ? newCal - currentCalTarget : null
+          let newCarb: number | null = null
+          let newCarbTrain: number | null = null
+          let newCarbRest: number | null = null
+          let newFat: number | null = currentFat
+          let strategyNote = ''
+          let unfilledKcal = 0
+
+          if (actualKcalShift != null && actualKcalShift < 0) {
+            const totalCutKcal = -actualKcalShift
+            if (noteFloors.avoidCarbCut) {
+              // 路徑 B：保碳水、砍脂肪、剩餘 cardio
+              const fatRoomG = Math.max(0, (currentFat ?? 0) - noteFloors.minFat)
+              const fatCutKcalMax = fatRoomG * 9
+              const fatCutKcal = Math.min(totalCutKcal, fatCutKcalMax)
+              newFat = (currentFat ?? 0) - Math.round(fatCutKcal / 9)
+              newCarb = currentCarbTarget
+              newCarbTrain = currentCarbTrain
+              newCarbRest = currentCarbRest
+              unfilledKcal = totalCutKcal - fatCutKcal
+              strategyNote = `🛡️ 依個人歷史：保碳水、砍脂肪 (-${Math.round(fatCutKcal)} kcal/天)` + (unfilledKcal > 50 ? `，剩 ${Math.round(unfilledKcal)} kcal 需從 cardio 取得（約 +${Math.ceil(unfilledKcal / 6)} min Zone 2）` : '')
+              // 重算 newCal（因為實際只砍 fat 那部分）
+              newCal = currentCalTarget != null ? currentCalTarget - Math.round(fatCutKcal) : null
+              actualKcalShift = -Math.round(fatCutKcal)
+            } else {
+              // 路徑 A：原本邏輯，碳水吸收，但用個人化 floor
+              const carbShift = Math.round((actualKcalShift / 4) / 5) * 5
+              const clampedCarbTrain = currentCarbTrain != null ? Math.max(noteFloors.minCarbsTraining, currentCarbTrain + carbShift) : null
+              const clampedCarbRest = currentCarbRest != null ? Math.max(noteFloors.minCarbsRest, currentCarbRest + carbShift) : null
+              const clampedCarbAvg = currentCarbTarget != null ? Math.max(noteFloors.minCarbsAvg, currentCarbTarget + carbShift) : null
+              newCarbTrain = clampedCarbTrain
+              newCarbRest = clampedCarbRest
+              newCarb = clampedCarbAvg
+              // 計算被 floor 卡掉多少 kcal，剩下從 fat 或 cardio
+              const desiredCarbCut = -carbShift * 4
+              const actualCarbCut =
+                (currentCarbTarget != null && clampedCarbAvg != null ? (currentCarbTarget - clampedCarbAvg) * 4 : desiredCarbCut)
+              unfilledKcal = Math.max(0, desiredCarbCut - actualCarbCut)
+              if (unfilledKcal > 50) {
+                strategyNote = `⚠️ 撞個人碳水下限，剩 ${Math.round(unfilledKcal)} kcal 建議從 cardio 取得（約 +${Math.ceil(unfilledKcal / 6)} min Zone 2）`
+              }
+            }
+          } else {
+            newCarb = currentCarbTarget
+            newCarbTrain = currentCarbTrain
+            newCarbRest = currentCarbRest
+          }
 
           const filledWeeks = weeks.filter(w => w.avg != null)
           const maxAvg = filledWeeks.length > 0 ? Math.max(...filledWeeks.map(w => w.avg as number)) : 0
@@ -1851,18 +1940,21 @@ export default function ClientOverview() {
                           onClick={async () => {
                             const summary = [
                               `熱量：${currentCalTarget} → ${newCal} kcal`,
-                              currentCarbTarget != null && newCarb != null ? `碳水：${currentCarbTarget}g → ${newCarb}g` : null,
-                              currentCarbTrain != null && newCarbTrain != null ? `訓練日碳水：${currentCarbTrain}g → ${newCarbTrain}g` : null,
-                              currentCarbRest != null && newCarbRest != null ? `非訓練日碳水：${currentCarbRest}g → ${newCarbRest}g` : null,
+                              currentFat != null && newFat != null && newFat !== currentFat ? `脂肪：${currentFat}g → ${newFat}g` : null,
+                              currentCarbTarget != null && newCarb != null && newCarb !== currentCarbTarget ? `碳水：${currentCarbTarget}g → ${newCarb}g` : null,
+                              currentCarbTrain != null && newCarbTrain != null && newCarbTrain !== currentCarbTrain ? `訓練日碳水：${currentCarbTrain}g → ${newCarbTrain}g` : null,
+                              currentCarbRest != null && newCarbRest != null && newCarbRest !== currentCarbRest ? `非訓練日碳水：${currentCarbRest}g → ${newCarbRest}g` : null,
+                              strategyNote ? `\n${strategyNote}` : null,
                             ].filter(Boolean).join('\n')
-                            if (!confirm(`確定套用？\n\n${summary}\n\n（蛋白質、脂肪不變；可隨時再改）`)) return
+                            if (!confirm(`確定套用？\n\n${summary}`)) return
                             const updates: Record<string, number | string> = {
-                              calories_target: newCal,
+                              calories_target: newCal!,
                               last_auto_adjust_at: new Date().toISOString(),
                             }
-                            if (currentCarbTarget != null && newCarb != null) updates.carbs_target = newCarb
-                            if (currentCarbTrain != null && newCarbTrain != null) updates.carbs_training_day = newCarbTrain
-                            if (currentCarbRest != null && newCarbRest != null) updates.carbs_rest_day = newCarbRest
+                            if (currentFat != null && newFat != null && newFat !== currentFat) updates.fat_target = newFat
+                            if (currentCarbTarget != null && newCarb != null && newCarb !== currentCarbTarget) updates.carbs_target = newCarb
+                            if (currentCarbTrain != null && newCarbTrain != null && newCarbTrain !== currentCarbTrain) updates.carbs_training_day = newCarbTrain
+                            if (currentCarbRest != null && newCarbRest != null && newCarbRest !== currentCarbRest) updates.carbs_rest_day = newCarbRest
                             await saveQuickAction(updates, '✓ macros 已調整')
                             // Audit log
                             try {
@@ -1890,6 +1982,18 @@ export default function ClientOverview() {
                         >
                           {quickSaving ? '套用中…' : '🎯 一鍵套用建議'}
                         </button>
+                      )}
+                      {/* 個人化保護觸發提示 */}
+                      {noteFloors.triggeredNotes.length > 0 && (
+                        <div className="mt-3 p-2.5 bg-emerald-50 border border-emerald-200 rounded text-xs">
+                          <p className="font-semibold text-emerald-800 mb-1">🛡️ 已套用個人歷史保護</p>
+                          {strategyNote && <p className="text-emerald-700 mb-1.5">{strategyNote}</p>}
+                          <ul className="text-emerald-600 space-y-0.5">
+                            {noteFloors.triggeredNotes.map((t, i) => (
+                              <li key={i}>· <span className="font-medium">{t.rule}</span> <span className="text-emerald-500">（weight {t.weight}）</span></li>
+                            ))}
+                          </ul>
+                        </div>
                       )}
                       <p className="text-[10px] text-gray-400 mt-2 leading-snug">
                         7700 kcal ≈ 1 kg 純脂肪推算（未區分肌脂、未含 NEAT 變化）。建議搭配 1-2 週體重驗證後再進一步調。
