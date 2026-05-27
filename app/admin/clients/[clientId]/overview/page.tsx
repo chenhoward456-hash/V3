@@ -1902,6 +1902,80 @@ export default function ClientOverview() {
           )
         })()}
 
+        {/* ===== 🏋️ 近 30 天訓練紀錄 + 學員備註（含疼痛紅標）===== */}
+        {trainingLogs.length > 0 && (() => {
+          const PAIN_KEYWORDS = ['痛', '不適', '受傷', '酸', '痠', '麻', '緊', '拉傷', '扭', '刺痛']
+          const hasFlag = (n: string | null) => !!n && PAIN_KEYWORDS.some(k => n.includes(k))
+          const recent30 = (trainingLogs as any[]).filter(t => {
+            const d = new Date(t.date)
+            return d.getTime() >= Date.now() - 30 * 86_400_000
+          }).sort((a, b) => b.date.localeCompare(a.date))
+          const flagged = recent30.filter(r => hasFlag(r.note))
+          const withNotes = recent30.filter(r => r.note && !hasFlag(r.note))
+          if (flagged.length === 0 && withNotes.length === 0) return null
+          const fmtType = (t: string | null) => {
+            if (!t) return '—'
+            const map: Record<string, string> = {
+              cardio: '🏃 有氧', strength: '💪 重訓', mixed: '🔀 混合',
+              rest: '😴 休息', flexibility: '🧘 柔軟度', sports: '⚽ 運動',
+              push: '💥 Push', pull: '🪝 Pull', legs: '🦵 Legs', upper: '💪 Upper', lower: '🦵 Lower',
+            }
+            return map[t] || t
+          }
+          return (
+            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">🏋️</span>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">近 30 天訓練紀錄（學員回報）</h3>
+                  <p className="text-[10px] text-gray-400 mt-0.5">含「痛 / 不適 / 受傷 / 酸 / 麻 / 緊」自動紅標置頂</p>
+                </div>
+              </div>
+
+              {flagged.length > 0 && (
+                <div className="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-lg">
+                  <p className="text-sm font-semibold text-rose-700 mb-2">
+                    ⚠️ {flagged.length} 筆紀錄含疼痛/不適關鍵字，建議優先處理
+                  </p>
+                  <div className="space-y-2">
+                    {flagged.map((r: any) => (
+                      <div key={r.id} className="bg-white border border-rose-200 rounded p-2 text-sm">
+                        <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                          <span className="font-mono">{r.date}</span>
+                          <span>{fmtType(r.training_type)}</span>
+                          {r.rpe != null && <span>RPE {r.rpe}</span>}
+                          {r.duration != null && <span>{r.duration} 分鐘</span>}
+                        </div>
+                        <p className="text-rose-900 whitespace-pre-wrap">{r.note}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {withNotes.length > 0 && (
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-gray-600 font-semibold">
+                    📝 其他學員備註（{withNotes.length} 筆）
+                  </summary>
+                  <div className="space-y-1.5 mt-2">
+                    {withNotes.map((r: any) => (
+                      <div key={r.id} className="border border-gray-100 rounded p-2 bg-gray-50">
+                        <div className="flex items-center gap-2 text-[10px] text-gray-500 mb-0.5">
+                          <span className="font-mono">{r.date}</span>
+                          <span>{fmtType(r.training_type)}</span>
+                          {r.rpe != null && <span>RPE {r.rpe}</span>}
+                        </div>
+                        <p className="text-gray-700 whitespace-pre-wrap">{r.note}</p>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          )
+        })()}
+
         {/* ===== 教練快速操作 ===== */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
