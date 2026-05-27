@@ -158,17 +158,23 @@ async function handleEvent(event: LineWebhookEvent) {
 // ═══════════════════════════════════════
 
 async function handleTextMessage(event: LineWebhookEvent, userId: string, supabase: SupabaseClient) {
-  const text = (event.message?.text || '').trim()
+  let text = (event.message?.text || '').trim()
 
   // 教練端 AI Agent 攔截（Phase 2a）
-  // Howard 直接在 LINE 跟 AI 對話。前綴 @ai 或 @a 觸發，避免吃掉舊指令
-  if (userId === process.env.ADMIN_LINE_USER_ID && /^@(ai|a)\s+/i.test(text)) {
-    const stripped = text.replace(/^@(ai|a)\s+/i, '').trim()
-    await handleAdminAgentMessage(
-      { replyToken: event.replyToken, message: { text: stripped } },
-      supabase,
-    )
-    return
+  // Admin 任何訊息都走 Agent，要 escape 回舊 flow 用 /raw 或 /menu 前綴
+  if (userId === process.env.ADMIN_LINE_USER_ID) {
+    const escapeMatch = text.match(/^\/(raw|menu)\s*(.*)$/i)
+    if (escapeMatch) {
+      // /raw 後接的內容走舊學員 flow
+      text = escapeMatch[2].trim() || '選單'
+    } else {
+      const cleaned = text.replace(/^@(ai|a)\s+/i, '').trim()
+      await handleAdminAgentMessage(
+        { replyToken: event.replyToken, message: { text: cleaned } },
+        supabase,
+      )
+      return
+    }
   }
 
   // Single client lookup shared by all handlers
