@@ -55,15 +55,7 @@ export async function handleAdminAgentMessage(
     return
   }
 
-  // 顯示「處理中」避免 LINE 等太久 timeout
-  try {
-    await replyMessage(event.replyToken, [
-      { type: 'text', text: '🧠 AI 思考中...（10-30 秒）' },
-    ])
-    await dbg('reply_thinking_ok')
-  } catch (e) {
-    await dbg('reply_thinking_fail', (e as Error).message)
-  }
+  const startMs = Date.now()
 
   try {
     await dbg('runAgent_start')
@@ -72,27 +64,20 @@ export async function handleAdminAgentMessage(
       contextHint: `(教練端 LINE 對話)\n${ADMIN_DEFAULT_CONTEXT}`,
       maxTurns: 6,
     })
-    await dbg('runAgent_done', `text_len=${result.finalText.length} toolCalls=${result.toolCalls.length}`)
+    const elapsedSec = (Date.now() - startMs) / 1000
+    await dbg('runAgent_done', `text_len=${result.finalText.length} toolCalls=${result.toolCalls.length} elapsed=${elapsedSec.toFixed(1)}s`)
 
-    const adminLineId = process.env.ADMIN_LINE_USER_ID
-    if (!adminLineId) {
-      await dbg('admin_env_missing')
-      return
-    }
+    // 組裝所有要送的訊息（為了省 push 配額：所有訊息打包成 1 次 LINE call）
+    const messages: any[] = []
 
-    // 1. AI 回應本文（chunk）
-    const textChunks = chunkText(result.finalText)
-    await dbg('push_text_start', `chunks=${textChunks.length}`)
+    // 1. AI 回應本文（chunk）— append 成本到最後一則
+    const cost = ((result.totalTokens.input * 3 + result.totalTokens.output * 15) / 1_000_000 * 32).toFixed(2)
+    const textChunks = chunkText(result.finalText + `\n\n— — — — — —\n🔧 ${result.toolCalls.length} tools · NT$${cost}`)
     for (const chunk of textChunks) {
-      try {
-        await pushMessage(adminLineId, [{ type: 'text', text: chunk }])
-      } catch (e) {
-        await dbg('push_text_fail', (e as Error).message)
-      }
+      messages.push({ type: 'text', text: chunk })
     }
-    await dbg('push_text_done')
 
-    // 2. 如果有新建立的 proposal，後接審核 quick reply
+    // 2. 如果有新建立的 proposal，附審核 quick reply
     const createdProposals = result.toolCalls
       .filter(tc => tc.name === 'propose_macro_adjustment' && tc.result?.success && tc.result?.proposal_id)
       .map(tc => tc.result.proposal_id as string)
@@ -104,46 +89,52 @@ export async function handleAdminAgentMessage(
         .eq('id', proposalId)
         .maybeSingle()
       if (!proposal) continue
-
       const summary = formatProposalSummary(proposal)
-      await pushMessage(adminLineId, [
-        {
-          type: 'text',
-          text: `📋 提案待審 ${proposalId.slice(0, 8)}\n\n${summary}`,
-          quickReply: {
-            items: [
-              {
-                type: 'action',
-                action: { type: 'postback', label: '✓ 核准套用', data: `agent_proposal:approve:${proposalId}`, displayText: `核准提案 ${proposalId.slice(0, 8)}` },
-              },
-              {
-                type: 'action',
-                action: { type: 'postback', label: '✗ 拒絕', data: `agent_proposal:reject:${proposalId}`, displayText: `拒絕提案 ${proposalId.slice(0, 8)}` },
-              },
-              {
-                type: 'action',
-                action: { type: 'postback', label: '💬 再聊', data: `agent_proposal:discuss:${proposalId}`, displayText: `再討論 ${proposalId.slice(0, 8)}` },
-              },
-            ],
-          },
-        } as any,
-      ]).catch(() => {})
+      messages.push({
+        type: 'text',
+        text: `📋 提案待審 ${proposalId.slice(0, 8)}\n\n${summary}`,
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'postback', label: '✓ 核准套用', data: `agent_proposal:approve:${proposalId}`, displayText: `核准 ${proposalId.slice(0, 8)}` } },
+            { type: 'action', action: { type: 'postback', label: '✗ 拒絕', data: `agent_proposal:reject:${proposalId}`, displayText: `拒絕 ${proposalId.slice(0, 8)}` } },
+            { type: 'action', action: { type: 'postback', label: '💬 再聊', data: `agent_proposal:discuss:${proposalId}`, displayText: `再聊 ${proposalId.slice(0, 8)}` } },
+          ],
+        },
+      })
     }
 
-    // 3. 成本資訊（debug 用，production 可關掉）
-    const cost = ((result.totalTokens.input * 3 + result.totalTokens.output * 15) / 1_000_000 * 32).toFixed(2)
-    await pushMessage(adminLineId, [
-      { type: 'text', text: `🔧 ${result.toolCalls.length} tool calls · in ${result.totalTokens.input}t / out ${result.totalTokens.output}t · NT$${cost}` },
-    ]).catch(() => {})
+    // LINE 一次最多 5 則
+    const toSend = messages.slice(0, 5)
+
+    // 優先用 replyMessage（免費），超時 fallback pushMessage（1 次扣 1 額度）
+    let usedReply = false
+    if (elapsedSec < 50) {
+      try {
+        await replyMessage(event.replyToken, toSend)
+        usedReply = true
+        await dbg('reply_ok', `messages=${toSend.length} sec=${elapsedSec.toFixed(1)}`)
+      } catch (e) {
+        await dbg('reply_fail_fallback_push', (e as Error).message)
+      }
+    }
+
+    if (!usedReply) {
+      const adminLineId = process.env.ADMIN_LINE_USER_ID
+      if (!adminLineId) { await dbg('admin_env_missing'); return }
+      try {
+        await pushMessage(adminLineId, toSend)
+        await dbg('push_fallback_ok', `messages=${toSend.length}`)
+      } catch (e) {
+        await dbg('push_fallback_fail', (e as Error).message)
+      }
+    }
   } catch (err) {
     const msg = (err as Error).message || 'unknown'
     await dbg('agent_exception', msg)
-    const adminLineId = process.env.ADMIN_LINE_USER_ID
-    if (adminLineId) {
-      await pushMessage(adminLineId, [
-        { type: 'text', text: '❌ AI 處理失敗: ' + msg.slice(0, 200) },
-      ]).catch(() => {})
-    }
+    // 嘗試用 replyToken 報錯（free），用過就算了
+    try {
+      await replyMessage(event.replyToken, [{ type: 'text', text: '❌ AI 處理失敗: ' + msg.slice(0, 200) }])
+    } catch {}
   }
 }
 
