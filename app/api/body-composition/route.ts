@@ -29,8 +29,17 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     return { adjusted: false, debug: `skip: goal_type=${client?.goal_type}, nutrition_enabled=${client?.nutrition_enabled}` }
   }
 
-  // 教練覆寫鎖定已移除 — 自動調整引擎是核心功能，不應被 coach lock 阻擋
-  // coach_macro_override 僅供前端顯示提示，不阻止引擎更新
+  // 修 critical bug：coached/protocol tier 學員的 macros 應由教練決定
+  // 之前這條每次記體重就把教練手動/AI Agent 核准的調整 silently reset
+  const tier = client.subscription_tier
+  if (tier === 'coached' || tier === 'protocol') {
+    return { adjusted: false, debug: `skip: tier=${tier}（由教練 / AI Agent 提案路徑管理 macros）` }
+  }
+
+  // 教練覆寫鎖定：override 期間引擎也不動
+  if (client.coach_macro_override) {
+    return { adjusted: false, debug: `skip: coach_macro_override 鎖定中` }
+  }
 
   // 2. 取得近 30 天所有相關數據（平行查詢）
   const thirtyDaysAgo = new Date()
@@ -223,7 +232,28 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     if (suggestion.suggestedCarbsRestDay != null) updates.carbs_rest_day = suggestion.suggestedCarbsRestDay
 
     if (Object.keys(updates).length > 0) {
-      await supabase.from('clients').update(updates).eq('id', clientId)
+      // 寫 audit log（修 audit gap：之前這條完全沒記）
+      const oldMacros = {
+        calories_target: client.calories_target,
+        protein_target: client.protein_target,
+        carbs_target: client.carbs_target,
+        fat_target: client.fat_target,
+        carbs_training_day: client.carbs_training_day,
+        carbs_rest_day: client.carbs_rest_day,
+      }
+      await supabase.from('clients').update({
+        ...updates,
+        last_auto_adjust_at: new Date().toISOString(),
+      }).eq('id', clientId)
+      await supabase.from('macro_adjustment_log').insert({
+        client_id: clientId,
+        applied_by: 'system',
+        trigger_source: 'tdee_weekly',
+        old_macros: oldMacros,
+        new_macros: updates,
+        reason: `body-composition trigger auto-adjust（${tier} tier）：${suggestion.message?.slice(0, 200) ?? ''}`,
+        trajectory_data: { autoApply: true, status: suggestion.status },
+      }).then(() => {}, () => {})
       return {
         adjusted: true,
         message: suggestion.message,
