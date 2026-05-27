@@ -100,29 +100,35 @@ export async function readClientState(clientIdOrCode: string) {
   const clientId = await resolveClientId(clientIdOrCode)
   if (!clientId) return { error: 'client not found' }
 
-  const fourteenDaysAgo = new Date(); fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
-  const fourteenStr = fourteenDaysAgo.toISOString().split('T')[0]
+  // 成本優化：14d → 7d，只回 essential，labs 只回有意義的（過濾正常值前）
+  const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const sevenStr = sevenDaysAgo.toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0]
 
   const [clientRes, bodyRes, wellnessRes, trainingRes, nutritionRes, labRes, notesRes, recentLogsRes] = await Promise.all([
-    supabase.from('clients').select('id, name, age, gender, client_mode, prep_phase, goal_type, target_weight, target_date, competition_date, calories_target, protein_target, carbs_target, fat_target, carbs_training_day, carbs_rest_day, macro_bounds, last_auto_adjust_at, gene_mthfr, gene_apoe, gene_depression_risk, ai_agent_enabled').eq('id', clientId).maybeSingle(),
-    supabase.from('body_composition').select('date, weight, body_fat, muscle_mass').eq('client_id', clientId).gte('date', fourteenStr).order('date', { ascending: false }),
-    supabase.from('daily_wellness').select('date, energy_level, training_drive, sleep_quality, mood, device_recovery_score, hrv, resting_hr').eq('client_id', clientId).gte('date', fourteenStr).order('date', { ascending: false }),
-    supabase.from('training_logs').select('date, training_type, rpe, duration, note').eq('client_id', clientId).gte('date', fourteenStr).order('date', { ascending: false }),
-    supabase.from('nutrition_logs').select('date, calories, protein_grams, carbs_grams, fat_grams, compliant').eq('client_id', clientId).gte('date', fourteenStr).order('date', { ascending: false }),
-    supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', clientId).order('date', { ascending: false }).limit(30),
-    supabase.from('personal_notes').select('category, note, weight, relevant_until, added_at').eq('client_id', clientId).or('relevant_until.is.null,relevant_until.gte.' + new Date().toISOString().split('T')[0]).order('weight', { ascending: false }).limit(20),
-    supabase.from('macro_adjustment_log').select('applied_at, applied_by, trigger_source, old_macros, new_macros, reason').eq('client_id', clientId).order('applied_at', { ascending: false }).limit(5),
+    supabase.from('clients').select('id, name, age, gender, goal_type, target_weight, target_date, competition_date, calories_target, protein_target, carbs_target, fat_target, carbs_training_day, carbs_rest_day, last_auto_adjust_at, gene_mthfr').eq('id', clientId).maybeSingle(),
+    supabase.from('body_composition').select('date, weight, body_fat').eq('client_id', clientId).gte('date', sevenStr).order('date', { ascending: false }),
+    supabase.from('daily_wellness').select('date, energy_level, training_drive, sleep_quality, mood').eq('client_id', clientId).gte('date', sevenStr).order('date', { ascending: false }),
+    supabase.from('training_logs').select('date, training_type, rpe').eq('client_id', clientId).gte('date', sevenStr).order('date', { ascending: false }),
+    supabase.from('nutrition_logs').select('date, calories, protein_grams, carbs_grams, compliant').eq('client_id', clientId).gte('date', sevenStr).order('date', { ascending: false }),
+    // labs：只取最近 3 個月 + 含基本荷爾蒙/代謝
+    supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', clientId).order('date', { ascending: false }).limit(15),
+    // personal_notes：只取 weight ≥ 7 的（重要的）+ 還在有效期內
+    supabase.from('personal_notes').select('category, note, weight').eq('client_id', clientId).gte('weight', 7).or('relevant_until.is.null,relevant_until.gte.' + today).order('weight', { ascending: false }).limit(8),
+    // macro_adjustment_log：只回最近 2 筆 + 簡化欄位
+    supabase.from('macro_adjustment_log').select('applied_at, reason').eq('client_id', clientId).order('applied_at', { ascending: false }).limit(2),
   ])
 
   return {
     client: clientRes.data,
-    recent_body_14d: bodyRes.data ?? [],
-    recent_wellness_14d: wellnessRes.data ?? [],
-    recent_training_14d: trainingRes.data ?? [],
-    recent_nutrition_14d: nutritionRes.data ?? [],
+    body_7d: bodyRes.data ?? [],
+    wellness_7d: wellnessRes.data ?? [],
+    training_7d: trainingRes.data ?? [],
+    nutrition_7d: nutritionRes.data ?? [],
     recent_labs: labRes.data ?? [],
-    personal_notes: notesRes.data ?? [],
-    recent_macro_changes: recentLogsRes.data ?? [],
+    personal_notes_important: notesRes.data ?? [],
+    last_2_adjustments: recentLogsRes.data ?? [],
+    _note: '若需更詳細的歷史資料（>7 天），告知我再特別查',
   }
 }
 

@@ -20,6 +20,8 @@ import {
 import { buildDay0Messages, enrollSubscriber, unenrollSubscriber } from '@/lib/nurture-sequence'
 import { handleAdminAgentMessage, handleAgentProposalPostback } from '@/lib/agent-line'
 
+export const maxDuration = 60  // Agent tool use 可能跑 20-30s，給足 60s
+
 const log = createLogger('LINE-Webhook')
 
 /** LINE webhook event shape (subset of fields we use) */
