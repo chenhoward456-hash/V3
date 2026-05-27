@@ -90,6 +90,16 @@ async function handleEvent(event: LineWebhookEvent) {
 
   const supabase = createServiceSupabase()
 
+  // DEBUG：每個 event 都寫進 line_webhook_debug_log（給 admin debug 用）
+  const adminEnvId = process.env.ADMIN_LINE_USER_ID
+  await supabase.from('line_webhook_debug_log').insert({
+    user_id: userId,
+    message_text: event.message?.text ?? null,
+    event_type: event.type,
+    matched_admin: adminEnvId ? userId === adminEnvId : null,
+    action_taken: 'event_received',
+  }).then(() => {}, () => {})
+
   // Update last activity time regardless of event type
   await supabase
     .from('clients')
