@@ -439,13 +439,31 @@ export async function GET(request: NextRequest) {
       }
 
       if (Object.keys(updates).length > 0) {
+        // 寫 audit log（修 CRITICAL bug：auto-apply 路徑之前完全沒記）
+        const oldMacros = {
+          calories_target: client.calories_target,
+          protein_target: client.protein_target,
+          carbs_target: client.carbs_target,
+          fat_target: client.fat_target,
+          carbs_training_day: client.carbs_training_day,
+          carbs_rest_day: client.carbs_rest_day,
+        }
         const { error: updateErr } = await supabase
           .from('clients')
-          .update(updates)
+          .update({ ...updates, last_auto_adjust_at: new Date().toISOString() })
           .eq('id', client.id)
 
         if (!updateErr) {
           applied = true
+          await supabase.from('macro_adjustment_log').insert({
+            client_id: client.id,
+            applied_by: 'system',
+            trigger_source: 'tdee_weekly',
+            old_macros: oldMacros,
+            new_macros: updates,
+            reason: `nutrition-suggestions auto-apply (${client.subscription_tier}): ${(suggestion.message ?? '').slice(0, 200)}`,
+            trajectory_data: { autoApply: true, status: suggestion.status },
+          }).then(() => {}, () => {})
         } else {
           console.error('[AutoNutrition] DB 更新失敗:', updateErr.message, 'clientId:', client.id, 'updates:', updates)
         }

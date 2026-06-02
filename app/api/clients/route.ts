@@ -243,7 +243,7 @@ export async function PATCH(request: NextRequest) {
     // 驗證 unique_code 存在
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('id, gender, subscription_tier, is_active')
+      .select('id, gender, subscription_tier, is_active, calories_target, protein_target, coach_macro_override')
       .eq('unique_code', clientId)
       .single()
 
@@ -362,7 +362,14 @@ export async function PATCH(request: NextRequest) {
         .upsert(bodyCompRecord, { onConflict: 'client_id,date' })
 
       // 有體重 + 目標類型 → 計算初始營養目標
-      if (validGoalType) {
+      // 修 CRITICAL：教練鎖定 / 已有 macros 時不覆寫
+      const tier = client.subscription_tier
+      const hasExistingMacros = client.calories_target != null && client.protein_target != null
+      const coachLocked = client.coach_macro_override != null
+      const isCoachedTier = tier === 'coached' || tier === 'protocol'
+      const skipMacroWrite = coachLocked || (hasExistingMacros && isCoachedTier)
+
+      if (validGoalType && !skipMacroWrite) {
         const targets = calculateInitialTargets({
           gender: resolvedGender,
           bodyWeight: body_weight,
@@ -379,6 +386,10 @@ export async function PATCH(request: NextRequest) {
         updates.carbs_target = targets.carbs
         updates.fat_target = targets.fat
         // 同時啟用 nutrition 和 body_composition 功能
+        updates.nutrition_enabled = true
+        updates.body_composition_enabled = true
+      } else if (validGoalType && skipMacroWrite) {
+        // 即使不覆寫 macros，仍啟用基本功能
         updates.nutrition_enabled = true
         updates.body_composition_enabled = true
       }
