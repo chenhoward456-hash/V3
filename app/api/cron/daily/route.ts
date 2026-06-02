@@ -332,6 +332,55 @@ export async function GET(request: NextRequest) {
         }
 
         const now = new Date().toISOString()
+        const tier = c.subscription_tier
+
+        // Tier 分流：coached/protocol 走 propose 流程、self_managed 走 auto-apply
+        if (tier === 'coached' || tier === 'protocol') {
+          // 寫 pending_proposals 等教練審核
+          // 先檢查 24h 內是否有未審 proposal，避免重複
+          const { data: existing } = await supabase
+            .from('pending_proposals')
+            .select('id')
+            .eq('client_id', c.id)
+            .eq('status', 'pending')
+            .gte('proposed_at', new Date(Date.now() - 24 * 3600 * 1000).toISOString())
+            .limit(1)
+            .maybeSingle()
+          if (existing) continue
+
+          const { data: proposal } = await supabase
+            .from('pending_proposals')
+            .insert({
+              client_id: c.id,
+              proposed_by: 'system_trajectory',
+              proposal_type: 'macro_adjustment',
+              current_state: oldMacros,
+              proposed_changes: trajResult.newMacros,
+              reasoning: `[Cron 自動偵測]\n${trajResult.reason}\n\n${trajResult.boundaryDetail ?? ''}`,
+              trajectory_data: { ...trajResult.trajectoryData, gatesChecked: true, engineReadinessScore: engineResult.cuttingReadinessGate?.readinessScore ?? null, metabolicStressScore: engineResult.metabolicStress?.score ?? null, tier },
+              safety_check_result: { passed: true, violations: [], warnings: [] },
+            })
+            .select()
+            .single()
+
+          autoAdjustResults.applied++ // 統計記成 proposed
+          if (trajResult.hitBoundary) autoAdjustResults.boundaryHit++
+
+          // LINE push 教練（不是學員）
+          const coachLineId = process.env.ADMIN_LINE_USER_ID
+          if (coachLineId && proposal) {
+            const carbLine = trajResult.newMacros?.carbs_training_day != null
+              ? `訓練日碳水 ${oldMacros.carbs_training_day} → ${trajResult.newMacros.carbs_training_day}g\n非訓練日 ${oldMacros.carbs_rest_day} → ${trajResult.newMacros.carbs_rest_day}g`
+              : trajResult.newMacros?.carbs_target != null
+                ? `碳水 ${oldMacros.carbs_target} → ${trajResult.newMacros.carbs_target}g`
+                : ''
+            const msg = `📋 [系統提案] ${c.name}\n\n熱量 ${oldMacros.calories_target} → ${trajResult.newMacros?.calories_target} kcal\n${carbLine}\n\n${trajResult.reason}${trajResult.hitBoundary ? `\n\n⚠️ ${trajResult.boundaryDetail}` : ''}\n\n→ Playground 或 LINE「list」審核\nID: ${proposal.id.slice(0, 8)}`
+            await pushMessage(coachLineId, [{ type: 'text', text: msg }]).catch(() => {})
+          }
+          continue // 不執行下方的 auto-apply
+        }
+
+        // self_managed：原本邏輯，直接套用
         const { error: updErr } = await supabase
           .from('clients')
           .update({ ...trajResult.newMacros, last_auto_adjust_at: now })
