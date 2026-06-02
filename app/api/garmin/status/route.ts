@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 const logger = createLogger('api-garmin-status')
 const supabaseAdmin = createServiceSupabase()
 

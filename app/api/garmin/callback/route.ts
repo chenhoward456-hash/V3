@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { getAccessToken } from '@/lib/garmin-api'
 
+export const dynamic = 'force-dynamic'
+
 const supabaseAdmin = createServiceSupabase()
 
 export async function GET(request: NextRequest) {
