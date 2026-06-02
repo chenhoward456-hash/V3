@@ -108,7 +108,7 @@ export async function readClientState(clientIdOrCode: string) {
   const [clientRes, bodyRes, wellnessRes, trainingRes, nutritionRes, labRes, notesRes, recentLogsRes] = await Promise.all([
     supabase.from('clients').select('id, name, age, gender, goal_type, target_weight, target_date, competition_date, calories_target, protein_target, carbs_target, fat_target, carbs_training_day, carbs_rest_day, last_auto_adjust_at, gene_mthfr').eq('id', clientId).maybeSingle(),
     supabase.from('body_composition').select('date, weight, body_fat').eq('client_id', clientId).gte('date', sevenStr).order('date', { ascending: false }),
-    supabase.from('daily_wellness').select('date, energy_level, training_drive, sleep_quality, mood').eq('client_id', clientId).gte('date', sevenStr).order('date', { ascending: false }),
+    supabase.from('daily_wellness').select('date, energy_level, training_drive, sleep_quality, mood, period_start').eq('client_id', clientId).gte('date', sevenStr).order('date', { ascending: false }),
     supabase.from('training_logs').select('date, training_type, rpe').eq('client_id', clientId).gte('date', sevenStr).order('date', { ascending: false }),
     supabase.from('nutrition_logs').select('date, calories, protein_grams, carbs_grams, compliant').eq('client_id', clientId).gte('date', sevenStr).order('date', { ascending: false }),
     // labs：只取最近 3 個月 + 含基本荷爾蒙/代謝
@@ -119,6 +119,37 @@ export async function readClientState(clientIdOrCode: string) {
     supabase.from('macro_adjustment_log').select('applied_at, reason').eq('client_id', clientId).order('applied_at', { ascending: false }).limit(2),
   ])
 
+  // 月經週期推算（女性學員，從近 60 天 wellness 找最後一次 period_start）
+  let cycleInfo: any = null
+  if (clientRes.data?.gender === '女性') {
+    const { data: lastPeriod } = await supabase
+      .from('daily_wellness')
+      .select('date')
+      .eq('client_id', clientId)
+      .eq('period_start', true)
+      .order('date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (lastPeriod?.date) {
+      const daysSince = Math.floor((Date.now() - new Date(lastPeriod.date).getTime()) / 86_400_000)
+      const cycleDay = (daysSince % 28) + 1
+      cycleInfo = {
+        last_period_start_date: lastPeriod.date,
+        days_since_last_period: daysSince,
+        estimated_cycle_day: cycleDay,
+        estimated_phase:
+          cycleDay <= 5 ? '月經期'
+          : cycleDay <= 13 ? '濾泡期'
+          : cycleDay <= 16 ? '排卵期'
+          : '黃體期',
+        in_luteal_phase: cycleDay > 16,
+        red_s_warning: daysSince > 45 ? `⚠️ ${daysSince} 天未來潮，可能是 RED-S 早期信號（>45d）` : null,
+      }
+    } else {
+      cycleInfo = { red_s_warning: '⚠️ 尚無經期紀錄，無法判斷週期' }
+    }
+  }
+
   return {
     client: clientRes.data,
     body_7d: bodyRes.data ?? [],
@@ -128,6 +159,7 @@ export async function readClientState(clientIdOrCode: string) {
     recent_labs: labRes.data ?? [],
     personal_notes_important: notesRes.data ?? [],
     last_2_adjustments: recentLogsRes.data ?? [],
+    menstrual_cycle: cycleInfo,
     _note: '若需更詳細的歷史資料（>7 天），告知我再特別查',
   }
 }
