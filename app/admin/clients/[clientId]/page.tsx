@@ -9,6 +9,7 @@ import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { getDefaultFeatures, type SubscriptionTier } from '@/lib/tier-defaults'
 import { isCompetitionMode, isHealthMode, ALL_CLIENT_MODES, MODE_LABELS, MODE_EMOJIS, MODE_CONFIG, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS } from '@/lib/client-mode'
 import LabPanelNotesEditor from './components/LabPanelNotesEditor'
+import PersonalNotesEditor from './components/PersonalNotesEditor'
 import ArchivedSupplementsList from './components/ArchivedSupplementsList'
 import { SUPPLEMENT_NAMES, findSuggestion } from '@/lib/supplement-catalog'
 
@@ -1921,6 +1922,9 @@ export default function ClientEditor() {
         {/* ===== Tab: 教練筆記 ===== */}
         {activeTab === 'notes' && (
           <div className="space-y-6">
+            {/* 🧠 個人化記憶（AI Agent 讀的紅線）*/}
+            <PersonalNotesEditor clientId={client.id} />
+
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">教練備註</h2>
               <div className="space-y-4">

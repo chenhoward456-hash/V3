@@ -1088,6 +1088,19 @@ export default function ClientDashboard() {
               }
               weeklyAdjustmentCount={0}
             />
+            {/* 🏃 今日 cardio 目標（教練或 AI Agent 核准的）*/}
+            {!isFree && (c as any).cardio_minutes_per_day && (
+              <div className="bg-white rounded-2xl shadow-sm border border-emerald-100 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-2xl">🏃</div>
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 font-medium">教練建議今日 cardio</p>
+                    <p className="text-2xl font-bold text-emerald-700">{(c as any).cardio_minutes_per_day} 分鐘</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Zone 2（鼻呼吸還能講話）· 116-136 bpm</p>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* 一般學員（非免費）的飲食目標卡片 */}
             {!isCompetition && !isFree && (c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day) && (
               <DailyNutritionTarget
