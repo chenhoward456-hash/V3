@@ -10,6 +10,7 @@ import { useCoachMode } from '@/hooks/useCoachMode'
 import { Lock, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
 import CollapsibleSection from '@/components/client/CollapsibleSection'
+import ConsentGate from '@/components/ConsentGate'
 import QuickActions from '@/components/client/QuickActions'
 import UpgradeGate from '@/components/client/UpgradeGate'
 import UpgradeWelcome from '@/components/client/UpgradeWelcome'
@@ -710,6 +711,9 @@ export default function ClientDashboard() {
   return (
     <ErrorBoundary>
     <div className="min-h-screen bg-gray-50">
+      {/* 法律同意 gate — 未同意者強制 modal */}
+      {c?.unique_code && <ConsentGate clientId={c.unique_code} />}
+
       <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
 
         {/* 訂閱狀態 Banner */}
@@ -1994,6 +1998,20 @@ export default function ClientDashboard() {
           <ChevronUp size={20} className="text-gray-600" />
         </button>
       )}
+
+      {/* 法律連結 footer */}
+      <div className="max-w-4xl mx-auto px-4 pb-24 pt-4">
+        <div className="text-center text-[10px] text-gray-400 space-x-2 border-t border-gray-100 pt-3">
+          <Link href="/legal/terms" className="hover:underline">服務條款</Link>
+          <span>·</span>
+          <Link href="/legal/privacy" className="hover:underline">隱私政策</Link>
+          <span>·</span>
+          <Link href="/legal/disclaimer" className="hover:underline">健康免責聲明</Link>
+        </div>
+        <p className="text-center text-[9px] text-gray-300 mt-2">
+          本服務為健康管理工具，不構成醫療建議。緊急情況請撥 119。
+        </p>
+      </div>
     </div>
     </ErrorBoundary>
   )
