@@ -2002,11 +2002,13 @@ export default function ClientDashboard() {
       {/* 法律連結 footer */}
       <div className="max-w-4xl mx-auto px-4 pb-24 pt-4">
         <div className="text-center text-[10px] text-gray-400 space-x-2 border-t border-gray-100 pt-3">
-          <Link href="/legal/terms" className="hover:underline">服務條款</Link>
+          <Link href="/terms" className="hover:underline">服務條款</Link>
           <span>·</span>
-          <Link href="/legal/privacy" className="hover:underline">隱私政策</Link>
+          <Link href="/privacy" className="hover:underline">隱私政策</Link>
           <span>·</span>
-          <Link href="/legal/disclaimer" className="hover:underline">健康免責聲明</Link>
+          <Link href="/medical-disclaimer" className="hover:underline">醫療免責聲明</Link>
+          <span>·</span>
+          <Link href="/refund-policy" className="hover:underline">退費政策</Link>
         </div>
         <p className="text-center text-[9px] text-gray-300 mt-2">
           本服務為健康管理工具，不構成醫療建議。緊急情況請撥 119。

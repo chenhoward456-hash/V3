@@ -81,21 +81,21 @@ export default function ConsentGate({ clientId, onAccepted }: Props) {
             onChange={(v) => setChecked({ ...checked, terms: v })}
             label="我已閱讀並同意"
             docName="服務條款"
-            docPath="/legal/terms"
+            docPath="/terms"
           />
           <ConsentRow
             checked={checked.privacy}
             onChange={(v) => setChecked({ ...checked, privacy: v })}
             label="我已閱讀並同意"
             docName="隱私政策"
-            docPath="/legal/privacy"
+            docPath="/privacy"
           />
           <ConsentRow
             checked={checked.health_disclaimer}
             onChange={(v) => setChecked({ ...checked, health_disclaimer: v })}
             label="我已閱讀並理解"
-            docName="健康免責聲明"
-            docPath="/legal/disclaimer"
+            docName="醫療免責聲明"
+            docPath="/medical-disclaimer"
             highlight
           />
 
