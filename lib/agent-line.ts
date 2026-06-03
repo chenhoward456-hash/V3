@@ -41,6 +41,11 @@ function chunkText(text: string, maxLen = MAX_TEXT_CHARS): string[] {
   return chunks
 }
 
+// TODO (Phase 2c): 學員端 handleClientAgentMessage 要檢查
+//   - client.subscription_tier === 'protocol' (4999)
+//   - client.ai_agent_enabled === true
+//   - 每日呼叫上限 (rate limit by client_id)
+// 目前只有 admin（Howard）走這條，不需要 tier check。
 export async function handleAdminAgentMessage(
   event: { replyToken: string; message?: { text?: string } },
   supabase: SupabaseClient,
@@ -189,10 +194,19 @@ export async function handleAgentProposalPostback(
   postbackData: string,
   replyToken: string,
   supabase: SupabaseClient,
+  callerUserId?: string,  // 新增：呼叫者 LINE userId 用於驗證
 ) {
   // format: agent_proposal:approve|reject|discuss:UUID
   const parts = postbackData.split(':')
   if (parts.length !== 3 || parts[0] !== 'agent_proposal') return false
+
+  // 修 MEDIUM：驗證呼叫者是 admin（單教練 SaaS 階段）
+  // 多教練階段要改成「驗證該教練是否負責此 client_id」
+  const adminLineId = process.env.ADMIN_LINE_USER_ID
+  if (callerUserId && adminLineId && callerUserId !== adminLineId) {
+    await replyMessage(replyToken, [{ type: 'text', text: '❌ 你沒有權限處理此提案' }])
+    return true
+  }
 
   const action = parts[1] as 'approve' | 'reject' | 'discuss'
   const proposalId = parts[2]

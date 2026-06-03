@@ -352,9 +352,12 @@ export async function GET(request: NextRequest) {
     const effectiveAutoApply = wantsAutoApply
       ? (suggestion.status !== 'insufficient_data')
       : suggestion.autoApply
-    // coached 用戶的目標由教練手動管理，不自動覆蓋（除非 admin 操作）
+    // coached/protocol 用戶的目標由教練手動管理（含 AI Agent propose），不自動覆蓋（除非 admin 操作）
+    // 修 MEDIUM：顯式 tier gate，避免 isCoached 邏輯漂移
     const isCoached = client.subscription_tier === 'coached'
-    const canAutoApply = wantsAutoApply && effectiveAutoApply && (isAdmin || ((!isCoached) && (suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)))
+    const isProtocol = client.subscription_tier === 'protocol'
+    const isCoachManaged = isCoached || isProtocol
+    const canAutoApply = wantsAutoApply && effectiveAutoApply && (isAdmin || ((!isCoachManaged) && (suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)))
 
     // 教練覆寫鎖定：教練手動調整過營養目標
     // Timed Coach Override: 覆寫期間（含 autoApply）都鎖定，確保教練設定值不被覆蓋

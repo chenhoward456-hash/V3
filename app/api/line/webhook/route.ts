@@ -73,7 +73,17 @@ export async function POST(request: NextRequest) {
     const events = data.events || []
 
     // Process events in parallel for faster response to LINE platform
-    await Promise.allSettled(events.map((event: LineWebhookEvent) => handleEvent(event)))
+    // 修 LOW：個別 event 失敗也要 log（之前 Promise.allSettled 吞掉錯誤）
+    const results = await Promise.allSettled(events.map((event: LineWebhookEvent) => handleEvent(event)))
+    results.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        log.error(`Event ${i} handler failed`, {
+          type: events[i]?.type,
+          userId: events[i]?.source?.userId,
+          reason: result.reason instanceof Error ? result.reason.message : String(result.reason),
+        })
+      }
+    })
 
     return NextResponse.json({ ok: true })
   } catch (error) {
@@ -145,7 +155,7 @@ async function handleEvent(event: LineWebhookEvent) {
       const data = event.postback?.data ?? ''
       // 教練端 AI Agent proposal 審核 postback
       if (userId === process.env.ADMIN_LINE_USER_ID && data.startsWith('agent_proposal:')) {
-        const handled = await handleAgentProposalPostback(data, event.replyToken, supabase)
+        const handled = await handleAgentProposalPostback(data, event.replyToken, supabase, userId)
         if (handled) break
       }
       await handlePostback(event, userId, supabase)
