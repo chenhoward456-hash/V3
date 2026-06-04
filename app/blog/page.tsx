@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '29',
+    title: '睪固酮 3 個月跌 36%：維生素 D 補到 56 也救不回來，被忽略的 SHBG 才是真兇',
+    description: '2026/03 血檢，總睪固酮從 625 跌到 404，游離睪固酮跌 41%。維生素 D 同期從 29 補到 56 卻沒擋住。低碳備賽期的雙重打擊：SHBG 飆升 + LEA 抑制。完整數據紀錄與三個行動方向。',
+    date: '2026-06-04',
+    category: '健康數據',
+    readTime: '8 分鐘',
+    slug: 'testosterone-shbg-crash-low-carb',
+  },
+  {
     id: '28',
     title: '體毛旺盛 = 容易禿？雄激素受體的矛盾，和你能做的 6 件事',
     description: '體毛旺盛和雄性禿是同一個 AR 敏感度體質的兩面。研究發現 6 個常同步偏差的血液指標，以及你在訓練和生活層面能做的事。',
