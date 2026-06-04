@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '32',
+    title: '有氧要喘才有效？這個觀念讓你的心肺一直在做白工',
+    description: 'VO2max 是預測壽命最準的指標之一，但 40 歲後每 10 年掉 10%。Zone 2 才是真正建立有氧基礎、提升粒線體效率的訓練。Maffetone 公式、每週劑量、80/20 黃金比例全攻略。',
+    date: '2026-06-04',
+    category: '訓練恢復',
+    readTime: '7 分鐘',
+    slug: 'zone-2-vo2max-aerobic-base',
+  },
+  {
     id: '31',
     title: 'T 跌 36%、E2 卻超標：備賽期最被忽視的荷爾蒙比例失衡',
     description: '2026/03 血檢，總睪固酮跌 36%，雌二醇 E2 卻超標到 42.4 pg/mL。體脂高和備賽期的 E2 升高是兩種完全不同的機轉，解法相反。記錄 T/E2 比例的真相、芳香化酶兩條路徑、以及我接下來的驗證計畫。',
