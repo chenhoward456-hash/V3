@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '31',
+    title: 'T 跌 36%、E2 卻超標：備賽期最被忽視的荷爾蒙比例失衡',
+    description: '2026/03 血檢，總睪固酮跌 36%，雌二醇 E2 卻超標到 42.4 pg/mL。體脂高和備賽期的 E2 升高是兩種完全不同的機轉，解法相反。記錄 T/E2 比例的真相、芳香化酶兩條路徑、以及我接下來的驗證計畫。',
+    date: '2026-06-04',
+    category: '健康數據',
+    readTime: '8 分鐘',
+    slug: 'testosterone-estradiol-ratio-aromatase',
+  },
+  {
     id: '30',
     title: '20 歲頭皮爛掉、脂漏皮膚炎、蕁麻疹輪番上身：六年後才搞懂是慢性發炎在燒',
     description: '頭皮發紅滲液、脂漏性皮膚炎反覆、蕁麻疹輪番爆發——20 歲的我以為是分開的倒楣事。六年後才搞懂這是同一個根源：慢性低度發炎。記錄炸物、潮濕、睡眠三條燃料，以及我怎麼調整回來。',
