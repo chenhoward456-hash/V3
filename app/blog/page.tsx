@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '33',
+    title: '健保給你一張「正常」報告——但有 5 個數字它根本沒幫你看',
+    description: '健保健檢的設計邏輯是「找已經生病的人」，不是「在生病前先看到異狀」。整理 ApoB、Hcy、維生素 D、hs-CRP、HOMA-IR 五個自費數字：意義、目標值、我自己的數據、總共多少錢。',
+    date: '2026-06-04',
+    category: '健康數據',
+    readTime: '9 分鐘',
+    slug: '5-blood-tests-beyond-nhi',
+  },
+  {
     id: '32',
     title: '有氧要喘才有效？這個觀念讓你的心肺一直在做白工',
     description: 'VO2max 是預測壽命最準的指標之一，但 40 歲後每 10 年掉 10%。Zone 2 才是真正建立有氧基礎、提升粒線體效率的訓練。Maffetone 公式、每週劑量、80/20 黃金比例全攻略。',
