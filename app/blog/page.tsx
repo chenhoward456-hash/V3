@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '30',
+    title: '20 歲頭皮爛掉、脂漏皮膚炎、蕁麻疹輪番上身：六年後才搞懂是慢性發炎在燒',
+    description: '頭皮發紅滲液、脂漏性皮膚炎反覆、蕁麻疹輪番爆發——20 歲的我以為是分開的倒楣事。六年後才搞懂這是同一個根源：慢性低度發炎。記錄炸物、潮濕、睡眠三條燃料，以及我怎麼調整回來。',
+    date: '2026-06-04',
+    category: '健康數據',
+    readTime: '7 分鐘',
+    slug: 'chronic-inflammation-skin-story',
+  },
+  {
     id: '29',
     title: '睪固酮 3 個月跌 36%：維生素 D 補到 56 也救不回來，被忽略的 SHBG 才是真兇',
     description: '2026/03 血檢，總睪固酮從 625 跌到 404，游離睪固酮跌 41%。維生素 D 同期從 29 補到 56 卻沒擋住。低碳備賽期的雙重打擊：SHBG 飆升 + LEA 抑制。完整數據紀錄與三個行動方向。',
