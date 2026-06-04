@@ -132,7 +132,7 @@ Furman et al. 2019 年在 *Nature Medicine* 發表的研究系統性地說明了
 ---
 
 > 本文為個人經驗與知識分享，不構成醫療、營養或運動處方建議。如有健康疑慮請諮詢專業醫療人員。
-    \`,
+    `,
   },
   'testosterone-shbg-crash-low-carb': {
     title: '睪固酮 3 個月跌 36%：維生素 D 補到 56 也救不回來，被忽略的 SHBG 才是真兇',
