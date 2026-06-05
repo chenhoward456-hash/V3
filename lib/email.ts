@@ -131,6 +131,9 @@ function buildWelcomeEmailHTML({
   dashboardUrl: string
   tierName: string
 }): string {
+  const bindMessage = `綁定 ${uniqueCode}`
+  const lineAddFriendUrl = 'https://lin.ee/LP65rCc'
+  const lineBindDeeplink = `https://line.me/R/oaMessage/%40howardprotocol/?${encodeURIComponent(bindMessage)}`
   return `<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -168,15 +171,53 @@ function buildWelcomeEmailHTML({
       </td>
     </tr>
     <tr>
-      <td style="padding: 0 30px 30px;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;">
+      <td style="padding: 0 30px 24px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0fdf4; border-radius:12px; border:2px solid #06C755;">
           <tr>
-            <td style="padding: 20px 24px; text-align:center;">
-              <p style="font-size:14px; color:#166534; margin:0 0 4px 0; font-weight:500;">
+            <td style="padding: 28px 24px;">
+              <p style="font-size:16px; color:#14532d; font-weight:bold; margin:0 0 6px 0;">
+                💬 最後一步：綁定 LINE
+              </p>
+              <p style="font-size:13px; color:#166534; margin:0 0 18px 0; line-height:1.6;">
+                沒綁 LINE 的會員，平均 <strong>5 天內就忘記回來</strong>。<br />
+                綁了之後，我會在你習慣的時間提醒你，傳訊息就能記錄。
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding-bottom:10px;">
+                    <a href="${escapeHTML(lineAddFriendUrl)}"
+                       style="display:block; background:#06C755; color:#ffffff; padding:14px 20px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:15px; text-align:center;">
+                      ① 加入 LINE 好友
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="${escapeHTML(lineBindDeeplink)}"
+                       style="display:block; background:#ffffff; color:#06C755; padding:14px 20px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:15px; text-align:center; border:2px solid #06C755;">
+                      ② 點此一鍵送出綁定
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="font-size:11px; color:#65a30d; margin:14px 0 0 0; text-align:center;">
+                ②會自動開啟 LINE 並填好「${escapeHTML(bindMessage)}」，你只要按送出
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0 30px 30px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
+          <tr>
+            <td style="padding: 16px 24px; text-align:center;">
+              <p style="font-size:13px; color:#64748b; margin:0 0 4px 0;">
                 追蹤 IG 獲得更多訓練與營養內容
               </p>
               <p style="font-size:12px; margin:0;">
-                <a href="https://instagram.com/chenhoward" style="color:#4ade80; text-decoration:none; font-weight:500;">@chenhoward →</a>
+                <a href="https://instagram.com/chenhoward" style="color:#2563eb; text-decoration:none; font-weight:500;">@chenhoward →</a>
               </p>
             </td>
           </tr>
@@ -292,6 +333,151 @@ function buildPurchaseEmailHTML({
         </p>
         <p style="font-size:11px; color:#94a3b8; margin:0;">
           © Howard Protocol · howard456.vercel.app
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+// ===== Day 1 LINE 綁定提醒信（給註冊滿 1 天但還沒綁 LINE 的人） =====
+
+interface SendLineBindReminderEmailParams {
+  to: string
+  name: string
+  uniqueCode: string
+}
+
+export async function sendLineBindReminderEmail({
+  to,
+  name,
+  uniqueCode,
+}: SendLineBindReminderEmailParams): Promise<{ success: boolean; error?: string }> {
+  try {
+    const resend = getResend()
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Howard Protocol <onboarding@resend.dev>'
+
+    const { error } = await resend.emails.send({
+      from: fromEmail,
+      to,
+      subject: `${name}，還差一步：綁定 LINE 才會收到提醒`,
+      html: buildLineBindReminderEmailHTML({ name, uniqueCode }),
+    })
+
+    if (error) {
+      log.error('Resend error', error)
+      return { success: false, error: error.message }
+    }
+
+    log.info('Line bind reminder email sent', { to })
+    return { success: true }
+  } catch (err: unknown) {
+    log.error('Line bind reminder send failed', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+  }
+}
+
+function buildLineBindReminderEmailHTML({
+  name,
+  uniqueCode,
+}: {
+  name: string
+  uniqueCode: string
+}): string {
+  const bindMessage = `綁定 ${uniqueCode}`
+  const lineAddFriendUrl = 'https://lin.ee/LP65rCc'
+  const lineBindDeeplink = `https://line.me/R/oaMessage/%40howardprotocol/?${encodeURIComponent(bindMessage)}`
+  return `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>還差一步：綁定 LINE</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
+    <tr>
+      <td style="background: linear-gradient(135deg, #06C755, #14532d); padding: 40px 30px; text-align: center;">
+        <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">${escapeHTML(name)}，還差最後一步</h1>
+        <p style="color:rgba(255,255,255,0.85); font-size:14px; margin:0;">綁定 LINE，系統才能在對的時間找到你</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 36px 30px 12px;">
+        <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 16px 0;">
+          嗨 ${escapeHTML(name)}，
+        </p>
+        <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 16px 0;">
+          昨天你註冊了 Howard Protocol，但<strong>還沒綁定 LINE</strong>。我想老實跟你說一件事：
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fef3c7; border-radius:12px; border:1px solid #fcd34d; margin:0 0 24px 0;">
+          <tr>
+            <td style="padding: 18px 22px;">
+              <p style="font-size:14px; color:#78350f; line-height:1.7; margin:0;">
+                沒綁 LINE 的會員，平均 <strong>5 天內就忘記回來</strong>。<br />
+                不是你沒毅力，是這個世界太多東西在搶你的注意力。<br />
+                <strong>讓我用 LINE 在對的時間提醒你，就這樣。</strong>
+              </p>
+            </td>
+          </tr>
+        </table>
+        <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 8px 0;">
+          綁了之後你會得到：
+        </p>
+        <ul style="font-size:14px; color:#334155; line-height:1.9; margin:0 0 24px 0; padding-left:20px;">
+          <li>每天提醒量體重、記飲食（你可以自訂時間）</li>
+          <li>傳訊息就能記錄（不用打開儀表板）</li>
+          <li>每週進度報告自動送到 LINE</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0 30px 24px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0fdf4; border-radius:12px; border:2px solid #06C755;">
+          <tr>
+            <td style="padding: 24px 22px;">
+              <p style="font-size:14px; color:#14532d; font-weight:bold; margin:0 0 14px 0; text-align:center;">
+                兩步完成綁定（30 秒）
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding-bottom:10px;">
+                    <a href="${escapeHTML(lineAddFriendUrl)}"
+                       style="display:block; background:#06C755; color:#ffffff; padding:14px 20px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:15px; text-align:center;">
+                      ① 加入 LINE 好友
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="${escapeHTML(lineBindDeeplink)}"
+                       style="display:block; background:#ffffff; color:#06C755; padding:14px 20px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:15px; text-align:center; border:2px solid #06C755;">
+                      ② 點此一鍵送出綁定
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="font-size:11px; color:#65a30d; margin:14px 0 0 0; text-align:center;">
+                ②會自動開啟 LINE 並填好「${escapeHTML(bindMessage)}」，你只要按送出
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0 30px 30px;">
+        <p style="font-size:12px; color:#94a3b8; line-height:1.6; margin:0; text-align:center;">
+          如果你決定不繼續，不用回信，這封是最後一次提醒。<br />
+          祝順利，Howard
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align:center;">
+        <p style="font-size:11px; color:#94a3b8; margin:0;">
+          &copy; Howard Protocol &middot; howard456.vercel.app
         </p>
       </td>
     </tr>

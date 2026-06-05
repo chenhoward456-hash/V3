@@ -28,6 +28,7 @@ import {
   sendDay14Email,
   sendExpiryWarningEmail,
   sendWinBackEmail,
+  sendLineBindReminderEmail,
 } from '@/lib/email'
 import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { generateBehaviorInsights, type InsightInput } from '@/lib/insight-engine'
@@ -941,6 +942,35 @@ export async function GET(request: NextRequest) {
     // Helper: compute days until a date (integer, ceil)
     const daysUntil = (dateStr: string): number => {
       return Math.ceil((new Date(dateStr).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    }
+
+    // ── a0) Day 1 LINE 綁定提醒：註冊滿 1 天但 line_user_id 仍為空 ──
+    {
+      const { data: unboundClients } = await supabase
+        .from('clients')
+        .select('id, name, unique_code, created_at, line_user_id')
+        .eq('is_active', true)
+        .is('line_user_id', null)
+
+      if (unboundClients) {
+        for (const c of unboundClients) {
+          if (daysSince(c.created_at) !== 1) continue
+          try {
+            const email = await getClientEmail(c.id)
+            if (!email) continue
+            const result = await sendLineBindReminderEmail({
+              to: email,
+              name: c.name,
+              uniqueCode: c.unique_code,
+            })
+            if (result.success) emailDripSent++
+            else emailDripFailed++
+          } catch (err: unknown) {
+            emailDripFailed++
+            errors.push(`email_linebind_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
+          }
+        }
+      }
     }
 
     // ── a) Day 3 email: active clients created exactly 3 days ago ──
