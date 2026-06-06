@@ -746,25 +746,33 @@ export default function ClientDashboard() {
 
         {/* LINE 綁定提示 Banner */}
         {!c.line_user_id && (
-          <div className="bg-[#06C755]/10 border border-[#06C755]/30 rounded-2xl p-4 mb-4">
+          <div className="bg-[#06C755]/10 border-2 border-[#06C755] rounded-2xl p-4 mb-4">
             <div className="flex items-start gap-3">
               <span className="text-2xl shrink-0">💬</span>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-800">用 LINE 記錄更快！</p>
-                <p className="text-xs text-gray-600 mt-1">
-                  綁定 LINE 後，傳訊息就能記體重、飲食、訓練，還會收到每日提醒和週報。
+                <p className="text-sm font-bold text-gray-900">還沒綁 LINE — 90% 的人 5 天內就忘了回來</p>
+                <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                  綁定後我會在你習慣的時間提醒你，傳訊息就能記體重、飲食、訓練，每週還會收到進度報告。
                 </p>
-                <div className="mt-2 space-y-1">
-                  <p className="text-xs text-gray-500">
-                    <span className="font-medium">Step 1</span>
-                    <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="text-[#06C755] font-semibold hover:underline">
-                      加入 LINE 好友
-                    </a>
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    <span className="font-medium">Step 2</span>　傳送「<span className="font-mono bg-white px-1.5 py-0.5 rounded border text-gray-700">綁定 {c.unique_code}</span>」即完成
-                  </p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <a
+                    href="https://lin.ee/LP65rCc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-center bg-[#06C755] text-white text-xs font-bold py-2.5 rounded-lg hover:bg-[#05a548] transition-colors"
+                  >
+                    ① 加好友
+                  </a>
+                  <a
+                    href={`https://line.me/R/oaMessage/%40howardprotocol/?${encodeURIComponent(`綁定 ${c.unique_code}`)}`}
+                    className="block text-center bg-white text-[#06C755] text-xs font-bold py-2.5 rounded-lg border-2 border-[#06C755] hover:bg-[#06C755]/5 transition-colors"
+                  >
+                    ② 一鍵綁定
+                  </a>
                 </div>
+                <p className="text-[10px] text-gray-500 mt-2">
+                  ②會自動開 LINE 並填好「綁定 {c.unique_code}」，按送出即可
+                </p>
               </div>
             </div>
           </div>

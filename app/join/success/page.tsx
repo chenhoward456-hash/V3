@@ -294,6 +294,46 @@ function JoinSuccessContent() {
             </p>
           </div>
 
+          {/* LINE 綁定引導 — 痛感文案 + 一鍵 deeplink */}
+          <div className="bg-[#06C755]/10 border-2 border-[#06C755] rounded-2xl p-5 mb-8 text-left">
+            <p className="text-base font-bold text-gray-900 mb-1">💬 最後一步：綁定 LINE</p>
+            <p className="text-sm text-gray-700 leading-relaxed mb-4">
+              沒綁 LINE 的會員，平均 <strong className="text-[#06C755]">5 天內就忘記回來</strong>。
+              綁了之後，我會在你習慣的時間提醒你，傳訊息就能記錄。
+            </p>
+            <div className="space-y-2.5">
+              <a
+                href="https://lin.ee/LP65rCc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full bg-[#06C755] text-white font-bold text-center py-3.5 rounded-xl hover:bg-[#05a548] transition-colors"
+              >
+                ① 加入 LINE 好友
+              </a>
+              <a
+                href={`https://line.me/R/oaMessage/%40howardprotocol/?${encodeURIComponent(`綁定 ${uniqueCode}`)}`}
+                className="block w-full bg-white text-[#06C755] font-bold text-center py-3.5 rounded-xl border-2 border-[#06C755] hover:bg-[#06C755]/5 transition-colors"
+              >
+                ② 點此一鍵送出綁定
+              </a>
+              <p className="text-xs text-gray-500 text-center pt-1">
+                ②會自動開啟 LINE 並填好「綁定 {uniqueCode}」，你只要按送出
+              </p>
+              <details className="text-xs text-gray-400 pt-1">
+                <summary className="cursor-pointer hover:text-gray-600">手動複製代碼</summary>
+                <button
+                  onClick={handleCopyBind}
+                  className="w-full mt-2 flex items-center justify-between gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 hover:border-[#06C755] transition-colors"
+                >
+                  <span className="font-mono text-xs text-gray-700">綁定 {uniqueCode}</span>
+                  <span className="text-xs text-[#06C755] font-semibold whitespace-nowrap">
+                    {copiedBind ? '已複製 ✓' : '點此複製'}
+                  </span>
+                </button>
+              </details>
+            </div>
+          </div>
+
           {/* What's Unlocked - for paid tiers */}
           {isPaid && (
             <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-6 mb-8 text-left">
@@ -319,40 +359,6 @@ function JoinSuccessContent() {
               )}
             </div>
           )}
-
-          {/* LINE 綁定引導 */}
-          <div className="bg-[#06C755]/10 border border-[#06C755]/30 rounded-2xl p-5 mb-8 text-left">
-            <p className="text-sm font-semibold text-gray-800 mb-3">💬 綁定 LINE，用訊息就能記錄</p>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-[#06C755]/20 flex items-center justify-center text-xs font-bold text-[#06C755] shrink-0">1</span>
-                <p className="text-sm text-gray-600">
-                  <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="text-[#06C755] font-semibold hover:underline">
-                    點此加入 LINE 好友
-                  </a>
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-[#06C755]/20 flex items-center justify-center text-xs font-bold text-[#06C755] shrink-0 mt-0.5">2</span>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-600 mb-2">複製下方指令，貼到 LINE 對話送出：</p>
-                  <button
-                    onClick={handleCopyBind}
-                    className="w-full flex items-center justify-between gap-2 bg-white border-2 border-[#06C755]/40 rounded-xl px-4 py-3 hover:border-[#06C755] transition-colors group"
-                  >
-                    <span className="font-mono text-sm font-semibold text-gray-800">綁定 {uniqueCode}</span>
-                    <span className="text-xs text-[#06C755] font-semibold whitespace-nowrap">
-                      {copiedBind ? '已複製 ✓' : '點此複製'}
-                    </span>
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-[#06C755]/20 flex items-center justify-center text-xs font-bold text-[#06C755] shrink-0">3</span>
-                <p className="text-sm text-gray-600">完成！之後傳訊息就能快速記錄，還會收到提醒</p>
-              </div>
-            </div>
-          </div>
 
           {/* Nutrition Targets Summary */}
           {isFree && targets && (
