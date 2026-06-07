@@ -468,7 +468,7 @@ export async function handleBind(replyToken: string, lineUserId: string, code: s
   await replyMessage(replyToken, [
     {
       type: 'text',
-      text: `綁定成功！歡迎 ${client.name} 🎉\n\n下方選單已切換為快速記錄模式，點按鈕開始使用 👇`,
+      text: `綁定成功！歡迎 ${client.name} 🎉\n\nLINE 主要用來：\n・快速回報今天體重（直接打數字）\n・看簡短狀態摘要\n\n完整記錄、看趨勢圖、改目標 → 開 App\n\n2 分鐘搞懂這套系統怎麼用 👉\n${process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'}/c/${code}/help`,
       quickReply: QR_MAIN,
     },
   ])
@@ -476,7 +476,7 @@ export async function handleBind(replyToken: string, lineUserId: string, code: s
   // Push onboarding guide after 1 second delay (via pushMessage to avoid reply limit)
   setTimeout(async () => {
     try {
-      const guide = buildOnboardingGuide(client.name, client.subscription_tier || 'free')
+      const guide = buildOnboardingGuide(client.name, client.subscription_tier || 'free', code)
       await pushMessage(lineUserId, [{ type: 'text', text: guide }])
     } catch (err) {
       log.error('Onboarding guide push failed', err)
@@ -484,94 +484,66 @@ export async function handleBind(replyToken: string, lineUserId: string, code: s
   }, 1000)
 }
 
-function buildOnboardingGuide(name: string, tier: string): string {
+function buildOnboardingGuide(name: string, tier: string, uniqueCode: string): string {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+  const helpUrl = `${siteUrl}/c/${uniqueCode}/help`
+  const appUrl = `${siteUrl}/c/${uniqueCode}`
 
-  const common = [
-    `📋 ${name} 的系統使用指南`,
+  const intro = [
+    `${name}，這是這套系統的玩法：`,
     '',
     '━━━━━━━━━━━━━━━━',
-    '⚖️ 每日體重記錄（最重要！）',
-    '→ 每天起床後空腹量體重，直接輸入數字（如「73.5」）系統會自動記錄',
-    '→ 連續 14 天後啟動 TDEE 校正',
+    '📱 主場是 App（完整記錄 + 趨勢）',
+    `→ ${appUrl}`,
+    '在 App 裡：',
+    '・量體重、記飲食、訓練、感受',
+    '・看週平均、目標進度、Howard 解讀',
+    '・改目標、升級方案',
     '',
-    '🍽️ 飲食記錄',
-    '→ 輸入「記飲食」標記今天飲食達標或未達標',
-    '→ 搭配體重數據，系統可分析你的飲食合規率',
+    '💬 LINE 是「快速回報 + 摘要」',
+    '・打數字（如「73.5」）→ 記今天體重',
+    '・打「狀態」→ 看今日摘要',
+    '・打「趨勢」→ 看 7 天變化',
     '',
-    '📊 查看狀態',
-    '→ 輸入「今日」查看今天的攝取總覽',
-    '→ 輸入「趨勢」查看 7 天體重與熱量變化',
+    '⚠️ 注意：LINE 沒辦法詳細記錄飲食或訓練內容，要記詳細資料請開 App。',
+    '',
+    '━━━━━━━━━━━━━━━━',
+    '📖 完整使用說明（5 分鐘讀完）',
+    `→ ${helpUrl}`,
+    '裡面有：每天怎麼用 / 數據怎麼看 / 三方案差異 / FAQ',
   ]
 
   if (tier === 'free') {
     return [
-      ...common,
+      ...intro,
       '',
       '━━━━━━━━━━━━━━━━',
-      '🎁 你目前是免費方案，包含：',
-      '✅ 體重追蹤 + 趨勢圖',
-      '✅ 飲食達標紀錄',
-      '✅ TDEE 與巨量營養素計算',
-      '',
-      '🔒 升級自主管理方案（$499/月）解鎖：',
-      '• 24h AI 自動分析你的數據趨勢',
-      '• 自適應 TDEE 每週自動校正',
-      '• 訓練紀錄 + 身心狀態追蹤',
-      '• Carb Cycling / Refeed 智能觸發',
-      '',
-      `👉 升級連結：${siteUrl}/remote`,
-      '',
-      '💡 建議先持續記錄 7 天，體驗系統後再決定是否升級！',
+      '🎁 你是免費方案 — 想看完整數據儀表板、智能營養引擎，可考慮升級',
+      `👉 ${siteUrl}/remote`,
     ].join('\n')
   }
 
   if (tier === 'coached') {
     return [
-      ...common,
-      '',
-      '🏋️ 訓練記錄',
-      '→ 輸入「練」開始記錄今天的訓練內容',
-      '',
-      '😊 身心狀態',
-      '→ 輸入「狀態」記錄睡眠、壓力、疲勞等指標',
-      '',
-      '💊 補劑追蹤',
-      '→ 輸入「補劑」記錄每日補劑攝取',
+      ...intro,
       '',
       '━━━━━━━━━━━━━━━━',
-      '🏆 你是教練指導方案，專屬功能：',
-      '✅ 以上全部功能',
-      '✅ CSCS 教練每週審閱你的數據',
-      '✅ LINE 一對一諮詢',
-      '✅ 完整補品管理與血檢追蹤',
-      '',
-      '💡 第一步：現在就輸入今天的體重吧！',
+      '🏆 你是 2999 教練指導方案',
+      '・我會親自看你的數據、每週審閱',
+      '・補品 protocol 個別化、血檢追蹤',
+      '・任何問題直接 LINE 找我',
     ].join('\n')
   }
 
-  // self_managed (499) — default for paid
+  // self_managed (499)
   return [
-    ...common,
-    '',
-    '🏋️ 訓練記錄',
-    '→ 輸入「練」開始記錄今天的訓練內容',
-    '',
-    '😊 身心狀態',
-    '→ 輸入「狀態」記錄睡眠、壓力、疲勞等指標',
-    '',
-    '🤖 AI 教練',
-    '→ 直接用自然語言問問題（如「我這週吃太多了嗎？」）',
-    '→ AI 會根據你的數據給出個人化建議',
+    ...intro,
     '',
     '━━━━━━━━━━━━━━━━',
-    '✅ 你的方案包含：',
-    '• 24h AI 自動分析 + 個人化建議',
-    '• 自適應 TDEE 每週校正',
-    '• 訓練追蹤 + 身心狀態記錄',
-    '• Carb Cycling / Refeed 智能觸發',
-    '',
-    '💡 第一步：現在就輸入今天的體重吧！',
+    '✅ 你是 499 自主管理方案',
+    '・完整數據儀表板 + 智能營養引擎',
+    '・自適應 TDEE 每週校正',
+    '・訓練 + 身心狀態追蹤',
   ].join('\n')
 }
 

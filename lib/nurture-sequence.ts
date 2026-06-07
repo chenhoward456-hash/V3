@@ -27,7 +27,7 @@ export function buildDay0Messages(): LineMessage[] {
   return [
     {
       type: 'text',
-      text: '嘿，謝謝你加入 👊\n我是 Howard，CSCS 教練。\n\n完整「健身地圖」PDF 還在製作中，先給你方案介紹 👇',
+      text: '嘿，謝謝你加入 👊\n我是 Howard，CSCS 教練。\n\n我做了一套「邊用邊看自己進步」的健康追蹤系統，免費就能用。\n\n先給你看方案差別 👇',
     },
     {
       type: 'flex',
@@ -58,7 +58,7 @@ export function buildDay0Messages(): LineMessage[] {
     },
     {
       type: 'text',
-      text: 'PDF 做好我會第一時間傳給你 🙌\n\n接下來 12 天我會分享幾個讓人真的進步的關鍵（不是更多動作，是觀念）。\n\n不想收到的話，左上角靜音就好，不用刪好友 🙏',
+      text: '🎯 三件事可以馬上做：\n\n1️⃣ 點上方「方案介紹」看你想要的版本\n2️⃣ 拿到專屬代碼後，把代碼貼回 LINE 我就幫你綁定\n3️⃣ 綁定後會給你完整使用說明連結\n\n之後我會偶爾分享真的有用的進步觀念（不是雞湯）。不想收到，左上角靜音就好 🙏',
     },
   ]
 }
