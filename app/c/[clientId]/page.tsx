@@ -940,6 +940,23 @@ export default function ClientDashboard() {
           />
         )}
 
+        {/* === 我的完整數據入口 === */}
+        <Link
+          href={`/c/${c.unique_code}/overview`}
+          className="block bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 text-white shadow-sm hover:shadow-md transition-shadow mb-3"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">📊</span>
+              <div>
+                <p className="text-sm font-semibold">看我的完整數據</p>
+                <p className="text-xs opacity-90">趨勢、日曆、累積成果</p>
+              </div>
+            </div>
+            <span className="text-xl opacity-80">→</span>
+          </div>
+        </Link>
+
         {/* 性別未設定提示 — 僅 free/self_managed 可自行設定，coached 由教練處理 */}
         {!c.gender && (isFree || isSelfManaged) && (
           <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 mb-4">
