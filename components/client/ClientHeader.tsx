@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import type { Client } from '@/hooks/useClientData'
-import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown, Settings } from 'lucide-react'
+import { Lock, Unlock, ChevronLeft, ChevronRight, ChevronDown, Settings, HelpCircle } from 'lucide-react'
 import { isCompetitionMode, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS as ALL_PHASE_LABELS } from '@/lib/client-mode'
 import { getLocalDateStr, daysUntilDateTW } from '@/lib/date-utils'
 import { trackEvent } from '@/lib/analytics'
@@ -97,6 +98,14 @@ export default function ClientHeader({
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <Link
+            href={`/c/${c.unique_code}/help`}
+            className="p-2 rounded-full transition-colors text-gray-400 hover:bg-gray-100"
+            title="使用說明"
+            aria-label="使用說明"
+          >
+            <HelpCircle size={18} />
+          </Link>
           <div className="relative">
             <button
               onClick={() => setShowSettings(!showSettings)}

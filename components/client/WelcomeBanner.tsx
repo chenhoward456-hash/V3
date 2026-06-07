@@ -35,22 +35,22 @@ export default function WelcomeBanner({ clientId }: Props) {
   return (
     <div className="bg-gradient-to-r from-emerald-50 via-blue-50 to-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4 flex items-center justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="text-3xl shrink-0">🎯</span>
+        <span className="text-3xl shrink-0">📖</span>
         <div className="min-w-0">
           <div className="text-sm font-semibold text-emerald-900 truncate">
-            第一次來？看 2 分鐘導覽
+            第一次來？看使用說明
           </div>
           <div className="text-xs text-emerald-700 mt-0.5 truncate">
-            介紹 5 個核心功能：上傳血檢 / 趨勢儀表板 / 教練筆記 / 補品 protocol / FAQ
+            5 分鐘讀完：每天怎麼用 / 數據怎麼看 / 方案差異 / FAQ
           </div>
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <Link
-          href={`/c/${clientId}/welcome`}
+          href={`/c/${clientId}/help`}
           className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg whitespace-nowrap"
         >
-          開始 →
+          打開 →
         </Link>
         <button
           onClick={dismiss}
