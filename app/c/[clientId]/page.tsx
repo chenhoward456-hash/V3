@@ -781,6 +781,15 @@ export default function ClientDashboard() {
         {/* 首次來訪導覽 banner（dismissible）*/}
         {isToday && <WelcomeBanner clientId={clientId as string} />}
 
+        {/* 核心邏輯一句話（常駐，新人不會誤會） */}
+        {isToday && (
+          <div className="mb-4 px-3 py-2 bg-gray-50 border-l-2 border-indigo-400 rounded-r-lg">
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              💡 重點不是「算營養素」，是<b className="text-indigo-700">連續追蹤 + 累積對照</b>。連續打卡 14 天，趨勢才會說話。
+            </p>
+          </div>
+        )}
+
         {/* 🔥 連續紀錄 streak 小 chip — 增強動機 */}
         {isToday && streakDays >= 3 && (
           <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-200 rounded-full">

@@ -291,6 +291,15 @@ export default function HelpPage() {
           <p className="text-xs opacity-90 mt-3 leading-relaxed">隨時可從首頁右上角 ❓ 重新打開這份說明。</p>
         </div>
 
+        {/* 核心邏輯 — 一句話定位 */}
+        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4">
+          <p className="text-xs font-bold text-indigo-700 mb-1">💡 這套系統的核心邏輯</p>
+          <p className="text-sm text-indigo-900 leading-relaxed">
+            <b>不是「算營養素」</b>，是<b>「連續追蹤 + 累積對照 + 找出你自己的 what works」</b>。
+            算得再準，沒連續記 4 週也沒用。先別卡在「夠不夠精準」，連續打卡 14 天看趨勢，再判斷下一步。
+          </p>
+        </div>
+
         {/* 法律提醒 banner */}
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 items-start">
           <AlertTriangle size={18} className="text-amber-700 flex-shrink-0 mt-0.5" />

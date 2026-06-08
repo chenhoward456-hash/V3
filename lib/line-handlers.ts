@@ -468,7 +468,7 @@ export async function handleBind(replyToken: string, lineUserId: string, code: s
   await replyMessage(replyToken, [
     {
       type: 'text',
-      text: `綁定成功！歡迎 ${client.name} 🎉\n\nLINE 主要用來：\n・快速回報今天體重（直接打數字）\n・看簡短狀態摘要\n\n完整記錄、看趨勢圖、改目標 → 開 App\n\n2 分鐘搞懂這套系統怎麼用 👉\n${process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'}/c/${code}/help`,
+      text: `綁定成功！歡迎 ${client.name} 🎉\n\n先講一個重點：\n這套系統不是「算營養素」，是「連續追蹤 + 累積對照」。\n算得再準，沒連續記 4 週也沒用。\n\nLINE 主要用來：\n・快速回報今天體重（直接打數字）\n・看簡短狀態摘要\n\n完整記錄、看趨勢圖、改目標 → 開 App\n\n2 分鐘搞懂這套系統怎麼用 👉\n${process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'}/c/${code}/help`,
       quickReply: QR_MAIN,
     },
   ])
