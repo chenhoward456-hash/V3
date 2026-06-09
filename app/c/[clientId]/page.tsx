@@ -803,9 +803,10 @@ export default function ClientDashboard() {
 
         {/* 核心邏輯一句話（常駐，新人不會誤會） */}
         {isToday && (
-          <div className="mb-4 px-3 py-2 bg-gray-50 border-l-2 border-indigo-400 rounded-r-lg">
+          <div className="mb-4 px-4 py-2.5 bg-zinc-50 border-l-2 border-emerald-500 rounded-r-lg">
             <p className="text-[11px] text-gray-600 leading-relaxed">
-              💡 重點不是「算營養素」，是<b className="text-indigo-700">連續追蹤 + 累積對照</b>。連續打卡 14 天，趨勢才會說話。
+              <span className="text-[9px] uppercase tracking-wider font-bold text-emerald-700 mr-1.5">重點</span>
+              不是「算營養素」，是<b className="text-zinc-900">連續追蹤 + 累積對照</b>。連續打卡 14 天，趨勢才會說話。
             </p>
           </div>
         )}
@@ -972,17 +973,15 @@ export default function ClientDashboard() {
         {/* === 我的完整數據入口 === */}
         <Link
           href={`/c/${c.unique_code}/overview`}
-          className="block bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 text-white shadow-sm hover:shadow-md transition-shadow mb-3"
+          className="block bg-zinc-900 rounded-2xl p-5 text-white hover:bg-zinc-800 transition-colors mb-3"
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">📊</span>
-              <div>
-                <p className="text-sm font-semibold">看我的完整數據</p>
-                <p className="text-xs opacity-90">趨勢、日曆、累積成果</p>
-              </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-400 font-semibold">My Data</p>
+              <p className="text-lg font-bold tracking-tight mt-1">完整數據儀表板</p>
+              <p className="text-xs text-zinc-400 mt-0.5">趨勢、日曆、累積成果</p>
             </div>
-            <span className="text-xl opacity-80">→</span>
+            <span className="text-2xl text-emerald-400 font-light">→</span>
           </div>
         </Link>
 

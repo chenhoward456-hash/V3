@@ -508,40 +508,41 @@ export default function ClientOverviewPage() {
 
       <main className="max-w-5xl mx-auto px-4 py-5 space-y-4">
         {/* 摘要 + Streak + 本週一句話 */}
-        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-5 text-white">
+        <div className="bg-zinc-900 rounded-2xl p-5 text-white">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm opacity-90">{c.name} 的累積成果</p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-bold">{streak}</span>
-                <span className="text-sm opacity-90">天連續打卡 🔥</span>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-400 font-semibold">{c.name}</p>
+              <div className="flex items-baseline gap-2 mt-2">
+                <span className="text-5xl font-black tracking-tight tabular-nums">{streak}</span>
+                <span className="text-xs text-zinc-400">天連續打卡</span>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[10px] opacity-70">累積天數</p>
-              <p className="text-2xl font-bold">{Math.max(totalTrainingDays, totalWeighIns, wellness.length)}</p>
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500">累積</p>
+              <p className="text-3xl font-black tabular-nums">{Math.max(totalTrainingDays, totalWeighIns, wellness.length)}</p>
+              <p className="text-[10px] text-zinc-500">天</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-white/20">
+          <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-white/10">
             <div>
-              <p className="text-xl font-bold">{totalTrainingDays}</p>
-              <p className="text-[10px] opacity-80">訓練</p>
+              <p className="text-xl font-bold tabular-nums">{totalTrainingDays}</p>
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">訓練</p>
             </div>
             <div>
-              <p className="text-xl font-bold">{totalWeighIns}</p>
-              <p className="text-[10px] opacity-80">量測</p>
+              <p className="text-xl font-bold tabular-nums">{totalWeighIns}</p>
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">量測</p>
             </div>
             <div>
-              <p className="text-xl font-bold">{wellness.length}</p>
-              <p className="text-[10px] opacity-80">感受紀錄</p>
+              <p className="text-xl font-bold tabular-nums">{wellness.length}</p>
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">感受</p>
             </div>
           </div>
 
           {/* 本週一句話摘要 */}
-          <div className="mt-4 pt-3 border-t border-white/20">
-            <p className="text-[10px] opacity-70 mb-1">📅 本週（近 7 天）</p>
-            <p className="text-sm leading-relaxed">
+          <div className="mt-4 pt-3 border-t border-white/10">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1.5">本週（近 7 天）</p>
+            <p className="text-sm leading-relaxed text-zinc-200">
               訓練 <b>{weekSummary.trainDays}</b> 天
               {weekSummary.weightDelta != null && (
                 <>
@@ -583,7 +584,7 @@ export default function ClientOverviewPage() {
                 </p>
                 {goalInsight && (
                   <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                    <span className="text-xs">💡</span>
+                    <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                     <p className="text-[11px] text-gray-600 leading-relaxed">{goalInsight}</p>
                   </div>
                 )}
@@ -614,7 +615,7 @@ export default function ClientOverviewPage() {
                 </div>
                 {weeklyWeightInsight && (
                   <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                    <span className="text-xs">💡</span>
+                    <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                     <p className="text-[11px] text-gray-600 leading-relaxed">{weeklyWeightInsight}</p>
                   </div>
                 )}
@@ -817,7 +818,7 @@ export default function ClientOverviewPage() {
                 <p className="text-[10px] text-gray-400 mt-2">Brzycki 公式估算最大肌力（kg）</p>
                 {e1rmInsight && (
                   <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                    <span className="text-xs">💡</span>
+                    <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                     <p className="text-[11px] text-gray-600 leading-relaxed">{e1rmInsight}</p>
                   </div>
                 )}
@@ -841,7 +842,7 @@ export default function ClientOverviewPage() {
                   <p className="text-[10px] text-gray-400 mt-2">總訓練量 = Σ (重量 × 次數)</p>
                   {tonnageInsight && (
                     <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                      <span className="text-xs">💡</span>
+                      <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                       <p className="text-[11px] text-gray-600 leading-relaxed">{tonnageInsight}</p>
                     </div>
                   )}
@@ -866,7 +867,7 @@ export default function ClientOverviewPage() {
                   <p className="text-[10px] text-gray-400 mt-2">綠色：≥10 組 · 黃色：6-9 組 · 灰：&lt;6 組</p>
                   {muscleInsight && (
                     <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                      <span className="text-xs">💡</span>
+                      <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                       <p className="text-[11px] text-gray-600 leading-relaxed">{muscleInsight}</p>
                     </div>
                   )}
@@ -914,7 +915,7 @@ export default function ClientOverviewPage() {
                   )}
                   {complianceInsight && (
                     <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                      <span className="text-xs">💡</span>
+                      <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                       <p className="text-[11px] text-gray-600 leading-relaxed">{complianceInsight}</p>
                     </div>
                   )}

@@ -143,7 +143,7 @@ export default function HelpPage() {
             <p className="text-xs text-gray-500 mt-1">「訓練 X 天 · 體重 ±X kg · 蛋白質達標 Y/Z 天」一眼看自己這週實際發生了什麼。</p>
           </div>
           <div className="border border-gray-100 rounded-xl p-3">
-            <p className="font-semibold">💡 Howard 解讀句</p>
+            <p className="font-semibold">Howard 解讀句</p>
             <p className="text-xs text-gray-500 mt-1">每張數據卡下方會有一句解讀，例如「速率 -0.3 kg/週，符合健康減脂節奏」。這是系統依規則自動產生的<b>數據觀察</b>，不是醫療意見，僅供參考。</p>
           </div>
           {c.body_composition_enabled && (
@@ -278,24 +278,26 @@ export default function HelpPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-5 space-y-3">
-        <div className="bg-gradient-to-br from-emerald-500 to-blue-600 rounded-2xl p-5 text-white">
+        <div className="bg-zinc-900 rounded-2xl p-5 text-white">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm opacity-90">Howard Protocol 使用指南</p>
-              <h2 className="text-xl font-bold mt-1">5 分鐘讀完，你就能上手</h2>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-400 font-semibold">Howard Protocol</p>
+              <h2 className="text-3xl font-black tracking-tight mt-2 leading-tight">5 分鐘<br />讀完上手</h2>
             </div>
-            <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${tierColor} whitespace-nowrap`}>
+            <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${tierColor} whitespace-nowrap`}>
               {tierLabel}
             </span>
           </div>
-          <p className="text-xs opacity-90 mt-3 leading-relaxed">隨時可從首頁右上角 ❓ 重新打開這份說明。</p>
+          <p className="text-xs text-zinc-400 mt-4 leading-relaxed">隨時可從首頁右上角圖示重新打開這份說明。</p>
         </div>
 
         {/* 核心邏輯 — 一句話定位 */}
-        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4">
-          <p className="text-xs font-bold text-indigo-700 mb-1">💡 這套系統的核心邏輯</p>
-          <p className="text-sm text-indigo-900 leading-relaxed">
+        <div className="bg-zinc-50 border-l-4 border-emerald-500 rounded-r-2xl p-5">
+          <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-700 mb-2">核心邏輯</p>
+          <p className="text-base text-zinc-900 leading-relaxed font-medium">
             <b>不是「算營養素」</b>，是<b>「連續追蹤 + 累積對照 + 找出你自己的 what works」</b>。
+          </p>
+          <p className="text-sm text-zinc-600 leading-relaxed mt-2">
             算得再準，沒連續記 4 週也沒用。先別卡在「夠不夠精準」，連續打卡 14 天看趨勢，再判斷下一步。
           </p>
         </div>

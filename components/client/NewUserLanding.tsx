@@ -90,19 +90,21 @@ export default function NewUserLanding({
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
       {/* Hero — 一個動作就好 */}
-      <div className="bg-gradient-to-br from-emerald-500 via-blue-600 to-purple-700 rounded-3xl p-6 text-white shadow-lg">
-        <p className="text-sm opacity-90">{firstName}，第一步是這個 👇</p>
-        <h1 className="text-2xl font-bold mt-2 leading-snug">
-          量今天的體重，<br />啟動你的 Streak 🔥
+      <div className="bg-zinc-900 rounded-3xl p-6 text-white">
+        <p className="text-[10px] uppercase tracking-[0.25em] text-emerald-400 font-semibold">Day 1 · Start your streak</p>
+        <h1 className="text-5xl font-black tracking-tight mt-3 leading-[1.05]">
+          量今天<br />的體重。
         </h1>
-        <div className="mt-4 inline-flex items-center gap-2 bg-white/15 rounded-full px-3 py-1.5">
-          <span className="text-lg">🔥</span>
-          <span className="text-sm font-semibold">
-            {submitted ? '1 → 明天再打卡 streak 跳成 2' : '0 → 今天打卡跳成 1'}
+        <div className="mt-5 inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+          <span className="text-emerald-400 font-bold tabular-nums">
+            {submitted ? '1' : '0'}
+          </span>
+          <span className="text-xs text-zinc-300">
+            {submitted ? '明天再打卡，streak 跳成 2' : '今天打卡，streak 跳成 1'}
           </span>
         </div>
-        <p className="text-xs opacity-90 mt-4 leading-relaxed">
-          重點不是「算營養素」，是<b>連續追蹤</b>。先連續打卡 14 天，趨勢才會說話。
+        <p className="text-xs text-zinc-400 mt-5 leading-relaxed">
+          {firstName}，重點不是算營養素，是<b className="text-zinc-200">連續追蹤</b>。先連續打卡 14 天，趨勢才會說話。
         </p>
       </div>
 
