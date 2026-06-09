@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     bodyDataEntries: bodyData.map((b: any) => ({ date: b.date, weight: b.weight })),
     goalType: c.goal_type as 'cut' | 'bulk' | 'recomp',
     targetWeight: c.target_weight ? Number(c.target_weight) : null,
-    targetDate: c.target_date,
+    targetDate: c.competition_date || c.target_date,
     currentCalories: c.calories_target ? Number(c.calories_target) : null,
     currentProtein: c.protein_target ? Number(c.protein_target) : null,
     currentFat: c.fat_target ? Number(c.fat_target) : null,
