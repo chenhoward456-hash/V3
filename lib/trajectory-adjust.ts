@@ -31,9 +31,19 @@ export interface TrajectoryInput {
   lastAdjustAt: string | null
 }
 
+export type SkipCategory =
+  | 'no_target'        // 缺 goal_type / target_weight / target_date — 需教練補欄位
+  | 'no_calories'      // 沒設 calories_target — 需教練補 macro
+  | 'no_body_data'     // 體重資料不足 2 週 — 需推學員量體重
+  | 'cooldown'         // 冷卻中 — 無需動作
+  | 'trend_reversed'   // 趨勢反轉 — 需教練判斷 (refeed 抖動 vs 真反轉)
+  | 'on_track'         // 進度跟得上 — 無需動作
+  | 'too_small'        // 調整 < 50 kcal — 無需動作
+
 export interface TrajectoryAdjustment {
   shouldAdjust: boolean
   reason: string
+  skipCategory: SkipCategory | null  // shouldAdjust=true 時為 null
   currentRatePerWeek: number | null
   neededRatePerWeek: number | null
   kcalAdjustment: number | null
@@ -143,9 +153,10 @@ function computeWeeklyAverages(entries: Array<{ date: string; weight: number | n
 }
 
 export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryAdjustment {
-  const empty = (reason: string): TrajectoryAdjustment => ({
+  const empty = (reason: string, category: SkipCategory): TrajectoryAdjustment => ({
     shouldAdjust: false,
     reason,
+    skipCategory: category,
     currentRatePerWeek: null,
     neededRatePerWeek: null,
     kcalAdjustment: null,
@@ -157,15 +168,15 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   })
 
   if (!input.goalType || !input.targetWeight || !input.targetDate) {
-    return empty('缺少 goal_type / target_weight / target_date')
+    return empty('缺少 goal_type / target_weight / target_date', 'no_target')
   }
   if (!input.currentCalories || input.currentCalories <= 0) {
-    return empty('未設定當前 calories_target')
+    return empty('未設定當前 calories_target', 'no_calories')
   }
 
   const traj = computeWeeklyAverages(input.bodyDataEntries)
   if (!traj || traj.weeksOfData < 2) {
-    return { ...empty('體重資料不足 2 週'), trajectoryData: traj }
+    return { ...empty('體重資料不足 2 週', 'no_body_data'), trajectoryData: traj }
   }
 
   const cooldownDays = cooldownDaysFor(input.targetDate)
@@ -173,7 +184,7 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
     const daysSinceLast = (Date.now() - new Date(input.lastAdjustAt).getTime()) / 86_400_000
     if (daysSinceLast < cooldownDays) {
       return {
-        ...empty(`Cooldown 中（已過 ${Math.floor(daysSinceLast)} / ${cooldownDays} 天）`),
+        ...empty(`Cooldown 中（已過 ${Math.floor(daysSinceLast)} / ${cooldownDays} 天）`, 'cooldown'),
         cooldownDaysRemaining: Math.ceil(cooldownDays - daysSinceLast),
         trajectoryData: traj,
       }
@@ -181,7 +192,7 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   }
 
   if (traj.trendReversed) {
-    return { ...empty('趨勢反轉（1 週 vs 4 週方向相反）'), trajectoryData: traj }
+    return { ...empty('趨勢反轉（1 週 vs 4 週方向相反）', 'trend_reversed'), trajectoryData: traj }
   }
 
   const remainingKg = traj.currentAvg - input.targetWeight
@@ -192,7 +203,7 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   const gap = neededRatePerWeek - currentRatePerWeek
   if (Math.abs(gap) < SIGNIFICANT_GAP_KG_PER_WEEK) {
     return {
-      ...empty('進度跟得上，不需調整'),
+      ...empty('進度跟得上，不需調整', 'on_track'),
       currentRatePerWeek,
       neededRatePerWeek,
       trajectoryData: traj,
@@ -239,7 +250,7 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   const actualKcalShift = newCal - input.currentCalories
   if (Math.abs(actualKcalShift) < 50) {
     return {
-      ...empty('調整後熱量變化 < 50 kcal，不值得套用'),
+      ...empty('調整後熱量變化 < 50 kcal，不值得套用', 'too_small'),
       currentRatePerWeek,
       neededRatePerWeek,
       kcalAdjustment: rawKcalAdjustment,
@@ -269,6 +280,7 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
     boundaryDetail,
     cooldownDaysRemaining: 0,
     trajectoryData: traj,
+    skipCategory: null,
   }
 }
 

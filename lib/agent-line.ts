@@ -314,11 +314,45 @@ export async function handleCoachActionPostback(
     return true
   }
 
-  const action = parts[1] as 'extend_target' | 'ease_target' | 'add_cardio' | 'cancel'
+  const action = parts[1] as 'extend_target' | 'ease_target' | 'add_cardio' | 'cancel' | 'nudge_weight' | 'force_recalc'
   const clientId = parts[2]
 
   if (action === 'cancel') {
     await replyMessage(replyToken, [{ type: 'text', text: '🛑 已忽略，請進後台 /admin/clients 手動處理' }])
+    return true
+  }
+
+  if (action === 'nudge_weight') {
+    const { data: c } = await supabase.from('clients').select('id, name, line_user_id').eq('id', clientId).maybeSingle()
+    if (!c) {
+      await replyMessage(replyToken, [{ type: 'text', text: '❌ 找不到學員' }])
+      return true
+    }
+    if (!c.line_user_id) {
+      await replyMessage(replyToken, [{ type: 'text', text: `⚠️ ${c.name} 還沒綁 LINE，無法推提醒` }])
+      return true
+    }
+    await pushMessage(c.line_user_id, [{
+      type: 'text',
+      text: `Hi ${c.name}，我這邊看到你的體重紀錄不足 2 週，沒辦法幫你算趨勢。\n\n抓緊時間每天早上起床上完廁所量一下吧，連續一週就能開始調整營養素了 💪`,
+    }]).catch(() => {})
+    await replyMessage(replyToken, [{ type: 'text', text: `✓ 已推 ${c.name} 量體重提醒` }])
+    return true
+  }
+
+  if (action === 'force_recalc') {
+    // 直接打自家 trajectory-check endpoint：跑一次當前軌跡，推給 admin
+    const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+    const secret = process.env.CRON_SECRET || ''
+    try {
+      const res = await fetch(`${site}/api/admin/trajectory-check?clientId=${clientId}`, {
+        headers: { Authorization: `Bearer ${secret}` },
+      })
+      const j = await res.json()
+      await replyMessage(replyToken, [{ type: 'text', text: `▶ 強制重算完成：${j.decision ?? 'unknown'}\n${j.reason ?? ''}\n\n（如果有結果會單獨推一則）` }])
+    } catch (e) {
+      await replyMessage(replyToken, [{ type: 'text', text: `❌ 重算失敗：${(e as Error).message}` }])
+    }
     return true
   }
 
