@@ -281,3 +281,132 @@ export async function handleAgentProposalPostback(
   await replyMessage(replyToken, [{ type: 'text', text: '✓ 已核准 + 套用到 DB' }])
   return true
 }
+
+// ═══════════════════════════════════════
+// Coach one-tap action postback (safety-blocked alert)
+// ═══════════════════════════════════════
+
+const COACH_ACTION_COOLDOWN_MS = 10 * 60 * 1000
+
+function addDaysUTC(dateStr: string | null, days: number): string {
+  const base = dateStr ? new Date(dateStr) : new Date()
+  base.setUTCDate(base.getUTCDate() + days)
+  return base.toISOString().split('T')[0]
+}
+
+/**
+ * 教練在 LINE 收到「安全層擋住」alert 後，點 quick reply 按鈕的 postback handler。
+ * 格式：coach_action:<action>:<clientId>
+ *   actions: extend_target | ease_target | add_cardio | cancel
+ */
+export async function handleCoachActionPostback(
+  postbackData: string,
+  replyToken: string,
+  supabase: SupabaseClient,
+  callerUserId?: string,
+): Promise<boolean> {
+  const parts = postbackData.split(':')
+  if (parts.length !== 3 || parts[0] !== 'coach_action') return false
+
+  const adminLineId = process.env.ADMIN_LINE_USER_ID
+  if (callerUserId && adminLineId && callerUserId !== adminLineId) {
+    await replyMessage(replyToken, [{ type: 'text', text: '❌ 你沒有權限' }])
+    return true
+  }
+
+  const action = parts[1] as 'extend_target' | 'ease_target' | 'add_cardio' | 'cancel'
+  const clientId = parts[2]
+
+  if (action === 'cancel') {
+    await replyMessage(replyToken, [{ type: 'text', text: '🛑 已忽略，請進後台 /admin/clients 手動處理' }])
+    return true
+  }
+
+  // Cooldown / 防呆：10 分鐘內已有同類 coach_action 就拒絕重複
+  const { data: recentLog } = await supabase
+    .from('macro_adjustment_log')
+    .select('id, created_at, trigger_source, reason')
+    .eq('client_id', clientId)
+    .eq('applied_by', 'coach_line_action')
+    .gte('created_at', new Date(Date.now() - COACH_ACTION_COOLDOWN_MS).toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (recentLog) {
+    await replyMessage(replyToken, [{ type: 'text', text: '⏱ 10 分鐘內已處理過，避免重複套用。如需再調整請進後台' }])
+    return true
+  }
+
+  const { data: client, error: cErr } = await supabase
+    .from('clients')
+    .select('id, name, goal_type, target_weight, target_date, competition_date, cardio_minutes_per_day')
+    .eq('id', clientId)
+    .maybeSingle()
+  if (cErr || !client) {
+    await replyMessage(replyToken, [{ type: 'text', text: '❌ 找不到學員資料' }])
+    return true
+  }
+
+  const updates: Record<string, any> = {}
+  let summary = ''
+
+  if (action === 'extend_target') {
+    if (client.competition_date) {
+      const newDate = addDaysUTC(client.competition_date, 14)
+      updates.competition_date = newDate
+      summary = `延比賽日：${client.competition_date} → ${newDate}（+14 天）`
+    } else if (client.target_date) {
+      const newDate = addDaysUTC(client.target_date, 14)
+      updates.target_date = newDate
+      summary = `延目標日：${client.target_date} → ${newDate}（+14 天）`
+    } else {
+      await replyMessage(replyToken, [{ type: 'text', text: '⚠️ 此學員未設定目標日，無法延' }])
+      return true
+    }
+  } else if (action === 'ease_target') {
+    if (client.target_weight == null) {
+      await replyMessage(replyToken, [{ type: 'text', text: '⚠️ 此學員未設定 target_weight' }])
+      return true
+    }
+    const goal = (client.goal_type || 'cut') as string
+    // cut (要瘦): target 變重 = 容易；bulk (要壯): target 變輕 = 容易；recomp 預設往上 1 kg
+    const delta = goal === 'bulk' ? -1 : 1
+    const newWeight = Number(client.target_weight) + delta
+    updates.target_weight = newWeight
+    summary = `放鬆目標：target_weight ${client.target_weight} → ${newWeight} kg（${goal} 方向 ${delta > 0 ? '+' : ''}${delta}）`
+  } else if (action === 'add_cardio') {
+    const current = Number(client.cardio_minutes_per_day ?? 0)
+    const next = Math.min(90, current + 30)
+    if (next === current) {
+      await replyMessage(replyToken, [{ type: 'text', text: '⚠️ Cardio 已達 90 min/天上限，無法再加' }])
+      return true
+    }
+    updates.cardio_minutes_per_day = next
+    summary = `加有氧：${current} → ${next} min/天`
+  } else {
+    return false
+  }
+
+  const { error: updErr } = await supabase.from('clients').update(updates).eq('id', clientId)
+  if (updErr) {
+    await replyMessage(replyToken, [{ type: 'text', text: '❌ DB 更新失敗: ' + updErr.message }])
+    return true
+  }
+
+  await supabase.from('macro_adjustment_log').insert({
+    client_id: clientId,
+    applied_by: 'coach_line_action',
+    trigger_source: 'safety_blocked_quick_reply',
+    old_macros: {
+      target_weight: client.target_weight,
+      target_date: client.target_date,
+      competition_date: client.competition_date,
+      cardio_minutes_per_day: client.cardio_minutes_per_day,
+    },
+    new_macros: updates,
+    reason: `教練 LINE 一鍵動作：${summary}`,
+  })
+
+  await replyMessage(replyToken, [{ type: 'text', text: `✓ ${client.name}：${summary}\n\n隔天 cron 會用新參數重算軌跡` }])
+  return true
+}

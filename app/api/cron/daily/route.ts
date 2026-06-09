@@ -315,8 +315,25 @@ export async function GET(request: NextRequest) {
           const coachLineId = process.env.ADMIN_LINE_USER_ID
           if (coachLineId) {
             const labFlags = engineResult.cuttingReadinessGate?.labFlags?.join('、') || ''
-            const alertMsg = `⚠️ ${c.name} 軌跡需要砍 ${Math.abs(trajResult.kcalAdjustment || 0)} kcal，但安全層擋住\n\n${blockReasons.join('\n')}\n\n${labFlags ? `異常項目：${labFlags}\n\n` : ''}→ 進後台手動處理：延比賽日 / 改目標體重 / 加 NEAT / refeed`
-            await pushMessage(coachLineId, [{ type: 'text', text: alertMsg }]).catch(() => {})
+            // 主訊息：人話為主，技術細節摺到下方
+            const kcalAbs = Math.abs(trajResult.kcalAdjustment || 0)
+            const headline = `🔴 ${c.name} 卡住了`
+            const lay = `軌跡需要砍 ${kcalAbs} kcal，但已撞安全層 → 引擎自動停手`
+            const detail = blockReasons.map(r => `· ${r}`).join('\n')
+            const alertMsg = `${headline}\n\n${lay}\n\n${labFlags ? `⚠️ 異常項目：${labFlags}\n\n` : ''}細節：\n${detail}\n\n👇 一鍵處理`
+
+            await pushMessage(coachLineId, [{
+              type: 'text',
+              text: alertMsg,
+              quickReply: {
+                items: [
+                  { type: 'action', action: { type: 'postback', label: '📅 延 14 天', data: `coach_action:extend_target:${c.id}`, displayText: `延 ${c.name} 目標日 +14 天` } },
+                  { type: 'action', action: { type: 'postback', label: '🎯 放鬆目標 1kg', data: `coach_action:ease_target:${c.id}`, displayText: `${c.name} target_weight ±1 kg` } },
+                  { type: 'action', action: { type: 'postback', label: '🏃 +30min cardio', data: `coach_action:add_cardio:${c.id}`, displayText: `${c.name} cardio +30 min/天` } },
+                  { type: 'action', action: { type: 'postback', label: '🛠 進後台處理', data: `coach_action:cancel:${c.id}`, displayText: `${c.name} 進後台手動處理` } },
+                ],
+              },
+            } as any]).catch(() => {})
           }
 
           continue

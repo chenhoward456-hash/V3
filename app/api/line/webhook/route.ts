@@ -18,7 +18,7 @@ import {
   handleNaturalNutrition,
 } from '@/lib/line-handlers'
 import { buildDay0Messages, enrollSubscriber, unenrollSubscriber } from '@/lib/nurture-sequence'
-import { handleAdminAgentMessage, handleAgentProposalPostback } from '@/lib/agent-line'
+import { handleAdminAgentMessage, handleAgentProposalPostback, handleCoachActionPostback } from '@/lib/agent-line'
 
 export const maxDuration = 60  // Agent tool use 可能跑 20-30s，給足 60s
 
@@ -156,6 +156,11 @@ async function handleEvent(event: LineWebhookEvent) {
       // 教練端 AI Agent proposal 審核 postback
       if (userId === process.env.ADMIN_LINE_USER_ID && data.startsWith('agent_proposal:')) {
         const handled = await handleAgentProposalPostback(data, event.replyToken, supabase, userId)
+        if (handled) break
+      }
+      // 教練端 safety-blocked alert 的一鍵動作 postback
+      if (userId === process.env.ADMIN_LINE_USER_ID && data.startsWith('coach_action:')) {
+        const handled = await handleCoachActionPostback(data, event.replyToken, supabase, userId)
         if (handled) break
       }
       await handlePostback(event, userId, supabase)
