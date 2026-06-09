@@ -361,7 +361,8 @@ export async function handleCoachActionPostback(
     .from('macro_adjustment_log')
     .select('id, created_at, trigger_source, reason')
     .eq('client_id', clientId)
-    .eq('applied_by', 'coach_line_action')
+    .eq('applied_by', 'coach')
+    .eq('trigger_source', 'manual')
     .gte('created_at', new Date(Date.now() - COACH_ACTION_COOLDOWN_MS).toISOString())
     .order('created_at', { ascending: false })
     .limit(1)
@@ -429,8 +430,8 @@ export async function handleCoachActionPostback(
 
   await supabase.from('macro_adjustment_log').insert({
     client_id: clientId,
-    applied_by: 'coach_line_action',
-    trigger_source: 'safety_blocked_quick_reply',
+    applied_by: 'coach',
+    trigger_source: 'manual',
     old_macros: {
       target_weight: client.target_weight,
       target_date: client.target_date,

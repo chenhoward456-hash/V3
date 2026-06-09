@@ -42,7 +42,12 @@ export async function GET(request: NextRequest) {
     ? Math.floor((new Date(compDate).getTime() - Date.now()) / 86_400_000)
     : null
 
+  const isRevision = request.nextUrl.searchParams.get('revision') === '1'
   const lines: string[] = []
+  if (isRevision) {
+    lines.push(`🔁 修正版 — 請以這份為準（上一則作廢）`)
+    lines.push('')
+  }
   lines.push(`Hi ${c.name}，幫你整理一下從現在到比賽的吃法 💪`)
   lines.push('')
   if (daysToComp != null) {
