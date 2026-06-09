@@ -219,9 +219,9 @@ export async function GET(request: NextRequest) {
   if (coachLineId) {
     // hitBoundary 才掛根因鍵；正常 proposal 走隔天 cron，這裡是 preview 不真的建，所以沒核准鍵
     const items: any[] = trajResult.hitBoundary ? [
-      { type: 'action', action: { type: 'postback', label: '📅 延 14 天 (改根因)', data: `coach_action:extend_target:${c.id}`, displayText: `${c.name} 改延 14 天` } },
-      { type: 'action', action: { type: 'postback', label: '🎯 放鬆 1kg (改根因)', data: `coach_action:ease_target:${c.id}`, displayText: `${c.name} 放鬆 target ±1 kg` } },
-      { type: 'action', action: { type: 'postback', label: '🏃 +30min cardio (改根因)', data: `coach_action:add_cardio:${c.id}`, displayText: `${c.name} cardio +30 min` } },
+      { type: 'action', action: { type: 'postback', label: '📅 延 14 天', data: `coach_action:extend_target:${c.id}`, displayText: `${c.name} 改延 14 天` } },
+      { type: 'action', action: { type: 'postback', label: '🎯 放鬆 1kg', data: `coach_action:ease_target:${c.id}`, displayText: `${c.name} 放鬆 target ±1 kg` } },
+      { type: 'action', action: { type: 'postback', label: '🏃 +30min 有氧', data: `coach_action:add_cardio:${c.id}`, displayText: `${c.name} cardio +30 min` } },
     ] : []
     await pushMessage(coachLineId, [{
       type: 'text', text: previewMsg,

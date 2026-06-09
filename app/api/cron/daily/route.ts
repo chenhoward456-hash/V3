@@ -402,9 +402,9 @@ export async function GET(request: NextRequest) {
             ]
             if (trajResult.hitBoundary) {
               items.push(
-                { type: 'action', action: { type: 'postback', label: '📅 延 14 天 (改根因)', data: `coach_action:extend_target:${c.id}`, displayText: `${c.name} 改延 14 天` } },
-                { type: 'action', action: { type: 'postback', label: '🎯 放鬆 1kg (改根因)', data: `coach_action:ease_target:${c.id}`, displayText: `${c.name} 放鬆 target ±1 kg` } },
-                { type: 'action', action: { type: 'postback', label: '🏃 +30min cardio (改根因)', data: `coach_action:add_cardio:${c.id}`, displayText: `${c.name} cardio +30 min` } },
+                { type: 'action', action: { type: 'postback', label: '📅 延 14 天', data: `coach_action:extend_target:${c.id}`, displayText: `${c.name} 改延 14 天` } },
+                { type: 'action', action: { type: 'postback', label: '🎯 放鬆 1kg', data: `coach_action:ease_target:${c.id}`, displayText: `${c.name} 放鬆 target ±1 kg` } },
+                { type: 'action', action: { type: 'postback', label: '🏃 +30min 有氧', data: `coach_action:add_cardio:${c.id}`, displayText: `${c.name} cardio +30 min` } },
               )
             }
             await pushMessage(coachLineId, [{
