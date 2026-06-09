@@ -10,6 +10,7 @@ import { useCoachMode } from '@/hooks/useCoachMode'
 import { Lock, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
 import CollapsibleSection from '@/components/client/CollapsibleSection'
+import NewUserLanding, { shouldUseNewUserMode } from '@/components/client/NewUserLanding'
 import ConsentGate from '@/components/ConsentGate'
 import QuickActions from '@/components/client/QuickActions'
 import UpgradeGate from '@/components/client/UpgradeGate'
@@ -688,6 +689,25 @@ export default function ClientDashboard() {
   const isHealthMode = isHealthModeHelper(c.client_mode)
   const isSelfManaged = c.subscription_tier === 'self_managed'
   const isFree = c.subscription_tier === 'free'
+
+  // 新人模式：完全沒打卡資料 + 沒按過 escape hatch → 簡化首頁
+  const useNewUserMode = isToday && shouldUseNewUserMode(clientData)
+  if (useNewUserMode) {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gray-50">
+          {c?.unique_code && <ConsentGate clientId={c.unique_code} />}
+          <NewUserLanding
+            client={c}
+            clientData={clientData}
+            selectedDate={selectedDate}
+            mutate={mutate}
+            onShowFullDashboard={() => window.location.reload()}
+          />
+        </div>
+      </ErrorBoundary>
+    )
+  }
 
   // 健康模式：計算健康分數
   // HRV baseline：用 7 天前以前的所有 HRV 數據算長期平均
