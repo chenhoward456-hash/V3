@@ -175,8 +175,8 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   }
 
   const traj = computeWeeklyAverages(input.bodyDataEntries)
-  if (!traj || traj.weeksOfData < 2) {
-    return { ...empty('體重資料不足 2 週', 'no_body_data'), trajectoryData: traj }
+  if (!traj || traj.weeksOfData < 3) {
+    return { ...empty('體重資料不足 3 週（單週 outlier 容易騙引擎）', 'no_body_data'), trajectoryData: traj }
   }
 
   const cooldownDays = cooldownDaysFor(input.targetDate)

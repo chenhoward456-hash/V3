@@ -380,7 +380,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (coachOverride && !isAdmin) {
+    // coach_macro_override 一旦設定，任何 caller (含 admin) 都不能自動覆寫。
+    // admin 想真的改要先 explicit clear coach_macro_override 再 trigger。
+    // 避免「教練手動設定 → 自己開 dashboard → 立刻被自家引擎吃掉」的悲劇。
+    if (coachOverride) {
       coachLocked = true
       suggestion.message += '\n\n🔒 教練已手動設定你的營養目標，系統建議僅供參考，不會自動調整。'
     }

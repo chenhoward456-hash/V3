@@ -33,6 +33,8 @@ type Problem = {
   reason: string
   daysToComp: number | null
   lastAdjustAt: string | null
+  clientLineId: string | null
+  weighsLast14d: number
 }
 
 const CATEGORY_LABELS: Record<Problem['category'], string> = {
@@ -52,9 +54,12 @@ export async function GET(request: NextRequest) {
 
   const { data: clients } = await supabase
     .from('clients')
-    .select('id, name, gender, goal_type, target_weight, target_date, competition_date, calories_target, protein_target, carbs_target, fat_target, carbs_training_day, carbs_rest_day, last_auto_adjust_at, macro_bounds, coach_macro_override, subscription_tier')
+    .select('id, name, gender, goal_type, target_weight, target_date, competition_date, calories_target, protein_target, carbs_target, fat_target, carbs_training_day, carbs_rest_day, last_auto_adjust_at, macro_bounds, coach_macro_override, subscription_tier, line_user_id')
     .in('subscription_tier', ['coached', 'protocol'])
     .is('coach_macro_override', null)
+
+  const fourteenDaysAgo = new Date(); fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
+  const fourteenStr = fourteenDaysAgo.toISOString().split('T')[0]
 
   const problems: Problem[] = []
 
@@ -92,6 +97,8 @@ export async function GET(request: NextRequest) {
       ? Math.floor((new Date(compDate).getTime() - today.getTime()) / 86_400_000)
       : null
 
+    const weighsLast14d = (bodyData ?? []).filter((b: any) => b.date >= fourteenStr && b.weight != null).length
+
     problems.push({
       clientId: c.id,
       name: c.name,
@@ -99,6 +106,8 @@ export async function GET(request: NextRequest) {
       reason: traj.reason,
       daysToComp,
       lastAdjustAt: c.last_auto_adjust_at,
+      clientLineId: c.line_user_id || null,
+      weighsLast14d,
     })
   }
 
@@ -146,5 +155,16 @@ export async function GET(request: NextRequest) {
     } as any]).catch(() => {})
   }
 
-  return NextResponse.json({ ok: true, problems, pushed: true })
+  // 3. 自動 nudge 學員（no_body_data 才推；其他類別需要教練判斷不直接推）
+  const clientNudged: string[] = []
+  for (const p of problems) {
+    if (p.category !== 'no_body_data') continue
+    if (!p.clientLineId) continue
+    const compLine = p.daysToComp != null ? `\n\n📅 距離比賽 ${p.daysToComp} 天` : ''
+    const text = `Hi ${p.name}，過去 14 天我只看到你量了 ${p.weighsLast14d} 次體重 👀\n\n系統需要連續 3 週的記錄才能幫你計算趨勢、自動微調營養素。沒記錄 = 我猜不到你進度，吃法就只能停在現在這組。\n\n抓緊每天早上起床上完廁所量一下，連續一週就能開始看到變化曲線了 💪${compLine}`
+    await pushMessage(p.clientLineId, [{ type: 'text', text }]).catch(() => {})
+    clientNudged.push(p.name)
+  }
+
+  return NextResponse.json({ ok: true, problems, pushed: true, clientNudged })
 }
