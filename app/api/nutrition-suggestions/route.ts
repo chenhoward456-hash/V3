@@ -388,6 +388,20 @@ export async function GET(request: NextRequest) {
       suggestion.message += '\n\n🔒 教練已手動設定你的營養目標，系統建議僅供參考，不會自動調整。'
     }
 
+    // 比賽模式 routing：
+    // 比賽模式 (bodybuilding + competition_date + prep_phase=cut/peak) 的學員，
+    // 營養素應由 trajectory-adjust 激進哲學管理（hard deadline 達標），
+    // 不該由 nutrition-engine 的保守哲學（0.5%/週永續減脂）自動覆寫。
+    // nutrition-engine 還是會算「建議參考」給 dashboard 顯示，但不寫 DB。
+    const isCompetitionPrep =
+      client.client_mode === 'bodybuilding' &&
+      !!client.competition_date &&
+      (client.prep_phase === 'cut' || client.prep_phase === 'peak')
+    if (isCompetitionPrep && !coachLocked) {
+      coachLocked = true
+      suggestion.message += '\n\n🏆 比賽模式 — 營養素由比賽引擎 (trajectory) 管理，nutrition-engine 建議僅供參考'
+    }
+
     const coachOverrideInfo = coachOverride ? {
       expiresAt: coachOverride.expires_at || null,
       reason: coachOverride.reason || null,
