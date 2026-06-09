@@ -392,8 +392,25 @@ export async function GET(request: NextRequest) {
               : trajResult.newMacros?.carbs_target != null
                 ? `碳水 ${oldMacros.carbs_target} → ${trajResult.newMacros.carbs_target}g`
                 : ''
-            const msg = `📋 [系統提案] ${c.name}\n\n熱量 ${oldMacros.calories_target} → ${trajResult.newMacros?.calories_target} kcal\n${carbLine}\n\n${trajResult.reason}${trajResult.hitBoundary ? `\n\n⚠️ ${trajResult.boundaryDetail}` : ''}\n\n→ Playground 或 LINE「list」審核\nID: ${proposal.id.slice(0, 8)}`
-            await pushMessage(coachLineId, [{ type: 'text', text: msg }]).catch(() => {})
+            const msg = `📋 [系統提案] ${c.name}\n\n熱量 ${oldMacros.calories_target} → ${trajResult.newMacros?.calories_target} kcal\n${carbLine}\n\n${trajResult.reason}${trajResult.hitBoundary ? `\n\n⚠️ ${trajResult.boundaryDetail}` : ''}\n\nID: ${proposal.id.slice(0, 8)}`
+
+            // 3 顆審核鍵 (一律)；hitBoundary=true 再加 3 顆「解根因」鍵
+            const items: any[] = [
+              { type: 'action', action: { type: 'postback', label: '✓ 核准套用', data: `agent_proposal:approve:${proposal.id}`, displayText: `核准 ${proposal.id.slice(0, 8)}` } },
+              { type: 'action', action: { type: 'postback', label: '✗ 拒絕', data: `agent_proposal:reject:${proposal.id}`, displayText: `拒絕 ${proposal.id.slice(0, 8)}` } },
+              { type: 'action', action: { type: 'postback', label: '💬 再聊', data: `agent_proposal:discuss:${proposal.id}`, displayText: `再聊 ${proposal.id.slice(0, 8)}` } },
+            ]
+            if (trajResult.hitBoundary) {
+              items.push(
+                { type: 'action', action: { type: 'postback', label: '📅 延 14 天 (改根因)', data: `coach_action:extend_target:${c.id}`, displayText: `${c.name} 改延 14 天` } },
+                { type: 'action', action: { type: 'postback', label: '🎯 放鬆 1kg (改根因)', data: `coach_action:ease_target:${c.id}`, displayText: `${c.name} 放鬆 target ±1 kg` } },
+                { type: 'action', action: { type: 'postback', label: '🏃 +30min cardio (改根因)', data: `coach_action:add_cardio:${c.id}`, displayText: `${c.name} cardio +30 min` } },
+              )
+            }
+            await pushMessage(coachLineId, [{
+              type: 'text', text: msg,
+              quickReply: { items },
+            } as any]).catch(() => {})
           }
           continue // 不執行下方的 auto-apply
         }

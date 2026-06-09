@@ -214,10 +214,19 @@ export async function GET(request: NextRequest) {
     : trajResult.newMacros?.carbs_target != null
       ? `碳水 ${c.carbs_target} → ${trajResult.newMacros.carbs_target}g`
       : ''
-  const previewMsg = `📋 [系統會建提案] ${c.name} (測試 — 不真的建)\n\n熱量 ${c.calories_target} → ${trajResult.newMacros?.calories_target} kcal\n${carbLine}\n\n${trajResult.reason}${trajResult.hitBoundary ? `\n\n⚠️ ${trajResult.boundaryDetail}` : ''}\n\n→ 隔天 cron 才會真的建 proposal`
+  const previewMsg = `📋 [系統會建提案] ${c.name} (測試 — 不真的建)\n\n熱量 ${c.calories_target} → ${trajResult.newMacros?.calories_target} kcal\n${carbLine}\n\n${trajResult.reason}${trajResult.hitBoundary ? `\n\n⚠️ ${trajResult.boundaryDetail}` : ''}\n\n→ 隔天 cron 才會真的建 proposal\n\n👇 hitBoundary 的「解根因」按鈕（會真的改 DB）`
 
   if (coachLineId) {
-    await pushMessage(coachLineId, [{ type: 'text', text: previewMsg }]).catch(() => {})
+    // hitBoundary 才掛根因鍵；正常 proposal 走隔天 cron，這裡是 preview 不真的建，所以沒核准鍵
+    const items: any[] = trajResult.hitBoundary ? [
+      { type: 'action', action: { type: 'postback', label: '📅 延 14 天 (改根因)', data: `coach_action:extend_target:${c.id}`, displayText: `${c.name} 改延 14 天` } },
+      { type: 'action', action: { type: 'postback', label: '🎯 放鬆 1kg (改根因)', data: `coach_action:ease_target:${c.id}`, displayText: `${c.name} 放鬆 target ±1 kg` } },
+      { type: 'action', action: { type: 'postback', label: '🏃 +30min cardio (改根因)', data: `coach_action:add_cardio:${c.id}`, displayText: `${c.name} cardio +30 min` } },
+    ] : []
+    await pushMessage(coachLineId, [{
+      type: 'text', text: previewMsg,
+      ...(items.length > 0 ? { quickReply: { items } } : {}),
+    } as any]).catch(() => {})
   }
 
   return NextResponse.json({
