@@ -11,7 +11,6 @@ import { Lock, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
 import CollapsibleSection from '@/components/client/CollapsibleSection'
 import NewUserLanding, { shouldUseNewUserMode } from '@/components/client/NewUserLanding'
-import DashboardSignatureHero from '@/components/client/DashboardSignatureHero'
 import ConsentGate from '@/components/ConsentGate'
 import QuickActions from '@/components/client/QuickActions'
 import UpgradeGate from '@/components/client/UpgradeGate'
@@ -812,33 +811,22 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* Signature hero — 全頁第一視覺 */}
-        {isToday && (() => {
-          const today = new Date()
-          const weekAgo = new Date(today); weekAgo.setDate(today.getDate() - 6)
-          const startStr = weekAgo.toISOString().split('T')[0]
-          const todayStr = today.toISOString().split('T')[0]
-          const weeklyTrain = (clientData.trainingLogs || []).filter(
-            l => l.date >= startStr && l.date <= todayStr && l.training_type !== 'rest'
-          ).length
-          return (
-            <DashboardSignatureHero
-              client={c}
-              streakDays={streakDays}
-              todayCompletedCount={todayCompletedItems.length}
-              todayTotalCount={[
-                c.body_composition_enabled,
-                c.nutrition_enabled,
-                c.supplement_enabled,
-                c.wellness_enabled,
-                c.training_enabled,
-              ].filter(Boolean).length}
-              weeklyTrainingDays={weeklyTrain}
-            />
-          )
-        })()}
+        {/* 🔥 連續紀錄 streak 小 chip — 增強動機 */}
+        {isToday && streakDays >= 3 && (
+          <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-200 rounded-full">
+            <span className="text-lg">🔥</span>
+            <div>
+              <span className="text-sm font-semibold text-orange-900">
+                連續 {streakDays} 天
+              </span>
+              <span className="text-xs text-orange-700 ml-2">
+                {streakMessage}
+              </span>
+            </div>
+          </div>
+        )}
 
-        {/* 標題區（功能控制：日期、設定、教練模式）*/}
+        {/* 標題區 */}
         <div className="bg-white rounded-3xl shadow-sm p-5 mb-6">
           <ClientHeader
             client={c}
