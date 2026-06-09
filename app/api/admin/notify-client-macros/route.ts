@@ -43,13 +43,24 @@ export async function GET(request: NextRequest) {
     : null
 
   const isRevision = request.nextUrl.searchParams.get('revision') === '1'
+  const isDashboardReady = request.nextUrl.searchParams.get('dashboard_ready') === '1'
   const lines: string[] = []
-  if (isRevision) {
+  if (isDashboardReady) {
+    lines.push(`✅ ${c.name}，你的 App 儀表板已經設定好了`)
+    lines.push('')
+    lines.push(`打開 App 就能看到新的營養目標 + 進度條，每天打卡就會顯示完成 % 💪`)
+    lines.push('')
+    lines.push(`再幫你列一次以下方便對照：`)
+    lines.push('')
+  } else if (isRevision) {
     lines.push(`🔁 修正版 — 請以這份為準（上一則作廢）`)
     lines.push('')
+    lines.push(`Hi ${c.name}，幫你整理一下從現在到比賽的吃法 💪`)
+    lines.push('')
+  } else {
+    lines.push(`Hi ${c.name}，幫你整理一下從現在到比賽的吃法 💪`)
+    lines.push('')
   }
-  lines.push(`Hi ${c.name}，幫你整理一下從現在到比賽的吃法 💪`)
-  lines.push('')
   if (daysToComp != null) {
     lines.push(`📅 距離比賽：${daysToComp} 天 (${compDate})`)
   }
