@@ -2,8 +2,14 @@
 // 統一參考範圍 — 全系統唯一真相來源（lab-status-calculator.ts, supplement-engine.ts 都從這裡參考）
 // 涵蓋：代謝、血脂、肝腎、甲狀腺、荷爾蒙、維生素、礦物質、血球、發炎
 
+import { createLogger } from '../lib/logger'
+
+const logger = createLogger('labStatus')
+// 同一個未知項目只警告一次，避免清單頁逐列呼叫時轟炸 Sentry
+const warnedUnknownTests = new Set<string>()
+
 // 有性別差異閾值的檢驗項目（三個函數共用，避免不同步）
-const FEMALE_VARIANTS = ['鐵蛋白', '睪固酮', '游離睪固酮', 'HDL-C', '尿酸', 'GGT', '肌酸酐', 'DHEA-S', '雌二醇', 'SHBG', '血紅素']
+export const FEMALE_VARIANTS = ['鐵蛋白', '睪固酮', '游離睪固酮', 'HDL-C', '尿酸', 'GGT', '肌酸酐', 'DHEA-S', '雌二醇', 'SHBG', '血紅素']
 
 // ── 閾值配置 ──
 // 數值型（越低越好）：normal = 正常上限, attention = 注意上限
@@ -203,13 +209,16 @@ export function calculateLabStatus(testName: string, value: number, gender?: '�
 
   const threshold = (LAB_THRESHOLDS as LabThresholds)[lookupName];
   if (!threshold) {
-    console.warn(`[labStatus] 未知的檢驗項目: "${testName}"，無法判定狀態，返回 attention`)
+    if (!warnedUnknownTests.has(lookupName)) {
+      warnedUnknownTests.add(lookupName)
+      logger.warn(`未知的檢驗項目，fallback 返回 attention`, { testName, lookupName })
+    }
     return 'attention';
   }
 
   // 防止 NaN / Infinity 造成錯誤判定
   if (!Number.isFinite(value)) {
-    console.warn(`[labStatus] 無效數值: ${value}，項目: "${testName}"`)
+    logger.warn(`無效數值，fallback 返回 alert`, { testName, value: String(value) })
     return 'alert';
   }
 

@@ -1,4 +1,7 @@
 import crypto from 'crypto'
+import { createLogger } from './logger'
+
+const logger = createLogger('line')
 
 function getLineChannelSecret(): string {
   const secret = process.env.LINE_CHANNEL_SECRET
@@ -44,7 +47,7 @@ async function lineAPI(path: string, body?: object): Promise<Response> {
       return res
     }
     if (res.status >= 400 && res.status < 500 && res.status !== 429) {
-      console.error(`[LINE API] ${path} failed with status ${res.status}`)
+      logger.error(`LINE API 呼叫失敗（client error，不重試）`, undefined, { path, status: res.status })
       return res
     }
     // Retry on 429, 5xx with exponential backoff
@@ -52,7 +55,7 @@ async function lineAPI(path: string, body?: object): Promise<Response> {
       const delay = Math.min(1000 * Math.pow(2, attempt), 4000)
       await new Promise(resolve => setTimeout(resolve, delay))
     } else {
-      console.error(`[LINE API] ${path} failed after ${maxRetries} retries, status ${res.status}`)
+      logger.error(`LINE API 重試耗盡仍失敗`, undefined, { path, status: res.status, maxRetries })
       return res // Return last failed response
     }
   }
@@ -73,7 +76,10 @@ export async function pushMessage(to: string, messages: LineMessage[]) {
 /** 取得用戶 profile */
 export async function getUserProfile(userId: string): Promise<{ displayName: string; pictureUrl?: string } | null> {
   const res = await lineAPI(`/profile/${userId}`)
-  if (!res.ok) return null
+  if (!res.ok) {
+    logger.warn('取得用戶 profile 失敗，返回 null', { userId, status: res.status })
+    return null
+  }
   return res.json()
 }
 
