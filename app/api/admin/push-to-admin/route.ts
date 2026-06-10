@@ -52,10 +52,11 @@ export async function POST(request: NextRequest) {
   }
 
   let pushed = 0
+  const lineId = targetLineId  // narrow null away
   for (const text of messages) {
     if (!text || typeof text !== 'string') continue
     if (text.length > 4800) continue
-    await pushMessage(targetLineId, [{ type: 'text', text }]).catch(() => {})
+    await pushMessage(lineId, [{ type: 'text', text }]).catch(() => {})
     await new Promise(r => setTimeout(r, 400))
     pushed++
   }
