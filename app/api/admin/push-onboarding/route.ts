@@ -62,12 +62,12 @@ function computeFoodPortions(macros: {
   const riceTrainTotal = Math.max(0, round10((macros.carb_train - carbsFromFixed - BANANA_C) / RICE_C_PER_100G * 100))
   const riceRestTotal = Math.max(0, round10((macros.carb_rest - carbsFromFixed) / RICE_C_PER_100G * 100))
 
-  // 4. 三餐分配（訓練日 20/40/40 / 休息日 25/40/35）
+  // 4. 三餐分配（訓練日 20/40/40 訓後不吃白飯 / 休息日 30/35/35 均勻分配）
   const riceTrainBreakfast = round10(riceTrainTotal * 0.20)
   const riceTrainLunch = round10(riceTrainTotal * 0.40)
   const riceTrainDinner = Math.max(0, riceTrainTotal - riceTrainBreakfast - riceTrainLunch)
-  const riceRestBreakfast = round10(riceRestTotal * 0.25)
-  const riceRestLunch = round10(riceRestTotal * 0.40)
+  const riceRestBreakfast = round10(riceRestTotal * 0.30)
+  const riceRestLunch = round10(riceRestTotal * 0.35)
   const riceRestDinner = Math.max(0, riceRestTotal - riceRestBreakfast - riceRestLunch)
 
   return {
