@@ -171,8 +171,6 @@ export async function GET(request: NextRequest) {
     carb_rest: carbRest,
     protein,
     fat,
-    rice_train: portions.rice_train,
-    rice_rest: portions.rice_rest,
     start_weight: startWeight,
     start_bf: startBf,
     fat_mass: fatMass,
@@ -188,7 +186,7 @@ export async function GET(request: NextRequest) {
     min_kcal: minKcal,
     min_protein: minProtein,
     min_fat: minFat,
-    // computed food portions
+    // computed food portions (rice_train / rice_rest / whey_scoops 等)
     ...portions,
   }
 
