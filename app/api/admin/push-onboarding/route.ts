@@ -192,7 +192,7 @@ export async function GET(request: NextRequest) {
 
   const sections = (template.sections as any[]).map(s => ({
     slug: s.slug,
-    title: s.title,
+    title: renderTemplate(s.title, vars),
     body: renderTemplate(s.body_md, vars),
   }))
 
