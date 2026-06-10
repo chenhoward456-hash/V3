@@ -126,6 +126,11 @@ function LabCard({
             最佳
           </span>
         )}
+        {!inOptimal && hasData && status === 'normal' && optimalText && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
+            可優化 ↑
+          </span>
+        )}
       </div>
 
       {hasData ? (
@@ -172,7 +177,7 @@ function LabCard({
           <div className="mt-2 text-[11px] text-gray-500 flex items-center justify-between">
             <span>
               Howard 標準：
-              <span className="text-gray-700 font-medium">
+              <span className={`font-medium ${!inOptimal && status === 'normal' && optimalText ? 'text-sky-700' : 'text-gray-700'}`}>
                 {optimalText ?? '—'}
               </span>
             </span>
