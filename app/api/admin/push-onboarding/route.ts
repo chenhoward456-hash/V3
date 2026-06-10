@@ -20,10 +20,70 @@ function verifyAuth(request: NextRequest): boolean {
 }
 
 function renderTemplate(text: string, vars: Record<string, string | number>): string {
-  return text.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+  // 同時支援 {{name}} 和 {{compute:rice_train}} 兩種 placeholder（compute: 視為同 key）
+  return text.replace(/\{\{(?:compute:)?(\w+)\}\}/g, (_, key) => {
     const v = vars[key]
     return v != null ? String(v) : `{{${key}}}`
   })
+}
+
+/**
+ * 從 macros 自動算出食物份量。
+ * macros 改變時（教練砍碳/熱量），重新呼叫 endpoint 就會自動 regen 食譜。
+ *
+ * 固定基礎：雞胸 200g + 牛肉 150g + 全蛋 3 顆 + 蔬菜不限
+ * 變數：乳清匙數（補蛋白）/ 橄欖油匙數（補脂肪）/ 白飯總量（補碳水）
+ */
+function computeFoodPortions(macros: {
+  protein: number
+  fat: number
+  carb_train: number
+  carb_rest: number
+}) {
+  const FIXED = { P: 103, F: 27, C: 1 }  // 雞胸 200g + 牛 150g + 蛋 3
+  const SCOOP = { P: 25, F: 1, C: 2 }     // 每匙乳清 ~25g 蛋白
+  const TBSP_F = 14                        // 每匙橄欖油 14g 脂肪
+  const RICE_C_PER_100G = 28               // 每 100g 熟白飯 28g 碳水
+  const BANANA_C = 25                      // 香蕉 1 根
+  const BOWL_G = 150                       // 1 碗白飯 ~150g 熟重
+
+  const round = (n: number, step = 0.5) => Math.round(n / step) * step
+  const round10 = (n: number) => Math.round(n / 10) * 10
+
+  // 1. 乳清補蛋白
+  const wheyScoops = Math.max(0, round((macros.protein - FIXED.P) / SCOOP.P))
+  const wheyContrib = { P: wheyScoops * SCOOP.P, F: wheyScoops * SCOOP.F, C: wheyScoops * SCOOP.C }
+
+  // 2. 橄欖油補脂肪
+  const oilTbsp = Math.max(0, round((macros.fat - FIXED.F - wheyContrib.F) / TBSP_F))
+
+  // 3. 白飯補碳水（訓練日扣掉 1 香蕉）
+  const carbsFromFixed = FIXED.C + wheyContrib.C
+  const riceTrainTotal = Math.max(0, round10((macros.carb_train - carbsFromFixed - BANANA_C) / RICE_C_PER_100G * 100))
+  const riceRestTotal = Math.max(0, round10((macros.carb_rest - carbsFromFixed) / RICE_C_PER_100G * 100))
+
+  // 4. 三餐分配（訓練日 20/40/40 / 休息日 25/40/35）
+  const riceTrainBreakfast = round10(riceTrainTotal * 0.20)
+  const riceTrainLunch = round10(riceTrainTotal * 0.40)
+  const riceTrainDinner = Math.max(0, riceTrainTotal - riceTrainBreakfast - riceTrainLunch)
+  const riceRestBreakfast = round10(riceRestTotal * 0.25)
+  const riceRestLunch = round10(riceRestTotal * 0.40)
+  const riceRestDinner = Math.max(0, riceRestTotal - riceRestBreakfast - riceRestLunch)
+
+  return {
+    whey_scoops: wheyScoops,
+    oil_tbsp: oilTbsp,
+    rice_train: riceTrainTotal,
+    rice_train_bowls: (riceTrainTotal / BOWL_G).toFixed(1),
+    rice_rest: riceRestTotal,
+    rice_rest_bowls: (riceRestTotal / BOWL_G).toFixed(1),
+    rice_train_breakfast: riceTrainBreakfast,
+    rice_train_lunch: riceTrainLunch,
+    rice_train_dinner: riceTrainDinner,
+    rice_rest_breakfast: riceRestBreakfast,
+    rice_rest_lunch: riceRestLunch,
+    rice_rest_dinner: riceRestDinner,
+  }
 }
 
 function generateRoadmapText(startWeight: number, targetWeight: number, weeksTotal: number): string {
@@ -55,12 +115,11 @@ export async function GET(request: NextRequest) {
   if (!clientId) return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
 
   const templateId = request.nextUrl.searchParams.get('templateId')
-  const riceTrain = Number(request.nextUrl.searchParams.get('riceTrain') ?? 500)
-  const riceRest = Number(request.nextUrl.searchParams.get('riceRest') ?? 230)
   const targetBf = Number(request.nextUrl.searchParams.get('targetBf') ?? 13)
   const minKcal = Number(request.nextUrl.searchParams.get('minKcal') ?? 1700)
   const minProtein = Number(request.nextUrl.searchParams.get('minProtein') ?? 180)
   const minFat = Number(request.nextUrl.searchParams.get('minFat') ?? 55)
+  const dryRun = request.nextUrl.searchParams.get('dryRun') === '1'
 
   const supabase = createServiceSupabase()
 
@@ -101,6 +160,9 @@ export async function GET(request: NextRequest) {
   const weeklyKg = (Number(weightToLose) / weeksTotal).toFixed(2)
   const roadmapText = generateRoadmapText(startWeight, targetWeight, weeksTotal)
 
+  // 自動算食物份量（macros 變了 → 食譜自動跟著變）
+  const portions = computeFoodPortions({ protein, fat, carb_train: carbTrain, carb_rest: carbRest })
+
   const vars: Record<string, string | number> = {
     name: c.name,
     kcal_train: Math.round(kcalTrain),
@@ -109,8 +171,8 @@ export async function GET(request: NextRequest) {
     carb_rest: carbRest,
     protein,
     fat,
-    rice_train: riceTrain,
-    rice_rest: riceRest,
+    rice_train: portions.rice_train,
+    rice_rest: portions.rice_rest,
     start_weight: startWeight,
     start_bf: startBf,
     fat_mass: fatMass,
@@ -126,6 +188,8 @@ export async function GET(request: NextRequest) {
     min_kcal: minKcal,
     min_protein: minProtein,
     min_fat: minFat,
+    // computed food portions
+    ...portions,
   }
 
   const sections = (template.sections as any[]).map(s => ({
@@ -139,6 +203,11 @@ export async function GET(request: NextRequest) {
     .from('clients')
     .update({ onboarding_notes_rendered: { template_id: template.id, rendered_at: new Date().toISOString(), sections } })
     .eq('id', clientId)
+
+  // dry run mode：只回傳 rendered 不推 LINE，讓 Howard 預覽
+  if (dryRun) {
+    return NextResponse.json({ ok: true, dryRun: true, sections_count: sections.length, sections, computed: portions })
+  }
 
   // push to admin LINE — 一節一則
   const adminLineId = process.env.ADMIN_LINE_USER_ID
