@@ -86,6 +86,43 @@ function computeFoodPortions(macros: {
   }
 }
 
+const DAY_LABELS: Record<number, string> = { 1: '週一', 2: '週二', 3: '週三', 4: '週四', 5: '週五', 6: '週六', 7: '週日' }
+
+function formatTrainingPlan(plan: any): string {
+  if (!plan || !Array.isArray(plan.days) || plan.days.length === 0) {
+    return '尚未設定訓練計畫，下次再給你'
+  }
+  const lines: string[] = []
+  if (plan.name) lines.push(`📋 ${plan.name}`)
+  if (plan.phaseNote) lines.push(`💡 ${plan.phaseNote}`)
+  lines.push('')
+
+  const days = [...plan.days].sort((a: any, b: any) => (a.dayOfWeek ?? 0) - (b.dayOfWeek ?? 0))
+  for (const d of days) {
+    lines.push(`━━━ ${DAY_LABELS[d.dayOfWeek] ?? `Day ${d.dayOfWeek}`} ${d.label ? `- ${d.label}` : ''} ━━━`)
+    for (const ex of (d.exercises ?? [])) {
+      const meta = `${ex.sets ?? '?'}×${ex.reps ?? '?'}${ex.rpe ? ` RPE ${ex.rpe}` : ''}`
+      lines.push(`・${ex.name} ${meta}`)
+      if (ex.note) lines.push(`  └ ${ex.note}`)
+    }
+    lines.push('')
+  }
+
+  if (plan.cardio) {
+    lines.push('━━━ 🏃 Cardio ━━━')
+    if (plan.cardio.frequency) lines.push(`頻率：${plan.cardio.frequency}`)
+    if (Array.isArray(plan.cardio.recommended) && plan.cardio.recommended.length > 0) {
+      lines.push(`推薦：${plan.cardio.recommended.join(' / ')}`)
+    }
+    if (Array.isArray(plan.cardio.avoid) && plan.cardio.avoid.length > 0) {
+      lines.push(`避開：${plan.cardio.avoid.join(' / ')}`)
+    }
+    if (plan.cardio.placement) lines.push(`時段：${plan.cardio.placement}`)
+  }
+
+  return lines.join('\n')
+}
+
 function generateRoadmapText(startWeight: number, targetWeight: number, weeksTotal: number): string {
   const stages = Math.min(6, Math.ceil(weeksTotal / 2))
   const lossPerStage = (startWeight - targetWeight) / stages
@@ -125,7 +162,7 @@ export async function GET(request: NextRequest) {
 
   // load client + latest body_composition + template
   const [clientRes, bodyRes, templateRes] = await Promise.all([
-    supabase.from('clients').select('id, name, target_weight, competition_date, target_date, calories_target, protein_target, fat_target, carbs_target, carbs_training_day, carbs_rest_day').eq('id', clientId).maybeSingle(),
+    supabase.from('clients').select('id, name, target_weight, competition_date, target_date, calories_target, protein_target, fat_target, carbs_target, carbs_training_day, carbs_rest_day, training_plan').eq('id', clientId).maybeSingle(),
     supabase.from('body_composition').select('weight, body_fat').eq('client_id', clientId).order('date', { ascending: false }).limit(1).maybeSingle(),
     templateId
       ? supabase.from('client_onboarding_notes').select('id, name, sections').eq('id', templateId).maybeSingle()
@@ -163,6 +200,9 @@ export async function GET(request: NextRequest) {
   // 自動算食物份量（macros 變了 → 食譜自動跟著變）
   const portions = computeFoodPortions({ protein, fat, carb_train: carbTrain, carb_rest: carbRest })
 
+  // 自動格式化訓練計畫
+  const trainingSchedule = formatTrainingPlan(c.training_plan)
+
   const vars: Record<string, string | number> = {
     name: c.name,
     kcal_train: Math.round(kcalTrain),
@@ -188,6 +228,8 @@ export async function GET(request: NextRequest) {
     min_fat: minFat,
     // computed food portions (rice_train / rice_rest / whey_scoops 等)
     ...portions,
+    // computed training schedule (從 clients.training_plan 自動 render)
+    training_schedule: trainingSchedule,
   }
 
   const sections = (template.sections as any[]).map(s => ({
