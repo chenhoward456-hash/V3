@@ -69,6 +69,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, decision: 'no_body_data', message: '沒有體重紀錄，無法判斷' })
   }
 
+  const latestBf = [...(bodyData as any[])].reverse().find(b => b.body_fat != null)?.body_fat ?? null
+
   const trajResult = computeTrajectoryAdjustment({
     bodyDataEntries: bodyData.map((b: any) => ({ date: b.date, weight: b.weight })),
     goalType: c.goal_type as 'cut' | 'bulk' | 'recomp',
@@ -83,6 +85,12 @@ export async function GET(request: NextRequest) {
     gender: c.gender,
     bounds: (c.macro_bounds as MacroBounds | null) ?? null,
     lastAdjustAt: c.last_auto_adjust_at,
+    bodyFatPct: latestBf != null ? Number(latestBf) : null,
+    geneticProfile: (c.gene_mthfr || c.gene_apoe || c.gene_depression_risk) ? {
+      mthfr: c.gene_mthfr || undefined,
+      apoe: c.gene_apoe || undefined,
+      ...parseSerotoninField(c.gene_depression_risk),
+    } : undefined,
   })
 
   if (!trajResult.shouldAdjust) {
@@ -92,7 +100,6 @@ export async function GET(request: NextRequest) {
   const latestWeight = (bodyData as any[]).filter(b => b.weight != null).slice(-1)[0]?.weight ?? null
   if (!latestWeight) return NextResponse.json({ ok: true, decision: 'no_weight', message: '抓不到最新體重' })
   const latestHeight = [...(bodyData as any[])].reverse().find(b => b.height != null)?.height ?? null
-  const latestBf = [...(bodyData as any[])].reverse().find(b => b.body_fat != null)?.body_fat ?? null
 
   const wellness = wellnessRes.data ?? []
   const trainingLogs = trainingRes.data ?? []

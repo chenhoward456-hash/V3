@@ -6,7 +6,12 @@
  *
  * 適用於所有有 goal_type + target_weight + target_date 的學員（不分 tier）。
  * coached/protocol tier 的教練可透過 macro_bounds 設定客製邊界。
+ *
+ * 基因 + 體脂安全層：低體脂 / MTHFR 突變 / 5-HTTLPR 血清素風險者，赤字會被收窄，
+ * 避免「數學上對、但對這個基因 + 體脂是錯」的過度減脂（吃肌肉 / 甲基化崩潰 / 血清素不足）。
  */
+
+import { type GeneticProfile, getSerotoninRiskLevel } from './supplement-engine'
 
 export interface MacroBounds {
   min_calories?: number | null
@@ -29,6 +34,9 @@ export interface TrajectoryInput {
   gender: 'male' | 'female' | string | null
   bounds: MacroBounds | null
   lastAdjustAt: string | null
+  // 基因 + 體脂安全層輸入（缺省時不套用對應保護，行為與舊版相同）
+  geneticProfile?: GeneticProfile | null
+  bodyFatPct?: number | null
 }
 
 export type SkipCategory =
@@ -69,6 +77,14 @@ export interface TrajectoryAdjustment {
 const DEFAULT_COOLDOWN_DAYS = 7
 const TREND_REVERSAL_DELTA_THRESHOLD = 0.15
 const SIGNIFICANT_GAP_KG_PER_WEEK = 0.1
+
+// ── 基因 + 體脂安全層常數 ──
+// 常數值直接對齊 lib/nutrition-engine.ts 的 GENETIC namespace（[G1][G2] PMID 已附於該檔）
+const BF_FLOOR_MALE = 10              // 男性體脂安全下限 %
+const BF_FLOOR_FEMALE = 16           // 女性體脂安全下限 %
+const MAX_DEFICIT_AT_BF_FLOOR = 500  // 低於體脂下限時，每日赤字上限 kcal
+const MTHFR_DEFICIT_REDUCTION = { homozygous: 150, heterozygous: 100 } as const // 赤字收窄 kcal
+const SEROTONIN_CARB_FLOOR = { high: 120, moderate: 100 } as const // 碳水最低下限 g（保護 5-HT 合成）
 
 type ResolvedBounds = { min_calories: number; min_protein_per_kg: number; max_loss_per_week: number; min_loss_per_week: number }
 
@@ -212,6 +228,48 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
 
   const rawKcalAdjustment = Math.round(gap * 7700 / 7)
 
+  let hitBoundary = false
+  const boundaryNotes: string[] = []
+
+  // ── 基因 + 體脂安全層（只作用於赤字 / 減脂方向）──
+  // 「數學上對、生理上對這個基因 + 體脂是錯」的過度減脂，在此被收窄。
+  let cappedAdjustment = rawKcalAdjustment
+  if (cappedAdjustment < 0) {
+    // 1. 體脂安全下限：BF 過低時，再砍會吃肌肉 → 限縮每日赤字
+    const bf = input.bodyFatPct
+    const bfFloor = input.gender === 'female' ? BF_FLOOR_FEMALE : BF_FLOOR_MALE
+    if (bf != null && bf < bfFloor && Math.abs(cappedAdjustment) > MAX_DEFICIT_AT_BF_FLOOR) {
+      cappedAdjustment = -MAX_DEFICIT_AT_BF_FLOOR
+      hitBoundary = true
+      boundaryNotes.push(`體脂 ${bf}% < 安全下限 ${bfFloor}%，每日赤字限縮到 -${MAX_DEFICIT_AT_BF_FLOOR} kcal（保護瘦體組織）`)
+    }
+
+    // 2. MTHFR 突變：赤字收窄（吃多一點 → 飲食多樣性 → 葉酸/甲基化保護）
+    const mthfr = input.geneticProfile?.mthfr
+    const mthfrReduction = mthfr === 'homozygous' ? MTHFR_DEFICIT_REDUCTION.homozygous
+      : mthfr === 'heterozygous' ? MTHFR_DEFICIT_REDUCTION.heterozygous : 0
+    if (mthfrReduction > 0) {
+      cappedAdjustment = Math.min(0, cappedAdjustment + mthfrReduction)
+      hitBoundary = true
+      boundaryNotes.push(`MTHFR ${mthfr === 'homozygous' ? '純合' : '雜合'}突變，赤字收窄 ${mthfrReduction} kcal（保護甲基化代謝）`)
+    }
+
+    // 3. 5-HTTLPR 血清素風險：碳水吸收赤字，碳水不可低於下限 → 反推赤字上限（保護 5-HT 合成）
+    const serotoninRisk = getSerotoninRiskLevel(input.geneticProfile)
+    const carbFloor = serotoninRisk === 'high' ? SEROTONIN_CARB_FLOOR.high
+      : serotoninRisk === 'moderate' ? SEROTONIN_CARB_FLOOR.moderate : null
+    const refCarbs = [input.currentCarbsRestDay, input.currentCarbs, input.currentCarbsTrainingDay]
+      .find(v => v != null) as number | undefined
+    if (carbFloor != null && refCarbs != null) {
+      const maxDeficitFromCarbs = Math.max(0, (refCarbs - carbFloor) * 4)
+      if (Math.abs(cappedAdjustment) > maxDeficitFromCarbs) {
+        cappedAdjustment = -maxDeficitFromCarbs
+        hitBoundary = true
+        boundaryNotes.push(`5-HTTLPR ${serotoninRisk === 'high' ? 'SS' : 'SL'}，碳水不可低於 ${carbFloor}g，赤字限縮（保護血清素合成）`)
+      }
+    }
+  }
+
   const defaults = getDefaultBounds(traj.currentAvg, input.gender ?? null)
   const userBounds = input.bounds ?? {}
   const bounds: { min_calories: number; min_protein_per_kg: number; max_loss_per_week: number; min_loss_per_week: number } = {
@@ -222,16 +280,14 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   }
 
   // 撞 max_loss_per_week (掉太快 → 加碳)
-  let hitBoundary = false
-  let boundaryDetail: string | null = null
-  let finalKcalAdjustment = rawKcalAdjustment
+  let finalKcalAdjustment = cappedAdjustment
 
-  const projectedRate = currentRatePerWeek + (rawKcalAdjustment * 7 / 7700)
+  const projectedRate = currentRatePerWeek + (cappedAdjustment * 7 / 7700)
   if (input.goalType === 'cut' && projectedRate < -bounds.max_loss_per_week) {
     const allowedRate = -bounds.max_loss_per_week
     finalKcalAdjustment = Math.round((allowedRate - currentRatePerWeek) * 7700 / 7)
     hitBoundary = true
-    boundaryDetail = `撞 max_loss_per_week (${bounds.max_loss_per_week} kg/週)，限縮調整幅度`
+    boundaryNotes.push(`撞 max_loss_per_week (${bounds.max_loss_per_week} kg/週)，限縮調整幅度`)
   }
 
   // 撞 min_calories
@@ -241,10 +297,11 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
     newCal = bounds.min_calories
     finalKcalAdjustment = newCal - input.currentCalories
     hitBoundary = true
-    boundaryDetail = `撞 min_calories (${bounds.min_calories} kcal)，無法再砍 — 建議加有氧、延目標日或改目標體重`
+    boundaryNotes.push(`撞 min_calories (${bounds.min_calories} kcal)，無法再砍 — 建議加有氧、延目標日或改目標體重`)
   }
 
   newCal = Math.round(newCal / 10) * 10
+  const boundaryDetail = boundaryNotes.length > 0 ? boundaryNotes.join('；') : null
 
   // 碳水吸收全部缺口（不動蛋白/脂肪）
   const actualKcalShift = newCal - input.currentCalories
@@ -253,7 +310,7 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
       ...empty('調整後熱量變化 < 50 kcal，不值得套用', 'too_small'),
       currentRatePerWeek,
       neededRatePerWeek,
-      kcalAdjustment: rawKcalAdjustment,
+      kcalAdjustment: cappedAdjustment,
       hitBoundary,
       boundaryDetail,
       trajectoryData: traj,
