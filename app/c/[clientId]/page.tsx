@@ -44,6 +44,7 @@ import HealthScoreBanner from '@/components/client/HealthScoreBanner'
 import BehaviorInsights from '@/components/client/BehaviorInsights'
 import ProgressJourney from '@/components/client/ProgressJourney'
 import PushNotificationPrompt from '@/components/client/PushNotificationPrompt'
+import SupplementStrategyCard from '@/components/client/SupplementStrategyCard'
 import SystemActions from '@/components/client/SystemActions'
 import ExportAiSummary from '@/components/client/ExportAiSummary'
 import SeeTabSection from '@/components/client/SeeTabSection'
@@ -1230,6 +1231,13 @@ export default function ClientDashboard() {
               onMutate={mutateAndRefreshEngine}
             />
           </CollapsibleSection>
+          </SectionErrorBoundary>
+        )}
+
+        {/* 補品策略（引擎依血檢/基因推導的「為什麼」，端給學員看）*/}
+        {isToday && supplementSuggestions.length > 0 && (
+          <SectionErrorBoundary name="supplement-strategy">
+            <SupplementStrategyCard suggestions={supplementSuggestions} />
           </SectionErrorBoundary>
         )}
 
