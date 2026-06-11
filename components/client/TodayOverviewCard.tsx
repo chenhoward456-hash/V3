@@ -178,7 +178,7 @@ function generateInsight(
       if (allDown && weights[0] - weights[3] >= 0.5) {
         return {
           emoji: '📉',
-          message: `體重穩定下降中（${weights[3]}→${weights[0]}kg），趨勢正確`,
+          message: `體重穩定下降中（${weights[0]}→${weights[3]}kg），趨勢正確`,
           type: 'trend',
         }
       }
