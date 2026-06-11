@@ -359,8 +359,13 @@ export async function GET(request: NextRequest) {
         const now = new Date().toISOString()
         const tier = c.subscription_tier
 
-        // Tier 分流：coached/protocol 走 propose 流程、self_managed 走 auto-apply
-        if (tier === 'coached' || tier === 'protocol') {
+        // 全自動白名單：AUTO_APPLY_CLIENT_IDS 內的帳號（教練自己的驗證帳號）即使是 coached 也直接套用，
+        // 用來端到端驗證自動化；其他付費學員維持「提案 → 教練核准」保護。
+        const autoApplyIds = (process.env.AUTO_APPLY_CLIENT_IDS || '').split(',').map(s => s.trim()).filter(Boolean)
+        const forceAutoApply = autoApplyIds.includes(c.id)
+
+        // Tier 分流：coached/protocol 走 propose 流程、self_managed（與白名單）走 auto-apply
+        if ((tier === 'coached' || tier === 'protocol') && !forceAutoApply) {
           // 寫 pending_proposals 等教練審核
           // 先檢查 24h 內是否有未審 proposal，避免重複
           const { data: existing } = await supabase
