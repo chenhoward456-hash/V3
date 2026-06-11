@@ -906,9 +906,6 @@ export default function ClientDashboard() {
             </SectionErrorBoundary>
           )}
 
-          {/* 開啟推播提醒（只在權限未決定時顯示一次，可關閉） */}
-          {isToday && <PushNotificationPrompt code={c.unique_code} />}
-
           {/* 賽後恢復提示：比賽日期已過但階段仍為 peak_week/competition */}
           {isCompetition && c.competition_date && (() => {
             const daysLeft = daysUntilDateTW(c.competition_date)
@@ -1233,6 +1230,9 @@ export default function ClientDashboard() {
           </CollapsibleSection>
           </SectionErrorBoundary>
         )}
+
+        {/* 推播提醒（測試模式：放補品旁方便檢視，確認後改回 gated 版） */}
+        {isToday && <PushNotificationPrompt code={c.unique_code} debug />}
 
         {/* 補品策略（引擎依血檢/基因推導的「為什麼」，端給學員看）*/}
         {isToday && supplementSuggestions.length > 0 && (
