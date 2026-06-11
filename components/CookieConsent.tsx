@@ -24,6 +24,7 @@ export default function CookieConsent() {
   const decline = () => {
     localStorage.setItem('cookie_consent', 'declined')
     setShow(false)
+    window.dispatchEvent(new Event('cookie-consent-changed'))
   }
 
   if (!show) return null

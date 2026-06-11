@@ -117,7 +117,15 @@ export default function OnboardingGuide({ clientId, clientName, tier, features, 
   useEffect(() => {
     if (typeof window === 'undefined') return
     const done = localStorage.getItem(storageKey)
-    if (!done) setShow(true)
+    if (done) return
+    // cookie 同意橫幅處理完才開導覽，避免兩個遮罩同時疊在畫面上
+    if (localStorage.getItem('cookie_consent')) {
+      setShow(true)
+      return
+    }
+    const onConsent = () => setShow(true)
+    window.addEventListener('cookie-consent-changed', onConsent)
+    return () => window.removeEventListener('cookie-consent-changed', onConsent)
   }, [storageKey])
 
   const dismiss = () => {

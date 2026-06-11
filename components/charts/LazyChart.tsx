@@ -2,6 +2,7 @@
 
 import { LineChart, Tooltip, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Line } from 'recharts'
 import React, { memo, useMemo } from 'react'
+import { useMeasuredContainer } from '@/hooks/useMeasuredContainer'
 
 interface LazyChartProps {
   data: any[]
@@ -18,6 +19,9 @@ const LazyChart = memo(({
   stroke = '#3b82f6',
   strokeWidth = 2
 }: LazyChartProps) => {
+  // 等容器實際量到寬度才掛 ResponsiveContainer，避免 width(-1) 警告
+  const { ref: wrapRef, measured } = useMeasuredContainer()
+
   // 動態計算 Y 軸範圍：根據數據自動縮放，讓趨勢清晰可見
   const yDomain = useMemo(() => {
     if (!data || data.length === 0) return [0, 100]
@@ -54,7 +58,8 @@ const LazyChart = memo(({
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full" ref={wrapRef} style={{ height }}>
+      {measured && (
       <ResponsiveContainer width="100%" height={height} minWidth={0} minHeight={undefined}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -76,6 +81,7 @@ const LazyChart = memo(({
           />
         </LineChart>
       </ResponsiveContainer>
+      )}
     </div>
   )
 })

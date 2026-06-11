@@ -3,12 +3,14 @@
 import { useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { WellnessData } from './types'
+import { useMeasuredContainer } from '@/hooks/useMeasuredContainer'
 
 interface WellnessTrendProps {
   wellness: WellnessData[]
 }
 
 export default function WellnessTrend({ wellness }: WellnessTrendProps) {
+  const { ref: chartRef, measured } = useMeasuredContainer()
   const chartData = useMemo(() => {
     if (!wellness?.length) return []
     return [...wellness]
@@ -30,6 +32,8 @@ export default function WellnessTrend({ wellness }: WellnessTrendProps) {
           資料累積中，持續記錄後會顯示趨勢
         </div>
       ) : (
+        <div ref={chartRef} style={{ height: 256 }}>
+        {measured && (
         <ResponsiveContainer width="100%" height={256}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -42,6 +46,8 @@ export default function WellnessTrend({ wellness }: WellnessTrendProps) {
             <Line type="monotone" dataKey="心情" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
+        )}
+        </div>
       )}
     </div>
   )

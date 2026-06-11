@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Calendar, X, Plus, Scale, Activity, Dumbbell, Ruler, Heart } from 'lucide-react'
 import LazyChart from '@/components/charts/LazyChart'
+import { useMeasuredContainer } from '@/hooks/useMeasuredContainer'
 import { getLocalDateStr, daysUntilDateTW } from '@/lib/date-utils'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useToast } from '@/components/ui/Toast'
@@ -195,6 +196,7 @@ export default function BodyComposition({
 }: BodyCompositionProps) {
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
+  const { ref: trajChartRef, measured: trajChartMeasured } = useMeasuredContainer()
   const { showToast } = useToast()
   const [nudgeDismissed, setNudgeDismissed] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -728,7 +730,8 @@ export default function BodyComposition({
               </div>
             </div>
 
-            <div className="h-56 w-full min-w-0">
+            <div className="h-56 w-full min-w-0" ref={trajChartRef}>
+              {trajChartMeasured && (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trajectoryData.chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -754,6 +757,7 @@ export default function BodyComposition({
                   <Line type="monotone" dataKey="predicted" stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="4 3" dot={{ r: 2, fill: '#9ca3af' }} connectNulls={false} />
                 </LineChart>
               </ResponsiveContainer>
+              )}
             </div>
 
             {/* 資訊摘要 */}

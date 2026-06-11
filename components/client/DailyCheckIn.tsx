@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { useMeasuredContainer } from '@/hooks/useMeasuredContainer'
 import { Plus, X, Loader2 } from 'lucide-react'
 import { Supplement } from './types'
 import { getLocalDateStr } from '@/lib/date-utils'
@@ -37,6 +38,7 @@ export default function DailyCheckIn({
   selectedDate, clientId,
   onToggleSupplement, onMarkAllComplete, onManageSupplements, onMutate
 }: DailyCheckInProps) {
+  const { ref: trendChartRef, measured: trendChartMeasured } = useMeasuredContainer()
   const [showAddForm, setShowAddForm] = useState(false)
   const [addLoading, setAddLoading] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
@@ -135,6 +137,8 @@ export default function DailyCheckIn({
         <div className="mb-4">
           <h3 className="text-sm font-medium text-gray-600 mb-2">打卡率趨勢（近 14 天）</h3>
           {hasEnoughData ? (
+            <div ref={trendChartRef} style={{ height: 160 }}>
+            {trendChartMeasured && (
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -148,6 +152,8 @@ export default function DailyCheckIn({
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            )}
+            </div>
           ) : (
             <div className="flex items-center justify-center h-24 text-gray-400 text-sm">
               持續打卡後會顯示趨勢

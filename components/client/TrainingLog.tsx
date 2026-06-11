@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { useMeasuredContainer } from '@/hooks/useMeasuredContainer'
 import { TRAINING_TYPES, isWeightTraining } from './types'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
@@ -72,6 +73,7 @@ interface TrainingLogProps {
 }
 
 export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode, todayPlanType, trainingPlan, tier }: TrainingLogProps) {
+  const { ref: rpeChartRef, measured: rpeChartMeasured } = useMeasuredContainer()
   const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
   const { showToast } = useToast()
@@ -1166,6 +1168,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         {!simpleMode && rpeChartData.length >= 2 && (
           <div className="pt-4 border-t border-gray-100">
             <p className="text-sm font-medium text-gray-700 mb-3">RPE 趨勢</p>
+            <div ref={rpeChartRef} style={{ height: 200 }}>
+            {rpeChartMeasured && (
             <ResponsiveContainer width="100%" height={200} minWidth={0}>
               <LineChart data={rpeChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -1187,6 +1191,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 />
               </LineChart>
             </ResponsiveContainer>
+            )}
+            </div>
           </div>
         )}
 
