@@ -6,6 +6,7 @@ import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { calculateInitialTargets } from '@/lib/nutrition-engine'
 import { createLogger } from '@/lib/logger'
 import { writeAuditLog } from '@/lib/audit'
+import { CURRENT_CONSENT_VERSIONS } from '@/lib/consent-versions'
 import crypto from 'crypto'
 import { pushMessage } from '@/lib/line'
 
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { name, email, gender, age, goalType, diagnosisData, ref, weight: formWeight } = await request.json()
+    const { name, email, gender, age, goalType, diagnosisData, ref, weight: formWeight, consented } = await request.json()
 
     if (!name || typeof name !== 'string' || name.trim().length < 1) {
       return createErrorResponse('請輸入姓名', 400)
@@ -187,6 +188,22 @@ export async function POST(request: NextRequest) {
       registration_data: { gender, age, goalType },
       completed_at: new Date().toISOString(),
     })
+
+    // 記錄使用者同意（/join 已勾選含醫療免責聲明的同意框），避免進 dashboard 後再被 ConsentGate 攔一次。
+    // 失敗不阻斷註冊——ConsentGate 仍會在 dashboard 補問一次（安全的 fallback 方向）。
+    if (consented) {
+      const ua = request.headers.get('user-agent') ?? null
+      const { error: consentError } = await supabase.from('user_consents').insert(
+        (['terms', 'privacy', 'health_disclaimer'] as const).map((t) => ({
+          client_id: newClient.id,
+          consent_type: t,
+          version: CURRENT_CONSENT_VERSIONS[t],
+          ip_address: ip,
+          user_agent: ua,
+        }))
+      )
+      if (consentError) log.error('Consent recording failed (non-blocking)', consentError)
+    }
 
     log.info('Account created', { uniqueCode, email })
 

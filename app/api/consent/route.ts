@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
+import { CURRENT_CONSENT_VERSIONS as CURRENT_VERSIONS } from '@/lib/consent-versions'
 
 export const dynamic = 'force-dynamic'
 const supabase = createServiceSupabase()
-
-// 同意版本記錄 — 跟 app/{terms,privacy,medical-disclaimer}/page.tsx 內顯示的「最後更新日期」對齊
-// 改版時 bump 這裡，既有用戶會被要求重新同意
-const CURRENT_VERSIONS = {
-  terms: '2026-03-07',
-  privacy: '2026-03-07',
-  health_disclaimer: '2026-03-07',
-}
 
 // GET ?clientId=xxx — 查詢使用者是否同意當前版本所有條款
 export async function GET(request: NextRequest) {

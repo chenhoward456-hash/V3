@@ -23,12 +23,16 @@ export default function ScrollReveal({ children }: { children: ReactNode }) {
     if (reducedMotion) { setVisible(true); return }
     const el = ref.current
     if (!el) return
+    // 已在（或接近）視窗內的區塊立刻顯示，避免首屏/慢速 JS 看到空白
+    if (el.getBoundingClientRect().top < window.innerHeight) { setVisible(true); return }
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.unobserve(el) } },
       { threshold: 0.15 }
     )
     observer.observe(el)
-    return () => observer.disconnect()
+    // 保險：observer 萬一沒觸發也不會永遠停在隱藏
+    const fallback = setTimeout(() => setVisible(true), 1500)
+    return () => { observer.disconnect(); clearTimeout(fallback) }
   }, [reducedMotion])
 
   return (

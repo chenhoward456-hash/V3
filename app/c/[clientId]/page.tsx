@@ -877,6 +877,21 @@ export default function ClientDashboard() {
             </SectionErrorBoundary>
           )}
 
+          {/* ===== 進步總覽：本週 vs 上週（從隱藏的進度 tab 移到主畫面第一眼） ===== */}
+          {isToday && (
+            <SectionErrorBoundary name="progress-journey">
+              <ProgressJourney
+                bodyData={(clientData.bodyData || []).map((b: any) => ({ date: b.date, weight: b.weight, body_fat: b.body_fat }))}
+                wellness={(clientData.wellness || []).map((w: any) => ({ date: w.date, sleep_quality: w.sleep_quality, energy_level: w.energy_level, mood: w.mood }))}
+                nutritionLogs={(clientData.nutritionLogs || []).map((n: any) => ({ date: n.date, compliant: n.compliant, protein_grams: n.protein_grams }))}
+                trainingLogs={(clientData.trainingLogs || []).map((t: any) => ({ date: t.date, training_type: t.training_type }))}
+                bodyWeight={latestBodyData?.weight ?? c.target_weight ?? 70}
+                goalType={c.goal_type as string | null}
+                prepPhase={c.prep_phase as string | null}
+              />
+            </SectionErrorBoundary>
+          )}
+
           {/* 賽後恢復提示：比賽日期已過但階段仍為 peak_week/competition */}
           {isCompetition && c.competition_date && (() => {
             const daysLeft = daysUntilDateTW(c.competition_date)

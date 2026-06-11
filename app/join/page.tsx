@@ -251,6 +251,7 @@ function JoinPageInner() {
             age: age ? parseInt(age) : null,
             goalType,
             diagnosisData,
+            consented: agreedToTerms,
             ...(refSource ? { ref: refSource } : {}),
           }),
         })
@@ -851,9 +852,10 @@ function JoinPageInner() {
                 <span className="text-xs text-gray-500 leading-relaxed">
                   我已閱讀並同意{' '}
                   <Link href="/terms" target="_blank" className="text-[#2563eb] hover:underline">服務條款</Link>、
-                  <Link href="/privacy" target="_blank" className="text-[#2563eb] hover:underline">隱私政策</Link>
-                  {' '}及{' '}
+                  <Link href="/privacy" target="_blank" className="text-[#2563eb] hover:underline">隱私政策</Link>、
                   <Link href="/refund-policy" target="_blank" className="text-[#2563eb] hover:underline">退費政策</Link>
+                  {' '}及{' '}
+                  <Link href="/medical-disclaimer" target="_blank" className="text-[#2563eb] hover:underline">醫療免責聲明</Link>
                 </span>
               </label>
 

@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic'
 import { SectionErrorBoundary } from '@/components/ErrorBoundary'
 import ExportAiSummary from '@/components/client/ExportAiSummary'
 import SystemActions from '@/components/client/SystemActions'
-import ProgressJourney from '@/components/client/ProgressJourney'
 import BehaviorInsights from '@/components/client/BehaviorInsights'
 import WellnessTrend from '@/components/client/WellnessTrend'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
@@ -34,7 +33,6 @@ interface SeeTabSectionProps {
 
 const TABS = [
   { key: 'analysis', label: '📊 分析', emoji: '📊' },
-  { key: 'progress', label: '📈 進度', emoji: '📈' },
   { key: 'tools', label: '🛠️ 工具', emoji: '🛠️' },
 ] as const
 
@@ -142,22 +140,6 @@ export default function SeeTabSection({ c, clientData, isFree, latestBodyData, n
 
           {/* 感受趨勢 */}
           {c.wellness_enabled && <WellnessTrend wellness={clientData.wellness || []} />}
-        </div>
-      )}
-
-      {activeTab === 'progress' && (
-        <div className="space-y-3">
-          <SectionErrorBoundary name="progress-journey">
-            <ProgressJourney
-              bodyData={(clientData.bodyData || []).map((b: any) => ({ date: b.date, weight: b.weight, body_fat: b.body_fat }))}
-              wellness={(clientData.wellness || []).map((w: any) => ({ date: w.date, sleep_quality: w.sleep_quality, energy_level: w.energy_level, mood: w.mood }))}
-              nutritionLogs={(clientData.nutritionLogs || []).map((n: any) => ({ date: n.date, compliant: n.compliant, protein_grams: n.protein_grams }))}
-              trainingLogs={(clientData.trainingLogs || []).map((t: any) => ({ date: t.date, training_type: t.training_type }))}
-              bodyWeight={latestBodyData?.weight ?? c.target_weight ?? 70}
-              goalType={c.goal_type as string | null}
-              prepPhase={c.prep_phase as string | null}
-            />
-          </SectionErrorBoundary>
         </div>
       )}
 
