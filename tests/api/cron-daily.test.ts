@@ -13,6 +13,7 @@ function createMockQueryBuilder(data: any = null, error: any = null) {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     neq: vi.fn().mockReturnThis(),
+    is: vi.fn().mockReturnThis(),
     not: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
     lte: vi.fn().mockReturnThis(),
@@ -37,13 +38,35 @@ function createMockQueryBuilder(data: any = null, error: any = null) {
   return builder
 }
 
+// Builder whose resolved data is decided lazily from the recorded filter calls —
+// lets tests differentiate queries on the same table by their conditions instead
+// of call order (which shifts whenever the route adds earlier queries)
+function createConditionalQueryBuilder(resolveData: (filters: Array<[string, ...any[]]>) => any) {
+  const filters: Array<[string, ...any[]]> = []
+  const builder = createMockQueryBuilder(null, null)
+  for (const method of ['eq', 'neq', 'is', 'not', 'gte', 'lte', 'lt', 'in'] as const) {
+    builder[method] = vi.fn((...args: any[]) => {
+      filters.push([method, ...args])
+      return builder
+    })
+  }
+  Object.defineProperty(builder, 'then', {
+    value(onFulfilled: any) {
+      return Promise.resolve({ data: resolveData(filters), error: null }).then(onFulfilled)
+    },
+  })
+  return builder
+}
+
 const mockFromResults: Record<string, { data: any; error: any }> = {}
 
+const defaultFromImpl = (table: string) => {
+  const result = mockFromResults[table] || { data: null, error: null }
+  return createMockQueryBuilder(result.data, result.error)
+}
+
 const mockSupabase = {
-  from: vi.fn((table: string) => {
-    const result = mockFromResults[table] || { data: null, error: null }
-    return createMockQueryBuilder(result.data, result.error)
-  }),
+  from: vi.fn(defaultFromImpl),
 }
 
 const { mockPushMessage, mockUnlinkRichMenuFromUser, mockSendRoutineReminder, mockGenerateSmartAlerts, mockSendPushNotification } = vi.hoisted(() => ({
@@ -94,6 +117,7 @@ vi.mock('@/lib/email', () => ({
   sendDay14Email: vi.fn().mockResolvedValue({ success: true }),
   sendExpiryWarningEmail: vi.fn().mockResolvedValue({ success: true }),
   sendWinBackEmail: vi.fn().mockResolvedValue({ success: true }),
+  sendLineBindReminderEmail: vi.fn().mockResolvedValue({ success: true }),
 }))
 
 vi.mock('@/lib/date-utils', () => ({
@@ -186,6 +210,10 @@ const morningClients = [
 describe('GET /api/cron/daily', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // Reset from() to the default implementation — tests that override it may
+    // throw at an assertion before restoring, which would leak into later tests
+    mockSupabase.from = vi.fn(defaultFromImpl)
 
     // Default: empty tables so the route runs through without errors
     mockFromResults['clients'] = { data: [], error: null }
@@ -439,17 +467,25 @@ describe('GET /api/cron/daily', () => {
     mockFromResults['training_logs'] = { data: [], error: null }
     mockFromResults['push_subscriptions'] = { data: [], error: null }
 
-    // Override from() to differentiate body_composition queries
-    let bcCallCount = 0
-    const originalFrom = mockSupabase.from
+    // Override from() to differentiate queries by their conditions:
+    // - clients query filtered on auto_adjust_enabled (trajectory auto-adjust block) → []
+    // - body_composition .eq('date', today) (todayWeights) → empty (no weight logged today)
+    // - other body_composition queries (recentRecords / latestWeights) → has data
+    // beforeEach restores the default from() implementation
     mockSupabase.from = vi.fn((table: string) => {
+      if (table === 'clients') {
+        return createConditionalQueryBuilder(filters =>
+          filters.some(([m, col]) => m === 'eq' && col === 'auto_adjust_enabled')
+            ? []
+            : mockFromResults['clients'].data
+        )
+      }
       if (table === 'body_composition') {
-        bcCallCount++
-        if (bcCallCount === 1) {
-          return createMockQueryBuilder([], null) // todayWeights — empty
-        } else {
-          return createMockQueryBuilder([{ client_id: 'client-1', weight: 70 }], null)
-        }
+        return createConditionalQueryBuilder(filters =>
+          filters.some(([m, col]) => m === 'eq' && col === 'date')
+            ? [] // todayWeights — empty
+            : [{ client_id: 'client-1', weight: 70, date: '2025-01-10' }]
+        )
       }
       const result = mockFromResults[table] || { data: null, error: null }
       return createMockQueryBuilder(result.data, result.error)
@@ -463,9 +499,6 @@ describe('GET /api/cron/daily', () => {
 
     // Evening now uses pushMessage for LINE weight reminders; errors are captured
     expect(body.errors).toContain('LINE weight push Alice: evening push failed')
-
-    // Restore original from
-    mockSupabase.from = originalFrom
   })
 
   it('should count LINE push method in evening reminders', async () => {
@@ -485,22 +518,25 @@ describe('GET /api/cron/daily', () => {
     mockFromResults['training_logs'] = { data: [], error: null }
     mockFromResults['push_subscriptions'] = { data: [], error: null }
 
-    // Override from() to return different body_composition data per call:
-    // 1st call: todayWeights (empty — no weight today)
-    // 2nd call: recentRecords (active in last 7 days)
-    // 3rd call: latestWeights (has a previous weight)
-    let bcCallCount = 0
-    const originalFrom = mockSupabase.from
+    // Override from() to differentiate queries by their conditions:
+    // - clients query filtered on auto_adjust_enabled (trajectory auto-adjust block) → []
+    // - body_composition todayWeights (.eq('date', today)) → empty (no weight today)
+    // - body_composition recentRecords / latestWeights → has data (active, has previous weight)
+    // beforeEach restores the default from() implementation
     mockSupabase.from = vi.fn((table: string) => {
+      if (table === 'clients') {
+        return createConditionalQueryBuilder(filters =>
+          filters.some(([m, col]) => m === 'eq' && col === 'auto_adjust_enabled')
+            ? []
+            : mockFromResults['clients'].data
+        )
+      }
       if (table === 'body_composition') {
-        bcCallCount++
-        if (bcCallCount === 1) {
-          // todayWeights — empty (no weight logged today)
-          return createMockQueryBuilder([], null)
-        } else {
-          // recentRecords + latestWeights — has data
-          return createMockQueryBuilder([{ client_id: 'client-1', weight: 70 }], null)
-        }
+        return createConditionalQueryBuilder(filters =>
+          filters.some(([m, col]) => m === 'eq' && col === 'date')
+            ? [] // todayWeights — empty (no weight logged today)
+            : [{ client_id: 'client-1', weight: 70, date: '2025-01-10' }]
+        )
       }
       const result = mockFromResults[table] || { data: null, error: null }
       return createMockQueryBuilder(result.data, result.error)
@@ -515,9 +551,6 @@ describe('GET /api/cron/daily', () => {
     // Evening LINE push is now used only for weight reminders to active users
     expect(body.linePushUsed).toBe(1)
     expect(body.webPushUsed).toBe(0)
-
-    // Restore original from
-    mockSupabase.from = originalFrom
   })
 
   // ── Smart Alerts (evening, lines 253-326) ──

@@ -213,25 +213,68 @@ describe('TrainingLog', () => {
     expect(mockShowToast).toHaveBeenCalledWith('請選擇訓練類型', 'error')
   })
 
-  // ---- Submit without duration shows error (non-simple mode) ----
-  it('shows error toast when submitting weight training without duration', () => {
+  // ---- Duration is optional (commit 478a3b3): engine falls back to 45min ----
+  it('allows submitting weight training without duration and sends duration: null', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ recommendedIntensity: 'moderate', recoveryScore: 72, reasons: [], suggestion: '' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+
     renderTrainingLog()
 
     fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByRole('button', { name: '7' }))
     fireEvent.click(screen.getByText('記錄訓練'))
 
-    expect(mockShowToast).toHaveBeenCalledWith('請填寫訓練時長', 'error')
+    await waitFor(() => {
+      const postCall = mockFetch.mock.calls.find((c: any) => c[0] === '/api/training-logs')
+      expect(postCall).toBeDefined()
+      const callBody = JSON.parse(postCall![1].body)
+      expect(callBody.training_type).toBe('push')
+      expect(callBody.duration).toBeNull()
+      expect(callBody.rpe).toBe(7)
+    })
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('訓練已記錄！'), 'success', '🎉')
+    })
   })
 
-  // ---- Submit without RPE shows error for weight training ----
-  it('shows error toast when submitting weight training without RPE', () => {
+  // ---- RPE is optional (commit 478a3b3): engine falls back to RPE 6 ----
+  it('allows submitting weight training without RPE and sends rpe: null', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ recommendedIntensity: 'moderate', recoveryScore: 72, reasons: [], suggestion: '' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+
     renderTrainingLog()
 
     fireEvent.click(screen.getByText(/🫸 推/))
     fireEvent.change(screen.getByPlaceholderText('60'), { target: { value: '45' } })
     fireEvent.click(screen.getByText('記錄訓練'))
 
-    expect(mockShowToast).toHaveBeenCalledWith('請選擇 RPE', 'error')
+    await waitFor(() => {
+      const postCall = mockFetch.mock.calls.find((c: any) => c[0] === '/api/training-logs')
+      expect(postCall).toBeDefined()
+      const callBody = JSON.parse(postCall![1].body)
+      expect(callBody.training_type).toBe('push')
+      expect(callBody.duration).toBe(45)
+      expect(callBody.rpe).toBeNull()
+    })
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('訓練已記錄！'), 'success', '🎉')
+    })
   })
 
   // ---- Successful submission ----
@@ -302,7 +345,8 @@ describe('TrainingLog', () => {
         ok: true,
         json: async () => ({ recommendedIntensity: 'moderate', recoveryScore: 72, reasons: [], suggestion: '' }),
       })
-      .mockResolvedValueOnce({ ok: false })
+      // Component now reads the server error via response.json() (TrainingLog.tsx:317-320)
+      .mockResolvedValueOnce({ ok: false, json: async () => ({ error: '伺服器錯誤' }) })
 
     renderTrainingLog()
 
@@ -310,7 +354,7 @@ describe('TrainingLog', () => {
     fireEvent.click(screen.getByText('記錄訓練'))
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith('提交失敗，請重試', 'error')
+      expect(mockShowToast).toHaveBeenCalledWith('伺服器錯誤', 'error')
     })
   })
 

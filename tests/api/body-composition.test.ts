@@ -1444,7 +1444,11 @@ describe('POST /api/body-composition', () => {
 
     let clientCallCount = 0
     const clientUpdateEq = vi.fn().mockReturnValue({ data: null, error: null })
+    const macroLogInsert = vi.fn().mockReturnValue(Promise.resolve({ data: null, error: null }))
     mockFrom.mockImplementation((table: string) => {
+      if (table === 'macro_adjustment_log') {
+        return { insert: macroLogInsert }
+      }
       if (table === 'clients') {
         return {
           select: vi.fn().mockReturnValue({
@@ -1616,6 +1620,14 @@ describe('POST /api/body-composition', () => {
     expect(mockGenerateNutritionSuggestion).toHaveBeenCalled()
     // Verify the client update was called
     expect(clientUpdateEq).toHaveBeenCalled()
+    // Verify the macro adjustment audit log was written
+    expect(macroLogInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        client_id: 'uuid-1',
+        applied_by: 'system',
+        trigger_source: 'tdee_weekly',
+      })
+    )
   })
 
   it('autoAdjustNutrition does not apply when engine returns autoApply=false', async () => {
@@ -1948,7 +1960,11 @@ describe('POST /api/body-composition', () => {
 
     let clientCallCount = 0
     const clientUpdateEq = vi.fn().mockReturnValue({ data: null, error: null })
+    const macroLogInsert = vi.fn().mockReturnValue(Promise.resolve({ data: null, error: null }))
     mockFrom.mockImplementation((table: string) => {
+      if (table === 'macro_adjustment_log') {
+        return { insert: macroLogInsert }
+      }
       if (table === 'clients') {
         return {
           select: vi.fn().mockReturnValue({
@@ -2051,6 +2067,14 @@ describe('POST /api/body-composition', () => {
     expect(json.data.nutritionAdjusted.calories).toBe(1800)
     // With goal-driven + competition, 1 week data should suffice (duplicates week 0)
     expect(mockGenerateNutritionSuggestion).toHaveBeenCalled()
+    // Verify the macro adjustment audit log was written
+    expect(macroLogInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        client_id: 'uuid-gd',
+        applied_by: 'system',
+        trigger_source: 'tdee_weekly',
+      })
+    )
   })
 
   it('autoAdjustNutrition handles client with genetic profile and supplement data', async () => {

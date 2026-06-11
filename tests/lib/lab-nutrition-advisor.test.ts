@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   generateLabNutritionAdvice,
   generateLabOptimizationTips,
@@ -1263,6 +1263,17 @@ describe('detectLabCrossPatterns', () => {
 // generateRetestReminders
 // ══════════════════════════════════════════════════════════
 describe('generateRetestReminders', () => {
+  // These tests use hard-coded lab dates and assert overdue/not-overdue,
+  // so pin the clock to keep them deterministic regardless of the real date.
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2025-01-01'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   // Labs for retest need date field
   function datedLab(
     test_name: string,

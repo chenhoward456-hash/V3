@@ -17,8 +17,9 @@ describe('DailyNutritionTarget', () => {
       />
     )
 
-    // Component recalculates calories: protein*4 + carbs*4 + fat*9 = 150*4+200*4+60*9 = 1940
-    expect(screen.getByText('1940')).toBeInTheDocument()
+    // Component displays DB calories_target directly (no longer recalculated from macros,
+    // to stay consistent with NutritionLog — see commit 637209d)
+    expect(screen.getByText('2000')).toBeInTheDocument()
     expect(screen.getByText('150')).toBeInTheDocument()
     expect(screen.getByText('200')).toBeInTheDocument()
     expect(screen.getByText('60')).toBeInTheDocument()

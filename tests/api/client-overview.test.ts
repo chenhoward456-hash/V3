@@ -14,6 +14,7 @@ const { mockTableCalls, mockSupabase, createMockQueryBuilder } = vi.hoisted(() =
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
       single: vi.fn().mockReturnThis(),
@@ -122,7 +123,7 @@ describe('GET /api/client-overview', () => {
     const clientData = { id: 'uuid-1', unique_code: 'ABC123', name: 'Test Client' }
 
     // Use sequential from() calls because the route calls from('clients') multiple times
-    // (once for lookup, once for update) and then 7 parallel queries
+    // (once for lookup, once for update) and then 9 parallel queries
     let clientsCallCount = 0
     mockSupabase.from.mockImplementation((table: string) => {
       if (table === 'clients') {
@@ -152,6 +153,8 @@ describe('GET /api/client-overview', () => {
     expect(json.bodyData).toEqual([])
     expect(json.labResults).toEqual([])
     expect(json.nutritionLogs).toEqual([])
+    expect(json.trainingSets).toEqual([])
+    expect(json.personalNotes).toEqual([])
   })
 
   it('returns overview data with populated tables', async () => {
