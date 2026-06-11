@@ -58,7 +58,7 @@ const CATEGORIES: Array<{ title: string; subtitle: string; tests: string[] }> = 
   {
     title: '甲狀腺 / 荷爾蒙',
     subtitle: '能量 / 恢復 / 性慾 / 肌肉合成的源頭',
-    tests: ['TSH', 'Free T4', 'Free T3', '睪固酮', '游離睪固酮', '皮質醇', 'DHEA-S', '雌二醇', 'SHBG'],
+    tests: ['TSH', 'Free T4', 'Free T3', '睪固酮', '游離睪固酮', '生物可利用睪固酮', '皮質醇', 'DHEA-S', '雌二醇', 'SHBG'],
   },
   {
     title: '微量營養素',

@@ -75,6 +75,9 @@ export const LAB_THRESHOLDS = {
   '睪固酮_female': { normal: { min: 15, max: 70 }, attention: { min: 10, max: 90 } },
   '游離睪固酮': { normal: { min: 47, max: 244 }, attention: { min: 30, max: 300 } },
   '游離睪固酮_female': { normal: { min: 0.5, max: 8.5 }, attention: { min: 0.3, max: 10.0 } },
+  // 生物可利用睪固酮（ng/dL）：底層參考為健康華人男性區間 107–380（PMID 29729137），
+  // 下限按 Howard 客群（有訓練男性）拉嚴至 200，alert 線 150；上限取健康族群實測上界 380。
+  '生物可利用睪固酮': { normal: { min: 200, max: 380 }, attention: { min: 150, max: 380 } },
   '皮質醇': { normal: { min: 6, max: 18 }, attention: { min: 4, max: 22 } },
   'DHEA-S': { normal: { min: 100, max: 500 }, attention: { min: 80, max: 600 } },
   'DHEA-S_female': { normal: { min: 65, max: 380 }, attention: { min: 50, max: 450 } },
@@ -157,6 +160,7 @@ export const LAB_OPTIMAL_RANGES: Record<string, number | { min: number; max: num
   '睪固酮_female': { min: 40, max: 60 },
   '游離睪固酮': { min: 150, max: 220 },        // 123 明顯偏低端 → 目標 150+
   '游離睪固酮_female': { min: 3.0, max: 7.0 },
+  '生物可利用睪固酮': { min: 250, max: 380 },   // 追求上半段，對應睪固酮軸「越高越好」立場
   '皮質醇': { min: 8, max: 12 },               // 越低端越放鬆
   'DHEA-S': { min: 250, max: 450 },            // 抗老化指標，越高端越好
   'DHEA-S_female': { min: 200, max: 350 },
