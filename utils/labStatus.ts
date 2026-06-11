@@ -109,7 +109,7 @@ export const LAB_OPTIMAL_RANGES: Record<string, number | { min: number; max: num
   'HOMA-IR': 0.8,                    // <0.8（共識最佳 <1.5; Attia 派 <1.0）
   '空腹胰島素': 2.5,                  // Attia「Outlive」立場；共識最佳 <5
   '空腹血糖': 80,                     // 共識 ADA 正常 <100；長壽派 <80
-  'HbA1c': 5.0,                      // <5.0（ADA 糖尿病前期 5.7+；長壽派目標 <5.0）
+  'HbA1c': { min: 5.0, max: 5.4 },   // 5.0-5.4（全因死亡呈 J 型：PMID 22855733 <5.0% 死亡率反升，HR 1.32／癌症 1.47）
   '尿酸': 5.0,
   '尿酸_female': 4.0,
 

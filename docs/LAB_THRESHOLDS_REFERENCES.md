@@ -13,7 +13,7 @@
 
 | 項目 | 問題 | 文獻 | 建議 |
 |---|---|---|---|
-| **HbA1c optimal <5.0** | **方向性錯誤**:HbA1c 全因死亡呈 J 型,<5.0% 反而與較高全因/癌症死亡相關;系統把 4.x% 標成「最佳」與文獻相反 | PMID 22855733（Aggarwal/Selvin 2012, ARIC）:<5.0% 全因死亡 HR 1.32、癌症 HR 1.47 | optimal 改為「區間 5.0–5.4%」而非單向 <5.0 |
+| **HbA1c optimal <5.0** | **方向性錯誤**:HbA1c 全因死亡呈 J 型,<5.0% 反而與較高全因/癌症死亡相關;系統把 4.x% 標成「最佳」與文獻相反 | PMID 22855733（Aggarwal/Selvin 2012, ARIC）:<5.0% 全因死亡 HR 1.32、癌症 HR 1.47 | optimal 改為「區間 5.0–5.4%」而非單向 <5.0 — ✅ **已在 branch `fix/hba1c-optimal-range` 提案,待 Howard merge** |
 | **游離睪固酮（男女）optimal/上限** | normal 上限與 optimal 明顯高於華人實測上界（男 150 pg/mL）;疑因免疫法 vs 平衡透析/計算法差異 | PMID 29729137（Yu 2018, 華人男 FT 46–150 pg/mL） | 先確認系統 free T 是哪種測法,再定閾值 |
 | **HDL-C「越高越好」無上限** | HDL 與全因死亡呈 U 型,男 >80、女 >93 mg/dL 風險回升;演算法對極高 HDL 仍判「最佳」 | PMID 28419274（Madsen 2017）/ PMID 35583863（Liu 2022, 冠心病 HDL>80 HR 1.96） | optimal 數值本身安全,但「越高越好」邏輯建議加上限 |
 | **鐵蛋白_female attention 下限 8** | 8–12 ng/mL 僅標「注意」,但 WHO 視 <15 為缺乏 → 可能漏標女性鐵缺乏 | PMID 26876679（Aktaş 2016, IDA <15）/ PMID 29792778（運動員 ≤20 才受益） | 複核 attention 下限是否上調 |
