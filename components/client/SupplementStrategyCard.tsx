@@ -15,20 +15,38 @@ const PRIORITY: Record<SupplementSuggestion['priority'], { label: string; cls: s
  * 無建議時不顯示。
  */
 export default function SupplementStrategyCard({ suggestions }: { suggestions: SupplementSuggestion[] }) {
-  const [expanded, setExpanded] = useState(false)
+  const [open, setOpen] = useState(false)      // 整張卡預設收合，去雜訊
+  const [expanded, setExpanded] = useState(false) // 展開 >3 項
   if (!suggestions || suggestions.length === 0) return null
 
   // 依優先序排序：high → medium → low
   const order = { high: 0, medium: 1, low: 2 }
   const sorted = [...suggestions].sort((a, b) => order[a.priority] - order[b.priority])
   const shown = expanded ? sorted : sorted.slice(0, 3)
+  const coreCount = sorted.filter(s => s.priority === 'high').length
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm mb-3">
-      <div className="flex items-center gap-2 mb-1">
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-3">
+      {/* 收合時只露標題 + 預覽，點開看依據 */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-2 px-4 py-3 text-left"
+        aria-expanded={open}
+      >
         <span className="text-lg">💊</span>
-        <h3 className="text-sm font-semibold text-gray-900">你的個人化補品策略</h3>
-      </div>
+        <span className="flex-1 min-w-0">
+          <span className="block text-sm font-semibold text-gray-900">你的個人化補品策略</span>
+          {!open && (
+            <span className="block text-xs text-gray-500 mt-0.5">
+              {sorted.length} 項建議{coreCount > 0 ? `（${coreCount} 項核心）` : ''}，依血檢與基因 · 點開看依據
+            </span>
+          )}
+        </span>
+        <span className={`text-gray-400 text-sm transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+
+      {!open ? null : (
+      <div className="px-4 pb-4">
       <p className="text-xs text-gray-500 mb-3">依你的血檢與基因推導，每項附依據——不是通用清單。</p>
 
       <div className="space-y-3">
@@ -68,6 +86,8 @@ export default function SupplementStrategyCard({ suggestions }: { suggestions: S
         >
           {expanded ? '收合' : `展開全部 ${sorted.length} 項`}
         </button>
+      )}
+      </div>
       )}
     </div>
   )
