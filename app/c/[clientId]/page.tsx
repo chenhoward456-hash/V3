@@ -43,6 +43,7 @@ import WelcomeBanner from '@/components/client/WelcomeBanner'
 import HealthScoreBanner from '@/components/client/HealthScoreBanner'
 import BehaviorInsights from '@/components/client/BehaviorInsights'
 import ProgressJourney from '@/components/client/ProgressJourney'
+import PushNotificationPrompt from '@/components/client/PushNotificationPrompt'
 import SystemActions from '@/components/client/SystemActions'
 import ExportAiSummary from '@/components/client/ExportAiSummary'
 import SeeTabSection from '@/components/client/SeeTabSection'
@@ -529,46 +530,58 @@ export default function ClientDashboard() {
 
   // 所有有營養追蹤的學員：頁面載入時自動觸發營養引擎更新目標
   // 備賽客戶由 GoalDrivenStatus 處理目標套用，但這裡仍需取得引擎數據給 AI Chat
-  const autoNutritionTriggered = useRef(false)
-  useEffect(() => {
+  // 跑營養引擎：
+  //   autoApply=true  → 把建議寫回 DB（首次載入用；備賽客戶一律不套用，由 GoalDrivenStatus 處理）
+  //   autoApply=false → 只取得建議刷新顯示（記錄後用，不動 macros，避免雙重套用）
+  const engineRunningRef = useRef(false)
+  const runEngine = useCallback(async (autoApply: boolean) => {
     const c = clientData?.client
     if (!c || !c.nutrition_enabled || !c.goal_type) return
-    if (autoNutritionTriggered.current) return
-    autoNutritionTriggered.current = true
-
-    const isComp = isCompetitionMode(c.client_mode)
-    const triggerAutoAdjust = async () => {
-      try {
-        const code = clientId as string
-        // 備賽客戶不 autoApply（由 GoalDrivenStatus 處理），但仍需取得完整引擎數據
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${code}${isComp ? '' : '&autoApply=true'}&code=${code}`)
-        if (!res.ok) {
-          console.error('[AutoNutrition] API 失敗:', res.status)
-          return
-        }
-        const json = await res.json()
-        if (json.suggestion) setNutritionEngineSuggestion(json.suggestion)
-        if (json.coachOverrideInfo) setCoachOverrideInfo(json.coachOverrideInfo)
-        console.log('[AutoNutrition] 引擎結果:', {
-          status: json.suggestion?.status,
-          autoApply: json.suggestion?.autoApply,
-          applied: json.applied,
-          coachLocked: json.coachLocked,
-          suggestedCalories: json.suggestion?.suggestedCalories,
-          suggestedProtein: json.suggestion?.suggestedProtein,
-          suggestedCarbs: json.suggestion?.suggestedCarbs,
-          suggestedFat: json.suggestion?.suggestedFat,
-        })
-        // 非備賽客戶：刷新 SWR 確保 UI 顯示最新 DB 值
-        if (!isComp && mutate) {
-          mutate()
-        }
-      } catch (err) {
-        console.error('[AutoNutrition] 錯誤:', err)
+    if (engineRunningRef.current) return
+    engineRunningRef.current = true
+    const apply = autoApply && !isCompetitionMode(c.client_mode)
+    try {
+      const code = clientId as string
+      const res = await fetch(`/api/nutrition-suggestions?clientId=${code}${apply ? '&autoApply=true' : ''}&code=${code}`)
+      if (!res.ok) {
+        console.error('[AutoNutrition] API 失敗:', res.status)
+        return
       }
+      const json = await res.json()
+      if (json.suggestion) setNutritionEngineSuggestion(json.suggestion)
+      if (json.coachOverrideInfo) setCoachOverrideInfo(json.coachOverrideInfo)
+      if (apply && mutate) mutate()
+    } catch (err) {
+      console.error('[AutoNutrition] 錯誤:', err)
+    } finally {
+      engineRunningRef.current = false
     }
-    triggerAutoAdjust()
   }, [clientData?.client, clientId, mutate])
+
+  // 記錄後只刷新引擎建議顯示，不動 macros
+  const refreshEngineSuggestion = useCallback(() => { void runEngine(false) }, [runEngine])
+
+  // 飲食記錄後：刷新 SWR + 引擎建議（讓「系統在幫我算」的回饋跟記錄動作即時連動）
+  const mutateAndRefreshEngine = useCallback(() => {
+    mutate()
+    refreshEngineSuggestion()
+  }, [mutate, refreshEngineSuggestion])
+
+  // 體重記錄後：體重 API 已自行套用 macros，這裡同步快取 + 刷新引擎建議顯示
+  const mutateWithTargetsAndRefreshEngine = useCallback((appliedTargets?: Record<string, number | undefined>) => {
+    mutateWithTargets(appliedTargets)
+    refreshEngineSuggestion()
+  }, [mutateWithTargets, refreshEngineSuggestion])
+
+  // 首次載入跑一次（autoApply）
+  const autoNutritionTriggered = useRef(false)
+  useEffect(() => {
+    if (autoNutritionTriggered.current) return
+    const c = clientData?.client
+    if (!c || !c.nutrition_enabled || !c.goal_type) return
+    autoNutritionTriggered.current = true
+    void runEngine(true)
+  }, [clientData?.client, runEngine])
 
   // LINE 瀏覽器：顯示引導頁面，不載入完整儀表板（避免記憶體崩潰）
   if (isLineBrowser) {
@@ -892,6 +905,9 @@ export default function ClientDashboard() {
             </SectionErrorBoundary>
           )}
 
+          {/* 開啟推播提醒（只在權限未決定時顯示一次，可關閉） */}
+          {isToday && <PushNotificationPrompt code={c.unique_code} />}
+
           {/* 賽後恢復提示：比賽日期已過但階段仍為 peak_week/competition */}
           {isCompetition && c.competition_date && (() => {
             const daysLeft = daysUntilDateTW(c.competition_date)
@@ -1064,7 +1080,7 @@ export default function ClientDashboard() {
               height={latestByField.height?.height ?? null}
               hasLineBinding={!!c.line_user_id}
               uniqueCode={c.unique_code}
-              onMutate={mutateWithTargets}
+              onMutate={mutateWithTargetsAndRefreshEngine}
             />
             {isCompetition && latestBodyData?.body_fat && (
               <StageWeightEstimator
@@ -1211,7 +1227,7 @@ export default function ClientDashboard() {
               caloriesTarget={c.calories_target}
               simpleMode={c.simple_mode}
               sodiumTarget={c.prep_phase === 'peak_week' ? c.sodium_target : null}
-              onMutate={mutate}
+              onMutate={mutateAndRefreshEngine}
             />
           </CollapsibleSection>
           </SectionErrorBoundary>
