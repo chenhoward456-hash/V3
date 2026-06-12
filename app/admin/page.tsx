@@ -345,6 +345,46 @@ export default function AdminDashboard() {
     return items.sort((a, b) => a.priority - b.priority)
   }, [clients, clientStats, recentBody, recentNutrition, recentWellness, recentRPE])
 
+  // === A1：今日行動佇列（待審草稿 + alerts + 訂閱到期，排序成一條待辦）===
+  type QueueItem = {
+    key: string
+    clientId: string | null
+    name: string
+    text: string
+    icon: string
+    tone: 'red' | 'orange' | 'yellow' | 'blue'
+    priority: number
+    href?: string
+    canNote: boolean
+  }
+  const actionQueue = useMemo<QueueItem[]>(() => {
+    const items: QueueItem[] = []
+    // 待審 AI 血檢草稿
+    if (pendingDraftCount > 0) {
+      items.push({ key: 'drafts', clientId: null, name: 'AI 血檢草稿', text: `${pendingDraftCount} 份待審`, icon: '🤖', tone: 'blue', priority: 1, href: '/admin/ai-audit', canNote: false })
+    }
+    // 既有 alerts → 行動項（依文字選 icon）
+    for (const a of alerts) {
+      const tone: QueueItem['tone'] = a.priority === 0 ? 'red' : a.priority === 1 ? 'orange' : 'yellow'
+      const icon = a.text.includes('回檢') ? '🩸'
+        : a.text.includes('體重') ? '📉'
+        : (a.text.includes('合規') || a.text.includes('服從')) ? '🍽️'
+        : a.text.includes('能量') ? '🔋'
+        : a.text.includes('RPE') ? '🏋️'
+        : (a.text.includes('未活動') || a.text.includes('打卡')) ? '😴'
+        : '⚠️'
+      items.push({ key: `alert-${a.clientId}-${a.text}`, clientId: a.clientId, name: a.name, text: a.text, icon, tone, priority: a.priority, href: `/admin/clients/${a.clientId}/overview`, canNote: true })
+    }
+    // 訂閱到期 / 已過期
+    for (const c of clients) {
+      if (!c.expires_at) continue
+      const d = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / DAY_MS)
+      if (d < 0) items.push({ key: `exp-${c.id}`, clientId: c.id, name: c.name, text: `方案已過期 ${-d} 天`, icon: '⏰', tone: 'red', priority: 0, href: `/admin/clients/${c.id}`, canNote: true })
+      else if (d <= 7) items.push({ key: `exp-${c.id}`, clientId: c.id, name: c.name, text: `方案 ${d} 天後到期`, icon: '⏰', tone: 'orange', priority: 1, href: `/admin/clients/${c.id}`, canNote: true })
+    }
+    return items.sort((a, b) => a.priority - b.priority)
+  }, [alerts, pendingDraftCount, clients])
+
   const handleSort = (key: SortKey) => { if (sortKey === key) setSortDir(p => p === 'asc' ? 'desc' : 'asc'); else { setSortKey(key); setSortDir(key === 'name' ? 'asc' : 'desc') } }
 
   const filteredClients = useMemo(() => {
@@ -635,11 +675,44 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ===== 警報區塊（回檢 + 體重停滯 + 飲食 + Wellness + RPE）===== */}
-        {alerts.length > 0 && (
+        {/* ===== A1：今日行動佇列（待審草稿 + 回檢/停滯/合規/Wellness/RPE + 訂閱到期）===== */}
+        {actionQueue.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">需要你注意</h3>
-            <div className="space-y-2">{alerts.map((a, i) => <Link key={`${a.clientId}-${i}`} href={`/admin/clients/${a.clientId}/overview`} className={`flex items-center justify-between px-4 py-3 rounded-xl ${a.color.split(' ')[1]} hover:opacity-80 transition-opacity`}><span className={`text-sm font-medium ${a.color.split(' ')[0]}`}>{a.name} — {a.text}</span><ExternalLink size={14} className="text-gray-400" /></Link>)}</div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-900">📋 今日行動佇列</h3>
+              <span className="text-xs text-gray-400">{actionQueue.length} 件待處理</span>
+            </div>
+            <div className="space-y-2">
+              {actionQueue.map(item => {
+                const toneBox = { red: 'bg-red-50', orange: 'bg-orange-50', yellow: 'bg-yellow-50', blue: 'bg-blue-50' }[item.tone]
+                const toneText = { red: 'text-red-700', orange: 'text-orange-700', yellow: 'text-yellow-800', blue: 'text-blue-700' }[item.tone]
+                return (
+                  <div key={item.key} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl ${toneBox}`}>
+                    <div className="min-w-0 flex items-center gap-2">
+                      <span className="shrink-0">{item.icon}</span>
+                      <span className={`text-sm font-medium ${toneText} truncate`}>{item.name} — {item.text}</span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {item.canNote && item.clientId && (
+                        <button
+                          onClick={() => { const c = clients.find(x => x.id === item.clientId); if (c) openFeedback(c) }}
+                          className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"
+                          title="寫筆記"
+                          aria-label={`寫筆記給 ${item.name}`}
+                        >
+                          <MessageSquare size={15} />
+                        </button>
+                      )}
+                      {item.href && (
+                        <Link href={item.href} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-colors" title="前往" aria-label={`前往 ${item.name}`}>
+                          <ExternalLink size={15} />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
 
