@@ -7,7 +7,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { AGENT_TOOLS, executeAgentTool } from './agent-tools'
-import { HOWARD_VOICE_CORE } from './howard-voice'
+import { HOWARD_VOICE_CORE, HOWARD_TRAINING_VOICE } from './howard-voice'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -129,6 +129,7 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentRunResult> {
       // 5 分鐘內重複呼叫只收 10% 的 input cost
       system: [
         { type: 'text', text: HOWARD_VOICE_CORE, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: HOWARD_TRAINING_VOICE, cache_control: { type: 'ephemeral' } },
         { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
       ] as any,
       tools: AGENT_TOOLS as any,
