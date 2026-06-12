@@ -152,6 +152,23 @@ export default function CaseDataPage() {
               </div>
             ))}
           </div>
+
+          {/* 真實檢驗報告 — 同半胱胺酸前後對照（原始檢驗單） */}
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+            <p className="text-xs font-medium text-slate-500 mb-3">真實檢驗報告 — 同半胱胺酸（原始檢驗單，未修圖）</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <figure className="m-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/case-homocysteine-before.jpg" alt="同半胱胺酸 15.0（補充前）" className="w-full rounded-lg border border-slate-100 bg-white" />
+                <figcaption className="text-[11px] text-slate-400 mt-1 text-center">補充前 · 15.0</figcaption>
+              </figure>
+              <figure className="m-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/case-homocysteine-after.jpg" alt="同半胱胺酸 9.3（追蹤後）" className="w-full rounded-lg border border-slate-100 bg-white" />
+                <figcaption className="text-[11px] text-slate-400 mt-1 text-center">追蹤後 · 9.3</figcaption>
+              </figure>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -166,6 +183,16 @@ export default function CaseDataPage() {
               <div className="text-sm text-slate-600 leading-relaxed">{s.desc}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* 誠實揭露 — 把激進減脂的代價講出來，並展示系統如何自動防護 */}
+      <section className="px-5 pb-4 max-w-3xl mx-auto">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5">
+          <p className="text-sm font-semibold text-slate-900 mb-1.5">誠實說一件事</p>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            備賽到 7.8% 這麼瘦，睪固酮確實會下降——這是激進減脂的代價，多數教練不會跟你說。所以這套系統會<b className="text-slate-900">依體脂自動收手</b>：體脂太低就縮減熱量赤字，不為了數字把人榨乾。看得到代價、也防得住，才是真的系統。
+          </p>
         </div>
       </section>
 
