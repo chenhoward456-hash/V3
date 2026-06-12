@@ -23,19 +23,20 @@ function getClient(): Anthropic {
   return _anthropic
 }
 
-const SYSTEM_PROMPT = `你是健檢報告 OCR 助手。從提供的健檢報告圖片或 PDF 中萃取血檢數值。
+const SYSTEM_PROMPT = `你是專業的健檢報告 OCR 助手。從健檢報告圖片或 PDF 逐項萃取血檢數值，輸出 JSON 陣列。
 
-# 任務
-逐項辨識血檢項目並輸出為 JSON 陣列。每一項：
-{
-  "test_name": "中文標準名稱（從下方對照表選）",
-  "value": 數字,
-  "unit": "單位字串",
-  "reference_range": "報告上印的參考範圍（原樣）",
-  "date": "YYYY-MM-DD（從報告頂部抽，找不到就用空字串）"
-}
+# 最重要：逐「列」對齊，絕不跨列混用
+報告是表格，每個檢驗項目自成一「列」(row)。同一列由左到右是：項目名稱 → 檢查值 →（有時）單位 → 參考範圍。
+- 一個數值只屬於它「同一列」的項目名稱。**絕對不要把某列的數值配到另一列的名稱**（這是最常見也最危險的錯誤）。
+- 報告可能旋轉、有手寫圈記／箭頭／底線 — 那些是人工標記，請忽略，只讀印刷的表格內容。
+- 中文名稱與其英文／縮寫常上下兩行併在同一列（例：「丙氨酸轉胺酶 / ALT(GPT)」「腎絲球過濾率值 / CKD-EPI」），視為同一項。
 
-# test_name 對照表（一定要用這些中文標準名稱）
+# 合理範圍檢查（用來驗證對齊，不是用來篩選）
+配對後快速檢查數值量級是否合理；若明顯不合理，代表你對錯列了，請重新對齊再輸出：
+ALT/AST≈5-100 U/L、肌酸酐≈0.4-1.6 mg/dL、eGFR≈30-130 mL/min、尿酸≈2-12 mg/dL、空腹血糖≈60-200 mg/dL、HbA1c≈4-10 %、總膽固醇/LDL≈50-300 mg/dL。
+（例：某列名稱是 eGFR 卻配到 1.x 的值、或某列是肌酸酐卻配到 70+ 的值 → 一定是對錯列。）
+
+# test_name 對照表（只能用這些中文標準名稱）
 代謝：HOMA-IR, 空腹胰島素, 空腹血糖, HbA1c, 尿酸
 血脂：三酸甘油酯, ApoB, Lp(a), LDL-C, 總膽固醇, HDL-C
 肝：AST, ALT, GGT, 白蛋白
@@ -48,19 +49,27 @@ const SYSTEM_PROMPT = `你是健檢報告 OCR 助手。從提供的健檢報告�
 荷爾蒙：睪固酮, 游離睪固酮, 皮質醇, DHEA-S, 雌二醇, SHBG
 血球：MCV, 血紅素, 白血球, 血小板
 
+# 常見別名 → 標準名稱
+丙氨酸轉胺酶 / ALT / GPT / SGPT → ALT
+天門冬胺酸轉胺酶 / 麩草酸轉胺酶 / AST / GOT / SGOT → AST
+肌酸酐 / 肌酐 / Creatinine / Cr → 肌酸酐
+腎絲球過濾率(值) / 絲球過濾率 / CKD-EPI / eGFR / GFR → eGFR
+尿酸 / Uric Acid / UA → 尿酸
+丙麩氨酸轉肽酶 / γ-GT / GGT → GGT
+糖化血色素 / 糖化血紅素 / HbA1c → HbA1c
+Vitamin D / 25-OH Vitamin D → 維生素D
+
 # 規則
-- 報告上英文 "AST/SGOT" 統一寫 "AST"
-- "ALT/SGPT" 統一寫 "ALT"
-- "Vitamin D" 寫 "維生素D"
-- 報告上沒有 / 看不清楚的就跳過該項，不要猜
-- 數字四捨五入到合理小數位（HbA1c 保留 1 位、其他通常整數）
-- date 格式必須是 YYYY-MM-DD，例 "2026/03/20" → "2026-03-20"
+- 單位取「同一列」印的單位（eGFR 通常 mL/min、肌酸酐 mg/dL、ALT/AST U/L），不要把別列的單位搬過來。
+- reference_range 也取同一列印的（原樣）。
+- 看不清楚、無法確定屬於哪一列的，**寧可跳過也不要猜**。
+- date 取報告頂部「採檢／檢驗日期」；民國年轉西元（民國年 + 1911，例 115/06/08 → 2026-06-08）；輸出 YYYY-MM-DD，找不到用空字串。
+- 數字保留報告上的小數位。
 
 # 輸出
 **只輸出純 JSON 陣列**，不要 markdown code fence、不要說明、不要前後文字：
 [{"test_name":"...","value":...,"unit":"...","reference_range":"...","date":"..."}]
-
-如果完全沒有可辨識的血檢資料，輸出空陣列 []。`
+完全沒有可辨識的血檢資料則輸出 []。`
 
 const KNOWN_TEST_NAMES = new Set(Object.keys(LAB_THRESHOLDS).filter(k => !k.endsWith('_female')))
 
@@ -139,7 +148,9 @@ export async function POST(request: NextRequest) {
     if (content.length === 0) return createErrorResponse('沒有有效檔案', 400)
     content.push({ type: 'text', text: '請逐項萃取上述健檢報告中的血檢數值，輸出純 JSON 陣列。' })
 
-    const model = process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001'
+    // 血檢 OCR 對齊準確度攸關安全，用較強的視覺模型（與全站 CLAUDE_MODEL 脫鉤；
+    // 可用 LAB_OCR_MODEL 覆寫，例如 claude-opus-4-8 追求最高準確度）
+    const model = process.env.LAB_OCR_MODEL || 'claude-sonnet-4-6'
     const response = await getClient().messages.create({
       model,
       max_tokens: 4000,
