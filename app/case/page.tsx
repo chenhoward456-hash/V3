@@ -13,6 +13,40 @@ export const metadata: Metadata = {
   },
 }
 
+// 達到 Howard 最佳標準的指標（藍標＝正常之上的最佳化區）。陳胤豪本人真實 lab_results。
+const OPTIMAL_MARKERS = [
+  { name: 'HOMA-IR', value: '0.49', std: '最佳 < 0.8', desc: '胰島素敏感度頂級' },
+  { name: '空腹胰島素', value: '2.17', unit: 'μIU/mL', std: '最佳 < 2.5', desc: '代謝健康' },
+  { name: 'ApoB', value: '42', unit: 'mg/dL', std: '最佳 ~50', desc: '心血管風險極低' },
+  { name: '三酸甘油酯', value: '34', unit: 'mg/dL', std: '最佳 < 60', desc: '血脂教科書級' },
+  { name: 'LDL-C', value: '69', unit: 'mg/dL', std: '最佳 < 100', desc: '低密度膽固醇' },
+  { name: 'HDL-C', value: '69', unit: 'mg/dL', std: '越高越好', desc: '高密度膽固醇' },
+  { name: 'HbA1c', value: '5.1', unit: '%', std: '最佳 < 5.5', desc: '血糖控制' },
+  { name: '維生素D', value: '59', unit: 'ng/mL', std: '最佳 60–80', desc: '接近最佳區' },
+]
+
+// 「看出方向 → 個人化補充 → 抽血回測」的鐵證
+const BEFORE_AFTER = [
+  {
+    name: '同半胱胺酸',
+    from: '15',
+    to: '9',
+    unit: 'μmol/L',
+    story:
+      'MTHFR 雜合基因型，葉酸代謝效率較低。依數據與基因型搭配活性葉酸（5-MTHF）營養補充，4 次回測追蹤，數字從偏高回到範圍內。對 MTHFR 型，活性葉酸的吸收路徑不同——這是基因導向營養才看得到的差別。',
+    cite: 'Qin 2012, Nutr J — 華人 RCT：MTHFR C677T 基因型影響葉酸降同半胱胺酸的效果',
+  },
+  {
+    name: '維生素 D',
+    from: '27',
+    to: '59',
+    unit: 'ng/mL',
+    story:
+      '從「不足」（< 30）拉到接近最佳區（60–80）。3 次回測追蹤劑量反應，不是補一補就算了。',
+    cite: 'Endocrine Society 維生素 D 指引',
+  },
+]
+
 export default function CasePage() {
   return (
     <section className="section-container">
@@ -140,6 +174,83 @@ export default function CasePage() {
             </div>
             <div className="text-text-muted text-sm">ELITE 等級</div>
           </div>
+        </div>
+      </div>
+
+      {/* 血檢藍標 — 不是減重，是把整個身體調到最佳 */}
+      <div className="my-24 max-w-4xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-4" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
+          血檢：不是減重，是把整個身體調到最佳
+        </h2>
+        <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
+          一個 7.8% 體脂的身體，代謝、血脂、血糖幾乎全項落在 Howard 最佳標準（藍標＝正常之上的最佳化區）。
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {OPTIMAL_MARKERS.map((m) => (
+            <div key={m.name} className="rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
+              <div className="text-xs text-slate-500">{m.name}</div>
+              <div className="mt-1 flex items-baseline gap-1">
+                <span className="text-2xl font-bold text-blue-700">{m.value}</span>
+                {m.unit && <span className="text-[11px] text-slate-400">{m.unit}</span>}
+              </div>
+              <div className="mt-1 inline-block text-[10px] font-medium text-blue-600 bg-blue-100 rounded px-1.5 py-0.5">{m.std}</div>
+              <div className="text-[11px] text-slate-500 mt-1.5 leading-snug">{m.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 看出方向 → 個人化補充 → 抽血回測（含真實檢驗單） */}
+      <div className="my-24 max-w-4xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-4" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
+          看出方向 → 個人化補充策略 → 抽血追蹤變化
+        </h2>
+        <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
+          不是吃補品碰運氣，是讀進血檢與基因、個人化調整，再用回測追蹤變化。相關補充與飲食調整，建議與醫師或藥師討論。
+        </p>
+        <div className="space-y-5">
+          {BEFORE_AFTER.map((b) => (
+            <div key={b.name} className="rounded-2xl border border-gray-200 bg-white p-6">
+              <div className="flex items-center gap-4 mb-3">
+                <span className="text-base font-semibold text-gray-900">{b.name}</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl text-gray-400 line-through decoration-gray-300">{b.from}</span>
+                  <span className="text-emerald-500">→</span>
+                  <span className="text-2xl font-bold text-emerald-600">{b.to}</span>
+                  <span className="text-xs text-gray-400">{b.unit}</span>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 leading-relaxed">{b.story}</p>
+              <p className="text-[11px] text-gray-400 mt-2">📄 {b.cite}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 真實檢驗報告 — 同半胱胺酸前後對照（原始檢驗單） */}
+        <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6">
+          <p className="text-xs font-medium text-gray-500 mb-3">真實檢驗報告 — 同半胱胺酸（原始檢驗單，未修圖）</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <figure className="m-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/case-homocysteine-before.jpg" alt="同半胱胺酸 15.0（補充前）" className="w-full rounded-lg border border-gray-100 bg-white" />
+              <figcaption className="text-[11px] text-gray-400 mt-1 text-center">補充前 · 15.0</figcaption>
+            </figure>
+            <figure className="m-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/case-homocysteine-after.jpg" alt="同半胱胺酸 9.3（追蹤後）" className="w-full rounded-lg border border-gray-100 bg-white" />
+              <figcaption className="text-[11px] text-gray-400 mt-1 text-center">追蹤後 · 9.3</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+
+      {/* 誠實揭露 — 把激進減脂的代價講出來，並展示系統如何自動防護 */}
+      <div className="my-24 max-w-4xl mx-auto">
+        <div className="rounded-2xl border-2 border-amber-200 bg-amber-50/50 p-6 md:p-8">
+          <p className="text-base font-bold text-gray-900 mb-2">誠實說一件事</p>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            備賽到 7.8% 這麼瘦，睪固酮確實會下降——這是激進減脂的代價，多數教練不會跟你說。所以這套系統會<strong className="text-gray-900">依體脂自動收手</strong>：體脂太低就縮減熱量赤字，不為了數字把人榨乾。看得到代價、也防得住，才是真的系統。
+          </p>
         </div>
       </div>
 
@@ -319,29 +430,27 @@ export default function CasePage() {
         </div>
       </div>
 
-      {/* 數據鐵證 — 連到資料展示頁，故事(情感) + 數據(證明)整合 */}
+      {/* CTA — 轉換目標：免費系統分析 */}
       <div className="my-16 bg-slate-900 text-white rounded-2xl p-8 md:p-12 text-center">
-        <p className="text-xs tracking-[0.2em] text-blue-400 font-medium mb-3">數據會說話</p>
-        <h3 className="text-2xl md:text-3xl font-bold mb-3">故事的另一半：血檢與基因的鐵證</h3>
-        <p className="text-slate-300 mb-7 leading-relaxed max-w-xl mx-auto">
-          7.8% 體脂、血檢幾乎全項達最佳標準、基因導向的補充策略——用抽血回測一一追蹤。看數據怎麼說。
+        <h3 className="text-2xl md:text-3xl font-bold mb-3">想知道你的身體能被優化到什麼程度？</h3>
+        <p className="text-slate-300 mb-8 leading-relaxed max-w-xl mx-auto">
+          先做一次免費的系統分析，30 秒看到你的營養目標與方向。
         </p>
         <Link
-          href="/case/data"
-          className="inline-block bg-blue-600 hover:bg-blue-700 transition-colors text-white px-8 py-4 rounded-xl text-lg font-bold"
+          href="/diagnosis"
+          className="inline-block bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold px-8 py-4 rounded-xl text-lg"
         >
-          看完整數據 →
+          免費系統分析 →
         </Link>
+        <p className="text-xs text-slate-500 mt-4">不用註冊、不用付費，直接看結果</p>
+        <p className="mt-6">
+          <Link href="/training" className="text-slate-300 hover:text-white underline text-sm">查看完整訓練系統 →</Link>
+        </p>
       </div>
 
-      <div className="text-center my-16">
-        <Link
-          href="/training"
-          className="inline-block bg-primary text-white px-10 py-5 rounded-xl text-lg font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
-        >
-          查看完整訓練系統 →
-        </Link>
-      </div>
+      <p className="text-xs text-gray-400 leading-relaxed text-center max-w-3xl mx-auto mb-16">
+        ⚠️ 個人案例分享，僅供參考。數據取自真實追蹤紀錄；每個人身體狀況不同，效果因人而異。任何健康決策請諮詢專業醫療人員。本服務非醫療行為。
+      </p>
     </section>
   )
 }
