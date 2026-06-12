@@ -178,6 +178,9 @@ export default function CaseDataPage() {
             免費系統分析 →
           </Link>
           <p className="text-xs text-slate-500 mt-4">不用註冊、不用付費，直接看結果</p>
+          <p className="mt-6">
+            <Link href="/case" className="text-slate-300 hover:text-white underline text-sm">← 看完整的轉變故事</Link>
+          </p>
         </div>
       </section>
 

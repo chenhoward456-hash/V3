@@ -319,8 +319,23 @@ export default function CasePage() {
         </div>
       </div>
 
+      {/* 數據鐵證 — 連到資料展示頁，故事(情感) + 數據(證明)整合 */}
+      <div className="my-16 bg-slate-900 text-white rounded-2xl p-8 md:p-12 text-center">
+        <p className="text-xs tracking-[0.2em] text-blue-400 font-medium mb-3">數據會說話</p>
+        <h3 className="text-2xl md:text-3xl font-bold mb-3">故事的另一半：血檢與基因的鐵證</h3>
+        <p className="text-slate-300 mb-7 leading-relaxed max-w-xl mx-auto">
+          7.8% 體脂、血檢幾乎全項達最佳標準、基因導向的補充策略——用抽血回測一一追蹤。看數據怎麼說。
+        </p>
+        <Link
+          href="/case/data"
+          className="inline-block bg-blue-600 hover:bg-blue-700 transition-colors text-white px-8 py-4 rounded-xl text-lg font-bold"
+        >
+          看完整數據 →
+        </Link>
+      </div>
+
       <div className="text-center my-16">
-        <Link 
+        <Link
           href="/training"
           className="inline-block bg-primary text-white px-10 py-5 rounded-xl text-lg font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
         >
