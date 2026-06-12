@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronUp, ChevronDown, Search, Users, Activity, AlertTriangle, TrendingUp, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2, Clock } from 'lucide-react'
+import { ChevronUp, ChevronDown, Search, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2, Clock } from 'lucide-react'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { isCompetitionMode, PHASE_LABELS } from '@/lib/client-mode'
 
@@ -56,6 +56,16 @@ interface CoachNotification {
 type SortKey = 'name' | 'status' | 'compliance' | 'lastActivity' | 'nextCheckup'
 type SortDir = 'asc' | 'desc'
 type StatusFilter = 'all' | 'normal' | 'attention' | 'competition' | 'coached' | 'self_managed' | 'free'
+
+function MiniStat({ label, value, tone }: { label: string; value: string | number; tone?: 'red' | 'orange' | 'rose' | 'green' }) {
+  const color = tone === 'red' ? 'text-red-600' : tone === 'orange' ? 'text-orange-600' : tone === 'rose' ? 'text-rose-600' : tone === 'green' ? 'text-emerald-600' : 'text-gray-900'
+  return (
+    <div className="flex items-baseline gap-1.5">
+      <span className="text-xs text-gray-400">{label}</span>
+      <span className={`text-lg font-bold ${color}`}>{value}</span>
+    </div>
+  )
+}
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -423,6 +433,27 @@ export default function AdminDashboard() {
     return { paying, newThisMonth, churnRisk }
   }, [clients, clientStats])
 
+  // === D：本週摘要（規則式彙整，可複製；LINE 配額爆掉期間走 copy）===
+  const weeklyDigest = useMemo(() => {
+    const d = new Date()
+    const lines: string[] = []
+    lines.push(`【本週教練摘要 ${d.getMonth() + 1}/${d.getDate()}】`)
+    lines.push(`學員 ${summaryStats.totalClients} 人（付費 ${retentionStats.paying}）· 今日活躍 ${summaryStats.todayActive} · 平均服從率 ${summaryStats.avgCompliance}%`)
+    if (pendingDraftCount > 0) lines.push(`🤖 ${pendingDraftCount} 份血檢草稿待審`)
+    if (alerts.length > 0) {
+      lines.push(`⚠️ 需關注 ${alerts.length} 項：`)
+      for (const a of alerts.slice(0, 8)) lines.push(`  · ${a.name} — ${a.text}`)
+      if (alerts.length > 8) lines.push(`  · …其餘 ${alerts.length - 8} 項`)
+    }
+    if (spotlightClients.stars.length > 0) lines.push(`🌟 表現好：${spotlightClients.stars.map(s => s.name).join('、')}`)
+    if (retentionStats.churnRisk.length > 0) lines.push(`📉 流失風險 ${retentionStats.churnRisk.length} 人：${retentionStats.churnRisk.slice(0, 6).map(c => `${c.name}(${c.days}天)`).join('、')}`)
+    if (competitionClients.length > 0) lines.push(`🏆 備賽：${competitionClients.slice(0, 5).map(c => `${c.name} 剩${c.daysLeft}天`).join('、')}`)
+    const expiry = summaryStats.expiringCount + summaryStats.expiredCount
+    if (expiry > 0) lines.push(`⏰ 到期/逾期 ${expiry} 人`)
+    lines.push(`（血檢進步/警示明細見「🩸 血檢總覽」）`)
+    return lines.join('\n')
+  }, [summaryStats, retentionStats, pendingDraftCount, alerts, spotlightClients, competitionClients])
+
   const handleSort = (key: SortKey) => { if (sortKey === key) setSortDir(p => p === 'asc' ? 'desc' : 'asc'); else { setSortKey(key); setSortDir(key === 'name' ? 'asc' : 'desc') } }
 
   const filteredClients = useMemo(() => {
@@ -619,52 +650,50 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ===== 頂部：一眼看重點 ===== */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <div className="flex items-center justify-between mb-2"><span className="text-sm text-gray-500">總學員數</span><Users size={18} className="text-blue-500" /></div>
-            <p className="text-3xl font-bold text-gray-900">{summaryStats.totalClients}</p>
-            <div className="flex items-center gap-2 mt-2">
-              {summaryStats.coachedCount > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">{summaryStats.coachedCount} 教練指導</span>}
-              {summaryStats.selfManagedCount > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">{summaryStats.selfManagedCount} 自主管理</span>}
-              {summaryStats.freeCount > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">{summaryStats.freeCount} 免費</span>}
-            </div>
+        {/* ===== 今日行動佇列（主角，置頂）===== */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold text-gray-900">📋 今日行動佇列</h2>
+            <span className="text-xs text-gray-400">{actionQueue.length} 件待處理</span>
           </div>
-          <div className="bg-white rounded-2xl shadow-sm p-5"><div className="flex items-center justify-between mb-2"><span className="text-sm text-gray-500">今日活躍</span><Activity size={18} className="text-green-500" /></div><p className="text-3xl font-bold text-gray-900">{summaryStats.todayActive}</p><p className="text-xs text-gray-400 mt-1">{summaryStats.totalClients > 0 ? Math.round((summaryStats.todayActive / summaryStats.totalClients) * 100) : 0}% 的學員</p></div>
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <div className="flex items-center justify-between mb-2"><span className="text-sm text-gray-500">需要關注</span><AlertTriangle size={18} className="text-red-500" /></div>
-            <p className={`text-3xl font-bold ${summaryStats.needAttention > 0 ? 'text-red-600' : 'text-gray-900'}`}>{summaryStats.needAttention}</p>
-            {(summaryStats.expiredCount > 0 || summaryStats.expiringCount > 0) && (
-              <div className="flex items-center gap-2 mt-2">
-                {summaryStats.expiredCount > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">{summaryStats.expiredCount} 已過期</span>}
-                {summaryStats.expiringCount > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">{summaryStats.expiringCount} 即將到期</span>}
-              </div>
-            )}
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm p-5"><div className="flex items-center justify-between mb-2"><span className="text-sm text-gray-500">平均服從率</span><TrendingUp size={18} className="text-purple-500" /></div><p className={`text-3xl font-bold ${getComplianceColor(summaryStats.avgCompliance)}`}>{summaryStats.avgCompliance}%</p><p className="text-xs text-gray-400 mt-1">本週平均</p></div>
-        </div>
-
-        {/* ===== C：留存 / 業務 ===== */}
-        <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">留存 / 業務</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div><p className="text-2xl font-bold text-gray-900">{retentionStats.paying}</p><p className="text-xs text-gray-400">付費學員</p></div>
-            <div><p className="text-2xl font-bold text-emerald-600">+{retentionStats.newThisMonth}</p><p className="text-xs text-gray-400">本月新增</p></div>
-            <div><p className={`text-2xl font-bold ${retentionStats.churnRisk.length > 0 ? 'text-orange-600' : 'text-gray-900'}`}>{retentionStats.churnRisk.length}</p><p className="text-xs text-gray-400">流失風險</p></div>
-            <div><p className={`text-2xl font-bold ${(summaryStats.expiringCount + summaryStats.expiredCount) > 0 ? 'text-rose-600' : 'text-gray-900'}`}>{summaryStats.expiringCount + summaryStats.expiredCount}</p><p className="text-xs text-gray-400">到期 / 逾期</p></div>
-          </div>
-          {retentionStats.churnRisk.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <p className="text-[11px] text-gray-400 mb-1.5">⚠️ 久未活動（≥10 天）— 退訂前先接觸（💰 = 付費）</p>
-              <div className="flex flex-wrap gap-1.5">
-                {retentionStats.churnRisk.slice(0, 12).map(c => (
-                  <Link key={c.id} href={`/admin/clients/${c.id}/overview`} className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 transition-colors">
-                    {c.name} · {c.days}天{c.paying ? ' 💰' : ''}
-                  </Link>
-                ))}
-              </div>
+          {actionQueue.length === 0 ? (
+            <p className="text-sm text-gray-400 py-1">今天沒有待辦 ✅ 一切正常</p>
+          ) : (
+            <div className="space-y-2">
+              {actionQueue.map(item => {
+                const toneBox = { red: 'bg-red-50', orange: 'bg-orange-50', yellow: 'bg-yellow-50', blue: 'bg-blue-50' }[item.tone]
+                const toneText = { red: 'text-red-700', orange: 'text-orange-700', yellow: 'text-yellow-800', blue: 'text-blue-700' }[item.tone]
+                return (
+                  <div key={item.key} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl ${toneBox}`}>
+                    <div className="min-w-0 flex items-center gap-2">
+                      <span className="shrink-0">{item.icon}</span>
+                      <span className={`text-sm font-medium ${toneText} truncate`}>{item.name} — {item.text}</span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {item.canNote && item.clientId && (
+                        <button onClick={() => { const c = clients.find(x => x.id === item.clientId); if (c) openFeedback(c) }} className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="寫筆記" aria-label={`寫筆記給 ${item.name}`}><MessageSquare size={15} /></button>
+                      )}
+                      {item.href && (<Link href={item.href} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-colors" title="前往" aria-label={`前往 ${item.name}`}><ExternalLink size={15} /></Link>)}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
+        </div>
+
+        {/* ===== Compact 數字條（取代原本 8 張大卡）===== */}
+        <div className="bg-white rounded-2xl shadow-sm px-5 py-3 mb-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <MiniStat label="學員" value={summaryStats.totalClients} />
+            <MiniStat label="付費" value={retentionStats.paying} />
+            <MiniStat label="今日活躍" value={summaryStats.todayActive} />
+            <MiniStat label="需關注" value={summaryStats.needAttention} tone={summaryStats.needAttention > 0 ? 'red' : undefined} />
+            <MiniStat label="服從率" value={`${summaryStats.avgCompliance}%`} />
+            <MiniStat label="本月新增" value={`+${retentionStats.newThisMonth}`} tone="green" />
+            <MiniStat label="流失風險" value={retentionStats.churnRisk.length} tone={retentionStats.churnRisk.length > 0 ? 'orange' : undefined} />
+            <MiniStat label="到期/逾期" value={summaryStats.expiringCount + summaryStats.expiredCount} tone={(summaryStats.expiringCount + summaryStats.expiredCount) > 0 ? 'rose' : undefined} />
+          </div>
         </div>
 
         {/* ===== 備賽倒數區塊 ===== */}
@@ -703,79 +732,58 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ===== 表現好 + 需要關注 雙欄 ===== */}
-        {(spotlightClients.stars.length > 0 || spotlightClients.struggling.length > 0) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-            {spotlightClients.stars.length > 0 && (
-              <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
-                <p className="text-sm font-semibold text-green-800 mb-2">🌟 今日表現好</p>
-                <div className="space-y-1.5">{spotlightClients.stars.map(s => (
-                  <Link key={s.id} href={`/admin/clients/${s.id}/overview`} className="flex items-center justify-between px-3 py-2 bg-white/60 rounded-lg hover:bg-white/80 transition-colors">
-                    <span className="text-sm font-medium text-green-700">{s.name}</span>
-                    <span className="text-xs text-green-600">{s.reason}</span>
-                  </Link>
-                ))}</div>
+        {/* ===== 更多洞察（收合，預設不展開）===== */}
+        <details className="bg-white rounded-2xl shadow-sm mb-4">
+          <summary className="cursor-pointer px-5 py-3 text-sm font-semibold text-gray-700 select-none">更多洞察 — 表現好 / 流失風險 / 本週摘要</summary>
+          <div className="px-5 pb-5 space-y-4">
+            {(spotlightClients.stars.length > 0 || spotlightClients.struggling.length > 0) && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {spotlightClients.stars.length > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+                    <p className="text-sm font-semibold text-green-800 mb-2">🌟 今日表現好</p>
+                    <div className="space-y-1.5">{spotlightClients.stars.map(s => (
+                      <Link key={s.id} href={`/admin/clients/${s.id}/overview`} className="flex items-center justify-between px-3 py-2 bg-white/60 rounded-lg hover:bg-white/80 transition-colors">
+                        <span className="text-sm font-medium text-green-700">{s.name}</span>
+                        <span className="text-xs text-green-600">{s.reason}</span>
+                      </Link>
+                    ))}</div>
+                  </div>
+                )}
+                {spotlightClients.struggling.length > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                    <p className="text-sm font-semibold text-red-800 mb-2">⚠️ 需要關注</p>
+                    <div className="space-y-1.5">{spotlightClients.struggling.map(s => (
+                      <div key={s.id} className="flex items-center justify-between px-3 py-2 bg-white/60 rounded-lg">
+                        <Link href={`/admin/clients/${s.id}/overview`} className="text-sm font-medium text-red-700 hover:underline">{s.name}</Link>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-red-600">{s.reason}</span>
+                          <button onClick={() => { const c = clients.find(c => c.id === s.id); if (c) openFeedback(c) }} className="p-1 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded transition-colors" title="快速回饋"><MessageSquare size={14} /></button>
+                        </div>
+                      </div>
+                    ))}</div>
+                  </div>
+                )}
               </div>
             )}
-            {spotlightClients.struggling.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-                <p className="text-sm font-semibold text-red-800 mb-2">⚠️ 需要關注</p>
-                <div className="space-y-1.5">{spotlightClients.struggling.map(s => (
-                  <div key={s.id} className="flex items-center justify-between px-3 py-2 bg-white/60 rounded-lg">
-                    <Link href={`/admin/clients/${s.id}/overview`} className="text-sm font-medium text-red-700 hover:underline">{s.name}</Link>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-red-600">{s.reason}</span>
-                      <button onClick={() => { const c = clients.find(c => c.id === s.id); if (c) openFeedback(c) }} className="p-1 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded transition-colors" title="快速回饋">
-                        <MessageSquare size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}</div>
+            {retentionStats.churnRisk.length > 0 && (
+              <div>
+                <p className="text-[11px] text-gray-400 mb-1.5">📉 久未活動（≥10 天）— 退訂前先接觸（💰 = 付費）</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {retentionStats.churnRisk.slice(0, 12).map(c => (
+                    <Link key={c.id} href={`/admin/clients/${c.id}/overview`} className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 transition-colors">{c.name} · {c.days}天{c.paying ? ' 💰' : ''}</Link>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
-        )}
-
-        {/* ===== A1：今日行動佇列（待審草稿 + 回檢/停滯/合規/Wellness/RPE + 訂閱到期）===== */}
-        {actionQueue.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-gray-900">📋 今日行動佇列</h3>
-              <span className="text-xs text-gray-400">{actionQueue.length} 件待處理</span>
-            </div>
-            <div className="space-y-2">
-              {actionQueue.map(item => {
-                const toneBox = { red: 'bg-red-50', orange: 'bg-orange-50', yellow: 'bg-yellow-50', blue: 'bg-blue-50' }[item.tone]
-                const toneText = { red: 'text-red-700', orange: 'text-orange-700', yellow: 'text-yellow-800', blue: 'text-blue-700' }[item.tone]
-                return (
-                  <div key={item.key} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl ${toneBox}`}>
-                    <div className="min-w-0 flex items-center gap-2">
-                      <span className="shrink-0">{item.icon}</span>
-                      <span className={`text-sm font-medium ${toneText} truncate`}>{item.name} — {item.text}</span>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {item.canNote && item.clientId && (
-                        <button
-                          onClick={() => { const c = clients.find(x => x.id === item.clientId); if (c) openFeedback(c) }}
-                          className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"
-                          title="寫筆記"
-                          aria-label={`寫筆記給 ${item.name}`}
-                        >
-                          <MessageSquare size={15} />
-                        </button>
-                      )}
-                      {item.href && (
-                        <Link href={item.href} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-colors" title="前往" aria-label={`前往 ${item.name}`}>
-                          <ExternalLink size={15} />
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[11px] text-gray-400">📋 本週摘要（可複製）</p>
+                <button onClick={() => { navigator.clipboard?.writeText(weeklyDigest); showToast('已複製本週摘要', 'success') }} className="text-[11px] bg-gray-800 text-white px-2.5 py-1 rounded-lg hover:bg-gray-700 transition-colors">複製</button>
+              </div>
+              <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans bg-gray-50 rounded-lg p-3 leading-relaxed">{weeklyDigest}</pre>
             </div>
           </div>
-        )}
+        </details>
 
         {/* ===== 學員列表 ===== */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
