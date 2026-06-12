@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export const metadata: Metadata = {
   title: '數據會說話 — The Howard Protocol 真實案例',
@@ -84,17 +85,25 @@ export default function CaseDataPage() {
   return (
     <div className="bg-white">
       {/* HERO */}
-      <section className="bg-slate-900 text-white px-5 py-16 md:py-24">
-        <div className="max-w-3xl mx-auto">
-          <p className="text-xs tracking-[0.2em] text-blue-400 font-medium mb-5">THE HOWARD PROTOCOL · 真實案例</p>
-          <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-5">
-            7.8% 體脂，<br className="hidden md:block" />血檢幾乎全項達標。
-            <span className="block text-blue-400 mt-2">不是猜的。</span>
-          </h1>
-          <p className="text-slate-300 text-base md:text-lg leading-relaxed mb-10 max-w-xl">
-            減脂誰都能做。但把一個身體的血檢、基因、荷爾蒙全部讀進來，找出問題、開對 protocol、再抽血驗證有效——這才是系統在做的事。
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-3 border-t border-slate-700 pt-8">
+      <section className="bg-slate-900 text-white px-5 py-14 md:py-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-[1.2fr_1fr] gap-10 items-center">
+            <div>
+              <p className="text-xs tracking-[0.2em] text-blue-400 font-medium mb-5">THE HOWARD PROTOCOL · 真實案例</p>
+              <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-5">
+                7.8% 體脂，<br className="hidden md:block" />血檢幾乎全項達標。
+                <span className="block text-blue-400 mt-2">不是猜的。</span>
+              </h1>
+              <p className="text-slate-300 text-base md:text-lg leading-relaxed max-w-xl">
+                減脂誰都能做。但把一個身體的血檢、基因、荷爾蒙全部讀進來，找出問題、開對 protocol、再抽血驗證有效——這才是系統在做的事。
+              </p>
+            </div>
+            <div className="relative aspect-[3/4] rounded-3xl overflow-hidden border border-slate-700 max-w-[260px] mx-auto w-full">
+              <Image src="/after.jpg" alt="7.8% 體脂的身體" fill sizes="(max-width:768px) 70vw, 260px" className="object-cover" />
+              <div className="absolute bottom-3 left-3 bg-blue-600 text-white text-sm font-bold px-3 py-1.5 rounded-lg shadow-lg">7.8% 體脂</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-3 border-t border-slate-700 pt-8 mt-10">
             {HERO_STATS.map((s) => <Stat key={s.label} {...s} />)}
           </div>
         </div>
