@@ -152,6 +152,88 @@ describe('pushMessage', () => {
   })
 })
 
+describe('pushMessage quota relay fallback', () => {
+  const ADMIN_ID = 'U_admin_999'
+  const RELAY_URL = 'https://howard-bot.example.workers.dev/admin/push'
+
+  function monthlyLimitResponse() {
+    const body = JSON.stringify({ message: 'You have reached your monthly limit.' })
+    return {
+      ok: false,
+      status: 429,
+      clone: () => ({ text: () => Promise.resolve(body) }),
+      json: () => Promise.resolve(JSON.parse(body)),
+      text: () => Promise.resolve(body),
+    }
+  }
+
+  beforeEach(() => {
+    process.env.ADMIN_LINE_USER_ID = ADMIN_ID
+    process.env.HOWARD_BOT_RELAY_URL = RELAY_URL
+    process.env.HOWARD_BOT_RELAY_SECRET = 'relay-secret'
+  })
+
+  afterEach(() => {
+    delete process.env.ADMIN_LINE_USER_ID
+    delete process.env.HOWARD_BOT_RELAY_URL
+    delete process.env.HOWARD_BOT_RELAY_SECRET
+  })
+
+  it('relays admin push through howard-bot when monthly quota exhausted', async () => {
+    mockFetch
+      .mockResolvedValueOnce(monthlyLimitResponse()) // LINE push → 429 monthly
+      .mockResolvedValueOnce(okResponse({ ok: true })) // relay POST
+
+    await pushMessage(ADMIN_ID, [{ type: 'text', text: '血檢解讀完成' }])
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    const [relayUrl, relayOpts] = mockFetch.mock.calls[1]
+    expect(relayUrl).toContain(RELAY_URL)
+    expect(relayUrl).toContain('secret=relay-secret')
+    const relayBody = JSON.parse(relayOpts.body)
+    expect(relayBody.text).toBe('血檢解讀完成')
+    expect(relayBody.source).toBe('V3')
+  })
+
+  it('does NOT relay client pushes (clients are not friends with the relay OA)', async () => {
+    mockFetch.mockResolvedValueOnce(monthlyLimitResponse())
+
+    await pushMessage('U_client_123', [{ type: 'text', text: 'hi' }])
+
+    expect(mockFetch).toHaveBeenCalledTimes(1) // no relay call
+  })
+
+  it('does NOT relay on per-minute 429 (retries then gives up without relay trigger from monthly check)', async () => {
+    const perMinute429 = {
+      ok: false,
+      status: 429,
+      clone: () => ({ text: () => Promise.resolve('{"message":"Too many requests"}') }),
+      json: () => Promise.resolve({}),
+      text: () => Promise.resolve('{"message":"Too many requests"}'),
+    }
+    mockFetch
+      .mockResolvedValueOnce(perMinute429)
+      .mockResolvedValueOnce(perMinute429)
+      .mockResolvedValueOnce(okResponse()) // succeeds on 3rd retry
+
+    await pushMessage(ADMIN_ID, [{ type: 'text', text: 'retry me' }])
+
+    // 3 LINE attempts, no relay call
+    expect(mockFetch).toHaveBeenCalledTimes(3)
+    const urls = mockFetch.mock.calls.map((c) => c[0])
+    expect(urls.every((u: string) => u.startsWith('https://api.line.me'))).toBe(true)
+  })
+
+  it('skips relay silently when relay env vars not configured', async () => {
+    delete process.env.HOWARD_BOT_RELAY_URL
+    mockFetch.mockResolvedValueOnce(monthlyLimitResponse())
+
+    await pushMessage(ADMIN_ID, [{ type: 'text', text: 'no relay configured' }])
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('getUserProfile', () => {
   it('returns profile on success', async () => {
     const profile = { displayName: 'Test User', pictureUrl: 'https://example.com/pic.jpg' }
