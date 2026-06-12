@@ -16,7 +16,7 @@ export default function TrainingPage() {
     <section className="section-container" style={{backgroundColor: '#F9F9F7'}}>
       <h2 className="text-3xl md:text-4xl font-bold text-center mb-6" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>The Howard Training System</h2>
       <p className="doc-subtitle" style={{color: '#2D2D2D', maxWidth: '800px', margin: '0 auto 3rem', lineHeight: '1.8'}}>
-        我不用傳統的「胸背腿」分化。我的訓練系統建立在結構優化、神經適應和數據追蹤之上。
+        我不開公版菜單。分化怎麼排（例如 Push / Pull / Legs / Upper）、用哪些動作，依你的程度、目標和關節狀況個人化——建立在結構優化、神經適應和數據追蹤之上。
       </p>
 
       {/* 個人訓練哲學 */}
@@ -141,7 +141,7 @@ export default function TrainingPage() {
             <p className="text-gray-400 text-sm mb-2">2026 年</p>
             <h4 className="text-xl font-semibold mb-3" style={{color: '#2D2D2D'}}>現在的訓練模式</h4>
             <p className="text-gray-600 text-sm leading-relaxed">
-              每週 3-4 次訓練，每次 60-90 分鐘。專注在深蹲、硬舉、臥推三大動作。用 RPE 管理強度，追蹤數據，持續進步。
+              每週 4 次訓練，每次 60-90 分鐘。以複合動作打底（臥推、划船、腿推／硬舉等，依關節狀況選用，膝蓋有狀況就用器械替代），用 RPE 管理強度、追蹤數據，持續進步。
             </p>
           </div>
         </div>
