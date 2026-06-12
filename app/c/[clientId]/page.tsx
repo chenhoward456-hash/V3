@@ -813,8 +813,8 @@ export default function ClientDashboard() {
         {/* 首次來訪導覽 banner（dismissible）*/}
         {isToday && <WelcomeBanner clientId={clientId as string} />}
 
-        {/* 核心邏輯一句話（常駐，新人不會誤會） */}
-        {isToday && (
+        {/* 核心邏輯一句話 — 暫藏 2026-06-12（去雜訊，常駐文案無資訊量；移除 false 即還原） */}
+        {false && isToday && (
           <div className="mb-4 px-4 py-2.5 bg-zinc-50 border-l-2 border-emerald-500 rounded-r-lg">
             <p className="text-[11px] text-gray-600 leading-relaxed">
               <span className="text-[9px] uppercase tracking-wider font-bold text-emerald-700 mr-1.5">重點</span>
@@ -823,8 +823,8 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* 🔥 連續紀錄 streak 小 chip — 增強動機 */}
-        {isToday && streakDays >= 3 && (
+        {/* 🔥 streak chip — 暫藏 2026-06-12（streak 已在 TodayOverviewCard 顯示，避免重複；移除 false 即還原） */}
+        {false && isToday && streakDays >= 3 && (
           <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-200 rounded-full">
             <span className="text-lg">🔥</span>
             <div>
@@ -889,7 +889,7 @@ export default function ClientDashboard() {
             </SectionErrorBoundary>
           )}
 
-          {/* ===== 進步總覽：本週 vs 上週（從隱藏的進度 tab 移到主畫面第一眼） ===== */}
+          {/* ===== 進步總覽 — 暫藏 2026-06-12（與 TodayOverviewCard 的現況/洞察重疊；要還原把下面整段註解打開即可） =====
           {isToday && (
             <SectionErrorBoundary name="progress-journey">
               <ProgressJourney
@@ -903,6 +903,7 @@ export default function ClientDashboard() {
               />
             </SectionErrorBoundary>
           )}
+          ===== */}
 
           {/* 賽後恢復提示：比賽日期已過但階段仍為 peak_week/competition */}
           {isCompetition && c.competition_date && (() => {
@@ -1230,7 +1231,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 推播提醒（測試模式：放補品旁方便檢視，確認後改回 gated 版） */}
-        {isToday && <PushNotificationPrompt code={c.unique_code} debug />}
+        {isToday && <PushNotificationPrompt code={c.unique_code} />}
 
         {/* 補品策略（引擎依血檢/基因推導的「為什麼」，端給學員看）*/}
         {isToday && supplementSuggestions.length > 0 && (
@@ -1389,8 +1390,8 @@ export default function ClientDashboard() {
         {/* === SEE section: 被動資訊（記錄完再看） === */}
         {/* ================================================================ */}
 
-        {/* HealthOverview 概覽（從白卡移到這裡） */}
-        <SectionErrorBoundary name="health-overview">
+        {/* HealthOverview 概覽 — 暫藏 2026-06-12（與 TodayOverviewCard 指標重疊；移除 false && 即還原） */}
+        {false && <SectionErrorBoundary name="health-overview">
         <HealthOverview
           weekRate={supplementComplianceStats.weekRate}
           monthRate={supplementComplianceStats.monthRate}
@@ -1416,7 +1417,7 @@ export default function ClientDashboard() {
             respiratory_rate: todayWellness.respiratory_rate,
           } : null}
         />
-        </SectionErrorBoundary>
+        </SectionErrorBoundary>}
 
         {/* 健康分數 + 健康模式進階 */}
         {isHealthMode && healthScore && <HealthScoreBanner healthScore={healthScore} />}
