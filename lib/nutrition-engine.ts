@@ -410,7 +410,7 @@ export interface ShowDayMeal {
 // ===== 胰島素敏感度分層（血檢驅動）=====
 // 文獻依據：
 // Cornier 2005：胰島素敏感者高碳水減脂效果更好
-// McClain 2013（POUNDS LOST）：胰島素阻抗者高蛋白組表現更好
+// McClain 2013（Gardner A TO Z 次級分析）：胰島素阻抗者較適合較低碳水組
 // Bandegan 2017（IAAO）：赤字下蛋白質需求上限 ~2.0 g/kg
 
 export type InsulinSensitivityTier = 'sensitive' | 'moderate' | 'resistant'
@@ -650,7 +650,7 @@ const CARB_CYCLE_TRAINING_RATIO = 0.6
 //      Obes Res, 3 Suppl 4:477S-480S. → 低碳水 → 色胺酸進入大腦減少 → 血清素合成下降
 // [G2] Gilbody S, Lightfoot T, Sheldon T (2007). Is low folate a risk factor for depression? A meta-analysis.
 //      J Epidemiol Community Health, 61(7):631-637. → MTHFR 突變 → 葉酸代謝受損 → 憂鬱風險
-// [G3] Minihane AM, et al. (2015). APOE genotype, cardiovascular risk and responsiveness to dietary fat
+// [G3] Minihane AM, et al. (2007). APOE genotype, cardiovascular risk and responsiveness to dietary fat
 //      manipulation. Proc Nutr Soc, 66(2):183-197. → APOE4 攜帶者 LDL-C 對飽和脂肪敏感度 2-3 倍
 const GENETIC = {
   // 憂鬱基因 → 碳水最低下限提高

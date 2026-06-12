@@ -119,7 +119,7 @@ export function generateLabNutritionAdvice(
         currentValue: lab.value,
         unit: lab.unit,
         targetRange: '<60（頂尖）/ <80（理想）',
-        references: ['Sniderman et al. 2019, Lancet', 'Ference et al. 2017, Eur Heart J'],
+        references: ['Sniderman et al. 2019, JAMA Cardiol', 'Ference et al. 2017, Eur Heart J'],
       })
     }
 
@@ -393,7 +393,7 @@ export function generateLabNutritionAdvice(
         unit: lab.unit,
         targetRange: '<30 nmol/L（理想）',
         references: [
-          'Tsimikas et al. 2020 (J Am Coll Cardiol): Lp(a) and cardiovascular disease',
+          'Tsimikas 2017 (J Am Coll Cardiol): A Test in Context — Lipoprotein(a)',
           'Nordestgaard et al. 2010 (Eur Heart J): Lp(a) as a cardiovascular risk factor',
         ],
         caveat: 'Lp(a) 超過 90% 由基因決定，飲食和運動對其直接影響非常有限。但可以透過控制其他風險因子（LDL、發炎、血壓）來降低整體心血管風險。',
@@ -540,7 +540,7 @@ export function generateLabNutritionAdvice(
         targetRange: '<40 U/L（理想 <25）',
         references: [
           'Kwo et al. 2017 (Am J Gastroenterol): ACG guideline — abnormal liver chemistries',
-          'Zelber-Sagi et al. 2011 (J Hepatol): Dietary patterns and NAFLD',
+          'Zelber-Sagi et al. 2011 (World J Gastroenterol): Nutrition and physical activity in NAFLD',
           'Abdelmalek et al. 2010 (Hepatology): Increased fructose consumption and NAFLD',
         ],
         caveat: 'ALT 比 AST 更具肝臟特異性。若 ALT > AST 且持續偏高，建議排查非酒精性脂肪肝（NAFLD），這在高體脂人群中很常見。',
@@ -565,8 +565,8 @@ export function generateLabNutritionAdvice(
         unit: lab.unit,
         targetRange: gender === '女性' ? '<40 U/L' : '<60 U/L',
         references: [
-          'Whitfield 2001 (Clin Chem): GGT and cardiometabolic risk',
-          'Koenig & Seneff 2015 (Entropy): GGT as a biomarker for glutathione status',
+          'Whitfield 2001 (Crit Rev Clin Lab Sci): GGT and cardiometabolic risk',
+          'Koenig & Seneff 2015 (Disease Markers): GGT as a biomarker for glutathione status',
         ],
         caveat: 'GGT 升高除了酒精，也可能反映氧化壓力、藥物影響（如 NSAIDs）或膽道問題。某些補充品（過量維生素 A、類固醇）也會升高 GGT。',
       })
@@ -596,7 +596,7 @@ export function generateLabNutritionAdvice(
           unit: lab.unit,
           targetRange: '>4.0 g/dL（理想）',
           references: [
-            'Don & Kaysen 2004 (J Am Soc Nephrol): Serum albumin — relationship to inflammation and nutrition',
+            'Don & Kaysen 2004 (Semin Dial): Serum albumin — relationship to inflammation and nutrition',
             'Morton et al. 2018 (Br J Sports Med): Protein distribution and muscle protein synthesis',
           ],
           caveat: '白蛋白是負性急性期蛋白，發炎時會下降（不代表蛋白質攝取不足）。脫水時會假性升高。需搭配 CRP 和飲食記錄綜合判讀。',
@@ -1275,7 +1275,7 @@ export function generateLabNutritionAdvice(
             'Volek et al. 1997 (J Appl Physiol): Testosterone and cortisol in relationship to dietary nutrients and resistance exercise',
             'Prasad et al. 1996 (Nutrition): Zinc status and serum testosterone levels in healthy adults',
             'Pilz et al. 2011 (Horm Metab Res): Effect of vitamin D supplementation on testosterone levels',
-            'Whittaker & Wu 2021 (Nutrients): Low-fat diets and testosterone in men — systematic review and meta-analysis',
+            'Whittaker & Wu 2021 (J Steroid Biochem Mol Biol): Low-fat diets and testosterone in men — systematic review and meta-analysis',
           ],
           caveat: '總睪固酮受 SHBG 影響大，SHBG 高時游離睪固酮可能偏低但總 T 正常。建議同時檢驗游離睪固酮。另外，抽血時間影響結果（早上 T 最高），需早晨空腹抽血。',
         })
@@ -2674,7 +2674,7 @@ export function getLabMacroModifiers(
     // 當血檢指標優秀時，放寬對應營養素限制，讓飲食分配更靈活
     // 文獻：
     //  - HOMA-IR < 1.0 → 極佳胰島素敏感度，碳水耐受力高 (Volek & Phinney 2011)
-    //  - ApoB < 60 → 心血管風險極低，脂肪攝取彈性更大 (Sniderman et al. 2019, Lancet)
+    //  - ApoB < 60 → 心血管風險極低，脂肪攝取彈性更大 (Sniderman et al. 2019, JAMA Cardiol)
     //  - 空腹胰島素 < 5 → 碳水分配窗口可拉寬 (Ludwig 2002, JAMA)
     //  - TG < 70 → 脂質代謝極佳，不需額外限制碳水
     //
