@@ -109,8 +109,20 @@ export default function CaseDataPage() {
         </div>
       </section>
 
+      {/* 背後的人 — 把「人」的鉤子放進來，這頁自成完整一頁（人 + 數據 + CTA） */}
+      <section className="px-5 pt-10 max-w-3xl mx-auto">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <p className="text-sm text-slate-700 leading-relaxed">
+            我是 Howard，CSCS 認證教練。<b className="text-slate-900">這一頁所有數據,都是我自己的身體</b>——我把同一套系統用在自己身上,連續追蹤好幾年。不是課表範本,是親身驗證過的東西。
+          </p>
+          <Link href="/case" className="inline-block mt-3 text-sm text-blue-600 font-medium hover:underline">
+            看我完整的轉變故事 →
+          </Link>
+        </div>
+      </section>
+
       {/* 血檢達標 */}
-      <section className="px-5 py-16 max-w-3xl mx-auto">
+      <section className="px-5 pt-10 pb-16 max-w-3xl mx-auto">
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">血檢：不是減重，是把整個身體調到最佳</h2>
         <p className="text-slate-500 mb-8 leading-relaxed">
           一個 7.8% 體脂的人，代謝、血脂、血糖幾乎全項落在 Howard 最佳標準（藍標＝正常之上的最佳化區）。
