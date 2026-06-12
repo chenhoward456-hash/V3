@@ -1526,6 +1526,63 @@ export default function ClientOverview() {
 
         {/* 原有警示區塊已整合到頂部摘要 */}
 
+        {/* ===== 核心指標卡片（置頂，一眼看狀況）===== */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {client.supplement_enabled && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '週' : `${dateRange}天`}補品服從率</p>
+              <p className={`text-3xl font-bold ${keyMetrics.weekCompliance >= 80 ? 'text-green-600' : keyMetrics.weekCompliance >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {keyMetrics.weekCompliance}%
+              </p>
+              <p className="text-xs text-gray-400 mt-1">月 {keyMetrics.monthCompliance}%</p>
+            </div>
+          )}
+          {client.training_enabled && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '本週' : `近${dateRange}天`}訓練</p>
+              <p className="text-3xl font-bold text-blue-600">{keyMetrics.weekTrainingDays} 天</p>
+            </div>
+          )}
+          {client.wellness_enabled && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">近 {dateRange} 天精力</p>
+              <p className="text-3xl font-bold text-purple-600">{keyMetrics.avgEnergy}</p>
+              <p className="text-xs text-gray-400 mt-1">滿分 5</p>
+            </div>
+          )}
+          {client.body_composition_enabled && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">最新體重</p>
+              <p className="text-3xl font-bold text-gray-900">{keyMetrics.latestWeight ?? '--'}</p>
+              {keyMetrics.weightChange && (
+                <p className={`text-xs mt-1 ${Number(keyMetrics.weightChange) > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                  {Number(keyMetrics.weightChange) > 0 ? '↑' : '↓'} {Math.abs(Number(keyMetrics.weightChange))} kg
+                </p>
+              )}
+            </div>
+          )}
+          {client.lab_enabled && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">血檢指標</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {latestLabs.filter(l => l.status === 'normal').length}/{latestLabs.length}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">正常</p>
+            </div>
+          )}
+          {client.nutrition_enabled && keyMetrics.weekNutritionRate != null && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '週' : `${dateRange}天`}飲食合規</p>
+              <p className={`text-3xl font-bold ${keyMetrics.weekNutritionRate >= 80 ? 'text-green-600' : keyMetrics.weekNutritionRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {keyMetrics.weekNutritionRate}%
+              </p>
+              {keyMetrics.monthNutritionRate != null && (
+                <p className="text-xs text-gray-400 mt-1">月 {keyMetrics.monthNutritionRate}%</p>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* ===== 目標進度卡（時間/體重/體脂） ===== */}
         {(keyMetrics.daysToGoal != null || keyMetrics.weightToGo != null || keyMetrics.bfToGo != null) && (
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
@@ -2577,62 +2634,10 @@ export default function ClientOverview() {
           </div>
         )}
 
-        {/* ===== 核心指標卡片 ===== */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {client.supplement_enabled && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
-              <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '週' : `${dateRange}天`}補品服從率</p>
-              <p className={`text-3xl font-bold ${keyMetrics.weekCompliance >= 80 ? 'text-green-600' : keyMetrics.weekCompliance >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                {keyMetrics.weekCompliance}%
-              </p>
-              <p className="text-xs text-gray-400 mt-1">月 {keyMetrics.monthCompliance}%</p>
-            </div>
-          )}
-          {client.training_enabled && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
-              <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '本週' : `近${dateRange}天`}訓練</p>
-              <p className="text-3xl font-bold text-blue-600">{keyMetrics.weekTrainingDays} 天</p>
-            </div>
-          )}
-          {client.wellness_enabled && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
-              <p className="text-xs text-gray-500 mb-1">近 {dateRange} 天精力</p>
-              <p className="text-3xl font-bold text-purple-600">{keyMetrics.avgEnergy}</p>
-              <p className="text-xs text-gray-400 mt-1">滿分 5</p>
-            </div>
-          )}
-          {client.body_composition_enabled && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
-              <p className="text-xs text-gray-500 mb-1">最新體重</p>
-              <p className="text-3xl font-bold text-gray-900">{keyMetrics.latestWeight ?? '--'}</p>
-              {keyMetrics.weightChange && (
-                <p className={`text-xs mt-1 ${Number(keyMetrics.weightChange) > 0 ? 'text-red-500' : 'text-green-500'}`}>
-                  {Number(keyMetrics.weightChange) > 0 ? '↑' : '↓'} {Math.abs(Number(keyMetrics.weightChange))} kg
-                </p>
-              )}
-            </div>
-          )}
-          {client.lab_enabled && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
-              <p className="text-xs text-gray-500 mb-1">血檢指標</p>
-              <p className="text-3xl font-bold text-gray-900">
-                {latestLabs.filter(l => l.status === 'normal').length}/{latestLabs.length}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">正常</p>
-            </div>
-          )}
-          {client.nutrition_enabled && keyMetrics.weekNutritionRate != null && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
-              <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '週' : `${dateRange}天`}飲食合規</p>
-              <p className={`text-3xl font-bold ${keyMetrics.weekNutritionRate >= 80 ? 'text-green-600' : keyMetrics.weekNutritionRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                {keyMetrics.weekNutritionRate}%
-              </p>
-              {keyMetrics.monthNutritionRate != null && (
-                <p className="text-xs text-gray-400 mt-1">月 {keyMetrics.monthNutritionRate}%</p>
-              )}
-            </div>
-          )}
-        </div>
+        {/* ===== 深度圖表（收合）：營養・感受・補品 ===== */}
+        <details className="group">
+          <summary className="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-900 px-1 py-2 select-none">🍽️ 營養・感受・補品 圖表（點開）</summary>
+          <div className="space-y-6 mt-2">
 
         {/* ===== 第一排圖表：補品 + 感受 ===== */}
         {(client.supplement_enabled || client.wellness_enabled) && (
@@ -2941,6 +2946,14 @@ export default function ClientOverview() {
           </div>
         )}
 
+          </div>
+        </details>
+
+        {/* ===== 深度圖表（收合）：訓練・身體 ===== */}
+        <details className="group">
+          <summary className="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-900 px-1 py-2 select-none">🏋️ 訓練・身體 圖表（點開）</summary>
+          <div className="space-y-6 mt-2">
+
         {/* ===== 第二排：訓練日曆 + RPE + 訓練分佈 ===== */}
         {client.training_enabled && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -3192,6 +3205,14 @@ export default function ClientOverview() {
           </div>
         )}
 
+          </div>
+        </details>
+
+        {/* ===== 深度圖表（收合）：血檢（預設展開，Howard 主戰場）===== */}
+        <details className="group" open>
+          <summary className="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-900 px-1 py-2 select-none">🩸 血檢 圖表與建議</summary>
+          <div className="space-y-6 mt-2">
+
         {/* ===== 血檢指標 ===== */}
         {client.lab_enabled && latestLabs.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm p-5">
@@ -3293,6 +3314,9 @@ export default function ClientOverview() {
             />
           </>
         )}
+
+          </div>
+        </details>
 
         {/* ===== 教練備註 ===== */}
         {client.coach_summary && (
