@@ -5,38 +5,28 @@ import { buildClientFeed, type FeedCard, type FeedTone, type MacroAdjustmentRow 
 import type { LabResultRow } from '@/lib/lab-trend-analyzer'
 
 const TONE_STYLE: Record<FeedTone, { box: string; title: string; icon: string }> = {
-  good:  { box: 'from-emerald-50 to-green-50 border-emerald-200', title: 'text-emerald-800', icon: 'bg-emerald-100' },
-  alert: { box: 'from-rose-50 to-red-50 border-rose-200',         title: 'text-rose-800',    icon: 'bg-rose-100' },
-  warn:  { box: 'from-amber-50 to-yellow-50 border-amber-200',    title: 'text-amber-800',   icon: 'bg-amber-100' },
-  info:  { box: 'from-blue-50 to-indigo-50 border-blue-200',      title: 'text-blue-800',    icon: 'bg-blue-100' },
+  good:  { box: 'bg-emerald-50/70 border-emerald-100', title: 'text-emerald-800', icon: 'bg-emerald-100' },
+  alert: { box: 'bg-rose-50/70 border-rose-100',       title: 'text-rose-800',    icon: 'bg-rose-100' },
+  warn:  { box: 'bg-amber-50/70 border-amber-100',     title: 'text-amber-800',   icon: 'bg-amber-100' },
+  info:  { box: 'bg-blue-50/70 border-blue-100',       title: 'text-blue-800',    icon: 'bg-blue-100' },
 }
 
-function Card({ card, onDismiss }: { card: FeedCard; onDismiss: (id: string) => void }) {
+function Row({ card, onDismiss }: { card: FeedCard; onDismiss: (id: string) => void }) {
   const s = TONE_STYLE[card.tone]
   return (
-    <div className={`relative bg-gradient-to-br ${s.box} border rounded-2xl p-4 mb-3`}>
+    <div className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border ${s.box}`}>
+      <span className={`shrink-0 w-7 h-7 rounded-lg ${s.icon} flex items-center justify-center text-sm`}>{card.icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className={`text-sm font-semibold ${s.title} leading-tight`}>{card.title}</p>
+        <p className="text-xs text-gray-500 leading-snug truncate">{card.body}</p>
+      </div>
       <button
         onClick={() => onDismiss(card.id)}
-        className="absolute top-2.5 right-2.5 text-gray-300 hover:text-gray-500 transition-colors p-1"
-        aria-label="關閉這則更新"
+        className="shrink-0 text-gray-300 hover:text-gray-500 transition-colors p-1"
+        aria-label="關閉"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <div className="flex gap-3 pr-5">
-        <div className={`shrink-0 w-9 h-9 rounded-xl ${s.icon} flex items-center justify-center text-lg`}>{card.icon}</div>
-        <div className="min-w-0">
-          <p className={`text-sm font-bold ${s.title} mb-0.5`}>{card.title}</p>
-          <p className="text-sm text-gray-600 leading-relaxed">{card.body}</p>
-          {card.cta && (
-            <a
-              href={card.cta.href}
-              className="inline-block mt-2 text-sm font-medium text-blue-600 hover:underline"
-            >
-              {card.cta.label} →
-            </a>
-          )}
-        </div>
-      </div>
     </div>
   )
 }
@@ -46,16 +36,16 @@ interface ForYouFeedProps {
   gender?: '男性' | '女性'
   nextCheckupDate?: string | null
   macroAdjustment?: MacroAdjustmentRow | null
-  clientName?: string | null
 }
 
 /**
- * 「為你更新」卡片流 — 把儀表板從給看變主動講。
- * 資料事件穩定 id；關掉存 localStorage，新事件會用新 id 重新出現。
+ * 「為你更新」精簡卡片流 — 每則一行重點、預設只顯示 3 則、合規免責收底部。
+ * 關掉存 localStorage；事件 id 變了會重新出現。
  */
-export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment, clientName }: ForYouFeedProps) {
+export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment }: ForYouFeedProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [ready, setReady] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -77,20 +67,29 @@ export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment, cli
     })
   }
 
-  // 避免 SSR / client 首渲染不一致（dismissed 來自 localStorage）
   if (!ready) return null
 
   const cards = buildClientFeed({ labs, gender, nextCheckupDate, macroAdjustment }).filter(c => !dismissed.has(c.id))
   if (cards.length === 0) return null
 
+  const visible = expanded ? cards : cards.slice(0, 3)
+  const hidden = cards.length - visible.length
+  const hasMedical = cards.some(c => c.tone === 'alert' || c.tone === 'warn')
+
   return (
     <div className="mb-4">
-      <p className="text-xs font-semibold text-gray-400 tracking-wide mb-2 px-1">
-        為你更新{clientName ? ` · ${clientName}` : ''}
-      </p>
-      {cards.map(card => (
-        <Card key={card.id} card={card} onDismiss={handleDismiss} />
-      ))}
+      <p className="text-xs font-semibold text-gray-400 tracking-wide mb-1.5 px-1">為你更新</p>
+      <div className="space-y-1.5">
+        {visible.map(card => <Row key={card.id} card={card} onDismiss={handleDismiss} />)}
+      </div>
+      {hidden > 0 && (
+        <button onClick={() => setExpanded(true)} className="mt-1.5 text-xs text-gray-500 hover:text-gray-700 px-1">
+          ＋ 還有 {hidden} 則
+        </button>
+      )}
+      {hasMedical && (
+        <p className="text-[10px] text-gray-400 mt-1.5 px-1 leading-snug">⚠️ 數值僅供追蹤、非醫療診斷；有疑慮請諮詢醫師。</p>
+      )}
     </div>
   )
 }

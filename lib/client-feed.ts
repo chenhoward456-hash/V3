@@ -83,7 +83,7 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
       tone: 'alert',
       icon: '🩸',
       title: `${f.testName} 要盯一下`,
-      body: `目前 ${f.latestValue}${f.unit ? ' ' + f.unit : ''}${f.optimalText ? `（最佳 ${f.optimalText}）` : ''}，還在要注意的範圍。我會幫你盯著，想調整方向或有疑慮，LINE 我、必要時找醫師評估。`,
+      body: `目前 ${f.latestValue}${f.unit ? ' ' + f.unit : ''}${f.optimalText ? `，最佳 ${f.optimalText}` : ''} · 持續追蹤`,
     })
   }
 
@@ -96,7 +96,7 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
       tone: 'good',
       icon: '🎉',
       title: `${f.testName} 進步了！`,
-      body: `從 ${f.previousValue} ${dir} ${f.latestValue}${f.unit ? ' ' + f.unit : ''}${pct != null ? `（進步約 ${pct}%）` : ''}。做得很好，繼續保持 💪`,
+      body: `${f.previousValue} ${dir} ${f.latestValue}${f.unit ? ' ' + f.unit : ''}${pct != null ? `（+${pct}%）` : ''} 👏`,
     })
   }
 
@@ -107,7 +107,7 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
       tone: 'warn',
       icon: '🩸',
       title: `${f.testName} 稍微偏離`,
-      body: `目前 ${f.latestValue}${f.unit ? ' ' + f.unit : ''}${f.optimalText ? `（最佳 ${f.optimalText}）` : ''}，還不用緊張，但值得追蹤。我們下次一起看趨勢。`,
+      body: `目前 ${f.latestValue}${f.unit ? ' ' + f.unit : ''}${f.optimalText ? `，最佳 ${f.optimalText}` : ''} · 留意即可`,
     })
   }
 
@@ -120,7 +120,7 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
         tone: 'warn',
         icon: '📅',
         title: '回檢日過囉',
-        body: `上次安排的回檢日（${input.nextCheckupDate}）已經過了 ${-d} 天。找個時間去抽血，才看得到最新的身體變化。`,
+        body: `回檢日（${input.nextCheckupDate}）已過 ${-d} 天 · 安排抽血看最新變化`,
       })
     } else if (d <= 21) {
       cards.push({
@@ -129,8 +129,8 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
         icon: '📅',
         title: d === 0 ? '今天是回檢日' : '回檢日快到了',
         body: d === 0
-          ? `今天（${input.nextCheckupDate}）是安排的回檢日，記得去抽血。`
-          : `下次回檢 ${input.nextCheckupDate}，還有 ${d} 天。可以先預約一下。`,
+          ? `今天（${input.nextCheckupDate}）是回檢日，記得抽血`
+          : `${input.nextCheckupDate} · 還有 ${d} 天`,
       })
     }
   }
@@ -155,7 +155,7 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
         tone: 'info',
         icon: '🎯',
         title: '你的目標自動調整了',
-        body: `${changeStr}。${reasonStr} 不用自己算，系統幫你盯著進度。`,
+        body: `${changeStr} · ${reasonStr}`,
       })
     }
   }
