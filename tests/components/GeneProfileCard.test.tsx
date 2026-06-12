@@ -54,7 +54,7 @@ describe('GeneProfileCard', () => {
   it('shows risk hint for high-risk gene variants', () => {
     render(<GeneProfileCard {...baseProps} apoe="e4/e4" />)
     fireEvent.click(screen.getByText('基因檔案'))
-    expect(screen.getByText(/心血管高風險/)).toBeInTheDocument()
+    expect(screen.getByText(/飽和脂肪較敏感/)).toBeInTheDocument()
   })
 
   it('enters edit mode and shows form fields', () => {

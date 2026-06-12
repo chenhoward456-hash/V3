@@ -97,14 +97,14 @@ export interface ClientInfo {
 export function getLabAdvice(testName: string, value: number): string {
   switch (testName) {
     // 代謝 / 血糖
-    case 'HOMA-IR': return value < 0.8 ? '胰島素敏感度頂尖' : value < 1.0 ? '很好，目標 <0.8 可再精進' : value < 2.0 ? '正常，可透過運動與飲食進一步優化' : '胰島素阻抗偏高'
+    case 'HOMA-IR': return value < 0.8 ? '胰島素敏感度頂尖' : value < 1.0 ? '很好，目標 <0.8 可再精進' : value < 2.0 ? '正常，可透過運動與飲食進一步優化' : '距最佳區間較遠，建議運動與飲食優化'
     case '空腹血糖': return value < 80 ? '血糖控制頂尖' : value < 85 ? '很好，目標 <80 可再優化' : value < 90 ? '正常，可透過進食順序與餐後走路再優化' : value < 100 ? '血糖偏高，注意碳水攝取' : '血糖過高'
     case '空腹胰島素': return value < 2.5 ? '胰島素分泌效率頂尖' : value < 5 ? '正常，持續維持低精製碳水飲食' : value < 8 ? '胰島素偏高' : '胰島素過高'
     case 'HbA1c': return value < 5.0 ? '長期血糖控制頂尖' : value < 5.5 ? '正常，可透過碳水管理進一步優化' : value < 5.7 ? '血糖略高' : '糖化血色素偏高'
     case '尿酸': return value < 5.0 ? '尿酸控制頂尖' : value < 5.5 ? '很好，目標 <5.0 可再精進' : value < 7.0 ? '正常，可減少高普林食物再優化' : '尿酸偏高，注意飲食'
     // 血脂
     case '三酸甘油酯': return value < 60 ? '三酸甘油酯頂尖' : value < 100 ? '正常，目標 <60 可透過 Omega-3 再優化' : value < 150 ? '偏高，減少精緻碳水' : '過高，需飲食調整'
-    case 'ApoB': return value < 50 ? 'ApoB 頂尖，心血管風險極低' : value < 80 ? '正常，目標 <50 可透過纖維與飲食優化' : value < 100 ? 'ApoB 偏高' : 'ApoB 過高，心血管風險升高'
+    case 'ApoB': return value < 50 ? 'ApoB 頂尖，落在最佳區間' : value < 80 ? '正常，目標 <50 可透過纖維與飲食優化' : value < 100 ? 'ApoB 偏高' : 'ApoB 偏高，建議追蹤並與醫師討論'
     case 'Lp(a)': return value < 30 ? 'Lp(a) 正常' : 'Lp(a) 偏高（基因相關）'
     case 'LDL-C': return value < 60 ? 'LDL 頂尖' : value < 100 ? '正常，目標 <60 可增加纖維與植物固醇來優化' : value < 130 ? 'LDL 偏高' : 'LDL 過高'
     case 'HDL-C': return value >= 65 ? 'HDL 頂尖' : value >= 50 ? '正常，目標 65+ 可透過有氧運動與好油脂提升' : value >= 40 ? 'HDL 偏低，建議增加運動與好油脂' : 'HDL 偏低'
@@ -124,7 +124,7 @@ export function getLabAdvice(testName: string, value: number): string {
     case 'Free T3': return value >= 3.0 && value <= 4.0 ? 'Free T3 頂尖' : value >= 2.3 && value <= 4.2 ? '正常，目標 3.0-4.0 確保充足碳水與睡眠' : 'Free T3 異常'
     // 鐵代謝
     case '鐵蛋白': return value >= 70 && value <= 120 ? '鐵儲存頂尖' : value >= 50 && value <= 150 ? '正常，目標 70-120 可透過富鐵食物搭配維生素C' : value < 50 ? '鐵儲存偏低' : '鐵儲存偏高'
-    case '血紅素': return value >= 14.5 && value <= 16.5 ? '血紅素頂尖' : value >= 13.5 && value <= 17.5 ? '正常，目標 14.5-16.5 確保鐵與B群攝取充足' : value < 13.5 ? '血紅素偏低，可能貧血' : '血紅素偏高'
+    case '血紅素': return value >= 14.5 && value <= 16.5 ? '血紅素頂尖' : value >= 13.5 && value <= 17.5 ? '正常，目標 14.5-16.5 確保鐵與B群攝取充足' : value < 13.5 ? '血紅素偏低，建議追蹤、必要時諮詢醫師' : '血紅素偏高'
     case 'MCV': return value >= 85 && value <= 95 ? 'MCV 頂尖' : value >= 80 && value <= 100 ? '正常，目標 85-95' : value < 80 ? '小球性（可能缺鐵）' : '巨球性（可能缺 B12/葉酸）'
     // 發炎
     case 'CRP': return value < 0.5 ? '發炎指標頂尖' : value < 1.0 ? '正常，目標 <0.5 可增加 Omega-3 與抗發炎食物' : value < 3.0 ? '輕度發炎' : '發炎指標偏高'

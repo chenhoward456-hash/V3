@@ -112,7 +112,7 @@ export function generateSupplementSuggestions(
         name: '⚠️ 停止鐵劑補充',
         dosage: '立即停止所有含鐵補品',
         timing: '—',
-        reason: `鐵蛋白 ${ferritin.value} ng/mL，顯著偏高（參考值 50-150）。高鐵蛋白增加氧化壓力與器官鐵沉積風險。${ferritin.value > 300 ? '建議諮詢醫師評估是否需要捐血或放血治療。' : '建議減少紅肉攝取、避免維生素 C 與含鐵食物同時服用。'}`,
+        reason: `鐵蛋白 ${ferritin.value} ng/mL，顯著偏高（參考值 50-150）。高鐵蛋白增加氧化壓力與器官鐵沉積風險。${ferritin.value > 300 ? '建議與醫師討論後續追蹤方式（高鐵蛋白者醫師可能評估捐血等）。' : '建議減少紅肉攝取、避免維生素 C 與含鐵食物同時服用。'}`,
         priority: ferritin.value > 300 ? 'high' : 'medium',
         evidence: 'Kell & Pretorius 2014 (Metallomics)：高鐵蛋白 > 200 與氧化壓力及代謝症候群相關',
         triggerTests: [ferritin.test_name],
@@ -151,7 +151,7 @@ export function generateSupplementSuggestions(
         name: '⚠️ 停止維生素 D 補充',
         dosage: '立即停止 D3 補品',
         timing: '—',
-        reason: `維生素 D ${vitd.value} ng/mL，超過安全上限（100 ng/mL）。過高的維生素 D 會導致高血鈣症，引起噁心、腎結石、甚至腎損傷。${vitd.value > 150 ? '數值嚴重偏高，請立即諮詢醫師。' : '停止補充後通常 2-3 個月會自然回降。'}`,
+        reason: `維生素 D ${vitd.value} ng/mL，超過安全上限（100 ng/mL）。維生素 D 過高可能造成血鈣偏高等不良反應。${vitd.value > 150 ? '數值明顯偏高，建議儘快諮詢醫師。' : '減少補充後通常 2-3 個月會自然回降。'}`,
         priority: vitd.value > 150 ? 'high' : 'medium',
         evidence: 'Holick 2011 (NEJM)：25(OH)D > 100 ng/mL 為潛在毒性範圍，>150 有高血鈣風險',
         triggerTests: [vitd.test_name],
@@ -569,7 +569,7 @@ export function generateSupplementSuggestions(
     if (existingD) {
       if (isHighRisk) {
         existingD.dosage = 'D3 4000 IU + K2 100mcg'
-        existingD.reason += ' 憂鬱傾向基因高風險，維生素 D 與血清素合成密切相關，建議維持 50+ ng/mL。'
+        existingD.reason += ' 5-HTTLPR 基因型較敏感，維生素 D 與血清素合成密切相關，建議維持 50+ ng/mL。'
         existingD.priority = 'high'
       }
     } else {
@@ -577,9 +577,9 @@ export function generateSupplementSuggestions(
         name: '維生素 D3 + K2',
         dosage: isHighRisk ? 'D3 4000 IU + K2 100mcg' : 'D3 2000 IU + K2 100mcg',
         timing: '隨含脂肪的餐點服用',
-        reason: `憂鬱傾向基因${isHighRisk ? '高' : '中等'}風險。維生素 D 參與血清素合成，不足與憂鬱症狀顯著相關。`,
+        reason: `5-HTTLPR 基因型${isHighRisk ? '較敏感' : '中等'}。維生素 D 參與血清素合成，與情緒及壓力調適相關。`,
         priority: isHighRisk ? 'high' : 'medium',
-        evidence: 'Anglin et al. 2013 (Br J Psychiatry)：低維生素 D 與憂鬱風險增加 2 倍相關',
+        evidence: 'Anglin et al. 2013 (Br J Psychiatry)：維生素 D 與情緒健康相關',
         triggerTests: [],
         category: 'deficiency',
       })
@@ -588,15 +588,15 @@ export function generateSupplementSuggestions(
     // Omega-3 EPA（抗憂鬱效果主要來自 EPA）
     const existingOmega = suggestions.find(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))
     if (existingOmega) {
-      existingOmega.reason += ' 憂鬱傾向基因風險，EPA 的抗發炎與神經保護作用有助穩定情緒。'
+      existingOmega.reason += ' 5-HTTLPR 基因型，EPA 的抗發炎與神經保護作用有助穩定情緒。'
     } else {
       suggestions.push({
         name: 'Omega-3 魚油（高 EPA 配方）',
         dosage: 'EPA 1000mg + DHA 500mg',
         timing: '隨餐服用',
-        reason: `憂鬱傾向基因${isHighRisk ? '高' : '中等'}風險。EPA 具抗發炎與調節神經傳導物質的作用，臨床研究顯示對憂鬱症狀有改善效果。`,
+        reason: `5-HTTLPR 基因型${isHighRisk ? '較敏感' : '中等'}。EPA 具抗發炎與調節神經傳導物質的作用，與情緒調適相關。`,
         priority: 'high',
-        evidence: 'Liao et al. 2019 (Transl Psychiatry)：EPA ≥1g/day 對憂鬱症狀有顯著改善',
+        evidence: 'Liao et al. 2019 (Transl Psychiatry)：EPA 與情緒調適相關',
         triggerTests: [],
         category: 'recovery',
       })
@@ -609,9 +609,9 @@ export function generateSupplementSuggestions(
         name: '甘胺酸鎂（Magnesium Glycinate）',
         dosage: '400mg',
         timing: '睡前 30 分鐘',
-        reason: `憂鬱傾向基因風險。鎂調節 NMDA 受體與 HPA 軸，不足會加重焦慮與憂鬱。甘胺酸鎂兼具助眠與穩定情緒效果。`,
+        reason: `5-HTTLPR 基因型。鎂調節 NMDA 受體與 HPA 軸，與壓力及睡眠品質相關。甘胺酸鎂兼具助眠與穩定情緒效果。`,
         priority: 'high',
-        evidence: 'Tarleton et al. 2017 (PLoS One)：鎂補充 6 週顯著改善輕中度憂鬱症狀',
+        evidence: 'Tarleton et al. 2017 (PLoS One)：鎂與情緒調適相關',
         triggerTests: [],
         category: 'recovery',
       })

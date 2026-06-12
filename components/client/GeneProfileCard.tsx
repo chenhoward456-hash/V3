@@ -40,12 +40,12 @@ const SEROTONIN_OPTIONS = [
 function getRiskHint(gene: string, value: string | null): string | null {
   if (!value) return null
   if (gene === 'mthfr') {
-    if (value === 'heterozygous') return '葉酸代謝部分受損，建議補充活性葉酸（5-MTHF）'
-    if (value === 'homozygous') return '葉酸代謝嚴重受損，必須補充活性葉酸，赤字期自動收窄'
+    if (value === 'heterozygous') return '葉酸代謝效率較低，建議搭配活性葉酸（5-MTHF）'
+    if (value === 'homozygous') return '葉酸代謝效率明顯較低，建議搭配活性葉酸，赤字期自動收窄'
   }
   if (gene === 'apoe') {
-    if (value === 'e3/e4') return 'LDL-C 對飽和脂肪敏感度 2-3 倍，脂肪來源需注意'
-    if (value === 'e4/e4') return '心血管高風險，飽和脂肪嚴格限制，優先 MUFA/MCT'
+    if (value === 'e3/e4') return 'LDL-C 對飽和脂肪敏感度較高，脂肪來源需注意'
+    if (value === 'e4/e4') return '飽和脂肪較敏感，建議留意攝取、優先 MUFA/MCT'
   }
   if (gene === 'serotonin') {
     if (value === 'SL' || value === 'moderate') return '血清素回收中等受損，碳水不宜過低'

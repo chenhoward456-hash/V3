@@ -43,7 +43,7 @@ const HIGHLIGHT_STORIES: Array<{ test: string; medical: string; howardOptimal: s
     test: 'hs-CRP',
     medical: '< 3 mg/L',
     howardOptimal: '< 0.5 mg/L',
-    why: '系統性發炎是所有慢性病共通底層 — 心血管 / 失智 / 癌症。越低越好。',
+    why: '系統性發炎與長期健康、老化速度密切相關，是值得長期追蹤的指標。越低越好。',
   },
 ]
 
