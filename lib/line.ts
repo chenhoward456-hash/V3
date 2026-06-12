@@ -46,6 +46,18 @@ async function lineAPI(path: string, body?: object): Promise<Response> {
     if (res.ok) {
       return res
     }
+    if (res.status === 429) {
+      // Distinguish per-minute rate limit (retryable) from monthly quota
+      // exhaustion (not retryable — backoff won't help until next month).
+      // clone() guard: test mocks may not implement it; real Response always does.
+      const text = typeof res.clone === 'function'
+        ? await res.clone().text().catch(() => '')
+        : ''
+      if (/monthly limit/i.test(text)) {
+        logger.error(`LINE 月配額已爆，不重試`, undefined, { path })
+        return res
+      }
+    }
     if (res.status >= 400 && res.status < 500 && res.status !== 429) {
       logger.error(`LINE API 呼叫失敗（client error，不重試）`, undefined, { path, status: res.status })
       return res
@@ -70,7 +82,38 @@ export async function replyMessage(replyToken: string, messages: LineMessage[]) 
 
 /** 推播訊息給特定用戶 */
 export async function pushMessage(to: string, messages: LineMessage[]) {
-  return lineAPI('/message/push', { to, messages })
+  const res = await lineAPI('/message/push', { to, messages })
+  // Quota fallback: when THIS OA's monthly push quota is exhausted (429) and the
+  // target is Howard (admin), relay through the howard-line-bot OA (separate
+  // quota) so admin notifications never go dark. Client-facing pushes can't be
+  // relayed (clients aren't friends with that OA) and just fail as before.
+  // Auto-recovers: once the quota resets (1st of month), the first attempt
+  // succeeds again and the relay simply stops being used.
+  if (res.status === 429 && to && to === process.env.ADMIN_LINE_USER_ID) {
+    const relayUrl = process.env.HOWARD_BOT_RELAY_URL
+    const relaySecret = process.env.HOWARD_BOT_RELAY_SECRET
+    if (relayUrl && relaySecret) {
+      const text = messages
+        .map((m) => (m.type === 'text' ? m.text : `[flex] ${m.altText || ''}`))
+        .join('\n\n')
+        .slice(0, 4500)
+      try {
+        const relayRes = await fetch(`${relayUrl}?secret=${encodeURIComponent(relaySecret)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, source: 'V3' }),
+        })
+        if (relayRes.ok) {
+          logger.warn('V3 OA 月配額爆，已借道 howard-line-bot 推給 admin', { textLength: text.length })
+        } else {
+          logger.error('借道 howard-line-bot 也失敗', undefined, { status: relayRes.status })
+        }
+      } catch (err) {
+        logger.error('借道 howard-line-bot 連線失敗', err instanceof Error ? err : undefined)
+      }
+    }
+  }
+  return res
 }
 
 /** 取得用戶 profile */
