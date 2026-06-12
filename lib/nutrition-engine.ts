@@ -1122,7 +1122,7 @@ export interface MetabolicStressResult {
  *   1. 飲食持續時間 (0-25) — [7] Trexler 2014: 持續限制加劇代謝適應
  *   2. 恢復狀態 (0-30)     — [10] RED-S: 低 EA 影響多系統恢復
  *   3. 體重停滯 (0-20)     — [8] MATADOR: 停滯是代謝適應的外顯指標
- *   4. 連續低碳天數 (0-15) — [7] Trexler 2014 + Kose 2024: 碳水不足 → T3 降幅達 34.6% + leptin 下降
+ *   4. 連續低碳天數 (0-15) — [7] Trexler 2014: 碳水/能量不足 → T3 下降 + leptin 下降（代謝適應）
  *   5. 主觀趨勢下滑 (0-10) — wellness tracking (能量、訓練動力)
  *
  * 建議閾值：≥60 diet break/2-day refeed, ≥45 1-day refeed, ≥30 monitor

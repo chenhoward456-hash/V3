@@ -337,7 +337,7 @@ export function generateLabNutritionAdvice(
         unit: lab.unit,
         targetRange: '<100 mg/dL（最佳）',
         references: [
-          'Miller et al. 2011 (J Am Coll Cardiol): Triglycerides and cardiovascular disease',
+          'Miller et al. 2011 (Circulation): Triglycerides and cardiovascular disease — AHA scientific statement',
           'Skulas-Ray et al. 2019 (Circulation): AHA advisory — Omega-3 for hypertriglyceridemia',
           'Parks 2001 (J Nutr): Dietary carbohydrate effects on lipogenesis and TG',
         ],
@@ -771,10 +771,9 @@ export function generateLabNutritionAdvice(
           references: [
             'Garber et al. 2012 (Endocr Pract): ATA/AACE guidelines for hypothyroidism',
             'Danforth et al. 1979 (J Clin Invest): Dietary carbohydrate and thyroid hormone metabolism',
-            'Kose et al. 2024 (Nutrients): Low-glycemic diets and thyroid — 低碳水使 T3 降幅達 34.6%（vs 高碳水 17.9%），機制為低胰島素抑制脫碘酶活性',
-            'Krupa-Kotara et al. 2025 (Curr Issues Mol Biol): Ketogenic diet and thyroid — 生酮飲食降低 T3/FT3，T4 代償性升高',
+            'Vranjić et al. 2025 (Curr Issues Mol Biol): Ketogenic diet and thyroid function — 生酮/低碳水可降低 T3/FT3，T4 常代償性升高',
           ],
-          caveat: '長期低碳水飲食會降低 T3（活性甲狀腺素），降幅可達 35%（Kose 2024）。機制：低胰島素 → 脫碘酶活性下降 → T4→T3 轉換受阻。T4 較穩定但若也低，建議回診。',
+          caveat: '長期低碳水或生酮飲食可能降低 T3（活性甲狀腺素），機制為低胰島素使脫碘酶活性下降、T4→T3 轉換受阻；此時 T4 常代償性偏高。若 T4 也偏低，建議回診評估。',
         })
       }
     }
