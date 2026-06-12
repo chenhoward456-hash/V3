@@ -1660,6 +1660,11 @@ export default function ClientDashboard() {
               const latestRows = labs.filter((r: { date: string }) => r.date === latestDate)
               const alertCount = latestRows.filter((r: { status?: string }) => r.status === 'alert').length
               const attnCount = latestRows.filter((r: { status?: string }) => r.status === 'attention').length
+              // 血檢旅程：抽血次數 + 橫跨月數（突出「整個進程」）
+              const testDates = [...new Set(labs.map((r: { date: string }) => r.date))].sort()
+              const drawCount = testDates.length
+              const firstDate = testDates[0] as string | undefined
+              const spanMonths = firstDate ? Math.max(1, Math.round((new Date(latestDate).getTime() - new Date(firstDate).getTime()) / (30 * 86400000))) : 0
 
               return (
                 <>
@@ -1670,18 +1675,18 @@ export default function ClientDashboard() {
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-semibold text-emerald-900">📊 健康趨勢儀表板</span>
+                          <span className="text-sm font-semibold text-emerald-900">🩸 你的血檢旅程</span>
                           {(alertCount > 0 || attnCount > 0) && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-700">
                               {alertCount > 0 ? `${alertCount} 警示` : `${attnCount} 注意`}
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-emerald-800">
-                          最近抽血：{latestDate}（{latestCount} 項，共 {labs.length} 筆紀錄）
+                        <div className="text-xs text-emerald-800 font-medium">
+                          已追蹤 {drawCount} 次抽血{spanMonths > 0 ? ` · 橫跨 ${spanMonths} 個月` : ''} · {labs.length} 筆指標
                         </div>
                         <div className="text-[11px] text-emerald-700 mt-0.5">
-                          6 大類連續追蹤 · Howard 最佳化範圍 · AI 觀察筆記
+                          最近 {latestDate}（{latestCount} 項）· Howard 最佳化範圍 · 看完整時間軸 →
                         </div>
                       </div>
                       <ChevronRight className="w-5 h-5 text-emerald-700 shrink-0" />
@@ -1732,7 +1737,8 @@ export default function ClientDashboard() {
                       goalType={c.goal_type as 'cut' | 'bulk' | null | undefined}
                     />
                   )}
-                  {hasLabAnalysis && (
+                  {/* LabInsightsCard 暫藏 2026-06-12（變化追蹤/複檢提醒與 /health/timeline「血檢旅程」重複；移除 false && 即還原） */}
+                  {false && hasLabAnalysis && (
                     <LabInsightsCard
                       labResults={c.lab_results}
                       gender={(c.gender as '男性' | '女性') ?? undefined}
