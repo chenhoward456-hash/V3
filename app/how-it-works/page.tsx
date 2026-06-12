@@ -119,8 +119,8 @@ export default function HowItWorksPage() {
       {/* 方案 */}
       <section className="px-5 py-12 md:py-16 bg-slate-50">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">方案差在哪</h2>
-          <p className="text-slate-500 mb-8">全部月繳制，不綁約，隨時取消（當月不退費，下月停止扣款）。免費版隨時升級補差額即可。</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">方案差在哪（快速概覽）</h2>
+          <p className="text-slate-500 mb-8">全部月繳制，不綁約，隨時取消。下面是快速概覽，<Link href="/remote" className="text-blue-600 font-medium hover:underline">完整方案與定價在這裡 →</Link></p>
           <div className="grid sm:grid-cols-2 gap-3">
             {TIERS.map(t => (
               <div key={t.name} className={`rounded-2xl border p-5 ${t.highlight ? 'border-blue-300 bg-blue-50/40' : 'border-slate-200 bg-white'}`}>

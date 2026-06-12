@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from 'react'
 import LineButton from '@/components/LineButton'
 
 const navItems = [
-  { label: '系統介紹', href: '/' },
+  { label: '系統介紹', href: '/how-it-works' },
   { label: '免費體驗', href: '/join' },
   { label: 'AI 顧問', href: '/ai' },
   { label: '知識分享', href: '/blog' },
