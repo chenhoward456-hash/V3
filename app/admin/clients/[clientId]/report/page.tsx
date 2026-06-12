@@ -383,7 +383,7 @@ export default function HealthReportPage() {
                           {STATUS_LABELS[r.status] || r.status}
                         </span>
                       </td>
-                      <td className="text-small">{advice}</td>
+                      <td className="text-small" style={{ whiteSpace: 'pre-line' }}>{advice.replace(/\\n/g, '\n')}</td>
                     </tr>
                   )
                 })}
@@ -780,6 +780,12 @@ export default function HealthReportPage() {
 
           .no-print {
             display: none !important;
+          }
+
+          /* globals.css 有一條 body * { visibility:hidden } 只露 .print-report；本頁用 .report-page，
+             所以要主動把報告樹露出來，否則列印整頁空白（class 名不符的歷史遺留）。 */
+          .report-page, .report-page * {
+            visibility: visible !important;
           }
 
           .report-page {
