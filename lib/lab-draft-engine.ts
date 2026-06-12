@@ -14,6 +14,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import type { LabFinding } from './lab-trend-analyzer'
+import { HOWARD_LAB_VOICE } from './howard-voice'
 
 let _anthropic: Anthropic | null = null
 function getClient(): Anthropic {
@@ -205,7 +206,8 @@ function findingsToMarkdown(findings: LabFinding[]): string {
 
 export async function generatePanelNoteDraft(input: DraftInput): Promise<DraftResult> {
   const model = process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001'
-  const systemPrompt = buildSystemPrompt(input.clientMode, input.subscriptionTier)
+  // 前置 Howard 判讀腦（Fable 蒸餾）→ 讓 Haiku 的推理與口吻收斂到 Howard 本人
+  const systemPrompt = `${HOWARD_LAB_VOICE}\n\n${buildSystemPrompt(input.clientMode, input.subscriptionTier)}`
 
   const ctx: string[] = []
   if (input.clientName) ctx.push(`學員：${input.clientName}`)
