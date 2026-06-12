@@ -88,6 +88,15 @@ export interface SupplementLog {
   [key: string]: string | boolean | number | null
 }
 
+export interface MacroAdjustment {
+  applied_at: string
+  applied_by: string | null
+  trigger_source: string | null
+  old_macros: Record<string, unknown> | null
+  new_macros: Record<string, unknown> | null
+  reason: string | null
+}
+
 export interface ClientDataPayload {
   client: Client
   todayLogs: SupplementLog[]
@@ -96,6 +105,7 @@ export interface ClientDataPayload {
   recentLogs: SupplementLog[]
   trainingLogs: TrainingLog[]
   nutritionLogs: NutritionLog[]
+  recentMacroAdjustment?: MacroAdjustment | null
 }
 
 interface UseClientDataOptions {

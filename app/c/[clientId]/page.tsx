@@ -32,6 +32,7 @@ import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
 import PostCompetitionRecovery from '@/components/client/PostCompetitionRecovery'
 import AthleticReboundTimeline from '@/components/client/AthleticReboundTimeline'
+import { ForYouFeed } from '@/components/client/ForYouFeed'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManagedNutrition'), { ssr: false })
@@ -869,6 +870,21 @@ export default function ClientDashboard() {
             cancellingSubscription={cancellingSubscription}
             onCancelSubscription={handleCancelSubscription}
           />
+
+          {/* ===== 為你更新：報喜報憂的主動卡片流（血檢趨勢 / 回檢提醒 / macro 自動調整） ===== */}
+          {isToday && (
+            <SectionErrorBoundary name="for-you-feed">
+              <div className="mt-4">
+                <ForYouFeed
+                  labs={c.lab_results || []}
+                  gender={c.gender === '女性' ? '女性' : c.gender === '男性' ? '男性' : undefined}
+                  nextCheckupDate={c.next_checkup_date}
+                  macroAdjustment={clientData.recentMacroAdjustment ?? null}
+                  clientName={c.name}
+                />
+              </div>
+            </SectionErrorBoundary>
+          )}
 
           {/* ===== INSIGHT: 每日洞察 + 完成進度（第一眼看到） ===== */}
           {isToday && (

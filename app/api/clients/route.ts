@@ -118,6 +118,19 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // 最近一次 macro 自動調整（給「為你更新」卡片說明用）
+    queryEntries.push({
+      key: 'recentMacroAdjustment',
+      query: wrap(
+        supabase
+          .from('macro_adjustment_log')
+          .select('applied_at, applied_by, trigger_source, old_macros, new_macros, reason')
+          .eq('client_id', client.id)
+          .order('applied_at', { ascending: false })
+          .limit(1)
+      ),
+    })
+
     // 平行執行所有查詢
     const results = await Promise.all(queryEntries.map(e => e.query))
     const resolved: Record<string, Record<string, unknown>[]> = {}
@@ -144,6 +157,7 @@ export async function GET(request: NextRequest) {
       recentLogs: resolved.recentLogs || [],
       trainingLogs: resolved.trainingLogs || [],
       nutritionLogs: resolved.nutritionLogs || [],
+      recentMacroAdjustment: resolved.recentMacroAdjustment?.[0] || null,
     })
     
   } catch (error) {

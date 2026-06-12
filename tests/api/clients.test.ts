@@ -494,17 +494,8 @@ describe('GET /api/clients', () => {
       if (table === 'clients') {
         return { select: mockSelect }
       }
-      // supplement_logs queries return errors
-      return {
-        select: () => ({
-          eq: () => ({
-            eq: () => thenable({ data: null, error: { message: 'db error' } }),
-            gte: () => ({
-              order: () => thenable({ data: null, error: { message: 'db error' } }),
-            }),
-          }),
-        }),
-      }
+      // any non-clients table (supplement_logs / macro_adjustment_log / …) errors → []
+      return chainable({ data: null, error: { message: 'db error' } })
     })
 
     mockSingle.mockReturnValue({ data: clientData, error: null })
