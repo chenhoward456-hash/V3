@@ -404,6 +404,25 @@ export default function AdminDashboard() {
     return map
   }, [clients, recentBody, recentNutrition, recentWellness, recentRPE, allLogs])
 
+  // === C：商業 / 留存數字（付費數、本月新增、流失風險）===
+  const retentionStats = useMemo(() => {
+    const now = Date.now()
+    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0)
+    const paying = clients.filter(c => c.subscription_tier === 'coached' || c.subscription_tier === 'self_managed').length
+    const newThisMonth = clients.filter(c => new Date(c.created_at).getTime() >= monthStart.getTime()).length
+    const churnRisk = clients
+      .filter(c => {
+        if (!c.is_active) return false
+        if (c.expires_at && new Date(c.expires_at).getTime() < now) return false  // 已過期另計
+        const la = clientStats[c.id]?.lastActivity
+        if (!la) return false
+        return Math.floor((now - new Date(la).getTime()) / DAY_MS) >= 10
+      })
+      .map(c => ({ id: c.id, name: c.name, days: Math.floor((now - new Date(clientStats[c.id]!.lastActivity!).getTime()) / DAY_MS), paying: c.subscription_tier !== 'free' }))
+      .sort((a, b) => b.days - a.days)
+    return { paying, newThisMonth, churnRisk }
+  }, [clients, clientStats])
+
   const handleSort = (key: SortKey) => { if (sortKey === key) setSortDir(p => p === 'asc' ? 'desc' : 'asc'); else { setSortKey(key); setSortDir(key === 'name' ? 'asc' : 'desc') } }
 
   const filteredClients = useMemo(() => {
@@ -623,6 +642,29 @@ export default function AdminDashboard() {
             )}
           </div>
           <div className="bg-white rounded-2xl shadow-sm p-5"><div className="flex items-center justify-between mb-2"><span className="text-sm text-gray-500">平均服從率</span><TrendingUp size={18} className="text-purple-500" /></div><p className={`text-3xl font-bold ${getComplianceColor(summaryStats.avgCompliance)}`}>{summaryStats.avgCompliance}%</p><p className="text-xs text-gray-400 mt-1">本週平均</p></div>
+        </div>
+
+        {/* ===== C：留存 / 業務 ===== */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">留存 / 業務</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div><p className="text-2xl font-bold text-gray-900">{retentionStats.paying}</p><p className="text-xs text-gray-400">付費學員</p></div>
+            <div><p className="text-2xl font-bold text-emerald-600">+{retentionStats.newThisMonth}</p><p className="text-xs text-gray-400">本月新增</p></div>
+            <div><p className={`text-2xl font-bold ${retentionStats.churnRisk.length > 0 ? 'text-orange-600' : 'text-gray-900'}`}>{retentionStats.churnRisk.length}</p><p className="text-xs text-gray-400">流失風險</p></div>
+            <div><p className={`text-2xl font-bold ${(summaryStats.expiringCount + summaryStats.expiredCount) > 0 ? 'text-rose-600' : 'text-gray-900'}`}>{summaryStats.expiringCount + summaryStats.expiredCount}</p><p className="text-xs text-gray-400">到期 / 逾期</p></div>
+          </div>
+          {retentionStats.churnRisk.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <p className="text-[11px] text-gray-400 mb-1.5">⚠️ 久未活動（≥10 天）— 退訂前先接觸（💰 = 付費）</p>
+              <div className="flex flex-wrap gap-1.5">
+                {retentionStats.churnRisk.slice(0, 12).map(c => (
+                  <Link key={c.id} href={`/admin/clients/${c.id}/overview`} className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 transition-colors">
+                    {c.name} · {c.days}天{c.paying ? ' 💰' : ''}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ===== 備賽倒數區塊 ===== */}
