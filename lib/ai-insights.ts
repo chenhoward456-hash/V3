@@ -11,6 +11,7 @@
  */
 
 import { askClaude, ChatMessage } from './claude'
+import { HOWARD_VOICE_CORE } from './howard-voice'
 import { isInOptimalRange } from '@/utils/labStatus'
 import { matchLabName } from '@/utils/labMatch'
 import { generateRecoveryAssessment, getTrainingAdviceFromRecovery, type RecoveryAssessment } from './recovery-engine'
@@ -125,7 +126,12 @@ export async function generateWeeklyAIReport(data: InsightData): Promise<string>
   const weights = last7Body.filter(b => b.weight != null).map(b => b.weight!)
   const weightChange = weights.length >= 2 ? weights[weights.length - 1] - weights[0] : null
 
-  const prompt = `你是 Howard Protocol 的 AI 分析師。請根據以下學員本週數據，生成一份簡潔的週報摘要。
+  const prompt = `${HOWARD_VOICE_CORE}
+
+---
+以上是你的教練腦與口吻。現在請根據以下學員本週數據，用「Howard 本人」的語氣寫這份週報（不是泛泛 AI 分析師）。
+
+請根據以下學員本週數據，生成一份簡潔的週報摘要。
 
 ## 學員資料
 - 姓名：${client.name}
