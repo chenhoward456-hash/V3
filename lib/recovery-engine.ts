@@ -562,7 +562,8 @@ function assessOvertrainingRisk(trainingLogs: TrainingLogEntry[]): OvertrainingR
   // Monotony = mean(daily load) / SD(daily load) — 過去 7 天
   const meanLoad = last7Loads.reduce((s, v) => s + v, 0) / last7Loads.length
   const sdLoad = Math.sqrt(last7Loads.reduce((s, v) => s + (v - meanLoad) ** 2, 0) / last7Loads.length)
-  const monotony = sdLoad > 0 ? Number((meanLoad / sdLoad).toFixed(2)) : null
+  // sd=0（7 天負荷完全相同）= 最高單調性、最高風險，不可當「無資料」略過（Foster monotony 定義）
+  const monotony = sdLoad > 0 ? Number((meanLoad / sdLoad).toFixed(2)) : (meanLoad > 0 ? 2.5 : null)
 
   // Strain = weekly load × monotony
   const weeklyLoad = last7Loads.reduce((s, v) => s + v, 0)

@@ -282,12 +282,14 @@ export async function GET(request: NextRequest) {
         const metabolicHighStress = (engineResult.metabolicStress?.score ?? 0) >= 60
         const tdeeAnomaly = engineResult.tdeeAnomalyDetected === true
         const engineNoAutoApply = engineResult.autoApply === false
+        // Peak/比賽/秤重/反彈期：體重劇烈波動（肝醣/水分），軌跡數學會算出離譜建議並破壞超補/秤重協議 → 一律不自動調整
+        const phaseLocked = ['peak_week', 'competition', 'weigh_in', 'rebound'].includes(c.prep_phase || '')
 
         const gates = {
-          cuttingBlocked, metabolicHighStress, tdeeAnomaly, engineNoAutoApply,
+          cuttingBlocked, metabolicHighStress, tdeeAnomaly, engineNoAutoApply, phaseLocked,
         }
 
-        if (cuttingBlocked || metabolicHighStress || tdeeAnomaly || engineNoAutoApply) {
+        if (cuttingBlocked || metabolicHighStress || tdeeAnomaly || engineNoAutoApply || phaseLocked) {
           if (cuttingBlocked) autoAdjustResults.gatedByCuttingReadiness++
           if (metabolicHighStress) autoAdjustResults.gatedByMetabolicStress++
           if (tdeeAnomaly) autoAdjustResults.gatedByTdeeAnomaly++
@@ -299,6 +301,7 @@ export async function GET(request: NextRequest) {
           if (metabolicHighStress) blockReasons.push(`Metabolic stress score ${engineResult.metabolicStress?.score} ≥ 60 — 建議 refeed/diet break`)
           if (tdeeAnomaly) blockReasons.push('TDEE 校正異常，引擎已暫停自動套用')
           if (engineNoAutoApply) blockReasons.push('Engine autoApply=false')
+          if (phaseLocked) blockReasons.push(`${c.prep_phase} 期 — 不自動調整（保護超補/秤重協議）`)
 
           await supabase.from('macro_adjustment_log').insert({
             client_id: c.id,

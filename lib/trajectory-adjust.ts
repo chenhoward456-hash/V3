@@ -121,13 +121,15 @@ function computeWeeklyAverages(entries: Array<{ date: string; weight: number | n
 
   if (withWeight.length === 0) return null
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // 以台北時區切週界（伺服器為 UTC，直接 setHours+toISOString 會位移一天，污染週均/斜率）
+  const TPE_OFFSET = 8 * 60 * 60 * 1000
+  const today = new Date(Date.now() + TPE_OFFSET)
+  today.setUTCHours(0, 0, 0, 0)
   const weeks: Array<{ avg: number | null; count: number }> = []
 
   for (let i = 7; i >= 0; i--) {
-    const end = new Date(today); end.setDate(today.getDate() - i * 7)
-    const start = new Date(end); start.setDate(end.getDate() - 6)
+    const end = new Date(today); end.setUTCDate(today.getUTCDate() - i * 7)
+    const start = new Date(end); start.setUTCDate(end.getUTCDate() - 6)
     const startStr = start.toISOString().split('T')[0]
     const endStr = end.toISOString().split('T')[0]
     const inWeek = withWeight.filter(e => e.date >= startStr && e.date <= endStr)
