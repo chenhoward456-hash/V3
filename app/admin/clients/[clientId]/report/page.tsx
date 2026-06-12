@@ -311,6 +311,14 @@ export default function HealthReportPage() {
           </div>
         </header>
 
+        {/* ── 教練重點（開場總結，挪到最上面）── */}
+        {client.coach_summary && (
+          <section className="report-section" style={{ borderLeft: '3px solid #1a1a1a', paddingLeft: 18 }}>
+            <h2>教練重點</h2>
+            <p className="report-text" style={{ whiteSpace: 'pre-line' }}>{client.coach_summary}</p>
+          </section>
+        )}
+
         {/* ────────────────────────────────────────────────
             Section 2: Body Composition
         ──────────────────────────────────────────────── */}
@@ -520,15 +528,9 @@ export default function HealthReportPage() {
         {/* ────────────────────────────────────────────────
             Section 7: Health Goals & Next Checkup
         ──────────────────────────────────────────────── */}
-        {(client.coach_summary || client.health_goals || client.next_checkup_date) && (
+        {(client.health_goals || client.next_checkup_date) && (
           <section className="report-section">
             <h2>健康計畫與追蹤</h2>
-            {client.coach_summary && (
-              <div style={{ marginBottom: 16 }}>
-                <h3 className="report-sub-heading">教練摘要</h3>
-                <p className="report-text">{client.coach_summary}</p>
-              </div>
-            )}
             <table className="report-table">
               <tbody>
                 {client.health_goals && (
