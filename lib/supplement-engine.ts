@@ -4,11 +4,10 @@
  *
  * 文獻依據：
  *   - Examine.com 系統性回顧（2023-2024）
- *   - Peeling et al. 2018 (IJSNEM) — 鐵劑補充
- *   - Holick 2011 (NEJM) — 維生素 D 缺乏
- *   - Lukaszuk et al. 2012 — 鋅鎂補充與睪固酮
+ *   - Sim et al. 2019 (Eur J Appl Physiol, PMID 31055680) — 運動員鐵質考量綜述
+ *   - Holick 2011 (JCEM, Endocrine Society 指引, PMID 21646368) — 維生素 D 缺乏
+ *   - Prasad 1996 (Nutrition, PMID 8875519) — 鋅與睪固酮
  *   - Kreider et al. 2017 (JISSN) — 肌酸共識聲明
- *   - Guest et al. 2021 (JISSN) — 運動員維生素 D 建議
  */
 
 export interface LabResult {
@@ -103,7 +102,7 @@ export function generateSupplementSuggestions(
         timing: '空腹或飯前 1 小時',
         reason: `鐵蛋白 ${ferritin.value} ng/mL，低於運動員建議下限（30 ng/mL）。低鐵蛋白會影響有氧代謝與訓練恢復。`,
         priority: ferritin.value < 15 ? 'high' : 'medium',
-        evidence: 'Peeling et al. 2018 (IJSNEM)：鐵蛋白 < 30 ng/mL 影響 VO2max 與運動表現',
+        evidence: 'Sim et al. 2019 (Eur J Appl Physiol, PMID 31055680)：運動員鐵缺乏與運動表現',
         triggerTests: [ferritin.test_name],
         category: 'deficiency',
       })
@@ -131,7 +130,7 @@ export function generateSupplementSuggestions(
         timing: '隨含脂肪的餐點服用',
         reason: `維生素 D ${vitd.value} ng/mL，嚴重缺乏（< 20）。影響骨骼、肌肉力量、免疫功能與睪固酮合成。`,
         priority: 'high',
-        evidence: 'Guest et al. 2021 (JISSN)：運動員維生素 D 建議維持 40-60 ng/mL',
+        evidence: 'Holick 2011 (JCEM, Endocrine Society 指引, PMID 21646368)：維生素 D 充足範圍建議',
         triggerTests: [vitd.test_name],
         category: 'deficiency',
       })
@@ -142,7 +141,7 @@ export function generateSupplementSuggestions(
         timing: '隨含脂肪的餐點服用',
         reason: `維生素 D ${vitd.value} ng/mL，不足（運動員理想值 40-60 ng/mL）。`,
         priority: 'medium',
-        evidence: 'Holick 2011 (NEJM)：血清 25(OH)D < 40 ng/mL 為不足',
+        evidence: 'Holick 2011 (JCEM, PMID 21646368)：血清 25(OH)D < 40 ng/mL 為不足',
         triggerTests: [vitd.test_name],
         category: 'deficiency',
       })
@@ -153,7 +152,7 @@ export function generateSupplementSuggestions(
         timing: '—',
         reason: `維生素 D ${vitd.value} ng/mL，超過安全上限（100 ng/mL）。維生素 D 過高可能造成血鈣偏高等不良反應。${vitd.value > 150 ? '數值明顯偏高，建議儘快諮詢醫師。' : '減少補充後通常 2-3 個月會自然回降。'}`,
         priority: vitd.value > 150 ? 'high' : 'medium',
-        evidence: 'Holick 2011 (NEJM)：25(OH)D > 100 ng/mL 為潛在毒性範圍，>150 有高血鈣風險',
+        evidence: 'Holick 2011 (JCEM, PMID 21646368)：25(OH)D > 100 ng/mL 為潛在毒性範圍，>150 有高血鈣風險',
         triggerTests: [vitd.test_name],
         category: 'deficiency',
       })
@@ -185,7 +184,7 @@ export function generateSupplementSuggestions(
         timing: '睡前空腹',
         reason: `鋅 ${zinc.value} mcg/dL，偏低。鋅是睪固酮合成、免疫功能與蛋白質代謝的關鍵礦物質。`,
         priority: 'medium',
-        evidence: 'Lukaszuk et al. 2012：鋅補充改善運動員睪固酮水平與恢復',
+        evidence: '鋅與睪固酮：Prasad 1996 (Nutrition, PMID 8875519)',
         triggerTests: [zinc.test_name],
         category: 'hormonal',
       })
@@ -213,7 +212,7 @@ export function generateSupplementSuggestions(
       timing: '睡前 30 分鐘',
       reason: `血清鎂 ${magnesium.value} mg/dL，低於正常範圍。鎂不足影響睡眠品質、肌肉放鬆與胰島素敏感性。`,
       priority: 'medium',
-      evidence: 'Zhang et al. 2017 (Nutrients)：鎂補充改善睡眠品質與運動後恢復',
+      evidence: 'Abbasi et al. 2012 (J Res Med Sci, PMID 23853635)：鎂補充改善睡眠品質',
       triggerTests: [magnesium.test_name],
       category: 'recovery',
     })
@@ -247,7 +246,7 @@ export function generateSupplementSuggestions(
             timing: '鋅隨餐、鎂睡前',
             reason: `睪固酮 ${testosterone.value} ng/dL，低於男性理想範圍（400-700 ng/dL）。鋅鎂不足會影響睪固酮合成，建議分開補充以提高吸收率。`,
             priority: testosterone.value < 300 ? 'high' : 'medium',
-            evidence: 'Abbasi 2012 + Zhang 2017（鎂與睡眠）；Prasad 1996（鋅與睪固酮）。注意：ZMA 複合配方的專利研究（Brilla 2000）由配方持有者資助，2024 獨立研究未能複製睪固酮提升效果（PMC 2024）',
+            evidence: 'Abbasi 2012 (J Res Med Sci, PMID 23853635，鎂與睡眠)；Prasad 1996 (Nutrition, PMID 8875519，鋅與睪固酮)。注意：ZMA 複合配方的專利研究（Brilla 2000）由配方持有者資助，Wilborn et al. 2004 (J Int Soc Sports Nutr, PMID 18500945) 獨立研究未能複製睪固酮提升效果',
             triggerTests: [testosterone.test_name],
             category: 'hormonal',
           })
@@ -269,7 +268,7 @@ export function generateSupplementSuggestions(
           timing: '鋅隨餐、鎂睡前',
           reason: `游離睪固酮 ${freeT.value} pg/mL，低於理想範圍（47-244 pg/mL）。游離 T 比總 T 更反映實際活性水平。鋅鎂不足會影響睪固酮合成。`,
           priority: freeT.value < 30 ? 'high' : 'medium',
-          evidence: 'Prasad 1996（鋅與睪固酮）；Abbasi 2012（鎂與睡眠品質）。ZMA 複合配方證據不足（AIS: 缺乏明確效益證明）',
+          evidence: 'Prasad 1996 (Nutrition, PMID 8875519，鋅與睪固酮)；Abbasi 2012 (J Res Med Sci, PMID 23853635，鎂與睡眠品質)。ZMA 複合配方證據不足（Wilborn et al. 2004, PMID 18500945 未複製睪固酮提升）',
           triggerTests: [freeT.test_name],
           category: 'hormonal',
         })
@@ -297,12 +296,12 @@ export function generateSupplementSuggestions(
         existing.triggerTests.push(hemoglobin.test_name)
       } else {
         suggestions.push({
-          name: `鐵劑 + ${folateForm}`,
-          dosage: `鐵 25mg + ${folateDose}`,
-          timing: '空腹服用，搭配維生素 C',
-          reason: `血紅素 ${hemoglobin.value} g/dL，低於正常值（${gender === '女性' ? '女性 12.0' : '男性 13.5'} g/dL）。貧血嚴重影響有氧代謝與運動表現。`,
+          name: '⚠️ 建議就醫評估貧血',
+          dosage: '—',
+          timing: '—',
+          reason: `血紅素 ${hemoglobin.value} g/dL，低於正常值（${gender === '女性' ? '女性 12.0' : '男性 13.5'} g/dL）。貧血可能影響有氧代謝與運動表現，且成因多樣（缺鐵、B12/葉酸不足、其他疾病等）。建議就醫評估鐵代謝（ferritin/transferrin）與相關指標，由醫師判斷是否需要補鐵或進一步檢查，勿自行服用鐵劑。`,
           priority: 'high',
-          evidence: 'WHO：血紅素低於閾值定義為貧血，需積極補充鐵劑',
+          evidence: 'WHO 貧血定義：血紅素低於閾值。建議就醫評估鐵代謝（ferritin/transferrin）由醫師決定是否補鐵',
           triggerTests: [hemoglobin.test_name],
           category: 'deficiency',
         })
@@ -320,7 +319,7 @@ export function generateSupplementSuggestions(
         timing: '隨餐服用',
         reason: `雌二醇 ${e2.value} pg/mL，偏高（男性參考值 10-40）。高雌二醇可能導致水腫、脂肪囤積、情緒波動。DIM 促進雌激素代謝為較無活性的代謝物。建議同時減少酒精、增加十字花科蔬菜攝取。`,
         priority: e2.value > 50 ? 'high' : 'medium',
-        evidence: 'Thomson et al. 2016 (Nutr Rev)：DIM 促進 2-hydroxyestrone 代謝路徑，降低活性雌激素',
+        evidence: 'Thomson et al. 2017 (Breast Cancer Res Treat, PMID 28560655)：DIM 提高 2/16α-OHE1 比值',
         triggerTests: [e2.test_name],
         category: 'hormonal',
       })
@@ -342,7 +341,7 @@ export function generateSupplementSuggestions(
         timing: '隨餐服用',
         reason: `ApoB ${apoB.value} mg/dL，偏高（理想值 <80）。ApoB 是心血管風險的最佳單一指標。建議搭配飲食調整：增加可溶性纖維、減少飽和脂肪。`,
         priority: apoB.value > 100 ? 'high' : 'medium',
-        evidence: 'Sniderman et al. 2019 (Lancet)：ApoB 是預測心血管事件的最準指標',
+        evidence: 'Sniderman et al. 2019 (JAMA Cardiol, PMID 31642874)：ApoB 是預測心血管事件的最準指標',
         triggerTests: [apoB.test_name],
         category: 'recovery',
       })
@@ -368,7 +367,7 @@ export function generateSupplementSuggestions(
         timing: '隨餐服用',
         reason: `CRP ${crp.value} mg/L，發炎指數偏高。Omega-3 有助於降低系統性發炎，改善訓練恢復。`,
         priority: crp.value > 10 ? 'high' : 'medium',
-        evidence: 'Calder 2017 (J Nutr)：EPA+DHA 2-4g/day 顯著降低 CRP 與 IL-6',
+        evidence: 'Calder 2017 (Biochem Soc Trans, PMID 28900017)：Omega-3 具抗發炎作用',
         triggerTests: [crp.test_name],
         category: 'recovery',
       })
@@ -450,7 +449,7 @@ export function generateSupplementSuggestions(
         timing: '隨含脂肪的餐點服用',
         reason: '台灣都市族群普遍維生素 D 不足。D3+K2 協同支持骨骼、免疫、情緒與心血管健康。',
         priority: 'medium',
-        evidence: 'Holick 2011 (NEJM)；Theuwissen 2012 (Mol Nutr Food Res)：D3+K2 協同心血管保護',
+        evidence: 'Holick 2011 (JCEM, PMID 21646368)；Theuwissen 2012 (Br J Nutr, PMID 22289649)：K2(MK-7) 改善血管 Gla 蛋白羧化',
         triggerTests: [],
         category: 'deficiency',
       })
@@ -464,7 +463,7 @@ export function generateSupplementSuggestions(
       timing: '隨餐服用',
       reason: '激活 Sirtuin 長壽蛋白通路，模擬熱量限制效果。改善胰島素敏感性、抗氧化、抗發炎。',
       priority: 'medium',
-      evidence: 'Bhatt et al. 2012 (Am J Cardiol)；Lagouge et al. 2006 (Cell)：Resveratrol 激活 SIRT1',
+      evidence: 'Lagouge et al. 2006 (Cell, PMID 17112576)：Resveratrol 激活 SIRT1/PGC-1α',
       triggerTests: [],
       category: 'performance',
     })
@@ -490,7 +489,7 @@ export function generateSupplementSuggestions(
       timing: '晚餐後或睡前',
       reason: '具臨床證據的適應原（Adaptogen）。降低皮質醇、改善睡眠品質、緩解焦慮，適合高壓工作族群。',
       priority: 'medium',
-      evidence: 'Chandrasekhar et al. 2012 (Indian J Psychol Med)：KSM-66 降低皮質醇 27.9%、焦慮量表改善 44%',
+      evidence: 'Chandrasekhar et al. 2012 (Indian J Psychol Med)：KSM-66 降低皮質醇 27.9%',
       triggerTests: [],
       category: 'hormonal',
     })
@@ -511,7 +510,7 @@ export function generateSupplementSuggestions(
         timing: '早餐後',
         reason: `MTHFR ${isHomozygous ? '純合' : '雜合'}突變，無法有效將葉酸轉化為活性形式。需補充已活化的 5-MTHF 與甲基 B12，支持甲基化代謝、降低同半胱胺酸。`,
         priority: isHomozygous ? 'high' : 'medium',
-        evidence: 'Tsang et al. 2015 (Mol Genet Metab)：MTHFR C677T 純合突變者補充 5-MTHF 顯著降低同半胱胺酸',
+        evidence: 'Qin et al. 2012 (Nutr J, PMID 22230384)：MTHFR C677T 基因型影響葉酸降同半胱胺酸的效果（華人 RCT）',
         triggerTests: [],
         category: 'deficiency',
       })
@@ -552,7 +551,7 @@ export function generateSupplementSuggestions(
         timing: '隨餐服用',
         reason: 'APOE4/4 高風險基因型。磷脂醯絲胺酸支持細胞膜流動性與認知功能，與 DHA 協同保護腦部。',
         priority: 'medium',
-        evidence: 'Richter et al. 2013 (Nutrition)：PS 補充改善認知功能指標',
+        evidence: 'Richter et al. 2013 (Clin Interv Aging, PMID 23723695)：PS 補充改善認知功能指標',
         triggerTests: [],
         category: 'performance',
       })
@@ -665,14 +664,14 @@ export function generateSupplementSuggestions(
         })
       }
 
-      // 升級色胺酸支持（5-HTP）— 減脂期碳水降低影響血清素合成
+      // 色胺酸（Tryptophan）食物來源提醒 — 不連結疾病、不建議補充劑
       suggestions.push({
-        name: '5-HTP（5-羥色胺酸）',
-        dosage: isHighRisk ? '200mg' : '100mg',
-        timing: '睡前空腹（與碳水間隔 2 小時）',
-        reason: `備賽減脂期碳水大幅降低，影響色胺酸進入腦部合成血清素。憂鬱傾向基因風險者血清素系統更脆弱，5-HTP 直接補充血清素前驅物，改善情緒與睡眠。`,
-        priority: isHighRisk ? 'high' : 'medium',
-        evidence: 'Jangid et al. 2013 (Asian J Psychiatr)：5-HTP 改善憂鬱症狀；Turner 2006：低碳水降低腦部色胺酸攝取',
+        name: '色胺酸食物來源（飲食調整）',
+        dosage: '無補充劑建議',
+        timing: '日常飲食',
+        reason: `備賽減脂期碳水與總熱量大幅降低時，可留意富含色胺酸的天然食物來源（如雞蛋、乳製品、火雞、堅果、種子）。如有持續情緒或睡眠困擾，建議尋求專業醫療評估，勿自行服用作用於血清素的補充劑。`,
+        priority: 'low',
+        evidence: '一般營養學：色胺酸為必需胺基酸，可由均衡飲食攝取',
         triggerTests: [],
         category: 'recovery',
       })
@@ -688,7 +687,7 @@ export function generateSupplementSuggestions(
           timing: '全天分次攝取',
           reason: 'Peak Week 水鈉操控期間電解質平衡至關重要。基因風險者（特別是心血管相關 APOE4）需更謹慎監控電解質狀態，避免極端脫水。',
           priority: 'high',
-          evidence: 'Chappell & Simper 2018 (JISSN)：備賽選手 Peak Week 策略與安全性回顧',
+          evidence: 'Chappell & Simper 2018 (Sports (Basel), PMID 30352979)：自然健美備賽 Peak Week 問卷調查',
           triggerTests: [],
           category: 'performance',
         })
@@ -719,7 +718,7 @@ export function generateSupplementSuggestions(
         timing: '降重期間持續監控',
         reason: '慢性熱量赤字+高訓練量會加速鐵質消耗，影響氧氣運輸與運動耐力。',
         priority: 'low',
-        evidence: 'Peeling 2008 (Sports Med): 運動員鐵質缺乏的篩檢與管理',
+        evidence: 'Peeling 2008 (Eur J Appl Physiol, PMID 18365240): 運動員鐵質缺乏的篩檢與管理',
         triggerTests: ['ferritin'],
         category: 'deficiency',
       })
@@ -734,7 +733,7 @@ export function generateSupplementSuggestions(
       timing: '賽前 30-60 分鐘',
       reason: '比賽日咖啡因可提升運動表現 2-6%。注意：需在備戰期先測試過個人耐受度。',
       priority: 'medium',
-      evidence: 'Goldstein 2010 (JISSN): 咖啡因增強力量與耐力表現',
+      evidence: 'Goldstein 2010 (JISSN, PMID 20205813)：咖啡因增強耐力表現（對力量證據不一）',
       triggerTests: [],
       category: 'performance',
     })

@@ -239,15 +239,14 @@ describe('generateSupplementSuggestions', () => {
   })
 
   describe('competition prep × genetics', () => {
-    it('should suggest 5-HTP for cutting with serotonin risk', () => {
+    it('does NOT auto-suggest 5-HTP (合規：5-HTP+憂鬱症為診斷/處方紅線，且有血清素症候群風險)', () => {
       const result = generateSupplementSuggestions([], {
         isCompetitionPrep: true,
         goalType: 'cut',
         genetics: { serotonin: 'SS' },
       })
       const htp = result.find(s => s.name.includes('5-HTP'))
-      expect(htp).toBeDefined()
-      expect(htp!.priority).toBe('high')
+      expect(htp).toBeUndefined()
     })
 
     it('should suggest MCT oil for APOE4 peak week', () => {
