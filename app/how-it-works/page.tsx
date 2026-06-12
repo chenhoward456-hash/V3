@@ -29,7 +29,7 @@ const PILLARS = [
     icon: '🩸',
     title: 'Howard 標準血檢最佳化',
     sub: '「正常」跟「最佳」是兩回事（教練指導以上方案）',
-    body: '醫院的參考範圍是「沒生病」的標準，不是「狀態最好」的標準。我用一套比醫院更嚴的最佳化目標（藍標）看血檢——例如 HOMA-IR 看的不是 <2.0 而是 <0.8。這不是診斷，是優化方向：數據往哪偏、生活方式與補充策略往哪調，再用回測確認。',
+    body: '醫院的參考範圍是「沒生病」的標準，不是「狀態最好」的標準。我用一套比醫院更嚴的最佳化目標（藍標）追蹤你的血檢趨勢——例如 HOMA-IR 看的不是 <2.0 而是 <0.8。我是教練、不是醫師、不做診斷：血檢在這裡是「追蹤與優化方向」，數據往哪偏、生活方式與補充怎麼調，並建議與你的醫師討論後再決定。',
   },
   {
     icon: '🧑‍🏫',
@@ -43,7 +43,7 @@ const TIERS = [
   { name: '免費', price: '$0', priceNote: '永久免費', who: '先試系統準不準', what: '體重趨勢、飲食紀錄、TDEE 計算、14 天自動校正營養目標' },
   { name: '自主管理', price: 'NT$499', priceNote: '/月', who: '自己做決定、系統當儀表板', what: '免費版全部＋身心狀態追蹤＋AI 私人顧問（用你的數據回答）＋碳水循環＋停滯期偵測' },
   { name: '教練指導', price: 'NT$2,999', priceNote: '/月', who: '要有人把關方向', what: '自主管理全部＋CSCS 教練每週 review＋LINE 即時問答＋訓練／補劑／血檢完整追蹤', highlight: true },
-  { name: 'Protocol', price: 'NT$4,999', priceNote: '/月', who: '長期健康深度優化', what: '教練指導全部＋長期健康導向的深度服務' },
+  { name: 'Protocol', price: 'NT$4,999', priceNote: '/月', who: '長期健康深度優化', what: '教練指導全部＋把這套親身驗證的最佳化系統用在你身上：基因導向的營養與補充方向、血檢趨勢深度追蹤、與你的醫師協作，把「正常」推到「最佳」（教練服務、非醫療診斷）' },
 ]
 
 export default function HowItWorksPage() {
@@ -142,6 +142,9 @@ export default function HowItWorksPage() {
           <p className="text-sm text-slate-700 leading-relaxed">
             <b className="text-slate-900">Howard Chen</b> — 高雄醫學大學運動醫學系 / NSCA-CSCS 肌力與體能專家 / 6+ 年實務經驗，台中北屯。
             每個功能背後都有運動科學文獻支撐，不是憑感覺教練。我相信：好的系統比好的意志力更可靠。
+          </p>
+          <p className="text-xs text-slate-500 leading-relaxed mt-3 pt-3 border-t border-slate-200">
+            我是教練、不是醫師。這套系統提供數據追蹤、趨勢觀察與最佳化方向，並與你的醫師協作——不做醫療診斷、處方或治療。任何健康決策請諮詢合格醫師。
           </p>
         </div>
       </section>
