@@ -86,10 +86,16 @@ const MAX_DEFICIT_AT_BF_FLOOR = 500  // 低於體脂下限時，每日赤字上�
 const MTHFR_DEFICIT_REDUCTION = { homozygous: 150, heterozygous: 100 } as const // 赤字收窄 kcal
 const SEROTONIN_CARB_FLOOR = { high: 120, moderate: 100 } as const // 碳水最低下限 g（保護 5-HT 合成）
 
+// 性別正規化：cron 傳中文（'女性'/'男性'），測試傳英文（'female'/'male'）。兩者都要認，
+// 否則女性會套到男性體脂下限(10%) → 低體脂赤字保護被靜默繞過（RED-S 風險）。
+function isFemaleGender(gender: string | null | undefined): boolean {
+  return gender === 'female' || gender === '女性' || gender === 'F' || gender === 'f'
+}
+
 type ResolvedBounds = { min_calories: number; min_protein_per_kg: number; max_loss_per_week: number; min_loss_per_week: number }
 
 function getDefaultBounds(currentWeight: number, gender: string | null): ResolvedBounds {
-  const isFemale = gender === 'female'
+  const isFemale = isFemaleGender(gender)
   return {
     min_calories: isFemale ? 1200 : 1500,
     min_protein_per_kg: 1.8,
@@ -237,7 +243,7 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   if (cappedAdjustment < 0) {
     // 1. 體脂安全下限：BF 過低時，再砍會吃肌肉 → 限縮每日赤字
     const bf = input.bodyFatPct
-    const bfFloor = input.gender === 'female' ? BF_FLOOR_FEMALE : BF_FLOOR_MALE
+    const bfFloor = isFemaleGender(input.gender) ? BF_FLOOR_FEMALE : BF_FLOOR_MALE
     if (bf != null && bf < bfFloor && Math.abs(cappedAdjustment) > MAX_DEFICIT_AT_BF_FLOOR) {
       cappedAdjustment = -MAX_DEFICIT_AT_BF_FLOOR
       hitBoundary = true

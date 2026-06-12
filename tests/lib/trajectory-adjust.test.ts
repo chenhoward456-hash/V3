@@ -68,6 +68,15 @@ describe('computeTrajectoryAdjustment — 基因 + 體脂安全層', () => {
     expect(lowBf.boundaryDetail).toMatch(/體脂.*安全下限/)
   })
 
+  it('中文性別「女性」14% 體脂 → 套用女性下限 16% 保護（性別字串 bug 修正）', () => {
+    const aggressive = { targetWeight: 78, targetDate: dateInDays(35) }
+    // 14% 介於女性下限(16) 與男性下限(10) 之間：bug 版會誤判沒過下限而裸奔
+    const female = computeTrajectoryAdjustment(baseInput({ ...aggressive, gender: '女性', bodyFatPct: 14 }))
+    expect(female.hitBoundary).toBe(true)
+    expect(female.boundaryDetail).toMatch(/安全下限 16%/)
+    expect(Math.abs(female.kcalAdjustment!)).toBeLessThanOrEqual(500)
+  })
+
   it('MTHFR 雜合突變 → 赤字收窄約 100 kcal（吃更多）', () => {
     const noGene = computeTrajectoryAdjustment(baseInput({ bodyFatPct: 20 }))
     const mthfrHet = computeTrajectoryAdjustment(baseInput({ bodyFatPct: 20, geneticProfile: { mthfr: 'heterozygous' } }))
