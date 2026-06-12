@@ -77,7 +77,9 @@ export const LAB_THRESHOLDS = {
   '游離睪固酮_female': { normal: { min: 0.5, max: 8.5 }, attention: { min: 0.3, max: 10.0 } },
   // 生物可利用睪固酮（ng/dL）：底層參考為健康華人男性區間 107–380（PMID 29729137），
   // 下限按 Howard 客群（有訓練男性）拉嚴至 200，alert 線 150；上限取健康族群實測上界 380。
-  '生物可利用睪固酮': { normal: { min: 200, max: 380 }, attention: { min: 150, max: 380 } },
+  // 上限>380（高於健康族群實測上界）對自然訓練男性是「優化方向」非紅燈：380–600 只降級為 attention，
+  // >600（疑似外源）才 alert。下限維持 200/150。
+  '生物可利用睪固酮': { normal: { min: 200, max: 380 }, attention: { min: 150, max: 600 } },
   '皮質醇': { normal: { min: 6, max: 18 }, attention: { min: 4, max: 22 } },
   'DHEA-S': { normal: { min: 100, max: 500 }, attention: { min: 80, max: 600 } },
   'DHEA-S_female': { normal: { min: 65, max: 380 }, attention: { min: 50, max: 450 } },
@@ -108,8 +110,8 @@ export const LAB_OPTIMAL_RANGES: Record<string, number | { min: number; max: num
   // ── 代謝 / 血糖（長壽派激進目標）──
   'HOMA-IR': 0.8,                    // <0.8（共識最佳 <1.5; Attia 派 <1.0）
   '空腹胰島素': 2.5,                  // Attia「Outlive」立場；共識最佳 <5
-  '空腹血糖': 80,                     // 共識 ADA 正常 <100；長壽派 <80
-  'HbA1c': 5.0,                      // <5.0（ADA 糖尿病前期 5.7+；長壽派目標 <5.0）
+  '空腹血糖': { min: 70, max: 85 },   // 改區間：太低=低血糖，避免「越低越好」誤標（J-curve）
+  'HbA1c': { min: 4.8, max: 5.4 },   // 改區間：<4.8 也有 J 型風險，非越低越好
   '尿酸': 5.0,
   '尿酸_female': 4.0,
 

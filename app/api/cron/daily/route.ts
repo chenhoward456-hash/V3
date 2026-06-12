@@ -34,6 +34,7 @@ import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { generateBehaviorInsights, type InsightInput } from '@/lib/insight-engine'
 import { startCronRun, completeCronRun, failCronRun } from '@/lib/cron-utils'
 import { computeTrajectoryAdjustment, type MacroBounds } from '@/lib/trajectory-adjust'
+import { calculateLabStatus } from '@/utils/labStatus'
 import { generateNutritionSuggestion, type NutritionInput } from '@/lib/nutrition-engine'
 import { isWeightTraining } from '@/components/client/types'
 
@@ -255,7 +256,13 @@ export async function GET(request: NextRequest) {
           clientMode: (c.client_mode as any) || undefined,
           weighInGapHours: c.weigh_in_gap_hours ?? undefined,
           activityProfile: c.activity_profile || undefined,
-          labResults: labs.map((l: any) => ({ test_name: String(l.test_name), value: l.value != null ? Number(l.value) : null, unit: String(l.unit ?? ''), status: 'normal' as const, date: l.date })),
+          // #3: 算真實 status（原本硬寫 normal → lab→macro 安全修正全失效）。性別取中文。
+          labResults: labs.map((l: any) => {
+            const v = l.value != null ? Number(l.value) : null
+            const g = c.gender === '女性' ? '女性' : c.gender === '男性' ? '男性' : undefined
+            const status = (v != null && Number.isFinite(v)) ? calculateLabStatus(String(l.test_name), v, g) : 'normal'
+            return { test_name: String(l.test_name), value: v, unit: String(l.unit ?? ''), status, date: l.date }
+          }),
           recentWellness: wellness.map((w: any) => ({
             date: w.date,
             energy_level: w.energy_level ?? null,
@@ -284,12 +291,16 @@ export async function GET(request: NextRequest) {
         const engineNoAutoApply = engineResult.autoApply === false
         // Peak/比賽/秤重/反彈期：體重劇烈波動（肝醣/水分），軌跡數學會算出離譜建議並破壞超補/秤重協議 → 一律不自動調整
         const phaseLocked = ['peak_week', 'competition', 'weigh_in', 'rebound'].includes(c.prep_phase || '')
+        // #8: 恢復狀態 critical 或過度訓練高風險時，不自動加深赤字（與 recovery 引擎「該休息+refeed」相反指令會打架）
+        const recoveryCritical = engineResult.recoveryAssessment?.state === 'critical'
+          || engineResult.recoveryAssessment?.overtrainingRisk?.riskLevel === 'high'
+          || engineResult.recoveryAssessment?.overtrainingRisk?.riskLevel === 'very_high'
 
         const gates = {
-          cuttingBlocked, metabolicHighStress, tdeeAnomaly, engineNoAutoApply, phaseLocked,
+          cuttingBlocked, metabolicHighStress, tdeeAnomaly, engineNoAutoApply, phaseLocked, recoveryCritical,
         }
 
-        if (cuttingBlocked || metabolicHighStress || tdeeAnomaly || engineNoAutoApply || phaseLocked) {
+        if (cuttingBlocked || metabolicHighStress || tdeeAnomaly || engineNoAutoApply || phaseLocked || recoveryCritical) {
           if (cuttingBlocked) autoAdjustResults.gatedByCuttingReadiness++
           if (metabolicHighStress) autoAdjustResults.gatedByMetabolicStress++
           if (tdeeAnomaly) autoAdjustResults.gatedByTdeeAnomaly++
@@ -302,6 +313,7 @@ export async function GET(request: NextRequest) {
           if (tdeeAnomaly) blockReasons.push('TDEE 校正異常，引擎已暫停自動套用')
           if (engineNoAutoApply) blockReasons.push('Engine autoApply=false')
           if (phaseLocked) blockReasons.push(`${c.prep_phase} 期 — 不自動調整（保護超補/秤重協議）`)
+          if (recoveryCritical) blockReasons.push('恢復 critical / 過度訓練高風險 — 不自動加深赤字（建議休息+refeed）')
 
           await supabase.from('macro_adjustment_log').insert({
             client_id: c.id,

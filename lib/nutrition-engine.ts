@@ -2980,14 +2980,24 @@ function generateGoalDrivenCut(
   // 超過此上限 → 不再加深赤字，改標記不可行
   // Athletic 模式使用更保守的 1.0% BW/week（Reale 2017, Garthe 2011）
   const isAthleticPrep = input.clientMode === 'athletic' && input.prepPhase === 'preparation'
-  const maxWeeklyLossPct = isAthleticPrep ? ATHLETIC_CUT.MAX_WEEKLY_LOSS_PCT : GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT
+  // #5: 只有健美備賽吃 1.2% 彈性；athletic 1.0%；一般/健康模式也壓 1.0%（原本誤吃 1.2%，繞過 zone 保肌上限）
+  const maxWeeklyLossPct = isAthleticPrep
+    ? ATHLETIC_CUT.MAX_WEEKLY_LOSS_PCT
+    : input.clientMode === 'bodybuilding'
+      ? GOAL_DRIVEN.MAX_WEEKLY_LOSS_PCT
+      : 1.0
   const maxSafeWeeklyLoss = bw * maxWeeklyLossPct / 100
   const maxSafeDailyDeficit = Math.round((maxSafeWeeklyLoss * energyDensity) / 7)
   if (requiredDailyDeficit > maxSafeDailyDeficit) {
     warnings.push(`🚫 需要每週減 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW），超過安全上限 ${maxWeeklyLossPct}%。系統已將赤字鎖定在安全上限，建議與教練討論延長時程或調整目標體重`)
   }
-  // 實際赤字不超過安全上限
-  const cappedDailyDeficit = Math.min(requiredDailyDeficit, maxSafeDailyDeficit)
+  // 實際赤字不超過安全上限（%體重）
+  // #6: 再加一道「絕對 kcal 硬上限」——重者 1.2%×100kg 可達 >1000 kcal，超過所有文件化上限。
+  //     健美備賽末期(≤21天) 1000、備賽期 750、一般/健康 500。
+  const absoluteDeficitCap = input.clientMode === 'bodybuilding'
+    ? (daysLeft <= 21 ? GOAL_DRIVEN.EXTREME_DEFICIT_KCAL : GOAL_DRIVEN.MAX_DEFICIT_KCAL)
+    : SAFETY.MAX_DEFICIT_KCAL
+  const cappedDailyDeficit = Math.min(requiredDailyDeficit, maxSafeDailyDeficit, absoluteDeficitCap)
 
   // 2b. 判斷安全等級（用 capped 後的赤字）
   let safetyLevel: 'normal' | 'aggressive' | 'extreme'
