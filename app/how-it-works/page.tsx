@@ -43,7 +43,7 @@ const TIERS = [
   { name: '免費', price: '$0', priceNote: '永久免費', who: '先試系統準不準', what: '體重趨勢、飲食紀錄、TDEE 計算、14 天自動校正營養目標' },
   { name: '自主管理', price: 'NT$499', priceNote: '/月', who: '自己做決定、系統當儀表板', what: '免費版全部＋身心狀態追蹤＋AI 私人顧問（用你的數據回答）＋碳水循環＋停滯期偵測' },
   { name: '教練指導', price: 'NT$2,999', priceNote: '/月', who: '要有人把關方向', what: '自主管理全部＋CSCS 教練每週 review＋LINE 即時問答＋訓練／補劑／血檢完整追蹤', highlight: true },
-  { name: 'Protocol', price: 'NT$4,999', priceNote: '/月', who: '長期健康深度優化', what: '教練指導全部＋把這套親身驗證的最佳化系統用在你身上：基因導向的營養與補充方向、血檢趨勢深度追蹤、與你的醫師協作，把「正常」推到「最佳」（教練服務、非醫療診斷）' },
+  { name: 'Protocol', price: '邀請制', priceNote: '', who: '長期健康深度優化', what: '教練指導全部＋基因導向的營養與補充方向、血檢趨勢深度追蹤、與你的醫師協作把「正常」推到「最佳」。先聊聊、確認適合你再進行（教練服務、非醫療診斷）' },
 ]
 
 export default function HowItWorksPage() {

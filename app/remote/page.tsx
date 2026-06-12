@@ -221,6 +221,17 @@ export default function RemotePage() {
             <p className="text-center text-xs text-gray-400 mt-8">
               信用卡定期定額，每月自動扣款。可隨時在儀表板取消，取消後用到當期到期日。自主管理版可隨時升級教練指導版，補差額即可。
             </p>
+
+            {/* Protocol — 邀請制（不公開定價、不即刷；先聊確認適合）*/}
+            <div className="mt-10 max-w-2xl mx-auto rounded-2xl border border-gray-200 bg-white/70 p-5 text-center">
+              <p className="text-sm font-semibold mb-1" style={{ color: '#1e3a5f' }}>想要更深度的健康最佳化？</p>
+              <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                基因導向的營養與補充方向、血檢趨勢深度追蹤、與你的醫師協作把「正常」推到「最佳」——這部分為<b>邀請制</b>，先聊聊、確認適合你再進行（教練協作、非醫療診斷）。
+              </p>
+              <LineButton source="remote_page" intent="protocol_inquiry" className="inline-block bg-[#1e3a5f] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#162d4a] transition-colors">
+                想了解 — 加 LINE 聊聊
+              </LineButton>
+            </div>
           </div>
         </section>
       </ScrollReveal>
