@@ -4,14 +4,33 @@ import Image from 'next/image'
 
 export const metadata: Metadata = {
   title: '我的故事 - The Howard Protocol',
-  description: 'Howard 的 6 年體態追蹤紀錄。從2020年系統崩潰到2026年完全重生，透過系統化訓練與營養介入達到菁英等級。',
+  description: 'Howard 的 6 年體態追蹤紀錄。從掉髮、亞健康到 7.8% 體脂、血檢幾乎全項達標，透過系統化訓練、基因導向營養與抽血回測完成。',
   alternates: { canonical: 'https://howard456.vercel.app/case' },
   openGraph: {
     title: '我的故事 - The Howard Protocol',
-    description: 'Howard 的 6 年體態追蹤紀錄 - 從系統崩潰到完全重生',
+    description: '從掉髮、亞健康到 7.8% 體脂、血檢全項達標 — 6 年系統化追蹤紀錄',
     url: 'https://howard456.vercel.app/case',
   },
 }
+
+// 開場數據快照（陳胤豪本人真實紀錄）
+const HERO_STATS = [
+  { value: '6 年', label: '完整追蹤' },
+  { value: '7.8%', label: '體脂' },
+  { value: '14 項', label: '血檢回測' },
+  { value: '91ms', label: 'HRV · ELITE' },
+]
+
+// 轉變前後症狀對照
+const BEFORE_SYMPTOMS = ['嚴重落髮（頭頂明顯稀疏）', '圓潤浮腫的臉型', '全身性慢性發炎', '持續疲勞、無動力', 'hs-CRP 發炎指標異常']
+const AFTER_SYMPTOMS = ['頭髮恢復濃密', '精實體態（FFMI 23.6）', '發炎指標正常化', '精力充沛、高效能', 'HRV 達菁英等級（91ms）']
+
+// 時間軸
+const TIMELINE = [
+  { year: '2020 年初', phase: '系統崩潰期', desc: '嚴重落髮、浮腫、慢性疲勞', stat: 'hs-CRP 偏高', statNote: '發炎指標異常', tone: 'rose' as const },
+  { year: '2022 年', phase: '系統修復期', desc: '開始系統化訓練與營養介入', stat: 'Testosterone 515 ng/dL', statNote: '荷爾蒙偏低，緩步回升', tone: 'amber' as const },
+  { year: '2026 年', phase: '系統優化完成', desc: '代謝、荷爾蒙、自律神經全面到位', stat: 'T 625 · HOMA-IR 0.49 · HRV 91', statNote: 'ELITE 等級', tone: 'emerald' as const },
+]
 
 // 達到 Howard 最佳標準的指標（藍標＝正常之上的最佳化區）。陳胤豪本人真實 lab_results。
 const OPTIMAL_MARKERS = [
@@ -47,410 +66,291 @@ const BEFORE_AFTER = [
   },
 ]
 
+// Zone 2 實測
+const ZONE2 = [
+  { metric: 'HRV', from: '65', to: '91', unit: 'ms', delta: '+40%', note: '副交感活性強，壓力恢復力佳' },
+  { metric: '靜息心率', from: '58', to: '52', unit: 'bpm', delta: '-10%', note: '心臟效率提升，心肺強化' },
+  { metric: '深層睡眠', from: '18', to: '24', unit: '%', delta: '+33%', note: '神經系統穩定，深睡比例高' },
+]
+
+function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
+  return (
+    <div className="mb-8">
+      <p className="text-xs tracking-[0.2em] text-blue-600 font-medium mb-2">{eyebrow}</p>
+      <h2 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">{title}</h2>
+      {sub && <p className="text-slate-500 mt-3 leading-relaxed">{sub}</p>}
+    </div>
+  )
+}
+
+const TONE = {
+  rose: { dot: 'bg-rose-400', chip: 'text-rose-600 bg-rose-50 border-rose-200', stat: 'text-rose-600' },
+  amber: { dot: 'bg-amber-400', chip: 'text-amber-600 bg-amber-50 border-amber-200', stat: 'text-amber-600' },
+  emerald: { dot: 'bg-emerald-500', chip: 'text-emerald-600 bg-emerald-50 border-emerald-200', stat: 'text-emerald-600' },
+}
+
 export default function CasePage() {
   return (
-    <section className="section-container">
-      <h2 className="doc-title">我的故事</h2>
-      <p className="doc-subtitle">Howard 的 6 年體態追蹤紀錄</p>
-
-      <div className="bg-warning/5 border-2 border-warning/30 rounded-xl p-6 mb-8">
-        <p className="text-text-secondary text-sm leading-relaxed">
-          ⚠️ <strong>個人經驗分享</strong>：以下內容為個人案例紀錄，僅供參考。每個人的身體狀況不同，效果因人而異。任何健康相關決策請諮詢專業醫療人員。
-        </p>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-10 my-16">
-        <div className="relative">
-          <div className="absolute -top-3 -left-3 bg-danger/75 text-white px-4 py-1.5 rounded-full font-normal text-sm z-10">
-            2020 年初
-          </div>
-          <div className="relative h-[300px] md:h-[420px] rounded-[1.5rem] overflow-hidden" style={{boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.03)'}}>
-            <Image
-              src="/before.jpg"
-              alt="2020 年系統崩潰狀態"
-              fill
-              className="object-cover"
-            />
-          </div>
-          <div className="mt-6">
-            <h3 className="text-danger mb-4 text-lg font-medium">❌ 系統失效</h3>
-            <div className="bg-bg-tertiary/40 p-6 rounded-2xl border-l-[3px] border-danger/40">
-              <div className="text-text-secondary leading-loose text-[15px]">
-                • 嚴重落髮（頭頂明顯稀疏）<br />
-                • 圓潤浮腫的臉型<br />
-                • 全身性慢性發炎<br />
-                • 持續疲勞、無動力<br />
-                • hs-CRP 發炎指標異常
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative">
-          <div className="absolute -top-3 -left-3 bg-success/75 text-white px-4 py-1.5 rounded-full font-normal text-sm z-10">
-            2026 年
-          </div>
-          <div className="relative h-[300px] md:h-[420px] rounded-[1.5rem] overflow-hidden" style={{boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.03)'}}>
-            <Image
-              src="/after.jpg"
-              alt="2026 年完全重生狀態 - 頭髮恢復與體態改善"
-              fill
-              className="object-cover"
-              style={{ objectPosition: 'center 20%' }}
-            />
-          </div>
-          <div className="mt-6">
-            <h3 className="text-success mb-4 text-lg font-medium">✓ 系統優化</h3>
-            <div className="bg-bg-tertiary/40 p-6 rounded-2xl border-l-[3px] border-success/40">
-              <div className="text-text-secondary leading-loose text-[15px]">
-                • 頭髮恢復濃密<br />
-                • 精實體態 (FFMI 23.6)<br />
-                • 發炎指標正常化<br />
-                • 精力充沛、高效能<br />
-                • HRV 達到菁英等級 (91ms)
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white border-2 border-border p-10 rounded-2xl my-12">
-        <h3 className="mb-6 text-text-primary text-[1.3rem] font-bold">🔬 核心發現</h3>
-        <div className="code-block">
-          <span className="code-label">系統分析結果</span>
-          <div className="leading-loose">
-            根據<strong>個人經驗</strong>，落髮可能不只是「年紀問題」，而是身體系統發出的警告訊號。<br /><br />
-            
-            經過系統化追蹤與調整，我發現三大可能原因：<br />
-            1. <strong>慢性發炎</strong> - 可能影響毛囊健康<br />
-            2. <strong>荷爾蒙波動</strong> - 睪固酮偏低，DHT 轉換過度<br />
-            3. <strong>代謝問題</strong> - 胰島素阻抗，營養輸送受阻
-          </div>
-        </div>
-      </div>
-
-      <h3 className="my-16 text-2xl font-bold text-text-primary">📈 數據時間軸</h3>
-      
-      <div className="grid gap-8">
-        <div className="protocol-card">
-          <span className="tag red">2020 年初</span>
-          <h3 className="text-xl mb-4 text-danger font-bold">系統崩潰期</h3>
-          <p className="text-text-secondary mb-4">
-            嚴重落髮、浮腫、慢性疲勞
+    <div className="bg-white">
+      {/* HERO */}
+      <section className="bg-slate-900 text-white px-5 py-14 md:py-20">
+        <div className="max-w-3xl mx-auto">
+          <p className="text-xs tracking-[0.2em] text-blue-400 font-medium mb-5">THE HOWARD PROTOCOL · 我的故事</p>
+          <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-5">
+            從掉髮、亞健康，
+            <span className="block text-blue-400 mt-2">到 7.8% 體脂、血檢全項達標。</span>
+          </h1>
+          <p className="text-slate-300 text-base md:text-lg leading-relaxed max-w-xl">
+            6 年完整追蹤紀錄。不是課表範本——是我把同一套系統用在自己身上、親身驗證過的東西。
           </p>
-          <div className="bg-bg-tertiary p-4 rounded-lg font-mono">
-            <div className="text-danger font-bold text-2xl mb-2">
-              hs-CRP: 高
-            </div>
-            <div className="text-text-muted text-sm">發炎指標異常</div>
-          </div>
-        </div>
-
-        <div className="protocol-card">
-          <span className="tag orange">2022 年</span>
-          <h3 className="text-xl mb-4 text-warning font-bold">系統修復期</h3>
-          <p className="text-text-secondary mb-4">
-            開始系統化訓練與營養介入
-          </p>
-          <div className="bg-bg-tertiary p-4 rounded-lg font-mono">
-            <div className="text-warning font-bold text-2xl mb-2">
-              Testosterone: 515 ng/dL
-            </div>
-            <div className="text-text-muted text-sm">荷爾蒙偏低</div>
-          </div>
-        </div>
-
-        <div className="protocol-card">
-          <span className="tag green">2026 年</span>
-          <h3 className="text-xl mb-4 text-success font-bold">系統優化完成</h3>
-          <p className="text-text-secondary mb-4">
-            所有指標達到菁英水平
-          </p>
-          <div className="bg-bg-tertiary p-4 rounded-lg font-mono">
-            <div className="text-success font-bold text-xl mb-2">
-              Testosterone: 625 ng/dL<br />
-              HOMA-IR: 0.49<br />
-              HRV: 91 ms
-            </div>
-            <div className="text-text-muted text-sm">ELITE 等級</div>
-          </div>
-        </div>
-      </div>
-
-      {/* 血檢藍標 — 不是減重，是把整個身體調到最佳 */}
-      <div className="my-24 max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-4" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
-          血檢：不是減重，是把整個身體調到最佳
-        </h2>
-        <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-          一個 7.8% 體脂的身體，代謝、血脂、血糖幾乎全項落在 Howard 最佳標準（藍標＝正常之上的最佳化區）。
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {OPTIMAL_MARKERS.map((m) => (
-            <div key={m.name} className="rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
-              <div className="text-xs text-slate-500">{m.name}</div>
-              <div className="mt-1 flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-blue-700">{m.value}</span>
-                {m.unit && <span className="text-[11px] text-slate-400">{m.unit}</span>}
+          <div className="grid grid-cols-4 gap-3 border-t border-slate-700 pt-8 mt-10">
+            {HERO_STATS.map((s) => (
+              <div key={s.label} className="text-center">
+                <div className="text-xl md:text-3xl font-bold text-white">{s.value}</div>
+                <div className="text-[11px] text-slate-400 mt-1">{s.label}</div>
               </div>
-              <div className="mt-1 inline-block text-[10px] font-medium text-blue-600 bg-blue-100 rounded px-1.5 py-0.5">{m.std}</div>
-              <div className="text-[11px] text-slate-500 mt-1.5 leading-snug">{m.desc}</div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 免責 */}
+      <div className="px-5 pt-8 max-w-3xl mx-auto">
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3">
+          <p className="text-xs text-slate-600 leading-relaxed">
+            ⚠️ <strong className="text-slate-800">個人經驗分享</strong>：以下為個人案例紀錄，僅供參考。每個人身體狀況不同，效果因人而異。任何健康決策請諮詢專業醫療人員。
+          </p>
         </div>
       </div>
 
-      {/* 看出方向 → 個人化補充 → 抽血回測（含真實檢驗單） */}
-      <div className="my-24 max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-4" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
-          看出方向 → 個人化補充策略 → 抽血追蹤變化
-        </h2>
-        <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-          不是吃補品碰運氣，是讀進血檢與基因、個人化調整，再用回測追蹤變化。相關補充與飲食調整，建議與醫師或藥師討論。
-        </p>
-        <div className="space-y-5">
-          {BEFORE_AFTER.map((b) => (
-            <div key={b.name} className="rounded-2xl border border-gray-200 bg-white p-6">
-              <div className="flex items-center gap-4 mb-3">
-                <span className="text-base font-semibold text-gray-900">{b.name}</span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl text-gray-400 line-through decoration-gray-300">{b.from}</span>
-                  <span className="text-emerald-500">→</span>
-                  <span className="text-2xl font-bold text-emerald-600">{b.to}</span>
-                  <span className="text-xs text-gray-400">{b.unit}</span>
+      {/* 轉變前後 */}
+      <section className="px-5 py-12 md:py-16 max-w-3xl mx-auto">
+        <SectionHeader eyebrow="2020 → 2026" title="看得見的轉變" sub="頭髮、體態、發炎——都是身體狀態的鏡子。把整套系統調對，看不見的數據好了，看得見的地方也跟著回來。" />
+        <div className="grid md:grid-cols-2 gap-5">
+          {/* before */}
+          <div>
+            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border border-slate-200">
+              <span className="absolute top-3 left-3 z-10 text-xs font-medium text-white bg-rose-500/85 rounded-full px-3 py-1">2020 年初</span>
+              <Image src="/before.jpg" alt="2020 年系統崩潰狀態" fill className="object-cover" />
+            </div>
+            <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50/40 p-5">
+              <p className="text-sm font-semibold text-rose-700 mb-3">系統失效</p>
+              <ul className="space-y-1.5">
+                {BEFORE_SYMPTOMS.map((s) => (
+                  <li key={s} className="text-sm text-slate-600 flex gap-2"><span className="text-rose-400">·</span>{s}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          {/* after */}
+          <div>
+            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border border-slate-200">
+              <span className="absolute top-3 left-3 z-10 text-xs font-medium text-white bg-emerald-500/85 rounded-full px-3 py-1">2026 年</span>
+              <Image src="/after.jpg" alt="2026 年完全重生狀態" fill className="object-cover" style={{ objectPosition: 'center 20%' }} />
+            </div>
+            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5">
+              <p className="text-sm font-semibold text-emerald-700 mb-3">系統優化</p>
+              <ul className="space-y-1.5">
+                {AFTER_SYMPTOMS.map((s) => (
+                  <li key={s} className="text-sm text-slate-600 flex gap-2"><span className="text-emerald-500">✓</span>{s}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 核心發現 */}
+      <section className="px-5 pb-4 max-w-3xl mx-auto">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 md:p-8">
+          <p className="text-sm font-semibold text-slate-900 mb-3">🔬 核心發現</p>
+          <p className="text-sm text-slate-600 leading-relaxed mb-4">
+            根據個人經驗，落髮可能不只是「年紀問題」，而是身體系統發出的警告訊號。經過系統化追蹤與調整，我發現三個可能方向：
+          </p>
+          <div className="grid sm:grid-cols-3 gap-3">
+            {[
+              { t: '慢性發炎', d: '可能影響毛囊健康' },
+              { t: '荷爾蒙波動', d: '睪固酮偏低、DHT 轉換過度' },
+              { t: '代謝問題', d: '胰島素阻抗、營養輸送受阻' },
+            ].map((x) => (
+              <div key={x.t} className="rounded-xl border border-slate-200 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-900">{x.t}</p>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{x.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 時間軸 */}
+      <section className="px-5 py-12 md:py-16 max-w-3xl mx-auto">
+        <SectionHeader eyebrow="DATA TIMELINE" title="數據時間軸" />
+        <div className="relative pl-6">
+          <div className="absolute left-[5px] top-2 bottom-2 w-px bg-slate-200" />
+          <div className="space-y-5">
+            {TIMELINE.map((t) => (
+              <div key={t.year} className="relative">
+                <span className={`absolute -left-6 top-1.5 w-[11px] h-[11px] rounded-full ring-4 ring-white ${TONE[t.tone].dot}`} />
+                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="flex items-center gap-3 mb-1.5">
+                    <span className={`text-[11px] font-medium border rounded-full px-2.5 py-0.5 ${TONE[t.tone].chip}`}>{t.year}</span>
+                    <span className="text-sm font-semibold text-slate-900">{t.phase}</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mb-3">{t.desc}</p>
+                  <div className={`text-lg font-bold ${TONE[t.tone].stat}`}>{t.stat}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{t.statNote}</div>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed">{b.story}</p>
-              <p className="text-[11px] text-gray-400 mt-2">📄 {b.cite}</p>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 血檢藍標 */}
+      <section className="px-5 py-12 md:py-16 bg-slate-50">
+        <div className="max-w-3xl mx-auto">
+          <SectionHeader
+            eyebrow="BLOODWORK"
+            title="血檢：不是減重，是把整個身體調到最佳"
+            sub="一個 7.8% 體脂的身體，代謝、血脂、血糖幾乎全項落在 Howard 最佳標準（藍標＝正常之上的最佳化區）。"
+          />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {OPTIMAL_MARKERS.map((m) => (
+              <div key={m.name} className="rounded-2xl border border-blue-100 bg-white p-4">
+                <div className="text-xs text-slate-500">{m.name}</div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className="text-2xl font-bold text-blue-700">{m.value}</span>
+                  {m.unit && <span className="text-[11px] text-slate-400">{m.unit}</span>}
+                </div>
+                <div className="mt-1 inline-block text-[10px] font-medium text-blue-600 bg-blue-100 rounded px-1.5 py-0.5">{m.std}</div>
+                <div className="text-[11px] text-slate-500 mt-1.5 leading-snug">{m.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 看出方向 → 個人化補充 → 抽血回測 */}
+      <section className="px-5 py-12 md:py-16 max-w-3xl mx-auto">
+        <SectionHeader
+          eyebrow="DISCOVER → ADJUST → RETEST"
+          title="看出方向 → 個人化補充策略 → 抽血追蹤變化"
+          sub="不是吃補品碰運氣，是讀進血檢與基因、個人化調整，再用回測追蹤變化。相關補充與飲食調整，建議與醫師或藥師討論。"
+        />
+        <div className="space-y-4">
+          {BEFORE_AFTER.map((b) => (
+            <div key={b.name} className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6">
+              <div className="flex items-center gap-4 mb-3">
+                <span className="text-base font-semibold text-slate-900">{b.name}</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl text-slate-400 line-through decoration-slate-300">{b.from}</span>
+                  <span className="text-emerald-500">→</span>
+                  <span className="text-2xl font-bold text-emerald-600">{b.to}</span>
+                  <span className="text-xs text-slate-400">{b.unit}</span>
+                </div>
+              </div>
+              <p className="text-sm text-slate-600 leading-relaxed">{b.story}</p>
+              <p className="text-[11px] text-slate-400 mt-2">📄 {b.cite}</p>
             </div>
           ))}
         </div>
 
-        {/* 真實檢驗報告 — 同半胱胺酸前後對照（原始檢驗單） */}
-        <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6">
-          <p className="text-xs font-medium text-gray-500 mb-3">真實檢驗報告 — 同半胱胺酸（原始檢驗單，未修圖）</p>
+        {/* 真實檢驗報告 */}
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
+          <p className="text-xs font-medium text-slate-500 mb-3">真實檢驗報告 — 同半胱胺酸（原始檢驗單，未修圖）</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <figure className="m-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/case-homocysteine-before.jpg" alt="同半胱胺酸 15.0（補充前）" className="w-full rounded-lg border border-gray-100 bg-white" />
-              <figcaption className="text-[11px] text-gray-400 mt-1 text-center">補充前 · 15.0</figcaption>
+              <img src="/case-homocysteine-before.jpg" alt="同半胱胺酸 15.0（補充前）" className="w-full rounded-lg border border-slate-100 bg-white" />
+              <figcaption className="text-[11px] text-slate-400 mt-1 text-center">補充前 · 15.0</figcaption>
             </figure>
             <figure className="m-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/case-homocysteine-after.jpg" alt="同半胱胺酸 9.3（追蹤後）" className="w-full rounded-lg border border-gray-100 bg-white" />
-              <figcaption className="text-[11px] text-gray-400 mt-1 text-center">追蹤後 · 9.3</figcaption>
+              <img src="/case-homocysteine-after.jpg" alt="同半胱胺酸 9.3（追蹤後）" className="w-full rounded-lg border border-slate-100 bg-white" />
+              <figcaption className="text-[11px] text-slate-400 mt-1 text-center">追蹤後 · 9.3</figcaption>
             </figure>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 誠實揭露 — 把激進減脂的代價講出來，並展示系統如何自動防護 */}
-      <div className="my-24 max-w-4xl mx-auto">
-        <div className="rounded-2xl border-2 border-amber-200 bg-amber-50/50 p-6 md:p-8">
-          <p className="text-base font-bold text-gray-900 mb-2">誠實說一件事</p>
-          <p className="text-sm text-gray-600 leading-relaxed">
-            備賽到 7.8% 這麼瘦，睪固酮確實會下降——這是激進減脂的代價，多數教練不會跟你說。所以這套系統會<strong className="text-gray-900">依體脂自動收手</strong>：體脂太低就縮減熱量赤字，不為了數字把人榨乾。看得到代價、也防得住，才是真的系統。
+      {/* 誠實揭露 */}
+      <section className="px-5 pb-4 max-w-3xl mx-auto">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 md:p-6">
+          <p className="text-base font-bold text-slate-900 mb-2">誠實說一件事</p>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            備賽到 7.8% 這麼瘦，睪固酮確實會下降——這是激進減脂的代價，多數教練不會跟你說。所以這套系統會<strong className="text-slate-900">依體脂自動收手</strong>：體脂太低就縮減熱量赤字，不為了數字把人榨乾。看得到代價、也防得住，才是真的系統。
           </p>
         </div>
-      </div>
+      </section>
 
-      {/* Technical Stack */}
-      <div className="my-24 max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
-          Technical Stack
-        </h2>
-        <p className="text-center text-gray-600 mb-12">
-          專業背景與技術規格
-        </p>
-
-        <div className="bg-white border-2 border-gray-200 rounded-2xl p-8">
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* 學歷認證 */}
-            <div>
-              <h3 className="text-sm font-bold text-gray-400 mb-4 tracking-wider">EDUCATION & CERTIFICATION</h3>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <span className="text-primary font-mono text-sm">▸</span>
-                  <div>
-                    <p className="font-medium text-gray-900">高雄醫學大學 運動醫學系</p>
-                    <p className="text-sm text-gray-500">Bachelor of Sports Medicine</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-primary font-mono text-sm">▸</span>
-                  <div>
-                    <p className="font-medium text-gray-900">NSCA-CSCS 肌力與體能專家</p>
-                    <p className="text-sm text-gray-500">Certified Strength & Conditioning Specialist</p>
-                  </div>
-                </div>
+      {/* Zone 2 訓練方法論 */}
+      <section className="px-5 py-12 md:py-16 max-w-3xl mx-auto">
+        <SectionHeader eyebrow="TRAINING · ZONE 2" title="訓練方法論：Zone 2 有氧實測" sub="備賽期間 12 週 Whoop 實測數據。" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {ZONE2.map((z) => (
+            <div key={z.metric} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-slate-900">{z.metric}</span>
+                <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 rounded px-1.5 py-0.5">{z.delta}</span>
               </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-base text-slate-400 line-through decoration-slate-300">{z.from}</span>
+                <span className="text-emerald-500">→</span>
+                <span className="text-2xl font-bold text-slate-900">{z.to}</span>
+                <span className="text-[11px] text-slate-400">{z.unit}</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1.5 leading-snug">{z.note}</p>
             </div>
-
-            {/* 技術專長 */}
-            <div>
-              <h3 className="text-sm font-bold text-gray-400 mb-4 tracking-wider">TECHNICAL EXPERTISE</h3>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <span className="text-success font-mono text-sm">✓</span>
-                  <div>
-                    <p className="font-medium text-gray-900">數據追蹤與分析</p>
-                    <p className="text-sm text-gray-500">HRV / 血檢 / 體組成 / 訓練量化</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-success font-mono text-sm">✓</span>
-                  <div>
-                    <p className="font-medium text-gray-900">系統化訓練設計</p>
-                    <p className="text-sm text-gray-500">肌力 / 代謝 / 恢復 / 營養介入</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-success font-mono text-sm">✓</span>
-                  <div>
-                    <p className="font-medium text-gray-900">個人實驗數據庫</p>
-                    <p className="text-sm text-gray-500">6 年完整追蹤記錄（2020-2026）</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 數據規格 */}
-          <div className="mt-8 pt-8 border-t-2 border-gray-100">
-            <h3 className="text-sm font-bold text-gray-400 mb-4 tracking-wider">PERFORMANCE METRICS (2026)</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="font-mono text-2xl font-bold text-primary">625</div>
-                <div className="text-xs text-gray-500 mt-1">Testosterone (ng/dL)</div>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="font-mono text-2xl font-bold text-success">0.49</div>
-                <div className="text-xs text-gray-500 mt-1">HOMA-IR</div>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="font-mono text-2xl font-bold text-warning">91</div>
-                <div className="text-xs text-gray-500 mt-1">HRV (ms)</div>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="font-mono text-2xl font-bold text-gray-900">ELITE</div>
-                <div className="text-xs text-gray-500 mt-1">Overall Grade</div>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
-      </div>
-
-      {/* 訓練方法論 - Zone 2 實測 */}
-      <div className="my-24 max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-4" style={{color: '#2D2D2D', letterSpacing: '0.05em'}}>
-          訓練方法論
-        </h2>
-        <p className="text-center text-gray-600 mb-12">
-          備賽期間的 Zone 2 有氧實測數據
-        </p>
-
-        <div className="bg-gradient-to-br from-success/5 to-success/10 rounded-2xl p-8 border-2 border-success/20">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl">🏃</span>
-            <div>
-              <h3 className="text-2xl font-bold" style={{color: '#2D2D2D'}}>Zone 2 登階機 5 大好處</h3>
-              <p className="text-sm text-gray-600">12 週 Whoop 實測數據</p>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-white rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">✅</span>
-                <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>提升 HRV</h4>
-              </div>
-              <p className="text-gray-600 text-sm mb-2">Higher HRV</p>
-              <div className="bg-success/10 rounded-lg p-3">
-                <p className="text-sm text-gray-700">65ms → <strong className="text-success">91ms</strong> (+40%)</p>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">副交感神經活性強，壓力恢復力佳</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">✅</span>
-                <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>降低 RHR</h4>
-              </div>
-              <p className="text-gray-600 text-sm mb-2">Lower Resting Heart Rate</p>
-              <div className="bg-primary/10 rounded-lg p-3">
-                <p className="text-sm text-gray-700">58bpm → <strong className="text-primary">52bpm</strong> (-10%)</p>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">心臟效率提升，心肺功能強化</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">✅</span>
-                <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>睡眠更好</h4>
-              </div>
-              <p className="text-gray-600 text-sm mb-2">Better Sleep Quality</p>
-              <div className="bg-warning/10 rounded-lg p-3">
-                <p className="text-sm text-gray-700">深睡 18% → <strong className="text-warning">24%</strong> (+33%)</p>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">穩定神經系統，深睡比例高</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">✅</span>
-                <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>核心穩定</h4>
-              </div>
-              <p className="text-gray-600 text-sm mb-2">Stronger Core & Lower Body</p>
-              <p className="text-xs text-gray-500">大肌群連動，排列穩定</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">✅</span>
-              <h4 className="font-bold text-lg" style={{color: '#2D2D2D'}}>穩定情緒</h4>
-            </div>
-            <p className="text-sm text-gray-600">Zone 2 有氧最能舒壓 → 腦內啡上升，心情穩定</p>
-          </div>
-
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg border-l-4 border-success">
-            <p className="text-sm text-gray-700 leading-relaxed">
-              💡 <strong>重點</strong>：Zone 2 有氧不是只有創造熱量赤字，它能讓粒線體效率更佳，大家不重訓至少好好善待自己的心肺能力！
-            </p>
-          </div>
-
-          <div className="text-center mt-6">
-            <Link 
-              href="/blog/zone-2-cardio-benefits"
-              className="inline-block text-success hover:underline font-medium"
-            >
-              閱讀完整文章 →
-            </Link>
-          </div>
+        <div className="mt-4 rounded-xl border-l-2 border-emerald-400 bg-emerald-50/40 px-4 py-3">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            💡 Zone 2 有氧不只是創造熱量赤字，更能提升粒線體效率、穩定核心與情緒。不重訓的人，也至少好好善待自己的心肺。
+          </p>
         </div>
-      </div>
-
-      {/* CTA — 轉換目標：免費系統分析 */}
-      <div className="my-16 bg-slate-900 text-white rounded-2xl p-8 md:p-12 text-center">
-        <h3 className="text-2xl md:text-3xl font-bold mb-3">想知道你的身體能被優化到什麼程度？</h3>
-        <p className="text-slate-300 mb-8 leading-relaxed max-w-xl mx-auto">
-          先做一次免費的系統分析，30 秒看到你的營養目標與方向。
-        </p>
-        <Link
-          href="/diagnosis"
-          className="inline-block bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold px-8 py-4 rounded-xl text-lg"
-        >
-          免費系統分析 →
+        <Link href="/blog/zone-2-cardio-benefits" className="inline-block mt-4 text-sm text-blue-600 font-medium hover:underline">
+          閱讀完整文章 →
         </Link>
-        <p className="text-xs text-slate-500 mt-4">不用註冊、不用付費，直接看結果</p>
-        <p className="mt-6">
-          <Link href="/training" className="text-slate-300 hover:text-white underline text-sm">查看完整訓練系統 →</Link>
-        </p>
-      </div>
+      </section>
 
-      <p className="text-xs text-gray-400 leading-relaxed text-center max-w-3xl mx-auto mb-16">
-        ⚠️ 個人案例分享，僅供參考。數據取自真實追蹤紀錄；每個人身體狀況不同，效果因人而異。任何健康決策請諮詢專業醫療人員。本服務非醫療行為。
-      </p>
-    </section>
+      {/* 背後的人 */}
+      <section className="px-5 pb-4 max-w-3xl mx-auto">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+          <p className="text-xs tracking-[0.2em] text-slate-400 font-medium mb-3">EDUCATION & CERTIFICATION</p>
+          <div className="space-y-2 mb-5">
+            <p className="text-sm text-slate-700"><strong className="text-slate-900">高雄醫學大學 運動醫學系</strong> · Bachelor of Sports Medicine</p>
+            <p className="text-sm text-slate-700"><strong className="text-slate-900">NSCA-CSCS 肌力與體能專家</strong> · Certified Strength &amp; Conditioning Specialist</p>
+          </div>
+          <p className="text-xs tracking-[0.2em] text-slate-400 font-medium mb-3">TECHNICAL EXPERTISE</p>
+          <ul className="space-y-1.5">
+            {['數據追蹤與分析（HRV／血檢／體組成／訓練量化）', '系統化訓練設計（肌力／代謝／恢復／營養介入）', '個人實驗數據庫（2020–2026 完整追蹤）'].map((s) => (
+              <li key={s} className="text-sm text-slate-600 flex gap-2"><span className="text-emerald-500">✓</span>{s}</li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="px-5 py-16 bg-slate-900 text-white text-center mt-12">
+        <div className="max-w-xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3">想知道你的身體能被優化到什麼程度？</h2>
+          <p className="text-slate-300 mb-8 leading-relaxed">先做一次免費的系統分析，30 秒看到你的營養目標與方向。</p>
+          <Link href="/diagnosis" className="inline-block bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold px-8 py-4 rounded-xl text-lg">
+            免費系統分析 →
+          </Link>
+          <p className="text-xs text-slate-500 mt-4">不用註冊、不用付費，直接看結果</p>
+          <p className="mt-6">
+            <Link href="/training" className="text-slate-300 hover:text-white underline text-sm">查看完整訓練系統 →</Link>
+          </p>
+        </div>
+      </section>
+
+      {/* 免責 */}
+      <section className="px-5 py-8 max-w-3xl mx-auto">
+        <p className="text-xs text-slate-400 leading-relaxed">
+          ⚠️ 個人案例分享，僅供參考。數據取自真實追蹤紀錄；每個人身體狀況不同，效果因人而異。任何健康決策請諮詢專業醫療人員。本服務非醫療行為。
+        </p>
+      </section>
+    </div>
   )
 }
