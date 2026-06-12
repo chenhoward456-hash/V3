@@ -980,9 +980,8 @@ function checkMenstrualCycle(input: NutritionInput): MenstrualCycleInfo {
   // 黃體期孕酮升高 → 水分滯留 → 體重假性上升
   const inLutealPhase = daysSince >= 14 && daysSince <= 30
 
-  // 黃體期碳水增量：孕酮升高 → 碳水需求增加 ~0.5 g/kg
-  // 文獻：Hackney 2012 (Br J Sports Med): 黃體期碳水氧化率增加 ~15-20%
-  // Hulmi et al. 2017: 黃體期增加碳水可減緩訓練表現下降
+  // 黃體期碳水增量：孕酮升高 → 碳水氧化/需求略增 → 補 ~0.5 g/kg
+  // （質性依據；精確百分比待真實文獻佐證。Hulmi et al. 2017: 黃體期增加碳水可減緩訓練表現下降）
   const carbBoostGPerKg = inLutealPhase ? 0.5 : 0
 
   let note: string | null = null
@@ -1139,7 +1138,7 @@ export function calculateMetabolicStressScore(params: {
   daysUntilCompetition?: number | null
   bodyFatZoneRefeedFreq?: string | null  // 來自 body-fat-zone-table
   bodyWeight?: number                // 用於 refeed 碳水體重區間調整
-  inLutealPhase?: boolean            // 女性黃體期：碳水氧化率 +15-20%，更適合安排 refeed
+  inLutealPhase?: boolean            // 女性黃體期：碳水氧化/需求略增，更適合安排 refeed
 }): MetabolicStressResult {
   const reasons: string[] = []
 
@@ -1200,12 +1199,12 @@ export function calculateMetabolicStressScore(params: {
   }
 
   // 6. 黃體期加分 (0-10)
-  // Hackney 2012: 黃體期碳水氧化率增加 15-20%，是安排 refeed 的最佳時機
+  // 黃體期碳水氧化/需求略增，是安排 refeed 的較佳時機
   // 黃體期 refeed 可同時緩解 PMS 症狀和代謝壓力
   let lutealBoost = 0
   if (params.inLutealPhase) {
     lutealBoost = 10
-    reasons.push('黃體期碳水需求增加（孕酮升高 → 碳水氧化率 +15-20%），適合安排 Refeed')
+    reasons.push('黃體期碳水需求增加（孕酮升高 → 碳水氧化略增），適合安排 Refeed')
   }
 
   const score = Math.min(100, dietDuration + recovery + plateau + lowCarb + wellnessTrend + lutealBoost)  // Bug fix L1: clamp 到 100
@@ -2661,14 +2660,14 @@ function generateCutSuggestion(
   const currentFat = input.currentFat || 0
 
   // 黃體期調整（女性專用）
-  // [Hackney 2012] 黃體期碳水氧化率 +15-20%，BMR 升高 5-10% (Webb 1986)
+  // 黃體期：碳水氧化/需求略增、BMR 略升（質性依據，精確數字待文獻佐證）
   // 1. 碳水增量 +0.5g/kg 支持代謝需求
   // 2. 赤字縮小 ~100kcal 避免黃體期被放在過深的赤字裡
   if (cycleInfo.carbBoostGPerKg > 0) {
     const lutealCarbBoost = Math.round(bw * cycleInfo.carbBoostGPerKg)
     carbDelta += lutealCarbBoost
     calDelta += lutealCarbBoost * 4 // 碳水 4 kcal/g
-    // 黃體期 BMR 升高約 5-10%（Webb 1986），若不補回會造成實際赤字過深
+    // 黃體期 BMR 略升，若不補回會造成實際赤字過深
     // 額外補回 100kcal（全碳水），與碳水增量合計約 250kcal 的緩衝
     const lutealDeficitBuffer = 100
     calDelta += lutealDeficitBuffer
@@ -3047,8 +3046,8 @@ function generateGoalDrivenCut(
   }
 
   // 3.6 黃體期赤字緩衝（女性專用）
-  // Webb 1986: 黃體期 BMR +5-10%，不補回等於實際赤字更深
-  // Hackney 2012: 碳水氧化率 +15-20%，碳水需求增加
+  // 黃體期 BMR 略升，不補回等於實際赤字更深
+  // 黃體期碳水氧化/需求略增
   let lutealDeficitAdjust = 0
   if (cycleInfo.inLutealPhase) {
     lutealDeficitAdjust = -100  // 縮小赤字 100kcal（碳水補回）
@@ -3615,7 +3614,7 @@ function generateBulkSuggestion(
   }
 
   // ===== 黃體期碳水增量（女性增肌專用）=====
-  // Hackney 2012: 黃體期碳水氧化率 +15-20%，增肌期同樣需要補回
+  // 黃體期碳水氧化/需求略增，增肌期同樣需要補回
   // 增肌期不縮赤字（沒有赤字），但增加碳水支持合成效率
   if (cycleInfo.carbBoostGPerKg > 0) {
     const lutealCarbBoost = Math.round(bw * cycleInfo.carbBoostGPerKg)
