@@ -42,8 +42,8 @@ const BEFORE_AFTER = [
     to: '9',
     unit: 'μmol/L',
     story:
-      'MTHFR 雜合基因型 → 葉酸代謝受損。系統開立活性葉酸（5-MTHF）protocol，4 次回測驗證數字從偏高降到正常。一般葉酸對 MTHFR 突變者效果差——這是基因導向才給得出的差別。',
-    cite: 'Gilbody 2007（MTHFR 與葉酸代謝）',
+      'MTHFR 雜合基因型，葉酸代謝效率較低。依數據與基因型搭配活性葉酸（5-MTHF）營養補充，4 次回測追蹤，數字從偏高回到範圍內。對 MTHFR 型，活性葉酸的吸收路徑不同——這是基因導向營養才看得到的差別。',
+    cite: 'Qin 2012, Nutr J — 華人 RCT：MTHFR C677T 基因型影響葉酸降同半胱胺酸的效果',
   },
   {
     name: '維生素 D',
@@ -59,7 +59,7 @@ const BEFORE_AFTER = [
 const SYSTEM = [
   { icon: '📊', title: '每日數據追蹤', desc: '體重、營養、訓練、睡眠——4 個月 111 次量測，趨勢用線性回歸看拐點，不是看單日。' },
   { icon: '🩸', title: 'Howard 標準血檢', desc: '不是醫院「正常就好」，是「正常但能更好」的最佳化標準，每項附 PubMed 文獻依據。' },
-  { icon: '🧬', title: '基因導向補品', desc: 'MTHFR / APOE / 5-HTTLPR 基因型決定 protocol，每項補品都有原因、劑量、文獻與觸發的血檢項目。' },
+  { icon: '🧬', title: '基因導向營養', desc: 'MTHFR / APOE / 5-HTTLPR 基因型，個人化補充與飲食方向，每項都有原因、文獻與對應的血檢指標。' },
   { icon: '🤖', title: '引擎自動調整', desc: '依進度速率 + 體脂 + 基因自動調整營養，低體脂自動收窄赤字保護肌肉，不會把人榨乾。' },
 ]
 
@@ -95,7 +95,7 @@ export default function CaseDataPage() {
                 <span className="block text-blue-400 mt-2">不是猜的。</span>
               </h1>
               <p className="text-slate-300 text-base md:text-lg leading-relaxed max-w-xl">
-                減脂誰都能做。但把一個身體的血檢、基因、荷爾蒙全部讀進來，找出問題、開對 protocol、再抽血驗證有效——這才是系統在做的事。
+                減脂誰都能做。但把一個身體的血檢、基因、生活數據全部讀進來，個人化調整營養與補充、再用回測持續追蹤變化——這才是系統在做的事。
               </p>
             </div>
             <div className="relative aspect-[3/4] rounded-3xl overflow-hidden border border-slate-700 max-w-[260px] mx-auto w-full">
@@ -133,8 +133,8 @@ export default function CaseDataPage() {
       {/* 發現→修復→驗證 */}
       <section className="px-5 py-16 bg-slate-50">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">發現問題 → 對的 protocol → 抽血驗證</h2>
-          <p className="text-slate-500 mb-8 leading-relaxed">這是別人給不出的部分：不是吃補品碰運氣，是讀你的血和基因，開對的、再驗證有效。</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">看出方向 → 個人化補充策略 → 抽血追蹤變化</h2>
+          <p className="text-slate-500 mb-8 leading-relaxed">這是別人給不出的部分：不是吃補品碰運氣，是讀進血檢與基因、個人化調整，再用回測追蹤變化。相關補充與飲食調整，建議與醫師或藥師討論。</p>
           <div className="space-y-5">
             {BEFORE_AFTER.map((b) => (
               <div key={b.name} className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6">

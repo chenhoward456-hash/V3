@@ -11,7 +11,6 @@ import { Lock, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
 import CollapsibleSection from '@/components/client/CollapsibleSection'
 import NewUserLanding, { shouldUseNewUserMode } from '@/components/client/NewUserLanding'
-import ConsentGate from '@/components/ConsentGate'
 import QuickActions from '@/components/client/QuickActions'
 import UpgradeGate from '@/components/client/UpgradeGate'
 import UpgradeWelcome from '@/components/client/UpgradeWelcome'
@@ -710,7 +709,7 @@ export default function ClientDashboard() {
     return (
       <ErrorBoundary>
         <div className="min-h-screen bg-gray-50">
-          {c?.unique_code && <ConsentGate clientId={c.unique_code} />}
+          {/* ConsentGate 已移至 app/c/[clientId]/layout.tsx，包住所有子頁（含血檢路由） */}
           <NewUserLanding
             client={c}
             clientData={clientData}
@@ -745,8 +744,7 @@ export default function ClientDashboard() {
   return (
     <ErrorBoundary>
     <div className="min-h-screen bg-gray-50">
-      {/* 法律同意 gate — 未同意者強制 modal */}
-      {c?.unique_code && <ConsentGate clientId={c.unique_code} />}
+      {/* 法律同意 gate 已移至 app/c/[clientId]/layout.tsx（包住所有子頁，含血檢路由） */}
 
       <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
 
