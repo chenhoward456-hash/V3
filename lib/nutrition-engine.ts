@@ -503,7 +503,7 @@ function getInsulinDrivenMacros(
 const SAFETY = {
   MIN_CALORIES_MALE: 1500,
   MIN_CALORIES_FEMALE: 1200,
-  // 男性蛋白質下限：自然選手優化 [Bandegan 2017 IAAO: ~2.0 g/kg 赤字上限]
+  // 男性蛋白質下限：減脂期保留肌肉 [1] Helms 2014 / [5] Morton 2018（2.0 g/kg 為實務下限；文獻支持 cut 期更高蛋白）
   MIN_PROTEIN_PER_KG_CUT: 2.0,
   MIN_PROTEIN_PER_KG_BULK: 1.8,
   // 女性蛋白質下限 [5] Morton 2018 / [6] Stokes 2018: 1.6 g/kg 即達最大合成效果
@@ -769,7 +769,7 @@ const PEAK_WEEK = {
   // 基準值用 Homer 2024 的 9.0 g/kg（~80kg 受試者），但需依體重調整：
   // >90kg 選手絕對量過高（>810g）會造成 GI distress，需降低 g/kg
   LOADING_CARB_G_PER_KG: 9.0,      // 基準值（≤90kg），>90kg 由 generatePeakWeekPlan 動態降低
-  LOADING_CARB_G_PER_KG_FEMALE: 6.5, // Tarnopolsky 1995, James 2001: 女性肌肉肝醣超補反應約為男性 50-70%
+  LOADING_CARB_G_PER_KG_FEMALE: 6.5, // 女性肝醣超補反應通常較男性保守（Tarnopolsky 1995 +0% vs 男 +41%；惟 James 2001 在等量 CHO/kg LBM 下無差異）— 採保守基準，數值待 Howard 複核
   LOADING_PROTEIN_G_PER_KG: 1.6,   // Escalante 2021: ~1.6 g/kg；降低蛋白為碳水騰空間，最大化肝醣超補
   LOADING_FAT_G_PER_KG: 0.65,      // 低脂最大化碳水吸收
   LOADING_FAT_G_PER_KG_FEMALE: 1.0, // 女性超補期脂肪不低於 1.0 g/kg（Loucks 2003: 雌激素合成需求）
@@ -4563,7 +4563,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         `📋 碳水超補量已依體重調整：${loadingCarb}g/kg（基準 ${baseLoadingCarb}g/kg）— 體重 ${bw}kg 時絕對量為 ${Math.round(bw * loadingCarb)}g，維持在腸胃可負荷範圍（Kistler 2024: 建議範圍 3-12g/kg）`,
       ] : []),
       ...(isFemale ? [
-        `📋 女性碳水超補量已調整為 ${loadingCarb}g/kg（男性基準 ${PEAK_WEEK.LOADING_CARB_G_PER_KG}g/kg）— 女性肌肉肝醣超補反應約為男性 50-70%（Tarnopolsky 1995, James 2001），過量碳水只會增加腸胃不適而非更多肝醣儲存。`,
+        `📋 女性碳水超補量已調整為 ${loadingCarb}g/kg（男性基準 ${PEAK_WEEK.LOADING_CARB_G_PER_KG}g/kg）— 女性肝醣超補反應通常較男性保守，過量碳水多半只增加腸胃不適而非更多肝醣儲存。`,
       ] : []),
       // 碳水溢出防護警告
       ...(spillOverWarning ? [spillOverWarning] : []),
