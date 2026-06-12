@@ -1956,6 +1956,11 @@ export default function ClientOverview() {
                     <span className="text-base mt-0.5">💡</span>
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-gray-900 mb-1">動態調整建議</p>
+                      {client.auto_adjust_enabled && (
+                        <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1 mb-1.5">
+                          ✅ 此學員自動調整中{client.last_auto_adjust_at ? `（上次 ${String(client.last_auto_adjust_at).slice(0, 10)}）` : ''}。下方為即時參考，系統會在冷卻期後自動評估，通常不需手動套用。
+                        </p>
+                      )}
                       <p className="text-xs text-gray-600 leading-relaxed">
                         距目標 <strong className="text-gray-900">{Math.abs(remaining).toFixed(1)} kg</strong>、剩 <strong className="text-gray-900">{remainingDays} 天</strong>。
                         {currentRate != null && (
@@ -2035,9 +2040,9 @@ export default function ClientOverview() {
                             } catch {/* silent */}
                           }}
                           disabled={quickSaving}
-                          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                          className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors ${client.auto_adjust_enabled ? 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                         >
-                          {quickSaving ? '套用中…' : '🎯 一鍵套用建議'}
+                          {quickSaving ? '套用中…' : client.auto_adjust_enabled ? '手動立即套用（通常不需）' : '🎯 一鍵套用建議'}
                         </button>
                       )}
                       {/* 個人化保護觸發提示 */}
