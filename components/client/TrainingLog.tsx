@@ -45,17 +45,6 @@ interface TrainingReadiness {
   modeRecommendation?: ModeRecommendation
 }
 
-// 靜態 Tailwind class map（避免動態 class 被 purge）
-const MODE_COLOR_MAP: Record<string, { bg: string; text: string; border: string; tagBg: string }> = {
-  purple: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', tagBg: 'bg-purple-100' },
-  red:    { bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-200',    tagBg: 'bg-red-100' },
-  blue:   { bg: 'bg-blue-50',   text: 'text-blue-700',   border: 'border-blue-200',   tagBg: 'bg-blue-100' },
-  amber:  { bg: 'bg-amber-50',  text: 'text-amber-700',  border: 'border-amber-200',  tagBg: 'bg-amber-100' },
-  teal:   { bg: 'bg-teal-50',   text: 'text-teal-700',   border: 'border-teal-200',   tagBg: 'bg-teal-100' },
-  green:  { bg: 'bg-green-50',  text: 'text-green-700',  border: 'border-green-200',  tagBg: 'bg-green-100' },
-  cyan:   { bg: 'bg-cyan-50',   text: 'text-cyan-700',   border: 'border-cyan-200',   tagBg: 'bg-cyan-100' },
-  gray:   { bg: 'bg-gray-50',   text: 'text-gray-700',   border: 'border-gray-200',   tagBg: 'bg-gray-100' },
-}
 
 interface TrainingLogProps {
   todayTraining: any
@@ -471,18 +460,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   }
 
   const getTypeBgColor = (type: string) => {
-    const colors: Record<string, string> = {
-      push: 'bg-red-100 text-red-700',
-      pull: 'bg-blue-100 text-blue-700',
-      legs: 'bg-green-100 text-green-700',
-      full_body: 'bg-purple-100 text-purple-700',
-      cardio: 'bg-orange-100 text-orange-700',
-      chest: 'bg-pink-100 text-pink-700',
-      shoulder: 'bg-indigo-100 text-indigo-700',
-      arms: 'bg-yellow-100 text-yellow-700',
-      rest: 'bg-gray-100 text-gray-500',
-    }
-    return colors[type] || 'bg-gray-100 text-gray-500'
+    // 訓練類型不是「狀態」→ 統一中性灰，不做彩虹（DESIGN.md：顏色只做語意，靠 emoji+文字辨識）
+    return type === 'rest' ? 'bg-slate-100 text-slate-500' : 'bg-slate-100 text-slate-700'
   }
 
   // ===== RPE 趨勢圖 =====
@@ -747,7 +726,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 onClick={() => setForm(prev => ({ ...prev, training_type: value }))}
                 className={`min-h-[44px] py-2 rounded-lg text-sm font-medium transition-all ${
                   form.training_type === value
-                    ? value === 'rest' ? 'bg-gray-600 text-white' : 'bg-orange-500 text-white'
+                    ? value === 'rest' ? 'bg-gray-600 text-white' : 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -781,7 +760,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                   onClick={() => setCardioSubtype(cardioSubtype === value ? null : value)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     cardioSubtype === value
-                      ? 'bg-orange-500 text-white'
+                      ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -794,18 +773,14 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
         {/* 碳循環提示（簡單模式隱藏） */}
         {!simpleMode && hasCarbCycling && form.training_type && (
-          <div className={`rounded-xl px-4 py-2.5 text-sm font-medium ${
-            isWeightTraining(form.training_type)
-              ? 'bg-cyan-50 text-cyan-700'
-              : 'bg-gray-50 text-gray-600'
-          }`}>
+          <div className="rounded-xl px-4 py-2.5 text-sm font-medium bg-slate-50 border border-slate-100 text-slate-700">
             🔄 今日碳水：{isWeightTraining(form.training_type) ? `${carbsTrainingDay}g（訓練日）` : `${carbsRestDay}g（休息日）`}
           </div>
         )}
 
         {/* 上次同類型提示（簡單模式隱藏） */}
         {!simpleMode && lastSameType && (
-          <div className="bg-blue-50 rounded-xl px-4 py-3 text-sm text-blue-700">
+          <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm text-slate-600">
             上次{getTypeLabel(lastSameType.training_type)}：{lastSameType.daysAgo} 天前
             {lastSameType.duration && `，${lastSameType.duration} 分鐘`}
             {lastSameType.sets && `，${lastSameType.sets} 組`}
