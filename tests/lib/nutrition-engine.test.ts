@@ -2463,3 +2463,45 @@ describe('edge cases', () => {
     expect(result.bodyFatZoneInfo).not.toBeNull()
   })
 })
+
+// ══════════════════════════════════════════════════════════
+// 腎指標蛋白守門（Rule C #5：跨引擎一致性）
+// ══════════════════════════════════════════════════════════
+describe('腎指標蛋白守門', () => {
+  it('eGFR < 60（腎功能下降）→ 蛋白封頂 2.0 g/kg + 警示', () => {
+    const result = generateNutritionSuggestion(makeCutInput({
+      currentProtein: 200, // 2.5 g/kg，明顯超過 2.0 上限
+      labResults: [{ test_name: 'eGFR', value: 45, unit: 'mL/min/1.73m²', status: 'attention' }],
+    }))
+    expect(result.suggestedProtein).not.toBeNull()
+    expect(result.suggestedProtein!).toBeLessThanOrEqual(160) // 2.0 * 80kg
+    expect(result.warnings.some(w => w.includes('eGFR') && w.includes('封頂'))).toBe(true)
+  })
+
+  it('肌酸酐高但無 eGFR → 不砍蛋白，只提醒補檢（不誤殺肌肉量大的選手）', () => {
+    const result = generateNutritionSuggestion(makeCutInput({
+      currentProtein: 200,
+      labResults: [{ test_name: '肌酸酐', value: 1.5, unit: 'mg/dL', status: 'attention' }],
+    }))
+    expect(result.suggestedProtein!).toBeGreaterThan(160) // 沒被砍
+    expect(result.warnings.some(w => w.includes('加測 eGFR'))).toBe(true)
+  })
+
+  it('肌酸酐高 + eGFR 正常 → 不動作（健美選手肌酸酐天生高，腎功能其實正常）', () => {
+    const result = generateNutritionSuggestion(makeCutInput({
+      currentProtein: 200,
+      labResults: [
+        { test_name: '肌酸酐', value: 1.5, unit: 'mg/dL', status: 'attention' },
+        { test_name: 'eGFR', value: 95, unit: 'mL/min/1.73m²', status: 'normal' },
+      ],
+    }))
+    expect(result.suggestedProtein!).toBeGreaterThan(160)
+    expect(result.warnings.some(w => w.includes('🫘'))).toBe(false)
+  })
+
+  it('無血檢 → 蛋白不受影響（守門不誤動）', () => {
+    const result = generateNutritionSuggestion(makeCutInput({ currentProtein: 200 }))
+    expect(result.suggestedProtein!).toBeGreaterThan(160)
+    expect(result.warnings.some(w => w.includes('🫘'))).toBe(false)
+  })
+})

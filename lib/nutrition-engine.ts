@@ -906,6 +906,48 @@ function buildPerMealProteinGuide(
   }
 }
 
+// ===== 腎指標蛋白守門（Rule C #5：跨引擎一致性）=====
+// 問題：nutrition-engine 蛋白可開到 3.0 g/kg、完全不讀腎指標；lab-advisor 同份報告卻說「腎指標偏離避免高蛋白」。
+// 解法：在最終蛋白出口統一夾限。
+// 重要臨床判斷：不可只看肌酸酐——肌肉量大的健美選手肌酸酐天生偏高（是肌酸代謝產物，≠ 腎損），
+// 只有 eGFR 才是腎功能真相。所以「硬性封頂」只在 eGFR < 60（真正腎功能下降）觸發；
+// 若只有肌酸酐高、缺 eGFR 佐證，僅提醒補檢、不砍蛋白，避免誤殺選手。
+function applyKidneyProteinGuard(
+  proteinG: number | null,
+  bw: number,
+  gender: string,
+  labResults?: NutritionInput['labResults'],
+): { protein: number | null; warning: string | null } {
+  if (!proteinG || proteinG <= 0 || bw <= 0 || !labResults || labResults.length === 0) {
+    return { protein: proteinG, warning: null }
+  }
+  const egfr = labResults.find(r => r.value != null && /egfr|腎絲球/i.test(r.test_name))
+  const cr = labResults.find(r => r.value != null && /肌酸酐|creatinine/i.test(r.test_name))
+
+  // eGFR < 60 = 真正腎功能下降 → 蛋白封頂 2.0 g/kg（與 lab-advisor 一致：避免 >2.0）
+  if (egfr && egfr.value != null && egfr.value < 60) {
+    const cap = Math.round(bw * 2.0)
+    if (proteinG > cap) {
+      return {
+        protein: cap,
+        warning: `🫘 eGFR 偏低（${egfr.value}，腎功能下降）→ 蛋白質已從 ${proteinG}g 封頂至 ${cap}g（2.0 g/kg）以降低腎臟負擔，建議與醫師確認蛋白攝取上限。`,
+      }
+    }
+    return { protein: proteinG, warning: null }
+  }
+
+  // 肌酸酐高但「沒有 eGFR」佐證 → 不硬砍（肌肉量大者肌酸酐本就偏高），只提醒補檢
+  const crMax = gender === '女性' ? 1.1 : 1.3
+  if (cr && cr.value != null && cr.value > crMax && !(egfr && egfr.value != null)) {
+    return {
+      protein: proteinG,
+      warning: `🫘 肌酸酐偏高（${cr.value}）但缺 eGFR 佐證——肌肉量大者肌酸酐本就偏高、未必腎損。維持目前高蛋白前，建議加測 eGFR 確認腎功能後再評估。`,
+    }
+  }
+
+  return { protein: proteinG, warning: null }
+}
+
 // ===== 體脂區間查詢 helper =====
 // 將 NutritionInput 的性別轉換為 body-fat-zone-table 的 Gender，查出區間
 
@@ -2480,6 +2522,19 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
         warning: null,
       }
     }
+  }
+
+  // 11.5 腎指標蛋白守門（Rule C #5）：所有引擎路徑都在此單一出口收斂，避免破洞補洞。
+  // 封頂後把少掉的蛋白克數移到碳水（同 4 kcal/g），維持總熱量、不製造非預期赤字，並重算每餐蛋白指引。
+  if (result.suggestedProtein != null) {
+    const kidneyGuard = applyKidneyProteinGuard(result.suggestedProtein, input.bodyWeight, input.gender, input.labResults)
+    if (kidneyGuard.protein != null && kidneyGuard.protein !== result.suggestedProtein) {
+      const delta = result.suggestedProtein - kidneyGuard.protein
+      result.suggestedProtein = kidneyGuard.protein
+      if (result.suggestedCarbs != null) result.suggestedCarbs += delta
+      result.perMealProteinGuide = buildPerMealProteinGuide(input.bodyWeight, result.suggestedProtein)
+    }
+    if (kidneyGuard.warning) result.warnings.push(kidneyGuard.warning)
   }
 
   return result
