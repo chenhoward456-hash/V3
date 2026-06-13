@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     const today = new Date().toISOString().split('T')[0]
     const [suppRes, logsRes, wellRes, trainRes, bodyRes, labRes, nutritionRes, trainingSetsRes, notesRes] = await Promise.all([
-      supabase.from('supplements').select('*').eq('client_id', realId),
+      supabase.from('supplements').select('*').eq('client_id', realId).is('archived_at', null),
       supabase.from('supplement_logs').select('id, supplement_id, client_id, date, completed').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('daily_wellness').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('training_logs').select('id, client_id, date, training_type, rpe, duration, note').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
