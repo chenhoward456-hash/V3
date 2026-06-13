@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { getLabAdvice } from '@/components/client/types'
 import { generateSupplementSuggestions, type SupplementSuggestion } from '@/lib/supplement-engine'
+import { analyzeLabs } from '@/lib/lab-trend-analyzer'
 import { isCompetitionMode, isHealthMode } from '@/lib/client-mode'
 
 // ---------------------------------------------------------------------------
@@ -129,6 +130,7 @@ export default function HealthReportPage() {
   const [bodyData, setBodyData] = useState<BodyDataEntry[]>([])
   const [labResults, setLabResults] = useState<LabResult[]>([])
   const [trainingLogs, setTrainingLogs] = useState<any[]>([])
+  const [wellness, setWellness] = useState<any[]>([])
 
   // ── Fetch data ──
   useEffect(() => {
@@ -146,6 +148,7 @@ export default function HealthReportPage() {
         setBodyData(data.bodyData || [])
         setLabResults(data.labResults || [])
         setTrainingLogs(data.trainingLogs || [])
+        setWellness(data.wellness || [])
       })
       .catch((err) => setError(err.message || '無法載入資料'))
       .finally(() => setLoading(false))
@@ -162,6 +165,35 @@ export default function HealthReportPage() {
     }
     return [...byName.values()].sort((a, b) => a.test_name.localeCompare(b.test_name))
   }, [labResults])
+
+  // 趨勢 + 藍標最佳：用 analyzeLabs 算每項的 前次→現在 / 變化% / 最佳區
+  const findingByName = useMemo(() => {
+    const g = client?.gender === '女性' ? '女性' : client?.gender === '男性' ? '男性' : undefined
+    const m = new Map<string, ReturnType<typeof analyzeLabs>[number]>()
+    for (const f of analyzeLabs(labResults as never, { gender: g })) m.set(f.testName, f)
+    return m
+  }, [labResults, client?.gender])
+
+  // 恢復與訓練摘要：訓練天數、平均 RPE、HRV / RHR、睡眠 / 精力
+  const recoverySummary = useMemo(() => {
+    const now = Date.now()
+    const d = (n: number) => new Date(now - n * 86400000).toISOString().slice(0, 10)
+    const t7 = d(7), t30 = d(30)
+    const train = trainingLogs.filter((t) => t.training_type && t.training_type !== 'rest')
+    const days7 = new Set(train.filter((t) => t.date >= t7).map((t) => t.date)).size
+    const days30 = new Set(train.filter((t) => t.date >= t30).map((t) => t.date)).size
+    const rpe7 = train.filter((t) => t.date >= t7 && t.rpe != null).map((t) => Number(t.rpe))
+    const avgRpe = rpe7.length ? rpe7.reduce((a, b) => a + b, 0) / rpe7.length : null
+    const wSorted = [...wellness].sort((a, b) => (a.date < b.date ? 1 : -1))
+    const latestHrv = wSorted.find((w) => w.hrv != null)?.hrv ?? null
+    const latestRhr = wSorted.find((w) => w.resting_hr != null)?.resting_hr ?? null
+    const w7 = wellness.filter((w) => w.date >= t7)
+    const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null)
+    const avgSleep = avg(w7.map((w) => w.sleep_quality).filter((v: unknown): v is number => typeof v === 'number'))
+    const avgEnergy = avg(w7.map((w) => w.energy_level).filter((v: unknown): v is number => typeof v === 'number'))
+    const has = days30 > 0 || latestHrv != null || latestRhr != null || avgSleep != null
+    return { days7, days30, avgRpe, latestHrv, latestRhr, avgSleep, avgEnergy, has }
+  }, [trainingLogs, wellness])
 
   // ── Latest body composition ──
   const latestBody = bodyData.length ? bodyData[bodyData.length - 1] : null
@@ -359,6 +391,31 @@ export default function HealthReportPage() {
           )}
         </section>
 
+        {/* ── 恢復與訓練摘要 ── */}
+        {recoverySummary.has && (
+          <section className="report-section">
+            <h2>恢復與訓練</h2>
+            <table className="report-table">
+              <tbody>
+                <tr><td>近 7 天訓練</td><td>{recoverySummary.days7} 天{recoverySummary.avgRpe != null ? `（平均 RPE ${recoverySummary.avgRpe.toFixed(1)}）` : ''}</td></tr>
+                <tr><td>近 30 天訓練</td><td>{recoverySummary.days30} 天</td></tr>
+                {recoverySummary.latestHrv != null && (
+                  <tr><td>HRV（最新）</td><td>{recoverySummary.latestHrv} ms</td></tr>
+                )}
+                {recoverySummary.latestRhr != null && (
+                  <tr><td>靜息心率（最新）</td><td>{recoverySummary.latestRhr} bpm</td></tr>
+                )}
+                {recoverySummary.avgSleep != null && (
+                  <tr><td>平均睡眠（7 天）</td><td>{recoverySummary.avgSleep.toFixed(1)} / 5</td></tr>
+                )}
+                {recoverySummary.avgEnergy != null && (
+                  <tr><td>平均精力（7 天）</td><td>{recoverySummary.avgEnergy.toFixed(1)} / 5</td></tr>
+                )}
+              </tbody>
+            </table>
+          </section>
+        )}
+
         {/* ────────────────────────────────────────────────
             Section 3: Blood Work
         ──────────────────────────────────────────────── */}
@@ -378,14 +435,28 @@ export default function HealthReportPage() {
               <tbody>
                 {latestLabs.map((r) => {
                   const advice = getLabAdvice(r.test_name, r.value) || r.custom_advice || '-'
+                  const f = findingByName.get(r.test_name)
+                  const trendLabel = f?.trend === 'improving' ? '↗ 進步' : f?.trend === 'declining' ? '↘ 退步' : ''
                   return (
                     <tr
                       key={r.id}
                       className={r.status === 'alert' ? 'row-alert' : r.status === 'attention' ? 'row-attention' : ''}
                     >
                       <td className="font-semibold">{r.test_name}</td>
-                      <td className="text-mono">{r.value} {r.unit}</td>
-                      <td>{r.custom_target || r.reference_range || '-'}</td>
+                      <td className="text-mono">
+                        {r.value} {r.unit}
+                        {f?.previousValue != null && (
+                          <div className="text-small" style={{ color: '#888', marginTop: 2 }}>
+                            前次 {f.previousValue}{f.changePercent != null ? `（${f.changePercent > 0 ? '+' : ''}${f.changePercent.toFixed(0)}%）` : ''} {trendLabel}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        {r.custom_target || r.reference_range || '-'}
+                        {f?.optimalText && (
+                          <div className="text-small" style={{ color: '#2563eb', marginTop: 2 }}>最佳 {f.optimalText}</div>
+                        )}
+                      </td>
                       <td>
                         <span className={`status-badge ${r.status}`}>
                           {STATUS_LABELS[r.status] || r.status}
