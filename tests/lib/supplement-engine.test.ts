@@ -314,3 +314,15 @@ describe('補品 × 血檢 一致性守門（防止「停止X」卡被改寫成�
     expect(result.find(s => s.name.includes('鐵劑') && !s.name.includes('停止'))).toBeDefined()
   })
 })
+
+describe('閾值對齊（#18 鎂 / #20 CRP）', () => {
+  it('血清鎂 1.9（labStatus attention 區）→ 建議補鎂（原本 <1.8 才動，會與系統 attention 不一致）', () => {
+    const result = generateSupplementSuggestions([makeLab('鎂', 1.9, 'mg/dL', 'attention')], {})
+    expect(result.find(s => s.name.includes('鎂'))).toBeDefined()
+  })
+
+  it('CRP 4（AHA 高風險 >3）→ 建議 Omega-3（原本 >5 才動）', () => {
+    const result = generateSupplementSuggestions([makeLab('CRP', 4, 'mg/L', 'attention')], {})
+    expect(result.find(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))).toBeDefined()
+  })
+})

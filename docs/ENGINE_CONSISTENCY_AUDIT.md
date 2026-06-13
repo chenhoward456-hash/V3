@@ -93,7 +93,16 @@
 - ✅ **#10 RED-S 政策**（Howard 拍板）：比賽模式維持「軟扣分」（比賽可以拼），非比賽期才硬保護。
   現況 nutrition-engine cutting gate 即為軟扣分、cron phaseLocked 又會跳過比賽相位 → 符合決策，無需改碼。
 
-### 仍待辦（需登入頁實看畫面，等 Playwright/Howard 確認後做）
-- #8 飲食方向紅肉矛盾（改 foodsToIncrease/Reduce，UI 內容）
-- #15/#17 client-feed 狀態來源統一到 calculateLabStatus
-- #18/#20 鎂/CRP 閾值跨引擎對齊（純常數，可純測試，低風險）
+### 第三批已上線（2026-06）
+- ✅ **#8 飲食方向紅肉矛盾**（commit 4fc6484）：`reconcileDietaryConflicts` 後處理，任一條要求減紅肉時
+  把紅肉/內臟從增加清單與 tip 移除、鐵質導向非紅肉來源 + caveat。
+- ✅ **#5/#17 client-feed 狀態來源** — 驗證為**已一致**：client-feed 用 `analyzeLabs`，而 lab-trend-analyzer
+  的 severity 本來就建立在 `calculateLabStatus`（lab-trend-analyzer.ts L208-209）之上，只是多加趨勢升級。
+  無獨立狀態計算、無矛盾，不需改碼。
+- ✅ **#15/#18/#20 閾值對齊**：
+  - #15 ferritin「偏高」：lab-advisor 原本男>300（漏 alert）/女>150（誤標正常）→ 對齊 labStatus alert 上界（男>200/女>300）。
+  - #18 鎂：supplement 觸發 <1.8 → <2.0（對齊 labStatus attention 區 + lab-advisor）。
+  - #20 CRP：supplement Omega-3 觸發 >5 → >3（對齊 recovery-engine + AHA hs-CRP 高風險界）。
+
+> 一致性稽核 21 項：高/critical 全處理；中低階逐項收斂或驗證為已一致。剩餘僅屬「不同動作用不同門檻」
+> 的設計差異（非矛盾），需要時再由 Howard 依臨床判斷微調。

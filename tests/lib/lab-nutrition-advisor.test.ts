@@ -393,20 +393,25 @@ describe('generateLabNutritionAdvice', () => {
 
   // ── Iron / Blood ──
   describe('iron and blood markers', () => {
-    it('flags high ferritin with gender-specific threshold', () => {
+    it('flags high ferritin with gender-specific threshold（對齊 labStatus alert：男>200 / 女>300）', () => {
       const male = generateLabNutritionAdvice(
-        [lab('鐵蛋白', 350, 'ng/mL', 'alert')],
+        [lab('鐵蛋白', 250, 'ng/mL', 'alert')],
         { gender: '男性' },
       )
-      expect(male[0].title).toContain('鐵蛋白偏高')
+      expect(male[0].title).toContain('鐵蛋白偏高') // 男 >200
       expect(male[0].macroAdjustment?.direction).toBe('decrease')
 
-      // Female threshold is 150
-      const female = generateLabNutritionAdvice(
-        [lab('鐵蛋白', 180, 'ng/mL', 'attention')],
+      // 女性對齊 labStatus：>300 才算高；180 在正常範圍內不應誤標
+      const femaleHigh = generateLabNutritionAdvice(
+        [lab('鐵蛋白', 320, 'ng/mL', 'alert')],
         { gender: '女性' },
       )
-      expect(female[0].title).toContain('鐵蛋白偏高')
+      expect(femaleHigh.find(a => a.title.includes('鐵蛋白偏高'))).toBeDefined()
+      const femaleNormal = generateLabNutritionAdvice(
+        [lab('鐵蛋白', 180, 'ng/mL', 'normal')],
+        { gender: '女性' },
+      )
+      expect(femaleNormal.find(a => a.title.includes('鐵蛋白偏高'))).toBeUndefined()
     })
 
     it('flags low ferritin with goalType-specific macroAdjustment', () => {

@@ -813,7 +813,8 @@ export function generateLabNutritionAdvice(
     // ════════════════════════════════════════
 
     if (matchName(lab.test_name, ['鐵蛋白', 'ferritin'])) {
-      const ferritinMax = gender === '女性' ? 150 : 300
+      // #15 對齊 labStatus 的 alert 上界（男>200 / 女>300）：原本男 300（漏掉 alert）、女 150（誤標正常）兩邊都不一致
+      const ferritinMax = gender === '女性' ? 300 : 200
       const ferritinMin = gender === '女性' ? 12 : 30
       const isHigh = lab.value > ferritinMax
       const isLow = lab.value < ferritinMin

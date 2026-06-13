@@ -206,7 +206,8 @@ export function generateSupplementSuggestions(
 
   // ── 5. 鎂 ──
   const magnesium = findLabValue(labs, 'magnesium')
-  if (magnesium?.value != null && magnesium.value < 1.8) {
+  // #18 對齊 labStatus（鎂 normal 下限 2.0，1.8-2.0 屬 attention）+ lab-advisor（<2.0）：原本 <1.8 會在系統已標 attention 時靜默
+  if (magnesium?.value != null && magnesium.value < 2.0) {
     suggestions.push({
       name: '鎂（Magnesium）',
       dosage: '300-400mg（甘胺酸鎂或蘋果酸鎂）',
@@ -353,7 +354,8 @@ export function generateSupplementSuggestions(
 
   // ── 8. 發炎指數（CRP 偏高 + 高 RPE）──
   const crp = findLabValue(labs, 'crp')
-  if (crp?.value != null && crp.value > 5) {
+  // #20 對齊 recovery-engine + AHA hs-CRP 高風險界（>3）：原本 >5 在系統已視為發炎時還不建議 Omega-3
+  if (crp?.value != null && crp.value > 3) {
     const alreadyHasOmega3ForCRP = suggestions.some(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))
     if (alreadyHasOmega3ForCRP) {
       // 已有 Omega-3（可能來自 ApoB 路徑），升級優先級並補充 CRP 原因
