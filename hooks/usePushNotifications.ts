@@ -25,6 +25,10 @@ export function usePushNotifications(clientId: string) {
   const [state, setState] = useState<PushState>('unsupported')
   const [busy, setBusy] = useState(false)
   const [subscribed, setSubscribed] = useState(false)
+  // iOS Safari 只有「加入主畫面」變 PWA 後才開放 Web Push API。
+  // 在那之前 supported=false，卡片若直接隱藏 → iPhone 用戶永遠不知道要加主畫面（最大開通破口）。
+  // needsInstall=true 時 UI 改顯示「加入主畫面」圖解，而不是消失。
+  const [needsInstall, setNeedsInstall] = useState(false)
 
   const supported =
     typeof window !== 'undefined' &&
@@ -34,6 +38,14 @@ export function usePushNotifications(clientId: string) {
     !!vapidKey
 
   useEffect(() => {
+    // iOS 偵測（含 iPadOS 13+ 偽裝成 Mac 的情況）+ 是否已是 standalone PWA
+    const ua = navigator.userAgent
+    const isIOS = /iphone|ipad|ipod/i.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches ||
+      (navigator as unknown as { standalone?: boolean }).standalone === true
+    setNeedsInstall(!!vapidKey && isIOS && !isStandalone && !supported)
+
     if (!supported) { setState('unsupported'); return }
     setState(Notification.permission as PushState)
     // 已經有訂閱就標記為已訂閱（避免重複跳）
@@ -41,7 +53,7 @@ export function usePushNotifications(clientId: string) {
       .then((reg) => reg.pushManager.getSubscription())
       .then((sub) => setSubscribed(!!sub))
       .catch(() => {})
-  }, [supported])
+  }, [supported, vapidKey])
 
   const subscribe = useCallback(async (): Promise<boolean> => {
     if (!supported || busy) return false
@@ -82,5 +94,5 @@ export function usePushNotifications(clientId: string) {
     }
   }, [supported, busy, vapidKey, clientId])
 
-  return { supported, state, busy, subscribed, subscribe }
+  return { supported, state, busy, subscribed, needsInstall, subscribe }
 }

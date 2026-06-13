@@ -11,7 +11,7 @@ const DISMISS_KEY = 'push_prompt_dismissed'
  * 不騷擾：權限為 denied、或使用者按過 ✕，就不再出現。
  */
 export default function PushNotificationPrompt({ code, debug = false }: { code: string; debug?: boolean }) {
-  const { supported, state, busy, subscribed, subscribe } = usePushNotifications(code)
+  const { supported, state, busy, subscribed, needsInstall, subscribe } = usePushNotifications(code)
   const [dismissed, setDismissed] = useState(true) // 預設不顯示，待 effect 判定
   const [justEnabled, setJustEnabled] = useState(false)
 
@@ -51,21 +51,41 @@ export default function PushNotificationPrompt({ code, debug = false }: { code: 
     )
   }
 
-  if (!supported || subscribed || dismissed || state !== 'default') {
-    if (justEnabled) {
-      return (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-800">
-          ✅ 提醒已開啟，打卡提醒和達標通知會直接推到這台裝置
-        </div>
-      )
-    }
-    return null
-  }
-
   const close = () => {
     try { localStorage.setItem(DISMISS_KEY, '1') } catch {}
     setDismissed(true)
   }
+
+  if (justEnabled) {
+    return (
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-800">
+        ✅ 提醒已開啟，打卡提醒和達標通知會直接推到這台裝置
+      </div>
+    )
+  }
+
+  if (subscribed || dismissed) return null
+
+  // iPhone Safari：尚未「加入主畫面」→ 不隱藏，改教他怎麼開（否則 iOS 用戶永遠開不了通知）
+  if (needsInstall) {
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 shadow-sm flex items-start gap-3">
+        <div className="text-2xl leading-none mt-0.5">📲</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-blue-900">想收到打卡提醒？先把這頁加到主畫面</p>
+          <ol className="text-xs text-blue-800/90 mt-1.5 space-y-1 list-decimal list-inside">
+            <li>點底部工具列的「分享」<span className="font-mono">⬆️</span></li>
+            <li>選「加入主畫面」</li>
+            <li>從桌面圖示重新打開這個 App，就能開啟提醒</li>
+          </ol>
+          <p className="text-[11px] text-blue-700/70 mt-2">iPhone 限制：只有從主畫面圖示打開才能收推播通知。</p>
+        </div>
+        <button onClick={close} aria-label="關閉" className="text-blue-400 hover:text-blue-600 text-sm shrink-0">✕</button>
+      </div>
+    )
+  }
+
+  if (!supported || state !== 'default') return null
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex items-start gap-3">

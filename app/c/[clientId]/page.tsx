@@ -814,6 +814,9 @@ export default function ClientDashboard() {
         {/* 首次來訪導覽 banner（dismissible）*/}
         {isToday && <WelcomeBanner clientId={clientId as string} />}
 
+        {/* 推播開通 — 置頂（開通推播=留存槓桿；gated，含 iPhone 加主畫面引導）*/}
+        {isToday && <div className="mb-4"><PushNotificationPrompt code={c.unique_code} /></div>}
+
         {/* 核心邏輯一句話 — 暫藏 2026-06-12（去雜訊，常駐文案無資訊量；移除 false 即還原） */}
         {false && isToday && (
           <div className="mb-4 px-4 py-2.5 bg-zinc-50 border-l-2 border-emerald-500 rounded-r-lg">
@@ -1243,8 +1246,6 @@ export default function ClientDashboard() {
           </SectionErrorBoundary>
         )}
 
-        {/* 推播提醒（gated：僅在支援 + 權限未決 + 未訂閱 + 未關閉時顯示） */}
-        {isToday && <PushNotificationPrompt code={c.unique_code} />}
 
         {/* 補品策略（引擎依血檢/基因推導的「為什麼」，端給學員看）*/}
         {isToday && supplementSuggestions.length > 0 && (
