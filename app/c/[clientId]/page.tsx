@@ -1243,7 +1243,7 @@ export default function ClientDashboard() {
           </SectionErrorBoundary>
         )}
 
-        {/* 推播提醒（測試模式：放補品旁方便檢視，確認後改回 gated 版） */}
+        {/* 推播提醒（gated：僅在支援 + 權限未決 + 未訂閱 + 未關閉時顯示） */}
         {isToday && <PushNotificationPrompt code={c.unique_code} />}
 
         {/* 補品策略（引擎依血檢/基因推導的「為什麼」，端給學員看）*/}
