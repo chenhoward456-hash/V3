@@ -108,6 +108,12 @@ export async function GET(request: NextRequest) {
         key: 'trainingLogs',
         query: wrap(supabase.from('training_logs').select('id, client_id, date, training_type, rpe').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
       })
+      // 逐組紀錄（近 120 天）→ 給「訓練進步追蹤」算 1RM 趨勢 / PR / 停滯 / 肌群組數
+      const since120 = new Date(Date.now() - 120 * 86_400_000).toISOString().slice(0, 10)
+      queryEntries.push({
+        key: 'trainingSets',
+        query: wrap(supabase.from('training_sets').select('date, exercise_name, muscle_group, weight, reps, rpe, is_main_lift').eq('client_id', client.id).gte('date', since120).order('date', { ascending: true })),
+      })
     }
 
     // 飲食（nutrition_enabled）
@@ -156,6 +162,7 @@ export async function GET(request: NextRequest) {
       wellness: resolved.wellness || [],
       recentLogs: resolved.recentLogs || [],
       trainingLogs: resolved.trainingLogs || [],
+      trainingSets: resolved.trainingSets || [],
       nutritionLogs: resolved.nutritionLogs || [],
       recentMacroAdjustment: resolved.recentMacroAdjustment?.[0] || null,
     })

@@ -15,6 +15,7 @@ import QuickActions from '@/components/client/QuickActions'
 import UpgradeGate from '@/components/client/UpgradeGate'
 import UpgradeWelcome from '@/components/client/UpgradeWelcome'
 import HealthOverview from '@/components/client/HealthOverview'
+import TrainingProgressCard from '@/components/client/TrainingProgressCard'
 import RecoveryDashboard from '@/components/client/RecoveryDashboard'
 import DailyCheckIn from '@/components/client/DailyCheckIn'
 import DailyWellness from '@/components/client/DailyWellness'
@@ -1900,6 +1901,11 @@ export default function ClientDashboard() {
             </div>
             <span className="text-blue-600 text-sm shrink-0">開啟 →</span>
           </Link>
+        )}
+
+        {/* 訓練進步追蹤（有逐組紀錄才顯示）*/}
+        {isToday && c.training_enabled && (clientData.trainingSets?.length ?? 0) > 0 && (
+          <div className="mt-4"><TrainingProgressCard sets={clientData.trainingSets ?? []} /></div>
         )}
 
         {!isFree && <PwaPrompt />}

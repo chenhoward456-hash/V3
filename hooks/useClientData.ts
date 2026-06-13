@@ -1,5 +1,6 @@
 import useSWR, { KeyedMutator } from 'swr'
 import type { LabResult, Supplement, BodyData, WellnessData, TrainingLog, NutritionLog } from '@/components/client/types'
+import type { TrainingSetRow } from '@/lib/training-progress'
 
 export interface TrainingPlanExercise {
   name: string
@@ -104,6 +105,7 @@ export interface ClientDataPayload {
   wellness: WellnessData[]
   recentLogs: SupplementLog[]
   trainingLogs: TrainingLog[]
+  trainingSets?: TrainingSetRow[]
   nutritionLogs: NutritionLog[]
   recentMacroAdjustment?: MacroAdjustment | null
 }
