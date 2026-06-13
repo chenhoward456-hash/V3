@@ -50,11 +50,17 @@ export async function GET(request: NextRequest) {
 
   try {
     // 1. 取得學員資料
-    const { data: client, error: clientErr } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('unique_code', clientId)
-      .single()
+    // clientId 可能是 unique_code（學員端 / 多數 caller）或 client.id UUID（admin 後台 overview）。
+    // 兩種都接受，否則 admin 用 UUID 查會撞 unique_code 不符 → 誤報 404（console 紅字）。
+    // 注意：id 是 uuid 欄位，只有在 clientId 真的是 UUID 格式時才納入 .or，避免型別錯誤；
+    // 此時帶進 .or 的字串已經過 regex 驗證，無注入風險。
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)
+    const clientQuery = supabase.from('clients').select('*')
+    const { data: client, error: clientErr } = await (
+      isUuid
+        ? clientQuery.or(`unique_code.eq.${clientId},id.eq.${clientId}`)
+        : clientQuery.eq('unique_code', clientId)
+    ).single()
 
     if (clientErr || !client) {
       return NextResponse.json({ error: '找不到學員' }, { status: 404 })

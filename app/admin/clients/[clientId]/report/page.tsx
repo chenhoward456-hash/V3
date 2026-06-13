@@ -437,10 +437,13 @@ export default function HealthReportPage() {
                   const advice = getLabAdvice(r.test_name, r.value) || r.custom_advice || '-'
                   const f = findingByName.get(r.test_name)
                   const trendLabel = f?.trend === 'improving' ? '↗ 進步' : f?.trend === 'declining' ? '↘ 退步' : ''
+                  // 徽章狀態用 calculateLabStatus 即時重算（analyzeLabs 已含，且性別感知、會跳過非數值列），
+                  // 不直接信 DB 的 lab_results.status（可能過期/過嚴，如維生素D 59 被標紅）。非數值/未分析列才回退 DB status。
+                  const status = f?.latestStatus ?? r.status
                   return (
                     <tr
                       key={r.id}
-                      className={r.status === 'alert' ? 'row-alert' : r.status === 'attention' ? 'row-attention' : ''}
+                      className={status === 'alert' ? 'row-alert' : status === 'attention' ? 'row-attention' : ''}
                     >
                       <td className="font-semibold">{r.test_name}</td>
                       <td className="text-mono">
@@ -458,8 +461,8 @@ export default function HealthReportPage() {
                         )}
                       </td>
                       <td>
-                        <span className={`status-badge ${r.status}`}>
-                          {STATUS_LABELS[r.status] || r.status}
+                        <span className={`status-badge ${status}`}>
+                          {STATUS_LABELS[status] || status}
                         </span>
                       </td>
                       <td className="text-small" style={{ whiteSpace: 'pre-line' }}>{advice.replace(/\\n/g, '\n')}</td>
