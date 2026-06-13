@@ -121,6 +121,13 @@ describe('generateSupplementSuggestions', () => {
     expect(creatine).toBeDefined()
   })
 
+  it('does NOT suggest creatine when 肌酸酐 elevated (跨引擎一致：與血檢「減少肌酸」不矛盾)', () => {
+    const labs = [makeLab('肌酸酐', 1.4, 'mg/dL', 'attention')]
+    const result = generateSupplementSuggestions(labs, { isCompetitionPrep: true })
+    const creatine = result.find(s => s.name.includes('肌酸') && !s.name.includes('肌酸酐'))
+    expect(creatine).toBeUndefined()
+  })
+
   it('should suggest magnesium for high RPE', () => {
     const result = generateSupplementSuggestions([], { hasHighRPE: true })
     const mag = result.find(s => s.name.includes('鎂'))

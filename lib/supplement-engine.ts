@@ -374,10 +374,15 @@ export function generateSupplementSuggestions(
     }
   }
 
-  // ── 9. 肌酸（備賽/增肌，無論血檢）──
+  // ── 9. 肌酸（備賽/增肌）──
+  // 腎指標守門：肌酸酐 / eGFR 偏離時不推肌酸——肌酸會墊高肌酸酐，否則會與血檢端「減少肌酸補充劑」自相矛盾。
+  // （健美選手肌酸酐高常為肌肉量/補充所致、未必腎損，但「一邊推一邊停」的矛盾訊息不該出現。）
   if (isCompetitionPrep || goalType === 'bulk') {
+    const creatinine = labs.find(l => matchLabName(l.test_name, ['肌酸酐', 'creatinine']))
+    const egfr = labs.find(l => matchLabName(l.test_name, ['egfr', '腎絲球過濾率']))
+    const kidneyFlagged = (creatinine != null && creatinine.status !== 'normal') || (egfr != null && egfr.status !== 'normal')
     const alreadyHasCreatine = suggestions.some(s => s.name.includes('肌酸'))
-    if (!alreadyHasCreatine) {
+    if (!kidneyFlagged && !alreadyHasCreatine) {
       suggestions.push({
         name: '肌酸（Creatine Monohydrate）',
         dosage: '3-5g',
