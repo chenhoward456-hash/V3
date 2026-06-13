@@ -116,6 +116,34 @@ const SEROTONIN_LABELS: Record<string, { label: string; note: string }> = {
   SS: { label: 'SS（短/短）', note: '血清素代謝效率較低，壓力情境下憂鬱及焦慮風險較高，建議積極補充維生素 D、Omega-3 EPA 及鎂，並留意睡眠品質。' },
 }
 
+// 白話對照：給「本次重點」摘要用，把專業項目名翻成一般人看得懂的「這是什麼、為什麼要看」。
+// 比對用 test_name 做關鍵字 includes（大小寫不敏感），找不到就只顯示項目名。
+const PLAIN_WHY: { match: string[]; why: string }[] = [
+  { match: ['尿酸', 'uric'], why: '偏高和痛風、結石有關，多喝水、少內臟/海鮮/酒' },
+  { match: ['肌酸酐', 'creatinine'], why: '腎功能指標' },
+  { match: ['egfr', '腎絲球'], why: '腎臟過濾效率，越高越好' },
+  { match: ['白血球', 'wbc', '白細胞'], why: '免疫力相關，偏低可能是訓練壓力或微量元素不足' },
+  { match: ['同半胱胺酸', 'homocyst'], why: '偏高和心血管風險有關，B 群/葉酸可改善' },
+  { match: ['lp(a)', 'lpa', '脂蛋白'], why: '基因型膽固醇，心血管風險指標（基因決定，難靠飲食大改）' },
+  { match: ['ldl', '低密度'], why: '壞膽固醇，心血管風險' },
+  { match: ['apob', 'apo b'], why: '壞膽固醇顆粒數，心血管風險更準的指標' },
+  { match: ['hdl', '高密度'], why: '好膽固醇，越高越好' },
+  { match: ['三酸甘油', 'triglyc', 'tg'], why: '血脂，和糖/酒攝取有關' },
+  { match: ['空腹血糖', 'glucose', '飯前血糖'], why: '血糖控制' },
+  { match: ['hba1c', '糖化'], why: '近 3 個月平均血糖' },
+  { match: ['睪固酮', 'testosterone'], why: '男性荷爾蒙，影響肌肉、精力、情緒' },
+  { match: ['shbg'], why: '會綁住睪固酮，太高會降低可用的游離睪固酮' },
+  { match: ['alt', 'ast', 'ggt', '肝'], why: '肝指標' },
+  { match: ['鐵蛋白', 'ferritin'], why: '體內鐵儲存量' },
+  { match: ['維生素d', 'vitamin d', '25-oh'], why: '免疫、骨骼、荷爾蒙都需要' },
+  { match: ['crp', '發炎'], why: '身體發炎程度' },
+]
+function plainWhy(testName: string): string | null {
+  const n = testName.toLowerCase()
+  for (const e of PLAIN_WHY) if (e.match.some(m => n.includes(m))) return e.why
+  return null
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -342,6 +370,51 @@ export default function HealthReportPage() {
             <span>教練：Howard Protocol</span>
           </div>
         </header>
+
+        {/* ── 本次重點（白話摘要，放最上面，讓非專業的學員 10 秒看懂）── */}
+        {latestLabs.length > 0 && (() => {
+          const improving = latestLabs
+            .filter(r => findingByName.get(r.test_name)?.trend === 'improving')
+            .map(r => {
+              const f = findingByName.get(r.test_name)
+              const pct = f?.changePercent != null ? `（${f.changePercent > 0 ? '+' : ''}${f.changePercent.toFixed(0)}%）` : ''
+              return `${r.test_name}${pct}`
+            })
+          const flagged = latestLabs.filter(r => {
+            const s = findingByName.get(r.test_name)?.latestStatus ?? r.status
+            return s === 'alert' || s === 'attention'
+          })
+          if (improving.length === 0 && flagged.length === 0) return null
+          return (
+            <section className="report-section" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 18px' }}>
+              <h2 style={{ marginTop: 0 }}>本次重點</h2>
+              {improving.length > 0 && (
+                <p className="report-text" style={{ margin: '0 0 10px' }}>
+                  <strong style={{ color: '#15803d' }}>✅ 往好的方向：</strong>{improving.join('、')}
+                </p>
+              )}
+              {flagged.length > 0 && (
+                <div style={{ margin: '0 0 4px' }}>
+                  <strong style={{ color: '#b45309' }}>⚠️ 要追蹤的項目：</strong>
+                  <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
+                    {flagged.map(r => {
+                      const s = findingByName.get(r.test_name)?.latestStatus ?? r.status
+                      const why = plainWhy(r.test_name)
+                      return (
+                        <li key={r.id} className="report-text" style={{ marginBottom: 3 }}>
+                          <strong>{r.test_name}</strong>（{STATUS_LABELS[s] || s}）{why ? `— ${why}` : ''}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              )}
+              <p className="report-note" style={{ marginTop: 10, marginBottom: 0 }}>
+                綠燈項目都正常，詳細數值見下方血檢表。具體該怎麼做，看下面「教練重點」。
+              </p>
+            </section>
+          )
+        })()}
 
         {/* ── 教練重點（開場總結，挪到最上面）── */}
         {client.coach_summary && (
