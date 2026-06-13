@@ -326,3 +326,16 @@ describe('閾值對齊（#18 鎂 / #20 CRP）', () => {
     expect(result.find(s => s.name.toLowerCase().includes('omega') || s.name.includes('魚油'))).toBeDefined()
   })
 })
+
+describe('肌酸守門改看 eGFR（B：不誤擋肌肉量大的選手）', () => {
+  it('eGFR 正常 + 肌酸酐高 → 仍建議肌酸（謝佳峻案例：肌肉量大、腎其實正常）', () => {
+    const labs = [makeLab('eGFR', 75, 'mL/min', 'normal'), makeLab('肌酸酐', 1.5, 'mg/dL', 'attention')]
+    const result = generateSupplementSuggestions(labs, { isCompetitionPrep: true })
+    expect(result.find(s => s.name.includes('肌酸') && !s.name.includes('肌酸酐'))).toBeDefined()
+  })
+  it('eGFR < 60 → 不建議肌酸（腎功能真的下降）', () => {
+    const labs = [makeLab('eGFR', 45, 'mL/min', 'attention')]
+    const result = generateSupplementSuggestions(labs, { isCompetitionPrep: true })
+    expect(result.find(s => s.name.includes('肌酸') && !s.name.includes('肌酸酐'))).toBeUndefined()
+  })
+})

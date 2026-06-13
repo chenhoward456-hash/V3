@@ -32,16 +32,8 @@ export interface SupplementLabInteraction {
 const v = (m: LabResult) => `${m.value ?? ''}${m.unit ? ' ' + m.unit : ''}`.trim()
 
 export const SUPPLEMENT_LAB_INTERACTIONS: SupplementLabInteraction[] = [
-  // 肌酸 ↔ 腎指標：肌酸會墊高肌酸酐；肌酸酐高或 eGFR 低時暫緩（謝佳峻案例，集中在此不再內聯特判）
-  {
-    id: 'creatine-kidney',
-    supplementKeywords: ['肌酸'],
-    markerKeywords: ['肌酸酐', 'creatinine', 'egfr', '腎絲球過濾率'],
-    triggered: (m) => m.status !== 'normal', // 肌酸酐高 / eGFR 低都是同向風險，皆非「正常」
-    action: 'suppress',
-    note: (m) =>
-      `腎指標目前偏離（${m.test_name} ${v(m)}），肌酸補充會墊高肌酸酐。健美選手肌酸酐高常為肌肉量/補充所致、未必腎損，但建議先暫緩肌酸、待回穩或與醫師確認非腎因性後再評估。`,
-  },
+  // 注意：肌酸 ↔ 腎指標的守門已移到 supplement-engine 第 9 段（用 shouldRestrictCreatine 共用判斷，
+  // 看 eGFR 而非單看肌酸酐，才不會誤擋肌肉量大的選手）；血檢端 lab-nutrition-advisor 也用同一判斷，三邊一致。
   // 鐵劑 ↔ 鐵蛋白：高鐵蛋白（鐵過載）不該再補鐵；safety net 防 name dedup 把停鐵卡改寫成補鐵
   {
     id: 'iron-overload',

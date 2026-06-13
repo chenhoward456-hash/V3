@@ -1522,3 +1522,24 @@ describe('飲食方向對帳 — 紅肉矛盾', () => {
     expect(iron!.foodsToIncrease.some(f => f.includes('牛肉'))).toBe(true)
   })
 })
+
+describe('肌酸酐區塊改看 eGFR（B：不誤叫肌肉量大者減肌酸）', () => {
+  it('肌酸酐高 + eGFR 正常 → 不叫人減肌酸', () => {
+    const advice = generateLabNutritionAdvice([
+      lab('肌酸酐', 1.5, 'mg/dL', 'attention'),
+      lab('eGFR', 80, 'mL/min', 'normal'),
+    ], { gender: '男性' })
+    const kidney = advice.find(a => a.title.includes('肌酸酐偏高'))
+    expect(kidney).toBeDefined()
+    expect(kidney!.dietaryChanges.some(d => d.includes('減少肌酸'))).toBe(false)
+    expect(kidney!.foodsToReduce.some(f => f.includes('肌酸補充劑'))).toBe(false)
+  })
+  it('肌酸酐高 + eGFR 低 → 維持「減少肌酸」', () => {
+    const advice = generateLabNutritionAdvice([
+      lab('肌酸酐', 1.5, 'mg/dL', 'attention'),
+      lab('eGFR', 45, 'mL/min', 'attention'),
+    ], { gender: '男性' })
+    const kidney = advice.find(a => a.title.includes('肌酸酐偏高'))
+    expect(kidney!.dietaryChanges.some(d => d.includes('減少肌酸'))).toBe(true)
+  })
+})

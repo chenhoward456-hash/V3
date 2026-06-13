@@ -48,6 +48,7 @@ interface LabInput {
 }
 
 import { matchLabName as matchName, getLabCanonicalId } from '@/utils/labMatch'
+import { shouldRestrictCreatine } from '@/utils/kidney'
 
 // ── 飲食方向對帳（#8）：同一份報告不可一邊「多吃紅肉」一邊「少吃紅肉」──
 // 鐵缺乏分支推紅肉/內臟補鐵；尿酸/血脂/鐵過載分支要求減紅肉。兩者並存時以安全側為準：
@@ -641,6 +642,9 @@ export function generateLabNutritionAdvice(
     if (matchName(lab.test_name, ['肌酸酐', 'creatinine'])) {
       const crMax = gender === '女性' ? 1.1 : 1.3
       if (lab.value > crMax) {
+        // 用共用判斷：eGFR 正常時不叫人減肌酸（肌肉量大者肌酸酐天生高、腎其實沒事），
+        // 與補品引擎、nutrition-engine 蛋白守門同一套邏輯，三邊一致。
+        const restrictCreatine = shouldRestrictCreatine(labs, gender)
         advice.push({
           category: 'kidney',
           title: '肌酸酐偏高',
@@ -649,11 +653,11 @@ export function generateLabNutritionAdvice(
           dietaryChanges: [
             '確保每日飲水 2.5-3L（維持腎臟灌流）',
             '蛋白質攝取不需要大幅降低，但避免超過 2.5g/kg',
-            '減少肌酸補充劑（會直接提高肌酸酐）',
+            ...(restrictCreatine ? ['減少肌酸補充劑（會直接提高肌酸酐）'] : []),
             '限制鈉攝取（<2000mg/day）',
           ],
           foodsToIncrease: ['水', '蔬菜', '水果'],
-          foodsToReduce: ['過量蛋白質', '高鈉食物', '加工食品', '肌酸補充劑'],
+          foodsToReduce: ['過量蛋白質', '高鈉食物', '加工食品', ...(restrictCreatine ? ['肌酸補充劑'] : [])],
           labMarker: lab.test_name,
           currentValue: lab.value,
           unit: lab.unit,
@@ -1701,17 +1705,14 @@ export function generateLabOptimizationTips(
     // ── 同半胱胺酸 ──
     if (matchName(lab.test_name, ['同半胱胺酸', 'homocysteine'])) {
       if (lab.value >= 6 && lab.value < 8) {
-        // 腎指標守門：肌酸酐偏高時不建議用肌酸降同半胱胺酸——肌酸會墊高肌酸酐，
-        // 否則會與腎功能區塊「減少肌酸補充劑」自相矛盾（同一份報告兩個引擎打架的另一道門）。
-        const crMaxHomo = gender === '女性' ? 1.1 : 1.3
-        const creatinineElevated = dedupedLabs.some(
-          l => matchName(l.test_name, ['肌酸酐', 'creatinine']) && l.value != null && l.value > crMaxHomo,
-        )
+        // 腎指標守門：腎功能不好時不建議用肌酸降同半胱胺酸（肌酸會墊高肌酸酐）。
+        // 用共用 shouldRestrictCreatine（看 eGFR，不誤擋肌肉量大者），與腎功能區塊/補品引擎三邊一致。
+        const restrictCreatine = shouldRestrictCreatine(dedupedLabs, gender)
         const homoSupplements = [
           { name: '活性 B 群複合物', dosage: '含 methylfolate 800μg + methylcobalamin 1000μg + P5P(B6) 50mg', timing: '早餐後', note: '甲基化關鍵輔因子，優先選活性形式' },
           { name: 'TMG (甜菜鹼)', dosage: '500-1500mg/天', timing: '隨餐', note: '提供甲基，直接幫助同半胱胺酸代謝' },
         ]
-        if (!creatinineElevated) {
+        if (!restrictCreatine) {
           homoSupplements.push({ name: '肌酸 (Creatine)', dosage: '3-5g/天', timing: '任意時間', note: '消耗甲基合成肌酸，間接降低同半胱胺酸' })
         }
         tips.push({

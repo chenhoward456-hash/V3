@@ -31,6 +31,7 @@ export interface SupplementSuggestion {
 
 import { matchLabName } from '@/utils/labMatch'
 import { reconcileSupplementsWithLabs, isCorrectiveSuggestion } from './supplement-lab-guard'
+import { shouldRestrictCreatine } from '@/utils/kidney'
 
 // ── 補品引擎的 key → 血檢關鍵字映射 ──
 const KEY_ALIASES: Record<string, string[]> = {
@@ -380,9 +381,9 @@ export function generateSupplementSuggestions(
   }
 
   // ── 9. 肌酸（備賽/增肌）──
-  // 注意：肌酸酐高 / eGFR 低時「不推肌酸」的守門已集中在 reconcileSupplementsWithLabs（補品×血檢一致性層），
-  // 這裡不再各自判斷腎指標，避免「每條規則各做各的血檢檢查、漏一條就矛盾」的老問題重演。
-  if (isCompetitionPrep || goalType === 'bulk') {
+  // 腎指標守門用 shouldRestrictCreatine（共用判斷，看 eGFR 而非單看肌酸酐）：
+  // eGFR 正常就放行——肌肉量大的選手肌酸酐天生高、腎其實正常，不該被誤擋。血檢端 lab-advisor 用同一判斷。
+  if ((isCompetitionPrep || goalType === 'bulk') && !shouldRestrictCreatine(labs, gender)) {
     const alreadyHasCreatine = suggestions.some(s => s.name.includes('肌酸'))
     if (!alreadyHasCreatine) {
       suggestions.push({
