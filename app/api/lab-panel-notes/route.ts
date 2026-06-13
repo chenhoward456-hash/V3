@@ -6,7 +6,7 @@ import {
   createSuccessResponse,
   sanitizeTextField,
 } from '@/lib/auth-middleware'
-import { pushMessage } from '@/lib/line'
+import { sendRoutineReminder } from '@/lib/notify'
 
 const supabase = createServiceSupabase()
 
@@ -187,7 +187,7 @@ async function notifyLearnerOfPanelNote(opts: {
       .maybeSingle<{ name: string; unique_code: string; line_user_id: string | null }>(),
   ])
 
-  if (!client?.line_user_id) return  // 沒綁 LINE
+  if (!client) return
 
   // Debounce: 5 分鐘內已通知過就跳過
   if (note?.learner_notified_at) {
@@ -197,26 +197,35 @@ async function notifyLearnerOfPanelNote(opts: {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
   const summaryPreview = opts.summary.trim().slice(0, 80).replace(/\n/g, ' ')
+  const reportPath = `/c/${client.unique_code}/report`
 
-  const text = [
-    `💬 Howard 寫了新的觀察筆記`,
+  const lineText = [
+    `💬 Howard 更新了你的健康報告`,
     `📅 血檢日期：${opts.panelDate}`,
     '',
     summaryPreview ? `${summaryPreview}${opts.summary.length > 80 ? '...' : ''}` : '',
     '',
-    '點下方看完整筆記：',
-    `${siteUrl}/c/${client.unique_code}/health/timeline`,
+    '點下方看完整報告：',
+    `${siteUrl}${reportPath}`,
   ].filter(l => l !== undefined).join('\n')
 
   try {
-    await pushMessage(client.line_user_id, [{ type: 'text', text }])
-    // 標記已通知
-    await supabase
-      .from('lab_panel_notes')
-      .update({ learner_notified_at: new Date().toISOString() })
-      .eq('id', opts.panelNoteId)
+    // Web Push 優先（學員不必綁 LINE 也收得到），無訂閱才 fallback LINE
+    const result = await sendRoutineReminder(opts.clientInternalId, client.line_user_id ?? '', {
+      title: '💬 你的健康報告更新了',
+      body: summaryPreview ? `${summaryPreview}${opts.summary.length > 80 ? '…' : ''}` : `${opts.panelDate} 血檢已判讀，點開看`,
+      lineText,
+      url: reportPath,
+    })
+    // push 或 LINE 任一成功才標記已通知（失敗則下次存檔再試）
+    if (result.success) {
+      await supabase
+        .from('lab_panel_notes')
+        .update({ learner_notified_at: new Date().toISOString() })
+        .eq('id', opts.panelNoteId)
+    }
   } catch (err) {
-    console.error('[lab-panel-notes] LINE push failed:', err)
+    console.error('[lab-panel-notes] notify failed:', err)
   }
 }
 
