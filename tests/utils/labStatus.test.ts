@@ -317,3 +317,19 @@ describe('LAB_OPTIMAL_RANGES', () => {
     expect(Object.keys(LAB_OPTIMAL_RANGES).length).toBeGreaterThan(10)
   })
 })
+
+describe('低側風險（J-curve）：空腹血糖 / HbA1c 過低不再顯示綠燈（#16）', () => {
+  it('空腹血糖：正常區間綠燈、過低標記', () => {
+    expect(calculateLabStatus('空腹血糖', 85)).toBe('normal')   // 正常
+    expect(calculateLabStatus('空腹血糖', 95)).toBe('attention') // 偏高
+    expect(calculateLabStatus('空腹血糖', 65)).toBe('attention') // 低血糖（過去會顯示 normal）
+    expect(calculateLabStatus('空腹血糖', 50)).toBe('alert')     // 嚴重低血糖
+  })
+
+  it('HbA1c：正常綠燈、過低標記', () => {
+    expect(calculateLabStatus('HbA1c', 5.2)).toBe('normal')
+    expect(calculateLabStatus('HbA1c', 5.6)).toBe('attention')
+    expect(calculateLabStatus('HbA1c', 3.8)).toBe('attention') // 過低（過去會顯示 normal）
+    expect(calculateLabStatus('HbA1c', 3.2)).toBe('alert')
+  })
+})

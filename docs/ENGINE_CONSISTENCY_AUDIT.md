@@ -76,3 +76,24 @@
 5. **#10 RED-S hard stop**：先問 Howard 政策決定。
 
 > 任何新增引擎或建議，先問：「它會不會跟別的引擎講相反的話？」能用通則蓋住就別寫新 if。
+
+---
+
+## 進度更新（2026-06，第二批）
+
+- ✅ **#5 腎指標蛋白上限（Rule C）** 已上線（commit 9e234ad）：`generateNutritionSuggestion` 單一出口夾限，
+  eGFR<60 → 蛋白封頂 2.0 g/kg（少掉的克數移到碳水維持熱量）；肌酸酐高但缺 eGFR 只提醒、不誤殺選手。
+- ✅ **#2 trajectory 赤字否決（Rule B）— 危險路徑已驗證為「已緩解」**：唯一會「自動套用」macro 的
+  `app/api/cron/daily` 早已 gate `recoveryCritical / phaseLocked / cuttingBlocked(含EA/RED-S) / metabolicHighStress / tdeeAnomaly`，
+  撞到就不寫 macro、改寫 `_blocked` audit + 推教練 alert（cron/daily route.ts L310-350）。
+  → 不再做引擎層集中化（skip-review/admin 只做提示/預覽、不自動套用，風險低，churn 不划算）。
+- ✅ **#16 低血糖/低 HbA1c 顯綠燈** 已修：`utils/labStatus.ts` 加 `LOW_BOUND_RISK`，在 calculateLabStatus
+  補低側判斷（空腹血糖<70 attention/<54 alert；HbA1c<4.0/<3.5）。**刻意不改 LAB_THRESHOLDS 形狀**，
+  避免動到 6 個消費端（bulk/trend/standards 顯示頁等），零漣漪。
+- ✅ **#10 RED-S 政策**（Howard 拍板）：比賽模式維持「軟扣分」（比賽可以拼），非比賽期才硬保護。
+  現況 nutrition-engine cutting gate 即為軟扣分、cron phaseLocked 又會跳過比賽相位 → 符合決策，無需改碼。
+
+### 仍待辦（需登入頁實看畫面，等 Playwright/Howard 確認後做）
+- #8 飲食方向紅肉矛盾（改 foodsToIncrease/Reduce，UI 內容）
+- #15/#17 client-feed 狀態來源統一到 calculateLabStatus
+- #18/#20 鎂/CRP 閾值跨引擎對齊（純常數，可純測試，低風險）

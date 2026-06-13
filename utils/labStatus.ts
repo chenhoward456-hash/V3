@@ -182,6 +182,14 @@ const HIGHER_IS_BETTER = new Set([
   'HDL-C', 'HDL-C_female', '白蛋白', 'eGFR',
 ]);
 
+// 「越低越好」型指標中，過低同樣有風險者（J-curve）→ 加下限警示。
+// 不改 LAB_THRESHOLDS 形狀（避免動到 6 個消費端），只在 calculateLabStatus 補低側判斷。
+// 空腹血糖 < 70 低血糖、< 54 嚴重；HbA1c 過低也與不良預後相關（保守）。
+const LOW_BOUND_RISK: Record<string, { attentionBelow: number; alertBelow: number }> = {
+  '空腹血糖': { attentionBelow: 70, alertBelow: 54 },
+  'HbA1c': { attentionBelow: 4.0, alertBelow: 3.5 },
+};
+
 // 血檢狀態類型
 export type LabStatus = 'normal' | 'attention' | 'alert';
 
@@ -254,6 +262,12 @@ export function calculateLabStatus(testName: string, value: number, gender?: '�
   // 處理一般數值（越低越好）
   const normalValue = threshold.normal as number;
   const attentionValue = threshold.attention as number;
+  // 低側風險（J-curve）：空腹血糖/HbA1c 過低也要標記，避免低血糖顯示綠燈
+  const lowBound = LOW_BOUND_RISK[lookupName];
+  if (lowBound) {
+    if (value < lowBound.alertBelow) return 'alert';
+    if (value < lowBound.attentionBelow) return 'attention';
+  }
   if (value <= normalValue) return 'normal';
   if (value <= attentionValue) return 'attention';
   return 'alert';
