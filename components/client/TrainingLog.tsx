@@ -630,57 +630,51 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">訓練紀錄</h2>
       <div className="space-y-4">
-        {/* 今日訓練準備度（簡單模式隱藏） */}
-        {!simpleMode && readiness && readiness.recoveryScore != null && (
-          <div className={`rounded-xl px-4 py-3 text-sm ${
-            readiness.recommendedIntensity === 'high'
-              ? 'bg-green-50 text-green-700'
-              : readiness.recommendedIntensity === 'moderate'
-                ? 'bg-blue-50 text-blue-700'
-                : readiness.recommendedIntensity === 'low'
-                  ? 'bg-amber-50 text-amber-700'
-                  : 'bg-red-50 text-red-700'
-          }`}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-medium">
-                {readiness.recommendedIntensity === 'high' ? '🟢 狀態良好' :
-                 readiness.recommendedIntensity === 'moderate' ? '🔵 狀態一般' :
-                 readiness.recommendedIntensity === 'low' ? '🟡 恢復偏差' :
-                 '🔴 建議休息'}
-              </span>
-              <span className="text-xs opacity-70">
-                恢復分數 {readiness.recoveryScore}/100
-              </span>
-            </div>
-            <p className="text-xs opacity-80">{readiness.suggestion}</p>
-            {readiness.reasons.length > 0 && (
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {readiness.reasons.map((r, i) => (
-                  <span key={i} className="text-[10px] bg-white/50 rounded px-1.5 py-0.5">{r}</span>
-                ))}
+        {/* 今日訓練準備度（簡單模式隱藏）— 中性卡 + 狀態色點，去除整片底色 */}
+        {!simpleMode && readiness && readiness.recoveryScore != null && (() => {
+          const intensity = readiness.recommendedIntensity
+          const dot = intensity === 'high' ? 'bg-emerald-500' : intensity === 'moderate' ? 'bg-blue-500' : intensity === 'low' ? 'bg-amber-500' : 'bg-rose-500'
+          const label = intensity === 'high' ? '狀態良好' : intensity === 'moderate' ? '狀態一般' : intensity === 'low' ? '恢復偏差' : '建議休息'
+          return (
+            <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
+              <div className="flex items-center justify-between mb-1">
+                <span className="flex items-center gap-2 font-medium text-gray-900">
+                  <span className={`inline-block w-2 h-2 rounded-full ${dot}`} />
+                  {label}
+                </span>
+                <span className="text-xs text-gray-400">恢復分數 {readiness.recoveryScore}/100</span>
               </div>
-            )}
-          </div>
-        )}
+              <p className="text-xs text-gray-500 leading-relaxed">{readiness.suggestion}</p>
+              {readiness.reasons.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {readiness.reasons.map((r, i) => (
+                    <span key={i} className="text-[10px] text-gray-500 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5">{r}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* ===== 訓練模式建議（簡單模式隱藏） ===== */}
         {!simpleMode && readiness?.modeRecommendation && (() => {
           const mode = readiness.modeRecommendation
-          const colors = MODE_COLOR_MAP[mode.modeColor] || MODE_COLOR_MAP.blue
+          const dotColor = ({ purple: 'bg-purple-500', red: 'bg-rose-500', blue: 'bg-blue-500', amber: 'bg-amber-500', teal: 'bg-teal-500', green: 'bg-emerald-500' } as Record<string, string>)[mode.modeColor] || 'bg-blue-500'
           const totalReasons = mode.reasons.length + mode.geneticTrainingCorrections.length
           return (
-            <div className={`rounded-xl border px-4 py-3 text-sm ${colors.bg} ${colors.text} ${colors.border}`}>
+            <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
               {/* 主訊息：一句話告訴學員今天怎麼練 */}
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">{mode.modeEmoji}</span>
-                <p className="font-medium">{mode.clientMessage}</p>
+                <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+                <span className="text-base">{mode.modeEmoji}</span>
+                <p className="font-medium text-gray-900">{mode.clientMessage}</p>
               </div>
 
               {/* 建議組數 */}
               <div className="flex flex-wrap gap-1 mb-2">
-                <span className={`text-[10px] ${colors.tagBg} rounded px-1.5 py-0.5`}>建議 {mode.suggestedSets}</span>
+                <span className="text-[10px] text-gray-600 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5">建議 {mode.suggestedSets}</span>
                 {mode.focusAreas.map((area, i) => (
-                  <span key={i} className={`text-[10px] ${colors.tagBg} rounded px-1.5 py-0.5`}>{area}</span>
+                  <span key={i} className="text-[10px] text-gray-600 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5">{area}</span>
                 ))}
               </div>
 

@@ -26,7 +26,7 @@ const SupplementModal = dynamic(() => import('@/components/client/SupplementModa
 import WellnessTrend from '@/components/client/WellnessTrend'
 const TrainingLog = dynamic(() => import('@/components/client/TrainingLog'), { ssr: false })
 import TodayWorkout from '@/components/client/TodayWorkout'
-import { isWeightTraining } from '@/components/client/types'
+import { isWeightTraining, TRAINING_TYPES } from '@/components/client/types'
 import NutritionLog from '@/components/client/NutritionLog'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import PeakWeekPlan from '@/components/client/PeakWeekPlan'
@@ -1329,7 +1329,7 @@ export default function ClientDashboard() {
             icon="🏋️"
             title="訓練紀錄"
             isCompleted={!!todayTraining}
-            summaryLine={todayTraining ? `${todayTraining.training_type ? todayTraining.training_type : '訓練'}${todayTraining.rpe ? ` · RPE ${todayTraining.rpe}` : ''}` : undefined}
+            summaryLine={todayTraining ? `${(() => { const t = TRAINING_TYPES.find(x => x.value === todayTraining.training_type); return t ? `${t.emoji} ${t.label}` : '訓練' })()}${todayTraining.rpe ? ` · RPE ${todayTraining.rpe}` : ''}` : undefined}
             isToday={isToday}
           >
             <TrainingLog
