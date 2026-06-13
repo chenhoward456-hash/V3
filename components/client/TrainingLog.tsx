@@ -422,46 +422,12 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     return { days, trainingDays, weightDays, cardioDays, totalDuration, totalSets, avgRpe }
   }, [trainingLogs, today])
 
-  // ===== 訓練歷史日曆（近 5 週） =====
-  const calendarWeeks = useMemo(() => {
-    const now = new Date()
-    // 找到本週一
-    const dayOfWeek = now.getDay()
-    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-    const thisMonday = new Date(now)
-    thisMonday.setDate(now.getDate() - mondayOffset)
-
-    const weeks: { date: string; label: string; log: any; isToday: boolean; isFuture: boolean }[][] = []
-    for (let w = 4; w >= 0; w--) {
-      const week: typeof weeks[0] = []
-      for (let d = 0; d < 7; d++) {
-        const date = new Date(thisMonday)
-        date.setDate(thisMonday.getDate() - w * 7 + d)
-        const dateStr = getLocalDateStr(date)
-        week.push({
-          date: dateStr,
-          label: date.getDate().toString(),
-          log: (trainingLogs || []).find((l: any) => l.date === dateStr) || null,
-          isToday: dateStr === today,
-          isFuture: dateStr > today,
-        })
-      }
-      weeks.push(week)
-    }
-    return weeks
-  }, [trainingLogs, today])
-
   const getTypeEmoji = (type: string) => {
     return TRAINING_TYPES.find(t => t.value === type)?.emoji || ''
   }
 
   const getTypeLabel = (type: string) => {
     return TRAINING_TYPES.find(t => t.value === type)?.label || type
-  }
-
-  const getTypeBgColor = (type: string) => {
-    // 訓練類型不是「狀態」→ 統一中性灰，不做彩虹（DESIGN.md：顏色只做語意，靠 emoji+文字辨識）
-    return type === 'rest' ? 'bg-slate-100 text-slate-500' : 'bg-slate-100 text-slate-700'
   }
 
   // ===== RPE 趨勢圖 =====
@@ -1097,41 +1063,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           )}
         </div>
 
-        {/* ===== 訓練歷史日曆（5 週）（簡單模式隱藏） ===== */}
-        {!simpleMode && <div className="pt-4 border-t border-gray-100">
-          <p className="text-sm font-medium text-gray-700 mb-3">訓練日曆</p>
-          <div className="space-y-1">
-            {/* 星期標題 */}
-            <div className="grid grid-cols-7 gap-1 mb-1">
-              {['一', '二', '三', '四', '五', '六', '日'].map(d => (
-                <div key={d} className="text-center text-xs text-gray-400 font-medium">{d}</div>
-              ))}
-            </div>
-            {calendarWeeks.map((week, wi) => (
-              <div key={wi} className="grid grid-cols-7 gap-1">
-                {week.map(({ date, label, log, isToday, isFuture }) => (
-                  <div
-                    key={date}
-                    className={`aspect-square flex flex-col items-center justify-center rounded-lg text-xs ${
-                      isToday ? 'ring-2 ring-blue-400' : ''
-                    } ${
-                      isFuture
-                        ? 'bg-gray-50 text-gray-300'
-                        : log
-                          ? getTypeBgColor(log.training_type)
-                          : 'bg-gray-50 text-gray-400'
-                    }`}
-                  >
-                    <span className="text-[10px] leading-none">{label}</span>
-                    <span className="text-sm leading-none mt-0.5">
-                      {!isFuture && log ? getTypeEmoji(log.training_type) : ''}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>}
+        {/* 訓練歷史日曆已移除（雞肋：純出席方塊、無 takeaway。出席率看「本週訓練」、進步看訓練進步卡）*/}
 
         {/* ===== RPE 趨勢圖（簡單模式隱藏） ===== */}
         {!simpleMode && rpeChartData.length >= 2 && (
