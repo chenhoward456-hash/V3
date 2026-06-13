@@ -18,6 +18,7 @@ import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isWeightTraining } from '@/components/client/types'
 import { pushMessage } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
+import { computeTrainingProgress } from '@/lib/training-progress'
 import { generateWeeklyAIReport, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import crypto from 'crypto'
 import { sendNewsletterEmail } from '@/lib/email'
@@ -137,6 +138,20 @@ export async function GET(request: NextRequest) {
     const allNutrition = nutritionRes.data || []
     const allTraining = trainingRes.data || []
     const allWellness = wellnessRes.data || []
+
+    // 逐組紀錄（近 90 天）→ 算「停滯」用（4 週沒進步）
+    const since90 = new Date(today.getTime() - 90 * 86_400_000).toISOString().split('T')[0]
+    const { data: allSets } = await supabase
+      .from('training_sets')
+      .select('client_id, date, exercise_name, muscle_group, weight, reps, is_main_lift')
+      .gte('date', since90)
+      .order('date', { ascending: true })
+    const setsByClient = new Map<string, NonNullable<typeof allSets>>()
+    for (const s of allSets || []) {
+      const arr = setsByClient.get(s.client_id) || []
+      arr.push(s)
+      setsByClient.set(s.client_id, arr)
+    }
 
     // 預建 Map 索引（避免 O(N*M) filter）
     const bodyByClient = new Map<string, typeof allBody>()
@@ -454,6 +469,17 @@ export async function GET(request: NextRequest) {
       // 訓練天數
       const weekTraining = (trainingByClient.get(client.id) || []).filter((t: { date: string }) => t.date >= sevenDaysStr)
       msgLines.push(`🏋️ 訓練：${weekTraining.length} 天`)
+
+      // 停滯主動提醒（隨週報一起送，不另外轟）：哪些動作 4 週沒進步 → 建議找教練調整
+      const clientSets = setsByClient.get(client.id) || []
+      if (clientSets.length > 0) {
+        const progress = computeTrainingProgress(clientSets)
+        if (progress.plateaus.length > 0) {
+          msgLines.push(`\n📉 卡關提醒：${progress.plateaus.slice(0, 3).join('、')} 近 4 週沒突破——回我訊息，幫你調整課表/重量區間。`)
+        } else if (progress.prsThisWeek.length > 0) {
+          msgLines.push(`\n💪 本週刷新個人紀錄：${progress.prsThisWeek.slice(0, 3).join('、')}，繼續保持！`)
+        }
+      }
 
       // 營養引擎建議
       if (summary) {

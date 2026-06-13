@@ -13,6 +13,7 @@ import { daysUntilDateTW } from '@/lib/date-utils'
 import { TRAINING_TYPES, isWeightTraining } from '@/components/client/types'
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 import { isCompetitionMode, isHealthMode, PHASE_LABELS, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS } from '@/lib/client-mode'
+import TrainingProgressCard from '@/components/client/TrainingProgressCard'
 
 const LabNutritionAdviceCard = dynamic(() => import('@/components/client/LabNutritionAdviceCard'), { ssr: false })
 const LabInsightsCard = dynamic(() => import('@/components/client/LabInsightsCard'), { ssr: false })
@@ -2958,6 +2959,11 @@ export default function ClientOverview() {
         <details className="group">
           <summary className="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-900 px-1 py-2 select-none">🏋️ 訓練・身體 圖表（點開）</summary>
           <div className="space-y-6 mt-2">
+
+        {/* 動作進步追蹤（每動作推估 1RM/PR/停滯）— 與學員端同一引擎 */}
+        {client.training_enabled && (trainingSets?.length ?? 0) > 0 && (
+          <TrainingProgressCard sets={trainingSets} />
+        )}
 
         {/* ===== 第二排：訓練日曆 + RPE + 訓練分佈 ===== */}
         {client.training_enabled && (

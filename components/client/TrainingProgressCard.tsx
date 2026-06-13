@@ -55,6 +55,27 @@ export default function TrainingProgressCard({ sets }: { sets: TrainingSetRow[] 
         </p>
       )}
 
+      {p.weeklyVolume.length >= 2 && (() => {
+        const maxVol = Math.max(...p.weeklyVolume.map(w => w.volume))
+        return (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500 mb-2">每週訓練量（總重量×次數，kg）</p>
+            <div className="flex items-end gap-1.5 h-20">
+              {p.weeklyVolume.map(w => (
+                <div key={w.week} className="flex-1 flex flex-col items-center justify-end gap-1" title={`${w.week}：${w.volume.toLocaleString()} kg`}>
+                  <span className="text-[9px] text-gray-400">{(w.volume / 1000).toFixed(1)}k</span>
+                  <div
+                    className="w-full bg-blue-400 rounded-t"
+                    style={{ height: `${maxVol > 0 ? Math.max(4, (w.volume / maxVol) * 56) : 4}px` }}
+                  />
+                  <span className="text-[9px] text-gray-400">{w.week.slice(5)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
+
       {p.muscleGroupSets.length > 0 && (
         <div className="mt-3 pt-3 border-t border-gray-100">
           <p className="text-xs text-gray-500 mb-1.5">本週各肌群訓練組數</p>
