@@ -1463,3 +1463,27 @@ describe('generateLabChangeReport', () => {
     expect(result[2].direction).toBe('worsened')
   })
 })
+
+// ══════════════════════════════════════════════════════════
+// 跨引擎一致性：同半胱胺酸的肌酸建議要受腎指標守門（#21）
+// ══════════════════════════════════════════════════════════
+describe('同半胱胺酸 × 肌酸酐 一致性守門', () => {
+  it('同半胱胺酸可優化 + 肌酸酐偏高 → 不建議肌酸（與腎功能「減少肌酸」不矛盾）', () => {
+    const tips = generateLabOptimizationTips([
+      lab('同半胱胺酸', 7, 'μmol/L', 'normal'),
+      lab('肌酸酐', 1.5, 'mg/dL', 'attention'),
+    ], { gender: '男性' })
+    const homo = tips.find(t => t.title.includes('同半胱胺酸'))
+    expect(homo).toBeDefined()
+    expect(homo!.supplements?.some(s => s.name.includes('肌酸'))).toBe(false)
+  })
+
+  it('同半胱胺酸可優化 + 肌酸酐正常 → 仍建議肌酸（守門不誤殺）', () => {
+    const tips = generateLabOptimizationTips([
+      lab('同半胱胺酸', 7, 'μmol/L', 'normal'),
+      lab('肌酸酐', 1.0, 'mg/dL', 'normal'),
+    ], { gender: '男性' })
+    const homo = tips.find(t => t.title.includes('同半胱胺酸'))
+    expect(homo!.supplements?.some(s => s.name.includes('肌酸'))).toBe(true)
+  })
+})

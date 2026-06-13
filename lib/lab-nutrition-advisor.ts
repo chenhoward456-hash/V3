@@ -1669,6 +1669,19 @@ export function generateLabOptimizationTips(
     // ── 同半胱胺酸 ──
     if (matchName(lab.test_name, ['同半胱胺酸', 'homocysteine'])) {
       if (lab.value >= 6 && lab.value < 8) {
+        // 腎指標守門：肌酸酐偏高時不建議用肌酸降同半胱胺酸——肌酸會墊高肌酸酐，
+        // 否則會與腎功能區塊「減少肌酸補充劑」自相矛盾（同一份報告兩個引擎打架的另一道門）。
+        const crMaxHomo = gender === '女性' ? 1.1 : 1.3
+        const creatinineElevated = dedupedLabs.some(
+          l => matchName(l.test_name, ['肌酸酐', 'creatinine']) && l.value != null && l.value > crMaxHomo,
+        )
+        const homoSupplements = [
+          { name: '活性 B 群複合物', dosage: '含 methylfolate 800μg + methylcobalamin 1000μg + P5P(B6) 50mg', timing: '早餐後', note: '甲基化關鍵輔因子，優先選活性形式' },
+          { name: 'TMG (甜菜鹼)', dosage: '500-1500mg/天', timing: '隨餐', note: '提供甲基，直接幫助同半胱胺酸代謝' },
+        ]
+        if (!creatinineElevated) {
+          homoSupplements.push({ name: '肌酸 (Creatine)', dosage: '3-5g/天', timing: '任意時間', note: '消耗甲基合成肌酸，間接降低同半胱胺酸' })
+        }
         tips.push({
           category: 'inflammation',
           title: '同半胱胺酸可再優化',
@@ -1682,11 +1695,7 @@ export function generateLabOptimizationTips(
             '增加 B 族維生素攝取（B6、B12、葉酸是關鍵輔因子）',
             '多吃深色蔬菜（菠菜、花椰菜）、雞蛋、魚類',
           ],
-          supplements: [
-            { name: '活性 B 群複合物', dosage: '含 methylfolate 800μg + methylcobalamin 1000μg + P5P(B6) 50mg', timing: '早餐後', note: '甲基化關鍵輔因子，優先選活性形式' },
-            { name: 'TMG (甜菜鹼)', dosage: '500-1500mg/天', timing: '隨餐', note: '提供甲基，直接幫助同半胱胺酸代謝' },
-            { name: '肌酸 (Creatine)', dosage: '3-5g/天', timing: '任意時間', note: '消耗甲基合成肌酸，間接降低同半胱胺酸' },
-          ],
+          supplements: homoSupplements,
           references: [
             'Refsum et al. 2004 (Clin Chem): Homocysteine and cardiovascular risk',
             'Steenge et al. 2003 (J Nutr): Betaine supplementation lowers homocysteine',
