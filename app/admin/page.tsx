@@ -85,6 +85,7 @@ export default function AdminDashboard() {
   const [recentWellness, setRecentWellness] = useState<WellnessRecord[]>([])
   const [recentRPE, setRecentRPE] = useState<RPERecord[]>([])
   const [lastActivityMap, setLastActivityMap] = useState<Record<string, string>>({})
+  const [pushClientIds, setPushClientIds] = useState<Set<string>>(new Set())
   // 從 URL 讀取初始篩選狀態
   const [search, setSearch] = useState(() => { if (typeof window === 'undefined') return ''; return new URLSearchParams(window.location.search).get('q') || '' })
   const [sortKey, setSortKey] = useState<SortKey>(() => { if (typeof window === 'undefined') return 'lastActivity'; return (new URLSearchParams(window.location.search).get('sort') as SortKey) || 'lastActivity' })
@@ -201,6 +202,7 @@ export default function AdminDashboard() {
       for (const r of (data.activityTraining || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
       for (const r of (data.supplementLogs || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
       setLastActivityMap(actMap)
+      setPushClientIds(new Set((data.pushClientIds || []) as string[]))
       setError(null)
       setLastUpdated(new Date())
     } catch (err) {
@@ -393,8 +395,20 @@ export default function AdminDashboard() {
       if (d < 0) items.push({ key: `exp-${c.id}`, clientId: c.id, name: c.name, text: `方案已過期 ${-d} 天`, icon: '⏰', tone: 'red', priority: 0, href: `/admin/clients/${c.id}`, canNote: true })
       else if (d <= 7) items.push({ key: `exp-${c.id}`, clientId: c.id, name: c.name, text: `方案 ${d} 天後到期`, icon: '⏰', tone: 'orange', priority: 1, href: `/admin/clients/${c.id}`, canNote: true })
     }
+    // 新加入但從未打卡（加入 3–30 天、有開通追蹤、零活動）→ 啟動沒接住，最該主動關懷
+    for (const c of clients) {
+      if (!c.is_active) continue
+      if (c.expires_at && new Date(c.expires_at).getTime() < Date.now()) continue
+      const tracks = c.body_composition_enabled || c.nutrition_enabled || c.wellness_enabled || c.training_enabled
+      if (!tracks) continue
+      if (lastActivityMap[c.id]) continue // 曾經有活動 → 不算「未啟動」
+      const daysSinceJoin = Math.floor((Date.now() - new Date(c.created_at).getTime()) / DAY_MS)
+      if (daysSinceJoin >= 3 && daysSinceJoin <= 30) {
+        items.push({ key: `noact-${c.id}`, clientId: c.id, name: c.name, text: `加入 ${daysSinceJoin} 天從未打卡 — 該主動關懷`, icon: '🌱', tone: 'orange', priority: 1, href: `/admin/clients/${c.id}/overview`, canNote: true })
+      }
+    }
     return items.sort((a, b) => a.priority - b.priority)
-  }, [alerts, pendingDraftCount, clients])
+  }, [alerts, pendingDraftCount, clients, lastActivityMap])
 
   // === A2：自教練上次查看後的新紀錄筆數（用已載入的近期 logs；未曾查看者不標）===
   const newSinceViewMap = useMemo<Record<string, number>>(() => {
@@ -430,8 +444,10 @@ export default function AdminDashboard() {
       })
       .map(c => ({ id: c.id, name: c.name, days: Math.floor((now - new Date(clientStats[c.id]!.lastActivity!).getTime()) / DAY_MS), paying: c.subscription_tier !== 'free' }))
       .sort((a, b) => b.days - a.days)
-    return { paying, newThisMonth, churnRisk }
-  }, [clients, clientStats])
+    const activeCount = clients.filter(c => c.is_active).length
+    const pushOn = clients.filter(c => c.is_active && pushClientIds.has(c.id)).length
+    return { paying, newThisMonth, churnRisk, activeCount, pushOn }
+  }, [clients, clientStats, pushClientIds])
 
   // === D：本週摘要（規則式彙整，可複製；LINE 配額爆掉期間走 copy）===
   const weeklyDigest = useMemo(() => {
@@ -692,6 +708,7 @@ export default function AdminDashboard() {
             <MiniStat label="服從率" value={`${summaryStats.avgCompliance}%`} />
             <MiniStat label="本月新增" value={`+${retentionStats.newThisMonth}`} tone="green" />
             <MiniStat label="流失風險" value={retentionStats.churnRisk.length} tone={retentionStats.churnRisk.length > 0 ? 'orange' : undefined} />
+            <MiniStat label="推播開通" value={`${retentionStats.pushOn}/${retentionStats.activeCount}`} tone={retentionStats.pushOn === 0 ? 'orange' : 'green'} />
             <MiniStat label="到期/逾期" value={summaryStats.expiringCount + summaryStats.expiredCount} tone={(summaryStats.expiringCount + summaryStats.expiredCount) > 0 ? 'rose' : undefined} />
           </div>
         </div>

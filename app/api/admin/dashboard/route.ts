@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       activityNutritionResult,
       activityWellnessResult,
       activityTrainingResult,
+      pushSubsResult,
     ] = await Promise.all([
       // 所有學員，按建立時間倒序（只選必要欄位）
       supabase
@@ -133,6 +134,8 @@ export async function GET(request: NextRequest) {
       supabase.from('nutrition_logs').select('client_id, date').gte('date', ninetyDaysAgoStr),
       supabase.from('daily_wellness').select('client_id, date').gte('date', ninetyDaysAgoStr),
       supabase.from('training_logs').select('client_id, date').gte('date', ninetyDaysAgoStr),
+      // 已開通 Web Push 的學員（只取 client_id，用於留存/推播覆蓋率）
+      supabase.from('push_subscriptions').select('client_id'),
     ])
 
     // 4. 檢查錯誤（僅 log，不阻擋回應）
@@ -178,6 +181,7 @@ export async function GET(request: NextRequest) {
       activityNutrition: activityNutritionResult.data || [],
       activityWellness: activityWellnessResult.data || [],
       activityTraining: activityTrainingResult.data || [],
+      pushClientIds: [...new Set((pushSubsResult.data || []).map((r: { client_id: string }) => r.client_id))],
     })
   } catch (error) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
