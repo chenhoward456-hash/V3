@@ -533,8 +533,9 @@ export default function ClientEditor() {
   }, [hasUnsavedChanges])
 
   const updateClient = (field: string, value: any) => {
-    if (!client) return
-    setClient({ ...client, [field]: value })
+    // 用 functional updater：同一個事件處理器若連續呼叫多次（如出生年同時寫 birth_year + age），
+    // 每次都要基於最新 state，否則第二次會用 render 當下的舊 client 把第一次的寫入蓋掉。
+    setClient(prev => (prev ? { ...prev, [field]: value } : prev))
   }
 
   const addLabResult = () => {
