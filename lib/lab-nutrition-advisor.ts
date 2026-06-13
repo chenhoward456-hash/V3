@@ -49,6 +49,36 @@ interface LabInput {
 
 import { matchLabName as matchName, getLabCanonicalId } from '@/utils/labMatch'
 
+// ── 飲食方向對帳（#8）：同一份報告不可一邊「多吃紅肉」一邊「少吃紅肉」──
+// 鐵缺乏分支推紅肉/內臟補鐵；尿酸/血脂/鐵過載分支要求減紅肉。兩者並存時以安全側為準：
+// 把紅肉從「增加」清單與相關 tip 移除，鐵質改導向非紅肉來源，並加 caveat 說明，不再自相矛盾。
+const RED_MEAT_TERMS = ['紅肉', '牛肉', '牛排', '羊肉', '豬肝', '內臟']
+function mentionsRedMeat(s: string): boolean {
+  return RED_MEAT_TERMS.some(t => s.includes(t))
+}
+function reconcileDietaryConflicts(advice: LabNutritionAdvice[]): LabNutritionAdvice[] {
+  // 「要求減紅肉」的可靠訊號只看 foodsToReduce（dietaryChanges 是自由文字，可能是「多吃紅肉」反而誤判）
+  const reduceReasons = advice
+    .filter(a => a.foodsToReduce.some(mentionsRedMeat))
+    .map(a => a.title)
+  if (reduceReasons.length === 0) return advice // 沒有「少紅肉」要求 → 無衝突
+
+  return advice.map(a => {
+    const hasRedMeatIncrease = a.foodsToIncrease.some(mentionsRedMeat) || a.dietaryChanges.some(mentionsRedMeat)
+    // 只調整「增加紅肉」的建議（通常是鐵缺乏分支）；提出「減少」的那條本身不動
+    if (!hasRedMeatIncrease || a.foodsToReduce.some(mentionsRedMeat)) return a
+
+    const keptFoods = a.foodsToIncrease.filter(f => !mentionsRedMeat(f))
+    const note = `因${reduceReasons.join('、')}建議減少紅肉/內臟，鐵質改由非紅肉來源（鴨血、蛤蜊、深綠色蔬菜、豆類）補充，並與醫師討論鐵與普林/血脂的平衡。`
+    return {
+      ...a,
+      foodsToIncrease: keptFoods.length > 0 ? keptFoods : ['鴨血', '蛤蜊', '深綠色蔬菜', '豆類'],
+      dietaryChanges: a.dietaryChanges.filter(d => !mentionsRedMeat(d)),
+      caveat: a.caveat ? `${a.caveat}\n⚠️ ${note}` : `⚠️ ${note}`,
+    }
+  })
+}
+
 export function generateLabNutritionAdvice(
   labs: LabInput[],
   options: { gender?: '男性' | '女性'; goalType?: 'cut' | 'bulk' | null } = {}
@@ -1514,7 +1544,8 @@ export function generateLabNutritionAdvice(
     return 0
   })
 
-  return advice
+  // 飲食方向對帳：消除「同時多吃/少吃紅肉」的矛盾（#8）
+  return reconcileDietaryConflicts(advice)
 }
 
 // ═══════════════════════════════════════════════════════════════

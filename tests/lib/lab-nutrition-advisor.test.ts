@@ -1487,3 +1487,33 @@ describe('同半胱胺酸 × 肌酸酐 一致性守門', () => {
     expect(homo!.supplements?.some(s => s.name.includes('肌酸'))).toBe(true)
   })
 })
+
+// ══════════════════════════════════════════════════════════
+// 飲食方向對帳：紅肉不可一邊推一邊禁（#8）
+// ══════════════════════════════════════════════════════════
+describe('飲食方向對帳 — 紅肉矛盾', () => {
+  const RED = ['紅肉', '牛肉', '羊肉', '豬肝', '內臟']
+  it('鐵缺乏 + 尿酸偏高 → 鐵那條不再推紅肉，改非紅肉來源 + caveat', () => {
+    const advice = generateLabNutritionAdvice([
+      lab('鐵蛋白', 20, 'ng/mL', 'attention'), // 男 <30 → 鐵質攝取不足（原推牛肉/羊肉/豬肝）
+      lab('尿酸', 8.5, 'mg/dL', 'attention'),   // >7 → 尿酸偏高（要求減紅肉）
+    ], { gender: '男性' })
+    const iron = advice.find(a => a.title.includes('鐵質攝取不足'))
+    const uric = advice.find(a => a.title.includes('尿酸'))
+    expect(iron).toBeDefined()
+    expect(uric).toBeDefined()
+    expect(uric!.foodsToReduce.some(f => f.includes('紅肉'))).toBe(true) // 減紅肉照常
+    expect(iron!.foodsToIncrease.some(f => RED.some(r => f.includes(r)))).toBe(false) // 不再推紅肉
+    expect(iron!.dietaryChanges.some(d => RED.some(r => d.includes(r)))).toBe(false)
+    expect(iron!.foodsToIncrease.length).toBeGreaterThan(0) // 仍有非紅肉鐵來源
+    expect(iron!.caveat || '').toMatch(/紅肉|鐵質/)
+  })
+
+  it('只有鐵缺乏、無減紅肉要求 → 紅肉建議照常保留（不誤改）', () => {
+    const advice = generateLabNutritionAdvice([
+      lab('鐵蛋白', 20, 'ng/mL', 'attention'),
+    ], { gender: '男性' })
+    const iron = advice.find(a => a.title.includes('鐵質攝取不足'))
+    expect(iron!.foodsToIncrease.some(f => f.includes('牛肉'))).toBe(true)
+  })
+})
