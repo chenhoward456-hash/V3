@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { ChevronUp, ChevronDown, Search, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2, Clock } from 'lucide-react'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { isCompetitionMode, PHASE_LABELS } from '@/lib/client-mode'
+import FeatureAnnounce from '@/components/admin/FeatureAnnounce'
 
 interface Client {
   id: string
@@ -712,6 +713,9 @@ export default function AdminDashboard() {
             <MiniStat label="到期/逾期" value={summaryStats.expiringCount + summaryStats.expiredCount} tone={(summaryStats.expiringCount + summaryStats.expiredCount) > 0 ? 'rose' : undefined} />
           </div>
         </div>
+
+        {/* ===== 功能公告廣播（推播給學員）===== */}
+        <FeatureAnnounce />
 
         {/* ===== 備賽倒數區塊 ===== */}
         {competitionClients.length > 0 && (
