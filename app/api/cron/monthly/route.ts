@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
-import { pushMessage, LineMessage } from '@/lib/line'
+import { sendRoutineReminder } from '@/lib/notify'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isWeightTraining } from '@/components/client/types'
 import { createLogger } from '@/lib/logger'
@@ -200,8 +200,12 @@ export async function GET(request: NextRequest) {
     lines.push(`\n📱 查看完整數據：${siteUrl}/c/${client.unique_code}`)
 
     try {
-      const msg: LineMessage = { type: 'text', text: lines.join('\n') }
-      await pushMessage(client.line_user_id, [msg])
+      await sendRoutineReminder(client.id, client.line_user_id, {
+        title: `📊 ${monthName}月報出爐`,
+        body: '點開看這個月的體重與飲食總結',
+        lineText: lines.join('\n'),
+        url: `/c/${client.unique_code}`,
+      })
       reportsSent++
     } catch (err: unknown) {
       errors.push(`${client.name}: ${err instanceof Error ? err.message : String(err)}`)

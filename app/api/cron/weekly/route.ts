@@ -17,6 +17,7 @@ import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-eng
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isWeightTraining } from '@/components/client/types'
 import { pushMessage } from '@/lib/line'
+import { sendRoutineReminder } from '@/lib/notify'
 import { generateWeeklyAIReport, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import crypto from 'crypto'
 import { sendNewsletterEmail } from '@/lib/email'
@@ -409,10 +410,12 @@ export async function GET(request: NextRequest) {
       // 在第 88-92 天之間觸發（只觸發一次）
       if (daysSinceCreated >= 88 && daysSinceCreated <= 92) {
         try {
-          await pushMessage(client.line_user_id, [{
-            type: 'text',
-            text: `Howard 教練：\n\n你已經用系統追蹤 90 天了 🎉\n我幫你看了一下你的數據，有幾個地方想跟你聊聊。\n\n這是一次免費的數據 review，不需要升級。\n你方便這週找個時間嗎？`,
-          }])
+          await sendRoutineReminder(client.id, client.line_user_id, {
+            title: '🎉 你用系統滿 90 天了',
+            body: 'Howard 想跟你聊聊你的數據，免費 review，這週方便嗎？',
+            lineText: `Howard 教練：\n\n你已經用系統追蹤 90 天了 🎉\n我幫你看了一下你的數據，有幾個地方想跟你聊聊。\n\n這是一次免費的數據 review，不需要升級。\n你方便這週找個時間嗎？`,
+            url: '/dashboard',
+          })
           reviewTriggered++
         } catch (err: unknown) {
           results.errors.push(`90 天 Review 推播失敗 [${client.name}]: ${err instanceof Error ? err.message : String(err)}`)
@@ -509,10 +512,15 @@ export async function GET(request: NextRequest) {
       msgLines.push('\n輸入「趨勢」查看詳細分析')
 
       try {
-        await pushMessage(client.line_user_id, [{ type: 'text', text: msgLines.join('\n') }])
+        await sendRoutineReminder(client.id, client.line_user_id, {
+          title: '📊 你的本週數據報告出爐',
+          body: '點開看這週的體重趨勢與 AI 分析',
+          lineText: msgLines.join('\n'),
+          url: '/dashboard',
+        })
         linePushCount++
       } catch (err: unknown) {
-        results.errors.push(`LINE 推播失敗 [${client.name}]: ${err instanceof Error ? err.message : String(err)}`)
+        results.errors.push(`推播失敗 [${client.name}]: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
 

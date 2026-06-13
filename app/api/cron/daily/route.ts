@@ -586,7 +586,13 @@ export async function GET(request: NextRequest) {
 
           const msg = `🩸 建議安排一次血檢\n\n你近 4 週身體訊號明顯下滑：\n${dropLines}\n\n${labContext}。可能原因：\n・荷爾蒙（睪固酮、甲狀腺）\n・恢復不足（皮質醇、發炎）\n・營養缺乏（鐵、維他命 D、B 群）\n\n驗一次荷爾蒙 + 代謝面板就能定位。`
 
-          await pushMessage(c.line_user_id, [{ type: 'text', text: msg }]).catch(() => {})
+          // Web Push 優先（省 LINE 額度），無訂閱才 fallback LINE
+          await sendRoutineReminder(c.id, c.line_user_id, {
+            title: '🩸 建議安排一次血檢',
+            body: '近 4 週身體訊號明顯下滑，驗一次荷爾蒙＋代謝面板就能定位',
+            lineText: msg,
+            url: '/dashboard',
+          }).catch(() => {})
 
           // 寫 log 做 dedupe 標記（用既有表，trigger_source 'tdee_weekly' 暫借）
           await supabase.from('macro_adjustment_log').insert({
@@ -943,7 +949,12 @@ export async function GET(request: NextRequest) {
             const expiryMsg = daysLeft === 0
               ? `${c.name}，你的方案今天自動續訂扣款。\n\n扣款成功後會自動延長一個月，無需手動操作。\n\n如需取消，請至儀表板設定頁面操作。`
               : `${c.name}，你的方案將在 ${daysLeft} 天後自動續訂。\n\n系統會自動從信用卡扣款，不需手動操作。\n如需取消自動扣款，請至儀表板右上角設定。`
-            await pushMessage(c.line_user_id, [{ type: 'text', text: expiryMsg }])
+            await sendRoutineReminder(c.id, c.line_user_id, {
+              title: daysLeft === 0 ? '💳 今日自動續訂' : `💳 ${daysLeft} 天後自動續訂`,
+              body: daysLeft === 0 ? '方案今天自動扣款，成功後自動延長一個月' : '系統將自動扣款，如需取消請至設定',
+              lineText: expiryMsg,
+              url: '/dashboard',
+            })
             expiryReminders++
           } catch (err: unknown) {
             errors.push(`expiry_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
@@ -982,7 +993,14 @@ export async function GET(request: NextRequest) {
 
         if (milestoneMsg) {
           try {
-            await pushMessage(c.line_user_id, [{ type: 'text', text: milestoneMsg }])
+            const milestoneTitle = daysSinceJoin === 3 ? '👍 連續記錄 3 天' : daysSinceJoin === 7 ? '📈 一週了，數據開始有趨勢' : '📊 兩週了，數據有參考價值'
+            const milestoneBody = daysSinceJoin === 3 ? '持續記錄的人減脂成功率是 2 倍，你在對的路上' : '想知道進度正不正常？看看升級差在哪'
+            await sendRoutineReminder(c.id, c.line_user_id, {
+              title: milestoneTitle,
+              body: milestoneBody,
+              lineText: milestoneMsg,
+              url: daysSinceJoin === 3 ? '/dashboard' : '/upgrade?from=free',
+            })
             milestonesSent++
           } catch (err: unknown) {
             errors.push(`milestone_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
