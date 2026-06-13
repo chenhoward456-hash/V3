@@ -716,6 +716,43 @@ export default function HealthReportPage() {
           </section>
         )}
 
+        {/* ── 建議下次回診追蹤項目（依本次數據自動整理；只挑需追蹤的，穩定/基因型不重驗）── */}
+        {latestLabs.length > 0 && (() => {
+          // 基因型指標一次檢測即可、終生不太變，不列入重驗（如 Lp(a)/APOE/MTHFR）
+          const GENETIC_ONCE = ['lp(a)', 'lpa', '脂蛋白', 'apoe', 'mthfr']
+          const retest = latestLabs.map(r => {
+            const f = findingByName.get(r.test_name)
+            if (!f) return null
+            const nameL = r.test_name.toLowerCase()
+            if (GENETIC_ONCE.some(g => nameL.includes(g))) return null
+            const s = f.latestStatus ?? r.status
+            if (s === 'alert' || s === 'attention') return { name: r.test_name, reason: '追蹤這次數值的變化趨勢' }
+            if (f.trend === 'declining' && f.inOptimal === false && f.changePercent != null && Math.abs(f.changePercent) >= 20) {
+              return { name: r.test_name, reason: '確認是否止跌、回到較佳範圍' }
+            }
+            return null
+          }).filter(Boolean) as { name: string; reason: string }[]
+          if (retest.length === 0) return null
+          return (
+            <section className="report-section">
+              <h2>建議下次回診重新檢測</h2>
+              <p className="report-note" style={{ marginTop: 0, marginBottom: 8 }}>
+                以下依本次數據整理，建議回診時重新檢測，追蹤變化趨勢、讓後續判讀更精準。供與醫師討論，非醫療診斷或處方。
+              </p>
+              <ul style={{ margin: 0, paddingLeft: 20 }}>
+                {retest.map((x, i) => (
+                  <li key={i} className="report-text" style={{ marginBottom: 3 }}>
+                    <strong>{x.name}</strong> — {x.reason}
+                  </li>
+                ))}
+              </ul>
+              <p className="report-note" style={{ marginTop: 8, marginBottom: 0 }}>
+                數值正常且穩定的項目（如血脂、血糖）與基因型指標（檢測一次即可）不列入，避免重複檢測、節省花費。
+              </p>
+            </section>
+          )
+        })()}
+
         {/* ────────────────────────────────────────────────
             Section 8: Footer
         ──────────────────────────────────────────────── */}
