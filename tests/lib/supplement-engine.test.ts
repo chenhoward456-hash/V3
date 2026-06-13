@@ -277,3 +277,40 @@ describe('generateSupplementSuggestions', () => {
     })
   })
 })
+
+describe('補品 × 血檢 一致性守門（防止「停止X」卡被改寫成「補X」+ 跨引擎矛盾）', () => {
+  // Critical #1：維生素 D > 100（毒性）+ 5-HTTLPR SS → 不可把「停止維生素 D」改寫成「D3 4000 IU」
+  it('維生素 D 毒性時，5-HTTLPR 區塊不得產生補 D 卡（只保留停用警告）', () => {
+    const labs = [makeLab('維生素D', 120, 'ng/mL', 'alert')]
+    const result = generateSupplementSuggestions(labs, { genetics: { serotonin: 'SS' } })
+    const stopCard = result.find(s => s.name.includes('停止') && s.name.includes('維生素 D'))
+    const activeD = result.find(s => (s.name.includes('D3') || s.name.includes('維生素 D')) && !s.name.includes('停止'))
+    expect(stopCard).toBeDefined()
+    expect(activeD).toBeUndefined()
+  })
+
+  // Critical #2：鐵蛋白 > 200（鐵過載）+ 血紅素低 → 不可合併成「補鐵」，應走就醫評估
+  it('鐵過載 + 貧血時，不得把停鐵卡合併成補鐵卡', () => {
+    const labs = [makeLab('鐵蛋白', 250, 'ng/mL', 'alert'), makeLab('血紅素', 12, 'g/dL', 'attention')]
+    const result = generateSupplementSuggestions(labs, { gender: '男性' })
+    const activeIron = result.find(s => s.name.includes('鐵劑') && !s.name.includes('停止'))
+    expect(activeIron).toBeUndefined()
+    expect(result.find(s => s.name.includes('就醫'))).toBeDefined()
+  })
+
+  // Critical #3：血清鋅 > 120（過量）+ 男性睪固酮低 → 不可把停鋅卡改寫成補鋅
+  it('鋅過量 + 睪固酮低時，不得產生補鋅卡（只保留停用警告）', () => {
+    const labs = [makeLab('鋅', 150, 'μg/dL', 'alert'), makeLab('睪固酮', 300, 'ng/dL', 'attention')]
+    const result = generateSupplementSuggestions(labs, { gender: '男性' })
+    const activeZinc = result.find(s => s.name.includes('鋅') && !s.name.includes('停止'))
+    expect(activeZinc).toBeUndefined()
+    expect(result.find(s => s.name.includes('停止') && s.name.includes('鋅'))).toBeDefined()
+  })
+
+  // 防誤殺：鐵蛋白「低」（缺乏）仍應正常推鐵——守門只擋高側，不可把缺乏當過量
+  it('鐵蛋白偏低（缺乏）時仍正常建議補鐵（守門不誤殺缺乏）', () => {
+    const labs = [makeLab('鐵蛋白', 10, 'ng/mL', 'attention')]
+    const result = generateSupplementSuggestions(labs, {})
+    expect(result.find(s => s.name.includes('鐵劑') && !s.name.includes('停止'))).toBeDefined()
+  })
+})

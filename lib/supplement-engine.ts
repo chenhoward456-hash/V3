@@ -30,6 +30,7 @@ export interface SupplementSuggestion {
 }
 
 import { matchLabName } from '@/utils/labMatch'
+import { reconcileSupplementsWithLabs, isCorrectiveSuggestion } from './supplement-lab-guard'
 
 // ── 補品引擎的 key → 血檢關鍵字映射 ──
 const KEY_ALIASES: Record<string, string[]> = {
@@ -223,7 +224,8 @@ export function generateSupplementSuggestions(
     const testosterone = findLabValue(labs, 'testosterone')
     if (testosterone?.value != null && testosterone.value < 400) {
       // Bug fix: 如果已有獨立鋅推薦（來自血檢鋅低），升級為鋅+鎂而非重複
-      const existingZinc = suggestions.find(s => s.name.includes('鋅') && !s.name.includes('鎂'))
+      // 必須排除「⚠️ 停止鋅」等矯正卡，否則會把停鋅警告改寫成「補鋅」（危險反轉）
+      const existingZinc = suggestions.find(s => s.name.includes('鋅') && !s.name.includes('鎂') && !isCorrectiveSuggestion(s.name))
       if (existingZinc) {
         existingZinc.name = '鋅 + 鎂（分開補充）'
         existingZinc.dosage = '鋅 30mg + 鎂甘胺酸鹽 400mg'
@@ -232,7 +234,7 @@ export function generateSupplementSuggestions(
         if (!existingZinc.triggerTests.includes(testosterone.test_name)) existingZinc.triggerTests.push(testosterone.test_name)
       } else {
         // 也檢查是否已有鎂推薦
-        const existingMag = suggestions.find(s => s.name.includes('鎂') && !s.name.includes('鋅'))
+        const existingMag = suggestions.find(s => s.name.includes('鎂') && !s.name.includes('鋅') && !isCorrectiveSuggestion(s.name))
         if (existingMag) {
           existingMag.name = '鋅 + 鎂（分開補充）'
           existingMag.dosage = '鋅 30mg + 鎂甘胺酸鹽 400mg'
@@ -281,14 +283,15 @@ export function generateSupplementSuggestions(
   if (hemoglobin?.value != null) {
     const threshold = gender === '女性' ? 12.0 : 13.5
     if (hemoglobin.value < threshold) {
-      const alreadyHasIron = suggestions.some(s => s.name.includes('鐵劑'))
+      // 排除「⚠️ 停止鐵劑」矯正卡：鐵蛋白>200+血紅素低（鐵過載性貧血）不該把停鐵卡合併成補鐵卡，而是走「就醫評估」分支
+      const alreadyHasIron = suggestions.some(s => s.name.includes('鐵劑') && !isCorrectiveSuggestion(s.name))
       const hasMTHFR = genetics?.mthfr === 'heterozygous' || genetics?.mthfr === 'homozygous'
       const folateForm = hasMTHFR ? '5-MTHF 活性葉酸' : '葉酸'
       const folateDose = hasMTHFR ? '5-MTHF 800mcg' : '葉酸 400mcg'
 
       if (alreadyHasIron) {
         // 已有鐵蛋白觸發的鐵劑建議 → 合併：升級劑量 + 加入葉酸 + 追加觸發指標
-        const existing = suggestions.find(s => s.name.includes('鐵劑'))!
+        const existing = suggestions.find(s => s.name.includes('鐵劑') && !isCorrectiveSuggestion(s.name))!
         existing.name = `鐵劑 + 維生素 C + ${folateForm}`
         existing.dosage = `鐵 25mg + 維生素 C 500mg + ${folateDose}`
         existing.reason += ` 同時血紅素 ${hemoglobin.value} g/dL 偏低，合併補充${folateForm}加速紅血球生成。${hasMTHFR ? '（MTHFR 突變，使用活性葉酸形式）' : ''}`
@@ -375,14 +378,11 @@ export function generateSupplementSuggestions(
   }
 
   // ── 9. 肌酸（備賽/增肌）──
-  // 腎指標守門：肌酸酐 / eGFR 偏離時不推肌酸——肌酸會墊高肌酸酐，否則會與血檢端「減少肌酸補充劑」自相矛盾。
-  // （健美選手肌酸酐高常為肌肉量/補充所致、未必腎損，但「一邊推一邊停」的矛盾訊息不該出現。）
+  // 注意：肌酸酐高 / eGFR 低時「不推肌酸」的守門已集中在 reconcileSupplementsWithLabs（補品×血檢一致性層），
+  // 這裡不再各自判斷腎指標，避免「每條規則各做各的血檢檢查、漏一條就矛盾」的老問題重演。
   if (isCompetitionPrep || goalType === 'bulk') {
-    const creatinine = labs.find(l => matchLabName(l.test_name, ['肌酸酐', 'creatinine']))
-    const egfr = labs.find(l => matchLabName(l.test_name, ['egfr', '腎絲球過濾率']))
-    const kidneyFlagged = (creatinine != null && creatinine.status !== 'normal') || (egfr != null && egfr.status !== 'normal')
     const alreadyHasCreatine = suggestions.some(s => s.name.includes('肌酸'))
-    if (!kidneyFlagged && !alreadyHasCreatine) {
+    if (!alreadyHasCreatine) {
       suggestions.push({
         name: '肌酸（Creatine Monohydrate）',
         dosage: '3-5g',
@@ -569,7 +569,8 @@ export function generateSupplementSuggestions(
     const isHighRisk = serotoninRisk === 'high'
 
     // 確保有維生素 D（升級劑量）
-    const existingD = suggestions.find(s => s.name.includes('D3') || s.name.includes('維生素 D'))
+    // 排除「⚠️ 停止維生素 D」矯正卡：維生素 D>100（毒性）時不該把停 D 卡改寫成「D3 4000 IU」
+    const existingD = suggestions.find(s => (s.name.includes('D3') || s.name.includes('維生素 D')) && !isCorrectiveSuggestion(s.name))
     if (existingD) {
       if (isHighRisk) {
         existingD.dosage = 'D3 4000 IU + K2 100mcg'
@@ -757,14 +758,18 @@ export function generateSupplementSuggestions(
     }
   }
 
+  // ── 一致性守門（補品 × 血檢）：最後一道，壓制/加註會惡化已偏離 marker 的補品 ──
+  // 把「肌酸 vs 肌酸酐」這類跨引擎矛盾集中在這裡通則處理，新補品自動被蓋住，不再各條 patch。
+  const { suggestions: reconciled } = reconcileSupplementsWithLabs(suggestions, labs)
+
   // ── 排序：high → medium → low，同優先級按 category 排序 ──
   const priorityOrder = { high: 0, medium: 1, low: 2 }
   const categoryOrder = { deficiency: 0, hormonal: 1, performance: 2, recovery: 3 }
-  suggestions.sort((a, b) => {
+  reconciled.sort((a, b) => {
     const p = priorityOrder[a.priority] - priorityOrder[b.priority]
     if (p !== 0) return p
     return categoryOrder[a.category] - categoryOrder[b.category]
   })
 
-  return suggestions
+  return reconciled
 }
