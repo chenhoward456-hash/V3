@@ -23,7 +23,6 @@ import StageWeightEstimator from '@/components/client/StageWeightEstimator'
 // LabResults inline removed in B integration — main page now shows compact summary card linking to /health/timeline
 const SupplementModal = dynamic(() => import('@/components/client/SupplementModal'), { ssr: false })
 import WellnessTrend from '@/components/client/WellnessTrend'
-const HealthReport = dynamic(() => import('@/components/client/HealthReport'), { ssr: false })
 const TrainingLog = dynamic(() => import('@/components/client/TrainingLog'), { ssr: false })
 import TodayWorkout from '@/components/client/TodayWorkout'
 import { isWeightTraining } from '@/components/client/types'
@@ -1884,11 +1883,23 @@ export default function ClientDashboard() {
           )
         })()}
 
-        {/* 教練報告（教練模式） */}
-        {isCoachMode && (
-          <HealthReport client={{ name: c.name, age: c.age ?? 0, gender: c.gender ?? '', coach_summary: c.coach_summary ?? undefined, health_goals: c.health_goals ?? undefined, next_checkup_date: c.next_checkup_date ?? undefined, lab_results: c.lab_results, supplements: c.supplements }} latestBodyData={latestBodyData} bmi={bmi}
-            weekRate={supplementComplianceStats.weekRate} monthRate={supplementComplianceStats.monthRate}
-          />
+        {/* 完整健康報告入口（與教練看到的同一份；點開可看 + 列印存 PDF，學員自助、教練不用再傳）
+            注意：gate 改用「有血檢資料」而非 isCoachMode——isCoachMode 是教練 PIN 模式，
+            學員本人看不到，那樣就達不到「學員自助」的目的。*/}
+        {isToday && (c.lab_results?.length ?? 0) > 0 && (
+          <Link
+            href={`/c/${c.unique_code}/report`}
+            className="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:border-blue-300 hover:shadow transition-all"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="text-2xl leading-none">📄</div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900">看我的完整健康報告</p>
+                <p className="text-xs text-gray-500 mt-0.5">本次重點、血檢趨勢、補品、下次回診建議——可列印存檔</p>
+              </div>
+            </div>
+            <span className="text-blue-600 text-sm shrink-0">開啟 →</span>
+          </Link>
         )}
 
         {!isFree && <PwaPrompt />}
