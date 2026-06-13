@@ -1526,42 +1526,49 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ===== 沉默用戶偵測 + 再喚醒（晚上執行）=====
+  // ===== 沉默用戶喚回（晚上執行）=====
+  // 只在「停打卡剛好第 3 天 / 第 7 天」各喚回一次（loss aversion：別讓進度斷掉）。
+  // 不每晚轟炸、不打擾早已死掉的帳號（gap>7 不發）；曾有記錄者才喚（從未記過走啟動序列）。
+  // Web Push 優先、無訂閱才 fallback LINE，省爆掉的 LINE 額度。
   let reengagementSent = 0
   if (!isMorning) {
-    const threeDaysAgo = new Date()
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
-    const threeDaysStr = threeDaysAgo.toISOString().split('T')[0]
-
-    // 取得所有活躍且有 LINE 的學員
+    const since31 = new Date(Date.now() - 31 * 86_400_000).toISOString().slice(0, 10)
     const { data: activeClients } = await supabase
       .from('clients')
-      .select('id, name, line_user_id, subscription_tier')
+      .select('id, name, line_user_id')
       .eq('is_active', true)
       .not('line_user_id', 'is', null)
 
-    if (activeClients) {
-      // 查詢過去 3 天所有紀錄
-      const [recentBody, recentNutrition, recentWellness] = await Promise.all([
-        supabase.from('body_composition').select('client_id').gte('date', threeDaysStr),
-        supabase.from('nutrition_logs').select('client_id').gte('date', threeDaysStr),
-        supabase.from('daily_wellness').select('client_id').gte('date', threeDaysStr),
-      ])
+    if (activeClients && activeClients.length > 0) {
+      // 近 31 天各表最後活動日 → 每位學員的最後打卡日
+      const lastAct: Record<string, string> = {}
+      for (const table of ['body_composition', 'nutrition_logs', 'training_logs', 'daily_wellness', 'supplement_logs'] as const) {
+        const { data } = await supabase.from(table).select('client_id, date').gte('date', since31)
+        for (const r of (data ?? []) as Array<{ client_id: string; date: string }>) {
+          if (!lastAct[r.client_id] || r.date > lastAct[r.client_id]) lastAct[r.client_id] = r.date
+        }
+      }
 
-      const activeClientIds = new Set([
-        ...(recentBody.data || []).map((r: { client_id: string }) => r.client_id),
-        ...(recentNutrition.data || []).map((r: { client_id: string }) => r.client_id),
-        ...(recentWellness.data || []).map((r: { client_id: string }) => r.client_id),
-      ])
+      const todayMs = Date.parse(today)
+      for (const c of activeClients) {
+        const la = lastAct[c.id]
+        if (!la) continue // 近 31 天從未記錄 → 啟動序列或早已流失，不在此喚
+        const gap = Math.floor((todayMs - Date.parse(la)) / 86_400_000)
+        if (gap !== 3 && gap !== 7) continue // 只在第 3 / 7 天各喚一次
 
-      const silentClients = activeClients.filter(c => !activeClientIds.has(c.id))
-
-      for (const c of silentClients) {
+        const msg = gap === 3
+          ? {
+              title: '👋 三天沒看到你了',
+              body: '別讓進度斷在這，10 秒記一筆就好',
+              lineText: `${c.name}，三天沒看到你了 👋\n\n你之前累積的記錄正在等下一筆——別讓趨勢斷掉。\n今天花 10 秒記個體重就好：輸入「體重 XX.X」。`,
+            }
+          : {
+              title: '一週沒記錄了，回來看看？',
+              body: '你的數據都還在，接著記就有趨勢',
+              lineText: `${c.name}，一週沒記錄了。\n\n你之前的數據都還在，接著記就能看出這週的變化。卡住的話直接回我，我幫你。`,
+            }
         try {
-          await pushMessage(c.line_user_id, [{
-            type: 'text',
-            text: `${c.name}，好幾天沒看到你了 👋\n\n不需要完美，只要持續記錄。\n今天花 10 秒記一筆體重就好：\n\n輸入「體重 XX.X」即可 ✌️`,
-          }])
+          await sendRoutineReminder(c.id, c.line_user_id, { ...msg, url: '/dashboard' })
           reengagementSent++
         } catch (err: unknown) {
           errors.push(`再喚醒失敗 [${c.name}]: ${err instanceof Error ? err.message : String(err)}`)
