@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
 
   // 由出生年重算年齡（有填 birth_year 者）→ age 隨年份自動更新，教練不必回後台改
   try {
-    const nowYear = new Date().getFullYear()
+    const nowYear = Number(today.slice(0, 4)) // 用台灣日期年份，避免 UTC 跨年邊界少算一歲
     const { data: birthClients } = await supabase
       .from('clients')
       .select('id, age, birth_year')

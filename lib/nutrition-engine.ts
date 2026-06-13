@@ -2532,6 +2532,10 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
       const delta = result.suggestedProtein - kidneyGuard.protein
       result.suggestedProtein = kidneyGuard.protein
       if (result.suggestedCarbs != null) result.suggestedCarbs += delta
+      // 碳循環客戶看的是訓練日/休息日碳水，平均值不夠——同步把少掉的蛋白克數補進 TD/RD，
+      // 否則碳循環+低 eGFR 的人會被偷砍每日碳水、且 macro 內部不一致。
+      if (result.suggestedCarbsTrainingDay != null) result.suggestedCarbsTrainingDay += delta
+      if (result.suggestedCarbsRestDay != null) result.suggestedCarbsRestDay += delta
       result.perMealProteinGuide = buildPerMealProteinGuide(input.bodyWeight, result.suggestedProtein)
     }
     if (kidneyGuard.warning) result.warnings.push(kidneyGuard.warning)

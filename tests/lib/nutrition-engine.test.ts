@@ -2505,3 +2505,22 @@ describe('腎指標蛋白守門', () => {
     expect(result.warnings.some(w => w.includes('🫘'))).toBe(false)
   })
 })
+
+describe('腎蛋白封頂 × 碳循環（TD/RD 同步，不偷砍碳水）', () => {
+  it('eGFR<60 封頂蛋白時，訓練日/休息日碳水同步補回少掉的蛋白克數', () => {
+    const base = {
+      bodyWeight: 80, currentProtein: 200, trainingDaysPerWeek: 4,
+      carbsCyclingEnabled: true, currentCarbsTrainingDay: 250, currentCarbsRestDay: 150,
+    }
+    const capped = generateNutritionSuggestion(makeCutInput({
+      ...base,
+      labResults: [{ test_name: 'eGFR', value: 45, unit: 'mL/min/1.73m²', status: 'attention' }],
+    }))
+    const uncapped = generateNutritionSuggestion(makeCutInput({ ...base }))
+
+    expect(capped.suggestedProtein!).toBeLessThan(uncapped.suggestedProtein!) // 蛋白被封頂
+    // 少掉的蛋白克數要補進 TD/RD（修好前 TD/RD 會跟未封頂版一樣 = 碳循環客戶被偷砍）
+    expect(capped.suggestedCarbsTrainingDay!).toBeGreaterThan(uncapped.suggestedCarbsTrainingDay!)
+    expect(capped.suggestedCarbsRestDay!).toBeGreaterThan(uncapped.suggestedCarbsRestDay!)
+  })
+})
