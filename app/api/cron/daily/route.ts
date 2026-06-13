@@ -964,25 +964,66 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ===== 免費用戶里程碑推播（第 3/7/14 天）=====
+  // ===== 新加入學員旅程（啟動序列 + 里程碑）=====
+  // 啟動序列：加入後第 1/2/3 天「從未記過任何一筆」→ 升級式催第一筆（接住啟動失敗，如 Eddie/世傳）。
+  // 里程碑：第 3/7/14 天「真的有記錄」的免費用戶 → 鼓勵/升級。
+  // 修正舊 bug：里程碑「你已經記錄 3 天了」原本不檢查有沒有記錄，會恭喜從沒打卡的人。
   let milestonesSent = 0
+  let activationNudges = 0
   if (isMorning) {
-    const { data: freeClients } = await supabase
+    const fifteenDaysAgoStr = new Date(Date.now() - 15 * 86_400_000).toISOString().slice(0, 10)
+    const { data: newClients } = await supabase
       .from('clients')
-      .select('id, name, line_user_id, created_at, subscription_tier')
+      .select('id, name, line_user_id, created_at, subscription_tier, body_composition_enabled, nutrition_enabled, wellness_enabled, training_enabled')
       .eq('is_active', true)
-      .eq('subscription_tier', 'free')
       .not('line_user_id', 'is', null)
+      .gte('created_at', fifteenDaysAgoStr + 'T00:00:00Z')
 
-    if (freeClients) {
+    if (newClients && newClients.length > 0) {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
       const now = new Date()
+      const ids = newClients.map(c => c.id)
 
-      for (const c of freeClients) {
+      // 批次判斷「這些新學員誰曾經記過任何一筆」（跨 5 張打卡表，只查候選 id）
+      const everLogged = new Set<string>()
+      for (const table of ['body_composition', 'nutrition_logs', 'training_logs', 'daily_wellness', 'supplement_logs'] as const) {
+        const { data } = await supabase.from(table).select('client_id').in('client_id', ids)
+        for (const r of (data ?? []) as Array<{ client_id: string }>) everLogged.add(r.client_id)
+      }
+
+      for (const c of newClients) {
         const daysSinceJoin = Math.floor((now.getTime() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24))
+        const hasLogged = everLogged.has(c.id)
+        const tracks = c.body_composition_enabled || c.nutrition_enabled || c.wellness_enabled || c.training_enabled
 
+        // ── 啟動序列：從未記過 + 有開通追蹤 + 第 1/2/3 天 ──
+        if (!hasLogged && tracks && (daysSinceJoin === 1 || daysSinceJoin === 2 || daysSinceJoin === 3)) {
+          let title = '', body = '', lineText = ''
+          if (daysSinceJoin === 1) {
+            title = '👋 Howard：記下你的第一筆'
+            body = '30 秒記體重，系統馬上算出你的每日目標'
+            lineText = `${c.name}，我是 Howard 👋\n\n看到你加入了，但還沒記第一筆數據。花 30 秒記今天體重，系統馬上幫你算出 TDEE 和每日目標——這是一切的起點。\n\n直接回覆「體重 XX」，或點開記錄。`
+          } else if (daysSinceJoin === 2) {
+            title = '第一筆最難，之後都很快'
+            body = '今天量完體重直接記，10 秒搞定'
+            lineText = `${c.name}，第一筆最難、之後都很快 🙂\n\n今天量完體重直接記一下（10 秒），系統就能開始幫你追蹤。卡在哪也可以直接問我。`
+          } else {
+            title = 'Howard：需要我幫你設定嗎？'
+            body = '卡住的話直接回我這則訊息'
+            lineText = `${c.name}，最後提醒一次——沒有你的數據，系統幫不了你。\n\n如果卡在哪裡，直接回我這則訊息，我幫你弄。`
+          }
+          try {
+            await sendRoutineReminder(c.id, c.line_user_id, { title, body, lineText, url: '/dashboard' })
+            activationNudges++
+          } catch (err: unknown) {
+            errors.push(`activation_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
+          }
+          continue // 啟動中就不發里程碑
+        }
+
+        // ── 里程碑：真的有記錄的免費用戶，第 3/7/14 天 ──
+        if (!hasLogged || c.subscription_tier !== 'free') continue
         let milestoneMsg: string | null = null
-
         if (daysSinceJoin === 3) {
           milestoneMsg = `${c.name}，你已經記錄 3 天了 👍\n\n持續記錄的人，減脂成功率是沒記錄的 2 倍——你已經在對的路上了。\n\n💡 每天量完體重直接輸入「體重 XX」就好，10 秒搞定。`
         } else if (daysSinceJoin === 7) {
@@ -1554,6 +1595,7 @@ export async function GET(request: NextRequest) {
     linePushUsed,
     expiryReminders,
     milestonesSent,
+    activationNudges,
     emailDripSent,
     emailDripFailed,
     referralsCompleted,
