@@ -13,6 +13,7 @@ import LabPanelNotesEditor from './components/LabPanelNotesEditor'
 import PersonalNotesEditor from './components/PersonalNotesEditor'
 import ArchivedSupplementsList from './components/ArchivedSupplementsList'
 import { SUPPLEMENT_NAMES, findSuggestion } from '@/lib/supplement-catalog'
+import { auditSupplement } from '@/lib/supplement-indication-audit'
 
 type EditorTab = 'basic' | 'features' | 'notes' | 'lab' | 'supplements'
 
@@ -2512,6 +2513,20 @@ export default function ClientEditor() {
                         <datalist id={`supplement-names-${index}`}>
                           {SUPPLEMENT_NAMES.map(n => <option key={n} value={n} />)}
                         </datalist>
+                        {/* 指徵對帳：依這位學員自己的血檢/基因，標這項補品有沒有數據指徵 */}
+                        {supplement.name?.trim() && (() => {
+                          const v = auditSupplement(supplement.name, client.lab_results || [], { gene_mthfr: client.gene_mthfr, gene_apoe: client.gene_apoe })
+                          const style = v.status === 'indicated' ? { box: 'bg-emerald-50 border-emerald-200 text-emerald-800', icon: '🟢', label: '有指徵' }
+                            : v.status === 'caution' ? { box: 'bg-red-50 border-red-200 text-red-800', icon: '🔴', label: '注意' }
+                            : v.status === 'no-indication' ? { box: 'bg-amber-50 border-amber-200 text-amber-800', icon: '🟡', label: '無數據指徵' }
+                            : { box: 'bg-slate-50 border-slate-200 text-slate-600', icon: '🔵', label: '生活型/目標' }
+                          return (
+                            <div className={`mt-2 text-xs border rounded-lg px-2.5 py-1.5 ${style.box}`}>
+                              <span className="font-semibold">{style.icon} {style.label}</span>
+                              <span className="ml-1.5 opacity-90">{v.basis}</span>
+                            </div>
+                          )
+                        })()}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">劑量</label>
