@@ -30,3 +30,8 @@ Key routing rules:
 5. **改 UI 之後必須實際看畫面**：起 dev server 用瀏覽器工具截圖驗證，不要只靠讀 code 推理渲染結果。
 6. **共用常數改之前先 grep 全 repo**：LAB_THRESHOLDS（真相在 `utils/labStatus.ts`）、血檢 CATEGORIES（散在 timeline/standards 等頁）、client mode 邏輯（`lib/client-mode.ts`，且要跟 DB trigger `sync_client_mode_booleans` 一致）。同一概念可能定義在 3+ 個地方。
 7. **push 前先在本地驗證完**（tsc 已有 pre-commit hook；UI 用本地瀏覽器確認），不要用 Vercel deploy 當測試迴圈。
+
+## Design System
+動任何 UI / 視覺決策前，先讀 `DESIGN.md`（全站設計北極星）。配色、字體、間距、卡片、氣質都定義在那。
+核心紀律：**顏色只做語意**——藍=品牌/互動，紅/黃/綠=血檢/訓練狀態（嚴禁裝飾），其餘一律中性灰；單一字族 Geist；卡片統一 `bg-white border border-slate-200 rounded-2xl p-5`。
+未經 Howard 同意不要偏離。QA / review 時看到不符 DESIGN.md 的就標出來。

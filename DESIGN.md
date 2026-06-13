@@ -1,0 +1,66 @@
+# Design System — Howard Protocol
+
+> 全站視覺北極星。**動任何 UI 前先讀這份。** 配色、字體、間距、卡片一律照這裡，不要各畫面各自決定（那是「躁」的來源）。改動需 Howard 明確同意。
+
+## Product Context
+- **是什麼**：數據驅動的體態與健康管理平台（血檢 + 訓練 + 營養 + 基因，教練監督、訂閱制 premium）。
+- **給誰**：教練（Howard）的學員 + 教練後台。學員端**手機優先**。
+- **領域對標**：Function Health / Levels / Whoop / Oura（臨床級、數據自信、冷靜權威）。
+
+## Aesthetic Direction
+- **方向**：臨床級 premium 數據感。極簡 + 大量留白。
+- **裝飾程度**：minimal（靠字體、留白、層次做事，不靠色塊）。
+- **氣質**：乾淨、可信、值月費。看起來像醫療數據產品，不像玩具。
+- **一句話**：少即是專業。
+
+## 🎨 Color（最重要的紀律）
+**核心原則：顏色只用來傳達「意義」，不用來裝飾。** 這是這個產品專業度的命脈，也是修掉「躁」的關鍵。
+
+- **品牌/互動色 = 藍**（連結、主要按鈕、可點元素、選取態）。
+  - `primary` `#2563eb`（blue-600）/ hover `#1d4ed8`（blue-700）/ 淺底 `#eff6ff`（blue-50，少用）。
+- **語意狀態色 — 只准用在血檢/訓練/健康狀態，嚴禁裝飾**：
+  - 🟢 正常/最佳/達標：emerald `#059669`（文字/點）、`#ecfdf5`（淺底）
+  - 🟡 需注意：amber `#d97706` / `#fffbeb`
+  - 🔴 異常/警告：rose `#e11d48` / `#fff1f2`
+  - **規則**：看到紅/黃/綠，使用者就該理解成「這是一個狀態」。任何「只是想讓卡片好看」的彩色一律改中性灰。
+- **中性灰（其餘一切的底色）**：
+  - 文字主 `#0f172a`(slate-900)、次 `#475569`(slate-600)、弱 `#94a3b8`(slate-400)
+  - 卡片底 `#ffffff`、頁底 `#f8fafc`(slate-50)、邊框 `#e2e8f0`(slate-200)、分隔 `#f1f5f9`(slate-100)
+- **禁用**：紫、橙、靛、青、粉、teal、yellow 等裝飾色系（目前全站 13 色系 → 收斂成 藍 + 紅黃綠語意 + 灰）。漸層按鈕、彩色 icon 圓圈一律不用。
+- **狀態色點規範**：狀態優先用「中性卡 + 一顆小色點/小標籤」呈現，不要整片色底（見 TrainingLog 準備度卡的做法 commit 7341aab）。
+
+## Typography
+- **單一字族：Geist**（顯示/內文/UI/數據通吃 → 高度一致＝專業）。
+- **數據/數字**：Geist + `font-variant-numeric: tabular-nums`（表格/趨勢數字對齊）。
+- **等寬（原始值/代碼，少用）**：Geist Mono。
+- **載入**：Geist 走 next/font 或 CDN；fallback `-apple-system, system-ui, "PingFang TC", "Noto Sans TC", sans-serif`（手機優先、中文要好看）。
+- **字級（rem）**：hero 1.5、h2 1.25、h3 1.0625、body 0.875、label/caption 0.75、micro 0.6875。粗細：標題 600、內文 400、強調 500。
+- **emoji**：大幅減量，只留功能性（狀態/導覽），不要每個標題都掛。
+
+## Spacing
+- **base unit**：8px（4px 為半階）。
+- **密度**：comfortable（目前偏擠 → 放寬，premium 感來自留白）。
+- **scale(px)**：2xs 2 / xs 4 / sm 8 / md 16 / lg 24 / xl 32 / 2xl 48 / 3xl 64。卡片內距預設 16–20，卡片間距 16。
+
+## Layout
+- **手機優先**，單欄為主；桌面後台可多欄。
+- **卡片統一規範**：白底 `bg-white`、邊框 `border border-slate-200`（或 `shadow-sm` 二選一，不要同時重）、圓角 `rounded-2xl`(16px)、內距 `p-5`。**全站卡片長一樣。**
+- **圓角階**：sm 8 / md 12 / card 16 / chip full / button 10。
+- **最大內容寬**：學員端 ~640px、後台寬版。
+
+## Motion
+- **minimal-functional**：只做幫助理解的過場。
+- **duration**：micro 80ms / short 180ms / medium 280ms。**easing**：enter ease-out、exit ease-in。
+- 不做花俏 scroll 動畫、不彈跳。
+
+## 套用順序（roadmap）
+1. 訓練端（學員 dashboard，已起頭：準備度/模式卡中性化 7341aab）
+2. 學員 dashboard 其餘卡片（補品/血檢/飲食）統一卡片規範 + 收斂顏色
+3. 健康報告（已偏乾淨，對齊字體/間距）
+4. 教練後台
+> 一次定規則、逐畫面套用。新畫面先讀這份再動手。
+
+## Decisions Log
+| 日期 | 決策 | 理由 |
+|------|------|------|
+| 2026-06-13 | 建立設計系統（臨床級 premium、顏色只做語意、單一字族 Geist、放寬留白）| Howard：訓練端「不專業俐落」+ 全站 13 色系太躁。收斂為 藍+紅黃綠語意+灰，一次定北極星。 |
