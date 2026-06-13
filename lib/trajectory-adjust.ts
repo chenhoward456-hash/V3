@@ -45,6 +45,7 @@ export type SkipCategory =
   | 'no_body_data'     // 體重資料不足 2 週 — 需推學員量體重
   | 'cooldown'         // 冷卻中 — 無需動作
   | 'trend_reversed'   // 趨勢反轉 — 需教練判斷 (refeed 抖動 vs 真反轉)
+  | 'stale_data'       // 最新體重 >14 天沒記錄 — 暫停建議，先請學員回來記錄
   | 'on_track'         // 進度跟得上 — 無需動作
   | 'too_small'        // 調整 < 50 kcal — 無需動作
 
@@ -201,6 +202,16 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   const traj = computeWeeklyAverages(input.bodyDataEntries)
   if (!traj || traj.weeksOfData < 3) {
     return { ...empty('體重資料不足 3 週（單週 outlier 容易騙引擎）', 'no_body_data'), trajectoryData: traj }
+  }
+
+  // 資料新鮮度：最新體重 >14 天沒記錄 → 不用舊資料硬算（否則對 inactive 學員每日 nag + 亂給方向，像 William 案例）
+  const STALE_WEIGHT_DAYS = 14
+  const latestWeightDate = input.bodyDataEntries.reduce((max, e) => (e.weight != null && e.date > max ? e.date : max), '')
+  if (latestWeightDate) {
+    const daysSinceWeight = Math.floor((Date.now() - new Date(latestWeightDate + 'T00:00:00').getTime()) / 86_400_000)
+    if (daysSinceWeight > STALE_WEIGHT_DAYS) {
+      return { ...empty(`學員已 ${daysSinceWeight} 天未記錄體重，暫停自動調整建議（先請學員回來記錄）`, 'stale_data'), trajectoryData: traj }
+    }
   }
 
   const cooldownDays = cooldownDaysFor(input.targetDate)

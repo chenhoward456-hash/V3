@@ -42,6 +42,7 @@ const CATEGORY_LABELS: Record<Problem['category'], string> = {
   no_calories: '缺 calories_target',
   no_body_data: '體重資料不足 2 週',
   trend_reversed: '趨勢反轉（1 週 vs 4 週方向相反）',
+  stale_data: '逾 14 天未記錄體重（請學員回來記錄，已暫停自動建議）',
 }
 
 export async function GET(request: NextRequest) {

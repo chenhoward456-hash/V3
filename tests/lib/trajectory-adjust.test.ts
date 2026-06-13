@@ -77,6 +77,18 @@ describe('computeTrajectoryAdjustment — 基因 + 體脂安全層', () => {
     expect(Math.abs(female.kcalAdjustment!)).toBeLessThanOrEqual(500)
   })
 
+  it('最新體重 >14 天沒記錄 → stale_data，不給建議（William 案例）', () => {
+    // 8 週資料但整體往前推 20 天 → 最新一筆 = 20 天前
+    const stale = flatEntries(82).map(e => {
+      const d = new Date(e.date); d.setDate(d.getDate() - 20)
+      return { date: d.toISOString().split('T')[0], weight: e.weight }
+    })
+    const r = computeTrajectoryAdjustment(baseInput({ bodyDataEntries: stale }))
+    expect(r.shouldAdjust).toBe(false)
+    expect(r.skipCategory).toBe('stale_data')
+    expect(r.reason).toMatch(/未記錄/)
+  })
+
   it('MTHFR 雜合突變 → 赤字收窄約 100 kcal（吃更多）', () => {
     const noGene = computeTrajectoryAdjustment(baseInput({ bodyFatPct: 20 }))
     const mthfrHet = computeTrajectoryAdjustment(baseInput({ bodyFatPct: 20, geneticProfile: { mthfr: 'heterozygous' } }))
