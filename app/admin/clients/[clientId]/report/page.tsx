@@ -384,7 +384,16 @@ export default function HealthReportPage() {
             const s = findingByName.get(r.test_name)?.latestStatus ?? r.status
             return s === 'alert' || s === 'attention'
           })
-          if (improving.length === 0 && flagged.length === 0) return null
+          // 正常但「低於最佳 + 明顯往壞方向（變化 ≥20%）」也抓進要追蹤，
+          // 否則整條軸線下滑（如睪固酮 -35~44%）卻因 normal 下限訂得寬而全被當「正常」漏掉。
+          const slipping = latestLabs.filter(r => {
+            const f = findingByName.get(r.test_name)
+            if (!f) return false
+            const s = f.latestStatus ?? r.status
+            if (s === 'alert' || s === 'attention') return false // 已在上面 flagged
+            return f.trend === 'declining' && f.inOptimal === false && f.changePercent != null && Math.abs(f.changePercent) >= 20
+          })
+          if (improving.length === 0 && flagged.length === 0 && slipping.length === 0) return null
           return (
             <section className="report-section" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 18px' }}>
               <h2 style={{ marginTop: 0 }}>本次重點</h2>
@@ -393,7 +402,7 @@ export default function HealthReportPage() {
                   <strong style={{ color: '#15803d' }}>✅ 往好的方向：</strong>{improving.join('、')}
                 </p>
               )}
-              {flagged.length > 0 && (
+              {(flagged.length > 0 || slipping.length > 0) && (
                 <div style={{ margin: '0 0 4px' }}>
                   <strong style={{ color: '#b45309' }}>⚠️ 要追蹤的項目：</strong>
                   <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
@@ -403,6 +412,16 @@ export default function HealthReportPage() {
                       return (
                         <li key={r.id} className="report-text" style={{ marginBottom: 3 }}>
                           <strong>{r.test_name}</strong>（{STATUS_LABELS[s] || s}）{why ? `— ${why}` : ''}
+                        </li>
+                      )
+                    })}
+                    {slipping.map(r => {
+                      const f = findingByName.get(r.test_name)
+                      const why = plainWhy(r.test_name)
+                      const pct = f?.changePercent != null ? `${f.changePercent > 0 ? '+' : ''}${f.changePercent.toFixed(0)}%` : ''
+                      return (
+                        <li key={r.id} className="report-text" style={{ marginBottom: 3 }}>
+                          <strong>{r.test_name}</strong>（正常但下滑 {pct}、低於最佳）{why ? `— ${why}` : ''}
                         </li>
                       )
                     })}
