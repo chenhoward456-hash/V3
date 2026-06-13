@@ -105,6 +105,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, skipped: true, reason: '今日已執行過' })
   }
 
+  // 由出生年重算年齡（有填 birth_year 者）→ age 隨年份自動更新，教練不必回後台改
+  try {
+    const nowYear = new Date().getFullYear()
+    const { data: birthClients } = await supabase
+      .from('clients')
+      .select('id, age, birth_year')
+      .not('birth_year', 'is', null)
+    for (const c of (birthClients ?? []) as Array<{ id: string; age: number | null; birth_year: number }>) {
+      const computed = nowYear - c.birth_year
+      if (computed >= 0 && computed <= 150 && computed !== c.age) {
+        await supabase.from('clients').update({ age: computed }).eq('id', c.id)
+      }
+    }
+  } catch (e) {
+    console.warn('[cron/daily] 年齡重算失敗:', e)
+  }
+
   // Clean up expired coach overrides
   try {
     const { data: overrideClients } = await supabase

@@ -76,7 +76,7 @@
 幾乎所有表的 `client_id` 都 FK → `clients(id) ON DELETE CASCADE`（刪 client 會連鎖刪光該學員所有資料）。例外：`subscription_purchases.client_id` 是 SET NULL。
 
 ### 核心
-- **clients** — 學員主表，60+ 欄。重點欄位：`unique_code`(UNIQUE)、`line_user_id`(UNIQUE)、`status`、`client_mode`、各 `*_enabled` 開關、`*_target` 營養目標、`coach_macro_override`(jsonb)、`macro_bounds`(jsonb)、`auto_adjust_enabled`、`training_plan`(jsonb)、`onboarding_notes_rendered`(jsonb)、`lab_panel_recommended`(jsonb)、基因欄位 `gene_*`
+- **clients** — 學員主表，60+ 欄。重點欄位：`unique_code`(UNIQUE)、`line_user_id`(UNIQUE)、`status`、`client_mode`、各 `*_enabled` 開關、`*_target` 營養目標、`coach_macro_override`(jsonb)、`macro_bounds`(jsonb)、`auto_adjust_enabled`、`training_plan`(jsonb)、`onboarding_notes_rendered`(jsonb)、`lab_panel_recommended`(jsonb)、基因欄位 `gene_*`、`age`(int)、`birth_year`(int，西元出生年；填了之後 age 由每日 cron 重算自動長大，前端以民國年輸入)
 - **client_mode_history** — mode 變更紀錄（trigger 自動寫）
 - **client_onboarding_notes** — onboarding 範本（`sections` jsonb NOT NULL、`placeholders` jsonb）
 - **personal_notes** — 學員個人化筆記（category/added_by 有 CHECK、weight 1–10、relevant_until）

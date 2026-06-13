@@ -45,11 +45,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { clientData, labResults, supplements } = body
+    const { clientData, labResults, supplements, startingBody } = body
 
     // 白名單過濾：只允許合法欄位，防止注入 id 等內部欄位
     const ALLOWED_CREATE_FIELDS = [
-      'unique_code', 'name', 'age', 'gender', 'status', 'expires_at', 'is_active', 'subscription_tier',
+      'unique_code', 'name', 'age', 'birth_year', 'gender', 'status', 'expires_at', 'is_active', 'subscription_tier',
       'nutrition_enabled', 'supplement_enabled', 'wellness_enabled', 'training_enabled',
       'body_composition_enabled', 'lab_enabled', 'ai_chat_enabled', 'competition_enabled', 'health_mode_enabled', 'simple_mode', 'client_mode',
       'target_weight', 'body_fat_target', 'target_date', 'competition_date', 'prep_phase', 'weigh_in_gap_hours',
@@ -110,6 +110,19 @@ export async function POST(request: NextRequest) {
       if (supError) { console.error('[admin/clients POST] 補品新增失敗:', supError) }
     }
 
+    // 起始身體數據 → 寫一筆 body_composition（讓引擎拿得到 bodyWeight，建立後即可算 TDEE/營養素）
+    if (startingBody && startingBody.weight != null) {
+      const today = new Date().toISOString().split('T')[0]
+      const { error: bodyError } = await supabase.from('body_composition').upsert({
+        client_id: newClient.id,
+        date: today,
+        weight: startingBody.weight,
+        height: startingBody.height ?? null,
+        body_fat: startingBody.bodyFat ?? null,
+      }, { onConflict: 'client_id,date' })
+      if (bodyError) console.error('[admin/clients POST] 起始體組成寫入失敗:', bodyError)
+    }
+
     return NextResponse.json({ success: true, id: newClient.id })
   } catch (err) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
@@ -124,7 +137,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { clientId, clientData, labResults, supplements, override_duration_days, override_reason } = body
+    const { clientId, clientData, labResults, supplements, override_duration_days, override_reason, startingBody } = body
 
     if (!clientId) {
       return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
@@ -170,10 +183,23 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // 起始身體數據 → upsert 今天的 body_composition（教練在後台補/改起始體重，引擎即可算 TDEE/營養素）
+    if (startingBody && startingBody.weight != null) {
+      const today = new Date().toISOString().split('T')[0]
+      const { error: bodyError } = await supabase.from('body_composition').upsert({
+        client_id: clientId,
+        date: today,
+        weight: startingBody.weight,
+        height: startingBody.height ?? null,
+        body_fat: startingBody.bodyFat ?? null,
+      }, { onConflict: 'client_id,date' })
+      if (bodyError) console.error('[admin/clients PUT] 起始體組成寫入失敗:', bodyError)
+    }
+
     // 最後更新 client（教練設的 status 不會被 trigger 覆蓋）
     // 白名單過濾：只允許教練可修改的欄位，防止注入 id/unique_code 等不可變欄位
     const ALLOWED_CLIENT_FIELDS = [
-      'name', 'age', 'gender', 'status', 'expires_at', 'is_active', 'subscription_tier',
+      'name', 'age', 'birth_year', 'gender', 'status', 'expires_at', 'is_active', 'subscription_tier',
       'nutrition_enabled', 'supplement_enabled', 'wellness_enabled', 'training_enabled',
       'body_composition_enabled', 'lab_enabled', 'ai_chat_enabled', 'competition_enabled', 'health_mode_enabled', 'simple_mode', 'client_mode',
       'target_weight', 'body_fat_target', 'target_date', 'competition_date', 'prep_phase', 'weigh_in_gap_hours',

@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { calcRecommendedStageWeight, type RecommendedStageWeightResult } from '@/lib/nutrition-engine'
+import { calcRecommendedStageWeight, type RecommendedStageWeightResult, calculateInitialTargets } from '@/lib/nutrition-engine'
+import { minguoToAD, adToMinguo, ageFromBirthYear } from '@/utils/age'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { getDefaultFeatures, type SubscriptionTier } from '@/lib/tier-defaults'
 import { isCompetitionMode, isHealthMode, ALL_CLIENT_MODES, MODE_LABELS, MODE_EMOJIS, MODE_CONFIG, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS } from '@/lib/client-mode'
@@ -47,6 +48,7 @@ interface Client {
   unique_code: string
   name: string
   age: number
+  birth_year: number | null
   gender: string
   status: 'normal' | 'attention' | 'alert'
   coach_summary: string
@@ -118,6 +120,8 @@ export default function ClientEditor() {
   const [successMsg, setSuccessMsg] = useState('')
   const [activeTab, setActiveTab] = useState<EditorTab>('basic')
   const [latestBodyComp, setLatestBodyComp] = useState<{ weight: number | null; body_fat: number | null; height: number | null } | null>(null)
+  // 起始身體數據（教練後台直接填，存檔時寫一筆 body_composition 供引擎算 TDEE/營養素）
+  const [startBody, setStartBody] = useState<{ weight: string; height: string; bodyFat: string }>({ weight: '', height: '', bodyFat: '' })
   const [bodyDataEntries, setBodyDataEntries] = useState<Array<{ date: string; weight: number | null; body_fat: number | null }>>([])
   const [upgradeLink, setUpgradeLink] = useState('')
   const [upgradeCopied, setUpgradeCopied] = useState(false)
@@ -239,6 +243,7 @@ export default function ClientEditor() {
         unique_code: '',
         name: '',
         age: 25,
+        birth_year: null,
         gender: '女性',
         status: 'normal',
         coach_summary: '',
@@ -317,10 +322,13 @@ export default function ClientEditor() {
         const entries: any[] = overview.bodyData || []
         const findLatest = (field: string) =>
           [...entries].reverse().find((e: any) => e[field] != null)?.[field] ?? null
-        setLatestBodyComp({
-          weight: findLatest('weight'),
-          body_fat: findLatest('body_fat'),
-          height: findLatest('height'),
+        const lw = findLatest('weight'); const lbf = findLatest('body_fat'); const lh = findLatest('height')
+        setLatestBodyComp({ weight: lw, body_fat: lbf, height: lh })
+        // 預填起始數據輸入框（教練可直接在此檢查/更新並重算 TDEE）
+        setStartBody({
+          weight: lw != null ? String(lw) : '',
+          height: lh != null ? String(lh) : '',
+          bodyFat: lbf != null ? String(lbf) : '',
         })
         setBodyDataEntries(
           entries
@@ -357,7 +365,9 @@ export default function ClientEditor() {
       const clientFields = {
         client_mode: client.client_mode || 'standard',
         name: client.name,
-        age: client.age,
+        // 出生年存在就由它推算 age（會隨年份自動更新；每日 cron 也會重算），否則保留原 age
+        age: client.birth_year != null ? (ageFromBirthYear(client.birth_year) ?? client.age) : client.age,
+        birth_year: client.birth_year ?? null,
         gender: client.gender,
         status: client.status,
         coach_summary: client.coach_summary || null,
@@ -407,6 +417,15 @@ export default function ClientEditor() {
           : {}),
       }
 
+      // 起始身體數據 payload（有填體重才送 → 後端寫一筆 body_composition）
+      const startingBodyPayload = startBody.weight.trim() !== '' && !Number.isNaN(Number(startBody.weight))
+        ? {
+            weight: Number(startBody.weight),
+            height: startBody.height.trim() !== '' ? Number(startBody.height) : null,
+            bodyFat: startBody.bodyFat.trim() !== '' ? Number(startBody.bodyFat) : null,
+          }
+        : null
+
       if (clientId === 'new') {
         // 新增學員
         const uniqueCode = generateUniqueCode()
@@ -424,6 +443,7 @@ export default function ClientEditor() {
             },
             labResults: client.lab_results,
             supplements: client.supplements,
+            startingBody: startingBodyPayload,
           }),
         })
 
@@ -455,6 +475,7 @@ export default function ClientEditor() {
             supplements: client.supplements,
             override_duration_days: overrideDurationDays,
             override_reason: overrideReason || null,
+            startingBody: startingBodyPayload,
           }),
         })
 
@@ -1020,13 +1041,25 @@ export default function ClientEditor() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">年齡</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">出生年（民國）</label>
                   <input
                     type="number"
-                    value={client.age}
-                    onChange={(e) => updateClient('age', Number(e.target.value))}
+                    placeholder="例：78（民國78年）"
+                    value={client.birth_year != null ? (adToMinguo(client.birth_year) ?? '') : ''}
+                    onChange={(e) => {
+                      const mg = e.target.value.trim() === '' ? null : Number(e.target.value)
+                      const ad = minguoToAD(mg)
+                      updateClient('birth_year', ad)
+                      const a = ageFromBirthYear(ad)
+                      if (a != null) updateClient('age', a)
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    {client.birth_year != null
+                      ? `西元 ${client.birth_year} · 目前 ${ageFromBirthYear(client.birth_year) ?? '?'} 歲（隨年份自動更新，不必再回來改）`
+                      : (client.age ? `目前以固定年齡 ${client.age} 歲計算 — 建議改填出生年，系統才會自動長大` : '填民國出生年，系統自動算年齡並逐年更新')}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">性別</label>
@@ -1051,6 +1084,69 @@ export default function ClientEditor() {
                     <option value="alert">警示</option>
                   </select>
                 </div>
+                {/* 起始身體數據：後台直接填，存檔寫一筆 body_composition，引擎即可算 TDEE/營養素 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    起始體重 (kg)
+                    {clientId !== 'new' && latestBodyComp?.weight != null && <span className="ml-1 text-xs text-gray-400">最新 {latestBodyComp.weight}</span>}
+                  </label>
+                  <input
+                    type="number" step="0.1" placeholder="例：62.5"
+                    value={startBody.weight}
+                    onChange={(e) => setStartBody(s => ({ ...s, weight: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">身高 (cm) <span className="text-xs text-gray-400">選填，TDEE 更準</span></label>
+                  <input
+                    type="number" step="0.1" placeholder="例：165"
+                    value={startBody.height}
+                    onChange={(e) => setStartBody(s => ({ ...s, height: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">起始體脂 (%) <span className="text-xs text-gray-400">選填</span></label>
+                  <input
+                    type="number" step="0.1" placeholder="例：22"
+                    value={startBody.bodyFat}
+                    onChange={(e) => setStartBody(s => ({ ...s, bodyFat: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                {/* 即時 TDEE / 營養素估算（不需存檔，當場檢查換算） */}
+                {(() => {
+                  const w = Number(startBody.weight)
+                  if (!startBody.weight.trim() || Number.isNaN(w) || w <= 0) return null
+                  const h = startBody.height.trim() !== '' ? Number(startBody.height) : null
+                  const bf = startBody.bodyFat.trim() !== '' ? Number(startBody.bodyFat) : null
+                  let preview: ReturnType<typeof calculateInitialTargets> | null = null
+                  try {
+                    preview = calculateInitialTargets({
+                      gender: client.gender || '女性',
+                      bodyWeight: w,
+                      height: h,
+                      bodyFatPct: bf,
+                      goalType: (client.goal_type as 'cut' | 'bulk' | 'recomp') || 'recomp',
+                      activityProfile: (client.activity_profile as 'sedentary' | 'high_energy_flux') || undefined,
+                    })
+                  } catch { preview = null }
+                  if (!preview) return null
+                  const goalLabel = client.goal_type ? ({ cut: '減脂', bulk: '增肌', recomp: '體態重組' } as Record<string, string>)[client.goal_type] : '體態重組（未設目標，預設）'
+                  return (
+                    <div className="md:col-span-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                      <div className="text-sm font-semibold text-emerald-900 mb-1">📊 即時估算 · {goalLabel} · {preview.method === 'katch_mcardle' ? 'Katch-McArdle（用體脂）' : '簡化公式'}</div>
+                      <div className="text-sm text-emerald-800">
+                        TDEE ≈ <b>{preview.estimatedTDEE}</b> kcal　→　目標熱量 <b>{preview.calories}</b> kcal（{preview.deficit >= 0 ? `赤字 ${preview.deficit}` : `盈餘 ${-preview.deficit}`} kcal）
+                      </div>
+                      <div className="text-sm text-emerald-800 mt-0.5">
+                        蛋白 <b>{preview.protein}g</b>　·　碳水 <b>{preview.carbs}g</b>　·　脂肪 <b>{preview.fat}g</b>
+                      </div>
+                      <p className="mt-1 text-xs text-emerald-700">即時估算（未存檔）。存檔後會寫入起始體重，正式營養目標仍以引擎/你的設定為準。</p>
+                    </div>
+                  )
+                })()}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">訂閱方案</label>
                   <div className="grid grid-cols-3 gap-2 mb-2">
