@@ -15,6 +15,8 @@ type Draft = {
   studentMessage: string
   needsCoachReview: boolean
   flags: string[]
+  hasPush: boolean
+  hasLine: boolean
 }
 
 export default function WeeklyCoachingPage() {
@@ -23,6 +25,8 @@ export default function WeeklyCoachingPage() {
   const [error, setError] = useState<string | null>(null)
   const [generatedAt, setGeneratedAt] = useState('')
   const [copied, setCopied] = useState<string | null>(null)
+  const [sending, setSending] = useState<string | null>(null)
+  const [sentResult, setSentResult] = useState<Record<string, string>>({})
 
   useEffect(() => {
     fetch('/api/admin/weekly-coaching', { cache: 'no-store' })
@@ -33,6 +37,28 @@ export default function WeeklyCoachingPage() {
 
   const copy = async (id: string, text: string) => {
     try { await navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(null), 1500) } catch {}
+  }
+
+  const send = async (d: Draft) => {
+    if (!window.confirm(`發送本週訊息給 ${d.name}？（${d.hasPush ? 'Web 推播' : d.hasLine ? 'LINE' : '無管道'}）`)) return
+    setSending(d.clientId)
+    setSentResult(p => ({ ...p, [d.clientId]: '' }))
+    try {
+      const res = await fetch('/api/admin/weekly-coaching/send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: d.clientId, message: d.studentMessage, mode: d.mode }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        setSentResult(p => ({ ...p, [d.clientId]: data.method === 'skipped' ? '❌ 此學員沒有可用管道（用你私訊）' : '❌ 發送失敗' }))
+      } else {
+        setSentResult(p => ({ ...p, [d.clientId]: data.method === 'web_push' ? '✅ 已推 Web Push' : '✅ 已發 LINE' }))
+      }
+    } catch {
+      setSentResult(p => ({ ...p, [d.clientId]: '❌ 發送失敗' }))
+    } finally {
+      setSending(null)
+    }
   }
 
   return (
@@ -60,6 +86,8 @@ export default function WeeklyCoachingPage() {
                     ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">問責召回</span>
                     : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">數據調整</span>}
                   {d.needsCoachReview && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">需你看</span>}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${d.hasPush ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasPush ? '已開 Web 推播' : '未開 Web 推播'}>🌐{d.hasPush ? '' : '✗'}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${d.hasLine ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasLine ? '有綁 LINE' : '沒綁 LINE'}>💬{d.hasLine ? '' : '✗'}</span>
                 </div>
                 <a href={`/admin/clients/${d.clientId}/overview`} className="text-xs text-blue-600 hover:text-blue-700 shrink-0">學員 →</a>
               </div>
@@ -88,12 +116,23 @@ export default function WeeklyCoachingPage() {
                 <p className="text-sm text-slate-700 whitespace-pre-line bg-white border border-slate-200 rounded-xl p-3 mt-1">{d.studentMessage}</p>
               </details>
 
-              <button
-                onClick={() => copy(d.clientId, d.studentMessage)}
-                className="mt-3 text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                {copied === d.clientId ? '✓ 已複製' : '複製訊息'}
-              </button>
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => send(d)}
+                  disabled={sending === d.clientId || (!d.hasPush && !d.hasLine)}
+                  className="text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40"
+                  title={!d.hasPush && !d.hasLine ? '此學員沒有 Web 推播也沒綁 LINE，請用你的私訊' : ''}
+                >
+                  {sending === d.clientId ? '發送中…' : d.hasPush ? '發送（Web 推播）' : d.hasLine ? '發送（LINE）' : '無管道可發'}
+                </button>
+                <button
+                  onClick={() => copy(d.clientId, d.studentMessage)}
+                  className="text-sm font-medium bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-lg hover:border-slate-300 transition-colors"
+                >
+                  {copied === d.clientId ? '✓ 已複製' : '複製（自己貼）'}
+                </button>
+                {sentResult[d.clientId] && <span className="text-xs text-slate-600">{sentResult[d.clientId]}</span>}
+              </div>
             </div>
           ))}
         </div>
