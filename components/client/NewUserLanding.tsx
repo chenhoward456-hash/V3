@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronRight, Check } from 'lucide-react'
 import type { Client, ClientDataPayload } from '@/hooks/useClientData'
 import type { KeyedMutator } from 'swr'
+import PushNotificationPrompt from '@/components/client/PushNotificationPrompt'
 
 interface Props {
   client: Client
@@ -111,14 +112,19 @@ export default function NewUserLanding({
       {/* 體重輸入 */}
       <div className="bg-white rounded-2xl shadow-sm p-5">
         {submitted ? (
-          <div className="flex items-center gap-3 text-emerald-700">
-            <div className="bg-emerald-100 rounded-full p-2">
-              <Check size={20} />
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-emerald-700">
+              <div className="bg-emerald-100 rounded-full p-2">
+                <Check size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">第一筆紀錄完成 ✅</p>
+                <p className="text-xs text-emerald-600 mt-0.5">明天起床後再打一次，連續 3 天解鎖飲食記錄</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold">第一筆紀錄完成 ✅</p>
-              <p className="text-xs text-emerald-600 mt-0.5">明天起床後再打一次，連續 3 天解鎖飲食記錄</p>
-            </div>
+            {/* 第一筆完成＝熱度最高的一刻，立刻把唯一已驗證的留存槓桿（開推播）擺成下一個動作。
+                新用戶過去走這條 NewUserLanding 分支時根本看不到推播卡 → 留存稽核點名的根因。 */}
+            <PushNotificationPrompt code={client.unique_code} />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -193,8 +199,8 @@ export default function NewUserLanding({
         </Link>
         <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
           <p className="text-2xl mb-1">💬</p>
-          <p className="text-sm font-semibold text-emerald-900">{client.line_user_id ? 'LINE 已綁定 ✓' : 'LINE 還沒綁？'}</p>
-          <p className="text-[10px] text-emerald-700 mt-1">{client.line_user_id ? '可直接傳體重數字記錄' : '綁了就能用 LINE 快速回報體重'}</p>
+          <p className="text-sm font-semibold text-emerald-900">{client.has_line_binding ? 'LINE 已綁定 ✓' : 'LINE 還沒綁？'}</p>
+          <p className="text-[10px] text-emerald-700 mt-1">{client.has_line_binding ? '可直接傳體重數字記錄' : '綁了就能用 LINE 快速回報體重'}</p>
         </div>
       </div>
     </div>

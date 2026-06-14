@@ -167,19 +167,6 @@ export default function DiagnosisPage() {
     window.open(`https://line.me/R/msg/text/?${text}`, '_blank', 'noopener,noreferrer')
   }
 
-  // ========== 子元件：模糊化 wrapper ==========
-  const BlurredSection = ({ children }: { children: React.ReactNode }) => (
-    <div className="relative">
-      <div className="filter blur-[6px] pointer-events-none select-none" aria-hidden="true">
-        {children}
-      </div>
-      <div className="absolute inset-0 flex items-center justify-center bg-white/20">
-        <span className="bg-white/95 px-5 py-2 rounded-full text-sm font-semibold text-gray-500 shadow-sm border border-gray-100">
-          🔒 加 LINE 解鎖
-        </span>
-      </div>
-    </div>
-  )
 
   return (
     <section className="max-w-4xl mx-auto px-6 py-16 md:py-20">
@@ -423,112 +410,77 @@ export default function DiagnosisPage() {
                       <p className="text-xl font-bold text-gray-900">{result.estimatedTDEE.toLocaleString()}</p>
                       <p className="text-[10px] text-gray-400">kcal/天</p>
                     </div>
-                    {/* 目標熱量 — BLURRED unless email sent */}
-                    <div className="relative rounded-xl overflow-hidden">
-                      <div className={`bg-[#2563eb]/5 p-3 text-center border border-[#2563eb]/20 ${!emailSent ? 'filter blur-[5px] pointer-events-none select-none' : ''}`}>
-                        <p className="text-[10px] text-[#2563eb] mb-1">目標熱量</p>
-                        <p className="text-xl font-bold text-[#2563eb]">{result.suggestedCalories.toLocaleString()}</p>
-                        <p className="text-[10px] text-[#2563eb]">kcal/天</p>
-                      </div>
-                      {!emailSent && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-gray-400 text-lg">🔒</span>
-                        </div>
-                      )}
+                    {/* 目標熱量 — 直接給（先讓人爽到，不設牆。aha moment 不該被扣為人質） */}
+                    <div className="bg-[#2563eb]/5 p-3 text-center border border-[#2563eb]/20 rounded-xl">
+                      <p className="text-[10px] text-[#2563eb] mb-1">目標熱量</p>
+                      <p className="text-xl font-bold text-[#2563eb]">{result.suggestedCalories.toLocaleString()}</p>
+                      <p className="text-[10px] text-[#2563eb]">kcal/天</p>
                     </div>
-                    {/* 赤字/盈餘 — BLURRED unless email sent */}
-                    <div className="relative rounded-xl overflow-hidden">
-                      <div className={`bg-gray-50 p-3 text-center ${!emailSent ? 'filter blur-[5px] pointer-events-none select-none' : ''}`}>
-                        <p className="text-[10px] text-gray-400 mb-1">每日{goalType === 'cut' ? '赤字' : '盈餘'}</p>
-                        <p className="text-xl font-bold text-green-600">{Math.abs(result.dailyDeficit)}</p>
-                        <p className="text-[10px] text-gray-400">kcal</p>
-                      </div>
-                      {!emailSent && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-gray-400 text-lg">🔒</span>
-                        </div>
-                      )}
+                    {/* 赤字/盈餘 — 直接給 */}
+                    <div className="bg-gray-50 p-3 text-center rounded-xl">
+                      <p className="text-[10px] text-gray-400 mb-1">每日{goalType === 'cut' ? '赤字' : '盈餘'}</p>
+                      <p className="text-xl font-bold text-green-600">{Math.abs(result.dailyDeficit)}</p>
+                      <p className="text-[10px] text-gray-400">kcal</p>
                     </div>
                   </div>
 
-                  {/* ===== Email Gate: 輸入 Email 解鎖完整結果 ===== */}
-                  {!emailSent && (
-                    <div className="bg-gradient-to-br from-[#2563eb]/5 to-[#2563eb]/10 border-2 border-[#2563eb]/20 rounded-2xl p-5 md:p-6">
-                      <div className="text-center mb-4">
-                        <p className="text-lg font-bold" style={{ color: '#1e3a5f' }}>📧 輸入 Email 解鎖完整分析</p>
-                        <p className="text-xs text-gray-500 mt-1">完整目標熱量、巨量營養素、安全性評估會同步寄到你的信箱</p>
-                      </div>
-
-                      <div>
-                        <div className="flex gap-2">
-                          <input
-                            type="email"
-                            placeholder="your@email.com"
-                            value={emailInput}
-                            onChange={(e) => {
-                              setEmailInput(e.target.value)
-                              if (emailError) setEmailError('')
-                            }}
-                            onKeyDown={(e) => { if (e.key === 'Enter') handleEmailSubmit() }}
-                            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#2563eb] transition-colors bg-white"
-                          />
-                          <button
-                            onClick={handleEmailSubmit}
-                            disabled={emailSubmitting}
-                            className="px-6 py-3 bg-[#2563eb] text-white text-sm font-bold rounded-xl hover:bg-[#1d4ed8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                          >
-                            {emailSubmitting ? '解鎖中...' : '解鎖結果'}
-                          </button>
-                        </div>
-                        {emailError && (
-                          <p className="text-xs text-red-500 mt-1.5 ml-1">{emailError}</p>
-                        )}
-                        <p className="text-[11px] text-gray-400 mt-2 text-center">
-                          僅用於寄送分析結果，不會發送垃圾郵件
-                        </p>
-                      </div>
+                  {/* 巨量營養素 — 直接給，不模糊（先給價值再談留資料） */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-red-50 rounded-xl p-3 text-center border border-red-100">
+                      <p className="text-[10px] text-red-400 mb-1">🥩 蛋白質</p>
+                      <p className="text-lg font-bold text-red-700">{result.suggestedProtein}g</p>
+                      <p className="text-[10px] text-red-400">{(result.suggestedProtein * 4)} kcal</p>
                     </div>
-                  )}
+                    <div className="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
+                      <p className="text-[10px] text-amber-500 mb-1">🍚 碳水</p>
+                      <p className="text-lg font-bold text-amber-700">{result.suggestedCarbs}g</p>
+                      <p className="text-[10px] text-amber-500">{(result.suggestedCarbs * 4)} kcal</p>
+                    </div>
+                    <div className="bg-yellow-50 rounded-xl p-3 text-center border border-yellow-200">
+                      <p className="text-[10px] text-yellow-600 mb-1">🥑 脂肪</p>
+                      <p className="text-lg font-bold text-yellow-700">{result.suggestedFat}g</p>
+                      <p className="text-[10px] text-yellow-600">{(result.suggestedFat * 9)} kcal</p>
+                    </div>
+                  </div>
 
-                  {/* 巨量營養素 — BLURRED unless email sent */}
-                  {emailSent ? (
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-red-50 rounded-xl p-3 text-center border border-red-100">
-                        <p className="text-[10px] text-red-400 mb-1">🥩 蛋白質</p>
-                        <p className="text-lg font-bold text-red-700">{result.suggestedProtein}g</p>
-                        <p className="text-[10px] text-red-400">{(result.suggestedProtein * 4)} kcal</p>
+                  {/* 選填加值：把完整報告寄到信箱（不是看結果的門票，是 bonus） */}
+                  {!emailSent ? (
+                    <div className="bg-gradient-to-br from-[#2563eb]/5 to-[#2563eb]/10 border border-[#2563eb]/20 rounded-2xl p-4">
+                      <div className="text-center mb-3">
+                        <p className="text-sm font-bold" style={{ color: '#1e3a5f' }}>📧 想把這份完整報告留著？（選填）</p>
+                        <p className="text-xs text-gray-500 mt-1">留 Email，把目標熱量、巨量營養素、時程整份寄給你，日後好對照</p>
                       </div>
-                      <div className="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
-                        <p className="text-[10px] text-amber-500 mb-1">🍚 碳水</p>
-                        <p className="text-lg font-bold text-amber-700">{result.suggestedCarbs}g</p>
-                        <p className="text-[10px] text-amber-500">{(result.suggestedCarbs * 4)} kcal</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="email"
+                          placeholder="your@email.com"
+                          value={emailInput}
+                          onChange={(e) => {
+                            setEmailInput(e.target.value)
+                            if (emailError) setEmailError('')
+                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleEmailSubmit() }}
+                          className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#2563eb] transition-colors bg-white"
+                        />
+                        <button
+                          onClick={handleEmailSubmit}
+                          disabled={emailSubmitting}
+                          className="px-6 py-3 bg-[#2563eb] text-white text-sm font-bold rounded-xl hover:bg-[#1d4ed8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        >
+                          {emailSubmitting ? '寄送中...' : '寄給我'}
+                        </button>
                       </div>
-                      <div className="bg-yellow-50 rounded-xl p-3 text-center border border-yellow-200">
-                        <p className="text-[10px] text-yellow-600 mb-1">🥑 脂肪</p>
-                        <p className="text-lg font-bold text-yellow-700">{result.suggestedFat}g</p>
-                        <p className="text-[10px] text-yellow-600">{(result.suggestedFat * 9)} kcal</p>
-                      </div>
+                      {emailError && (
+                        <p className="text-xs text-red-500 mt-1.5 ml-1">{emailError}</p>
+                      )}
+                      <p className="text-[11px] text-gray-400 mt-2 text-center">
+                        僅用於寄送分析結果，不會發送垃圾郵件
+                      </p>
                     </div>
                   ) : (
-                  <BlurredSection>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-red-50 rounded-xl p-3 text-center border border-red-100">
-                        <p className="text-[10px] text-red-400 mb-1">🥩 蛋白質</p>
-                        <p className="text-lg font-bold text-red-700">{result.suggestedProtein}g</p>
-                        <p className="text-[10px] text-red-400">{(result.suggestedProtein * 4)} kcal</p>
-                      </div>
-                      <div className="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
-                        <p className="text-[10px] text-amber-500 mb-1">🍚 碳水</p>
-                        <p className="text-lg font-bold text-amber-700">{result.suggestedCarbs}g</p>
-                        <p className="text-[10px] text-amber-500">{(result.suggestedCarbs * 4)} kcal</p>
-                      </div>
-                      <div className="bg-yellow-50 rounded-xl p-3 text-center border border-yellow-200">
-                        <p className="text-[10px] text-yellow-600 mb-1">🥑 脂肪</p>
-                        <p className="text-lg font-bold text-yellow-700">{result.suggestedFat}g</p>
-                        <p className="text-[10px] text-yellow-600">{(result.suggestedFat * 9)} kcal</p>
-                      </div>
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-800 text-center">
+                      ✅ 完整報告已寄出，記得收信
                     </div>
-                  </BlurredSection>
                   )}
 
                   {/* 預估時程 — FREE（勾慾望） */}
@@ -543,36 +495,14 @@ export default function DiagnosisPage() {
                     </div>
                   )}
 
-                  {/* 安全提醒 — 解鎖後顯示 */}
+                  {/* 安全提醒 — 直接顯示（安全資訊更不該被閘門擋住） */}
                   {result.safetyNotes.length > 0 && (
-                    emailSent ? (
-                      <div className="space-y-2">
-                        {result.safetyNotes.map((note, i) => (
-                          <div key={i} className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                            <p className="text-xs text-amber-700">⚠️ {note}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <BlurredSection>
-                        <div className="space-y-2">
-                          {result.safetyNotes.map((note, i) => (
-                            <div key={i} className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                              <p className="text-xs text-amber-700">⚠️ {note}</p>
-                            </div>
-                          ))}
+                    <div className="space-y-2">
+                      {result.safetyNotes.map((note, i) => (
+                        <div key={i} className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                          <p className="text-xs text-amber-700">⚠️ {note}</p>
                         </div>
-                      </BlurredSection>
-                    )
-                  )}
-
-                  {/* Email 已解鎖後的確認訊息 */}
-                  {emailSent && (
-                    <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-                      <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <p className="text-sm text-green-700 font-medium">完整結果已解鎖，同時寄到你的信箱了！</p>
+                      ))}
                     </div>
                   )}
 

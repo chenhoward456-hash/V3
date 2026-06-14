@@ -324,10 +324,10 @@ export default function HomePage() {
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
-                  href="/join"
+                  href="/diagnosis"
                   className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition-all shadow-lg shadow-blue-500/25 text-center min-h-[48px]"
                 >
-                  免費開始記錄 →
+                  30 秒免費算出我的數字 →
                 </Link>
                 <LineButton
                   source="homepage_hero"

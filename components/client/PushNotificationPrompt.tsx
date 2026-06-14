@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 const DISMISS_KEY = 'push_prompt_dismissed'
+const SNOOZE_MS = 3 * 86_400_000 // 關掉只「延後 3 天」，不再是終身放棄（推播=唯一已驗證的留存槓桿）
 
 /**
  * 開啟瀏覽器推播提醒的卡片。
@@ -17,7 +18,11 @@ export default function PushNotificationPrompt({ code, debug = false }: { code: 
 
   useEffect(() => {
     try {
-      setDismissed(localStorage.getItem(DISMISS_KEY) === '1')
+      // 存的是「關掉的時間戳」。距上次關掉未滿 3 天才隱藏，過了就再提醒。
+      // 舊資料是 '1'（終身關閉）→ Number('1')=1，早就超過 3 天 → 重新顯示，正是我們要的。
+      const raw = localStorage.getItem(DISMISS_KEY)
+      const ts = raw ? Number(raw) : 0
+      setDismissed(Number.isFinite(ts) && ts > 0 && Date.now() - ts < SNOOZE_MS)
     } catch {
       setDismissed(false)
     }
@@ -52,7 +57,7 @@ export default function PushNotificationPrompt({ code, debug = false }: { code: 
   }
 
   const close = () => {
-    try { localStorage.setItem(DISMISS_KEY, '1') } catch {}
+    try { localStorage.setItem(DISMISS_KEY, String(Date.now())) } catch {}
     setDismissed(true)
   }
 
