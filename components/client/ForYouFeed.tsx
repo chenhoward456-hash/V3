@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { buildClientFeed, type FeedCard, type FeedTone, type MacroAdjustmentRow } from '@/lib/client-feed'
+import { buildClientFeed, type FeedCard, type FeedTone, type MacroAdjustmentRow, type CoachMessageRow } from '@/lib/client-feed'
 import type { LabResultRow } from '@/lib/lab-trend-analyzer'
 
 const TONE_STYLE: Record<FeedTone, { box: string; title: string; icon: string }> = {
@@ -31,18 +31,46 @@ function Row({ card, onDismiss }: { card: FeedCard; onDismiss: (id: string) => v
   )
 }
 
+/** 教練週度訊息：完整顯示（不截斷），因為這就是學員點推播要看的內容 */
+function CoachMessageCard({ msg, onDismiss }: { msg: CoachMessageRow; onDismiss: (id: string) => void }) {
+  const id = `coach_msg_${msg.id}`
+  const dateStr = msg.created_at ? new Date(msg.created_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }) : ''
+  const isAccount = msg.mode === 'accountability'
+  const cleanTitle = (msg.title || '').replace(/^(💬|👋)\s*/u, '').trim() || 'Howard 的本週訊息'
+  return (
+    <div className="relative px-4 py-3 rounded-2xl border border-blue-200 bg-blue-50/60 mb-2">
+      <button
+        onClick={() => onDismiss(id)}
+        className="absolute top-2.5 right-2.5 text-blue-300 hover:text-blue-500 transition-colors p-1"
+        aria-label="關閉"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <div className="flex items-center gap-2 mb-1.5 pr-6">
+        <span className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center text-sm shrink-0">{isAccount ? '👋' : '💬'}</span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-blue-900 leading-tight">{cleanTitle}</p>
+          {dateStr && <p className="text-[11px] text-blue-400 leading-tight">{dateStr} · 教練</p>}
+        </div>
+      </div>
+      <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{msg.body}</p>
+    </div>
+  )
+}
+
 interface ForYouFeedProps {
   labs: LabResultRow[]
   gender?: '男性' | '女性'
   nextCheckupDate?: string | null
   macroAdjustment?: MacroAdjustmentRow | null
+  coachMessage?: CoachMessageRow | null
 }
 
 /**
  * 「為你更新」精簡卡片流 — 每則一行重點、預設只顯示 3 則、合規免責收底部。
  * 關掉存 localStorage；事件 id 變了會重新出現。
  */
-export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment }: ForYouFeedProps) {
+export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment, coachMessage }: ForYouFeedProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [ready, setReady] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -70,7 +98,8 @@ export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment }: F
   if (!ready) return null
 
   const cards = buildClientFeed({ labs, gender, nextCheckupDate, macroAdjustment }).filter(c => !dismissed.has(c.id))
-  if (cards.length === 0) return null
+  const showCoach = coachMessage && !dismissed.has(`coach_msg_${coachMessage.id}`)
+  if (cards.length === 0 && !showCoach) return null
 
   const visible = expanded ? cards : cards.slice(0, 3)
   const hidden = cards.length - visible.length
@@ -79,6 +108,7 @@ export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment }: F
   return (
     <div className="mb-4">
       <p className="text-xs font-semibold text-gray-400 tracking-wide mb-1.5 px-1">為你更新</p>
+      {showCoach && <CoachMessageCard msg={coachMessage} onDismiss={handleDismiss} />}
       <div className="space-y-1.5">
         {visible.map(card => <Row key={card.id} card={card} onDismiss={handleDismiss} />)}
       </div>

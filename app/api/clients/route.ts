@@ -137,6 +137,19 @@ export async function GET(request: NextRequest) {
       ),
     })
 
+    // 最近一則教練週度訊息（給「為你更新」頂部卡片用）— 點推播進來看得到完整內容
+    queryEntries.push({
+      key: 'recentCoachMessage',
+      query: wrap(
+        supabase
+          .from('coach_messages')
+          .select('id, title, body, mode, created_at')
+          .eq('client_id', client.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+      ),
+    })
+
     // 平行執行所有查詢
     const results = await Promise.all(queryEntries.map(e => e.query))
     const resolved: Record<string, Record<string, unknown>[]> = {}
@@ -165,6 +178,7 @@ export async function GET(request: NextRequest) {
       trainingSets: resolved.trainingSets || [],
       nutritionLogs: resolved.nutritionLogs || [],
       recentMacroAdjustment: resolved.recentMacroAdjustment?.[0] || null,
+      recentCoachMessage: resolved.recentCoachMessage?.[0] || null,
     })
     
   } catch (error) {

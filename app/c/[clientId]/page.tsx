@@ -901,6 +901,7 @@ export default function ClientDashboard() {
                 gender={c.gender === '女性' ? '女性' : c.gender === '男性' ? '男性' : undefined}
                 nextCheckupDate={c.next_checkup_date}
                 macroAdjustment={clientData.recentMacroAdjustment ?? null}
+                coachMessage={clientData.recentCoachMessage ?? null}
               />
             </SectionErrorBoundary>
           )}

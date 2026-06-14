@@ -98,6 +98,14 @@ export interface MacroAdjustment {
   reason: string | null
 }
 
+export interface CoachMessage {
+  id: string
+  title: string | null
+  body: string
+  mode: string | null
+  created_at: string
+}
+
 export interface ClientDataPayload {
   client: Client
   todayLogs: SupplementLog[]
@@ -108,6 +116,7 @@ export interface ClientDataPayload {
   trainingSets?: TrainingSetRow[]
   nutritionLogs: NutritionLog[]
   recentMacroAdjustment?: MacroAdjustment | null
+  recentCoachMessage?: CoachMessage | null
 }
 
 interface UseClientDataOptions {

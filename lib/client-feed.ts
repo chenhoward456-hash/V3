@@ -33,11 +33,21 @@ export interface MacroAdjustmentRow {
   reason: string | null
 }
 
+export interface CoachMessageRow {
+  id: string
+  title: string | null
+  body: string
+  mode: string | null
+  created_at: string
+}
+
 export interface ClientFeedInput {
   labs: LabResultRow[]
   gender?: '男性' | '女性'
   nextCheckupDate?: string | null
   macroAdjustment?: MacroAdjustmentRow | null
+  /** 最近一則教練週度訊息（點推播進來要看得到完整內容） */
+  coachMessage?: CoachMessageRow | null
   /** 覆寫「今天」，方便測試；預設為現在 */
   today?: string
 }

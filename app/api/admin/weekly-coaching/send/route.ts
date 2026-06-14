@@ -37,8 +37,20 @@ export async function POST(request: NextRequest) {
     url: `/c/${client.unique_code}`, // 學員實際儀表板（/dashboard 不存在會 404）
   })
 
+  // 持久化訊息：推播只在通知欄閃一下就沒了，學員「點進去看不到內容」。
+  // 寫一筆到 coach_messages → 儀表板「為你更新」頂部卡片渲染完整內容（不管走哪個管道、甚至 skipped 都存）。
+  const { error: insertErr } = await supabase.from('coach_messages').insert({
+    client_id: clientId,
+    title,
+    body: message.trim(),
+    mode: mode === 'accountability' ? 'accountability' : 'adjust',
+    sent_via: result.method, // web_push / line_push / skipped
+  })
+  if (insertErr) console.error('[weekly-coaching/send] coach_messages insert 失敗', insertErr)
+
   return NextResponse.json({
     method: result.method,   // web_push / line_push / skipped
     success: result.success,
+    saved: !insertErr,       // 訊息已存進儀表板（即使推播 skipped 也看得到）
   })
 }
