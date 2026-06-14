@@ -97,6 +97,7 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
   const bullets: string[] = []
   const adjustments: string[] = []
   const msgLines: string[] = []
+  let needsReview = false
 
   // 1) 體重趨勢（用近 14 天線性兩端估週速率）
   const ws = w14.map(x => ({ d: x.date, v: num(x.weight)! })).filter(x => x.v != null).sort((a, b) => a.d.localeCompare(b.d))
@@ -112,15 +113,41 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
     // 備賽/減脂：對照目標速率
     const tw = num(client.target_weight)
     const isCut = client.goal_type === 'cut' || client.prep_phase === 'cut'
-    if (isCut && tw != null && client.competition_date) {
-      // daysAgo(comp, now) = comp - now = 距賽天數（賽在未來為正）
-      const weeksLeft = Math.max(0.5, daysAgo(client.competition_date, now) / 7)
-      const need = (last.v - tw) / weeksLeft // kg/week needed
-      if (need > 0) {
-        if (perWeek > -0.1) { adjustments.push('體重沒在掉、但賽期逼近 → 製造赤字（降熱量或加有氧）'); bullets.push(`🎯 距賽 ~${weeksLeft.toFixed(0)} 週、要 -${need.toFixed(1)}kg/週才到 ${tw}kg，目前沒掉 → 落後`) }
-        else if (perWeek <= -need * 1.4) { adjustments.push('掉太快、有掉肌風險 → 略收赤字'); bullets.push(`🎯 掉得比需要的 ${need.toFixed(1)}kg/週 還快 → 太猛`) }
-        else { bullets.push(`🎯 距賽 ~${weeksLeft.toFixed(0)} 週、需 -${need.toFixed(1)}kg/週 → 進度上，別加速`) }
+    // competition_enabled 明確為 false（已關備賽但日期沒清）就不做賽期對帳
+    if (isCut && tw != null && client.competition_date && client.competition_enabled !== false) {
+      const daysToComp = daysAgo(client.competition_date, now) // comp - now，賽在未來為正
+      if (daysToComp <= 7) {
+        // 賽期已過或剩不到一週：絕不用 0.5 週硬算出「-10kg/週」這種荒謬又危險的指令
+        needsReview = true
+        if (daysToComp < 0) {
+          flags.unshift(`比賽日（${client.competition_date}）已過 ${-daysToComp} 天 → 需教練確認新階段/新目標`)
+          bullets.push(`🎯 賽期已過，體重對帳暫停 → 等教練設定下一階段`)
+        } else {
+          flags.unshift(`距賽僅 ${daysToComp} 天 → Peak Week，需教練親自帶`)
+          bullets.push(`🎯 距賽 ${daysToComp} 天 → Peak Week，交給教練手動帶`)
+        }
+      } else {
+        const weeksLeft = daysToComp / 7 // 此分支必 >1，不需夾值
+        const need = (last.v - tw) / weeksLeft // kg/week needed
+        const weeksLabel = weeksLeft < 2 ? `${daysToComp} 天` : `~${weeksLeft.toFixed(0)} 週`
+        if (need > 1.5) {
+          // 需要的速率不健康（>1.5kg/週）→ 不寫進學員訊息，丟給教練重設
+          needsReview = true
+          flags.unshift(`距賽 ${daysToComp} 天卻需 -${need.toFixed(1)}kg/週才達標（不健康）→ 需教練重設目標或賽事`)
+          bullets.push(`🎯 距賽 ${weeksLabel}、要 -${need.toFixed(1)}kg/週才到 ${tw}kg → 速率不合理，需教練介入`)
+        } else if (need > 0) {
+          if (perWeek > -0.1) { adjustments.push('體重沒在掉、但賽期逼近 → 製造赤字（降熱量或加有氧）'); bullets.push(`🎯 距賽 ${weeksLabel}、要 -${need.toFixed(1)}kg/週才到 ${tw}kg，目前沒掉 → 落後`) }
+          else if (perWeek <= -need * 1.4) { adjustments.push('掉太快、有掉肌風險 → 略收赤字'); bullets.push(`🎯 掉得比需要的 ${need.toFixed(1)}kg/週 還快 → 太猛`) }
+          else { bullets.push(`🎯 距賽 ${weeksLabel}、需 -${need.toFixed(1)}kg/週 → 進度上，別加速`) }
+        } else {
+          // need <= 0：已達標或低於目標體重——別靜默放生
+          if (perWeek < -0.1) { adjustments.push('已達/低於目標體重卻還在掉 → 止跌、別再加赤字（保肌）'); bullets.push(`🎯 已到 ${tw}kg 目標仍掉 ${perWeek.toFixed(1)}kg/週 → 該止跌`) }
+          else bullets.push(`🎯 已達目標體重 ${tw}kg → 維持`)
+        }
       }
+    } else if (isCut && tw == null && client.competition_date && client.competition_enabled !== false) {
+      // 有賽期但沒填目標體重 → 無法做速率對帳，標記教練補齊（別無聲跳過）
+      flags.push('有備賽日但缺目標體重，無法做速率對帳 → 建議補 target_weight')
     }
   } else {
     bullets.push('⚖️ 體重資料偏少，趨勢先觀察')
@@ -181,7 +208,7 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
     bullets,
     adjustments,
     studentMessage: msgLines.join('\n'),
-    needsCoachReview: !!newLab,
+    needsCoachReview: needsReview || !!newLab,
     flags,
   }
 }

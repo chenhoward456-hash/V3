@@ -138,6 +138,8 @@ export async function GET(request: NextRequest) {
     })
 
     // 最近一則教練週度訊息（給「為你更新」頂部卡片用）— 點推播進來看得到完整內容
+    // 只取近 14 天：超過就不該再假裝是「本週」調整置頂（與血檢/macro 卡片的新鮮度窗一致）
+    const coachMsgCutoff = new Date(Date.now() - 14 * 86_400_000).toISOString()
     queryEntries.push({
       key: 'recentCoachMessage',
       query: wrap(
@@ -145,6 +147,7 @@ export async function GET(request: NextRequest) {
           .from('coach_messages')
           .select('id, title, body, mode, created_at')
           .eq('client_id', client.id)
+          .gte('created_at', coachMsgCutoff)
           .order('created_at', { ascending: false })
           .limit(1)
       ),

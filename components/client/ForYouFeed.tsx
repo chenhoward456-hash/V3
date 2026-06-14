@@ -53,7 +53,8 @@ function CoachMessageCard({ msg, onDismiss }: { msg: CoachMessageRow; onDismiss:
           {dateStr && <p className="text-[11px] text-blue-400 leading-tight">{dateStr} · 教練</p>}
         </div>
       </div>
-      <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{msg.body}</p>
+      <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed max-h-72 overflow-y-auto">{msg.body}</p>
+      <p className="text-[10px] text-blue-400/80 mt-2 leading-snug">本訊息為健身/營養指導，非醫療診斷或處方；身體不適請就醫。</p>
     </div>
   )
 }

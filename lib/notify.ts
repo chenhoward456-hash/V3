@@ -73,9 +73,17 @@ export async function sendRoutineReminder(
     // 全部過期了，fallback 到 LINE
   }
 
-  // 2. Fallback: LINE Push
+  // 2. Fallback: LINE Push — 沒有 lineUserId 就誠實回 skipped（不要硬打空字串假裝成功）
+  if (!lineUserId) {
+    return { method: 'skipped', success: false }
+  }
   try {
-    await pushMessage(lineUserId, [{ type: 'text', text: message.lineText }])
+    const res = await pushMessage(lineUserId, [{ type: 'text', text: message.lineText }])
+    // pushMessage 對 4xx/5xx 是 return res 不 throw → 必須自己看 res.ok，否則空 id/配額爆都會被當成功
+    if (!res || res.ok === false) {
+      log.error('LINE push fallback 非 2xx', { clientId, status: res?.status })
+      return { method: 'line_push', success: false }
+    }
     return { method: 'line_push', success: true }
   } catch (err: unknown) {
     log.error('LINE push fallback failed', { clientId, error: err instanceof Error ? err.message : String(err) })
