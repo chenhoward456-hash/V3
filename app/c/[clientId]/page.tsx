@@ -778,7 +778,7 @@ export default function ClientDashboard() {
         })()}
 
         {/* LINE 綁定提示 Banner */}
-        {!c.line_user_id && (
+        {!c.has_line_binding && (
           <div className="bg-[#06C755]/10 border-2 border-[#06C755] rounded-2xl p-4 mb-4">
             <div className="flex items-start gap-3">
               <span className="text-2xl shrink-0">💬</span>
@@ -902,6 +902,7 @@ export default function ClientDashboard() {
                 nextCheckupDate={c.next_checkup_date}
                 macroAdjustment={clientData.recentMacroAdjustment ?? null}
                 coachMessage={clientData.recentCoachMessage ?? null}
+                clientCode={c.unique_code}
               />
             </SectionErrorBoundary>
           )}
@@ -1092,7 +1093,7 @@ export default function ClientDashboard() {
               caloriesTarget={c.calories_target}
               proteinTarget={c.protein_target}
               height={latestByField.height?.height ?? null}
-              hasLineBinding={!!c.line_user_id}
+              hasLineBinding={!!c.has_line_binding}
               uniqueCode={c.unique_code}
               onMutate={mutateWithTargetsAndRefreshEngine}
             />
@@ -1363,7 +1364,7 @@ export default function ClientDashboard() {
           const hasNutrition = (clientData.nutritionLogs || []).length > 0
           const hasTraining = (clientData.trainingLogs || []).length > 0
           const hasWellness = (clientData.wellness || []).length > 0
-          const hasLineBinding = !!c.line_user_id
+          const hasLineBinding = !!c.has_line_binding
           const trainingEnabled = !!c.training_enabled
           const wellnessEnabled = !!c.wellness_enabled
           const checkItems = [hasWeight, hasNutrition, hasLineBinding]

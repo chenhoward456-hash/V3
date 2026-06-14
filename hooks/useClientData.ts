@@ -71,7 +71,9 @@ export interface Client {
   gene_notes: string | null
   training_plan: TrainingPlan | null
   training_experience: 'beginner' | 'intermediate' | 'advanced' | null
-  line_user_id: string | null
+  /** @deprecated /api/clients 不再回傳原始 line_user_id（PII）；用 has_line_binding 判斷有沒有綁 LINE */
+  line_user_id?: string | null
+  has_line_binding?: boolean
   created_at: string
   height: number | null
   lab_results: LabResult[]

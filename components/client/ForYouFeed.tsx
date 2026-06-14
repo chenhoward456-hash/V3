@@ -65,13 +65,15 @@ interface ForYouFeedProps {
   nextCheckupDate?: string | null
   macroAdjustment?: MacroAdjustmentRow | null
   coachMessage?: CoachMessageRow | null
+  /** 學員 unique_code：關閉教練訊息時回寫 read_at（跨裝置一致） */
+  clientCode?: string
 }
 
 /**
  * 「為你更新」精簡卡片流 — 每則一行重點、預設只顯示 3 則、合規免責收底部。
  * 關掉存 localStorage；事件 id 變了會重新出現。
  */
-export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment, coachMessage }: ForYouFeedProps) {
+export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment, coachMessage, clientCode }: ForYouFeedProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [ready, setReady] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -94,6 +96,14 @@ export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment, coa
       try { localStorage.setItem('foryou_dismissed', JSON.stringify([...next])) } catch { /* ignore */ }
       return next
     })
+    // 教練訊息：除了本機隱藏，回寫 read_at → 換裝置/清快取不再跳出
+    if (id.startsWith('coach_msg_') && clientCode && coachMessage) {
+      fetch('/api/coach-message-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: clientCode, messageId: coachMessage.id }),
+      }).catch(() => { /* 本機已隱藏，回寫失敗不影響當下體驗 */ })
+    }
   }
 
   if (!ready) return null

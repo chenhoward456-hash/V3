@@ -29,9 +29,15 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('缺少客戶 ID', 400)
     }
 
-    // 驗證 clientId 格式（允許英數字、連字號、底線，最長 20 字）
-    if (!/^[a-zA-Z0-9_-]{1,20}$/.test(clientId)) {
+    // 驗證 clientId 格式：實際 code 是 8–12 字 base64url，收緊下限降低枚舉/誤命中面
+    if (!/^[a-zA-Z0-9_-]{8,20}$/.test(clientId)) {
       return createErrorResponse('無效的客戶 ID 格式', 400)
+    }
+
+    // 第二層限流：對「單一 code」也設限，擋住換 IP/代理對同一碼狂打探測（per-IP 限流擋不到）
+    const { allowed: codeAllowed } = await rateLimit(`clients-get-code:${clientId}`, 60, 60_000)
+    if (!codeAllowed) {
+      return createErrorResponse('請求過於頻繁，請稍後再試', 429)
     }
 
     const { data: client, error: clientError } = await supabase
@@ -147,6 +153,7 @@ export async function GET(request: NextRequest) {
           .from('coach_messages')
           .select('id, title, body, mode, created_at')
           .eq('client_id', client.id)
+          .is('read_at', null)              // 已讀（學員關過）的不再回 → 跨裝置一致
           .gte('created_at', coachMsgCutoff)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -164,8 +171,12 @@ export async function GET(request: NextRequest) {
 
     // 過濾出 active 的補品（未封存）— 學員端打卡、計算依據都只看 active
     // 封存的補品仍在 DB，由 /api/supplements/history 端點專門查詢用於 timeline 顯示
+    // line_user_id 是 LINE 推播識別碼（PII token）：此端點只靠 unique_code 鑑權、連結會被轉傳，
+    // 不該把原始值送到瀏覽器。前端只用它判斷「有沒有綁 LINE」→ 改回布林 has_line_binding。
+    const { line_user_id, ...clientSafe } = client as Record<string, unknown>
     const clientWithActiveSupplements = {
-      ...client,
+      ...clientSafe,
+      has_line_binding: !!line_user_id,
       supplements: Array.isArray(client.supplements)
         ? client.supplements.filter((s: { archived_at?: string | null }) => !s.archived_at)
         : [],
