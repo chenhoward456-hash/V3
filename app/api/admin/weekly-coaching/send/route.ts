@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
   const supabase = createServiceSupabase()
   const { data: client } = await supabase
     .from('clients')
-    .select('name, line_user_id')
+    .select('name, line_user_id, unique_code')
     .eq('id', clientId)
-    .maybeSingle<{ name: string; line_user_id: string | null }>()
+    .maybeSingle<{ name: string; line_user_id: string | null; unique_code: string }>()
   if (!client) return NextResponse.json({ error: '找不到學員' }, { status: 404 })
 
   const title = mode === 'accountability' ? '👋 Howard 找你回來' : '💬 Howard 的本週調整'
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     title,
     body: firstLine.slice(0, 80),
     lineText: message,
-    url: '/dashboard',
+    url: `/c/${client.unique_code}`, // 學員實際儀表板（/dashboard 不存在會 404）
   })
 
   return NextResponse.json({
