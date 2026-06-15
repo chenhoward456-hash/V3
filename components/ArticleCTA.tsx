@@ -48,22 +48,22 @@ export default function ArticleCTA({ articleTitle, slug, relatedArticles, freeRe
         </div>
       )}
       
-      {/* 主要 CTA — 導向免費體驗 */}
+      {/* 主要 CTA — 導向線上訂閱 */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-10 text-center border-2 border-blue-200">
         <h3 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
-          想知道你目前的身體狀態？
+          準備好讓「教練 + 數據」幫你把方向定對？
         </h3>
         <p className="text-gray-600 mb-6">
-          免費系統分析，30 秒輸入基本資料，馬上看到你的營養目標和建議。
+          線上訂閱：個人化營養與訓練、血檢判讀、教練全程跟進——不靠迷思，跟著數據走。
         </p>
         <Link
-          href="/diagnosis"
+          href="/join"
           className="inline-block bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:bg-blue-700 hover:-translate-y-1 transition-all"
         >
-          免費體驗系統分析
+          查看線上訂閱方案
         </Link>
         <p className="text-sm text-gray-400 mt-4">
-          不用註冊，不用付費，直接看結果
+          隨時可調整，方向不對隨時校正
         </p>
       </div>
 
