@@ -17,6 +17,42 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '37',
+    title: '練到力竭才有效？8-12 下才會大？增肌的 5 個真相（每條附 RCT）',
+    description: '練到力竭、一定要 8-12 下、痠才有練到——這些健身房口耳相傳的觀念，對照 PubMed 後有些是過度簡化、有些根本不必要。RIR、訓練量劑量反應、合成代謝窗口、痠痛迷思一次講清楚。',
+    date: '2026-06-15',
+    category: '訓練恢復',
+    readTime: '9 分鐘',
+    slug: 'muscle-building-truths',
+  },
+  {
+    id: '36',
+    title: '健身補劑哪些有用、哪些是智商稅？一張證據分級表幫你省錢',
+    description: '把常見補劑一條條丟進 PubMed 照證據強度分級：肌酸與咖啡因值得買、β-丙胺酸與乳清看情境、BCAA／HMB／睪固酮 booster 多半是智商稅。附肌酸傷腎掉髮的真相。',
+    date: '2026-06-15',
+    category: '飲食營養',
+    readTime: '9 分鐘',
+    slug: 'supplements-worth-it-or-scam',
+  },
+  {
+    id: '35',
+    title: '不吃澱粉瘦比較快？減太快會復胖？減脂的 5 個迷思，連飲控老手都中招',
+    description: '碳水致胖、減越快越好、有氧是主力、卡關＝代謝壞掉——這些減脂直覺對照研究後幾乎都被講歪。附女性低能量可用性（RED-S）與飲食失調風險的但書。',
+    date: '2026-06-15',
+    category: '飲食營養',
+    readTime: '9 分鐘',
+    slug: '5-fatloss-myths-corrected',
+  },
+  {
+    id: '34',
+    title: '睡前喝酒助眠？褪黑激素越多越好？7 個睡眠迷思，有幾個連教練都講反了',
+    description: '睡前小酌、咖啡下午不喝就沒事、褪黑激素越多越好——7 個睡眠迷思逐條對照 PubMed，並標出對失眠者、輪班族、服藥者各自的但書。',
+    date: '2026-06-15',
+    category: '訓練恢復',
+    readTime: '8 分鐘',
+    slug: '7-sleep-myths-corrected',
+  },
+  {
     id: '33',
     title: '健保給你一張「正常」報告——但有 5 個數字它根本沒幫你看',
     description: '健保健檢的設計邏輯是「找已經生病的人」，不是「在生病前先看到異狀」。整理 ApoB、Hcy、維生素 D、hs-CRP、HOMA-IR 五個自費數字：意義、目標值、我自己的數據、總共多少錢。',
