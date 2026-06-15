@@ -1,32 +1,56 @@
 /**
  * 醫療合規巡檢（runtime guard）
  *
- * V3 紅線：學員看到的文字嚴禁出現診斷／處方／疾病名。教練在佇列可手改草稿，
- * 一旦改成含醫療宣稱的字會原樣推給學員並入庫——這裡在「發送前」攔下。
+ * V3 紅線：學員看得到的文字嚴禁出現診斷／處方／疾病名／療效宣稱。
+ * 用途有二：
+ *   1. 攔截教練手改的訊息（weekly-coaching/send）→ 命中回 422
+ *   2. 當各引擎/AI 輸出的 runtime backstop（命中就 degradeToSafe 降級）
  *
- * 設計取捨：只擋最清楚的紅線（疾病名 + 診斷語氣 + 處方語氣），不做寬鬆模糊比對，
- * 避免擋掉正當的健身/營養教練用語（「血糖偏高建議追蹤」是 OK 的，「你有糖尿病」不行）。
+ * 設計取捨：只擋清楚的紅線，盡量不誤殺正當教練/補品語句。
+ *   - 補品劑量（DIM 300mg、creatine 5g）是學員自己的 protocol，合法 → 不靠裸 mg 偵測，
+ *     處方風險改用「處方藥名」抓（metformin / 甲狀腺素…），補品 mg 不誤殺。
  */
 
-// 疾病名／臨床診斷詞（出現幾乎都越界）
+// 疾病名／臨床診斷詞（含中英；出現幾乎都越界）
 const DISEASE_TERMS = [
-  '糖尿病', '脂肪肝', '高血壓', '高血脂', '甲狀腺亢進', '甲狀腺低下', '甲狀腺炎',
-  '癌', '腫瘤', '憂鬱症', '焦慮症', '躁鬱', '思覺失調',
-  '腎衰竭', '肝硬化', '心臟病', '中風', '痛風', '紅斑性狼瘡',
-  '貧血症', '骨質疏鬆症', '代謝症候群', '胰島素阻抗症', '多囊性卵巢',
+  // 內分泌/代謝
+  '糖尿病', '糖尿病前期', '胰島素阻抗', '代謝症候群',
+  '甲狀腺低下', '甲狀腺功能低下', '甲狀腺亢進', '甲狀腺功能亢進', '甲亢', '甲狀腺炎',
+  '腎上腺疲勞', '腎上腺功能不全', '腎上腺功能低下', 'Addison',
+  '多囊性卵巢', '多囊卵巢', 'PCOS', '閉經', '無月經症',
+  // 肝腎心
+  '脂肪肝', '非酒精性脂肪肝', 'NAFLD', '肝硬化', '腎衰竭', '心臟病', '中風', '高血壓', '高血脂',
+  // 血液
+  '貧血', '缺鐵性貧血', '小球性貧血', '大球性貧血', '巨球性貧血', '銅缺乏性貧血',
+  // 其他
+  '癌', '腫瘤', '痛風', '紅斑性狼瘡', '骨質疏鬆症', '系統性發炎',
+  // 精神
+  '憂鬱症', '焦慮症', '躁鬱', '思覺失調',
+  // 英文（AI 自由生成最常蹦出）
+  'diabetes', 'fatty liver', 'hypothyroidism', 'hyperthyroidism', 'anemia', 'anaemia',
+  'gout', 'amenorrhea', 'metabolic syndrome', 'insulin resistance',
 ]
 
-// 診斷語氣：把人「定性成有病」
+// 處方藥名（出現＝把補品/飲食扯到用藥處方，越界）。補品名不在此列，故補品 mg 不誤殺。
+const DRUG_TERMS = [
+  'metformin', '二甲雙胍', 'levothyroxine', '左旋甲狀腺素', '甲狀腺素藥', '優甲樂',
+  'clomid', 'clomiphene', '可洛米分', 'spironolactone', 'accutane', '異維A酸',
+  'statin', '史他汀', '他汀', 'prednisone', '潑尼松', 'SSRI', '血清素回收抑制劑',
+]
+
+// 診斷語氣（把人定性成有病）——含「有主詞」與「無主詞」句型
 const DIAGNOSIS_PATTERNS: { re: RegExp; label: string }[] = [
-  { re: /你(有|患有|罹患|得了)\s*[一-龥A-Za-z]{0,8}(症|病|炎|癌)/, label: '診斷語氣（你有/罹患…病症）' },
-  { re: /(確診|診斷為|判定為)/, label: '診斷語氣（確診/診斷為）' },
+  { re: /你(有|患有|罹患|得了|是不是有)\s*[一-龥A-Za-z]{0,8}(症|病|炎|癌)/, label: '診斷語氣（你有/罹患…病症）' },
+  { re: /(確診|診斷為|判定為|被診斷)/, label: '診斷語氣（確診/診斷為）' },
   { re: /(前期|疑似)\s*[一-龥]{0,6}(症|病)/, label: '診斷語氣（…前期/疑似…病）' },
+  // 無主詞句型：符合…診斷標準 / 像是…症 / …的表現 / 指向…
+  { re: /符合[一-龥A-Za-z]{0,10}(診斷標準|的診斷)/, label: '診斷語氣（符合…診斷標準）' },
+  { re: /(看起來|像是|疑似|指向|傾向)\s*[一-龥A-Za-z]{0,8}(症|病|低下|亢進)/, label: '診斷語氣（像是/指向…症病）' },
 ]
 
-// 處方語氣：開藥／劑量
+// 處方語氣：開藥／服藥／與藥名綁定的劑量
 const PRESCRIPTION_PATTERNS: { re: RegExp; label: string }[] = [
-  { re: /(開|處方|服用|建議吃)\s*[一-龥A-Za-z]{0,10}(藥|錠|膠囊|針劑)/, label: '處方語氣（開藥/服用…藥）' },
-  { re: /\d+\s*(mg|毫克|ml|毫升|IU|單位)\b/i, label: '劑量數字（mg/毫克/IU…）' },
+  { re: /(開立?|處方|建議服用|該吃|可服用)\s*[一-龥A-Za-z]{0,10}(藥|錠|膠囊|針劑)/, label: '處方語氣（開藥/服用…藥）' },
   { re: /(停藥|加藥|減藥|換藥)/, label: '處方語氣（停藥/換藥…）' },
 ]
 
@@ -39,13 +63,21 @@ export function scanMedicalCompliance(text: string): ComplianceHit[] {
   if (!text) return []
   const hits: ComplianceHit[] = []
   const seen = new Set<string>()
+  const lower = text.toLowerCase()
   const add = (term: string, reason: string) => {
     const key = `${term}|${reason}`
     if (!seen.has(key)) { seen.add(key); hits.push({ term, reason }) }
   }
 
   for (const d of DISEASE_TERMS) {
-    if (text.includes(d)) add(d, '疾病／臨床診斷名稱')
+    if (/[A-Za-z]/.test(d) ? lower.includes(d.toLowerCase()) : text.includes(d)) {
+      add(d, '疾病／臨床診斷名稱')
+    }
+  }
+  for (const drug of DRUG_TERMS) {
+    if (/[A-Za-z]/.test(drug) ? lower.includes(drug.toLowerCase()) : text.includes(drug)) {
+      add(drug, '處方藥名（含用藥/劑量語境）')
+    }
   }
   for (const p of [...DIAGNOSIS_PATTERNS, ...PRESCRIPTION_PATTERNS]) {
     const m = text.match(p.re)
@@ -56,4 +88,44 @@ export function scanMedicalCompliance(text: string): ComplianceHit[] {
 
 export function isMedicallyCompliant(text: string): boolean {
   return scanMedicalCompliance(text).length === 0
+}
+
+const DEFAULT_SAFE =
+  '這部分牽涉醫療判讀，建議與家醫科或整合醫學醫師討論；我可以幫你看數據趨勢與生活方式方向。'
+
+/**
+ * runtime backstop：文字命中紅線就換成安全句；沒命中原樣回。
+ * 回傳 { text, hits, degraded } 方便呼叫端決定要不要記 log 給教練稽核。
+ */
+export function degradeToSafe(text: string, fallback: string = DEFAULT_SAFE): {
+  text: string; hits: ComplianceHit[]; degraded: boolean
+} {
+  const hits = scanMedicalCompliance(text)
+  return hits.length > 0
+    ? { text: fallback, hits, degraded: true }
+    : { text, hits, degraded: false }
+}
+
+/**
+ * 遞迴把物件/陣列裡【命中紅線的字串】換成安全句，其餘原樣（沒命中不動）。
+ * 給引擎輸出 route 當最後一道網：源頭措辭已改好時幾乎不會觸發，只兜未來新增/漏網。
+ * 回傳 { value, hits } —— hits 非空代表有降級，呼叫端可記 log。
+ */
+export function deepDegrade<T>(input: T, fallback: string = DEFAULT_SAFE): { value: T; hits: ComplianceHit[] } {
+  const allHits: ComplianceHit[] = []
+  const walk = (v: unknown): unknown => {
+    if (typeof v === 'string') {
+      const g = degradeToSafe(v, fallback)
+      if (g.degraded) allHits.push(...g.hits)
+      return g.text
+    }
+    if (Array.isArray(v)) return v.map(walk)
+    if (v && typeof v === 'object') {
+      const out: Record<string, unknown> = {}
+      for (const [k, val] of Object.entries(v)) out[k] = walk(val)
+      return out
+    }
+    return v
+  }
+  return { value: walk(input) as T, hits: allHits }
 }

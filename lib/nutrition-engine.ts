@@ -1008,14 +1008,14 @@ function checkMenstrualCycle(input: NutritionInput): MenstrualCycleInfo {
   const periodDate = new Date(input.lastPeriodDate)
   const daysSince = Math.floor((now.getTime() - periodDate.getTime()) / (1000 * 60 * 60 * 24))
 
-  // 閉經偵測：>45 天未標記經期 = 功能性下丘腦性閉經風險
-  // [9] Loucks & Thuma 2003: EA < 30 kcal/kg FFM → LH 脈衝頻率下降 → 閉經
-  // [10] Mountjoy 2018: 連續 3 個月無月經 = 閉經診斷標準；45 天為早期預警
+  // 長期未記錄經期偵測：>45 天 = 能量不足（RED-S）早期訊號，不對學員下臨床診斷
+  // [9] Loucks & Thuma 2003: EA < 30 kcal/kg FFM → LH 脈衝頻率下降
+  // [10] Mountjoy 2018: 長期月經沒來與低能量可用性相關；45 天為早期預警
   let amenorrheaWarning: string | null = null
   if (daysSince > 90) {
-    amenorrheaWarning = `🩸 🚨 已超過 ${daysSince} 天未標記經期（>90 天）！這符合閉經診斷標準，是 RED-S 的嚴重警訊。建議立即增加熱量攝取、減少訓練量，並諮詢婦產科/內分泌科。`
+    amenorrheaWarning = `🩸 🚨 已超過 ${daysSince} 天未記錄經期。長期月經沒來常是能量攝取不足（RED-S）的重要訊號，建議盡快增加熱量、減少訓練量，並與婦產科或內分泌科醫師評估。`
   } else if (daysSince > 45) {
-    amenorrheaWarning = `🩸 ⚠️ 已超過 ${daysSince} 天未標記經期。月經延遲可能是能量不足的早期信號（RED-S），請留意並考慮諮詢醫師。`
+    amenorrheaWarning = `🩸 ⚠️ 已超過 ${daysSince} 天未記錄經期。月經延遲可能是能量不足的早期信號（RED-S），請留意並考慮與醫師討論。`
   }
 
   // 標準週期 ~28 天：卵泡期 day 1-14, 黃體期 day 15-28
@@ -1485,19 +1485,19 @@ function checkCuttingReadiness(
   const freeT4 = findLab(['free t4', 'ft4', '游離甲狀腺素'])
   if (tsh && tsh.value != null && tsh.value > 4.0) {
     score -= 15
-    reasons.push(`🟡 TSH 偏高（${tsh.value}）— 甲狀腺功能低下，代謝率降低，不適合加深赤字`)
+    reasons.push(`🟡 TSH 偏高（${tsh.value}）— 代謝速率可能偏慢，目前不適合加深赤字，建議與醫師確認`)
     labFlags.push(`TSH ${tsh.value}`)
   }
   if (freeT4 && freeT4.value != null && freeT4.value < 1.0) {
     score -= 10
-    reasons.push(`🟡 Free T4 偏低（${freeT4.value}）— 甲狀腺輸出不足`)
+    reasons.push(`🟡 Free T4 偏低（${freeT4.value}）— 建議追蹤`)
     labFlags.push(`Free T4 ${freeT4.value}`)
   }
-  // TSH + Free T4 聯合：代謝低下模式
+  // TSH + Free T4 聯合：代謝偏慢訊號
   if (tsh?.value != null && tsh.value > 3.5 && freeT4?.value != null && freeT4.value < 1.0) {
     score -= 10  // 額外扣分
-    severePenaltyMagnitude += 10  // 雙指標代謝低下 = 結構性問題
-    reasons.push('🔴 TSH↑ + Free T4↓ = 甲狀腺代謝低下模式，必須先恢復碳水攝取')
+    severePenaltyMagnitude += 10  // 雙指標代謝偏慢 = 結構性訊號
+    reasons.push('🔴 TSH↑ + Free T4↓ — 代謝速率可能偏慢，建議先恢復碳水攝取並與醫師確認')
   }
 
   // CRP（發炎指標）

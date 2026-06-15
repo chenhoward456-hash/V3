@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { generateLabNutritionAdvice, type LabNutritionAdvice } from '@/lib/lab-nutrition-advisor'
+import { degradeToSafe } from '@/lib/compliance-scrub'
 
 interface LabNutritionAdviceCardProps {
   labResults: Array<{ test_name: string; value: number | null; unit: string; status: 'normal' | 'attention' | 'alert'; date?: string }>
@@ -28,6 +29,9 @@ export default function LabNutritionAdviceCard({ labResults, gender, goalType }:
           <AdviceItem key={i} advice={item} />
         ))}
       </div>
+      <p className="text-[10px] text-gray-400 mt-4 leading-snug">
+        ⚠️ 本卡片為依血檢數據的教練飲食追蹤建議，不構成醫療診斷或處方；數值偏離參考範圍請諮詢家醫科或整合醫學醫師。
+      </p>
     </div>
   )
 }
@@ -55,7 +59,7 @@ function AdviceItem({ advice }: { advice: LabNutritionAdvice }) {
           <div className="flex items-center gap-2">
             <span className="text-lg">{advice.icon}</span>
             <div>
-              <p className={`text-sm font-bold ${textColor}`}>{advice.title}</p>
+              <p className={`text-sm font-bold ${textColor}`}>{degradeToSafe(advice.title).text}</p>
               <p className="text-[10px] text-gray-500">
                 {advice.labMarker} {advice.currentValue}{advice.unit}（目標：{advice.targetRange}）
               </p>
@@ -117,7 +121,7 @@ function AdviceItem({ advice }: { advice: LabNutritionAdvice }) {
           {advice.caveat && (
             <div className="bg-gray-100 rounded-xl p-2.5">
               <p className="text-[10px] font-bold text-gray-600 mb-0.5">⚠️ 判讀提醒</p>
-              <p className="text-[10px] text-gray-500">{advice.caveat}</p>
+              <p className="text-[10px] text-gray-500">{degradeToSafe(advice.caveat).text}</p>
             </div>
           )}
 

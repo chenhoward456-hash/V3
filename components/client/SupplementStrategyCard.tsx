@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { SupplementSuggestion } from '@/lib/supplement-engine'
+import { degradeToSafe } from '@/lib/compliance-scrub'
 
 const PRIORITY: Record<SupplementSuggestion['priority'], { label: string; cls: string }> = {
   high: { label: '核心', cls: 'bg-amber-100 text-amber-800' },
@@ -53,7 +54,7 @@ export default function SupplementStrategyCard({ suggestions }: { suggestions: S
         {shown.map((s, i) => (
           <div key={`${s.name}-${i}`} className="border border-gray-100 rounded-xl p-3">
             <div className="flex items-start justify-between gap-2">
-              <div className="font-medium text-gray-900 text-sm">{s.name}</div>
+              <div className="font-medium text-gray-900 text-sm">{degradeToSafe(s.name).text}</div>
               <span className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full font-medium ${PRIORITY[s.priority].cls}`}>
                 {PRIORITY[s.priority].label}
               </span>
@@ -62,7 +63,7 @@ export default function SupplementStrategyCard({ suggestions }: { suggestions: S
               {s.dosage}
               {s.timing ? <span className="text-gray-400"> · {s.timing}</span> : null}
             </div>
-            {s.reason && <p className="text-xs text-gray-700 mt-1.5 leading-relaxed">{s.reason}</p>}
+            {s.reason && <p className="text-xs text-gray-700 mt-1.5 leading-relaxed">{degradeToSafe(s.reason).text}</p>}
             {s.evidence && (
               <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">📄 {s.evidence}</p>
             )}

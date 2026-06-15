@@ -4,6 +4,7 @@ import { buildClientContextSnapshot } from '@/lib/client-context'
 import { rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
+import { degradeToSafe } from '@/lib/compliance-scrub'
 
 const logger = createLogger('ai-chat')
 
@@ -155,6 +156,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (reply === null) throw lastErr
+
+    // 合規 backstop：AI 自由生成可能講出診斷/處方/疾病名（學員逼問「我是不是有X病」時）。
+    // 命中醫療紅線就整段降級成安全句，並記 log 供 Howard 稽核——prompt 不是強制守門，這是第二道防線。
+    const guarded = degradeToSafe(reply)
+    if (guarded.degraded) {
+      logger.warn('AI 聊天回覆命中醫療紅線，已降級為安全句', { clientId: client.id, hits: guarded.hits.map(h => h.term) })
+      reply = guarded.text
+    }
 
     // 所有成功的 AI 回覆都記錄用量（用於每日上限 + 免費額度計數）
     await supabase.from('ai_chat_usage').insert({ client_id: client.id }).then(({ error: insertError }) => {

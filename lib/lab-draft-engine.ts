@@ -15,6 +15,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { LabFinding } from './lab-trend-analyzer'
 import { HOWARD_LAB_VOICE } from './howard-voice'
+import { scanMedicalCompliance } from './compliance-scrub'
 
 let _anthropic: Anthropic | null = null
 function getClient(): Anthropic {
@@ -151,6 +152,9 @@ export interface DraftResult {
   priorities: string
   modelUsed: string
   findingsCount: number
+  /** AI 草稿命中醫療紅線（疾病名/處方/劑量）→ 教練須先改寫再給學員 */
+  needsComplianceReview?: boolean
+  complianceHits?: string[]
 }
 
 /**
@@ -262,14 +266,22 @@ ${findingsToMarkdown(input.findings)}
     }
   }
 
-  const summary = String(parsed.summary || '').trim()
-  const priorities = String(parsed.priorities || '').trim()
+  const rawSummary = String(parsed.summary || '').trim()
+  const rawPriorities = String(parsed.priorities || '').trim()
+
+  // 合規 backstop：LLM 草稿可能蹦出疾病名/處方/劑量（prompt 不是強制守門）。
+  // 命中就標記 needsComplianceReview，讓教練佇列知道要先改寫再給學員。
+  const summaryHits = scanMedicalCompliance(rawSummary)
+  const priorityHits = scanMedicalCompliance(rawPriorities)
+  const complianceHits = [...summaryHits, ...priorityHits]
 
   return {
-    summary,
-    priorities,
+    summary: rawSummary,
+    priorities: rawPriorities,
     modelUsed: model,
     findingsCount: input.findings.length,
+    needsComplianceReview: complianceHits.length > 0,
+    complianceHits: complianceHits.map(h => h.term),
   }
 }
 

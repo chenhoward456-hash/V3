@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
 import { generateRecoveryAssessment, type RecoveryInput } from '@/lib/recovery-engine'
+import { deepDegrade } from '@/lib/compliance-scrub'
 
 const logger = createLogger('api-recovery-assessment')
 
@@ -102,7 +103,13 @@ export async function GET(request: NextRequest) {
 
     const assessment = generateRecoveryAssessment(input)
 
-    return NextResponse.json(assessment)
+    // 合規 backstop：整包輸出（signals/reasons/recommendations…）過一遍，命中醫療紅線的字串降級
+    const { value: safeAssessment, hits } = deepDegrade(assessment)
+    if (hits.length > 0) {
+      logger.warn('recovery-assessment 輸出命中醫療紅線，已降級', { clientId: client.id, terms: hits.map(h => h.term) })
+    }
+
+    return NextResponse.json(safeAssessment)
   } catch (error) {
     logger.error('GET /api/recovery-assessment unexpected error', error)
     return NextResponse.json({ error: '恢復評估失敗' }, { status: 500 })

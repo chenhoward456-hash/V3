@@ -248,7 +248,7 @@ export function generateLabNutritionAdvice(
       // Bug fix: 加閾值門檻，避免 HOMA-IR 1.2-1.4 的 attention 狀態誤觸發
       advice.push({
         category: 'glucose',
-        title: '胰島素阻抗偏高',
+        title: '胰島素敏感性較低',
         icon: '📊',
         severity: lab.value > 2.5 ? 'high' : 'medium',
         dietaryChanges: [
@@ -334,7 +334,7 @@ export function generateLabNutritionAdvice(
             'Juraschek et al. 2011 (Arthritis Care Res): Effect of vitamin C supplementation on serum uric acid',
             'Choi & Curhan 2008 (BMJ): Soft drinks, fructose, and risk of gout in men',
           ],
-          caveat: '尿酸偏高不一定會痛風，但長期高尿酸與代謝症候群、心血管風險相關。減脂期過度斷食或生酮也可能暫時升高尿酸（酮體與尿酸競爭腎臟排泄）。',
+          caveat: '尿酸偏高建議追蹤，與代謝症候群、心血管指標相關。減脂期過度斷食或生酮也可能暫時升高尿酸（酮體與尿酸競爭腎臟排泄）。',
         })
       }
     }
@@ -558,7 +558,7 @@ export function generateLabNutritionAdvice(
         severity: lab.value > 80 ? 'high' : 'medium',
         dietaryChanges: [
           '完全避免酒精',
-          '減少精製碳水和果糖（非酒精性脂肪肝的主要飲食驅動因子）',
+          '減少精製碳水和果糖（ALT 偏高常見的飲食驅動因子）',
           '增加膳食纖維和抗氧化物',
           '考慮補充牛磺酸和 NAC（N-乙醯半胱胺酸）',
           '增加十字花科蔬菜',
@@ -574,7 +574,7 @@ export function generateLabNutritionAdvice(
           'Zelber-Sagi et al. 2011 (World J Gastroenterol): Nutrition and physical activity in NAFLD',
           'Abdelmalek et al. 2010 (Hepatology): Increased fructose consumption and NAFLD',
         ],
-        caveat: 'ALT 比 AST 更具肝臟特異性。若 ALT > AST 且持續偏高，建議排查非酒精性脂肪肝（NAFLD），這在高體脂人群中很常見。',
+        caveat: 'ALT 比 AST 更具肝臟特異性。若 ALT > AST 且持續偏高，建議就醫評估肝臟相關指標，這在高體脂人群中很常見。',
       })
     }
 
@@ -735,7 +735,7 @@ export function generateLabNutritionAdvice(
       if (tshHigh) {
         advice.push({
           category: 'thyroid',
-          title: 'TSH 偏高（甲狀腺低下傾向）',
+          title: 'TSH 偏高（代謝速率可能偏慢，建議與醫師確認）',
           icon: '🦋',
           severity: lab.value > 5.0 ? 'high' : 'medium',
           dietaryChanges: [
@@ -760,14 +760,14 @@ export function generateLabNutritionAdvice(
       } else if (lab.value < 0.4) {
         advice.push({
           category: 'thyroid',
-          title: 'TSH 偏低（甲狀腺亢進傾向）',
+          title: 'TSH 偏低（代謝速率可能偏快，建議與醫師確認）',
           icon: '🦋',
           severity: lab.value < 0.3 ? 'high' : 'medium',
           dietaryChanges: [
             '避免過量碘攝取（停止碘補充劑、減少海帶）',
-            '增加抗氧化食物（甲亢狀態氧化壓力高）',
-            '確保鈣和維生素 D 充足（甲亢會加速骨質流失）',
-            '增加熱量攝取（甲亢代謝率高，容易消耗過多）',
+            '增加抗氧化食物（代謝速率偏快時氧化壓力較高）',
+            '確保鈣和維生素 D 充足（代謝速率偏快可能加速骨質流失）',
+            '增加熱量攝取（代謝速率偏快，容易消耗過多）',
           ],
           foodsToIncrease: ['十字花科蔬菜', '莓果', '乳製品（鈣）', '堅果'],
           foodsToReduce: ['海帶', '紫菜', '碘鹽（改無碘鹽）', '碘補充劑'],
@@ -779,7 +779,7 @@ export function generateLabNutritionAdvice(
             'Ross et al. 2016 (Thyroid): ATA guidelines for hyperthyroidism',
             'Bahn et al. 2011 (Thyroid): Hyperthyroidism and other causes of thyrotoxicosis',
           ],
-          caveat: 'TSH 偏低需要醫療評估，飲食調整只能輔助。若確診甲亢，需配合內分泌科治療。',
+          caveat: 'TSH 偏低需要醫療評估，飲食調整只能輔助。建議至內分泌科評估。',
         })
       }
     }
@@ -890,7 +890,7 @@ export function generateLabNutritionAdvice(
       if (lab.value < hbMin) {
         advice.push({
           category: 'iron',
-          title: '貧血風險',
+          title: '血紅素偏低，建議追蹤',
           icon: '🩸',
           severity: 'high',
           dietaryChanges: [
@@ -916,11 +916,11 @@ export function generateLabNutritionAdvice(
       if (lab.value < 80) {
         advice.push({
           category: 'blood',
-          title: 'MCV 偏低（小球性貧血傾向）',
+          title: 'MCV 偏低，建議追蹤',
           icon: '🔬',
           severity: lab.value < 75 ? 'high' : 'medium',
           dietaryChanges: [
-            'MCV 低通常指向缺鐵性貧血 → 增加鐵質攝取',
+            'MCV 偏低常與鐵代謝相關 → 增加鐵質攝取，建議就醫評估鐵代謝',
             '確認鐵蛋白是否同時偏低',
             '搭配維生素 C 提高鐵吸收',
           ],
@@ -938,7 +938,7 @@ export function generateLabNutritionAdvice(
       } else if (lab.value > 100) {
         advice.push({
           category: 'blood',
-          title: 'MCV 偏高（大球性貧血傾向）',
+          title: 'MCV 偏高，建議追蹤',
           icon: '🔬',
           severity: lab.value > 105 ? 'high' : 'medium',
           dietaryChanges: [
@@ -957,7 +957,7 @@ export function generateLabNutritionAdvice(
             'Green & Mitra 2017 (Am Fam Physician): Megaloblastic anemia',
             'Stabler 2013 (NEJM): Vitamin B12 deficiency',
           ],
-          caveat: 'MCV 偏高最常見原因是 B12/葉酸缺乏和酒精。但甲狀腺低下也會升高 MCV。',
+          caveat: 'MCV 偏高最常見原因是 B12/葉酸缺乏和酒精。代謝速率偏慢時也可能升高 MCV，建議與醫師確認。',
         })
       }
     }
@@ -1183,7 +1183,7 @@ export function generateLabNutritionAdvice(
           dietaryChanges: [
             '暫停鋅補充劑',
             '減少貝類和紅肉頻率',
-            '注意：長期鋅過高會抑制銅吸收，留意相關症狀（貧血、白血球低）',
+            '注意：長期鋅過高會抑制銅吸收，留意相關症狀（血紅素偏低、白血球低），必要時就醫評估',
           ],
           foodsToIncrease: [],
           foodsToReduce: ['鋅補充劑', '牡蠣（暫時減少）', '過量紅肉'],
@@ -1321,7 +1321,7 @@ export function generateLabNutritionAdvice(
           icon: '⚖️',
           severity: lab.status === 'alert' ? 'high' : 'medium',
           dietaryChanges: [
-            '減少精製碳水和高 GI 食物（胰島素阻抗會刺激卵巢產生更多雄性素）',
+            '減少精製碳水和高 GI 食物（胰島素敏感性較低時會刺激卵巢產生更多雄性素）',
             '增加抗發炎食物（Omega-3、莓果、薑黃）',
             '增加纖維攝取（25-30g/day，幫助排除多餘雄性素代謝物）',
             '考慮薄荷茶（研究顯示有輕微降低雄性素效果）',
@@ -1337,7 +1337,7 @@ export function generateLabNutritionAdvice(
             'Escobar-Morreale et al. 2005 (Eur J Endocrinol): Dietary composition and PCOS',
             'Barrea et al. 2019 (Nutrients): Nutrition and PCOS — from bench to bedside',
           ],
-          caveat: '女性睪固酮偏高常與 PCOS 相關，建議配合婦產科/內分泌科評估。飲食調整可輔助但不能替代醫療。',
+          caveat: '女性睪固酮偏高建議至婦產科/內分泌科評估。飲食調整可輔助但不能替代醫療。',
         })
       }
     }
@@ -1411,7 +1411,7 @@ export function generateLabNutritionAdvice(
           icon: '😴',
           severity: lab.value < 4 ? 'high' : 'medium',
           dietaryChanges: [
-            '確保充足鈉攝取（腎上腺疲勞時鈉需求增加）',
+            '確保充足鈉攝取（皮質醇偏低時鈉需求可能增加）',
             '增加維生素 C 攝取（腎上腺是體內維生素 C 濃度最高的器官）',
             '小頻餐（避免長時間空腹導致低血糖）',
             '增加甘草根茶（含甘草酸可延長皮質醇半衰期，但有高血壓者避免）',
@@ -1426,7 +1426,7 @@ export function generateLabNutritionAdvice(
             'Cadegiani & Kater 2016 (BMC Endocr Disord): Adrenal fatigue — does it exist?',
             'Patak et al. 2004 (J Inherit Metab Dis): Vitamin C and the adrenal glands',
           ],
-          caveat: '持續低皮質醇需排除腎上腺功能不全（Addison disease），建議內分泌科評估。「腎上腺疲勞」在正統醫學中仍有爭議。',
+          caveat: '皮質醇偏低，建議至內分泌科評估。',
         })
       }
     }
@@ -1515,7 +1515,7 @@ export function generateLabNutritionAdvice(
             'Naghii et al. 2011 (J Trace Elem Med Biol): Boron supplementation and SHBG',
             'Anderson et al. 1987 (Am J Clin Nutr): Diet-hormone interactions — protein/carb ratio and SHBG',
           ],
-          caveat: 'SHBG 受甲狀腺功能、肝臟、年齡、BMI 影響。甲亢會升高 SHBG，肥胖和胰島素阻抗會降低 SHBG。',
+          caveat: 'SHBG 受甲狀腺功能、肝臟、年齡、BMI 影響。代謝速率偏快會升高 SHBG，肥胖和胰島素敏感性較低會降低 SHBG。',
         })
       } else if (isMale && lab.value < 10) {
         advice.push({
@@ -1524,7 +1524,7 @@ export function generateLabNutritionAdvice(
           icon: '🔗',
           severity: lab.status === 'alert' ? 'high' : 'medium',
           dietaryChanges: [
-            'SHBG 偏低常與胰島素阻抗和肥胖相關',
+            'SHBG 偏低常與胰島素敏感性較低和肥胖相關',
             '改善胰島素敏感性（見 HOMA-IR 建議）',
             '減脂（體脂降低通常 SHBG 會回升）',
           ],
@@ -1816,7 +1816,7 @@ export function generateLabOptimizationTips(
             '確保充足睡眠（睡眠不足會降低胰島素敏感度）',
           ],
           supplements: [
-            { name: '小檗鹼 (Berberine)', dosage: '500mg x 2-3次/天', timing: '餐前', note: '改善胰島素阻抗，多項 RCT 支持' },
+            { name: '小檗鹼 (Berberine)', dosage: '500mg x 2-3次/天', timing: '餐前', note: '改善胰島素敏感性，多項 RCT 支持' },
             { name: '鉻 (Chromium Picolinate)', dosage: '200-400μg/天', timing: '隨餐', note: '增強胰島素受體敏感度' },
             { name: 'Alpha-Lipoic Acid (ALA)', dosage: '300-600mg/天', timing: '餐前', note: '強效抗氧化劑，改善胰島素敏感度' },
           ],
@@ -2058,7 +2058,7 @@ export function generateLabOptimizationTips(
           ],
           supplements: [
             { name: '維生素C', dosage: '500-1000mg/天', timing: '分次攝取', note: '促進尿酸排泄，降低血清尿酸' },
-            { name: '櫻桃萃取 (Tart Cherry)', dosage: '500-1000mg/天', timing: '隨餐', note: '含花青素，研究顯示可降低尿酸與痛風發作風險' },
+            { name: '櫻桃萃取 (Tart Cherry)', dosage: '500-1000mg/天', timing: '隨餐', note: '含花青素，研究顯示可降低尿酸' },
           ],
           references: ['Choi et al. 2004 (NEJM): Diet and hyperuricemia', 'Huang et al. 2005 (Arthritis Rheum): Vitamin C and uric acid'],
         })
@@ -2187,7 +2187,7 @@ export function generateLabOptimizationTips(
           currentRange: '<40（正常）',
           tips: [
             '減少酒精攝取',
-            '控制體脂率（脂肪肝是 ALT 升高的常見原因）',
+            '控制體脂率（ALT 持續偏高建議就醫評估肝臟相關指標）',
             '減少加工食品與精製碳水',
             '增加十字花科蔬菜（花椰菜、高麗菜）支持肝臟解毒',
           ],
@@ -2533,9 +2533,9 @@ export function generateLabOptimizationTips(
             'SHBG 過高會結合過多游離睪固酮，降低生物利用率',
             '確保碳水攝取不要過低（低碳飲食會升高 SHBG）',
             '確保鋅和鎂攝取充足',
-            '檢查甲狀腺功能（甲亢會升高 SHBG）',
+            '檢查甲狀腺功能（代謝速率偏快會升高 SHBG）',
           ] : [
-            'SHBG 偏低可能與胰島素阻抗相關',
+            'SHBG 偏低可能與胰島素敏感性較低相關',
             '改善胰島素敏感度：運動、控制碳水',
             '減少過量酒精攝取',
           ],
@@ -2543,7 +2543,7 @@ export function generateLabOptimizationTips(
             { name: '硼 (Boron)', dosage: '6-10mg/天', timing: '隨餐', note: '研究顯示可降低 SHBG，提升游離睪固酮' },
             { name: '鎂', dosage: '400mg/天', timing: '睡前', note: '鎂缺乏與 SHBG 升高相關' },
           ] : [
-            { name: '小檗鹼 (Berberine)', dosage: '500mg x 2次/天', timing: '餐前', note: '改善胰島素敏感度，低 SHBG 常與胰島素阻抗相關' },
+            { name: '小檗鹼 (Berberine)', dosage: '500mg x 2次/天', timing: '餐前', note: '改善胰島素敏感度，低 SHBG 常與胰島素敏感性較低相關' },
           ],
           references: ['Hammond 2011 (Mol Cell Endocrinol): SHBG and metabolic function', 'Naghii et al. 2011 (J Trace Elem Med Biol): Boron and steroid hormones'],
         })
@@ -2902,7 +2902,7 @@ export function getLabMacroModifiers(
           nutrient: 'calories',
           direction: 'increase',
           delta: 100,
-          reason: `TSH 偏高（${lab.value}），甲狀腺低下傾向，不宜過度限制熱量`,
+          reason: `TSH 偏高（${lab.value}），代謝速率可能偏慢，建議與醫師確認，不宜過度限制熱量`,
           labMarker: lab.test_name,
         })
         trainingModifiers.push({
@@ -2911,7 +2911,7 @@ export function getLabMacroModifiers(
           reason: `TSH 偏高（${lab.value}），代謝率降低，建議適度降低訓練強度`,
           labMarker: lab.test_name,
         })
-        warnings.push(`🦋 TSH ${lab.value}（目標 1.0-2.0）：甲狀腺低下傾向，不宜過度限制熱量`)
+        warnings.push(`🦋 TSH ${lab.value}（目標 1.0-2.0）：代謝速率可能偏慢，建議與醫師確認，不宜過度限制熱量`)
       }
     }
 
@@ -3079,7 +3079,7 @@ export function detectLabCrossPatterns(
         title: '代謝症候群風險',
         icon: '⚠️',
         severity: metSynScore >= 4 ? 'high' : 'medium',
-        description: `${metSynMarkers.length} 項代謝指標同時異常，符合代謝症候群模式。胰島素阻抗可能是核心問題，需要從飲食結構整體調整。`,
+        description: `${metSynMarkers.length} 項代謝指標同時異常，符合代謝症候群模式。胰島素敏感性較低可能是核心問題，需要從飲食結構整體調整。`,
         triggeredMarkers: metSynMarkers,
         actionItems: [
           '碳水總量減少 20-30%，優先移除精緻碳水（白飯白麵可保留，糖飲甜食先砍）',
@@ -3246,7 +3246,7 @@ export function generateRetestReminders(
   const retestSchedule: { keywords: string[]; weeks: number; reason: string; reasonHigh?: string; severity: 'high' | 'medium' }[] = [
     // 鐵 — 依偏高/偏低給不同原因（Peeling 2008）
     { keywords: ['鐵蛋白', 'ferritin'], weeks: 12, reason: '鐵劑補充後約 8-12 週可見鐵蛋白回升，建議追蹤效果', reasonHigh: '鐵蛋白偏高需定期追蹤，確認是否有改善或需進一步檢查', severity: 'high' },
-    { keywords: ['血紅素', 'hemoglobin', 'hgb'], weeks: 12, reason: '貧血治療後 8-12 週追蹤血紅素恢復情況', severity: 'high' },
+    { keywords: ['血紅素', 'hemoglobin', 'hgb'], weeks: 12, reason: '血紅素偏低，建議追蹤，8-12 週後複檢恢復情況', severity: 'high' },
     // 維生素 D — 補充 3 個月後複檢（Holick 2011）
     { keywords: ['維生素d', 'vitamind', '25oh'], weeks: 12, reason: '維生素 D 補充後 3 個月達穩態，建議複檢確認是否達標', severity: 'medium' },
     // 血脂 — 飲食調整後 3 個月（NCEP ATP III）

@@ -445,26 +445,26 @@ function assessHormonalRecovery(
   for (const lab of labResults) {
     if (lab.value == null) continue
 
-    // 皮質醇偏高 → 分解代謝主導
+    // 皮質醇偏離 → 恢復壓力
     if (matchLabName(lab.test_name, ['cortisol', '皮質醇', '可體松'])) {
-      if (lab.value > 20) { score -= 20; signals.push(`皮質醇偏高（${lab.value}），分解代謝主導`) }
-      else if (lab.value < 5) { score -= 15; signals.push(`皮質醇偏低（${lab.value}），腎上腺疲勞信號`) }
+      if (lab.value > 20) { score -= 20; signals.push(`皮質醇偏高（${lab.value}），恢復壓力偏大，建議追蹤`) }
+      else if (lab.value < 5) { score -= 15; signals.push(`皮質醇偏低（${lab.value}），建議追蹤並與醫師討論`) }
     }
 
     // 睪固酮偏低
     if (matchLabName(lab.test_name, ['testosterone', '睪固酮', '睪酮'])) {
-      if (lab.status === 'alert') { score -= 20; signals.push(`睪固酮異常（${lab.value}），恢復能力顯著降低`) }
+      if (lab.status === 'alert') { score -= 20; signals.push(`睪固酮偏離參考範圍（${lab.value}），可能影響恢復，建議追蹤`) }
       else if (lab.status === 'attention') { score -= 10; signals.push(`睪固酮偏低（${lab.value}）`) }
     }
 
-    // TSH 偏高 → 代謝率下降
+    // TSH 偏高 → 代謝率可能偏慢
     if (matchLabName(lab.test_name, ['tsh', '促甲狀腺'])) {
-      if (lab.value > 4.0) { score -= 10; signals.push(`TSH 偏高（${lab.value}），甲狀腺功能偏低`) }
+      if (lab.value > 4.0) { score -= 10; signals.push(`TSH 偏高（${lab.value}），代謝速率可能偏慢，建議與醫師確認`) }
     }
 
-    // CRP 偏高 → 系統性發炎
+    // CRP 偏高 → 發炎指標
     if (matchLabName(lab.test_name, ['crp', 'c-reactive', 'c反應蛋白'])) {
-      if (lab.value > 3) { score -= 15; signals.push(`CRP 偏高（${lab.value}），系統性發炎`) }
+      if (lab.value > 3) { score -= 15; signals.push(`CRP 偏高（${lab.value}），發炎指標偏高，建議追蹤複檢`) }
       else if (lab.value > 1) { score -= 5; signals.push(`CRP 輕微偏高（${lab.value}）`) }
     }
   }
@@ -818,7 +818,7 @@ function generateRecommendations(
 
   // 醫療（照給）
   if (systems.hormonal.signals.some(s => s.includes('皮質醇') || s.includes('睪固酮') || s.includes('CRP'))) {
-    recs.push({ priority: 'medium', category: 'medical', message: '血檢荷爾蒙指標異常，建議追蹤複檢並諮詢醫師。' })
+    recs.push({ priority: 'medium', category: 'medical', message: '部分血檢荷爾蒙數值偏離參考範圍，建議追蹤複檢並與醫師討論。' })
   }
 
   // 軌跡下滑 — peak_week 時不發「建議停練 1-2 天」

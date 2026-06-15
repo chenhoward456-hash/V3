@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { degradeToSafe } from '@/lib/compliance-scrub'
 
 interface GoalDrivenStatusProps {
   clientId: string
@@ -534,11 +535,11 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         </div>
       )}
 
-      {/* 警告 */}
+      {/* 警告 — 過合規 backstop（命中診斷/疾病名的逐條降級成安全句，備賽學員不再看到越界字） */}
       {data.warnings && data.warnings.length > 0 && (
         <div className="mt-3 space-y-1">
           {data.warnings.slice(0, 5).map((w: string, i: number) => (
-            <p key={i} className="text-[11px] text-gray-500">{w}</p>
+            <p key={i} className="text-[11px] text-gray-500">{degradeToSafe(w).text}</p>
           ))}
         </div>
       )}
