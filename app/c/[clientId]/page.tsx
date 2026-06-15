@@ -632,6 +632,8 @@ export default function ClientDashboard() {
           </div>
         </div>
         <div className="max-w-md mx-auto px-4 py-6 space-y-4">
+          {/* 教練訊息先秀（自抓，不等整包資料）→ 點推播進來馬上看到內容 */}
+          <CoachMessageBanner clientCode={clientId as string} />
           {/* Skeleton card 1 - main stats */}
           <div className="bg-white rounded-3xl shadow-sm p-6 space-y-4">
             <div className="h-5 w-24 bg-gray-200 rounded animate-pulse" />

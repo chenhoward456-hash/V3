@@ -8,9 +8,23 @@ import type { CoachMessageRow } from '@/lib/client-feed'
  * 放在儀表板最上方（之前藏在「為你更新」中段，學員/教練點進去看不到全部內容）。
  * 關閉時回寫 read_at（跨裝置一致）；localStorage 只做本機即時隱藏。
  */
-export default function CoachMessageBanner({ msg, clientCode }: { msg: CoachMessageRow | null; clientCode: string }) {
+// msg 給定就直接用（已載入的頁面）；沒給就自己打輕量端點抓（儀表板 skeleton 階段也能先秀訊息）
+export default function CoachMessageBanner({ msg: msgProp, clientCode }: { msg?: CoachMessageRow | null; clientCode: string }) {
   const [dismissed, setDismissed] = useState(true)
   const [ready, setReady] = useState(false)
+  const [fetched, setFetched] = useState<CoachMessageRow | null>(null)
+  const msg = msgProp ?? fetched
+
+  // 沒有 prop 時自己抓（快速、獨立於 /api/clients）
+  useEffect(() => {
+    if (msgProp !== undefined) return
+    let alive = true
+    fetch(`/api/coach-message?code=${encodeURIComponent(clientCode)}`)
+      .then(r => r.json())
+      .then(d => { if (alive) setFetched(d?.message ?? null) })
+      .catch(() => { if (alive) setFetched(null) })
+    return () => { alive = false }
+  }, [msgProp, clientCode])
 
   useEffect(() => {
     if (!msg) { setReady(true); return }
