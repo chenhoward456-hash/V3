@@ -49,6 +49,7 @@ import SystemActions from '@/components/client/SystemActions'
 import ExportAiSummary from '@/components/client/ExportAiSummary'
 import SeeTabSection from '@/components/client/SeeTabSection'
 import TodayOverviewCard from '@/components/client/TodayOverviewCard'
+import CoachMessageBanner from '@/components/client/CoachMessageBanner'
 import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
 import { isCompetitionMode, isHealthMode as isHealthModeHelper } from '@/lib/client-mode'
@@ -811,6 +812,11 @@ export default function ClientDashboard() {
           </div>
         )}
 
+        {/* 教練訊息置頂 — 點推播進來第一眼就看到全文（之前藏在「為你更新」中段看不到）*/}
+        {isToday && clientData.recentCoachMessage && (
+          <CoachMessageBanner msg={clientData.recentCoachMessage} clientCode={c.unique_code} />
+        )}
+
         {/* 首次來訪導覽 banner（dismissible）*/}
         {isToday && <WelcomeBanner clientId={clientId as string} />}
 
@@ -901,8 +907,6 @@ export default function ClientDashboard() {
                 gender={c.gender === '女性' ? '女性' : c.gender === '男性' ? '男性' : undefined}
                 nextCheckupDate={c.next_checkup_date}
                 macroAdjustment={clientData.recentMacroAdjustment ?? null}
-                coachMessage={clientData.recentCoachMessage ?? null}
-                clientCode={c.unique_code}
               />
             </SectionErrorBoundary>
           )}
