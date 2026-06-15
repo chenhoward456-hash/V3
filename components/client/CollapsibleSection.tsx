@@ -62,6 +62,12 @@ export default function CollapsibleSection({
     setIsOpen(prev => !prev)
   }
 
+  // 延後掛載：折疊區塊首屏不渲染 children（重元件不 mount），第一次展開後才掛、之後保留。
+  // 這是首屏提速關鍵——已完成日體重/飲食/補品/感受/訓練預設折疊，原本全在首屏 mount。
+  const hasOpenedRef = useRef(false)
+  if (isOpen) hasOpenedRef.current = true
+  const shouldRenderChildren = isOpen || hasOpenedRef.current
+
   return (
     <div id={id} className="scroll-mt-4 mb-3">
       {/* Clickable header — only interactive on today */}
@@ -105,7 +111,7 @@ export default function CollapsibleSection({
         }}
       >
         <div ref={contentRef}>
-          {children}
+          {shouldRenderChildren && children}
         </div>
       </div>
     </div>

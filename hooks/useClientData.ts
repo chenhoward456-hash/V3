@@ -145,7 +145,7 @@ export function useClientData(
 ): UseClientDataResult {
   const {
     revalidateOnFocus = true,
-    dedupingInterval = 10000 // 10秒內相同請求不重複發
+    dedupingInterval = 30000 // 30秒內相同請求不重複發（149KB payload，別太頻繁全量重抓）
   } = options
 
   // 使用 API route 獲取資料
@@ -167,8 +167,9 @@ export function useClientData(
     fetcher,
     {
       revalidateOnFocus,
+      focusThrottleInterval: 60000, // 切回前景(含點推播)最多每 60s 才重抓，不然 149KB 全量重抓很卡
       dedupingInterval,
-      refreshInterval: 30000, // 30秒自動刷新（教練修改 tier 後能更快反映）
+      refreshInterval: 120000, // 120秒自動刷新（教練改 tier 不需 30s 即時；學員寫入後本就有 mutate 即時更新）
       errorRetryCount: 3,
       onError: (error) => {
         console.error('客戶資料獲取失敗:', error)

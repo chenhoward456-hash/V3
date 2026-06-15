@@ -16,24 +16,19 @@ import UpgradeGate from '@/components/client/UpgradeGate'
 import UpgradeWelcome from '@/components/client/UpgradeWelcome'
 import HealthOverview from '@/components/client/HealthOverview'
 import TrainingProgressCard from '@/components/client/TrainingProgressCard'
-import RecoveryDashboard from '@/components/client/RecoveryDashboard'
-import DailyCheckIn from '@/components/client/DailyCheckIn'
+const DailyCheckIn = dynamic(() => import('@/components/client/DailyCheckIn'), { ssr: false })
 import DailyWellness from '@/components/client/DailyWellness'
-import BodyComposition from '@/components/client/BodyComposition'
+const BodyComposition = dynamic(() => import('@/components/client/BodyComposition'), { ssr: false })
 import StageWeightEstimator from '@/components/client/StageWeightEstimator'
 // LabResults inline removed in B integration — main page now shows compact summary card linking to /health/timeline
 const SupplementModal = dynamic(() => import('@/components/client/SupplementModal'), { ssr: false })
-import WellnessTrend from '@/components/client/WellnessTrend'
+const WellnessTrend = dynamic(() => import('@/components/client/WellnessTrend'), { ssr: false })
 const TrainingLog = dynamic(() => import('@/components/client/TrainingLog'), { ssr: false })
 import TodayWorkout from '@/components/client/TodayWorkout'
 import { isWeightTraining, TRAINING_TYPES } from '@/components/client/types'
 import NutritionLog from '@/components/client/NutritionLog'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
-import PeakWeekPlan from '@/components/client/PeakWeekPlan'
-import PostCompetitionRecovery from '@/components/client/PostCompetitionRecovery'
-import AthleticReboundTimeline from '@/components/client/AthleticReboundTimeline'
 import { ForYouFeed } from '@/components/client/ForYouFeed'
-import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManagedNutrition'), { ssr: false })
 const NutritionStrategyCard = dynamic(() => import('@/components/client/NutritionStrategyCard'), { ssr: false })
@@ -41,12 +36,9 @@ import PwaPrompt from '@/components/client/PwaPrompt'
 import ClientHeader from '@/components/client/ClientHeader'
 import WelcomeBanner from '@/components/client/WelcomeBanner'
 import HealthScoreBanner from '@/components/client/HealthScoreBanner'
-import BehaviorInsights from '@/components/client/BehaviorInsights'
 import ProgressJourney from '@/components/client/ProgressJourney'
 import PushNotificationPrompt from '@/components/client/PushNotificationPrompt'
 import SupplementStrategyCard from '@/components/client/SupplementStrategyCard'
-import SystemActions from '@/components/client/SystemActions'
-import ExportAiSummary from '@/components/client/ExportAiSummary'
 import SeeTabSection from '@/components/client/SeeTabSection'
 import TodayOverviewCard from '@/components/client/TodayOverviewCard'
 import CoachMessageBanner from '@/components/client/CoachMessageBanner'
@@ -575,15 +567,27 @@ export default function ClientDashboard() {
     refreshEngineSuggestion()
   }, [mutateWithTargets, refreshEngineSuggestion])
 
-  // 首次載入跑一次（autoApply）
+  // 首次載入跑一次（autoApply）— 但延後到首屏穩定後 + 一天只跑一次寫 DB，
+  // 不然每次點進來都在首屏關鍵期打 nutrition-suggestions(寫 DB) + 觸發整包 refetch，畫面很卡。
   const autoNutritionTriggered = useRef(false)
   useEffect(() => {
     if (autoNutritionTriggered.current) return
     const c = clientData?.client
     if (!c || !c.nutrition_enabled || !c.goal_type) return
     autoNutritionTriggered.current = true
-    void runEngine(true)
-  }, [clientData?.client, runEngine])
+    // 本日是否已 autoApply 過（寫 DB 一天一次就夠）
+    let appliedToday = false
+    try {
+      const key = `hp_engine_applied_${clientId}_${new Date().toISOString().slice(0, 10)}`
+      appliedToday = localStorage.getItem(key) === '1'
+      if (!appliedToday) localStorage.setItem(key, '1')
+    } catch { /* ignore */ }
+    // 延到首屏穩定後再跑，避免和首屏渲染/主請求搶資源
+    const run = () => { void runEngine(!appliedToday) } // 今天已套用過 → 只取建議顯示(false)，不再寫 DB/重抓
+    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback
+    const t = ric ? ric(run, { timeout: 2500 }) : window.setTimeout(run, 1500)
+    return () => { if (!ric) window.clearTimeout(t as number) }
+  }, [clientData?.client, runEngine, clientId])
 
   // LINE 瀏覽器：顯示引導頁面，不載入完整儀表板（避免記憶體崩潰）
   if (isLineBrowser) {
