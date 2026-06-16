@@ -337,6 +337,9 @@ export default function HomePage() {
                   加 LINE 了解更多
                 </LineButton>
               </div>
+              <p className="mt-4 text-sm text-gray-500">
+                已經是會員？<Link href="/login" className="text-primary font-medium hover:underline">用 Email 登入找回儀表板 →</Link>
+              </p>
             </div>
 
             {/* 右側：Howard 照片 + 引擎 Demo 預覽 */}

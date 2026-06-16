@@ -67,6 +67,54 @@ export async function sendPurchaseEmail({
   }
 }
 
+// ===== 登入連結信（magic link：忘記網址/換裝置時用 Email 找回儀表板）=====
+
+interface SendLoginLinkEmailParams {
+  to: string
+  name: string
+  uniqueCode: string
+}
+
+export async function sendLoginLinkEmail({
+  to,
+  name,
+  uniqueCode,
+}: SendLoginLinkEmailParams): Promise<{ success: boolean; error?: string }> {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+  const dashboardUrl = `${siteUrl}/c/${uniqueCode}`
+  try {
+    const resend = getResend()
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Howard Protocol <onboarding@resend.dev>'
+    const { error } = await resend.emails.send({
+      from: fromEmail,
+      to,
+      subject: '你的 Howard Protocol 登入連結',
+      html: `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;">
+    <tr><td style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:40px 30px;text-align:center;">
+      <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">你的登入連結</h1>
+      <p style="color:rgba(255,255,255,.8);font-size:14px;margin:0;">${escapeHTML(name)}，點下面就能回到你的儀表板</p>
+    </td></tr>
+    <tr><td style="padding:40px 30px;text-align:center;">
+      <a href="${escapeHTML(dashboardUrl)}" style="display:inline-block;background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:14px 40px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:16px;">進入我的儀表板</a>
+      <p style="font-size:12px;color:#94a3b8;margin:20px 0 0;line-height:1.6;">把這封信留著，之後忘記網址隨時可以點回來。<br/>如果不是你本人要求登入，忽略這封信即可。</p>
+    </td></tr>
+    <tr><td style="padding:20px 30px;border-top:1px solid #e2e8f0;text-align:center;">
+      <p style="font-size:11px;color:#94a3b8;margin:0;">&copy; Howard Protocol &middot; howard456.vercel.app</p>
+    </td></tr>
+  </table>
+</body></html>`,
+    })
+    if (error) { log.error('Login link send error', error); return { success: false, error: error.message } }
+    log.info('Login link email sent', { to })
+    return { success: true }
+  } catch (err: unknown) {
+    log.error('Login link send failed', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+  }
+}
+
 // ===== 訂閱歡迎信 =====
 
 interface SendWelcomeEmailParams {
