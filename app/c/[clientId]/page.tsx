@@ -1317,13 +1317,12 @@ export default function ClientDashboard() {
               gender={c.gender ?? undefined}
               onMutate={mutate}
             />
-            {/* 恢復評估（紅綠燈判決）擺在這——記完感受立刻看到「今天該怎麼練」，輸入跟輸出在一起才直覺 */}
-            {isToday && (
-              <div className="mt-3">
-                <RecoveryDashboard clientId={c.unique_code} />
-              </div>
-            )}
           </CollapsibleSection>
+          {/* 恢復判決放在折疊區「外面」且不綁 isToday——記過感受會自動收合、恢復評估本來就是「當前」狀態，
+              一律顯示(只要有開 wellness)，才不會像之前那樣找不到 */}
+          <div className="mt-3">
+            <RecoveryDashboard clientId={c.unique_code} />
+          </div>
           </SectionErrorBoundary>
         )}
 
