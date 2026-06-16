@@ -63,6 +63,8 @@ interface RecoveryAssessmentData {
 
 interface RecoveryDashboardProps {
   clientId: string
+  // 近期感受（給 7 天趨勢迷你圖用）；每筆取 sleep/energy/training_drive 平均
+  recentWellness?: { date: string; sleep_quality?: number | null; energy_level?: number | null; training_drive?: number | null }[]
 }
 
 // ── 常數映射 ──
@@ -128,7 +130,7 @@ function SystemBar({ name, icon, system }: { name: string; icon: string; system:
   )
 }
 
-export default function RecoveryDashboard({ clientId }: RecoveryDashboardProps) {
+export default function RecoveryDashboard({ clientId, recentWellness }: RecoveryDashboardProps) {
   const [data, setData] = useState<RecoveryAssessmentData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -179,17 +181,29 @@ export default function RecoveryDashboard({ clientId }: RecoveryDashboardProps) 
     .filter(r => r.priority === 'high' || r.priority === 'medium')
     .slice(0, 3)
 
-  // ── 一句話判決：恢復端最該回答的「今天該怎麼練」（紅綠燈）──
+  // ── 一句話判決：恢復端最該回答的「今天該怎麼練」（紅綠燈）+ 具體訓練處方 ──
   const verdict = data.score >= 75
-    ? { emoji: '🟢', box: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-900', headline: '恢復不錯 → 照表操課，可以推重量' }
+    ? { emoji: '🟢', box: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-900', headline: '恢復好 → 照表全力練', trainRx: '可挑戰 PR、加重量；今天身體準備好了' }
     : data.score >= 50
-    ? { emoji: '🟡', box: 'bg-amber-50 border-amber-200', text: 'text-amber-900', headline: '恢復普通 → 照常練，但別追 PR、組數收一點' }
+    ? { emoji: '🟡', box: 'bg-amber-50 border-amber-200', text: 'text-amber-900', headline: '恢復普通 → 照練但別逞強', trainRx: '主項照常、先別追 PR；輔助組數收一點' }
     : data.score >= 30
-    ? { emoji: '🟠', box: 'bg-orange-50 border-orange-200', text: 'text-orange-900', headline: '恢復偏低 → 降強度與量，今天練輕一點' }
-    : { emoji: '🔴', box: 'bg-rose-50 border-rose-200', text: 'text-rose-900', headline: '恢復偏差 → 今天輕鬆動或休，別硬上' }
+    ? { emoji: '🟠', box: 'bg-orange-50 border-orange-200', text: 'text-orange-900', headline: '恢復偏低 → 今天降量', trainRx: '主項降到 7-8 成重量、每項少 1-2 組' }
+    : { emoji: '🔴', box: 'bg-rose-50 border-rose-200', text: 'text-rose-900', headline: '恢復差 → 今天別硬上', trainRx: '改輕鬆有氧／活動度，或直接休一天' }
   // 驅動原因：取分數最低系統的第一個 signal（已去醫療化）；恢復好(綠)就不囉嗦
   const lowestSystem = Object.values(data.systems).sort((a, b) => a.score - b.score)[0]
   const driverLine = data.score < 75 ? (lowestSystem?.signals?.[0] ?? null) : null
+
+  // ── 7 天感受趨勢迷你圖：每天 (睡眠+精力+想練)/可得項 平均，看方向 ──
+  const trend7 = (recentWellness ?? [])
+    .filter(w => w.sleep_quality != null || w.energy_level != null || w.training_drive != null)
+    .slice(-7)
+    .map(w => {
+      const vals = [w.sleep_quality, w.energy_level, w.training_drive].filter((v): v is number => v != null)
+      return { date: w.date, avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0 }
+    })
+  const trendDir = trend7.length >= 4
+    ? (trend7.slice(-3).reduce((a, b) => a + b.avg, 0) / 3) - (trend7.slice(0, 3).reduce((a, b) => a + b.avg, 0) / 3)
+    : 0
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -202,13 +216,31 @@ export default function RecoveryDashboard({ clientId }: RecoveryDashboardProps) 
           </span>
         </div>
 
-        {/* 一句話判決 — 恢復端最該回答的「今天該怎麼練」 */}
-        <div className={`flex items-start gap-2.5 px-3 py-2.5 rounded-xl border ${verdict.box} mb-3`}>
-          <span className="text-lg leading-none mt-0.5">{verdict.emoji}</span>
-          <div className="min-w-0">
-            <p className={`text-sm font-bold leading-snug ${verdict.text}`}>{verdict.headline}</p>
-            {driverLine && <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">主要因為：{driverLine}</p>}
+        {/* 一句話判決 — 恢復端最該回答的「今天該怎麼練」+ 具體訓練處方 */}
+        <div className={`px-3 py-2.5 rounded-xl border ${verdict.box} mb-3`}>
+          <div className="flex items-start gap-2.5">
+            <span className="text-lg leading-none mt-0.5">{verdict.emoji}</span>
+            <div className="min-w-0">
+              <p className={`text-sm font-bold leading-snug ${verdict.text}`}>{verdict.headline}</p>
+              <p className="text-xs text-gray-600 mt-0.5 leading-snug">🏋️ {verdict.trainRx}</p>
+              {driverLine && <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">主要因為：{driverLine}</p>}
+            </div>
           </div>
+          {/* 7 天感受趨勢迷你圖 */}
+          {trend7.length >= 3 && (
+            <div className="flex items-end gap-1 mt-2.5 pt-2.5 border-t border-black/5">
+              <span className="text-[10px] text-gray-400 mr-1 self-center">近 7 天</span>
+              {trend7.map((d, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center justify-end" style={{ height: 24 }} title={`${d.date.slice(5)}：${d.avg.toFixed(1)}/5`}>
+                  <div className={`w-full rounded-sm ${d.avg >= 4 ? 'bg-emerald-400' : d.avg >= 3 ? 'bg-amber-400' : 'bg-rose-400'}`}
+                    style={{ height: `${Math.max(10, (d.avg / 5) * 100)}%` }} />
+                </div>
+              ))}
+              <span className={`text-[10px] ml-1 self-center font-medium ${trendDir > 0.3 ? 'text-emerald-600' : trendDir < -0.3 ? 'text-rose-600' : 'text-gray-400'}`}>
+                {trendDir > 0.3 ? '↗ 回升' : trendDir < -0.3 ? '↘ 下降' : '→ 持平'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* 分數圓環 + 三個快速指標 */}

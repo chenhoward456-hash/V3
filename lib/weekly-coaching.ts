@@ -186,11 +186,26 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
     if (trained.length >= 10 && rests.length <= 1) adjustments.push('排 1 個固定休息日（高頻深切恢復遲早撞牆）')
   }
 
-  // 5) 恢復
+  // 5) 恢復（含趨勢；連續偏低或走下坡 → 旗標給教練 + 標記需介入）
   const eAvg = avg(recent(input.wellness, 7).map(x => x.energy_level ?? NaN))
   if (eAvg != null) {
-    if (eAvg <= 2.5) { adjustments.push('恢復偏差 → 本週降量/多睡'); bullets.push(`😴 近 7 天精力均 ${eAvg.toFixed(1)}/5 → 偏低`) }
-    else bullets.push(`😴 恢復均 ${eAvg.toFixed(1)}/5 → 還行`)
+    // 前一週（8~14 天前）對照，看方向
+    const ePrev = avg((input.wellness || [])
+      .filter(x => x.date && daysAgo(now, x.date) > 7 && daysAgo(now, x.date) <= 14)
+      .map(x => num(x.energy_level)!).filter(v => v != null))
+    const declining = ePrev != null && eAvg < ePrev - 0.5
+    if (eAvg <= 2.5) {
+      adjustments.push('恢復偏差 → 本週降量/多睡')
+      bullets.push(`😴 近 7 天精力均 ${eAvg.toFixed(1)}/5 → 偏低`)
+      flags.push('恢復連續偏低，關心是否訓練量/睡眠/壓力出問題')
+      needsReview = true
+    } else if (declining) {
+      bullets.push(`😴 精力 ${ePrev!.toFixed(1)}→${eAvg.toFixed(1)}/5 → 走下坡`)
+      flags.push('恢復趨勢下降，留意本週訓練量與睡眠')
+      needsReview = true
+    } else {
+      bullets.push(`😴 恢復均 ${eAvg.toFixed(1)}/5 → 還行`)
+    }
   }
 
   if (adjustments.length === 0) adjustments.push('維持現況，按表執行（數據都在合理區）')
