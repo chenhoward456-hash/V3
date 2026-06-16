@@ -13,7 +13,6 @@ import { isCompetitionMode } from '@/lib/client-mode'
 import { daysUntilDateTW } from '@/lib/date-utils'
 import { isWeightTraining } from '@/components/client/types'
 
-const RecoveryDashboard = dynamic(() => import('@/components/client/RecoveryDashboard'), { ssr: false })
 const PeakWeekPlan = dynamic(() => import('@/components/client/PeakWeekPlan'), { ssr: false })
 
 interface SeeTabSectionProps {
@@ -114,12 +113,7 @@ export default function SeeTabSection({ c, clientData, isFree, latestBodyData, n
             </SectionErrorBoundary>
           )}
 
-          {/* 恢復評估 */}
-          {c.wellness_enabled && (
-            <SectionErrorBoundary name="recovery">
-              <RecoveryDashboard clientId={c.unique_code} />
-            </SectionErrorBoundary>
-          )}
+          {/* 恢復評估已移到「每日感受」區塊下方（記完感受立刻看判決，輸入輸出在一起更直覺）*/}
 
           {/* 系統動態 */}
           <SectionErrorBoundary name="system-actions">

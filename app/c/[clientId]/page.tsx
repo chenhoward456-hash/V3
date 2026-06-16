@@ -48,6 +48,7 @@ import { isCompetitionMode, isHealthMode as isHealthModeHelper } from '@/lib/cli
 
 // Dynamic imports for code splitting (client-only components)
 const AiChatDrawer = dynamic(() => import('@/components/client/AiChatDrawer'), { ssr: false })
+const RecoveryDashboard = dynamic(() => import('@/components/client/RecoveryDashboard'), { ssr: false })
 const AiInsightsPanel = dynamic(() => import('@/components/client/AiInsightsPanel'), { ssr: false })
 const GeneProfileCard = dynamic(() => import('@/components/client/GeneProfileCard'), { ssr: false })
 const LabInsightsCard = dynamic(() => import('@/components/client/LabInsightsCard'), { ssr: false })
@@ -1305,7 +1306,7 @@ export default function ClientDashboard() {
             icon="😊"
             title="每日感受"
             isCompleted={!!todayWellness}
-            summaryLine={todayWellness ? `睡眠 ${todayWellness.sleep_quality ?? '--'}/5 | 精力 ${todayWellness.energy_level ?? '--'}/5 | 心情 ${todayWellness.mood ?? '--'}/5` : undefined}
+            summaryLine={todayWellness ? `睡眠 ${todayWellness.sleep_quality ?? '--'}/5 | 精力 ${todayWellness.energy_level ?? '--'}/5 | 想練 ${todayWellness.training_drive ?? '--'}/5` : undefined}
             isToday={isToday}
           >
             <DailyWellness
@@ -1316,6 +1317,12 @@ export default function ClientDashboard() {
               gender={c.gender ?? undefined}
               onMutate={mutate}
             />
+            {/* 恢復評估（紅綠燈判決）擺在這——記完感受立刻看到「今天該怎麼練」，輸入跟輸出在一起才直覺 */}
+            {isToday && (
+              <div className="mt-3">
+                <RecoveryDashboard clientId={c.unique_code} />
+              </div>
+            )}
           </CollapsibleSection>
           </SectionErrorBoundary>
         )}
