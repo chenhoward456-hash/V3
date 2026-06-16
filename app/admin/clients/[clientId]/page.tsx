@@ -165,6 +165,7 @@ export default function ClientEditor() {
   // Timed Coach Override state
   const [overrideDurationDays, setOverrideDurationDays] = useState<number | null>(null)
   const [overrideReason, setOverrideReason] = useState('')
+  const [lockMacros, setLockMacros] = useState(false) // 預設不鎖：改 macro 後仍交給系統自動調整；勾選才鎖定
   const [systemSuggestion, setSystemSuggestion] = useState<{
     suggestedCalories?: number | null
     suggestedProtein?: number | null
@@ -411,7 +412,7 @@ export default function ClientEditor() {
         gene_notes: client.gene_notes || null,
         training_plan: client.training_plan || null,
         training_experience: client.training_experience || 'intermediate',
-        // coach_macro_override 由後端自動處理（修改 macro 時自動鎖定）
+        // coach_macro_override：預設不鎖（信任系統自動調整）；只有勾「鎖定設定」(lock_macros) 才鎖
         // 只有教練明確解鎖時才送 null
         ...(client.coach_macro_override === null && clientId !== 'new'
           ? { coach_macro_override: null }
@@ -476,6 +477,7 @@ export default function ClientEditor() {
             supplements: client.supplements,
             override_duration_days: overrideDurationDays,
             override_reason: overrideReason || null,
+            lock_macros: lockMacros,
             startingBody: startingBodyPayload,
           }),
         })
@@ -1618,7 +1620,7 @@ export default function ClientEditor() {
                   <span className="text-xs font-semibold text-gray-500">每日目標</span>
                   <div className="h-px bg-gray-200 flex-1"></div>
                 </div>
-                <p className="text-[10px] text-gray-400 mb-3">修改營養目標後會自動鎖定，防止系統覆蓋你的設定。可隨時解除鎖定恢復自動調整。</p>
+                <p className="text-[10px] text-gray-400 mb-3">預設：改完目標後系統會依進度繼續自動調整（信任系統）。若要鎖死你的設定不讓系統動，勾選下方「鎖定設定」。</p>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <div>
@@ -1724,43 +1726,59 @@ export default function ClientEditor() {
                   </>
                 )}
 
-                {/* Override Duration & Reason Selector */}
+                {/* 鎖定設定（預設不鎖 = 信任系統自動調整；勾選才鎖死你的值）*/}
                 <div className="flex items-center gap-3 mt-5 mb-3">
                   <div className="h-px bg-gray-200 flex-1"></div>
-                  <span className="text-xs font-semibold text-gray-500">覆寫設定</span>
+                  <span className="text-xs font-semibold text-gray-500">鎖定設定</span>
                   <div className="h-px bg-gray-200 flex-1"></div>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-gray-400">期限：</span>
-                  {[
-                    { label: '7 天', value: 7 },
-                    { label: '14 天', value: 14 },
-                    { label: '30 天', value: 30 },
-                    { label: '永久', value: null as number | null },
-                  ].map(opt => (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => setOverrideDurationDays(opt.value)}
-                      className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                        overrideDurationDays === opt.value
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-2">
+                <label className="flex items-start gap-2 cursor-pointer">
                   <input
-                    type="text"
-                    value={overrideReason}
-                    onChange={(e) => setOverrideReason(e.target.value)}
-                    placeholder="備註（選填，例如：備賽最後衝刺）"
-                    className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
+                    type="checkbox"
+                    checked={lockMacros}
+                    onChange={(e) => setLockMacros(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 accent-green-600 shrink-0"
                   />
-                </div>
+                  <span className="text-xs text-gray-600 leading-snug">
+                    <b>鎖定此 macro，不讓系統自動調整</b><br />
+                    <span className="text-gray-400">預設不勾＝存檔後系統會依進度繼續自動調整（有資料不足/太舊/上下限等安全層）。只有你比引擎更懂這個人時才鎖（例如：備賽手動帶、個體特殊反應）。</span>
+                  </span>
+                </label>
+                {lockMacros && (
+                  <>
+                    <div className="flex items-center gap-2 flex-wrap mt-3">
+                      <span className="text-xs text-gray-400">鎖定期限：</span>
+                      {[
+                        { label: '7 天', value: 7 },
+                        { label: '14 天', value: 14 },
+                        { label: '30 天', value: 30 },
+                        { label: '永久', value: null as number | null },
+                      ].map(opt => (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          onClick={() => setOverrideDurationDays(opt.value)}
+                          className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                            overrideDurationDays === opt.value
+                              ? 'bg-green-600 text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        value={overrideReason}
+                        onChange={(e) => setOverrideReason(e.target.value)}
+                        placeholder="鎖定原因（選填，例如：備賽最後衝刺 / 此人低碳反效）"
+                        className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

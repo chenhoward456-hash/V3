@@ -137,7 +137,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { clientId, clientData, labResults, supplements, override_duration_days, override_reason, startingBody } = body
+    const { clientId, clientData, labResults, supplements, override_duration_days, override_reason, startingBody, lock_macros } = body
 
     if (!clientId) {
       return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
@@ -336,22 +336,25 @@ export async function PUT(request: NextRequest) {
           .update({ last_auto_adjust_at: new Date().toISOString() })
           .eq('id', clientId)
 
-        // 3. 建立 override
-        overrideValue = {
-          locked_at: new Date().toISOString(),
-          expires_at: (typeof override_duration_days === 'number' && override_duration_days > 0)
-            ? new Date(Date.now() + override_duration_days * 86400000).toISOString()
-            : null,
-          locked_fields: actuallyChanged,
-          override_values: Object.fromEntries(
-            actuallyChanged.map(f => [f, sanitizedClientData[f] ?? null])
-          ),
-          previous_values: Object.fromEntries(
-            actuallyChanged.map(f => [f, preUpdateMacros![f]])
-          ),
-          reason: (typeof override_reason === 'string' && override_reason.trim())
-            ? override_reason.trim()
-            : null,
+        // 3. 只有教練「明確要求鎖定」(lock_macros=true) 才建 override。
+        //    預設不鎖 → 信任系統自動調整（有 stale/bounds/基因 安全層守著）。改 macro 仍會寫 log + cooldown。
+        if (lock_macros === true) {
+          overrideValue = {
+            locked_at: new Date().toISOString(),
+            expires_at: (typeof override_duration_days === 'number' && override_duration_days > 0)
+              ? new Date(Date.now() + override_duration_days * 86400000).toISOString()
+              : null,
+            locked_fields: actuallyChanged,
+            override_values: Object.fromEntries(
+              actuallyChanged.map(f => [f, sanitizedClientData[f] ?? null])
+            ),
+            previous_values: Object.fromEntries(
+              actuallyChanged.map(f => [f, preUpdateMacros![f]])
+            ),
+            reason: (typeof override_reason === 'string' && override_reason.trim())
+              ? override_reason.trim()
+              : null,
+          }
         }
       }
 
