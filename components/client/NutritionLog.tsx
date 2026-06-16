@@ -38,6 +38,11 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   const effectiveCarbsTarget = carbsCyclingEnabled && carbsTrainingDay && carbsRestDay
     ? (effectiveIsTraining ? carbsTrainingDay : carbsRestDay)
     : carbsTarget
+  // 碳循環時熱量目標要跟著「當日碳水」走，否則拿訓練日(碳水高)的熱量去比平均日的 caloriesTarget → 假性超過 100%。
+  // 用跟「自動計算熱量」同一條公式(P×4+C×4+F×9)算當日目標，% 才一致。非碳循環維持原 caloriesTarget。
+  const effectiveCalorieTarget = carbsCyclingEnabled && proteinTarget != null && effectiveCarbsTarget != null && fatTarget != null
+    ? Math.round(proteinTarget * 4 + effectiveCarbsTarget * 4 + fatTarget * 9)
+    : (caloriesTarget ?? null)
   const [note, setNote] = useState(todayNutrition?.note || '')
   const [showNote, setShowNote] = useState(false)
   const [proteinInput, setProteinInput] = useState<string>(todayNutrition?.protein_grams?.toString() || '')
@@ -533,27 +538,27 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">🔥 熱量（自動計算）</span>
                   <span className={`text-lg font-bold ${
-                    computedCalories && caloriesTarget && computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1
+                    computedCalories && effectiveCalorieTarget && computedCalories >= effectiveCalorieTarget * 0.9 && computedCalories <= effectiveCalorieTarget * 1.1
                       ? 'text-green-600'
                       : computedCalories ? 'text-orange-600' : 'text-gray-300'
                   }`}>
                     {computedCalories ?? '--'} <span className="text-xs font-normal text-gray-400">kcal</span>
                   </span>
                 </div>
-                {caloriesTarget && computedCalories && (
+                {effectiveCalorieTarget && computedCalories && (
                   <div className="flex items-center gap-2 mt-1.5">
                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${computedCalories >= caloriesTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
-                        style={{ width: `${Math.min(100, (computedCalories / caloriesTarget) * 100)}%` }}
+                        className={`h-full rounded-full transition-all ${computedCalories >= effectiveCalorieTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
+                        style={{ width: `${Math.min(100, (computedCalories / effectiveCalorieTarget) * 100)}%` }}
                       />
                     </div>
-                    <span className={`text-xs font-medium ${computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1 ? 'text-green-600' : 'text-orange-600'}`}>
-                      {Math.round((computedCalories / caloriesTarget) * 100)}%
+                    <span className={`text-xs font-medium ${computedCalories >= effectiveCalorieTarget * 0.9 && computedCalories <= effectiveCalorieTarget * 1.1 ? 'text-green-600' : 'text-orange-600'}`}>
+                      {Math.round((computedCalories / effectiveCalorieTarget) * 100)}%
                     </span>
                   </div>
                 )}
-                <p className="text-[10px] text-gray-400 mt-1">= 蛋白質×4 + 碳水×4 + 脂肪×9{caloriesTarget ? ` ｜ 目標 ${caloriesTarget} kcal` : ''}</p>
+                <p className="text-[10px] text-gray-400 mt-1">= 蛋白質×4 + 碳水×4 + 脂肪×9{effectiveCalorieTarget ? ` ｜ 目標 ${effectiveCalorieTarget} kcal${carbsCyclingEnabled ? `（${effectiveIsTraining ? '訓練日' : '休息日'}）` : ''}` : ''}</p>
               </div>
             </div>
           )}
