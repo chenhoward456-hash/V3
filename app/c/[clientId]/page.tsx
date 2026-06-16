@@ -15,7 +15,7 @@ import QuickActions from '@/components/client/QuickActions'
 import UpgradeGate from '@/components/client/UpgradeGate'
 import UpgradeWelcome from '@/components/client/UpgradeWelcome'
 import HealthOverview from '@/components/client/HealthOverview'
-import TrainingProgressCard from '@/components/client/TrainingProgressCard'
+const TrainingProgressCardLazy = dynamic(() => import('@/components/client/TrainingProgressCardLazy'), { ssr: false })
 const DailyCheckIn = dynamic(() => import('@/components/client/DailyCheckIn'), { ssr: false })
 import DailyWellness from '@/components/client/DailyWellness'
 const BodyComposition = dynamic(() => import('@/components/client/BodyComposition'), { ssr: false })
@@ -1922,8 +1922,8 @@ export default function ClientDashboard() {
         )}
 
         {/* 訓練進步追蹤（有逐組紀錄才顯示）*/}
-        {isToday && c.training_enabled && (clientData.trainingSets?.length ?? 0) > 0 && (
-          <div className="mt-4"><TrainingProgressCard sets={clientData.trainingSets ?? []} /></div>
+        {isToday && c.training_enabled && (
+          <div className="mt-4"><TrainingProgressCardLazy clientCode={c.unique_code} /></div>
         )}
 
         {!isFree && <PwaPrompt />}
