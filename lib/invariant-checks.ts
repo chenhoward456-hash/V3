@@ -92,8 +92,8 @@ async function checkTrainingPlanShapes(supabase: SupabaseClient, findings: Findi
 
 // ── C. coach_macro_override 優先權 ──
 async function checkCoachOverride(supabase: SupabaseClient, findings: Finding[]) {
-  const overridden = await fetchAll<{ id: string; name: string; auto_adjust_enabled: boolean | null }>(
-    supabase, 'clients', 'id, name, auto_adjust_enabled', q => q.not('coach_macro_override', 'is', null)
+  const overridden = await fetchAll<{ id: string; name: string; auto_adjust_enabled: boolean | null; coach_macro_override: { locked_at?: string } | null }>(
+    supabase, 'clients', 'id, name, auto_adjust_enabled, coach_macro_override', q => q.not('coach_macro_override', 'is', null)
   )
   if (overridden.length === 0) return
   for (const c of overridden) {
@@ -108,15 +108,22 @@ async function checkCoachOverride(supabase: SupabaseClient, findings: Finding[])
   const since = new Date(Date.now() - 30 * 86400_000).toISOString()
   const ids = overridden.map(c => c.id)
   const nameOf = new Map(overridden.map(c => [c.id, c.name]))
-  const logs = await fetchAll<{ client_id: string; applied_at: string; trigger_source: string }>(
-    supabase, 'macro_adjustment_log', 'client_id, applied_at, trigger_source',
+  // 鎖定日：只有「override 鎖定之後」的 system 調整才可能是違規（鎖定前的歷史 log 不算）
+  const lockedAtOf = new Map(overridden.map(c => [c.id, c.coach_macro_override?.locked_at ? Date.parse(c.coach_macro_override.locked_at) : 0]))
+  const logs = await fetchAll<{ client_id: string; applied_at: string; trigger_source: string; new_macros: Record<string, unknown> | null }>(
+    supabase, 'macro_adjustment_log', 'client_id, applied_at, trigger_source, new_macros',
     q => q.eq('applied_by', 'system').gte('applied_at', since).in('client_id', ids)
   )
+  // 真的有改到 macro 才算（被安全層 gate / autoApply=false 的是空 new_macros，沒套用任何值 → 不是違規）
+  const MACRO_KEYS = ['calories', 'protein', 'carbs', 'fat', 'calories_target', 'protein_target', 'carbs_target', 'fat_target']
+  const realChange = (nm: Record<string, unknown> | null) => !!nm && MACRO_KEYS.some(k => nm[k] != null)
   for (const log of logs) {
+    if (Date.parse(log.applied_at) <= (lockedAtOf.get(log.client_id) ?? 0)) continue // 鎖定前的舊 log，略過
+    if (!realChange(log.new_macros)) continue // 被 gate、沒實際套用，略過
     findings.push({
       severity: 'violation',
       check: 'C. system 覆寫教練設定',
-      detail: `學員「${nameOf.get(log.client_id)}」(${log.client_id}) 有 coach_macro_override，但 ${log.applied_at} 仍被 system (${log.trigger_source}) 調整 macro`,
+      detail: `學員「${nameOf.get(log.client_id)}」(${log.client_id}) 有 coach_macro_override（鎖定 ${overridden.find(o => o.id === log.client_id)?.coach_macro_override?.locked_at}），但 ${log.applied_at} 仍被 system (${log.trigger_source}) 實際調整 macro`,
     })
   }
 }
