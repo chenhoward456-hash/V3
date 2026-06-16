@@ -107,10 +107,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
       if (todayWellness.training_drive || todayWellness.cognitive_clarity || todayWellness.stress_level) {
         setShowMore(true)
       }
-      // 如果已經有穿戴裝置數據，預設展開
-      if (todayWellness.device_recovery_score || todayWellness.resting_hr || todayWellness.hrv || todayWellness.wearable_sleep_score || todayWellness.respiratory_rate) {
-        setShowWearable(true)
-      }
+      // 穿戴裝置數據預設收合（多數學員沒有裝置，是進階選填）— 不再因為有資料就自動展開
     } else {
       setForm({
         sleep_quality: null, energy_level: null, mood: null,
@@ -300,7 +297,9 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
             onClick={() => setShowWearable(true)}
             className="w-full py-2.5 text-sm text-emerald-600 font-medium bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors"
           >
-            ⌚ 填寫手錶恢復分數 <span className="text-gray-400 text-xs">（只要 1 個數字）</span>
+            {form.device_recovery_score != null
+              ? <>⌚ 手錶恢復分數：{form.device_recovery_score} <span className="text-gray-400 text-xs">（點開修改）</span></>
+              : <>⌚ 有戴 WHOOP/Oura/Garmin？填恢復分數 <span className="text-gray-400 text-xs">（選填）</span></>}
           </button>
         ) : (
           <div className="border-t border-emerald-100 pt-3 space-y-3">
