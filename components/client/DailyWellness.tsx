@@ -125,8 +125,8 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
   }, [todayWellness])
 
   const handleSubmit = async () => {
-    if (!form.sleep_quality || !form.energy_level || !form.mood) {
-      showToast('請填寫睡眠、精力、心情三項必填指標', 'error')
+    if (!form.sleep_quality || !form.energy_level || !form.training_drive) {
+      showToast('請填寫睡眠、精力、想不想練三項必填指標', 'error')
       return
     }
     setSubmitting(true)
@@ -161,16 +161,16 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
     }
   }
 
-  // 核心三項（所有模式必填）
-  const coreFields: { key: 'sleep_quality' | 'energy_level' | 'mood'; label: string; options: { score: number; emoji: string; label: string }[] }[] = [
+  // 核心三項（所有模式必填）— 睡眠 / 精力 / 想不想練，是「今天該怎麼練」最相關的三個
+  const coreFields: { key: 'sleep_quality' | 'energy_level' | 'training_drive'; label: string; options: { score: number; emoji: string; label: string }[] }[] = [
     { key: 'sleep_quality',    label: '😴 睡眠品質',   options: SLEEP_OPTIONS },
     { key: 'energy_level',     label: '⚡ 精力水平',   options: ENERGY_OPTIONS },
-    { key: 'mood',             label: '😊 今日心情',   options: MOOD_OPTIONS },
+    { key: 'training_drive',   label: '💪 想不想練',   options: TRAINING_DRIVE_OPTIONS },
   ]
 
-  // 進階指標（訓練慾望一般選填，健康模式額外指標）
-  const extraFields: { key: 'training_drive' | 'cognitive_clarity' | 'stress_level'; label: string; options: { score: number; emoji: string; label: string }[]; groupLabel?: string }[] = [
-    { key: 'training_drive', label: '💪 訓練慾望', options: TRAINING_DRIVE_OPTIONS },
+  // 進階指標（選填；心情、健康模式額外指標）
+  const extraFields: { key: 'mood' | 'cognitive_clarity' | 'stress_level'; label: string; options: { score: number; emoji: string; label: string }[]; groupLabel?: string }[] = [
+    { key: 'mood', label: '😊 今日心情', options: MOOD_OPTIONS },
   ]
 
   if (healthModeEnabled) {
@@ -180,15 +180,15 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
     )
   }
 
-  const coreFilled = form.sleep_quality && form.energy_level && form.mood
+  const coreFilled = form.sleep_quality && form.energy_level && form.training_drive
 
   // 快速摘要（已填寫的數據）
   const filledSummary = todayWellness ? (() => {
     const items = []
     if (todayWellness.sleep_quality) items.push(SLEEP_OPTIONS[todayWellness.sleep_quality - 1]?.emoji)
     if (todayWellness.energy_level) items.push(ENERGY_OPTIONS[todayWellness.energy_level - 1]?.emoji)
-    if (todayWellness.mood) items.push(MOOD_OPTIONS[todayWellness.mood - 1]?.emoji)
-    const avg = [todayWellness.sleep_quality, todayWellness.energy_level, todayWellness.mood].filter(Boolean)
+    if (todayWellness.training_drive) items.push(TRAINING_DRIVE_OPTIONS[todayWellness.training_drive - 1]?.emoji)
+    const avg = [todayWellness.sleep_quality, todayWellness.energy_level, todayWellness.training_drive].filter(Boolean)
     const avgScore = avg.length > 0 ? (avg.reduce((a: number, b: number) => a + b, 0) / avg.length).toFixed(1) : null
     return { emojis: items.join(' '), avgScore }
   })() : null

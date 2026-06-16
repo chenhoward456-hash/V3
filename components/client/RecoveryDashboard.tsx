@@ -179,15 +179,36 @@ export default function RecoveryDashboard({ clientId }: RecoveryDashboardProps) 
     .filter(r => r.priority === 'high' || r.priority === 'medium')
     .slice(0, 3)
 
+  // ── 一句話判決：恢復端最該回答的「今天該怎麼練」（紅綠燈）──
+  const verdict = data.score >= 75
+    ? { emoji: '🟢', box: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-900', headline: '恢復不錯 → 照表操課，可以推重量' }
+    : data.score >= 50
+    ? { emoji: '🟡', box: 'bg-amber-50 border-amber-200', text: 'text-amber-900', headline: '恢復普通 → 照常練，但別追 PR、組數收一點' }
+    : data.score >= 30
+    ? { emoji: '🟠', box: 'bg-orange-50 border-orange-200', text: 'text-orange-900', headline: '恢復偏低 → 降強度與量，今天練輕一點' }
+    : { emoji: '🔴', box: 'bg-rose-50 border-rose-200', text: 'text-rose-900', headline: '恢復偏差 → 今天輕鬆動或休，別硬上' }
+  // 驅動原因：取分數最低系統的第一個 signal（已去醫療化）；恢復好(綠)就不囉嗦
+  const lowestSystem = Object.values(data.systems).sort((a, b) => a.score - b.score)[0]
+  const driverLine = data.score < 75 ? (lowestSystem?.signals?.[0] ?? null) : null
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
       {/* 頂部：綜合分數 */}
       <div className="p-4 pb-3">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-medium text-gray-500">🔬 恢復評估</p>
+          <p className="text-xs font-medium text-gray-500">🔬 今天的恢復</p>
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${config.color} ${config.ring} ring-1`}>
             {config.label}
           </span>
+        </div>
+
+        {/* 一句話判決 — 恢復端最該回答的「今天該怎麼練」 */}
+        <div className={`flex items-start gap-2.5 px-3 py-2.5 rounded-xl border ${verdict.box} mb-3`}>
+          <span className="text-lg leading-none mt-0.5">{verdict.emoji}</span>
+          <div className="min-w-0">
+            <p className={`text-sm font-bold leading-snug ${verdict.text}`}>{verdict.headline}</p>
+            {driverLine && <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">主要因為：{driverLine}</p>}
+          </div>
         </div>
 
         {/* 分數圓環 + 三個快速指標 */}
@@ -235,14 +256,6 @@ export default function RecoveryDashboard({ clientId }: RecoveryDashboardProps) 
         </div>
       </div>
 
-      {/* 五大系統條形圖 */}
-      <div className="px-4 pb-3 space-y-1.5">
-        {Object.entries(data.systems).map(([key, system]) => {
-          const info = systemLabels[key]
-          return <SystemBar key={key} name={info.name} icon={info.icon} system={system} />
-        })}
-      </div>
-
       {/* 建議（如果有的話） */}
       {topRecommendations.length > 0 && (
         <div className="px-4 pb-3">
@@ -257,14 +270,13 @@ export default function RecoveryDashboard({ clientId }: RecoveryDashboardProps) 
         </div>
       )}
 
-      {/* 展開/收合 — ACWR 詳細數據 */}
-      {(data.overtrainingRisk.acwr !== null || data.autonomicBalance.hrvZScore !== null) && (
-        <>
+      {/* 展開/收合 — 五大系統 + ACWR 等詳細（想鑽的人才打開，預設只看上面那句判決）*/}
+      <>
           <button
             onClick={() => setExpanded(!expanded)}
             className="w-full px-4 py-2 text-[11px] text-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-1 border-t border-gray-50"
           >
-            {expanded ? '收合詳細數據' : '查看詳細數據'}
+            {expanded ? '收合詳細分析' : '查看詳細分析（五大系統 / 負荷）'}
             <svg
               className={`w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`}
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
@@ -275,6 +287,13 @@ export default function RecoveryDashboard({ clientId }: RecoveryDashboardProps) 
 
           {expanded && (
             <div className="px-4 pb-4 space-y-3 border-t border-gray-50 pt-3">
+              {/* 五大系統條形圖（搬到詳細區，預設不洗版）*/}
+              <div className="space-y-1.5">
+                {Object.entries(data.systems).map(([key, system]) => {
+                  const info = systemLabels[key]
+                  return <SystemBar key={key} name={info.name} icon={info.icon} system={system} />
+                })}
+              </div>
               {/* ACWR 區塊 */}
               {data.overtrainingRisk.acwr !== null && (
                 <div>
@@ -366,7 +385,6 @@ export default function RecoveryDashboard({ clientId }: RecoveryDashboardProps) 
             </div>
           )}
         </>
-      )}
     </div>
   )
 }
