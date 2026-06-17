@@ -324,38 +324,45 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         </div>
       )}
 
-      {/* 代謝壓力分數 */}
-      {data.metabolicStress && data.metabolicStress.score >= 30 && (
-        <div className={`rounded-xl p-3 mb-3 ${
-          data.metabolicStress.level === 'high' ? 'bg-red-50 border border-red-200' :
-          data.metabolicStress.level === 'elevated' ? 'bg-orange-50 border border-orange-200' :
-          'bg-yellow-50 border border-yellow-200'
-        }`}>
+      {/* 代謝壓力分數 — 減脂跑道（永遠顯示，含「翻牌條件」讓人看得到何時該回碳）*/}
+      {data.metabolicStress && (() => {
+        const ms = data.metabolicStress
+        const isLow = ms.level === 'low'
+        const toRefeed = Math.max(0, 45 - ms.score)
+        const box = ms.level === 'high' ? 'bg-red-50 border border-red-200'
+          : ms.level === 'elevated' ? 'bg-orange-50 border border-orange-200'
+          : ms.level === 'moderate' ? 'bg-yellow-50 border border-yellow-200'
+          : 'bg-emerald-50 border border-emerald-200'
+        const titleColor = ms.level === 'high' ? 'text-red-700'
+          : ms.level === 'elevated' ? 'text-orange-700'
+          : ms.level === 'moderate' ? 'text-yellow-700'
+          : 'text-emerald-700'
+        const badge = ms.level === 'high' ? 'bg-red-100 text-red-700'
+          : ms.level === 'elevated' ? 'bg-orange-100 text-orange-700'
+          : ms.level === 'moderate' ? 'bg-yellow-100 text-yellow-700'
+          : 'bg-emerald-100 text-emerald-700'
+        const badgeText = ms.level === 'high' ? '偏高'
+          : ms.level === 'elevated' ? '中高'
+          : ms.level === 'moderate' ? '監控中'
+          : '穩定'
+        return (
+        <div className={`rounded-xl p-3 mb-3 ${box}`}>
           <div className="flex items-center justify-between mb-1">
-            <p className={`text-xs font-bold ${
-              data.metabolicStress.level === 'high' ? 'text-red-700' :
-              data.metabolicStress.level === 'elevated' ? 'text-orange-700' :
-              'text-yellow-700'
-            }`}>
-              🔥 代謝壓力：{data.metabolicStress.score}/100
+            <p className={`text-xs font-bold ${titleColor}`}>
+              {isLow ? '🟢' : '🔥'} 代謝壓力：{ms.score}/100
             </p>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              data.metabolicStress.level === 'high' ? 'bg-red-100 text-red-700' :
-              data.metabolicStress.level === 'elevated' ? 'bg-orange-100 text-orange-700' :
-              'bg-yellow-100 text-yellow-700'
-            }`}>
-              {data.metabolicStress.level === 'high' ? '偏高' :
-               data.metabolicStress.level === 'elevated' ? '中高' : '監控中'}
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badge}`}>
+              {badgeText}
             </span>
           </div>
           {/* 五維度 bar */}
           <div className="grid grid-cols-5 gap-1 mb-2">
             {[
-              { label: '飲食', value: data.metabolicStress.breakdown.dietDuration, max: 25 },
-              { label: '恢復', value: data.metabolicStress.breakdown.recovery, max: 30 },
-              { label: '停滯', value: data.metabolicStress.breakdown.plateau, max: 20 },
-              { label: '低碳', value: data.metabolicStress.breakdown.lowCarb, max: 15 },
-              { label: '狀態', value: data.metabolicStress.breakdown.wellnessTrend, max: 10 },
+              { label: '飲食', value: ms.breakdown.dietDuration, max: 25 },
+              { label: '恢復', value: ms.breakdown.recovery, max: 30 },
+              { label: '停滯', value: ms.breakdown.plateau, max: 20 },
+              { label: '低碳', value: ms.breakdown.lowCarb, max: 15 },
+              { label: '狀態', value: ms.breakdown.wellnessTrend, max: 10 },
             ].map(({ label, value, max }) => (
               <div key={label} className="text-center">
                 <div className="w-full bg-gray-100 rounded-full h-1 mb-0.5">
@@ -366,15 +373,26 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
               </div>
             ))}
           </div>
-          {data.metabolicStress.recommendation !== 'continue' && data.metabolicStress.recommendation !== 'monitor' && (
-            <p className="text-[11px] text-gray-600 leading-relaxed">
-              {data.metabolicStress.recommendation === 'refeed_1day' && `💡 建議安排 1 天 strategic refeed（碳水 ${data.metabolicStress.refeedCarbGPerKg}g/kg，脂肪壓低，蛋白質維持）`}
-              {data.metabolicStress.recommendation === 'refeed_2day' && `💡 建議安排 2 天 full refeed（碳水 ${data.metabolicStress.refeedCarbGPerKg}g/kg，恢復 leptin 與甲狀腺）`}
-              {data.metabolicStress.recommendation === 'diet_break' && '💡 建議安排 3-5 天 diet break（維持熱量，高碳水，恢復荷爾蒙和代謝率）'}
-            </p>
+          {/* 建議句：continue / monitor 也明確說出來，不再讓人「不知道壓到何時」*/}
+          <p className="text-[11px] text-gray-600 leading-relaxed">
+            {ms.recommendation === 'continue' && '✅ 目前維持即可 — 壓力低、減脂節奏健康，安心繼續。'}
+            {ms.recommendation === 'monitor' && '👀 持續監控中 — 壓力中等但尚未到回碳門檻。'}
+            {ms.recommendation === 'refeed_1day' && `💡 建議安排 1 天 strategic refeed（碳水 ${ms.refeedCarbGPerKg}g/kg，脂肪壓低，蛋白質維持）`}
+            {ms.recommendation === 'refeed_2day' && `💡 建議安排 2 天 full refeed（碳水 ${ms.refeedCarbGPerKg}g/kg，恢復 leptin 與甲狀腺）`}
+            {ms.recommendation === 'diet_break' && '💡 建議安排 3-5 天 diet break（維持熱量，高碳水，恢復荷爾蒙和代謝率）'}
+          </p>
+          {/* 翻牌條件：還沒到回碳時，明確告訴你「差幾分」+「什麼情況會觸發」*/}
+          {(ms.recommendation === 'continue' || ms.recommendation === 'monitor') && (
+            <div className="mt-2 pt-2 border-t border-gray-200/70">
+              <p className="text-[10px] text-gray-500 leading-relaxed">
+                📍 距離建議回碳還差 <span className="font-bold text-gray-700">{toRefeed}</span> 分。
+                會在以下任一情況觸發：連續停滯 ≥2 週、近 7 天能量平均 ≤2.5、連續低碳(&lt;150g) ≥5 天、或減脂滿 12 週。
+              </p>
+            </div>
           )}
         </div>
-      )}
+        )
+      })()}
 
       {/* 飲食目標 */}
       <div className={`${colors.bg} ${colors.border} border rounded-2xl p-4 mb-3`}>

@@ -27,6 +27,8 @@ interface Client {
   lab_enabled: boolean
   competition_enabled: boolean
   client_mode: string
+  goal_type: string | null
+  diet_start_date: string | null
   competition_date: string | null
   prep_phase: string | null
   coach_weekly_note: string | null
@@ -408,7 +410,25 @@ export default function AdminDashboard() {
         items.push({ key: `noact-${c.id}`, clientId: c.id, name: c.name, text: `加入 ${daysSinceJoin} 天從未打卡 — 該主動關懷`, icon: '🌱', tone: 'orange', priority: 1, href: `/admin/clients/${c.id}/overview`, canNote: true })
       }
     }
-    return items.sort((a, b) => a.priority - b.priority)
+    // 減脂中斷聯絡：正在減脂（diet_start_date 已設）但近期沒記錄 → 最高價值的流失訊號
+    const cutSilentIds = new Set<string>()
+    for (const c of clients) {
+      if (!c.is_active) continue
+      if (c.expires_at && new Date(c.expires_at).getTime() < Date.now()) continue
+      const gt = (c.goal_type || '').toLowerCase()
+      const isFatLoss = gt.includes('loss') || gt === 'cut' || gt.includes('fat') || (c.goal_type || '').includes('減')
+      if (!isFatLoss || !c.diet_start_date) continue
+      const la = lastActivityMap[c.id]
+      if (!la) continue // 從未記錄者由上面「未啟動」區塊處理
+      const daysSince = Math.floor((Date.now() - new Date(la).getTime()) / DAY_MS)
+      if (daysSince < 4 || daysSince > 30) continue // 4–30 天=還救得回；>30 天已流失（歸入留存數字，不佔行動佇列）
+      const weeks = Math.max(1, Math.floor((Date.now() - new Date(c.diet_start_date).getTime()) / (7 * DAY_MS)))
+      cutSilentIds.add(c.id)
+      items.push({ key: `cutsilent-${c.id}`, clientId: c.id, name: c.name, text: `減脂第 ${weeks} 週但 ${daysSince} 天沒記錄 — 可能脫離`, icon: '🔻', tone: daysSince >= 7 ? 'red' : 'orange', priority: daysSince >= 7 ? 0 : 1, href: `/admin/clients/${c.id}/overview`, canNote: true })
+    }
+    // 去重：被「減脂中斷」涵蓋的人，移除泛用的「未活動」alert（同人不重複兩列）
+    const deduped = items.filter(it => !(cutSilentIds.has(it.clientId || '') && it.key.startsWith('alert-') && it.text.includes('未活動')))
+    return deduped.sort((a, b) => a.priority - b.priority)
   }, [alerts, pendingDraftCount, clients, lastActivityMap])
 
   // === A2：自教練上次查看後的新紀錄筆數（用已載入的近期 logs；未曾查看者不標）===
