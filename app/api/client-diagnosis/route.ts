@@ -52,8 +52,9 @@ export async function GET(request: NextRequest) {
     const c = matches[0]
     const now = Date.now()
     const d90 = new Date(now - 90 * DAY_MS).toISOString().split('T')[0]
+    const d14 = new Date(now - 14 * DAY_MS).toISOString().split('T')[0]
 
-    const [bodyR, labR, macroR] = await Promise.all([
+    const [bodyR, labR, macroR, nutR] = await Promise.all([
       supabase
         .from('body_composition')
         .select('date, weight, body_fat')
@@ -73,6 +74,12 @@ export async function GET(request: NextRequest) {
         .eq('client_id', c.id)
         .order('applied_at', { ascending: false })
         .limit(1),
+      // 依從(adherence)：近 14 天飲食記錄。先攻依從、macro 後站——沒在執行就不該動數字。
+      supabase
+        .from('nutrition_logs')
+        .select('date, compliant, calories')
+        .eq('client_id', c.id)
+        .gte('date', d14),
     ])
 
     // --- 體重 / 體脂 軌跡 ---
@@ -120,6 +127,24 @@ export async function GET(request: NextRequest) {
     const labFlags = labs.filter((l) => l.status !== 'normal')
     const labDate = labsLatest.length ? labsLatest[0].date : null
 
+    // --- 依從裁定（adherence）：bot 診斷必先講這個，低依從就別動 macro ---
+    const nut = nutR.data || []
+    const loggedDays = nut.length
+    const loggingRate = +(loggedDays / 14).toFixed(2) // 0~1，近14天有記錄的天數比例
+    const compliantDays = nut.filter((n) => n.compliant === true).length
+    const compliantRate = loggedDays ? +(compliantDays / loggedDays).toFixed(2) : null
+    const calVals = nut.map((n) => Number(n.calories)).filter((v) => v > 0)
+    const avgLoggedCalories = calVals.length ? Math.round(calVals.reduce((a, b) => a + b, 0) / calVals.length) : null
+    const calTarget = c.calories_target != null ? Number(c.calories_target) : null
+    const calorieGapVsTarget = avgLoggedCalories != null && calTarget ? avgLoggedCalories - calTarget : null
+    // 粗略裁定：記錄太少 = 沒在執行(engagement)；有記錄但常超標 = 執行打折；都好才算真執行。
+    let adherenceVerdict: string
+    if (loggedDays < 4) adherenceVerdict = 'not_tracking' // 14天記不到4天，連追蹤都沒有
+    else if (loggingRate < 0.5) adherenceVerdict = 'sporadic' // 記得零星
+    else if (calorieGapVsTarget != null && calorieGapVsTarget > 200) adherenceVerdict = 'over_target' // 有記但常吃超過目標
+    else if (compliantRate != null && compliantRate < 0.6) adherenceVerdict = 'low_self_compliance'
+    else adherenceVerdict = 'executing' // 有確實在執行 → 才輪到考慮調 macro
+
     // --- 目標 / 引擎 ---
     const gt = (c.goal_type || '').toLowerCase()
     const isFatLoss = gt.includes('loss') || gt === 'cut' || gt.includes('fat') || (c.goal_type || '').includes('減')
@@ -156,6 +181,16 @@ export async function GET(request: NextRequest) {
       coachOverrideLocked: !!c.coach_macro_override,
       autoAdjustEnabled: c.auto_adjust_enabled,
       lastMacroAdjustment: macroR.data?.[0] || null,
+      // 依從裁定：bot 先講這個。verdict=executing 才考慮調 macro，其餘都是執行問題、先抓人。
+      adherence: {
+        window: 14,
+        loggedDays,
+        loggingRate,
+        compliantRate,
+        avgLoggedCalories,
+        calorieGapVsTarget,
+        verdict: adherenceVerdict,
+      },
       // 血檢
       labDate,
       labCount: labs.length,
