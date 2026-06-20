@@ -5,7 +5,8 @@ import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronUp, ChevronDown, Search, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2, Clock } from 'lucide-react'
-import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
+import { daysUntilDateTW, DAY_MS, getLocalDateStr } from '@/lib/date-utils'
+import { projectWeightVerdict } from '@/lib/comp-projection'
 import { isCompetitionMode, PHASE_LABELS } from '@/lib/client-mode'
 import FeatureAnnounce from '@/components/admin/FeatureAnnounce'
 
@@ -33,6 +34,7 @@ interface Client {
   prep_phase: string | null
   coach_weekly_note: string | null
   target_weight: number | null
+  target_date: string | null
   is_active: boolean
   subscription_tier: 'free' | 'self_managed' | 'coached'
   line_user_id: string | null
@@ -59,6 +61,65 @@ interface CoachNotification {
 type SortKey = 'name' | 'status' | 'compliance' | 'lastActivity' | 'nextCheckup'
 type SortDir = 'asc' | 'desc'
 type StatusFilter = 'all' | 'normal' | 'attention' | 'competition' | 'coached' | 'self_managed' | 'free'
+
+// ── 進度判定：用近 14 天體重趨勢 vs 目標方向，算出「有沒有效果」──
+type ProgressLevel = 'on_track' | 'slow' | 'reverse' | 'insufficient'
+interface ProgressVerdict { level: ProgressLevel; emoji: string; label: string; detail: string; rank: number; pill: string }
+
+const FLAT_KG_PER_WEEK = 0.12 // 每週變化 < 此值視為「持平」
+
+function computeProgress(
+  goalType: string | null,
+  prepPhase: string | null,
+  targetWeight: number | null,
+  weights: { date: string; weight: number }[], // 已按日期升冪
+): ProgressVerdict {
+  const insufficient = (detail: string): ProgressVerdict => ({ level: 'insufficient', emoji: '⚪', label: '資料不足', detail, rank: 2, pill: 'bg-slate-100 text-slate-500' })
+  if (!weights || weights.length === 0) return insufficient('14 天沒量體重')
+  if (weights.length < 3) return insufficient(`14 天只量 ${weights.length} 次`)
+  const first = weights[0], last = weights[weights.length - 1]
+  const days = (new Date(last.date).getTime() - new Date(first.date).getTime()) / DAY_MS
+  if (days < 5) return insufficient('量測天數太短')
+
+  const deltaKg = last.weight - first.weight
+  const perWeek = deltaKg / (days / 7)
+  const gt = (goalType || '').toLowerCase()
+  const isCut = gt.includes('loss') || gt === 'cut' || gt.includes('fat') || (goalType || '').includes('減') || prepPhase === 'cut'
+  const isBulk = gt === 'bulk' || gt.includes('gain') || (goalType || '').includes('增') || prepPhase === 'bulk'
+  const mag = `${deltaKg > 0 ? '+' : ''}${deltaKg.toFixed(1)}kg / ${Math.round(days)}天`
+  const toGoal = targetWeight != null ? `　距目標 ${(targetWeight - last.weight) > 0 ? '+' : ''}${(targetWeight - last.weight).toFixed(1)}kg` : ''
+
+  if (isCut) {
+    if (perWeek <= -FLAT_KG_PER_WEEK) return { level: 'on_track', emoji: '🟢', label: '減脂中', detail: `${mag}（${perWeek.toFixed(1)}kg/週）${toGoal}`, rank: 3, pill: 'bg-emerald-100 text-emerald-700' }
+    if (perWeek >= FLAT_KG_PER_WEEK) return { level: 'reverse', emoji: '🔴', label: '不減反增', detail: `${mag}${toGoal}`, rank: 0, pill: 'bg-red-100 text-red-700' }
+    return { level: 'slow', emoji: '🟡', label: '停滯', detail: `${mag} 幾乎沒動${toGoal}`, rank: 1, pill: 'bg-amber-100 text-amber-700' }
+  }
+  if (isBulk) {
+    if (perWeek >= FLAT_KG_PER_WEEK) return { level: 'on_track', emoji: '🟢', label: '增重中', detail: `${mag}（+${perWeek.toFixed(1)}kg/週）${toGoal}`, rank: 3, pill: 'bg-emerald-100 text-emerald-700' }
+    if (perWeek <= -FLAT_KG_PER_WEEK) return { level: 'reverse', emoji: '🔴', label: '不增反掉', detail: `${mag}${toGoal}`, rank: 0, pill: 'bg-red-100 text-red-700' }
+    return { level: 'slow', emoji: '🟡', label: '沒長', detail: `${mag} 幾乎沒動${toGoal}`, rank: 1, pill: 'bg-amber-100 text-amber-700' }
+  }
+  // 維持 / 健康
+  if (Math.abs(perWeek) < FLAT_KG_PER_WEEK) return { level: 'on_track', emoji: '🟢', label: '維持穩定', detail: `${mag}${toGoal}`, rank: 3, pill: 'bg-emerald-100 text-emerald-700' }
+  return { level: 'slow', emoji: '🟡', label: '體重漂移', detail: `${mag}${toGoal}`, rank: 1, pill: 'bg-amber-100 text-amber-700' }
+}
+
+// ── 連續記錄天數：和學員端同定義（任一紀錄都算），結算到今天或昨天 ──
+function computeStreak(activeDates: Set<string>): number {
+  if (activeDates.size === 0) return 0
+  const sorted = [...activeDates].sort().reverse()
+  const now = new Date()
+  const todayStr = getLocalDateStr(now)
+  const startOffset = sorted[0] === todayStr ? 0 : 1
+  let streak = 0
+  for (let i = 0; i < sorted.length; i++) {
+    const expected = new Date(now)
+    expected.setDate(expected.getDate() - (i + startOffset))
+    if (sorted[i] === getLocalDateStr(expected)) streak++
+    else break
+  }
+  return streak
+}
 
 function MiniStat({ label, value, tone }: { label: string; value: string | number; tone?: 'red' | 'orange' | 'rose' | 'green' }) {
   const color = tone === 'red' ? 'text-red-600' : tone === 'orange' ? 'text-orange-600' : tone === 'rose' ? 'text-rose-600' : tone === 'green' ? 'text-emerald-600' : 'text-gray-900'
@@ -293,11 +354,44 @@ export default function AdminDashboard() {
     return { stars: stars.slice(0, 3), struggling: struggling.slice(0, 5) }
   }, [clients, clientStats, todayLogIds, todayWellnessIds, todayTrainingMap, todayNutritionMap, todayBodyIds])
 
+  // === 戰情室：近 7 天有在動的學員，每人一句「到底有沒有效果」===
+  const progressBoard = useMemo(() => {
+    const now = Date.now()
+    const byClient: Record<string, { date: string; weight: number }[]> = {}
+    for (const b of recentBody) (byClient[b.client_id] ||= []).push({ date: b.date, weight: b.weight })
+    // 每位學員的活動日期集合（任一紀錄都算）→ 算連續天數
+    const datesByClient: Record<string, Set<string>> = {}
+    const addDate = (cid: string, d: string) => { (datesByClient[cid] ||= new Set()).add(d) }
+    for (const b of recentBody) addDate(b.client_id, b.date)
+    for (const n of recentNutrition) if (n.compliant != null) addDate(n.client_id, n.date)
+    for (const w of recentWellness) addDate(w.client_id, w.date)
+    for (const r of recentRPE) addDate(r.client_id, r.date)
+    return clients
+      .filter(c => c.is_active)
+      .map(c => {
+        const last = lastActivityMap[c.id]
+        const daysIdle = last ? Math.floor((now - new Date(last).getTime()) / DAY_MS) : Infinity
+        return { c, daysIdle }
+      })
+      .filter(r => r.daysIdle <= 7)
+      .map(r => ({
+        ...r,
+        verdict: computeProgress(r.c.goal_type, r.c.prep_phase, r.c.target_weight, byClient[r.c.id] || []),
+        streak: computeStreak(datesByClient[r.c.id] || new Set()),
+      }))
+      .sort((a, b) => a.verdict.rank - b.verdict.rank || a.daysIdle - b.daysIdle || a.c.name.localeCompare(b.c.name))
+  }, [clients, recentBody, recentNutrition, recentWellness, recentRPE, lastActivityMap])
+
   const alerts = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0)
     const items: { clientId: string; name: string; uniqueCode: string; text: string; color: string; priority: number }[] = []
     for (const client of clients) {
       const stat = clientStats[client.id]
+      // 深度流失過濾：已停用、或 >30 天沒動（從未記錄者用加入天數）→ 叫不回來的鬼魂不進行動佇列，歸留存數字
+      let idleDays = Infinity
+      if (stat?.lastActivity) idleDays = Math.floor((today.getTime() - new Date(stat.lastActivity).getTime()) / DAY_MS)
+      else if (client.created_at) idleDays = Math.floor((today.getTime() - new Date(client.created_at).getTime()) / DAY_MS)
+      if (!client.is_active || idleDays > 30) continue
       if (stat) {
         let daysSince = Infinity
         if (stat.lastActivity) daysSince = Math.floor((today.getTime() - new Date(stat.lastActivity).getTime()) / DAY_MS)
@@ -391,9 +485,12 @@ export default function AdminDashboard() {
         : '⚠️'
       items.push({ key: `alert-${a.clientId}-${a.text}`, clientId: a.clientId, name: a.name, text: a.text, icon, tone, priority: a.priority, href: `/admin/clients/${a.clientId}/overview`, canNote: true })
     }
-    // 訂閱到期 / 已過期
+    // 訂閱到期 / 已過期（深度流失者不列：歸留存數字，不佔今日待辦）
     for (const c of clients) {
       if (!c.expires_at) continue
+      const la = lastActivityMap[c.id]
+      const idle = la ? Math.floor((Date.now() - new Date(la).getTime()) / DAY_MS) : Math.floor((Date.now() - new Date(c.created_at).getTime()) / DAY_MS)
+      if (!c.is_active || idle > 30) continue
       const d = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / DAY_MS)
       if (d < 0) items.push({ key: `exp-${c.id}`, clientId: c.id, name: c.name, text: `方案已過期 ${-d} 天`, icon: '⏰', tone: 'red', priority: 0, href: `/admin/clients/${c.id}`, canNote: true })
       else if (d <= 7) items.push({ key: `exp-${c.id}`, clientId: c.id, name: c.name, text: `方案 ${d} 天後到期`, icon: '⏰', tone: 'orange', priority: 1, href: `/admin/clients/${c.id}`, canNote: true })
@@ -428,7 +525,8 @@ export default function AdminDashboard() {
     }
     // 去重：被「減脂中斷」涵蓋的人，移除泛用的「未活動」alert（同人不重複兩列）
     const deduped = items.filter(it => !(cutSilentIds.has(it.clientId || '') && it.key.startsWith('alert-') && it.text.includes('未活動')))
-    return deduped.sort((a, b) => a.priority - b.priority)
+    // 排序：先緊急度，再依人名聚在一起（同一個人的待辦不會散落各處），最後依文字
+    return deduped.sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name) || a.text.localeCompare(b.text))
   }, [alerts, pendingDraftCount, clients, lastActivityMap])
 
   // === A2：自教練上次查看後的新紀錄筆數（用已載入的近期 logs；未曾查看者不標）===
@@ -687,12 +785,15 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ===== 今日行動佇列（主角，置頂）===== */}
-        <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
-          <div className="flex items-center justify-between mb-3">
+        {/* ===== 今日行動佇列（預設收合，只留還活著、真能動的）===== */}
+        <details className="bg-white rounded-2xl shadow-sm mb-4">
+          <summary className="cursor-pointer select-none px-5 py-4 flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">📋 今日行動佇列</h2>
-            <span className="text-xs text-gray-400">{actionQueue.length} 件待處理</span>
-          </div>
+            <span className="text-xs text-gray-400">
+              {actionQueue.length === 0 ? '無待辦 ✅' : (() => { const urgent = actionQueue.filter(i => i.priority === 0).length; return `${actionQueue.length} 件${urgent > 0 ? ` · ${urgent} 緊急` : ''} · 展開 ▾` })()}
+            </span>
+          </summary>
+          <div className="px-5 pb-5">
           {actionQueue.length === 0 ? (
             <p className="text-sm text-gray-400 py-1">今天沒有待辦 ✅ 一切正常</p>
           ) : (
@@ -717,7 +818,8 @@ export default function AdminDashboard() {
               })}
             </div>
           )}
-        </div>
+          </div>
+        </details>
 
         {/* ===== Compact 數字條（取代原本 8 張大卡）===== */}
         <div className="bg-white rounded-2xl shadow-sm px-5 py-3 mb-4">
@@ -737,6 +839,62 @@ export default function AdminDashboard() {
         {/* ===== 功能公告廣播（推播給學員）===== */}
         <FeatureAnnounce />
 
+        {/* ===== 戰情室：近 7 天有在動的學員，一眼看誰有效果 ===== */}
+        {progressBoard.length > 0 && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-base font-semibold text-gray-900">🎯 戰情室</span>
+                <span className="text-xs text-gray-400">近 7 天有在動 · 需關注的排前面</span>
+              </div>
+              <span className="text-xs text-gray-400">{progressBoard.length} 人活躍</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {progressBoard.map(({ c, daysIdle, verdict, streak }) => {
+                const tier = getTierBadge(c.subscription_tier)
+                const idleText = daysIdle === 0 ? '今天' : `${daysIdle}天前`
+                return (
+                  <div key={c.id} className={`rounded-xl border p-3.5 ${verdict.level === 'reverse' ? 'border-red-200 bg-red-50/40' : verdict.level === 'slow' ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-white'}`}>
+                    <Link href={`/admin/clients/${c.id}/overview`} className="block hover:opacity-80 transition-opacity">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-sm font-semibold text-gray-900 truncate">{c.name}</span>
+                          <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full shrink-0 ${tier.color}`}>{tier.label}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {streak >= 2 && <span className="text-[11px] font-bold text-orange-500" title={`連續記錄 ${streak} 天`}>🔥{streak}</span>}
+                          <span className="text-[11px] text-gray-400">{idleText}</span>
+                        </div>
+                      </div>
+                      <div className="mb-1">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${verdict.pill}`}>{verdict.emoji} {verdict.label}</span>
+                      </div>
+                      <p className="text-[11px] text-gray-500 leading-snug min-h-[2.2em]">{verdict.detail}</p>
+                    </Link>
+                    {!pushClientIds.has(c.id) && (
+                      <div className="mt-1.5 -mb-0.5">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700" title="沒開推播提醒＝沒人提醒他每天記，最該優先帶他開通知">🔕 沒開提醒</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+                      <div className="flex items-center gap-1">
+                        {c.body_composition_enabled && <span className={`text-xs ${todayBodyIds.has(c.id) ? 'opacity-100' : 'opacity-25'}`} title="體重">⚖️</span>}
+                        {c.nutrition_enabled && <span className={`text-xs ${todayNutritionMap[c.id] !== undefined ? 'opacity-100' : 'opacity-25'}`} title="飲食">🥗</span>}
+                        {c.training_enabled && <span className={`text-xs ${todayTrainingMap[c.id] ? 'opacity-100' : 'opacity-25'}`} title="訓練">🏋️</span>}
+                        {c.wellness_enabled && <span className={`text-xs ${todayWellnessIds.has(c.id) ? 'opacity-100' : 'opacity-25'}`} title="感受">😊</span>}
+                        {c.supplement_enabled && <span className={`text-xs ${todayLogIds.has(c.id) ? 'opacity-100' : 'opacity-25'}`} title="補品">💊</span>}
+                      </div>
+                      <button onClick={() => openFeedback(c)} className="flex items-center gap-1 px-2 py-1 text-[11px] text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors" title="寫回饋">
+                        <MessageSquare size={12} /> {c.coach_weekly_note ? '改回饋' : '回饋'}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* ===== 備賽倒數區塊 ===== */}
         {competitionClients.length > 0 && (
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5 mb-6">
@@ -748,6 +906,10 @@ export default function AdminDashboard() {
               {competitionClients.map(c => {
                 const stat = clientStats[c.id]
                 const urgencyColor = c.daysLeft <= 7 ? 'text-red-600' : c.daysLeft <= 14 ? 'text-orange-600' : c.daysLeft <= 30 ? 'text-amber-600' : 'text-gray-700'
+                // 會不會準時上台（體重主導；體脂量測後期失真，不用來判定）
+                const wv = c.competition_date
+                  ? projectWeightVerdict(recentBody.filter(b => b.client_id === c.id).map(b => ({ date: b.date, value: b.weight })), c.competition_date, c.target_weight)
+                  : null
                 return (
                   <Link key={c.id} href={`/admin/clients/${c.id}/overview`}
                     className={`bg-white rounded-xl p-4 hover:shadow-md transition-shadow block ${c.daysLeft <= 3 ? 'ring-2 ring-red-400 animate-pulse' : ''}`}>
@@ -759,6 +921,11 @@ export default function AdminDashboard() {
                       <span className="text-gray-500">{getPrepPhaseLabel(c.prep_phase)} {c.target_weight ? `· 目標 ${c.target_weight}kg` : ''}</span>
                       {stat?.supplementCount ? <span className={`font-medium ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span> : null}
                     </div>
+                    {wv && (
+                      <div className={`mt-1.5 text-[11px] font-medium ${wv.onTrack ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {wv.onTrack ? '🟢' : '🟡'} 體重{wv.onTrack ? '會準時' : `落後 ${wv.gap.toFixed(1)}kg`}（預測 {wv.projected.toFixed(1)}kg）
+                      </div>
+                    )}
                     <div className="flex items-center gap-1 mt-2">
                       {c.body_composition_enabled && <span className={`text-xs ${todayBodyIds.has(c.id) ? 'opacity-100' : 'opacity-30'}`}>⚖️</span>}
                       {c.nutrition_enabled && <span className={`text-xs ${todayNutritionMap[c.id] !== undefined ? 'opacity-100' : 'opacity-30'}`}>🥗</span>}

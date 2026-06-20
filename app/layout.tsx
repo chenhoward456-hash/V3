@@ -179,6 +179,8 @@ export default function RootLayout({
         <ManifestLink />
         <meta name="theme-color" content="#2563eb" />
         <meta name="mobile-web-app-capable" content="yes" />
+        {/* 舊版 iOS 仍看 apple- 前綴版才會以 standalone 開啟（standalone 才有 Web Push） */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Howard" />
         <link rel="apple-touch-icon" href="/icon-192.png" />

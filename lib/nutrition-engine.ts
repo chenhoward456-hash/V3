@@ -2174,6 +2174,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
 
   // C) 決定最終 TDEE
   let estimatedTDEE: number | null = null
+  let tdeeClamped = false  // 反推值被夾到地板(代表資料不可信，多半少記/水分雜訊) → 不再另外喊「異常」
   const complianceThreshold = 70  // 合規率門檻
 
   if (input.nutritionCompliance >= complianceThreshold && adaptiveTDEE != null) {
@@ -2182,6 +2183,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     const minTDEE = Math.round(formulaTDEE * 0.80)
     if (adaptiveTDEE < minTDEE) {
       estimatedTDEE = minTDEE
+      tdeeClamped = true
       warnings.push(`📊 系統根據你的飲食記錄和體重變化估算 TDEE 為 ${minTDEE}kcal，持續記錄可讓數值更準確`)
     } else {
       estimatedTDEE = adaptiveTDEE
@@ -2196,10 +2198,13 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     warnings.push(`📊 尚未有飲食記錄，TDEE 以公式估算為 ${estimatedTDEE}kcal。開始記錄飲食後系統會自動校正`)
   }
 
-  // 6b. 異常值安全檢查：校正幅度超過 15% 時標記需人工確認
-  const TDEE_ADJUSTMENT_THRESHOLD = 0.15
+  // 6b. 異常值安全檢查：只在「真離群」才標記，避免 cry wolf
+  //  - 門檻 22%：公式與反推都是估計值，差 15% 在合理誤差內；差 22%+ 才算可疑
+  //  - 排除 tdeeClamped：被地板夾過 = 資料已不可信、clamp 已處理，再喊異常是雙重計算
+  //    且 80% 地板 = 剛好 -20%，舊的 15% 門檻會「保證觸發」誤報（胤豪就是這樣中的）
+  const TDEE_ADJUSTMENT_THRESHOLD = 0.22
   let tdeeAnomalyDetected = false
-  if (formulaTDEE && adaptiveTDEE != null && estimatedTDEE != null) {
+  if (formulaTDEE && adaptiveTDEE != null && estimatedTDEE != null && !tdeeClamped) {
     const adjustmentRatio = (estimatedTDEE - formulaTDEE) / formulaTDEE
     if (Math.abs(adjustmentRatio) > TDEE_ADJUSTMENT_THRESHOLD) {
       tdeeAnomalyDetected = true

@@ -395,14 +395,17 @@ export async function GET(request: NextRequest) {
     }
 
     // 比賽模式 routing：
-    // 比賽模式 (bodybuilding + competition_date + prep_phase=cut/peak) 的學員，
-    // 營養素應由 trajectory-adjust 激進哲學管理（hard deadline 達標），
+    // 比賽引擎 (trajectory/教練) 管理的階段 = 減脂衝刺 + 超補/秤重/賽日協議。
+    // 這些階段營養素由 trajectory 激進哲學(hard deadline)或教練協議管，
     // 不該由 nutrition-engine 的保守哲學（0.5%/週永續減脂）自動覆寫。
+    // (off_season/bulk/recovery 等永續階段才由 nutrition-engine 管)
     // nutrition-engine 還是會算「建議參考」給 dashboard 顯示，但不寫 DB。
+    // ⚠️ 必須與 cron/daily 的 phaseLocked 階段集一致，且用 'peak_week'(非 'peak')、含 athletic。
+    const TRAJECTORY_MANAGED_PHASES = ['cut', 'peak_week', 'competition', 'weigh_in', 'preparation', 'rebound']
     const isCompetitionPrep =
-      client.client_mode === 'bodybuilding' &&
+      isCompetitionMode(client.client_mode) &&
       !!client.competition_date &&
-      (client.prep_phase === 'cut' || client.prep_phase === 'peak')
+      TRAJECTORY_MANAGED_PHASES.includes(client.prep_phase ?? '')
     if (isCompetitionPrep && !coachLocked) {
       coachLocked = true
       suggestion.message += '\n\n🏆 比賽模式 — 營養素由比賽引擎 (trajectory) 管理，nutrition-engine 建議僅供參考'

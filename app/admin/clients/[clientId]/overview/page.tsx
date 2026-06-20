@@ -48,6 +48,33 @@ export default function ClientOverview() {
   const [caloriesDraft, setCaloriesDraft] = useState<number | null>(null)
   const [phaseDraft, setPhaseDraft] = useState<string>('')
   const [noteDraft, setNoteDraft] = useState<string>('')
+  // ===== 手機快速行動：發訊息 =====
+  const [showCompose, setShowCompose] = useState(false)
+  const [composeMsg, setComposeMsg] = useState('')
+  const [composeBusy, setComposeBusy] = useState(false)
+
+  const sendCoachMessage = async () => {
+    const msg = composeMsg.trim()
+    if (!msg || !client?.id) return
+    setComposeBusy(true)
+    try {
+      const res = await fetch('/api/admin/weekly-coaching/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id, message: msg, mode: 'adjust' }),
+      })
+      if (!res.ok) throw new Error()
+      setShowCompose(false)
+      setComposeMsg('')
+      setQuickToast({ type: 'success', msg: '訊息已送出，學員打開就看得到' })
+      setTimeout(() => setQuickToast(null), 3000)
+    } catch {
+      setQuickToast({ type: 'error', msg: '送出失敗，請重試' })
+      setTimeout(() => setQuickToast(null), 3000)
+    } finally {
+      setComposeBusy(false)
+    }
+  }
 
   useEffect(() => {
     fetchAllData()
@@ -2144,7 +2171,7 @@ export default function ClientOverview() {
         })()}
 
         {/* ===== 教練快速操作 ===== */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <div id="coach-quick-actions" className="bg-white border border-gray-200 rounded-2xl p-5 scroll-mt-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">⚡</span>
@@ -3339,7 +3366,55 @@ export default function ClientOverview() {
             )}
           </div>
         )}
+
+        {/* ===== 手機快速行動列（固定底部，桌機隱藏）===== */}
+        <div className="h-20 sm:hidden" aria-hidden />
+        <div
+          className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200 px-4 py-3 flex gap-2"
+          style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+        >
+          <button
+            onClick={() => setShowCompose(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors"
+          >
+            💬 發訊息
+          </button>
+          <button
+            onClick={() => { openQuickAction('calories'); document.getElementById('coach-quick-actions')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 text-slate-700 text-sm font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors"
+          >
+            ⚡ 調整
+          </button>
+        </div>
       </div>
+
+      {/* ===== 發訊息 compose modal ===== */}
+      {showCompose && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => !composeBusy && setShowCompose(false)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-5 shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-gray-900">發訊息給 {client.name}</h3>
+              <button onClick={() => setShowCompose(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+            </div>
+            <textarea
+              value={composeMsg}
+              onChange={e => setComposeMsg(e.target.value)}
+              rows={4}
+              autoFocus
+              placeholder="這週體重控制得不錯，碳水可以再加一點…"
+              className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+            />
+            <p className="text-xs text-gray-400 mb-3">學員打開 app 最上面就會看到這則訊息（有開推播會同時收到通知）。</p>
+            <button
+              onClick={sendCoachMessage}
+              disabled={composeBusy || !composeMsg.trim()}
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-40 transition-colors"
+            >
+              {composeBusy ? '送出中…' : '送出'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

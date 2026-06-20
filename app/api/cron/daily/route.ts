@@ -1594,9 +1594,35 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ── 折疊排程：Vercel 方案只跑前 2 個 cron(daily 早/晚)，vercel.json 其餘 6 支從未被觸發。
+  // 折進每日 morning run：依「台灣日期」判斷今天該跑哪幾支，用 CRON_SECRET 自呼叫(verifyCronAuth 認得)。
+  const foldedCrons: Record<string, string> = {}
+  if (isMorningRun) {
+    const twDow = new Date(today + 'T12:00:00Z').getUTCDay() // 台灣日期的星期(0=日)
+    const twDom = Number(today.slice(8, 10))
+    const due = ['invariants', 'nurture-sequence']  // 每天
+    if (twDow === 0) due.push('weekly')             // 週日：學員週報
+    if (twDow === 1) due.push('skip-review')        // 週一
+    if (twDom === 1) due.push('monthly')            // 每月 1 號
+    const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+    for (const job of due) {
+      try {
+        const r = await fetch(`${base}/api/cron/${job}`, {
+          headers: { Authorization: `Bearer ${process.env.CRON_SECRET || ''}` },
+        })
+        foldedCrons[job] = String(r.status)
+        if (!r.ok) errors.push(`折疊排程 ${job} 回 ${r.status}`)
+      } catch (e) {
+        foldedCrons[job] = 'error'
+        errors.push(`折疊排程 ${job} 失敗: ${e instanceof Error ? e.message : String(e)}`)
+      }
+    }
+  }
+
   const responseData = {
     success: errors.length === 0,
     type: isMorning ? 'morning' : 'evening',
+    foldedCrons,
     sent,
     webPushUsed,
     linePushUsed,

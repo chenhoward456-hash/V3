@@ -27,6 +27,8 @@ const TrainingLog = dynamic(() => import('@/components/client/TrainingLog'), { s
 import TodayWorkout from '@/components/client/TodayWorkout'
 import { isWeightTraining, TRAINING_TYPES } from '@/components/client/types'
 import NutritionLog from '@/components/client/NutritionLog'
+import CompWarRoom from '@/components/client/CompWarRoom'
+import CutHealthCard from '@/components/client/CutHealthCard'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import { ForYouFeed } from '@/components/client/ForYouFeed'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
@@ -999,6 +1001,26 @@ export default function ClientDashboard() {
           )}
         </div>
 
+        {/* === 備賽作戰室：會不會準時上台（備賽模式置頂英雄卡） === */}
+        {isCompetition && c.competition_date && (
+          <CompWarRoom
+            bodyData={clientData.bodyData || []}
+            competitionDate={c.competition_date}
+            targetWeight={c.target_weight}
+            targetBodyFat={c.target_body_fat}
+            prepPhase={c.prep_phase}
+          />
+        )}
+
+        {/* === 本週減脂體檢：掉重速率 + 力量保持 + 能量（減脂/備賽，體脂不參與判定） === */}
+        {(isCompetition || c.prep_phase === 'cut' || /cut|loss|fat|減/.test((c.goal_type || '').toLowerCase())) && (
+          <CutHealthCard
+            bodyData={clientData.bodyData || []}
+            wellness={clientData.wellness || []}
+            currentWeight={latestBodyData?.weight ?? null}
+          />
+        )}
+
         {/* === QuickActions: 未完成項目快速導航（緊接在概覽下方） === */}
         {isToday && (
           <QuickActions
@@ -1023,6 +1045,34 @@ export default function ClientDashboard() {
             onNavigate={(sectionId) => {
               setActiveTab(sectionId)
               document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}
+            showQuickWeight={c.body_composition_enabled && !(latestBodyData && latestBodyData.date === selectedDate)}
+            onQuickWeight={async (weight) => {
+              try {
+                const res = await fetch('/api/body-composition', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ clientId, date: today, weight }),
+                })
+                if (!res.ok) throw new Error()
+                await mutate()
+                showToast('今天體重記好了 💪', 'success', '⚖️')
+                return true
+              } catch { showToast('記錄失敗，請重試', 'error'); return false }
+            }}
+            showQuickNutrition={c.nutrition_enabled && !todayNutrition}
+            onQuickNutrition={async (compliant) => {
+              try {
+                const res = await fetch('/api/nutrition-logs', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ clientId, date: today, compliant }),
+                })
+                if (!res.ok) throw new Error()
+                await mutate()
+                showToast(compliant ? '記好了,達標 👍' : '記好了,明天再追上', 'success', '🍽️')
+                return true
+              } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
           />
         )}

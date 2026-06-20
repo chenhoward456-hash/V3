@@ -83,6 +83,37 @@ function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
 }
 
+// 動作名正規化（用於「肌肉保持」訊號）：把同一動作模式的中英/器材/別名變體合併，
+// 例如 "Hammer row" / "hammer划船" / "坐姿繩索划船" → "划船"。同動作 session 才不會被打碎。
+// 注意：這是動作「模式」層級合併（混不同器材），適合判斷「力量有沒有掉」，
+// 不適合精準單一動作 PR — 所以只給減脂體檢用，computeTrainingProgress 本身仍吃原始名。
+const EXERCISE_ALIASES: [RegExp, string][] = [
+  [/bench|臥推/, '臥推'],
+  [/squat|深蹲|蹲/, '深蹲'],
+  [/dead\s*lift|硬舉/, '硬舉'],
+  [/shoulder|ohp|overhead\s*press|肩推/, '肩推'],
+  [/row|划船/, '划船'],
+  [/lat\s*pull|pull\s*down|下拉|引體|pull\s*up|chin/, '背部下拉/引體'],
+  [/curl|彎舉|二頭/, '二頭彎舉'],
+  [/tricep|三頭|下壓|push\s*down|dip|撐體/, '三頭'],
+  [/lateral|側平舉/, '側平舉'],
+  [/leg\s*press|腿推/, '腿推'],
+  [/leg\s*ext|腿伸|extension/, '腿伸'],
+  [/leg\s*curl|腿彎|腿後/, '腿後彎舉'],
+  [/fly|飛鳥|夾胸|machine\s*fly/, '飛鳥'],
+  [/hip\s*ab|髖外展/, '髖外展'],
+]
+export function canonicalExercise(raw: string): string {
+  if (!raw) return raw
+  const n = raw
+    .toLowerCase()
+    .replace(/（[^）]*）|\([^)]*\)/g, '') // 去括號內器材/把手註記
+    .replace(/[\s　]+/g, ' ')
+    .trim()
+  for (const [re, key] of EXERCISE_ALIASES) if (re.test(n)) return key
+  return n || raw
+}
+
 export function computeTrainingProgress(sets: TrainingSetRow[], opts?: { now?: string }): TrainingProgress {
   const rows = (sets || []).filter(s => s.date && s.exercise_name)
   const now = opts?.now ?? rows.reduce((m, s) => (s.date > m ? s.date : m), rows[0]?.date ?? '1970-01-01')

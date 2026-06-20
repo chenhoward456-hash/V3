@@ -8,30 +8,6 @@
     {
       "path": "/api/cron/daily",
       "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/cron/weekly",
-      "schedule": "0 8 * * 0"
-    },
-    {
-      "path": "/api/cron/monthly",
-      "schedule": "0 0 1 * *"
-    },
-    {
-      "path": "/api/cron/nurture-sequence",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/cron/nurture-sequence",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/skip-review",
-      "schedule": "0 0 * * 1"
-    },
-    {
-      "path": "/api/cron/invariants",
-      "schedule": "0 23 * * *"
     }
   ],
   "functions": {

@@ -136,35 +136,9 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
 
   // 舊的強制恢復 UI 已移除 — 閘門改為純警告模式
 
-  // 穿戴裝置恢復狀態回饋（所有狀態都顯示）
-  const wearableInsightCard = (() => {
-    if (!data.wearableInsight) return null
-
-    const stateConfig: Record<string, { bg: string; border: string; text: string; emoji: string; label: string }> = {
-      optimal: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', emoji: '💪', label: '恢復極佳' },
-      good: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', emoji: '👍', label: '恢復正常' },
-      struggling: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', emoji: '⚠️', label: '恢復偏低' },
-      critical: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', emoji: '🚨', label: '恢復不足' },
-    }
-    const config = stateConfig[data.currentState] || stateConfig.good
-
-    return (
-      <div className={`mt-3 ${config.bg} border ${config.border} rounded-2xl p-4`}>
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <span className="text-base">⌚</span>
-            <p className={`text-xs font-bold ${config.text}`}>{config.emoji} {config.label}</p>
-          </div>
-          {data.readinessScore != null && (
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${config.bg} ${config.text}`}>
-              {data.readinessScore}/100
-            </span>
-          )}
-        </div>
-        <p className={`text-xs ${config.text} leading-relaxed`}>{data.wearableInsight}</p>
-      </div>
-    )
-  })()
+  // 穿戴裝置恢復狀態回饋 — 已停用：恢復/訓練建議統一由 RecoveryDashboard（今天的恢復）一個聲音講，
+  // 避免同畫面出現兩個恢復分數(61 vs 100)、互相矛盾的訓練建議(挑戰PR vs 減量)。
+  const wearableInsightCard = null
 
   // 非 goal-driven 時顯示基本引擎狀態
   if (!isGoalDriven) {
