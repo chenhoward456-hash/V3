@@ -90,19 +90,24 @@ export async function POST(request: NextRequest) {
     // 3. cooldown 時間戳
     await supabase.from('clients').update({ last_auto_adjust_at: new Date().toISOString() }).eq('id', c.id)
 
-    // 4. coach_macro_override 鎖住（教練刻意改→別讓引擎覆寫，見 macro-lock）
-    const overrideValue = {
-      locked_at: new Date().toISOString(),
-      expires_at: null,
-      locked_fields: actuallyChanged,
-      override_values: Object.fromEntries(actuallyChanged.map((f) => [f, newMacros[f]])),
-      previous_values: Object.fromEntries(actuallyChanged.map((f) => [f, oldMacros[f]])),
-      reason: reason ? `LINE 助手：${reason}` : 'LINE 助手手動調整',
+    // 4. coach_macro_override：**預設不鎖**（Howard 決策：系統本來就自動調，應急改只是當下推一把、讓引擎繼續自動 tune）。
+    //    只有明確 body.lock===true 才鎖住（停掉該生自動調整、定住數字直到手動解鎖）。
+    let locked = false
+    if (body.lock === true) {
+      const overrideValue = {
+        locked_at: new Date().toISOString(),
+        expires_at: null,
+        locked_fields: actuallyChanged,
+        override_values: Object.fromEntries(actuallyChanged.map((f) => [f, newMacros[f]])),
+        previous_values: Object.fromEntries(actuallyChanged.map((f) => [f, oldMacros[f]])),
+        reason: reason ? `LINE 助手：${reason}` : 'LINE 助手手動調整',
+      }
+      const { error: ovErr } = await supabase.from('clients').update({ coach_macro_override: overrideValue }).eq('id', c.id)
+      if (ovErr) logger.warn('coach_macro_override 更新失敗', { error: ovErr.message })
+      else locked = true
     }
-    const { error: ovErr } = await supabase.from('clients').update({ coach_macro_override: overrideValue }).eq('id', c.id)
-    if (ovErr) logger.warn('coach_macro_override 更新失敗', { error: ovErr.message })
 
-    return NextResponse.json({ ok: true, name: c.name, changed: actuallyChanged, old: oldMacros, new: newMacros })
+    return NextResponse.json({ ok: true, name: c.name, changed: actuallyChanged, old: oldMacros, new: newMacros, locked })
   } catch (error) {
     logger.warn('client-macro-adjust 失敗', { error })
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
