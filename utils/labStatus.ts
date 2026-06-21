@@ -327,6 +327,25 @@ export function getOptimalRangeText(testName: string, gender?: '男性' | '女�
 }
 
 /**
+ * 取得「正常範圍」文字描述（共識閾值 LAB_THRESHOLDS，非最佳化目標）
+ * 範圍型 → "min-max"；越高越好 → "≥x"；越低越好 → "≤x"。未知項目回 null。
+ * 與 getOptimalRangeText 一樣以 labStatus.ts 為唯一真相來源，供 API / bot 顯示，
+ * 避免下游（賴助手等）自行編造實驗室參考範圍而放寬 Howard 的標準。
+ */
+export function getNormalRangeText(testName: string, gender?: '男性' | '女性'): string | null {
+  let lookupName = testName
+  if (gender === '女性' && FEMALE_VARIANTS.includes(testName)) {
+    lookupName = `${testName}_female`
+  }
+  const threshold = (LAB_THRESHOLDS as LabThresholds)[lookupName]
+  if (!threshold) return null
+  const n = threshold.normal
+  if (typeof n === 'object' && 'min' in n) return `${n.min}-${n.max}`
+  if (HIGHER_IS_BETTER.has(lookupName)) return `≥${n}`
+  return `≤${n}`
+}
+
+/**
  * 獲取狀態對應的顏色類名
  * @param status 血檢狀態
  * @returns CSS 類名字串

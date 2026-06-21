@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyCoachAuth } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
-import { calculateLabStatus } from '@/utils/labStatus'
+import { calculateLabStatus, getNormalRangeText, getOptimalRangeText, isInOptimalRange } from '@/utils/labStatus'
 
 const logger = createLogger('client-diagnosis')
 
@@ -117,13 +117,22 @@ export async function GET(request: NextRequest) {
       return true
     })
     const gender = c.gender === '男性' || c.gender === '女性' ? c.gender : undefined
-    const labs = labsLatest.map((l) => ({
-      test_name: l.test_name,
-      value: l.value,
-      unit: l.unit,
-      date: l.date,
-      status: calculateLabStatus(l.test_name, Number(l.value), gender),
-    }))
+    // 帶上 Howard 系統的標準（正常範圍 + 最佳值 + 是否達最佳），讓下游（賴助手）
+    // 用「我的閾值」顯示、嚴禁自己掰實驗室寬鬆參考範圍把偏高說成正常。
+    const labs = labsLatest.map((l) => {
+      const v = Number(l.value)
+      const status = calculateLabStatus(l.test_name, v, gender)
+      return {
+        test_name: l.test_name,
+        value: l.value,
+        unit: l.unit,
+        date: l.date,
+        status,
+        normalRange: getNormalRangeText(l.test_name, gender), // 共識閾值（你的「正常」）
+        optimalText: getOptimalRangeText(l.test_name, gender), // 長壽/功能醫學最佳值
+        inOptimal: status === 'normal' ? isInOptimalRange(l.test_name, v, gender) : null, // 正常時：是否已達最佳
+      }
+    })
     const labFlags = labs.filter((l) => l.status !== 'normal')
     const labDate = labsLatest.length ? labsLatest[0].date : null
 
