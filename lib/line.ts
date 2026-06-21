@@ -15,6 +15,27 @@ function getLineChannelAccessToken(): string {
   return token
 }
 
+/** 抓取使用者傳來的訊息內容(圖片/檔案)，回傳 base64 + media type。失敗回 null。 */
+export async function getMessageContent(
+  messageId: string
+): Promise<{ base64: string; mediaType: string } | null> {
+  try {
+    const res = await fetch(`https://api-data.line.me/v2/bot/message/${messageId}/content`, {
+      headers: { Authorization: `Bearer ${getLineChannelAccessToken()}` },
+    })
+    if (!res.ok) {
+      logger.error('getMessageContent failed', { messageId, status: res.status })
+      return null
+    }
+    const mediaType = res.headers.get('content-type')?.split(';')[0] || 'image/jpeg'
+    const buf = Buffer.from(await res.arrayBuffer())
+    return { base64: buf.toString('base64'), mediaType }
+  } catch (e) {
+    logger.error('getMessageContent error', { messageId, error: e })
+    return null
+  }
+}
+
 /** 驗證 LINE Webhook 簽名 */
 export function verifyLineSignature(body: string, signature: string): boolean {
   const hash = crypto
