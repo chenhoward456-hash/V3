@@ -1029,23 +1029,28 @@ export async function handleNaturalNutrition(
     const today = getTaiwanDate()
     const { data: existing } = await supabase
       .from('nutrition_logs')
-      .select('id, calories, protein, carbs, fat, note')
+      .select('id, calories, protein_grams, carbs_grams, fat_grams, note')
       .eq('client_id', client.id)
       .eq('date', today)
       .maybeSingle()
 
     if (existing) {
-      // 累加
+      // 累加（欄位是 *_grams，不是 protein/carbs/fat）
       const newCal = (existing.calories || 0) + calories
-      const newPro = (existing.protein || 0) + protein
-      const newCarbs = (existing.carbs || 0) + carbs
-      const newFat = (existing.fat || 0) + fat
+      const newPro = (existing.protein_grams || 0) + protein
+      const newCarbs = (existing.carbs_grams || 0) + carbs
+      const newFat = (existing.fat_grams || 0) + fat
       const newNote = existing.note ? `${existing.note}\n${items}` : items
 
-      await supabase
+      const { error: updErr } = await supabase
         .from('nutrition_logs')
-        .update({ calories: newCal, protein: newPro, carbs: newCarbs, fat: newFat, note: newNote })
+        .update({ calories: newCal, protein_grams: newPro, carbs_grams: newCarbs, fat_grams: newFat, note: newNote })
         .eq('id', existing.id)
+      if (updErr) {
+        log.error('Natural nutrition update failed', { error: updErr })
+        await replyMessage(replyToken, [{ type: 'text', text: '記錄失敗，請稍後再試或開 App 🙏' }])
+        return
+      }
 
       const target = client.calories_target
       const pctText = target ? ` (${Math.round(newCal / target * 100)}%)` : ''
@@ -1058,10 +1063,15 @@ export async function handleNaturalNutrition(
         },
       ])
     } else {
-      // 新增
-      await supabase
+      // 新增（欄位是 *_grams）
+      const { error: insErr } = await supabase
         .from('nutrition_logs')
-        .insert({ client_id: client.id, date: today, calories, protein, carbs, fat, compliant: true, note: items })
+        .insert({ client_id: client.id, date: today, calories, protein_grams: protein, carbs_grams: carbs, fat_grams: fat, compliant: true, note: items })
+      if (insErr) {
+        log.error('Natural nutrition insert failed', { error: insErr })
+        await replyMessage(replyToken, [{ type: 'text', text: '記錄失敗，請稍後再試或開 App 🙏' }])
+        return
+      }
 
       await replyMessage(replyToken, [
         {
