@@ -16,6 +16,7 @@ import {
   handleTrendQuery,
   handlePostback,
   handleNaturalNutrition,
+  handleNaturalTraining,
 } from '@/lib/line-handlers'
 import { buildDay0Messages, enrollSubscriber, unenrollSubscriber } from '@/lib/nurture-sequence'
 import { handleAdminAgentMessage, handleAgentProposalPostback, handleCoachActionPostback } from '@/lib/agent-line'
@@ -633,6 +634,18 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   const foodMatch = foodPrefixes.find(p => text.startsWith(p))
   if (foodMatch && client && text.length > foodMatch.length) {
     await handleNaturalNutrition(event.replyToken, client, text, supabase)
+    return
+  }
+
+  // ── Natural language training (動作+量, AI parse) ──
+  // 偵測「動作 重量x次數x組數 / 組 / 下」這種訓練量寫法 → 解析入 training_sets。
+  // 需含中/英文字(動作名)+ 組數/次數模式，避免誤判純數字(體重)或水量等指令。
+  if (
+    client?.training_enabled &&
+    /[xX×]\s*\d+|\d+\s*(組|下|reps?)/.test(text) &&
+    /[一-龥a-zA-Z]/.test(text)
+  ) {
+    await handleNaturalTraining(event.replyToken, client, text, supabase)
     return
   }
 

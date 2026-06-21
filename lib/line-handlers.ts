@@ -10,6 +10,7 @@ import { replyMessage, pushMessage, qr, switchRichMenuForUser } from '@/lib/line
 import { createLogger } from '@/lib/logger'
 import { DAY_MS } from '@/lib/date-utils'
 import { markConverted } from '@/lib/nurture-sequence'
+import { rateLimit } from '@/lib/auth-middleware'
 
 const log = createLogger('LINE-Handlers')
 
@@ -492,22 +493,21 @@ function buildOnboardingGuide(name: string, tier: string, uniqueCode: string): s
   const appUrl = `${siteUrl}/c/${uniqueCode}`
 
   const intro = [
-    `${name}，這是這套系統的玩法：`,
+    `${name}，這套系統最重要的就是「每天回報」，而且在 LINE 直接打字就能記，不用開 App：`,
     '',
     '━━━━━━━━━━━━━━━━',
-    '📱 主場是 App（完整記錄 + 趨勢）',
+    '💬 每天在這直接打就好：',
+    '・吃了什麼 → 打「午餐 雞腿便當」，我直接幫你算熱量＋蛋白/碳水/脂肪',
+    '・訓練 → 打「深蹲 100x5x3、臥推 80x8x3」，我記下動作和訓練量',
+    '・體重 → 直接打數字（如「73.5」）',
+    '・水 → 打「水 500」',
+    '・今天達標嗎 → 打「達標」或「未達標」',
+    '・睡眠/精神 → 打「記身心」',
+    '',
+    '打「狀態」看今天摘要、「趨勢」看 7 天變化。',
+    '',
+    '📊 想看週平均、趨勢圖、完整報告、改目標 → 再開 App',
     `→ ${appUrl}`,
-    '在 App 裡：',
-    '・量體重、記飲食、訓練、感受',
-    '・看週平均、目標進度、Howard 解讀',
-    '・改目標、升級方案',
-    '',
-    '💬 LINE 是「快速回報 + 摘要」',
-    '・打數字（如「73.5」）→ 記今天體重',
-    '・打「狀態」→ 看今日摘要',
-    '・打「趨勢」→ 看 7 天變化',
-    '',
-    '⚠️ 注意：LINE 沒辦法詳細記錄飲食或訓練內容，要記詳細資料請開 App。',
     '',
     '━━━━━━━━━━━━━━━━',
     '📖 完整使用說明（5 分鐘讀完）',
@@ -547,6 +547,124 @@ function buildOnboardingGuide(name: string, tier: string, uniqueCode: string): s
     '・自適應 TDEE 每週校正',
     '・訓練 + 身心狀態追蹤',
   ].join('\n')
+}
+
+// ═══════════════════════════════════════
+// 自然語言記訓練（動作 + 訓練量）：打「深蹲 100x5x3、臥推 80x8x3」→ AI 解析 → training_sets
+// 補上 LINE 唯一缺口（原本只能記訓練「類型」，記不到動作與組數×次數×重量）。append 不覆寫。
+// ═══════════════════════════════════════
+export async function handleNaturalTraining(
+  replyToken: string,
+  client: LineClient | null,
+  text: string,
+  supabase: SupabaseClient
+) {
+  if (!client) {
+    await replyMessage(replyToken, [{ type: 'text', text: '此功能需綁定帳號 🔒\n輸入「綁定 [學員代碼]」', quickReply: { items: [qr('🔗 我有代碼', '我要綁定')] } }])
+    return
+  }
+  if (!client.training_enabled) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+    await replyMessage(replyToken, [{ type: 'text', text: `訓練記錄是自主管理方案（$499/月）以上的功能 🔒\n👉 ${siteUrl}/remote` }])
+    return
+  }
+  const { allowed } = await rateLimit(`line-nat-train:${client.id}`, 30, 24 * 60 * 60_000)
+  if (!allowed) {
+    await replyMessage(replyToken, [{ type: 'text', text: '今天記錄次數有點多，先休息一下，或開 App 記 🙏' }])
+    return
+  }
+
+  let parsed: { exercises?: Array<{ exercise_name?: string; muscle_group?: string; weight?: number; reps?: number; sets?: number }>; training_type?: string }
+  try {
+    const Anthropic = (await import('@anthropic-ai/sdk')).default
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) { await replyMessage(replyToken, [{ type: 'text', text: '訓練記錄功能暫時不可用，請稍後再試' }]); return }
+    const anthropic = new Anthropic({ apiKey })
+    const resp = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: `你是健身訓練記錄解析工具。把訓練描述解析成 JSON：
+{"exercises":[{"exercise_name":"動作中文名","muscle_group":"胸/背/腿/肩/手臂/核心/有氧之一","weight":數字或null,"reps":每組次數數字或null,"sets":組數數字}],"training_type":"push/pull/legs/cardio/full_body/upper_body 之一"}
+寫法範例：「深蹲 100x5x3」=重量100 次數5 組數3；「臥推 80kg 8下 4組」同理；「跑步30分」=有氧(weight/reps 用 null、sets 1)。
+看不懂的動作就照原文當 exercise_name。不要解釋，只回 JSON。
+
+訓練描述：${text}`,
+      }],
+    })
+    const aiText = resp.content[0].type === 'text' ? resp.content[0].text : ''
+    const m = aiText.match(/\{[\s\S]*\}/)
+    if (!m) throw new Error('no json')
+    parsed = JSON.parse(m[0])
+  } catch (e) {
+    log.error('natural training parse failed', { error: e })
+    await replyMessage(replyToken, [{ type: 'text', text: '看不太懂耶 🤔 格式像這樣：\n「深蹲 100x5x3、臥推 80x8x3」\n（重量 x 次數 x 組數）' }])
+    return
+  }
+
+  const exs = (parsed.exercises || []).filter((e) => e.exercise_name && (e.sets || e.reps))
+  if (exs.length === 0) {
+    await replyMessage(replyToken, [{ type: 'text', text: '看不太懂耶 🤔 格式像「深蹲 100x5x3」（重量 x 次數 x 組數）' }])
+    return
+  }
+
+  const today = getTaiwanDate()
+  // 取當日各動作現有 set_number 起點 → append 不覆寫（學員可分次記）
+  const { data: existing } = await supabase
+    .from('training_sets')
+    .select('exercise_name, set_number')
+    .eq('client_id', client.id)
+    .eq('date', today)
+  const maxByEx = new Map<string, number>()
+  for (const r of existing || []) {
+    const cur = maxByEx.get(r.exercise_name) || 0
+    if ((r.set_number || 0) > cur) maxByEx.set(r.exercise_name, r.set_number)
+  }
+
+  const rows: Array<Record<string, unknown>> = []
+  for (const e of exs) {
+    const name = String(e.exercise_name)
+    const nSets = Math.min(Math.max(Number(e.sets) || 1, 1), 50)
+    let sn = maxByEx.get(name) || 0
+    for (let i = 0; i < nSets; i++) {
+      sn += 1
+      rows.push({
+        client_id: client.id,
+        date: today,
+        exercise_name: name,
+        muscle_group: e.muscle_group || null,
+        set_number: sn,
+        weight: e.weight != null ? Number(e.weight) : null,
+        reps: e.reps != null ? Number(e.reps) : null,
+      })
+    }
+  }
+
+  const { error } = await supabase.from('training_sets').insert(rows)
+  if (error) {
+    log.error('training_sets insert failed', { error })
+    await replyMessage(replyToken, [{ type: 'text', text: '存檔出了點問題，請再試一次或開 App 🙏' }])
+    return
+  }
+
+  // 標記今天有訓練（training_logs 日層級，狀態/引擎會用；只更新 training_type，不動既有 duration/rpe）
+  await supabase
+    .from('training_logs')
+    .upsert({ client_id: client.id, date: today, training_type: parsed.training_type || 'strength' }, { onConflict: 'client_id,date' })
+
+  const summary = exs
+    .map((e) => {
+      const w = e.weight != null ? `${e.weight}kg ` : ''
+      const r = e.reps != null ? `${e.reps}` : '?'
+      return `・${e.exercise_name} ${w}${r}×${e.sets || 1}`
+    })
+    .join('\n')
+  const totalVolume = rows.reduce((sum, r) => sum + (Number(r.weight) || 0) * (Number(r.reps) || 0), 0)
+  let msg = `🏋️ 已記錄訓練：\n${summary}`
+  if (totalVolume > 0) msg += `\n總訓練量 ${Math.round(totalVolume).toLocaleString()} kg`
+  msg += `\n\n記錯了開 App 可修改。`
+  await replyMessage(replyToken, [{ type: 'text', text: msg, quickReply: { items: [qr('📊 看狀態', '狀態')] } }])
 }
 
 // ═══════════════════════════════════════
