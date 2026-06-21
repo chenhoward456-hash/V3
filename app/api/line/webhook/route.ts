@@ -638,11 +638,12 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   }
 
   // ── Natural language training (動作+量, AI parse) ──
-  // 偵測「動作 重量x次數x組數 / 組 / 下」這種訓練量寫法 → 解析入 training_sets。
-  // 需含中/英文字(動作名)+ 組數/次數模式，避免誤判純數字(體重)或水量等指令。
+  // 只認明確的「數字 x 數字」訓練量寫法(如 100x5x3 / 80x8)，避免誤判
+  // 「我想問x3個問題」「下午3組會議」等(那些沒有 數字-x-數字 結構)。
+  // 仍要求含中/英文字(動作名)。教學文案也以 x 格式為準。
   if (
     client?.training_enabled &&
-    /[xX×]\s*\d+|\d+\s*(組|下|reps?)/.test(text) &&
+    /\d+\s*[xX×]\s*\d+/.test(text) &&
     /[一-龥a-zA-Z]/.test(text)
   ) {
     await handleNaturalTraining(event.replyToken, client, text, supabase)

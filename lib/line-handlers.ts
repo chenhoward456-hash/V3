@@ -639,6 +639,7 @@ export async function handleNaturalTraining(
         reps: e.reps != null ? Number(e.reps) : null,
       })
     }
+    maxByEx.set(name, sn) // 回寫，避免同訊息同動作重複時組號撞號
   }
 
   const { error } = await supabase.from('training_sets').insert(rows)
@@ -649,9 +650,13 @@ export async function handleNaturalTraining(
   }
 
   // 標記今天有訓練（training_logs 日層級，狀態/引擎會用；只更新 training_type，不動既有 duration/rpe）
-  await supabase
+  // ⚠️ training_type 有 DB CHECK 約束，必須是白名單值，否則 upsert 會失敗（且要檢查 error）
+  const ALLOWED_TRAINING_TYPES = ['push', 'pull', 'legs', 'full_body', 'upper_body', 'cardio', 'rest', 'chest', 'shoulder', 'arms']
+  const trainingType = ALLOWED_TRAINING_TYPES.includes(parsed.training_type || '') ? parsed.training_type! : 'full_body'
+  const { error: logErr } = await supabase
     .from('training_logs')
-    .upsert({ client_id: client.id, date: today, training_type: parsed.training_type || 'strength' }, { onConflict: 'client_id,date' })
+    .upsert({ client_id: client.id, date: today, training_type: trainingType }, { onConflict: 'client_id,date' })
+  if (logErr) log.error('training_logs upsert failed', { error: logErr })
 
   const summary = exs
     .map((e) => {
