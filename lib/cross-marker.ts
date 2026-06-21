@@ -131,21 +131,27 @@ export function detectCrossMarkerSignals(
     }
   }
 
-  // G. (減脂期) HOMA-IR / 同半胱胺酸 / Lp(a) 偏高 → 卡關的生理阻力，直接導向就醫配合
-  //    (Howard 臨床：這些本身就可能讓人減不下來，跟備賽無關，不要只靠硬砍熱量解)
-  if (ctx.isFatLoss) {
-    const triggers: string[] = []
-    if (dirOf(find(['HOMA-IR'])) === 'high') triggers.push('HOMA-IR(胰島素阻抗)')
-    if (dirOf(find(['同半胱胺酸'])) === 'high') triggers.push('同半胱胺酸')
-    if (dirOf(find(['Lp(a)'])) === 'high') triggers.push('Lp(a)')
-    if (triggers.length) {
-      signals.push({
-        id: 'metabolic_resistance',
-        title: '減脂卡關的生理阻力訊號',
-        detail: `${triggers.join('、')} 偏高——減脂卡關時，這些代謝/發炎面的指標本身就可能是減不下來的生理原因(跟有沒有備賽無關)。建議請學員就醫、與醫療端配合處理，不要只靠硬砍熱量硬解。`,
-        severity: 'attention',
-      })
-    }
+  // G. (減脂期) HOMA-IR 偏高 → 可能真的影響減脂的生理阻力（Howard 臨床 + 證據相符）。
+  //    注意：同半胱胺酸 / Lp(a) 不放這裡——它們是健康/心血管風險，沒有證據會「造成減脂卡關」。
+  if (ctx.isFatLoss && dirOf(find(['HOMA-IR'])) === 'high') {
+    signals.push({
+      id: 'insulin_resistance_plateau',
+      title: '減脂卡關的生理阻力（胰島素阻抗）',
+      detail:
+        'HOMA-IR(胰島素阻抗)偏高，在減脂卡關時可能真的是減不下來的生理原因之一。優先處理飲食結構與體脂、增加活動，必要時與醫師配合，別只靠硬砍熱量。',
+      severity: 'attention',
+    })
+  }
+
+  // H. Lp(a) 偏高 → 基因性心血管風險，與體重/減脂無關（不歸因卡關），純健康面導向就醫。
+  if (dirOf(find(['Lp(a)'])) === 'high') {
+    signals.push({
+      id: 'lpa_cvd_risk',
+      title: 'Lp(a) 偏高（心血管風險）',
+      detail:
+        'Lp(a) 偏高主要由基因決定，是心血管風險指標，跟體重或減脂進度無關、也不是飲食能直接改善的。這是健康面的紅旗，建議請學員與醫師討論心血管風險管理。',
+      severity: 'attention',
+    })
   }
 
   return signals
