@@ -23,6 +23,7 @@ interface CrossCtx {
   isFatLoss?: boolean
   prepPhase?: string | null
   clientMode?: string | null
+  mthfr?: string | null // heterozygous / homozygous / normal
 }
 
 export function detectCrossMarkerSignals(
@@ -73,14 +74,17 @@ export function detectCrossMarkerSignals(
     })
   }
 
-  // C. 同半胱胺酸↑ → 甲基化訊號（接 MTHFR / 甲基葉酸規則）
+  // C. 同半胱胺酸↑ → 甲基化訊號（接 MTHFR / 甲基葉酸規則）。
+  //    若已知 MTHFR 帶因，直接講死、不再用「如果你是」。
   const homo = find(['同半胱胺酸'])
   if (dirOf(homo) === 'high') {
+    const isCarrier = ['heterozygous', 'homozygous'].includes((ctx.mthfr || '').toLowerCase())
     signals.push({
       id: 'homocysteine',
       title: '同半胱胺酸偏高',
-      detail:
-        '甲基化代謝訊號，常與葉酸/B12/B6 不足或 MTHFR 基因型有關。若為 MTHFR 帶因者，宜用甲基葉酸(5-MTHF)而非一般葉酸。可考慮檢查 B 群與 MTHFR 基因。',
+      detail: isCarrier
+        ? `甲基化代謝訊號。你已知是 MTHFR 帶因(${ctx.mthfr})，葉酸代謝效率較低，這正好對應同半胱胺酸偏高——補葉酸要用甲基葉酸(5-MTHF)而非一般合成葉酸，並確保 B12/B6 足夠。`
+        : '甲基化代謝訊號，常與葉酸/B12/B6 不足或 MTHFR 基因型有關。建議檢查 MTHFR 基因；若為帶因者宜用甲基葉酸(5-MTHF)而非一般葉酸。',
       severity: 'attention',
     })
   }

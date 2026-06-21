@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     const { data: matches, error: cErr } = await supabase
       .from('clients')
-      .select('id, name, status, client_mode, goal_type, prep_phase, gender, age, diet_start_date, target_weight, body_fat_target, target_date, calories_target, protein_target, carbs_target, fat_target, coach_macro_override, auto_adjust_enabled, subscription_tier, is_active')
+      .select('id, name, status, client_mode, goal_type, prep_phase, gender, age, diet_start_date, target_weight, body_fat_target, target_date, calories_target, protein_target, carbs_target, fat_target, coach_macro_override, auto_adjust_enabled, subscription_tier, is_active, gene_mthfr, gene_apoe, gene_depression_risk, gene_notes')
       .ilike('name', `%${name}%`)
       .limit(5)
     if (cErr) logger.warn('查 clients 失敗', { error: cErr })
@@ -139,10 +139,17 @@ export async function GET(request: NextRequest) {
     // 跨指標關聯：只偵測 Howard 定義過的組合（SHBG↑+游離T↓ 等），bot 照唸不自由聯想
     const gt0 = (c.goal_type || '').toLowerCase()
     const isFatLoss0 = gt0.includes('loss') || gt0 === 'cut' || gt0.includes('fat') || (c.goal_type || '').includes('減')
+    const genetics = {
+      mthfr: c.gene_mthfr || null, // heterozygous/homozygous/normal
+      apoe: c.gene_apoe || null,
+      depressionRisk: c.gene_depression_risk || null, // 5-HTTLPR: SS/SL/LL
+      notes: c.gene_notes || null,
+    }
     const crossMarkerSignals = detectCrossMarkerSignals(labs, gender, {
       isFatLoss: isFatLoss0,
       prepPhase: c.prep_phase,
       clientMode: c.client_mode,
+      mthfr: genetics.mthfr,
     })
 
     // --- 依從裁定（adherence）：bot 診斷必先講這個，低依從就別動 macro ---
@@ -215,6 +222,7 @@ export async function GET(request: NextRequest) {
       labFlags, // 只列 attention/alert 的，bot 重點講這些
       labs, // 完整重算清單
       crossMarkerSignals, // 跨指標關聯（命中的組合，bot 照唸、保守措辭、不自由聯想）
+      genetics, // 基因型（MTHFR/APOE/5-HTTLPR）：與相關血檢/macro 一起判讀，別假設性說「如果你是」
       // meta
       subscriptionTier: c.subscription_tier,
       isActive: c.is_active,
