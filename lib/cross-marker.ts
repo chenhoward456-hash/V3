@@ -131,5 +131,22 @@ export function detectCrossMarkerSignals(
     }
   }
 
+  // G. (減脂期) HOMA-IR / 同半胱胺酸 / Lp(a) 偏高 → 卡關的生理阻力，直接導向就醫配合
+  //    (Howard 臨床：這些本身就可能讓人減不下來，跟備賽無關，不要只靠硬砍熱量解)
+  if (ctx.isFatLoss) {
+    const triggers: string[] = []
+    if (dirOf(find(['HOMA-IR'])) === 'high') triggers.push('HOMA-IR(胰島素阻抗)')
+    if (dirOf(find(['同半胱胺酸'])) === 'high') triggers.push('同半胱胺酸')
+    if (dirOf(find(['Lp(a)'])) === 'high') triggers.push('Lp(a)')
+    if (triggers.length) {
+      signals.push({
+        id: 'metabolic_resistance',
+        title: '減脂卡關的生理阻力訊號',
+        detail: `${triggers.join('、')} 偏高——減脂卡關時，這些代謝/發炎面的指標本身就可能是減不下來的生理原因(跟有沒有備賽無關)。建議請學員就醫、與醫療端配合處理，不要只靠硬砍熱量硬解。`,
+        severity: 'attention',
+      })
+    }
+  }
+
   return signals
 }
