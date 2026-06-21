@@ -960,6 +960,21 @@ export async function handleNaturalNutrition(
     ])
     return
   }
+  // 成本閘門：AI 自動算熱量只給付費學員（free 擋掉，在呼叫 AI 之前就擋，不燒額度）。
+  if (client.subscription_tier === 'free') {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+    await replyMessage(replyToken, [{
+      type: 'text',
+      text: `AI 自動算熱量是付費方案的功能 🔒\n升級後，打一句「午餐 雞腿便當」我就直接幫你算熱量＋蛋白/碳水/脂肪。\n👉 ${siteUrl}/remote`,
+    }])
+    return
+  }
+  // 成本封頂：每位付費學員每天最多 30 次 AI 估算
+  const { allowed: foodAllowed } = await rateLimit(`line-nat-food:${client.id}`, 30, 24 * 60 * 60_000)
+  if (!foodAllowed) {
+    await replyMessage(replyToken, [{ type: 'text', text: '今天記錄次數有點多，先休息一下，或開 App 記 🙏' }])
+    return
+  }
 
   try {
     // 1. 用 Claude Haiku 估算熱量
