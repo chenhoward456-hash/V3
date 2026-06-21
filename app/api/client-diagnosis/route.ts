@@ -3,6 +3,7 @@ import { verifyCoachAuth } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
 import { calculateLabStatus, getNormalRangeText, getOptimalRangeText, isInOptimalRange } from '@/utils/labStatus'
+import { detectCrossMarkerSignals } from '@/lib/cross-marker'
 
 const logger = createLogger('client-diagnosis')
 
@@ -135,6 +136,14 @@ export async function GET(request: NextRequest) {
     })
     const labFlags = labs.filter((l) => l.status !== 'normal')
     const labDate = labsLatest.length ? labsLatest[0].date : null
+    // 跨指標關聯：只偵測 Howard 定義過的組合（SHBG↑+游離T↓ 等），bot 照唸不自由聯想
+    const gt0 = (c.goal_type || '').toLowerCase()
+    const isFatLoss0 = gt0.includes('loss') || gt0 === 'cut' || gt0.includes('fat') || (c.goal_type || '').includes('減')
+    const crossMarkerSignals = detectCrossMarkerSignals(labs, gender, {
+      isFatLoss: isFatLoss0,
+      prepPhase: c.prep_phase,
+      clientMode: c.client_mode,
+    })
 
     // --- 依從裁定（adherence）：bot 診斷必先講這個，低依從就別動 macro ---
     const nut = nutR.data || []
@@ -205,6 +214,7 @@ export async function GET(request: NextRequest) {
       labCount: labs.length,
       labFlags, // 只列 attention/alert 的，bot 重點講這些
       labs, // 完整重算清單
+      crossMarkerSignals, // 跨指標關聯（命中的組合，bot 照唸、保守措辭、不自由聯想）
       // meta
       subscriptionTier: c.subscription_tier,
       isActive: c.is_active,

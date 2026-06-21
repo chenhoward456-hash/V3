@@ -327,6 +327,32 @@ export function getOptimalRangeText(testName: string, gender?: '男性' | '女�
 }
 
 /**
+ * 取得指標相對「正常範圍」的方向：low / normal / high。
+ * 給跨指標關聯偵測用（SHBG↑+游離T↓ 等），以共識閾值判斷「偏高/偏低」，
+ * 保守取向：落在正常範圍內一律回 normal，不會把「在範圍內」當成異常方向。
+ */
+export function getLabDirection(testName: string, value: number, gender?: '男性' | '女性'): 'low' | 'normal' | 'high' {
+  let lookupName = testName
+  if (gender === '女性' && FEMALE_VARIANTS.includes(testName)) {
+    lookupName = `${testName}_female`
+  }
+  const threshold = (LAB_THRESHOLDS as LabThresholds)[lookupName]
+  if (!threshold || !Number.isFinite(value)) return 'normal'
+  const n = threshold.normal
+  if (typeof n === 'object' && 'min' in n) {
+    if (value < n.min) return 'low'
+    if (value > n.max) return 'high'
+    return 'normal'
+  }
+  if (HIGHER_IS_BETTER.has(lookupName)) {
+    return value < (n as number) ? 'low' : 'normal' // 越高越好：只有低於正常才算偏低
+  }
+  const lb = LOW_BOUND_RISK[lookupName]
+  if (lb && value < lb.attentionBelow) return 'low' // J-curve：過低也算偏低
+  return value > (n as number) ? 'high' : 'normal' // 越低越好：高於正常算偏高
+}
+
+/**
  * 取得「正常範圍」文字描述（共識閾值 LAB_THRESHOLDS，非最佳化目標）
  * 範圍型 → "min-max"；越高越好 → "≥x"；越低越好 → "≤x"。未知項目回 null。
  * 與 getOptimalRangeText 一樣以 labStatus.ts 為唯一真相來源，供 API / bot 顯示，
