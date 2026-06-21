@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyCoachAuth } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
-import { calculateLabStatus, getNormalRangeText, getOptimalRangeText, isInOptimalRange } from '@/utils/labStatus'
+import { getNormalRangeText } from '@/utils/labStatus'
+import { analyzeLabs } from '@/lib/lab-trend-analyzer'
 import { detectCrossMarkerSignals } from '@/lib/cross-marker'
 
 const logger = createLogger('client-diagnosis')
@@ -110,32 +111,30 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // --- 血檢：只留每項最新一筆，並用 calculateLabStatus 重算（前端真相，非 DB status）---
-    const seen = new Set<string>()
-    const labsLatest = (labR.data || []).filter((l) => {
-      if (seen.has(l.test_name)) return false
-      seen.add(l.test_name)
-      return true
-    })
+    // --- 血檢：用 analyzeLabs 拿「趨勢」(prev→latest、改善/惡化、Howard 14 天間隔規則)，
+    //     再 enrich 上 Howard 的正常範圍/最佳值。單一 labs 陣列含當前值 + 趨勢，bot 好用。---
     const gender = c.gender === '男性' || c.gender === '女性' ? c.gender : undefined
-    // 帶上 Howard 系統的標準（正常範圍 + 最佳值 + 是否達最佳），讓下游（賴助手）
-    // 用「我的閾值」顯示、嚴禁自己掰實驗室寬鬆參考範圍把偏高說成正常。
-    const labs = labsLatest.map((l) => {
-      const v = Number(l.value)
-      const status = calculateLabStatus(l.test_name, v, gender)
-      return {
-        test_name: l.test_name,
-        value: l.value,
-        unit: l.unit,
-        date: l.date,
-        status,
-        normalRange: getNormalRangeText(l.test_name, gender), // 共識閾值（你的「正常」）
-        optimalText: getOptimalRangeText(l.test_name, gender), // 長壽/功能醫學最佳值
-        inOptimal: status === 'normal' ? isInOptimalRange(l.test_name, v, gender) : null, // 正常時：是否已達最佳
-      }
-    })
-    const labFlags = labs.filter((l) => l.status !== 'normal')
-    const labDate = labsLatest.length ? labsLatest[0].date : null
+    const findings = analyzeLabs(labR.data || [], { gender })
+    const labs = findings.map((f) => ({
+      test_name: f.testName,
+      value: f.latestValue,
+      unit: f.unit,
+      date: f.latestDate,
+      status: f.latestStatus,
+      normalRange: getNormalRangeText(f.testName, gender), // 你的「正常」共識閾值
+      optimalText: f.optimalText, // 長壽/功能醫學最佳值
+      inOptimal: f.latestStatus === 'normal' ? f.inOptimal : null,
+      prevValue: f.previousValue, // 上一筆(≥14 天前)比較基準
+      prevDate: f.previousDate,
+      changePercent: f.changePercent != null ? +f.changePercent.toFixed(1) : null,
+      trend: f.trend, // improving / declining / stable / unknown
+      severity: f.severity, // critical / attention / watch / improving / optimal
+      label: f.autoLabel, // 例：同半胱胺酸 15 → 9 (-40.0%), 最佳 <6
+    }))
+    const labFlags = labs.filter((l) => l.status !== 'normal') // 異常(注意/警示)
+    const labImproving = labs.filter((l) => l.trend === 'improving' && l.prevValue != null) // 在改善(鼓勵)
+    const labOptimizable = labs.filter((l) => l.status === 'normal' && l.inOptimal === false) // 正常但未達最佳(可優化)
+    const labDate = (labR.data && labR.data[0]?.date) || null
     // 跨指標關聯：只偵測 Howard 定義過的組合（SHBG↑+游離T↓ 等），bot 照唸不自由聯想
     const gt0 = (c.goal_type || '').toLowerCase()
     const isFatLoss0 = gt0.includes('loss') || gt0 === 'cut' || gt0.includes('fat') || (c.goal_type || '').includes('減')
@@ -151,6 +150,15 @@ export async function GET(request: NextRequest) {
       clientMode: c.client_mode,
       mthfr: genetics.mthfr,
     })
+    // 基因 × 情境的可行動提示（只在相關時觸發；MTHFR↔同半胱胺酸由 crossMarkerSignals 處理）
+    const geneticNotes: string[] = []
+    const dr = (genetics.depressionRisk || '').toUpperCase()
+    if (['SS', 'SL'].includes(dr) && isFatLoss0) {
+      geneticNotes.push(`5-HTTLPR=${genetics.depressionRisk}：減脂期碳水別壓太低，碳水下限要抬高以保護血清素與情緒（避免崩）。`)
+    }
+    if ((genetics.apoe || '').toLowerCase().includes('e4')) {
+      geneticNotes.push(`APOE=${genetics.apoe}：Omega-3 強調 DHA（而非 EPA），並搭配較低飽和脂肪飲食。`)
+    }
 
     // --- 依從裁定（adherence）：bot 診斷必先講這個，低依從就別動 macro ---
     const nut = nutR.data || []
@@ -220,9 +228,12 @@ export async function GET(request: NextRequest) {
       labDate,
       labCount: labs.length,
       labFlags, // 只列 attention/alert 的，bot 重點講這些
-      labs, // 完整重算清單
+      labImproving, // 在改善的（鼓勵用，講 prev→latest）
+      labOptimizable, // 正常但未達最佳的（可優化，講 optimalText）
+      labs, // 完整清單（每項含當前值 + 你的範圍/最佳值 + 趨勢）
       crossMarkerSignals, // 跨指標關聯（命中的組合，bot 照唸、保守措辭、不自由聯想）
       genetics, // 基因型（MTHFR/APOE/5-HTTLPR）：與相關血檢/macro 一起判讀，別假設性說「如果你是」
+      geneticNotes, // 基因×情境的可行動提示（已過濾相關性，bot 直接用）
       // meta
       subscriptionTier: c.subscription_tier,
       isActive: c.is_active,
