@@ -10,9 +10,6 @@ import { replyMessage, pushMessage, qr, switchRichMenuForUser } from '@/lib/line
 import { createLogger } from '@/lib/logger'
 import { DAY_MS } from '@/lib/date-utils'
 import { markConverted } from '@/lib/nurture-sequence'
-import { extractLabRows } from '@/lib/lab-ocr'
-import { calculateLabStatus } from '@/utils/labStatus'
-import { rateLimit } from '@/lib/auth-middleware'
 
 const log = createLogger('LINE-Handlers')
 
@@ -88,109 +85,6 @@ export async function getClientByLineId(lineUserId: string, supabase: SupabaseCl
     .eq('line_user_id', lineUserId)
     .maybeSingle()
   return data
-}
-
-// ═══════════════════════════════════════
-// 血檢報告拍照入庫（學員直接傳照片 → OCR → 寫入 lab_results）
-// 降門檻關鍵：以前要開 App 逐欄手填，現在拍張照丟 LINE 就好。
-// 安全：只寫入 isKnown(在 LAB_THRESHOLDS 內) 的指標、status 用 canonical calculateLabStatus
-// 重算、逐項回學員對帳、同 (test_name,date) 不重複，數值有誤請開 App 改。
-// ═══════════════════════════════════════
-export async function handleLabPhoto(
-  replyToken: string,
-  client: LineClient | null,
-  base64: string,
-  mediaType: string,
-  supabase: SupabaseClient
-) {
-  if (!client) {
-    await replyMessage(replyToken, [{ type: 'text', text: '要先綁定帳號才能上傳血檢喔。輸入你的綁定碼，或開 App 綁定。' }])
-    return
-  }
-  if (client.lab_enabled === false) {
-    await replyMessage(replyToken, [{ type: 'text', text: '你的血檢功能還沒開啟，跟 Howard 說一聲幫你開 🙏' }])
-    return
-  }
-
-  // 成本封頂：每個學員每天最多 15 次 OCR，防亂傳圖燒錢（OCR 走 Claude API 付費）。
-  const { allowed } = await rateLimit(`line-lab-ocr:${client.id}`, 15, 24 * 60 * 60_000)
-  if (!allowed) {
-    await replyMessage(replyToken, [{ type: 'text', text: '今天血檢上傳次數有點多，先暫停一下，明天再傳，或開 App 手動輸入 🙏' }])
-    return
-  }
-
-  let rows
-  try {
-    rows = await extractLabRows([{ mediaType, data: base64 }])
-  } catch (e) {
-    log.error('lab photo OCR failed', { error: e })
-    await replyMessage(replyToken, [{ type: 'text', text: '這張我讀取失敗了，請拍清楚一點重傳，或開 App 手動輸入 🙏' }])
-    return
-  }
-
-  const known = rows.filter((r) => r.isKnown && Number.isFinite(Number(r.value)))
-  if (known.length === 0) {
-    await replyMessage(replyToken, [{
-      type: 'text',
-      text: '這張我讀不到可辨識的血檢數值 🤔\n如果是健檢報告：請光線足、整張入鏡、拍清楚再傳一次。\n如果想記體重/飲食，用下方選單即可。',
-      quickReply: { items: [qr('⚖️ 記體重', '記體重'), qr('🍽️ 記飲食', '記飲食')] },
-    }])
-    return
-  }
-
-  const today = getTaiwanDate()
-  const gender = client.gender === '男性' || client.gender === '女性' ? client.gender : undefined
-
-  // 去重：查現有同 (test_name, date)，避免重傳同份報告造成重複列。
-  const dates = Array.from(new Set(known.map((r) => r.date || today)))
-  const names = Array.from(new Set(known.map((r) => r.test_name)))
-  const { data: existing } = await supabase
-    .from('lab_results')
-    .select('test_name, date')
-    .eq('client_id', client.id)
-    .in('date', dates)
-    .in('test_name', names)
-  const seen = new Set((existing || []).map((e) => `${e.test_name}|${e.date}`))
-
-  const toInsert: Array<{ client_id: string; test_name: string; value: number; unit: string; reference_range: string; date: string; status: string }> = []
-  let usedToday = false
-  for (const r of known) {
-    const d = r.date || today
-    if (!r.date) usedToday = true
-    const key = `${r.test_name}|${d}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    toInsert.push({
-      client_id: client.id,
-      test_name: r.test_name,
-      value: Number(r.value),
-      unit: r.unit || '',
-      reference_range: r.reference_range || '',
-      date: d,
-      status: calculateLabStatus(r.test_name, Number(r.value), gender),
-    })
-  }
-
-  if (toInsert.length === 0) {
-    await replyMessage(replyToken, [{ type: 'text', text: '這份血檢我之前已經記過了 ✅ 沒有重複新增。要看判讀請跟 Howard 說。' }])
-    return
-  }
-
-  const { error } = await supabase.from('lab_results').insert(toInsert)
-  if (error) {
-    log.error('lab insert failed', { error })
-    await replyMessage(replyToken, [{ type: 'text', text: '存檔時出了點問題，請稍後再傳一次，或開 App 手動輸入 🙏' }])
-    return
-  }
-
-  const lines = toInsert.slice(0, 25).map((r) => `・${r.test_name}：${r.value}${r.unit ? ' ' + r.unit : ''}`)
-  const skipped = known.length - toInsert.length
-  let msg = `✅ 已記錄 ${toInsert.length} 項血檢（${toInsert[0].date}）：\n${lines.join('\n')}`
-  if (toInsert.length > 25) msg += `\n…等共 ${toInsert.length} 項`
-  if (skipped > 0) msg += `\n（${skipped} 項之前已記過，未重複）`
-  if (usedToday) msg += `\n\n⚠️ 有項目沒讀到報告日期，先記成今天，若不對請開 App 改日期。`
-  msg += `\n\n數值若有誤可開 App 修改。`
-  await replyMessage(replyToken, [{ type: 'text', text: msg, quickReply: { items: [qr('📊 看狀態', '狀態')] } }])
 }
 
 // ═══════════════════════════════════════

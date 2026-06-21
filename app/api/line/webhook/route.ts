@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SupabaseClient } from '@supabase/supabase-js'
-import { verifyLineSignature, replyMessage, qr, unlinkRichMenuFromUser, switchRichMenuForUser, getUserProfile, getMessageContent } from '@/lib/line'
+import { verifyLineSignature, replyMessage, qr, unlinkRichMenuFromUser, switchRichMenuForUser, getUserProfile } from '@/lib/line'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
 import {
@@ -16,7 +16,6 @@ import {
   handleTrendQuery,
   handlePostback,
   handleNaturalNutrition,
-  handleLabPhoto,
 } from '@/lib/line-handlers'
 import { buildDay0Messages, enrollSubscriber, unenrollSubscriber } from '@/lib/nurture-sequence'
 import { handleAdminAgentMessage, handleAgentProposalPostback, handleCoachActionPostback } from '@/lib/agent-line'
@@ -149,15 +148,6 @@ async function handleEvent(event: LineWebhookEvent) {
     case 'message':
       if (event.message?.type === 'text') {
         await handleTextMessage(event, userId, supabase)
-      } else if (event.message?.type === 'image' && event.message.id) {
-        // 學員傳照片 → 嘗試當血檢報告 OCR 入庫（降門檻：免開 App 逐欄手填）
-        const labClient = await getClientByLineId(userId, supabase)
-        const content = await getMessageContent(event.message.id)
-        if (!content) {
-          await replyMessage(event.replyToken, [{ type: 'text', text: '圖片抓取失敗了，請再傳一次 🙏' }])
-        } else {
-          await handleLabPhoto(event.replyToken, labClient, content.base64, content.mediaType, supabase)
-        }
       }
       break
 
