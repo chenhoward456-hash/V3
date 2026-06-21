@@ -319,7 +319,9 @@ export async function markConverted(lineUserId: string, supabase: SupabaseClient
 // ═══════════════════════════════════════
 
 /** 序列天數對應到從 followed_at 算起的天數 */
-const SEQUENCE_DAYS = [2, 4, 6, 8, 10, 12] as const
+// 2026-06-22 停用 12 天 nurture 序列（Howard：沒意義；且免費 LINE 額度該留給付費學員、
+// 不要花在追沒付錢的潛在客）。清空＝cron 照跑但不推任何序列訊息。加入時的即時歡迎(Day 0)保留。
+const SEQUENCE_DAYS: number[] = []
 
 interface DispatchResult {
   processed: number
