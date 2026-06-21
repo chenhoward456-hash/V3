@@ -12,6 +12,7 @@ import { DAY_MS } from '@/lib/date-utils'
 import { markConverted } from '@/lib/nurture-sequence'
 import { extractLabRows } from '@/lib/lab-ocr'
 import { calculateLabStatus } from '@/utils/labStatus'
+import { rateLimit } from '@/lib/auth-middleware'
 
 const log = createLogger('LINE-Handlers')
 
@@ -108,6 +109,13 @@ export async function handleLabPhoto(
   }
   if (client.lab_enabled === false) {
     await replyMessage(replyToken, [{ type: 'text', text: '你的血檢功能還沒開啟，跟 Howard 說一聲幫你開 🙏' }])
+    return
+  }
+
+  // 成本封頂：每個學員每天最多 15 次 OCR，防亂傳圖燒錢（OCR 走 Claude API 付費）。
+  const { allowed } = await rateLimit(`line-lab-ocr:${client.id}`, 15, 24 * 60 * 60_000)
+  if (!allowed) {
+    await replyMessage(replyToken, [{ type: 'text', text: '今天血檢上傳次數有點多，先暫停一下，明天再傳，或開 App 手動輸入 🙏' }])
     return
   }
 
