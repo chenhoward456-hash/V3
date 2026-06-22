@@ -125,36 +125,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, problems: [], pushed: true })
   }
 
-  // 1. 摘要訊息
-  const summary = `🔍 引擎週掃描：${problems.length} 位學員需要處理\n\n（每位下面會單獨推一則含一鍵動作）`
-  await pushMessage(coachLineId, [{ type: 'text', text: summary }]).catch(() => {})
-
-  // 2. 每位 problematic client 一則訊息 + 對應按鈕
+  // 全部併成「一則」推給教練（省 LINE 額度；原本是 header + 每人一則 = N+1 則）。
+  // 一鍵按鈕拿掉，改附後台連結(可點)；要重算/處理就開連結，或在賴助手說「診斷 名字」。
+  const lines: string[] = [`🔍 引擎週掃描：${problems.length} 位學員需要處理`]
   for (const p of problems) {
     const daysLine = p.daysToComp != null ? `${p.daysToComp} 天比賽` : '無比賽日'
-    const lastLine = p.lastAdjustAt
-      ? `上次調整：${p.lastAdjustAt.split('T')[0]}`
-      : '從未被調整'
-    const text = `🟡 ${p.name}（${daysLine}）\n\n原因：${CATEGORY_LABELS[p.category]}\n${lastLine}`
-
-    const items: any[] = []
-    if (p.category === 'no_target' || p.category === 'no_calories') {
-      items.push({ type: 'action', action: { type: 'uri', label: '⚙️ 開後台補', uri: `${SITE_URL}/admin/clients/${p.clientId}` } })
-    }
-    if (p.category === 'no_body_data') {
-      items.push({ type: 'action', action: { type: 'postback', label: '📲 推學員量體重', data: `coach_action:nudge_weight:${p.clientId}`, displayText: `推 ${p.name} 量體重` } })
-      items.push({ type: 'action', action: { type: 'uri', label: '⚙️ 開後台看', uri: `${SITE_URL}/admin/clients/${p.clientId}` } })
-    }
-    if (p.category === 'trend_reversed') {
-      items.push({ type: 'action', action: { type: 'postback', label: '▶ 強制重算', data: `coach_action:force_recalc:${p.clientId}`, displayText: `強制重算 ${p.name}` } })
-      items.push({ type: 'action', action: { type: 'uri', label: '⚙️ 開後台看趨勢', uri: `${SITE_URL}/admin/clients/${p.clientId}/overview` } })
-    }
-
-    await pushMessage(coachLineId, [{
-      type: 'text', text,
-      ...(items.length > 0 ? { quickReply: { items } } : {}),
-    } as any]).catch(() => {})
+    const lastLine = p.lastAdjustAt ? `上次調整 ${p.lastAdjustAt.split('T')[0]}` : '從未被調整'
+    const link = p.category === 'trend_reversed'
+      ? `${SITE_URL}/admin/clients/${p.clientId}/overview`
+      : `${SITE_URL}/admin/clients/${p.clientId}`
+    lines.push(`\n🟡 ${p.name}（${daysLine}）\n原因：${CATEGORY_LABELS[p.category]}｜${lastLine}\n${link}`)
   }
+  lines.push(`\n要處理就開上面連結，或在賴助手說「診斷 名字」。`)
+  await pushMessage(coachLineId, [{ type: 'text', text: lines.join('\n') }]).catch(() => {})
 
   // 3. 自動 nudge 學員（no_body_data 才推；其他類別需要教練判斷不直接推）
   const clientNudged: string[] = []
