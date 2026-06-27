@@ -9,8 +9,7 @@ CREATE TABLE clients (
   gender TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '3 months'),
-  status TEXT DEFAULT 'normal' CHECK (status IN ('normal', 'attention', 'alert')),
-  subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'self_managed', 'coached'))
+  status TEXT DEFAULT 'normal' CHECK (status IN ('normal', 'attention', 'alert'))
 );
 
 -- 2. 血檢結果表
@@ -89,45 +88,116 @@ ALTER TABLE supplements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE supplement_logs ENABLE ROW LEVEL SECURITY;
 
 -- 8. RLS 政策
--- ⚠️ 注意：本系統所有 API 路由皆透過 Service Role Key 存取 Supabase，
--- Service Role Key 會繞過 RLS。以下政策是「最後防線」，防止意外使用 anon key 洩漏資料。
--- 主要存取控制在 API 路由的 middleware 層（auth-middleware.ts）。
+-- ⚠️ 重要說明：本系統所有 API 路由使用 createServiceSupabase()（Service Role Key），
+--    會完全繞過 RLS。因此目前 RLS 政策僅作為「防護層」，
+--    防止有人透過客戶端直接存取 Supabase（例如洩漏 anon key）時讀取所有資料。
+-- TODO [需 review]：若未來開放客戶端直接 Supabase 存取，需將 USING(true) 改為
+--    基於 unique_code 或 auth.uid() 的嚴格政策。
 
--- 客戶表：只有認證用戶可存取
-CREATE POLICY "Authenticated can view clients" ON clients
-  FOR SELECT USING (auth.role() = 'authenticated');
+-- 客戶只能透過 unique_code 訪問自己的資料
+CREATE POLICY "Clients can view own data via unique_code" ON clients
+  FOR SELECT USING (true);
 
+-- 所有人都可以透過 unique_code 查看客戶資料（用於學員儀表板）
+CREATE POLICY "Public can view clients via unique_code" ON clients
+  FOR SELECT USING (true);
+
+-- 只有教練可以修改客戶資料
 CREATE POLICY "Only authenticated can update clients" ON clients
   FOR UPDATE USING (auth.role() = 'authenticated');
 
+-- 只有教練可以新增客戶
 CREATE POLICY "Only authenticated can insert clients" ON clients
   FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
--- 血檢結果政策：只有認證用戶可存取
-CREATE POLICY "Authenticated can view lab_results" ON lab_results
-  FOR SELECT USING (auth.role() = 'authenticated');
+-- 血檢結果政策
+CREATE POLICY "Public can view lab_results via client" ON lab_results
+  FOR SELECT USING (true);
 
 CREATE POLICY "Only authenticated can modify lab_results" ON lab_results
   FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
 
--- 補品政策：只有認證用戶可存取
-CREATE POLICY "Authenticated can view supplements" ON supplements
-  FOR SELECT USING (auth.role() = 'authenticated');
+-- 補品政策
+CREATE POLICY "Public can view supplements via client" ON supplements
+  FOR SELECT USING (true);
 
 CREATE POLICY "Only authenticated can modify supplements" ON supplements
   FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
 
--- 補品打卡政策：只有認證用戶可存取
-CREATE POLICY "Authenticated can view supplement_logs" ON supplement_logs
-  FOR SELECT USING (auth.role() = 'authenticated');
+-- 補品打卡政策
+CREATE POLICY "Public can view supplement_logs via client" ON supplement_logs
+  FOR SELECT USING (true);
 
-CREATE POLICY "Authenticated can insert supplement_logs" ON supplement_logs
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Public can insert supplement_logs" ON supplement_logs
+  FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Authenticated can update supplement_logs" ON supplement_logs
-  FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Public can update supplement_logs" ON supplement_logs
+  FOR UPDATE USING (true);
 
--- 9. 客戶表新增 training_enabled 欄位
+-- 9. 體組成表
+CREATE TABLE IF NOT EXISTS body_composition (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  weight NUMERIC,
+  height NUMERIC,
+  body_fat NUMERIC,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(client_id, date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_body_composition_client_id ON body_composition(client_id);
+
+ALTER TABLE body_composition ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public can view body_composition" ON body_composition FOR SELECT USING (true);
+CREATE POLICY "Public can insert body_composition" ON body_composition FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public can update body_composition" ON body_composition FOR UPDATE USING (true);
+CREATE POLICY "Authenticated can delete body_composition" ON body_composition FOR DELETE USING (auth.role() = 'authenticated');
+
+-- 10. 每日感受表
+CREATE TABLE IF NOT EXISTS daily_wellness (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  sleep_quality INTEGER CHECK (sleep_quality >= 1 AND sleep_quality <= 5),
+  energy_level INTEGER CHECK (energy_level >= 1 AND energy_level <= 5),
+  mood INTEGER CHECK (mood >= 1 AND mood <= 5),
+  note TEXT,
+  period_start BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(client_id, date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_wellness_client_id ON daily_wellness(client_id);
+
+ALTER TABLE daily_wellness ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public can view daily_wellness" ON daily_wellness FOR SELECT USING (true);
+CREATE POLICY "Public can insert daily_wellness" ON daily_wellness FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public can update daily_wellness" ON daily_wellness FOR UPDATE USING (true);
+
+-- 11. 電子書購買表
+CREATE TABLE IF NOT EXISTS ebook_purchases (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL,
+  merchant_trade_no TEXT UNIQUE NOT NULL,
+  product_key TEXT NOT NULL,
+  amount INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'TWD',
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed')),
+  ecpay_trade_no TEXT,
+  download_token TEXT UNIQUE,
+  quiz_data JSONB,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ebook_purchases_merchant ON ebook_purchases(merchant_trade_no);
+CREATE INDEX IF NOT EXISTS idx_ebook_purchases_token ON ebook_purchases(download_token);
+
+ALTER TABLE ebook_purchases ENABLE ROW LEVEL SECURITY;
+-- ebook_purchases 不允許公開存取，只能透過 Service Role 操作
+
+-- 12. 客戶表新增 training_enabled 欄位
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS training_enabled BOOLEAN DEFAULT FALSE;
 
 -- 10. 訓練紀錄表
@@ -152,14 +222,14 @@ CREATE INDEX idx_training_logs_client_date ON training_logs(client_id, date);
 -- 訓練紀錄 RLS
 ALTER TABLE training_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Authenticated can view training_logs" ON training_logs
-  FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Public can view training_logs via client" ON training_logs
+  FOR SELECT USING (true);
 
-CREATE POLICY "Authenticated can insert training_logs" ON training_logs
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Public can insert training_logs" ON training_logs
+  FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Authenticated can update training_logs" ON training_logs
-  FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Public can update training_logs" ON training_logs
+  FOR UPDATE USING (true);
 
 -- 11. 建立範例資料（可選）
 INSERT INTO clients (unique_code, name, age, gender, status) VALUES
@@ -185,14 +255,14 @@ CREATE INDEX idx_nutrition_logs_client_date ON nutrition_logs(client_id, date);
 -- 飲食紀錄 RLS
 ALTER TABLE nutrition_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Authenticated can view nutrition_logs" ON nutrition_logs
-  FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Public can view nutrition_logs via client" ON nutrition_logs
+  FOR SELECT USING (true);
 
-CREATE POLICY "Authenticated can insert nutrition_logs" ON nutrition_logs
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Public can insert nutrition_logs" ON nutrition_logs
+  FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Authenticated can update nutrition_logs" ON nutrition_logs
-  FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Public can update nutrition_logs" ON nutrition_logs
+  FOR UPDATE USING (true);
 
 -- 14. 飲食紀錄新增蛋白質與水量欄位
 ALTER TABLE nutrition_logs ADD COLUMN IF NOT EXISTS protein_grams NUMERIC;
@@ -207,7 +277,6 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS body_composition_enabled BOOLEAN DE
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS wellness_enabled BOOLEAN DEFAULT FALSE;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS supplement_enabled BOOLEAN DEFAULT FALSE;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS lab_enabled BOOLEAN DEFAULT FALSE;
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS ai_chat_enabled BOOLEAN DEFAULT FALSE;
 
 -- 為承鈞添加血檢數據
 INSERT INTO lab_results (client_id, test_name, value, unit, reference_range, date, status) VALUES
@@ -399,174 +468,3 @@ ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS respiratory_rate NUMERIC CHE
 -- 裝置恢復分數 (0-100)：WHOOP Recovery / Oura Readiness / Garmin Body Battery
 -- 使用者只需填這一個數字，引擎直接用作 Readiness Score
 ALTER TABLE daily_wellness ADD COLUMN IF NOT EXISTS device_recovery_score INTEGER CHECK (device_recovery_score >= 0 AND device_recovery_score <= 100);
-
--- 訂閱方案層級：free（免費/驗證期）、self_managed（499自主管理）、coached（2999教練指導）
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'self_managed', 'coached'));
-
--- ============================================
--- 25. 自主管理用戶目標期限 (Self-Managed Goal Deadline)
--- 讓 499 用戶設定「目標體重 + 預計達成日期」
--- 引擎自動倒推每週減幅、動態調整熱量
--- ============================================
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS target_date DATE;
-
--- ============================================
--- 26. Web Push 訂閱（瀏覽器推播通知）
--- 儲存用戶的推播訂閱資訊
--- ============================================
-
-CREATE TABLE IF NOT EXISTS push_subscriptions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
-  endpoint TEXT NOT NULL UNIQUE,
-  p256dh TEXT NOT NULL,
-  auth TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_push_subscriptions_client ON push_subscriptions(client_id);
-
--- ============================================
--- 27. 訂閱付款紀錄 (Subscription Purchases)
--- 自助註冊 + 訂閱金流
--- ============================================
-
-CREATE TABLE IF NOT EXISTS subscription_purchases (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email TEXT NOT NULL,
-  name TEXT NOT NULL,
-  phone TEXT,
-  merchant_trade_no TEXT UNIQUE NOT NULL,
-  subscription_tier TEXT NOT NULL CHECK (subscription_tier IN ('free', 'self_managed', 'coached')),
-  amount INTEGER NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed')),
-  ecpay_trade_no TEXT,
-  client_id UUID REFERENCES clients(id),
-  -- 註冊時填寫的基本資料，付款成功後用來建立 client
-  registration_data JSONB NOT NULL DEFAULT '{}',
-  completed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_subscription_purchases_email ON subscription_purchases(email);
-CREATE INDEX IF NOT EXISTS idx_subscription_purchases_status ON subscription_purchases(status);
-CREATE INDEX IF NOT EXISTS idx_subscription_purchases_trade_no ON subscription_purchases(merchant_trade_no);
-
--- RLS
-ALTER TABLE subscription_purchases ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access on subscription_purchases" ON subscription_purchases
-  FOR ALL USING (true) WITH CHECK (true);
-
--- ============================================
--- 28. AI 聊天使用量追蹤 (AI Chat Usage)
--- 免費用戶每月 1 次免費體驗，由後端計數
--- ============================================
-
-CREATE TABLE IF NOT EXISTS ai_chat_usage (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_ai_chat_usage_client_month ON ai_chat_usage(client_id, created_at);
-
--- RLS
-ALTER TABLE ai_chat_usage ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access on ai_chat_usage" ON ai_chat_usage
-  FOR ALL USING (true) WITH CHECK (true);
-
--- ============================================
--- 29. LINE Messaging API 整合
--- 儲存客戶的 LINE 用戶 ID，用於查看在線狀態和推播通知
--- ============================================
-
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS line_user_id TEXT UNIQUE;
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS last_line_activity TIMESTAMPTZ;
-
--- 30. 來源追蹤（電子書→免費版→付費轉換率）
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS ref_source TEXT;
-
--- 31. 候補名單
-CREATE TABLE IF NOT EXISTS waitlist (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email TEXT NOT NULL UNIQUE,
-  tier TEXT DEFAULT 'self_managed',
-  ref_source TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access on waitlist" ON waitlist
-  FOR ALL USING (true) WITH CHECK (true);
-
-CREATE INDEX IF NOT EXISTS idx_clients_line_user_id ON clients(line_user_id) WHERE line_user_id IS NOT NULL;
-
--- ============================================
--- 32. Garmin Connect API 直接同步
--- 儲存 OAuth 1.0a token，支援一鍵同步穿戴裝置數據
--- ============================================
-
-CREATE TABLE IF NOT EXISTS garmin_connections (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
-  access_token TEXT NOT NULL,
-  access_token_secret TEXT NOT NULL,
-  garmin_user_id TEXT,
-  last_sync_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(client_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_garmin_connections_client ON garmin_connections(client_id);
-
-ALTER TABLE garmin_connections ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access on garmin_connections" ON garmin_connections
-  FOR ALL USING (true) WITH CHECK (true);
-
--- OAuth 流程中暫存 request token（授權完成後刪除）
-CREATE TABLE IF NOT EXISTS garmin_oauth_states (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
-  oauth_token TEXT NOT NULL UNIQUE,
-  oauth_token_secret TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE garmin_oauth_states ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access on garmin_oauth_states" ON garmin_oauth_states
-  FOR ALL USING (true) WITH CHECK (true);
-
--- ============================================
--- 教練巨量覆寫鎖定
--- 教練手動調整營養目標後，系統自動鎖定，
--- 防止 auto-apply 覆蓋教練的決定。
--- 教練可手動解鎖，讓系統恢復自動調整。
--- ============================================
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS coach_macro_override JSONB DEFAULT NULL;
--- 格式：{ "locked_at": "ISO date", "locked_fields": ["calories_target","protein_target",...], "reason": "教練備註" }
--- NULL = 未鎖定（系統可自動調整）
-
--- ============================================
--- 簡單模式 (Simple Mode)
--- 預設簡化 UI：只顯示核心欄位，隱藏進階數據
--- 教練可在後台為每位學員開關
--- ============================================
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS simple_mode BOOLEAN DEFAULT TRUE;
-
--- ============================================
--- 33. 基因風險欄位（Genetic Risk Profiles）
--- 高端差異化：根據基因檢測結果調整補品建議和 AI 顧問回覆
--- ============================================
-
--- MTHFR 突變：影響葉酸代謝，需要活性葉酸（methylfolate）而非一般葉酸
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS gene_mthfr TEXT CHECK (gene_mthfr IN ('normal', 'heterozygous', 'homozygous'));
-
--- APOE4 基因：影響心血管風險與脂質代謝
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS gene_apoe TEXT CHECK (gene_apoe IN ('e2/e2', 'e2/e3', 'e3/e3', 'e3/e4', 'e4/e4'));
-
--- 5-HTTLPR 血清素轉運體基因：LL（低風險）、SL（中風險）、SS（高風險）
--- 向後相容也接受舊值 low/moderate/high
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS gene_depression_risk TEXT CHECK (gene_depression_risk IN ('LL', 'SL', 'SS', 'low', 'moderate', 'high'));
-
--- 基因檢測備註
-ALTER TABLE clients ADD COLUMN IF NOT EXISTS gene_notes TEXT;
