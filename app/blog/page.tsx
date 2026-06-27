@@ -17,6 +17,42 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '38',
+    title: 'SHBG 高又雌激素高？先別急著壓 E2——這組合九成不是它的錯',
+    description: '男性 SHBG 與 E2 雙高，最常被腦補成「雌激素在拉高 SHBG，趕快上藥壓」。但九條實證一條條拆下來，真正的主謀多半在共同上游：老化、甲狀腺、肝臟。每條都標了「對哪些人不適用」，因為健康建議最危險的不是講錯，是對錯的人講對的話。',
+    date: '2026-06-27',
+    category: '健康數據',
+    readTime: '13 分鐘',
+    slug: 'male-shbg-high-estradiol',
+  },
+  {
+    id: '39',
+    title: '吃 A 酸要每個月抽血？8 個被過度監測的迷思，連診所都做太多',
+    description: '很多人吃口服 A 酸被要求整個療程每月抽血、驗一整排，但實證早把這套打回票：對健康年輕痤瘡患者，月驗的臨床 yield 低到接近零。這篇用 8 條宣稱、每條附研究與 PMID，告訴你哪些檢查是慣性、哪些（育齡女性避孕驗孕、重訓者的 CK）反而一項都不能省。',
+    date: '2026-06-27',
+    category: '健康數據',
+    readTime: '9 分鐘',
+    slug: 'isotretinoin-blood-monitoring',
+  },
+  {
+    id: '40',
+    title: '減脂卡關＝代謝壞掉了？9 個被你誇大的代謝適應迷思',
+    description: '一停滯就喊「代謝壞掉、進入飢餓模式」？適應性產熱是真的，但常態只有每天幾十到一兩百卡，Biggest Loser 那種掉 500 卡是極端離群。9 條宣稱逐一用研究數字打臉，並標清楚對哪些人不適用。',
+    date: '2026-06-27',
+    category: '飲食營養',
+    readTime: '9 分鐘',
+    slug: 'metabolic-adaptation-truth',
+  },
+  {
+    id: '41',
+    title: '減重 5 年一定復胖？10 個復胖迷思——補 leptin、reverse dieting、refeed 全是行銷',
+    description: '「減完 5 年一定打回原形」是被誇大的；復胖是生理放大器撞上食物環境，不是你沒意志力。10 條最常見的防復胖宣稱，逐條用 PubMed 實查過的數字拆給你看，並標出對哪些人不適用。',
+    date: '2026-06-27',
+    category: '飲食營養',
+    readTime: '12 分鐘',
+    slug: 'weight-regain-prevention',
+  },
+  {
     id: '37',
     title: '練到力竭才有效？8-12 下才會大？增肌的 5 個真相（每條附 RCT）',
     description: '練到力竭、一定要 8-12 下、痠才有練到——這些健身房口耳相傳的觀念，對照 PubMed 後有些是過度簡化、有些根本不必要。RIR、訓練量劑量反應、合成代謝窗口、痠痛迷思一次講清楚。',
