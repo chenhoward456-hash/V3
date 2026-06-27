@@ -161,6 +161,11 @@ export interface NutritionInput {
   // 客戶模式（用於區分 athletic vs bodybuilding 的營養策略）
   clientMode?: 'standard' | 'health' | 'bodybuilding' | 'athletic'
 
+  // 是否有教練在迴路裡監督（coached/protocol tier）。
+  // 只有「有人把關」的學員才允許放寬到 GOAL_DRIVEN 極限底線(1200/1050)；
+  // 自助/免費(無人看)即使設了 prepPhase 也鎖在 SAFETY 底線(1500/1200)，避免 AI 自動把沒人盯的人砍到極限。
+  coachManaged?: boolean
+
   // 秤重到比賽的間距（小時），用於超補償期計算
   weighInGapHours?: number | null
 
@@ -3142,7 +3147,9 @@ function generateGoalDrivenCut(
 
   // 4. 安全底線 + 巨量營養素（先算，因為有氧需要知道真實卡路里底線）
   // 備賽選手（有 prepPhase）才允許放寬到 GOAL_DRIVEN 極限，一般學員仍用 SAFETY 底線
-  const isCompetitionPrep = !!input.prepPhase
+  // ⚠️ 並且必須「有教練監督」(coachManaged) — 自助/免費的人即使設了 prepPhase 也不放寬，
+  //    避免 AI 自動把沒人把關的學員砍到 1200/1050 的競技極限。
+  const isCompetitionPrep = !!input.prepPhase && !!input.coachManaged
   const absoluteMinCal = isMale
     ? (isCompetitionPrep ? GOAL_DRIVEN.MIN_CALORIES_MALE : SAFETY.MIN_CALORIES_MALE)
     : (isCompetitionPrep ? GOAL_DRIVEN.MIN_CALORIES_FEMALE : SAFETY.MIN_CALORIES_FEMALE)

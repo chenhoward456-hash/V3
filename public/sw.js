@@ -2,9 +2,10 @@
  * Service Worker — 離線快取 + 推播通知
  */
 
-// 每次部署自動更新：cache name 含 build timestamp，舊快取自動失效
-// Vercel 每次 build 會重新部署 sw.js，timestamp 就會變
-const CACHE_NAME = 'hp-v6-20260328'
+// ⚠️ 這個版號是「手動」bump 的，不是自動 timestamp（之前註解寫錯、卡在 20260328 從沒變→快取一直沒清）。
+// 每次想強制所有人(含已裝 PWA)拿到新版時，務必更新這個字串：activate 會刪掉所有非當前版號的舊快取。
+// TODO: 之後改成 build 時注入真正的 build id 才能真正「自動」。
+const CACHE_NAME = 'hp-v7-20260622'
 const PRECACHE_URLS = [
   '/icon-192.png',
   '/icon-512.png',

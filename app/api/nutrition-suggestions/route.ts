@@ -273,6 +273,7 @@ export async function GET(request: NextRequest) {
       trainingDaysPerWeek,
       prepPhase: client.prep_phase || undefined,
       clientMode: (client.client_mode as 'standard' | 'health' | 'bodybuilding' | 'athletic') || undefined,
+      coachManaged: client.subscription_tier === 'coached' || client.subscription_tier === 'protocol',
       weighInGapHours: (client as any).weigh_in_gap_hours ?? undefined,
       activityProfile: (client.activity_profile as 'sedentary' | 'high_energy_flux') || undefined,
       cuttingGateOverride: !!client.cutting_gate_override,
@@ -363,7 +364,19 @@ export async function GET(request: NextRequest) {
     const isCoached = client.subscription_tier === 'coached'
     const isProtocol = client.subscription_tier === 'protocol'
     const isCoachManaged = isCoached || isProtocol
-    const canAutoApply = wantsAutoApply && effectiveAutoApply && (isAdmin || ((!isCoachManaged) && (suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)))
+    // 自助安全閘：沒教練把關的人若已經很瘦（BMI<18.5 或體脂極低），不自動再砍熱量 →
+    // 改成只給建議參考、不寫 DB，並提示「已很精瘦，再減請諮詢專業」。(coached 由教練判斷不受此限)
+    const bmiNow = (latestWeight && latestHeight) ? latestWeight / Math.pow(latestHeight / 100, 2) : null
+    const veryLean = !isCoachManaged && (
+      (bmiNow != null && bmiNow < 18.5) ||
+      (latestBodyFat != null && latestBodyFat < (client.gender === '女性' ? 15 : 8))
+    )
+    const wouldCut = suggestion.suggestedCalories != null && client.calories_target != null && suggestion.suggestedCalories < client.calories_target
+    const leanAutoBlock = veryLean && (wouldCut || suggestion.status === 'goal_driven')
+    if (leanAutoBlock) {
+      suggestion.warnings = [...(suggestion.warnings ?? []), '⚠️ 你已經相當精瘦了，系統不會自動再幫你降低熱量。想繼續減脂請先諮詢專業教練/醫師，避免影響健康。']
+    }
+    const canAutoApply = !leanAutoBlock && wantsAutoApply && effectiveAutoApply && (isAdmin || ((!isCoachManaged) && (suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)))
 
     // 教練覆寫鎖定：教練手動調整過營養目標
     // Timed Coach Override: 覆寫期間（含 autoApply）都鎖定，確保教練設定值不被覆蓋

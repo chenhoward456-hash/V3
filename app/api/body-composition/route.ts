@@ -177,6 +177,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     trainingDaysPerWeek,
     prepPhase: client.prep_phase || undefined,
     clientMode: (client.client_mode as 'standard' | 'health' | 'bodybuilding' | 'athletic') || undefined,
+    coachManaged: tier === 'coached' || tier === 'protocol',
     weighInGapHours: (client as any).weigh_in_gap_hours ?? undefined,
     activityProfile: (client.activity_profile as 'sedentary' | 'high_energy_flux') || undefined,
     geneticProfile: (client.gene_mthfr || client.gene_apoe || client.gene_depression_risk) ? {
@@ -220,6 +221,17 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
   })
 
   const debugInfo = `status=${suggestion.status}, autoApply=${suggestion.autoApply}, compliance=${compliance}%, weeklyWeights=${weeklyWeights.length}, rate=${suggestion.weeklyWeightChangeRate?.toFixed(2)}%/wk, bf=${latestBodyFat ?? 'n/a'}%, wellness=${wellnessLogs.length}, labs=${labResults.length}`
+
+  // 自助安全閘：這條只對 free/self_managed 跑（coached 上面已 return）。
+  // 若學員已很瘦（BMI<18.5 或體脂極低）且這次是「降熱量」，不自動套用 → 避免 AI 把沒人盯的人越推越瘦。
+  const bmiNow = (latestWeight && latestHeight) ? latestWeight / Math.pow(latestHeight / 100, 2) : null
+  const veryLean =
+    (bmiNow != null && bmiNow < 18.5) ||
+    (latestBodyFat != null && latestBodyFat < (client.gender === '女性' ? 15 : 8))
+  const wouldCut = suggestion.suggestedCalories != null && client.calories_target != null && suggestion.suggestedCalories < client.calories_target
+  if (veryLean && wouldCut) {
+    return { adjusted: false, debug: `skip: 已很精瘦（BMI ${bmiNow?.toFixed(1) ?? '?'} / 體脂 ${latestBodyFat ?? '?'}%），不自動再降熱量，建議諮詢專業` }
+  }
 
   // 10. 自動套用（Goal-Driven 結果已 safety-capped，一律套用）
   if (suggestion.autoApply) {

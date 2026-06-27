@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const [clientsResult, bodyResult, wellnessResult] = await Promise.all([
       supabase
         .from('clients')
-        .select('id, name, is_active, goal_type, diet_start_date, subscription_tier')
+        .select('id, name, is_active, goal_type, diet_start_date, subscription_tier, status, next_checkup_date')
         .eq('is_active', true)
         .in('subscription_tier', ['coached', 'self_managed']),
       supabase
@@ -105,6 +105,16 @@ export async function GET(request: NextRequest) {
           const aP = recPrior.reduce((a, b) => a + b, 0) / recPrior.length
           if (aP - aR >= 20) signals.push({ client: name, type: 'recovery_drop', detail: `recovery 從 ${Math.round(aP)} 掉到 ${Math.round(aR)}` })
         }
+      }
+
+      // ── 訊號 3：血檢狀態（跟教練後台「誰要顧」同一套：clients.status 由 lab trigger 同步）──
+      if (c.status === 'alert') signals.push({ client: name, type: 'lab_alert', detail: '血檢有警示項目，需追蹤/回診' })
+      else if (c.status === 'attention') signals.push({ client: name, type: 'lab_attention', detail: '血檢有需注意項目' })
+
+      // ── 訊號 4：回檢逾期 ──
+      if (c.next_checkup_date) {
+        const overdue = Math.floor((now - new Date(c.next_checkup_date as string).getTime()) / DAY_MS)
+        if (overdue > 0) signals.push({ client: name, type: 'checkup_overdue', detail: `回檢已逾期 ${overdue} 天` })
       }
     }
 
