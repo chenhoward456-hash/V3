@@ -59,17 +59,31 @@ export function detectCrossMarkerSignals(
     })
   }
 
-  // B. TSH↑ + Free T4/T3↓ → 甲狀腺下降（減脂期多為節能性、非疾病）
+  // B 拆兩型（對帳 2026-06 修正：原本把「TSH↑+FT4↓」當減脂可逆節能是錯的，會漏接真甲低）：
   const tsh = find(['TSH'])
   const ft4 = find(['Free T4'])
   const ft3 = find(['Free T3'])
-  if (dirOf(tsh) === 'high' && (dirOf(ft4) === 'low' || dirOf(ft3) === 'low')) {
+
+  // B1. 原發性甲狀腺低下型（TSH↑ + Free T4↓）= 疾病型態，不可當減脂可逆節能放著，一律提示就醫複檢。
+  if (dirOf(tsh) === 'high' && dirOf(ft4) === 'low') {
     signals.push({
-      id: 'thyroid_down',
-      title: 'TSH 偏高 + 甲狀腺素偏低',
+      id: 'primary_hypothyroid',
+      title: 'TSH 偏高 + Free T4 偏低（疑似甲狀腺低下）',
+      detail:
+        '這個組合（TSH 升高合併 Free T4 偏低）是原發性甲狀腺低下的典型型態，不是減脂期的可逆節能性下降——別當成赤字副作用放著。建議轉介家醫科/內分泌科複檢，含甲狀腺抗體(anti-TPO)。',
+      severity: 'attention',
+    })
+  }
+
+  // B2. 減脂期節能性下降型（Free T3↓ 而 TSH 未升高）= 多為可逆、回補熱量改善。
+  //     刻意排除「TSH 偏高」——那是上面的疾病型、不是節能。
+  if (dirOf(ft3) === 'low' && dirOf(tsh) !== 'high') {
+    signals.push({
+      id: 'thyroid_energy_saving',
+      title: 'Free T3 偏低（甲狀腺節能性下降）',
       detail: inCut
-        ? '甲狀腺有下降跡象。正在減脂/備賽期時，這常是熱量赤字的節能性下降、回補熱量多會改善，多屬暫時。但若伴隨明顯疲勞/怕冷或持續惡化，建議與家醫科或整合醫學醫師討論。'
-        : '甲狀腺功能有下降跡象。非減脂期出現要找原因，若伴隨疲勞/怕冷等症狀，建議與家醫科或整合醫學醫師討論。',
+        ? '低 T3 而 TSH 沒升高，常是熱量赤字的節能性下降、回補熱量多會改善，多屬暫時。但若伴隨明顯疲勞/怕冷或持續惡化，建議與家醫科或整合醫學醫師討論。'
+        : '低 T3 而 TSH 沒升高。非減脂期出現要找原因（含低能量可用性等），若伴隨疲勞/怕冷等症狀，建議與家醫科或整合醫學醫師討論。',
       severity: 'attention',
     })
   }
@@ -136,9 +150,9 @@ export function detectCrossMarkerSignals(
   if (ctx.isFatLoss && dirOf(find(['HOMA-IR'])) === 'high') {
     signals.push({
       id: 'insulin_resistance_plateau',
-      title: '減脂卡關的生理阻力（胰島素阻抗）',
+      title: '胰島素阻抗訊號（影響飲食組成選擇）',
       detail:
-        'HOMA-IR(胰島素阻抗)偏高，在減脂卡關時可能真的是減不下來的生理原因之一。優先處理飲食結構與體脂、增加活動，必要時與醫師配合，別只靠硬砍熱量。',
+        'HOMA-IR(胰島素阻抗)偏高。⚠️總熱量赤字仍是減脂主因——胰島素阻抗對總減重的因果證據其實偏弱(別讓停滯被怪到胰島素而忽略依從性)。它比較是「飲食組成」的訊號：高 HOMA-IR 者優先降升糖負荷、加阻力訓練，必要時與醫師配合。',
       severity: 'attention',
     })
   }

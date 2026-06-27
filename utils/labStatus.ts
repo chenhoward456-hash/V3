@@ -52,7 +52,9 @@ export const LAB_THRESHOLDS = {
   'Free T3': { normal: { min: 2.3, max: 4.2 }, attention: { min: 2.0, max: 4.5 } },
 
   // ── 鐵 ──
-  '鐵蛋白': { normal: { min: 50, max: 150 }, attention: { min: 30, max: 200 } },
+  // 共識正常放寬(對帳 2026-06)：男缺鐵<30、實驗室 ULN ~300-400。原 50-150 是功能/長壽緊帶、
+  // 已移到 OPTIMAL(70-120)。高鐵蛋白的發炎假性升高由 cross-marker D(鐵蛋白↑+CRP↑)接手。
+  '鐵蛋白': { normal: { min: 30, max: 300 }, attention: { min: 20, max: 400 } },
   '鐵蛋白_female': { normal: { min: 12, max: 200 }, attention: { min: 8, max: 300 } },
 
   // ── 發炎 ──
@@ -61,12 +63,14 @@ export const LAB_THRESHOLDS = {
   '同半胱胺酸': { normal: 8.0, attention: 12.0 },
 
   // ── 維生素（均為範圍型：過低=缺乏，過高=中毒/遮蔽效應）──
-  '維生素D': { normal: { min: 50, max: 100 }, attention: { min: 30, max: 150 } },      // >100 可能中毒（高血鈣）
+  // 下界 30=主流充足門檻(Endocrine Society 2011 / IOM；死亡率 U 型最低點~31, PMID 39183989)。
+  // 原 50 會把 30-50(主流視為正常)大量誤標不足 → 對帳 2026-06 下修。
+  '維生素D': { normal: { min: 30, max: 100 }, attention: { min: 20, max: 150 } },      // >100 可能中毒（高血鈣）
   '維生素B12': { normal: { min: 400, max: 900 }, attention: { min: 200, max: 1100 } }, // >900 可能代表肝病或發炎
   '葉酸': { normal: { min: 5.4, max: 20 }, attention: { min: 3.0, max: 24 } },         // >20 可能遮蔽 B12 缺乏
 
   // ── 礦物質（範圍型）──
-  '鎂': { normal: { min: 2.0, max: 2.4 }, attention: { min: 1.8, max: 2.6 } },
+  '鎂': { normal: { min: 1.8, max: 2.4 }, attention: { min: 1.6, max: 2.6 } },       // 下界 1.8=主流正常下緣(對帳 2026-06)
   '鋅': { normal: { min: 70, max: 120 }, attention: { min: 60, max: 140 } },
   '鈣': { normal: { min: 8.5, max: 10.5 }, attention: { min: 8.0, max: 11.0 } },
 
@@ -80,7 +84,7 @@ export const LAB_THRESHOLDS = {
   // 上限>380（高於健康族群實測上界）對自然訓練男性是「優化方向」非紅燈：380–600 只降級為 attention，
   // >600（疑似外源）才 alert。下限維持 200/150。
   '生物可利用睪固酮': { normal: { min: 200, max: 380 }, attention: { min: 150, max: 600 } },
-  '皮質醇': { normal: { min: 6, max: 18 }, attention: { min: 4, max: 22 } },
+  '皮質醇': { normal: { min: 6, max: 23 }, attention: { min: 4, max: 27 } },         // 上限放寬：8am 標準約 5-25(對帳 2026-06)
   'DHEA-S': { normal: { min: 100, max: 500 }, attention: { min: 80, max: 600 } },
   'DHEA-S_female': { normal: { min: 65, max: 380 }, attention: { min: 50, max: 450 } },
   '雌二醇': { normal: { min: 10, max: 40 }, attention: { min: 8, max: 60 } },         // 男性
@@ -108,19 +112,21 @@ export const LAB_THRESHOLDS = {
 //     這些是「個人化健康優化目標」，**不是診斷標準**
 export const LAB_OPTIMAL_RANGES: Record<string, number | { min: number; max: number }> = {
   // ── 代謝 / 血糖（長壽派激進目標）──
-  'HOMA-IR': 0.8,                    // <0.8（共識最佳 <1.5; Attia 派 <1.0）
-  '空腹胰島素': 2.5,                  // Attia「Outlive」立場；共識最佳 <5
+  'HOMA-IR': 1.0,                    // <1.0（Attia 派）；原 <0.8 近檢測下緣無文獻背書故放寬(對帳 2026-06)
+  '空腹胰島素': 5.0,                  // <5（理想敏感）；原 <2.5 近偵測下緣無背書故放寬(對帳 2026-06)
   '空腹血糖': { min: 70, max: 85 },   // 改區間：太低=低血糖，避免「越低越好」誤標（J-curve）
   'HbA1c': { min: 4.8, max: 5.4 },   // 改區間：<4.8 也有 J 型風險，非越低越好
   '尿酸': 5.0,
-  '尿酸_female': 4.0,
+  '尿酸_female': { min: 3.5, max: 4.5 },  // U型：女<3.5 喪失抗氧化、踩低尿酸風險(PMID 40229850/40331095)，非越低越好(對帳 2026-06)
 
   // ── 血脂（長壽研究派 / Peter Attia）──
   '三酸甘油酯': 60,                   // <60 Attia 立場；AHA 正常 <150
   'ApoB': 50,                        // Peter Attia「Outlive」(2023) longevity target；AHA / Canadian CCS 警示 ~80-100
   'LDL-C': 60,                       // <60 Attia；AHA 正常 <100
-  'HDL-C': 65,                       // >65 越高越好（共識 >40 男 / >50 女）
-  'HDL-C_female': 75,
+  // ⚠️ HDL 非「越高越好」：呈 U 型，>80 mg/dL 全因死亡 HR~1.96，孟德爾隨機化證明拉高 HDL 不保護
+  // (PMID 35583863/39113030)。改成 U 型最適區間；判讀心血管風險主看 TG/HDL 比或 apoB(對帳 2026-06)。
+  'HDL-C': { min: 40, max: 60 },
+  'HDL-C_female': { min: 50, max: 65 },
   '總膽固醇': 170,
 
   // 肝功能
@@ -134,9 +140,9 @@ export const LAB_OPTIMAL_RANGES: Record<string, number | { min: number; max: num
   'eGFR': 100,                       // >100 = 腎功能極佳（越高越好）
 
   // 甲狀腺
-  'TSH': { min: 1.0, max: 2.5 },     // 功能醫學最佳區間
-  'Free T4': { min: 1.0, max: 1.5 },
-  'Free T3': { min: 3.0, max: 4.0 },
+  'TSH': { min: 1.0, max: 2.5 },     // 功能醫學最佳區間；⚠️非長壽實證(長壽家族 TSH 偏高較好 PMID 20739380/25514105)
+  // Free T4 / Free T3 不設長壽最佳：長壽/CVD 證據一致指向「區間內偏低較好」(FT4 每升 1SD 致死中風 HR 1.10;
+  // 長壽家族 FT3 偏低 — PMID 25514105/27603906/20739380)。原本推上緣與實證相反 → 對帳 2026-06 移除避免誤導。
 
   // 鐵
   '鐵蛋白': { min: 70, max: 120 },
@@ -148,7 +154,7 @@ export const LAB_OPTIMAL_RANGES: Record<string, number | { min: number; max: num
   '同半胱胺酸': 6.0,                   // <6 較激進；功能醫學共識 6-9（Kresser/Lamkin）
 
   // ── 維生素（Endocrine Society + 功能醫學派）──
-  '維生素D': { min: 60, max: 80 },     // Endocrine Society 偏好 40-60；長壽派 50-80
+  '維生素D': { min: 40, max: 60 },     // 下修：>40 ng/mL 全因死亡開始回升、60-80 落回升區(PMID 39183989)(對帳 2026-06)
   '維生素B12': { min: 500, max: 800 },
   '葉酸': { min: 10, max: 18 },
 
@@ -188,6 +194,9 @@ const HIGHER_IS_BETTER = new Set([
 const LOW_BOUND_RISK: Record<string, { attentionBelow: number; alertBelow: number }> = {
   '空腹血糖': { attentionBelow: 70, alertBelow: 54 },
   'HbA1c': { attentionBelow: 4.0, alertBelow: 3.5 },
+  // 尿酸 U 型：過低喪失抗氧化作用、與死亡上升相關(轉折 ~5.4-5.9, PMID 40229850/40331095)(對帳 2026-06)
+  '尿酸': { attentionBelow: 2.5, alertBelow: 2.0 },
+  '尿酸_female': { attentionBelow: 2.0, alertBelow: 1.5 },
 };
 
 // 血檢狀態類型
