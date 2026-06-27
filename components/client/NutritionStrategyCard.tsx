@@ -51,7 +51,7 @@ export default function NutritionStrategyCard({
   // ─── Free user: simplified version ───
   if (isFree) {
     return (
-      <div className="bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl p-4 mb-3">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
         <div className="flex items-center gap-2 mb-2.5">
           <span className="text-lg">📋</span>
           <h3 className="text-sm font-bold text-gray-900">你的飲食策略</h3>
@@ -59,19 +59,19 @@ export default function NutritionStrategyCard({
 
         {modeDescription && (
           <p className="text-xs text-gray-600 mb-2">
-            目前模式：<span className="font-semibold text-emerald-700">{modeDescription}</span>
+            目前模式：<span className="font-semibold text-slate-900">{modeDescription}</span>
           </p>
         )}
 
         <div className="space-y-1.5 mb-3">
           <div className="flex items-start gap-1.5">
-            <span className="text-emerald-500 text-xs shrink-0 mt-0.5">&#10003;</span>
+            <span className="text-slate-400 text-xs shrink-0 mt-0.5">&#10003;</span>
             <span className="text-xs text-gray-600">系統已計算你的 TDEE 和巨量營養素</span>
           </div>
         </div>
 
         {/* Locked features section */}
-        <div className="bg-white/60 border border-emerald-100 rounded-xl p-3 mb-3">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-3">
           <div className="flex items-start gap-2">
             <span className="text-sm shrink-0">🔒</span>
             <div>
@@ -84,7 +84,7 @@ export default function NutritionStrategyCard({
 
         <Link
           href="/upgrade?from=free&feature=nutrition_strategy"
-          className="block text-center bg-emerald-600 text-white text-xs font-semibold py-2 rounded-xl hover:bg-emerald-700 transition-colors"
+          className="block text-center bg-blue-600 text-white text-xs font-semibold py-2 rounded-xl hover:bg-blue-700 transition-colors"
         >
           升級自主管理版 — NT$499/月
         </Link>
@@ -125,7 +125,7 @@ export default function NutritionStrategyCard({
   }
 
   return (
-    <div className="bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl p-4 mb-3">
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
       {/* Header */}
       <div className="flex items-center gap-2 mb-2.5">
         <span className="text-lg">📋</span>
@@ -135,7 +135,7 @@ export default function NutritionStrategyCard({
       {/* Current mode */}
       {modeDescription && (
         <p className="text-xs text-gray-600 mb-2.5">
-          目前模式：<span className="font-semibold text-emerald-700">{modeDescription}</span>
+          目前模式：<span className="font-semibold text-slate-900">{modeDescription}</span>
         </p>
       )}
 
@@ -144,7 +144,7 @@ export default function NutritionStrategyCard({
         <div className="space-y-1.5 mb-2">
           {strategies.map((s) => (
             <div key={s.key} className="flex items-start gap-1.5">
-              <span className="text-emerald-500 text-xs shrink-0 mt-0.5">&#10003;</span>
+              <span className="text-slate-400 text-xs shrink-0 mt-0.5">&#10003;</span>
               <span className="text-xs text-gray-700">{s.text}</span>
             </div>
           ))}
@@ -153,11 +153,11 @@ export default function NutritionStrategyCard({
 
       {/* Lab-based modifiers */}
       {hasLabModifiers && (
-        <div className="bg-white/60 border border-emerald-100 rounded-xl p-3 mt-2.5">
-          <p className="text-[11px] font-semibold text-blue-700 mb-1.5">🩸 根據你的血檢：</p>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mt-2.5">
+          <p className="text-[11px] font-semibold text-slate-900 mb-1.5">🩸 根據你的血檢：</p>
           <div className="space-y-1">
             {labMacroModifiers!.map((mod, i) => (
-              <p key={i} className="text-[11px] text-blue-600 leading-relaxed">
+              <p key={i} className="text-[11px] text-slate-600 leading-relaxed">
                 {mod.reason}
               </p>
             ))}
@@ -168,14 +168,14 @@ export default function NutritionStrategyCard({
       {/* Collapsible details */}
       <button
         onClick={() => setShowDetails(!showDetails)}
-        className="flex items-center justify-center gap-1.5 w-full mt-3 py-1.5 text-[11px] text-emerald-600 hover:text-emerald-800 transition-colors"
+        className="flex items-center justify-center gap-1.5 w-full mt-3 py-1.5 text-[11px] text-slate-600 hover:text-slate-900 transition-colors"
       >
         <span>{showDetails ? '收合分析依據' : '查看完整分析依據'}</span>
         <ChevronDown size={12} className={`transition-transform ${showDetails ? 'rotate-180' : ''}`} />
       </button>
 
       {showDetails && (
-        <div className="bg-white/60 border border-emerald-100 rounded-xl p-3 mt-1.5 space-y-2">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mt-1.5 space-y-2">
           <div className="space-y-1.5 text-[11px] text-gray-600 leading-relaxed">
             {client.goal_type && (
               <p>

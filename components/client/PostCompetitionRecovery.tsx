@@ -67,7 +67,7 @@ export default function PostCompetitionRecovery({
   const isRecoveryComplete = daysPostCompetition > 28
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-5 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
@@ -87,14 +87,14 @@ export default function PostCompetitionRecovery({
       {/* Progress bar */}
       <div className="mb-5">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] text-gray-400">恢復進度</span>
-          <span className="text-[10px] text-gray-400">
+          <span className="text-[11px] text-gray-400">恢復進度</span>
+          <span className="text-[11px] text-gray-400 tabular-nums">
             {Math.min(daysPostCompetition, 28)} / 28 天
           </span>
         </div>
-        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-500"
+            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
             style={{ width: `${Math.min((daysPostCompetition / 28) * 100, 100)}%` }}
           />
         </div>
@@ -109,8 +109,8 @@ export default function PostCompetitionRecovery({
               phase.isCurrent
                 ? 'border-emerald-300 bg-emerald-50'
                 : phase.isCompleted
-                ? 'border-gray-100 bg-gray-50'
-                : 'border-gray-100 bg-white'
+                ? 'border-slate-200 bg-slate-50'
+                : 'border-slate-200 bg-white'
             }`}
           >
             {/* Phase header */}
@@ -125,8 +125,8 @@ export default function PostCompetitionRecovery({
                     <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
                   </div>
                 ) : (
-                  <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-[10px] text-gray-500">{idx + 1}</span>
+                  <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center">
+                    <span className="text-[11px] text-gray-500 tabular-nums">{idx + 1}</span>
                   </div>
                 )}
                 <span className={`text-sm font-semibold ${
@@ -135,7 +135,7 @@ export default function PostCompetitionRecovery({
                   {phase.weekLabel}
                 </span>
               </div>
-              <span className="text-[10px] text-gray-400">{phase.dayRange}</span>
+              <span className="text-[11px] text-gray-400">{phase.dayRange}</span>
             </div>
 
             {/* Items */}
@@ -165,7 +165,7 @@ export default function PostCompetitionRecovery({
 
       {/* Recovery complete / Next steps */}
       {isRecoveryComplete && (
-        <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4">
+        <div className="mt-4 bg-white border border-slate-200 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-lg">🎉</span>
             <p className="text-sm font-bold text-gray-800">恢復期結束，準備下一階段</p>
@@ -183,7 +183,7 @@ export default function PostCompetitionRecovery({
             </button>
             <button
               onClick={onSetNextCompetition}
-              className="flex items-center justify-center gap-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-center gap-1.5 bg-white border border-slate-200 text-gray-700 text-xs font-semibold py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
             >
               切換到增肌/減脂
               <ChevronRight size={14} />
@@ -201,10 +201,10 @@ export default function PostCompetitionRecovery({
             value={nextCompDate}
             onChange={(e) => setNextCompDate(e.target.value)}
             min={new Date().toISOString().split('T')[0]}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-blue-500 transition-colors mb-3"
+            className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-blue-500 transition-colors mb-3"
           />
           {error && (
-            <p className="text-xs text-red-600 mb-2">{error}</p>
+            <p className="text-xs text-rose-600 mb-2">{error}</p>
           )}
           <div className="flex gap-2">
             <button
@@ -236,7 +236,7 @@ export default function PostCompetitionRecovery({
             </button>
             <button
               onClick={() => { setShowDatePicker(false); setNextCompDate(''); setError('') }}
-              className="px-4 bg-white border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+              className="px-4 bg-white border border-slate-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
             >
               取消
             </button>
@@ -259,7 +259,7 @@ export default function PostCompetitionRecovery({
               const el = document.querySelector('[data-section="goal-settings"]')
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold py-2.5 rounded-xl hover:bg-gray-100 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 text-gray-700 text-xs font-semibold py-2.5 rounded-xl hover:bg-slate-100 transition-colors"
           >
             修改目標體重/體脂
           </button>

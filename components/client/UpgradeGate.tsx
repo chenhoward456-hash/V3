@@ -63,7 +63,7 @@ export default function UpgradeGate({
   // Simple variant: no preview, no benefits, no currentTier -- compact card (backward-compatible layout)
   if (!hasPreview && !hasBenefits && !currentTier) {
     return (
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4">
         <div className="flex items-start gap-3">
           <span className="text-xl shrink-0">🔒</span>
           <div className="flex-1">
@@ -86,7 +86,7 @@ export default function UpgradeGate({
 
   // Enhanced variant: with preview, benefits list, and upgrade path context
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
       {/* Blurred preview overlay */}
       {hasPreview && (
         <div className="relative">
@@ -133,7 +133,7 @@ export default function UpgradeGate({
                 <ul className="space-y-1">
                   {displayBenefits.map((benefit) => (
                     <li key={benefit} className="flex items-center gap-1.5 text-xs text-gray-600">
-                      <svg className="w-3.5 h-3.5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                      <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                       </svg>
                       {benefit}
@@ -147,7 +147,7 @@ export default function UpgradeGate({
             <Link
               href={upgradeHref}
               onClick={() => trackEvent('upgrade_cta_clicked', { feature, tier, currentTier })}
-              className="inline-block mt-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
+              className="inline-block mt-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors"
             >
               升級{info.label} — NT${info.price}/月
             </Link>

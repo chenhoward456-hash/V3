@@ -74,15 +74,15 @@ export default function CollapsibleSection({
       {isToday && (
         <button
           onClick={toggle}
-          className="w-full flex items-center gap-2 px-4 py-2.5 rounded-t-2xl bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center gap-2 px-4 py-2.5 rounded-t-2xl bg-white border-b border-slate-200 hover:bg-gray-50 transition-colors"
           aria-expanded={isOpen}
           aria-controls={`${id}-content`}
         >
           <span className="text-base">{icon}</span>
           <span className="text-sm font-semibold text-gray-800 flex-1 text-left">{title}</span>
           {isCompleted && (
-            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-green-100">
-              <Check size={12} className="text-green-600" />
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100">
+              <Check size={12} className="text-emerald-600" />
             </span>
           )}
           <ChevronDown
@@ -96,9 +96,9 @@ export default function CollapsibleSection({
       {isToday && !isOpen && isCompleted && summaryLine && (
         <button
           onClick={toggle}
-          className="w-full text-left px-4 py-2 bg-green-50 rounded-b-2xl border-t-0"
+          className="w-full text-left px-4 py-2 bg-emerald-50 rounded-b-2xl border-t-0"
         >
-          <p className="text-xs text-green-700">{summaryLine}</p>
+          <p className="text-xs text-emerald-700">{summaryLine}</p>
         </button>
       )}
 

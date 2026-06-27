@@ -12,6 +12,7 @@ import BottomNav from '@/components/client/BottomNav'
 import CollapsibleSection from '@/components/client/CollapsibleSection'
 import NewUserLanding, { shouldUseNewUserMode } from '@/components/client/NewUserLanding'
 import QuickActions from '@/components/client/QuickActions'
+import EngineStatusLine from '@/components/client/EngineStatusLine'
 import UpgradeGate from '@/components/client/UpgradeGate'
 import UpgradeWelcome from '@/components/client/UpgradeWelcome'
 import HealthOverview from '@/components/client/HealthOverview'
@@ -126,6 +127,8 @@ export default function ClientDashboard() {
   const [showSupplementModal, setShowSupplementModal] = useState(false)
   const [togglingSupplements, setTogglingSupplements] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState('')
+  // 真分頁：一次只顯示一個畫面（取代「一長卷到底」）。首頁=今日打卡+備賽進度，其餘各自進分頁。
+  const [view, setView] = useState<'home' | 'data' | 'training' | 'lab' | 'more'>('home')
   const [showCoachSummary, setShowCoachSummary] = useState(false)
   const [showAiChat, setShowAiChat] = useState(false)
   const [aiChatInitialPrompt, setAiChatInitialPrompt] = useState<string | undefined>()
@@ -642,7 +645,7 @@ export default function ClientDashboard() {
           {/* 教練訊息先秀（自抓，不等整包資料）→ 點推播進來馬上看到內容 */}
           <CoachMessageBanner clientCode={clientId as string} />
           {/* Skeleton card 1 - main stats */}
-          <div className="bg-white rounded-3xl shadow-sm p-6 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
             <div className="h-5 w-24 bg-gray-200 rounded animate-pulse" />
             <div className="grid grid-cols-3 gap-3">
               <div className="h-16 bg-gray-100 rounded-2xl animate-pulse" />
@@ -652,7 +655,7 @@ export default function ClientDashboard() {
             <div className="h-4 w-3/4 bg-gray-100 rounded animate-pulse" />
           </div>
           {/* Skeleton card 2 - training */}
-          <div className="bg-white rounded-3xl shadow-sm p-6 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
             <div className="h-5 w-20 bg-gray-200 rounded animate-pulse" />
             <div className="grid grid-cols-4 gap-2">
               <div className="h-11 bg-gray-100 rounded-lg animate-pulse" />
@@ -663,7 +666,7 @@ export default function ClientDashboard() {
             <div className="h-12 bg-gray-100 rounded-xl animate-pulse" />
           </div>
           {/* Skeleton card 3 - nutrition */}
-          <div className="bg-white rounded-3xl shadow-sm p-6 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
             <div className="h-5 w-28 bg-gray-200 rounded animate-pulse" />
             <div className="h-20 bg-gray-100 rounded-2xl animate-pulse" />
             <div className="h-4 w-1/2 bg-gray-100 rounded animate-pulse" />
@@ -813,7 +816,7 @@ export default function ClientDashboard() {
                     ② 一鍵綁定
                   </a>
                 </div>
-                <p className="text-[10px] text-gray-500 mt-2">
+                <p className="text-[11px] text-gray-500 mt-2">
                   ②會自動開 LINE 並填好「綁定 {c.unique_code}」，按送出即可
                 </p>
               </div>
@@ -829,14 +832,13 @@ export default function ClientDashboard() {
         {/* 首次來訪導覽 banner（dismissible）*/}
         {isToday && <WelcomeBanner clientId={clientId as string} />}
 
-        {/* 推播開通 — 置頂（開通推播=留存槓桿；gated，含 iPhone 加主畫面引導）*/}
-        {isToday && <div className="mb-4"><PushNotificationPrompt code={c.unique_code} /></div>}
+        {/* 推播開通 — 已下移到行動/判決卡之後（開通推播=留存槓桿，但別佔掉第一屏；gated）*/}
 
         {/* 核心邏輯一句話 — 暫藏 2026-06-12（去雜訊，常駐文案無資訊量；移除 false 即還原） */}
         {false && isToday && (
           <div className="mb-4 px-4 py-2.5 bg-zinc-50 border-l-2 border-emerald-500 rounded-r-lg">
             <p className="text-[11px] text-gray-600 leading-relaxed">
-              <span className="text-[9px] uppercase tracking-wider font-bold text-emerald-700 mr-1.5">重點</span>
+              <span className="text-[11px] uppercase tracking-wider font-bold text-emerald-700 mr-1.5">重點</span>
               不是「算營養素」，是<b className="text-zinc-900">連續追蹤 + 累積對照</b>。連續打卡 14 天，趨勢才會說話。
             </p>
           </div>
@@ -858,7 +860,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 標題區 */}
-        <div className="bg-white rounded-3xl shadow-sm p-5 mb-6">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
           <ClientHeader
             client={c}
             isCoachMode={isCoachMode}
@@ -888,9 +890,43 @@ export default function ClientDashboard() {
             cancellingSubscription={cancellingSubscription}
             onCancelSubscription={handleCancelSubscription}
           />
+        </div>
 
-          {/* ===== INSIGHT: 每日洞察 + 完成進度（第一眼看到） ===== */}
-          {isToday && (
+        {/* 🎯 今日教練指令 — 首頁最上面一句話：今天該幹嘛 + 還剩幾項沒打卡（打完變慶祝） */}
+        {view === 'home' && isToday && (() => {
+          const daily = [
+            c.body_composition_enabled ? !!(latestBodyData && latestBodyData.date === selectedDate) : null,
+            c.nutrition_enabled ? !!todayNutrition : null,
+            (c.supplement_enabled && (c.supplements || []).length > 0) ? (todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total) : null,
+            c.wellness_enabled ? !!todayWellness : null,
+            c.training_enabled ? !!todayTraining : null,
+          ].filter(v => v !== null) as boolean[]
+          if (daily.length === 0) return null
+          const unlogged = daily.filter(v => !v).length
+          const allDone = unlogged === 0
+          // 碳水用「飲食卡上的目標」（碳循環時=當日訓練/休息日值），跟飲食卡+達標一致
+          const carbs = (c.carbs_training_day && c.carbs_rest_day)
+            ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day)
+            : c.carbs_target
+          return (
+            <div className={`border rounded-2xl p-4 mb-3 flex items-center gap-2.5 ${allDone ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
+              <span className="text-lg shrink-0">{allDone ? '🎉' : '🎯'}</span>
+              <p className="text-sm text-gray-700 leading-snug">
+                <span className="font-semibold text-gray-900">今日重點</span>
+                {c.nutrition_enabled && (
+                  <span className="text-gray-500"> · {isTrainingDayResolved ? '💪 訓練日' : '😴 休息日'}{carbs != null ? `，碳水 ${carbs}g` : ''}</span>
+                )}
+                {' · '}
+                {allDone
+                  ? <span className="text-emerald-700 font-semibold">五項打卡完成，今天收工 💪</span>
+                  : <span className="text-amber-700 font-semibold tabular-nums">還有 {unlogged} 項要記</span>}
+              </p>
+            </div>
+          )
+        })()}
+
+        {/* ===== INSIGHT: 每日洞察 + 完成進度（進「數據」分頁看） ===== */}
+          {view === 'data' && isToday && (
             <SectionErrorBoundary name="today-overview">
             <TodayOverviewCard
               overallStreak={overallStreak}
@@ -909,7 +945,7 @@ export default function ClientDashboard() {
           )}
 
           {/* ===== 為你更新：精簡主動卡片（血檢趨勢 / 回檢 / macro 調整）===== */}
-          {isToday && (
+          {view === 'home' && isToday && (
             <SectionErrorBoundary name="for-you-feed">
               <ForYouFeed
                 labs={c.lab_results || []}
@@ -937,13 +973,13 @@ export default function ClientDashboard() {
           ===== */}
 
           {/* 賽後恢復提示：比賽日期已過但階段仍為 peak_week/competition */}
-          {isCompetition && c.competition_date && (() => {
+          {view === 'home' && isCompetition && c.competition_date && (() => {
             const daysLeft = daysUntilDateTW(c.competition_date)
             // 比賽日當天(0)或之後(<0)，且還沒選擇下一步
             const needsRecoveryPrompt = daysLeft <= 0 && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition')
             if (!needsRecoveryPrompt) return null
             return (
-              <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-5 mb-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-4">
                 <div className="text-center mb-3">
                   <span className="text-3xl">🏆</span>
                   <h3 className="text-lg font-bold text-gray-900 mt-2">比賽結束了！辛苦了！</h3>
@@ -994,35 +1030,14 @@ export default function ClientDashboard() {
           })()}
 
           {/* 新手引導 — 只有完全沒數據的新用戶才看到（營養設定移到 DO section 後） */}
-          {!latestBodyData && (!clientData.nutritionLogs || clientData.nutritionLogs.length === 0) && (
+          {view === 'home' && !latestBodyData && (!clientData.nutritionLogs || clientData.nutritionLogs.length === 0) && (
             <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
               <p className="text-sm text-blue-700 font-medium">👋 歡迎！往下滑開始記錄你的第一筆數據</p>
             </div>
           )}
-        </div>
 
-        {/* === 備賽作戰室：會不會準時上台（備賽模式置頂英雄卡） === */}
-        {isCompetition && c.competition_date && (
-          <CompWarRoom
-            bodyData={clientData.bodyData || []}
-            competitionDate={c.competition_date}
-            targetWeight={c.target_weight}
-            targetBodyFat={c.target_body_fat}
-            prepPhase={c.prep_phase}
-          />
-        )}
-
-        {/* === 本週減脂體檢：掉重速率 + 力量保持 + 能量（減脂/備賽，體脂不參與判定） === */}
-        {(isCompetition || c.prep_phase === 'cut' || /cut|loss|fat|減/.test((c.goal_type || '').toLowerCase())) && (
-          <CutHealthCard
-            bodyData={clientData.bodyData || []}
-            wellness={clientData.wellness || []}
-            currentWeight={latestBodyData?.weight ?? null}
-          />
-        )}
-
-        {/* === QuickActions: 未完成項目快速導航（緊接在概覽下方） === */}
-        {isToday && (
+        {/* === QuickActions: 一鍵打卡（每天打開最常做的事，擺在判決卡前面，不用滑過 3 張卡才摸得到） === */}
+        {view === 'home' && isToday && (
           <QuickActions
             enabledSections={[
               ...(c.body_composition_enabled ? [{ id: 'section-body', icon: '⚖️', label: '體重', completed: !!latestBodyData && latestBodyData.date === selectedDate }] : []),
@@ -1034,17 +1049,24 @@ export default function ClientDashboard() {
             topSummary={{
               weight: latestBodyData?.weight,
               daysLeft: c.competition_date ? daysUntilDateTW(c.competition_date) : null,
-              todayCarbs: nutritionEngineSuggestion?.suggestedCarbsTrainingDay != null
-                ? (isTrainingDayResolved
-                  ? nutritionEngineSuggestion.suggestedCarbsTrainingDay
-                  : nutritionEngineSuggestion.suggestedCarbsRestDay)
-                : nutritionEngineSuggestion?.suggestedCarbs ?? c.carbs_target,
+              todayCarbs: (c.carbs_training_day && c.carbs_rest_day)
+                ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day)
+                : c.carbs_target, // 跟飲食卡/今日指令/達標一致（碳循環當日值）
               isTrainingDay: isTrainingDayResolved,
               streak: overallStreak,
             }}
             onNavigate={(sectionId) => {
-              setActiveTab(sectionId)
-              document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              // 分頁化後：點「看細節」→ 切到該功能所在的分頁（不再是捲到隱藏的區塊）
+              const toView: Record<string, 'data' | 'training' | 'more'> = {
+                'section-body': 'data',
+                'section-nutrition': 'data',
+                'section-nutrition-general': 'data',
+                'section-supplements': 'more',
+                'section-wellness': 'more',
+                'section-training': 'training',
+              }
+              const v = toView[sectionId]
+              if (v) { setView(v); window.scrollTo({ top: 0, behavior: 'smooth' }) }
             }}
             showQuickWeight={c.body_composition_enabled && !(latestBodyData && latestBodyData.date === selectedDate)}
             onQuickWeight={async (weight) => {
@@ -1063,40 +1085,140 @@ export default function ClientDashboard() {
             showQuickNutrition={c.nutrition_enabled && !todayNutrition}
             onQuickNutrition={async (compliant) => {
               try {
+                // 「達標」= 今天照飲食卡上看到的目標吃 → 碳循環時用當日(訓練/休息)值，
+                // 例：訓練日 = carbs_training_day(236)，不是 base 177、更不是引擎另算的 301。熱量跟著巨量算、水分一起填。
+                const effCarbs = (c.carbs_training_day && c.carbs_rest_day)
+                  ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day)
+                  : c.carbs_target
+                const effCals = (c.protein_target != null && effCarbs != null && c.fat_target != null)
+                  ? Math.round(c.protein_target * 4 + effCarbs * 4 + c.fat_target * 9)
+                  : (c.calories_target ?? null)
+                const macros = compliant
+                  ? {
+                      calories: effCals,
+                      protein_grams: c.protein_target ?? null,
+                      carbs_grams: effCarbs ?? null,
+                      fat_grams: c.fat_target ?? null,
+                      water_ml: c.water_target ?? null,
+                    }
+                  : {}
                 const res = await fetch('/api/nutrition-logs', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ clientId, date: today, compliant }),
+                  body: JSON.stringify({ clientId, date: today, compliant, ...macros }),
                 })
                 if (!res.ok) throw new Error()
                 await mutate()
-                showToast(compliant ? '記好了,達標 👍' : '記好了,明天再追上', 'success', '🍽️')
+                showToast(compliant ? '記好了，達標 👍 已照目標填好營養素' : '記好了，明天再追上', 'success', '🍽️')
+                return true
+              } catch { showToast('記錄失敗，請重試', 'error'); return false }
+            }}
+            showQuickSupplements={c.supplement_enabled && (c.supplements || []).length > 0 && !(todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total)}
+            onQuickSupplements={async () => {
+              try {
+                // 一鍵「全部吃了」：把今天清單每個補品標完成（細項要改再進補品分頁）
+                const sups = (c.supplements || []) as Array<{ id: string }>
+                await Promise.all(sups.map(s => fetch('/api/supplement-logs', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ clientId, supplementId: s.id, date: today, completed: true }),
+                })))
+                await mutate()
+                showToast('補品今天全部標完成 💊', 'success', '💊')
+                return true
+              } catch { showToast('記錄失敗，請重試', 'error'); return false }
+            }}
+            showQuickWellness={c.wellness_enabled && !todayWellness}
+            onQuickWellness={async (level) => {
+              try {
+                // 一鍵感受：好/普通/累 → 對應睡眠+精力+心情；要記睡眠分數/HRV 再進感受分頁
+                const map = { good: 4, ok: 3, tired: 2 }[level]
+                const res = await fetch('/api/daily-wellness', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ clientId, date: today, sleep_quality: map, energy_level: map, mood: map }),
+                })
+                if (!res.ok) throw new Error()
+                await mutate()
+                showToast('今天感受記好了 😊', 'success', '😊')
+                return true
+              } catch { showToast('記錄失敗，請重試', 'error'); return false }
+            }}
+            showQuickTraining={c.training_enabled && !todayTraining}
+            onQuickTraining={async (trainingType) => {
+              try {
+                // 一鍵訓練：選肌群=同時標記今天練了；要記重量/組數再進訓練分頁
+                const res = await fetch('/api/training-logs', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ clientId, date: today, training_type: trainingType }),
+                })
+                if (!res.ok) throw new Error()
+                await mutate()
+                showToast(trainingType === 'rest' ? '今天休息日,記好了 😴' : '今天訓練記好了 💪', 'success', '🏋️')
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
           />
         )}
 
+        {/* === 備賽作戰室：記完今天的數據，馬上看會不會準時上台 === */}
+        {view === 'home' && isCompetition && c.competition_date && (
+          <CompWarRoom
+            bodyData={clientData.bodyData || []}
+            competitionDate={c.competition_date}
+            targetWeight={c.target_weight}
+            targetBodyFat={c.target_body_fat}
+            prepPhase={c.prep_phase}
+          />
+        )}
+
+        {/* === 本週減脂體檢：掉重速率 + 能量（減脂/備賽，體脂不參與判定） === */}
+        {view === 'home' && (isCompetition || c.prep_phase === 'cut' || /cut|loss|fat|減/.test((c.goal_type || '').toLowerCase())) && (
+          <CutHealthCard
+            bodyData={clientData.bodyData || []}
+            wellness={clientData.wellness || []}
+            currentWeight={latestBodyData?.weight ?? null}
+          />
+        )}
+
+        {/* 推播開通 — 下移到行動/判決卡之後（留存槓桿但不佔第一屏；gated，含 iPhone 加主畫面引導）*/}
+        {view === 'home' && isToday && <div className="mb-4"><PushNotificationPrompt code={c.unique_code} /></div>}
+
+        {/* === 系統校正狀態（一行，讓學員看得到引擎在算、為何按住、何時再動）=== */}
+        {view === 'home' && (
+        <EngineStatusLine
+          caloriesTarget={c.calories_target}
+          autoAdjustEnabled={c.auto_adjust_enabled}
+          lastAutoAdjustAt={c.last_auto_adjust_at}
+          coachOverride={c.coach_macro_override}
+          competitionDate={c.competition_date}
+          targetDate={c.target_date}
+        />
+        )}
+
         {/* === 我的完整數據入口 === */}
+        {view === 'data' && (
         <Link
           href={`/c/${c.unique_code}/overview`}
           className="block bg-zinc-900 rounded-2xl p-5 text-white hover:bg-zinc-800 transition-colors mb-3"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-400 font-semibold">My Data</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-400 font-semibold">My Data</p>
               <p className="text-lg font-bold tracking-tight mt-1">完整數據儀表板</p>
               <p className="text-xs text-zinc-400 mt-0.5">趨勢、日曆、累積成果</p>
             </div>
             <span className="text-2xl text-emerald-400 font-light">→</span>
           </div>
         </Link>
+        )}
 
         {/* 性別未設定提示 — 僅 free/self_managed 可自行設定，coached 由教練處理 */}
-        {!c.gender && (isFree || isSelfManaged) && (
-          <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 mb-4">
-            <p className="text-sm font-medium text-purple-800 mb-2">請設定你的生理性別</p>
-            <p className="text-xs text-purple-600 mb-3">性別會影響蛋白質、脂肪建議量及荷爾蒙安全底線的計算。未設定時系統預設為男性參數。</p>
+        {view === 'more' && !c.gender && (isFree || isSelfManaged) && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
+            <p className="text-sm font-medium text-slate-900 mb-2">請設定你的生理性別</p>
+            <p className="text-xs text-slate-500 mb-3">性別會影響蛋白質、脂肪建議量及荷爾蒙安全底線的計算。未設定時系統預設為男性參數。</p>
             <div className="grid grid-cols-2 gap-2">
               {(['男性', '女性'] as const).map(g => (
                 <button
@@ -1113,7 +1235,7 @@ export default function ClientDashboard() {
                       showToast(`已設定為${g}`, 'success')
                     } catch { showToast('設定失敗，請重試', 'error') }
                   }}
-                  className="py-2.5 rounded-xl text-sm font-semibold border-2 border-purple-200 bg-white text-purple-700 hover:bg-purple-100 transition-colors"
+                  className="py-2.5 rounded-xl text-sm font-semibold border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   {g === '男性' ? '♂' : '♀'} {g}
                 </button>
@@ -1127,7 +1249,7 @@ export default function ClientDashboard() {
         {/* ================================================================ */}
 
         {/* 身體數據記錄 — DO section 第一項 */}
-        {c.body_composition_enabled && (
+        {view === 'data' && c.body_composition_enabled && (
           <SectionErrorBoundary name="body-composition">
           <CollapsibleSection
             id="section-body"
@@ -1172,7 +1294,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 營養目標設定 — 免費/自主管理用戶還沒設定目標時顯示 */}
-        {(isFree || isSelfManaged) && !c.calories_target && c.body_composition_enabled && (
+        {view === 'data' && (isFree || isSelfManaged) && !c.calories_target && c.body_composition_enabled && (
           <SelfManagedNutrition
             clientId={c.id}
             uniqueCode={c.unique_code}
@@ -1194,7 +1316,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 飲食目標 + 飲食紀錄 */}
-        {c.nutrition_enabled && (
+        {view === 'data' && c.nutrition_enabled && (
           <SectionErrorBoundary name="nutrition">
           <CollapsibleSection
             id={isCompetition ? 'section-nutrition' : 'section-nutrition-general'}
@@ -1214,7 +1336,7 @@ export default function ClientDashboard() {
                   </span>
                 </div>
                 {coachOverrideInfo.reason && (
-                  <span className="text-[10px] text-amber-500">{coachOverrideInfo.reason}</span>
+                  <span className="text-[11px] text-amber-500">{coachOverrideInfo.reason}</span>
                 )}
               </div>
             )}
@@ -1223,7 +1345,7 @@ export default function ClientDashboard() {
               nutritionEngineSuggestion.suggestedCalories != null || nutritionEngineSuggestion.suggestedProtein != null
             ) && (
               <div className="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 mb-2">
-                <p className="text-[10px] text-blue-500">
+                <p className="text-[11px] text-blue-500">
                   系統建議：{nutritionEngineSuggestion.suggestedCalories?.toLocaleString() ?? '—'} kcal / P {nutritionEngineSuggestion.suggestedProtein ?? '—'}g / C {nutritionEngineSuggestion.suggestedCarbs ?? '—'}g / F {nutritionEngineSuggestion.suggestedFat ?? '—'}g
                 </p>
               </div>
@@ -1260,7 +1382,7 @@ export default function ClientDashboard() {
                   <div className="flex-1">
                     <p className="text-xs text-gray-500 font-medium">教練建議今日 cardio</p>
                     <p className="text-2xl font-bold text-emerald-700">{(c as any).cardio_minutes_per_day} 分鐘</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Zone 2（鼻呼吸還能講話）· 116-136 bpm</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">Zone 2（鼻呼吸還能講話）· 116-136 bpm</p>
                   </div>
                 </div>
               </div>
@@ -1311,14 +1433,14 @@ export default function ClientDashboard() {
 
 
         {/* 補品策略（引擎依血檢/基因推導的「為什麼」，端給學員看）*/}
-        {isToday && supplementSuggestions.length > 0 && (
+        {view === 'more' && isToday && supplementSuggestions.length > 0 && (
           <SectionErrorBoundary name="supplement-strategy">
             <SupplementStrategyCard suggestions={supplementSuggestions} />
           </SectionErrorBoundary>
         )}
 
         {/* 補品打卡 */}
-        {c.supplement_enabled && (
+        {view === 'more' && c.supplement_enabled && (
           <SectionErrorBoundary name="supplements">
           <CollapsibleSection
             id="section-supplements"
@@ -1349,7 +1471,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 每日感受 */}
-        {c.wellness_enabled && (
+        {view === 'more' && c.wellness_enabled && (
           <SectionErrorBoundary name="wellness">
           <CollapsibleSection
             id="section-wellness"
@@ -1377,20 +1499,20 @@ export default function ClientDashboard() {
         )}
 
         {/* 今日訓練計畫（教練指導用戶 + 有訓練計畫） */}
-        {c.training_enabled && c.training_plan && c.subscription_tier === 'coached' && (
+        {view === 'training' && c.training_enabled && c.training_plan && c.subscription_tier === 'coached' && (
           <SectionErrorBoundary name="today-workout">
           <TodayWorkout trainingPlan={c.training_plan} todayTrainingType={todayTraining?.training_type} />
           </SectionErrorBoundary>
         )}
-        {c.training_enabled && !c.training_plan && c.subscription_tier === 'coached' && (
-          <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-3 text-center">
-            <p className="text-sm text-indigo-700">📋 教練將為你製作個人化訓練計畫</p>
-            <p className="text-[10px] text-indigo-500 mt-1">設定完成後會顯示在這裡</p>
+        {view === 'training' && c.training_enabled && !c.training_plan && c.subscription_tier === 'coached' && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3 text-center">
+            <p className="text-sm text-slate-700">📋 教練將為你製作個人化訓練計畫</p>
+            <p className="text-[11px] text-slate-400 mt-1">設定完成後會顯示在這裡</p>
           </div>
         )}
 
         {/* 訓練紀錄 */}
-        {c.training_enabled && (
+        {view === 'training' && c.training_enabled && (
           <SectionErrorBoundary name="training">
           <CollapsibleSection
             id="section-training"
@@ -1419,7 +1541,7 @@ export default function ClientDashboard() {
         )}
 
         {/* === Onboarding & Upgrade（DO section 之後） === */}
-        {(() => {
+        {view === 'more' && (() => {
           if (checklistDismissed) return null
           if (!c.created_at) return null
           const daysSinceCreation = Math.floor(
@@ -1455,6 +1577,7 @@ export default function ClientDashboard() {
           )
         })()}
 
+        {view === 'more' && (
         <UpgradeWelcome
           clientId={c.unique_code}
           tier={c.subscription_tier}
@@ -1467,13 +1590,14 @@ export default function ClientDashboard() {
           hasGeneData={!!c.gene_mthfr}
           onOpenAiChat={() => setShowAiChat(true)}
         />
+        )}
 
         {/* ================================================================ */}
         {/* === SEE section: 被動資訊（記錄完再看） === */}
         {/* ================================================================ */}
 
         {/* HealthOverview 概覽 — 暫藏 2026-06-12（與 TodayOverviewCard 指標重疊；移除 false && 即還原） */}
-        {false && <SectionErrorBoundary name="health-overview">
+        {view === 'data' && false && <SectionErrorBoundary name="health-overview">
         <HealthOverview
           weekRate={supplementComplianceStats.weekRate}
           monthRate={supplementComplianceStats.monthRate}
@@ -1502,13 +1626,13 @@ export default function ClientDashboard() {
         </SectionErrorBoundary>}
 
         {/* 健康分數 + 健康模式進階 */}
-        {isHealthMode && healthScore && <HealthScoreBanner healthScore={healthScore} />}
-        {isHealthMode && (
+        {view === 'lab' && isHealthMode && healthScore && <HealthScoreBanner healthScore={healthScore} />}
+        {view === 'lab' && isHealthMode && (
           <HealthModeAdvanced clientId={c.id} code={c.unique_code} />
         )}
 
         {/* 教練資訊（從頂部移到這裡） */}
-        {(c.coach_last_viewed_at || c.coach_weekly_note || c.coach_summary) && (
+        {view === 'more' && (c.coach_last_viewed_at || c.coach_weekly_note || c.coach_summary) && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -1516,7 +1640,7 @@ export default function ClientDashboard() {
                 <span className="text-xs font-semibold text-amber-700">教練回饋</span>
               </div>
               {c.coach_last_viewed_at && (
-                <span className="text-[10px] text-gray-400">
+                <span className="text-[11px] text-gray-400">
                   ✓ {(() => {
                     const viewed = new Date(c.coach_last_viewed_at)
                     const now = new Date()
@@ -1559,6 +1683,7 @@ export default function ClientDashboard() {
           </div>
         )}
 
+        {view === 'data' && (
         <DayBasedCards
           client={c}
           isFree={isFree}
@@ -1566,7 +1691,9 @@ export default function ClientDashboard() {
           nutritionLogs={clientData.nutritionLogs || []}
           setShowAiChat={setShowAiChat}
         />
+        )}
 
+        {view === 'data' && (
         <SeeTabSection
           c={c}
           clientData={clientData}
@@ -1581,11 +1708,12 @@ export default function ClientDashboard() {
           selectedDate={selectedDate}
           today={today}
         />
+        )}
 
         {/* ============================================================
             📊 進階分析（預設折疊：智能營養 / 每週分析 / AI 洞察）
             ============================================================ */}
-        {(() => {
+        {view === 'data' && (() => {
           const hasAdvanced =
             (!isCompetition && (isSelfManaged || isFree) && c.body_composition_enabled && c.calories_target) ||
             (!isCompetition && !isSelfManaged && !isFree && c.nutrition_enabled && c.body_composition_enabled) ||
@@ -1598,7 +1726,7 @@ export default function ClientDashboard() {
                 <div className="flex items-center gap-2">
                   <span className="text-lg">📊</span>
                   <span className="text-sm font-medium text-gray-900">進階分析</span>
-                  <span className="text-[10px] text-gray-400">智能營養 / 每週洞察</span>
+                  <span className="text-[11px] text-gray-400">智能營養 / 每週洞察</span>
                 </div>
                 <ChevronDown size={16} className="text-gray-400 group-open:rotate-180 transition-transform" />
               </summary>
@@ -1652,7 +1780,7 @@ export default function ClientDashboard() {
         {/* ================================================================ */}
 
         {/* 推薦好友卡片 — 至少使用 7 天以上且非免費用戶才顯示 */}
-        {c.created_at && (() => {
+        {view === 'more' && c.created_at && (() => {
           const daysSinceSignup = Math.floor((Date.now() - new Date(c.created_at).getTime()) / DAY_MS)
           if (daysSinceSignup < 7) return null
           if (c.subscription_tier === 'free' && streakDays < 7) return null
@@ -1662,12 +1790,13 @@ export default function ClientDashboard() {
         {/* ============================================================
             ⚙️ 設定 / 工具（預設折疊：基因檔案 / 目標設定）
             ============================================================ */}
+        {view === 'more' && (
         <details className="group bg-white border border-gray-200 rounded-2xl mb-3 overflow-hidden">
           <summary className="cursor-pointer px-4 py-3 list-none flex items-center justify-between hover:bg-gray-50 transition-colors">
             <div className="flex items-center gap-2">
               <span className="text-lg">⚙️</span>
               <span className="text-sm font-medium text-gray-900">設定 / 工具</span>
-              <span className="text-[10px] text-gray-400">基因檔案 · 目標設定</span>
+              <span className="text-[11px] text-gray-400">基因檔案 · 目標設定</span>
             </div>
             <ChevronDown size={16} className="text-gray-400 group-open:rotate-180 transition-transform" />
           </summary>
@@ -1712,8 +1841,9 @@ export default function ClientDashboard() {
             )}
           </div>
         </details>
+        )}
 
-        {c.lab_enabled && (
+        {view === 'lab' && c.lab_enabled && (
           <div id="section-lab" className="scroll-mt-4 mb-4">
             {(() => {
               const labs = c.lab_results || []
@@ -1752,14 +1882,14 @@ export default function ClientDashboard() {
                 <>
                   <Link
                     href={`/c/${clientId}/health/timeline`}
-                    className="block bg-gradient-to-r from-emerald-50 to-emerald-100/60 border border-emerald-200 hover:border-emerald-300 rounded-2xl p-4 transition-colors"
+                    className="block bg-emerald-50 border border-emerald-200 hover:border-emerald-300 rounded-2xl p-5 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-semibold text-emerald-900">🩸 你的血檢旅程</span>
                           {(alertCount > 0 || attnCount > 0) && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-700">
+                            <span className="text-[11px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-700">
                               {alertCount > 0 ? `${alertCount} 警示` : `${attnCount} 注意`}
                             </span>
                           )}
@@ -1774,6 +1904,30 @@ export default function ClientDashboard() {
                       <ChevronRight className="w-5 h-5 text-emerald-700 shrink-0" />
                     </div>
                   </Link>
+                  {/* 最新這批血檢的實際數值 — 直接顯示，不用點進時間軸才看得到 */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 mt-2">
+                    <p className="text-sm font-semibold text-gray-900 mb-3">🩸 最新血檢 · {latestDate}（{latestCount} 項）</p>
+                    <div className="space-y-1.5">
+                      {latestRows.map((r: { test_name: string; value: number; unit?: string; status?: string }, i: number) => {
+                        const prev = labs
+                          .filter((x: { test_name: string; date: string }) => x.test_name === r.test_name && x.date < latestDate)
+                          .sort((a: { date: string }, b: { date: string }) => b.date.localeCompare(a.date))[0] as { value: number } | undefined
+                        const dot = r.status === 'alert' ? 'bg-rose-500' : r.status === 'attention' ? 'bg-amber-400' : 'bg-emerald-400'
+                        const col = r.status === 'alert' ? 'text-rose-600' : r.status === 'attention' ? 'text-amber-700' : 'text-gray-900'
+                        return (
+                          <div key={i} className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2 text-gray-700"><span className={`w-1.5 h-1.5 rounded-full ${dot}`} />{r.test_name}</span>
+                            <span className="tabular-nums">
+                              {prev != null && Number(prev.value) !== Number(r.value) && <span className="text-gray-400 text-xs">{prev.value}→</span>}
+                              <span className={`font-semibold ${col}`}>{r.value}</span>
+                              <span className="text-gray-400 text-xs"> {r.unit || ''}</span>
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-3">趨勢圖、最佳範圍、判讀 → 點上方卡片看完整時間軸</p>
+                  </div>
                   <div className="mt-2 flex items-center gap-2 text-xs px-1">
                     <Link
                       href={`/c/${clientId}/health/upload`}
@@ -1795,7 +1949,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 更多分析 — 預設收合以減少滑動長度 */}
-        {(() => {
+        {view === 'lab' && (() => {
           const hasLabAnalysis = c.lab_enabled && c.lab_results && c.lab_results.length > 0
           const hasAi = c.ai_chat_enabled
           if (!hasLabAnalysis && !hasAi) return null
@@ -1842,8 +1996,8 @@ export default function ClientDashboard() {
         })()}
 
         {/* 免費用戶升級提示（使用數據後提示） */}
-        {isFree && streakDays >= 3 && (
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-3xl p-5 mb-6">
+        {view === 'more' && isFree && streakDays >= 3 && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
             <div className="text-center mb-3">
               <span className="text-2xl">🎯</span>
               <p className="text-sm font-bold text-gray-800 mt-1">
@@ -1859,7 +2013,7 @@ export default function ClientDashboard() {
                 trackEvent('upgrade_cta_clicked', { source: 'streak_prompt', streak_days: streakDays })
                 trackConversion('pricing_cta', peekVariant('pricing_cta') ?? 'original', 'click_upgrade')
               }}
-              className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+              className="block text-center bg-blue-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors"
             >
               <ABTest
                 experimentId="pricing_cta"
@@ -1875,8 +2029,8 @@ export default function ClientDashboard() {
         )}
 
         {/* 自主管理用戶升級教練指導提示 */}
-        {isSelfManaged && streakDays >= 7 && (
-          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-3xl p-5 mb-6">
+        {view === 'more' && isSelfManaged && streakDays >= 7 && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
             <div className="text-center mb-3">
               <span className="text-2xl">👑</span>
               <p className="text-sm font-bold text-gray-800 mt-1">
@@ -1895,12 +2049,12 @@ export default function ClientDashboard() {
             >
               加 LINE 諮詢升級 — NT$2,999/月
             </a>
-            <p className="text-[10px] text-gray-400 mt-1.5 text-center">開啟 LINE 後輸入「升級」即可</p>
+            <p className="text-[11px] text-gray-400 mt-1.5 text-center">開啟 LINE 後輸入「升級」即可</p>
           </div>
         )}
 
         {/* 未開放功能提示 */}
-        {(() => {
+        {view === 'more' && (() => {
           const locked = []
           if (!c.wellness_enabled) locked.push({ icon: '😊', label: '每日感受紀錄' })
           if (!c.nutrition_enabled) locked.push({ icon: '🥗', label: '飲食追蹤' })
@@ -1909,7 +2063,7 @@ export default function ClientDashboard() {
           if (!c.lab_enabled) locked.push({ icon: '🩸', label: '血檢追蹤' })
           if (locked.length === 0) return null
           return (
-            <div className="bg-gray-50 rounded-3xl p-6 mb-6 border border-gray-100">
+            <div className="bg-slate-50 rounded-2xl p-5 mb-6 border border-slate-200">
               <div className="flex items-center gap-2 mb-3">
                 <Lock size={16} className="text-gray-400" />
                 <h3 className="text-sm font-semibold text-gray-500">更多功能</h3>
@@ -1927,7 +2081,7 @@ export default function ClientDashboard() {
                   <Link
                     href={`/upgrade?from=${c.subscription_tier}`}
                     onClick={() => trackEvent('upgrade_cta_clicked', { source: 'locked_features' })}
-                    className="block text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+                    className="block text-center bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
                   >
                     升級自主管理版 NT$499/月
                   </Link>
@@ -1940,7 +2094,7 @@ export default function ClientDashboard() {
                   <Link
                     href={`/upgrade?from=self_managed`}
                     onClick={() => trackEvent('upgrade_cta_clicked', { source: 'locked_features_self_managed' })}
-                    className="block text-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold py-2.5 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all"
+                    className="block text-center bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
                   >
                     升級教練方案解鎖 →
                   </Link>
@@ -1955,7 +2109,7 @@ export default function ClientDashboard() {
         {/* 完整健康報告入口（與教練看到的同一份；點開可看 + 列印存 PDF，學員自助、教練不用再傳）
             注意：gate 改用「有血檢資料」而非 isCoachMode——isCoachMode 是教練 PIN 模式，
             學員本人看不到，那樣就達不到「學員自助」的目的。*/}
-        {isToday && (c.lab_results?.length ?? 0) > 0 && (
+        {view === 'lab' && isToday && (c.lab_results?.length ?? 0) > 0 && (
           <Link
             href={`/c/${c.unique_code}/report`}
             className="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:border-blue-300 hover:shadow transition-all"
@@ -1972,11 +2126,11 @@ export default function ClientDashboard() {
         )}
 
         {/* 訓練進步追蹤（有逐組紀錄才顯示）*/}
-        {isToday && c.training_enabled && (
+        {view === 'training' && isToday && c.training_enabled && (
           <div className="mt-4"><TrainingProgressCardLazy clientCode={c.unique_code} /></div>
         )}
 
-        {!isFree && <PwaPrompt />}
+        {view === 'more' && !isFree && <PwaPrompt />}
       </div>
 
       <OnboardingGuide
@@ -2039,12 +2193,12 @@ export default function ClientDashboard() {
           </svg>
           <span className="text-sm font-medium">AI 顧問</span>
           {!c.ai_chat_enabled && (
-            <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">3次免費</span>
+            <span className="text-[11px] bg-white/20 px-1.5 py-0.5 rounded-full">3次免費</span>
           )}
         </button>
         {!c.ai_chat_enabled && (
           <span
-            className="fixed z-40 text-[9px] text-blue-400 whitespace-nowrap pointer-events-none"
+            className="fixed z-40 text-[11px] text-blue-400 whitespace-nowrap pointer-events-none"
             style={{ bottom: 'calc(56px + env(safe-area-inset-bottom))', right: '16px' }}
           >
             免費每月 3 次，升級後無限使用
@@ -2154,31 +2308,31 @@ export default function ClientDashboard() {
 
       {/* 底部導航 */}
       {(() => {
-        const tabs: { id: string; icon: string; label: string }[] = []
-        if (c.body_composition_enabled) tabs.push({ id: 'section-body', icon: '⚖️', label: '身體' })
-        if (c.nutrition_enabled) tabs.push({ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: '🥗', label: '飲食' })
-        if (c.supplement_enabled) tabs.push({ id: 'section-supplements', icon: '💊', label: '補品' })
-        if (c.wellness_enabled) tabs.push({ id: 'section-wellness', icon: '😊', label: '感受' })
-        if (c.training_enabled) tabs.push({ id: 'section-training', icon: '🏋️', label: '訓練' })
-        if (c.lab_enabled) tabs.push({ id: 'section-lab', icon: '🩸', label: '血檢' })
+        // 真分頁：一次顯示一個畫面。點 tab = 切換畫面 + 捲回頂部（不再是捲到底）。
+        const tabs: { id: string; icon: string; label: string }[] = [
+          { id: 'home', icon: '🎯', label: '今日' },
+          { id: 'data', icon: '📊', label: '數據' },
+        ]
+        if (c.training_enabled) tabs.push({ id: 'training', icon: '🏋️', label: '訓練' })
+        if (c.lab_enabled) tabs.push({ id: 'lab', icon: '🩸', label: '血檢' })
+        tabs.push({ id: 'more', icon: '☰', label: '更多' })
 
-        const completedMap: Record<string, boolean> = {
-          'section-nutrition': !!todayNutrition,
-          'section-nutrition-general': !!todayNutrition,
-          'section-supplements': todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total,
-          'section-wellness': !!todayWellness,
-          'section-training': !!todayTraining,
-        }
+        // 「今日」分頁：當天該打的卡全打完 → 顯示綠點
+        const homeDone = (!c.body_composition_enabled || !!(latestBodyData && latestBodyData.date === selectedDate))
+          && (!c.nutrition_enabled || !!todayNutrition)
+          && (!c.wellness_enabled || !!todayWellness)
+          && (!c.training_enabled || !!todayTraining)
+        const completedMap: Record<string, boolean> = { home: homeDone }
 
         return (
           <BottomNav
             tabs={tabs}
-            activeTab={activeTab}
+            activeTab={view}
             completedMap={completedMap}
             isToday={isToday}
             onTabClick={(id) => {
-              setActiveTab(id)
-              document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              setView(id as 'home' | 'data' | 'training' | 'lab' | 'more')
+              window.scrollTo({ top: 0, behavior: 'smooth' })
             }}
           />
         )
@@ -2197,7 +2351,7 @@ export default function ClientDashboard() {
 
       {/* 法律連結 footer */}
       <div className="max-w-4xl mx-auto px-4 pb-24 pt-4">
-        <div className="text-center text-[10px] text-gray-400 space-x-2 border-t border-gray-100 pt-3">
+        <div className="text-center text-[11px] text-gray-400 space-x-2 border-t border-gray-100 pt-3">
           <Link href="/terms" className="hover:underline">服務條款</Link>
           <span>·</span>
           <Link href="/privacy" className="hover:underline">隱私政策</Link>
@@ -2206,7 +2360,7 @@ export default function ClientDashboard() {
           <span>·</span>
           <Link href="/refund-policy" className="hover:underline">退費政策</Link>
         </div>
-        <p className="text-center text-[9px] text-gray-300 mt-2">
+        <p className="text-center text-[11px] text-gray-300 mt-2">
           本服務為健康管理工具，不構成醫療建議。緊急情況請撥 119。
         </p>
       </div>

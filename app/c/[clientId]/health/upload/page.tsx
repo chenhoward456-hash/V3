@@ -287,7 +287,7 @@ export default function UploadLabsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
-      <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
+      <div className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-2 mb-2">
             <Link href={`/c/${clientId}/health/timeline`} className="text-gray-500 hover:text-gray-700">
@@ -303,7 +303,7 @@ export default function UploadLabsPage() {
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Tab 切換 */}
-        <div className="flex gap-2 mb-6 border-b border-gray-200">
+        <div className="flex gap-2 mb-6 border-b border-slate-200">
           {([
             { key: 'manual', label: '✏️ 手打', icon: Pencil },
             { key: 'csv',    label: '📊 CSV 上傳', icon: FileText },
@@ -314,7 +314,7 @@ export default function UploadLabsPage() {
               onClick={() => setTab(t.key)}
               className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
                 tab === t.key
-                  ? 'border-emerald-500 text-emerald-700'
+                  ? 'border-blue-600 text-blue-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -325,7 +325,7 @@ export default function UploadLabsPage() {
 
         {/* 手打 */}
         {tab === 'manual' && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">項目名稱</label>
@@ -335,7 +335,7 @@ export default function UploadLabsPage() {
                   onChange={e => setM(s => ({ ...s, test_name: e.target.value }))}
                   list="lab-name-list"
                   placeholder="例：ApoB"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
                 <datalist id="lab-name-list">
                   {KNOWN_TEST_NAMES.map(n => <option key={n} value={n} />)}
@@ -349,7 +349,7 @@ export default function UploadLabsPage() {
                   value={m.value}
                   onChange={e => setM(s => ({ ...s, value: e.target.value }))}
                   placeholder="例：42"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               <div>
@@ -359,7 +359,7 @@ export default function UploadLabsPage() {
                   value={m.unit}
                   onChange={e => setM(s => ({ ...s, unit: e.target.value }))}
                   placeholder="例：mg/dL"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               <div>
@@ -368,7 +368,7 @@ export default function UploadLabsPage() {
                   type="date"
                   value={m.date}
                   onChange={e => setM(s => ({ ...s, date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               <div className="md:col-span-2">
@@ -378,13 +378,13 @@ export default function UploadLabsPage() {
                   value={m.reference_range}
                   onChange={e => setM(s => ({ ...s, reference_range: e.target.value }))}
                   placeholder="例：< 130 或 70-120"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
             </div>
             <button
               onClick={addManual}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded flex items-center gap-1"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded flex items-center gap-1"
             >
               <Plus className="w-4 h-4" /> 加入下方清單
             </button>
@@ -393,7 +393,7 @@ export default function UploadLabsPage() {
 
         {/* CSV */}
         {tab === 'csv' && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
             <div className="text-center">
               <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <p className="text-sm text-gray-600 mb-4">
@@ -417,7 +417,7 @@ export default function UploadLabsPage() {
               <button
                 onClick={() => csvInputRef.current?.click()}
                 disabled={csvLoading}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded inline-flex items-center gap-1 disabled:opacity-50"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded inline-flex items-center gap-1 disabled:opacity-50"
               >
                 <Upload className="w-4 h-4" /> {csvLoading ? '解析中...' : '選擇 CSV 檔案'}
               </button>
@@ -428,8 +428,8 @@ export default function UploadLabsPage() {
         {/* OCR */}
         {tab === 'ocr' && (
           <div
-            className={`rounded-xl border-2 border-dashed p-6 mb-6 transition-colors ${
-              ocrDragActive ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300 bg-white'
+            className={`rounded-xl border border-dashed p-6 mb-6 transition-colors ${
+              ocrDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'
             }`}
             onDragEnter={e => { e.preventDefault(); setOcrDragActive(true) }}
             onDragOver={e => { e.preventDefault(); setOcrDragActive(true) }}
@@ -446,9 +446,9 @@ export default function UploadLabsPage() {
               <div className="text-center py-4">
                 {/* Animated progress */}
                 <div className="relative inline-flex items-center justify-center w-16 h-16 mb-3">
-                  <div className="absolute inset-0 rounded-full border-4 border-emerald-200"></div>
-                  <div className="absolute inset-0 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin"></div>
-                  <span className="relative text-xs font-medium text-emerald-700">{ocrElapsedSec}s</span>
+                  <div className="absolute inset-0 rounded-full border-4 border-blue-200"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+                  <span className="relative text-xs font-medium text-blue-700 tabular-nums">{ocrElapsedSec}s</span>
                 </div>
                 <p className="text-sm font-medium text-gray-800">
                   AI 正在辨識 {ocrFileCount} 個檔案...
@@ -464,7 +464,7 @@ export default function UploadLabsPage() {
               </div>
             ) : (
               <div className="text-center">
-                <Camera className={`w-12 h-12 mx-auto mb-3 ${ocrDragActive ? 'text-emerald-600' : 'text-gray-400'}`} />
+                <Camera className={`w-12 h-12 mx-auto mb-3 ${ocrDragActive ? 'text-blue-600' : 'text-gray-400'}`} />
                 <p className="text-sm font-medium text-gray-800 mb-1">
                   {ocrDragActive ? '放開即可上傳' : '拖曳檔案到這裡 或點下方按鈕'}
                 </p>
@@ -485,7 +485,7 @@ export default function UploadLabsPage() {
                 />
                 <button
                   onClick={() => ocrInputRef.current?.click()}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded inline-flex items-center gap-1"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded inline-flex items-center gap-1"
                 >
                   <Upload className="w-4 h-4" /> 選擇檔案
                 </button>
@@ -500,7 +500,7 @@ export default function UploadLabsPage() {
         {/* 訊息 */}
         {/* 儲存成功 — 大 success card + 自動跳轉倒數 */}
         {saveSuccess && (
-          <div className="mb-4 bg-gradient-to-br from-emerald-50 to-blue-50 border border-emerald-300 rounded-2xl p-5">
+          <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
             <div className="text-center mb-4">
               <div className="text-5xl mb-2">✅</div>
               <div className="text-lg font-bold text-emerald-900 mb-1">
@@ -533,7 +533,7 @@ export default function UploadLabsPage() {
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={() => router.push(`/c/${clientId}/health/timeline`)}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-3 rounded-lg"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-3 rounded-lg"
               >
                 📊 立刻看健康趨勢儀表板
               </button>
@@ -566,8 +566,8 @@ export default function UploadLabsPage() {
 
         {/* 待確認清單 */}
         {rows.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
               <div>
                 <div className="font-medium text-gray-900">待確認資料（{rows.length} 筆）</div>
                 <div className="text-xs text-gray-500 mt-0.5">
@@ -577,7 +577,7 @@ export default function UploadLabsPage() {
               <button
                 onClick={saveAll}
                 disabled={saving}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded disabled:opacity-50"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded disabled:opacity-50"
               >
                 {saving ? '儲存中...' : `✅ 全部確認儲存（${rows.length}）`}
               </button>
@@ -597,7 +597,7 @@ export default function UploadLabsPage() {
                 </thead>
                 <tbody>
                   {rows.map(r => (
-                    <tr key={r.id} className="border-t border-gray-100">
+                    <tr key={r.id} className="border-t border-slate-200">
                       <td className="px-2 py-1 text-xs text-gray-500">
                         {r.source === 'manual' ? '✏️' : r.source === 'csv' ? '📊' : '📷'}
                       </td>
@@ -642,7 +642,7 @@ export default function UploadLabsPage() {
                                 className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                               />
                               {prev && (
-                                <div className="text-[10px] mt-0.5 flex items-center gap-1">
+                                <div className="text-[11px] mt-0.5 flex items-center gap-1">
                                   <span className="text-gray-500">上次: {prev.value}</span>
                                   {diffBadge && (
                                     <span className={`px-1 rounded ${diffBadge.color} font-medium`}>

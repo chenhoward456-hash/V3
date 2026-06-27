@@ -42,11 +42,11 @@ export default function AthleticReboundTimeline({
   const phases: TimelinePhase[] = buildPhases(strategy, gapHours, waterPerHour, bodyWeight)
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-5 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-          <Zap size={20} className="text-indigo-600" />
+        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+          <Zap size={20} className="text-slate-600" />
         </div>
         <div>
           <h2 className="text-base font-bold text-gray-900">超補償時間軸</h2>
@@ -57,21 +57,21 @@ export default function AthleticReboundTimeline({
       </div>
 
       {/* Strategy summary */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 mb-4">
+      <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-4">
         <div className="grid grid-cols-3 gap-3 text-center">
           <div>
-            <p className="text-[10px] text-indigo-500 mb-0.5">補水速率</p>
-            <p className="text-sm font-bold text-indigo-700">{waterPerHour} mL/hr</p>
+            <p className="text-[11px] text-slate-400 mb-0.5">補水速率</p>
+            <p className="text-sm font-bold text-slate-900 tabular-nums">{waterPerHour} mL/hr</p>
           </div>
           <div>
-            <p className="text-[10px] text-indigo-500 mb-0.5">碳水目標</p>
-            <p className="text-sm font-bold text-indigo-700">
+            <p className="text-[11px] text-slate-400 mb-0.5">碳水目標</p>
+            <p className="text-sm font-bold text-slate-900 tabular-nums">
               {strategy === 'short' ? `${(bodyWeight * 1.2).toFixed(0)}g/hr` : strategy === 'medium' ? `${(bodyWeight * 8).toFixed(0)}g` : `${(bodyWeight * 10).toFixed(0)}g`}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-indigo-500 mb-0.5">間距時間</p>
-            <p className="text-sm font-bold text-indigo-700">{gapHours}h</p>
+            <p className="text-[11px] text-slate-400 mb-0.5">間距時間</p>
+            <p className="text-sm font-bold text-slate-900 tabular-nums">{gapHours}h</p>
           </div>
         </div>
       </div>
@@ -79,13 +79,13 @@ export default function AthleticReboundTimeline({
       {/* Timeline */}
       <div className="relative">
         {/* Vertical line */}
-        <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-indigo-100" />
+        <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-slate-200" />
 
         <div className="space-y-3">
           {phases.map((phase, idx) => (
             <div key={idx} className="relative flex gap-3">
               {/* Node */}
-              <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${phase.color.iconBg} ${phase.highlight ? 'ring-2 ring-indigo-400 shadow-md' : ''}`}>
+              <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${phase.color.iconBg} ${phase.highlight ? 'ring-2 ring-blue-400 shadow-md' : ''}`}>
                 {phase.icon}
               </div>
 
@@ -93,7 +93,7 @@ export default function AthleticReboundTimeline({
               <div className={`flex-1 rounded-xl px-4 py-3 border ${phase.color.bg} ${phase.color.border}`}>
                 <div className="flex items-center justify-between mb-1.5">
                   <p className={`text-xs font-bold ${phase.color.text}`}>{phase.label}</p>
-                  <span className="text-[10px] text-gray-400">{phase.timeRange}</span>
+                  <span className="text-[11px] text-gray-400">{phase.timeRange}</span>
                 </div>
                 <div className="space-y-1">
                   {phase.items.map((item, i) => (
@@ -109,8 +109,8 @@ export default function AthleticReboundTimeline({
       </div>
 
       {/* References */}
-      <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5">
-        <p className="text-[10px] text-gray-500 leading-relaxed">
+      <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">
+        <p className="text-[11px] text-gray-500 leading-relaxed">
           參考文獻：Reale et al. 2017（格鬥運動快速減重恢復）、Artioli et al. 2016（格鬥運動體重管理）、Thomas et al. 2016（ACSM 運動營養）。此計畫僅供參考，請在教練監督下執行。
         </p>
       </div>
@@ -124,10 +124,10 @@ function buildPhases(
   waterPerHour: number,
   bodyWeight: number,
 ): TimelinePhase[] {
-  const droplets = <Droplets size={18} className="text-blue-600" />
-  const utensils = <Utensils size={18} className="text-orange-600" />
-  const zap = <Zap size={18} className="text-indigo-600" />
-  const trophy = <Trophy size={18} className="text-amber-600" />
+  const droplets = <Droplets size={18} className="text-slate-600" />
+  const utensils = <Utensils size={18} className="text-slate-600" />
+  const zap = <Zap size={18} className="text-slate-600" />
+  const trophy = <Trophy size={18} className="text-slate-600" />
 
   if (strategy === 'short') {
     // < 6 hours: liquid carbs only, aggressive rehydration
@@ -143,7 +143,7 @@ function buildPhases(
           `液態碳水：${(bodyWeight * 1.2).toFixed(0)}g/小時（運動飲料、果汁、蜂蜜水）`,
           '避免固體食物 — 消化時間不夠',
         ],
-        color: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', iconBg: 'bg-blue-100' },
+        color: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', iconBg: 'bg-slate-100' },
       },
       {
         label: '持續補充',
@@ -154,7 +154,7 @@ function buildPhases(
           '持續攝取液態碳水（稀釋運動飲料）',
           '監測排尿：目標淺黃色',
         ],
-        color: { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', iconBg: 'bg-cyan-100' },
+        color: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', iconBg: 'bg-slate-100' },
       },
       {
         label: '比賽',
@@ -164,7 +164,7 @@ function buildPhases(
           '賽前 30 分鐘：最後一口水 + 少量高 GI 碳水',
           `目標恢復體重 ${(bodyWeight * 0.02).toFixed(1)}-${(bodyWeight * 0.04).toFixed(1)}kg（部分恢復即可）`,
         ],
-        color: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', iconBg: 'bg-amber-100' },
+        color: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', iconBg: 'bg-slate-100' },
       },
     ]
   }
@@ -182,7 +182,7 @@ function buildPhases(
           '電解質飲料（鈉 500-700mg/L、鉀 200mg/L）',
           '第一餐：液態碳水 + 電解質（果汁、運動飲料）',
         ],
-        color: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', iconBg: 'bg-blue-100' },
+        color: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', iconBg: 'bg-slate-100' },
       },
       {
         label: '結構化進食',
@@ -194,7 +194,7 @@ function buildPhases(
           '蛋白質：1.5-2.0 g/kg（雞胸、蛋白）',
           '低脂（< 0.5g/kg）、低纖（< 10g）— 加速消化',
         ],
-        color: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', iconBg: 'bg-orange-100' },
+        color: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', iconBg: 'bg-slate-100' },
       },
       {
         label: '持續補充 + 休息',
@@ -205,7 +205,7 @@ function buildPhases(
           '補水速率降至 300-400 mL/小時',
           '儘量休息和睡眠',
         ],
-        color: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', iconBg: 'bg-indigo-100' },
+        color: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', iconBg: 'bg-slate-100' },
       },
       {
         label: '賽前準備',
@@ -216,7 +216,7 @@ function buildPhases(
           '賽前 1 小時：少量高 GI 碳水 + 200mg 咖啡因（可選）',
           `目標恢復體重 ${(bodyWeight * 0.04).toFixed(1)}-${(bodyWeight * 0.06).toFixed(1)}kg`,
         ],
-        color: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', iconBg: 'bg-amber-100' },
+        color: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', iconBg: 'bg-slate-100' },
       },
     ]
   }
@@ -246,7 +246,7 @@ function buildPhases(
         '脂肪最低（< 0.5g/kg）— 加速胃排空',
         '鈉攝取 3000mg — 協助糖原+水分超補（SGLT-1 協同運輸）',
       ],
-      color: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', iconBg: 'bg-orange-100' },
+      color: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', iconBg: 'bg-slate-100' },
     },
     {
       label: '休息與恢復',
@@ -258,7 +258,7 @@ function buildPhases(
         '充分睡眠 — 最少 7-8 小時',
         '監測體重恢復進度',
       ],
-      color: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', iconBg: 'bg-indigo-100' },
+      color: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', iconBg: 'bg-slate-100' },
     },
     {
       label: '賽前準備',

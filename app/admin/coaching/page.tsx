@@ -143,11 +143,11 @@ export default function WeeklyCoachingPage() {
                   />
                   <span className="font-semibold text-slate-900">{d.name}</span>
                   {d.mode === 'accountability'
-                    ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">問責召回</span>
-                    : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">數據調整</span>}
-                  {d.needsCoachReview && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">需你看</span>}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${d.hasPush ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasPush ? '已開 Web 推播' : '未開 Web 推播'}>🌐{d.hasPush ? '' : '✗'}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${d.hasLine ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasLine ? '有綁 LINE' : '沒綁 LINE'}>💬{d.hasLine ? '' : '✗'}</span>
+                    ? <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">問責召回</span>
+                    : <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">數據調整</span>}
+                  {d.needsCoachReview && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">需你看</span>}
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${d.hasPush ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasPush ? '已開 Web 推播' : '未開 Web 推播'}>🌐{d.hasPush ? '' : '✗'}</span>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${d.hasLine ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasLine ? '有綁 LINE' : '沒綁 LINE'}>💬{d.hasLine ? '' : '✗'}</span>
                 </div>
                 <a href={`/admin/clients/${d.clientId}/overview`} className="text-xs text-blue-600 hover:text-blue-700 shrink-0">學員 →</a>
               </div>

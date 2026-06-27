@@ -81,7 +81,7 @@ export default function ArchivedSupplementsList({ clientUniqueCode, refreshKey }
 
   if (loading && items.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6">
         <p className="text-sm text-gray-400">載入過去 protocol...</p>
       </div>
     )
@@ -92,7 +92,7 @@ export default function ArchivedSupplementsList({ clientUniqueCode, refreshKey }
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-6">
       <button
         onClick={() => setExpanded(v => !v)}
         className="w-full flex items-center justify-between text-left"
@@ -113,13 +113,13 @@ export default function ArchivedSupplementsList({ clientUniqueCode, refreshKey }
           {items.map(s => {
             const replacedByName = findReplacement(s.replaced_by_id)
             return (
-              <div key={s.id} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+              <div key={s.id} className="border border-slate-200 rounded-xl p-3 bg-slate-50">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="font-medium text-gray-900">{s.name}</div>
                     <div className="text-xs text-gray-600">
                       {s.dosage} · {s.timing}
-                      {s.mode_context && <span className="ml-2 text-indigo-600">mode: {s.mode_context}</span>}
+                      {s.mode_context && <span className="ml-2 text-slate-600">mode: {s.mode_context}</span>}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
                       期間：{s.started_at || '—'} → {s.archived_at || '—'}
@@ -135,7 +135,7 @@ export default function ArchivedSupplementsList({ clientUniqueCode, refreshKey }
                       </div>
                     )}
                     {replacedByName && (
-                      <div className="mt-1 text-xs text-indigo-700">
+                      <div className="mt-1 text-xs text-slate-600">
                         ↪ 被「{replacedByName}」取代
                       </div>
                     )}
@@ -143,7 +143,7 @@ export default function ArchivedSupplementsList({ clientUniqueCode, refreshKey }
                   <button
                     onClick={() => restore(s.id)}
                     disabled={restoring === s.id}
-                    className="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-white disabled:opacity-50"
+                    className="text-xs px-2 py-1 border border-slate-300 rounded-lg hover:bg-white disabled:opacity-50"
                   >
                     {restoring === s.id ? '還原中...' : '還原'}
                   </button>

@@ -244,19 +244,19 @@ export default function ProgressJourney({
             <div key={m.label} className={`${bgColor} rounded-2xl p-3`}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-gray-500">{m.emoji} {m.label}</span>
-                <span className={`text-[10px] font-bold ${trendColor}`}>
+                <span className={`text-[11px] font-bold ${trendColor}`}>
                   {trendIcon} {m.change}
                 </span>
               </div>
               <p className="text-lg font-bold text-gray-900">{m.current}</p>
-              <p className="text-[10px] text-gray-400">上週 {m.previous}</p>
+              <p className="text-[11px] text-gray-400">上週 {m.previous}</p>
             </div>
           )
         })}
       </div>
 
       {/* Week comparison label */}
-      <p className="text-[9px] text-gray-400 mt-2 text-center">
+      <p className="text-[11px] text-gray-400 mt-2 text-center">
         本週 vs 上週比較
       </p>
     </div>

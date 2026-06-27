@@ -90,7 +90,7 @@ export default function CutHealthCard({ bodyData, wellness, currentWeight }: Cut
   const styles = {
     good: { box: 'border-emerald-200', pill: 'bg-emerald-100 text-emerald-700', emoji: '🟢' },
     watch: { box: 'border-amber-200', pill: 'bg-amber-100 text-amber-700', emoji: '🟡' },
-    risk: { box: 'border-red-200', pill: 'bg-red-100 text-red-700', emoji: '🔴' },
+    risk: { box: 'border-rose-200', pill: 'bg-rose-100 text-rose-700', emoji: '🔴' },
   }[level]
 
   const Chip = ({ ok, warn, label }: { ok: boolean; warn: boolean; label: string }) => (

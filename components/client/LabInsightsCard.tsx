@@ -41,7 +41,7 @@ export default function LabInsightsCard({ labResults, gender, bodyFatPct }: LabI
         <span className="text-2xl">🔬</span>
         <div>
           <h2 className="text-lg font-bold text-gray-900">血檢深度分析</h2>
-          <p className="text-[10px] text-gray-400">交叉比對多項指標，偵測系統性風險與追蹤改善趨勢</p>
+          <p className="text-[11px] text-gray-400">交叉比對多項指標，偵測系統性風險與追蹤改善趨勢</p>
         </div>
       </div>
 
@@ -105,13 +105,13 @@ function CrossPatternItem({ pattern }: { pattern: LabCrossAnalysis }) {
             <div>
               <div className="flex items-center gap-1.5">
                 <p className={`text-sm font-bold ${titleColor}`}>{pattern.title}</p>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+                <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-bold ${
                   pattern.severity === 'critical' ? 'bg-red-200 text-red-800' :
                   pattern.severity === 'high' ? 'bg-red-100 text-red-700' :
                   'bg-amber-100 text-amber-700'
                 }`}>{severityLabel}</span>
               </div>
-              <p className="text-[10px] text-gray-500 mt-0.5">
+              <p className="text-[11px] text-gray-500 mt-0.5">
                 {pattern.triggeredMarkers.map(m => m.name).join('、')}
               </p>
             </div>
@@ -127,7 +127,7 @@ function CrossPatternItem({ pattern }: { pattern: LabCrossAnalysis }) {
           {/* 觸發指標 */}
           <div className="flex flex-wrap gap-1.5">
             {pattern.triggeredMarkers.map((m, i) => (
-              <span key={i} className="text-[10px] bg-white bg-opacity-70 text-gray-700 px-2 py-0.5 rounded-full border border-gray-200">
+              <span key={i} className="text-[11px] bg-white bg-opacity-70 text-gray-700 px-2 py-0.5 rounded-full border border-gray-200">
                 {m.name} {m.value} {m.unit}
               </span>
             ))}
@@ -135,7 +135,7 @@ function CrossPatternItem({ pattern }: { pattern: LabCrossAnalysis }) {
 
           {/* 建議行動 */}
           <div>
-            <p className="text-[10px] font-bold text-gray-700 mb-1">📋 建議行動</p>
+            <p className="text-[11px] font-bold text-gray-700 mb-1">📋 建議行動</p>
             <ul className="space-y-1">
               {pattern.actionItems.map((item, i) => (
                 <li key={i} className="text-[11px] text-gray-700 flex gap-1">
@@ -149,10 +149,10 @@ function CrossPatternItem({ pattern }: { pattern: LabCrossAnalysis }) {
           {/* 文獻 */}
           {pattern.references.length > 0 && (
             <div className="border-t border-gray-200 pt-2">
-              <p className="text-[10px] font-bold text-gray-400 mb-1">📚 文獻依據</p>
+              <p className="text-[11px] font-bold text-gray-400 mb-1">📚 文獻依據</p>
               <ul className="space-y-0.5">
                 {pattern.references.map((ref, i) => (
-                  <li key={i} className="text-[9px] text-gray-400">{ref}</li>
+                  <li key={i} className="text-[11px] text-gray-400">{ref}</li>
                 ))}
               </ul>
             </div>
@@ -185,7 +185,7 @@ function ChangeReportSection({ reports }: { reports: LabChangeReport[] }) {
                 </span>
                 <div>
                   <p className="text-[11px] font-bold text-gray-800">{r.testName}</p>
-                  <p className="text-[10px] text-gray-500">
+                  <p className="text-[11px] text-gray-500">
                     {r.previousValue} → {r.currentValue} {r.unit}
                   </p>
                 </div>
@@ -198,19 +198,19 @@ function ChangeReportSection({ reports }: { reports: LabChangeReport[] }) {
                 }`}>
                   {r.changeAbsolute > 0 ? '+' : ''}{r.changeAbsolute} {r.unit}
                 </p>
-                <p className="text-[9px] text-gray-400">
+                <p className="text-[11px] text-gray-400">
                   {r.previousDate} → {r.currentDate}
                 </p>
               </div>
             </div>
-            <p className="text-[10px] text-gray-600 mt-1">{r.interpretation}</p>
+            <p className="text-[11px] text-gray-600 mt-1">{r.interpretation}</p>
           </div>
         ))}
       </div>
       {reports.length > 5 && (
         <button
           onClick={() => setShowAll(!showAll)}
-          className="text-[10px] text-blue-600 mt-2 underline"
+          className="text-[11px] text-blue-600 mt-2 underline"
         >
           {showAll ? '收起' : `查看全部 ${reports.length} 項`}
         </button>
@@ -224,8 +224,8 @@ function OptimizationSection({ tips }: { tips: LabOptimizationTip[] }) {
   return (
     <div>
       <p className="text-xs font-bold text-gray-700 mb-2">🎯 正常範圍內的優化空間</p>
-      <p className="text-[10px] text-gray-400 mb-3">以下指標在正常範圍內，但尚未達到最佳區間，可進一步優化</p>
-      <p className="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-3">
+      <p className="text-[11px] text-gray-400 mb-3">以下指標在正常範圍內，但尚未達到最佳區間，可進一步優化</p>
+      <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-3">
         ⚠️ 補品建議僅供參考，不構成醫療建議。使用前請諮詢醫師或營養師，特別是正在服藥者。
       </p>
       <div className="space-y-3">
@@ -249,9 +249,9 @@ function OptimizationTipItem({ tip }: { tip: LabOptimizationTip }) {
             <div>
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-bold text-blue-700">{tip.title}</p>
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-blue-100 text-blue-700">可優化</span>
+                <span className="text-[11px] px-1.5 py-0.5 rounded-full font-bold bg-blue-100 text-blue-700">可優化</span>
               </div>
-              <p className="text-[10px] text-gray-500 mt-0.5">
+              <p className="text-[11px] text-gray-500 mt-0.5">
                 目前 {tip.currentValue} {tip.unit}｜最佳 {tip.optimalRange}
               </p>
             </div>
@@ -262,14 +262,14 @@ function OptimizationTipItem({ tip }: { tip: LabOptimizationTip }) {
 
       {expanded && (
         <div className="mt-3 space-y-3">
-          <div className="flex items-center gap-2 text-[10px] text-gray-500">
+          <div className="flex items-center gap-2 text-[11px] text-gray-500">
             <span className="bg-white px-2 py-0.5 rounded-full border border-gray-200">正常範圍：{tip.currentRange}</span>
             <span className="bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 text-blue-700">最佳目標：{tip.optimalRange}</span>
           </div>
 
           {/* 優化建議 */}
           <div>
-            <p className="text-[10px] font-bold text-gray-700 mb-1">💡 優化建議</p>
+            <p className="text-[11px] font-bold text-gray-700 mb-1">💡 優化建議</p>
             <ul className="space-y-1">
               {tip.tips.map((item, i) => (
                 <li key={i} className="text-[11px] text-gray-700 flex gap-1">
@@ -283,18 +283,18 @@ function OptimizationTipItem({ tip }: { tip: LabOptimizationTip }) {
           {/* 補品建議 */}
           {tip.supplements && tip.supplements.length > 0 && (
             <div>
-              <p className="text-[10px] font-bold text-gray-700 mb-1">💊 補品建議</p>
+              <p className="text-[11px] font-bold text-gray-700 mb-1">💊 補品建議</p>
               <div className="space-y-1.5">
                 {tip.supplements.map((s, i) => (
                   <div key={i} className="bg-white bg-opacity-70 border border-blue-100 rounded-xl p-2.5">
                     <div className="flex items-start justify-between">
                       <p className="text-[11px] font-bold text-blue-800">{s.name}</p>
                     </div>
-                    <p className="text-[10px] text-gray-600 mt-0.5">
+                    <p className="text-[11px] text-gray-600 mt-0.5">
                       {s.dosage}{s.timing ? ` · ${s.timing}` : ''}
                     </p>
                     {s.note && (
-                      <p className="text-[9px] text-gray-400 mt-0.5">{s.note}</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">{s.note}</p>
                     )}
                   </div>
                 ))}
@@ -305,10 +305,10 @@ function OptimizationTipItem({ tip }: { tip: LabOptimizationTip }) {
           {/* 文獻 */}
           {tip.references.length > 0 && (
             <div className="border-t border-blue-100 pt-2">
-              <p className="text-[10px] font-bold text-gray-400 mb-1">📚 文獻依據</p>
+              <p className="text-[11px] font-bold text-gray-400 mb-1">📚 文獻依據</p>
               <ul className="space-y-0.5">
                 {tip.references.map((ref, i) => (
-                  <li key={i} className="text-[9px] text-gray-400">{ref}</li>
+                  <li key={i} className="text-[11px] text-gray-400">{ref}</li>
                 ))}
               </ul>
             </div>
@@ -336,7 +336,7 @@ function RetestReminderSection({ reminders }: { reminders: LabRetestReminder[] }
                   <span className="text-sm">{isOverdue ? '🔴' : '🔵'}</span>
                   <div>
                     <p className="text-[11px] font-bold text-gray-800">{r.testName}</p>
-                    <p className="text-[10px] text-gray-500">
+                    <p className="text-[11px] text-gray-500">
                       上次：{r.lastValue} {r.unit}（{r.lastDate}）
                     </p>
                   </div>
@@ -345,12 +345,12 @@ function RetestReminderSection({ reminders }: { reminders: LabRetestReminder[] }
                   <p className={`text-[11px] font-bold ${isOverdue ? 'text-red-700' : 'text-blue-700'}`}>
                     {isOverdue ? '已逾期' : `建議 ${r.suggestedRetestDate}`}
                   </p>
-                  <p className="text-[9px] text-gray-400">
+                  <p className="text-[11px] text-gray-400">
                     間隔 {r.suggestedRetestWeeks} 週
                   </p>
                 </div>
               </div>
-              <p className="text-[10px] text-gray-600 mt-1">{r.reason}</p>
+              <p className="text-[11px] text-gray-600 mt-1">{r.reason}</p>
             </div>
           )
         })}

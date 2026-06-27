@@ -993,7 +993,8 @@ describe('generateNutritionSuggestion', () => {
         targetWeight: null,
         targetDate: null,
       }))
-      expect(result.warnings.some(w => w.includes('閉經') || w.includes('90'))).toBe(true)
+      // 警告文字已配合醫療合規改寫（去掉「閉經」臨床字、顯示實際天數），改驗 RED-S/經期語意
+      expect(result.warnings.some(w => w.includes('RED-S') || w.includes('經期') || w.includes('月經'))).toBe(true)
     })
 
     it('should warn about amenorrhea when period date is 45-90 days ago', () => {

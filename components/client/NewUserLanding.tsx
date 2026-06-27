@@ -91,8 +91,8 @@ export default function NewUserLanding({
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
       {/* Hero — 一個動作就好 */}
-      <div className="bg-zinc-900 rounded-3xl p-6 text-white">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-emerald-400 font-semibold">Day 1 · Start your streak</p>
+      <div className="bg-zinc-900 rounded-2xl p-5 text-white">
+        <p className="text-[11px] uppercase tracking-[0.25em] text-emerald-400 font-semibold">Day 1 · Start your streak</p>
         <h1 className="text-5xl font-black tracking-tight mt-3 leading-[1.05]">
           量今天<br />的體重。
         </h1>
@@ -110,7 +110,7 @@ export default function NewUserLanding({
       </div>
 
       {/* 體重輸入 */}
-      <div className="bg-white rounded-2xl shadow-sm p-5">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5">
         {submitted ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3 text-emerald-700">
@@ -130,7 +130,7 @@ export default function NewUserLanding({
           <form onSubmit={handleSubmit} className="space-y-3">
             <label className="block">
               <span className="text-sm font-semibold text-gray-900">⚖️ 今天的體重 (kg)</span>
-              <p className="text-[10px] text-gray-500 mt-0.5">早上起床、上完廁所、空腹量最準</p>
+              <p className="text-[11px] text-gray-500 mt-0.5">早上起床、上完廁所、空腹量最準</p>
               <input
                 type="number"
                 step="0.1"
@@ -138,11 +138,11 @@ export default function NewUserLanding({
                 placeholder="例如 73.5"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
-                className="mt-2 w-full px-4 py-3 text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                className="mt-2 w-full px-4 py-3 text-2xl font-bold border border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
                 autoFocus
               />
             </label>
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && <p className="text-xs text-rose-600">{error}</p>}
             <button
               type="submit"
               disabled={submitting || !weight}
@@ -155,52 +155,52 @@ export default function NewUserLanding({
       </div>
 
       {/* 接下來會發生什麼 */}
-      <div className="bg-white rounded-2xl shadow-sm p-5">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5">
         <p className="text-sm font-semibold text-gray-900 mb-3">📅 接下來會發生什麼</p>
         <div className="space-y-2.5 text-xs text-gray-600">
           <div className="flex gap-2 items-start">
-            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">1</span>
+            <span className="bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">1</span>
             <span><b className="text-gray-800">今天</b>：先打第一筆體重，認識介面。其他先別管。</span>
           </div>
           <div className="flex gap-2 items-start">
-            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">2</span>
+            <span className="bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">2</span>
             <span><b className="text-gray-800">第 3 天</b>：解鎖飲食記錄。看你想不想加。</span>
           </div>
           <div className="flex gap-2 items-start">
-            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">3</span>
+            <span className="bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">3</span>
             <span><b className="text-gray-800">第 7 天</b>：你會看到體重趨勢線。第一次數據說話。</span>
           </div>
           <div className="flex gap-2 items-start">
-            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">4</span>
+            <span className="bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">4</span>
             <span><b className="text-gray-800">第 14 天</b>：完整儀表板解鎖，週平均 + Howard 解讀句。</span>
           </div>
         </div>
-        <p className="text-[10px] text-gray-400 mt-4">不想等？下方可以直接顯示完整版。</p>
+        <p className="text-[11px] text-gray-400 mt-4">不想等？下方可以直接顯示完整版。</p>
       </div>
 
       {/* 想看完整版 escape hatch */}
       <button
         onClick={unlockFullDashboard}
-        className="w-full bg-white border-2 border-dashed border-gray-300 hover:border-indigo-300 rounded-2xl p-4 text-left flex items-center justify-between gap-3 group transition-colors"
+        className="w-full bg-white border border-dashed border-gray-300 hover:border-blue-300 rounded-2xl p-4 text-left flex items-center justify-between gap-3 group transition-colors"
       >
         <div>
           <p className="text-sm font-semibold text-gray-800">我已經熟悉這類系統，給我完整版</p>
-          <p className="text-[10px] text-gray-500 mt-1">解鎖全部功能：飲食、訓練、補品、感受、AI 分析</p>
+          <p className="text-[11px] text-gray-500 mt-1">解鎖全部功能：飲食、訓練、補品、感受、AI 分析</p>
         </div>
-        <ChevronRight size={20} className="text-gray-400 group-hover:text-indigo-500 flex-shrink-0" />
+        <ChevronRight size={20} className="text-gray-400 group-hover:text-blue-500 flex-shrink-0" />
       </button>
 
       {/* Help + LINE 提醒 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Link href={helpUrl} className="bg-white rounded-2xl shadow-sm p-4 hover:shadow-md transition-shadow">
+        <Link href={helpUrl} className="bg-white border border-slate-200 rounded-2xl p-5 transition-colors">
           <p className="text-2xl mb-1">📖</p>
           <p className="text-sm font-semibold text-gray-800">完整使用說明</p>
-          <p className="text-[10px] text-gray-500 mt-1">5 分鐘讀完</p>
+          <p className="text-[11px] text-gray-500 mt-1">5 分鐘讀完</p>
         </Link>
         <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
           <p className="text-2xl mb-1">💬</p>
           <p className="text-sm font-semibold text-emerald-900">{client.has_line_binding ? 'LINE 已綁定 ✓' : 'LINE 還沒綁？'}</p>
-          <p className="text-[10px] text-emerald-700 mt-1">{client.has_line_binding ? '可直接傳體重數字記錄' : '綁了就能用 LINE 快速回報體重'}</p>
+          <p className="text-[11px] text-emerald-700 mt-1">{client.has_line_binding ? '可直接傳體重數字記錄' : '綁了就能用 LINE 快速回報體重'}</p>
         </div>
       </div>
     </div>

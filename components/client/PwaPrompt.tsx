@@ -39,7 +39,7 @@ export default function PwaPrompt() {
   if (!show) return null
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 mb-3 relative">
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 relative">
       <button
         onClick={dismiss}
         className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
@@ -109,7 +109,7 @@ export default function PwaPrompt() {
 function Step({ number, icon, children }: { number: number; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 text-xs text-gray-700">
-      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-[10px]">
+      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-[11px]">
         {number}
       </span>
       {icon && <span className="text-gray-400 flex-shrink-0">{icon}</span>}

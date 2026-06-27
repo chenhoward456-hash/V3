@@ -46,7 +46,7 @@ function CloseIcon() {
 function SparkleIcon() {
   return (
     <svg
-      className="w-5 h-5 text-amber-400"
+      className="w-5 h-5 text-slate-400"
       viewBox="0 0 24 24"
       fill="currentColor"
     >
@@ -75,7 +75,7 @@ function ChartIcon() {
 function TrophyIcon() {
   return (
     <svg
-      className="w-5 h-5 text-yellow-500"
+      className="w-5 h-5 text-slate-400"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -96,7 +96,7 @@ function TrophyIcon() {
 function LockOpenIcon() {
   return (
     <svg
-      className="w-5 h-5 text-indigo-400"
+      className="w-5 h-5 text-slate-400"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -226,9 +226,9 @@ export default function UpgradeTrigger({
       role="complementary"
       aria-label="升級提示"
     >
-      <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-black/8">
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
         {/* Decorative gradient bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600" />
 
         {/* Close button */}
         <button
@@ -244,7 +244,7 @@ export default function UpgradeTrigger({
           <div className="flex items-start gap-3">
             {/* Icon */}
             <div className="shrink-0 mt-0.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center">
                 <TriggerIcon type={trigger.type} />
               </div>
             </div>
@@ -265,7 +265,7 @@ export default function UpgradeTrigger({
             <Link
               href={trigger.link}
               onClick={handleCtaClick}
-              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 bg-blue-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-all"
             >
               {trigger.cta}
             </Link>

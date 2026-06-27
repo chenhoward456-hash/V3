@@ -16,12 +16,12 @@ export default function LabNutritionAdviceCard({ labResults, gender, goalType }:
   if (advice.length === 0) return null
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-2xl">🩸</span>
         <div>
           <h2 className="text-lg font-bold text-gray-900">血檢飲食建議</h2>
-          <p className="text-[10px] text-gray-400">根據你的血檢結果，系統自動產出的飲食調整方案</p>
+          <p className="text-[11px] text-gray-400">根據你的血檢結果，系統自動產出的飲食調整方案</p>
         </div>
       </div>
       <div className="space-y-3">
@@ -29,7 +29,7 @@ export default function LabNutritionAdviceCard({ labResults, gender, goalType }:
           <AdviceItem key={i} advice={item} />
         ))}
       </div>
-      <p className="text-[10px] text-gray-400 mt-4 leading-snug">
+      <p className="text-[11px] text-gray-400 mt-4 leading-snug">
         ⚠️ 本卡片為依血檢數據的教練飲食追蹤建議，不構成醫療診斷或處方；數值偏離參考範圍請諮詢家醫科或整合醫學醫師。
       </p>
     </div>
@@ -60,7 +60,7 @@ function AdviceItem({ advice }: { advice: LabNutritionAdvice }) {
             <span className="text-lg">{advice.icon}</span>
             <div>
               <p className={`text-sm font-bold ${textColor}`}>{degradeToSafe(advice.title).text}</p>
-              <p className="text-[10px] text-gray-500">
+              <p className="text-[11px] text-gray-500">
                 {advice.labMarker} {advice.currentValue}{advice.unit}（目標：{advice.targetRange}）
               </p>
             </div>
@@ -72,7 +72,7 @@ function AdviceItem({ advice }: { advice: LabNutritionAdvice }) {
       {expanded && (
         <div className="mt-3 space-y-3">
           <div>
-            <p className="text-[10px] font-bold text-gray-700 mb-1">📋 飲食調整</p>
+            <p className="text-[11px] font-bold text-gray-700 mb-1">📋 飲食調整</p>
             <ul className="space-y-1">
               {advice.dietaryChanges.map((change, i) => (
                 <li key={i} className="text-[11px] text-gray-700 flex gap-1">
@@ -85,10 +85,10 @@ function AdviceItem({ advice }: { advice: LabNutritionAdvice }) {
 
           {advice.foodsToIncrease.length > 0 && (
             <div>
-              <p className="text-[10px] font-bold text-green-700 mb-1">✅ 建議多吃</p>
+              <p className="text-[11px] font-bold text-green-700 mb-1">✅ 建議多吃</p>
               <div className="flex flex-wrap gap-1.5">
                 {advice.foodsToIncrease.map((food, i) => (
-                  <span key={i} className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                  <span key={i} className="text-[11px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                     {food}
                   </span>
                 ))}
@@ -98,10 +98,10 @@ function AdviceItem({ advice }: { advice: LabNutritionAdvice }) {
 
           {advice.foodsToReduce.length > 0 && (
             <div>
-              <p className="text-[10px] font-bold text-red-700 mb-1">⚠️ 建議減少</p>
+              <p className="text-[11px] font-bold text-red-700 mb-1">⚠️ 建議減少</p>
               <div className="flex flex-wrap gap-1.5">
                 {advice.foodsToReduce.map((food, i) => (
-                  <span key={i} className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                  <span key={i} className="text-[11px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
                     {food}
                   </span>
                 ))}
@@ -111,26 +111,26 @@ function AdviceItem({ advice }: { advice: LabNutritionAdvice }) {
 
           {advice.macroAdjustment && (
             <div className="bg-white bg-opacity-70 rounded-xl p-2.5">
-              <p className="text-[10px] font-bold text-blue-700 mb-0.5">
+              <p className="text-[11px] font-bold text-blue-700 mb-0.5">
                 🔧 {advice.macroAdjustment.nutrient}調整
               </p>
-              <p className="text-[10px] text-blue-600">{advice.macroAdjustment.detail}</p>
+              <p className="text-[11px] text-blue-600">{advice.macroAdjustment.detail}</p>
             </div>
           )}
 
           {advice.caveat && (
             <div className="bg-gray-100 rounded-xl p-2.5">
-              <p className="text-[10px] font-bold text-gray-600 mb-0.5">⚠️ 判讀提醒</p>
-              <p className="text-[10px] text-gray-500">{degradeToSafe(advice.caveat).text}</p>
+              <p className="text-[11px] font-bold text-gray-600 mb-0.5">⚠️ 判讀提醒</p>
+              <p className="text-[11px] text-gray-500">{degradeToSafe(advice.caveat).text}</p>
             </div>
           )}
 
           {advice.references.length > 0 && (
             <div className="border-t border-gray-200 pt-2">
-              <p className="text-[10px] font-bold text-gray-400 mb-1">📚 文獻依據</p>
+              <p className="text-[11px] font-bold text-gray-400 mb-1">📚 文獻依據</p>
               <ul className="space-y-0.5">
                 {advice.references.map((ref, i) => (
-                  <li key={i} className="text-[9px] text-gray-400">{ref}</li>
+                  <li key={i} className="text-[11px] text-gray-400">{ref}</li>
                 ))}
               </ul>
             </div>

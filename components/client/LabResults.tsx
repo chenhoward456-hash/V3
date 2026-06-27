@@ -198,7 +198,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
 
   return (
     <>
-      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setIsExpanded(prev => !prev)}
@@ -224,7 +224,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
             {summary.attentionCount === 0 && summary.abnormalCount === 0 ? (
               <>
                 <span className="text-gray-300">·</span>
-                <span className="text-green-600 font-medium">全部正常</span>
+                <span className="text-emerald-600 font-medium">全部正常</span>
               </>
             ) : (
               <>
@@ -232,8 +232,8 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                   <>
                     <span className="text-gray-300">·</span>
                     <span className="flex items-center gap-1">
-                      <span className="inline-block w-2 h-2 rounded-full bg-yellow-500" />
-                      <span className="text-yellow-600 font-medium">{summary.attentionCount} 需注意</span>
+                      <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
+                      <span className="text-amber-600 font-medium">{summary.attentionCount} 需注意</span>
                     </span>
                   </>
                 )}
@@ -241,8 +241,8 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                   <>
                     <span className="text-gray-300">·</span>
                     <span className="flex items-center gap-1">
-                      <span className="inline-block w-2 h-2 rounded-full bg-red-500" />
-                      <span className="text-red-600 font-medium">{summary.abnormalCount} 異常</span>
+                      <span className="inline-block w-2 h-2 rounded-full bg-rose-500" />
+                      <span className="text-rose-600 font-medium">{summary.abnormalCount} 異常</span>
                     </span>
                   </>
                 )}
@@ -256,7 +256,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
           className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}
         >
           <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-4">
-            <p className="text-[10px] text-gray-500 leading-relaxed">
+            <p className="text-[11px] text-gray-500 leading-relaxed">
               此頁面僅供數據紀錄與趨勢追蹤，不構成醫療診斷或健康評估。數值判讀請以你的醫師意見為準。
             </p>
           </div>
@@ -270,14 +270,14 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                 const canOptimize = latest.status === 'normal' && !isOptimal
                 const optimalRange = canOptimize ? getOptimalRangeText(latest.test_name) : null
                 const statusColor = latest.status !== 'normal'
-                  ? (latest.status === 'attention' ? 'border-yellow-200 bg-yellow-50' : 'border-red-200 bg-red-50')
-                  : isOptimal ? 'border-green-200 bg-green-50' : 'border-blue-100 bg-blue-50'
+                  ? (latest.status === 'attention' ? 'border-amber-200 bg-amber-50' : 'border-rose-200 bg-rose-50')
+                  : isOptimal ? 'border-emerald-200 bg-emerald-50' : 'border-blue-100 bg-blue-50'
                 const dotColor = latest.status !== 'normal'
-                  ? (latest.status === 'attention' ? 'bg-yellow-500' : 'bg-red-500')
-                  : isOptimal ? 'bg-green-500' : 'bg-blue-500'
+                  ? (latest.status === 'attention' ? 'bg-amber-500' : 'bg-rose-500')
+                  : isOptimal ? 'bg-emerald-500' : 'bg-blue-500'
                 const lineColor = latest.status !== 'normal'
-                  ? (latest.status === 'attention' ? '#eab308' : '#ef4444')
-                  : isOptimal ? '#22c55e' : '#3b82f6'
+                  ? (latest.status === 'attention' ? '#f59e0b' : '#f43f5e')
+                  : isOptimal ? '#10b981' : '#3b82f6'
 
                 // 變化計算
                 let changeText = ''
@@ -295,20 +295,20 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                         {isCoachMode && (
                           <>
                             <button onClick={() => openModal(latest)} className="p-1 hover:bg-white/50 rounded"><Pencil size={14} className="text-gray-500" /></button>
-                            <button onClick={() => handleDelete(latest.id)} className="p-1 hover:bg-white/50 rounded"><Trash2 size={14} className="text-red-400" /></button>
+                            <button onClick={() => handleDelete(latest.id)} className="p-1 hover:bg-white/50 rounded"><Trash2 size={14} className="text-rose-400" /></button>
                           </>
                         )}
                         <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
                       </div>
                     </div>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-2xl font-bold text-gray-900 tabular-nums">
                       {latest.value} <span className="text-sm font-normal text-gray-500">{latest.unit}</span>
                       {latest.status !== 'normal' && (
                         <button
                           onClick={() => {
                             window.dispatchEvent(new CustomEvent('open-ai-chat', { detail: { prompt: `我的${latest.test_name}數值是 ${latest.value} ${latest.unit}，參考範圍是 ${latest.reference_range}，這代表什麼？我該怎麼做？` } }))
                           }}
-                          className="text-[10px] text-blue-500 hover:text-blue-700 font-medium ml-1"
+                          className="text-[11px] text-blue-500 hover:text-blue-700 font-medium ml-1"
                         >
                           問 AI →
                         </button>
@@ -330,7 +330,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
 
                     {/* 迷你趨勢圖 */}
                     {history.length >= 2 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200/50">
+                      <div className="mt-3 pt-3 border-t border-slate-200/50">
                         {changeText && <p className="text-xs text-gray-500 mb-1">{changeText}</p>}
                         <ResponsiveContainer width="100%" height={60}>
                           <LineChart data={history}>

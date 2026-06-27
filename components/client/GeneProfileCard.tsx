@@ -100,7 +100,7 @@ export default function GeneProfileCard({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       {/* Header - always visible */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -110,12 +110,12 @@ export default function GeneProfileCard({
           <span className="text-lg">🧬</span>
           <span className="font-semibold text-gray-900">基因檔案</span>
           {hasAnyGene && (
-            <span className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full">
+            <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
               已設定
             </span>
           )}
           {!hasAnyGene && (
-            <span className="text-xs bg-gray-50 text-gray-400 px-2 py-0.5 rounded-full">
+            <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
               未填寫
             </span>
           )}
@@ -126,7 +126,7 @@ export default function GeneProfileCard({
       {/* Active corrections summary (show even when collapsed if has corrections) */}
       {!expanded && activeCorrections.length > 0 && (
         <div className="px-4 pb-3 -mt-1">
-          <div className="text-xs text-purple-600 space-y-0.5">
+          <div className="text-xs text-slate-600 space-y-0.5">
             {activeCorrections.slice(0, 2).map((gc, i) => (
               <div key={i}>🧬 {gc.rule}</div>
             ))}
@@ -139,7 +139,7 @@ export default function GeneProfileCard({
 
       {/* Expanded content */}
       {expanded && (
-        <div className="px-4 pb-4 border-t border-gray-50">
+        <div className="px-4 pb-4 border-t border-slate-200">
           {!editing ? (
             // View mode
             <div className="pt-3 space-y-3">
@@ -154,10 +154,10 @@ export default function GeneProfileCard({
 
               {/* Genetic corrections display */}
               {activeCorrections.length > 0 && (
-                <div className="bg-purple-50 rounded-xl p-3 space-y-1.5">
-                  <div className="text-xs font-medium text-purple-700">系統已套用的基因修正：</div>
+                <div className="bg-slate-50 rounded-xl p-3 space-y-1.5">
+                  <div className="text-xs font-medium text-slate-900">系統已套用的基因修正：</div>
                   {activeCorrections.map((gc, i) => (
-                    <div key={i} className="text-xs text-purple-600">
+                    <div key={i} className="text-xs text-slate-600">
                       • {gc.adjustment}
                     </div>
                   ))}
@@ -166,7 +166,7 @@ export default function GeneProfileCard({
 
               <button
                 onClick={() => setEditing(true)}
-                className="w-full py-2 text-sm text-purple-600 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors"
+                className="w-full py-2 text-sm text-slate-600 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
               >
                 {hasAnyGene ? '修改基因資料' : '填寫基因檢測結果'}
               </button>
@@ -179,12 +179,12 @@ export default function GeneProfileCard({
                 <select
                   value={formMthfr}
                   onChange={(e) => setFormMthfr(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {MTHFR_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 {formMthfr && getRiskHint('mthfr', formMthfr) && (
-                  <p className="text-xs text-purple-500 mt-1">{getRiskHint('mthfr', formMthfr)}</p>
+                  <p className="text-xs text-slate-600 mt-1">{getRiskHint('mthfr', formMthfr)}</p>
                 )}
               </div>
 
@@ -193,12 +193,12 @@ export default function GeneProfileCard({
                 <select
                   value={formApoe}
                   onChange={(e) => setFormApoe(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {APOE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 {formApoe && getRiskHint('apoe', formApoe) && (
-                  <p className="text-xs text-purple-500 mt-1">{getRiskHint('apoe', formApoe)}</p>
+                  <p className="text-xs text-slate-600 mt-1">{getRiskHint('apoe', formApoe)}</p>
                 )}
               </div>
 
@@ -207,12 +207,12 @@ export default function GeneProfileCard({
                 <select
                   value={formSerotonin}
                   onChange={(e) => setFormSerotonin(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {SEROTONIN_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 {formSerotonin && getRiskHint('serotonin', formSerotonin) && (
-                  <p className="text-xs text-purple-500 mt-1">{getRiskHint('serotonin', formSerotonin)}</p>
+                  <p className="text-xs text-slate-600 mt-1">{getRiskHint('serotonin', formSerotonin)}</p>
                 )}
               </div>
 
@@ -224,7 +224,7 @@ export default function GeneProfileCard({
                   onChange={(e) => setFormNotes(e.target.value)}
                   placeholder="其他基因資訊..."
                   maxLength={500}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -244,7 +244,7 @@ export default function GeneProfileCard({
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 py-2 text-sm text-white bg-purple-600 rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50"
+                  className="flex-1 py-2 text-sm text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
                   {saving ? '儲存中...' : '儲存'}
                 </button>
@@ -272,10 +272,10 @@ function GeneRow({ label, value, options, gene }: {
     <div className="flex items-start justify-between py-1">
       <span className="text-xs text-gray-500 shrink-0">{label}</span>
       <div className="text-right">
-        <span className={`text-xs font-medium ${hasRisk ? 'text-purple-700' : value ? 'text-gray-700' : 'text-gray-400'}`}>
+        <span className={`text-xs font-medium ${hasRisk ? 'text-slate-900' : value ? 'text-gray-700' : 'text-gray-400'}`}>
           {displayLabel}
         </span>
-        {hint && <div className="text-[10px] text-purple-500 mt-0.5 max-w-[200px]">{hint}</div>}
+        {hint && <div className="text-[11px] text-slate-600 mt-0.5 max-w-[200px]">{hint}</div>}
       </div>
     </div>
   )

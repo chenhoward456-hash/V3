@@ -83,15 +83,15 @@ export default function ClientHeader({
       {/* 標題 + 頭像 */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
+          <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-lg shrink-0">
             {c.name.charAt(0)}
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900 leading-tight">{c.name}</h1>
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-              c.status === 'normal' ? 'bg-green-100 text-green-700'
-              : c.status === 'attention' ? 'bg-yellow-100 text-yellow-700'
-              : 'bg-red-100 text-red-700'
+              c.status === 'normal' ? 'bg-emerald-100 text-emerald-700'
+              : c.status === 'attention' ? 'bg-amber-100 text-amber-700'
+              : 'bg-rose-100 text-rose-700'
             }`}>
               {c.status === 'normal' ? '● 狀態良好' : '● 需要關注'}
             </span>
@@ -121,7 +121,7 @@ export default function ClientHeader({
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="text-sm font-medium text-gray-700">簡單模式</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">只顯示核心欄位</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">只顯示核心欄位</p>
                   </div>
                   <button
                     onClick={() => !isFree && onToggleFeature('simple_mode')}
@@ -136,7 +136,7 @@ export default function ClientHeader({
                 </div>
 
                 <div className="border-t border-gray-100 my-3" />
-                <p className="text-[10px] text-gray-400 mb-2">{isFree ? '免費版預設功能' : '不需要的功能可以關掉'}</p>
+                <p className="text-[11px] text-gray-400 mb-2">{isFree ? '免費版預設功能' : '不需要的功能可以關掉'}</p>
 
                 {/* 功能開關 */}
                 {([
@@ -156,8 +156,8 @@ export default function ClientHeader({
                     <div key={key} className="flex items-center justify-between py-1.5">
                       <span className="text-sm text-gray-700">
                         {icon} {label}
-                        {isLockedOn && <span className="text-[10px] text-gray-400 ml-1">預設</span>}
-                        {isLockedOff && <span className="text-[10px] text-gray-400 ml-1">🔒</span>}
+                        {isLockedOn && <span className="text-[11px] text-gray-400 ml-1">預設</span>}
+                        {isLockedOff && <span className="text-[11px] text-gray-400 ml-1">🔒</span>}
                       </span>
                       <button
                         onClick={() => {
@@ -186,7 +186,7 @@ export default function ClientHeader({
                 <div className="flex items-center justify-between py-1.5">
                   <div>
                     <p className="text-sm text-gray-700">📬 每週電子報</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">每週收到最新訓練與營養文章</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">每週收到最新訓練與營養文章</p>
                   </div>
                   <button
                     onClick={() => onToggleFeature('email_newsletter_opt_in')}
@@ -213,7 +213,7 @@ export default function ClientHeader({
                     ) : (
                       <div className="space-y-2">
                         <p className="text-xs text-red-600 font-medium">確定要取消嗎？</p>
-                        <p className="text-[10px] text-gray-500">
+                        <p className="text-[11px] text-gray-500">
                           取消後不再自動扣款{c.expires_at ? `，帳號可使用至 ${new Date(c.expires_at).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}` : ''}。所有數據會保留。
                         </p>
                         <div className="flex gap-2">
@@ -310,10 +310,10 @@ export default function ClientHeader({
 
       {/* 明日預覽 Banner */}
       {selectedDate > today && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl px-4 py-3 mb-3 flex items-center gap-2">
+        <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3 mb-3 flex items-center gap-2">
           <span className="text-base">🔮</span>
-          <p className="text-sm font-semibold text-indigo-700">明日預覽模式</p>
-          <p className="text-xs text-indigo-500 ml-auto">查看明天的 Peak Week 計畫</p>
+          <p className="text-sm font-semibold text-slate-900">明日預覽模式</p>
+          <p className="text-xs text-slate-600 ml-auto">查看明天的 Peak Week 計畫</p>
         </div>
       )}
 
@@ -321,8 +321,7 @@ export default function ClientHeader({
       {isCompetition && c.competition_date && (() => {
         const daysLeft = daysUntilDateTW(c.competition_date)
         const phase = c.prep_phase || 'off_season'
-        const urgencyColor = daysLeft <= 7 ? 'from-red-500 to-red-600' : daysLeft <= 14 ? 'from-amber-500 to-orange-500' : daysLeft <= 30 ? 'from-amber-400 to-yellow-500' : 'from-blue-500 to-blue-600'
-        const urgencyBg = daysLeft <= 7 ? 'bg-red-50 border-red-200' : daysLeft <= 14 ? 'bg-amber-50 border-amber-200' : daysLeft <= 30 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
+        const urgencyBg = daysLeft <= 7 ? 'bg-rose-50 border-rose-200' : daysLeft <= 14 ? 'bg-amber-50 border-amber-200' : daysLeft <= 30 ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'
         return (
           <div className={`${urgencyBg} border rounded-2xl p-4 mb-3`}>
             <div className="flex items-center justify-between">
@@ -331,7 +330,7 @@ export default function ClientHeader({
                   <span className="text-lg">🏆</span>
                   <button
                     onClick={() => setShowPhaseSelector(!showPhaseSelector)}
-                    className={`px-2 py-0.5 text-xs font-bold rounded-full text-white bg-gradient-to-r ${urgencyColor} flex items-center gap-1 transition-all active:scale-95`}
+                    className="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600 flex items-center gap-1 transition-all active:scale-95"
                   >
                     {PHASE_LABELS[phase] || phase}
                     <ChevronDown className={`w-3 h-3 transition-transform ${showPhaseSelector ? 'rotate-180' : ''}`} />
@@ -342,7 +341,7 @@ export default function ClientHeader({
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-3xl font-black text-gray-900">{Math.max(0, daysLeft)}</p>
+                <p className="text-3xl font-black text-gray-900 tabular-nums">{Math.max(0, daysLeft)}</p>
                 <p className="text-xs text-gray-500 font-medium">{daysLeft > 0 ? '天後比賽' : daysLeft === 0 ? '今天比賽！' : '已結束'}</p>
               </div>
             </div>

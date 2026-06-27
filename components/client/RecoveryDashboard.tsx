@@ -70,10 +70,10 @@ interface RecoveryDashboardProps {
 // ── 常數映射 ──
 
 const stateConfig = {
-  optimal: { label: '最佳狀態', color: 'text-green-600', bg: 'bg-green-500', ring: 'ring-green-200' },
+  optimal: { label: '最佳狀態', color: 'text-emerald-600', bg: 'bg-emerald-500', ring: 'ring-emerald-200' },
   good: { label: '狀態良好', color: 'text-blue-600', bg: 'bg-blue-500', ring: 'ring-blue-200' },
-  struggling: { label: '需要恢復', color: 'text-amber-600', bg: 'bg-amber-500', ring: 'ring-amber-200' },
-  critical: { label: '嚴重疲勞', color: 'text-red-600', bg: 'bg-red-500', ring: 'ring-red-200' },
+  struggling: { label: '需要恢復', color: 'text-amber-700', bg: 'bg-amber-500', ring: 'ring-amber-200' },
+  critical: { label: '嚴重疲勞', color: 'text-rose-600', bg: 'bg-rose-500', ring: 'ring-rose-200' },
 }
 
 const systemLabels: Record<string, { icon: string; name: string }> = {
@@ -85,23 +85,24 @@ const systemLabels: Record<string, { icon: string; name: string }> = {
 }
 
 const riskLevelConfig = {
-  low: { label: '低風險', color: 'text-green-600', bg: 'bg-green-50' },
-  moderate: { label: '中等風險', color: 'text-amber-600', bg: 'bg-amber-50' },
-  high: { label: '高風險', color: 'text-red-500', bg: 'bg-red-50' },
-  very_high: { label: '極高風險', color: 'text-red-700', bg: 'bg-red-100' },
+  low: { label: '低風險', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  moderate: { label: '中等風險', color: 'text-amber-700', bg: 'bg-amber-50' },
+  high: { label: '高風險', color: 'text-rose-600', bg: 'bg-rose-50' },
+  very_high: { label: '極高風險', color: 'text-rose-700', bg: 'bg-rose-100' },
 }
 
 const ansLabels = {
-  parasympathetic_dominant: { label: '副交感主導', icon: '😌', color: 'text-green-600' },
+  parasympathetic_dominant: { label: '副交感主導', icon: '😌', color: 'text-emerald-600' },
   balanced: { label: '平衡', icon: '⚖️', color: 'text-blue-600' },
-  sympathetic_dominant: { label: '交感主導', icon: '⚡', color: 'text-amber-600' },
-  unknown: { label: '數據不足', icon: '❓', color: 'text-gray-400' },
+  sympathetic_dominant: { label: '交感主導', icon: '⚡', color: 'text-amber-700' },
+  // 沒 HRV 就沒得算 → 講清楚是「缺穿戴數據」而非功能被拿掉（學員會誤以為刪掉了）
+  unknown: { label: '需手錶 HRV', icon: '⌚', color: 'text-gray-400' },
 }
 
 const trajectoryLabels = {
-  improving: { label: '改善中', icon: '📈', color: 'text-green-600' },
+  improving: { label: '改善中', icon: '📈', color: 'text-emerald-600' },
   stable: { label: '穩定', icon: '➡️', color: 'text-blue-600' },
-  declining: { label: '下滑中', icon: '📉', color: 'text-red-500' },
+  declining: { label: '下滑中', icon: '📉', color: 'text-rose-600' },
   unknown: { label: '數據不足', icon: '❓', color: 'text-gray-400' },
 }
 
@@ -187,11 +188,19 @@ export default function RecoveryDashboard({ clientId, recentWellness }: Recovery
     : data.score >= 50
     ? { emoji: '🟡', box: 'bg-amber-50 border-amber-200', text: 'text-amber-900', headline: '恢復普通 → 照練但別逞強', trainRx: '主項照常、先別追 PR；輔助組數收一點' }
     : data.score >= 30
-    ? { emoji: '🟠', box: 'bg-orange-50 border-orange-200', text: 'text-orange-900', headline: '恢復偏低 → 今天降量', trainRx: '主項降到 7-8 成重量、每項少 1-2 組' }
+    ? { emoji: '🟠', box: 'bg-amber-100 border-amber-300', text: 'text-amber-900', headline: '恢復偏低 → 今天降量', trainRx: '主項降到 7-8 成重量、每項少 1-2 組' }
     : { emoji: '🔴', box: 'bg-rose-50 border-rose-200', text: 'text-rose-900', headline: '恢復差 → 今天別硬上', trainRx: '改輕鬆有氧／活動度，或直接休一天' }
-  // 驅動原因：取分數最低系統的第一個 signal（已去醫療化）；恢復好(綠)就不囉嗦
-  const lowestSystem = Object.values(data.systems).sort((a, b) => a.score - b.score)[0]
-  const driverLine = data.score < 75 ? (lowestSystem?.signals?.[0] ?? null) : null
+  // 驅動原因：列出所有「在扣分」的系統(<65)的主因，最多兩條 → 讓綜合分數一眼說得通，
+  // 不只給一條最低的(會漏掉同樣在拉低分數的另一個系統，分數看起來莫名)。恢復好(綠)就不囉嗦。
+  const driverLine = data.score < 75
+    ? (Object.values(data.systems)
+        .filter(s => s.score < 65)
+        .sort((a, b) => a.score - b.score)
+        .map(s => s.signals?.[0])
+        .filter((s): s is string => !!s)
+        .slice(0, 2)
+        .join('；') || null)
+    : null
 
   // ── 7 天感受趨勢迷你圖：每天 (睡眠+精力+想練)/可得項 平均，看方向 ──
   const trend7 = (recentWellness ?? [])
@@ -206,12 +215,12 @@ export default function RecoveryDashboard({ clientId, recentWellness }: Recovery
     : 0
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       {/* 頂部：綜合分數 */}
       <div className="p-4 pb-3">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-medium text-gray-500">🔬 今天的恢復</p>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${config.color} ${config.ring} ring-1`}>
+          <p className="text-base font-semibold text-gray-900">🔬 今天的恢復</p>
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${config.color} ${config.ring} ring-1`}>
             {config.label}
           </span>
         </div>
@@ -229,14 +238,14 @@ export default function RecoveryDashboard({ clientId, recentWellness }: Recovery
           {/* 7 天感受趨勢迷你圖 */}
           {trend7.length >= 3 && (
             <div className="flex items-end gap-1 mt-2.5 pt-2.5 border-t border-black/5">
-              <span className="text-[10px] text-gray-400 mr-1 self-center">近 7 天</span>
+              <span className="text-[11px] text-gray-400 mr-1 self-center">近 7 天</span>
               {trend7.map((d, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center justify-end" style={{ height: 24 }} title={`${d.date.slice(5)}：${d.avg.toFixed(1)}/5`}>
                   <div className={`w-full rounded-sm ${d.avg >= 4 ? 'bg-emerald-400' : d.avg >= 3 ? 'bg-amber-400' : 'bg-rose-400'}`}
                     style={{ height: `${Math.max(10, (d.avg / 5) * 100)}%` }} />
                 </div>
               ))}
-              <span className={`text-[10px] ml-1 self-center font-medium ${trendDir > 0.3 ? 'text-emerald-600' : trendDir < -0.3 ? 'text-rose-600' : 'text-gray-400'}`}>
+              <span className={`text-[11px] ml-1 self-center font-medium ${trendDir > 0.3 ? 'text-emerald-600' : trendDir < -0.3 ? 'text-rose-600' : 'text-gray-400'}`}>
                 {trendDir > 0.3 ? '↗ 回升' : trendDir < -0.3 ? '↘ 下降' : '→ 持平'}
               </span>
             </div>
@@ -259,8 +268,8 @@ export default function RecoveryDashboard({ clientId, recentWellness }: Recovery
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-xl font-bold text-gray-900">{data.score}</span>
-              <span className="text-[9px] text-gray-400">/ 100</span>
-              <span className="text-[10px] text-gray-400">系統綜合評估</span>
+              <span className="text-[11px] text-gray-400">/ 100</span>
+              <span className="text-[11px] text-gray-400">系統綜合評估</span>
             </div>
           </div>
 
@@ -333,23 +342,23 @@ export default function RecoveryDashboard({ clientId, recentWellness }: Recovery
                   <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
                     {/* 安全區 0.8-1.3 綠色背景 */}
                     <div
-                      className="absolute inset-y-0 bg-green-100 rounded-full"
+                      className="absolute inset-y-0 bg-emerald-100 rounded-full"
                       style={{ left: `${(0.8 / 2) * 100}%`, width: `${((1.3 - 0.8) / 2) * 100}%` }}
                     />
                     {/* 當前值指標 */}
                     <div
                       className={`absolute top-0 w-2.5 h-3 rounded-full ${
                         data.overtrainingRisk.acwr >= 0.8 && data.overtrainingRisk.acwr <= 1.3
-                          ? 'bg-green-500' : data.overtrainingRisk.acwr > 1.5
-                          ? 'bg-red-500' : 'bg-amber-500'
+                          ? 'bg-emerald-500' : data.overtrainingRisk.acwr > 1.5
+                          ? 'bg-rose-500' : 'bg-amber-500'
                       }`}
                       style={{ left: `${Math.min((data.overtrainingRisk.acwr / 2) * 100, 98)}%` }}
                     />
                   </div>
                   <div className="flex justify-between mt-1">
-                    <span className="text-[10px] text-gray-400">0</span>
-                    <span className="text-[10px] text-green-500">安全區 0.8–1.3</span>
-                    <span className="text-[10px] text-gray-400">2.0</span>
+                    <span className="text-[11px] text-gray-400">0</span>
+                    <span className="text-[11px] text-emerald-600">安全區 0.8–1.3</span>
+                    <span className="text-[11px] text-gray-400">2.0</span>
                   </div>
                   <p className="text-xs text-gray-600 mt-1">
                     當前 ACWR: <span className="font-semibold">{data.overtrainingRisk.acwr.toFixed(2)}</span>
@@ -369,13 +378,13 @@ export default function RecoveryDashboard({ clientId, recentWellness }: Recovery
                   <div className="grid grid-cols-2 gap-2">
                     {data.autonomicBalance.hrvZScore !== null && (
                       <div className="bg-blue-50 rounded-lg p-2 text-center">
-                        <p className="text-[10px] text-blue-500">HRV</p>
+                        <p className="text-[11px] text-blue-500">HRV</p>
                         <p className={`text-sm font-bold ${
-                          data.autonomicBalance.hrvZScore >= 0 ? 'text-green-600' : 'text-red-500'
+                          data.autonomicBalance.hrvZScore >= 0 ? 'text-emerald-600' : 'text-rose-600'
                         }`}>
                           {data.autonomicBalance.hrvZScore > 0 ? '+' : ''}{data.autonomicBalance.hrvZScore.toFixed(1)}
                         </p>
-                        <p className="text-[10px] text-gray-400">
+                        <p className="text-[11px] text-gray-400">
                           {data.autonomicBalance.hrvTrend === 'rising' ? '上升趨勢' :
                            data.autonomicBalance.hrvTrend === 'declining' ? '下降趨勢' :
                            data.autonomicBalance.hrvTrend === 'stable' ? '穩定' : '--'}
@@ -383,14 +392,14 @@ export default function RecoveryDashboard({ clientId, recentWellness }: Recovery
                       </div>
                     )}
                     {data.autonomicBalance.rhrZScore !== null && (
-                      <div className="bg-red-50 rounded-lg p-2 text-center">
-                        <p className="text-[10px] text-red-400">RHR</p>
+                      <div className="bg-rose-50 rounded-lg p-2 text-center">
+                        <p className="text-[11px] text-rose-400">RHR</p>
                         <p className={`text-sm font-bold ${
-                          data.autonomicBalance.rhrZScore <= 0 ? 'text-green-600' : 'text-red-500'
+                          data.autonomicBalance.rhrZScore <= 0 ? 'text-emerald-600' : 'text-rose-600'
                         }`}>
                           {data.autonomicBalance.rhrZScore > 0 ? '+' : ''}{data.autonomicBalance.rhrZScore.toFixed(1)}
                         </p>
-                        <p className="text-[10px] text-gray-400">
+                        <p className="text-[11px] text-gray-400">
                           {data.autonomicBalance.rhrTrend === 'rising' ? '上升趨勢' :
                            data.autonomicBalance.rhrTrend === 'declining' ? '下降趨勢' :
                            data.autonomicBalance.rhrTrend === 'stable' ? '穩定' : '--'}

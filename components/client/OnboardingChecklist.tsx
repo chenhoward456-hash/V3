@@ -158,9 +158,9 @@ export default function OnboardingChecklist({
 
   return (
     <div className="mb-4 animate-fade-in-up">
-      <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-100">
+      <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200">
         {/* Gradient top border */}
-        <div className="h-1 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600" />
+        <div className="h-1 bg-blue-600" />
 
         <div className="p-4">
           {/* Header */}
@@ -212,7 +212,7 @@ export default function OnboardingChecklist({
           {celebrating && (
             <div className="text-center py-3 animate-celebrate">
               <div className="text-4xl mb-2 animate-bounce">🎊</div>
-              <p className="text-sm font-semibold text-green-700">
+              <p className="text-sm font-semibold text-emerald-700">
                 所有新手任務已完成！
               </p>
               <p className="text-xs text-gray-500 mt-1">
@@ -231,8 +231,8 @@ export default function OnboardingChecklist({
                     key={item.id}
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300 ${
                       item.completed
-                        ? 'bg-green-50/60'
-                        : 'bg-gray-50 hover:bg-blue-50/60 cursor-pointer active:scale-[0.98]'
+                        ? 'bg-emerald-50/60'
+                        : 'bg-slate-50 hover:bg-blue-50/60 cursor-pointer active:scale-[0.98]'
                     } ${isJustCompleted ? 'scale-[1.02]' : ''}`}
                     onClick={() => handleNavigate(item)}
                     role={item.completed ? undefined : 'button'}
@@ -248,8 +248,8 @@ export default function OnboardingChecklist({
                     <div
                       className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-500 ${
                         item.completed
-                          ? 'bg-green-500 text-white'
-                          : 'border-2 border-gray-300'
+                          ? 'bg-emerald-500 text-white'
+                          : 'border border-gray-300'
                       } ${isJustCompleted ? 'animate-ping-once' : ''}`}
                     >
                       {item.completed && <Check size={12} strokeWidth={3} />}
@@ -259,7 +259,7 @@ export default function OnboardingChecklist({
                     <span
                       className={`flex-1 text-sm transition-all duration-300 ${
                         item.completed
-                          ? 'text-green-700 line-through decoration-green-400/50'
+                          ? 'text-emerald-700 line-through decoration-emerald-400/50'
                           : 'text-gray-700 font-medium'
                       }`}
                     >

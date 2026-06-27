@@ -27,11 +27,11 @@ export default function SupplementStrategyCard({ suggestions }: { suggestions: S
   const coreCount = sorted.filter(s => s.priority === 'high').length
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-3">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
       {/* 收合時只露標題 + 預覽，點開看依據 */}
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-2 px-4 py-3 text-left"
+        className="w-full flex items-center gap-2 text-left"
         aria-expanded={open}
       >
         <span className="text-lg">💊</span>
@@ -47,12 +47,12 @@ export default function SupplementStrategyCard({ suggestions }: { suggestions: S
       </button>
 
       {!open ? null : (
-      <div className="px-4 pb-4">
+      <div className="pt-4">
       <p className="text-xs text-gray-500 mb-3">依你的血檢與基因推導，每項附依據——不是通用清單。</p>
 
       <div className="space-y-3">
         {shown.map((s, i) => (
-          <div key={`${s.name}-${i}`} className="border border-gray-100 rounded-xl p-3">
+          <div key={`${s.name}-${i}`} className="border border-slate-200 rounded-xl p-3">
             <div className="flex items-start justify-between gap-2">
               <div className="font-medium text-gray-900 text-sm">{degradeToSafe(s.name).text}</div>
               <span className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full font-medium ${PRIORITY[s.priority].cls}`}>
@@ -70,7 +70,7 @@ export default function SupplementStrategyCard({ suggestions }: { suggestions: S
             {s.triggerTests && s.triggerTests.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {s.triggerTests.map((t) => (
-                  <span key={t} className="text-[11px] bg-gray-50 border border-gray-200 text-gray-500 px-1.5 py-0.5 rounded">
+                  <span key={t} className="text-[11px] bg-slate-50 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded">
                     依據：{t}
                   </span>
                 ))}

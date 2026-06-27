@@ -425,7 +425,7 @@ export default function BodyComposition({
   return (
     <>
       {nutritionAdjusted && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-slide-in-down bg-gradient-to-r from-blue-600 to-indigo-600">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-slide-in-down bg-blue-600">
           <div className="flex items-center gap-2">
             <span className="text-lg">🎯</span>
             <div>
@@ -442,37 +442,37 @@ export default function BodyComposition({
 
       {/* 第一筆體重洞察卡片 — 記完第一筆後立刻顯示有價值的分析 */}
       {firstRecordInsight && (
-        <div className="bg-gradient-to-br from-emerald-50 via-blue-50 to-indigo-50 border border-emerald-200 rounded-2xl p-5 mb-4 animate-fade-in">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 animate-fade-in">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-2xl">🎯</span>
             <h3 className="text-base font-bold text-gray-900">你的起點分析</h3>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="bg-white/70 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-gray-500">目前體重</p>
-              <p className="text-xl font-bold text-gray-900">{firstRecordInsight.weight} <span className="text-sm font-normal">kg</span></p>
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-gray-500">目前體重</p>
+              <p className="text-xl font-bold text-gray-900 tabular-nums">{firstRecordInsight.weight} <span className="text-sm font-normal">kg</span></p>
             </div>
-            <div className="bg-white/70 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-gray-500">BMI</p>
-              <p className="text-xl font-bold text-gray-900">{firstRecordInsight.bmiVal}</p>
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-gray-500">BMI</p>
+              <p className="text-xl font-bold text-gray-900 tabular-nums">{firstRecordInsight.bmiVal}</p>
             </div>
             {firstRecordInsight.calories && (
-              <div className="bg-white/70 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-gray-500">每日熱量預算</p>
-                <p className="text-xl font-bold text-blue-600">{firstRecordInsight.calories} <span className="text-sm font-normal">kcal</span></p>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <p className="text-[11px] text-gray-500">每日熱量預算</p>
+                <p className="text-xl font-bold text-blue-600 tabular-nums">{firstRecordInsight.calories} <span className="text-sm font-normal">kcal</span></p>
               </div>
             )}
             {firstRecordInsight.protein && (
-              <div className="bg-white/70 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-gray-500">蛋白質目標</p>
-                <p className="text-xl font-bold text-red-500">{firstRecordInsight.protein} <span className="text-sm font-normal">g</span></p>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <p className="text-[11px] text-gray-500">蛋白質目標</p>
+                <p className="text-xl font-bold text-slate-900 tabular-nums">{firstRecordInsight.protein} <span className="text-sm font-normal">g</span></p>
               </div>
             )}
           </div>
           {firstRecordInsight.targetGap != null && firstRecordInsight.weeksToGoal != null && (
-            <div className="bg-white/70 rounded-xl p-3 mb-3">
+            <div className="bg-slate-50 rounded-xl p-3 mb-3">
               <p className="text-sm text-gray-700 leading-relaxed">
-                距離目標還有 <span className="font-bold text-blue-600">{firstRecordInsight.targetGap} kg</span>，
+                距離目標還有 <span className="font-bold text-blue-600 tabular-nums">{firstRecordInsight.targetGap} kg</span>，
                 以每週 {goalType === 'bulk' ? '0.25' : '0.5'} kg 的速度，
                 預估 <span className="font-bold text-blue-600">{firstRecordInsight.weeksToGoal <= 4 ? `${firstRecordInsight.weeksToGoal} 週` : `約 ${Math.round(firstRecordInsight.weeksToGoal / 4.3)} 個月`}</span>可達成。
               </p>
@@ -519,7 +519,7 @@ export default function BodyComposition({
           </button>
         </div>
       )}
-      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">身體數據追蹤</h2>
 
         <div className={`grid ${simpleMode ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'} gap-3 mb-6`}>
@@ -531,16 +531,16 @@ export default function BodyComposition({
               { label: '肌肉量', value: latestBodyData?.muscle_mass, prev: prevBodyData?.muscle_mass, unit: 'kg', lowerBetter: false },
             ] : []),
           ].map(({ label, value, prev, unit, lowerBetter }) => (
-            <div key={label} className="bg-gray-50 rounded-2xl p-4">
+            <div key={label} className="bg-slate-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 mb-1">{label}</p>
-              <p className="text-xl font-bold text-gray-900">
+              <p className="text-xl font-bold text-gray-900 tabular-nums">
                 {value != null ? `${value}${unit ? ` ${unit}` : ''}` : '--'}
               </p>
               {value == null && (label === 'BMI' || label === '肌肉量') && (
-                <p className="text-[10px] text-gray-400 mt-0.5">輸入 InBody 數據後自動計算</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">輸入 InBody 數據後自動計算</p>
               )}
               {prev != null && value != null && prev !== value && (
-                <p className={`text-xs mt-1 ${(lowerBetter ? value < prev : value > prev) ? 'text-green-600' : 'text-red-500'}`}>
+                <p className={`text-xs mt-1 tabular-nums ${(lowerBetter ? value < prev : value > prev) ? 'text-emerald-600' : 'text-rose-500'}`}>
                   {(lowerBetter ? value < prev : value > prev) ? (lowerBetter ? '↓' : '↑') : (lowerBetter ? '↑' : '↓')}
                   {Math.abs(value - prev).toFixed(1)}{unit}
                 </p>
@@ -572,20 +572,20 @@ export default function BodyComposition({
           // Lower weight is generally the goal (cut) — green for decrease
           const isPositive = targetWeight != null ? (change < 0 === targetWeight < lastAvg) : change < 0
           return (
-            <div className={`rounded-xl px-4 py-3 mb-4 border ${isPositive ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+            <div className={`rounded-xl px-4 py-3 mb-4 border ${isPositive ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
               <p className="text-xs font-semibold text-gray-700 mb-2">Week-over-Week</p>
               <div className="flex items-center justify-between">
                 <div className="text-center">
-                  <p className="text-[10px] text-gray-400">上週均值</p>
-                  <p className="text-sm font-bold text-gray-700">{lastAvg.toFixed(1)} kg</p>
+                  <p className="text-[11px] text-gray-400">上週均值</p>
+                  <p className="text-sm font-bold text-gray-700 tabular-nums">{lastAvg.toFixed(1)} kg</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[10px] text-gray-400">本週均值</p>
-                  <p className="text-sm font-bold text-gray-700">{thisAvg.toFixed(1)} kg</p>
+                  <p className="text-[11px] text-gray-400">本週均值</p>
+                  <p className="text-sm font-bold text-gray-700 tabular-nums">{thisAvg.toFixed(1)} kg</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[10px] text-gray-400">變化</p>
-                  <p className={`text-sm font-bold ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+                  <p className="text-[11px] text-gray-400">變化</p>
+                  <p className={`text-sm font-bold tabular-nums ${isPositive ? 'text-emerald-600' : 'text-rose-500'}`}>
                     {change > 0 ? '+' : ''}{change.toFixed(1)} kg
                   </p>
                 </div>
@@ -598,13 +598,13 @@ export default function BodyComposition({
         {!simpleMode && weightFluctuationNote && (
           <div className={`rounded-xl px-4 py-3 mb-4 flex items-start gap-2 ${
             weightFluctuationNote.color === 'blue' ? 'bg-blue-50 border border-blue-100' :
-            weightFluctuationNote.color === 'green' ? 'bg-green-50 border border-green-100' :
+            weightFluctuationNote.color === 'green' ? 'bg-emerald-50 border border-emerald-100' :
             'bg-amber-50 border border-amber-100'
           }`}>
             <span className="text-sm mt-0.5">{weightFluctuationNote.color === 'green' ? '💡' : weightFluctuationNote.color === 'blue' ? '💧' : '⚖️'}</span>
             <p className={`text-xs leading-relaxed ${
               weightFluctuationNote.color === 'blue' ? 'text-blue-700' :
-              weightFluctuationNote.color === 'green' ? 'text-green-700' :
+              weightFluctuationNote.color === 'green' ? 'text-emerald-700' :
               'text-amber-700'
             }`}>
               {weightFluctuationNote.text}
@@ -674,7 +674,7 @@ export default function BodyComposition({
           }
 
           return (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
+            <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 mb-4">
               <div className="flex items-start gap-2">
                 <span className="text-sm mt-0.5">{nudgeEmoji}</span>
                 <div className="flex-1">
@@ -719,10 +719,10 @@ export default function BodyComposition({
 
         {/* 體重軌跡 vs 目標體重（備賽模式） */}
         {trajectoryData && targetWeight && (
-          <div className="mt-4 border-t border-amber-200 pt-4">
+          <div className="mt-4 border-t border-slate-200 pt-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-medium text-gray-700">🏆 體重軌跡 vs 目標</p>
-              <div className="flex items-center gap-3 text-[10px] text-gray-400">
+              <div className="flex items-center gap-3 text-[11px] text-gray-400">
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-400 inline-block rounded" /> 實際</span>
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-orange-400 inline-block rounded" /> 7日均</span>
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-400 inline-block rounded" style={{borderTop: '2px dashed #9ca3af', height: 0}} /> 預測</span>
@@ -763,29 +763,29 @@ export default function BodyComposition({
             {/* 資訊摘要 */}
             <div className="grid grid-cols-2 gap-3 mt-3">
               <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[10px] text-gray-400 mb-0.5">目前體重（7日均）</p>
-                <p className="text-lg font-bold text-orange-600">{trajectoryData.lastMA} kg</p>
+                <p className="text-[11px] text-gray-400 mb-0.5">目前體重（7日均）</p>
+                <p className="text-lg font-bold text-orange-600 tabular-nums">{trajectoryData.lastMA} kg</p>
               </div>
               <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[10px] text-gray-400 mb-0.5">目標體重</p>
-                <p className="text-lg font-bold text-red-500">{targetWeight} kg</p>
+                <p className="text-[11px] text-gray-400 mb-0.5">目標體重</p>
+                <p className="text-lg font-bold text-red-500 tabular-nums">{targetWeight} kg</p>
               </div>
               <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[10px] text-gray-400 mb-0.5">預測比賽日體重</p>
-                <p className={`text-lg font-bold ${trajectoryData.onTrack ? 'text-green-600' : 'text-amber-600'}`}>
+                <p className="text-[11px] text-gray-400 mb-0.5">預測比賽日體重</p>
+                <p className={`text-lg font-bold tabular-nums ${trajectoryData.onTrack ? 'text-emerald-600' : 'text-amber-600'}`}>
                   {trajectoryData.predictedWeight} kg
                 </p>
               </div>
               <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[10px] text-gray-400 mb-0.5">距離比賽</p>
-                <p className="text-lg font-bold text-gray-700">{trajectoryData.daysToComp} 天</p>
+                <p className="text-[11px] text-gray-400 mb-0.5">距離比賽</p>
+                <p className="text-lg font-bold text-gray-700 tabular-nums">{trajectoryData.daysToComp} 天</p>
               </div>
             </div>
 
             {/* 狀態判斷 */}
             <div className={`mt-3 rounded-xl px-4 py-3 text-sm font-medium ${
               trajectoryData.onTrack
-                ? 'bg-green-50 text-green-700 border border-green-200'
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                 : trajectoryData.predictedWeight > targetWeight
                   ? 'bg-amber-50 text-amber-700 border border-amber-200'
                   : 'bg-blue-50 text-blue-700 border border-blue-200'
@@ -800,7 +800,7 @@ export default function BodyComposition({
 
             {/* 每週掉重速率 */}
             {trajectoryData.slope !== 0 && (
-              <p className="text-[10px] text-gray-400 mt-2 text-center">
+              <p className="text-[11px] text-gray-400 mt-2 text-center">
                 目前趨勢：每週 {trajectoryData.slope > 0 ? '+' : ''}{(trajectoryData.slope * 7).toFixed(2)} kg/週
               </p>
             )}
@@ -809,7 +809,7 @@ export default function BodyComposition({
 
         {/* 7 日移動平均線（備賽模式，無目標體重時 fallback） */}
         {competitionEnabled && !trajectoryData && weightMAData && weightMAData.length >= 3 && (
-          <div className="mt-4 border-t border-amber-200 pt-4">
+          <div className="mt-4 border-t border-slate-200 pt-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-gray-700">🏆 體重 7 日移動平均</p>
               <div className="flex items-center gap-3 text-xs text-gray-400">
@@ -837,7 +837,7 @@ export default function BodyComposition({
                       style={{ bottom: `${rawPct}%`, transform: 'translateY(50%)' }}
                       title={`${d.value}kg`}
                     />
-                    <span className="absolute bottom-0 translate-y-full text-[8px] text-gray-400 mt-1">{i % 2 === 0 ? d.date.split('/')[1] : ''}</span>
+                    <span className="absolute bottom-0 translate-y-full text-[11px] text-gray-400 mt-1">{i % 2 === 0 ? d.date.split('/')[1] : ''}</span>
                   </div>
                 )
               })}
@@ -848,7 +848,7 @@ export default function BodyComposition({
                 <span>
                   vs 上週均: {(() => {
                     const diff = weightMAData[weightMAData.length - 1].ma7 - weightMAData[Math.max(0, weightMAData.length - 8)].ma7
-                    return <strong className={diff < 0 ? 'text-green-600' : diff > 0 ? 'text-red-500' : 'text-gray-500'}>{diff > 0 ? '+' : ''}{diff.toFixed(1)}kg</strong>
+                    return <strong className={`tabular-nums ${diff < 0 ? 'text-emerald-600' : diff > 0 ? 'text-rose-500' : 'text-gray-500'}`}>{diff > 0 ? '+' : ''}{diff.toFixed(1)}kg</strong>
                   })()}
                 </span>
               )}
@@ -884,7 +884,7 @@ export default function BodyComposition({
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-end justify-center z-[100] backdrop-blur-sm" onClick={() => setShowModal(false)}>
-          <div className="bg-white w-full max-w-lg rounded-t-3xl p-6 animate-slide-up shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-lg rounded-t-2xl p-6 animate-slide-up shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">

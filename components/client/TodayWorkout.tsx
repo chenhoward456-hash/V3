@@ -38,7 +38,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
   const showPlan = todayPlan && !isActualRest
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-4 mb-3">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -52,10 +52,10 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
                 : '今天是休息日'}
             </h3>
             {isActualRest && todayPlan && (
-              <p className="text-[10px] text-gray-400 mt-0.5">原定：{todayPlan.label}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">原定：{todayPlan.label}</p>
             )}
             {trainingPlan.name && (
-              <p className="text-[10px] text-gray-400 mt-0.5">{trainingPlan.name}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">{trainingPlan.name}</p>
             )}
           </div>
         </div>
@@ -64,10 +64,10 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
 
       {/* Today's exercises or rest day */}
       {showPlan ? (
-        <div className="bg-white/60 rounded-xl overflow-hidden">
+        <div className="bg-slate-50 rounded-xl overflow-hidden">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-indigo-100 text-gray-500">
+              <tr className="border-b border-slate-200 text-gray-500">
                 <th className="text-left py-2 px-3 font-medium">動作</th>
                 <th className="text-center py-2 px-2 font-medium">組x次</th>
                 <th className="text-center py-2 px-2 font-medium">RPE</th>
@@ -76,17 +76,17 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
             </thead>
             <tbody>
               {todayPlan.exercises.map((ex, i) => (
-                <tr key={i} className="border-b border-gray-50 last:border-b-0">
+                <tr key={i} className="border-b border-slate-200 last:border-b-0">
                   <td className="py-2 px-3 font-medium text-gray-800">{ex.name}</td>
-                  <td className="py-2 px-2 text-center text-gray-600">
+                  <td className="py-2 px-2 text-center text-gray-600 tabular-nums">
                     {ex.sets && ex.reps ? `${ex.sets}x${ex.reps}` : ex.sets || ex.reps || '-'}
                   </td>
                   <td className="py-2 px-2 text-center">
                     {ex.rpe ? (
-                      <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                        Number(ex.rpe) >= 9 ? 'bg-red-100 text-red-700' :
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-medium tabular-nums ${
+                        Number(ex.rpe) >= 9 ? 'bg-rose-100 text-rose-700' :
                         Number(ex.rpe) >= 7 ? 'bg-amber-100 text-amber-700' :
-                        'bg-green-100 text-green-700'
+                        'bg-emerald-100 text-emerald-700'
                       }`}>
                         {ex.rpe}
                       </span>
@@ -101,7 +101,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
           </table>
         </div>
       ) : (
-        <div className="bg-white/60 rounded-xl p-6 text-center">
+        <div className="bg-slate-50 rounded-xl p-6 text-center">
           <span className="text-3xl block mb-2">🛌</span>
           <p className="text-sm text-gray-500">好好休息，明天繼續加油！</p>
         </div>
@@ -109,7 +109,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
 
       {/* 提示 */}
       {showPlan && (
-        <p className="text-[10px] text-gray-400 mt-2 text-center">
+        <p className="text-[11px] text-gray-400 mt-2 text-center">
           這是教練安排的參考課表。實際訓練可在下方「記錄動作明細」自由調整。
           {'\n'}想修改課表？在 LINE 跟教練說一聲 💬
         </p>
@@ -118,7 +118,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
       {/* Toggle full weekly plan */}
       <button
         onClick={() => setShowFullPlan(!showFullPlan)}
-        className="flex items-center justify-center gap-1.5 w-full mt-3 py-2 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
+        className="flex items-center justify-center gap-1.5 w-full mt-3 py-2 text-xs text-blue-600 hover:text-blue-700 transition-colors"
       >
         <span>{showFullPlan ? '收合週課表' : '查看完整週課表'}</span>
         <ChevronDown size={14} className={`transition-transform ${showFullPlan ? 'rotate-180' : ''}`} />
@@ -136,12 +136,12 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
                 <div
                   key={dow}
                   className={`rounded-lg px-3 py-2 text-xs ${
-                    isToday ? 'bg-gray-100 ring-1 ring-indigo-200' : 'bg-gray-50'
+                    isToday ? 'bg-slate-100 ring-1 ring-blue-200' : 'bg-slate-50'
                   }`}
                 >
                   <span className="text-gray-400">
                     {DAY_LABELS[dow]} — 休息日
-                    {isToday && <span className="ml-1 text-indigo-500 font-medium">(今天)</span>}
+                    {isToday && <span className="ml-1 text-blue-600 font-medium">(今天)</span>}
                   </span>
                 </div>
               )
@@ -152,13 +152,13 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
                 key={dow}
                 className={`rounded-lg p-3 ${
                   isToday
-                    ? 'bg-indigo-50 ring-1 ring-indigo-200'
-                    : 'bg-white/80'
+                    ? 'bg-blue-50 ring-1 ring-blue-200'
+                    : 'bg-slate-50'
                 }`}
               >
-                <p className={`text-xs font-semibold mb-1.5 ${isToday ? 'text-indigo-700' : 'text-gray-700'}`}>
+                <p className={`text-xs font-semibold mb-1.5 ${isToday ? 'text-blue-700' : 'text-gray-700'}`}>
                   {DAY_LABELS[dow]} — {day.label}
-                  {isToday && <span className="ml-1 text-indigo-500">(今天)</span>}
+                  {isToday && <span className="ml-1 text-blue-600">(今天)</span>}
                 </p>
                 <div className="space-y-0.5">
                   {day.exercises.map((ex, i) => (

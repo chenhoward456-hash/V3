@@ -25,9 +25,9 @@ export default function HelpPage() {
       : 'coached')
     : 'free'
   const tierLabel = tier === 'free' ? '免費' : tier === 'self_managed' ? '499 自主管理' : '2999 教練指導'
-  const tierColor = tier === 'free' ? 'bg-gray-100 text-gray-700'
+  const tierColor = tier === 'free' ? 'bg-slate-100 text-slate-600'
     : tier === 'self_managed' ? 'bg-blue-100 text-blue-700'
-    : 'bg-purple-100 text-purple-700'
+    : 'bg-slate-100 text-slate-600'
 
   if (isLoading || !c) {
     return (
@@ -94,8 +94,8 @@ export default function HelpPage() {
               </div>
             )}
           </div>
-          <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 mt-3">
-            <p className="text-xs text-amber-800"><b>關鍵</b>：不需要每天填到 100%。每天打到一項就有 streak 🔥，連續打卡才是進步的關鍵。</p>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mt-3">
+            <p className="text-xs text-slate-700"><b>關鍵</b>：不需要每天填到 100%。每天打到一項就有 streak 🔥，連續打卡才是進步的關鍵。</p>
           </div>
         </div>
       ),
@@ -107,22 +107,22 @@ export default function HelpPage() {
       body: (
         <div className="space-y-3 text-sm text-gray-700">
           {yourSections.map(s => (
-            <div key={s.key} className="border border-gray-100 rounded-xl p-3">
+            <div key={s.key} className="border border-slate-200 rounded-xl p-3">
               <p className="font-semibold flex items-center gap-2">{s.emoji} {s.title}</p>
               <p className="text-xs text-gray-500 mt-1">{s.desc}</p>
             </div>
           ))}
           {lockedSections.length > 0 && (
-            <div className="border border-dashed border-gray-200 rounded-xl p-3 bg-gray-50">
+            <div className="border border-dashed border-slate-200 rounded-xl p-3 bg-gray-50">
               <p className="text-xs font-semibold text-gray-500 mb-2">🔒 你的方案還沒解鎖的功能</p>
               <div className="flex flex-wrap gap-2">
                 {lockedSections.map(s => (
-                  <span key={s.key} className="text-xs bg-white border border-gray-200 rounded-full px-3 py-1 text-gray-500">
+                  <span key={s.key} className="text-xs bg-white border border-slate-200 rounded-full px-3 py-1 text-gray-500">
                     {s.emoji} {s.title}
                   </span>
                 ))}
               </div>
-              <p className="text-[10px] text-gray-400 mt-2">想開啟其他功能：右上 ⚙️ 自行打開（部分功能限制方案），或升級方案。</p>
+              <p className="text-[11px] text-gray-400 mt-2">想開啟其他功能：右上 ⚙️ 自行打開（部分功能限制方案），或升級方案。</p>
             </div>
           )}
         </div>
@@ -134,44 +134,44 @@ export default function HelpPage() {
       title: '怎麼看懂你的數據？',
       body: (
         <div className="space-y-3 text-sm text-gray-700">
-          <div className="border border-gray-100 rounded-xl p-3">
+          <div className="border border-slate-200 rounded-xl p-3">
             <p className="font-semibold">🔥 Streak（連續打卡天數）</p>
             <p className="text-xs text-gray-500 mt-1">只要當天有任何打卡，就算數。漏一天歸零。建立習慣最強的動力。</p>
           </div>
-          <div className="border border-gray-100 rounded-xl p-3">
+          <div className="border border-slate-200 rounded-xl p-3">
             <p className="font-semibold">📅 本週一句話摘要</p>
             <p className="text-xs text-gray-500 mt-1">「訓練 X 天 · 體重 ±X kg · 蛋白質達標 Y/Z 天」一眼看自己這週實際發生了什麼。</p>
           </div>
-          <div className="border border-gray-100 rounded-xl p-3">
+          <div className="border border-slate-200 rounded-xl p-3">
             <p className="font-semibold">Howard 解讀句</p>
             <p className="text-xs text-gray-500 mt-1">每張數據卡下方會有一句解讀，例如「速率 -0.3 kg/週，符合健康減脂節奏」。這是系統依規則自動產生的<b>數據觀察</b>，不是醫療意見，僅供參考。</p>
           </div>
           {c.body_composition_enabled && (
-            <div className="border border-gray-100 rounded-xl p-3">
+            <div className="border border-slate-200 rounded-xl p-3">
               <p className="font-semibold">🎯 目標進度</p>
               <p className="text-xs text-gray-500 mt-1">當前體重 → 目標體重的差距、當前速率（kg/週）。{tier === 'coached' ? '教練會用這個調整方向。' : '你會用這個調整自己的方向。'}</p>
             </div>
           )}
-          <div className="border border-gray-100 rounded-xl p-3">
+          <div className="border border-slate-200 rounded-xl p-3">
             <p className="font-semibold">📈 週平均體重（8 週）</p>
             <p className="text-xs text-gray-500 mt-1">每日體重會跳，週平均才是真實趨勢。看 4 週變化最準。</p>
           </div>
           {tier === 'coached' && (
             <>
-              <div className="border border-purple-100 bg-purple-50/30 rounded-xl p-3">
-                <p className="font-semibold text-purple-900">💪 主項力量 E1RM</p>
-                <p className="text-xs text-purple-700 mt-1">用 Brzycki 公式估算最大肌力（kg）。看你的硬舉/臥推/深蹲 90 天進步幅度。</p>
+              <div className="border border-slate-200 bg-slate-50 rounded-xl p-3">
+                <p className="font-semibold text-slate-900">💪 主項力量 E1RM</p>
+                <p className="text-xs text-slate-600 mt-1">用 Brzycki 公式估算最大肌力（kg）。看你的硬舉/臥推/深蹲 90 天進步幅度。</p>
               </div>
-              <div className="border border-purple-100 bg-purple-50/30 rounded-xl p-3">
-                <p className="font-semibold text-purple-900">🩸 血檢追蹤</p>
-                <p className="text-xs text-purple-700 mt-1">最新血檢值 + 狀態（正常/注意/警示）。<b>系統呈現的觀察與建議僅為生活型態建議，不構成醫療診斷或治療指引</b>，最終判斷請與你的醫師討論。</p>
+              <div className="border border-slate-200 bg-slate-50 rounded-xl p-3">
+                <p className="font-semibold text-slate-900">🩸 血檢追蹤</p>
+                <p className="text-xs text-slate-600 mt-1">最新血檢值 + 狀態（正常/注意/警示）。<b>系統呈現的觀察與建議僅為生活型態建議，不構成醫療診斷或治療指引</b>，最終判斷請與你的醫師討論。</p>
               </div>
             </>
           )}
           <div className="mt-3">
             <Link
               href={`/c/${clientId}/overview`}
-              className="block bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 text-white"
+              className="block bg-blue-600 hover:bg-blue-700 rounded-xl p-4 text-white transition-colors"
             >
               <p className="text-sm font-semibold">📊 想看自己的完整數據？</p>
               <p className="text-xs opacity-90 mt-1">點這裡打開「我的完整數據」頁 →</p>
@@ -190,26 +190,26 @@ export default function HelpPage() {
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="text-left p-2 border border-gray-200 font-semibold">功能</th>
-                  <th className={`text-center p-2 border border-gray-200 font-semibold ${tier === 'free' ? 'bg-yellow-50' : ''}`}>免費{tier === 'free' && ' ★'}</th>
-                  <th className={`text-center p-2 border border-gray-200 font-semibold text-blue-700 ${tier === 'self_managed' ? 'bg-yellow-50' : ''}`}>499 自主{tier === 'self_managed' && ' ★'}</th>
-                  <th className={`text-center p-2 border border-gray-200 font-semibold text-purple-700 ${tier === 'coached' ? 'bg-yellow-50' : ''}`}>2999 教練{tier === 'coached' && ' ★'}</th>
+                  <th className="text-left p-2 border border-slate-200 font-semibold">功能</th>
+                  <th className={`text-center p-2 border border-slate-200 font-semibold ${tier === 'free' ? 'bg-slate-50' : ''}`}>免費{tier === 'free' && ' ★'}</th>
+                  <th className={`text-center p-2 border border-slate-200 font-semibold text-blue-700 ${tier === 'self_managed' ? 'bg-slate-50' : ''}`}>499 自主{tier === 'self_managed' && ' ★'}</th>
+                  <th className={`text-center p-2 border border-slate-200 font-semibold text-slate-700 ${tier === 'coached' ? 'bg-slate-50' : ''}`}>2999 教練{tier === 'coached' && ' ★'}</th>
                 </tr>
               </thead>
               <tbody className="text-gray-700">
-                <tr><td className="p-2 border border-gray-200">每日打卡</td><td className="text-center border border-gray-200">✓</td><td className="text-center border border-gray-200">✓</td><td className="text-center border border-gray-200">✓</td></tr>
-                <tr><td className="p-2 border border-gray-200">體重 / 訓練 / 飲食趨勢</td><td className="text-center border border-gray-200">✓</td><td className="text-center border border-gray-200">✓</td><td className="text-center border border-gray-200">✓</td></tr>
-                <tr><td className="p-2 border border-gray-200">完整數據儀表板</td><td className="text-center border border-gray-200 text-gray-400">基本版</td><td className="text-center border border-gray-200">✓</td><td className="text-center border border-gray-200">✓</td></tr>
-                <tr><td className="p-2 border border-gray-200">營養目標計算 + 智能調整</td><td className="text-center border border-gray-200 text-gray-400">—</td><td className="text-center border border-gray-200">✓</td><td className="text-center border border-gray-200">✓</td></tr>
-                <tr><td className="p-2 border border-gray-200">血檢數據追蹤 *</td><td className="text-center border border-gray-200 text-gray-400">—</td><td className="text-center border border-gray-200 text-gray-400">—</td><td className="text-center border border-gray-200">✓</td></tr>
-                <tr><td className="p-2 border border-gray-200">力量 / 訓練量 / 肌群分析</td><td className="text-center border border-gray-200 text-gray-400">—</td><td className="text-center border border-gray-200 text-gray-400">—</td><td className="text-center border border-gray-200">✓</td></tr>
-                <tr><td className="p-2 border border-gray-200">補品 protocol 個別化 *</td><td className="text-center border border-gray-200 text-gray-400">—</td><td className="text-center border border-gray-200 text-gray-400">—</td><td className="text-center border border-gray-200">✓</td></tr>
-                <tr><td className="p-2 border border-gray-200">Howard 看數據 + 調整 *</td><td className="text-center border border-gray-200 text-gray-400">—</td><td className="text-center border border-gray-200 text-gray-400">—</td><td className="text-center border border-gray-200">✓</td></tr>
-                <tr><td className="p-2 border border-gray-200">每週 / 每月觀察筆記</td><td className="text-center border border-gray-200 text-gray-400">—</td><td className="text-center border border-gray-200 text-gray-400">—</td><td className="text-center border border-gray-200">✓</td></tr>
+                <tr><td className="p-2 border border-slate-200">每日打卡</td><td className="text-center border border-slate-200">✓</td><td className="text-center border border-slate-200">✓</td><td className="text-center border border-slate-200">✓</td></tr>
+                <tr><td className="p-2 border border-slate-200">體重 / 訓練 / 飲食趨勢</td><td className="text-center border border-slate-200">✓</td><td className="text-center border border-slate-200">✓</td><td className="text-center border border-slate-200">✓</td></tr>
+                <tr><td className="p-2 border border-slate-200">完整數據儀表板</td><td className="text-center border border-slate-200 text-gray-400">基本版</td><td className="text-center border border-slate-200">✓</td><td className="text-center border border-slate-200">✓</td></tr>
+                <tr><td className="p-2 border border-slate-200">營養目標計算 + 智能調整</td><td className="text-center border border-slate-200 text-gray-400">—</td><td className="text-center border border-slate-200">✓</td><td className="text-center border border-slate-200">✓</td></tr>
+                <tr><td className="p-2 border border-slate-200">血檢數據追蹤 *</td><td className="text-center border border-slate-200 text-gray-400">—</td><td className="text-center border border-slate-200 text-gray-400">—</td><td className="text-center border border-slate-200">✓</td></tr>
+                <tr><td className="p-2 border border-slate-200">力量 / 訓練量 / 肌群分析</td><td className="text-center border border-slate-200 text-gray-400">—</td><td className="text-center border border-slate-200 text-gray-400">—</td><td className="text-center border border-slate-200">✓</td></tr>
+                <tr><td className="p-2 border border-slate-200">補品 protocol 個別化 *</td><td className="text-center border border-slate-200 text-gray-400">—</td><td className="text-center border border-slate-200 text-gray-400">—</td><td className="text-center border border-slate-200">✓</td></tr>
+                <tr><td className="p-2 border border-slate-200">Howard 看數據 + 調整 *</td><td className="text-center border border-slate-200 text-gray-400">—</td><td className="text-center border border-slate-200 text-gray-400">—</td><td className="text-center border border-slate-200">✓</td></tr>
+                <tr><td className="p-2 border border-slate-200">每週 / 每月觀察筆記</td><td className="text-center border border-slate-200 text-gray-400">—</td><td className="text-center border border-slate-200 text-gray-400">—</td><td className="text-center border border-slate-200">✓</td></tr>
               </tbody>
             </table>
           </div>
-          <p className="text-[10px] text-gray-500 leading-relaxed">
+          <p className="text-[11px] text-gray-500 leading-relaxed">
             ★ 你目前的方案。<br />
             * 標示項目為「生活型態 / 運動表現觀察與建議」，<b>非醫療診斷、非處方藥建議</b>，最終決策請結合醫師、營養師、藥師專業判斷。詳見<Link href="/medical-disclaimer" className="text-blue-600 underline">醫療免責聲明</Link>。
           </p>
@@ -223,11 +223,11 @@ export default function HelpPage() {
       title: '常見問題',
       body: (
         <div className="space-y-3 text-sm text-gray-700">
-          <details className="border border-gray-100 rounded-xl p-3">
+          <details className="border border-slate-200 rounded-xl p-3">
             <summary className="font-semibold cursor-pointer">數據沒進來 / 趨勢圖空白？</summary>
             <p className="text-xs text-gray-500 mt-2 leading-relaxed">趨勢圖至少要 2 筆資料才會畫。剛開始用會空 1-2 天，連續打卡 3 天後就會出現曲線。</p>
           </details>
-          <details className="border border-gray-100 rounded-xl p-3">
+          <details className="border border-slate-200 rounded-xl p-3">
             <summary className="font-semibold cursor-pointer">想改目標體重 / 卡路里？</summary>
             <p className="text-xs text-gray-500 mt-2 leading-relaxed">
               {tier === 'coached'
@@ -235,29 +235,29 @@ export default function HelpPage() {
                 : '右上角 ⚙️ 設定 → 改目標。系統會自動重算營養建議。'}
             </p>
           </details>
-          <details className="border border-gray-100 rounded-xl p-3">
+          <details className="border border-slate-200 rounded-xl p-3">
             <summary className="font-semibold cursor-pointer">LINE 沒連到怎麼辦？</summary>
             <p className="text-xs text-gray-500 mt-2 leading-relaxed">回首頁找「綁定 LINE」按鈕，掃 QR code 加 Howard 助手 → 跟它說「綁定」即可。綁定後可以直接傳訊息記錄當天數據。</p>
           </details>
           {tier !== 'coached' && (
-            <details className="border border-purple-100 bg-purple-50/30 rounded-xl p-3">
-              <summary className="font-semibold cursor-pointer text-purple-900">想看血檢追蹤 / 力量分析？</summary>
-              <p className="text-xs text-purple-700 mt-2 leading-relaxed">這些功能在 2999 教練指導方案。包含 Howard 親自看數據、補品 protocol 個別化、每週觀察筆記。LINE 找 Howard 諮詢升級。</p>
+            <details className="border border-slate-200 bg-slate-50 rounded-xl p-3">
+              <summary className="font-semibold cursor-pointer text-slate-900">想看血檢追蹤 / 力量分析？</summary>
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed">這些功能在 2999 教練指導方案。包含 Howard 親自看數據、補品 protocol 個別化、每週觀察筆記。LINE 找 Howard 諮詢升級。</p>
             </details>
           )}
           {tier === 'coached' && (
-            <details className="border border-gray-100 rounded-xl p-3">
+            <details className="border border-slate-200 rounded-xl p-3">
               <summary className="font-semibold cursor-pointer">血檢看不到 / 還沒上傳？</summary>
               <p className="text-xs text-gray-500 mt-2 leading-relaxed">從首頁找「📥 上傳健檢報告」。可以手打、CSV、或直接拍 PDF 給 AI 辨識。辨識後你可以再確認 / 修改數值。</p>
             </details>
           )}
-          <details className="border border-gray-100 rounded-xl p-3">
+          <details className="border border-slate-200 rounded-xl p-3">
             <summary className="font-semibold cursor-pointer">想找 Howard 諮詢</summary>
             <p className="text-xs text-gray-500 mt-2 leading-relaxed">直接 LINE 訊息或填首頁的諮詢表單。三個方案任何問題都可以問。</p>
           </details>
-          <details className="border border-red-100 bg-red-50/30 rounded-xl p-3">
-            <summary className="font-semibold cursor-pointer text-red-900">什麼情況不該用這套系統？</summary>
-            <p className="text-xs text-red-700 mt-2 leading-relaxed">急性疾病、術後恢復、懷孕哺乳、正在服用處方藥、進食障礙等情況，請優先諮詢醫師，不要依賴本系統的飲食 / 訓練 / 補品建議。詳見<Link href="/medical-disclaimer" className="underline">完整禁用情況列表</Link>。</p>
+          <details className="border border-rose-200 bg-rose-50 rounded-xl p-3">
+            <summary className="font-semibold cursor-pointer text-rose-900">什麼情況不該用這套系統？</summary>
+            <p className="text-xs text-rose-700 mt-2 leading-relaxed">急性疾病、術後恢復、懷孕哺乳、正在服用處方藥、進食障礙等情況，請優先諮詢醫師，不要依賴本系統的飲食 / 訓練 / 補品建議。詳見<Link href="/medical-disclaimer" className="underline">完整禁用情況列表</Link>。</p>
           </details>
         </div>
       ),
@@ -266,7 +266,7 @@ export default function HelpPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href={`/c/${clientId}`} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
             <ChevronLeft size={20} />
@@ -281,10 +281,10 @@ export default function HelpPage() {
         <div className="bg-zinc-900 rounded-2xl p-5 text-white">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-400 font-semibold">Howard Protocol</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-400 font-semibold">Howard Protocol</p>
               <h2 className="text-3xl font-black tracking-tight mt-2 leading-tight">5 分鐘<br />讀完上手</h2>
             </div>
-            <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${tierColor} whitespace-nowrap`}>
+            <span className={`text-[11px] font-bold px-2 py-1 rounded-md ${tierColor} whitespace-nowrap`}>
               {tierLabel}
             </span>
           </div>
@@ -293,7 +293,7 @@ export default function HelpPage() {
 
         {/* 核心邏輯 — 一句話定位 */}
         <div className="bg-zinc-50 border-l-4 border-emerald-500 rounded-r-2xl p-5">
-          <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-700 mb-2">核心邏輯</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] font-bold text-emerald-700 mb-2">核心邏輯</p>
           <p className="text-base text-zinc-900 leading-relaxed font-medium">
             <b>不是「算營養素」</b>，是<b>「連續追蹤 + 累積對照 + 找出你自己的 what works」</b>。
           </p>
@@ -315,7 +315,7 @@ export default function HelpPage() {
         </div>
 
         {sections.map((s) => (
-          <div key={s.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div key={s.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
             <button
               onClick={() => setOpen(open === s.id ? null : s.id)}
               className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
@@ -330,7 +330,7 @@ export default function HelpPage() {
               />
             </button>
             {open === s.id && (
-              <div className="px-5 pb-5 border-t border-gray-100 pt-4">
+              <div className="px-5 pb-5 border-t border-slate-200 pt-4">
                 {s.body}
               </div>
             )}
@@ -338,46 +338,46 @@ export default function HelpPage() {
         ))}
 
         {/* 相關連結 */}
-        <div className="bg-white rounded-2xl shadow-sm p-5 mt-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 mt-4">
           <h3 className="text-sm font-semibold text-gray-900 mb-3">更多資源</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {tier === 'coached' && (
-              <Link href={`/c/${clientId}/welcome`} className="flex items-center gap-2 p-3 rounded-xl border border-gray-100 hover:bg-gray-50">
+              <Link href={`/c/${clientId}/welcome`} className="flex items-center gap-2 p-3 rounded-xl border border-slate-200 hover:bg-gray-50">
                 <span>🎯</span>
                 <div>
                   <p className="text-sm font-medium text-gray-800">2 分鐘新手導覽</p>
-                  <p className="text-[10px] text-gray-500">血檢追蹤入門流程</p>
+                  <p className="text-[11px] text-gray-500">血檢追蹤入門流程</p>
                 </div>
               </Link>
             )}
-            <Link href="/blog" className="flex items-center gap-2 p-3 rounded-xl border border-gray-100 hover:bg-gray-50">
+            <Link href="/blog" className="flex items-center gap-2 p-3 rounded-xl border border-slate-200 hover:bg-gray-50">
               <span>📚</span>
               <div>
                 <p className="text-sm font-medium text-gray-800">深入學原理</p>
-                <p className="text-[10px] text-gray-500">29 篇研究文章</p>
+                <p className="text-[11px] text-gray-500">29 篇研究文章</p>
               </div>
             </Link>
-            <Link href="/medical-disclaimer" className="flex items-center gap-2 p-3 rounded-xl border border-red-100 bg-red-50/30 hover:bg-red-50">
+            <Link href="/medical-disclaimer" className="flex items-center gap-2 p-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100">
               <span>⚠️</span>
               <div>
-                <p className="text-sm font-medium text-red-900">醫療免責聲明（必讀）</p>
-                <p className="text-[10px] text-red-700">教練資格、系統限制、禁用情況</p>
+                <p className="text-sm font-medium text-rose-900">醫療免責聲明（必讀）</p>
+                <p className="text-[11px] text-rose-700">教練資格、系統限制、禁用情況</p>
               </div>
             </Link>
             {c.lab_enabled && (
-              <Link href={`/c/${clientId}/health/learn`} className="flex items-center gap-2 p-3 rounded-xl border border-gray-100 hover:bg-gray-50">
+              <Link href={`/c/${clientId}/health/learn`} className="flex items-center gap-2 p-3 rounded-xl border border-slate-200 hover:bg-gray-50">
                 <span>📖</span>
                 <div>
                   <p className="text-sm font-medium text-gray-800">健康知識 FAQ</p>
-                  <p className="text-[10px] text-gray-500">18 個常見問題 + 文獻</p>
+                  <p className="text-[11px] text-gray-500">18 個常見問題 + 文獻</p>
                 </div>
               </Link>
             )}
-            <Link href="/terms" className="flex items-center gap-2 p-3 rounded-xl border border-gray-100 hover:bg-gray-50">
+            <Link href="/terms" className="flex items-center gap-2 p-3 rounded-xl border border-slate-200 hover:bg-gray-50">
               <span>📋</span>
               <div>
                 <p className="text-sm font-medium text-gray-800">服務條款 / 隱私政策</p>
-                <p className="text-[10px] text-gray-500">資料使用、退費政策</p>
+                <p className="text-[11px] text-gray-500">資料使用、退費政策</p>
               </div>
             </Link>
           </div>

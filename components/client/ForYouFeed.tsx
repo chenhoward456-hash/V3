@@ -5,10 +5,10 @@ import { buildClientFeed, type FeedCard, type FeedTone, type MacroAdjustmentRow,
 import type { LabResultRow } from '@/lib/lab-trend-analyzer'
 
 const TONE_STYLE: Record<FeedTone, { box: string; title: string; icon: string }> = {
-  good:  { box: 'bg-emerald-50/70 border-emerald-100', title: 'text-emerald-800', icon: 'bg-emerald-100' },
-  alert: { box: 'bg-rose-50/70 border-rose-100',       title: 'text-rose-800',    icon: 'bg-rose-100' },
-  warn:  { box: 'bg-amber-50/70 border-amber-100',     title: 'text-amber-800',   icon: 'bg-amber-100' },
-  info:  { box: 'bg-blue-50/70 border-blue-100',       title: 'text-blue-800',    icon: 'bg-blue-100' },
+  good:  { box: 'bg-emerald-50/70 border-emerald-100', title: 'text-emerald-800', icon: 'bg-slate-100' },
+  alert: { box: 'bg-rose-50/70 border-rose-100',       title: 'text-rose-800',    icon: 'bg-slate-100' },
+  warn:  { box: 'bg-amber-50/70 border-amber-100',     title: 'text-amber-800',   icon: 'bg-slate-100' },
+  info:  { box: 'bg-blue-50/70 border-blue-100',       title: 'text-blue-800',    icon: 'bg-slate-100' },
 }
 
 function Row({ card, onDismiss }: { card: FeedCard; onDismiss: (id: string) => void }) {
@@ -18,7 +18,7 @@ function Row({ card, onDismiss }: { card: FeedCard; onDismiss: (id: string) => v
       <span className={`shrink-0 w-7 h-7 rounded-lg ${s.icon} flex items-center justify-center text-sm`}>{card.icon}</span>
       <div className="min-w-0 flex-1">
         <p className={`text-sm font-semibold ${s.title} leading-tight`}>{card.title}</p>
-        <p className="text-xs text-gray-500 leading-snug truncate">{card.body}</p>
+        <p className="text-xs text-gray-500 leading-snug">{card.body}</p>
       </div>
       <button
         onClick={() => onDismiss(card.id)}
@@ -54,7 +54,7 @@ function CoachMessageCard({ msg, onDismiss }: { msg: CoachMessageRow; onDismiss:
         </div>
       </div>
       <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed max-h-72 overflow-y-auto">{msg.body}</p>
-      <p className="text-[10px] text-blue-400/80 mt-2 leading-snug">本訊息為健身/營養指導，非醫療診斷或處方；身體不適請就醫。</p>
+      <p className="text-[11px] text-blue-400/80 mt-2 leading-snug">本訊息為健身/營養指導，非醫療診斷或處方；身體不適請就醫。</p>
     </div>
   )
 }
@@ -129,7 +129,7 @@ export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment, coa
         </button>
       )}
       {hasMedical && (
-        <p className="text-[10px] text-gray-400 mt-1.5 px-1 leading-snug">⚠️ 數值僅供追蹤、非醫療診斷；有疑慮請諮詢醫師。</p>
+        <p className="text-[11px] text-gray-400 mt-1.5 px-1 leading-snug">⚠️ 數值僅供追蹤、非醫療診斷；有疑慮請諮詢醫師。</p>
       )}
     </div>
   )

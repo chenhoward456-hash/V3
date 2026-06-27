@@ -24,8 +24,8 @@ function BottomNavInner({ tabs, activeTab, completedMap, isToday, onTabClick }: 
               onClick={() => onTabClick(tab.id)}
               className={`flex-1 flex flex-col items-center py-2 transition-colors relative ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`}
             >
-              <span className="text-lg leading-none">{tab.icon}</span>
-              <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
+              <span className={`text-lg leading-none transition-transform duration-200 ${activeTab === tab.id ? 'scale-110 -translate-y-0.5' : ''}`}>{tab.icon}</span>
+              <span className="text-[11px] mt-0.5 font-medium">{tab.label}</span>
               {isDailyCompleted && (
                 <span className="absolute top-1 right-1/2 translate-x-4 w-1.5 h-1.5 bg-green-400 rounded-full" />
               )}

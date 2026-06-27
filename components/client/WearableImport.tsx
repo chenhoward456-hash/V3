@@ -261,7 +261,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
     return (
       <button
         onClick={() => setOpen(true)}
-        className="w-full py-2.5 text-sm text-purple-600 font-medium bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors"
+        className="w-full py-2.5 text-sm text-slate-600 font-medium bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
       >
         📥 匯入穿戴裝置歷史數據 <span className="text-gray-400 text-xs">（Garmin / Apple Health）</span>
       </button>
@@ -269,9 +269,9 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
   }
 
   return (
-    <div className="border-2 border-purple-200 rounded-2xl p-4 bg-purple-50/30 space-y-4">
+    <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-purple-800">📥 匯入穿戴裝置數據</h3>
+        <h3 className="text-sm font-bold text-slate-900">📥 匯入穿戴裝置數據</h3>
         <button
           onClick={() => { setOpen(false); reset() }}
           className="text-xs text-gray-400 hover:text-gray-600"
@@ -287,8 +287,8 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
             onClick={() => setImportMode('direct')}
             className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
               importMode === 'direct'
-                ? 'bg-purple-600 text-white'
-                : 'bg-white text-gray-500 border border-gray-200 hover:bg-purple-50'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-500 border border-slate-200 hover:bg-slate-50'
             }`}
           >
             🔗 直接連線
@@ -297,8 +297,8 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
             onClick={() => setImportMode('csv')}
             className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
               importMode === 'csv'
-                ? 'bg-purple-600 text-white'
-                : 'bg-white text-gray-500 border border-gray-200 hover:bg-purple-50'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-500 border border-slate-200 hover:bg-slate-50'
             }`}
           >
             📄 上傳檔案
@@ -312,21 +312,21 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
           {garminStatus.connected ? (
             <>
               {/* 已連線狀態 */}
-              <div className="bg-green-50 rounded-xl p-3 space-y-2">
+              <div className="bg-emerald-50 rounded-xl p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    <span className="text-sm font-medium text-green-700">Garmin 已連線</span>
+                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-sm font-medium text-emerald-700">Garmin 已連線</span>
                   </div>
                   <button
                     onClick={handleGarminDisconnect}
-                    className="text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                    className="text-[11px] text-gray-400 hover:text-red-500 transition-colors"
                   >
                     解除連線
                   </button>
                 </div>
                 {garminStatus.lastSyncAt && (
-                  <p className="text-[10px] text-green-600">
+                  <p className="text-[11px] text-emerald-600">
                     上次同步：{formatLastSync(garminStatus.lastSyncAt)}
                   </p>
                 )}
@@ -342,7 +342,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
                       onClick={() => setSyncDays(d)}
                       className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         syncDays === d
-                          ? 'bg-purple-100 text-purple-700 ring-1 ring-purple-300'
+                          ? 'bg-slate-100 text-slate-600 ring-1 ring-slate-200'
                           : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
                       }`}
                     >
@@ -354,8 +354,8 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
 
               {/* 同步結果 */}
               {result && (
-                <div className="bg-green-50 rounded-xl p-3 text-sm">
-                  <p className="text-green-700 font-medium">
+                <div className="bg-emerald-50 rounded-xl p-3 text-sm">
+                  <p className="text-emerald-700 font-medium">
                     ✅ 成功同步 {result.imported} 天的數據
                   </p>
                 </div>
@@ -365,7 +365,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
               <button
                 onClick={handleGarminSync}
                 disabled={syncing}
-                className="w-full bg-purple-600 text-white py-3 rounded-xl font-medium hover:bg-purple-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {syncing ? (
                   <>
@@ -400,7 +400,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
                     <>🔗 連線 Garmin Connect</>
                   )}
                 </button>
-                <p className="text-[10px] text-gray-400">
+                <p className="text-[11px] text-gray-400">
                   將會導向 Garmin 授權頁面，完成後自動返回
                 </p>
               </div>
@@ -422,12 +422,12 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
                   onClick={() => { setFormat(opt.value); reset() }}
                   className={`flex-1 py-2.5 px-2 rounded-xl text-center transition-all ${
                     format === opt.value
-                      ? 'bg-purple-600 text-white shadow-sm'
-                      : 'bg-white text-gray-600 hover:bg-purple-100 border border-gray-200'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-slate-50 border border-slate-200'
                   }`}
                 >
                   <span className="block text-sm font-medium">{opt.label}</span>
-                  <span className={`block text-[10px] mt-0.5 ${format === opt.value ? 'text-purple-200' : 'text-gray-400'}`}>
+                  <span className={`block text-[11px] mt-0.5 ${format === opt.value ? 'text-blue-100' : 'text-gray-400'}`}>
                     {opt.desc}
                   </span>
                 </button>
@@ -462,7 +462,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
             {format === 'json' && (
               <>
                 <p className="font-medium text-gray-700">JSON 格式範例：</p>
-                <pre className="bg-gray-50 rounded p-2 text-[10px] overflow-x-auto">
+                <pre className="bg-gray-50 rounded p-2 text-[11px] overflow-x-auto">
 {`[
   {
     "date": "2024-03-01",
@@ -490,10 +490,10 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
             />
             <label
               htmlFor="wearable-file"
-              className="block w-full py-4 border-2 border-dashed border-purple-300 rounded-xl text-center cursor-pointer hover:bg-purple-50 transition-colors"
+              className="block w-full py-4 border border-dashed border-slate-300 rounded-xl text-center cursor-pointer hover:bg-slate-50 transition-colors"
             >
               {file ? (
-                <span className="text-sm text-purple-700 font-medium">
+                <span className="text-sm text-slate-900 font-medium">
                   📄 {file.name} <span className="text-gray-400 font-normal">({(file.size / 1024).toFixed(1)} KB)</span>
                 </span>
               ) : (
@@ -508,7 +508,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
           {preview && preview.length > 0 && (
             <div className="bg-white rounded-xl p-3 overflow-x-auto">
               <p className="text-xs font-medium text-gray-600 mb-2">數據預覽（前 {preview.length} 筆）：</p>
-              <table className="w-full text-[10px]">
+              <table className="w-full text-[11px]">
                 <thead>
                   <tr className="border-b border-gray-100">
                     {Object.keys(preview[0]).slice(0, 6).map(key => (
@@ -531,8 +531,8 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
 
           {/* 匯入結果 */}
           {result && (
-            <div className="bg-green-50 rounded-xl p-3 text-sm">
-              <p className="text-green-700 font-medium">
+            <div className="bg-emerald-50 rounded-xl p-3 text-sm">
+              <p className="text-emerald-700 font-medium">
                 ✅ 成功匯入 {result.imported} 天的數據
               </p>
               {result.skipped > 0 && (
@@ -548,7 +548,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
             <button
               onClick={handleImport}
               disabled={importing}
-              className="w-full bg-purple-600 text-white py-3 rounded-xl font-medium hover:bg-purple-700 transition-colors disabled:opacity-40"
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-40"
             >
               {importing ? '匯入中...' : '確認匯入'}
             </button>
@@ -565,7 +565,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
         </>
       )}
 
-      <p className="text-[10px] text-gray-400 text-center">
+      <p className="text-[11px] text-gray-400 text-center">
         匯入只會更新穿戴裝置數據，不會覆蓋你手動填寫的每日感受
       </p>
     </div>

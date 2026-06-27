@@ -12,7 +12,7 @@ export default function ActionPlan({ healthGoals, nextCheckupDate, coachSummary,
 
   if (!hasAny) {
     return (
-      <div className="bg-white rounded-3xl shadow-sm p-6 mb-20">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-20">
         <p className="text-gray-600">持續追蹤中，有問題隨時 LINE 我！— Howard 教練</p>
       </div>
     )
@@ -22,7 +22,7 @@ export default function ActionPlan({ healthGoals, nextCheckupDate, coachSummary,
   const isOverdue = checkupDate ? checkupDate < new Date() : false
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-6 mb-20">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-20">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">📋 你的行動計畫</h2>
       <div className="space-y-3">
         {healthGoals && (

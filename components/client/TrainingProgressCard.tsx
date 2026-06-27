@@ -32,8 +32,8 @@ export default function TrainingProgressCard({ sets }: { sets: TrainingSetRow[] 
             <div key={e.exercise} className="flex items-center justify-between gap-3 text-sm border-b border-gray-50 pb-2 last:border-0">
               <div className="min-w-0">
                 <span className="font-medium text-gray-900">{e.exercise}</span>
-                {e.isPR && <span className="ml-1.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">PR</span>}
-                {e.plateau && <span className="ml-1.5 text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">停滯</span>}
+                {e.isPR && <span className="ml-1.5 text-[11px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">PR</span>}
+                {e.plateau && <span className="ml-1.5 text-[11px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">停滯</span>}
                 <div className="text-xs text-gray-400 mt-0.5">最重 {e.topWeight}kg · 練過 {e.sessions} 次</div>
               </div>
               <div className="text-right shrink-0">
@@ -63,12 +63,12 @@ export default function TrainingProgressCard({ sets }: { sets: TrainingSetRow[] 
             <div className="flex items-end gap-1.5 h-20">
               {p.weeklyVolume.map(w => (
                 <div key={w.week} className="flex-1 flex flex-col items-center justify-end gap-1" title={`${w.week}：${w.volume.toLocaleString()} kg`}>
-                  <span className="text-[9px] text-gray-400">{(w.volume / 1000).toFixed(1)}k</span>
+                  <span className="text-[11px] text-gray-400">{(w.volume / 1000).toFixed(1)}k</span>
                   <div
                     className="w-full bg-blue-400 rounded-t"
                     style={{ height: `${maxVol > 0 ? Math.max(4, (w.volume / maxVol) * 56) : 4}px` }}
                   />
-                  <span className="text-[9px] text-gray-400">{w.week.slice(5)}</span>
+                  <span className="text-[11px] text-gray-400">{w.week.slice(5)}</span>
                 </div>
               ))}
             </div>

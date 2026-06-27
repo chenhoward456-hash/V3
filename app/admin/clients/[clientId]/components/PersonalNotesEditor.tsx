@@ -22,12 +22,12 @@ const CATEGORIES = [
 ]
 
 const colorMap: Record<string, string> = {
-  rose: 'bg-rose-50 border-rose-200 text-rose-800',
-  violet: 'bg-violet-50 border-violet-200 text-violet-800',
-  blue: 'bg-blue-50 border-blue-200 text-blue-800',
-  amber: 'bg-amber-50 border-amber-200 text-amber-800',
-  gray: 'bg-gray-50 border-gray-200 text-gray-800',
-  emerald: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+  rose: 'bg-slate-50 border-slate-200 text-slate-800',
+  violet: 'bg-slate-50 border-slate-200 text-slate-800',
+  blue: 'bg-slate-50 border-slate-200 text-slate-800',
+  amber: 'bg-slate-50 border-slate-200 text-slate-800',
+  gray: 'bg-slate-50 border-slate-200 text-slate-800',
+  emerald: 'bg-slate-50 border-slate-200 text-slate-800',
 }
 
 export default function PersonalNotesEditor({ clientId }: { clientId: string }) {
@@ -101,7 +101,7 @@ export default function PersonalNotesEditor({ clientId }: { clientId: string }) 
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-3">
         <div>
           <h2 className="text-lg font-medium text-gray-900">🧠 個人化記憶（AI Agent 紅線）</h2>
@@ -116,14 +116,14 @@ export default function PersonalNotesEditor({ clientId }: { clientId: string }) 
       </div>
 
       {showAdd && (
-        <div className="border border-blue-200 bg-blue-50 rounded p-3 mb-4 space-y-2">
+        <div className="border border-slate-200 bg-slate-50 rounded-xl p-3 mb-4 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-xs text-gray-600 mb-1">分類</label>
               <select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                className="w-full px-2 py-1 border border-slate-300 rounded text-sm"
               >
                 {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
@@ -135,7 +135,7 @@ export default function PersonalNotesEditor({ clientId }: { clientId: string }) 
                 min={1} max={10}
                 value={form.weight}
                 onChange={(e) => setForm({ ...form, weight: parseInt(e.target.value) || 5 })}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                className="w-full px-2 py-1 border border-slate-300 rounded text-sm"
               />
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function PersonalNotesEditor({ clientId }: { clientId: string }) 
               onChange={(e) => setForm({ ...form, note: e.target.value })}
               rows={3}
               placeholder="例：對 SHBG 敏感，低碳 1-2 週就會看到 SHBG 上升..."
-              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+              className="w-full px-2 py-1 border border-slate-300 rounded text-sm"
             />
           </div>
           <div>
@@ -157,7 +157,7 @@ export default function PersonalNotesEditor({ clientId }: { clientId: string }) 
               type="date"
               value={form.relevant_until}
               onChange={(e) => setForm({ ...form, relevant_until: e.target.value })}
-              className="px-2 py-1 border border-gray-300 rounded text-sm"
+              className="px-2 py-1 border border-slate-300 rounded text-sm"
             />
           </div>
           <div className="flex gap-2">

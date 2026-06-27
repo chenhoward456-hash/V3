@@ -111,7 +111,7 @@ export default function WelcomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Top bar */}
       <div className="px-4 py-4 flex items-center justify-between">
         <Link
@@ -121,7 +121,7 @@ export default function WelcomePage() {
           <ChevronLeft className="w-4 h-4" />
           跳過
         </Link>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 tabular-nums">
           {step + 1} / {STEPS.length}
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function WelcomePage() {
       <div className="px-4 mb-4">
         <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-emerald-500 transition-all duration-300"
+            className="h-full bg-blue-600 transition-all duration-300"
             style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
           />
         </div>
@@ -151,10 +151,10 @@ export default function WelcomePage() {
 
           {/* Tips */}
           {current.tips && current.tips.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 space-y-2">
+            <div className="bg-white border border-slate-200 rounded-xl p-4 mb-4 space-y-2">
               {current.tips.map((tip, i) => (
                 <div key={i} className="flex items-start gap-2 text-xs text-gray-700">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                  <Check className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
                   <span>{tip}</span>
                 </div>
               ))}
@@ -165,7 +165,7 @@ export default function WelcomePage() {
           {current.cta && (
             <Link
               href={current.cta.href(clientId)}
-              className="block w-full bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 text-emerald-800 text-sm py-3 rounded-xl text-center mb-4 transition-colors"
+              className="block w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 text-sm py-3 rounded-xl text-center mb-4 transition-colors"
             >
               {current.cta.label}（先看，等下回來）
             </Link>
@@ -184,7 +184,7 @@ export default function WelcomePage() {
             {!isLast ? (
               <button
                 onClick={() => setStep(s => Math.min(STEPS.length - 1, s + 1))}
-                className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-xl flex items-center justify-center gap-1"
+                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-xl flex items-center justify-center gap-1"
               >
                 下一步
                 <ChevronRight className="w-4 h-4" />
@@ -192,7 +192,7 @@ export default function WelcomePage() {
             ) : (
               <button
                 onClick={finishAndGoHome}
-                className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-xl"
+                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-xl"
               >
                 ✅ 完成，進主頁
               </button>
@@ -207,7 +207,7 @@ export default function WelcomePage() {
                 onClick={() => setStep(i)}
                 className={`transition-all ${
                   i === step
-                    ? 'w-6 h-2 bg-emerald-600 rounded-full'
+                    ? 'w-6 h-2 bg-blue-600 rounded-full'
                     : 'w-2 h-2 bg-gray-300 rounded-full hover:bg-gray-400'
                 }`}
                 aria-label={`Step ${i + 1}`}

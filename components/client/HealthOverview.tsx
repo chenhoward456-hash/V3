@@ -156,7 +156,7 @@ export default function HealthOverview({
       <div key="calories" className={`${calStatus?.bg || 'bg-amber-50'} rounded-2xl p-4 text-center`}>
         <div className="flex items-center justify-center gap-1.5 mb-1">
           <p className="text-xs text-gray-500">今日熱量</p>
-          {calStatus && <span className={`text-[10px] font-medium ${calStatus.color}`}>{calStatus.label}</span>}
+          {calStatus && <span className={`text-[11px] font-medium ${calStatus.color}`}>{calStatus.label}</span>}
         </div>
         <p className={`text-2xl font-bold ${calStatus?.color || 'text-amber-600'}`}>
           {todayCalories ? `${todayCalories}` : '--'}
@@ -226,7 +226,7 @@ export default function HealthOverview({
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-medium text-gray-400">⌚ 穿戴裝置數據</p>
             {wearable?.respiratory_rate != null && (
-              <span className="text-[10px] text-gray-500">
+              <span className="text-[11px] text-gray-500">
                 呼吸 {wearable.respiratory_rate} 次/分
               </span>
             )}

@@ -117,14 +117,14 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           <span>🩸</span>
           <p className="text-sm font-semibold text-amber-800">血檢指標異常</p>
         </div>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
           就緒 {gate.readinessScore}/100
         </span>
       </div>
       {(gate.labFlags ?? []).length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-2">
           {gate.labFlags.map((flag: string, i: number) => (
-            <span key={i} className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
+            <span key={i} className="text-[11px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
               {flag}
             </span>
           ))}
@@ -145,12 +145,12 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
     // 如果有 deadlineInfo 但沒進入 goal-driven（例如已達標、數據不足等），顯示簡易卡片
     if (data.status === 'insufficient_data') {
       return (
-        <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-2xl">📊</span>
             <h2 className="text-lg font-bold text-gray-900">目標體重計畫</h2>
           </div>
-          <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-500">
+          <div className="bg-slate-50 rounded-xl px-4 py-3 text-sm text-gray-500">
             需要至少 2 週的體重數據，系統才能啟動自動調整。請持續記錄體重！
           </div>
         </div>
@@ -159,55 +159,55 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
     // 其他非 goal-driven 狀態（on_track 等）顯示引擎狀態
     if (data.status && data.statusEmoji) {
       return (
-        <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-2xl">🎯</span>
             <h2 className="text-lg font-bold text-gray-900">目標體重計畫</h2>
           </div>
           <div className={`rounded-xl px-4 py-3 text-sm font-medium ${
-            data.status === 'on_track' ? 'bg-green-50 text-green-700 border border-green-200'
+            data.status === 'on_track' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
             : data.status === 'plateau' ? 'bg-amber-50 text-amber-700 border border-amber-200'
-            : 'bg-red-50 text-red-700 border border-red-200'
+            : 'bg-rose-50 text-rose-600 border border-rose-200'
           }`}>
             {data.statusEmoji} {data.statusLabel} — {data.message}
           </div>
           {dl && (
             <div className="grid grid-cols-3 gap-2 mt-3">
-              <div className="bg-gray-50 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-gray-400">還需減</p>
-                <p className="text-lg font-bold text-gray-900">{dl.weightToLose}</p>
-                <p className="text-[10px] text-gray-400">kg</p>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <p className="text-[11px] text-gray-400">還需減</p>
+                <p className="text-lg font-bold text-gray-900 tabular-nums">{dl.weightToLose}</p>
+                <p className="text-[11px] text-gray-400">kg</p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-gray-400">剩餘</p>
-                <p className="text-lg font-bold text-gray-900">{dl.daysLeft}</p>
-                <p className="text-[10px] text-gray-400">天</p>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <p className="text-[11px] text-gray-400">剩餘</p>
+                <p className="text-lg font-bold text-gray-900 tabular-nums">{dl.daysLeft}</p>
+                <p className="text-[11px] text-gray-400">天</p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-gray-400">TDEE</p>
-                <p className="text-lg font-bold text-gray-900">{data.estimatedTDEE || '--'}</p>
-                <p className="text-[10px] text-gray-400">kcal</p>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <p className="text-[11px] text-gray-400">TDEE</p>
+                <p className="text-lg font-bold text-gray-900 tabular-nums">{data.estimatedTDEE || '--'}</p>
+                <p className="text-[11px] text-gray-400">kcal</p>
               </div>
             </div>
           )}
           {data.refeedSuggested && (
-            <div className="mt-3 bg-orange-50 border border-orange-300 rounded-2xl p-4">
+            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">🔄</span>
-                <p className="text-sm font-bold text-orange-800">
+                <p className="text-sm font-bold text-amber-700">
                   系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
                 </p>
               </div>
-              <p className="text-xs text-orange-700">{data.refeedReason}</p>
-              <p className="text-[11px] text-orange-500 mt-1">
+              <p className="text-xs text-amber-700">{data.refeedReason}</p>
+              <p className="text-[11px] text-amber-600 mt-1">
                 今日碳水提升至維持熱量（4-6g/kg），脂肪降低，蛋白質維持。
               </p>
             </div>
           )}
           {wearableInsightCard}
           {data.menstrualCycleNote && (
-            <div className="mt-3 bg-pink-50 border border-pink-200 rounded-2xl p-4">
-              <p className="text-xs text-pink-700 leading-relaxed">{data.menstrualCycleNote}</p>
+            <div className="mt-3 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <p className="text-xs text-slate-600 leading-relaxed">{data.menstrualCycleNote}</p>
             </div>
           )}
         </div>
@@ -217,9 +217,9 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
   }
 
   const safetyColors: Record<string, { bg: string; border: string; text: string; badge: string }> = {
-    normal: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', badge: 'bg-green-100 text-green-700' },
-    aggressive: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700' },
-    extreme: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', badge: 'bg-red-100 text-red-700' },
+    normal: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', badge: 'bg-emerald-50 text-emerald-600' },
+    aggressive: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', badge: 'bg-amber-50 text-amber-700' },
+    extreme: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-600', badge: 'bg-rose-50 text-rose-600' },
   }
   const colors = safetyColors[dl.safetyLevel || 'normal'] || safetyColors.normal
   const isAheadOfSchedule = data.statusLabel === '進度超前'
@@ -239,14 +239,14 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
   return (
     <>
     {gateWarningBanner}
-    <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* 標題 */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🎯</span>
           <h2 className="text-lg font-bold text-gray-900">目標體重計畫</h2>
         </div>
-        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
           isAheadOfSchedule ? 'bg-blue-100 text-blue-700' : colors.badge
         }`}>
           {isAheadOfSchedule ? '📈 進度超前' : safetyLabels[dl.safetyLevel || 'normal']}
@@ -255,44 +255,44 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
 
       {/* 核心數據 */}
       <div className="grid grid-cols-3 gap-2 mb-3">
-        <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <p className="text-[10px] text-gray-400">{dl.prePeakEntryWeight ? '飲食需減' : '還需減'}</p>
-          <p className="text-xl font-bold text-gray-900">{dl.dietWeightToLose ?? dl.weightToLose}</p>
-          <p className="text-[10px] text-gray-400">kg</p>
+        <div className="bg-slate-50 rounded-xl p-3 text-center">
+          <p className="text-[11px] text-gray-400">{dl.prePeakEntryWeight ? '飲食需減' : '還需減'}</p>
+          <p className="text-xl font-bold text-gray-900 tabular-nums">{dl.dietWeightToLose ?? dl.weightToLose}</p>
+          <p className="text-[11px] text-gray-400">kg</p>
         </div>
-        <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <p className="text-[10px] text-gray-400">剩餘天數</p>
-          <p className="text-xl font-bold text-gray-900">{dl.daysLeft}</p>
-          <p className="text-[10px] text-gray-400">天</p>
+        <div className="bg-slate-50 rounded-xl p-3 text-center">
+          <p className="text-[11px] text-gray-400">剩餘天數</p>
+          <p className="text-xl font-bold text-gray-900 tabular-nums">{dl.daysLeft}</p>
+          <p className="text-[11px] text-gray-400">天</p>
         </div>
-        <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <p className="text-[10px] text-gray-400">每日赤字</p>
-          <p className={`text-xl font-bold ${dl.requiredDailyDeficit > 750 ? 'text-red-600' : dl.requiredDailyDeficit > 500 ? 'text-amber-600' : 'text-green-600'}`}>
+        <div className="bg-slate-50 rounded-xl p-3 text-center">
+          <p className="text-[11px] text-gray-400">每日赤字</p>
+          <p className={`text-xl font-bold tabular-nums ${dl.requiredDailyDeficit > 750 ? 'text-rose-600' : dl.requiredDailyDeficit > 500 ? 'text-amber-600' : 'text-emerald-600'}`}>
             {dl.requiredDailyDeficit}
           </p>
-          <p className="text-[10px] text-gray-400">kcal</p>
+          <p className="text-[11px] text-gray-400">kcal</p>
         </div>
       </div>
 
       {/* Peak Week 體重拆分（備賽專用） */}
       {dl.prePeakEntryWeight && dl.peakWeekExpectedLoss && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 mb-4">
-          <p className="text-[10px] font-semibold text-indigo-700 mb-1.5">💧 Peak Week 體重拆分</p>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
+          <p className="text-[11px] font-semibold text-slate-600 mb-1.5">💧 Peak Week 體重拆分</p>
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div>
-              <p className="text-[10px] text-gray-400">PW 入場目標</p>
-              <p className="font-bold text-indigo-700">{dl.prePeakEntryWeight} kg</p>
+              <p className="text-[11px] text-gray-400">PW 入場目標</p>
+              <p className="font-bold text-slate-900 tabular-nums">{dl.prePeakEntryWeight} kg</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400">PW 預估可脫</p>
-              <p className="font-bold text-blue-600">-{dl.peakWeekExpectedLoss} kg</p>
+              <p className="text-[11px] text-gray-400">PW 預估可脫</p>
+              <p className="font-bold text-slate-900 tabular-nums">-{dl.peakWeekExpectedLoss} kg</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400">上台目標</p>
-              <p className="font-bold text-gray-900">{targetWeightValue} kg</p>
+              <p className="text-[11px] text-gray-400">上台目標</p>
+              <p className="font-bold text-gray-900 tabular-nums">{targetWeightValue} kg</p>
             </div>
           </div>
-          <p className="text-[9px] text-indigo-400 mt-1.5 text-center">
+          <p className="text-[11px] text-slate-400 mt-1.5 text-center">
             水分操作預估（{Math.round((dl.peakWeekWaterCutPct || 0.02) * 100)}% BW），實際依個人反應調整
           </p>
         </div>
@@ -303,18 +303,18 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         const ms = data.metabolicStress
         const isLow = ms.level === 'low'
         const toRefeed = Math.max(0, 45 - ms.score)
-        const box = ms.level === 'high' ? 'bg-red-50 border border-red-200'
-          : ms.level === 'elevated' ? 'bg-orange-50 border border-orange-200'
-          : ms.level === 'moderate' ? 'bg-yellow-50 border border-yellow-200'
+        const box = ms.level === 'high' ? 'bg-rose-50 border border-rose-200'
+          : ms.level === 'elevated' ? 'bg-amber-50 border border-amber-200'
+          : ms.level === 'moderate' ? 'bg-amber-50 border border-amber-200'
           : 'bg-emerald-50 border border-emerald-200'
-        const titleColor = ms.level === 'high' ? 'text-red-700'
-          : ms.level === 'elevated' ? 'text-orange-700'
-          : ms.level === 'moderate' ? 'text-yellow-700'
-          : 'text-emerald-700'
-        const badge = ms.level === 'high' ? 'bg-red-100 text-red-700'
-          : ms.level === 'elevated' ? 'bg-orange-100 text-orange-700'
-          : ms.level === 'moderate' ? 'bg-yellow-100 text-yellow-700'
-          : 'bg-emerald-100 text-emerald-700'
+        const titleColor = ms.level === 'high' ? 'text-rose-600'
+          : ms.level === 'elevated' ? 'text-amber-700'
+          : ms.level === 'moderate' ? 'text-amber-700'
+          : 'text-emerald-600'
+        const badge = ms.level === 'high' ? 'bg-rose-50 text-rose-600'
+          : ms.level === 'elevated' ? 'bg-amber-50 text-amber-700'
+          : ms.level === 'moderate' ? 'bg-amber-50 text-amber-700'
+          : 'bg-emerald-50 text-emerald-600'
         const badgeText = ms.level === 'high' ? '偏高'
           : ms.level === 'elevated' ? '中高'
           : ms.level === 'moderate' ? '監控中'
@@ -323,9 +323,9 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         <div className={`rounded-xl p-3 mb-3 ${box}`}>
           <div className="flex items-center justify-between mb-1">
             <p className={`text-xs font-bold ${titleColor}`}>
-              {isLow ? '🟢' : '🔥'} 代謝壓力：{ms.score}/100
+              {isLow ? '🟢' : '🔥'} 代謝壓力：<span className="tabular-nums">{ms.score}</span>/100
             </p>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badge}`}>
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${badge}`}>
               {badgeText}
             </span>
           </div>
@@ -339,11 +339,11 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
               { label: '狀態', value: ms.breakdown.wellnessTrend, max: 10 },
             ].map(({ label, value, max }) => (
               <div key={label} className="text-center">
-                <div className="w-full bg-gray-100 rounded-full h-1 mb-0.5">
-                  <div className={`h-1 rounded-full ${value / max >= 0.7 ? 'bg-red-400' : value / max >= 0.4 ? 'bg-amber-400' : 'bg-green-400'}`}
+                <div className="w-full bg-slate-100 rounded-full h-1 mb-0.5">
+                  <div className={`h-1 rounded-full ${value / max >= 0.7 ? 'bg-rose-400' : value / max >= 0.4 ? 'bg-amber-400' : 'bg-emerald-400'}`}
                     style={{ width: `${Math.round(value / max * 100)}%` }} />
                 </div>
-                <p className="text-[8px] text-gray-400">{label}</p>
+                <p className="text-[11px] text-gray-400">{label}</p>
               </div>
             ))}
           </div>
@@ -357,8 +357,8 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           </p>
           {/* 翻牌條件：還沒到回碳時，明確告訴你「差幾分」+「什麼情況會觸發」*/}
           {(ms.recommendation === 'continue' || ms.recommendation === 'monitor') && (
-            <div className="mt-2 pt-2 border-t border-gray-200/70">
-              <p className="text-[10px] text-gray-500 leading-relaxed">
+            <div className="mt-2 pt-2 border-t border-slate-200">
+              <p className="text-[11px] text-gray-500 leading-relaxed">
                 📍 距離建議回碳還差 <span className="font-bold text-gray-700">{toRefeed}</span> 分。
                 會在以下任一情況觸發：連續停滯 ≥2 週、近 7 天能量平均 ≤2.5、連續低碳(&lt;150g) ≥5 天、或減脂滿 12 週。
               </p>
@@ -373,8 +373,8 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-semibold text-gray-700">📋 今日飲食目標</p>
           {hasCarbCycling && (
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              isTrainingDay ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+              isTrainingDay ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
             }`}>
               {isTrainingDay ? '🏋️ 訓練日' : '🛋️ 休息日'}
             </span>
@@ -387,15 +387,15 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
             { label: '碳水', value: todayCarbs, unit: 'g', emoji: '🍚' },
             { label: '脂肪', value: dbTargets?.fat ?? data.suggestedFat, unit: 'g', emoji: '🥑' },
           ].map(({ label, value, unit, emoji }) => (
-            <div key={label} className="text-center bg-white bg-opacity-70 rounded-xl py-2 px-1">
-              <p className="text-[10px] text-gray-500">{emoji} {label}</p>
-              <p className="text-lg font-bold text-gray-900">{value || '--'}</p>
-              <p className="text-[10px] text-gray-400">{unit}</p>
+            <div key={label} className="text-center bg-slate-50 rounded-xl py-2 px-1">
+              <p className="text-[11px] text-gray-500">{emoji} {label}</p>
+              <p className="text-lg font-bold text-gray-900 tabular-nums">{value || '--'}</p>
+              <p className="text-[11px] text-gray-400">{unit}</p>
             </div>
           ))}
         </div>
         {hasCarbCycling && (
-          <p className="text-[10px] text-gray-400 mt-2 text-center">
+          <p className="text-[11px] text-gray-400 mt-2 text-center">
             {(() => {
               const tDay = dbCarbCycling ? dbTargets!.carbsTrainingDay! : data.suggestedCarbsTrainingDay
               const rDay = dbCarbCycling ? dbTargets!.carbsRestDay! : data.suggestedCarbsRestDay
@@ -415,39 +415,39 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
             每餐 {data.perMealProteinGuide.perMealGrams.min}-{data.perMealProteinGuide.perMealGrams.max}g，
             分 {data.perMealProteinGuide.mealsPerDay.min}-{data.perMealProteinGuide.mealsPerDay.max} 餐
           </p>
-          <p className="text-[10px] text-amber-600 mt-1">{data.perMealProteinGuide.periWorkoutNote}</p>
+          <p className="text-[11px] text-amber-600 mt-1">{data.perMealProteinGuide.periWorkoutNote}</p>
         </div>
       )}
 
       {/* 有氧 / 步數參考 */}
       {(dl.suggestedCardioMinutes > 0 || dl.suggestedDailySteps > 0) && (
-        <div className="bg-cyan-50 border border-cyan-200 rounded-2xl p-4 mb-3">
-          <p className="text-xs font-semibold text-cyan-700 mb-2">🏃 活動量參考</p>
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
+          <p className="text-xs font-semibold text-slate-600 mb-2">🏃 活動量參考</p>
           <div className="grid grid-cols-2 gap-3">
             {dl.suggestedCardioMinutes > 0 && (
-              <div className="bg-white bg-opacity-70 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-gray-500">🚴 有氧</p>
-                <p className="text-2xl font-bold text-cyan-700">{dl.suggestedCardioMinutes}</p>
-                <p className="text-[10px] text-gray-400">分鐘/天</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">中等強度</p>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <p className="text-[11px] text-gray-500">🚴 有氧</p>
+                <p className="text-2xl font-bold text-slate-900 tabular-nums">{dl.suggestedCardioMinutes}</p>
+                <p className="text-[11px] text-gray-400">分鐘/天</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">中等強度</p>
               </div>
             )}
             {dl.suggestedDailySteps > 0 && (
-              <div className="bg-white bg-opacity-70 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-gray-500">👟 步數</p>
-                <p className="text-2xl font-bold text-cyan-700">{dl.suggestedDailySteps?.toLocaleString()}</p>
-                <p className="text-[10px] text-gray-400">步/天</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">含日常活動</p>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <p className="text-[11px] text-gray-500">👟 步數</p>
+                <p className="text-2xl font-bold text-slate-900 tabular-nums">{dl.suggestedDailySteps?.toLocaleString()}</p>
+                <p className="text-[11px] text-gray-400">步/天</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">含日常活動</p>
               </div>
             )}
           </div>
           {dl.extraCardioNeeded && dl.extraBurnPerDay > 0 && (
-            <p className="text-[10px] text-cyan-600 mt-2 text-center">
+            <p className="text-[11px] text-slate-500 mt-2 text-center">
               💡 飲食面不足，需透過活動額外消耗 {dl.extraBurnPerDay} kcal/天
             </p>
           )}
           {dl.cardioNote && (
-            <p className="text-[10px] text-gray-500 mt-1 text-center">{dl.cardioNote}</p>
+            <p className="text-[11px] text-gray-500 mt-1 text-center">{dl.cardioNote}</p>
           )}
         </div>
       )}
@@ -459,7 +459,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         const hasPeakSplit = !!dl.prePeakEntryWeight
         return (
           <div className={`rounded-xl px-4 py-3 text-sm font-medium ${
-            canReach ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+            canReach ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
           }`}>
             {canReach
               ? `✅ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg${hasPeakSplit ? `（PW 後 → ${targetWeightValue}kg）` : ''} — 可以達標！`
@@ -471,15 +471,15 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
 
       {/* Refeed 建議 */}
       {data.refeedSuggested && (
-        <div className="mt-3 bg-orange-50 border border-orange-300 rounded-2xl p-4">
+        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg">🔄</span>
-            <p className="text-sm font-bold text-orange-800">
+            <p className="text-sm font-bold text-amber-700">
               系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
             </p>
           </div>
-          <p className="text-xs text-orange-700">{data.refeedReason}</p>
-          <p className="text-[11px] text-orange-500 mt-1">
+          <p className="text-xs text-amber-700">{data.refeedReason}</p>
+          <p className="text-[11px] text-amber-600 mt-1">
             今日碳水提升至維持熱量（4-6g/kg），脂肪降低，蛋白質維持。
           </p>
         </div>
@@ -492,16 +492,16 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       {data.energyAvailability && data.energyAvailability.level !== 'adequate' && (
         <div className={`mt-3 rounded-2xl p-4 ${
           data.energyAvailability.level === 'critical'
-            ? 'bg-red-50 border border-red-300'
+            ? 'bg-rose-50 border border-rose-200'
             : 'bg-amber-50 border border-amber-200'
         }`}>
           <p className={`text-xs font-medium mb-1 ${
-            data.energyAvailability.level === 'critical' ? 'text-red-700' : 'text-amber-700'
+            data.energyAvailability.level === 'critical' ? 'text-rose-600' : 'text-amber-700'
           }`}>
             能量可用性：{data.energyAvailability.eaKcalPerKgFFM} kcal/kg FFM/day
           </p>
           <p className={`text-[11px] leading-relaxed ${
-            data.energyAvailability.level === 'critical' ? 'text-red-600' : 'text-amber-600'
+            data.energyAvailability.level === 'critical' ? 'text-rose-600' : 'text-amber-600'
           }`}>{data.energyAvailability.warning}</p>
         </div>
       )}
@@ -522,8 +522,8 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
 
       {/* 月經週期提示 */}
       {data.menstrualCycleNote && (
-        <div className="mt-3 bg-pink-50 border border-pink-200 rounded-2xl p-4">
-          <p className="text-xs text-pink-700 leading-relaxed">{data.menstrualCycleNote}</p>
+        <div className="mt-3 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+          <p className="text-xs text-slate-600 leading-relaxed">{data.menstrualCycleNote}</p>
         </div>
       )}
 

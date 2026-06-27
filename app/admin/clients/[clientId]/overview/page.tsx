@@ -494,11 +494,23 @@ export default function ClientOverview() {
       if (den > 0) regressionSlope = num / den
     }
 
+    // 近 4 週斜率：對照長期斜率用（早期平台期會把 8 週斜率拖慢 → 誤判「落後」）。只改顯示、不進處方。
+    let recentSlope: number | null = null
+    const recentPts = points.slice(-4)
+    if (recentPts.length >= 3) {
+      const n2 = recentPts.length
+      const mx = recentPts.reduce((s, p) => s + p.x, 0) / n2
+      const my = recentPts.reduce((s, p) => s + p.y, 0) / n2
+      let nu = 0, de = 0
+      for (const p of recentPts) { nu += (p.x - mx) * (p.y - my); de += (p.x - mx) ** 2 }
+      if (de > 0) recentSlope = nu / de
+    }
+
     const trendReversed = delta1w != null && delta4w != null &&
       Math.sign(delta1w) !== Math.sign(delta4w) &&
       Math.abs(delta1w) > 0.15
 
-    return { weeks, current, delta1w, delta4w, regressionSlope, trendReversed }
+    return { weeks, current, delta1w, delta4w, regressionSlope, recentSlope, trendReversed }
   }, [bodyData])
 
   // ===== 體組成趨勢 =====
@@ -1342,19 +1354,19 @@ export default function ClientOverview() {
 
   const getTypeBgColor = (type: string) => {
     const colors: Record<string, string> = {
-      push: 'bg-red-100', pull: 'bg-blue-100', legs: 'bg-green-100',
-      full_body: 'bg-purple-100', cardio: 'bg-orange-100', chest: 'bg-pink-100',
-      shoulder: 'bg-indigo-100', arms: 'bg-yellow-100', rest: 'bg-gray-100',
+      push: 'bg-slate-100', pull: 'bg-slate-100', legs: 'bg-slate-100',
+      full_body: 'bg-slate-100', cardio: 'bg-slate-100', chest: 'bg-slate-100',
+      shoulder: 'bg-slate-100', arms: 'bg-slate-100', rest: 'bg-slate-100',
     }
-    return colors[type] || 'bg-gray-100'
+    return colors[type] || 'bg-slate-100'
   }
 
   const getTypeEmoji = (type: string) => TRAINING_TYPES.find(t => t.value === type)?.emoji || ''
 
   const getStatusColor = (status: string) => {
-    if (status === 'normal') return 'bg-green-100 text-green-700'
-    if (status === 'attention') return 'bg-yellow-100 text-yellow-700'
-    return 'bg-red-100 text-red-700'
+    if (status === 'normal') return 'bg-emerald-100 text-emerald-700'
+    if (status === 'attention') return 'bg-amber-100 text-amber-700'
+    return 'bg-rose-100 text-rose-700'
   }
 
   if (loading) {
@@ -1379,7 +1391,7 @@ export default function ClientOverview() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
@@ -1389,7 +1401,7 @@ export default function ClientOverview() {
                   <h1 className="text-xl font-bold text-gray-900">{client.name} — 學員總覽</h1>
                   {isCompetitionMode(client.client_mode) && client.competition_date && (() => {
                     const d = daysUntilDateTW(client.competition_date)
-                    return d > 0 ? <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${d <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {d}天</span> : null
+                    return d > 0 ? <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${d <= 14 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {d}天</span> : null
                   })()}
                 </div>
                 <p className="text-xs text-gray-500">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) ? ` · ${PHASE_LABELS[client.prep_phase || ''] || ''}` : ''}</p>
@@ -1432,7 +1444,7 @@ export default function ClientOverview() {
 
         {/* ===== 頂部快速摘要：紅綠燈 ===== */}
         <div className={`rounded-2xl p-5 border ${
-          alerts.length >= 2 ? 'bg-red-50 border-red-200' : alerts.length === 1 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'
+          alerts.length >= 2 ? 'bg-rose-50 border-rose-200' : alerts.length === 1 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'
         }`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -1459,49 +1471,49 @@ export default function ClientOverview() {
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-3">
             {client.supplement_enabled && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
-                <p className="text-[10px] text-gray-500">補品</p>
-                <p className={`text-lg font-bold ${keyMetrics.weekCompliance >= 80 ? 'text-green-600' : keyMetrics.weekCompliance >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>{keyMetrics.weekCompliance}%</p>
+                <p className="text-[11px] text-gray-500">補品</p>
+                <p className={`text-lg font-bold tabular-nums ${keyMetrics.weekCompliance >= 80 ? 'text-emerald-600' : keyMetrics.weekCompliance >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>{keyMetrics.weekCompliance}%</p>
               </div>
             )}
             {client.nutrition_enabled && keyMetrics.weekNutritionRate != null && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
-                <p className="text-[10px] text-gray-500">飲食</p>
-                <p className={`text-lg font-bold ${keyMetrics.weekNutritionRate >= 80 ? 'text-green-600' : keyMetrics.weekNutritionRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>{keyMetrics.weekNutritionRate}%</p>
+                <p className="text-[11px] text-gray-500">飲食</p>
+                <p className={`text-lg font-bold tabular-nums ${keyMetrics.weekNutritionRate >= 80 ? 'text-emerald-600' : keyMetrics.weekNutritionRate >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>{keyMetrics.weekNutritionRate}%</p>
               </div>
             )}
             {client.training_enabled && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
-                <p className="text-[10px] text-gray-500">訓練</p>
-                <p className="text-lg font-bold text-blue-600">{keyMetrics.weekTrainingDays}天</p>
+                <p className="text-[11px] text-gray-500">訓練</p>
+                <p className="text-lg font-bold tabular-nums text-blue-600">{keyMetrics.weekTrainingDays}天</p>
               </div>
             )}
             {client.wellness_enabled && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
-                <p className="text-[10px] text-gray-500">精力</p>
-                <p className="text-lg font-bold text-purple-600">{keyMetrics.avgEnergy}</p>
+                <p className="text-[11px] text-gray-500">精力</p>
+                <p className="text-lg font-bold tabular-nums text-slate-900">{keyMetrics.avgEnergy}</p>
               </div>
             )}
             {client.body_composition_enabled && keyMetrics.latestWeight && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
-                <p className="text-[10px] text-gray-500">體重</p>
-                <p className="text-lg font-bold text-gray-900">{keyMetrics.latestWeight}<span className="text-xs font-normal">kg</span></p>
+                <p className="text-[11px] text-gray-500">體重</p>
+                <p className="text-lg font-bold tabular-nums text-gray-900">{keyMetrics.latestWeight}<span className="text-xs font-normal">kg</span></p>
               </div>
             )}
             {client.body_composition_enabled && keyMetrics.weightChange && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
-                <p className="text-[10px] text-gray-500">週變化</p>
-                <p className={`text-lg font-bold ${Number(keyMetrics.weightChange) > 0 ? (client.goal_type === 'bulk' ? 'text-green-500' : 'text-red-500') : Number(keyMetrics.weightChange) < 0 ? (client.goal_type === 'cut' ? 'text-green-500' : 'text-red-500') : 'text-gray-500'}`}>
+                <p className="text-[11px] text-gray-500">週變化</p>
+                <p className={`text-lg font-bold tabular-nums ${Number(keyMetrics.weightChange) > 0 ? (client.goal_type === 'bulk' ? 'text-emerald-500' : 'text-rose-500') : Number(keyMetrics.weightChange) < 0 ? (client.goal_type === 'cut' ? 'text-emerald-500' : 'text-rose-500') : 'text-gray-500'}`}>
                   {Number(keyMetrics.weightChange) > 0 ? '+' : ''}{keyMetrics.weightChange}
-                  {keyMetrics.weightChangePct && <span className="text-[10px] font-normal text-gray-400 ml-0.5">({Number(keyMetrics.weightChangePct) > 0 ? '+' : ''}{keyMetrics.weightChangePct}%)</span>}
+                  {keyMetrics.weightChangePct && <span className="text-[11px] font-normal text-gray-400 ml-0.5">({Number(keyMetrics.weightChangePct) > 0 ? '+' : ''}{keyMetrics.weightChangePct}%)</span>}
                 </p>
               </div>
             )}
             {keyMetrics.weightTrend && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
-                <p className="text-[10px] text-gray-500">14天趨勢</p>
+                <p className="text-[11px] text-gray-500">14天趨勢</p>
                 <p className={`text-lg font-bold ${
-                  keyMetrics.weightTrend === 'down' ? (client.goal_type === 'cut' ? 'text-green-600' : 'text-red-600')
-                  : keyMetrics.weightTrend === 'up' ? (client.goal_type === 'bulk' ? 'text-green-600' : 'text-red-600')
+                  keyMetrics.weightTrend === 'down' ? (client.goal_type === 'cut' ? 'text-emerald-600' : 'text-rose-600')
+                  : keyMetrics.weightTrend === 'up' ? (client.goal_type === 'bulk' ? 'text-emerald-600' : 'text-rose-600')
                   : 'text-gray-500'
                 }`}>
                   {keyMetrics.weightTrend === 'down' ? '↓' : keyMetrics.weightTrend === 'up' ? '↑' : '→'}
@@ -1510,33 +1522,33 @@ export default function ClientOverview() {
             )}
             {client.nutrition_enabled && keyMetrics.proteinHitRate != null && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
-                <p className="text-[10px] text-gray-500">蛋白質達標</p>
-                <p className={`text-lg font-bold ${keyMetrics.proteinHitRate >= 80 ? 'text-green-600' : keyMetrics.proteinHitRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>{keyMetrics.proteinHitRate}%</p>
+                <p className="text-[11px] text-gray-500">蛋白質達標</p>
+                <p className={`text-lg font-bold tabular-nums ${keyMetrics.proteinHitRate >= 80 ? 'text-emerald-600' : keyMetrics.proteinHitRate >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>{keyMetrics.proteinHitRate}%</p>
                 {keyMetrics.proteinMissStreak >= 3 && (
-                  <p className="text-[9px] text-red-500">連{keyMetrics.proteinMissStreak}天</p>
+                  <p className="text-[11px] text-rose-500">連{keyMetrics.proteinMissStreak}天</p>
                 )}
               </div>
             )}
             {keyMetrics.avgHrv != null && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
-                <p className="text-[10px] text-gray-500">HRV</p>
-                <p className={`text-lg font-bold ${
-                  keyMetrics.hrvLowStreak >= 3 ? 'text-red-600' :
-                  keyMetrics.hrvLowStreak >= 2 ? 'text-yellow-600' :
-                  'text-green-600'
+                <p className="text-[11px] text-gray-500">HRV</p>
+                <p className={`text-lg font-bold tabular-nums ${
+                  keyMetrics.hrvLowStreak >= 3 ? 'text-rose-600' :
+                  keyMetrics.hrvLowStreak >= 2 ? 'text-amber-600' :
+                  'text-emerald-600'
                 }`}>
-                  {keyMetrics.avgHrv}<span className="text-[10px] font-normal text-gray-400 ml-0.5">ms</span>
+                  {keyMetrics.avgHrv}<span className="text-[11px] font-normal text-gray-400 ml-0.5">ms</span>
                 </p>
                 {keyMetrics.hrvBaseline && (
-                  <p className="text-[9px] text-gray-400">基線 {keyMetrics.hrvBaseline}</p>
+                  <p className="text-[11px] text-gray-400">基線 {keyMetrics.hrvBaseline}</p>
                 )}
               </div>
             )}
             {keyMetrics.latestRhr != null && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
-                <p className="text-[10px] text-gray-500">RHR</p>
-                <p className="text-lg font-bold text-pink-600">
-                  {keyMetrics.latestRhr}<span className="text-[10px] font-normal text-gray-400 ml-0.5">bpm</span>
+                <p className="text-[11px] text-gray-500">RHR</p>
+                <p className="text-lg font-bold tabular-nums text-slate-900">
+                  {keyMetrics.latestRhr}<span className="text-[11px] font-normal text-gray-400 ml-0.5">bpm</span>
                 </p>
               </div>
             )}
@@ -1546,7 +1558,7 @@ export default function ClientOverview() {
           {alerts.length > 0 && (
             <div className="bg-white/50 rounded-lg px-3 py-2">
               {alerts.map((a, i) => (
-                <p key={i} className="text-xs text-red-700">⚠️ {a}</p>
+                <p key={i} className="text-xs text-rose-700">⚠️ {a}</p>
               ))}
             </div>
           )}
@@ -1557,51 +1569,51 @@ export default function ClientOverview() {
         {/* ===== 核心指標卡片（置頂，一眼看狀況）===== */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {client.supplement_enabled && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '週' : `${dateRange}天`}補品服從率</p>
-              <p className={`text-3xl font-bold ${keyMetrics.weekCompliance >= 80 ? 'text-green-600' : keyMetrics.weekCompliance >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+              <p className={`text-3xl font-bold tabular-nums ${keyMetrics.weekCompliance >= 80 ? 'text-emerald-600' : keyMetrics.weekCompliance >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>
                 {keyMetrics.weekCompliance}%
               </p>
               <p className="text-xs text-gray-400 mt-1">月 {keyMetrics.monthCompliance}%</p>
             </div>
           )}
           {client.training_enabled && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '本週' : `近${dateRange}天`}訓練</p>
-              <p className="text-3xl font-bold text-blue-600">{keyMetrics.weekTrainingDays} 天</p>
+              <p className="text-3xl font-bold tabular-nums text-blue-600">{keyMetrics.weekTrainingDays} 天</p>
             </div>
           )}
           {client.wellness_enabled && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <p className="text-xs text-gray-500 mb-1">近 {dateRange} 天精力</p>
-              <p className="text-3xl font-bold text-purple-600">{keyMetrics.avgEnergy}</p>
+              <p className="text-3xl font-bold tabular-nums text-slate-900">{keyMetrics.avgEnergy}</p>
               <p className="text-xs text-gray-400 mt-1">滿分 5</p>
             </div>
           )}
           {client.body_composition_enabled && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <p className="text-xs text-gray-500 mb-1">最新體重</p>
-              <p className="text-3xl font-bold text-gray-900">{keyMetrics.latestWeight ?? '--'}</p>
+              <p className="text-3xl font-bold tabular-nums text-gray-900">{keyMetrics.latestWeight ?? '--'}</p>
               {keyMetrics.weightChange && (
-                <p className={`text-xs mt-1 ${Number(keyMetrics.weightChange) > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                <p className={`text-xs mt-1 ${Number(keyMetrics.weightChange) > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                   {Number(keyMetrics.weightChange) > 0 ? '↑' : '↓'} {Math.abs(Number(keyMetrics.weightChange))} kg
                 </p>
               )}
             </div>
           )}
           {client.lab_enabled && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <p className="text-xs text-gray-500 mb-1">血檢指標</p>
-              <p className="text-3xl font-bold text-gray-900">
+              <p className="text-3xl font-bold tabular-nums text-gray-900">
                 {latestLabs.filter(l => l.status === 'normal').length}/{latestLabs.length}
               </p>
               <p className="text-xs text-gray-400 mt-1">正常</p>
             </div>
           )}
           {client.nutrition_enabled && keyMetrics.weekNutritionRate != null && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '週' : `${dateRange}天`}飲食合規</p>
-              <p className={`text-3xl font-bold ${keyMetrics.weekNutritionRate >= 80 ? 'text-green-600' : keyMetrics.weekNutritionRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+              <p className={`text-3xl font-bold tabular-nums ${keyMetrics.weekNutritionRate >= 80 ? 'text-emerald-600' : keyMetrics.weekNutritionRate >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>
                 {keyMetrics.weekNutritionRate}%
               </p>
               {keyMetrics.monthNutritionRate != null && (
@@ -1613,7 +1625,7 @@ export default function ClientOverview() {
 
         {/* ===== 目標進度卡（時間/體重/體脂） ===== */}
         {(keyMetrics.daysToGoal != null || keyMetrics.weightToGo != null || keyMetrics.bfToGo != null) && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🎯</span>
@@ -1627,19 +1639,19 @@ export default function ClientOverview() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* 距目標日 */}
               {keyMetrics.daysToGoal != null && (
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
-                  <p className="text-[10px] text-blue-600 font-semibold tracking-wider uppercase mb-1">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <p className="text-[11px] text-slate-600 font-semibold tracking-wider uppercase mb-1">
                     {client.competition_date ? '距比賽日' : '距目標日'}
                   </p>
-                  <p className={`text-2xl font-bold ${
+                  <p className={`text-2xl font-bold tabular-nums ${
                     keyMetrics.daysToGoal <= 0 ? 'text-gray-400' :
-                    keyMetrics.daysToGoal <= 14 ? 'text-red-600' :
+                    keyMetrics.daysToGoal <= 14 ? 'text-rose-600' :
                     keyMetrics.daysToGoal <= 30 ? 'text-amber-600' :
-                    'text-blue-700'
+                    'text-slate-900'
                   }`}>
                     {keyMetrics.daysToGoal <= 0 ? '已過' : `${keyMetrics.daysToGoal} 天`}
                   </p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">
+                  <p className="text-[11px] text-gray-500 mt-0.5">
                     {client.competition_date || client.target_date}
                   </p>
                   {keyMetrics.timeProgress != null && (
@@ -1650,7 +1662,7 @@ export default function ClientOverview() {
                           style={{ width: `${keyMetrics.timeProgress}%` }}
                         />
                       </div>
-                      <p className="text-[9px] text-gray-500 mt-1">時程已過 {keyMetrics.timeProgress}%</p>
+                      <p className="text-[11px] text-gray-500 mt-1">時程已過 {keyMetrics.timeProgress}%</p>
                     </div>
                   )}
                 </div>
@@ -1658,31 +1670,31 @@ export default function ClientOverview() {
 
               {/* 距目標體重 */}
               {keyMetrics.weightToGo != null && keyMetrics.targetWeightNum && (
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl p-3">
-                  <p className="text-[10px] text-green-700 font-semibold tracking-wider uppercase mb-1">距目標體重</p>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <p className="text-[11px] text-slate-600 font-semibold tracking-wider uppercase mb-1">距目標體重</p>
                   <div className="flex items-baseline gap-1">
-                    <p className={`text-2xl font-bold ${
-                      Math.abs(keyMetrics.weightToGo) <= 0.5 ? 'text-green-700' :
+                    <p className={`text-2xl font-bold tabular-nums ${
+                      Math.abs(keyMetrics.weightToGo) <= 0.5 ? 'text-emerald-700' :
                       client.goal_type === 'cut' && keyMetrics.weightToGo > 0 ? 'text-amber-600' :
                       client.goal_type === 'bulk' && keyMetrics.weightToGo < 0 ? 'text-amber-600' :
-                      'text-green-600'
+                      'text-emerald-600'
                     }`}>
                       {keyMetrics.weightToGo > 0 ? '+' : ''}{keyMetrics.weightToGo}
                     </p>
                     <span className="text-xs font-normal text-gray-500">kg</span>
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-0.5">
+                  <p className="text-[11px] text-gray-500 mt-0.5">
                     {keyMetrics.latestWeight}kg → 目標 {keyMetrics.targetWeightNum}kg
                   </p>
                   {keyMetrics.weightProgress != null && (
                     <div className="mt-2">
-                      <div className="h-1.5 bg-green-100 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-green-500 rounded-full transition-all"
+                          className="h-full bg-blue-500 rounded-full transition-all"
                           style={{ width: `${keyMetrics.weightProgress}%` }}
                         />
                       </div>
-                      <p className="text-[9px] text-gray-500 mt-1">
+                      <p className="text-[11px] text-gray-500 mt-1">
                         進度 {keyMetrics.weightProgress}%
                         {keyMetrics.startingWeight && ` · 起點 ${keyMetrics.startingWeight}kg`}
                       </p>
@@ -1693,30 +1705,30 @@ export default function ClientOverview() {
 
               {/* 距目標體脂 */}
               {keyMetrics.bfToGo != null && keyMetrics.targetBfNum && (
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100 rounded-xl p-3">
-                  <p className="text-[10px] text-purple-700 font-semibold tracking-wider uppercase mb-1">距目標體脂</p>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <p className="text-[11px] text-slate-700 font-semibold tracking-wider uppercase mb-1">距目標體脂</p>
                   <div className="flex items-baseline gap-1">
-                    <p className={`text-2xl font-bold ${
-                      Math.abs(keyMetrics.bfToGo) <= 1 ? 'text-purple-700' :
+                    <p className={`text-2xl font-bold tabular-nums ${
+                      Math.abs(keyMetrics.bfToGo) <= 1 ? 'text-slate-900' :
                       keyMetrics.bfToGo > 3 ? 'text-amber-600' :
-                      'text-purple-600'
+                      'text-slate-700'
                     }`}>
                       {keyMetrics.bfToGo > 0 ? '+' : ''}{keyMetrics.bfToGo}
                     </p>
                     <span className="text-xs font-normal text-gray-500">%</span>
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-0.5">
+                  <p className="text-[11px] text-gray-500 mt-0.5">
                     {keyMetrics.latestBodyFat}% → 目標 {keyMetrics.targetBfNum}%
                   </p>
                   {keyMetrics.bfProgress != null && (
                     <div className="mt-2">
-                      <div className="h-1.5 bg-purple-100 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-purple-500 rounded-full transition-all"
+                          className="h-full bg-blue-500 rounded-full transition-all"
                           style={{ width: `${keyMetrics.bfProgress}%` }}
                         />
                       </div>
-                      <p className="text-[9px] text-gray-500 mt-1">
+                      <p className="text-[11px] text-gray-500 mt-1">
                         進度 {keyMetrics.bfProgress}%
                         {keyMetrics.startingBodyFat && ` · 起點 ${keyMetrics.startingBodyFat}%`}
                       </p>
@@ -1730,7 +1742,7 @@ export default function ClientOverview() {
 
         {/* ===== 週平均體重（滾動 7 天 × 8 週） ===== */}
         {weeklyWeightStats?.current && (() => {
-          const { weeks, current, delta1w, delta4w, regressionSlope, trendReversed } = weeklyWeightStats
+          const { weeks, current, delta1w, delta4w, regressionSlope, recentSlope, trendReversed } = weeklyWeightStats
           const target = keyMetrics.targetWeightNum
           const remaining = target != null ? current.avg! - target : null
           const remainingDays = keyMetrics.daysToGoal
@@ -1878,27 +1890,27 @@ export default function ClientOverview() {
           const projectedOverdue = remainingDays != null && projectedDays != null && projectedDays > remainingDays
 
           return (
-            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">📈</span>
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900">週平均體重</h3>
-                    <p className="text-[10px] text-gray-400">滾動 7 天平均 · 最近 8 週 · 用來判斷有沒有在進度上</p>
+                    <p className="text-[11px] text-gray-400">滾動 7 天平均 · 最近 8 週 · 用來判斷有沒有在進度上</p>
                   </div>
                 </div>
                 {progressTag && <span className={`text-xs font-semibold ${progressTag.color}`}>{progressTag.text}</span>}
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
-                  <p className="text-[10px] text-blue-700 font-semibold tracking-wider uppercase mb-1">本週平均</p>
-                  <p className="text-2xl font-bold text-blue-900">{current.avg!.toFixed(1)}<span className="text-xs font-normal text-gray-500 ml-1">kg</span></p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">{current.count} 筆紀錄</p>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <p className="text-[11px] text-blue-700 font-semibold tracking-wider uppercase mb-1">本週平均</p>
+                  <p className="text-2xl font-bold tabular-nums text-blue-900">{current.avg!.toFixed(1)}<span className="text-xs font-normal text-gray-500 ml-1">kg</span></p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">{current.count} 筆紀錄</p>
                 </div>
-                <div className="bg-gray-50 border border-gray-100 rounded-xl p-3">
-                  <p className="text-[10px] text-gray-600 font-semibold tracking-wider uppercase mb-1">vs 上週</p>
-                  <p className={`text-xl font-bold ${
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <p className="text-[11px] text-gray-600 font-semibold tracking-wider uppercase mb-1">vs 上週</p>
+                  <p className={`text-xl font-bold tabular-nums ${
                     delta1w == null ? 'text-gray-400'
                       : delta1w > 0 ? 'text-rose-600'
                       : delta1w < 0 ? 'text-emerald-600'
@@ -1906,11 +1918,11 @@ export default function ClientOverview() {
                   }`}>
                     {delta1w == null ? '—' : `${delta1w > 0 ? '+' : ''}${delta1w.toFixed(2)}`}
                   </p>
-                  {delta1w != null && <p className="text-[10px] text-gray-500 mt-0.5">kg / 週</p>}
+                  {delta1w != null && <p className="text-[11px] text-gray-500 mt-0.5">kg / 週</p>}
                 </div>
-                <div className="bg-gray-50 border border-gray-100 rounded-xl p-3">
-                  <p className="text-[10px] text-gray-600 font-semibold tracking-wider uppercase mb-1">vs 4 週前</p>
-                  <p className={`text-xl font-bold ${
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <p className="text-[11px] text-gray-600 font-semibold tracking-wider uppercase mb-1">vs 4 週前</p>
+                  <p className={`text-xl font-bold tabular-nums ${
                     delta4w == null ? 'text-gray-400'
                       : delta4w > 0 ? 'text-rose-600'
                       : delta4w < 0 ? 'text-emerald-600'
@@ -1918,14 +1930,14 @@ export default function ClientOverview() {
                   }`}>
                     {delta4w == null ? '—' : `${delta4w > 0 ? '+' : ''}${delta4w.toFixed(2)}`}
                   </p>
-                  {delta4w != null && <p className="text-[10px] text-gray-500 mt-0.5">kg / 月</p>}
+                  {delta4w != null && <p className="text-[11px] text-gray-500 mt-0.5">kg / 月</p>}
                 </div>
                 <div className={`border rounded-xl p-3 ${
                   trendReversed ? 'bg-amber-50 border-amber-200'
                     : projectedOverdue ? 'bg-rose-50 border-rose-200'
                     : 'bg-emerald-50 border-emerald-100'
                 }`}>
-                  <p className={`text-[10px] font-semibold tracking-wider uppercase mb-1 ${
+                  <p className={`text-[11px] font-semibold tracking-wider uppercase mb-1 ${
                     trendReversed ? 'text-amber-700'
                       : projectedOverdue ? 'text-rose-700'
                       : 'text-emerald-700'
@@ -1933,7 +1945,7 @@ export default function ClientOverview() {
                   {trendReversed ? (
                     <>
                       <p className="text-base font-bold text-amber-700">趨勢反轉</p>
-                      <p className="text-[10px] text-gray-500 mt-0.5">本週與 4 週前方向相反，先看 2-3 週</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">本週與 4 週前方向相反，先看 2-3 週</p>
                     </>
                   ) : (
                     <>
@@ -1941,12 +1953,19 @@ export default function ClientOverview() {
                         {projectedDays != null ? `${projectedDays} 天` : '—'}
                       </p>
                       {projectedDays != null && remainingDays != null && (
-                        <p className="text-[10px] text-gray-500 mt-0.5">
+                        <p className="text-[11px] text-gray-500 mt-0.5">
                           {projectedOverdue ? `⚠️ 比目標慢 ${projectedDays - remainingDays} 天` : `比目標快 ${remainingDays - projectedDays} 天`}
                         </p>
                       )}
+                      {/* 早期平台期會把 8 週斜率拖慢 → 落後其實被高估；近 4 週加速就提醒教練別只看長期 */}
+                      {projectedOverdue && projectedDays != null && remainingDays != null && recentSlope != null && regressionSlope != null &&
+                        (goalType === 'bulk' ? recentSlope > regressionSlope + 0.05 : recentSlope < regressionSlope - 0.05) && (
+                        <p className="text-[11px] text-emerald-600 mt-1 leading-snug">
+                          📈 近 4 週已加速到 {recentSlope.toFixed(2)} kg/週（8 週平均 {regressionSlope.toFixed(2)}）→ 「慢 {projectedDays - remainingDays} 天」是被早期平台期拖到偏悲觀，實際可能更樂觀
+                        </p>
+                      )}
                       {projectedDays == null && (
-                        <p className="text-[10px] text-gray-500 mt-0.5">速度不足以推算</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">速度不足以推算</p>
                       )}
                     </>
                   )}
@@ -1962,7 +1981,7 @@ export default function ClientOverview() {
                   const isCurrent = i === weeks.length - 1
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                      <span className="text-[9px] text-gray-500">{w.avg.toFixed(1)}</span>
+                      <span className="text-[11px] text-gray-500">{w.avg.toFixed(1)}</span>
                       <div
                         className={`w-full rounded transition-all ${isCurrent ? 'bg-blue-500' : 'bg-blue-200'}`}
                         style={{ height: `${pct}%` }}
@@ -1972,14 +1991,14 @@ export default function ClientOverview() {
                   )
                 })}
               </div>
-              <div className="flex justify-between text-[10px] text-gray-400">
+              <div className="flex justify-between text-[11px] text-gray-400">
                 <span>7 週前</span>
                 <span>本週</span>
               </div>
 
               {/* 動態調整建議 + 一鍵套用 */}
               {kcalAdjustment != null && remainingDays != null && remainingDays > 0 && remaining != null && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="mt-4 pt-4 border-t border-slate-200">
                   <div className="flex items-start gap-2">
                     <span className="text-base mt-0.5">💡</span>
                     <div className="flex-1">
@@ -1992,7 +2011,7 @@ export default function ClientOverview() {
                       <p className="text-xs text-gray-600 leading-relaxed">
                         距目標 <strong className="text-gray-900">{Math.abs(remaining).toFixed(1)} kg</strong>、剩 <strong className="text-gray-900">{remainingDays} 天</strong>。
                         {currentRate != null && (
-                          <>目前速率 <strong className={currentRate < 0 ? 'text-emerald-700' : 'text-rose-700'}>{currentRate >= 0 ? '+' : ''}{currentRate.toFixed(2)} kg/週</strong>，</>
+                          <>目前速率 <strong className={currentRate < 0 ? 'text-emerald-700' : 'text-rose-700'}>{currentRate >= 0 ? '+' : ''}{currentRate.toFixed(2)} kg/週</strong>{recentSlope != null && regressionSlope != null && Math.abs(recentSlope - regressionSlope) > 0.05 ? <span className="text-gray-400">（近 4 週 {recentSlope >= 0 ? '+' : ''}{recentSlope.toFixed(2)}）</span> : null}，</>
                         )}
                         {neededRate != null && (
                           <>需 <strong className="text-gray-900">{neededRate >= 0 ? '+' : ''}{neededRate.toFixed(2)} kg/週</strong> 才會準時。</>
@@ -2068,7 +2087,7 @@ export default function ClientOverview() {
                             } catch {/* silent */}
                           }}
                           disabled={quickSaving}
-                          className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors ${client.auto_adjust_enabled ? 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                          className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors ${client.auto_adjust_enabled ? 'bg-white border border-slate-300 text-gray-600 hover:bg-slate-50' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                         >
                           {quickSaving ? '套用中…' : client.auto_adjust_enabled ? '手動立即套用（通常不需）' : '🎯 一鍵套用建議'}
                         </button>
@@ -2085,7 +2104,7 @@ export default function ClientOverview() {
                           </ul>
                         </div>
                       )}
-                      <p className="text-[10px] text-gray-400 mt-2 leading-snug">
+                      <p className="text-[11px] text-gray-400 mt-2 leading-snug">
                         7700 kcal ≈ 1 kg 純脂肪推算（未區分肌脂、未含 NEAT 變化）。建議搭配 1-2 週體重驗證後再進一步調。
                       </p>
                     </div>
@@ -2117,12 +2136,12 @@ export default function ClientOverview() {
             return map[t] || t
           }
           return (
-            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-lg">🏋️</span>
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900">近 30 天訓練紀錄（學員回報）</h3>
-                  <p className="text-[10px] text-gray-400 mt-0.5">含「痛 / 不適 / 受傷 / 酸 / 麻 / 緊」自動紅標置頂</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">含「痛 / 不適 / 受傷 / 酸 / 麻 / 緊」自動紅標置頂</p>
                 </div>
               </div>
 
@@ -2154,8 +2173,8 @@ export default function ClientOverview() {
                   </summary>
                   <div className="space-y-1.5 mt-2">
                     {withNotes.map((r: any) => (
-                      <div key={r.id} className="border border-gray-100 rounded p-2 bg-gray-50">
-                        <div className="flex items-center gap-2 text-[10px] text-gray-500 mb-0.5">
+                      <div key={r.id} className="border border-slate-200 rounded p-2 bg-slate-50">
+                        <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-0.5">
                           <span className="font-mono">{r.date}</span>
                           <span>{fmtType(r.training_type)}</span>
                           {r.rpe != null && <span>RPE {r.rpe}</span>}
@@ -2171,7 +2190,7 @@ export default function ClientOverview() {
         })()}
 
         {/* ===== 教練快速操作 ===== */}
-        <div id="coach-quick-actions" className="bg-white border border-gray-200 rounded-2xl p-5 scroll-mt-4">
+        <div id="coach-quick-actions" className="bg-white border border-slate-200 rounded-2xl p-5 scroll-mt-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">⚡</span>
@@ -2184,7 +2203,7 @@ export default function ClientOverview() {
             </div>
             {quickToast && (
               <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                quickToast.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                quickToast.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
               }`}>
                 {quickToast.type === 'success' ? '✅' : '❌'} {quickToast.msg}
               </span>
@@ -2203,7 +2222,7 @@ export default function ClientOverview() {
             <button
               onClick={() => openQuickAction(quickAction === 'phase' ? null as any : 'phase')}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                quickAction === 'phase' ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                quickAction === 'phase' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50'
               }`}
             >
               📅 切階段
@@ -2255,7 +2274,7 @@ export default function ClientOverview() {
                   目前：{client?.calories_target || '—'} kcal
                   {caloriesDraft && client?.calories_target && (
                     <span className={`ml-2 font-semibold ${
-                      caloriesDraft - parseInt(client.calories_target) > 0 ? 'text-green-700' : 'text-red-700'
+                      caloriesDraft - parseInt(client.calories_target) > 0 ? 'text-emerald-700' : 'text-rose-700'
                     }`}>
                       ({caloriesDraft - parseInt(client.calories_target) > 0 ? '+' : ''}{caloriesDraft - parseInt(client.calories_target)})
                     </span>
@@ -2274,9 +2293,9 @@ export default function ClientOverview() {
 
           {/* 切 prep_phase inline editor */}
           {quickAction === 'phase' && (
-            <div className="mt-3 p-4 bg-purple-50 border border-purple-200 rounded-xl">
+            <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs text-purple-700 font-semibold">切換訓練階段（prep_phase）</p>
+                <p className="text-xs text-slate-700 font-semibold">切換訓練階段（prep_phase）</p>
                 <button onClick={() => setQuickAction(null)} className="text-xs text-gray-500 hover:text-gray-700">取消</button>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
@@ -2286,8 +2305,8 @@ export default function ClientOverview() {
                     onClick={() => setPhaseDraft(opt.value)}
                     className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
                       phaseDraft === opt.value
-                        ? 'bg-purple-600 text-white border-purple-600'
-                        : 'bg-white text-gray-700 border-purple-200 hover:bg-purple-100'
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     {opt.label}
@@ -2301,7 +2320,7 @@ export default function ClientOverview() {
                 <button
                   disabled={quickSaving || !phaseDraft || phaseDraft === client?.prep_phase}
                   onClick={() => saveQuickAction({ prep_phase: phaseDraft }, `階段改為 ${PHASE_LABELS[phaseDraft] || phaseDraft}`)}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   {quickSaving ? '儲存中...' : '✓ 儲存'}
                 </button>
@@ -2345,19 +2364,19 @@ export default function ClientOverview() {
         </div>
 
         {/* ===== AI 教練建議 ===== */}
-        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-5">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">🤖</span>
-              <h3 className="text-sm font-semibold text-indigo-900">本週建議調整</h3>
+              <h3 className="text-sm font-semibold text-slate-900">本週建議調整</h3>
             </div>
             <button
               onClick={fetchCoachSummary}
               disabled={summaryLoading}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 summaryLoading
-                  ? 'bg-indigo-300 text-white cursor-not-allowed'
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  ? 'bg-blue-300 text-white cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
               {summaryLoading ? '生成中...' : coachSummary ? '重新生成' : '生成教練建議'}
@@ -2366,8 +2385,8 @@ export default function ClientOverview() {
 
           {summaryLoading && (
             <div className="flex items-center gap-3 py-4">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
-              <p className="text-sm text-indigo-700">AI 正在分析學員數據...</p>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              <p className="text-sm text-slate-700">AI 正在分析學員數據...</p>
             </div>
           )}
 
@@ -2378,12 +2397,12 @@ export default function ClientOverview() {
           )}
 
           {!summaryLoading && !coachSummary && (
-            <p className="text-xs text-indigo-600/70">點擊「生成教練建議」，AI 將根據近 14 天數據產出具體建議。</p>
+            <p className="text-xs text-slate-600">點擊「生成教練建議」，AI 將根據近 14 天數據產出具體建議。</p>
           )}
         </div>
 
         {/* ===== 本週報告 ===== */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-blue-900">📋 {dateRange === '7' ? '本週' : `近 ${dateRange} 天`}報告</h3>
             <div className="flex items-center gap-2">
@@ -2397,7 +2416,7 @@ export default function ClientOverview() {
                   })
                 }}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  copied ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
+                  copied ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
                 {copied ? '已複製 ✓' : '複製文字'}
@@ -2411,7 +2430,7 @@ export default function ClientOverview() {
                   })
                 }}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  copiedTraining ? 'bg-green-500 text-white' : 'bg-amber-500 text-white hover:bg-amber-600'
+                  copiedTraining ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
                 {copiedTraining ? '已複製 ✓' : '訓練端摘要'}
@@ -2425,7 +2444,7 @@ export default function ClientOverview() {
                   })
                 }}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  copiedAi ? 'bg-green-500 text-white' : 'bg-violet-500 text-white hover:bg-violet-600'
+                  copiedAi ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
                 {copiedAi ? '已複製 ✓' : 'AI 完整摘要'}
@@ -2437,14 +2456,14 @@ export default function ClientOverview() {
             {client.training_enabled && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">訓練天數</p>
-                <p className="text-2xl font-bold text-blue-700">{weeklyReport.trainingDays}</p>
+                <p className="text-2xl font-bold tabular-nums text-blue-700">{weeklyReport.trainingDays}</p>
                 {weeklyReport.avgRpe && <p className="text-xs text-gray-400">RPE {weeklyReport.avgRpe}</p>}
               </div>
             )}
             {client.wellness_enabled && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">精力</p>
-                <p className="text-2xl font-bold text-purple-600">
+                <p className="text-2xl font-bold tabular-nums text-slate-900">
                   {weeklyReport.avgEnergy != null ? weeklyReport.avgEnergy.toFixed(1) : '--'}
                 </p>
                 {weeklyReport.energyArrow && <p className="text-xs text-gray-400">vs 上週{weeklyReport.energyArrow}</p>}
@@ -2453,7 +2472,7 @@ export default function ClientOverview() {
             {client.supplement_enabled && weeklyReport.weekSuppRate != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">補品服從</p>
-                <p className={`text-2xl font-bold ${weeklyReport.weekSuppRate >= 80 ? 'text-green-600' : weeklyReport.weekSuppRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                <p className={`text-2xl font-bold tabular-nums ${weeklyReport.weekSuppRate >= 80 ? 'text-emerald-600' : weeklyReport.weekSuppRate >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>
                   {weeklyReport.weekSuppRate}%
                 </p>
                 {weeklyReport.lastWeekSuppRate != null && (
@@ -2464,7 +2483,7 @@ export default function ClientOverview() {
             {client.nutrition_enabled && weeklyReport.weekNutRate != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">飲食合規</p>
-                <p className={`text-2xl font-bold ${weeklyReport.weekNutRate >= 80 ? 'text-green-600' : weeklyReport.weekNutRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                <p className={`text-2xl font-bold tabular-nums ${weeklyReport.weekNutRate >= 80 ? 'text-emerald-600' : weeklyReport.weekNutRate >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>
                   {weeklyReport.weekNutRate}%
                 </p>
                 {weeklyReport.lastWeekNutRate != null && (
@@ -2475,7 +2494,7 @@ export default function ClientOverview() {
             {client.body_composition_enabled && weeklyReport.weightDelta != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">體重變化</p>
-                <p className={`text-2xl font-bold ${Number(weeklyReport.weightDelta) > 0 ? 'text-red-600' : Number(weeklyReport.weightDelta) < 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                <p className={`text-2xl font-bold tabular-nums ${Number(weeklyReport.weightDelta) > 0 ? 'text-rose-600' : Number(weeklyReport.weightDelta) < 0 ? 'text-emerald-600' : 'text-gray-600'}`}>
                   {Number(weeklyReport.weightDelta) > 0 ? '+' : ''}{weeklyReport.weightDelta}
                 </p>
                 <p className="text-xs text-gray-400">kg</p>
@@ -2484,7 +2503,7 @@ export default function ClientOverview() {
             {client.nutrition_enabled && weeklyReport.avgProtein != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">平均蛋白質</p>
-                <p className={`text-2xl font-bold ${client.protein_target && weeklyReport.avgProtein >= client.protein_target ? 'text-green-600' : 'text-blue-600'}`}>
+                <p className={`text-2xl font-bold tabular-nums ${client.protein_target && weeklyReport.avgProtein >= client.protein_target ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {weeklyReport.avgProtein}g
                 </p>
                 {client.protein_target && <p className="text-xs text-gray-400">目標 {client.protein_target}g</p>}
@@ -2493,7 +2512,7 @@ export default function ClientOverview() {
             {client.nutrition_enabled && weeklyReport.avgWater != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">平均飲水</p>
-                <p className={`text-2xl font-bold ${client.water_target && weeklyReport.avgWater >= client.water_target ? 'text-green-600' : 'text-cyan-600'}`}>
+                <p className={`text-2xl font-bold tabular-nums ${client.water_target && weeklyReport.avgWater >= client.water_target ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {weeklyReport.avgWater}ml
                 </p>
                 {client.water_target && <p className="text-xs text-gray-400">目標 {client.water_target}ml</p>}
@@ -2502,7 +2521,7 @@ export default function ClientOverview() {
             {isCompetitionMode(client.client_mode) && weeklyReport.avgCalories != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">🔥 平均熱量</p>
-                <p className={`text-2xl font-bold ${client.calories_target && weeklyReport.avgCalories >= client.calories_target * 0.9 && weeklyReport.avgCalories <= client.calories_target * 1.1 ? 'text-green-600' : 'text-orange-600'}`}>
+                <p className={`text-2xl font-bold tabular-nums ${client.calories_target && weeklyReport.avgCalories >= client.calories_target * 0.9 && weeklyReport.avgCalories <= client.calories_target * 1.1 ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {weeklyReport.avgCalories}
                 </p>
                 {client.calories_target && <p className="text-xs text-gray-400">目標 {client.calories_target}kcal</p>}
@@ -2511,7 +2530,7 @@ export default function ClientOverview() {
             {isCompetitionMode(client.client_mode) && weeklyReport.avgCarbs != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">🍚 平均碳水</p>
-                <p className={`text-2xl font-bold ${client.carbs_target && weeklyReport.avgCarbs >= client.carbs_target * 0.9 && weeklyReport.avgCarbs <= client.carbs_target * 1.1 ? 'text-green-600' : 'text-amber-600'}`}>
+                <p className={`text-2xl font-bold tabular-nums ${client.carbs_target && weeklyReport.avgCarbs >= client.carbs_target * 0.9 && weeklyReport.avgCarbs <= client.carbs_target * 1.1 ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {weeklyReport.avgCarbs}g
                 </p>
                 {client.carbs_target && <p className="text-xs text-gray-400">目標 {client.carbs_target}g</p>}
@@ -2520,7 +2539,7 @@ export default function ClientOverview() {
             {isCompetitionMode(client.client_mode) && weeklyReport.avgFat != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">🥑 平均脂肪</p>
-                <p className={`text-2xl font-bold ${client.fat_target && weeklyReport.avgFat >= client.fat_target * 0.9 && weeklyReport.avgFat <= client.fat_target * 1.1 ? 'text-green-600' : 'text-yellow-600'}`}>
+                <p className={`text-2xl font-bold tabular-nums ${client.fat_target && weeklyReport.avgFat >= client.fat_target * 0.9 && weeklyReport.avgFat <= client.fat_target * 1.1 ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {weeklyReport.avgFat}g
                 </p>
                 {client.fat_target && <p className="text-xs text-gray-400">目標 {client.fat_target}g</p>}
@@ -2536,16 +2555,17 @@ export default function ClientOverview() {
         {/* ===== 營養分析引擎 ===== */}
         {suggestion && suggestion.status !== 'insufficient_data' && (
           <div className={`rounded-2xl p-5 border ${
-            suggestion.status === 'on_track' ? 'bg-green-50 border-green-200' :
+            isCompetitionMode(client.client_mode) ? 'bg-slate-50 border-slate-200' :
+            suggestion.status === 'on_track' ? 'bg-emerald-50 border-emerald-200' :
             suggestion.status === 'low_compliance' ? 'bg-gray-50 border-gray-200' :
-            suggestion.status === 'too_fast' || suggestion.status === 'wrong_direction' ? 'bg-red-50 border-red-200' :
+            suggestion.status === 'too_fast' || suggestion.status === 'wrong_direction' ? 'bg-rose-50 border-rose-200' :
             'bg-amber-50 border-amber-200'
           }`}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{suggestion.statusEmoji}</span>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900">🧮 營養分析引擎</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">🧮 營養分析引擎{isCompetitionMode(client.client_mode) ? ' · 僅供對照' : ''}</h3>
                   <p className="text-xs text-gray-500">
                     {suggestionMeta?.goalType === 'cut' ? '🔻 減脂模式' : '🔺 增肌模式'}
                     {suggestion.weeklyWeightChangeRate != null && ` · 週變化 ${suggestion.weeklyWeightChangeRate > 0 ? '+' : ''}${suggestion.weeklyWeightChangeRate.toFixed(2)}%`}
@@ -2554,14 +2574,15 @@ export default function ClientOverview() {
                 </div>
               </div>
               <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                suggestion.status === 'on_track' ? 'bg-green-100 text-green-700' :
+                isCompetitionMode(client.client_mode) ? 'bg-slate-100 text-slate-500' :
+                suggestion.status === 'on_track' ? 'bg-emerald-100 text-emerald-700' :
                 suggestion.status === 'low_compliance' ? 'bg-gray-100 text-gray-600' :
                 suggestion.status === 'plateau' ? 'bg-amber-100 text-amber-700' :
-                suggestion.status === 'peak_week' || suggestion.status === 'athletic_competition' ? 'bg-purple-100 text-purple-700' :
-                suggestion.status === 'athletic_rebound' ? 'bg-indigo-100 text-indigo-700' :
-                suggestion.status === 'athletic_weigh_in' ? 'bg-orange-100 text-orange-700' :
-                'bg-red-100 text-red-700'
-              }`}>{suggestion.statusLabel}</span>
+                suggestion.status === 'peak_week' || suggestion.status === 'athletic_competition' ? 'bg-amber-100 text-amber-700' :
+                suggestion.status === 'athletic_rebound' ? 'bg-amber-100 text-amber-700' :
+                suggestion.status === 'athletic_weigh_in' ? 'bg-amber-100 text-amber-700' :
+                'bg-rose-100 text-rose-700'
+              }`}>{isCompetitionMode(client.client_mode) ? '僅供對照' : suggestion.statusLabel}</span>
             </div>
 
             <p className="text-sm text-gray-700 mb-4">{suggestion.message}</p>
@@ -2573,36 +2594,36 @@ export default function ClientOverview() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {suggestion.suggestedCalories != null && (
                     <div className="text-center">
-                      <p className="text-[10px] text-gray-500">🔥 熱量</p>
+                      <p className="text-[11px] text-gray-500">🔥 熱量</p>
                       <p className="text-lg font-bold text-gray-900">{suggestion.suggestedCalories}</p>
-                      <p className={`text-xs font-medium ${suggestion.caloriesDelta > 0 ? 'text-green-600' : suggestion.caloriesDelta < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                      <p className={`text-xs font-medium ${suggestion.caloriesDelta > 0 ? 'text-emerald-600' : suggestion.caloriesDelta < 0 ? 'text-rose-600' : 'text-gray-400'}`}>
                         {suggestion.caloriesDelta > 0 ? '+' : ''}{suggestion.caloriesDelta} kcal
                       </p>
                     </div>
                   )}
                   {suggestion.suggestedProtein != null && (
                     <div className="text-center">
-                      <p className="text-[10px] text-gray-500">🥩 蛋白質</p>
+                      <p className="text-[11px] text-gray-500">🥩 蛋白質</p>
                       <p className="text-lg font-bold text-gray-900">{suggestion.suggestedProtein}g</p>
-                      <p className={`text-xs font-medium ${suggestion.proteinDelta > 0 ? 'text-green-600' : suggestion.proteinDelta < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                      <p className={`text-xs font-medium ${suggestion.proteinDelta > 0 ? 'text-emerald-600' : suggestion.proteinDelta < 0 ? 'text-rose-600' : 'text-gray-400'}`}>
                         {suggestion.proteinDelta === 0 ? '維持' : `${suggestion.proteinDelta > 0 ? '+' : ''}${suggestion.proteinDelta}g`}
                       </p>
                     </div>
                   )}
                   {suggestion.suggestedCarbs != null && (
                     <div className="text-center">
-                      <p className="text-[10px] text-gray-500">🍚 碳水</p>
+                      <p className="text-[11px] text-gray-500">🍚 碳水</p>
                       <p className="text-lg font-bold text-gray-900">{suggestion.suggestedCarbs}g</p>
-                      <p className={`text-xs font-medium ${suggestion.carbsDelta > 0 ? 'text-green-600' : suggestion.carbsDelta < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                      <p className={`text-xs font-medium ${suggestion.carbsDelta > 0 ? 'text-emerald-600' : suggestion.carbsDelta < 0 ? 'text-rose-600' : 'text-gray-400'}`}>
                         {suggestion.carbsDelta > 0 ? '+' : ''}{suggestion.carbsDelta}g
                       </p>
                     </div>
                   )}
                   {suggestion.suggestedFat != null && (
                     <div className="text-center">
-                      <p className="text-[10px] text-gray-500">🥑 脂肪</p>
+                      <p className="text-[11px] text-gray-500">🥑 脂肪</p>
                       <p className="text-lg font-bold text-gray-900">{suggestion.suggestedFat}g</p>
-                      <p className={`text-xs font-medium ${suggestion.fatDelta > 0 ? 'text-green-600' : suggestion.fatDelta < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                      <p className={`text-xs font-medium ${suggestion.fatDelta > 0 ? 'text-emerald-600' : suggestion.fatDelta < 0 ? 'text-rose-600' : 'text-gray-400'}`}>
                         {suggestion.fatDelta === 0 ? '維持' : `${suggestion.fatDelta > 0 ? '+' : ''}${suggestion.fatDelta}g`}
                       </p>
                     </div>
@@ -2610,10 +2631,10 @@ export default function ClientOverview() {
                 </div>
                 {/* 碳循環分配 */}
                 {suggestion.suggestedCarbsTrainingDay != null && suggestion.suggestedCarbsRestDay != null && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <p className="text-[10px] text-gray-500 mb-1">🔄 碳循環分配</p>
+                  <div className="mt-3 pt-3 border-t border-slate-200">
+                    <p className="text-[11px] text-gray-500 mb-1">🔄 碳循環分配</p>
                     <div className="flex gap-4 text-sm">
-                      <span className="text-cyan-700">訓練日：{suggestion.suggestedCarbsTrainingDay}g</span>
+                      <span className="text-slate-600">訓練日：{suggestion.suggestedCarbsTrainingDay}g</span>
                       <span className="text-gray-500">休息日：{suggestion.suggestedCarbsRestDay}g</span>
                     </div>
                   </div>
@@ -2630,15 +2651,15 @@ export default function ClientOverview() {
               </div>
             )}
 
-            {/* 操作按鈕 */}
-            {suggestion.status !== 'low_compliance' && !(suggestion.status === 'on_track' && !suggestion.autoApply) && (
+            {/* 操作按鈕（比賽模式不給套用，避免跟下方比賽引擎打架 → 一鍵套用會把備賽吃爆） */}
+            {!isCompetitionMode(client.client_mode) && suggestion.status !== 'low_compliance' && !(suggestion.status === 'on_track' && !suggestion.autoApply) && (
               <div className="flex gap-2">
                 <button
                   onClick={applySuggestion}
                   disabled={applyingsuggestion || suggestionApplied}
                   className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                     suggestionApplied
-                      ? 'bg-green-500 text-white'
+                      ? 'bg-emerald-500 text-white'
                       : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
                   }`}
                 >
@@ -2646,16 +2667,21 @@ export default function ClientOverview() {
                 </button>
                 <Link
                   href={`/admin/clients/${clientId}`}
-                  className="flex-1 py-2.5 bg-white text-gray-700 rounded-xl text-sm font-medium text-center hover:bg-gray-50 transition-colors border border-gray-200"
+                  className="flex-1 py-2.5 bg-white text-gray-700 rounded-xl text-sm font-medium text-center hover:bg-slate-50 transition-colors border border-slate-200"
                 >
                   手動微調
                 </Link>
               </div>
             )}
+            {isCompetitionMode(client.client_mode) && (
+              <div className="bg-white/60 border border-slate-200 rounded-lg px-3 py-2 text-xs text-gray-500 leading-snug">
+                ℹ️ 比賽模式：實際營養素由下方「動態調整建議（比賽引擎 trajectory）」為準，此卡數字僅供對照、不提供套用。
+              </div>
+            )}
 
             {/* 資料來源 */}
             {suggestionMeta && (
-              <div className="mt-3 pt-2 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-400">
+              <div className="mt-3 pt-2 border-t border-slate-200 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-400">
                 <span>體重：{suggestionMeta.latestWeight}kg</span>
                 <span>合規率：{suggestionMeta.nutritionCompliance}%</span>
                 {suggestionMeta.avgDailyCalories && <span>均攝取：{suggestionMeta.avgDailyCalories}kcal</span>}
@@ -2663,7 +2689,7 @@ export default function ClientOverview() {
                 {suggestion.dietDurationWeeks != null && <span>已執行：{suggestion.dietDurationWeeks}週</span>}
               </div>
             )}
-            <p className="text-[10px] text-gray-400 mt-2">⚠️ 以上數據由系統根據體重趨勢自動運算，僅供教練參考，不構成營養指導。最終調整請依教練專業判斷。</p>
+            <p className="text-[11px] text-gray-400 mt-2">⚠️ 以上數據由系統根據體重趨勢自動運算，僅供教練參考，不構成營養指導。最終調整請依教練專業判斷。</p>
           </div>
         )}
 
@@ -2677,7 +2703,7 @@ export default function ClientOverview() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 補品服從率趨勢 */}
             {client.supplement_enabled && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">💊 補品服從率趨勢</h3>
                 {complianceTrend.length >= 2 ? (
                   <ResponsiveContainer width="100%" height={200} minWidth={0}>
@@ -2697,7 +2723,7 @@ export default function ClientOverview() {
 
             {/* 感受趨勢 */}
             {client.wellness_enabled && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">😊 感受趨勢</h3>
                 {wellnessTrend.length >= 2 ? (
                   <ResponsiveContainer width="100%" height={200} minWidth={0}>
@@ -2722,7 +2748,7 @@ export default function ClientOverview() {
 
         {/* ===== 飲食合規趨勢 ===== */}
         {client.nutrition_enabled && nutritionTrend.length >= 2 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">🍽️ 飲食合規趨勢（週）</h3>
             <ResponsiveContainer width="100%" height={200} minWidth={0}>
               <BarChart data={nutritionTrend}>
@@ -2740,7 +2766,7 @@ export default function ClientOverview() {
         {client.nutrition_enabled && proteinWaterTrend.length >= 2 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {proteinWaterTrend.some(d => d.蛋白質 != null) && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">🥩 蛋白質攝取趨勢</h3>
                 <ResponsiveContainer width="100%" height={200} minWidth={0}>
                   <BarChart data={proteinWaterTrend.filter(d => d.蛋白質 != null)}>
@@ -2760,7 +2786,7 @@ export default function ClientOverview() {
               </div>
             )}
             {proteinWaterTrend.some(d => d.飲水量 != null) && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">💧 飲水量趨勢</h3>
                 <ResponsiveContainer width="100%" height={200} minWidth={0}>
                   <BarChart data={proteinWaterTrend.filter(d => d.飲水量 != null)}>
@@ -2781,7 +2807,7 @@ export default function ClientOverview() {
 
         {/* ===== 備賽巨量營養素趨勢 ===== */}
         {isCompetitionMode(client.client_mode) && (macroTrend.calories.length >= 2 || macroTrend.carbs.length >= 2 || macroTrend.fat.length >= 2) && (
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">🏆 備賽巨量營養素趨勢</h3>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {macroTrend.calories.length >= 2 && (
@@ -2835,46 +2861,46 @@ export default function ClientOverview() {
 
         {/* ===== 巨量營養素偏差報告 ===== */}
         {macroDeviation && macroDeviation.dailyData.length >= 3 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">📊 巨量營養素偏差報告</h3>
             <p className="text-xs text-gray-400 mb-4">近 14 天每日攝取 vs 目標的偏差百分比，綠色 = ±10% 以內</p>
 
             {/* 偏差摘要卡片 */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
               {macroDeviation.avgCalDev != null && (
-                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgCalDev) <= 10 ? 'bg-green-50' : Math.abs(macroDeviation.avgCalDev) <= 20 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgCalDev) <= 10 ? 'bg-emerald-50' : Math.abs(macroDeviation.avgCalDev) <= 20 ? 'bg-amber-50' : 'bg-rose-50'}`}>
                   <p className="text-xs text-gray-500 mb-0.5">🔥 熱量偏差</p>
-                  <p className={`text-xl font-bold ${Math.abs(macroDeviation.avgCalDev) <= 10 ? 'text-green-600' : Math.abs(macroDeviation.avgCalDev) <= 20 ? 'text-amber-600' : 'text-red-600'}`}>
+                  <p className={`text-xl font-bold tabular-nums ${Math.abs(macroDeviation.avgCalDev) <= 10 ? 'text-emerald-600' : Math.abs(macroDeviation.avgCalDev) <= 20 ? 'text-amber-600' : 'text-rose-600'}`}>
                     {macroDeviation.avgCalDev > 0 ? '+' : ''}{macroDeviation.avgCalDev}%
                   </p>
-                  <p className="text-[10px] text-gray-400">{macroDeviation.calOverDays}/{macroDeviation.totalDays} 天超標</p>
+                  <p className="text-[11px] text-gray-400">{macroDeviation.calOverDays}/{macroDeviation.totalDays} 天超標</p>
                 </div>
               )}
               {macroDeviation.avgProDev != null && (
-                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgProDev) <= 10 ? 'bg-green-50' : Math.abs(macroDeviation.avgProDev) <= 20 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgProDev) <= 10 ? 'bg-emerald-50' : Math.abs(macroDeviation.avgProDev) <= 20 ? 'bg-amber-50' : 'bg-rose-50'}`}>
                   <p className="text-xs text-gray-500 mb-0.5">🥩 蛋白質偏差</p>
-                  <p className={`text-xl font-bold ${Math.abs(macroDeviation.avgProDev) <= 10 ? 'text-green-600' : Math.abs(macroDeviation.avgProDev) <= 20 ? 'text-amber-600' : 'text-red-600'}`}>
+                  <p className={`text-xl font-bold tabular-nums ${Math.abs(macroDeviation.avgProDev) <= 10 ? 'text-emerald-600' : Math.abs(macroDeviation.avgProDev) <= 20 ? 'text-amber-600' : 'text-rose-600'}`}>
                     {macroDeviation.avgProDev > 0 ? '+' : ''}{macroDeviation.avgProDev}%
                   </p>
-                  <p className="text-[10px] text-gray-400">{macroDeviation.proOverDays}/{macroDeviation.totalDays} 天超標</p>
+                  <p className="text-[11px] text-gray-400">{macroDeviation.proOverDays}/{macroDeviation.totalDays} 天超標</p>
                 </div>
               )}
               {macroDeviation.avgCarbDev != null && (
-                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgCarbDev) <= 10 ? 'bg-green-50' : Math.abs(macroDeviation.avgCarbDev) <= 20 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgCarbDev) <= 10 ? 'bg-emerald-50' : Math.abs(macroDeviation.avgCarbDev) <= 20 ? 'bg-amber-50' : 'bg-rose-50'}`}>
                   <p className="text-xs text-gray-500 mb-0.5">🍚 碳水偏差</p>
-                  <p className={`text-xl font-bold ${Math.abs(macroDeviation.avgCarbDev) <= 10 ? 'text-green-600' : Math.abs(macroDeviation.avgCarbDev) <= 20 ? 'text-amber-600' : 'text-red-600'}`}>
+                  <p className={`text-xl font-bold tabular-nums ${Math.abs(macroDeviation.avgCarbDev) <= 10 ? 'text-emerald-600' : Math.abs(macroDeviation.avgCarbDev) <= 20 ? 'text-amber-600' : 'text-rose-600'}`}>
                     {macroDeviation.avgCarbDev > 0 ? '+' : ''}{macroDeviation.avgCarbDev}%
                   </p>
-                  <p className="text-[10px] text-gray-400">{macroDeviation.carbOverDays}/{macroDeviation.totalDays} 天超標</p>
+                  <p className="text-[11px] text-gray-400">{macroDeviation.carbOverDays}/{macroDeviation.totalDays} 天超標</p>
                 </div>
               )}
               {macroDeviation.avgFatDev != null && (
-                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgFatDev) <= 10 ? 'bg-green-50' : Math.abs(macroDeviation.avgFatDev) <= 20 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgFatDev) <= 10 ? 'bg-emerald-50' : Math.abs(macroDeviation.avgFatDev) <= 20 ? 'bg-amber-50' : 'bg-rose-50'}`}>
                   <p className="text-xs text-gray-500 mb-0.5">🥑 脂肪偏差</p>
-                  <p className={`text-xl font-bold ${Math.abs(macroDeviation.avgFatDev) <= 10 ? 'text-green-600' : Math.abs(macroDeviation.avgFatDev) <= 20 ? 'text-amber-600' : 'text-red-600'}`}>
+                  <p className={`text-xl font-bold tabular-nums ${Math.abs(macroDeviation.avgFatDev) <= 10 ? 'text-emerald-600' : Math.abs(macroDeviation.avgFatDev) <= 20 ? 'text-amber-600' : 'text-rose-600'}`}>
                     {macroDeviation.avgFatDev > 0 ? '+' : ''}{macroDeviation.avgFatDev}%
                   </p>
-                  <p className="text-[10px] text-gray-400">{macroDeviation.fatOverDays}/{macroDeviation.totalDays} 天超標</p>
+                  <p className="text-[11px] text-gray-400">{macroDeviation.fatOverDays}/{macroDeviation.totalDays} 天超標</p>
                 </div>
               )}
             </div>
@@ -2996,7 +3022,7 @@ export default function ClientOverview() {
         {client.training_enabled && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 訓練日曆 */}
-            <div className="bg-white rounded-2xl shadow-sm p-5 lg:col-span-2">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 lg:col-span-2">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">🗓️ 訓練日曆（6 週）</h3>
               <div className="space-y-1">
                 <div className="grid grid-cols-7 gap-1 mb-1">
@@ -3011,7 +3037,7 @@ export default function ClientOverview() {
                   return (
                   <div key={wi} className="grid grid-cols-7 gap-1 relative">
                     {isDeloadWeek && (
-                      <div className="absolute -left-1 top-1/2 -translate-y-1/2 text-[8px] font-bold text-teal-600 bg-teal-50 px-1 py-0.5 rounded -rotate-90 origin-center whitespace-nowrap" style={{ transform: 'translateX(-100%) translateY(-50%) rotate(-90deg)' }}>DELOAD</div>
+                      <div className="absolute -left-1 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-600 bg-slate-100 px-1 py-0.5 rounded -rotate-90 origin-center whitespace-nowrap" style={{ transform: 'translateX(-100%) translateY(-50%) rotate(-90deg)' }}>DELOAD</div>
                     )}
                     {week.map(({ date, label, log, isToday, isFuture }) => (
                       <div
@@ -3020,13 +3046,13 @@ export default function ClientOverview() {
                           isToday ? 'ring-2 ring-blue-400' : ''
                         } ${
                           isFuture ? 'bg-gray-50 text-gray-300'
-                            : isDeloadWeek && log ? 'bg-teal-50 border border-teal-200'
+                            : isDeloadWeek && log ? 'bg-slate-100 border border-slate-200'
                             : log ? getTypeBgColor(log.training_type)
                             : 'bg-gray-50 text-gray-400'
                         }`}
                         title={log ? `${TRAINING_TYPES.find(t => t.value === log.training_type)?.label} ${log.duration ? log.duration + '分' : ''} ${log.rpe ? 'RPE' + log.rpe : ''}` : ''}
                       >
-                        <span className="text-[10px] leading-none">{label}</span>
+                        <span className="text-[11px] leading-none">{label}</span>
                         <span className="text-sm leading-none mt-0.5">{!isFuture && log ? getTypeEmoji(log.training_type) : ''}</span>
                       </div>
                     ))}
@@ -3037,7 +3063,7 @@ export default function ClientOverview() {
             </div>
 
             {/* 訓練類型分佈 */}
-            <div className="bg-white rounded-2xl shadow-sm p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">📊 訓練分佈</h3>
               {trainingDistribution.length > 0 ? (
                 <ResponsiveContainer width="100%" height={200} minWidth={0}>
@@ -3058,7 +3084,7 @@ export default function ClientOverview() {
 
         {/* RPE 趨勢 */}
         {client.training_enabled && rpeTrend.length >= 2 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">💥 RPE 趨勢</h3>
             <ResponsiveContainer width="100%" height={200} minWidth={0}>
               <LineChart data={rpeTrend}>
@@ -3075,7 +3101,7 @@ export default function ClientOverview() {
         {/* ===== 第三排：體組成趨勢 ===== */}
         {client.body_composition_enabled && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {bodyTrend.weight.length >= 2 && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">⚖️ 體重趨勢</h3>
               <ResponsiveContainer width="100%" height={200} minWidth={0}>
                 <LineChart data={bodyTrend.weight}>
@@ -3089,7 +3115,7 @@ export default function ClientOverview() {
             </div>
           )}
           {bodyTrend.bodyFat.length >= 2 && (
-            <div className="bg-white rounded-2xl shadow-sm p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">📉 體脂趨勢</h3>
               <ResponsiveContainer width="100%" height={200} minWidth={0}>
                 <LineChart data={bodyTrend.bodyFat}>
@@ -3106,12 +3132,12 @@ export default function ClientOverview() {
 
         {/* ===== 訓練 × 恢復分析 ===== */}
         {client.training_enabled && client.wellness_enabled && recoveryAnalysis.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">🔍 訓練 × 恢復分析</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-slate-200">
                     <th className="text-left py-2 px-3 text-xs text-gray-500">訓練類型</th>
                     <th className="text-center py-2 px-3 text-xs text-gray-500">次數</th>
                     <th className="text-center py-2 px-3 text-xs text-gray-500">平均RPE</th>
@@ -3122,16 +3148,16 @@ export default function ClientOverview() {
                 </thead>
                 <tbody>
                   {recoveryAnalysis.map((r, i) => {
-                    const rpeColor = r.avgRpe !== '--' && Number(r.avgRpe) >= 9 ? 'bg-red-100 text-red-700'
-                      : r.avgRpe !== '--' && Number(r.avgRpe) >= 7.5 ? 'bg-yellow-100 text-yellow-700'
-                      : r.avgRpe !== '--' ? 'bg-green-100 text-green-700'
+                    const rpeColor = r.avgRpe !== '--' && Number(r.avgRpe) >= 9 ? 'bg-rose-100 text-rose-700'
+                      : r.avgRpe !== '--' && Number(r.avgRpe) >= 7.5 ? 'bg-amber-100 text-amber-700'
+                      : r.avgRpe !== '--' ? 'bg-emerald-100 text-emerald-700'
                       : 'bg-gray-100 text-gray-500'
-                    const cellColor = (val: string) => val !== '--' && Number(val) >= 4 ? 'bg-green-100 text-green-700'
-                      : val !== '--' && Number(val) >= 3 ? 'bg-yellow-100 text-yellow-700'
-                      : val !== '--' ? 'bg-red-100 text-red-700'
+                    const cellColor = (val: string) => val !== '--' && Number(val) >= 4 ? 'bg-emerald-100 text-emerald-700'
+                      : val !== '--' && Number(val) >= 3 ? 'bg-amber-100 text-amber-700'
+                      : val !== '--' ? 'bg-rose-100 text-rose-700'
                       : 'bg-gray-100 text-gray-500'
                     return (
-                    <tr key={i} className="border-b border-gray-50">
+                    <tr key={i} className="border-b border-slate-200">
                       <td className="py-2 px-3 font-medium">{r.emoji} {r.type}</td>
                       <td className="py-2 px-3 text-center text-gray-600">{r.count}</td>
                       <td className="py-2 px-3 text-center">
@@ -3157,7 +3183,7 @@ export default function ClientOverview() {
 
         {/* ===== E1RM 趨勢（主項力量）===== */}
         {client.training_enabled && e1rmTrend.exercises.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">💪 主項力量趨勢（E1RM）</h3>
             <div className="flex flex-wrap gap-3 mb-3">
               {e1rmTrend.exercises.map((ex: string) => {
@@ -3166,7 +3192,7 @@ export default function ClientOverview() {
                   <span key={ex} className="text-xs text-gray-600">
                     {ex}
                     {change && (
-                      <span className={`ml-1 font-semibold ${change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className={`ml-1 font-semibold ${change.startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {change}
                       </span>
                     )}
@@ -3199,13 +3225,13 @@ export default function ClientOverview() {
                 })}
               </LineChart>
             </ResponsiveContainer>
-            <p className="text-[10px] text-gray-400 mt-2">Brzycki E1RM = weight x 36/(37-reps)，僅取 reps &le; 10 的組數</p>
+            <p className="text-[11px] text-gray-400 mt-2">Brzycki E1RM = weight x 36/(37-reps)，僅取 reps &le; 10 的組數</p>
           </div>
         )}
 
         {/* ===== 每週訓練量趨勢 ===== */}
         {client.training_enabled && weeklyTonnage.length >= 2 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">📈 每週訓練量趨勢</h3>
             <ResponsiveContainer width="100%" height={220} minWidth={0}>
               <BarChart data={weeklyTonnage}>
@@ -3220,13 +3246,13 @@ export default function ClientOverview() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <p className="text-[10px] text-gray-400 mt-2">訓練量 = 所有組數的 weight x reps 加總（綠色 = 較上週增加，紅色 = 減少）</p>
+            <p className="text-[11px] text-gray-400 mt-2">訓練量 = 所有組數的 weight x reps 加總（綠色 = 較上週增加，紅色 = 減少）</p>
           </div>
         )}
 
         {/* ===== 每肌群週組數 ===== */}
         {client.training_enabled && muscleGroupSets.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">🎯 每肌群週組數</h3>
             <ResponsiveContainer width="100%" height={Math.max(180, muscleGroupSets.length * 36)} minWidth={0}>
               <BarChart data={muscleGroupSets} layout="vertical">
@@ -3239,7 +3265,7 @@ export default function ClientOverview() {
                 <Bar dataKey="組數" fill="#6366f1" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
-            <p className="text-[10px] text-gray-400 mt-2">本週（週一至今）各肌群組數，MEV=最小有效量（10組）、MRV=最大恢復量（20組）</p>
+            <p className="text-[11px] text-gray-400 mt-2">本週（週一至今）各肌群組數，MEV=最小有效量（10組）、MRV=最大恢復量（20組）</p>
           </div>
         )}
 
@@ -3253,18 +3279,18 @@ export default function ClientOverview() {
 
         {/* ===== 血檢指標 ===== */}
         {client.lab_enabled && latestLabs.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">🩸 血檢指標（最新）</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {latestLabs.map((lab) => (
-                <div key={lab.id} className="border border-gray-100 rounded-xl p-3">
+                <div key={lab.id} className="border border-slate-200 rounded-xl p-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-gray-900">{lab.test_name}</span>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(lab.status)}`}>
                       {lab.status === 'normal' ? '正常' : lab.status === 'attention' ? '注意' : '警示'}
                     </span>
                   </div>
-                  <p className="text-2xl font-bold text-gray-900">{lab.value} <span className="text-sm font-normal text-gray-500">{lab.unit}</span></p>
+                  <p className="text-2xl font-bold tabular-nums text-gray-900">{lab.value} <span className="text-sm font-normal text-gray-500">{lab.unit}</span></p>
                   <p className="text-xs text-gray-400 mt-1">參考：{lab.reference_range} · {new Date(lab.date).toLocaleDateString('zh-TW')}</p>
                 </div>
               ))}
@@ -3274,7 +3300,7 @@ export default function ClientOverview() {
 
         {/* ===== 補品建議（依血檢）===== */}
         {supplementSuggestions.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-base">💊</span>
               <h3 className="text-sm font-semibold text-gray-900">補品建議</h3>
@@ -3283,27 +3309,27 @@ export default function ClientOverview() {
             <div className="space-y-4">
               {supplementSuggestions.map((s, i) => (
                 <div key={i} className={`rounded-xl border overflow-hidden ${
-                  s.priority === 'high' ? 'border-red-200' :
+                  s.priority === 'high' ? 'border-rose-200' :
                   s.priority === 'medium' ? 'border-amber-200' :
-                  'border-gray-200'
+                  'border-slate-200'
                 }`}>
                   {/* 標題列 */}
                   <div className={`px-5 py-3 flex items-center gap-2 flex-wrap ${
-                    s.priority === 'high' ? 'bg-red-50' :
+                    s.priority === 'high' ? 'bg-rose-50' :
                     s.priority === 'medium' ? 'bg-amber-50' :
-                    'bg-gray-50'
+                    'bg-slate-50'
                   }`}>
                     <span className="text-base font-bold text-gray-900">{s.name}</span>
                     <span className={`px-2.5 py-0.5 text-[11px] font-bold rounded-full ${
-                      s.priority === 'high' ? 'bg-red-100 text-red-700' :
+                      s.priority === 'high' ? 'bg-rose-100 text-rose-700' :
                       s.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
                       'bg-gray-100 text-gray-600'
                     }`}>{s.priority === 'high' ? '強烈建議' : s.priority === 'medium' ? '建議' : '可考慮'}</span>
                     <span className={`px-2.5 py-0.5 text-[11px] rounded-full ${
                       s.category === 'deficiency' ? 'bg-blue-100 text-blue-700' :
-                      s.category === 'hormonal' ? 'bg-purple-100 text-purple-700' :
-                      s.category === 'performance' ? 'bg-green-100 text-green-700' :
-                      'bg-orange-100 text-orange-700'
+                      s.category === 'hormonal' ? 'bg-slate-100 text-slate-600' :
+                      s.category === 'performance' ? 'bg-slate-100 text-slate-600' :
+                      'bg-slate-100 text-slate-600'
                     }`}>{
                       s.category === 'deficiency' ? '補充缺乏' :
                       s.category === 'hormonal' ? '荷爾蒙' :
@@ -3316,12 +3342,12 @@ export default function ClientOverview() {
                     <p className="text-sm text-gray-700 leading-relaxed">{s.reason}</p>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-gray-50 rounded-lg px-3 py-2.5">
-                        <p className="text-[10px] font-medium text-gray-400 mb-1">劑量</p>
+                      <div className="bg-slate-50 rounded-lg px-3 py-2.5">
+                        <p className="text-[11px] font-medium text-gray-400 mb-1">劑量</p>
                         <p className="text-sm font-medium text-gray-800">{s.dosage}</p>
                       </div>
-                      <div className="bg-gray-50 rounded-lg px-3 py-2.5">
-                        <p className="text-[10px] font-medium text-gray-400 mb-1">服用時機</p>
+                      <div className="bg-slate-50 rounded-lg px-3 py-2.5">
+                        <p className="text-[11px] font-medium text-gray-400 mb-1">服用時機</p>
                         <p className="text-sm font-medium text-gray-800">{s.timing}</p>
                       </div>
                     </div>
@@ -3402,7 +3428,7 @@ export default function ClientOverview() {
               rows={4}
               autoFocus
               placeholder="這週體重控制得不錯，碳水可以再加一點…"
-              className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
             />
             <p className="text-xs text-gray-400 mb-3">學員打開 app 最上面就會看到這則訊息（有開推播會同時收到通知）。</p>
             <button

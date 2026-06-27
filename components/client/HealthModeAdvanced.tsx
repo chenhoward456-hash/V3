@@ -98,9 +98,9 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
   // 載入失敗 → 顯示錯誤
   if (fetchError) {
     return (
-      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-center">
-          <p className="text-sm text-red-600">{fetchError}</p>
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-center">
+          <p className="text-sm text-rose-600">{fetchError}</p>
         </div>
       </div>
     )
@@ -110,7 +110,7 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
   if (!data && !hasAdvice) return null
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* 標題 */}
       <div className="flex items-center gap-2 mb-4">
         <span className="text-2xl">🌿</span>
@@ -166,12 +166,12 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
           {data.report.currentGrade && data.report.previousGrade && (
             <div className="flex items-center justify-center gap-6 mb-4 py-3">
               <div className="text-center">
-                <p className="text-[10px] text-gray-400 mb-1">上季</p>
+                <p className="text-[11px] text-gray-400 mb-1">上季</p>
                 <GradeBadge grade={data.report.previousGrade} size="lg" />
               </div>
               <span className="text-2xl text-gray-300">→</span>
               <div className="text-center">
-                <p className="text-[10px] text-gray-400 mb-1">本季</p>
+                <p className="text-[11px] text-gray-400 mb-1">本季</p>
                 <GradeBadge grade={data.report.currentGrade} size="lg" />
               </div>
             </div>
@@ -231,7 +231,7 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
       {/* ===== 微營養素目標 ===== */}
       {activeTab === 'micro' && (
         <div>
-          <p className="text-[10px] text-gray-400 mb-3">
+          <p className="text-[11px] text-gray-400 mb-3">
             健康模式每日微營養素建議攝取量（基於最新運動營養研究）
           </p>
           <div className="space-y-2">
@@ -244,12 +244,12 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
                   </div>
                   <span className="text-sm font-bold text-emerald-700">{micro.target}</span>
                 </div>
-                <p className="text-[10px] text-gray-400 ml-7">{micro.tip}</p>
+                <p className="text-[11px] text-gray-400 ml-7">{micro.tip}</p>
               </div>
             ))}
           </div>
           <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-            <p className="text-[10px] text-emerald-700">
+            <p className="text-[11px] text-emerald-700">
               💡 以上為基於運動營養研究的每日建議攝取量。搭配血檢結果，可在「血檢飲食」分頁查看個人化調整建議。
             </p>
           </div>
@@ -257,7 +257,7 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
       )}
 
       <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-3">
-        <p className="text-[10px] text-gray-500 leading-relaxed">
+        <p className="text-[11px] text-gray-500 leading-relaxed">
           以上建議攝取量僅為一般運動營養參考值，不構成個人化營養處方或醫療建議。實際需求因人而異，請以專業醫師或營養師意見為準。
         </p>
       </div>
@@ -285,7 +285,7 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
             <span className="text-lg">{advice.icon}</span>
             <div>
               <p className={`text-sm font-bold ${textColor}`}>{advice.title}</p>
-              <p className="text-[10px] text-gray-500">
+              <p className="text-[11px] text-gray-500">
                 {advice.labMarker} {advice.currentValue}{advice.unit}（目標：{advice.targetRange}）
               </p>
             </div>
@@ -298,7 +298,7 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
         <div className="mt-3 space-y-3">
           {/* 飲食調整 */}
           <div>
-            <p className="text-[10px] font-bold text-gray-700 mb-1">📋 飲食調整</p>
+            <p className="text-[11px] font-bold text-gray-700 mb-1">📋 飲食調整</p>
             <ul className="space-y-1">
               {advice.dietaryChanges.map((change, i) => (
                 <li key={i} className="text-[11px] text-gray-700 flex gap-1">
@@ -312,10 +312,10 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
           {/* 多吃 */}
           {advice.foodsToIncrease.length > 0 && (
             <div>
-              <p className="text-[10px] font-bold text-green-700 mb-1">✅ 建議多吃</p>
+              <p className="text-[11px] font-bold text-green-700 mb-1">✅ 建議多吃</p>
               <div className="flex flex-wrap gap-1.5">
                 {advice.foodsToIncrease.map((food, i) => (
-                  <span key={i} className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                  <span key={i} className="text-[11px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                     {food}
                   </span>
                 ))}
@@ -326,10 +326,10 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
           {/* 少吃 */}
           {advice.foodsToReduce.length > 0 && (
             <div>
-              <p className="text-[10px] font-bold text-red-700 mb-1">⚠️ 建議減少</p>
+              <p className="text-[11px] font-bold text-red-700 mb-1">⚠️ 建議減少</p>
               <div className="flex flex-wrap gap-1.5">
                 {advice.foodsToReduce.map((food, i) => (
-                  <span key={i} className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                  <span key={i} className="text-[11px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
                     {food}
                   </span>
                 ))}
@@ -340,26 +340,26 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
           {/* 巨量營養素調整 */}
           {advice.macroAdjustment && (
             <div className="bg-white bg-opacity-70 rounded-xl p-2.5">
-              <p className="text-[10px] font-bold text-blue-700 mb-0.5">
+              <p className="text-[11px] font-bold text-blue-700 mb-0.5">
                 🔧 {advice.macroAdjustment.nutrient}調整
               </p>
-              <p className="text-[10px] text-blue-600">{advice.macroAdjustment.detail}</p>
+              <p className="text-[11px] text-blue-600">{advice.macroAdjustment.detail}</p>
             </div>
           )}
 
           {advice.caveat && (
             <div className="bg-gray-100 rounded-xl p-2.5">
-              <p className="text-[10px] font-bold text-gray-600 mb-0.5">⚠️ 判讀提醒</p>
-              <p className="text-[10px] text-gray-500">{advice.caveat}</p>
+              <p className="text-[11px] font-bold text-gray-600 mb-0.5">⚠️ 判讀提醒</p>
+              <p className="text-[11px] text-gray-500">{advice.caveat}</p>
             </div>
           )}
 
           {advice.references && advice.references.length > 0 && (
             <div className="border-t border-gray-200 pt-2">
-              <p className="text-[10px] font-bold text-gray-400 mb-1">📚 文獻依據</p>
+              <p className="text-[11px] font-bold text-gray-400 mb-1">📚 文獻依據</p>
               <ul className="space-y-0.5">
                 {advice.references.map((ref, i) => (
-                  <li key={i} className="text-[9px] text-gray-400">{ref}</li>
+                  <li key={i} className="text-[11px] text-gray-400">{ref}</li>
                 ))}
               </ul>
             </div>
@@ -405,7 +405,7 @@ function ComparisonRow({ item }: { item: ComparisonItem }) {
           {item.current != null ? `${item.current}${item.unit}` : '-'}
         </span>
         {delta != null && (
-          <span className={`text-[10px] font-bold ${
+          <span className={`text-[11px] font-bold ${
             item.improved === true ? 'text-green-600' : item.improved === false ? 'text-red-600' : 'text-gray-400'
           }`}>
             {item.improved === true ? '↑' : item.improved === false ? '↓' : '→'}

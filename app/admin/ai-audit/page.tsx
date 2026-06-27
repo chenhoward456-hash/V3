@@ -57,7 +57,7 @@ export default function AiAuditPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b border-gray-200 px-4 py-4">
+        <div className="bg-white border-b border-slate-200 px-4 py-4">
           <div className="max-w-6xl mx-auto animate-pulse">
             <div className="h-6 bg-gray-200 rounded w-56 mb-2"></div>
             <div className="h-3 bg-gray-100 rounded w-72"></div>
@@ -66,7 +66,7 @@ export default function AiAuditPage() {
         <div className="max-w-6xl mx-auto px-4 py-6 animate-pulse">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 p-3">
+              <div key={i} className="bg-white rounded-2xl border border-slate-200 p-3">
                 <div className="h-3 bg-gray-100 rounded w-20 mb-2"></div>
                 <div className="h-8 bg-gray-200 rounded w-16"></div>
               </div>
@@ -74,7 +74,7 @@ export default function AiAuditPage() {
           </div>
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+              <div key={i} className="bg-white rounded-2xl border border-slate-200 px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="h-5 bg-gray-200 rounded-full w-16"></div>
                   <div className="h-4 bg-gray-200 rounded w-24"></div>
@@ -119,7 +119,7 @@ export default function AiAuditPage() {
 
   function tierColor(t: string | null) {
     if (t === 'protocol') return 'bg-emerald-100 text-emerald-800'
-    if (t === 'concierge') return 'bg-purple-100 text-purple-800'
+    if (t === 'concierge') return 'bg-slate-100 text-slate-600'
     if (t === 'coached') return 'bg-blue-100 text-blue-800'
     if (t === 'self_managed') return 'bg-gray-100 text-gray-700'
     return 'bg-gray-50 text-gray-500'
@@ -128,7 +128,7 @@ export default function AiAuditPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
+      <div className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-2 mb-1">
             <Link href="/admin" className="text-gray-500 hover:text-gray-700">
@@ -145,37 +145,37 @@ export default function AiAuditPage() {
       <div className="max-w-6xl mx-auto px-4 py-6">
         {/* 摘要 */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-3">
+          <div className="bg-white rounded-2xl border border-slate-200 p-3">
             <div className="text-xs text-gray-500">總草稿數</div>
-            <div className="text-2xl font-semibold text-gray-900">{data.counts.total}</div>
+            <div className="text-2xl font-semibold text-gray-900 tabular-nums">{data.counts.total}</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-3">
+          <div className="bg-white rounded-2xl border border-slate-200 p-3">
             <div className="text-xs text-emerald-600">已儲存（教練審核過）</div>
-            <div className="text-2xl font-semibold text-emerald-700">{data.counts.saved}</div>
+            <div className="text-2xl font-semibold text-emerald-700 tabular-nums">{data.counts.saved}</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-3">
+          <div className="bg-white rounded-2xl border border-slate-200 p-3">
             <div className="text-xs text-amber-600">未儲存（草稿但沒寫進 panel notes）</div>
-            <div className="text-2xl font-semibold text-amber-700">{data.counts.pending}</div>
+            <div className="text-2xl font-semibold text-amber-700 tabular-nums">{data.counts.pending}</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-3">
-            <div className="text-xs text-indigo-600">AI 平均長度</div>
-            <div className="text-2xl font-semibold text-indigo-700">{data.avg_chars.ai}<span className="text-sm text-gray-500 ml-1">字</span></div>
+          <div className="bg-white rounded-2xl border border-slate-200 p-3">
+            <div className="text-xs text-slate-500">AI 平均長度</div>
+            <div className="text-2xl font-semibold text-slate-900 tabular-nums">{data.avg_chars.ai}<span className="text-sm text-gray-500 ml-1">字</span></div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-3">
+          <div className="bg-white rounded-2xl border border-slate-200 p-3">
             <div className="text-xs text-emerald-600">教練最終長度</div>
-            <div className="text-2xl font-semibold text-emerald-700">{data.avg_chars.coach || '—'}<span className="text-sm text-gray-500 ml-1">字</span></div>
+            <div className="text-2xl font-semibold text-emerald-700 tabular-nums">{data.avg_chars.coach || '—'}<span className="text-sm text-gray-500 ml-1">字</span></div>
           </div>
         </div>
 
         {/* 搜尋 + 篩選 */}
-        <div className="bg-white border border-gray-200 rounded-xl p-3 mb-4 space-y-2">
+        <div className="bg-white border border-slate-200 rounded-2xl p-3 mb-4 space-y-2">
           {/* 搜尋框 */}
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="🔍 搜尋客戶名 / panel 日期 / mode / unique code..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {/* 篩選 row */}
           <div className="flex flex-wrap gap-2 items-center text-xs">
@@ -190,8 +190,8 @@ export default function AiAuditPage() {
                 onClick={() => setShowFilter(f.key)}
                 className={`px-2.5 py-1 rounded ${
                   showFilter === f.key
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-50 border border-slate-200 text-gray-700 hover:bg-slate-100'
                 }`}
               >
                 {f.label}
@@ -205,8 +205,8 @@ export default function AiAuditPage() {
                 onClick={() => setTierFilter(t)}
                 className={`px-2.5 py-1 rounded ${
                   tierFilter === t
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-50 border border-slate-200 text-gray-700 hover:bg-slate-100'
                 }`}
               >
                 {t}
@@ -232,7 +232,7 @@ export default function AiAuditPage() {
         {/* 列表 */}
         <div className="space-y-3">
           {filtered.length === 0 && (
-            <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
+            <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center">
               {data.counts.total === 0 ? (
                 <>
                   <div className="text-5xl mb-3 opacity-60">✨</div>
@@ -256,11 +256,11 @@ export default function AiAuditPage() {
           {filtered.map(entry => {
             const isOpen = expanded === entry.id
             return (
-              <div key={entry.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div key={entry.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                 {/* Summary row */}
                 <button
                   onClick={() => setExpanded(isOpen ? null : entry.id)}
-                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 text-left"
+                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 text-left"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`text-xs px-2 py-0.5 rounded-full ${
@@ -271,12 +271,12 @@ export default function AiAuditPage() {
                     </div>
                     <div className="font-medium text-gray-900 truncate">{entry.client.name}</div>
                     {entry.client.subscription_tier && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${tierColor(entry.client.subscription_tier)}`}>
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded ${tierColor(entry.client.subscription_tier)}`}>
                         {entry.client.subscription_tier}
                       </span>
                     )}
                     {entry.client_mode && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                         {entry.client_mode}
                       </span>
                     )}
@@ -300,7 +300,7 @@ export default function AiAuditPage() {
 
                 {/* Expanded detail */}
                 {isOpen && (
-                  <div className="border-t border-gray-100 p-4 space-y-4 bg-gray-50">
+                  <div className="border-t border-slate-200 p-4 space-y-4 bg-slate-50">
                     <div className="text-xs text-gray-500">
                       Model: {entry.model_used} · Created: {fmtDate(entry.created_at)}
                       {entry.coach_saved_at && <> · Saved: {fmtDate(entry.coach_saved_at)}</>}
@@ -308,10 +308,10 @@ export default function AiAuditPage() {
 
                     {/* AI 寫的 */}
                     <div>
-                      <div className="text-xs font-semibold text-indigo-700 mb-1 flex items-center gap-1">
+                      <div className="text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
                         <Sparkles className="w-3 h-3" /> AI 寫的（{entry.ai.total_chars} 字）
                       </div>
-                      <div className="bg-white border border-indigo-200 rounded p-3 space-y-2">
+                      <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
                         <div>
                           <div className="text-[11px] font-medium text-gray-500 mb-0.5">Summary</div>
                           <p className="text-xs text-gray-800 whitespace-pre-wrap leading-relaxed">{entry.ai.summary || '(無)'}</p>
@@ -333,7 +333,7 @@ export default function AiAuditPage() {
                               : '，沒改長度'
                           }）
                         </div>
-                        <div className="bg-white border border-emerald-200 rounded p-3 space-y-2">
+                        <div className="bg-white border border-emerald-200 rounded-xl p-3 space-y-2">
                           <div>
                             <div className="text-[11px] font-medium text-gray-500 mb-0.5">Summary</div>
                             <p className="text-xs text-gray-800 whitespace-pre-wrap leading-relaxed">{entry.coach.summary || '(無)'}</p>
@@ -353,7 +353,7 @@ export default function AiAuditPage() {
                     )}
 
                     {entry.client.unique_code && (
-                      <div className="pt-2 border-t border-gray-200">
+                      <div className="pt-2 border-t border-slate-200">
                         <Link
                           href={`/c/${entry.client.unique_code}/health/timeline`}
                           className="text-xs text-blue-600 hover:underline"

@@ -11,11 +11,11 @@ interface BehaviorInsightsProps {
 }
 
 const categoryColors: Record<string, { bg: string; border: string; text: string }> = {
-  sleep_training: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700' },
-  nutrition_mood: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-  training_recovery: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
-  supplement_effect: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
-  trend: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
+  sleep_training: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700' },
+  nutrition_mood: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700' },
+  training_recovery: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700' },
+  supplement_effect: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700' },
+  trend: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700' },
 }
 
 const categoryLabels: Record<string, string> = {
@@ -27,9 +27,9 @@ const categoryLabels: Record<string, string> = {
 }
 
 const confidenceLabels: Record<string, { label: string; color: string }> = {
-  high: { label: '資料充足', color: 'text-green-600' },
-  medium: { label: '資料尚可', color: 'text-amber-600' },
-  low: { label: '資料偏少', color: 'text-gray-400' },
+  high: { label: '資料充足', color: 'text-slate-600' },
+  medium: { label: '資料尚可', color: 'text-slate-500' },
+  low: { label: '資料偏少', color: 'text-slate-400' },
 }
 
 // 模糊化的假 insight（免費用戶看到被鎖住的預覽）
@@ -62,11 +62,11 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
 
   if (loading) {
     return (
-      <div className="bg-white rounded-3xl shadow-sm p-5 mb-4 animate-pulse">
-        <div className="h-5 w-32 bg-gray-200 rounded mb-3" />
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 animate-pulse">
+        <div className="h-5 w-32 bg-slate-200 rounded mb-3" />
         <div className="space-y-3">
-          <div className="h-16 bg-gray-100 rounded-xl" />
-          <div className="h-16 bg-gray-100 rounded-xl" />
+          <div className="h-16 bg-slate-100 rounded-xl" />
+          <div className="h-16 bg-slate-100 rounded-xl" />
         </div>
       </div>
     )
@@ -78,11 +78,11 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
   const hasMeaningfulInsight = insights.some(i => i.confidence !== 'low' && !i.id.startsWith('early-'))
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-5 mb-4">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">💡</span>
         <h2 className="text-base font-bold text-gray-900">你的數據告訴你</h2>
-        <span className="text-[10px] text-gray-400 ml-auto">根據近 14 天行為數據</span>
+        <span className="text-[11px] text-gray-400 ml-auto">根據近 14 天行為數據</span>
       </div>
 
       <div className="space-y-2.5">
@@ -98,7 +98,7 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className={`text-sm font-bold ${colors.text}`}>{insight.title}</p>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full bg-white/60 ${conf.color}`}>
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded-full bg-white/60 ${conf.color}`}>
                         {conf.label}
                       </span>
                     </div>
@@ -111,7 +111,7 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
                   </div>
                 </div>
                 <div className="flex items-center justify-end mt-1.5">
-                  <span className={`text-[9px] ${colors.text} opacity-60`}>
+                  <span className={`text-[11px] ${colors.text} opacity-60`}>
                     {categoryLabels[insight.category] || ''}
                   </span>
                 </div>
@@ -119,11 +119,11 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
 
               {/* 上下文 CTA：在第一個有意義的 insight 後面推升級（僅免費用戶） */}
               {isFree && hasMeaningfulInsight && idx === 0 && insights.length >= 2 && (
-                <div className="mt-2 mb-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl px-4 py-3 text-center">
-                  <p className="text-xs text-white font-bold mb-1">
+                <div className="mt-2 mb-1 bg-blue-600 rounded-xl px-4 py-3 text-center">
+                  <p className="text-xs text-white font-bold mb-1 tabular-nums">
                     系統發現了 {totalCount} 個與你有關的行為模式
                   </p>
-                  <p className="text-[10px] text-blue-100 mb-2">
+                  <p className="text-[11px] text-blue-100 mb-2">
                     升級後解鎖完整分析 — 包含跨維度交叉比對、趨勢預測、個人化建議
                   </p>
                   <Link
@@ -157,7 +157,7 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
                   </div>
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center bg-white/30">
-                  <span className="text-xs font-bold text-gray-500 bg-white/80 px-3 py-1.5 rounded-full shadow-sm">
+                  <span className="text-xs font-bold text-gray-500 bg-white/80 px-3 py-1.5 rounded-full">
                     🔒 升級解鎖
                   </span>
                 </div>
@@ -167,7 +167,7 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
         </div>
       )}
 
-      <p className="text-[9px] text-gray-400 mt-2 text-center">
+      <p className="text-[11px] text-gray-400 mt-2 text-center">
         以上為教練級行為分析，非醫療建議
       </p>
     </div>

@@ -91,12 +91,12 @@ function computeProgress(
 
   if (isCut) {
     if (perWeek <= -FLAT_KG_PER_WEEK) return { level: 'on_track', emoji: '🟢', label: '減脂中', detail: `${mag}（${perWeek.toFixed(1)}kg/週）${toGoal}`, rank: 3, pill: 'bg-emerald-100 text-emerald-700' }
-    if (perWeek >= FLAT_KG_PER_WEEK) return { level: 'reverse', emoji: '🔴', label: '不減反增', detail: `${mag}${toGoal}`, rank: 0, pill: 'bg-red-100 text-red-700' }
+    if (perWeek >= FLAT_KG_PER_WEEK) return { level: 'reverse', emoji: '🔴', label: '不減反增', detail: `${mag}${toGoal}`, rank: 0, pill: 'bg-rose-100 text-rose-700' }
     return { level: 'slow', emoji: '🟡', label: '停滯', detail: `${mag} 幾乎沒動${toGoal}`, rank: 1, pill: 'bg-amber-100 text-amber-700' }
   }
   if (isBulk) {
     if (perWeek >= FLAT_KG_PER_WEEK) return { level: 'on_track', emoji: '🟢', label: '增重中', detail: `${mag}（+${perWeek.toFixed(1)}kg/週）${toGoal}`, rank: 3, pill: 'bg-emerald-100 text-emerald-700' }
-    if (perWeek <= -FLAT_KG_PER_WEEK) return { level: 'reverse', emoji: '🔴', label: '不增反掉', detail: `${mag}${toGoal}`, rank: 0, pill: 'bg-red-100 text-red-700' }
+    if (perWeek <= -FLAT_KG_PER_WEEK) return { level: 'reverse', emoji: '🔴', label: '不增反掉', detail: `${mag}${toGoal}`, rank: 0, pill: 'bg-rose-100 text-rose-700' }
     return { level: 'slow', emoji: '🟡', label: '沒長', detail: `${mag} 幾乎沒動${toGoal}`, rank: 1, pill: 'bg-amber-100 text-amber-700' }
   }
   // 維持 / 健康
@@ -122,11 +122,11 @@ function computeStreak(activeDates: Set<string>): number {
 }
 
 function MiniStat({ label, value, tone }: { label: string; value: string | number; tone?: 'red' | 'orange' | 'rose' | 'green' }) {
-  const color = tone === 'red' ? 'text-red-600' : tone === 'orange' ? 'text-orange-600' : tone === 'rose' ? 'text-rose-600' : tone === 'green' ? 'text-emerald-600' : 'text-gray-900'
+  const color = tone === 'red' ? 'text-rose-600' : tone === 'orange' ? 'text-amber-600' : tone === 'rose' ? 'text-rose-600' : tone === 'green' ? 'text-emerald-600' : 'text-gray-900'
   return (
     <div className="flex items-baseline gap-1.5">
       <span className="text-xs text-gray-400">{label}</span>
-      <span className={`text-lg font-bold ${color}`}>{value}</span>
+      <span className={`text-lg font-bold tabular-nums ${color}`}>{value}</span>
     </div>
   )
 }
@@ -395,14 +395,14 @@ export default function AdminDashboard() {
       if (stat) {
         let daysSince = Infinity
         if (stat.lastActivity) daysSince = Math.floor((today.getTime() - new Date(stat.lastActivity).getTime()) / DAY_MS)
-        if (daysSince >= 5 && stat.supplementCount > 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: daysSince === Infinity ? '從未打卡' : `${daysSince}天未活動`, color: 'text-red-600 bg-red-50', priority: 0 })
-        if (stat.weekRate < 50 && stat.supplementCount > 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `本週服從率 ${stat.weekRate}%`, color: 'text-yellow-700 bg-yellow-50', priority: 2 })
+        if (daysSince >= 5 && stat.supplementCount > 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: daysSince === Infinity ? '從未打卡' : `${daysSince}天未活動`, color: 'text-rose-600 bg-rose-50', priority: 0 })
+        if (stat.weekRate < 50 && stat.supplementCount > 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `本週服從率 ${stat.weekRate}%`, color: 'text-amber-700 bg-amber-50', priority: 2 })
       }
       if (client.next_checkup_date) {
         const checkup = new Date(client.next_checkup_date); checkup.setHours(0, 0, 0, 0)
         const diff = Math.floor((checkup.getTime() - today.getTime()) / DAY_MS)
-        if (diff < 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `回檢已逾期 ${Math.abs(diff)}天`, color: 'text-red-600 bg-red-50', priority: 0 })
-        else if (diff <= 7) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `回檢日 ${client.next_checkup_date}`, color: 'text-orange-600 bg-orange-50', priority: 1 })
+        if (diff < 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `回檢已逾期 ${Math.abs(diff)}天`, color: 'text-rose-600 bg-rose-50', priority: 0 })
+        else if (diff <= 7) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `回檢日 ${client.next_checkup_date}`, color: 'text-amber-600 bg-amber-50', priority: 1 })
       }
 
       // ── 體重停滯偵測（近 14 天，啟用體組成的學員）──
@@ -412,7 +412,7 @@ export default function AdminDashboard() {
           const weights = bodyLogs.map(b => b.weight)
           const maxW = Math.max(...weights); const minW = Math.min(...weights)
           if (maxW - minW < 0.5) {
-            items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: '體重近 14 天停滯（< 0.5kg 波動）', color: 'text-yellow-700 bg-yellow-50', priority: 2 })
+            items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: '體重近 14 天停滯（< 0.5kg 波動）', color: 'text-amber-700 bg-amber-50', priority: 2 })
           }
         }
       }
@@ -425,7 +425,7 @@ export default function AdminDashboard() {
           const compliantCount = validNutLogs.filter(n => n.compliant).length
           const rate = Math.round((compliantCount / validNutLogs.length) * 100)
           if (rate < 60) {
-            items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `飲食合規率僅 ${rate}%（近 14 天）`, color: 'text-red-600 bg-red-50', priority: 1 })
+            items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `飲食合規率僅 ${rate}%（近 14 天）`, color: 'text-rose-600 bg-rose-50', priority: 1 })
           }
         }
       }
@@ -437,7 +437,7 @@ export default function AdminDashboard() {
           .sort((a, b) => b.date.localeCompare(a.date))
           .slice(0, 3)
         if (wLogs.length >= 3 && wLogs.every(w => w.energy_level <= 2)) {
-          items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: '連續 3 天能量指數 ≤ 2，需關注', color: 'text-orange-600 bg-orange-50', priority: 1 })
+          items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: '連續 3 天能量指數 ≤ 2，需關注', color: 'text-amber-600 bg-amber-50', priority: 1 })
         }
       }
 
@@ -448,7 +448,7 @@ export default function AdminDashboard() {
           .sort((a, b) => b.date.localeCompare(a.date))
           .slice(0, 3)
         if (rpeLogs.length >= 3 && rpeLogs.every(r => r.rpe > 8.5)) {
-          items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `訓練 RPE 連續偏高（${rpeLogs.map(r => r.rpe).join('/')}），建議 Deload`, color: 'text-orange-600 bg-orange-50', priority: 1 })
+          items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `訓練 RPE 連續偏高（${rpeLogs.map(r => r.rpe).join('/')}），建議 Deload`, color: 'text-amber-600 bg-amber-50', priority: 1 })
         }
       }
     }
@@ -638,23 +638,44 @@ export default function AdminDashboard() {
   const copyClientUrl = (code: string) => { navigator.clipboard.writeText(`${window.location.origin}/c/${code}`).then(() => showToast('已複製學員網址', 'success')) }
   const handleLogout = async () => { await fetch('/api/admin/logout', { method: 'POST' }); router.push('/admin/login') }
   const SortIcon = ({ column }: { column: SortKey }) => sortKey !== column ? <ChevronUp size={14} className="text-gray-300 ml-1 inline" /> : sortDir === 'asc' ? <ChevronUp size={14} className="text-blue-600 ml-1 inline" /> : <ChevronDown size={14} className="text-blue-600 ml-1 inline" />
-  const getActivityLabel = (id: string) => { const s = clientStats[id]; if (!s?.lastActivity) return { text: '無記錄', color: 'text-gray-400' }; const d = Math.floor((Date.now() - new Date(s.lastActivity).getTime()) / DAY_MS); if (d >= 5) return { text: `${d}天未活動`, color: 'text-red-600 font-medium' }; if (d >= 3) return { text: `${d}天前`, color: 'text-yellow-600' }; if (d === 0) return { text: '今天', color: 'text-green-600' }; return { text: `${d}天前`, color: 'text-gray-600' } }
-  const getCheckupLabel = (c: Client) => { if (!c.next_checkup_date) return { text: '未設定', color: 'text-gray-400' }; const t = new Date(); t.setHours(0,0,0,0); const ck = new Date(c.next_checkup_date); ck.setHours(0,0,0,0); const d = Math.floor((ck.getTime()-t.getTime())/DAY_MS); if (d<0) return { text: `逾期 ${Math.abs(d)}天`, color: 'text-red-600 font-medium' }; if (d<=7) return { text: c.next_checkup_date, color: 'text-orange-600 font-medium' }; return { text: c.next_checkup_date, color: 'text-gray-600' } }
+  const getActivityLabel = (id: string) => { const s = clientStats[id]; if (!s?.lastActivity) return { text: '無記錄', color: 'text-gray-400' }; const d = Math.floor((Date.now() - new Date(s.lastActivity).getTime()) / DAY_MS); if (d >= 5) return { text: `${d}天未活動`, color: 'text-rose-600 font-medium' }; if (d >= 3) return { text: `${d}天前`, color: 'text-amber-600' }; if (d === 0) return { text: '今天', color: 'text-emerald-600' }; return { text: `${d}天前`, color: 'text-gray-600' } }
+  const getCheckupLabel = (c: Client) => { if (!c.next_checkup_date) return { text: '未設定', color: 'text-gray-400' }; const t = new Date(); t.setHours(0,0,0,0); const ck = new Date(c.next_checkup_date); ck.setHours(0,0,0,0); const d = Math.floor((ck.getTime()-t.getTime())/DAY_MS); if (d<0) return { text: `逾期 ${Math.abs(d)}天`, color: 'text-rose-600 font-medium' }; if (d<=7) return { text: c.next_checkup_date, color: 'text-amber-600 font-medium' }; return { text: c.next_checkup_date, color: 'text-gray-600' } }
   const getTrainingEmoji = (t: string) => ({ push:'🫸',pull:'🫷',legs:'🦵',full_body:'🏋️',cardio:'🏃',rest:'😴',chest:'💪',shoulder:'🏔️',arms:'💪🏼' }[t] || '')
-  const getComplianceColor = (r: number) => r >= 80 ? 'text-green-600' : r >= 50 ? 'text-yellow-600' : 'text-red-600'
+  const getComplianceColor = (r: number) => r >= 80 ? 'text-emerald-600' : r >= 50 ? 'text-amber-600' : 'text-rose-600'
+  // 一眼判斷「誰要顧」：融合 血檢狀態 + 多久沒打卡 + 服從率 + 回檢逾期 → 取最該注意的 1-2 條。
+  // 紅=要立刻處理、黃=該關注、綠=正常。學員列表左緣的色條 + 原因標籤就是這個。
+  const getAttention = (c: Client) => {
+    if (!c.is_active) return { level: 'off', reason: '', accent: '', chip: '' }
+    const s = clientStats[c.id]
+    const idle = s?.lastActivity ? Math.floor((Date.now() - new Date(s.lastActivity).getTime()) / DAY_MS) : null
+    const reasons: { sev: number; text: string }[] = []
+    if (idle == null) reasons.push({ sev: 2, text: '從未打卡' })
+    else if (idle >= 7) reasons.push({ sev: 3, text: `${idle}天沒打卡` })
+    else if (idle >= 5) reasons.push({ sev: 2, text: `${idle}天沒打卡` })
+    if (c.status === 'alert') reasons.push({ sev: 3, text: '血檢警示' })
+    else if (c.status === 'attention') reasons.push({ sev: 2, text: '血檢關注' })
+    if (s && s.supplementCount > 0 && s.weekRate < 50) reasons.push({ sev: 2, text: `服從率 ${s.weekRate}%` })
+    if (c.next_checkup_date) { const t = new Date(); t.setHours(0, 0, 0, 0); const ck = new Date(c.next_checkup_date); ck.setHours(0, 0, 0, 0); const d = Math.floor((ck.getTime() - t.getTime()) / DAY_MS); if (d < 0) reasons.push({ sev: 2, text: `回檢逾期${Math.abs(d)}天` }) }
+    if (reasons.length === 0) return { level: 'ok', reason: '', accent: '', chip: '' }
+    reasons.sort((a, b) => b.sev - a.sev)
+    const reason = reasons.slice(0, 2).map(r => r.text).join(' · ')
+    return reasons[0].sev >= 3
+      ? { level: 'alert', reason, accent: 'border-l-4 border-rose-400', chip: 'bg-rose-50 text-rose-700' }
+      : { level: 'watch', reason, accent: 'border-l-4 border-amber-400', chip: 'bg-amber-50 text-amber-700' }
+  }
   const getPrepPhaseLabel = (p: string | null) => PHASE_LABELS[p || ''] || p || ''
-  const getLineStatus = (c: Client) => { if (!c.line_user_id) return { label: '', color: '' }; if (!c.last_line_activity) return { label: 'LINE 已綁定', color: 'text-gray-400' }; const mins = Math.floor((Date.now() - new Date(c.last_line_activity).getTime()) / 60000); if (mins < 5) return { label: '在線', color: 'text-green-500' }; if (mins < 60) return { label: `${mins}分鐘前`, color: 'text-green-400' }; const hrs = Math.floor(mins / 60); if (hrs < 24) return { label: `${hrs}小時前`, color: 'text-gray-400' }; return { label: `${Math.floor(hrs/24)}天前`, color: 'text-gray-400' } }
+  const getLineStatus = (c: Client) => { if (!c.line_user_id) return { label: '', color: '' }; if (!c.last_line_activity) return { label: 'LINE 已綁定', color: 'text-gray-400' }; const mins = Math.floor((Date.now() - new Date(c.last_line_activity).getTime()) / 60000); if (mins < 5) return { label: '在線', color: 'text-emerald-500' }; if (mins < 60) return { label: `${mins}分鐘前`, color: 'text-emerald-400' }; const hrs = Math.floor(mins / 60); if (hrs < 24) return { label: `${hrs}小時前`, color: 'text-gray-400' }; return { label: `${Math.floor(hrs/24)}天前`, color: 'text-gray-400' } }
   const getTierBadge = (tier: string) => {
-    if (tier === 'coached') return { label: '2999', color: 'bg-purple-100 text-purple-700', dot: 'bg-purple-500' }
+    if (tier === 'coached') return { label: '2999', color: 'bg-slate-100 text-slate-600', dot: 'bg-slate-500' }
     if (tier === 'self_managed') return { label: '499', color: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500' }
     return { label: '免費', color: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' }
   }
   const getExpiryWarning = (c: Client) => {
     if (!c.expires_at) return null
     const days = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / DAY_MS)
-    if (days < 0) return { text: `已過期 ${Math.abs(days)} 天`, color: 'text-red-600' }
-    if (days <= 7) return { text: `${days} 天到期`, color: 'text-red-500' }
-    if (days <= 14) return { text: `${days} 天到期`, color: 'text-orange-500' }
+    if (days < 0) return { text: `已過期 ${Math.abs(days)} 天`, color: 'text-rose-600' }
+    if (days <= 7) return { text: `${days} 天到期`, color: 'text-rose-500' }
+    if (days <= 14) return { text: `${days} 天到期`, color: 'text-amber-500' }
     return null
   }
 
@@ -711,12 +732,12 @@ export default function AdminDashboard() {
 
   if (loading) return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center"><div className="h-5 w-32 bg-gray-200 rounded animate-pulse" /></div></div>
+      <div className="bg-white border-b border-slate-200"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center"><div className="h-5 w-32 bg-gray-200 rounded animate-pulse" /></div></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* KPI 骨架 */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[1,2,3,4].map(i => (
-            <div key={i} className="bg-white rounded-2xl shadow-sm p-5 animate-pulse">
+            <div key={i} className="bg-white border border-slate-200 rounded-2xl p-5 animate-pulse">
               <div className="flex items-center justify-between mb-3"><div className="h-3 w-16 bg-gray-200 rounded" /><div className="h-5 w-5 bg-gray-200 rounded" /></div>
               <div className="h-8 w-20 bg-gray-200 rounded mb-2" />
               <div className="h-2 w-24 bg-gray-100 rounded" />
@@ -724,7 +745,7 @@ export default function AdminDashboard() {
           ))}
         </div>
         {/* 學員列表骨架 */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
           <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-4" />
           <div className="space-y-4">
             {[1,2,3,4,5,6].map(i => (
@@ -744,20 +765,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex items-center justify-between h-16"><div><h1 className="text-xl font-bold text-gray-900">教練儀表板</h1><p className="text-sm text-gray-500">Howard 健康管理系統</p></div><div className="flex items-center gap-3">
+      <div className="bg-white border-b border-slate-200"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex items-center justify-between h-16"><div><h1 className="text-xl font-bold text-gray-900">教練儀表板</h1><p className="text-sm text-gray-500">Howard 健康管理系統</p></div><div className="flex items-center gap-3">
                 <button onClick={runWeeklyCron} disabled={runningCron} className="flex items-center gap-1 text-gray-500 hover:text-gray-700 text-sm disabled:opacity-50" title="手動執行每週分析">
                   <RefreshCw size={15} className={runningCron ? 'animate-spin' : ''} /> {runningCron ? '分析中...' : '每週分析'}
                 </button>
                 <div className="relative">
                   <button onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications) markNotificationsRead() }} className="p-2 text-gray-500 hover:text-gray-700 relative">
                     <Bell size={18} />
-                    {notifications.filter(n => !n.read).length > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{notifications.filter(n => !n.read).length}</span>}
+                    {notifications.filter(n => !n.read).length > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center">{notifications.filter(n => !n.read).length}</span>}
                   </button>
                   {showNotifications && (
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto">
-                      <div className="p-3 border-b border-gray-100 flex items-center justify-between"><span className="text-sm font-semibold text-gray-900">通知</span><button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button></div>
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 max-h-96 overflow-y-auto">
+                      <div className="p-3 border-b border-slate-200 flex items-center justify-between"><span className="text-sm font-semibold text-gray-900">通知</span><button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button></div>
                       {notifications.length === 0 ? <p className="p-4 text-sm text-gray-400 text-center">暫無通知</p> : notifications.map((n) => (
-                        <div key={n.id} className={`p-3 border-b border-gray-50 ${n.read ? '' : 'bg-blue-50/50'}`}>
+                        <div key={n.id} className={`p-3 border-b border-slate-100 ${n.read ? '' : 'bg-blue-50/50'}`}>
                           <div className="text-xs text-gray-400 mb-1">{n.date}</div>
                           <div className="text-sm font-medium text-gray-900 mb-1">{n.title}</div>
                           {n.content && (() => { try { const items = JSON.parse(n.content); return Array.isArray(items) ? <ul className="text-xs text-gray-600 space-y-0.5">{items.slice(0, 5).map((item: string, i: number) => <li key={i}>• {item}</li>)}{items.length > 5 && <li className="text-gray-400">...還有 {items.length - 5} 項</li>}</ul> : null } catch { return <p className="text-xs text-gray-600">{n.content}</p> } })()}
@@ -766,27 +787,27 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
-                {lastUpdated && <span className="text-[10px] text-gray-400 flex items-center gap-1"><Clock size={10} />{lastUpdated.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })} 更新</span>}
-                <Link href="/admin/ai-audit" className="relative bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition-colors">
+                {lastUpdated && <span className="text-[11px] text-gray-400 flex items-center gap-1"><Clock size={10} />{lastUpdated.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })} 更新</span>}
+                <Link href="/admin/ai-audit" className="relative bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">
                   ✨ AI Audit
                   {pendingDraftCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] inline-flex items-center justify-center px-1">
+                    <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[11px] font-bold rounded-full min-w-[18px] h-[18px] inline-flex items-center justify-center px-1">
                       {pendingDraftCount > 99 ? '99+' : pendingDraftCount}
                     </span>
                   )}
-                </Link><Link href="/admin/coaching" className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-900 transition-colors">📋 本週教練佇列</Link><Link href="/admin/labs" className="bg-rose-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-rose-700 transition-colors">🩸 血檢總覽</Link><Link href="/admin/agent-playground" className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-700 transition-colors">🤖 AI Agent</Link><Link href="/admin/blog" className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors">文章管理</Link><Link href="/admin/clients/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">新增學員</Link><button onClick={handleLogout} className="text-gray-500 hover:text-gray-700 text-sm">登出</button></div></div></div></div>
+                </Link><Link href="/admin/coaching" className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-900 transition-colors">📋 本週教練佇列</Link><Link href="/admin/labs" className="bg-rose-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-rose-700 transition-colors">🩸 血檢總覽</Link><Link href="/admin/agent-playground" className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-700 transition-colors">🤖 AI Agent</Link><Link href="/admin/blog" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">文章管理</Link><Link href="/admin/clients/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">新增學員</Link><button onClick={handleLogout} className="text-gray-500 hover:text-gray-700 text-sm">登出</button></div></div></div></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         {/* ===== 錯誤提示 ===== */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between">
-            <span className="text-sm text-red-700">{error}</span>
-            <button onClick={() => { setError(null); setLoading(true); fetchData() }} className="text-sm font-medium text-red-600 hover:text-red-800 px-3 py-1 bg-red-100 rounded-lg hover:bg-red-200 transition-colors">重試</button>
+          <div className="mb-4 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-rose-700">{error}</span>
+            <button onClick={() => { setError(null); setLoading(true); fetchData() }} className="text-sm font-medium text-rose-600 hover:text-rose-800 px-3 py-1 bg-rose-100 rounded-lg hover:bg-rose-200 transition-colors">重試</button>
           </div>
         )}
 
         {/* ===== 今日行動佇列（預設收合，只留還活著、真能動的）===== */}
-        <details className="bg-white rounded-2xl shadow-sm mb-4">
+        <details className="bg-white border border-slate-200 rounded-2xl mb-4">
           <summary className="cursor-pointer select-none px-5 py-4 flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">📋 今日行動佇列</h2>
             <span className="text-xs text-gray-400">
@@ -799,8 +820,8 @@ export default function AdminDashboard() {
           ) : (
             <div className="space-y-2">
               {actionQueue.map(item => {
-                const toneBox = { red: 'bg-red-50', orange: 'bg-orange-50', yellow: 'bg-yellow-50', blue: 'bg-blue-50' }[item.tone]
-                const toneText = { red: 'text-red-700', orange: 'text-orange-700', yellow: 'text-yellow-800', blue: 'text-blue-700' }[item.tone]
+                const toneBox = { red: 'bg-rose-50', orange: 'bg-amber-50', yellow: 'bg-amber-50', blue: 'bg-blue-50' }[item.tone]
+                const toneText = { red: 'text-rose-700', orange: 'text-amber-700', yellow: 'text-amber-800', blue: 'text-blue-700' }[item.tone]
                 return (
                   <div key={item.key} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl ${toneBox}`}>
                     <div className="min-w-0 flex items-center gap-2">
@@ -822,7 +843,7 @@ export default function AdminDashboard() {
         </details>
 
         {/* ===== Compact 數字條（取代原本 8 張大卡）===== */}
-        <div className="bg-white rounded-2xl shadow-sm px-5 py-3 mb-4">
+        <div className="bg-white border border-slate-200 rounded-2xl px-5 py-3 mb-4">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <MiniStat label="學員" value={summaryStats.totalClients} />
             <MiniStat label="付費" value={retentionStats.paying} />
@@ -854,15 +875,15 @@ export default function AdminDashboard() {
                 const tier = getTierBadge(c.subscription_tier)
                 const idleText = daysIdle === 0 ? '今天' : `${daysIdle}天前`
                 return (
-                  <div key={c.id} className={`rounded-xl border p-3.5 ${verdict.level === 'reverse' ? 'border-red-200 bg-red-50/40' : verdict.level === 'slow' ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-white'}`}>
+                  <div key={c.id} className={`rounded-xl border p-3.5 ${verdict.level === 'reverse' ? 'border-rose-200 bg-rose-50/40' : verdict.level === 'slow' ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-white'}`}>
                     <Link href={`/admin/clients/${c.id}/overview`} className="block hover:opacity-80 transition-opacity">
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <span className="text-sm font-semibold text-gray-900 truncate">{c.name}</span>
-                          <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full shrink-0 ${tier.color}`}>{tier.label}</span>
+                          <span className={`px-1.5 py-0.5 text-[11px] font-bold rounded-full shrink-0 ${tier.color}`}>{tier.label}</span>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {streak >= 2 && <span className="text-[11px] font-bold text-orange-500" title={`連續記錄 ${streak} 天`}>🔥{streak}</span>}
+                          {streak >= 2 && <span className="text-[11px] font-bold text-amber-500" title={`連續記錄 ${streak} 天`}>🔥{streak}</span>}
                           <span className="text-[11px] text-gray-400">{idleText}</span>
                         </div>
                       </div>
@@ -873,7 +894,7 @@ export default function AdminDashboard() {
                     </Link>
                     {!pushClientIds.has(c.id) && (
                       <div className="mt-1.5 -mb-0.5">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700" title="沒開推播提醒＝沒人提醒他每天記，最該優先帶他開通知">🔕 沒開提醒</span>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700" title="沒開推播提醒＝沒人提醒他每天記，最該優先帶他開通知">🔕 沒開提醒</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
@@ -897,22 +918,22 @@ export default function AdminDashboard() {
 
         {/* ===== 備賽倒數區塊 ===== */}
         {competitionClients.length > 0 && (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5 mb-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
             <div className="flex items-center gap-2 mb-3">
               <Trophy size={18} className="text-amber-600" />
-              <h3 className="text-base font-semibold text-amber-900">備賽倒數</h3>
+              <h3 className="text-base font-semibold text-gray-900">備賽倒數</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {competitionClients.map(c => {
                 const stat = clientStats[c.id]
-                const urgencyColor = c.daysLeft <= 7 ? 'text-red-600' : c.daysLeft <= 14 ? 'text-orange-600' : c.daysLeft <= 30 ? 'text-amber-600' : 'text-gray-700'
+                const urgencyColor = c.daysLeft <= 7 ? 'text-rose-600' : c.daysLeft <= 14 ? 'text-amber-600' : c.daysLeft <= 30 ? 'text-amber-600' : 'text-gray-700'
                 // 會不會準時上台（體重主導；體脂量測後期失真，不用來判定）
                 const wv = c.competition_date
                   ? projectWeightVerdict(recentBody.filter(b => b.client_id === c.id).map(b => ({ date: b.date, value: b.weight })), c.competition_date, c.target_weight)
                   : null
                 return (
                   <Link key={c.id} href={`/admin/clients/${c.id}/overview`}
-                    className={`bg-white rounded-xl p-4 hover:shadow-md transition-shadow block ${c.daysLeft <= 3 ? 'ring-2 ring-red-400 animate-pulse' : ''}`}>
+                    className={`bg-slate-50 rounded-xl p-4 transition-colors block ${c.daysLeft <= 3 ? 'ring-2 ring-rose-400 animate-pulse' : ''}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-semibold text-gray-900">{c.name}</span>
                       <span className={`text-2xl font-bold ${urgencyColor}`}>{c.daysLeft}<span className="text-xs font-normal ml-0.5">天</span></span>
@@ -941,30 +962,30 @@ export default function AdminDashboard() {
         )}
 
         {/* ===== 更多洞察（收合，預設不展開）===== */}
-        <details className="bg-white rounded-2xl shadow-sm mb-4">
+        <details className="bg-white border border-slate-200 rounded-2xl mb-4">
           <summary className="cursor-pointer px-5 py-3 text-sm font-semibold text-gray-700 select-none">更多洞察 — 表現好 / 流失風險 / 本週摘要</summary>
           <div className="px-5 pb-5 space-y-4">
             {(spotlightClients.stars.length > 0 || spotlightClients.struggling.length > 0) && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {spotlightClients.stars.length > 0 && (
-                  <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
-                    <p className="text-sm font-semibold text-green-800 mb-2">🌟 今日表現好</p>
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                    <p className="text-sm font-semibold text-emerald-800 mb-2">🌟 今日表現好</p>
                     <div className="space-y-1.5">{spotlightClients.stars.map(s => (
                       <Link key={s.id} href={`/admin/clients/${s.id}/overview`} className="flex items-center justify-between px-3 py-2 bg-white/60 rounded-lg hover:bg-white/80 transition-colors">
-                        <span className="text-sm font-medium text-green-700">{s.name}</span>
-                        <span className="text-xs text-green-600">{s.reason}</span>
+                        <span className="text-sm font-medium text-emerald-700">{s.name}</span>
+                        <span className="text-xs text-emerald-600">{s.reason}</span>
                       </Link>
                     ))}</div>
                   </div>
                 )}
                 {spotlightClients.struggling.length > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-                    <p className="text-sm font-semibold text-red-800 mb-2">⚠️ 需要關注</p>
+                  <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4">
+                    <p className="text-sm font-semibold text-rose-800 mb-2">⚠️ 需要關注</p>
                     <div className="space-y-1.5">{spotlightClients.struggling.map(s => (
                       <div key={s.id} className="flex items-center justify-between px-3 py-2 bg-white/60 rounded-lg">
-                        <Link href={`/admin/clients/${s.id}/overview`} className="text-sm font-medium text-red-700 hover:underline">{s.name}</Link>
+                        <Link href={`/admin/clients/${s.id}/overview`} className="text-sm font-medium text-rose-700 hover:underline">{s.name}</Link>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-red-600">{s.reason}</span>
+                          <span className="text-xs text-rose-600">{s.reason}</span>
                           <button onClick={() => { const c = clients.find(c => c.id === s.id); if (c) openFeedback(c) }} className="p-1 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded transition-colors" title="快速回饋"><MessageSquare size={14} /></button>
                         </div>
                       </div>
@@ -978,7 +999,7 @@ export default function AdminDashboard() {
                 <p className="text-[11px] text-gray-400 mb-1.5">📉 久未活動（≥10 天）— 退訂前先接觸（💰 = 付費）</p>
                 <div className="flex flex-wrap gap-1.5">
                   {retentionStats.churnRisk.slice(0, 12).map(c => (
-                    <Link key={c.id} href={`/admin/clients/${c.id}/overview`} className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 transition-colors">{c.name} · {c.days}天{c.paying ? ' 💰' : ''}</Link>
+                    <Link key={c.id} href={`/admin/clients/${c.id}/overview`} className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors">{c.name} · {c.days}天{c.paying ? ' 💰' : ''}</Link>
                   ))}
                 </div>
               </div>
@@ -994,10 +1015,10 @@ export default function AdminDashboard() {
         </details>
 
         {/* ===== 學員列表 ===== */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-gray-100"><div className="flex flex-col sm:flex-row gap-3"><div className="relative flex-1"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="搜尋學員姓名..." className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div><div className="flex gap-2 flex-wrap">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+          <div className="p-5 border-b border-slate-200"><div className="flex flex-col sm:flex-row gap-3"><div className="relative flex-1"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="搜尋學員姓名..." className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div><div className="flex gap-2 flex-wrap">
                   {([['all','全部'],['competition','備賽'],['coached','2999'],['self_managed','499'],['free','免費'],['attention','需關注']] as [StatusFilter, string][]).map(([k,l]) => (
-                    <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter===k?'bg-blue-600 text-white': k === 'coached' ? 'bg-purple-50 text-purple-700 hover:bg-purple-100' : k === 'self_managed' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                    <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter===k?'bg-blue-600 text-white': k === 'coached' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : k === 'self_managed' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                       {k === 'competition' ? '🏆 ' : k === 'coached' ? '💎 ' : k === 'self_managed' ? '📊 ' : ''}{l}
                       {k === 'coached' && summaryStats.coachedCount > 0 ? ` (${summaryStats.coachedCount})` : ''}
                       {k === 'self_managed' && summaryStats.selfManagedCount > 0 ? ` (${summaryStats.selfManagedCount})` : ''}
@@ -1009,21 +1030,22 @@ export default function AdminDashboard() {
             <>
             {/* 手機版卡片 */}
             <div className="sm:hidden divide-y divide-gray-100">
-              {paginatedClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = isCompetitionMode(client.client_mode) && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); return (
-                <div key={client.id} className="px-4 py-4">
+              {paginatedClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = isCompetitionMode(client.client_mode) && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); const att = getAttention(client); return (
+                <div key={client.id} className={`px-4 py-4 ${att.accent}`}>
                   <Link href={`/admin/clients/${client.id}/overview`} className="block hover:bg-gray-50 active:bg-gray-100 transition-colors rounded-lg -mx-2 px-2 py-1">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-base font-semibold text-gray-900">{client.name}</span>
-                        <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${tier.color}`}>{tier.label}</span>
-                        {client.line_user_id && <span className={`text-[10px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? '🟢' : '💬'}</span>}
+                        <span className={`px-1.5 py-0.5 text-[11px] font-bold rounded-full ${tier.color}`}>{tier.label}</span>
+                        {client.line_user_id && <span className={`text-[11px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? '🟢' : '💬'}</span>}
                         {isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && (
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                          <span className={`px-2 py-0.5 text-[11px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
                             🏆 {daysToComp}天
                           </span>
                         )}
-                        {expiry && <span className={`text-[10px] font-medium ${expiry.color}`}>{expiry.text}</span>}
-                        <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'關注'}</span>
+                        {expiry && <span className={`text-[11px] font-medium ${expiry.color}`}>{expiry.text}</span>}
+                        <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'關注'}</span>
+                        {att.reason && <span className={`px-2 py-0.5 text-[11px] font-semibold rounded-full ${att.chip}`}>⚠️ {att.reason}</span>}
                       </div>
                       {stat?.supplementCount>0?<span className={`text-lg font-bold ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span>:<span className="text-sm text-gray-300">--</span>}
                     </div>
@@ -1043,12 +1065,12 @@ export default function AdminDashboard() {
                     </div>
                   </Link>
                   {/* 手機版快速回饋按鈕 */}
-                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-50">
+                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
                     <button onClick={() => openFeedback(client)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors">
                       <MessageSquare size={12} /> {client.coach_weekly_note ? '修改回饋' : '寫回饋'}
                     </button>
                     {client.coach_weekly_note && <span className="text-xs text-gray-400 truncate flex-1">{client.coach_weekly_note}</span>}
-                    <button onClick={() => deleteClient(client)} className="ml-auto flex items-center gap-1 px-3 py-1.5 text-xs text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                    <button onClick={() => deleteClient(client)} className="ml-auto flex items-center gap-1 px-3 py-1.5 text-xs text-rose-600 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors">
                       <Trash2 size={12} /> 刪除
                     </button>
                   </div>
@@ -1056,20 +1078,20 @@ export default function AdminDashboard() {
               ) })}
             </div>
             {/* 桌面版表格 */}
-            <div className="hidden sm:block overflow-x-auto"><table className="min-w-full"><thead><tr className="border-b border-gray-100"><th onClick={() => handleSort('name')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">學員 <SortIcon column="name" /></th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">方案</th><th onClick={() => handleSort('status')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">狀態 <SortIcon column="status" /></th><th onClick={() => handleSort('compliance')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">本週服從率 <SortIcon column="compliance" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">今日進度</th><th onClick={() => handleSort('lastActivity')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">最後活動 <SortIcon column="lastActivity" /></th><th onClick={() => handleSort('nextCheckup')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">下次回檢 <SortIcon column="nextCheckup" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th></tr></thead>
-            <tbody className="divide-y divide-gray-50">{paginatedClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = isCompetitionMode(client.client_mode) && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); return (
-              <tr key={client.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-blue-600"><div className="text-sm font-medium text-gray-900">{client.name}{newSinceViewMap[client.id] > 0 && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-medium" title={`自你上次查看後新增 ${newSinceViewMap[client.id]} 筆紀錄`}>🆕 {newSinceViewMap[client.id]}</span>}{client.line_user_id && <span className={`ml-1 text-[10px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? '🟢' : '💬'}</span>}{isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && <span className={`ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingEmoji(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className="ml-1" title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'🥗':'🍔'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) && ` · ${getPrepPhaseLabel(client.prep_phase)}`}<span className="ml-1.5 inline-flex gap-0.5">{client.body_composition_enabled&&<span title="體重/體態">⚖️</span>}{client.wellness_enabled&&<span title="每日感受">😊</span>}{client.nutrition_enabled&&<span title="飲食">🥗</span>}{client.training_enabled&&<span title="訓練">🏋️</span>}{client.supplement_enabled&&<span title="補品">💊</span>}{client.lab_enabled&&<span title="血檢">🩸</span>}</span></div></Link></td>
-                <td className="px-4 py-4"><div><span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${tier.color}`}>{tier.label}</span>{expiry && <p className={`text-[10px] mt-1 ${expiry.color}`}>{expiry.text}</p>}</div></td>
-                <td className="px-5 py-4"><span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'需要關注'}</span></td>
+            <div className="hidden sm:block overflow-x-auto"><table className="min-w-full"><thead><tr className="border-b border-slate-200"><th onClick={() => handleSort('name')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">學員 <SortIcon column="name" /></th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">方案</th><th onClick={() => handleSort('status')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">狀態 <SortIcon column="status" /></th><th onClick={() => handleSort('compliance')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">本週服從率 <SortIcon column="compliance" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">今日進度</th><th onClick={() => handleSort('lastActivity')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">最後活動 <SortIcon column="lastActivity" /></th><th onClick={() => handleSort('nextCheckup')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">下次回檢 <SortIcon column="nextCheckup" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th></tr></thead>
+            <tbody className="divide-y divide-gray-50">{paginatedClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = isCompetitionMode(client.client_mode) && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); const att = getAttention(client); return (
+              <tr key={client.id} className={`hover:bg-gray-50 transition-colors ${att.accent}`}>
+                <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-blue-600"><div className="text-sm font-medium text-gray-900">{client.name}{newSinceViewMap[client.id] > 0 && <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-medium" title={`自你上次查看後新增 ${newSinceViewMap[client.id]} 筆紀錄`}>🆕 {newSinceViewMap[client.id]}</span>}{client.line_user_id && <span className={`ml-1 text-[11px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? '🟢' : '💬'}</span>}{isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && <span className={`ml-1.5 px-1.5 py-0.5 text-[11px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingEmoji(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className="ml-1" title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'🥗':'🍔'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) && ` · ${getPrepPhaseLabel(client.prep_phase)}`}<span className="ml-1.5 inline-flex gap-0.5">{client.body_composition_enabled&&<span title="體重/體態">⚖️</span>}{client.wellness_enabled&&<span title="每日感受">😊</span>}{client.nutrition_enabled&&<span title="飲食">🥗</span>}{client.training_enabled&&<span title="訓練">🏋️</span>}{client.supplement_enabled&&<span title="補品">💊</span>}{client.lab_enabled&&<span title="血檢">🩸</span>}</span></div></Link></td>
+                <td className="px-4 py-4"><div><span className={`px-2 py-0.5 text-[11px] font-bold rounded-full ${tier.color}`}>{tier.label}</span>{expiry && <p className={`text-[11px] mt-1 ${expiry.color}`}>{expiry.text}</p>}</div></td>
+                <td className="px-5 py-4"><span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'需要關注'}</span>{att.reason && <span className={`ml-1.5 px-2 py-0.5 text-[11px] font-semibold rounded-full ${att.chip}`}>⚠️ {att.reason}</span>}</td>
                 <td className="px-5 py-4">{stat?.supplementCount>0?<span className={`text-sm font-medium ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span>:<span className="text-sm text-gray-500" title="此學員未設定補品">N/A</span>}</td>
-                <td className="px-5 py-4"><div className="flex flex-wrap gap-1">{client.body_composition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayBodyIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="體重">⚖️</span>}{client.wellness_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayWellnessIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="感受">😊</span>}{client.nutrition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayNutritionMap[client.id]!==undefined?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="飲食">🥗</span>}{client.training_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayTrainingMap[client.id]?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="訓練">🏋️</span>}{client.supplement_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayLogIds.has(client.id)?'bg-green-50 text-green-600':'bg-gray-50 text-gray-300'}`} title="補品">💊</span>}</div></td>
+                <td className="px-5 py-4"><div className="flex flex-wrap gap-1">{client.body_composition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayBodyIds.has(client.id)?'bg-emerald-50 text-emerald-600':'bg-gray-50 text-gray-300'}`} title="體重">⚖️</span>}{client.wellness_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayWellnessIds.has(client.id)?'bg-emerald-50 text-emerald-600':'bg-gray-50 text-gray-300'}`} title="感受">😊</span>}{client.nutrition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayNutritionMap[client.id]!==undefined?'bg-emerald-50 text-emerald-600':'bg-gray-50 text-gray-300'}`} title="飲食">🥗</span>}{client.training_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayTrainingMap[client.id]?'bg-emerald-50 text-emerald-600':'bg-gray-50 text-gray-300'}`} title="訓練">🏋️</span>}{client.supplement_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayLogIds.has(client.id)?'bg-emerald-50 text-emerald-600':'bg-gray-50 text-gray-300'}`} title="補品">💊</span>}</div></td>
                 <td className="px-5 py-4"><span className={`text-sm ${act.color}`}>{act.text}</span></td>
                 <td className="px-5 py-4"><span className={`text-sm ${ckup.color}`}>{ckup.text}</span></td>
-                <td className="px-5 py-4"><div className="flex items-center gap-1.5"><button onClick={() => openFeedback(client)} className="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors" title="快速回饋" aria-label={`寫回饋給 ${client.name}`}><MessageSquare size={15} /></button><button onClick={(e) => { e.preventDefault(); copyClientUrl(client.unique_code) }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="複製學員連結" aria-label={`複製 ${client.name} 的連結`}><Copy size={15} /></button><Link href={`/admin/clients/${client.id}`} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="編輯" aria-label={`編輯 ${client.name}`}><ExternalLink size={15} /></Link><button onClick={() => deleteClient(client)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="刪除學員" aria-label={`刪除 ${client.name}`}><Trash2 size={15} /></button></div></td>
+                <td className="px-5 py-4"><div className="flex items-center gap-1.5"><button onClick={() => openFeedback(client)} className="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors" title="快速回饋" aria-label={`寫回饋給 ${client.name}`}><MessageSquare size={15} /></button><button onClick={(e) => { e.preventDefault(); copyClientUrl(client.unique_code) }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="複製學員連結" aria-label={`複製 ${client.name} 的連結`}><Copy size={15} /></button><Link href={`/admin/clients/${client.id}`} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="編輯" aria-label={`編輯 ${client.name}`}><ExternalLink size={15} /></Link><button onClick={() => deleteClient(client)} className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="刪除學員" aria-label={`刪除 ${client.name}`}><Trash2 size={15} /></button></div></td>
               </tr>) })}</tbody></table></div>
             {currentPage * PAGE_SIZE < filteredClients.length && (
-              <div className="px-5 py-3 border-t border-gray-100">
+              <div className="px-5 py-3 border-t border-slate-200">
                 <button
                   onClick={() => setCurrentPage(p => p + 1)}
                   className="w-full py-3 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
@@ -1100,7 +1122,7 @@ export default function AdminDashboard() {
               onChange={e => setFeedbackText(e.target.value)}
               rows={3}
               placeholder="這週體重控制得不錯，繼續保持！碳水可以再多吃一點。"
-              className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50 text-sm mb-2"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 text-sm mb-2"
             />
             <p className="text-xs text-gray-400 mb-4">學員打開 app 第一眼就會看到這段話</p>
             {/* 快速短語 */}
@@ -1112,7 +1134,7 @@ export default function AdminDashboard() {
             <button
               onClick={saveFeedback}
               disabled={feedbackSaving}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 font-medium"
             >
               <Send size={16} /> {feedbackSaving ? '儲存中...' : '送出回饋'}
             </button>

@@ -119,7 +119,7 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
   const visible = actions.slice(0, 4)
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-5 mb-4">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">⚙️</span>
         <h2 className="text-base font-bold text-gray-900">系統幫你做了什麼</h2>
@@ -143,7 +143,7 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
         ))}
       </div>
 
-      <p className="text-[9px] text-gray-400 mt-2 text-center">
+      <p className="text-[11px] text-gray-400 mt-2 text-center">
         以上調整由引擎根據你的數據自動執行
       </p>
     </div>

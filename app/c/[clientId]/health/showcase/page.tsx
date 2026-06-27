@@ -119,14 +119,14 @@ export default function ShowcasePage() {
 
   if (isLoading || !client) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-gray-500 text-sm">載入中...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
+    <div className="min-h-screen bg-slate-50">
       {/* Hero */}
       <section className="px-5 pt-12 pb-8 max-w-md mx-auto text-center">
         <div className="text-5xl mb-3">🧬</div>
@@ -143,10 +143,10 @@ export default function ShowcasePage() {
       {/* Health Score */}
       {healthScore && (
         <section className="px-5 max-w-md mx-auto mb-6">
-          <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 text-center">
-            <div className="text-xs font-medium text-indigo-700 mb-1">{client.name} 的健康總分</div>
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 text-center">
+            <div className="text-xs font-medium text-slate-600 mb-1">{client.name} 的健康總分</div>
             <div className="flex items-baseline justify-center gap-1 mb-2">
-              <div className="text-7xl font-bold text-gray-900 leading-none">
+              <div className="text-7xl font-bold text-gray-900 leading-none tabular-nums">
                 {Math.round(healthScore.total)}
               </div>
               <div className="text-lg font-medium text-gray-400">/ 100</div>
@@ -162,7 +162,7 @@ export default function ShowcasePage() {
               {healthScore.pillars.map(p => (
                 <div key={p.pillar} className="text-center">
                   <div className="text-xl">{p.emoji}</div>
-                  <div className="text-[9px] text-gray-500 mt-0.5">{p.label}</div>
+                  <div className="text-[11px] text-gray-500 mt-0.5">{p.label}</div>
                   <div className={`text-sm font-bold mt-0.5 ${
                     p.score >= 80 ? 'text-emerald-700' :
                     p.score >= 65 ? 'text-blue-700' :
@@ -186,18 +186,18 @@ export default function ShowcasePage() {
           </div>
           <div className="space-y-2">
             {topOptimalStats.map(({ row, optimalText }) => (
-              <div key={row.test_name} className="bg-white rounded-2xl p-4 shadow-sm border border-emerald-200 flex items-center justify-between">
+              <div key={row.test_name} className="bg-white rounded-2xl p-4 border border-emerald-200 flex items-center justify-between">
                 <div>
                   <div className="text-sm text-gray-500">{row.test_name}</div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-emerald-700">{row.value}</span>
+                    <span className="text-3xl font-bold text-emerald-700 tabular-nums">{row.value}</span>
                     <span className="text-xs text-gray-400">{row.unit}</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[10px] text-emerald-700 font-medium">進階追蹤範圍</div>
+                  <div className="text-[11px] text-emerald-700 font-medium">進階追蹤範圍</div>
                   <div className="text-sm text-gray-600">{optimalText}</div>
-                  <div className="text-[10px] text-emerald-700 font-bold mt-1">✓ 已達</div>
+                  <div className="text-[11px] text-emerald-700 font-bold mt-1">✓ 已達</div>
                 </div>
               </div>
             ))}
@@ -213,18 +213,18 @@ export default function ShowcasePage() {
         </div>
         <div className="space-y-3">
           {HIGHLIGHT_STORIES.map(s => (
-            <div key={s.test} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div key={s.test} className="bg-white rounded-2xl p-4 border border-slate-200">
               <div className="font-semibold text-gray-900 mb-2">{s.test}</div>
               <div className="grid grid-cols-2 gap-2 mb-2">
                 <div className="bg-gray-50 rounded-lg p-2 text-center">
-                  <div className="text-[10px] text-gray-500 mb-0.5">一般醫院</div>
+                  <div className="text-[11px] text-gray-500 mb-0.5">一般醫院</div>
                   <div className="text-sm font-medium text-gray-700">{s.medical}</div>
-                  <div className="text-[10px] text-gray-400 mt-1">「沒病」門檻</div>
+                  <div className="text-[11px] text-gray-400 mt-1">「沒病」門檻</div>
                 </div>
                 <div className="bg-emerald-50 rounded-lg p-2 text-center border border-emerald-200">
-                  <div className="text-[10px] text-emerald-700 mb-0.5">進階追蹤範圍</div>
+                  <div className="text-[11px] text-emerald-700 mb-0.5">進階追蹤範圍</div>
                   <div className="text-sm font-bold text-emerald-800">{s.howardOptimal}</div>
-                  <div className="text-[10px] text-emerald-600 mt-1">參考國際研究</div>
+                  <div className="text-[11px] text-emerald-600 mt-1">參考國際研究</div>
                 </div>
               </div>
               <p className="text-[11px] text-gray-600 leading-relaxed">{s.why}</p>
@@ -240,7 +240,7 @@ export default function ShowcasePage() {
             <div className="text-xs text-gray-500 mb-1">教練解讀（{panelNote.panel_date}）</div>
             <div className="text-base font-semibold text-gray-900">Howard 為你寫的觀察筆記</div>
           </div>
-          <div className="bg-gradient-to-br from-amber-50 to-emerald-50 rounded-2xl p-4 shadow-sm border border-amber-200">
+          <div className="bg-white rounded-2xl p-4 border border-slate-200">
             {panelNote.summary && (
               <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap mb-2">
                 {panelNote.summary.slice(0, 300)}
@@ -248,8 +248,8 @@ export default function ShowcasePage() {
               </p>
             )}
             {panelNote.priorities && (
-              <div className="mt-3 pt-3 border-t border-amber-200">
-                <div className="text-[11px] font-medium text-amber-800 mb-1">優先處理</div>
+              <div className="mt-3 pt-3 border-t border-slate-200">
+                <div className="text-[11px] font-medium text-slate-600 mb-1">優先處理</div>
                 <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">
                   {panelNote.priorities.slice(0, 250)}
                   {panelNote.priorities.length > 250 && '...'}
@@ -277,10 +277,10 @@ export default function ShowcasePage() {
             { emoji: '🩸', t: '抽血提醒', d: '季度自動排程 + 必驗清單' },
             { emoji: '💬', t: 'LINE 整合', d: '教練即時通知 + AI 對話' },
           ].map(f => (
-            <div key={f.t} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+            <div key={f.t} className="bg-white rounded-xl p-3 border border-slate-200">
               <div className="text-xl mb-1">{f.emoji}</div>
               <div className="text-sm font-semibold text-gray-900">{f.t}</div>
-              <div className="text-[10px] text-gray-500 mt-0.5 leading-tight">{f.d}</div>
+              <div className="text-[11px] text-gray-500 mt-0.5 leading-tight">{f.d}</div>
             </div>
           ))}
         </div>
@@ -288,7 +288,7 @@ export default function ShowcasePage() {
 
       {/* CTA */}
       <section className="px-5 max-w-md mx-auto mb-8">
-        <div className="bg-gray-900 rounded-3xl p-6 text-center text-white shadow-xl">
+        <div className="bg-gray-900 rounded-2xl p-6 text-center text-white">
           <div className="text-2xl mb-2">🎯</div>
           <div className="text-lg font-semibold mb-2">想試試這套追蹤系統？</div>
           <p className="text-xs text-gray-300 mb-5 leading-relaxed">
@@ -300,11 +300,11 @@ export default function ShowcasePage() {
             href="https://line.me/R/ti/p/@howard"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block bg-emerald-500 hover:bg-emerald-600 text-white font-medium px-6 py-3 rounded-full text-sm transition-colors"
+            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-full text-sm transition-colors"
           >
             💬 加 LINE 聊聊
           </a>
-          <div className="mt-3 text-[10px] text-gray-400 leading-relaxed">
+          <div className="mt-3 text-[11px] text-gray-400 leading-relaxed">
             本服務為健康管理諮詢 + 工具，<br />
             不構成醫療診斷或治療
           </div>
@@ -315,7 +315,7 @@ export default function ShowcasePage() {
       <section className="px-5 max-w-md mx-auto pb-8 text-center">
         <Link
           href={`/c/${clientId}/health/timeline`}
-          className="text-xs text-gray-500 hover:text-emerald-700 underline"
+          className="text-xs text-gray-500 hover:text-blue-700 underline"
         >
           看 Howard 完整健康儀表板 →
         </Link>
@@ -323,7 +323,7 @@ export default function ShowcasePage() {
 
       {/* 免責 */}
       <section className="px-5 max-w-md mx-auto pb-12">
-        <p className="text-[10px] text-gray-400 text-center leading-relaxed">
+        <p className="text-[11px] text-gray-400 text-center leading-relaxed">
           本頁為示範用途，所有數據為 Howard 本人真實數據。系統提供的數值範圍與教練筆記僅供生活方式調整參考，不構成醫療診斷或處方建議。指標異常請諮詢您的醫師。
         </p>
       </section>

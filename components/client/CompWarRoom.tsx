@@ -74,31 +74,7 @@ export default function CompWarRoom({ bodyData, competitionDate, targetWeight, t
     insufficient: { pill: 'bg-slate-100 text-slate-500', emoji: '⚪', label: '資料不足' },
   }[level]
 
-  const Metric = ({ title, cur, target, proj, slopePerWeek, jud, unit, noTrendHint }: {
-    title: string; cur: number | null; target: number | null; proj: number | null; slopePerWeek: number | null; jud: { ok: boolean } | null; unit: string; noTrendHint: string
-  }) => {
-    const gap = cur != null && target != null ? cur - target : null
-    return (
-      <div className="bg-slate-50 rounded-xl p-3">
-        <p className="text-[11px] text-gray-400 mb-0.5">{title}</p>
-        <p className="text-sm text-gray-700">
-          <span className="font-bold text-gray-900">{cur != null ? cur.toFixed(1) : '--'}</span>
-          <span className="text-gray-400"> → {target != null ? target : '--'}{unit}</span>
-          {gap != null && gap > 0 && <span className="text-gray-400">（差 {gap.toFixed(1)}{unit}）</span>}
-        </p>
-        {proj != null ? (
-          <p className={`text-xs mt-1 font-medium ${jud ? (jud.ok ? 'text-emerald-600' : 'text-red-500') : 'text-gray-500'}`}>
-            比賽日預測 {proj.toFixed(1)}{unit}{jud && !jud.ok ? `（仍差 ${(proj - (target ?? 0)).toFixed(1)}）` : jud?.ok ? ' ✓ 達標' : ''}
-          </p>
-        ) : (
-          <p className="text-xs mt-1 text-amber-600">{noTrendHint}</p>
-        )}
-        {slopePerWeek != null && (
-          <p className="text-[10px] text-gray-400 mt-0.5">目前 {slopePerWeek > 0 ? '+' : ''}{slopePerWeek.toFixed(1)}{unit}/週</p>
-        )}
-      </div>
-    )
-  }
+  const weightGap = curWeight != null && targetWeight != null ? Math.abs(curWeight - targetWeight) : null
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
@@ -108,7 +84,7 @@ export default function CompWarRoom({ bodyData, competitionDate, targetWeight, t
           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${styles.pill}`}>{styles.emoji} {styles.label}</span>
         </div>
         <div className="text-right">
-          <span className="text-2xl font-bold text-gray-900">{daysLeft}</span>
+          <span className="text-2xl font-bold text-gray-900 tabular-nums">{daysLeft}</span>
           <span className="text-xs text-gray-400 ml-0.5">天</span>
         </div>
       </div>
@@ -117,14 +93,34 @@ export default function CompWarRoom({ bodyData, competitionDate, targetWeight, t
         <p className="text-sm text-gray-700 mb-3 leading-snug">會不會準時上台？<span className="font-semibold">{headline}</span></p>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <Metric title="體重 (現在 → 目標)" cur={curWeight} target={targetWeight} proj={w?.projected ?? null} slopePerWeek={w?.slopePerWeek ?? null} jud={wj} unit="kg" noTrendHint="多記幾天才能預測趨勢" />
-        <Metric title="體脂 (現在 → 目標 · 參考)" cur={curBf} target={targetBodyFat} proj={bf?.projected ?? null} slopePerWeek={bf?.slopePerWeek ?? null} jud={latePrep ? null : bfj} unit="%" noTrendHint="量太少、無法預測" />
+      {/* 體重（主、可靠）+ 體脂（次、參考） */}
+      <div className="space-y-2">
+        <div className="bg-slate-50 rounded-xl p-3">
+          <p className="text-[11px] text-gray-400 mb-0.5">體重 · 現在 → 上台{w?.slopePerWeek != null ? `（${w.slopePerWeek > 0 ? '+' : ''}${w.slopePerWeek.toFixed(1)} kg/週）` : ''}</p>
+          <p className="text-sm text-gray-700">
+            <span className="font-bold text-gray-900 tabular-nums">{curWeight != null ? curWeight.toFixed(1) : '--'}</span>
+            <span className="text-gray-400"> → {targetWeight ?? '--'} kg</span>
+            {weightGap != null && weightGap > 0 && <span className="text-gray-400">（差 {weightGap.toFixed(1)}）</span>}
+          </p>
+          {w?.projected != null ? (
+            <p className={`text-xs mt-1 font-medium ${wj ? (wj.ok ? 'text-emerald-600' : 'text-rose-500') : 'text-gray-500'}`}>
+              比賽日預測 <span className="tabular-nums">{w.projected.toFixed(1)} kg</span>{wj ? (wj.ok ? ' ✓ 達標' : `（仍差 ${(w.projected - (targetWeight ?? 0)).toFixed(1)}）`) : ''}
+            </p>
+          ) : (
+            <p className="text-xs mt-1 text-amber-600">多記幾天才能預測趨勢</p>
+          )}
+        </div>
+        {(curBf != null || bf) && (
+          <div className="flex items-baseline justify-between text-sm px-1">
+            <span className="text-xs text-gray-400">體脂 · 參考</span>
+            <span className="text-gray-600 tabular-nums">{curBf != null ? curBf.toFixed(1) : '--'} → {targetBodyFat ?? '--'}%{!latePrep && bf?.projected != null ? ` · 預測 ${bf.projected.toFixed(1)}%` : ''}</span>
+          </div>
+        )}
       </div>
 
       {(curBf != null || bf) && (
-        <p className="text-xs text-amber-600 mt-3 leading-snug">
-          ℹ️ 體脂用 InBody 量{latePrep ? '，而你已進入備賽後期：' : '：備賽後期'}低碳會讓肝醣與水分下降，肌肉量量起來偏低、<b>體脂%被高估</b> → 體脂數字{latePrep ? '現在就' : '越接近比賽越'}僅供參考，<b>以體重 + 外觀 + 教練判斷為準</b>。
+        <p className="text-[11px] text-amber-600 mt-3 leading-snug">
+          ℹ️ 體脂 InBody 量{latePrep ? '，備賽後期' : ''}低碳→肝醣與水分↓→<b>體脂%被高估</b>，以體重＋外觀＋教練判斷為準。
         </p>
       )}
       {level === 'insufficient' && curBf == null && !bf && (

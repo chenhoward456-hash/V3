@@ -34,12 +34,12 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
   // 數據不足時顯示引導卡片
   if (data.status === 'insufficient_data') {
     return (
-      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-2xl">🧠</span>
           <h2 className="text-lg font-bold text-gray-900">每週智能分析</h2>
         </div>
-        <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-500">
+        <div className="bg-slate-50 rounded-xl px-4 py-3 text-sm text-gray-500">
           需要至少 2 週的體重數據，系統才能開始分析。持續記錄，下週就能看到分析結果！
         </div>
       </div>
@@ -49,7 +49,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
   // 合規率低時也顯示，但帶不同訊息
   if (data.status === 'low_compliance') {
     return (
-      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-2xl">🧠</span>
           <h2 className="text-lg font-bold text-gray-900">每週智能分析</h2>
@@ -63,15 +63,15 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
 
   // 狀態對應顏色和配置
   const statusConfig: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-    on_track: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', icon: '🟢' },
-    too_fast: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: '🔴' },
+    on_track: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', icon: '🟢' },
+    too_fast: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', icon: '🔴' },
     plateau: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', icon: '🟡' },
-    wrong_direction: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: '🔴' },
-    goal_driven: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', icon: '🎯' },
-    peak_week: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', icon: '🏆' },
-    athletic_competition: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', icon: '🏆' },
-    athletic_rebound: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', icon: '⚡' },
-    athletic_weigh_in: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', icon: '⚖️' },
+    wrong_direction: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', icon: '🔴' },
+    goal_driven: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: '🎯' },
+    peak_week: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: '🏆' },
+    athletic_competition: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: '🏆' },
+    athletic_rebound: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: '⚡' },
+    athletic_weigh_in: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: '⚖️' },
   }
   const config = statusConfig[data.status] || statusConfig.on_track
 
@@ -92,7 +92,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
     .slice(0, 3)
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* 標題 */}
       <div className="flex items-center gap-2 mb-4">
         <span className="text-2xl">🧠</span>
@@ -113,90 +113,90 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
       <div className="grid grid-cols-3 gap-2 mb-4">
         {/* TDEE */}
         {data.estimatedTDEE && (
-          <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="text-[10px] text-gray-400">預估 TDEE</p>
-            <p className="text-lg font-bold text-gray-900">{data.estimatedTDEE}</p>
-            <p className="text-[10px] text-gray-400">kcal</p>
+          <div className="bg-slate-50 rounded-xl p-3 text-center">
+            <p className="text-[11px] text-gray-400">預估 TDEE</p>
+            <p className="text-lg font-bold text-gray-900 tabular-nums">{data.estimatedTDEE}</p>
+            <p className="text-[11px] text-gray-400">kcal</p>
           </div>
         )}
 
         {/* 週體重變化 */}
         {changeRateText && (
-          <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="text-[10px] text-gray-400">本週體重</p>
-            <p className={`text-lg font-bold ${
+          <div className="bg-slate-50 rounded-xl p-3 text-center">
+            <p className="text-[11px] text-gray-400">本週體重</p>
+            <p className={`text-lg font-bold tabular-nums ${
               meta?.goalType === 'cut'
-                ? (changeRate! < 0 ? 'text-green-600' : 'text-red-600')
-                : (changeRate! > 0 ? 'text-green-600' : 'text-red-600')
+                ? (changeRate! < 0 ? 'text-emerald-600' : 'text-rose-600')
+                : (changeRate! > 0 ? 'text-emerald-600' : 'text-rose-600')
             }`}>{changeRateText}</p>
-            <p className="text-[10px] text-gray-400">/週</p>
+            <p className="text-[11px] text-gray-400">/週</p>
           </div>
         )}
 
         {/* 赤字 or 盈餘 */}
         {dailyDeficit != null && (
-          <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="text-[10px] text-gray-400">{meta?.goalType === 'cut' ? '每日赤字' : '每日盈餘'}</p>
-            <p className={`text-lg font-bold ${
-              Math.abs(dailyDeficit) > 500 ? 'text-amber-600' : 'text-green-600'
+          <div className="bg-slate-50 rounded-xl p-3 text-center">
+            <p className="text-[11px] text-gray-400">{meta?.goalType === 'cut' ? '每日赤字' : '每日盈餘'}</p>
+            <p className={`text-lg font-bold tabular-nums ${
+              Math.abs(dailyDeficit) > 500 ? 'text-amber-600' : 'text-emerald-600'
             }`}>{Math.abs(dailyDeficit)}</p>
-            <p className="text-[10px] text-gray-400">kcal</p>
+            <p className="text-[11px] text-gray-400">kcal</p>
           </div>
         )}
 
         {/* 合規率 fallback（如果赤字或 TDEE 缺一個） */}
         {(!data.estimatedTDEE || dailyDeficit == null) && meta?.nutritionCompliance != null && (
-          <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="text-[10px] text-gray-400">飲食合規率</p>
-            <p className={`text-lg font-bold ${
-              meta.nutritionCompliance >= 80 ? 'text-green-600'
+          <div className="bg-slate-50 rounded-xl p-3 text-center">
+            <p className="text-[11px] text-gray-400">飲食合規率</p>
+            <p className={`text-lg font-bold tabular-nums ${
+              meta.nutritionCompliance >= 80 ? 'text-emerald-600'
               : meta.nutritionCompliance >= 50 ? 'text-amber-600'
-              : 'text-red-600'
+              : 'text-rose-600'
             }`}>{meta.nutritionCompliance}%</p>
-            <p className="text-[10px] text-gray-400">近 14 天</p>
+            <p className="text-[11px] text-gray-400">近 14 天</p>
           </div>
         )}
       </div>
 
       {/* 調整參考（如果有 delta） */}
       {(data.caloriesDelta != null && data.caloriesDelta !== 0) || (data.proteinDelta != null && data.proteinDelta !== 0) || (data.carbsDelta != null && data.carbsDelta !== 0) || (data.fatDelta != null && data.fatDelta !== 0) ? (
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
-          <p className="text-xs font-semibold text-blue-700 mb-2">📋 系統分析 — 目標校正</p>
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
+          <p className="text-xs font-semibold text-slate-700 mb-2">📋 系統分析 — 目標校正</p>
           <div className="grid grid-cols-2 gap-2">
             {data.caloriesDelta != null && data.caloriesDelta !== 0 && (
-              <div className="flex items-center justify-between bg-white bg-opacity-70 rounded-lg px-3 py-2">
+              <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
                 <span className="text-xs text-gray-600">🔥 熱量</span>
-                <span className={`text-xs font-bold ${data.caloriesDelta > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`text-xs font-bold tabular-nums ${data.caloriesDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.caloriesDelta > 0 ? '+' : ''}{data.caloriesDelta} kcal
                 </span>
               </div>
             )}
             {data.proteinDelta != null && data.proteinDelta !== 0 && (
-              <div className="flex items-center justify-between bg-white bg-opacity-70 rounded-lg px-3 py-2">
+              <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
                 <span className="text-xs text-gray-600">🥩 蛋白質</span>
-                <span className={`text-xs font-bold ${data.proteinDelta > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`text-xs font-bold tabular-nums ${data.proteinDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.proteinDelta > 0 ? '+' : ''}{data.proteinDelta}g
                 </span>
               </div>
             )}
             {data.carbsDelta != null && data.carbsDelta !== 0 && (
-              <div className="flex items-center justify-between bg-white bg-opacity-70 rounded-lg px-3 py-2">
+              <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
                 <span className="text-xs text-gray-600">🍚 碳水</span>
-                <span className={`text-xs font-bold ${data.carbsDelta > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`text-xs font-bold tabular-nums ${data.carbsDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.carbsDelta > 0 ? '+' : ''}{data.carbsDelta}g
                 </span>
               </div>
             )}
             {data.fatDelta != null && data.fatDelta !== 0 && (
-              <div className="flex items-center justify-between bg-white bg-opacity-70 rounded-lg px-3 py-2">
+              <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
                 <span className="text-xs text-gray-600">🥑 脂肪</span>
-                <span className={`text-xs font-bold ${data.fatDelta > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`text-xs font-bold tabular-nums ${data.fatDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.fatDelta > 0 ? '+' : ''}{data.fatDelta}g
                 </span>
               </div>
             )}
           </div>
-          <p className="text-[10px] text-blue-500 mt-2">
+          <p className="text-[11px] text-slate-500 mt-2">
             以上為系統根據體重趨勢自動分析的參考數據，僅供教練與你討論時參考
           </p>
         </div>
@@ -204,15 +204,15 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
 
       {/* Refeed 提示 */}
       {data.refeedSuggested && (
-        <div className="bg-orange-50 border border-orange-300 rounded-2xl p-4 mb-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg">🔄</span>
-            <p className="text-sm font-bold text-orange-800">
+            <p className="text-sm font-bold text-slate-900">
               系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
             </p>
           </div>
-          <p className="text-xs text-orange-700">{data.refeedReason}</p>
-          <p className="text-[11px] text-orange-500 mt-1">
+          <p className="text-xs text-slate-600">{data.refeedReason}</p>
+          <p className="text-[11px] text-slate-400 mt-1">
             今日碳水提升至維持熱量（4-6g/kg），脂肪降低，蛋白質維持。
           </p>
         </div>
@@ -220,12 +220,12 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
 
       {/* Diet Break 提示 */}
       {data.dietBreakSuggested && (
-        <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 mb-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg">⏸️</span>
-            <p className="text-sm font-bold text-purple-800">系統偵測：可考慮安排 Diet Break</p>
+            <p className="text-sm font-bold text-slate-900">系統偵測：可考慮安排 Diet Break</p>
           </div>
-          <p className="text-xs text-purple-700">
+          <p className="text-xs text-slate-600">
             已持續減脂 {data.dietDurationWeeks} 週以上。可考慮安排 1-2 週維持熱量，讓代謝和荷爾蒙恢復。
           </p>
         </div>
@@ -235,27 +235,27 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
       {data.energyAvailability && data.energyAvailability.level !== 'adequate' && (
         <div className={`rounded-2xl p-4 mb-4 ${
           data.energyAvailability.level === 'critical'
-            ? 'bg-red-50 border border-red-300'
+            ? 'bg-rose-50 border border-rose-200'
             : 'bg-amber-50 border border-amber-200'
         }`}>
           <p className={`text-xs font-medium mb-1 ${
-            data.energyAvailability.level === 'critical' ? 'text-red-700' : 'text-amber-700'
+            data.energyAvailability.level === 'critical' ? 'text-rose-700' : 'text-amber-700'
           }`}>
             能量可用性：{data.energyAvailability.eaKcalPerKgFFM} kcal/kg FFM/day
           </p>
           <p className={`text-[11px] leading-relaxed ${
-            data.energyAvailability.level === 'critical' ? 'text-red-600' : 'text-amber-600'
+            data.energyAvailability.level === 'critical' ? 'text-rose-600' : 'text-amber-600'
           }`}>{data.energyAvailability.warning}</p>
         </div>
       )}
 
       {/* 血檢驅動的營養調整 */}
       {data.labMacroModifiers && data.labMacroModifiers.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
-          <p className="text-xs font-medium text-blue-700 mb-2">🩸 血檢指標建議</p>
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
+          <p className="text-xs font-medium text-slate-700 mb-2">🩸 血檢指標建議</p>
           <div className="space-y-1">
             {data.labMacroModifiers.map((mod: any, i: number) => (
-              <p key={i} className="text-[11px] text-blue-600 leading-relaxed">
+              <p key={i} className="text-[11px] text-slate-600 leading-relaxed">
                 {mod.reason}
               </p>
             ))}
@@ -265,8 +265,8 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
 
       {/* 月經週期提示 */}
       {data.menstrualCycleNote && (
-        <div className="bg-pink-50 border border-pink-200 rounded-2xl p-4 mb-4">
-          <p className="text-xs text-pink-700 leading-relaxed">{data.menstrualCycleNote}</p>
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
+          <p className="text-xs text-slate-600 leading-relaxed">{data.menstrualCycleNote}</p>
         </div>
       )}
 
@@ -279,8 +279,8 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
         </div>
       )}
 
-      <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-3">
-        <p className="text-[10px] text-gray-500 leading-relaxed">
+      <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 mt-3">
+        <p className="text-[11px] text-gray-500 leading-relaxed">
           此為系統根據體重趨勢與飲食紀錄自動產生之參考建議，不構成個人化營養指導或醫療建議。
         </p>
       </div>

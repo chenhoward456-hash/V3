@@ -115,19 +115,19 @@ function LabCard({
     : '#f43f5e'
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-xl border border-slate-200 p-4 transition-colors">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <StatusDot status={status} />
           <div className="font-medium text-gray-900 truncate">{testName}</div>
         </div>
         {inOptimal && hasData && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+          <span className="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
             最佳
           </span>
         )}
         {!inOptimal && hasData && status === 'normal' && optimalText && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
+          <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
             可優化 ↑
           </span>
         )}
@@ -137,7 +137,7 @@ function LabCard({
         <>
           <div className="flex items-baseline justify-between mb-1">
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-semibold text-gray-900">
+              <span className="text-2xl font-semibold text-gray-900 tabular-nums">
                 {latest!.value}
               </span>
               <span className="text-xs text-gray-500">
@@ -177,7 +177,7 @@ function LabCard({
           <div className="mt-2 text-[11px] text-gray-500 flex items-center justify-between">
             <span>
               Howard 標準：
-              <span className={`font-medium ${!inOptimal && status === 'normal' && optimalText ? 'text-sky-700' : 'text-gray-700'}`}>
+              <span className={`font-medium ${!inOptimal && status === 'normal' && optimalText ? 'text-slate-600' : 'text-gray-700'}`}>
                 {optimalText ?? '—'}
               </span>
             </span>
@@ -191,8 +191,8 @@ function LabCard({
               .find(p => p.coach_interpretation && p.coach_interpretation.trim().length > 0)
             if (!latestInterp) return null
             return (
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <div className="text-[10px] font-medium text-emerald-700 mb-1">
+              <div className="mt-3 pt-3 border-t border-slate-200">
+                <div className="text-[11px] font-medium text-emerald-700 mb-1">
                   💬 Howard 觀察
                 </div>
                 <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">
@@ -421,7 +421,7 @@ export default function HealthTimelinePage() {
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
         {/* Header skeleton */}
-        <div className="bg-white border-b border-gray-200 px-4 py-4">
+        <div className="bg-white border-b border-slate-200 px-4 py-4">
           <div className="max-w-5xl mx-auto animate-pulse">
             <div className="h-6 bg-gray-200 rounded w-48 mb-2"></div>
             <div className="h-3 bg-gray-100 rounded w-64"></div>
@@ -431,7 +431,7 @@ export default function HealthTimelinePage() {
           {/* Summary row */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 p-3">
+              <div key={i} className="bg-white rounded-xl border border-slate-200 p-3">
                 <div className="h-3 bg-gray-100 rounded w-16 mb-2"></div>
                 <div className="h-7 bg-gray-200 rounded w-12"></div>
               </div>
@@ -444,7 +444,7 @@ export default function HealthTimelinePage() {
               <div className="h-3 bg-gray-100 rounded w-48 mb-3"></div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {[...Array(3)].map((_, j) => (
-                  <div key={j} className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div key={j} className="bg-white rounded-xl border border-slate-200 p-4">
                     <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
                     <div className="h-8 bg-gray-100 rounded w-16 mb-3"></div>
                     <div className="h-10 bg-gray-100 rounded mb-2"></div>
@@ -470,7 +470,7 @@ export default function HealthTimelinePage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
+      <div className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-2 mb-2">
             <Link
@@ -483,7 +483,7 @@ export default function HealthTimelinePage() {
             <h1 className="text-lg font-semibold text-gray-900">健康趨勢儀表板</h1>
             {client?.client_mode && (MODE_LABELS as Record<string, string>)[client.client_mode] && (
               <span
-                className="ml-2 inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200"
+                className="ml-2 inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200"
                 title={(MODE_DESCRIPTIONS as Record<string, string>)[client.client_mode]}
               >
                 {(MODE_EMOJIS as Record<string, string>)[client.client_mode]} {(MODE_LABELS as Record<string, string>)[client.client_mode]}
@@ -497,62 +497,26 @@ export default function HealthTimelinePage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        {/* 下次抽血倒數 banner */}
+        {/* 抽血將近時的「建議抽血項目」提示 — 排程倒數細節統一放在下方「下次抽血規劃」 */}
         {(() => {
           const nextDate = client?.next_checkup_date
-          const compDate = client?.competition_date
           if (!nextDate) return null
           const today = new Date(); today.setHours(0, 0, 0, 0)
           const next = new Date(nextDate); next.setHours(0, 0, 0, 0)
           const days = Math.floor((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-          if (days < -7) return null  // 太久以前的不顯示
-
-          const compDays = compDate
-            ? Math.floor((new Date(compDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-            : null
-
-          if (days < 0) {
-            return (
-              <div className="mb-4 bg-rose-50 border border-rose-200 rounded-xl p-4">
-                <div className="text-sm font-semibold text-rose-900">
-                  ⚠️ 抽血日已過 {Math.abs(days)} 天 — {nextDate}
-                </div>
-                <div className="text-xs text-rose-700 mt-1">
-                  記得補抽，上傳後系統會自動生成新觀察筆記
-                </div>
-              </div>
-            )
-          }
-          if (days <= 14) {
-            return (
-              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-amber-900">
-                      🩸 下次抽血倒數 <span className="text-xl">{days}</span> 天（{nextDate}）
-                    </div>
-                    <div className="text-xs text-amber-800 mt-1 leading-relaxed">
-                      {compDays !== null && compDays > 0 && (
-                        <>距離比賽日（{compDate}）還有 <strong>{compDays}</strong> 天 — </>
-                      )}
-                      建議抽血項目：T / Free T / E2 / SHBG / Cortisol / TSH / hs-CRP / 鐵蛋白 / ALT
-                    </div>
-                  </div>
-                  <Link
-                    href={`/c/${clientId}/health/upload`}
-                    className="text-xs px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white shrink-0"
-                  >
-                    上傳結果 →
-                  </Link>
-                </div>
-              </div>
-            )
-          }
+          if (days < 0 || days > 14) return null  // 只在抽血將近（14 天內）時提示建議項目
           return (
-            <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-3">
-              <div className="text-xs text-blue-800">
-                🩸 下次抽血排程：<strong>{nextDate}</strong>（{days} 天後）
-                {compDays !== null && compDays > 0 && <> · 距離比賽 {compDays} 天</>}
+            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="text-xs text-amber-800 leading-relaxed">
+                  🩸 抽血將近 — 建議抽血項目：T / Free T / E2 / SHBG / Cortisol / TSH / hs-CRP / 鐵蛋白 / ALT
+                </div>
+                <Link
+                  href={`/c/${clientId}/health/upload`}
+                  className="text-xs px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                >
+                  上傳結果 →
+                </Link>
               </div>
             </div>
           )
@@ -560,14 +524,14 @@ export default function HealthTimelinePage() {
 
         {/* Health Score（整體健康分數）*/}
         {healthScore && (
-          <div className="mb-6 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 border border-indigo-200 rounded-2xl p-4 sm:p-5">
+          <div className="mb-6 bg-white border border-slate-200 rounded-2xl p-5">
             <div className="flex items-center justify-between gap-4 mb-3">
               <div>
-                <div className="text-xs font-medium text-indigo-700 mb-0.5">整體健康分數</div>
-                <div className="text-[10px] text-gray-500">睡眠 + 營養 + 訓練 + 補品 + 血檢 加權</div>
+                <div className="text-xs font-medium text-slate-600 mb-0.5">整體健康分數</div>
+                <div className="text-[11px] text-gray-500">睡眠 + 營養 + 訓練 + 補品 + 血檢 加權</div>
               </div>
               <div className="text-right">
-                <div className="text-4xl sm:text-5xl font-bold text-gray-900 leading-none">
+                <div className="text-4xl sm:text-5xl font-bold text-gray-900 leading-none tabular-nums">
                   {Math.round(healthScore.total)}
                   <span className="text-base font-medium text-gray-400 ml-1">/100</span>
                 </div>
@@ -583,9 +547,9 @@ export default function HealthTimelinePage() {
             {/* Pillar 細項 */}
             <div className="grid grid-cols-5 gap-1.5">
               {healthScore.pillars.map(p => (
-                <div key={p.pillar} className="text-center bg-white rounded-lg p-2 border border-gray-100">
+                <div key={p.pillar} className="text-center bg-white rounded-lg p-2 border border-slate-200">
                   <div className="text-base sm:text-lg">{p.emoji}</div>
-                  <div className="text-[9px] text-gray-500 mt-0.5">{p.label}</div>
+                  <div className="text-[11px] text-gray-500 mt-0.5">{p.label}</div>
                   <div className={`text-sm font-semibold mt-0.5 ${
                     p.score >= 80 ? 'text-emerald-700' :
                     p.score >= 65 ? 'text-blue-700' :
@@ -609,25 +573,25 @@ export default function HealthTimelinePage() {
 
         {/* 摘要列 */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-3">
+          <div className="bg-white rounded-xl border border-slate-200 p-3">
             <div className="text-xs text-gray-500">追蹤項目</div>
-            <div className="text-xl font-semibold text-gray-900">{summary.total}</div>
+            <div className="text-xl font-semibold text-gray-900 tabular-nums">{summary.total}</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-3">
+          <div className="bg-white rounded-xl border border-slate-200 p-3">
             <div className="text-xs text-emerald-600">正常</div>
-            <div className="text-xl font-semibold text-emerald-700">{summary.normal}</div>
+            <div className="text-xl font-semibold text-emerald-700 tabular-nums">{summary.normal}</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-3">
+          <div className="bg-white rounded-xl border border-slate-200 p-3">
             <div className="text-xs text-amber-600">注意</div>
-            <div className="text-xl font-semibold text-amber-700">{summary.attention}</div>
+            <div className="text-xl font-semibold text-amber-700 tabular-nums">{summary.attention}</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-3">
+          <div className="bg-white rounded-xl border border-slate-200 p-3">
             <div className="text-xs text-rose-600">警示</div>
-            <div className="text-xl font-semibold text-rose-700">{summary.alert}</div>
+            <div className="text-xl font-semibold text-rose-700 tabular-nums">{summary.alert}</div>
           </div>
           <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-3 col-span-2 md:col-span-1">
             <div className="text-xs text-emerald-700">已達最佳</div>
-            <div className="text-xl font-semibold text-emerald-800">
+            <div className="text-xl font-semibold text-emerald-800 tabular-nums">
               {summary.optimal}
               <span className="text-xs font-normal text-emerald-700 ml-1">/ {summary.total}</span>
             </div>
@@ -743,183 +707,7 @@ export default function HealthTimelinePage() {
           </section>
         )}
 
-        {/* 🤖 AI 草稿生成 / 教練審核中 狀態 */}
-        {pendingDraftStatus && pendingDraftStatus.pendingCount > 0 && (
-          <section className="mb-6 bg-indigo-50 border border-indigo-200 rounded-2xl p-4">
-            <div className="flex items-start gap-3">
-              <div className="relative shrink-0">
-                <span className="text-2xl">🤖</span>
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold text-indigo-900 mb-1">
-                  AI 草稿生成完成，等待教練審核
-                </div>
-                <p className="text-xs text-indigo-800 leading-relaxed">
-                  你近期上傳的 <strong>{pendingDraftStatus.pendingCount} 份</strong>血檢已自動生成觀察筆記初稿。
-                  Howard 審核 + 個人化調整後（通常 24 小時內），完整筆記會出現在下方「Howard 觀察筆記」區塊，
-                  你會收到 LINE 通知。
-                </p>
-                <div className="mt-2 text-[11px] text-indigo-600">
-                  待審日期：
-                  <span className="font-mono ml-1">{pendingDraftStatus.panelDates.join(', ')}</span>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* 教練筆記（Panel Notes）— Protocol 層核心交付 */}
-        {panelNotes.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-base font-semibold text-gray-900 mb-1">
-              Howard 的觀察筆記
-            </h2>
-            <p className="text-[11px] text-gray-500 mb-3">
-              教練基於數據趨勢的生活方式建議，不構成醫療診斷或處方。指標異常請諮詢醫師。
-            </p>
-            <div className="space-y-3">
-              {panelNotes
-                .filter(n => n.summary || n.priorities)
-                .slice(0, 3)
-                .map(note => (
-                  <div
-                    key={note.panel_date}
-                    className="bg-white border border-emerald-200 rounded-xl p-4 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-medium text-emerald-700">
-                        {note.panel_date}
-                      </div>
-                      {note.next_review_date && (
-                        <div className="text-xs text-gray-500">
-                          下次追蹤：{note.next_review_date}
-                        </div>
-                      )}
-                    </div>
-                    {note.summary && (
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                        {note.summary}
-                      </p>
-                    )}
-                    {note.priorities && (
-                      <div className="mt-3 pt-3 border-t border-emerald-100">
-                        <div className="text-xs font-medium text-emerald-700 mb-1">
-                          優先處理
-                        </div>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                          {note.priorities}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-          </section>
-        )}
-
-        {/* 補品 Protocol 演進 — Longevity tier 核心交付 */}
-        {(activeSupps.length > 0 || archivedSupps.length > 0) && (
-          <section className="mb-8">
-            <h2 className="text-base font-semibold text-gray-900 mb-3">
-              💊 你的補品 Protocol
-            </h2>
-
-            {/* Active */}
-            {activeSupps.length > 0 && (
-              <div className="bg-white border border-gray-200 rounded-xl p-4 mb-3">
-                <div className="text-xs font-medium text-gray-700 mb-3">
-                  目前在吃（{activeSupps.length} 項）
-                </div>
-                <div className="space-y-2">
-                  {activeSupps.map(s => (
-                    <div key={s.id} className="border-l-2 border-emerald-400 pl-3 py-1">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <div className="font-medium text-gray-900">{s.name}</div>
-                        <div className="text-xs text-gray-500 shrink-0">
-                          {s.dosage} · {s.timing}
-                        </div>
-                      </div>
-                      {s.coach_rationale && (
-                        <div className="text-xs text-emerald-700 mt-0.5">
-                          💬 {s.coach_rationale}
-                        </div>
-                      )}
-                      {(s.started_at || s.mode_context) && (
-                        <div className="text-[11px] text-gray-400 mt-0.5">
-                          {s.started_at && <>從 {s.started_at} 開始</>}
-                          {s.started_at && s.mode_context && ' · '}
-                          {s.mode_context && <>當時 mode: {s.mode_context}</>}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Archived — collapsible */}
-            {archivedSupps.length > 0 && (
-              <div className="bg-white border border-gray-200 rounded-xl">
-                <button
-                  onClick={() => setShowArchivedSupps(v => !v)}
-                  className="w-full flex items-center justify-between p-4 text-left"
-                >
-                  <div>
-                    <div className="text-sm font-medium text-gray-700">
-                      📦 過去 protocol（{archivedSupps.length} 項已封存）
-                    </div>
-                    <div className="text-[11px] text-gray-500 mt-0.5">
-                      為什麼 Howard 當初開、後來為什麼停 — protocol 演進的故事
-                    </div>
-                  </div>
-                  <span className="text-xs text-gray-400">
-                    {showArchivedSupps ? '收合 ▴' : '展開 ▾'}
-                  </span>
-                </button>
-                {showArchivedSupps && (
-                  <div className="border-t border-gray-100 p-4 space-y-3">
-                    {archivedSupps.map(s => {
-                      const replacedByName = s.replaced_by_id
-                        ? activeSupps.find(a => a.id === s.replaced_by_id)?.name ?? null
-                        : null
-                      return (
-                        <div key={s.id} className="border-l-2 border-gray-300 pl-3 py-1">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <div className="font-medium text-gray-700">{s.name}</div>
-                            <div className="text-xs text-gray-400 shrink-0">
-                              {s.dosage} · {s.timing}
-                            </div>
-                          </div>
-                          {s.coach_rationale && (
-                            <div className="text-xs text-emerald-700 mt-0.5">
-                              💬 當時：{s.coach_rationale}
-                            </div>
-                          )}
-                          {s.archive_reason && (
-                            <div className="text-xs text-amber-700 mt-0.5">
-                              停掉：{s.archive_reason}
-                            </div>
-                          )}
-                          {replacedByName && (
-                            <div className="text-xs text-indigo-700 mt-0.5">
-                              ↪ 被「{replacedByName}」取代
-                            </div>
-                          )}
-                          <div className="text-[11px] text-gray-400 mt-0.5">
-                            {s.started_at || '—'} → {s.archived_at || '—'}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* 分類顯示 */}
+        {/* 分類顯示 — 實際血檢數值（用戶最想看的，放最前面）*/}
         {CATEGORIES.map(cat => {
           const cards = cat.tests
             .map(testName => ({
@@ -952,7 +740,7 @@ export default function HealthTimelinePage() {
 
         {/* 沒有任何分類有資料時 — 富有引導感的空狀態 */}
         {summary.total === 0 && (
-          <div className="bg-gradient-to-br from-emerald-50 via-white to-blue-50 border border-emerald-200 rounded-2xl p-8 text-center">
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
             <div className="text-6xl mb-4">🩸</div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               還沒有血檢資料
@@ -983,6 +771,182 @@ export default function HealthTimelinePage() {
               </ol>
             </div>
           </div>
+        )}
+
+        {/* 🤖 AI 草稿生成 / 教練審核中 狀態 */}
+        {pendingDraftStatus && pendingDraftStatus.pendingCount > 0 && (
+          <section className="mb-6 bg-white border border-slate-200 rounded-2xl p-5">
+            <div className="flex items-start gap-3">
+              <div className="relative shrink-0">
+                <span className="text-2xl">🤖</span>
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-slate-400 rounded-full animate-pulse"></span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold text-slate-900 mb-1">
+                  AI 草稿生成完成，等待教練審核
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  你近期上傳的 <strong>{pendingDraftStatus.pendingCount} 份</strong>血檢已自動生成觀察筆記初稿。
+                  Howard 審核 + 個人化調整後（通常 24 小時內），完整筆記會出現在下方「Howard 觀察筆記」區塊，
+                  你會收到 LINE 通知。
+                </p>
+                <div className="mt-2 text-[11px] text-slate-500">
+                  待審日期：
+                  <span className="font-mono ml-1">{pendingDraftStatus.panelDates.join(', ')}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 教練筆記（Panel Notes）— Protocol 層核心交付 */}
+        {panelNotes.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-base font-semibold text-gray-900 mb-1">
+              Howard 的觀察筆記
+            </h2>
+            <p className="text-[11px] text-gray-500 mb-3">
+              教練基於數據趨勢的生活方式建議，不構成醫療診斷或處方。指標異常請諮詢醫師。
+            </p>
+            <div className="space-y-3">
+              {panelNotes
+                .filter(n => n.summary || n.priorities)
+                .slice(0, 3)
+                .map(note => (
+                  <div
+                    key={note.panel_date}
+                    className="bg-white border border-slate-200 rounded-xl p-4"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm font-medium text-emerald-700">
+                        {note.panel_date}
+                      </div>
+                      {note.next_review_date && (
+                        <div className="text-xs text-gray-500">
+                          下次追蹤：{note.next_review_date}
+                        </div>
+                      )}
+                    </div>
+                    {note.summary && (
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                        {note.summary}
+                      </p>
+                    )}
+                    {note.priorities && (
+                      <div className="mt-3 pt-3 border-t border-emerald-100">
+                        <div className="text-xs font-medium text-emerald-700 mb-1">
+                          優先處理
+                        </div>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                          {note.priorities}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          </section>
+        )}
+
+        {/* 補品 Protocol 演進 — Longevity tier 核心交付（非血檢數據，預設收合）*/}
+        {(activeSupps.length > 0 || archivedSupps.length > 0) && (
+          <details className="mb-8">
+            <summary className="cursor-pointer text-base font-semibold text-gray-900 mb-3 list-none [&::-webkit-details-marker]:hidden">
+              💊 補品 Protocol 演進（展開）
+            </summary>
+
+            {/* Active */}
+            {activeSupps.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-xl p-4 mb-3">
+                <div className="text-xs font-medium text-gray-700 mb-3">
+                  目前在吃（{activeSupps.length} 項）
+                </div>
+                <div className="space-y-2">
+                  {activeSupps.map(s => (
+                    <div key={s.id} className="border-l-2 border-emerald-400 pl-3 py-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <div className="font-medium text-gray-900">{s.name}</div>
+                        <div className="text-xs text-gray-500 shrink-0">
+                          {s.dosage} · {s.timing}
+                        </div>
+                      </div>
+                      {s.coach_rationale && (
+                        <div className="text-xs text-emerald-700 mt-0.5">
+                          💬 {s.coach_rationale}
+                        </div>
+                      )}
+                      {(s.started_at || s.mode_context) && (
+                        <div className="text-[11px] text-gray-400 mt-0.5">
+                          {s.started_at && <>從 {s.started_at} 開始</>}
+                          {s.started_at && s.mode_context && ' · '}
+                          {s.mode_context && <>當時 mode: {s.mode_context}</>}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Archived — collapsible */}
+            {archivedSupps.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-xl">
+                <button
+                  onClick={() => setShowArchivedSupps(v => !v)}
+                  className="w-full flex items-center justify-between p-4 text-left"
+                >
+                  <div>
+                    <div className="text-sm font-medium text-gray-700">
+                      📦 過去 protocol（{archivedSupps.length} 項已封存）
+                    </div>
+                    <div className="text-[11px] text-gray-500 mt-0.5">
+                      為什麼 Howard 當初開、後來為什麼停 — protocol 演進的故事
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-400">
+                    {showArchivedSupps ? '收合 ▴' : '展開 ▾'}
+                  </span>
+                </button>
+                {showArchivedSupps && (
+                  <div className="border-t border-slate-200 p-4 space-y-3">
+                    {archivedSupps.map(s => {
+                      const replacedByName = s.replaced_by_id
+                        ? activeSupps.find(a => a.id === s.replaced_by_id)?.name ?? null
+                        : null
+                      return (
+                        <div key={s.id} className="border-l-2 border-slate-300 pl-3 py-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <div className="font-medium text-gray-700">{s.name}</div>
+                            <div className="text-xs text-gray-400 shrink-0">
+                              {s.dosage} · {s.timing}
+                            </div>
+                          </div>
+                          {s.coach_rationale && (
+                            <div className="text-xs text-emerald-700 mt-0.5">
+                              💬 當時：{s.coach_rationale}
+                            </div>
+                          )}
+                          {s.archive_reason && (
+                            <div className="text-xs text-amber-700 mt-0.5">
+                              停掉：{s.archive_reason}
+                            </div>
+                          )}
+                          {replacedByName && (
+                            <div className="text-xs text-slate-600 mt-0.5">
+                              ↪ 被「{replacedByName}」取代
+                            </div>
+                          )}
+                          <div className="text-[11px] text-gray-400 mt-0.5">
+                            {s.started_at || '—'} → {s.archived_at || '—'}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </details>
         )}
 
         {/* 有資料時：在底部放一個次要 CTA 讓學員追加更多 */}
@@ -1018,7 +982,7 @@ export default function HealthTimelinePage() {
           const suggestNew = recommendCore.filter(t => !recentTestNames.has(t))
 
           return (
-            <section className="mt-10 bg-white border border-gray-200 rounded-xl p-4">
+            <section className="mt-10 bg-white border border-slate-200 rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-gray-900">
                   🩸 下次抽血規劃（{client.next_checkup_date}）
@@ -1050,10 +1014,10 @@ export default function HealthTimelinePage() {
 
               {suggestNew.length > 0 && (
                 <div className="mb-3">
-                  <div className="text-[11px] font-medium text-indigo-700 mb-1">💡 建議加驗（近 1 年未驗的核心指標）</div>
+                  <div className="text-[11px] font-medium text-slate-600 mb-1">💡 建議加驗（近 1 年未驗的核心指標）</div>
                   <div className="flex flex-wrap gap-1.5">
                     {suggestNew.slice(0, 12).map(t => (
-                      <span key={t} className="text-[11px] px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      <span key={t} className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                         {t}
                       </span>
                     ))}
@@ -1061,7 +1025,7 @@ export default function HealthTimelinePage() {
                 </div>
               )}
 
-              <p className="text-[11px] text-gray-500 leading-relaxed pt-3 border-t border-gray-100">
+              <p className="text-[11px] text-gray-500 leading-relaxed pt-3 border-t border-slate-200">
                 抽血前空腹 8 小時、前一天降低訓練量、選上午抽。抽完拿到報告就到「📥 上傳血檢」自動生成觀察筆記。
               </p>
             </section>
@@ -1072,43 +1036,43 @@ export default function HealthTimelinePage() {
         <section className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
           <Link
             href={`/c/${clientId}/health/upload`}
-            className="bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
+            className="bg-white border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
           >
             <div className="text-2xl mb-1">📥</div>
             <div className="text-sm font-medium text-gray-900">上傳血檢</div>
-            <div className="text-[10px] text-gray-500 mt-0.5">手打 / CSV / 照片</div>
+            <div className="text-[11px] text-gray-500 mt-0.5">手打 / CSV / 照片</div>
           </Link>
           <Link
             href={`/c/${clientId}/health/standards`}
-            className="bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
+            className="bg-white border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
           >
             <div className="text-2xl mb-1">📏</div>
             <div className="text-sm font-medium text-gray-900">標準對照</div>
-            <div className="text-[10px] text-gray-500 mt-0.5">醫院 vs Howard 最佳</div>
+            <div className="text-[11px] text-gray-500 mt-0.5">醫院 vs Howard 最佳</div>
           </Link>
           <Link
             href={`/c/${clientId}/health/learn`}
-            className="bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
+            className="bg-white border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
           >
             <div className="text-2xl mb-1">📖</div>
             <div className="text-sm font-medium text-gray-900">健康知識</div>
-            <div className="text-[10px] text-gray-500 mt-0.5">18 個 FAQ + 文獻</div>
+            <div className="text-[11px] text-gray-500 mt-0.5">18 個 FAQ + 文獻</div>
           </Link>
           <Link
             href={`/c/${clientId}#section-supplements`}
-            className="bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
+            className="bg-white border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
           >
             <div className="text-2xl mb-1">💊</div>
             <div className="text-sm font-medium text-gray-900">補品 protocol</div>
-            <div className="text-[10px] text-gray-500 mt-0.5">目前在吃 + 歷史</div>
+            <div className="text-[11px] text-gray-500 mt-0.5">目前在吃 + 歷史</div>
           </Link>
           <Link
             href={`/c/${clientId}`}
-            className="bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
+            className="bg-white border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl p-4 text-center transition-colors"
           >
             <div className="text-2xl mb-1">🏠</div>
             <div className="text-sm font-medium text-gray-900">回主頁</div>
-            <div className="text-[10px] text-gray-500 mt-0.5">每日打卡 + 訓練</div>
+            <div className="text-[11px] text-gray-500 mt-0.5">每日打卡 + 訓練</div>
           </Link>
         </section>
 

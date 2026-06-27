@@ -28,11 +28,11 @@ export default function NutrientSlider({ label, emoji, value, onChange, target, 
 
   // 顏色映射（避免 Tailwind JIT purge 問題）
   const colorMap: Record<string, { bg: string; text: string; slider: string }> = {
-    blue:   { bg: 'bg-blue-400',   text: 'text-blue-600',   slider: 'accent-blue-500' },
-    cyan:   { bg: 'bg-cyan-400',   text: 'text-cyan-600',   slider: 'accent-cyan-500' },
-    orange: { bg: 'bg-orange-400', text: 'text-orange-600', slider: 'accent-orange-500' },
-    amber:  { bg: 'bg-amber-400',  text: 'text-amber-600',  slider: 'accent-amber-500' },
-    yellow: { bg: 'bg-yellow-400', text: 'text-yellow-600', slider: 'accent-yellow-500' },
+    blue:   { bg: 'bg-blue-500', text: 'text-blue-600', slider: 'accent-blue-500' },
+    cyan:   { bg: 'bg-blue-500', text: 'text-blue-600', slider: 'accent-blue-500' },
+    orange: { bg: 'bg-blue-500', text: 'text-blue-600', slider: 'accent-blue-500' },
+    amber:  { bg: 'bg-blue-500', text: 'text-blue-600', slider: 'accent-blue-500' },
+    yellow: { bg: 'bg-blue-500', text: 'text-blue-600', slider: 'accent-blue-500' },
   }
   const c = colorMap[color] || colorMap.blue
 
@@ -44,7 +44,7 @@ export default function NutrientSlider({ label, emoji, value, onChange, target, 
           {target && (
             <span className="text-xs text-gray-400">目標 {target}{unit}</span>
           )}
-          <span className={`text-sm font-bold tabular-nums ${reached ? 'text-green-600' : numValue > 0 ? c.text : 'text-gray-400'}`}>
+          <span className={`text-sm font-bold tabular-nums ${reached ? 'text-emerald-600' : numValue > 0 ? c.text : 'text-gray-400'}`}>
             {numValue > 0 ? numValue : '--'}{numValue > 0 ? unit : ''}
           </span>
         </div>
@@ -98,11 +98,11 @@ export default function NutrientSlider({ label, emoji, value, onChange, target, 
         <div className="flex items-center gap-2 mt-1">
           <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${reached ? 'bg-green-500' : c.bg}`}
+              className={`h-full rounded-full transition-all ${reached ? 'bg-emerald-500' : c.bg}`}
               style={{ width: `${pct}%` }}
             />
           </div>
-          <span className={`text-xs font-medium w-10 text-right ${reached ? 'text-green-600' : numValue > 0 ? c.text : 'text-gray-400'}`}>
+          <span className={`text-xs font-medium tabular-nums w-10 text-right ${reached ? 'text-emerald-600' : numValue > 0 ? c.text : 'text-gray-400'}`}>
             {numValue > 0 ? `${pct}%` : ''}
           </span>
         </div>

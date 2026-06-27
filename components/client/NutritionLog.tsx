@@ -257,14 +257,14 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
   }, [caloriesTarget, computedCalories, proteinInput, proteinTarget, carbsInput, effectiveCarbsTarget, fatInput, fatTarget, sodiumTarget, sodiumInput])
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-bold text-gray-900">🍽️ 飲食紀錄</h2>
           {!hasRecorded && lastNutrition && (
             <button
               onClick={copyLastNutrition}
-              className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full hover:bg-blue-100 transition-colors"
+              className="text-[11px] font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full hover:bg-blue-100 transition-colors"
             >
               跟昨天一樣
             </button>
@@ -274,14 +274,14 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           <div className="flex items-center gap-1.5">
             {/* 手動回報：用戶主觀感受 */}
             <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-              todayNutrition.compliant ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              todayNutrition.compliant ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
             }`}>
               {todayNutrition.compliant ? '照計畫' : '沒照計畫'}
             </span>
             {/* 自動判斷：數據實際狀態 */}
             {autoComplianceStatus && autoComplianceStatus.status !== 'compliant' && (
               <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                autoComplianceStatus.color === 'amber' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                autoComplianceStatus.color === 'amber' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-600'
               }`} title={autoComplianceStatus.hint}>
                 {autoComplianceStatus.hint}
               </span>
@@ -299,8 +299,8 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
               onClick={() => setCompliant(true)}
               className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold transition-all ${
                 compliant === true
-                  ? 'bg-green-100 border-2 border-green-400 text-green-700 scale-[1.02]'
-                  : 'bg-green-50 border-2 border-green-200 text-green-700 hover:bg-green-100'
+                  ? 'bg-emerald-50 border-2 border-emerald-200 text-emerald-600 scale-[1.02]'
+                  : 'bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
               <span className="text-xl">✅</span>
@@ -310,8 +310,8 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
               onClick={() => setCompliant(false)}
               className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl font-semibold transition-all ${
                 compliant === false
-                  ? 'bg-red-100 border-2 border-red-400 text-red-700 scale-[1.02]'
-                  : 'bg-red-50 border-2 border-red-200 text-red-700 hover:bg-red-100'
+                  ? 'bg-rose-50 border-2 border-rose-200 text-rose-600 scale-[1.02]'
+                  : 'bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
               <span className="text-xl">❌</span>
@@ -330,8 +330,8 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                     onClick={() => setSelectedReason(selectedReason === reason ? null : reason)}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                       selectedReason === reason
-                        ? 'bg-red-100 border border-red-400 text-red-700 scale-[1.05]'
-                        : 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-rose-50 border border-rose-200 text-rose-600 scale-[1.05]'
+                        : 'bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
                     {reason}
@@ -362,15 +362,15 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                     }}
                     className={`py-2 rounded-xl text-xs font-medium transition-all ${
                       roughEstimate === est.key
-                        ? 'bg-amber-100 border-2 border-amber-400 text-amber-700'
-                        : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'
+                        ? 'bg-blue-50 border-2 border-blue-200 text-blue-700'
+                        : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     {est.label}
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-gray-400 mt-1">選了會自動估算巨量營養素，不用手填</p>
+              <p className="text-[11px] text-gray-400 mt-1">選了會自動估算巨量營養素，不用手填</p>
             </div>
           )}
         </div>
@@ -378,9 +378,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
 
       {/* 新用戶引導：直接記錄吃了什麼 */}
       {isNewUser && (
-        <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-4">
-          <p className="text-sm font-medium text-blue-800">先記錄今天吃了什麼就好</p>
-          <p className="text-xs text-blue-600 mt-0.5">系統會根據你的數據自動計算營養目標</p>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-4">
+          <p className="text-sm font-medium text-slate-900">先記錄今天吃了什麼就好</p>
+          <p className="text-xs text-slate-600 mt-0.5">系統會根據你的數據自動計算營養目標</p>
         </div>
       )}
 
@@ -389,28 +389,28 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
         <div className="space-y-4 mb-4">
           {/* 巨量營養素進度快照（簡單模式只顯示熱量） */}
           {(caloriesTarget || (!simpleMode && (effectiveCarbsTarget || fatTarget))) && (
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-amber-700">{simpleMode ? '🔥 今日熱量' : (competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 今日巨量營養素')}</p>
+                <p className="text-xs font-semibold text-slate-600">{simpleMode ? '🔥 今日熱量' : (competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 今日巨量營養素')}</p>
                 {!simpleMode && carbsCyclingEnabled && (
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-100 text-gray-600'}`}
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${effectiveIsTraining ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}`}
                     >
                       🔄 {effectiveIsTraining ? '訓練日' : '休息日'} {manualDayType ? '(手動)' : '(自動)'} ▾
                     </button>
                     {manualDayType && (
                       <button
                         onClick={() => setManualDayType(null)}
-                        className="px-1.5 py-0.5 rounded-full text-[10px] text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        className="px-1.5 py-0.5 rounded-full text-[11px] text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                         title="重置為自動偵測"
                       >
                         ↺
                       </button>
                     )}
                     {!manualDayType && isTrainingDay && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] text-cyan-600 bg-cyan-50 animate-pulse">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] text-blue-700 bg-blue-50 animate-pulse">
                         從訓練紀錄偵測
                       </span>
                     )}
@@ -420,47 +420,47 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
               <div className={`grid ${simpleMode ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3'} gap-3`}>
                 {caloriesTarget && (
                   <div className="text-center">
-                    <p className="text-[10px] text-gray-500 mb-1">🔥 熱量</p>
-                    <p className={`text-lg font-bold ${computedCalories && computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1 ? 'text-green-600' : computedCalories ? 'text-orange-600' : 'text-gray-300'}`}>
+                    <p className="text-[11px] text-gray-500 mb-1">🔥 熱量</p>
+                    <p className={`text-lg font-bold tabular-nums ${computedCalories && computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1 ? 'text-emerald-600' : computedCalories ? 'text-amber-700' : 'text-gray-300'}`}>
                       {computedCalories ?? '--'}
                     </p>
                     <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
                       <div
-                        className={`h-full rounded-full transition-all ${computedCalories && computedCalories >= caloriesTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
+                        className={`h-full rounded-full transition-all ${computedCalories && computedCalories >= caloriesTarget * 0.9 ? 'bg-emerald-500' : 'bg-amber-400'}`}
                         style={{ width: `${Math.min(100, computedCalories ? (computedCalories / caloriesTarget) * 100 : 0)}%` }}
                       />
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-0.5">/ {caloriesTarget}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">/ {caloriesTarget}</p>
                   </div>
                 )}
                 {!simpleMode && effectiveCarbsTarget && (
                   <div className="text-center">
-                    <p className="text-[10px] text-gray-500 mb-1">🍚 碳水</p>
-                    <p className={`text-lg font-bold ${carbsInput && Number(carbsInput) >= effectiveCarbsTarget * 0.9 && Number(carbsInput) <= effectiveCarbsTarget * 1.1 ? 'text-green-600' : Number(carbsInput) ? 'text-amber-600' : 'text-gray-300'}`}>
+                    <p className="text-[11px] text-gray-500 mb-1">🍚 碳水</p>
+                    <p className={`text-lg font-bold tabular-nums ${carbsInput && Number(carbsInput) >= effectiveCarbsTarget * 0.9 && Number(carbsInput) <= effectiveCarbsTarget * 1.1 ? 'text-emerald-600' : Number(carbsInput) ? 'text-amber-700' : 'text-gray-300'}`}>
                       {carbsInput ? `${Number(carbsInput)}g` : '--'}
                     </p>
                     <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
                       <div
-                        className={`h-full rounded-full transition-all ${carbsInput && Number(carbsInput) >= effectiveCarbsTarget * 0.9 ? 'bg-green-500' : 'bg-amber-400'}`}
+                        className={`h-full rounded-full transition-all ${carbsInput && Number(carbsInput) >= effectiveCarbsTarget * 0.9 ? 'bg-emerald-500' : 'bg-amber-400'}`}
                         style={{ width: `${Math.min(100, carbsInput ? (Number(carbsInput) / effectiveCarbsTarget) * 100 : 0)}%` }}
                       />
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-0.5">/ {effectiveCarbsTarget}g</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">/ {effectiveCarbsTarget}g</p>
                   </div>
                 )}
                 {!simpleMode && fatTarget && (
                   <div className="text-center">
-                    <p className="text-[10px] text-gray-500 mb-1">🥑 脂肪</p>
-                    <p className={`text-lg font-bold ${fatInput && Number(fatInput) >= fatTarget * 0.9 && Number(fatInput) <= fatTarget * 1.1 ? 'text-green-600' : Number(fatInput) ? 'text-yellow-600' : 'text-gray-300'}`}>
+                    <p className="text-[11px] text-gray-500 mb-1">🥑 脂肪</p>
+                    <p className={`text-lg font-bold tabular-nums ${fatInput && Number(fatInput) >= fatTarget * 0.9 && Number(fatInput) <= fatTarget * 1.1 ? 'text-emerald-600' : Number(fatInput) ? 'text-amber-700' : 'text-gray-300'}`}>
                       {fatInput ? `${Number(fatInput)}g` : '--'}
                     </p>
                     <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
                       <div
-                        className={`h-full rounded-full transition-all ${fatInput && Number(fatInput) >= fatTarget * 0.9 ? 'bg-green-500' : 'bg-yellow-400'}`}
+                        className={`h-full rounded-full transition-all ${fatInput && Number(fatInput) >= fatTarget * 0.9 ? 'bg-emerald-500' : 'bg-amber-400'}`}
                         style={{ width: `${Math.min(100, fatInput ? (Number(fatInput) / fatTarget) * 100 : 0)}%` }}
                       />
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-0.5">/ {fatTarget}g</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">/ {fatTarget}g</p>
                   </div>
                 )}
               </div>
@@ -496,21 +496,21 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           )}
           {/* 進階巨量營養素（簡單模式下收合） */}
           {(effectiveCarbsTarget || fatTarget) && (!simpleMode || showAdvanced) && (
-            <div className="border-t border-gray-100 pt-3 mt-1 space-y-4">
+            <div className="border-t border-slate-200 pt-3 mt-1 space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-amber-600">{competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 巨量營養素'}</p>
+                <p className="text-xs font-semibold text-slate-600">{competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 巨量營養素'}</p>
                 {carbsCyclingEnabled && carbsTrainingDay && carbsRestDay && (
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${effectiveIsTraining ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-200 text-gray-600'}`}
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${effectiveIsTraining ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}`}
                     >
                       🔄 {effectiveIsTraining ? '訓練日' : '休息日'} {manualDayType ? '(手動)' : '(自動)'} ▾
                     </button>
                     {manualDayType && (
                       <button
                         onClick={() => setManualDayType(null)}
-                        className="px-1.5 py-0.5 rounded-full text-[10px] text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        className="px-1.5 py-0.5 rounded-full text-[11px] text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                         title="重置為自動偵測"
                       >
                         ↺
@@ -534,13 +534,13 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                 color="yellow"
               />
               {/* 自動計算熱量顯示 */}
-              <div className="bg-orange-50 rounded-xl px-4 py-3">
+              <div className="bg-slate-50 rounded-xl px-4 py-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">🔥 熱量（自動計算）</span>
-                  <span className={`text-lg font-bold ${
+                  <span className={`text-lg font-bold tabular-nums ${
                     computedCalories && effectiveCalorieTarget && computedCalories >= effectiveCalorieTarget * 0.9 && computedCalories <= effectiveCalorieTarget * 1.1
-                      ? 'text-green-600'
-                      : computedCalories ? 'text-orange-600' : 'text-gray-300'
+                      ? 'text-emerald-600'
+                      : computedCalories ? 'text-amber-700' : 'text-gray-300'
                   }`}>
                     {computedCalories ?? '--'} <span className="text-xs font-normal text-gray-400">kcal</span>
                   </span>
@@ -549,16 +549,16 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                   <div className="flex items-center gap-2 mt-1.5">
                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${computedCalories >= effectiveCalorieTarget * 0.9 ? 'bg-green-500' : 'bg-orange-400'}`}
+                        className={`h-full rounded-full transition-all ${computedCalories >= effectiveCalorieTarget * 0.9 ? 'bg-emerald-500' : 'bg-amber-400'}`}
                         style={{ width: `${Math.min(100, (computedCalories / effectiveCalorieTarget) * 100)}%` }}
                       />
                     </div>
-                    <span className={`text-xs font-medium ${computedCalories >= effectiveCalorieTarget * 0.9 && computedCalories <= effectiveCalorieTarget * 1.1 ? 'text-green-600' : 'text-orange-600'}`}>
+                    <span className={`text-xs font-medium tabular-nums ${computedCalories >= effectiveCalorieTarget * 0.9 && computedCalories <= effectiveCalorieTarget * 1.1 ? 'text-emerald-600' : 'text-amber-700'}`}>
                       {Math.round((computedCalories / effectiveCalorieTarget) * 100)}%
                     </span>
                   </div>
                 )}
-                <p className="text-[10px] text-gray-400 mt-1">= 蛋白質×4 + 碳水×4 + 脂肪×9{effectiveCalorieTarget ? ` ｜ 目標 ${effectiveCalorieTarget} kcal${carbsCyclingEnabled ? `（${effectiveIsTraining ? '訓練日' : '休息日'}）` : ''}` : ''}</p>
+                <p className="text-[11px] text-gray-400 mt-1">= 蛋白質×4 + 碳水×4 + 脂肪×9{effectiveCalorieTarget ? ` ｜ 目標 ${effectiveCalorieTarget} kcal${carbsCyclingEnabled ? `（${effectiveIsTraining ? '訓練日' : '休息日'}）` : ''}` : ''}</p>
               </div>
             </div>
           )}
@@ -576,9 +576,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           {/* 自動合規提示 */}
           {autoComplianceStatus && (
             <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
-              autoComplianceStatus.color === 'green' ? 'bg-green-50 text-green-700' :
+              autoComplianceStatus.color === 'green' ? 'bg-emerald-50 text-emerald-600' :
               autoComplianceStatus.color === 'amber' ? 'bg-amber-50 text-amber-700' :
-              'bg-red-50 text-red-700'
+              'bg-rose-50 text-rose-600'
             }`}>
               <span>{autoComplianceStatus.color === 'green' ? '✅' : autoComplianceStatus.color === 'amber' ? '⚠️' : '❌'}</span>
               <span>{autoComplianceStatus.hint}</span>
@@ -610,11 +610,11 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
 
       {/* 巨量營養素填寫鼓勵 */}
       {(isNewUser || compliant !== null) && hasTargets && !computedCalories && (
-        <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 mb-3 flex items-start gap-2">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-3 flex items-start gap-2">
           <span className="text-sm mt-0.5">📝</span>
           <div>
-            <p className="text-xs text-indigo-700 font-medium">填入今天的營養素數據，系統能更準確追蹤你的進度</p>
-            <p className="text-[10px] text-indigo-500 mt-0.5">只需輸入蛋白質和碳水，熱量會自動計算</p>
+            <p className="text-xs text-slate-900 font-medium">填入今天的營養素數據，系統能更準確追蹤你的進度</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">只需輸入蛋白質和碳水，熱量會自動計算</p>
           </div>
         </div>
       )}
@@ -626,7 +626,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           .slice(0, 5)
           .filter((l: any) => l.compliant != null && l.calories == null)
         return recentWithoutMacros.length >= 3 && !computedCalories ? (
-          <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-3 flex items-start gap-2">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-3 flex items-start gap-2">
             <span className="text-sm mt-0.5">💡</span>
             <p className="text-xs text-amber-700">
               你已連續 {recentWithoutMacros.length} 天沒有填寫營養素數據。填入實際攝取量可以幫助系統判斷是否需要調整你的目標。
@@ -647,11 +647,11 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       )}
 
       {/* 本週一覽 */}
-      <div className="border-t border-gray-100 pt-4 mt-2">
+      <div className="border-t border-slate-200 pt-4 mt-2">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-medium text-gray-700">本週一覽</p>
           {weekStats.total > 0 && (
-            <span className={`text-sm font-bold ${weekStats.rate >= 80 ? 'text-green-600' : weekStats.rate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+            <span className={`text-sm font-bold tabular-nums ${weekStats.rate >= 80 ? 'text-emerald-600' : weekStats.rate >= 50 ? 'text-amber-700' : 'text-rose-600'}`}>
               {weekStats.rate}%
             </span>
           )}
@@ -664,10 +664,10 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                 day.isToday ? 'ring-2 ring-blue-400' : ''
               } ${
                 day.log == null
-                  ? 'bg-gray-50'
+                  ? 'bg-slate-50'
                   : day.log.compliant
-                    ? 'bg-green-50'
-                    : 'bg-red-50'
+                    ? 'bg-emerald-50'
+                    : 'bg-rose-50'
               }`}>
                 {day.log == null ? '' : day.log.compliant ? '✅' : '❌'}
               </div>
@@ -678,7 +678,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
 
       {/* 蛋白質/水量 7 天趨勢（簡單模式隱藏） */}
       {!simpleMode && nutrientTrend && (
-        <div className="border-t border-gray-100 pt-4 mt-2 space-y-4">
+        <div className="border-t border-slate-200 pt-4 mt-2 space-y-4">
           {nutrientTrend.hasAnyProtein && proteinTarget && (
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -694,19 +694,19 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                       <div className="w-full flex flex-col justify-end h-16">
                         {d.protein != null ? (
                           <>
-                            <span className="text-[9px] text-gray-500 font-medium text-center w-full block">{d.protein}</span>
+                            <span className="text-[11px] text-gray-500 font-medium text-center w-full block tabular-nums">{d.protein}</span>
                             <div
-                              className={`w-full rounded-t transition-all ${reached ? 'bg-green-400' : 'bg-blue-300'}`}
+                              className={`w-full rounded-t transition-all ${reached ? 'bg-emerald-400' : 'bg-blue-300'}`}
                               style={{ height: `${Math.max(8, pct)}%` }}
                             />
                           </>
                         ) : (
                           <div className="w-full h-full flex items-end justify-center">
-                            <div className="w-full h-2 bg-gray-100 rounded border border-dashed border-gray-200" title="未記錄" />
+                            <div className="w-full h-2 bg-gray-100 rounded border border-dashed border-slate-200" title="未記錄" />
                           </div>
                         )}
                       </div>
-                      <span className="text-[10px] text-gray-400">{d.label.split('/')[1]}</span>
+                      <span className="text-[11px] text-gray-400">{d.label.split('/')[1]}</span>
                     </div>
                   )
                 })}
@@ -728,17 +728,17 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                       <div className="w-full flex flex-col justify-end h-12">
                         {d.water != null ? (
                           <div
-                            className={`w-full rounded-t transition-all ${reached ? 'bg-green-400' : 'bg-cyan-300'}`}
+                            className={`w-full rounded-t transition-all ${reached ? 'bg-emerald-400' : 'bg-blue-300'}`}
                             style={{ height: `${Math.max(8, pct)}%` }}
                             title={`${d.water}ml`}
                           />
                         ) : (
                           <div className="w-full h-full flex items-end justify-center">
-                            <div className="w-full h-2 bg-gray-100 rounded border border-dashed border-gray-200" title="未記錄" />
+                            <div className="w-full h-2 bg-gray-100 rounded border border-dashed border-slate-200" title="未記錄" />
                           </div>
                         )}
                       </div>
-                      <span className="text-[10px] text-gray-400">{d.label.split('/')[1]}</span>
+                      <span className="text-[11px] text-gray-400">{d.label.split('/')[1]}</span>
                     </div>
                   )
                 })}
@@ -750,22 +750,22 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
 
       {/* 近 30 天趨勢（簡單模式隱藏） */}
       {!simpleMode && monthStats.total > 0 && (
-        <div className="border-t border-gray-100 pt-3 mt-3">
+        <div className="border-t border-slate-200 pt-3 mt-3">
           <div className="flex items-center justify-between">
             <p className="text-xs text-gray-500">近 30 天合規率</p>
             <div className="flex items-center gap-2">
               <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${monthStats.rate >= 80 ? 'bg-green-500' : monthStats.rate >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                  className={`h-full rounded-full ${monthStats.rate >= 80 ? 'bg-emerald-500' : monthStats.rate >= 50 ? 'bg-amber-400' : 'bg-rose-500'}`}
                   style={{ width: `${monthStats.rate}%` }}
                 />
               </div>
-              <span className={`text-sm font-bold ${monthStats.rate >= 80 ? 'text-green-600' : monthStats.rate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+              <span className={`text-sm font-bold tabular-nums ${monthStats.rate >= 80 ? 'text-emerald-600' : monthStats.rate >= 50 ? 'text-amber-700' : 'text-rose-600'}`}>
                 {monthStats.rate}%
               </span>
             </div>
           </div>
-          <p className="text-xs text-gray-400 mt-1">{monthStats.compliant}/{monthStats.total} 天合規</p>
+          <p className="text-xs text-gray-400 mt-1 tabular-nums">{monthStats.compliant}/{monthStats.total} 天合規</p>
         </div>
       )}
     </div>

@@ -178,7 +178,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
 
   if (panelDates.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6">
         <h2 className="text-lg font-medium text-gray-900 mb-2">
           🩺 整組血檢觀察筆記（教練 Notes）
         </h2>
@@ -190,7 +190,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 space-y-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-6">
       <div>
         <h2 className="text-lg font-medium text-gray-900">
           🩺 整組血檢觀察筆記（教練 Notes）
@@ -208,7 +208,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
         const note = notes[date] || { panel_date: date }
         const count = labCountByDate.get(date) ?? 0
         return (
-          <div key={date} className="border border-gray-200 rounded-lg p-4 bg-gray-50/60">
+          <div key={date} className="border border-slate-200 rounded-xl p-4 bg-slate-50">
             <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
               <div>
                 <div className="font-medium text-gray-900">{date}</div>
@@ -218,7 +218,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
                 <button
                   onClick={() => generateDraft(date)}
                   disabled={draftingDate === date || savingDate === date}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-3 py-1.5 rounded disabled:opacity-50 flex items-center gap-1"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-lg disabled:opacity-50 flex items-center gap-1"
                   title="AI 自動生成教練觀察筆記草稿（會分析所有指標趨勢，避免 cherry-pick）"
                 >
                   {draftingDate === date ? '生成中...' : '✨ AI 草稿'}
@@ -226,7 +226,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
                 <button
                   onClick={() => save(date)}
                   disabled={savingDate === date || draftingDate === date}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-1.5 rounded disabled:opacity-50"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-lg disabled:opacity-50"
                 >
                   {savingDate === date ? '儲存中...' : '儲存'}
                 </button>
@@ -235,8 +235,8 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
 
             {/* AI 偵測到的 findings 摘要（生成後顯示） */}
             {draftFindings[date] && draftFindings[date].length > 0 && (
-              <div className="mb-3 p-3 bg-white border border-indigo-200 rounded">
-                <div className="text-xs font-medium text-indigo-700 mb-2">
+              <div className="mb-3 p-3 bg-white border border-slate-200 rounded-xl">
+                <div className="text-xs font-medium text-slate-600 mb-2">
                   AI 偵測到的關鍵指標（依嚴重度排序，前 12 項）
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -271,7 +271,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
                   onChange={e => update(date, 'summary', e.target.value)}
                   rows={4}
                   placeholder="例：心血管風險面看 ApoB 與 hsCRP 都從上一季的注意區降到正常，但游離睪固酮仍偏低，與睡眠品質下降相關。代謝端 HOMA-IR 持平，建議維持目前策略再觀察一季..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
 
@@ -284,7 +284,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
                   onChange={e => update(date, 'priorities', e.target.value)}
                   rows={3}
                   placeholder="1) 提高睡眠時長至 7h 以上（最高優先）\n2) Omega-3 提升至 3g / day\n3) 加做 SHBG + 雌二醇追蹤"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
 
@@ -296,7 +296,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
                   type="date"
                   value={note.next_review_date || ''}
                   onChange={e => update(date, 'next_review_date', e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
             </div>

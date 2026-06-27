@@ -24,7 +24,7 @@ interface DailyCheckInProps {
   onMutate?: () => void
 }
 
-const rateColor = (rate: number) => rate >= 80 ? '#22c55e' : rate >= 50 ? '#eab308' : '#ef4444'
+const rateColor = (rate: number) => rate >= 80 ? '#10b981' : rate >= 50 ? '#f59e0b' : '#f43f5e'
 
 const TIMING_OPTIONS = [
   '早餐前', '早餐後', '午餐前', '午餐後',
@@ -68,7 +68,7 @@ export default function DailyCheckIn({
   }, [recentLogs])
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">
@@ -88,7 +88,7 @@ export default function DailyCheckIn({
             </button>
           )}
           {streakDays > 0 && (
-            <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+            <div className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-sm font-medium tabular-nums">
               連續 {streakDays} 天
             </div>
           )}
@@ -103,13 +103,13 @@ export default function DailyCheckIn({
                 ? '今日全數完成'
                 : `${todayStats.completed}/${todayStats.total} 已完成`}
             </span>
-            <span className="text-sm font-medium text-gray-700">{todayStats.rate}%</span>
+            <span className="text-sm font-medium text-gray-700 tabular-nums">{todayStats.rate}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div
               className={`h-2.5 rounded-full transition-all ${
                 todayStats.completed === todayStats.total && todayStats.total > 0
-                  ? 'bg-green-500'
+                  ? 'bg-emerald-500'
                   : 'bg-blue-500'
               }`}
               style={{ width: `${todayStats.rate}%` }}
@@ -126,7 +126,7 @@ export default function DailyCheckIn({
               if (navigator.vibrate) navigator.vibrate([30, 50, 30])
               onMarkAllComplete()
             }}
-            className="w-full py-2.5 bg-green-50 border-2 border-green-200 text-green-700 text-sm font-semibold rounded-2xl hover:bg-green-100 transition-all active:scale-[0.98]"
+            className="w-full py-2.5 bg-emerald-50 border-2 border-emerald-200 text-emerald-700 text-sm font-semibold rounded-2xl hover:bg-emerald-100 transition-all active:scale-[0.98]"
           >
             ✅ 全部完成
           </button>
@@ -183,17 +183,17 @@ export default function DailyCheckIn({
                 disabled={isToggling}
                 className={`flex items-center p-4 rounded-xl border-2 transition-all text-left ${
                   isCompleted
-                    ? 'border-green-300 bg-green-50'
-                    : 'border-gray-200 bg-white hover:border-blue-300 active:scale-[0.97]'
+                    ? 'border-emerald-300 bg-emerald-50'
+                    : 'border-slate-200 bg-white hover:border-blue-300 active:scale-[0.97]'
                 } ${isToggling ? 'opacity-50' : ''}`}
               >
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 flex-shrink-0 transition-all ${
-                  isCompleted ? 'border-green-500 bg-green-500 animate-check-pop' : 'border-gray-300'
+                  isCompleted ? 'border-emerald-500 bg-emerald-500 animate-check-pop' : 'border-gray-300'
                 }`}>
                   {isCompleted && <span className="text-white text-xs font-bold">✓</span>}
                 </div>
                 <div className="min-w-0">
-                  <p className={`font-medium ${isCompleted ? 'text-green-700 line-through' : 'text-gray-900'}`}>
+                  <p className={`font-medium ${isCompleted ? 'text-emerald-700 line-through' : 'text-gray-900'}`}>
                     {supplement.name}
                   </p>
                   <p className="text-xs text-gray-500">
@@ -222,7 +222,7 @@ export default function DailyCheckIn({
               <Plus size={16} className="mr-1" /> 新增補品
             </button>
           ) : (
-            <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/50">
+            <div className="border border-slate-200 rounded-xl p-4 bg-gray-50/50">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-medium text-gray-700">新增補品</h4>
                 <button

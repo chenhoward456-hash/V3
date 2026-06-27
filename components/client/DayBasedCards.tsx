@@ -40,7 +40,7 @@ export default function DayBasedCards({
   // Day 1-2 — 系統正在學習
   if (daysSinceSignup < 3) {
     return (
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 mb-3">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
         <div className="flex items-start gap-3">
           <span className="text-xl flex-shrink-0">🧠</span>
           <div>
@@ -53,7 +53,7 @@ export default function DayBasedCards({
               <p>• 每天記錄體重（越準確越好）</p>
               <p>• 正常飲食，不用刻意改變</p>
             </div>
-            <p className="text-[10px] text-blue-500 mt-2">系統會在背景持續分析你的數據趨勢</p>
+            <p className="text-[11px] text-slate-400 mt-2">系統會在背景持續分析你的數據趨勢</p>
           </div>
         </div>
       </div>
@@ -73,13 +73,13 @@ export default function DayBasedCards({
               {proteinHitRate != null && (
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-600">蛋白質平均達標率</span>
-                  <span className={`font-bold ${proteinHitRate >= 80 ? 'text-green-600' : 'text-amber-600'}`}>{proteinHitRate}%</span>
+                  <span className={`font-bold tabular-nums ${proteinHitRate >= 80 ? 'text-emerald-600' : 'text-amber-700'}`}>{proteinHitRate}%</span>
                 </div>
               )}
               {caloriesCompliantDays != null && (
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-600">熱量合規天數</span>
-                  <span className="font-bold text-gray-800">{caloriesCompliantDays}/{logsWithCalories.length} 天</span>
+                  <span className="font-bold text-gray-800 tabular-nums">{caloriesCompliantDays}/{logsWithCalories.length} 天</span>
                 </div>
               )}
             </div>
@@ -95,7 +95,7 @@ export default function DayBasedCards({
   // P1: Day 7 — AI 顧問預覽
   if (daysSinceSignup >= 7 && daysSinceSignup <= 10 && c.nutrition_enabled) {
     return (
-      <div className="bg-gradient-to-br from-violet-50 to-blue-50 border border-violet-200 rounded-2xl p-4 mb-3">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
         <div className="flex items-start gap-3">
           <span className="text-xl flex-shrink-0">🤖</span>
           <div className="flex-1">
@@ -111,7 +111,7 @@ export default function DayBasedCards({
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               試試看
-              {!c.ai_chat_enabled && <span className="text-[10px] opacity-80">（每月 3 次免費）</span>}
+              {!c.ai_chat_enabled && <span className="text-[11px] opacity-80">（每月 3 次免費）</span>}
             </button>
           </div>
         </div>

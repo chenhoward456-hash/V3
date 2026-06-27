@@ -58,6 +58,9 @@ export interface Client {
   activity_profile: string | null
   competition_date: string | null
   prep_phase: string | null
+  auto_adjust_enabled: boolean | null
+  last_auto_adjust_at: string | null
+  coach_macro_override: { reason?: string | null } | null
   weigh_in_gap_hours: number | null
   coach_last_viewed_at: string | null
   coach_weekly_note: string | null

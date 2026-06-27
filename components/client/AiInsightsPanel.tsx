@@ -62,10 +62,10 @@ interface InsightsData {
 }
 
 const intensityColors = {
-  high: 'bg-green-100 text-green-700 border-green-200',
+  high: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   moderate: 'bg-blue-100 text-blue-700 border-blue-200',
-  low: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  rest: 'bg-red-100 text-red-700 border-red-200',
+  low: 'bg-amber-100 text-amber-700 border-amber-200',
+  rest: 'bg-rose-100 text-rose-700 border-rose-200',
 }
 
 const intensityLabels = {
@@ -131,9 +131,9 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-2xl p-5 border border-slate-200">
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles size={18} className="text-purple-500" />
+          <Sparkles size={18} className="text-slate-400" />
           <h3 className="font-semibold text-gray-900">AI 智能分析</h3>
         </div>
         <div className="flex items-center justify-center py-8 text-gray-400">
@@ -156,7 +156,7 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
     <div className="space-y-3">
       {/* 智能警示 */}
       {hasAlerts && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200">
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle size={16} className="text-amber-500" />
             <h4 className="text-sm font-semibold text-gray-900">智能提醒</h4>
@@ -174,10 +174,10 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
 
       {/* 訓練建議 */}
       {trainingAdvice && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Dumbbell size={16} className="text-indigo-500" />
+              <Dumbbell size={16} className="text-slate-400" />
               <h4 className="text-sm font-semibold text-gray-900">今日訓練建議</h4>
             </div>
             <span className={`text-xs px-2 py-0.5 rounded-full border ${intensityColors[trainingAdvice.recommendedIntensity]}`}>
@@ -189,14 +189,14 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
           <div className="mb-3">
             <div className="flex justify-between text-xs text-gray-500 mb-1">
               <span>恢復分數</span>
-              <span>{trainingAdvice.recoveryScore}/100</span>
+              <span className="tabular-nums">{trainingAdvice.recoveryScore}/100</span>
             </div>
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${
-                  trainingAdvice.recoveryScore >= 75 ? 'bg-green-400' :
-                  trainingAdvice.recoveryScore >= 50 ? 'bg-blue-400' :
-                  trainingAdvice.recoveryScore >= 30 ? 'bg-yellow-400' : 'bg-red-400'
+                  trainingAdvice.recoveryScore >= 75 ? 'bg-emerald-500' :
+                  trainingAdvice.recoveryScore >= 50 ? 'bg-blue-500' :
+                  trainingAdvice.recoveryScore >= 30 ? 'bg-amber-500' : 'bg-rose-500'
                 }`}
                 style={{ width: `${trainingAdvice.recoveryScore}%` }}
               />
@@ -217,13 +217,13 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
 
       {/* 趨勢預測 */}
       {trendPrediction && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200">
           <div className="flex items-center gap-2 mb-3">
             <Target size={16} className="text-blue-500" />
             <h4 className="text-sm font-semibold text-gray-900">趨勢預測</h4>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-              trendPrediction.confidence === 'high' ? 'bg-green-50 text-green-600' :
-              trendPrediction.confidence === 'medium' ? 'bg-yellow-50 text-yellow-600' :
+            <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+              trendPrediction.confidence === 'high' ? 'bg-emerald-50 text-emerald-600' :
+              trendPrediction.confidence === 'medium' ? 'bg-amber-50 text-amber-600' :
               'bg-gray-50 text-gray-500'
             }`}>
               {confidenceLabels[trendPrediction.confidence]}
@@ -232,21 +232,21 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
 
           <div className="flex items-center gap-4 mb-3">
             <div className="text-center">
-              <p className="text-lg font-bold text-gray-900">{trendPrediction.currentWeight}kg</p>
-              <p className="text-[10px] text-gray-400">目前</p>
+              <p className="text-lg font-bold text-gray-900 tabular-nums">{trendPrediction.currentWeight}kg</p>
+              <p className="text-[11px] text-gray-400">目前</p>
             </div>
             {trendPrediction.weeklyRate != null && (
               <>
                 <div className="flex items-center text-gray-300">
                   {trendPrediction.weeklyRate < 0
-                    ? <TrendingDown size={16} className={trendPrediction.targetWeight != null && trendPrediction.currentWeight > trendPrediction.targetWeight ? 'text-green-500' : 'text-red-500'} />
-                    : <TrendingUp size={16} className={trendPrediction.targetWeight != null && trendPrediction.currentWeight < trendPrediction.targetWeight ? 'text-green-500' : 'text-red-500'} />}
+                    ? <TrendingDown size={16} className={trendPrediction.targetWeight != null && trendPrediction.currentWeight > trendPrediction.targetWeight ? 'text-emerald-500' : 'text-rose-500'} />
+                    : <TrendingUp size={16} className={trendPrediction.targetWeight != null && trendPrediction.currentWeight < trendPrediction.targetWeight ? 'text-emerald-500' : 'text-rose-500'} />}
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-gray-700">
+                  <p className="text-sm font-semibold text-gray-700 tabular-nums">
                     {trendPrediction.weeklyRate > 0 ? '+' : ''}{trendPrediction.weeklyRate}kg/週
                   </p>
-                  <p className="text-[10px] text-gray-400">週變化率</p>
+                  <p className="text-[11px] text-gray-400">週變化率</p>
                 </div>
               </>
             )}
@@ -254,8 +254,8 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
               <>
                 <div className="text-gray-300">→</div>
                 <div className="text-center">
-                  <p className="text-lg font-bold text-blue-600">{trendPrediction.targetWeight}kg</p>
-                  <p className="text-[10px] text-gray-400">目標</p>
+                  <p className="text-lg font-bold text-blue-600 tabular-nums">{trendPrediction.targetWeight}kg</p>
+                  <p className="text-[11px] text-gray-400">目標</p>
                 </div>
               </>
             )}
@@ -276,38 +276,38 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
 
       {/* 飲食模式洞察 */}
       {dietaryPatterns && (dietaryPatterns.weekendOvereat.detected || dietaryPatterns.proteinDeficiency.detected || dietaryPatterns.carbsImbalance.detected || dietaryPatterns.waterDeficiency.detected) && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200">
           <div className="flex items-center gap-2 mb-3">
-            <Brain size={16} className="text-purple-500" />
+            <Brain size={16} className="text-slate-400" />
             <h4 className="text-sm font-semibold text-gray-900">飲食模式洞察</h4>
           </div>
           <div className="space-y-2">
             {dietaryPatterns.weekendOvereat.detected && (
-              <div className="p-3 bg-orange-50 rounded-xl border border-orange-100">
-                <p className="text-xs font-medium text-orange-800 mb-1">週末熱量偏高</p>
-                <p className="text-[11px] text-orange-600">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-medium text-slate-900 mb-1">週末熱量偏高</p>
+                <p className="text-[11px] text-slate-600 tabular-nums">
                   平日平均 {dietaryPatterns.weekendOvereat.avgWeekdayCal} kcal → 週末平均 {dietaryPatterns.weekendOvereat.avgWeekendCal} kcal（+{dietaryPatterns.weekendOvereat.diff} kcal）
                 </p>
               </div>
             )}
             {dietaryPatterns.proteinDeficiency.detected && (
-              <div className="p-3 bg-red-50 rounded-xl border border-red-100">
-                <p className="text-xs font-medium text-red-800 mb-1">蛋白質攝取不足</p>
-                <p className="text-[11px] text-red-600">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-medium text-slate-900 mb-1">蛋白質攝取不足</p>
+                <p className="text-[11px] text-slate-600 tabular-nums">
                   近 14 天有 {dietaryPatterns.proteinDeficiency.deficientDays}/{dietaryPatterns.proteinDeficiency.totalDays} 天蛋白質低於目標 80%
                 </p>
               </div>
             )}
             {dietaryPatterns.carbsImbalance.detected && (
-              <div className="p-3 bg-yellow-50 rounded-xl border border-yellow-100">
-                <p className="text-xs font-medium text-yellow-800 mb-1">碳水攝取不穩定</p>
-                <p className="text-[11px] text-yellow-600">{dietaryPatterns.carbsImbalance.detail}</p>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-medium text-slate-900 mb-1">碳水攝取不穩定</p>
+                <p className="text-[11px] text-slate-600">{dietaryPatterns.carbsImbalance.detail}</p>
               </div>
             )}
             {dietaryPatterns.waterDeficiency.detected && (
-              <div className="p-3 bg-cyan-50 rounded-xl border border-cyan-100">
-                <p className="text-xs font-medium text-cyan-800 mb-1">水分攝取不足</p>
-                <p className="text-[11px] text-cyan-600">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-medium text-slate-900 mb-1">水分攝取不足</p>
+                <p className="text-[11px] text-slate-600 tabular-nums">
                   平均 {dietaryPatterns.waterDeficiency.avgWater} ml/天（目標 {dietaryPatterns.waterDeficiency.target} ml）
                 </p>
               </div>
@@ -318,7 +318,7 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
 
       {/* 血檢趨勢 */}
       {hasLabChanges && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200">
           <button
             onClick={() => {
               setExpandedSection(expandedSection === 'lab' ? null : 'lab')
@@ -329,7 +329,7 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
             className="w-full flex items-center justify-between"
           >
             <div className="flex items-center gap-2">
-              <FlaskConical size={16} className="text-teal-500" />
+              <FlaskConical size={16} className="text-slate-400" />
               <h4 className="text-sm font-semibold text-gray-900">血檢趨勢對比</h4>
             </div>
             <ChevronRight size={16} className={`text-gray-400 transition-transform ${expandedSection === 'lab' ? 'rotate-90' : ''}`} />
@@ -338,18 +338,18 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
           {expandedSection === 'lab' && (
             <div className="mt-3 space-y-2">
               {labComparisons!.filter(c => c.previous != null).map((comp, i) => (
-                <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
                   <span className="text-xs text-gray-600">{comp.testName}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-gray-400">{comp.previous?.value}</span>
+                    <span className="text-[11px] text-gray-400 tabular-nums">{comp.previous?.value}</span>
                     <span className="text-gray-300">→</span>
-                    <span className={`text-xs font-medium ${
-                      comp.improved ? 'text-green-600' : comp.improved === false ? 'text-red-600' : 'text-gray-600'
+                    <span className={`text-xs font-medium tabular-nums ${
+                      comp.improved ? 'text-emerald-600' : comp.improved === false ? 'text-rose-600' : 'text-gray-600'
                     }`}>
                       {comp.current?.value} {comp.unit}
                     </span>
                     {comp.improved != null && (
-                      <span className={`text-[10px] ${comp.improved ? 'text-green-500' : 'text-red-500'}`}>
+                      <span className={`text-[11px] ${comp.improved ? 'text-emerald-500' : 'text-rose-500'}`}>
                         {comp.improved ? '↑' : '↓'}
                       </span>
                     )}
@@ -363,7 +363,7 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
                 </div>
               )}
               {aiContent['lab-comparison-summary'] && (
-                <div className="mt-2 p-3 bg-teal-50 rounded-xl text-xs text-teal-800 leading-relaxed whitespace-pre-wrap">
+                <div className="mt-2 p-3 bg-slate-50 rounded-xl text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
                   {aiContent['lab-comparison-summary']}
                 </div>
               )}
@@ -373,38 +373,38 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
       )}
 
       {/* AI 功能按鈕 */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-2xl p-5 border border-slate-200">
         <div className="flex items-center gap-2 mb-3">
-          <Sparkles size={16} className="text-purple-500" />
+          <Sparkles size={16} className="text-slate-400" />
           <h4 className="text-sm font-semibold text-gray-900">AI 進階分析</h4>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => fetchAiContent('weekly-report')}
             disabled={aiLoading['weekly-report']}
-            className="flex items-center gap-2 p-3 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-100 hover:border-purple-200 transition-colors text-left"
+            className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors text-left"
           >
-            {aiLoading['weekly-report'] ? <Loader2 size={14} className="animate-spin text-purple-400" /> : <Activity size={14} className="text-purple-500" />}
-            <span className="text-xs font-medium text-purple-700">AI 週報</span>
+            {aiLoading['weekly-report'] ? <Loader2 size={14} className="animate-spin text-slate-400" /> : <Activity size={14} className="text-slate-500" />}
+            <span className="text-xs font-medium text-slate-700">AI 週報</span>
           </button>
           <button
             onClick={() => fetchAiContent('meal-suggestion', `&training=${isTrainingDay ? '1' : '0'}`)}
             disabled={aiLoading['meal-suggestion']}
-            className="flex items-center gap-2 p-3 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl border border-orange-100 hover:border-orange-200 transition-colors text-left"
+            className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors text-left"
           >
-            {aiLoading['meal-suggestion'] ? <Loader2 size={14} className="animate-spin text-orange-400" /> : <Utensils size={14} className="text-orange-500" />}
-            <span className="text-xs font-medium text-orange-700">菜單建議</span>
+            {aiLoading['meal-suggestion'] ? <Loader2 size={14} className="animate-spin text-slate-400" /> : <Utensils size={14} className="text-slate-500" />}
+            <span className="text-xs font-medium text-slate-700">菜單建議</span>
           </button>
         </div>
 
         {/* AI 生成的內容顯示 */}
         {aiContent['weekly-report'] && (
-          <div className="mt-3 p-3 bg-purple-50 rounded-xl text-xs text-purple-900 leading-relaxed whitespace-pre-wrap border border-purple-100">
+          <div className="mt-3 p-3 bg-slate-50 rounded-xl text-xs text-slate-700 leading-relaxed whitespace-pre-wrap border border-slate-200">
             {aiContent['weekly-report']}
           </div>
         )}
         {aiContent['meal-suggestion'] && (
-          <div className="mt-3 p-3 bg-orange-50 rounded-xl text-xs text-orange-900 leading-relaxed whitespace-pre-wrap border border-orange-100">
+          <div className="mt-3 p-3 bg-slate-50 rounded-xl text-xs text-slate-700 leading-relaxed whitespace-pre-wrap border border-slate-200">
             {aiContent['meal-suggestion']}
           </div>
         )}

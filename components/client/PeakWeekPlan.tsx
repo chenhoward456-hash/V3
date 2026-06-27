@@ -59,10 +59,10 @@ interface PeakWeekPlanProps {
 }
 
 const phaseColors: Record<string, { bg: string; text: string; border: string; badge: string }> = {
-  depletion: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', badge: 'bg-red-100 text-red-700' },
-  fat_load: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', badge: 'bg-orange-100 text-orange-700' },
+  depletion: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', badge: 'bg-rose-100 text-rose-700' },
+  fat_load: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700' },
   carb_load: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', badge: 'bg-blue-100 text-blue-700' },
-  taper: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', badge: 'bg-purple-100 text-purple-700' },
+  taper: { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', badge: 'bg-slate-100 text-slate-600' },
   show_day: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700' },
 }
 
@@ -109,7 +109,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
 
   if (loading) {
     return (
-      <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
         <div className="animate-pulse flex items-center gap-2">
           <div className="w-6 h-6 bg-gray-200 rounded-full" />
           <div className="h-5 bg-gray-200 rounded w-40" />
@@ -125,7 +125,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
   const focusLabel = previewDate ? '明日計畫' : '今日計畫'
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* 標題 */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -135,7 +135,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setExpandAll(!expandAll); if (!expandAll) setExpandedDay(null) }}
-            className="text-[10px] text-gray-500 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+            className="text-[11px] text-gray-500 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
           >
             {expandAll ? '收合全部' : '展開全部'}
           </button>
@@ -147,7 +147,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
 
       {/* 基因風險提示 */}
       {geneDepressionRisk && (geneDepressionRisk === 'high' || geneDepressionRisk === 'moderate') && (
-        <div className={`mb-4 px-3 py-2 rounded-xl text-xs flex items-center gap-2 ${geneDepressionRisk === 'high' ? 'bg-purple-50 border border-purple-200 text-purple-700' : 'bg-indigo-50 border border-indigo-200 text-indigo-700'}`}>
+        <div className={`mb-4 px-3 py-2 rounded-xl text-xs flex items-center gap-2 ${geneDepressionRisk === 'high' ? 'bg-amber-50 border border-amber-200 text-amber-700' : 'bg-slate-50 border border-slate-200 text-slate-700'}`}>
           <span>🧬</span>
           <span>
             因 5-HTTLPR {geneDepressionRisk === 'high' ? 'SS' : 'SL'} 基因型，碳水耗竭期已
@@ -159,15 +159,15 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
 
       {/* ===== 焦點日重點卡片 ===== */}
       {focusPlan && (
-        <div className={`${phaseColors[focusPlan.phase]?.bg || 'bg-gray-50'} ${phaseColors[focusPlan.phase]?.border || 'border-gray-200'} border-2 rounded-2xl p-4 mb-5`}>
+        <div className={`${phaseColors[focusPlan.phase]?.bg || 'bg-gray-50'} ${phaseColors[focusPlan.phase]?.border || 'border-slate-200'} border rounded-2xl p-4 mb-5`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${phaseColors[focusPlan.phase]?.badge || 'bg-gray-100 text-gray-600'}`}>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${phaseColors[focusPlan.phase]?.badge || 'bg-gray-100 text-gray-600'}`}>
                 {phaseLabels[focusPlan.phase] || focusPlan.phase}
               </span>
               <span className="text-sm font-semibold text-gray-700">{focusLabel}</span>
             </div>
-            <span className="text-[10px] text-gray-400">Day {focusPlan.daysOut}</span>
+            <span className="text-[11px] text-gray-400">Day {focusPlan.daysOut}</span>
           </div>
 
           {/* 預估體重 badge */}
@@ -178,7 +178,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                 預估體重 <strong className="text-gray-900">{focusPlan.expectedWeight}kg</strong>
               </span>
               {focusPlan.weightNote && (
-                <span className="text-[10px] text-gray-400">— {focusPlan.weightNote}</span>
+                <span className="text-[11px] text-gray-400">— {focusPlan.weightNote}</span>
               )}
             </div>
           )}
@@ -194,9 +194,9 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
               { label: '鈉', value: focusPlan.sodiumMg, unit: 'mg', emoji: '🧂' },
             ].map(({ label, value, unit, emoji }) => (
               <div key={label} className="text-center bg-white bg-opacity-70 rounded-xl py-2 px-1">
-                <p className="text-[10px] text-gray-500">{emoji} {label}</p>
+                <p className="text-[11px] text-gray-500">{emoji} {label}</p>
                 <p className="text-lg font-bold text-gray-900">{value}</p>
-                <p className="text-[10px] text-gray-400">{unit}</p>
+                <p className="text-[11px] text-gray-400">{unit}</p>
               </div>
             ))}
           </div>
@@ -225,8 +225,8 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                         meal.relativeHours === 0
                           ? 'bg-amber-500 shadow-lg shadow-amber-200'
                           : meal.relativeHours === -1.5
-                          ? 'bg-red-100 border-2 border-red-300'
-                          : 'bg-amber-100 border-2 border-amber-300'
+                          ? 'bg-rose-100 border border-rose-300'
+                          : 'bg-amber-100 border border-amber-300'
                       }`}>
                         {meal.emoji}
                       </div>
@@ -236,22 +236,22 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                         meal.relativeHours === 0
                           ? 'bg-amber-200/60 border border-amber-300'
                           : meal.relativeHours === -1.5
-                          ? 'bg-red-50/80 border border-red-200'
+                          ? 'bg-rose-50/80 border border-rose-200'
                           : 'bg-white/60 border border-gray-200'
                       }`}>
                         <p className={`text-xs font-bold mb-1.5 ${
-                          meal.relativeHours === 0 ? 'text-amber-800' : meal.relativeHours === -1.5 ? 'text-red-700' : 'text-gray-700'
+                          meal.relativeHours === 0 ? 'text-amber-800' : meal.relativeHours === -1.5 ? 'text-rose-700' : 'text-gray-700'
                         }`}>
                           {meal.timeLabel}
                         </p>
 
                         {/* 迷你指標 */}
                         {(meal.carbs > 0 || meal.waterMl > 0) && (
-                          <div className="flex flex-wrap gap-2 mb-1.5 text-[10px]">
+                          <div className="flex flex-wrap gap-2 mb-1.5 text-[11px]">
                             {meal.carbs > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-gray-600">🍚 {meal.carbs}g</span>}
                             {meal.protein > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-gray-600">🥩 {meal.protein}g</span>}
                             {meal.waterMl > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-blue-600">💧 {meal.waterMl}ml</span>}
-                            {meal.sodiumMg > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-orange-600 font-bold">🧂 {meal.sodiumMg}mg</span>}
+                            {meal.sodiumMg > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-slate-600 font-bold">🧂 {meal.sodiumMg}mg</span>}
                           </div>
                         )}
 
@@ -264,8 +264,8 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
 
                         {/* 說明 */}
                         {meal.note && (
-                          <p className={`mt-1.5 text-[10px] leading-relaxed ${
-                            meal.relativeHours === -1.5 ? 'text-red-500 font-medium' : 'text-gray-400'
+                          <p className={`mt-1.5 text-[11px] leading-relaxed ${
+                            meal.relativeHours === -1.5 ? 'text-rose-500 font-medium' : 'text-gray-400'
                           }`}>
                             {meal.note}
                           </p>
@@ -278,14 +278,14 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
 
               {/* 比賽日總計 */}
               <div className="mt-3 bg-gray-900 rounded-xl px-4 py-3">
-                <p className="text-[10px] text-gray-400 mb-1.5">比賽日總計</p>
+                <p className="text-[11px] text-gray-400 mb-1.5">比賽日總計</p>
                 <div className="flex justify-between text-xs">
                   <span className="text-white">🍚 {focusPlan.carbs}g</span>
                   <span className="text-white">🥩 {focusPlan.protein}g</span>
                   <span className="text-blue-300">💧 ~{(focusPlan.water / 1000).toFixed(1)}L</span>
-                  <span className="text-orange-300 font-bold">🧂 ~{focusPlan.sodiumMg}mg</span>
+                  <span className="text-slate-300 font-bold">🧂 ~{focusPlan.sodiumMg}mg</span>
                 </div>
-                <p className="text-[10px] text-gray-500 mt-1">鈉大部分集中在上台前 1.5 小時</p>
+                <p className="text-[11px] text-gray-500 mt-1">鈉大部分集中在上台前 1.5 小時</p>
               </div>
             </div>
           ) : (
@@ -378,7 +378,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
 
       {/* 表格式總覽 — 一眼看出每天的差異 */}
       <div className="overflow-x-auto -mx-2 px-2 mb-4">
-        <table className="w-full text-[10px] border-collapse">
+        <table className="w-full text-[11px] border-collapse">
           <thead>
             <tr className="text-gray-400">
               <th className="text-left py-1 px-1.5 font-medium">日期</th>
@@ -413,7 +413,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                     </span>
                   </td>
                   <td className="py-1.5 px-1.5">
-                    <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${colors.badge}`}>
+                    <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-bold ${colors.badge}`}>
                       {phaseLabels[day.phase]}
                     </span>
                   </td>
@@ -450,7 +450,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
 
             return (
               <div key={day.date} className="text-center">
-                <p className="text-[10px] text-gray-400 mb-1">{dateLabel}</p>
+                <p className="text-[11px] text-gray-400 mb-1">{dateLabel}</p>
                 <input
                   type="number"
                   step="0.1"
@@ -469,15 +469,15 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                     }
                   }}
                   placeholder="--"
-                  className={`w-full text-center text-xs px-1 py-1.5 rounded-lg border ${isSpillover ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'} focus:outline-none focus:ring-1 focus:ring-blue-400`}
+                  className={`w-full text-center text-xs px-1 py-1.5 rounded-lg border tabular-nums ${isSpillover ? 'border-rose-400 bg-rose-50' : 'border-gray-200 bg-white'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
                 />
-                {gain !== null && <p className={`text-[9px] mt-0.5 ${gain > 0 ? 'text-orange-500' : 'text-green-500'}`}>{gain > 0 ? '+' : ''}{gain.toFixed(1)}</p>}
+                {gain !== null && <p className={`text-[11px] mt-0.5 tabular-nums ${gain > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{gain > 0 ? '+' : ''}{gain.toFixed(1)}</p>}
               </div>
             )
           })}
         </div>
         {spilloverNote && (
-          <div className="mt-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 flex items-start gap-1.5">
+          <div className="mt-2 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 text-xs text-rose-700 flex items-start gap-1.5">
             <span className="shrink-0">⚠️</span>
             <span>{spilloverNote}</span>
           </div>
@@ -500,7 +500,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
               <button
                 onClick={() => setExpandedDay(isExpanded ? null : idx)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${
-                  isFocus ? `${colors.bg} ${colors.border} border-2 shadow-sm`
+                  isFocus ? `${colors.bg} ${colors.border} border shadow-sm`
                   : isPast ? 'bg-gray-50 opacity-60'
                   : 'bg-gray-50 hover:bg-gray-100'
                 }`}
@@ -509,14 +509,14 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                   <p className={`text-xs font-bold ${isFocus ? colors.text : 'text-gray-500'}`}>
                     {dateLabel}
                   </p>
-                  <p className="text-[10px] text-gray-400">({weekDayLabel})</p>
+                  <p className="text-[11px] text-gray-400">({weekDayLabel})</p>
                 </div>
 
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${colors.badge}`}>
+                <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${colors.badge}`}>
                   {phaseLabels[day.phase]}
                 </span>
 
-                <div className="flex-1 flex items-center gap-2 text-[10px] text-gray-500 flex-wrap">
+                <div className="flex-1 flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
                   <span>🍚{day.carbs}g</span>
                   <span>🔥{day.calories}</span>
                   <span className="text-blue-500 font-semibold">💧{(day.water / 1000).toFixed(1)}L</span>
@@ -536,7 +536,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                     <div><span className="text-gray-500">脂肪：</span><strong>{day.fat}g</strong></div>
                     <div><span className="text-gray-500">熱量：</span><strong>{day.calories} kcal</strong></div>
                     <div><span className="text-blue-600">飲水：</span><strong className="text-blue-700">{(day.water / 1000).toFixed(1)}L</strong></div>
-                    <div><span className="text-orange-600">鈉：</span><strong className="text-orange-700">{day.sodiumMg}mg</strong></div>
+                    <div><span className="text-slate-600">鈉：</span><strong className="text-slate-700 tabular-nums">{day.sodiumMg}mg</strong></div>
                   </div>
 
                   {/* 比賽日展開：顯示簡化時間軸 */}
@@ -549,10 +549,10 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                           <div>
                             <p className="font-medium text-gray-700">{meal.timeLabel}</p>
                             <div className="flex flex-wrap gap-1.5 my-0.5">
-                              {meal.carbs > 0 && <span className="text-[10px] text-gray-500">🍚{meal.carbs}g</span>}
-                              {meal.protein > 0 && <span className="text-[10px] text-gray-500">🥩{meal.protein}g</span>}
-                              {meal.waterMl > 0 && <span className="text-[10px] text-blue-500">💧{meal.waterMl}ml</span>}
-                              {meal.sodiumMg > 0 && <span className="text-[10px] text-orange-500 font-bold">🧂{meal.sodiumMg}mg</span>}
+                              {meal.carbs > 0 && <span className="text-[11px] text-gray-500">🍚{meal.carbs}g</span>}
+                              {meal.protein > 0 && <span className="text-[11px] text-gray-500">🥩{meal.protein}g</span>}
+                              {meal.waterMl > 0 && <span className="text-[11px] text-blue-500">💧{meal.waterMl}ml</span>}
+                              {meal.sodiumMg > 0 && <span className="text-[11px] text-slate-600 font-bold">🧂{meal.sodiumMg}mg</span>}
                             </div>
                             <div className="text-gray-500">
                               {meal.items.map((item, j) => <p key={j}>• {item}</p>)}
@@ -560,7 +560,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                           </div>
                         </div>
                       ))}
-                      <p className="text-[10px] text-amber-600 font-medium mt-1">{day.sodiumNote}</p>
+                      <p className="text-[11px] text-amber-600 font-medium mt-1">{day.sodiumNote}</p>
                     </div>
                   ) : (
                     <div className="space-y-1.5 text-[11px] text-gray-600 border-t border-gray-200 pt-2">
@@ -611,7 +611,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
       </div>
 
       <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-3">
-        <p className="text-[10px] text-gray-500 leading-relaxed">
+        <p className="text-[11px] text-gray-500 leading-relaxed">
           此計畫由系統根據文獻公式自動產生，僅供教練與選手參考，不構成醫療建議。Peak Week 涉及水分與鈉操作，請務必在教練監督下執行。
         </p>
       </div>

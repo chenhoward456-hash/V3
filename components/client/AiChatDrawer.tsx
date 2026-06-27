@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { X, Send, Camera } from 'lucide-react'
-import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
+import { daysUntilDateTW, DAY_MS, getLocalDateStr } from '@/lib/date-utils'
+import { projectWeightVerdict } from '@/lib/comp-projection'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -370,6 +371,7 @@ export default function AiChatDrawer({
     return `你是 Howard Protocol 的 AI 健康顧問助手。你正在協助一位學員規劃飲食和健康管理。
 
 ## 學員資料
+- 今天日期：${getLocalDateStr()}（請以此判斷哪些日期已過、哪些還沒到；不要把已過的日期講成「即將到來」）
 - 姓名：${clientName}
 - 性別：${gender || '未設定'}
 - 目標：${goalType === 'cut' ? '減脂' : goalType === 'bulk' ? '增肌' : '未設定'}
@@ -484,12 +486,19 @@ ${nutritionEngineStatus.warnings.length > 0 ? `- 注意：${nutritionEngineStatu
 ` : ''}${(() => {
   const dl = nutritionEngineStatus?.deadlineInfo
   if (!dl || dl.daysLeft > 90) return ''
+  // 預估比賽體重一律用與「備賽作戰室」相同的投影(projectWeightVerdict)，避免 AI 講出跟作戰室不一樣的數字
+  const wv = (competitionDate && targetWeight != null)
+    ? projectWeightVerdict((weightTrend || []).map(w => ({ date: w.date, value: w.weight })), competitionDate, targetWeight)
+    : null
+  const predictedCompLine = wv
+    ? `- 預估比賽體重：${wv.projected.toFixed(1)} kg（與作戰室一致；體重主導判定）`
+    : (dl.predictedCompWeight ? `- 預估比賽體重：${dl.predictedCompWeight} kg` : '')
   return `## 目標進度分析
 - 剩餘 ${dl.daysLeft} 天 / ${dl.weeksLeft ?? Math.round(dl.daysLeft / 7 * 10) / 10} 週
 - 還需${dl.weightToLose > 0 ? '減' : '增'} ${Math.abs(dl.weightToLose).toFixed(1)} kg
 - 每週需${dl.weightToLose > 0 ? '減' : '增'} ${Math.abs(dl.requiredRatePerWeek).toFixed(2)} kg/週
 ${dl.safetyLevel ? `- 安全等級：${dl.safetyLevel}` : dl.isAggressive ? '- 安全等級：超過安全範圍' : '- 安全等級：正常'}
-${dl.predictedCompWeight ? `- 預估比賽體重：${dl.predictedCompWeight} kg` : ''}
+${predictedCompLine}
 ${dl.suggestedCardioMinutes ? `- 建議有氧：${dl.suggestedCardioMinutes} 分/天` : ''}
 ${dl.cardioNote ? `- ${dl.cardioNote}` : ''}
 `
@@ -604,6 +613,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
     - 這是你最重要的功能之一，讓學員不需要自己查食物資料庫
 16. 當學員問體重變化（變重/變輕/停滯）時，優先引用體重趨勢數據回答，結合飲食合規率、睡眠、水分等因素分析原因
 17. 如果有教練備註，你的建議方向要跟教練一致，不要與教練的評估矛盾
+17b. **絕不編造具體日期、絕不把過去當未來**：context 最上方有「今天日期」。不要自己生出抽血日、回診日、或任何具體日曆日期（例如「2026-06-14 抽血」）；尤其不要把「今天日期」之前的日期講成「即將」「這週末」「該去」。要建議時間時，一律用相對描述（「比賽前 2-3 週」「最後衝刺階段」「下次回檢時」），或只引用 context 明確提供且尚未過期的日期。編造或搞錯日期會誤導學員、損害信任。
 18. **Peak Week 問題**：如果學員在 Peak Week 階段，你需要理解並解釋以下機制：
     - 耗竭期（比賽前 7-4 天）：碳水極低（1.1g/kg），但水載（75mL/kg）和鈉（3000mg）刻意維持高量，目的是壓制 ADH（抗利尿激素）。此階段體重不掉甚至微漲是正常的，因為在大量灌水。要告訴學員：「耗竭期的目的是清空肝醣，不是讓體重掉。體重是 Taper 那天的事。」
     - 超補期（比賽前 3-2 天）：碳水爆量（男 9.0g/kg、女 6.5g/kg），每 1g 碳水帶 3-4g 水進肌肉，體重會上升 1-3kg，這是肌肉飽滿的表現，不是變胖。
@@ -937,7 +947,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
         style={{ maxHeight: '85vh', paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -947,7 +957,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
             <div>
               <p className="text-sm font-semibold text-gray-900">AI 私人顧問</p>
               {remaining.length > 0 && (
-                <p className="text-[10px] text-gray-400">今日還需：{remaining.join('、')}</p>
+                <p className="text-[11px] text-gray-400">今日還需：{remaining.join('、')}</p>
               )}
             </div>
           </div>
@@ -957,11 +967,11 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
         </div>
 
         {/* AI Disclaimer + 免費額度進度 */}
-        <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 shrink-0">
+        <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 shrink-0">
           <p className="text-[11px] text-gray-400 text-center">AI 建議僅供參考，不構成醫療診斷或治療建議</p>
           {freeUsage && (
             <p className={`text-[11px] text-center mt-1 font-medium ${
-              freeUsage.used >= freeUsage.limit ? 'text-red-500'
+              freeUsage.used >= freeUsage.limit ? 'text-rose-600'
               : freeUsage.used === freeUsage.limit - 1 ? 'text-amber-600'
               : 'text-gray-400'
             }`}>
@@ -986,7 +996,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
                   <button
                     key={q}
                     onClick={() => { setInput(q); inputRef.current?.focus() }}
-                    className="w-full text-left text-sm text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-[#2563eb] px-4 py-2.5 rounded-xl transition-colors border border-gray-100"
+                    className="w-full text-left text-sm text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-[#2563eb] px-4 py-2.5 rounded-xl transition-colors border border-slate-200"
                   >
                     {q}
                   </button>
@@ -1014,7 +1024,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
 
           {quotaExceeded && (
             <div className="max-w-[90%] ml-1">
-              <div className="bg-gradient-to-b from-blue-50 to-white border border-blue-200 rounded-2xl p-5 mb-2">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-2">
                 <p className="text-sm font-bold text-gray-900 mb-2">本月 3 次免費分析已達上限</p>
                 <p className="text-[13px] text-gray-600 leading-relaxed mb-4">
                   你應該有發現，AI 剛剛是根據你「今天的剩餘熱量」與「這週的減脂進度」在幫你算——這不是外面網路上查得到的通用答案。
@@ -1028,13 +1038,13 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
                     className="block w-full text-center bg-blue-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-blue-700 transition-colors text-sm"
                   >
                     解鎖無上限 AI 顧問 — NT$499/月
-                    <span className="block text-[10px] font-normal opacity-80 mt-0.5">讓系統繼續幫你推進進度</span>
+                    <span className="block text-[11px] font-normal opacity-80 mt-0.5">讓系統繼續幫你推進進度</span>
                   </a>
                   <a
                     href="https://lin.ee/LP65rCc"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block w-full text-center text-gray-500 font-medium py-2.5 px-4 rounded-xl hover:bg-gray-100 transition-colors text-sm border border-gray-200"
+                    className="block w-full text-center text-gray-500 font-medium py-2.5 px-4 rounded-xl hover:bg-gray-100 transition-colors text-sm border border-slate-200"
                   >
                     或加 LINE 與 Howard 討論方案
                   </a>
@@ -1059,7 +1069,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
         </div>
 
         {/* Input */}
-        <div className="border-t border-gray-100 px-3 py-2.5 shrink-0">
+        <div className="border-t border-slate-200 px-3 py-2.5 shrink-0">
           {/* Coach quick prompts — 永遠顯示（不只是 empty state）*/}
           {isCoachMode && messages.length > 0 && quickQuestions.length > 0 && (
             <div className="mb-2 -mx-1 px-1 flex gap-1.5 overflow-x-auto pb-1">
@@ -1067,7 +1077,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
                 <button
                   key={q}
                   onClick={() => { setInput(q); inputRef.current?.focus() }}
-                  className="text-[11px] bg-indigo-50 hover:bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full whitespace-nowrap border border-indigo-200 shrink-0"
+                  className="text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full whitespace-nowrap border border-blue-200 shrink-0"
                 >
                   {q}
                 </button>
@@ -1080,7 +1090,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
               <img src={pendingImagePreview} alt="預覽" className="h-20 rounded-xl border border-gray-200" />
               <button
                 onClick={clearPendingImage}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs shadow-sm"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center text-xs shadow-sm"
               >
                 <X size={12} />
               </button>
@@ -1099,7 +1109,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={loading}
-              className="p-2.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-[#2563eb] transition-colors disabled:opacity-40 flex-shrink-0"
+              className="p-2.5 rounded-xl border border-slate-200 text-gray-500 hover:bg-gray-50 hover:text-[#2563eb] transition-colors disabled:opacity-40 flex-shrink-0"
               title="拍照或選擇圖片"
             >
               <Camera size={16} />
@@ -1111,7 +1121,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
               onKeyDown={handleKeyDown}
               placeholder={pendingImage ? '描述這餐吃了什麼（選填）...' : '問我今天怎麼吃...'}
               rows={1}
-              className="flex-1 resize-none px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#2563eb] transition-colors"
+              className="flex-1 resize-none px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#2563eb] transition-colors"
             />
             <button
               onClick={handleSend}
@@ -1121,7 +1131,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
               <Send size={16} />
             </button>
           </div>
-          <p className="text-[10px] text-gray-400 mt-1.5 text-center">
+          <p className="text-[11px] text-gray-400 mt-1.5 text-center">
             拍照估算營養素，或問任何跟你數據有關的問題
           </p>
         </div>

@@ -284,6 +284,7 @@ export async function GET(request: NextRequest) {
           trainingDaysPerWeek,
           prepPhase: client.prep_phase || undefined,
           clientMode: (client.client_mode as 'standard' | 'health' | 'bodybuilding' | 'athletic') || undefined,
+          coachManaged: client.subscription_tier === 'coached' || client.subscription_tier === 'protocol',
           weighInGapHours: (client as any).weigh_in_gap_hours ?? undefined,
           activityProfile: client.activity_profile || undefined,
           recentWellness: clientWellness.map((w: { date: string; energy_level: number | null; training_drive: number | null; device_recovery_score: number | null; resting_hr: number | null; hrv: number | null; wearable_sleep_score: number | null; respiratory_rate: number | null }) => ({

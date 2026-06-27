@@ -13,17 +13,17 @@ import { TRAINING_TYPES } from '@/components/client/types'
 
 const getTypeBgColor = (type: string) => {
   const colors: Record<string, string> = {
-    push: 'bg-red-100', pull: 'bg-blue-100', legs: 'bg-green-100',
-    full_body: 'bg-purple-100', cardio: 'bg-orange-100', chest: 'bg-pink-100',
-    shoulder: 'bg-indigo-100', arms: 'bg-yellow-100', rest: 'bg-gray-100',
+    push: 'bg-slate-100', pull: 'bg-slate-100', legs: 'bg-slate-100',
+    full_body: 'bg-slate-100', cardio: 'bg-slate-100', chest: 'bg-slate-100',
+    shoulder: 'bg-slate-100', arms: 'bg-slate-100', rest: 'bg-slate-100',
   }
-  return colors[type] || 'bg-gray-100'
+  return colors[type] || 'bg-slate-100'
 }
 const getTypeEmoji = (type: string) => TRAINING_TYPES.find(t => t.value === type)?.emoji || ''
 const getStatusColor = (status: string) => {
-  if (status === 'normal') return 'bg-green-100 text-green-700'
-  if (status === 'attention') return 'bg-yellow-100 text-yellow-700'
-  return 'bg-red-100 text-red-700'
+  if (status === 'normal') return 'bg-emerald-50 text-emerald-700'
+  if (status === 'attention') return 'bg-amber-50 text-amber-700'
+  return 'bg-rose-50 text-rose-700'
 }
 
 const fmtDate = (iso: string) =>
@@ -495,7 +495,7 @@ export default function ClientOverviewPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href={`/c/${clientId}`} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
             <ChevronLeft size={20} />
@@ -511,37 +511,37 @@ export default function ClientOverviewPage() {
         <div className="bg-zinc-900 rounded-2xl p-5 text-white">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-400 font-semibold">{c.name}</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-400 font-semibold">{c.name}</p>
               <div className="flex items-baseline gap-2 mt-2">
                 <span className="text-5xl font-black tracking-tight tabular-nums">{streak}</span>
                 <span className="text-xs text-zinc-400">天連續打卡</span>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500">累積</p>
+              <p className="text-[11px] uppercase tracking-wider text-zinc-500">累積</p>
               <p className="text-3xl font-black tabular-nums">{Math.max(totalTrainingDays, totalWeighIns, wellness.length)}</p>
-              <p className="text-[10px] text-zinc-500">天</p>
+              <p className="text-[11px] text-zinc-500">天</p>
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-white/10">
             <div>
               <p className="text-xl font-bold tabular-nums">{totalTrainingDays}</p>
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">訓練</p>
+              <p className="text-[11px] uppercase tracking-wider text-zinc-500 mt-0.5">訓練</p>
             </div>
             <div>
               <p className="text-xl font-bold tabular-nums">{totalWeighIns}</p>
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">量測</p>
+              <p className="text-[11px] uppercase tracking-wider text-zinc-500 mt-0.5">量測</p>
             </div>
             <div>
               <p className="text-xl font-bold tabular-nums">{wellness.length}</p>
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">感受</p>
+              <p className="text-[11px] uppercase tracking-wider text-zinc-500 mt-0.5">感受</p>
             </div>
           </div>
 
           {/* 本週一句話摘要 */}
           <div className="mt-4 pt-3 border-t border-white/10">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1.5">本週（近 7 天）</p>
+            <p className="text-[11px] uppercase tracking-wider text-zinc-500 mb-1.5">本週（近 7 天）</p>
             <p className="text-sm leading-relaxed text-zinc-200">
               訓練 <b>{weekSummary.trainDays}</b> 天
               {weekSummary.weightDelta != null && (
@@ -563,7 +563,7 @@ export default function ClientOverviewPage() {
         {(goalProgress || weeklyWeight) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {goalProgress && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">🎯 目標進度</h3>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold text-gray-900">{goalProgress.current.toFixed(1)}</span>
@@ -571,9 +571,9 @@ export default function ClientOverviewPage() {
                 </div>
                 <p className={`text-sm mt-2 ${
                   goalProgress.direction === 'down'
-                    ? goalProgress.diff > 0 ? 'text-amber-600' : 'text-green-600'
+                    ? goalProgress.diff > 0 ? 'text-amber-600' : 'text-emerald-600'
                     : goalProgress.direction === 'up'
-                      ? goalProgress.diff < 0 ? 'text-amber-600' : 'text-green-600'
+                      ? goalProgress.diff < 0 ? 'text-amber-600' : 'text-emerald-600'
                       : 'text-gray-600'
                 }`}>
                   {goalProgress.diff > 0 ? `還差 ${goalProgress.diff.toFixed(1)} kg` : goalProgress.diff < 0 ? `已超過 ${Math.abs(goalProgress.diff).toFixed(1)} kg` : '達成目標'}
@@ -583,15 +583,15 @@ export default function ClientOverviewPage() {
                   　·　當前趨勢：{slopeText}
                 </p>
                 {goalInsight && (
-                  <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                    <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
+                  <div className="mt-3 pt-2 border-t border-slate-200 flex items-start gap-1.5">
+                    <span className="text-[11px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                     <p className="text-[11px] text-gray-600 leading-relaxed">{goalInsight}</p>
                   </div>
                 )}
               </div>
             )}
             {weeklyWeight && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">📈 週平均體重（8 週）</h3>
                 <ResponsiveContainer width="100%" height={140}>
                   <LineChart data={weeklyWeight.chartData}>
@@ -599,23 +599,23 @@ export default function ClientOverviewPage() {
                     <XAxis dataKey="label" fontSize={10} />
                     <YAxis fontSize={10} domain={['auto', 'auto']} />
                     <Tooltip />
-                    <Line type="monotone" dataKey="體重" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="體重" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
                 <div className="flex gap-4 mt-2 text-xs">
                   <span className="text-gray-600">本週：<b>{weeklyWeight.current.toFixed(1)} kg</b></span>
-                  <span className={weeklyWeight.delta1w! > 0 ? 'text-orange-600' : 'text-blue-600'}>
+                  <span className="text-slate-600 tabular-nums">
                     1週 {weeklyWeight.delta1w! > 0 ? '+' : ''}{weeklyWeight.delta1w!.toFixed(2)}
                   </span>
                   {weeklyWeight.delta4w != null && (
-                    <span className={weeklyWeight.delta4w > 0 ? 'text-orange-600' : 'text-blue-600'}>
+                    <span className="text-slate-600 tabular-nums">
                       4週 {weeklyWeight.delta4w > 0 ? '+' : ''}{weeklyWeight.delta4w.toFixed(2)}
                     </span>
                   )}
                 </div>
                 {weeklyWeightInsight && (
-                  <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                    <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
+                  <div className="mt-3 pt-2 border-t border-slate-200 flex items-start gap-1.5">
+                    <span className="text-[11px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                     <p className="text-[11px] text-gray-600 leading-relaxed">{weeklyWeightInsight}</p>
                   </div>
                 )}
@@ -628,7 +628,7 @@ export default function ClientOverviewPage() {
         {c.body_composition_enabled && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {bodyTrend.weight.length >= 2 ? (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">⚖️ 體重趨勢（每日）</h3>
                 <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={bodyTrend.weight}>
@@ -636,18 +636,18 @@ export default function ClientOverviewPage() {
                     <XAxis dataKey="date" fontSize={11} />
                     <YAxis fontSize={11} domain={['auto', 'auto']} />
                     <Tooltip />
-                    <Line type="monotone" dataKey="體重" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="體重" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">⚖️ 體重趨勢</h3>
                 <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">資料不足（至少 2 筆）</div>
               </div>
             )}
             {bodyTrend.bodyFat.length >= 2 && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">📉 體脂趨勢</h3>
                 <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={bodyTrend.bodyFat}>
@@ -655,7 +655,7 @@ export default function ClientOverviewPage() {
                     <XAxis dataKey="date" fontSize={11} />
                     <YAxis fontSize={11} domain={['auto', 'auto']} />
                     <Tooltip />
-                    <Line type="monotone" dataKey="體脂" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="體脂" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -666,7 +666,7 @@ export default function ClientOverviewPage() {
         {/* 訓練日曆 + 分佈 */}
         {c.training_enabled && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="bg-white rounded-2xl shadow-sm p-5 lg:col-span-2">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 lg:col-span-2">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">🗓️ 訓練日曆（6 週）</h3>
               <div className="space-y-1">
                 <div className="grid grid-cols-7 gap-1 mb-1">
@@ -686,7 +686,7 @@ export default function ClientOverviewPage() {
                         }`}
                         title={log ? `${TRAINING_TYPES.find(t => t.value === log.training_type)?.label}${log.rpe ? ' · RPE' + log.rpe : ''}` : ''}
                       >
-                        <span className="text-[10px] leading-none">{label}</span>
+                        <span className="text-[11px] leading-none">{label}</span>
                         <span className="text-sm leading-none mt-0.5">{!isFuture && log ? getTypeEmoji(log.training_type) : ''}</span>
                       </div>
                     ))}
@@ -695,7 +695,7 @@ export default function ClientOverviewPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm p-5">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">📊 訓練分佈</h3>
               {trainingDistribution.length > 0 ? (
                 <ResponsiveContainer width="100%" height={200}>
@@ -704,7 +704,7 @@ export default function ClientOverviewPage() {
                     <XAxis type="number" fontSize={11} />
                     <YAxis type="category" dataKey="name" fontSize={11} width={40} />
                     <Tooltip />
-                    <Bar dataKey="次數" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="次數" fill="#2563eb" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -716,7 +716,7 @@ export default function ClientOverviewPage() {
 
         {/* RPE */}
         {c.training_enabled && rpeTrend.length >= 2 && (
-          <div className="bg-white rounded-2xl shadow-sm p-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">💥 RPE 趨勢（訓練強度感受）</h3>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={rpeTrend}>
@@ -724,11 +724,11 @@ export default function ClientOverviewPage() {
                 <XAxis dataKey="date" fontSize={11} />
                 <YAxis domain={[0, 10]} ticks={[2, 4, 6, 8, 10]} fontSize={11} />
                 <Tooltip formatter={(v: any, _: any, props: any) => [`RPE ${v}（${props.payload.type}）`, '']} />
-                <Line type="monotone" dataKey="RPE" stroke="#ef4444" strokeWidth={2} dot={{ r: 4, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 }} />
+                <Line type="monotone" dataKey="RPE" stroke="#f43f5e" strokeWidth={2} dot={{ r: 4, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }} />
               </LineChart>
             </ResponsiveContainer>
             {rpeInsight && (
-              <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
+              <div className="mt-3 pt-2 border-t border-slate-200 flex items-start gap-1.5">
                 <span className="text-xs">💡</span>
                 <p className="text-[11px] text-gray-600 leading-relaxed">{rpeInsight}</p>
               </div>
@@ -740,7 +740,7 @@ export default function ClientOverviewPage() {
         {c.nutrition_enabled && (proteinTrend.length >= 2 || waterTrend.length >= 2 || caloriesTrend.length >= 2) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {caloriesTrend.length >= 2 && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">🔥 卡路里攝取（30 天）</h3>
                 <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={caloriesTrend}>
@@ -749,13 +749,13 @@ export default function ClientOverviewPage() {
                     <YAxis fontSize={10} />
                     <Tooltip />
                     {c.calories_target && <ReferenceLine y={Number(c.calories_target)} stroke="#10b981" strokeDasharray="3 3" label={{ value: `目標 ${c.calories_target}`, fontSize: 10, fill: '#10b981' }} />}
-                    <Line type="monotone" dataKey="卡路里" stroke="#f97316" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="卡路里" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
             {proteinTrend.length >= 2 && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">🥩 蛋白質攝取（30 天）</h3>
                 <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={proteinTrend}>
@@ -764,13 +764,13 @@ export default function ClientOverviewPage() {
                     <YAxis fontSize={10} />
                     <Tooltip />
                     {c.protein_target && <ReferenceLine y={Number(c.protein_target)} stroke="#10b981" strokeDasharray="3 3" label={{ value: `目標 ${c.protein_target}g`, fontSize: 10, fill: '#10b981' }} />}
-                    <Line type="monotone" dataKey="蛋白質" stroke="#dc2626" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="蛋白質" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
             {waterTrend.length >= 2 && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">💧 飲水量（30 天）</h3>
                 <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={waterTrend}>
@@ -779,7 +779,7 @@ export default function ClientOverviewPage() {
                     <YAxis fontSize={10} />
                     <Tooltip />
                     {c.water_target && <ReferenceLine y={Number(c.water_target)} stroke="#10b981" strokeDasharray="3 3" label={{ value: `目標 ${c.water_target}ml`, fontSize: 10, fill: '#10b981' }} />}
-                    <Line type="monotone" dataKey="飲水ml" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="飲水ml" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -792,15 +792,15 @@ export default function ClientOverviewPage() {
           <>
             <div className="pt-3 pb-1">
               <div className="flex items-center gap-2">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-indigo-300 to-transparent" />
-                <span className="text-xs font-semibold text-indigo-600 px-2">👨‍🏫 教練指導 · 進階分析</span>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-indigo-300 to-transparent" />
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-xs font-semibold text-slate-600 px-2">👨‍🏫 教練指導 · 進階分析</span>
+                <div className="h-px flex-1 bg-slate-200" />
               </div>
             </div>
 
             {/* E1RM */}
             {e1rmTrend.length >= 2 && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">💪 主項力量 E1RM（前 3 大動作）</h3>
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={e1rmTrend}>
@@ -810,15 +810,15 @@ export default function ClientOverviewPage() {
                     <Tooltip />
                     <Legend />
                     {Object.keys(e1rmTrend[0] || {}).filter(k => k !== 'date').map((k, i) => {
-                      const colors = ['#6366f1', '#ef4444', '#10b981']
+                      const colors = ['#2563eb', '#64748b', '#94a3b8']
                       return <Line key={k} type="monotone" dataKey={k} stroke={colors[i % 3]} strokeWidth={2} dot={{ r: 3 }} connectNulls />
                     })}
                   </LineChart>
                 </ResponsiveContainer>
-                <p className="text-[10px] text-gray-400 mt-2">Brzycki 公式估算最大肌力（kg）</p>
+                <p className="text-[11px] text-gray-400 mt-2">Brzycki 公式估算最大肌力（kg）</p>
                 {e1rmInsight && (
-                  <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                    <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
+                  <div className="mt-3 pt-2 border-t border-slate-200 flex items-start gap-1.5">
+                    <span className="text-[11px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                     <p className="text-[11px] text-gray-600 leading-relaxed">{e1rmInsight}</p>
                   </div>
                 )}
@@ -828,7 +828,7 @@ export default function ClientOverviewPage() {
             {/* 每週訓練量 + 肌群分佈 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {weeklyTonnage.length >= 2 && (
-                <div className="bg-white rounded-2xl shadow-sm p-5">
+                <div className="bg-white border border-slate-200 rounded-2xl p-5">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">📈 每週訓練量</h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={weeklyTonnage}>
@@ -836,20 +836,20 @@ export default function ClientOverviewPage() {
                       <XAxis dataKey="week" fontSize={10} />
                       <YAxis fontSize={10} />
                       <Tooltip formatter={(v: any) => [`${v.toLocaleString()} kg`, '訓練量']} />
-                      <Bar dataKey="訓練量" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="訓練量" fill="#2563eb" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                  <p className="text-[10px] text-gray-400 mt-2">總訓練量 = Σ (重量 × 次數)</p>
+                  <p className="text-[11px] text-gray-400 mt-2">總訓練量 = Σ (重量 × 次數)</p>
                   {tonnageInsight && (
-                    <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                      <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
+                    <div className="mt-3 pt-2 border-t border-slate-200 flex items-start gap-1.5">
+                      <span className="text-[11px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                       <p className="text-[11px] text-gray-600 leading-relaxed">{tonnageInsight}</p>
                     </div>
                   )}
                 </div>
               )}
               {muscleVolume.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-sm p-5">
+                <div className="bg-white border border-slate-200 rounded-2xl p-5">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">🎯 本週肌群組數</h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={muscleVolume} layout="vertical">
@@ -859,15 +859,15 @@ export default function ClientOverviewPage() {
                       <Tooltip />
                       <Bar dataKey="組數" fill="#10b981" radius={[0, 4, 4, 0]}>
                         {muscleVolume.map((entry, i) => (
-                          <Cell key={i} fill={entry.組數 >= 10 ? '#10b981' : entry.組數 >= 6 ? '#f59e0b' : '#9ca3af'} />
+                          <Cell key={i} fill={entry.組數 >= 10 ? '#10b981' : entry.組數 >= 6 ? '#f59e0b' : '#94a3b8'} />
                         ))}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
-                  <p className="text-[10px] text-gray-400 mt-2">綠色：≥10 組 · 黃色：6-9 組 · 灰：&lt;6 組</p>
+                  <p className="text-[11px] text-gray-400 mt-2">綠色：≥10 組 · 黃色：6-9 組 · 灰：&lt;6 組</p>
                   {muscleInsight && (
-                    <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                      <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
+                    <div className="mt-3 pt-2 border-t border-slate-200 flex items-start gap-1.5">
+                      <span className="text-[11px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                       <p className="text-[11px] text-gray-600 leading-relaxed">{muscleInsight}</p>
                     </div>
                   )}
@@ -877,18 +877,18 @@ export default function ClientOverviewPage() {
 
             {/* 血檢 */}
             {c.lab_enabled && latestLabs.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">🩸 血檢指標（最新）</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {latestLabs.map((lab) => (
-                    <div key={lab.id} className="border border-gray-100 rounded-xl p-3">
+                    <div key={lab.id} className="border border-slate-200 rounded-xl p-3">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-gray-900">{lab.test_name}</span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(lab.status)}`}>
                           {lab.status === 'normal' ? '正常' : lab.status === 'attention' ? '注意' : '警示'}
                         </span>
                       </div>
-                      <p className="text-2xl font-bold text-gray-900">{lab.value} <span className="text-sm font-normal text-gray-500">{lab.unit}</span></p>
+                      <p className="text-2xl font-bold text-gray-900 tabular-nums">{lab.value} <span className="text-sm font-normal text-gray-500">{lab.unit}</span></p>
                       <p className="text-xs text-gray-400 mt-1">參考：{lab.reference_range} · {new Date(lab.date).toLocaleDateString('zh-TW')}</p>
                     </div>
                   ))}
@@ -898,7 +898,7 @@ export default function ClientOverviewPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {c.supplement_enabled && (
-                <div className="bg-white rounded-2xl shadow-sm p-5">
+                <div className="bg-white border border-slate-200 rounded-2xl p-5">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">💊 補品服從率（14 天）</h3>
                   {complianceTrend.length >= 2 ? (
                     <ResponsiveContainer width="100%" height={200}>
@@ -907,22 +907,22 @@ export default function ClientOverviewPage() {
                         <XAxis dataKey="date" fontSize={11} />
                         <YAxis domain={[0, 100]} fontSize={11} />
                         <Tooltip formatter={(v: any) => [`${v}%`, '服從率']} />
-                        <Line type="monotone" dataKey="服從率" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="服從率" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
                     <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">資料不足</div>
                   )}
                   {complianceInsight && (
-                    <div className="mt-3 pt-2 border-t border-gray-100 flex items-start gap-1.5">
-                      <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
+                    <div className="mt-3 pt-2 border-t border-slate-200 flex items-start gap-1.5">
+                      <span className="text-[11px] uppercase tracking-wider font-semibold text-emerald-600">解讀</span>
                       <p className="text-[11px] text-gray-600 leading-relaxed">{complianceInsight}</p>
                     </div>
                   )}
                 </div>
               )}
               {c.wellness_enabled && (
-                <div className="bg-white rounded-2xl shadow-sm p-5">
+                <div className="bg-white border border-slate-200 rounded-2xl p-5">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">😊 感受趨勢（30 天）</h3>
                   {wellnessTrend.length >= 2 ? (
                     <ResponsiveContainer width="100%" height={200}>
@@ -932,9 +932,9 @@ export default function ClientOverviewPage() {
                         <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} fontSize={11} />
                         <Tooltip />
                         <Legend />
-                        <Line type="monotone" dataKey="睡眠" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} />
-                        <Line type="monotone" dataKey="精力" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} />
-                        <Line type="monotone" dataKey="心情" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} />
+                        <Line type="monotone" dataKey="睡眠" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} />
+                        <Line type="monotone" dataKey="精力" stroke="#64748b" strokeWidth={2} dot={{ r: 2 }} />
+                        <Line type="monotone" dataKey="心情" stroke="#94a3b8" strokeWidth={2} dot={{ r: 2 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
@@ -947,7 +947,7 @@ export default function ClientOverviewPage() {
         )}
 
         {/* 📚 延伸閱讀 — 對應 dashboard 各指標 */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-3">📚 想深入學原理？</h3>
           <p className="text-xs text-gray-500 mb-4">數字背後的科學，看完你會更知道在追什麼。</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -979,28 +979,28 @@ export default function ClientOverviewPage() {
                   key={a.slug}
                   href={`/blog/${a.slug}`}
                   target="_blank"
-                  className="group flex items-start gap-2 p-3 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
+                  className="group flex items-start gap-2 p-3 rounded-xl border border-slate-200 hover:border-blue-200 hover:bg-blue-50/30 transition-colors"
                 >
                   <span className="text-base flex-shrink-0">📖</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-indigo-500 font-medium mb-0.5">{a.metric}</p>
-                    <p className="text-xs text-gray-800 leading-snug group-hover:text-indigo-700">{a.title}</p>
+                    <p className="text-[11px] text-slate-500 font-medium mb-0.5">{a.metric}</p>
+                    <p className="text-xs text-gray-800 leading-snug group-hover:text-blue-700">{a.title}</p>
                   </div>
-                  <span className="text-gray-300 group-hover:text-indigo-500 flex-shrink-0">→</span>
+                  <span className="text-gray-300 group-hover:text-blue-600 flex-shrink-0">→</span>
                 </Link>
               ))
             })()}
           </div>
-          <Link href="/blog" target="_blank" className="block mt-4 text-center text-xs text-indigo-600 hover:underline">
+          <Link href="/blog" target="_blank" className="block mt-4 text-center text-xs text-blue-600 hover:underline">
             看完整文章列表 →
           </Link>
         </div>
 
         {/* 499/自主管理 提示 */}
         {!isCoachGuided && (
-          <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
-            <p className="text-sm font-semibold text-indigo-900 mb-1">想看更深入的分析？</p>
-            <p className="text-xs text-indigo-700 leading-relaxed">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
+            <p className="text-sm font-semibold text-slate-900 mb-1">想看更深入的分析？</p>
+            <p className="text-xs text-slate-600 leading-relaxed">
               升級教練指導方案可解鎖主項力量 E1RM、每週訓練量、肌群分佈、血檢追蹤、補品服從率、感受趨勢分析，
               並有 Howard 親自為你解讀數據、調整方向。
             </p>

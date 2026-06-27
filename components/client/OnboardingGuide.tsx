@@ -152,7 +152,7 @@ export default function OnboardingGuide({ clientId, clientName, tier, features, 
     <>
       <div className="fixed inset-0 bg-black/50 z-[80] backdrop-blur-sm" onClick={dismiss} />
       <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[85] max-w-sm mx-auto">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           {/* Progress */}
           <div className="flex gap-1 px-6 pt-5">
             {activeSteps.map((_, i) => (

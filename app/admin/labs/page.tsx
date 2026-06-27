@@ -30,7 +30,7 @@ function MarkerPill({ m }: { m: Marker }) {
     <span className="inline-flex items-baseline gap-1 text-xs px-2 py-0.5 rounded-full bg-white/70 border border-gray-200">
       <span className="font-medium text-gray-800">{m.name}</span>
       <span className="text-gray-900 font-semibold">{m.value}{m.unit ? ` ${m.unit}` : ''}</span>
-      {m.optimal && <span className="text-[10px] text-gray-400">最佳 {m.optimal}</span>}
+      {m.optimal && <span className="text-[11px] text-gray-400">最佳 {m.optimal}</span>}
     </span>
   )
 }
@@ -108,8 +108,8 @@ export default function AdminLabsOverviewPage() {
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-medium text-gray-900 truncate">{c.name}</span>
-                      {c.criticalCount > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 font-medium shrink-0">{c.criticalCount} 警示</span>}
-                      {c.attentionCount > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium shrink-0">{c.attentionCount} 注意</span>}
+                      {c.criticalCount > 0 && <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 font-medium shrink-0">{c.criticalCount} 警示</span>}
+                      {c.attentionCount > 0 && <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium shrink-0">{c.attentionCount} 注意</span>}
                     </div>
                     <div className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
                       {c.latestDate && <span>{c.latestDate}</span>}

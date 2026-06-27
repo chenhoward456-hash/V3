@@ -821,7 +821,7 @@ export default function ClientEditor() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">找不到學員資料</h1>
-          {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
+          {error && <p className="text-rose-500 mb-4 text-sm">{error}</p>}
           <Link href="/admin" className="text-blue-600 hover:text-blue-800">
             返回後台
           </Link>
@@ -833,7 +833,7 @@ export default function ClientEditor() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -856,14 +856,14 @@ export default function ClientEditor() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
 
         {/* 保存成功 Toast */}
         {successMsg && (
-          <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-[slideIn_0.3s_ease-out]">
+          <div className="fixed top-4 right-4 z-50 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-[slideIn_0.3s_ease-out]">
             <span className="text-lg">✓</span>
             <span className="text-sm font-medium">{successMsg}</span>
           </div>
@@ -905,7 +905,7 @@ export default function ClientEditor() {
           const range = Math.max(maxAvg - minAvg, 0.5)
 
           return (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h2 className="text-sm font-semibold text-gray-900">📈 週平均體重</h2>
@@ -918,13 +918,13 @@ export default function ClientEditor() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
                 <div>
-                  <p className="text-[10px] text-gray-400 uppercase">本週平均</p>
-                  <p className="text-2xl font-bold text-gray-900">{current.avg!.toFixed(1)}<span className="text-sm font-normal text-gray-500 ml-1">kg</span></p>
-                  <p className="text-[10px] text-gray-400">{current.count} 筆紀錄</p>
+                  <p className="text-[11px] text-gray-400 uppercase">本週平均</p>
+                  <p className="text-2xl font-bold text-gray-900 tabular-nums">{current.avg!.toFixed(1)}<span className="text-sm font-normal text-gray-500 ml-1">kg</span></p>
+                  <p className="text-[11px] text-gray-400">{current.count} 筆紀錄</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-gray-400 uppercase">vs 上週</p>
-                  <p className={`text-lg font-semibold ${
+                  <p className="text-[11px] text-gray-400 uppercase">vs 上週</p>
+                  <p className={`text-lg font-semibold tabular-nums ${
                     delta1w == null ? 'text-gray-400'
                       : delta1w > 0 ? 'text-rose-600'
                       : delta1w < 0 ? 'text-emerald-600'
@@ -934,8 +934,8 @@ export default function ClientEditor() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-gray-400 uppercase">vs 4 週前</p>
-                  <p className={`text-lg font-semibold ${
+                  <p className="text-[11px] text-gray-400 uppercase">vs 4 週前</p>
+                  <p className={`text-lg font-semibold tabular-nums ${
                     delta4w == null ? 'text-gray-400'
                       : delta4w > 0 ? 'text-rose-600'
                       : delta4w < 0 ? 'text-emerald-600'
@@ -945,12 +945,12 @@ export default function ClientEditor() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-gray-400 uppercase">目標</p>
-                  <p className="text-lg font-semibold text-gray-900">
+                  <p className="text-[11px] text-gray-400 uppercase">目標</p>
+                  <p className="text-lg font-semibold text-gray-900 tabular-nums">
                     {target != null ? `${target} kg` : '未設定'}
                   </p>
                   {remainingToTarget != null && (
-                    <p className="text-[10px] text-gray-500">
+                    <p className="text-[11px] text-gray-500">
                       距 {remainingToTarget > 0 ? `−${remainingToTarget.toFixed(1)}` : `+${Math.abs(remainingToTarget).toFixed(1)}`} kg
                     </p>
                   )}
@@ -975,14 +975,14 @@ export default function ClientEditor() {
                   )
                 })}
               </div>
-              <div className="flex justify-between text-[10px] text-gray-400">
+              <div className="flex justify-between text-[11px] text-gray-400">
                 <span>7 週前</span>
                 <span>本週</span>
               </div>
 
               {/* 進度判讀 */}
               {(remainingDays != null || projectedDays != null) && (
-                <div className="mt-3 pt-3 border-t border-gray-100 text-xs">
+                <div className="mt-3 pt-3 border-t border-slate-200 text-xs">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
                     {targetDate && remainingDays != null && (
                       <span>📅 目標日期：{targetDate}（剩 {remainingDays} 天）</span>
@@ -1023,7 +1023,7 @@ export default function ClientEditor() {
           {/* Issue 1: Unsaved changes indicator in tab bar */}
           {hasUnsavedChanges && (
             <div className="flex items-center px-2">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="有未儲存的變更"></span>
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" title="有未儲存的變更"></span>
             </div>
           )}
         </div>
@@ -1032,7 +1032,7 @@ export default function ClientEditor() {
         {activeTab === 'basic' && (
           <div className="space-y-6">
             {/* Basic Info */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">基本資料</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1041,7 +1041,7 @@ export default function ClientEditor() {
                     type="text"
                     value={client.name}
                     onChange={(e) => updateClient('name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -1057,7 +1057,7 @@ export default function ClientEditor() {
                       const a = ageFromBirthYear(ad)
                       if (a != null) updateClient('age', a)
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     {client.birth_year != null
@@ -1070,7 +1070,7 @@ export default function ClientEditor() {
                   <select
                     value={client.gender}
                     onChange={(e) => updateClient('gender', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="女性">女性</option>
                     <option value="男性">男性</option>
@@ -1081,7 +1081,7 @@ export default function ClientEditor() {
                   <select
                     value={client.status}
                     onChange={(e) => updateClient('status', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="normal">正常</option>
                     <option value="attention">需要關注</option>
@@ -1098,7 +1098,7 @@ export default function ClientEditor() {
                     type="number" step="0.1" placeholder="例：62.5"
                     value={startBody.weight}
                     onChange={(e) => setStartBody(s => ({ ...s, weight: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -1107,7 +1107,7 @@ export default function ClientEditor() {
                     type="number" step="0.1" placeholder="例：165"
                     value={startBody.height}
                     onChange={(e) => setStartBody(s => ({ ...s, height: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -1116,7 +1116,7 @@ export default function ClientEditor() {
                     type="number" step="0.1" placeholder="例：22"
                     value={startBody.bodyFat}
                     onChange={(e) => setStartBody(s => ({ ...s, bodyFat: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 {/* 即時 TDEE / 營養素估算（不需存檔，當場檢查換算） */}
@@ -1141,10 +1141,10 @@ export default function ClientEditor() {
                   return (
                     <div className="md:col-span-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                       <div className="text-sm font-semibold text-emerald-900 mb-1">📊 即時估算 · {goalLabel} · {preview.method === 'katch_mcardle' ? 'Katch-McArdle（用體脂）' : '簡化公式'}</div>
-                      <div className="text-sm text-emerald-800">
+                      <div className="text-sm text-emerald-800 tabular-nums">
                         TDEE ≈ <b>{preview.estimatedTDEE}</b> kcal　→　目標熱量 <b>{preview.calories}</b> kcal（{preview.deficit >= 0 ? `赤字 ${preview.deficit}` : `盈餘 ${-preview.deficit}`} kcal）
                       </div>
-                      <div className="text-sm text-emerald-800 mt-0.5">
+                      <div className="text-sm text-emerald-800 mt-0.5 tabular-nums">
                         蛋白 <b>{preview.protein}g</b>　·　碳水 <b>{preview.carbs}g</b>　·　脂肪 <b>{preview.fat}g</b>
                       </div>
                       <p className="mt-1 text-xs text-emerald-700">即時估算（未存檔）。存檔後會寫入起始體重，正式營養目標仍以引擎/你的設定為準。</p>
@@ -1154,9 +1154,9 @@ export default function ClientEditor() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">訂閱方案</label>
                   <div className="grid grid-cols-3 gap-2 mb-2">
-                    {([['free', '免費體驗', '$0', 'border-gray-300 bg-gray-50 text-gray-700'],
+                    {([['free', '免費體驗', '$0', 'border-slate-300 bg-slate-50 text-gray-700'],
                        ['self_managed', '自主管理', '$499', 'border-blue-300 bg-blue-50 text-blue-700'],
-                       ['coached', '教練指導', '$2999', 'border-purple-300 bg-purple-50 text-purple-700']] as const).map(([tier, label, price, style]) => (
+                       ['coached', '教練指導', '$2999', 'border-blue-500 bg-blue-50 text-blue-700']] as const).map(([tier, label, price, style]) => (
                       <button
                         key={tier}
                         onClick={() => {
@@ -1187,14 +1187,14 @@ export default function ClientEditor() {
                           const defaults = getDefaultFeatures(tier)
                           setClient(prev => prev ? ({ ...prev, subscription_tier: tier, ...defaults }) : prev)
                         }}
-                        className={`p-3 rounded-xl border-2 text-center transition-all ${
+                        className={`p-3 rounded-xl border text-center transition-all ${
                           client.subscription_tier === tier
                             ? style + ' ring-2 ring-offset-1 ring-blue-500'
-                            : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                            : 'border-slate-200 bg-white text-gray-500 hover:border-slate-300'
                         }`}
                       >
                         <p className="text-sm font-bold">{price}</p>
-                        <p className="text-[10px]">{label}</p>
+                        <p className="text-[11px]">{label}</p>
                       </button>
                     ))}
                   </div>
@@ -1215,7 +1215,7 @@ export default function ClientEditor() {
                                 setClient(prev => prev ? ({ ...prev, subscription_tier: pendingDowngrade, ...defaults }) : prev)
                                 setPendingDowngrade(null)
                               }}
-                              className="px-3 py-1.5 text-xs font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                              className="px-3 py-1.5 text-xs font-semibold bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
                             >
                               確認降級
                             </button>
@@ -1235,8 +1235,8 @@ export default function ClientEditor() {
                   {/* 升級 / 取消定期定額 */}
                   {/* 升級至教練指導（僅 self_managed 顯示） */}
                   {client.id && client.subscription_tier === 'self_managed' && (
-                    <div className="mt-3 p-3 bg-purple-50 rounded-xl border border-purple-200 space-y-2">
-                      <p className="text-xs font-semibold text-purple-700">升級至教練指導 $2999</p>
+                    <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                      <p className="text-xs font-semibold text-slate-700">升級至教練指導 $2999</p>
                       {!upgradeLink ? (
                         <button
                           onClick={() => {
@@ -1244,13 +1244,13 @@ export default function ClientEditor() {
                             const params = new URLSearchParams({ tier: 'coached', name: client.name || '' })
                             setUpgradeLink(`${origin}/pay?${params.toString()}`)
                           }}
-                          className="w-full py-2 text-xs font-semibold bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                          className="w-full py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
                           產生付款連結
                         </button>
                       ) : (
                         <div className="space-y-2">
-                          <div className="bg-white rounded-lg px-3 py-2 text-xs text-gray-600 break-all font-mono border border-purple-200">
+                          <div className="bg-white rounded-lg px-3 py-2 text-xs text-gray-600 break-all font-mono border border-slate-200">
                             {upgradeLink}
                           </div>
                           <button
@@ -1259,7 +1259,7 @@ export default function ClientEditor() {
                               setUpgradeCopied(true)
                               setTimeout(() => setUpgradeCopied(false), 2000)
                             }}
-                            className="w-full py-2 text-xs font-semibold bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                            className="w-full py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                           >
                             {upgradeCopied ? '已複製 ✓' : '複製連結（丟 LINE 給客戶）'}
                           </button>
@@ -1274,13 +1274,13 @@ export default function ClientEditor() {
                       {!showCancelOldConfirm ? (
                         <button
                           onClick={() => setShowCancelOldConfirm(true)}
-                          className="text-[11px] text-gray-400 hover:text-red-500 transition-colors"
+                          className="text-[11px] text-gray-400 hover:text-rose-500 transition-colors"
                         >
                           取消定期定額（${client.subscription_tier === 'coached' ? '2999' : '499'}）
                         </button>
                       ) : (
-                        <div className="p-3 bg-red-50 rounded-xl border border-red-200 space-y-1.5">
-                          <p className="text-[11px] text-red-600 font-medium">
+                        <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 space-y-1.5">
+                          <p className="text-[11px] text-rose-600 font-medium">
                             確定取消 ${client.subscription_tier === 'coached' ? '2999' : '499'} 定期定額？綠界會停止自動扣款。
                           </p>
                           <div className="flex gap-2">
@@ -1304,7 +1304,7 @@ export default function ClientEditor() {
                                 }
                               }}
                               disabled={cancellingOldSub}
-                              className="px-3 py-1 bg-red-500 text-white text-[11px] rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                              className="px-3 py-1 bg-rose-500 text-white text-[11px] rounded-lg hover:bg-rose-600 disabled:opacity-50 transition-colors"
                             >
                               {cancellingOldSub ? '處理中...' : '確認取消'}
                             </button>
@@ -1323,14 +1323,14 @@ export default function ClientEditor() {
               </div>
 
               {/* 到期日管理 */}
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-4 pt-4 border-t border-slate-200">
                 <label className="block text-sm font-medium text-gray-700 mb-2">到期日</label>
                 <div className="flex items-center gap-3">
                   <input
                     type="date"
                     value={client.expires_at ? new Date(client.expires_at).toISOString().split('T')[0] : ''}
                     onChange={(e) => setClient({ ...client, expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={() => { const d = new Date(); d.setMonth(d.getMonth() + 1); setClient({ ...client, expires_at: d.toISOString() }) }}
@@ -1347,15 +1347,15 @@ export default function ClientEditor() {
                 </div>
                 {client.expires_at && (() => {
                   const days = Math.ceil((new Date(client.expires_at).getTime() - Date.now()) / DAY_MS)
-                  if (days < 0) return <p className="text-xs text-red-600 mt-1">已過期 {Math.abs(days)} 天</p>
-                  if (days <= 7) return <p className="text-xs text-orange-600 mt-1">剩餘 {days} 天</p>
+                  if (days < 0) return <p className="text-xs text-rose-600 mt-1">已過期 {Math.abs(days)} 天</p>
+                  if (days <= 7) return <p className="text-xs text-amber-600 mt-1">剩餘 {days} 天</p>
                   return <p className="text-xs text-gray-400 mt-1">剩餘 {days} 天（到 {new Date(client.expires_at).toLocaleDateString('zh-TW')}）</p>
                 })()}
               </div>
             </div>
 
             {/* 帳號啟用狀態 */}
-            <div className={`rounded-lg shadow p-6 ${client.is_active ? 'bg-white' : 'bg-red-50 border-2 border-red-300'}`}>
+            <div className={`rounded-2xl p-6 ${client.is_active ? 'bg-white border border-slate-200' : 'bg-rose-50 border border-rose-300'}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-medium text-gray-900">帳號權限</h2>
@@ -1365,7 +1365,7 @@ export default function ClientEditor() {
                 </div>
                 <button
                   onClick={() => updateClient('is_active', !client.is_active)}
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${client.is_active ? 'bg-green-500' : 'bg-red-400'}`}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${client.is_active ? 'bg-emerald-500' : 'bg-rose-400'}`}
                 >
                   <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow ${client.is_active ? 'translate-x-7' : 'translate-x-1'}`} />
                 </button>
@@ -1378,7 +1378,7 @@ export default function ClientEditor() {
         {activeTab === 'features' && (
           <div className="space-y-6">
             {/* Feature Toggles */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">功能設定</h2>
               <p className="text-xs text-gray-400 mb-4">依學員階段逐步開放功能</p>
               <div className="space-y-4">
@@ -1413,7 +1413,7 @@ export default function ClientEditor() {
                 ))}
 
                 {/* 客戶模式 — 4 選 1 segmented control */}
-                <div className="border-t border-gray-100 pt-4 mt-2">
+                <div className="border-t border-slate-200 pt-4 mt-2">
                   <label className="text-sm font-medium text-gray-700">客戶模式</label>
                   <div className="mt-1 grid grid-cols-4 gap-1 p-1 bg-gray-100 rounded-lg">
                     {ALL_CLIENT_MODES.map(mode => (
@@ -1449,7 +1449,7 @@ export default function ClientEditor() {
 
             {/* ===== Issue 5: Competition Prep Quick Setup ===== */}
             {isCompetitionMode(client.client_mode) && !client.calories_target && !client.protein_target && (
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow p-6 border border-amber-200">
+              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽快速設定</h2>
                 <p className="text-xs text-gray-400 mb-4">一鍵開啟所有備賽功能並設定基礎參數</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -1459,7 +1459,7 @@ export default function ClientEditor() {
                       type="date"
                       value={compQuickSetupDate}
                       onChange={(e) => setCompQuickSetupDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     />
                   </div>
                   <div>
@@ -1470,7 +1470,7 @@ export default function ClientEditor() {
                       value={compQuickSetupWeight}
                       onChange={(e) => setCompQuickSetupWeight(e.target.value)}
                       placeholder="例如：65.0"
-                      className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     />
                   </div>
                   <div>
@@ -1478,7 +1478,7 @@ export default function ClientEditor() {
                     <select
                       value={compQuickSetupGoalType}
                       onChange={(e) => setCompQuickSetupGoalType(e.target.value as 'cut' | 'bulk')}
-                      className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
                       <option value="cut">🔻 減脂</option>
                       <option value="bulk">🔺 增肌</option>
@@ -1507,12 +1507,12 @@ export default function ClientEditor() {
                     setCompQuickSetupSuccess(`已啟用：${enabled.join('、')}，目標類型：${compQuickSetupGoalType === 'cut' ? '減脂' : '增肌'}，活動型態：高能量通量`)
                     setTimeout(() => setCompQuickSetupSuccess(''), 5000)
                   }}
-                  className="w-full py-2.5 bg-amber-500 text-white rounded-lg text-sm font-semibold hover:bg-amber-600 transition-colors"
+                  className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
                 >
                   一鍵套用備賽預設
                 </button>
                 {compQuickSetupSuccess && (
-                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700">
+                  <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700">
                     {compQuickSetupSuccess}
                   </div>
                 )}
@@ -1521,7 +1521,7 @@ export default function ClientEditor() {
 
             {/* ===== Issue 3: Unified Nutrition Settings ===== */}
             {client.nutrition_enabled && (
-              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-400">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">🥗 營養設定</h2>
                 <p className="text-xs text-gray-400 mb-4">所有營養相關設定集中在此，設定後學員會看到目標對比</p>
 
@@ -1565,7 +1565,7 @@ export default function ClientEditor() {
                         )}
                         <button
                           onClick={() => setClient({ ...client, coach_macro_override: null })}
-                          className="px-3 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
+                          className="px-3 py-1.5 text-xs bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg transition-colors"
                         >
                           解除
                         </button>
@@ -1581,7 +1581,7 @@ export default function ClientEditor() {
                     <select
                       value={client.goal_type || ''}
                       onChange={(e) => setClient({ ...client, goal_type: e.target.value as 'cut' | 'bulk' || null })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     >
                       <option value="">未設定</option>
                       <option value="cut">🔻 減脂</option>
@@ -1593,7 +1593,7 @@ export default function ClientEditor() {
                     <select
                       value={client.activity_profile || ''}
                       onChange={(e) => setClient({ ...client, activity_profile: e.target.value as 'sedentary' | 'high_energy_flux' || null })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     >
                       <option value="">預設（中等活動量）</option>
                       <option value="sedentary">🪑 上班族</option>
@@ -1606,11 +1606,11 @@ export default function ClientEditor() {
                       type="date"
                       value={client.diet_start_date || ''}
                       onChange={(e) => setClient({ ...client, diet_start_date: e.target.value || null })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     />
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1 mb-4">
+                <p className="text-[11px] text-gray-400 mt-1 mb-4">
                   上班族：TDEE 低、步數 3K-8K｜高能量通量：TDEE 高、步數 8K-15K
                 </p>
 
@@ -1620,7 +1620,7 @@ export default function ClientEditor() {
                   <span className="text-xs font-semibold text-gray-500">每日目標</span>
                   <div className="h-px bg-gray-200 flex-1"></div>
                 </div>
-                <p className="text-[10px] text-gray-400 mb-3">預設：改完目標後系統會依進度繼續自動調整（信任系統）。若要鎖死你的設定不讓系統動，勾選下方「鎖定設定」。</p>
+                <p className="text-[11px] text-gray-400 mb-3">預設：改完目標後系統會依進度繼續自動調整（信任系統）。若要鎖死你的設定不讓系統動，勾選下方「鎖定設定」。</p>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <div>
@@ -1630,10 +1630,10 @@ export default function ClientEditor() {
                       value={client.calories_target ?? ''}
                       onChange={(e) => updateClient('calories_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="2200"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     {client.coach_macro_override && systemSuggestion?.suggestedCalories != null && (
-                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCalories.toLocaleString()} kcal</p>
+                      <p className="text-[11px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCalories.toLocaleString()} kcal</p>
                     )}
                   </div>
                   <div>
@@ -1643,10 +1643,10 @@ export default function ClientEditor() {
                       value={client.protein_target ?? ''}
                       onChange={(e) => updateClient('protein_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="120"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     {client.coach_macro_override && systemSuggestion?.suggestedProtein != null && (
-                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedProtein}g</p>
+                      <p className="text-[11px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedProtein}g</p>
                     )}
                   </div>
                   <div>
@@ -1656,10 +1656,10 @@ export default function ClientEditor() {
                       value={client.carbs_target ?? ''}
                       onChange={(e) => updateClient('carbs_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="250"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     {client.coach_macro_override && systemSuggestion?.suggestedCarbs != null && (
-                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCarbs}g</p>
+                      <p className="text-[11px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCarbs}g</p>
                     )}
                   </div>
                   <div>
@@ -1669,10 +1669,10 @@ export default function ClientEditor() {
                       value={client.fat_target ?? ''}
                       onChange={(e) => updateClient('fat_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="60"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     {client.coach_macro_override && systemSuggestion?.suggestedFat != null && (
-                      <p className="text-[10px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedFat}g</p>
+                      <p className="text-[11px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedFat}g</p>
                     )}
                   </div>
                   <div>
@@ -1682,7 +1682,7 @@ export default function ClientEditor() {
                       value={client.water_target ?? ''}
                       onChange={(e) => updateClient('water_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="2500"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -1695,7 +1695,7 @@ export default function ClientEditor() {
                       <span className="text-xs font-semibold text-gray-500">碳水循環（選填）</span>
                       <div className="h-px bg-gray-200 flex-1"></div>
                     </div>
-                    <p className="text-[10px] text-gray-400 mb-3">設定後系統會根據當天有無訓練自動切換碳水目標</p>
+                    <p className="text-[11px] text-gray-400 mb-3">設定後系統會根據當天有無訓練自動切換碳水目標</p>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs text-gray-500 mb-1">訓練日碳水 (g)</label>
@@ -1704,7 +1704,7 @@ export default function ClientEditor() {
                           value={client.carbs_training_day ?? ''}
                           onChange={(e) => updateClient('carbs_training_day', e.target.value ? Number(e.target.value) : null)}
                           placeholder="300"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -1714,12 +1714,12 @@ export default function ClientEditor() {
                           value={client.carbs_rest_day ?? ''}
                           onChange={(e) => updateClient('carbs_rest_day', e.target.value ? Number(e.target.value) : null)}
                           placeholder="100"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
                     {client.carbs_training_day && client.carbs_rest_day && (
-                      <div className="mt-2 bg-cyan-50 rounded-lg px-3 py-2 text-xs text-cyan-700">
+                      <div className="mt-2 bg-slate-50 rounded-lg px-3 py-2 text-xs text-slate-600">
                         訓練日 {client.carbs_training_day}g → 休息日 {client.carbs_rest_day}g（差距 {client.carbs_training_day - client.carbs_rest_day}g）
                       </div>
                     )}
@@ -1737,7 +1737,7 @@ export default function ClientEditor() {
                     type="checkbox"
                     checked={lockMacros}
                     onChange={(e) => setLockMacros(e.target.checked)}
-                    className="w-4 h-4 mt-0.5 accent-green-600 shrink-0"
+                    className="w-4 h-4 mt-0.5 accent-blue-600 shrink-0"
                   />
                   <span className="text-xs text-gray-600 leading-snug">
                     <b>鎖定此 macro，不讓系統自動調整</b><br />
@@ -1760,7 +1760,7 @@ export default function ClientEditor() {
                           onClick={() => setOverrideDurationDays(opt.value)}
                           className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
                             overrideDurationDays === opt.value
-                              ? 'bg-green-600 text-white'
+                              ? 'bg-blue-600 text-white'
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
                         >
@@ -1774,7 +1774,7 @@ export default function ClientEditor() {
                         value={overrideReason}
                         onChange={(e) => setOverrideReason(e.target.value)}
                         placeholder="鎖定原因（選填，例如：備賽最後衝刺 / 此人低碳反效）"
-                        className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   </>
@@ -1784,7 +1784,7 @@ export default function ClientEditor() {
 
             {/* 目標體重與體態推算 -- 所有學員都可看到 */}
             {client.body_composition_enabled && (
-              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-400">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">
                   {isCompetitionMode(client.client_mode) ? '🎯 目標上台體重' : '🎯 目標體重'}
                 </h2>
@@ -1800,7 +1800,7 @@ export default function ClientEditor() {
                       value={client.target_weight ?? ''}
                       onChange={(e) => updateClient('target_weight', e.target.value ? Number(e.target.value) : null)}
                       placeholder={isCompetitionMode(client.client_mode) ? '例如：65.0' : '例如：65.0'}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
@@ -1811,7 +1811,7 @@ export default function ClientEditor() {
                       value={client.body_fat_target ?? ''}
                       onChange={(e) => updateClient('body_fat_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="例如：15.0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   {!isCompetitionMode(client.client_mode) && (
@@ -1821,7 +1821,7 @@ export default function ClientEditor() {
                         type="date"
                         value={client.target_date || ''}
                         onChange={(e) => setClient({ ...client, target_date: e.target.value || null })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   )}
@@ -1859,7 +1859,7 @@ export default function ClientEditor() {
                             {rec.recommendedLow} – {rec.recommendedHigh} kg
                           </p>
                           {client.target_weight && (
-                            <p className={`mt-1 ${isOutOfRange ? 'text-amber-600 font-medium' : 'text-green-600'}`}>
+                            <p className={`mt-1 ${isOutOfRange ? 'text-amber-600 font-medium' : 'text-emerald-600'}`}>
                               {isBelow
                                 ? `⚠️ 手動目標 ${client.target_weight} kg 低於建議下限 ${(rec.recommendedLow - client.target_weight).toFixed(1)} kg，可能壓縮 FFM`
                                 : isAbove
@@ -1881,7 +1881,7 @@ export default function ClientEditor() {
 
             {/* Health Mode Settings -- 健康模式季度週期 */}
             {isHealthMode(client.client_mode) && (
-              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-emerald-400">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">🌿 健康模式設定</h2>
                 <p className="text-xs text-gray-400 mb-4">每 90 天一個季度週期，配合季度血檢追蹤健康進步</p>
                 <div>
@@ -1890,7 +1890,7 @@ export default function ClientEditor() {
                     type="date"
                     value={client.quarterly_cycle_start || ''}
                     onChange={(e) => updateClient('quarterly_cycle_start', e.target.value || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {client.quarterly_cycle_start && (() => {
                     const start = new Date(client.quarterly_cycle_start)
@@ -1900,8 +1900,8 @@ export default function ClientEditor() {
                     const cycleEnd = new Date(start)
                     cycleEnd.setDate(cycleEnd.getDate() + 89)
                     return (
-                      <div className="mt-2 bg-emerald-50 rounded-lg px-3 py-2 text-xs text-emerald-700">
-                        <p>本季第 <span className="font-bold">{Math.min(90, elapsed)}</span> 天 / 90 天</p>
+                      <div className="mt-2 bg-slate-50 rounded-lg px-3 py-2 text-xs text-slate-600">
+                        <p>本季第 <span className="font-bold tabular-nums">{Math.min(90, elapsed)}</span> 天 / 90 天</p>
                         <p className="mt-0.5">預計血檢日：{cycleEnd.toLocaleDateString('zh-TW')}（距今 {daysLeft} 天）</p>
                       </div>
                     )
@@ -1912,7 +1912,7 @@ export default function ClientEditor() {
 
             {/* Genetic Risk Profile — 基因風險欄位 */}
             {isHealthMode(client.client_mode) && (
-              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-400">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">🧬 基因風險設定</h2>
                 <p className="text-xs text-gray-400 mb-4">根據基因檢測結果設定，系統會自動調整補品建議與 AI 顧問回覆</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1921,7 +1921,7 @@ export default function ClientEditor() {
                     <select
                       value={client.gene_mthfr || ''}
                       onChange={(e) => updateClient('gene_mthfr', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">未檢測</option>
                       <option value="normal">正常</option>
@@ -1929,7 +1929,7 @@ export default function ClientEditor() {
                       <option value="homozygous">純合突變（C677T）</option>
                     </select>
                     {client.gene_mthfr && client.gene_mthfr !== 'normal' && (
-                      <p className="text-xs text-purple-600 mt-1">補品引擎將建議活性葉酸（5-MTHF）取代一般葉酸</p>
+                      <p className="text-xs text-slate-600 mt-1">補品引擎將建議活性葉酸（5-MTHF）取代一般葉酸</p>
                     )}
                   </div>
                   <div>
@@ -1937,7 +1937,7 @@ export default function ClientEditor() {
                     <select
                       value={client.gene_apoe || ''}
                       onChange={(e) => updateClient('gene_apoe', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">未檢測</option>
                       <option value="e2/e2">e2/e2</option>
@@ -1947,7 +1947,7 @@ export default function ClientEditor() {
                       <option value="e4/e4">e4/e4（高風險）</option>
                     </select>
                     {(client.gene_apoe === 'e3/e4' || client.gene_apoe === 'e4/e4') && (
-                      <p className="text-xs text-purple-600 mt-1">將強調 Omega-3 DHA、降低飽和脂肪、加強心血管監控</p>
+                      <p className="text-xs text-slate-600 mt-1">將強調 Omega-3 DHA、降低飽和脂肪、加強心血管監控</p>
                     )}
                   </div>
                   <div>
@@ -1955,7 +1955,7 @@ export default function ClientEditor() {
                     <select
                       value={client.gene_depression_risk || ''}
                       onChange={(e) => updateClient('gene_depression_risk', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">未檢測</option>
                       <option value="LL">LL（長/長）— 低風險</option>
@@ -1963,7 +1963,7 @@ export default function ClientEditor() {
                       <option value="SS">SS（短/短）— 高風險</option>
                     </select>
                     {client.gene_depression_risk && client.gene_depression_risk !== 'LL' && client.gene_depression_risk !== 'low' && (
-                      <p className="text-xs text-purple-600 mt-1">碳水下限提高、赤字期飲食多樣性保護、Peak Week 耗竭策略緩和</p>
+                      <p className="text-xs text-slate-600 mt-1">碳水下限提高、赤字期飲食多樣性保護、Peak Week 耗竭策略緩和</p>
                     )}
                   </div>
                   <div>
@@ -1973,7 +1973,7 @@ export default function ClientEditor() {
                       value={client.gene_notes || ''}
                       onChange={(e) => updateClient('gene_notes', e.target.value || null)}
                       placeholder="其他基因相關資訊..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -1982,7 +1982,7 @@ export default function ClientEditor() {
 
             {/* Competition Prep Settings — 備賽專屬（比賽日期、備賽階段） */}
             {isCompetitionMode(client.client_mode) && (
-              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-400">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">
                   {MODE_EMOJIS[client.client_mode as keyof typeof MODE_EMOJIS] || '🏆'} 備賽設定
                 </h2>
@@ -1994,7 +1994,7 @@ export default function ClientEditor() {
                       type="date"
                       value={client.competition_date || ''}
                       onChange={(e) => updateClient('competition_date', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     {client.competition_date && (
                       <p className="text-xs text-amber-600 mt-1 font-medium">
@@ -2007,7 +2007,7 @@ export default function ClientEditor() {
                     <select
                       value={client.prep_phase || 'off_season'}
                       onChange={(e) => updateClient('prep_phase', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       {(client.client_mode === 'athletic' ? ATHLETIC_PHASE_OPTIONS : BODYBUILDING_PHASE_OPTIONS).map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -2024,7 +2024,7 @@ export default function ClientEditor() {
                         value={client.weigh_in_gap_hours ?? ''}
                         onChange={(e) => updateClient('weigh_in_gap_hours', e.target.value ? parseInt(e.target.value) : null)}
                         placeholder="例如：24"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                       <p className="text-xs text-gray-500 mt-1">影響超補償期的碳水計算策略</p>
                     </div>
@@ -2041,7 +2041,7 @@ export default function ClientEditor() {
             {/* 🧠 個人化記憶（AI Agent 讀的紅線）*/}
             <PersonalNotesEditor clientId={client.id} />
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">教練備註</h2>
               <div className="space-y-4">
                 <div>
@@ -2052,7 +2052,7 @@ export default function ClientEditor() {
                     onChange={(e) => updateClient('coach_weekly_note', e.target.value)}
                     rows={3}
                     placeholder="例如：這週體重控制得不錯，繼續保持！碳水可以再多吃一點。"
-                    className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
                   />
                 </div>
                 <div>
@@ -2062,7 +2062,7 @@ export default function ClientEditor() {
                     onChange={(e) => updateClient('coach_summary', e.target.value)}
                     rows={5}
                     placeholder="本月健康分析..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -2071,7 +2071,7 @@ export default function ClientEditor() {
                     type="date"
                     value={client.next_checkup_date || ''}
                     onChange={(e) => updateClient('next_checkup_date', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -2081,7 +2081,7 @@ export default function ClientEditor() {
                     onChange={(e) => updateClient('health_goals', e.target.value)}
                     rows={3}
                     placeholder="例如：同半胱胺酸降到 8 以下"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -2103,7 +2103,7 @@ export default function ClientEditor() {
                 return map[t] || t
               }
               return (
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white border border-slate-200 rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h2 className="text-lg font-medium text-gray-900">🏋️ 近 30 天訓練紀錄（學員回報）</h2>
@@ -2138,7 +2138,7 @@ export default function ClientEditor() {
                       <p className="text-xs font-medium text-gray-500 mb-2">📝 其他學員備註（{withNotes.length} 筆）</p>
                       <div className="space-y-1.5">
                         {withNotes.map(r => (
-                          <div key={r.id} className="border border-gray-100 rounded p-2 text-sm bg-gray-50">
+                          <div key={r.id} className="border border-slate-200 rounded p-2 text-sm bg-slate-50">
                             <div className="flex items-center gap-2 text-xs text-gray-500 mb-0.5">
                               <span className="font-mono">{r.date}</span>
                               <span>{fmtType(r.training_type)}</span>
@@ -2168,7 +2168,7 @@ export default function ClientEditor() {
                         </thead>
                         <tbody>
                           {trainingHistory.map(r => (
-                            <tr key={r.id} className={`border-b border-gray-50 ${hasFlag(r.note) ? 'bg-rose-50' : ''}`}>
+                            <tr key={r.id} className={`border-b border-slate-200 ${hasFlag(r.note) ? 'bg-rose-50' : ''}`}>
                               <td className="py-1 pr-2 font-mono text-gray-600">{r.date}</td>
                               <td className="py-1 pr-2 text-gray-700">{fmtType(r.training_type)}</td>
                               <td className="py-1 px-1 text-center text-gray-600">{r.rpe ?? '-'}</td>
@@ -2195,7 +2195,7 @@ export default function ClientEditor() {
 
             {/* 訓練經驗等級 */}
             {client.training_enabled && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-2">📊 訓練經驗</h2>
                 <p className="text-xs text-gray-400 mb-3">影響建議組數：新手多練動作、進階少量高強度</p>
                 <div className="flex gap-2">
@@ -2214,7 +2214,7 @@ export default function ClientEditor() {
                       }`}
                     >
                       <div>{opt.label}</div>
-                      <div className="text-[10px] mt-0.5 opacity-75">{opt.desc}</div>
+                      <div className="text-[11px] mt-0.5 opacity-75">{opt.desc}</div>
                     </button>
                   ))}
                 </div>
@@ -2223,7 +2223,7 @@ export default function ClientEditor() {
 
             {/* 訓練計畫編輯器 */}
             {client.training_enabled && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-lg font-medium text-gray-900">🏋️ 週間訓練計畫</h2>
@@ -2237,7 +2237,7 @@ export default function ClientEditor() {
                           setTrainingPlanText('')
                         }
                       }}
-                      className="text-xs text-red-500 hover:text-red-700 transition-colors"
+                      className="text-xs text-rose-500 hover:text-rose-700 transition-colors"
                     >
                       清除計畫
                     </button>
@@ -2257,7 +2257,7 @@ export default function ClientEditor() {
                       }}
                       rows={12}
                       placeholder={`計畫名稱：5天分化 — 減脂期\n\n週一 Push Day\n啞鈴臥推 | 4組 | 8-10下 | RPE 8 | 主項\n上斜啞鈴飛鳥 | 3組 | 12-15下 | RPE 7 | 胸肌上部\n\n週二 Pull Day\n引體向上 | 4組 | 6-8下 | RPE 8 | 主項\n坐姿划船 | 3組 | 10-12下 | RPE 7 | 背厚度\n\n週三 Leg Day\n深蹲 | 4組 | 6-8下 | RPE 9 | 主項\n腿推 | 3組 | 10-12下 | RPE 7`}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                     />
                   </div>
 
@@ -2274,11 +2274,11 @@ export default function ClientEditor() {
                   </div>
 
                   {trainingPlanParseError && (
-                    <p className="text-sm text-red-600">{trainingPlanParseError}</p>
+                    <p className="text-sm text-rose-600">{trainingPlanParseError}</p>
                   )}
 
                   <div className="bg-gray-50 rounded-lg px-3 py-2">
-                    <p className="text-[10px] text-gray-400 leading-relaxed">
+                    <p className="text-[11px] text-gray-400 leading-relaxed">
                       格式說明：第一行可寫「計畫名稱：...」。每天以「週X 標籤」開頭（如「週一 Push Day」），
                       動作格式為「動作名 | 組數 | 次數 | RPE | 備註」，各欄位以 | 分隔。
                       天與天之間空一行。沒有訓練的日子不用寫（自動視為休息日）。
@@ -2288,7 +2288,7 @@ export default function ClientEditor() {
 
                 {/* 預覽目前的訓練計畫 */}
                 {client.training_plan && (
-                  <div className="mt-4 border-t border-gray-100 pt-4">
+                  <div className="mt-4 border-t border-slate-200 pt-4">
                     <button
                       onClick={() => setShowTrainingPlanPreview(!showTrainingPlanPreview)}
                       className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-3"
@@ -2339,7 +2339,7 @@ export default function ClientEditor() {
         {/* ===== Tab: 血檢 ===== */}
         {activeTab === 'lab' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-900">血檢數據</h2>
                 <button
@@ -2356,7 +2356,7 @@ export default function ClientEditor() {
 
               <div className="space-y-4">
                 {client.lab_results.map((result, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div key={index} className="border border-slate-200 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">檢測項目</label>
@@ -2364,7 +2364,7 @@ export default function ClientEditor() {
                           type="text"
                           value={result.test_name}
                           onChange={(e) => updateLabResult(index, 'test_name', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -2374,7 +2374,7 @@ export default function ClientEditor() {
                           step="0.01"
                           value={result.value}
                           onChange={(e) => updateLabResult(index, 'value', Number(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -2383,7 +2383,7 @@ export default function ClientEditor() {
                           type="text"
                           value={result.unit}
                           onChange={(e) => updateLabResult(index, 'unit', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -2392,7 +2392,7 @@ export default function ClientEditor() {
                           type="text"
                           value={result.reference_range}
                           onChange={(e) => updateLabResult(index, 'reference_range', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -2400,7 +2400,7 @@ export default function ClientEditor() {
                         <select
                           value={result.status}
                           onChange={(e) => updateLabResult(index, 'status', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="normal">正常</option>
                           <option value="attention">注意</option>
@@ -2413,7 +2413,7 @@ export default function ClientEditor() {
                           type="date"
                           value={result.date}
                           onChange={(e) => updateLabResult(index, 'date', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div className="lg:col-span-2">
@@ -2423,7 +2423,7 @@ export default function ClientEditor() {
                           onChange={(e) => updateLabResult(index, 'custom_advice', e.target.value)}
                           rows={2}
                           placeholder="留空則使用預設建議"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -2433,11 +2433,11 @@ export default function ClientEditor() {
                           value={result.custom_target || ''}
                           onChange={(e) => updateLabResult(index, 'custom_target', e.target.value)}
                           placeholder="留空則使用預設範圍"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div className="lg:col-span-3">
-                        <label className="block text-sm font-medium text-emerald-700 mb-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
                           🔬 教練觀察筆記（Longevity Protocol）
                         </label>
                         <textarea
@@ -2445,13 +2445,13 @@ export default function ClientEditor() {
                           onChange={(e) => updateLabResult(index, 'coach_interpretation', e.target.value)}
                           rows={3}
                           placeholder="這個指標的趨勢觀察、與其他指標的關聯、生活方式調整建議（教練筆記非醫療診斷）"
-                          className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
                         />
                       </div>
                     </div>
                     <button
                       onClick={() => removeLabResult(index)}
-                      className="mt-4 text-red-600 hover:text-red-800 text-sm"
+                      className="mt-4 text-rose-600 hover:text-rose-800 text-sm"
                     >
                       刪除
                     </button>
@@ -2471,7 +2471,7 @@ export default function ClientEditor() {
         {/* ===== Tab: 補品 ===== */}
         {activeTab === 'supplements' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-900">補品清單</h2>
                 <button
@@ -2488,7 +2488,7 @@ export default function ClientEditor() {
 
               <div className="space-y-4">
                 {client.supplements.map((supplement, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div key={index} className="border border-slate-200 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2515,7 +2515,7 @@ export default function ClientEditor() {
                                 updateSupplement(index, 'coach_rationale', s.rationaleStarter)
                               }
                             }}
-                            className="ml-2 text-xs text-indigo-600 hover:text-indigo-800 font-normal"
+                            className="ml-2 text-xs text-blue-600 hover:text-blue-800 font-normal"
                             title="從名稱自動填入劑量、時間、rationale 起手式"
                           >
                             ✨ 套用建議
@@ -2526,7 +2526,7 @@ export default function ClientEditor() {
                           value={supplement.name}
                           onChange={(e) => updateSupplement(index, 'name', e.target.value)}
                           list={`supplement-names-${index}`}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <datalist id={`supplement-names-${index}`}>
                           {SUPPLEMENT_NAMES.map(n => <option key={n} value={n} />)}
@@ -2535,7 +2535,7 @@ export default function ClientEditor() {
                         {supplement.name?.trim() && (() => {
                           const v = auditSupplement(supplement.name, client.lab_results || [], { gene_mthfr: client.gene_mthfr, gene_apoe: client.gene_apoe })
                           const style = v.status === 'indicated' ? { box: 'bg-emerald-50 border-emerald-200 text-emerald-800', icon: '🟢', label: '有指徵' }
-                            : v.status === 'caution' ? { box: 'bg-red-50 border-red-200 text-red-800', icon: '🔴', label: '注意' }
+                            : v.status === 'caution' ? { box: 'bg-rose-50 border-rose-200 text-rose-800', icon: '🔴', label: '注意' }
                             : v.status === 'no-indication' ? { box: 'bg-amber-50 border-amber-200 text-amber-800', icon: '🟡', label: '無數據指徵' }
                             : { box: 'bg-slate-50 border-slate-200 text-slate-600', icon: '🔵', label: '生活型/目標' }
                           return (
@@ -2552,7 +2552,7 @@ export default function ClientEditor() {
                           type="text"
                           value={supplement.dosage}
                           onChange={(e) => updateSupplement(index, 'dosage', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -2560,7 +2560,7 @@ export default function ClientEditor() {
                         <select
                           value={supplement.timing}
                           onChange={(e) => updateSupplement(index, 'timing', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="早餐">早餐</option>
                           <option value="午餐">午餐</option>
@@ -2575,13 +2575,13 @@ export default function ClientEditor() {
                           type="text"
                           value={supplement.why || ''}
                           onChange={(e) => updateSupplement(index, 'why', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
 
                     {/* 子區塊：版本管理 */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="mt-4 pt-4 border-t border-slate-200">
                       <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
                         📅 版本管理
                       </div>
@@ -2592,7 +2592,7 @@ export default function ClientEditor() {
                             type="date"
                             value={supplement.started_at || ''}
                             onChange={(e) => updateSupplement(index, 'started_at', e.target.value || null)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                           />
                         </div>
                         <div>
@@ -2602,15 +2602,15 @@ export default function ClientEditor() {
                             value={supplement.mode_context || ''}
                             onChange={(e) => updateSupplement(index, 'mode_context', e.target.value || null)}
                             placeholder={client.client_mode || '自動帶入目前 mode'}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* 子區塊：教練筆記 */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide mb-2">
+                    <div className="mt-4 pt-4 border-t border-slate-200">
+                      <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-wide mb-2">
                         🧬 教練 Rationale
                       </div>
                       <label className="block text-xs text-gray-600 mb-1">
@@ -2621,7 +2621,7 @@ export default function ClientEditor() {
                         onChange={(e) => updateSupplement(index, 'coach_rationale', e.target.value)}
                         rows={2}
                         placeholder="例：游離睪固酮 72.8（最佳 150-220）偏低 + 鋅是 aromatase 抑制 + 雌二醇 42 偏高，雙效介入"
-                        className="w-full px-3 py-2 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30 text-sm"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 text-sm"
                       />
                     </div>
                     <div className="mt-4 flex items-center justify-between">
@@ -2658,27 +2658,27 @@ export default function ClientEditor() {
         {/* Actions -- fixed at bottom, visible on all tabs */}
         <div className="flex items-center justify-end space-x-4 mt-6 sticky bottom-4">
           {hasUnsavedChanges && (
-            <span className="text-xs text-red-500 font-medium bg-red-50 px-3 py-1.5 rounded-full border border-red-200 animate-pulse">
+            <span className="text-xs text-rose-500 font-medium bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200 animate-pulse">
               有未儲存的變更
             </span>
           )}
           <Link
             href="/admin"
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors bg-white shadow-sm"
+            className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-gray-50 transition-colors bg-white"
           >
             取消
           </Link>
           <button
             onClick={handleSave}
             disabled={saving}
-            className={`relative px-6 py-2 text-white rounded-lg transition-colors disabled:opacity-50 shadow-sm ${
-              hasUnsavedChanges ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+            className={`relative px-6 py-2 text-white rounded-lg transition-colors disabled:opacity-50 ${
+              hasUnsavedChanges ? 'bg-rose-600 hover:bg-rose-700' : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
             {hasUnsavedChanges && (
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
               </span>
             )}
             {saving ? '保存中...' : hasUnsavedChanges ? '保存 *' : '保存'}

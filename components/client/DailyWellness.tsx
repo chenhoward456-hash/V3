@@ -191,15 +191,15 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
   })() : null
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-lg font-bold text-gray-900">每日感受</h2>
         {todayWellness && filledSummary && (
           <div className="flex items-center gap-2">
             <span className="text-sm">{filledSummary.emojis}</span>
             {filledSummary.avgScore && (
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                Number(filledSummary.avgScore) >= 4 ? 'bg-green-100 text-green-700' :
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full tabular-nums ${
+                Number(filledSummary.avgScore) >= 4 ? 'bg-emerald-100 text-emerald-700' :
                 Number(filledSummary.avgScore) >= 3 ? 'bg-blue-100 text-blue-700' :
                 'bg-amber-100 text-amber-700'
               }`}>
@@ -231,7 +231,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
                     }`}
                   >
                     <span className="text-xl leading-none mb-1">{emoji}</span>
-                    <span className={`text-[10px] font-medium ${selected ? 'text-blue-100' : 'text-gray-400'}`}>{optLabel}</span>
+                    <span className={`text-[11px] font-medium ${selected ? 'text-blue-100' : 'text-gray-400'}`}>{optLabel}</span>
                   </button>
                 )
               })}
@@ -254,7 +254,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
                 {extraFields.map(({ key, label, options, groupLabel }, idx) => (
                   <div key={key}>
                     {groupLabel && (idx === 0 || extraFields[idx - 1].groupLabel !== groupLabel) && (
-                      <div className="border-t border-gray-100 pt-3 mb-3">
+                      <div className="border-t border-slate-200 pt-3 mb-3">
                         <p className="text-xs font-semibold text-gray-500 mb-2">{groupLabel}</p>
                       </div>
                     )}
@@ -273,7 +273,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
                             }`}
                           >
                             <span className="text-xl leading-none mb-1">{emoji}</span>
-                            <span className={`text-[10px] font-medium ${selected ? 'text-blue-100' : 'text-gray-400'}`}>{optLabel}</span>
+                            <span className={`text-[11px] font-medium ${selected ? 'text-blue-100' : 'text-gray-400'}`}>{optLabel}</span>
                           </button>
                         )
                       })}
@@ -295,16 +295,16 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
         {!showWearable ? (
           <button
             onClick={() => setShowWearable(true)}
-            className="w-full py-2.5 text-sm text-emerald-600 font-medium bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors"
+            className="w-full py-2.5 text-sm text-blue-600 font-medium bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
           >
             {form.device_recovery_score != null
               ? <>⌚ 手錶恢復分數：{form.device_recovery_score} <span className="text-gray-400 text-xs">（點開修改）</span></>
               : <>⌚ 有戴 WHOOP/Oura/Garmin？填恢復分數 <span className="text-gray-400 text-xs">（選填）</span></>}
           </button>
         ) : (
-          <div className="border-t border-emerald-100 pt-3 space-y-3">
+          <div className="border-t border-slate-200 pt-3 space-y-3">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs font-semibold text-emerald-700">⌚ 穿戴裝置恢復分數</p>
+              <p className="text-xs font-semibold text-slate-700">⌚ 穿戴裝置恢復分數</p>
               <button
                 onClick={() => setShowWearable(false)}
                 className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
@@ -323,20 +323,20 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
                   max={100}
                   value={form.device_recovery_score ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, device_recovery_score: e.target.value ? Math.min(100, Math.max(0, Number(e.target.value))) : null }))}
-                  className="w-24 px-3 py-3 border-2 border-emerald-200 rounded-xl bg-emerald-50/50 text-2xl font-bold text-center text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-24 px-3 py-3 border-2 border-slate-200 rounded-xl bg-slate-50 text-2xl font-bold text-center text-slate-700 tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="--"
                 />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-700">恢復分數 <span className="text-gray-400 font-normal">(0-100)</span></p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">
+                  <p className="text-[11px] text-gray-400 mt-0.5">
                     WHOOP Recovery / Oura Readiness / Garmin Body Battery
                   </p>
                 </div>
                 {form.device_recovery_score != null && (
                   <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                    form.device_recovery_score >= 67 ? 'bg-green-100 text-green-700' :
-                    form.device_recovery_score >= 34 ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
+                    form.device_recovery_score >= 67 ? 'bg-emerald-100 text-emerald-700' :
+                    form.device_recovery_score >= 34 ? 'bg-amber-100 text-amber-700' :
+                    'bg-rose-100 text-rose-700'
                   }`}>
                     {form.device_recovery_score >= 67 ? '恢復良好' :
                      form.device_recovery_score >= 34 ? '中等' : '需要休息'}
@@ -348,11 +348,11 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
             {/* 進階：個別生理指標（可展開） */}
             <details className="group">
               <summary className="text-[11px] text-gray-400 cursor-pointer hover:text-gray-600 transition-colors list-none flex items-center gap-1">
-                <span className="group-open:rotate-90 transition-transform text-[10px]">▶</span>
+                <span className="group-open:rotate-90 transition-transform text-[11px]">▶</span>
                 進階：填寫個別生理數據（選填）
               </summary>
               {form.device_recovery_score != null && (
-                <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5 mt-2">
+                <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5 mt-2">
                   已填恢復分數，以下指標不會影響營養建議計算
                 </p>
               )}
@@ -364,7 +364,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
                     inputMode="numeric"
                     value={form.resting_hr ?? ''}
                     onChange={(e) => setForm(prev => ({ ...prev, resting_hr: e.target.value ? Number(e.target.value) : null }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="如 52"
                   />
                 </div>
@@ -375,7 +375,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
                     inputMode="numeric"
                     value={form.hrv ?? ''}
                     onChange={(e) => setForm(prev => ({ ...prev, hrv: e.target.value ? Number(e.target.value) : null }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="如 85"
                   />
                 </div>
@@ -386,7 +386,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
                     inputMode="numeric"
                     value={form.wearable_sleep_score ?? ''}
                     onChange={(e) => setForm(prev => ({ ...prev, wearable_sleep_score: e.target.value ? Number(e.target.value) : null }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="如 82"
                   />
                 </div>
@@ -398,7 +398,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
                     step="0.1"
                     value={form.respiratory_rate ?? ''}
                     onChange={(e) => setForm(prev => ({ ...prev, respiratory_rate: e.target.value ? Number(e.target.value) : null }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="如 14.5"
                   />
                 </div>
@@ -412,28 +412,28 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
 
         {/* 月經週期標記（女性專用） */}
         {isFemale && (
-          <div className="border-t border-pink-100 pt-3">
+          <div className="border-t border-slate-200 pt-3">
             <button
               onClick={() => setForm(prev => ({ ...prev, period_start: !prev.period_start }))}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
                 form.period_start
-                  ? 'bg-pink-100 border-2 border-pink-400'
-                  : 'bg-gray-50 border-2 border-gray-200 hover:bg-pink-50'
+                  ? 'bg-blue-50 border-2 border-blue-400'
+                  : 'bg-gray-50 border-2 border-slate-200 hover:bg-slate-100'
               }`}
             >
               <div className="flex items-center gap-2">
                 <span className="text-lg">🩸</span>
-                <span className={`text-sm font-medium ${form.period_start ? 'text-pink-700' : 'text-gray-600'}`}>
+                <span className={`text-sm font-medium ${form.period_start ? 'text-blue-700' : 'text-gray-600'}`}>
                   今天月經來了
                 </span>
               </div>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                form.period_start ? 'bg-pink-200 text-pink-700' : 'text-gray-400'
+                form.period_start ? 'bg-blue-100 text-blue-700' : 'text-gray-400'
               }`}>
                 {form.period_start ? '已標記' : '點擊標記'}
               </span>
             </button>
-            <p className="text-[10px] text-gray-400 mt-1 px-1">
+            <p className="text-[11px] text-gray-400 mt-1 px-1">
               標記經期第一天，系統會自動排除荷爾蒙造成的體重浮動
             </p>
           </div>
@@ -444,7 +444,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
           <textarea
             value={form.note}
             onChange={(e) => setForm(prev => ({ ...prev, note: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 text-sm"
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 text-sm"
             rows={2}
             placeholder="今天特別的感受？"
           />

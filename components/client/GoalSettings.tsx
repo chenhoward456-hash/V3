@@ -145,7 +145,7 @@ export default function GoalSettings({
                   }`}
                 >
                   <div className="font-medium">{label}</div>
-                  <div className="text-[10px] opacity-70 mt-0.5">{desc}</div>
+                  <div className="text-[11px] opacity-70 mt-0.5">{desc}</div>
                 </button>
               ))}
             </div>
@@ -200,7 +200,7 @@ export default function GoalSettings({
               min={new Date().toISOString().split('T')[0]}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
             />
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className="text-[11px] text-gray-400 mt-1">
               {competitionEnabled
                 ? '修改後會同步更新頂部倒數日期與後台資料'
                 : '有設定日期時，系統會計算每週需要的進度'}

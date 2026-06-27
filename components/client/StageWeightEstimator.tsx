@@ -25,16 +25,16 @@ export default function StageWeightEstimator({ currentWeight, currentBodyFat, ta
     : null
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-4 mt-3">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mt-3">
       <div className="flex items-center justify-between mb-3">
         <div>
           <h3 className="text-sm font-bold text-gray-900">🎯 上台體重推算</h3>
-          <p className="text-[10px] text-gray-500 mt-0.5">
+          <p className="text-[11px] text-gray-500 mt-0.5 tabular-nums">
             根據 InBody：{currentWeight}kg / 體脂 {currentBodyFat}% / FFM {ffm.toFixed(1)}kg
           </p>
         </div>
         {daysLeft != null && daysLeft > 0 && (
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 tabular-nums">
             {daysLeft} 天
           </span>
         )}
@@ -42,7 +42,7 @@ export default function StageWeightEstimator({ currentWeight, currentBodyFat, ta
 
       {/* 主要推算表 - 使用正常範圍 (1.5kg 肌肉流失) */}
       <div className="bg-white rounded-xl p-3 mb-3">
-        <p className="text-[10px] text-gray-400 mb-2">預估上台體重（假設流失 1.5kg 肌肉）</p>
+        <p className="text-[11px] text-gray-400 mb-2">預估上台體重（假設流失 1.5kg 肌肉）</p>
         <div className="grid grid-cols-4 gap-2">
           {bodyFatTargets.map(bf => {
             const adjFFM = ffm - 1.5
@@ -55,19 +55,19 @@ export default function StageWeightEstimator({ currentWeight, currentBodyFat, ta
               : weeklyPct <= 1.0 ? 'aggressive'
               : 'extreme'
             const colors = {
-              safe: 'bg-green-50 border-green-200 text-green-700',
+              safe: 'bg-emerald-50 border-emerald-200 text-emerald-700',
               aggressive: 'bg-amber-50 border-amber-200 text-amber-700',
-              extreme: 'bg-red-50 border-red-200 text-red-700',
-              unknown: 'bg-gray-50 border-gray-200 text-gray-600',
+              extreme: 'bg-rose-50 border-rose-200 text-rose-700',
+              unknown: 'bg-slate-50 border-slate-200 text-gray-600',
             }
 
             return (
               <div key={bf} className={`border rounded-lg p-2 text-center ${colors[feasibility]}`}>
-                <p className="text-[10px] font-medium">{bf}% 體脂</p>
-                <p className="text-lg font-bold">{stageWeight.toFixed(1)}</p>
-                <p className="text-[9px]">kg</p>
+                <p className="text-[11px] font-medium tabular-nums">{bf}% 體脂</p>
+                <p className="text-lg font-bold tabular-nums">{stageWeight.toFixed(1)}</p>
+                <p className="text-[11px]">kg</p>
                 {weeklyRate != null && (
-                  <p className="text-[9px] mt-1">
+                  <p className="text-[11px] mt-1 tabular-nums">
                     -{needToLose.toFixed(1)}kg
                     <br />
                     {weeklyRate.toFixed(2)}kg/週
@@ -78,32 +78,32 @@ export default function StageWeightEstimator({ currentWeight, currentBodyFat, ta
           })}
         </div>
         <div className="flex justify-center gap-4 mt-2">
-          <span className="text-[9px] text-green-600">🟢 安全（≤0.7%/週）</span>
-          <span className="text-[9px] text-amber-600">🟡 積極（0.7-1%）</span>
-          <span className="text-[9px] text-red-600">🔴 極限（&gt;1%）</span>
+          <span className="text-[11px] text-emerald-600">🟢 安全（≤0.7%/週）</span>
+          <span className="text-[11px] text-amber-600">🟡 積極（0.7-1%）</span>
+          <span className="text-[11px] text-rose-600">🔴 極限（&gt;1%）</span>
         </div>
       </div>
 
       {/* 目標對比 */}
       {targetWeight && targetBodyFat && (
-        <div className="bg-white/70 rounded-xl p-3">
-          <p className="text-[10px] text-gray-400 mb-1">教練設定 vs 推算</p>
+        <div className="bg-slate-50 rounded-xl p-3">
+          <p className="text-[11px] text-gray-400 mb-1">教練設定 vs 推算</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center">
-              <p className="text-[10px] text-gray-500">教練目標</p>
-              <p className="text-base font-bold text-gray-900">{targetWeight}kg / {targetBodyFat}%</p>
-              <p className="text-[10px] text-gray-400">FFM {(targetWeight * (1 - (targetBodyFat as number) / 100)).toFixed(1)}kg</p>
+              <p className="text-[11px] text-gray-500">教練目標</p>
+              <p className="text-base font-bold text-gray-900 tabular-nums">{targetWeight}kg / {targetBodyFat}%</p>
+              <p className="text-[11px] text-gray-400 tabular-nums">FFM {(targetWeight * (1 - (targetBodyFat as number) / 100)).toFixed(1)}kg</p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] text-gray-500">系統推算（5% 體脂）</p>
-              <p className="text-base font-bold text-indigo-700">{((ffm - 1.5) / 0.95).toFixed(1)}kg</p>
-              <p className="text-[10px] text-gray-400">FFM {(ffm - 1.5).toFixed(1)}kg</p>
+              <p className="text-[11px] text-gray-500">系統推算（5% 體脂）</p>
+              <p className="text-base font-bold text-slate-900 tabular-nums">{((ffm - 1.5) / 0.95).toFixed(1)}kg</p>
+              <p className="text-[11px] text-gray-400 tabular-nums">FFM {(ffm - 1.5).toFixed(1)}kg</p>
             </div>
           </div>
         </div>
       )}
 
-      <p className="text-[9px] text-gray-400 mt-2 text-center">
+      <p className="text-[11px] text-gray-400 mt-2 text-center">
         InBody 對低體脂選手可能偏低 1-2%。建議搭配皮脂夾或 DEXA 交叉驗證。
       </p>
     </div>

@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo } from 'react'
-import { daysUntilDateTW } from '@/lib/date-utils'
 import { calcRecommendedStageWeight } from '@/lib/stage-weight'
 
 interface CompletedItem {
@@ -229,10 +228,10 @@ function generateInsight(
 const INSIGHT_STYLES: Record<DailyInsight['type'], { bg: string; border: string; text: string }> = {
   progress: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
   warning: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-  milestone: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
+  milestone: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
   trend: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
-  gap: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
-  neutral: { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-600' },
+  gap: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
+  neutral: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600' },
 }
 
 export default function TodayOverviewCard({
@@ -256,7 +255,7 @@ export default function TodayOverviewCard({
   const insightStyle = insight ? INSIGHT_STYLES[insight.type] : null
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-4 mb-3">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
       {/* Daily Insight — the aha moment */}
       {insight && insightStyle && (
         <div className={`${insightStyle.bg} ${insightStyle.border} border rounded-xl px-3.5 py-2.5 mb-3`}>
@@ -270,7 +269,7 @@ export default function TodayOverviewCard({
         <div className="flex flex-wrap gap-1.5 flex-1">
           {todayCompletedItems.length > 0 ? (
             todayCompletedItems.map(item => (
-              <span key={item.label} className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 rounded-full px-2 py-0.5 text-[11px] font-medium">
+              <span key={item.label} className="inline-flex items-center gap-0.5 bg-emerald-100 text-emerald-700 rounded-full px-2 py-0.5 text-[11px] font-medium">
                 {item.icon} {item.label} ✓
               </span>
             ))
@@ -279,67 +278,32 @@ export default function TodayOverviewCard({
           )}
         </div>
         {overallStreak > 0 && (
-          <div className="flex items-center gap-1 bg-white rounded-full px-2.5 py-0.5 shadow-sm ml-2 shrink-0">
+          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-full px-2.5 py-0.5 ml-2 shrink-0">
             <span className="text-xs">🔥</span>
-            <span className="text-xs font-bold text-orange-600">{overallStreak}</span>
-            <span className="text-[9px] text-gray-400">天</span>
+            <span className="text-xs font-bold text-slate-700 tabular-nums">{overallStreak}</span>
+            <span className="text-[11px] text-gray-400">天</span>
           </div>
         )}
       </div>
 
-      {/* 備賽模式：今日體重 vs 目標 */}
-      {isCompetition && targetWeight && latestBodyData?.weight && (
-        <div className="mt-2 pt-2 border-t border-blue-100 space-y-1">
-          {(() => {
-            const totalGap = Math.abs(latestBodyData.weight! - targetWeight)
-            const waterCutPct = 0.02
-            const peakWeekLoss = Math.round(latestBodyData.weight! * waterCutPct * 10) / 10
-            const prePeakTarget = Math.round((targetWeight + peakWeekLoss) * 10) / 10
-            const dietGap = Math.max(0, Math.round((latestBodyData.weight! - prePeakTarget) * 10) / 10)
-            const daysLeft = competitionDate ? daysUntilDateTW(competitionDate) : null
-            const showSplit = daysLeft != null && daysLeft > 7 && prepPhase !== 'peak_week'
-
-            return (
-              <>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-500">⚖️ 最新</span>
-                  <span className="text-sm font-bold text-gray-800">{latestBodyData.weight} kg</span>
-                  <span className="text-xs text-gray-400">→</span>
-                  <span className="text-xs text-gray-500">🎯 上台</span>
-                  <span className="text-sm font-bold text-red-500">{targetWeight} kg</span>
-                  <span className={`text-xs font-medium ml-auto ${totalGap <= 1 ? 'text-green-600' : 'text-amber-600'}`}>
-                    差 {totalGap.toFixed(1)} kg
-                  </span>
-                </div>
-                {showSplit && totalGap > peakWeekLoss && (
-                  <div className="flex items-center gap-2 text-[10px] text-indigo-500 bg-indigo-50 rounded-lg px-2 py-1">
-                    <span>💧 飲食目標 {dietGap} kg</span>
-                    <span className="text-gray-300">+</span>
-                    <span>Peak Week 約 {peakWeekLoss} kg</span>
-                  </div>
-                )}
-              </>
-            )
-          })()}
-          {latestBodyData.body_fat && (() => {
-            const rec = calcRecommendedStageWeight(
-              latestBodyData.weight!,
-              latestBodyData.body_fat!,
-              gender ?? '男性',
-              latestBodyData.height
-            )
-            return (
-              <div className="text-xs text-gray-500 flex items-center gap-1 flex-wrap">
-                <span>🔬 FFM {rec.ffm} kg</span>
-                <span className="text-gray-300">｜</span>
-                <span>參考上台範圍</span>
-                <span className="font-semibold text-blue-600">{rec.recommendedLow}–{rec.recommendedHigh} kg</span>
-                <span className="text-gray-400">（體脂 {rec.targetBFLow}–{rec.targetBFHigh}%）</span>
-              </div>
-            )
-          })()}
-        </div>
-      )}
+      {/* 備賽模式：FFM 推算的「參考上台範圍」（體重 vs 目標已移到備賽作戰室，這裡不重複） */}
+      {isCompetition && latestBodyData?.weight && latestBodyData?.body_fat && (() => {
+        const rec = calcRecommendedStageWeight(
+          latestBodyData.weight!,
+          latestBodyData.body_fat!,
+          gender ?? '男性',
+          latestBodyData.height
+        )
+        return (
+          <div className="mt-2 pt-2 border-t border-slate-100 text-xs text-slate-500 flex items-center gap-1 flex-wrap">
+            <span>🔬 FFM {rec.ffm} kg</span>
+            <span className="text-slate-300">｜</span>
+            <span>參考上台範圍</span>
+            <span className="font-semibold text-slate-700 tabular-nums">{rec.recommendedLow}–{rec.recommendedHigh} kg</span>
+            <span className="text-slate-400 tabular-nums">（體脂 {rec.targetBFLow}–{rec.targetBFHigh}%）</span>
+          </div>
+        )
+      })()}
     </div>
   )
 }

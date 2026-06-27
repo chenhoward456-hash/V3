@@ -71,7 +71,7 @@ export default function ReferralCard({ clientId }: ReferralCardProps) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-3 animate-pulse">
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-3 animate-pulse">
         <div className="h-4 bg-gray-100 rounded w-1/3 mb-3" />
         <div className="h-10 bg-gray-100 rounded-xl mb-3" />
         <div className="h-8 bg-gray-100 rounded-xl" />
@@ -82,15 +82,15 @@ export default function ReferralCard({ clientId }: ReferralCardProps) {
   if (error || !code) return null
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 p-5 mb-3">
+    <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200 p-5 mb-3">
       {/* Subtle decorative gradient border */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-400/10 via-indigo-400/5 to-purple-400/10 pointer-events-none" />
+      <div className="absolute inset-0 rounded-2xl bg-transparent pointer-events-none" />
 
       <div className="relative">
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-            <Gift size={16} className="text-indigo-600" />
+          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+            <Gift size={16} className="text-slate-600" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-gray-800">推薦好友</h3>
@@ -100,15 +100,15 @@ export default function ReferralCard({ clientId }: ReferralCardProps) {
 
         {/* Referral code display + copy */}
         <div className="flex items-center gap-2 mb-3">
-          <div className="flex-1 bg-white/80 backdrop-blur-sm border border-indigo-200/50 rounded-xl px-4 py-2.5 font-mono text-sm font-bold text-indigo-700 tracking-wider text-center select-all">
+          <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-mono text-sm font-bold text-blue-700 tracking-wider text-center select-all tabular-nums">
             {code}
           </div>
           <button
             onClick={handleCopy}
             className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
               copied
-                ? 'bg-green-500 text-white'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
             }`}
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -127,17 +127,17 @@ export default function ReferralCard({ clientId }: ReferralCardProps) {
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white/60 backdrop-blur-sm rounded-xl px-3 py-2.5 text-center">
+          <div className="bg-slate-50 rounded-xl px-3 py-2.5 text-center">
             <div className="flex items-center justify-center gap-1.5 mb-0.5">
-              <Users size={13} className="text-indigo-500" />
-              <span className="text-lg font-bold text-gray-800">{totalReferrals}</span>
+              <Users size={13} className="text-slate-400" />
+              <span className="text-lg font-bold text-gray-800 tabular-nums">{totalReferrals}</span>
             </div>
             <span className="text-[11px] text-gray-500">成功推薦</span>
           </div>
-          <div className="bg-white/60 backdrop-blur-sm rounded-xl px-3 py-2.5 text-center">
+          <div className="bg-slate-50 rounded-xl px-3 py-2.5 text-center">
             <div className="flex items-center justify-center gap-1.5 mb-0.5">
-              <Gift size={13} className="text-purple-500" />
-              <span className="text-lg font-bold text-gray-800">{rewardDays}</span>
+              <Gift size={13} className="text-slate-400" />
+              <span className="text-lg font-bold text-gray-800 tabular-nums">{rewardDays}</span>
             </div>
             <span className="text-[11px] text-gray-500">獲得天數</span>
           </div>

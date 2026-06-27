@@ -127,7 +127,7 @@ export default function FreeInsightTeaser({
   ]
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5">
       {/* 標題 */}
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">📊</span>
@@ -146,7 +146,7 @@ export default function FreeInsightTeaser({
         {analysis.visibleInsights.map((insight, i) => (
           <div
             key={i}
-            className="flex items-start gap-2 bg-white/70 rounded-xl px-3 py-2"
+            className="flex items-start gap-2 bg-slate-50 rounded-xl px-3 py-2"
           >
             <span className="text-xs mt-0.5">
               {i === 0 ? '⚠️' : '📉'}
@@ -161,7 +161,7 @@ export default function FreeInsightTeaser({
         {lockedLines.map((line, i) => (
           <div
             key={i}
-            className="flex items-center gap-2 rounded-xl px-3 py-2 bg-white/40"
+            className="flex items-center gap-2 rounded-xl px-3 py-2 bg-slate-50"
           >
             <svg
               className="w-3.5 h-3.5 text-gray-400 shrink-0"
@@ -192,10 +192,13 @@ export default function FreeInsightTeaser({
             tier: 'self_managed',
           })
         }
-        className="block w-full text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
+        className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors"
       >
         升級自主管理方案，解鎖完整 AI 分析 — NT$499/月
       </Link>
+      <p className="text-[11px] text-gray-400 mt-3 leading-snug">
+        ⚠️ 非醫療建議：分析與營養目標僅供參考。激進減脂、體態已偏瘦或有任何健康疑慮，請先諮詢醫師或專業教練。
+      </p>
     </div>
   )
 }

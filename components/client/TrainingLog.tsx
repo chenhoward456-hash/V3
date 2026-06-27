@@ -560,7 +560,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   const scoreBar = (value: number | null, max: number = 5) => {
     if (value == null) return <span className="text-gray-400 text-xs">--</span>
     const pct = (value / max) * 100
-    const color = value >= 4 ? 'bg-green-400' : value >= 3 ? 'bg-yellow-400' : 'bg-red-400'
+    const color = value >= 4 ? 'bg-emerald-500' : value >= 3 ? 'bg-amber-400' : 'bg-rose-500'
     return (
       <div className="flex items-center gap-1.5">
         <div className="flex-1 bg-gray-200 rounded-full h-1.5">
@@ -572,7 +572,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   }
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-6 mb-6">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">訓練紀錄</h2>
       <div className="space-y-4">
         {/* 今日訓練準備度（簡單模式隱藏）— 中性卡 + 狀態色點，去除整片底色 */}
@@ -593,7 +593,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
               {readiness.reasons.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {readiness.reasons.map((r, i) => (
-                    <span key={i} className="text-[10px] text-gray-500 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5">{r}</span>
+                    <span key={i} className="text-[11px] text-gray-500 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5">{r}</span>
                   ))}
                 </div>
               )}
@@ -604,7 +604,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         {/* ===== 訓練模式建議（簡單模式隱藏） ===== */}
         {!simpleMode && readiness?.modeRecommendation && (() => {
           const mode = readiness.modeRecommendation
-          const dotColor = ({ purple: 'bg-purple-500', red: 'bg-rose-500', blue: 'bg-blue-500', amber: 'bg-amber-500', teal: 'bg-teal-500', green: 'bg-emerald-500' } as Record<string, string>)[mode.modeColor] || 'bg-blue-500'
+          const dotColor = ({ purple: 'bg-slate-400', red: 'bg-rose-500', blue: 'bg-blue-500', amber: 'bg-amber-500', teal: 'bg-slate-400', green: 'bg-emerald-500' } as Record<string, string>)[mode.modeColor] || 'bg-blue-500'
           const totalReasons = mode.reasons.length + mode.geneticTrainingCorrections.length
           return (
             <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
@@ -617,14 +617,14 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
               {/* 建議組數 */}
               <div className="flex flex-wrap gap-1 mb-2">
-                <span className="text-[10px] text-gray-600 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5">建議 {mode.suggestedSets}</span>
+                <span className="text-[11px] text-gray-600 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5">建議 {mode.suggestedSets}</span>
                 {mode.focusAreas.map((area, i) => (
-                  <span key={i} className="text-[10px] text-gray-600 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5">{area}</span>
+                  <span key={i} className="text-[11px] text-gray-600 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5">{area}</span>
                 ))}
               </div>
 
               {tier === 'self_managed' && (
-                <p className="text-[10px] text-blue-500 mb-2">
+                <p className="text-[11px] text-blue-500 mb-2">
                   🔒 <a href="/upgrade?from=self_managed&feature=personalized_sets" className="hover:underline">升級教練指導，獲得根據你的經驗、恢復和基因計算的個人化建議 →</a>
                 </p>
               )}
@@ -657,7 +657,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                     </div>
                   ))}
                   {mode.geneticTrainingCorrections.map((g, i) => (
-                    <div key={`g-${i}`} className="text-purple-700">
+                    <div key={`g-${i}`} className="text-slate-700">
                       {g.emoji} {g.gene} {g.variant}：{g.effect}
                     </div>
                   ))}
@@ -853,7 +853,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
             </div>
             {compoundHistory.length > 0 && (
               <div className="mt-2 pt-2 border-t border-amber-200">
-                <p className="text-[10px] text-amber-600 mb-1">最近紀錄</p>
+                <p className="text-[11px] text-amber-600 mb-1">最近紀錄</p>
                 <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                   {compoundHistory.map((h: any, i: number) => (
                     <span key={i} className="text-[11px] text-gray-600">
@@ -926,7 +926,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <label className="text-[10px] text-gray-400 block">重量(kg)</label>
+                          <label className="text-[11px] text-gray-400 block">重量(kg)</label>
                           <input
                             type="number"
                             inputMode="decimal"
@@ -938,7 +938,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-gray-400 block">次數</label>
+                          <label className="text-[11px] text-gray-400 block">次數</label>
                           <input
                             type="number"
                             inputMode="numeric"
@@ -949,7 +949,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-gray-400 block">組數</label>
+                          <label className="text-[11px] text-gray-400 block">組數</label>
                           <input
                             type="number"
                             inputMode="numeric"
@@ -973,7 +973,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                         </div>
                       </div>
                       {prevSame && (
-                        <p className="text-[10px] text-gray-400">上次：{prevSame.weight}kg x {prevSame.reps} x {prevSame.num_sets || 1}組</p>
+                        <p className="text-[11px] text-gray-400">上次：{prevSame.weight}kg x {prevSame.reps} x {prevSame.num_sets || 1}組</p>
                       )}
                     </div>
                   )
@@ -1099,7 +1099,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
         {/* ===== 訓練洞察頂部摘要（不需展開即可看到） ===== */}
         {!simpleMode && insights && insights.bestRecovery && insights.bestRecovery.avgNextEnergy != null && (
-          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl px-4 py-3">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
             <p className="text-xs font-semibold text-emerald-700 mb-2">Sleep x Training Insight</p>
             <p className="text-sm text-emerald-800">
               {insights.bestRecovery.emoji} {insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）
@@ -1111,14 +1111,14 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                   .filter(t => t.avgNextEnergy != null)
                   .map(t => (
                     <div key={t.type} className="flex items-center gap-2">
-                      <span className="text-[10px] text-gray-500 w-12 text-right truncate">{t.label}</span>
+                      <span className="text-[11px] text-gray-500 w-12 text-right truncate">{t.label}</span>
                       <div className="flex-1 bg-gray-200 rounded-full h-2">
                         <div
-                          className={`h-2 rounded-full transition-all ${(t.avgNextEnergy ?? 0) >= 4 ? 'bg-green-400' : (t.avgNextEnergy ?? 0) >= 3 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                          className={`h-2 rounded-full transition-all ${(t.avgNextEnergy ?? 0) >= 4 ? 'bg-emerald-500' : (t.avgNextEnergy ?? 0) >= 3 ? 'bg-amber-400' : 'bg-rose-500'}`}
                           style={{ width: `${((t.avgNextEnergy ?? 0) / 5) * 100}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-gray-600 w-6">{t.avgNextEnergy?.toFixed(1)}</span>
+                      <span className="text-[11px] text-gray-600 w-6">{t.avgNextEnergy?.toFixed(1)}</span>
                     </div>
                   ))}
               </div>
@@ -1143,12 +1143,12 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 {(insights.worstRecovery || insights.bestRecovery) && (
                   <div className="space-y-2">
                     {insights.bestRecovery && insights.bestRecovery.avgNextEnergy != null && (
-                      <div className="bg-green-50 rounded-xl px-4 py-3 text-sm text-green-700">
+                      <div className="bg-emerald-50 rounded-xl px-4 py-3 text-sm text-emerald-700">
                         ✅ {insights.bestRecovery.emoji} {insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）
                       </div>
                     )}
                     {insights.worstRecovery && insights.worstRecovery.avgNextEnergy != null && (
-                      <div className="bg-red-50 rounded-xl px-4 py-3 text-sm text-red-700">
+                      <div className="bg-rose-50 rounded-xl px-4 py-3 text-sm text-rose-700">
                         ⚠️ {insights.worstRecovery.emoji} {insights.worstRecovery.label}日後恢復最差（隔天精力 {insights.worstRecovery.avgNextEnergy.toFixed(1)}/5）
                       </div>
                     )}
@@ -1167,15 +1167,15 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                           <div>
-                            <span className="text-[10px] text-gray-400">隔天睡眠</span>
+                            <span className="text-[11px] text-gray-400">隔天睡眠</span>
                             {scoreBar(t.avgNextSleep)}
                           </div>
                           <div>
-                            <span className="text-[10px] text-gray-400">隔天精力</span>
+                            <span className="text-[11px] text-gray-400">隔天精力</span>
                             {scoreBar(t.avgNextEnergy)}
                           </div>
                           <div>
-                            <span className="text-[10px] text-gray-400">隔天心情</span>
+                            <span className="text-[11px] text-gray-400">隔天心情</span>
                             {scoreBar(t.avgNextMood)}
                           </div>
                         </div>
@@ -1190,11 +1190,11 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                     <p className="text-xs text-gray-500 mb-2">需注意的訓練日</p>
                     <div className="space-y-1">
                       {insights.roughDays.map((d, i) => (
-                        <div key={i} className="flex items-center justify-between bg-red-50 rounded-lg px-3 py-2 text-sm">
-                          <span className="text-red-700">
+                        <div key={i} className="flex items-center justify-between bg-rose-50 rounded-lg px-3 py-2 text-sm">
+                          <span className="text-rose-700">
                             {formatDate(d.date)} {getTypeEmoji(d.type)} {getTypeLabel(d.type)}
                           </span>
-                          <span className="text-red-500 text-xs">{d.reason}</span>
+                          <span className="text-rose-500 text-xs">{d.reason}</span>
                         </div>
                       ))}
                     </div>

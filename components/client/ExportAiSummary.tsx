@@ -165,16 +165,16 @@ export default function ExportAiSummary({ client, bodyData, nutritionLogs, welln
   }
 
   return (
-    <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-2xl p-4 mb-3">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-violet-800">🤖 帶著你的數據問 AI</p>
-          <p className="text-[11px] text-violet-600 mt-0.5">一鍵匯出你的健康摘要，貼到 ChatGPT / Claude 討論</p>
+          <p className="text-sm font-semibold text-slate-900">🤖 帶著你的數據問 AI</p>
+          <p className="text-[11px] text-slate-600 mt-0.5">一鍵匯出你的健康摘要，貼到 ChatGPT / Claude 討論</p>
         </div>
         <button
           onClick={handleCopy}
           className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-            copied ? 'bg-green-500 text-white' : 'bg-violet-600 text-white hover:bg-violet-700'
+            copied ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
           }`}
         >
           {copied ? '已複製 ✓' : '複製摘要'}

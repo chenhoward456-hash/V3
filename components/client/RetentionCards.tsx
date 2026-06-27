@@ -14,7 +14,7 @@ export function RetentionCard({ children, onDismiss, id }: { children: React.Rea
   }, [id])
   if (dismissed) return null
   return (
-    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-4 mb-3 relative">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3 relative">
       <button
         onClick={() => {
           localStorage.setItem(`retention_${id}_dismissed`, '1')
@@ -51,27 +51,27 @@ export function TDEECalibrationCard({ client }: { client: Client }) {
 
   // We show the card as a "report" style
   return (
-    <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 border-2 border-indigo-200 rounded-2xl p-5 mb-3 shadow-sm">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
       <div className="text-center mb-4">
         <span className="text-3xl">🧠</span>
         <h3 className="text-base font-bold text-gray-900 mt-2">14 天智能校正完成</h3>
       </div>
 
-      <div className="bg-white/70 rounded-xl p-4 mb-4 space-y-3">
+      <div className="bg-slate-50 rounded-xl p-4 mb-4 space-y-3">
         <p className="text-xs text-gray-500 text-center">
           根據你過去 14 天的真實體重趨勢，系統已自動校正你的代謝估算。
         </p>
         {initialTDEE && (
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center">
-              <p className="text-[10px] text-gray-400">初始估算 TDEE</p>
-              <p className="text-lg font-bold text-gray-500">{initialTDEE.toLocaleString()}</p>
-              <p className="text-[10px] text-gray-400">kcal</p>
+              <p className="text-[11px] text-gray-400">初始估算 TDEE</p>
+              <p className="text-lg font-bold text-gray-500 tabular-nums">{initialTDEE.toLocaleString()}</p>
+              <p className="text-[11px] text-gray-400">kcal</p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] text-indigo-500">校正後目標熱量</p>
-              <p className="text-lg font-bold text-indigo-700">{currentCalories.toLocaleString()}</p>
-              <p className="text-[10px] text-indigo-500">kcal</p>
+              <p className="text-[11px] text-blue-600">校正後目標熱量</p>
+              <p className="text-lg font-bold text-blue-700 tabular-nums">{currentCalories.toLocaleString()}</p>
+              <p className="text-[11px] text-blue-600">kcal</p>
             </div>
           </div>
         )}
@@ -106,7 +106,7 @@ export function TDEECalibrationCard({ client }: { client: Client }) {
           我知道了
         </button>
       ) : (
-        <p className="text-center text-xs text-green-500 mt-3">✓ 已確認</p>
+        <p className="text-center text-xs text-emerald-600 mt-3">✓ 已確認</p>
       )}
     </div>
   )

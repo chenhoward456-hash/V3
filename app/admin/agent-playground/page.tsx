@@ -109,13 +109,13 @@ export default function AgentPlayground() {
         </div>
 
         {/* Input */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
           <label className="block text-xs font-semibold text-gray-600 mb-1">Context Hint（會 prepend 到 user message 前）</label>
           <input
             type="text"
             value={contextHint}
             onChange={(e) => setContextHint(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg mb-3 text-sm"
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg mb-3 text-sm"
           />
           <label className="block text-xs font-semibold text-gray-600 mb-1">學員 / 教練講的話（測試輸入）</label>
           <textarea
@@ -123,7 +123,7 @@ export default function AgentPlayground() {
             onChange={(e) => setUserMessage(e.target.value)}
             rows={4}
             placeholder="範例：我這週體重沒掉，是不是要再砍一點？"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono"
           />
           <div className="flex items-center justify-between mt-3">
             <div className="text-xs text-gray-400">
@@ -140,14 +140,14 @@ export default function AgentPlayground() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm text-red-700">
+          <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-6 text-sm text-rose-700">
             ❌ {error}
           </div>
         )}
 
         {/* Response */}
         {response && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
             <h2 className="text-sm font-semibold mb-3">📝 AI 回應</h2>
             <div className="bg-gray-50 rounded-lg p-3 text-sm whitespace-pre-wrap mb-4 leading-relaxed">{response.finalText}</div>
 
@@ -162,22 +162,22 @@ export default function AgentPlayground() {
                       </summary>
                       <div className="mt-2 text-xs">
                         <div className="text-gray-500 mb-1">input:</div>
-                        <pre className="bg-white p-2 rounded text-[10px] overflow-auto">{JSON.stringify(tc.input, null, 2)}</pre>
+                        <pre className="bg-white p-2 rounded text-[11px] overflow-auto">{JSON.stringify(tc.input, null, 2)}</pre>
                         <div className="text-gray-500 mt-2 mb-1">result:</div>
-                        <pre className="bg-white p-2 rounded text-[10px] overflow-auto max-h-60">{JSON.stringify(tc.result, null, 2)}</pre>
+                        <pre className="bg-white p-2 rounded text-[11px] overflow-auto max-h-60">{JSON.stringify(tc.result, null, 2)}</pre>
                       </div>
                     </details>
                   ))}
                 </div>
               </>
             )}
-            <p className="text-[10px] text-gray-400 mt-3">tokens: in {response.totalTokens.input} / out {response.totalTokens.output}</p>
+            <p className="text-[11px] text-gray-400 mt-3">tokens: in {response.totalTokens.input} / out {response.totalTokens.output}</p>
           </div>
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="flex items-center gap-1 mb-4 border-b border-gray-100 pb-2">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="flex items-center gap-1 mb-4 border-b border-slate-200 pb-2">
             <button
               onClick={() => setActiveTab('pending')}
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
@@ -209,18 +209,18 @@ export default function AgentPlayground() {
                 const isNote = p.proposal_type === 'personal_note'
                 const ch: any = p.proposed_changes ?? {}
                 return (
-                <div key={p.id} className={`border rounded-lg p-4 ${isNote ? 'border-purple-200 bg-purple-50' : 'border-amber-200 bg-amber-50'}`}>
+                <div key={p.id} className={`border rounded-xl p-4 ${isNote ? 'border-slate-200 bg-slate-50' : 'border-amber-200 bg-amber-50'}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`text-xs font-semibold ${isNote ? 'text-purple-800' : 'text-amber-800'}`}>
+                    <span className={`text-xs font-semibold ${isNote ? 'text-slate-700' : 'text-amber-800'}`}>
                       {p.clients?.name ?? p.client_id} · {isNote ? '📝 個人筆記提案' : 'macros 調整提案'} · by {p.proposed_by}
                     </span>
-                    <span className="text-[10px] text-gray-500">{new Date(p.proposed_at).toLocaleString('zh-TW')}</span>
+                    <span className="text-[11px] text-gray-500">{new Date(p.proposed_at).toLocaleString('zh-TW')}</span>
                   </div>
 
                   {isNote ? (
                     <div className="bg-white rounded p-3 mb-3 text-sm">
                       <div className="flex items-center gap-2 text-xs mb-2">
-                        <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-700">{ch.category}</span>
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600">{ch.category}</span>
                         <span className="text-gray-500">weight: {ch.weight}/10</span>
                         {ch.relevant_until && <span className="text-gray-500">有效到: {ch.relevant_until}</span>}
                       </div>
@@ -230,11 +230,11 @@ export default function AgentPlayground() {
                     <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
                       <div>
                         <p className="font-semibold text-gray-600 mb-1">目前</p>
-                        <pre className="bg-white p-2 rounded text-[10px]">{JSON.stringify(p.current_state, null, 2)}</pre>
+                        <pre className="bg-white p-2 rounded text-[11px]">{JSON.stringify(p.current_state, null, 2)}</pre>
                       </div>
                       <div>
                         <p className="font-semibold text-gray-600 mb-1">提議</p>
-                        <pre className="bg-white p-2 rounded text-[10px]">{JSON.stringify(p.proposed_changes, null, 2)}</pre>
+                        <pre className="bg-white p-2 rounded text-[11px]">{JSON.stringify(p.proposed_changes, null, 2)}</pre>
                       </div>
                     </div>
                   )}
@@ -253,7 +253,7 @@ export default function AgentPlayground() {
                     value={reviewNote}
                     onChange={(e) => setReviewNote(e.target.value)}
                     placeholder="教練註記（選填）..."
-                    className="w-full px-2 py-1 border border-gray-200 rounded text-xs mb-2"
+                    className="w-full px-2 py-1 border border-slate-200 rounded text-xs mb-2"
                   />
                   <div className="flex gap-2">
                     <button onClick={() => actOnProposal(p.id, 'approve')} className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded hover:bg-emerald-700">✓ 核准套用</button>
@@ -274,24 +274,24 @@ export default function AgentPlayground() {
               {history.map((h: any) => {
                 const isAi = (h.reason || '').includes('AI 提案')
                 return (
-                  <div key={h.id} className={`border rounded-lg p-4 ${isAi ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
+                  <div key={h.id} className={`border rounded-xl p-4 ${isAi ? 'border-blue-200 bg-blue-50' : 'border-slate-200 bg-slate-50'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className={`text-xs font-semibold ${isAi ? 'text-blue-800' : 'text-gray-800'}`}>
                         {isAi ? '🤖 AI 提案 → 教練核准' : '👤 教練手動'}
                         {' · '}
                         {h.applied_by} · {h.trigger_source}
                       </span>
-                      <span className="text-[10px] text-gray-500">{new Date(h.applied_at).toLocaleString('zh-TW')}</span>
+                      <span className="text-[11px] text-gray-500">{new Date(h.applied_at).toLocaleString('zh-TW')}</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 mb-2 text-xs">
                       <div>
                         <p className="font-semibold text-gray-600 mb-1">舊值</p>
-                        <pre className="bg-white p-2 rounded text-[10px] max-h-32 overflow-auto">{JSON.stringify(h.old_macros, null, 2)}</pre>
+                        <pre className="bg-white p-2 rounded text-[11px] max-h-32 overflow-auto">{JSON.stringify(h.old_macros, null, 2)}</pre>
                       </div>
                       <div>
                         <p className="font-semibold text-gray-600 mb-1">新值</p>
-                        <pre className="bg-white p-2 rounded text-[10px] max-h-32 overflow-auto">{JSON.stringify(h.new_macros, null, 2)}</pre>
+                        <pre className="bg-white p-2 rounded text-[11px] max-h-32 overflow-auto">{JSON.stringify(h.new_macros, null, 2)}</pre>
                       </div>
                     </div>
 
