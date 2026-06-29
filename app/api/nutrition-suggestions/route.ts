@@ -376,13 +376,14 @@ export async function GET(request: NextRequest) {
     if (leanAutoBlock) {
       suggestion.warnings = [...(suggestion.warnings ?? []), '⚠️ 你已經相當精瘦了，系統不會自動再幫你降低熱量。想繼續減脂請先諮詢專業教練/醫師，避免影響健康。']
     }
-    // 增肌安全閘：goal=bulk / off_season 階段「絕不自動往下砍熱量」。停滯的增肌只該往上推；
-    // 會算出更低值幾乎都是 adaptive TDEE 被低估(記錄稀疏/沒吃到設定的 surplus)→ surplus cap
-    // (TDEE+500) 把教練刻意設的較高目標拖下來的陷阱。要調降一律由教練手動，不讓引擎自動 cut 增肌目標。
+    // 增肌安全閘：goal=bulk / off_season 階段，只擋「停滯卻被往下砍」這一種誤判。
+    // 系統仍依資料雙向調整——髒增肌(too_fast，體脂/體重升太快)該降的照降；
+    // 但停滯/掉重(plateau/wrong_direction/on_track)時算出更低值，幾乎都是 adaptive TDEE 被低估
+    // (記錄稀疏/沒吃到設定 surplus)→ surplus cap 把該往上的目標拖下來的陷阱，不自動套用。
     const isBulkGoal = client.goal_type === 'bulk' || client.prep_phase === 'off_season'
-    const bulkCutBlock = isBulkGoal && wouldCut
+    const bulkCutBlock = isBulkGoal && wouldCut && suggestion.status !== 'too_fast'
     if (bulkCutBlock) {
-      suggestion.warnings = [...(suggestion.warnings ?? []), '⚠️ 增肌目標下系統不會自動調降熱量——增重停滯多半是攝取未達標或記錄不足，不是該砍熱量。請先確認有吃到設定量＋穩定記錄；要調整由教練手動決定。']
+      suggestion.warnings = [...(suggestion.warnings ?? []), '⚠️ 增肌目標下，系統不會把熱量往下砍（增重停滯多半是攝取未達標或記錄不足，不是該降熱量）。系統會依體重趨勢往上推；要調降由教練手動決定。']
     }
     const canAutoApply = !leanAutoBlock && !bulkCutBlock && wantsAutoApply && effectiveAutoApply && (isAdmin || ((!isCoachManaged) && (suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)))
 
