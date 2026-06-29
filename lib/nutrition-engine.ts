@@ -3842,11 +3842,17 @@ function generateBulkSuggestion(
   }
 
   // 增肌期熱量安全上限：TDEE + MAX_SURPLUS_KCAL
+  // ⚠️ adaptive TDEE 會因低報/記錄稀疏被低估 → 上限被拉低 → 把合理增肌目標誤砍（威銘案）。
+  // 修正：增重停滯/不升反降時，真實維持熱量必 ≥ 目前攝取（沒增重＝已達或超過維持）；
+  // 此時若 estimatedTDEE < 現值＝估值被低估，改用現值當維持基準，避免上限把該往上推的盈餘砍掉。
+  // on_track / too_fast（穩定或需主動降髒增肌）維持原邏輯，上限仍可下砍。
   if (estimatedTDEE != null) {
-    const maxBulkCal = estimatedTDEE + SAFETY.MAX_SURPLUS_KCAL
+    const stalledBulk = status === 'plateau' || status === 'wrong_direction'
+    const maintenanceBase = stalledBulk ? Math.max(estimatedTDEE, currentCal) : estimatedTDEE
+    const maxBulkCal = maintenanceBase + SAFETY.MAX_SURPLUS_KCAL
     if (suggestedCal > maxBulkCal) {
       suggestedCal = maxBulkCal
-      warnings.push(`增肌期熱量已達上限 ${maxBulkCal}kcal（TDEE ${estimatedTDEE} + ${SAFETY.MAX_SURPLUS_KCAL}），避免過度盈餘`)
+      warnings.push(`增肌期熱量已達上限 ${maxBulkCal}kcal（維持熱量 ${maintenanceBase} + ${SAFETY.MAX_SURPLUS_KCAL}），避免過度盈餘`)
     }
   }
 
