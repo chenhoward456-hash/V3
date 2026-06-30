@@ -330,7 +330,7 @@ export async function POST(request: NextRequest) {
   try {
     // 1. 獲取請求內容
     const body = await request.json()
-    const { clientId, date, height, weight, bodyFat, muscleMass, visceralFat, bmi } = body
+    const { clientId, date, height, weight, bodyFat, muscleMass, visceralFat, bmi, inbodyWeight } = body
 
     // 驗證輸入
     if (!clientId || !date) {
@@ -352,6 +352,11 @@ export async function POST(request: NextRequest) {
 
     if (weight != null) {
       validations.push(validateBodyComposition('weight', weight))
+    }
+
+    // InBody 體重（晚上/吃飽量的）—— 跟早晨 weight 同範圍驗證，但寫進獨立欄位、永遠不污染體重趨勢
+    if (inbodyWeight != null) {
+      validations.push(validateBodyComposition('weight', inbodyWeight))
     }
 
     if (bodyFat != null) {
@@ -401,16 +406,17 @@ export async function POST(request: NextRequest) {
       .eq('date', date)
       .maybeSingle()
 
-    const record = {
-      client_id: client.id,
-      date,
-      height: height ?? null,
-      weight: weight ?? null,
-      body_fat: bodyFat ?? null,
-      muscle_mass: muscleMass ?? null,
-      visceral_fat: visceralFat ?? null,
-      bmi: bmi ?? null,
-    }
+    // 部分更新：只寫「這次有提供」的欄位（undefined = 不碰）。
+    // 關鍵——記 InBody 時不送 weight，所以不會清掉/覆寫當天的早晨體重；
+    // 記每日體重時不送 body_fat/inbody_weight，所以不會清掉 InBody 資料。
+    const record: Record<string, string | number | null> = { client_id: client.id, date }
+    if (height !== undefined) record.height = height ?? null
+    if (weight !== undefined) record.weight = weight ?? null
+    if (bodyFat !== undefined) record.body_fat = bodyFat ?? null
+    if (muscleMass !== undefined) record.muscle_mass = muscleMass ?? null
+    if (visceralFat !== undefined) record.visceral_fat = visceralFat ?? null
+    if (bmi !== undefined) record.bmi = bmi ?? null
+    if (inbodyWeight !== undefined) record.inbody_weight = inbodyWeight ?? null
 
     let data, error
     if (existing) {

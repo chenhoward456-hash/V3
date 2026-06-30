@@ -210,9 +210,12 @@ export default function BodyComposition({
     return () => { timerRefs.current.forEach(t => clearTimeout(t)) }
   }, [])
   const todayStr = getLocalDateStr()
+  // entryMode 分流：'weight' = 每日早晨空腹體重（只寫 weight、驅動趨勢與引擎）；
+  // 'inbody' = InBody 量測（體脂/肌肉/內臟 + InBody 自己的體重 inbody_weight，永遠不碰 weight 趨勢）。
+  const [entryMode, setEntryMode] = useState<'weight' | 'inbody'>('weight')
   const [form, setForm] = useState({
     date: todayStr,
-    weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: ''
+    weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '', inbody_weight: ''
   })
 
   // 選定日期是否已有紀錄
@@ -328,7 +331,33 @@ export default function BodyComposition({
     return { chartData, predictedWeight, daysToComp, slope, lastMA, minY, maxY, onTrack, diff }
   }, [competitionEnabled, targetWeight, competitionDate, weightMAData])
 
+  // 記 InBody：只送體脂/肌肉/內臟 + InBody 體重(inbody_weight)，不送 weight → 不碰體重趨勢/引擎。
+  const handleSubmitInbody = async () => {
+    const hasAny = form.inbody_weight || form.body_fat || form.muscle_mass || form.visceral_fat
+    if (!hasAny) { showToast('至少填一項 InBody 數據', 'error'); return }
+    try {
+      const res = await fetch('/api/body-composition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId, date: form.date,
+          inbodyWeight: form.inbody_weight ? parseFloat(form.inbody_weight) : null,
+          bodyFat: form.body_fat ? parseFloat(form.body_fat) : null,
+          muscleMass: form.muscle_mass ? parseFloat(form.muscle_mass) : null,
+          visceralFat: form.visceral_fat ? parseFloat(form.visceral_fat) : null,
+          height: form.height ? parseFloat(form.height) : null,
+        })
+      })
+      if (!res.ok) throw new Error('保存失敗')
+      setShowModal(false)
+      setForm({ date: getLocalDateStr(), weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '', inbody_weight: '' })
+      onMutate()
+      showToast('InBody 數據已記錄（不影響每日體重趨勢）', 'success', '📊')
+    } catch { showToast('儲存失敗，請重試', 'error') }
+  }
+
   const handleSubmit = async () => {
+    if (entryMode === 'inbody') return handleSubmitInbody()
     if (!form.weight || form.weight.trim() === '') { showToast('請輸入體重', 'error'); return }
     const weight = parseFloat(form.weight)
     if (isNaN(weight) || weight < 20 || weight > 300) { showToast('體重請輸入 20-300kg 之間的數值', 'error'); return }
@@ -336,19 +365,13 @@ export default function BodyComposition({
       const res = await fetch('/api/body-composition', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId, date: form.date, weight,
-          bodyFat: form.body_fat ? parseFloat(form.body_fat) : null,
-          muscleMass: form.muscle_mass ? parseFloat(form.muscle_mass) : null,
-          height: form.height ? parseFloat(form.height) : null,
-          visceralFat: form.visceral_fat ? parseFloat(form.visceral_fat) : null
-        })
+        body: JSON.stringify({ clientId, date: form.date, weight })
       })
       if (!res.ok) throw new Error('保存失敗')
       const result = await res.json()
       const submittedDate = form.date
       setShowModal(false)
-      setForm({ date: getLocalDateStr(), weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
+      setForm({ date: getLocalDateStr(), weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '', inbody_weight: '' })
       // 營養素引擎結果（只在有調整時顯示）
       const na = result?.data?.nutritionAdjusted
       if (na?.adjusted) {
@@ -856,28 +879,46 @@ export default function BodyComposition({
           </div>
         )}
 
-        <button
-          onClick={() => {
-            const today = getLocalDateStr()
-            const todayRecord = bodyData?.find((r: any) => r.date === today)
-            if (todayRecord) {
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={() => {
+              const today = getLocalDateStr()
+              const todayRecord = bodyData?.find((r: any) => r.date === today)
+              setEntryMode('weight')
               setForm({
                 date: today,
-                weight: todayRecord.weight != null ? String(todayRecord.weight) : '',
-                body_fat: todayRecord.body_fat != null ? String(todayRecord.body_fat) : '',
-                muscle_mass: todayRecord.muscle_mass != null ? String(todayRecord.muscle_mass) : '',
-                height: todayRecord.height != null ? String(todayRecord.height) : '',
-                visceral_fat: todayRecord.visceral_fat != null ? String(todayRecord.visceral_fat) : '',
+                weight: todayRecord?.weight != null ? String(todayRecord.weight) : '',
+                body_fat: '', muscle_mass: '', height: '', visceral_fat: '', inbody_weight: '',
               })
-            } else {
-              setForm({ date: today, weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
-            }
-            setShowModal(true)
-          }}
-          className="w-full mt-4 bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
-        >
-          <Plus size={20} className="mr-2" /> 新增身體紀錄
-        </button>
+              setShowModal(true)
+            }}
+            className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+          >
+            <Scale size={18} className="mr-2" /> 記每日體重
+          </button>
+          {!simpleMode && (
+            <button
+              onClick={() => {
+                const today = getLocalDateStr()
+                const todayRecord = bodyData?.find((r: any) => r.date === today)
+                setEntryMode('inbody')
+                setForm({
+                  date: today,
+                  weight: '',
+                  body_fat: todayRecord?.body_fat != null ? String(todayRecord.body_fat) : '',
+                  muscle_mass: todayRecord?.muscle_mass != null ? String(todayRecord.muscle_mass) : '',
+                  height: todayRecord?.height != null ? String(todayRecord.height) : '',
+                  visceral_fat: todayRecord?.visceral_fat != null ? String(todayRecord.visceral_fat) : '',
+                  inbody_weight: todayRecord?.inbody_weight != null ? String(todayRecord.inbody_weight) : '',
+                })
+                setShowModal(true)
+              }}
+              className="flex-1 bg-white border border-blue-600 text-blue-600 py-3 px-4 rounded-xl font-medium hover:bg-blue-50 transition-colors flex items-center justify-center"
+            >
+              <Activity size={18} className="mr-2" /> 記 InBody
+            </button>
+          )}
+        </div>
       </div>
 
 
@@ -890,24 +931,32 @@ export default function BodyComposition({
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                   <Plus size={16} className="text-blue-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900">{isUpdate ? '更新身體數據' : '新增身體數據'}</h3>
+                <h3 className="text-xl font-semibold text-gray-900">{entryMode === 'inbody' ? '記錄 InBody' : (isUpdate ? '更新每日體重' : '記每日體重')}</h3>
               </div>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-all">
                 <X size={20} />
               </button>
             </div>
 
+            {entryMode === 'inbody' && (
+              <div className="mb-4 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 flex items-start gap-2">
+                <span className="text-sm mt-0.5">💡</span>
+                <p className="text-xs text-blue-700 leading-relaxed">InBody 在晚上、吃飽量都沒關係——它只看自己跟上次 InBody 的趨勢，<b>不會影響你的每日體重趨勢</b>。每日體重請另外用「記每日體重」、固定早晨空腹量。</p>
+              </div>
+            )}
+
             <div className="space-y-4">
-              {[
+              {(entryMode === 'inbody' ? [
                 { key: 'date', label: '日期', icon: Calendar, type: 'date', required: false, unit: '', min: '', max: new Date().toISOString().split('T')[0], step: '' },
-                { key: 'weight', label: '體重 (kg)', icon: Scale, type: 'number', required: true, unit: 'kg', min: '20', max: '300', step: '0.1' },
+                { key: 'inbody_weight', label: 'InBody 體重 (kg)', icon: Scale, type: 'number', required: false, unit: 'kg', min: '20', max: '300', step: '0.1' },
                 { key: 'body_fat', label: '體脂 (%)', icon: Activity, type: 'number', required: false, unit: '%', min: '1', max: '60', step: '0.1' },
-                ...(!simpleMode ? [
-                  { key: 'muscle_mass', label: '肌肉量 (kg)', icon: Dumbbell, type: 'number', required: false, unit: 'kg', min: '10', max: '100', step: '0.1' },
-                  { key: 'height', label: '身高 (cm)', icon: Ruler, type: 'number', required: false, unit: 'cm', min: '100', max: '250', step: '0.1' },
-                  { key: 'visceral_fat', label: '內臟脂肪', icon: Heart, type: 'number', required: false, unit: '', min: '1', max: '30', step: '0.1' },
-                ] : []),
-              ].map(({ key, label, icon: Icon, type, required, unit, min, max, step }) => (
+                { key: 'muscle_mass', label: '肌肉量 (kg)', icon: Dumbbell, type: 'number', required: false, unit: 'kg', min: '10', max: '100', step: '0.1' },
+                { key: 'height', label: '身高 (cm)', icon: Ruler, type: 'number', required: false, unit: 'cm', min: '100', max: '250', step: '0.1' },
+                { key: 'visceral_fat', label: '內臟脂肪', icon: Heart, type: 'number', required: false, unit: '', min: '1', max: '30', step: '0.1' },
+              ] : [
+                { key: 'date', label: '日期', icon: Calendar, type: 'date', required: false, unit: '', min: '', max: new Date().toISOString().split('T')[0], step: '' },
+                { key: 'weight', label: '體重 (kg，早晨空腹)', icon: Scale, type: 'number', required: true, unit: 'kg', min: '20', max: '300', step: '0.1' },
+              ]).map(({ key, label, icon: Icon, type, required, unit, min, max, step }) => (
                 <div key={key}>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
                     <Icon size={16} className="mr-1 text-gray-500" />
@@ -932,9 +981,10 @@ export default function BodyComposition({
                               muscle_mass: rec.muscle_mass != null ? String(rec.muscle_mass) : '',
                               height: rec.height != null ? String(rec.height) : '',
                               visceral_fat: rec.visceral_fat != null ? String(rec.visceral_fat) : '',
+                              inbody_weight: rec.inbody_weight != null ? String(rec.inbody_weight) : '',
                             })
                           } else {
-                            setForm({ date: val, weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '' })
+                            setForm({ date: val, weight: '', body_fat: '', muscle_mass: '', height: '', visceral_fat: '', inbody_weight: '' })
                           }
                         } else {
                           setForm(prev => ({ ...prev, [key]: val }))

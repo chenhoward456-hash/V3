@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     if (client.body_composition_enabled) {
       queryEntries.push({
         key: 'bodyData',
-        query: wrap(supabase.from('body_composition').select('id, client_id, date, weight, height, body_fat').eq('client_id', client.id).order('date', { ascending: false }).limit(90)),
+        query: wrap(supabase.from('body_composition').select('id, client_id, date, weight, height, body_fat, muscle_mass, visceral_fat, inbody_weight').eq('client_id', client.id).order('date', { ascending: false }).limit(90)),
       })
     }
 
