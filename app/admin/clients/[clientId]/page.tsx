@@ -281,7 +281,7 @@ export default function ClientEditor() {
         diet_start_date: null,
         activity_profile: null,
         health_mode_enabled: false,
-        simple_mode: true,
+        simple_mode: false,
         quarterly_cycle_start: null,
         coach_macro_override: null,
         gene_mthfr: null,
