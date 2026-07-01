@@ -105,6 +105,9 @@ function renderMarkdown(content: string) {
     let result = escapeHtml(text)
     // **粗體**
     result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // ![alt](圖片 url) — 圖片，必須在連結處理之前（否則會被當成連結）
+    result = result.replace(/!\[(.*?)\]\((.*?)\)/g, (_, alt, url) =>
+      `<img src="${sanitizeHref(url)}" alt="${alt}" style="width: 100%; height: auto; border-radius: 12px; margin: 1.5rem 0;" loading="lazy" />`)
     // [連結文字](url)
     result = result.replace(/\[(.*?)\]\((.*?)\)/g, (_, linkText, url) =>
       `<a href="${sanitizeHref(url)}" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">${linkText}</a>`)
