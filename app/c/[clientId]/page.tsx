@@ -1269,6 +1269,7 @@ export default function ClientDashboard() {
               competitionEnabled={isCompetitionMode(clientData.client.client_mode)}
               targetWeight={clientData.client.target_weight}
               competitionDate={clientData.client.competition_date}
+              targetDate={clientData.client.target_date}
               simpleMode={clientData.client.simple_mode}
               goalType={clientData.client.goal_type}
               prepPhase={clientData.client.prep_phase}

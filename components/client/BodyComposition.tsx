@@ -18,6 +18,7 @@ interface BodyCompositionProps {
   competitionEnabled?: boolean
   targetWeight?: number | null
   competitionDate?: string | null
+  targetDate?: string | null
   simpleMode?: boolean
   goalType?: string | null
   prepPhase?: string | null
@@ -192,7 +193,7 @@ function getWeightFeedback(
 }
 
 export default function BodyComposition({
-  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, simpleMode, goalType, prepPhase, tier, caloriesTarget, proteinTarget, height, hasLineBinding, uniqueCode, onMutate
+  latestBodyData, prevBodyData, bmi, trendData, bodyData, clientId, competitionEnabled, targetWeight, competitionDate, targetDate, simpleMode, goalType, prepPhase, tier, caloriesTarget, proteinTarget, height, hasLineBinding, uniqueCode, onMutate
 }: BodyCompositionProps) {
   const [trendType, setTrendType] = useState<'weight' | 'body_fat'>('weight')
   const [showModal, setShowModal] = useState(false)
@@ -243,14 +244,16 @@ export default function BodyComposition({
     })
   }, [bodyData])
 
-  // 體重軌跡 vs 目標體重（含預測線）
+  // 體重軌跡 vs 目標體重（含預測線）。有比賽日就用比賽日；沒有就用自訂目標日 target_date，
+  // 讓「非比賽、自己設期限」的學員（例如純減脂到某天）也能看到到期日預測。
   const trajectoryData = useMemo(() => {
-    if (!competitionEnabled || !targetWeight || !competitionDate || !weightMAData || weightMAData.length < 3) return null
+    const deadline = competitionDate || targetDate
+    if (!competitionEnabled || !targetWeight || !deadline || !weightMAData || weightMAData.length < 3) return null
 
-    const compDate = new Date(competitionDate)
+    const compDate = new Date(deadline)
     const now = new Date()
-    const daysToComp = daysUntilDateTW(competitionDate)
-    if (daysToComp < 0) return null // 比賽已過
+    const daysToComp = daysUntilDateTW(deadline)
+    if (daysToComp < 0) return null // 期限已過
 
     // 取近 14 天的 MA7 做線性回歸
     const recentMA = weightMAData.slice(-14)
@@ -328,8 +331,8 @@ export default function BodyComposition({
     const diff = Math.abs(predictedWeight - targetWeight)
     const onTrack = diff <= 0.5
 
-    return { chartData, predictedWeight, daysToComp, slope, lastMA, minY, maxY, onTrack, diff }
-  }, [competitionEnabled, targetWeight, competitionDate, weightMAData])
+    return { chartData, predictedWeight, daysToComp, slope, lastMA, minY, maxY, onTrack, diff, isComp: !!competitionDate }
+  }, [competitionEnabled, targetWeight, competitionDate, targetDate, weightMAData])
 
   // 記 InBody：只送體脂/肌肉/內臟 + InBody 體重(inbody_weight)，不送 weight → 不碰體重趨勢/引擎。
   const handleSubmitInbody = async () => {
@@ -744,7 +747,7 @@ export default function BodyComposition({
         {trajectoryData && targetWeight && (
           <div className="mt-4 border-t border-slate-200 pt-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-gray-700">🏆 體重軌跡 vs 目標</p>
+              <p className="text-sm font-medium text-gray-700">{trajectoryData.isComp ? '🏆' : '🎯'} 體重軌跡 vs 目標</p>
               <div className="flex items-center gap-3 text-[11px] text-gray-400">
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-400 inline-block rounded" /> 實際</span>
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-orange-400 inline-block rounded" /> 7日均</span>
@@ -794,13 +797,13 @@ export default function BodyComposition({
                 <p className="text-lg font-bold text-red-500 tabular-nums">{targetWeight} kg</p>
               </div>
               <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[11px] text-gray-400 mb-0.5">預測比賽日體重</p>
+                <p className="text-[11px] text-gray-400 mb-0.5">{trajectoryData.isComp ? '預測比賽日體重' : '預測目標日體重'}</p>
                 <p className={`text-lg font-bold tabular-nums ${trajectoryData.onTrack ? 'text-emerald-600' : 'text-amber-600'}`}>
                   {trajectoryData.predictedWeight} kg
                 </p>
               </div>
               <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[11px] text-gray-400 mb-0.5">距離比賽</p>
+                <p className="text-[11px] text-gray-400 mb-0.5">{trajectoryData.isComp ? '距離比賽' : '距離目標日'}</p>
                 <p className="text-lg font-bold text-gray-700 tabular-nums">{trajectoryData.daysToComp} 天</p>
               </div>
             </div>
@@ -814,7 +817,7 @@ export default function BodyComposition({
                   : 'bg-blue-50 text-blue-700 border border-blue-200'
             }`}>
               {trajectoryData.onTrack
-                ? '✅ 在軌道上！照目前趨勢，比賽日可以達到目標體重'
+                ? `✅ 在軌道上！照目前趨勢，${trajectoryData.isComp ? '比賽日' : '目標日'}可以達到目標體重`
                 : trajectoryData.predictedWeight > targetWeight
                   ? `⚠️ 預計比目標重 ${trajectoryData.diff.toFixed(1)} kg，需要加速減重`
                   : `💡 預計比目標輕 ${trajectoryData.diff.toFixed(1)} kg，減重速度良好`
