@@ -667,6 +667,47 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // ── 學員端二次追加提醒（第一次晚上提醒後仍沒填 → 隔天早上補推一次）──
+    //    只針對 coached/protocol tier（教練實際在盯的學員，如 Eddie/William/陳胤豪），不吵自助/免費用戶。
+    //    體重不列入：昨天的空腹體重無法補量，已由上面的「量體重」晨間提醒涵蓋；這裡只追可補填的 飲食/訓練/感受。
+    try {
+      const fuYday = new Date(); fuYday.setDate(fuYday.getDate() - 1)
+      const fuYdayStr = fuYday.toISOString().split('T')[0]
+      const [fuNutRes, fuTrainRes, fuWellRes] = await Promise.all([
+        supabase.from('nutrition_logs').select('client_id').eq('date', fuYdayStr),
+        supabase.from('training_logs').select('client_id').eq('date', fuYdayStr),
+        supabase.from('daily_wellness').select('client_id').eq('date', fuYdayStr),
+      ])
+      const fuHadNut = new Set((fuNutRes.data || []).map((r: { client_id: string }) => r.client_id))
+      const fuHadTrain = new Set((fuTrainRes.data || []).map((r: { client_id: string }) => r.client_id))
+      const fuHadWell = new Set((fuWellRes.data || []).map((r: { client_id: string }) => r.client_id))
+      const followups: { client: typeof clients[0]; missed: string[] }[] = []
+      for (const c of clients) {
+        if (c.subscription_tier !== 'coached' && c.subscription_tier !== 'protocol') continue
+        const missed: string[] = []
+        if (c.nutrition_enabled && !fuHadNut.has(c.id)) missed.push('飲食')
+        if (c.training_enabled && !fuHadTrain.has(c.id)) missed.push('訓練')
+        if (c.wellness_enabled && !fuHadWell.has(c.id)) missed.push('感受')
+        if (missed.length > 0) followups.push({ client: c, missed })
+      }
+      for (let i = 0; i < followups.length; i += 5) {
+        const batch = followups.slice(i, i + 5)
+        const results = await Promise.allSettled(batch.map(({ client, missed }) =>
+          sendWebPushOnly(client.id, {
+            title: `📋 ${client.name}，昨天的紀錄還沒補`,
+            body: `昨天的${missed.join('、')}還沒填，順手補一下、進度才追得準 💪`,
+            url: `${siteUrl}/dashboard`,
+          })
+        ))
+        results.forEach((r, idx) => {
+          if (r.status === 'fulfilled' && r.value) { sent++; webPushUsed++ }
+          else if (r.status === 'rejected') errors.push(`followup ${batch[idx].client.name}: ${(r.reason as { message?: string })?.message || 'unknown'}`)
+        })
+      }
+    } catch (e) {
+      errors.push(`followup: ${e instanceof Error ? e.message : String(e)}`)
+    }
+
     // ── 教練晨間摘要：推送昨日學員狀態到教練 LINE ──
     const coachLineId = process.env.COACH_LINE_USER_ID
     if (coachLineId) {
