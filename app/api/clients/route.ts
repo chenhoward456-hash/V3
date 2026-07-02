@@ -40,9 +40,11 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('請求過於頻繁，請稍後再試', 429)
     }
 
+    // lab_results 白名單（欄位真相對過 live DB information_schema，別依 SCHEMA.md）：
+    // 省掉 client_id，其餘前端/報告/AI 都會讀到（custom_advice/custom_target repo 無 DDL 但 prod 有、漏了會讓客製建議消失）
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select(`*, lab_results (*), supplements (*)`)
+      .select(`*, lab_results (id, test_name, value, unit, reference_range, date, status, created_at, custom_advice, custom_target, coach_interpretation), supplements (*)`)
       .eq('unique_code', clientId)
       .single()
     
@@ -105,7 +107,7 @@ export async function GET(request: NextRequest) {
     if (client.wellness_enabled) {
       queryEntries.push({
         key: 'wellness',
-        query: wrap(supabase.from('daily_wellness').select('*').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
+        query: wrap(supabase.from('daily_wellness').select('id, date, sleep_quality, energy_level, mood, note, hunger, digestion, training_drive, period_start, cognitive_clarity, stress_level, resting_hr, hrv, wearable_sleep_score, respiratory_rate, device_recovery_score').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
       })
     }
 
@@ -123,7 +125,7 @@ export async function GET(request: NextRequest) {
     if (client.nutrition_enabled) {
       queryEntries.push({
         key: 'nutritionLogs',
-        query: wrap(supabase.from('nutrition_logs').select('*').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
+        query: wrap(supabase.from('nutrition_logs').select('id, date, compliant, note, protein_grams, carbs_grams, fat_grams, calories, water_ml, sodium_mg').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
       })
     }
 
