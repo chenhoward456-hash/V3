@@ -324,7 +324,7 @@ export default function ShowcasePage() {
       {/* 免責 */}
       <section className="px-5 max-w-md mx-auto pb-12">
         <p className="text-[11px] text-gray-400 text-center leading-relaxed">
-          本頁為示範用途，所有數據為 Howard 本人真實數據。系統提供的數值範圍與教練筆記僅供生活方式調整參考，不構成醫療診斷或處方建議。指標異常請諮詢您的醫師。
+          本頁為示範用途，所有數據為 Howard 本人真實數據。「進階追蹤範圍／最佳」為長壽最佳化參考目標（依 Peter Attia「Outlive」與功能醫學派），非醫學診斷標準；醫院「正常」範圍才是疾病門檻。系統提供的數值範圍與教練筆記僅供生活方式調整參考，不構成醫療診斷或處方建議。指標異常請諮詢您的醫師。
         </p>
       </section>
     </div>

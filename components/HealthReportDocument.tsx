@@ -688,6 +688,9 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
             <p className="report-disclaimer">
               以上建議由系統依據血檢數值、訓練狀態及基因資料自動產出，僅供參考，不構成醫療建議。請諮詢醫師後再行使用。
             </p>
+            <p className="report-disclaimer">
+              報告中標示的「最佳」數值為長壽／最佳化參考目標（依 Peter Attia「Outlive」與功能醫學派），非醫學診斷標準；醫院檢驗單的「正常」範圍才是疾病門檻。
+            </p>
           </section>
         )}
 

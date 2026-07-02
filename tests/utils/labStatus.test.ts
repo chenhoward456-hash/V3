@@ -101,31 +101,31 @@ describe('calculateLabStatus', () => {
     })
 
     it('should handle vitamin D range correctly', () => {
-      expect(calculateLabStatus('維生素D', 60)).toBe('normal')   // within 50-100
-      expect(calculateLabStatus('維生素D', 35)).toBe('attention') // within 30-150
-      expect(calculateLabStatus('維生素D', 20)).toBe('alert')    // outside 30-150
+      expect(calculateLabStatus('維生素D', 60)).toBe('normal')   // within 30-100
+      expect(calculateLabStatus('維生素D', 25)).toBe('attention') // within 20-150, below normal 30
+      expect(calculateLabStatus('維生素D', 15)).toBe('alert')    // outside 20-150
     })
 
     it('should handle mineral ranges (magnesium)', () => {
-      expect(calculateLabStatus('鎂', 2.2)).toBe('normal')   // within 2.0-2.4
-      expect(calculateLabStatus('鎂', 1.9)).toBe('attention') // within 1.8-2.6
-      expect(calculateLabStatus('鎂', 1.5)).toBe('alert')    // outside 1.8-2.6
+      expect(calculateLabStatus('鎂', 2.2)).toBe('normal')   // within 1.8-2.4
+      expect(calculateLabStatus('鎂', 1.7)).toBe('attention') // within 1.6-2.6, below normal 1.8
+      expect(calculateLabStatus('鎂', 1.5)).toBe('alert')    // outside 1.6-2.6
     })
   })
 
   describe('gender-specific indicators', () => {
     it('should use female ferritin thresholds for female gender', () => {
-      // Female ferritin: normal 12-200, attention 8-300
+      // Female ferritin (2026-07-02)：normal 20-200, attention 15-300；WHO <15 即缺乏 → 紅
       expect(calculateLabStatus('鐵蛋白', 100, '女性')).toBe('normal')
-      expect(calculateLabStatus('鐵蛋白', 10, '女性')).toBe('attention')
-      expect(calculateLabStatus('鐵蛋白', 5, '女性')).toBe('alert')
+      expect(calculateLabStatus('鐵蛋白', 17, '女性')).toBe('attention')
+      expect(calculateLabStatus('鐵蛋白', 10, '女性')).toBe('alert')
     })
 
     it('should use male ferritin thresholds by default', () => {
-      // Male ferritin: normal 50-150, attention 30-200
+      // Male ferritin (對帳 2026-06)：normal 30-300, attention 20-400
       expect(calculateLabStatus('鐵蛋白', 100)).toBe('normal')
-      expect(calculateLabStatus('鐵蛋白', 35)).toBe('attention')
-      expect(calculateLabStatus('鐵蛋白', 20)).toBe('alert')
+      expect(calculateLabStatus('鐵蛋白', 25)).toBe('attention') // 20-30, below normal 30
+      expect(calculateLabStatus('鐵蛋白', 15)).toBe('alert')     // below attention 20
     })
 
     it('should use female testosterone thresholds', () => {
@@ -170,13 +170,13 @@ describe('isInOptimalRange', () => {
   })
 
   it('should return true for higher-is-better when value >= optimal', () => {
-    // HDL-C optimal: > 65
-    expect(isInOptimalRange('HDL-C', 70)).toBe(true)
-    expect(isInOptimalRange('HDL-C', 65)).toBe(true)
+    // eGFR optimal: >100（越高越好）
+    expect(isInOptimalRange('eGFR', 110)).toBe(true)
+    expect(isInOptimalRange('eGFR', 100)).toBe(true)
   })
 
   it('should return false for higher-is-better when value < optimal', () => {
-    expect(isInOptimalRange('HDL-C', 50)).toBe(false)
+    expect(isInOptimalRange('eGFR', 80)).toBe(false)
   })
 
   it('should check range-type optimal (TSH 1.0-2.5)', () => {
@@ -186,19 +186,19 @@ describe('isInOptimalRange', () => {
   })
 
   it('should use female variant for female gender', () => {
-    // HDL-C_female optimal: > 75
-    expect(isInOptimalRange('HDL-C', 80, '女性')).toBe(true)
-    expect(isInOptimalRange('HDL-C', 60, '女性')).toBe(false)
+    // HDL-C_female optimal 現為 U 型區間 50-65（對帳 2026-06，非越高越好）
+    expect(isInOptimalRange('HDL-C', 60, '女性')).toBe(true)
+    expect(isInOptimalRange('HDL-C', 80, '女性')).toBe(false)
   })
 
   it('should return true for tests without defined optimal range', () => {
     expect(isInOptimalRange('Lp(a)', 20)).toBe(true) // Lp(a) not in optimal ranges
   })
 
-  it('should handle vitamin D optimal range (60-80)', () => {
-    expect(isInOptimalRange('維生素D', 70)).toBe(true)
-    expect(isInOptimalRange('維生素D', 40)).toBe(false)
-    expect(isInOptimalRange('維生素D', 90)).toBe(false)
+  it('should handle vitamin D optimal range (40-60)', () => {
+    expect(isInOptimalRange('維生素D', 50)).toBe(true)
+    expect(isInOptimalRange('維生素D', 35)).toBe(false)
+    expect(isInOptimalRange('維生素D', 70)).toBe(false)
   })
 })
 
@@ -211,12 +211,12 @@ describe('getOptimalRangeText', () => {
     expect(getOptimalRangeText('TSH')).toBe('1-2.5')
   })
 
-  it('should return >value for higher-is-better (HDL-C)', () => {
-    expect(getOptimalRangeText('HDL-C')).toBe('>65')
+  it('should return range text for range-type optimal (HDL-C U 型)', () => {
+    expect(getOptimalRangeText('HDL-C')).toBe('40-60')
   })
 
   it('should return <value for lower-is-better (HOMA-IR)', () => {
-    expect(getOptimalRangeText('HOMA-IR')).toBe('<0.8')
+    expect(getOptimalRangeText('HOMA-IR')).toBe('<1')
   })
 
   it('should return null for tests without optimal range', () => {
@@ -224,12 +224,12 @@ describe('getOptimalRangeText', () => {
   })
 
   it('should use female variant when specified', () => {
-    expect(getOptimalRangeText('HDL-C', '女性')).toBe('>75')
+    expect(getOptimalRangeText('HDL-C', '女性')).toBe('50-65')
     expect(getOptimalRangeText('鐵蛋白', '女性')).toBe('40-120')
   })
 
-  it('should return range text for vitamin D (60-80)', () => {
-    expect(getOptimalRangeText('維生素D')).toBe('60-80')
+  it('should return range text for vitamin D (40-60)', () => {
+    expect(getOptimalRangeText('維生素D')).toBe('40-60')
   })
 })
 

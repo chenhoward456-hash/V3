@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { Plus, Pencil, Trash2, X, ChevronDown } from 'lucide-react'
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { getLocalDateStr } from '@/lib/date-utils'
-import { getLabAdvice } from './types'
+import { getLabAdvice, LAB_OPTIMAL_DISCLAIMER } from './types'
 import { isInOptimalRange, getOptimalRangeText } from '@/utils/labStatus'
 import { useToast } from '@/components/ui/Toast'
 
@@ -258,6 +258,9 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
           <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-4">
             <p className="text-[11px] text-gray-500 leading-relaxed">
               此頁面僅供數據紀錄與趨勢追蹤，不構成醫療診斷或健康評估。數值判讀請以你的醫師意見為準。
+            </p>
+            <p className="text-[11px] text-gray-500 leading-relaxed mt-1">
+              {LAB_OPTIMAL_DISCLAIMER}
             </p>
           </div>
 

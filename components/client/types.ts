@@ -1,3 +1,8 @@
+// 血檢「最佳/Howard 標準」= 長壽研究派優化目標，非醫學共識診斷標準。
+// 任何顯示 optimal 區間、「最佳」、「已達標」的 UI 都應在附近引用此免責，避免學員誤讀為疾病門檻。
+export const LAB_OPTIMAL_DISCLAIMER =
+  '「最佳」為長壽/最佳化參考目標（依 Peter Attia「Outlive」與功能醫學派），非醫學診斷標準；醫院「正常」範圍才是疾病門檻。此頁不構成醫療診斷或處方。'
+
 export interface LabResult {
   id: string
   test_name: string
@@ -114,10 +119,10 @@ export function getLabAdvice(testName: string, value: number): string {
     case 'ALT': return value < 25 ? '肝功能極佳' : value < 40 ? '正常，目標 <25 可透過控制體脂與飲食優化' : '肝指數偏高'
     case 'GGT': return value < 30 ? 'GGT 極佳' : value < 60 ? '正常，目標 <30 可減少酒精攝取' : 'GGT 偏高'
     case '白蛋白': return value >= 4.2 ? '營養狀態極佳' : value >= 3.5 ? '正常，目標 >4.2 可增加優質蛋白攝取' : '白蛋白偏低，注意蛋白質攝取'
-    // 腎功能
-    case '肌酸酐': return value >= 0.7 && value <= 1.3 ? '腎功能正常' : '肌酸酐異常'
+    // 腎功能（肌肉量大者：肌酸酐由肌肉代謝產生，天生偏高、連帶壓低肌酸酐型 eGFR，未必是腎不好）
+    case '肌酸酐': return value >= 0.7 && value <= 1.3 ? '腎功能正常' : value > 1.3 ? '肌酸酐偏高，肌肉量大者可能為天生偏高（非腎功能問題），可搭配 eGFR 與 BUN/肌酸酐比判讀' : '肌酸酐異常'
     case 'BUN': return value >= 7 && value <= 20 ? '腎功能正常' : 'BUN 異常'
-    case 'eGFR': return value >= 100 ? '腎功能頂尖' : value >= 90 ? '正常，目標 100+ 可透過水分與血壓管理優化' : value >= 60 ? '腎功能輕度下降' : '腎功能需注意'
+    case 'eGFR': return value >= 100 ? '腎功能頂尖' : value >= 90 ? '正常，目標 100+ 可透過水分與血壓管理優化' : value >= 60 ? '此為肌酸酐推估值，肌肉量大者常被低估；如肌酸酐偏高、無其他腎指標異常，多屬正常，需要時可驗 cystatin C 確認' : '腎功能需注意，建議諮詢醫師'
     // 甲狀腺
     case 'TSH': return value >= 1.0 && value <= 2.5 ? '甲狀腺功能頂尖' : value >= 0.4 && value <= 4.0 ? '正常，目標 1.0-2.5 可透過碘/硒/睡眠優化' : value < 0.4 ? 'TSH 偏低' : 'TSH 偏高'
     case 'Free T4': return value >= 1.0 && value <= 1.5 ? '游離甲狀腺素頂尖' : value >= 0.8 && value <= 1.8 ? '正常，目標 1.0-1.5 可關注碘與硒攝取' : 'Free T4 異常'

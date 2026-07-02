@@ -55,7 +55,9 @@ export const LAB_THRESHOLDS = {
   // 共識正常放寬(對帳 2026-06)：男缺鐵<30、實驗室 ULN ~300-400。原 50-150 是功能/長壽緊帶、
   // 已移到 OPTIMAL(70-120)。高鐵蛋白的發炎假性升高由 cross-marker D(鐵蛋白↑+CRP↑)接手。
   '鐵蛋白': { normal: { min: 30, max: 300 }, attention: { min: 20, max: 400 } },
-  '鐵蛋白_female': { normal: { min: 12, max: 200 }, attention: { min: 8, max: 300 } },
+  // 女性下限上調(Howard 拍板 2026-07-02)：WHO <15 ng/mL 即鐵缺乏、女性運動員 ≤20 補鐵才受益
+  // (PMID 26876679, 29792778)。原 8-12 帶會漏標缺鐵 → <15 紅、15-20 黃。
+  '鐵蛋白_female': { normal: { min: 20, max: 200 }, attention: { min: 15, max: 300 } },
 
   // ── 發炎 ──
   'CRP': { normal: 1.0, attention: 3.0 },
