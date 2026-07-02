@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import type { BehaviorInsight } from '@/lib/insight-engine'
 
@@ -44,8 +44,25 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
   const [hasMore, setHasMore] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [inView, setInView] = useState(false)
+
+  // 進入視口才打 /api/insights（首屏/切 tab 時不預先 fetch）
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') { setInView(true); return }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        setInView(true)
+        observer.disconnect()
+      }
+    }, { rootMargin: '200px' })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
+    if (!inView) return
     const fetchInsights = async () => {
       try {
         const res = await fetch(`/api/insights?clientId=${clientId}&code=${code}`)
@@ -58,11 +75,11 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
       finally { setLoading(false) }
     }
     fetchInsights()
-  }, [clientId, code])
+  }, [inView, clientId, code])
 
   if (loading) {
     return (
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 animate-pulse">
+      <div ref={containerRef} className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 animate-pulse">
         <div className="h-5 w-32 bg-slate-200 rounded mb-3" />
         <div className="space-y-3">
           <div className="h-16 bg-slate-100 rounded-xl" />

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { Copy, Trash2 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useMeasuredContainer } from '@/hooks/useMeasuredContainer'
 import { TRAINING_TYPES, isWeightTraining } from './types'
@@ -758,7 +759,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         {(!simpleMode || showTrainingAdvanced) && !isRest && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">⏱️ 時長（分鐘）</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">時長（分鐘）</p>
               <input
                 type="number"
                 inputMode="numeric"
@@ -770,7 +771,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
               />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">📊 組數（選填）</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">組數（選填）</p>
               <input
                 type="number"
                 inputMode="numeric"
@@ -786,7 +787,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
         {(!simpleMode || showTrainingAdvanced) && !isRest && (
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">💥 RPE（自覺強度 1-10）{isCardio && <span className="text-gray-400 font-normal">（選填）</span>}</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">RPE（自覺強度 1-10）{isCardio && <span className="text-gray-400 font-normal">（選填）</span>}</p>
             <div className="space-y-2">
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map(score => (
@@ -824,8 +825,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
         {/* 主項重量追蹤（展開動作明細時隱藏，避免重複填） */}
         {(!simpleMode || showTrainingAdvanced) && !isRest && !isCardio && compoundLiftName && !showDetailedSets && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-            <p className="text-sm font-semibold text-amber-800 mb-2">🏆 主項：{compoundLiftName}</p>
+          <div className="bg-white border border-slate-200 rounded-xl p-3">
+            <p className="text-sm font-semibold text-gray-900 mb-2">主項：{compoundLiftName}</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">重量（kg）</label>
@@ -835,7 +836,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                   step="2.5"
                   value={form.compound_weight ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, compound_weight: e.target.value ? Number(e.target.value) : null }))}
-                  className="w-full px-3 py-2.5 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   placeholder="100"
                 />
               </div>
@@ -846,14 +847,14 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                   inputMode="numeric"
                   value={form.compound_reps ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, compound_reps: e.target.value ? Number(e.target.value) : null }))}
-                  className="w-full px-3 py-2.5 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   placeholder="8"
                 />
               </div>
             </div>
             {compoundHistory.length > 0 && (
-              <div className="mt-2 pt-2 border-t border-amber-200">
-                <p className="text-[11px] text-amber-600 mb-1">最近紀錄</p>
+              <div className="mt-2 pt-2 border-t border-gray-100">
+                <p className="text-[11px] text-gray-400 mb-1">最近紀錄</p>
                 <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                   {compoundHistory.map((h: any, i: number) => (
                     <span key={i} className="text-[11px] text-gray-600">
@@ -874,7 +875,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 onClick={() => setShowDetailedSets(true)}
                 className="w-full py-3 bg-blue-50 border border-blue-200 rounded-xl text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
               >
-                📝 記錄每個動作（重量/次數/組數）
+                記錄每個動作（重量/次數/組數）
               </button>
             ) : (
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
@@ -921,8 +922,12 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                           placeholder="動作名稱"
                         />
                         <span className="text-xs text-gray-400 whitespace-nowrap">#{set.set_number}</span>
-                        <button onClick={() => duplicateSet(i)} className="text-gray-400 hover:text-blue-500 text-xs" title="複製這組">+</button>
-                        <button onClick={() => removeSet(i)} className="text-gray-400 hover:text-red-500 text-xs" title="刪除">x</button>
+                        <button onClick={() => duplicateSet(i)} className="p-1 text-gray-400 hover:text-blue-500" title="複製這組" aria-label="複製這組">
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => removeSet(i)} className="p-1 text-gray-400 hover:text-rose-500" title="刪除" aria-label="刪除這組">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
@@ -1054,11 +1059,11 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           </div>
           {!simpleMode && (
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
-              <span>🏋️ {weeklySummary.weightDays} 天</span>
-              {weeklySummary.cardioDays > 0 && <span>🏃 {weeklySummary.cardioDays} 天</span>}
-              <span>⏱️ {weeklySummary.totalDuration} 分鐘</span>
-              {weeklySummary.totalSets > 0 && <span>📊 {weeklySummary.totalSets} 組</span>}
-              <span>💥 RPE {weeklySummary.avgRpe}</span>
+              <span>重訓 {weeklySummary.weightDays} 天</span>
+              {weeklySummary.cardioDays > 0 && <span>有氧 {weeklySummary.cardioDays} 天</span>}
+              <span>{weeklySummary.totalDuration} 分鐘</span>
+              {weeklySummary.totalSets > 0 && <span>{weeklySummary.totalSets} 組</span>}
+              <span>RPE {weeklySummary.avgRpe}</span>
             </div>
           )}
         </div>
@@ -1099,10 +1104,11 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
         {/* ===== 訓練洞察頂部摘要（不需展開即可看到） ===== */}
         {!simpleMode && insights && insights.bestRecovery && insights.bestRecovery.avgNextEnergy != null && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
-            <p className="text-xs font-semibold text-emerald-700 mb-2">Sleep x Training Insight</p>
-            <p className="text-sm text-emerald-800">
-              {insights.bestRecovery.emoji} {insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+            <p className="text-xs font-medium text-gray-500 mb-2">Sleep x Training Insight</p>
+            <p className="flex items-center gap-2 text-sm text-gray-900">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <span>{insights.bestRecovery.emoji} {insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）</span>
             </p>
             {/* Mini bar chart: 各訓練類型的隔天精力 */}
             {insights.typeAnalysis.filter(t => t.avgNextEnergy != null).length >= 2 && (
@@ -1143,13 +1149,15 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 {(insights.worstRecovery || insights.bestRecovery) && (
                   <div className="space-y-2">
                     {insights.bestRecovery && insights.bestRecovery.avgNextEnergy != null && (
-                      <div className="bg-emerald-50 rounded-xl px-4 py-3 text-sm text-emerald-700">
-                        ✅ {insights.bestRecovery.emoji} {insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）
+                      <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
+                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span>{insights.bestRecovery.emoji} {insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）</span>
                       </div>
                     )}
                     {insights.worstRecovery && insights.worstRecovery.avgNextEnergy != null && (
-                      <div className="bg-rose-50 rounded-xl px-4 py-3 text-sm text-rose-700">
-                        ⚠️ {insights.worstRecovery.emoji} {insights.worstRecovery.label}日後恢復最差（隔天精力 {insights.worstRecovery.avgNextEnergy.toFixed(1)}/5）
+                      <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
+                        <span className="inline-block w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                        <span>{insights.worstRecovery.emoji} {insights.worstRecovery.label}日後恢復最差（隔天精力 {insights.worstRecovery.avgNextEnergy.toFixed(1)}/5）</span>
                       </div>
                     )}
                   </div>
@@ -1190,11 +1198,12 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                     <p className="text-xs text-gray-500 mb-2">需注意的訓練日</p>
                     <div className="space-y-1">
                       {insights.roughDays.map((d, i) => (
-                        <div key={i} className="flex items-center justify-between bg-rose-50 rounded-lg px-3 py-2 text-sm">
-                          <span className="text-rose-700">
+                        <div key={i} className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+                          <span className="flex items-center gap-2 text-gray-700">
+                            <span className="inline-block w-2 h-2 rounded-full bg-rose-500 shrink-0" />
                             {formatDate(d.date)} {getTypeEmoji(d.type)} {getTypeLabel(d.type)}
                           </span>
-                          <span className="text-rose-500 text-xs">{d.reason}</span>
+                          <span className="text-gray-500 text-xs">{d.reason}</span>
                         </div>
                       ))}
                     </div>

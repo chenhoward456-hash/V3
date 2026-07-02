@@ -1545,6 +1545,63 @@ describe('generateNutritionSuggestion', () => {
       expect(result.geneticCorrections.some(gc => gc.gene === 'depression')).toBe(true)
     })
 
+    // 紅隊 #11：碳循環 RD 套基因碳水下限後，suggestedCalories 要跟著重算
+    // 斷言：回傳熱量 = 蛋白*4 + 脂肪*9 + TD/RD 加權週均碳水*4（自洽，容差 ±10 kcal）
+    it('should recalculate calories after rest-day carb floor in reactive cut (red-team #11)', () => {
+      // Reactive 是 delta-based（suggestedCal = currentCal + calDelta），
+      // 輸入的 currentCalories 必須跟 macros 自洽（160*4 + 80*4 + 55*9 = 1455），否則落差是輸入造成的
+      const result = generateNutritionSuggestion(makeCutInput({
+        carbsCyclingEnabled: true,
+        currentCarbsTrainingDay: null,
+        currentCarbsRestDay: null,
+        geneticProfile: {
+          serotonin: 'SS', // 碳水下限 120g
+        },
+        trainingDaysPerWeek: 2, // 休息日多 → RD floor 對週均影響大
+        currentCarbs: 80, // below 120g floor
+        currentCalories: 1455,
+        avgDailyCalories: 1455,
+        weeklyWeights: [
+          { week: 0, avgWeight: 80 },
+          { week: 1, avgWeight: 81 }, // 掉 1.23%/週 → too_fast（加碳水路徑，不會撞熱量安全底線）
+        ],
+        targetWeight: null,
+        targetDate: null,
+      }))
+      expect(result.suggestedCarbsTrainingDay).not.toBeNull()
+      expect(result.suggestedCarbsRestDay).not.toBeNull()
+      expect(result.suggestedCarbsRestDay!).toBeGreaterThanOrEqual(120)
+      const weeklyAvgCarb = Math.round((result.suggestedCarbsTrainingDay! * 2 + result.suggestedCarbsRestDay! * 5) / 7)
+      const macroCal = result.suggestedProtein! * 4 + weeklyAvgCarb * 4 + result.suggestedFat! * 9
+      expect(Math.abs(result.suggestedCalories! - macroCal)).toBeLessThanOrEqual(10)
+    })
+
+    it('should recalculate calories after rest-day carb floor in goal-driven cut (red-team #11)', () => {
+      const result = generateNutritionSuggestion(makeCutInput({
+        carbsCyclingEnabled: true,
+        currentCarbsTrainingDay: null,
+        currentCarbsRestDay: null,
+        geneticProfile: {
+          serotonin: 'SS', // 碳水下限 120g
+        },
+        trainingDaysPerWeek: 2,
+        targetWeight: 75,
+        targetDate: daysFromNow(60),
+        avgDailyCalories: 1800, // 壓低 TDEE 估算 → 反算碳水低於 120g 下限，RD floor 才會真的觸發
+        weeklyWeights: [
+          { week: 0, avgWeight: 80 },
+          { week: 1, avgWeight: 80.3 },
+        ],
+      }))
+      expect(result.status).toBe('goal_driven')
+      expect(result.suggestedCarbsTrainingDay).not.toBeNull()
+      expect(result.suggestedCarbsRestDay).not.toBeNull()
+      expect(result.suggestedCarbsRestDay!).toBeGreaterThanOrEqual(120)
+      const weeklyAvgCarb = Math.round((result.suggestedCarbsTrainingDay! * 2 + result.suggestedCarbsRestDay! * 5) / 7)
+      const macroCal = result.suggestedProtein! * 4 + weeklyAvgCarb * 4 + result.suggestedFat! * 9
+      expect(Math.abs(result.suggestedCalories! - macroCal)).toBeLessThanOrEqual(10)
+    })
+
     it('should apply MTHFR deficit reduction in goal-driven', () => {
       const result = generateNutritionSuggestion(makeCutInput({
         geneticProfile: {

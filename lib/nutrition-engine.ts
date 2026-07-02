@@ -715,6 +715,21 @@ function applyGeneticCarbFloor(
   return suggestedCarbs
 }
 
+// 紅隊 #11：碳循環 TD/RD 的加權週均碳水
+// RD 被基因下限提高後，週均碳水（和熱量）要用這個重算，不然回傳的 suggestedCalories 會低估
+// trainingDaysPerWeek 為 0 時 default 4（與碳循環分配規則一致），上限 7
+// 沒有休息日（R=0）時回傳 null（RD 不影響週均，不需重算）
+function weeklyAvgCarbFromCycle(
+  carbsTD: number,
+  carbsRD: number,
+  trainingDaysPerWeek: number,
+): number | null {
+  const T = trainingDaysPerWeek === 0 ? 4 : Math.min(trainingDaysPerWeek, 7)
+  const R = 7 - T
+  if (T <= 0 || R <= 0) return null
+  return Math.round((carbsTD * T + carbsRD * R) / 7)
+}
+
 function getGeneticDeficitReduction(
   geneticProfile: GeneticProfile | undefined,
   corrections: GeneticCorrection[],
@@ -2979,10 +2994,23 @@ function generateCutSuggestion(
 
   // 基因修正層（Reactive 模式）
   const geneticCorrections: GeneticCorrection[] = []
+  const prevReactiveCarb = suggestedCarb
   suggestedCarb = applyGeneticCarbFloor(suggestedCarb, input.geneticProfile, geneticCorrections)
+  if (suggestedCarb > prevReactiveCarb) {
+    // 紅隊 #11：碳水提高 → 熱量同步上調（不壓回赤字，因為這是基因安全需求）
+    suggestedCal += (suggestedCarb - prevReactiveCarb) * 4
+  }
   // 碳循環拆分後，休息日碳水也要套用基因下限（5-HTTLPR SL/SS）
   if (suggestedCarbsRD != null) {
     suggestedCarbsRD = applyGeneticCarbFloor(suggestedCarbsRD, input.geneticProfile, geneticCorrections)
+    // 紅隊 #11：RD 被基因下限提高後，週均碳水與熱量要同步重算
+    if (suggestedCarbsTD != null) {
+      const newAvgCarb = weeklyAvgCarbFromCycle(suggestedCarbsTD, suggestedCarbsRD, input.trainingDaysPerWeek)
+      if (newAvgCarb != null && newAvgCarb > suggestedCarb) {
+        suggestedCal += (newAvgCarb - suggestedCarb) * 4
+        suggestedCarb = newAvgCarb
+      }
+    }
   }
   getApoe4FatWarnings(input.geneticProfile, geneticCorrections, warnings)
 
@@ -3445,6 +3473,15 @@ function generateGoalDrivenCut(
     }
     // 碳循環拆分後，休息日碳水也要套用基因下限（5-HTTLPR SL/SS）
     suggestedCarbsRD = applyGeneticCarbFloor(suggestedCarbsRD, input.geneticProfile, geneticCorrections)
+    // 紅隊 #11：RD 被基因下限提高後，週均碳水與熱量要同步重算（不然回傳的熱量會低估真實攝取）
+    if (suggestedCarbsTD != null && suggestedCarbsRD != null) {
+      const newAvgCarb = weeklyAvgCarbFromCycle(suggestedCarbsTD, suggestedCarbsRD, input.trainingDaysPerWeek)
+      if (newAvgCarb != null && newAvgCarb > suggestedCarb) {
+        // 碳水提高 → 熱量同步上調（不壓回赤字，因為這是基因安全需求）
+        actualCalories += (newAvgCarb - suggestedCarb) * 4
+        suggestedCarb = newAvgCarb
+      }
+    }
   }
 
   // 6b. Athletic 備戰期碳水下限保護（Thomas 2016: 3-5g/kg for moderate exercise）

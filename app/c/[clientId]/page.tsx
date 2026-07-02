@@ -463,7 +463,9 @@ export default function ClientDashboard() {
   }, [todayTraining, todayPlanType])
 
   // 生成補品建議（必須在所有條件 return 之前，遵守 React Hooks 規則）
+  // 消費者只有「更多」視圖的 SupplementStrategyCard 和 AI 聊天抽屜 → 首屏不跑引擎，等真的需要才算
   const supplementSuggestions = useMemo(() => {
+    if (view !== 'more' && !showAiChat) return []
     const c = clientData?.client
     if (!c) return []
     const healthMode = isHealthModeHelper(c.client_mode)
@@ -494,7 +496,7 @@ export default function ClientDashboard() {
         prepPhase: (c.prep_phase as 'off_season' | 'bulk' | 'cut' | 'peak_week' | 'competition' | 'recovery' | 'preparation' | 'weigh_in' | 'rebound' | null) || null,
       }
     )
-  }, [clientData?.client, clientData?.trainingLogs])
+  }, [clientData?.client, clientData?.trainingLogs, view, showAiChat])
 
   // 基因修正提示（從基因欄位推導，用於營養目標旁顯示）
   const geneCorrections = useMemo(() => {
@@ -518,6 +520,29 @@ export default function ClientDashboard() {
     }
     return corrections
   }, [clientData?.client])
+
+  // 健康模式：健康分數 + HRV baseline（memo 化，避免每次 render 重算）
+  // HRV baseline：用 7 天前以前的所有 HRV 數據算長期平均
+  const healthScore = useMemo(() => {
+    const c = clientData?.client
+    if (!c || !isHealthModeHelper(c.client_mode)) return null
+    const allWellness = clientData.wellness || []
+    const hrvOlder = allWellness.slice(0, -7)
+      .map((w: { hrv?: number | null }) => w.hrv)
+      .filter((v: number | null | undefined): v is number => v != null)
+    const hrvBaseline = hrvOlder.length >= 7
+      ? hrvOlder.reduce((a: number, b: number) => a + b, 0) / hrvOlder.length
+      : null
+    return calculateHealthScore({
+      wellnessLast7: allWellness.slice(-7),
+      nutritionLast7: (clientData.nutritionLogs || []).slice(-7),
+      trainingLast7: (clientData.trainingLogs || []).slice(-7),
+      supplementComplianceRate: supplementComplianceStats.weekRate / 100,
+      labResults: c.lab_results || [],
+      hrvBaseline,
+      quarterlyStart: c.quarterly_cycle_start,
+    })
+  }, [clientData?.client, clientData?.wellness, clientData?.nutritionLogs, clientData?.trainingLogs, supplementComplianceStats.weekRate])
 
   // 營養引擎分析結果（傳給 AI Chat 用）
   const [nutritionEngineSuggestion, setNutritionEngineSuggestion] = useState<NutritionSuggestion | null>(null)
@@ -735,25 +760,6 @@ export default function ClientDashboard() {
       </ErrorBoundary>
     )
   }
-
-  // 健康模式：計算健康分數
-  // HRV baseline：用 7 天前以前的所有 HRV 數據算長期平均
-  const allWellness = clientData.wellness || []
-  const hrvOlder = allWellness.slice(0, -7)
-    .map((w: { hrv?: number | null }) => w.hrv)
-    .filter((v: number | null | undefined): v is number => v != null)
-  const hrvBaseline = hrvOlder.length >= 7
-    ? hrvOlder.reduce((a: number, b: number) => a + b, 0) / hrvOlder.length
-    : null
-  const healthScore = isHealthMode ? calculateHealthScore({
-    wellnessLast7: allWellness.slice(-7),
-    nutritionLast7: (clientData.nutritionLogs || []).slice(-7),
-    trainingLast7: (clientData.trainingLogs || []).slice(-7),
-    supplementComplianceRate: supplementComplianceStats.weekRate / 100,
-    labResults: c.lab_results || [],
-    hrvBaseline,
-    quarterlyStart: c.quarterly_cycle_start,
-  }) : null
 
   return (
     <ErrorBoundary>

@@ -14,7 +14,7 @@ export default function TrainingProgressCard({ sets }: { sets: TrainingSetRow[] 
   if (tracked.length === 0 && p.muscleGroupSets.length === 0) return null
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-5">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-1">
         <span className="text-lg">💪</span>
         <h3 className="text-base font-semibold text-gray-900">訓練進步</h3>

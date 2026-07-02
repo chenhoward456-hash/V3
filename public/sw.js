@@ -5,7 +5,7 @@
 // ⚠️ 這個版號是「手動」bump 的，不是自動 timestamp（之前註解寫錯、卡在 20260328 從沒變→快取一直沒清）。
 // 每次想強制所有人(含已裝 PWA)拿到新版時，務必更新這個字串：activate 會刪掉所有非當前版號的舊快取。
 // TODO: 之後改成 build 時注入真正的 build id 才能真正「自動」。
-const CACHE_NAME = 'hp-v9-20260701'
+const CACHE_NAME = 'hp-v10-20260702'
 const PRECACHE_URLS = [
   '/icon-192.png',
   '/icon-512.png',

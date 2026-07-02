@@ -53,8 +53,19 @@ const MUSCLE_KEYWORDS: { group: string; kw: string[] }[] = [
   { group: '核心', kw: ['腹', '捲腹', '核心', 'plank', 'crunch', 'core', 'ab'] },
 ]
 
+// DB muscle_group 若存了英文值（API schema 接受任意字串），轉成中文標籤再顯示。
+// production 現況（2026-07 查核）全為 null 或中文，這層純防呆。
+const MUSCLE_GROUP_ZH: Record<string, string> = {
+  chest: '胸', back: '背', legs: '腿', leg: '腿', shoulders: '肩', shoulder: '肩',
+  biceps: '二頭', triceps: '三頭', arms: '手臂', arm: '手臂',
+  core: '核心', abs: '核心', glutes: '腿', cardio: '有氧', other: '其他',
+}
+
 function inferMuscleGroup(s: TrainingSetRow): string {
-  if (s.muscle_group && s.muscle_group.trim()) return s.muscle_group.trim()
+  if (s.muscle_group && s.muscle_group.trim()) {
+    const g = s.muscle_group.trim()
+    return MUSCLE_GROUP_ZH[g.toLowerCase()] || g
+  }
   const n = (s.exercise_name || '').toLowerCase()
   for (const m of MUSCLE_KEYWORDS) if (m.kw.some(k => n.includes(k.toLowerCase()))) return m.group
   return '其他'

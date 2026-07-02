@@ -1030,31 +1030,17 @@ describe('TrainingLog', () => {
   })
 
   // ===========================================================================
-  // TRAINING CALENDAR (lines 694-728)
+  // TRAINING CALENDAR — 已刻意移除（純出席方塊、無 takeaway），守住移除決策
   // ===========================================================================
   describe('training calendar', () => {
-    it('renders training calendar in non-simple mode', () => {
-      renderTrainingLog()
-
-      expect(screen.getByText('訓練日曆')).toBeInTheDocument()
-      // Day headers appear multiple times (weekly summary + calendar); use getAllByText
-      expect(screen.getAllByText('一').length).toBeGreaterThanOrEqual(1)
-      expect(screen.getAllByText('日').length).toBeGreaterThanOrEqual(1)
-    })
-
-    it('hides training calendar in simple mode', () => {
-      renderTrainingLog({ simpleMode: true })
-      expect(screen.queryByText('訓練日曆')).not.toBeInTheDocument()
-    })
-
-    it('renders calendar with colored cells for logged days', () => {
+    it('does not render the removed training calendar', () => {
       const logs = [
         { date: '2026-03-09', training_type: 'push', duration: 60, sets: 20, rpe: 8 },
         { date: '2026-03-10', training_type: 'rest', duration: null, sets: null, rpe: null },
       ]
 
       renderTrainingLog({ trainingLogs: logs })
-      expect(screen.getByText('訓練日曆')).toBeInTheDocument()
+      expect(screen.queryByText('訓練日曆')).not.toBeInTheDocument()
     })
   })
 
@@ -1072,8 +1058,8 @@ describe('TrainingLog', () => {
 
       renderTrainingLog({ trainingLogs: logs, date: todayStr })
 
-      // 🏃 appears in both the type button and weekly stats; verify stats line exists
-      expect(screen.getAllByText(/🏃/).length).toBeGreaterThanOrEqual(2) // button + stats
+      // 統計列已改文字呈現（emoji 減量），emoji 只留在類型按鈕
+      expect(screen.getByText(/有氧 1 天/)).toBeInTheDocument()
     })
 
     it('shows total sets when weight training sets exist', () => {

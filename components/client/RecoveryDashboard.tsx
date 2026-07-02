@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 /**
  * RecoveryDashboard — 恢復評估儀表板
@@ -136,9 +136,25 @@ export default function RecoveryDashboard({ clientId, recentWellness }: Recovery
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [inView, setInView] = useState(false)
+
+  // 進入視口才打 /api/recovery-assessment（mount 時不預先 fetch，省首屏請求）
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') { setInView(true); return }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        setInView(true)
+        observer.disconnect()
+      }
+    }, { rootMargin: '200px' })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
-    if (!clientId) return
+    if (!clientId || !inView) return
     let cancelled = false
     setLoading(true)
     setError(false)
@@ -159,11 +175,11 @@ export default function RecoveryDashboard({ clientId, recentWellness }: Recovery
       })
 
     return () => { cancelled = true }
-  }, [clientId])
+  }, [clientId, inView])
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl p-4 animate-pulse">
+      <div ref={containerRef} className="bg-white rounded-2xl p-4 animate-pulse">
         <div className="h-4 bg-gray-200 rounded w-32 mb-3" />
         <div className="h-20 bg-gray-100 rounded-xl" />
       </div>
