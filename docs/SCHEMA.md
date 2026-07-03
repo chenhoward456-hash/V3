@@ -88,7 +88,7 @@
 - **cron_runs** — cron 執行紀錄（job_type、status default 'running'）
 
 ### 數據紀錄（學員打卡）
-- **nutrition_logs** — 每日營養（protein/carbs/fat/calories/sodium/water）
+- **nutrition_logs** — 每日營養（欄名帶單位：`protein_grams`/`carbs_grams`/`fat_grams`/`calories`/`water_ml`/`sodium_mg`/`compliant`/`note`；**不是** protein/carbs/fat，用錯名 INSERT 會靜默不存，見 commit 3984848）
 - **training_logs** — 每日訓練（training_type CHECK、rpe、sets、compound_weight/reps）
 - **training_sets** — 逐組紀錄（exercise_name、muscle_group、set_number、is_main_lift）
 - **daily_wellness** — 主觀感受 + 穿戴裝置數據

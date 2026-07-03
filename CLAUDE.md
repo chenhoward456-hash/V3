@@ -28,7 +28,7 @@ Key routing rules:
 3. **教練設定優先於引擎**：`coach_macro_override` 存在時任何引擎不可覆寫 macros；自動調整前必查 `auto_adjust_enabled`；所有 macro 變更寫 `macro_adjustment_log`（applied_by 只能 system/coach，trigger_source 只能 trajectory/manual/tdee_weekly）。
 4. **`lab_results.status` 不是 UI 真相**：前端用 `utils/labStatus.ts` 的 `calculateLabStatus()` 重算；lab_results 上的 trigger 還會連動改 `clients.status`。「寫進 DB 看起來對」≠「畫面上對」。
 5. **改 UI 之後必須實際看畫面**：起 dev server 用瀏覽器工具截圖驗證，不要只靠讀 code 推理渲染結果。
-6. **共用常數改之前先 grep 全 repo**：LAB_THRESHOLDS（真相在 `utils/labStatus.ts`）、血檢 CATEGORIES（散在 timeline/standards 等頁）、client mode 邏輯（`lib/client-mode.ts`，且要跟 DB trigger `sync_client_mode_booleans` 一致）。同一概念可能定義在 3+ 個地方。
+6. **共用常數改之前先 grep 全 repo**：LAB_THRESHOLDS（真相在 `utils/labStatus.ts`）、血檢 CATEGORIES（散在 timeline/standards 等頁）、client mode 邏輯（`lib/client-mode.ts`，且要跟 DB trigger `trg_sync_client_mode`／函式 `sync_client_mode_booleans()` 一致）。同一概念可能定義在 3+ 個地方。
 7. **push 前先在本地驗證完**（tsc 已有 pre-commit hook；UI 用本地瀏覽器確認），不要用 Vercel deploy 當測試迴圈。
 
 ## Design System
