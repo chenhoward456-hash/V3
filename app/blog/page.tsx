@@ -17,6 +17,15 @@ export const metadata: Metadata = {
 
 const hardcodedPosts = [
   {
+    id: '38',
+    title: '胸推沒感覺？問題可能不在胸——胸椎熱身完整流程（含單邊划船操作細節）',
+    description: '胸推卡關很多時候不在胸，在胸椎。四足跪姿呼吸、單邊滑輪水平划船（拉更後、骨盆不動、最常見錯誤）、直臂下拉——完整熱身流程與操作細節。',
+    date: '2026-07-03',
+    category: '訓練恢復',
+    readTime: '6 分鐘',
+    slug: 'thoracic-rotation-chest-press-fix',
+  },
+  {
     id: '37',
     title: '練到力竭才有效？8-12 下才會大？增肌的 5 個真相（每條附 RCT）',
     description: '練到力竭、一定要 8-12 下、痠才有練到——這些健身房口耳相傳的觀念，對照 PubMed 後有些是過度簡化、有些根本不必要。RIR、訓練量劑量反應、合成代謝窗口、痠痛迷思一次講清楚。',
