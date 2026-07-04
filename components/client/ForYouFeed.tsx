@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { memo, useState, useEffect } from 'react'
 import { buildClientFeed, type FeedCard, type FeedTone, type MacroAdjustmentRow, type CoachMessageRow } from '@/lib/client-feed'
 import type { LabResultRow } from '@/lib/lab-trend-analyzer'
 
@@ -73,7 +73,7 @@ interface ForYouFeedProps {
  * 「為你更新」精簡卡片流 — 每則一行重點、預設只顯示 3 則、合規免責收底部。
  * 關掉存 localStorage；事件 id 變了會重新出現。
  */
-export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment, coachMessage, clientCode }: ForYouFeedProps) {
+function ForYouFeedInner({ labs, gender, nextCheckupDate, macroAdjustment, coachMessage, clientCode }: ForYouFeedProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [ready, setReady] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -134,3 +134,5 @@ export function ForYouFeed({ labs, gender, nextCheckupDate, macroAdjustment, coa
     </div>
   )
 }
+
+export const ForYouFeed = memo(ForYouFeedInner)

@@ -1,5 +1,7 @@
 'use client'
 
+import { memo } from 'react'
+
 interface CutHealthCardProps {
   bodyData: { date: string; weight: number | null }[]
   wellness: { date: string; energy_level?: number | null }[]
@@ -30,7 +32,7 @@ function weeklyRate(rows: { date: string; weight: number | null }[]): number | n
  * 刻意不用體脂(後期量測失真)、也不用訓練力量(學員常不填重量/亂換動作 → 資料不可靠，
  * 秀精準力量趨勢會誤導、傷信任)。
  */
-export default function CutHealthCard({ bodyData, wellness, currentWeight }: CutHealthCardProps) {
+function CutHealthCardInner({ bodyData, wellness, currentWeight }: CutHealthCardProps) {
   // ── 1. 掉重速率 ──
   const kgPerWeek = weeklyRate(bodyData)
   const ratePct = kgPerWeek != null && currentWeight ? Math.abs(kgPerWeek) / currentWeight * 100 : null
@@ -120,3 +122,5 @@ export default function CutHealthCard({ bodyData, wellness, currentWeight }: Cut
     </div>
   )
 }
+
+export default memo(CutHealthCardInner)

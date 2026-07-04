@@ -25,7 +25,8 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-playfair), serif;
+    /* Playfair 只有拉丁字，中文必須落到 Noto Sans TC（否則掉進系統明體，跟內文不一致） */
+    font-family: var(--font-playfair), var(--font-noto-sans-tc), serif;
     line-height: 1.3;
     letter-spacing: -0.02em;
     font-weight: 700;
@@ -59,7 +60,7 @@
 
   .doc-title {
     @apply text-4xl md:text-5xl font-bold mb-8 leading-tight;
-    font-family: var(--font-playfair), serif;
+    font-family: var(--font-playfair), var(--font-noto-sans-tc), serif;
     letter-spacing: -0.03em;
   }
 

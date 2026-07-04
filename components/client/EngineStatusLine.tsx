@@ -1,5 +1,7 @@
 'use client'
 
+import { memo } from 'react'
+
 interface EngineStatusLineProps {
   caloriesTarget: number | null
   autoAdjustEnabled: boolean | null
@@ -22,7 +24,7 @@ function cooldownDays(targetDate: string | null): number {
  * 一行「系統校正狀態」— 讓學員看得到引擎活著、為什麼按住、下次什麼時候動。
  * 解決「macros 一直不變，搞不清楚系統有沒有在算」的信任問題。刻意做成細線、不佔版面。
  */
-export default function EngineStatusLine({
+function EngineStatusLineInner({
   caloriesTarget, autoAdjustEnabled, lastAutoAdjustAt, coachOverride, competitionDate, targetDate,
 }: EngineStatusLineProps) {
   if (caloriesTarget == null) return null
@@ -56,3 +58,5 @@ export default function EngineStatusLine({
     </p>
   )
 }
+
+export default memo(EngineStatusLineInner)

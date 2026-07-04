@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { daysUntilDateTW } from '@/lib/date-utils'
 import { projectMetricToDate, projectWeightVerdict } from '@/lib/comp-projection'
 
@@ -22,7 +23,7 @@ function latest(rows: { date: string; value: number | null }[]): number | null {
   return v.length ? (v[0].value as number) : null
 }
 
-export default function CompWarRoom({ bodyData, competitionDate, targetWeight, targetBodyFat, prepPhase }: CompWarRoomProps) {
+function CompWarRoomInner({ bodyData, competitionDate, targetWeight, targetBodyFat, prepPhase }: CompWarRoomProps) {
   if (!competitionDate) return null
   const daysLeft = daysUntilDateTW(competitionDate)
   if (daysLeft < 0) return null
@@ -129,3 +130,6 @@ export default function CompWarRoom({ bodyData, competitionDate, targetWeight, t
     </div>
   )
 }
+
+// 首屏卡片：props 由 page.tsx 穩定引用（EMPTY_ARRAY），memo 擋掉父層 state 變動引起的重繪
+export default memo(CompWarRoomInner)

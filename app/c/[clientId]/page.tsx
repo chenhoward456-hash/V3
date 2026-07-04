@@ -72,6 +72,9 @@ import ABTest from '@/components/ABTest'
 import { trackConversion, peekVariant } from '@/lib/ab-testing'
 import ErrorBoundary, { SectionErrorBoundary } from '@/components/ErrorBoundary'
 
+// 首屏卡片 props 穩定引用：`|| []` 每次 render 都產生新陣列，會打穿子元件的 React.memo
+const EMPTY_ARRAY: never[] = []
+
 export default function ClientDashboard() {
   const { clientId } = useParams()
 
@@ -943,9 +946,9 @@ export default function ClientDashboard() {
               prepPhase={c.prep_phase || null}
               gender={c.gender ?? null}
               latestBodyData={latestBodyData}
-              trainingLogs={clientData.trainingLogs || []}
-              wellness={clientData.wellness || []}
-              bodyData={clientData.bodyData || []}
+              trainingLogs={clientData.trainingLogs ?? EMPTY_ARRAY}
+              wellness={clientData.wellness ?? EMPTY_ARRAY}
+              bodyData={clientData.bodyData ?? EMPTY_ARRAY}
             />
             </SectionErrorBoundary>
           )}
@@ -954,7 +957,7 @@ export default function ClientDashboard() {
           {view === 'home' && isToday && (
             <SectionErrorBoundary name="for-you-feed">
               <ForYouFeed
-                labs={c.lab_results || []}
+                labs={c.lab_results ?? EMPTY_ARRAY}
                 gender={c.gender === '女性' ? '女性' : c.gender === '男性' ? '男性' : undefined}
                 nextCheckupDate={c.next_checkup_date}
                 macroAdjustment={clientData.recentMacroAdjustment ?? null}
@@ -1171,7 +1174,7 @@ export default function ClientDashboard() {
         {/* === 備賽作戰室：記完今天的數據，馬上看會不會準時上台 === */}
         {view === 'home' && isCompetition && c.competition_date && (
           <CompWarRoom
-            bodyData={clientData.bodyData || []}
+            bodyData={clientData.bodyData ?? EMPTY_ARRAY}
             competitionDate={c.competition_date}
             targetWeight={c.target_weight}
             targetBodyFat={c.target_body_fat}
@@ -1182,8 +1185,8 @@ export default function ClientDashboard() {
         {/* === 本週減脂體檢：掉重速率 + 能量（減脂/備賽，體脂不參與判定） === */}
         {view === 'home' && (isCompetition || c.prep_phase === 'cut' || /cut|loss|fat|減/.test((c.goal_type || '').toLowerCase())) && (
           <CutHealthCard
-            bodyData={clientData.bodyData || []}
-            wellness={clientData.wellness || []}
+            bodyData={clientData.bodyData ?? EMPTY_ARRAY}
+            wellness={clientData.wellness ?? EMPTY_ARRAY}
             currentWeight={latestBodyData?.weight ?? null}
           />
         )}

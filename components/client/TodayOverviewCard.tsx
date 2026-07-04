@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { calcRecommendedStageWeight } from '@/lib/stage-weight'
 
 interface CompletedItem {
@@ -234,7 +234,7 @@ const INSIGHT_STYLES: Record<DailyInsight['type'], { bg: string; border: string;
   neutral: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600' },
 }
 
-export default function TodayOverviewCard({
+function TodayOverviewCardInner({
   overallStreak,
   todayCompletedItems,
   isCompetition,
@@ -307,3 +307,5 @@ export default function TodayOverviewCard({
     </div>
   )
 }
+
+export default memo(TodayOverviewCardInner)

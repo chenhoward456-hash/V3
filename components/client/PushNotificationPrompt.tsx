@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 const DISMISS_KEY = 'push_prompt_dismissed'
@@ -11,7 +11,7 @@ const SNOOZE_MS = 3 * 86_400_000 // 關掉只「延後 3 天」，不再是終�
  * 只在「瀏覽器支援 + 有 VAPID 公鑰 + 權限尚未決定 + 未訂閱 + 使用者沒關過」時顯示，
  * 不騷擾：權限為 denied、或使用者按過 ✕，就不再出現。
  */
-export default function PushNotificationPrompt({ code, debug = false }: { code: string; debug?: boolean }) {
+function PushNotificationPromptInner({ code, debug = false }: { code: string; debug?: boolean }) {
   const { supported, state, busy, subscribed, needsInstall, subscribe } = usePushNotifications(code)
   const [dismissed, setDismissed] = useState(true) // 預設不顯示，待 effect 判定
   const [justEnabled, setJustEnabled] = useState(false)
@@ -121,3 +121,5 @@ export default function PushNotificationPrompt({ code, debug = false }: { code: 
     </div>
   )
 }
+
+export default memo(PushNotificationPromptInner)

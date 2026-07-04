@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { memo, useState, useEffect } from 'react'
 import type { CoachMessageRow } from '@/lib/client-feed'
 
 /**
@@ -9,7 +9,7 @@ import type { CoachMessageRow } from '@/lib/client-feed'
  * 關閉時回寫 read_at（跨裝置一致）；localStorage 只做本機即時隱藏。
  */
 // msg 給定就直接用（已載入的頁面）；沒給就自己打輕量端點抓（儀表板 skeleton 階段也能先秀訊息）
-export default function CoachMessageBanner({ msg: msgProp, clientCode }: { msg?: CoachMessageRow | null; clientCode: string }) {
+function CoachMessageBannerInner({ msg: msgProp, clientCode }: { msg?: CoachMessageRow | null; clientCode: string }) {
   const [dismissed, setDismissed] = useState(true)
   const [ready, setReady] = useState(false)
   const [fetched, setFetched] = useState<CoachMessageRow | null>(null)
@@ -85,3 +85,5 @@ export default function CoachMessageBanner({ msg: msgProp, clientCode }: { msg?:
     </div>
   )
 }
+
+export default memo(CoachMessageBannerInner)

@@ -30,10 +30,11 @@
 - **狀態色點規範**：狀態優先用「中性卡 + 一顆小色點/小標籤」呈現，不要整片色底（見 TrainingLog 準備度卡的做法 commit 7341aab）。
 
 ## Typography
-- **單一字族：Geist**（顯示/內文/UI/數據通吃 → 高度一致＝專業）。
-- **數據/數字**：Geist + `font-variant-numeric: tabular-nums`（表格/趨勢數字對齊）。
-- **等寬（原始值/代碼，少用）**：Geist Mono。
-- **載入**：Geist 走 next/font 或 CDN；fallback `-apple-system, system-ui, "PingFang TC", "Noto Sans TC", sans-serif`（手機優先、中文要好看）。
+- **body 字族首選：Noto Sans TC**（中文站，中文渲染一致性優先），拉丁 fallback Inter，鏈尾 system-ui。實際鏈：`var(--font-noto-sans-tc), var(--font-inter), system-ui, -apple-system, sans-serif`（`app/globals.css`）。
+- **標題（h1–h6 / .doc-title）**：Playfair Display 只涵蓋拉丁字，**中文必須 fallback 到 Noto Sans TC**（`var(--font-playfair), var(--font-noto-sans-tc), serif`），不准讓中文掉進系統明體。
+- **數據/數字**：`font-variant-numeric: tabular-nums`（表格/趨勢數字對齊）。
+- **載入**：全走 next/font/google（Noto Sans TC 只載 400/500/600/700，display swap），不掛 CDN `<link>`。
+- （註：2026-06-13 原案寫「單一字族 Geist」，但 code 從未導入 Geist；2026-07-04 依實況+Howard 同意改記為 Noto Sans TC 優先。）
 - **字級（rem）**：hero 1.5、h2 1.25、h3 1.0625、body 0.875、label/caption 0.75、micro 0.6875。粗細：標題 600、內文 400、強調 500。
 - **emoji**：大幅減量，只留功能性（狀態/導覽），不要每個標題都掛。
 
@@ -64,4 +65,5 @@
 | 日期 | 決策 | 理由 |
 |------|------|------|
 | 2026-06-13 | 建立設計系統（臨床級 premium、顏色只做語意、單一字族 Geist、放寬留白）| Howard：訓練端「不專業俐落」+ 全站 13 色系太躁。收斂為 藍+紅黃綠語意+灰，一次定北極星。 |
+| 2026-07-04 | 字體北極星改為 **body 首選 Noto Sans TC**（Inter 為拉丁 fallback），標題 h1–h6/.doc-title 的 Playfair 後面補 Noto Sans TC fallback；並修正 Typography 段落與 code 實況不符的「單一字族 Geist」記載（Geist 從未進 code）。 | 中文渲染一致性：Playfair 無中文字形，中文標題會掉進系統明體、跟內文打架（docs/PRODUCT_AUDIT_RETENTION.md 早已標記）。Howard 2026-07-04 口頭同意，屬 2026-07-02 臨床決策包收尾。 |
 | 2026-06-22 | 學員儀表板全面執行此規範（41 個 component 收斂）：殺光漸層（卡片→白底細灰框、按鈕→實心藍）、裝飾色（靛/紫/青/粉/橙/黃）一律轉中性灰、真狀態統一 emerald/amber/rose、卡片統一 `rounded-2xl p-5`。**順序重排**：一鍵打卡上移到判決卡之前、推播開通下移、移除體重/倒數/streak 重複顯示（備賽作戰室為單一真相）。實測 prod 0 漸層/0 裝飾色。| Howard：「重新沉一次儀表板美感+順序」、選「極簡臨床做到位」。**準則可演進**：強制紀律是手段，目的是 premium+好用；未做的獨立子頁（overview/help/timeline/showcase/welcome/upload）待後續。 |

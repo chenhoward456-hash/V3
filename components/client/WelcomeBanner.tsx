@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { X } from 'lucide-react'
 
@@ -10,7 +10,7 @@ interface Props {
   clientId: string
 }
 
-export default function WelcomeBanner({ clientId }: Props) {
+function WelcomeBannerInner({ clientId }: Props) {
   // 預設不顯示，hydration 後才檢查 localStorage（避免 SSR mismatch）
   const [visible, setVisible] = useState(false)
 
@@ -64,3 +64,5 @@ export default function WelcomeBanner({ clientId }: Props) {
     </div>
   )
 }
+
+export default memo(WelcomeBannerInner)
