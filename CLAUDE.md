@@ -33,5 +33,5 @@ Key routing rules:
 
 ## Design System
 動任何 UI / 視覺決策前，先讀 `DESIGN.md`（全站設計北極星）。配色、字體、間距、卡片、氣質都定義在那。
-核心紀律：**顏色只做語意**——藍=品牌/互動，紅/黃/綠=血檢/訓練狀態（嚴禁裝飾），其餘一律中性灰；單一字族 Geist；卡片統一 `bg-white border border-slate-200 rounded-2xl p-5`。
+核心紀律：**顏色只做語意**——藍=品牌/互動，紅/黃/綠=血檢/訓練狀態（嚴禁裝飾），其餘一律中性灰；字族＝內文 Noto Sans TC（Inter 拉丁 fallback）、標題 Playfair→Noto Sans TC（2026-07-04 更正：原寫「單一字族 Geist」與 code 不符，Geist 從未進 repo）；卡片統一 `bg-white border border-slate-200 rounded-2xl p-5`。
 未經 Howard 同意不要偏離。QA / review 時看到不符 DESIGN.md 的就標出來。
