@@ -29,11 +29,11 @@ describe('calcRecommendedStageWeight — male competition', () => {
     expect(result.targetBFLow).toBe(4)
     expect(result.targetBFHigh).toBe(6)
 
-    // recommendedLow = 68 / (1 - 0.06) = 68 / 0.94 = 72.3404... -> 72.3
-    expect(result.recommendedLow).toBe(r1(68 / 0.94))
+    // recommendedLow = 68 / (1 - 0.04) = 68 / 0.96 = 70.8333... -> 70.8（體脂下限 → 體重下限）
+    expect(result.recommendedLow).toBe(r1(68 / 0.96))
 
-    // recommendedHigh = 68 / (1 - 0.04) = 68 / 0.96 = 70.8333... -> 70.8
-    expect(result.recommendedHigh).toBe(r1(68 / 0.96))
+    // recommendedHigh = 68 / (1 - 0.06) = 68 / 0.94 = 72.3404... -> 72.3（體脂上限 → 體重上限）
+    expect(result.recommendedHigh).toBe(r1(68 / 0.94))
 
     // mid = (72.3 + 70.8) / 2 = 71.55 (using actual rounded values)
     // Actually: mid = (recommendedLow + recommendedHigh) / 2
@@ -72,11 +72,11 @@ describe('calcRecommendedStageWeight — female competition', () => {
     expect(result.targetBFLow).toBe(10)
     expect(result.targetBFHigh).toBe(14)
 
-    // recommendedLow = 42.9 / (1 - 0.14) = 42.9 / 0.86 = 49.8837... -> 49.9
-    expect(result.recommendedLow).toBe(r1(42.9 / 0.86))
+    // recommendedLow = 42.9 / (1 - 0.10) = 42.9 / 0.90 = 47.6666... -> 47.7（體脂下限 → 體重下限）
+    expect(result.recommendedLow).toBe(r1(42.9 / 0.90))
 
-    // recommendedHigh = 42.9 / (1 - 0.10) = 42.9 / 0.90 = 47.6666... -> 47.7
-    expect(result.recommendedHigh).toBe(r1(42.9 / 0.90))
+    // recommendedHigh = 42.9 / (1 - 0.14) = 42.9 / 0.86 = 49.8837... -> 49.9（體脂上限 → 體重上限）
+    expect(result.recommendedHigh).toBe(r1(42.9 / 0.86))
 
     // Weight is above midpoint, so fatToLose should be a positive number
     expect(result.fatToLose).not.toBeNull()
@@ -102,11 +102,11 @@ describe('calcRecommendedStageWeight — male health', () => {
     expect(result.targetBFLow).toBe(10)
     expect(result.targetBFHigh).toBe(18)
 
-    // recommendedLow = 68 / (1 - 0.18) = 68 / 0.82 = 82.9268... -> 82.9
-    expect(result.recommendedLow).toBe(r1(68 / 0.82))
+    // recommendedLow = 68 / (1 - 0.10) = 68 / 0.90 = 75.5555... -> 75.6（體脂下限 → 體重下限）
+    expect(result.recommendedLow).toBe(r1(68 / 0.90))
 
-    // recommendedHigh = 68 / (1 - 0.10) = 68 / 0.90 = 75.5555... -> 75.6
-    expect(result.recommendedHigh).toBe(r1(68 / 0.90))
+    // recommendedHigh = 68 / (1 - 0.18) = 68 / 0.82 = 82.9268... -> 82.9（體脂上限 → 體重上限）
+    expect(result.recommendedHigh).toBe(r1(68 / 0.82))
 
     expect(result.mode).toBe('health')
   })
@@ -139,11 +139,11 @@ describe('calcRecommendedStageWeight — female health', () => {
     expect(result.targetBFLow).toBe(18)
     expect(result.targetBFHigh).toBe(25)
 
-    // recommendedLow = 46.8 / 0.75 = 62.4
-    expect(result.recommendedLow).toBe(r1(46.8 / 0.75))
+    // recommendedLow = 46.8 / 0.82 = 57.0731... -> 57.1（體脂下限 18% → 體重下限）
+    expect(result.recommendedLow).toBe(r1(46.8 / 0.82))
 
-    // recommendedHigh = 46.8 / 0.82 = 57.0731... -> 57.1
-    expect(result.recommendedHigh).toBe(r1(46.8 / 0.82))
+    // recommendedHigh = 46.8 / 0.75 = 62.4（體脂上限 25% → 體重上限）
+    expect(result.recommendedHigh).toBe(r1(46.8 / 0.75))
 
     expect(result.mode).toBe('health')
   })
@@ -296,19 +296,17 @@ describe('FFM and fatMass consistency', () => {
 })
 
 // ---------------------------------------------------------------------------
-// recommendedLow >= recommendedHigh (counter-intuitive but correct)
+// recommendedLow <= recommendedHigh
 // ---------------------------------------------------------------------------
 
 describe('recommended range ordering', () => {
-  it('recommendedLow >= recommendedHigh (higher BF target = more total weight)', () => {
-    // This is expected because:
-    //   recommendedLow = FFM / (1 - targetBFHigh/100)  → higher target BF → more total weight
-    //   recommendedHigh = FFM / (1 - targetBFLow/100) → lower target BF → less total weight
-    // So "Low" in the naming means the lower-weight recommendation (the leaner one)
-    // Actually, targetBFHigh is numerically larger → (1 - targetBFHigh/100) is smaller → FFM / smaller = larger
-    // So recommendedLow (using targetBFHigh) > recommendedHigh (using targetBFLow)
+  it('recommendedLow <= recommendedHigh (higher BF target = more total weight)', () => {
+    // 同一 FFM 下，體脂越高總重越高：
+    //   recommendedLow = FFM / (1 - targetBFLow/100)（最瘦、最輕）
+    //   recommendedHigh = FFM / (1 - targetBFHigh/100)（體脂上緣、較重）
+    // 2026-07-04 前這裡曾把兩者反過來，導致 UI 顯示「84.3–82.5」與後台目標警示誤判
     const result = calcRecommendedStageWeight(80, 15, '男性', 180, true)
-    expect(result.recommendedLow).toBeGreaterThanOrEqual(result.recommendedHigh)
+    expect(result.recommendedLow).toBeLessThanOrEqual(result.recommendedHigh)
   })
 })
 

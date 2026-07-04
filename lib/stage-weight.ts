@@ -5,8 +5,8 @@
 export interface RecommendedStageWeightResult {
   ffm: number                    // 去脂體重 (kg)
   ffmi: number | null            // Fat Free Mass Index (kg/m²)，需要身高才能算
-  recommendedLow: number         // 參考體重下限 (kg) — 以最高目標體脂推算
-  recommendedHigh: number        // 參考體重上限 (kg) — 以最低目標體脂推算
+  recommendedLow: number         // 參考體重下限 (kg) — 以最低目標體脂推算（同 FFM 下體脂越低越輕）
+  recommendedHigh: number        // 參考體重上限 (kg) — 以最高目標體脂推算
   targetBFLow: number            // 使用的目標體脂下限 (%)
   targetBFHigh: number           // 使用的目標體脂上限 (%)
   currentBF: number              // 輸入的現況體脂 (%)
@@ -50,9 +50,9 @@ export function calcRecommendedStageWeight(
   }
 
   // 參考體重 = FFM ÷ (1 - 目標體脂)
-  // 體脂高上限 → 體重下限；體脂低上限 → 體重上限
-  const recommendedLow = Math.round(ffm / (1 - targetBFHigh / 100) * 10) / 10
-  const recommendedHigh = Math.round(ffm / (1 - targetBFLow / 100) * 10) / 10
+  // 同一 FFM 下體脂越高總重越高 → 體脂下限對應體重下限、體脂上限對應體重上限
+  const recommendedLow = Math.round(ffm / (1 - targetBFLow / 100) * 10) / 10
+  const recommendedHigh = Math.round(ffm / (1 - targetBFHigh / 100) * 10) / 10
 
   // 以參考中點計算需減脂量
   const recommendedMid = (recommendedLow + recommendedHigh) / 2
