@@ -44,7 +44,7 @@ interface Client {
 
 interface TrainingLogRecord { client_id: string; training_type: string }
 interface SupplementLog { client_id: string; supplement_id: string; date: string; completed: boolean }
-interface SupplementRecord { client_id: string }
+interface SupplementRecord { id: string; client_id: string }
 interface BodyRecord { client_id: string; date: string; weight: number }
 interface NutritionRecord { client_id: string; date: string; compliant: boolean | null }
 interface WellnessRecord { client_id: string; date: string; energy_level: number }
@@ -283,8 +283,11 @@ export default function AdminDashboard() {
       logsByClient[log.client_id].push(log)
     }
     const supCountByClient: Record<string, number> = {}
+    const supIdsByClient: Record<string, Set<string>> = {}
     for (const s of allSupplements) {
       supCountByClient[s.client_id] = (supCountByClient[s.client_id] || 0) + 1
+      if (!supIdsByClient[s.client_id]) supIdsByClient[s.client_id] = new Set()
+      supIdsByClient[s.client_id].add(s.id)
     }
 
     const stats: Record<string, { weekRate: number; lastActivity: string | null; supplementCount: number }> = {}
@@ -292,7 +295,16 @@ export default function AdminDashboard() {
       const clientLogs = logsByClient[client.id] || []
       const supplementCount = supCountByClient[client.id] || 0
       let weekRate = 0
-      if (supplementCount > 0) { weekRate = Math.round((clientLogs.filter(l => l.completed).length / (supplementCount * 7)) * 100) }
+      if (supplementCount > 0) {
+        // 只算「目前清單上」補品的打卡（已刪補品的殘留 log 會把分子灌爆），
+        // 同一補品同一天去重，最後夾在 0–100（曾出現 114% 的來源就是這裡）
+        const curIds = supIdsByClient[client.id] || new Set()
+        const done = new Set<string>()
+        for (const l of clientLogs) {
+          if (l.completed && curIds.has(l.supplement_id)) done.add(`${l.supplement_id}|${l.date}`)
+        }
+        weekRate = Math.min(100, Math.round((done.size / (supplementCount * 7)) * 100))
+      }
       const lastActivity = lastActivityMap[client.id] || null
       stats[client.id] = { weekRate, lastActivity, supplementCount }
     }

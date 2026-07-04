@@ -62,10 +62,10 @@ export async function GET(request: NextRequest) {
         .select('client_id, supplement_id, date, completed')
         .gte('date', sevenDaysAgoStr),
 
-      // 所有補品（只取 client_id）
+      // 所有補品（id 用來過濾已刪補品的殘留打卡，算服從率要用）
       supabase
         .from('supplements')
-        .select('client_id'),
+        .select('id, client_id'),
 
       // 今天的每日感受（只取 client_id）
       supabase
