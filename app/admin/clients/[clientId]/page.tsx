@@ -14,6 +14,7 @@ import PersonalNotesEditor from './components/PersonalNotesEditor'
 import ArchivedSupplementsList from './components/ArchivedSupplementsList'
 import { SUPPLEMENT_NAMES, findSuggestion } from '@/lib/supplement-catalog'
 import { auditSupplement } from '@/lib/supplement-indication-audit'
+import { getCycleState } from '@/lib/periodization'
 
 type EditorTab = 'basic' | 'features' | 'notes' | 'lab' | 'supplements'
 
@@ -664,6 +665,7 @@ export default function ClientEditor() {
     try {
       const lines = text.split('\n')
       let planName = ''
+      let mesocycle: any = null
       const days: any[] = []
       let currentDay: any = null
 
@@ -682,6 +684,32 @@ export default function ClientEditor() {
         const nameMatch = line.match(/^計[畫劃]名[稱称][\s：:]+(.+)$/i)
         if (nameMatch) {
           planName = nameMatch[1].trim()
+          continue
+        }
+
+        // 選配週期行（方案 A）：「週期：2026-07-07 起 5 週，第 5 週減量，塊：減脂後期，備註：...」
+        // 沒這行 = 沒 mesocycle（功能靜默關閉）；有這行但解析不出必要欄位 → 報錯不套用，避免默默吃掉
+        const mesoMatch = line.match(/^週期[\s：:]+(.+)$/)
+        if (mesoMatch) {
+          const body = mesoMatch[1]
+          const dateMatch = body.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/)
+          // 總週數：優先「起 N 週」；退而求其次取排除「第 X 週減量」後的第一個「N 週」
+          const weeksMatch = body.match(/起\s*(\d+)\s*週/) || body.replace(/第\s*\d+\s*週減量/g, '').match(/(\d+)\s*週/)
+          if (!dateMatch || !weeksMatch) {
+            setTrainingPlanParseError('週期行無法解析：需要「YYYY-MM-DD 起 N 週」，例：週期：2026-07-07 起 5 週，第 5 週減量，塊：減脂後期')
+            return
+          }
+          const pad = (s: string) => s.padStart(2, '0')
+          mesocycle = {
+            startDate: `${dateMatch[1]}-${pad(dateMatch[2])}-${pad(dateMatch[3])}`,
+            weeks: parseInt(weeksMatch[1]),
+          }
+          const deloadMatch = body.match(/第\s*(\d+)\s*週減量/)
+          if (deloadMatch) mesocycle.deloadWeek = parseInt(deloadMatch[1])
+          const blockMatch = body.match(/塊[\s：:]+([^，,]+)/)
+          if (blockMatch) mesocycle.blockLabel = blockMatch[1].trim()
+          const noteMatch = body.match(/備註[\s：:]+(.+)$/)
+          if (noteMatch) mesocycle.note = noteMatch[1].trim()
           continue
         }
 
@@ -728,10 +756,11 @@ export default function ClientEditor() {
         return
       }
 
-      const plan = {
+      const plan: any = {
         name: planName || '訓練計畫',
         days,
       }
+      if (mesocycle) plan.mesocycle = mesocycle
       updateClient('training_plan', plan)
     } catch (e) {
       setTrainingPlanParseError('解析失敗，請檢查格式')
@@ -742,6 +771,15 @@ export default function ClientEditor() {
     if (!plan) return ''
     const lines: string[] = []
     if (plan.name) lines.push(`計畫名稱：${plan.name}`)
+    // 選配週期行（與 parser 對稱；沒 startDate/weeks 的 mesocycle 不序列化）
+    const meso = plan.mesocycle
+    if (meso?.startDate && meso?.weeks) {
+      let mesoLine = `週期：${meso.startDate} 起 ${meso.weeks} 週`
+      if (meso.deloadWeek) mesoLine += `，第 ${meso.deloadWeek} 週減量`
+      if (meso.blockLabel) mesoLine += `，塊：${meso.blockLabel}`
+      if (meso.note) mesoLine += `，備註：${meso.note}`
+      lines.push(mesoLine)
+    }
     lines.push('')
     for (const day of plan.days || []) {
       const dayLabel = DAY_LABELS[day.dayOfWeek] || `Day ${day.dayOfWeek}`
@@ -2282,6 +2320,9 @@ export default function ClientEditor() {
                       格式說明：第一行可寫「計畫名稱：...」。每天以「週X 標籤」開頭（如「週一 Push Day」），
                       動作格式為「動作名 | 組數 | 次數 | RPE | 備註」，各欄位以 | 分隔。
                       天與天之間空一行。沒有訓練的日子不用寫（自動視為休息日）。
+                      <br />
+                      選配週期行（可省略）：「週期：2026-07-07 起 5 週，第 5 週減量，塊：減脂後期」。
+                      有這行，學員的今日課表卡會顯示「第 X 週 / 共 N 週」；減量週自動把主項（每天第一個動作）換算成 RPE 上限 6、組數 −2（附屬照舊）。
                     </p>
                   </div>
                 </div>
@@ -2298,6 +2339,27 @@ export default function ClientEditor() {
                     </button>
                     {showTrainingPlanPreview && (
                       <div className="space-y-3">
+                        {/* 週期狀態（有 mesocycle 才顯示） */}
+                        {(client.training_plan as any).mesocycle && (() => {
+                          const meso = (client.training_plan as any).mesocycle
+                          const state = getCycleState(client.training_plan as any)
+                          return (
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-gray-600">
+                              <span className="font-medium text-gray-800">週期</span>
+                              ：{meso.startDate} 起 {meso.weeks} 週
+                              {meso.deloadWeek ? `，第 ${meso.deloadWeek} 週減量` : ''}
+                              {meso.blockLabel ? ` · ${meso.blockLabel}` : ''}
+                              <span className="ml-2 text-gray-500">
+                                {state
+                                  ? state.ended
+                                    ? '（週期已結束，記得排下一塊）'
+                                    : `（目前第 ${state.week} 週${state.isDeloadWeek ? '，本週減量週' : ''}）`
+                                  : '（尚未開始）'}
+                              </span>
+                              {meso.note ? <span className="block mt-0.5 text-gray-400">備註：{meso.note}</span> : null}
+                            </div>
+                          )
+                        })()}
                         {(client.training_plan.days || []).map((day: any, di: number) => (
                           <div key={di} className="bg-blue-50 rounded-lg p-3">
                             <p className="text-sm font-semibold text-blue-800 mb-2">

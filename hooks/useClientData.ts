@@ -16,9 +16,19 @@ export interface TrainingPlanDay {
   exercises: TrainingPlanExercise[]
 }
 
+/** 週期化選配欄（方案 A 純日曆版，見 docs/DESIGN_TRAINING_PERIODIZATION.md §2） */
+export interface TrainingPlanMesocycle {
+  startDate: string // YYYY-MM-DD（週期起始，慣例是週一）
+  weeks: number
+  deloadWeek?: number
+  blockLabel?: string
+  note?: string
+}
+
 export interface TrainingPlan {
   name: string
   days: TrainingPlanDay[]
+  mesocycle?: TrainingPlanMesocycle | null
 }
 
 /** Client data from Supabase. Nullable fields use `| null` (DB convention). */

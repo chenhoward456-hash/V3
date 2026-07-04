@@ -7,6 +7,7 @@ import { useMeasuredContainer } from '@/hooks/useMeasuredContainer'
 import { TRAINING_TYPES, isWeightTraining } from './types'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
+import { getCycleState } from '@/lib/periodization'
 
 interface ModeReason {
   signal: string
@@ -70,6 +71,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   const [readiness, setReadiness] = useState<TrainingReadiness | null>(null)
   const [showTrainingAdvanced, setShowTrainingAdvanced] = useState(false)
   const [showRestForm, setShowRestForm] = useState(false)
+  // 課表週期化：本週是否為排定的減量週（純日曆，沒 mesocycle = false）
+  const isPlannedDeloadWeek = useMemo(() => getCycleState(trainingPlan)?.isDeloadWeek ?? false, [trainingPlan])
 
   // 載入今日訓練準備度
   useEffect(() => {
@@ -603,7 +606,17 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         })()}
 
         {/* ===== 訓練模式建議（簡單模式隱藏） ===== */}
-        {!simpleMode && readiness?.modeRecommendation && (() => {
+        {/* 課表排定的減量週：模式建議讓位（單一真相 = 課表），不跑投票 */}
+        {!simpleMode && readiness?.modeRecommendation && isPlannedDeloadWeek && (
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full shrink-0 bg-slate-400" />
+              <p className="font-medium text-gray-900">本週是課表排定的減量週</p>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">照上方調整後的課表練就好（主項降強度，附屬照舊）。</p>
+          </div>
+        )}
+        {!simpleMode && readiness?.modeRecommendation && !isPlannedDeloadWeek && (() => {
           const mode = readiness.modeRecommendation
           const dotColor = ({ purple: 'bg-slate-400', red: 'bg-rose-500', blue: 'bg-blue-500', amber: 'bg-amber-500', teal: 'bg-slate-400', green: 'bg-emerald-500' } as Record<string, string>)[mode.modeColor] || 'bg-blue-500'
           const totalReasons = mode.reasons.length + mode.geneticTrainingCorrections.length

@@ -18,6 +18,7 @@ import {
   extractHormoneLabs,
 } from '@/lib/training-mode-engine'
 import { calculateMetabolicStressScore } from '@/lib/nutrition-engine'
+import { getCycleState, applyDeloadToDay, getTaipeiDayOfWeek } from '@/lib/periodization'
 import { isCompetitionMode } from '@/lib/client-mode'
 
 const logger = createLogger('api-training-readiness')
@@ -259,12 +260,12 @@ export async function GET(request: NextRequest) {
     // 計算今日課表總組數（用於動態建議組數）
     let planTotalSets: number | null = null
     if (client.training_plan?.days?.length) {
-      const now = new Date()
-      const taipeiStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
-      const taipeiDate = new Date(taipeiStr + 'T12:00:00')
-      const jsDay = taipeiDate.getDay()
-      const dow = jsDay === 0 ? 7 : jsDay
-      const todayPlan = client.training_plan.days.find((d: any) => d.dayOfWeek === dow)
+      const dow = getTaipeiDayOfWeek()
+      let todayPlan = client.training_plan.days.find((d: any) => d.dayOfWeek === dow)
+      // 課表排定的減量週：主項組數用換算後的值（跟 TodayWorkout 顯示一致，避免建議組數跟課表打架）
+      if (todayPlan && getCycleState(client.training_plan)?.isDeloadWeek) {
+        todayPlan = applyDeloadToDay(todayPlan)
+      }
       if (todayPlan?.exercises?.length) {
         planTotalSets = todayPlan.exercises.reduce((sum: number, ex: any) => {
           const sets = parseInt(ex.sets)

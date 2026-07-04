@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type { TrainingPlan, TrainingPlanDay, TrainingPlanExercise } from '@/hooks/useClientData'
+import { getCycleState, applyDeloadToDay, getTaipeiDayOfWeek } from '@/lib/periodization'
 
 interface TodayWorkoutProps {
   trainingPlan: TrainingPlan
@@ -13,25 +14,18 @@ const DAY_LABELS: Record<number, string> = {
   1: '週一', 2: '週二', 3: '週三', 4: '週四', 5: '週五', 6: '週六', 7: '週日',
 }
 
-function getTaipeiDayOfWeek(): number {
-  // Get current day in Asia/Taipei timezone
-  // JS getDay(): 0=Sun, 1=Mon ... 6=Sat
-  // We need: 1=Mon, 2=Tue ... 7=Sun
-  const now = new Date()
-  const taipeiStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
-  const taipeiDate = new Date(taipeiStr + 'T12:00:00')
-  const jsDay = taipeiDate.getDay()
-  return jsDay === 0 ? 7 : jsDay
-}
-
 export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayWorkoutProps) {
   const [showFullPlan, setShowFullPlan] = useState(false)
 
   const todayDow = useMemo(() => getTaipeiDayOfWeek(), [])
-  const todayPlan = useMemo(
-    () => trainingPlan.days.find(d => d.dayOfWeek === todayDow) || null,
-    [trainingPlan, todayDow]
-  )
+  // 週期狀態（沒 mesocycle = null，UI 完全不出現，現狀不變）
+  const cycle = useMemo(() => getCycleState(trainingPlan), [trainingPlan])
+  const todayPlan = useMemo(() => {
+    const raw = trainingPlan.days.find(d => d.dayOfWeek === todayDow) || null
+    // 減量週：只換算主項顯示（RPE 上限 6、組數 -2 下限 2），附屬照舊
+    if (raw && cycle?.isDeloadWeek) return applyDeloadToDay(raw)
+    return raw
+  }, [trainingPlan, todayDow, cycle])
 
   // 如果今天已記錄為「休息」，即使課表有訓練也顯示休息
   const isActualRest = todayTrainingType === 'rest'
@@ -57,10 +51,34 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
             {trainingPlan.name && (
               <p className="text-[11px] text-gray-400 mt-0.5">{trainingPlan.name}</p>
             )}
+            {cycle && !cycle.ended && (
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                第 {cycle.week} 週 / 共 {cycle.totalWeeks} 週
+                {cycle.blockLabel && <> · {cycle.blockLabel}</>}
+                {cycle.isDeloadWeek && (
+                  <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium align-middle">
+                    本週減量週
+                  </span>
+                )}
+              </p>
+            )}
+            {cycle?.ended && (
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                週期已結束（共 {cycle.totalWeeks} 週），等教練排下一塊
+                {cycle.blockLabel && <> · {cycle.blockLabel}</>}
+              </p>
+            )}
           </div>
         </div>
         <span className="text-xs text-gray-400">{DAY_LABELS[todayDow]}</span>
       </div>
+
+      {/* 減量週說明（中性小字，不搶版面） */}
+      {showPlan && cycle?.isDeloadWeek && (
+        <p className="text-[11px] text-gray-500 mb-2">
+          本週是課表排定的減量週：主項已自動換算（RPE 上限 6、組數 −2），附屬動作照舊。
+        </p>
+      )}
 
       {/* Today's exercises or rest day */}
       {showPlan ? (
@@ -75,13 +93,25 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
               </tr>
             </thead>
             <tbody>
-              {todayPlan.exercises.map((ex, i) => (
+              {todayPlan.exercises.map((rawEx, i) => {
+                const ex = rawEx as TrainingPlanExercise & {
+                  deloadAdjusted?: boolean
+                  originalSets?: string
+                  originalRpe?: string
+                }
+                return (
                 <tr key={i} className="border-b border-slate-200 last:border-b-0">
                   <td className="py-2 px-3 font-medium text-gray-800">{ex.name}</td>
                   <td className="py-2 px-2 text-center text-gray-600 tabular-nums">
+                    {ex.originalSets && (
+                      <span className="line-through text-gray-300 mr-1">{ex.originalSets}</span>
+                    )}
                     {ex.sets && ex.reps ? `${ex.sets}x${ex.reps}` : ex.sets || ex.reps || '-'}
                   </td>
                   <td className="py-2 px-2 text-center">
+                    {ex.originalRpe && (
+                      <span className="line-through text-gray-300 text-[11px] mr-1 tabular-nums">{ex.originalRpe}</span>
+                    )}
                     {ex.rpe ? (
                       <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-medium tabular-nums ${
                         Number(ex.rpe) >= 9 ? 'bg-rose-100 text-rose-700' :
@@ -96,7 +126,8 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
                   </td>
                   <td className="py-2 px-2 text-gray-500 max-w-[100px] truncate">{ex.note || ''}</td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>
