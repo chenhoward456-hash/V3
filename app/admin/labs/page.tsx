@@ -25,11 +25,16 @@ interface LabClient {
   improving: ImprovingMarker[]
 }
 
+// DB 的 unit 有 umol/µmol/μmol 三種寫法（歷史資料），顯示統一成 μ；資料清洗另案
+function fmtUnit(u: string | null): string | null {
+  return u ? u.replace(/^u/, 'μ').replace(/^µ/, 'μ') : u
+}
+
 function MarkerPill({ m }: { m: Marker }) {
   return (
     <span className="inline-flex items-baseline gap-1 text-xs px-2 py-0.5 rounded-full bg-white/70 border border-gray-200">
       <span className="font-medium text-gray-800">{m.name}</span>
-      <span className="text-gray-900 font-semibold">{m.value}{m.unit ? ` ${m.unit}` : ''}</span>
+      <span className="text-gray-900 font-semibold">{m.value}{m.unit ? ` ${fmtUnit(m.unit)}` : ''}</span>
       {m.optimal && <span className="text-[11px] text-gray-400">最佳 {m.optimal}</span>}
     </span>
   )
@@ -171,7 +176,7 @@ export default function AdminLabsOverviewPage() {
                     {c.improving.map((m, i) => (
                       <span key={i} className="inline-flex items-baseline gap-1 text-xs px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
                         <span className="font-medium text-emerald-800">{m.name}</span>
-                        <span className="text-emerald-700">{m.from ?? '?'} → {m.to}{m.unit ? ` ${m.unit}` : ''}</span>
+                        <span className="text-emerald-700">{m.from ?? '?'} → {m.to}{m.unit ? ` ${fmtUnit(m.unit)}` : ''}</span>
                       </span>
                     ))}
                   </div>
