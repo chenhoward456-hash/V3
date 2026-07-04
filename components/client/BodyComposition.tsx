@@ -5,6 +5,7 @@ import { Calendar, X, Plus, Scale, Activity, Dumbbell, Ruler, Heart } from 'luci
 import LazyChart from '@/components/charts/LazyChart'
 import { useMeasuredContainer } from '@/hooks/useMeasuredContainer'
 import { getLocalDateStr, daysUntilDateTW } from '@/lib/date-utils'
+import { projectWeightVerdict } from '@/lib/comp-projection'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useToast } from '@/components/ui/Toast'
 
@@ -246,6 +247,9 @@ export default function BodyComposition({
 
   // 體重軌跡 vs 目標體重（含預測線）。有比賽日就用比賽日；沒有就用自訂目標日 target_date，
   // 讓「非比賽、自己設期限」的學員（例如純減脂到某天）也能看到到期日預測。
+  // 預測走共用 projectWeightVerdict（14 天窗、真實日期回歸、容差 1.0kg）——
+  // 與今日分頁作戰室、教練端 /admin 備賽倒數同一套，三處數字必須一致。
+  // （舊版用「最後 14 筆、索引當天數」自己回歸，紀錄稀疏時斜率會被灌水）
   const trajectoryData = useMemo(() => {
     const deadline = competitionDate || targetDate
     if (!competitionEnabled || !targetWeight || !deadline || !weightMAData || weightMAData.length < 3) return null
@@ -255,23 +259,16 @@ export default function BodyComposition({
     const daysToComp = daysUntilDateTW(deadline)
     if (daysToComp < 0) return null // 期限已過
 
-    // 取近 14 天的 MA7 做線性回歸
-    const recentMA = weightMAData.slice(-14)
-    const n = recentMA.length
+    const verdict = projectWeightVerdict(
+      (bodyData || []).map((b: any) => ({ date: b.date, value: b.weight })),
+      deadline,
+      targetWeight
+    )
+    if (!verdict) return null // 近 14 天資料不足 → 跟作戰室一樣不硬給預測
 
-    // 線性回歸：y = a + bx（x = 天數索引）
-    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0
-    recentMA.forEach((d, i) => {
-      sumX += i
-      sumY += d.ma7
-      sumXY += i * d.ma7
-      sumX2 += i * i
-    })
-    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
-    const lastMA = recentMA[recentMA.length - 1].ma7
-
-    // 預測比賽日體重
-    const predictedWeight = Math.round((lastMA + slope * daysToComp) * 10) / 10
+    const slope = verdict.slopePerWeek / 7
+    const lastMA = weightMAData[weightMAData.length - 1].ma7
+    const predictedWeight = Math.round(verdict.projected * 10) / 10
 
     // 構建圖表數據：實際數據 + 預測延伸
     const chartData: { date: string; actual: number | null; ma7: number | null; predicted: number | null }[] = []
@@ -292,12 +289,12 @@ export default function BodyComposition({
     // 把最後一個點也加到 predicted 讓線連接
     chartData[chartData.length - 1].predicted = lastEntry.ma7
 
-    // 每 3 天加一個預測點（或到比賽日）
+    // 每 3 天加一個預測點（或到比賽日）；線從最後的 MA7 連到共用預測值，終點與作戰室一致
     const interval = Math.max(1, Math.min(3, Math.floor(daysToComp / 6)))
     for (let day = interval; day <= daysToComp; day += interval) {
       const predDate = new Date(now)
       predDate.setDate(now.getDate() + day)
-      const predWeight = Math.round((lastMA + slope * day) * 10) / 10
+      const predWeight = Math.round((lastMA + (predictedWeight - lastMA) * (day / daysToComp)) * 10) / 10
       chartData.push({
         date: predDate.toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
         actual: null,
@@ -328,11 +325,11 @@ export default function BodyComposition({
     const minY = Math.floor(Math.min(...allValues) - 1)
     const maxY = Math.ceil(Math.max(...allValues) + 1)
 
-    const diff = Math.abs(predictedWeight - targetWeight)
-    const onTrack = diff <= 0.5
+    const diff = Math.abs(verdict.gap)
+    const onTrack = verdict.onTrack
 
     return { chartData, predictedWeight, daysToComp, slope, lastMA, minY, maxY, onTrack, diff, isComp: !!competitionDate }
-  }, [competitionEnabled, targetWeight, competitionDate, targetDate, weightMAData])
+  }, [competitionEnabled, targetWeight, competitionDate, targetDate, weightMAData, bodyData])
 
   // 記 InBody：只送體脂/肌肉/內臟 + InBody 體重(inbody_weight)，不送 weight → 不碰體重趨勢/引擎。
   const handleSubmitInbody = async () => {
@@ -827,7 +824,7 @@ export default function BodyComposition({
             {/* 每週掉重速率 */}
             {trajectoryData.slope !== 0 && (
               <p className="text-[11px] text-gray-400 mt-2 text-center">
-                目前趨勢：每週 {trajectoryData.slope > 0 ? '+' : ''}{(trajectoryData.slope * 7).toFixed(2)} kg/週
+                目前趨勢：每週 {trajectoryData.slope > 0 ? '+' : ''}{(trajectoryData.slope * 7).toFixed(1)} kg/週
               </p>
             )}
           </div>
