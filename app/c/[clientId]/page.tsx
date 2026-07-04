@@ -1682,7 +1682,7 @@ export default function ClientDashboard() {
                     <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{c.coach_summary}</p>
                     {(c.next_checkup_date || c.health_goals) && (
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 pt-2 border-t border-amber-200/50">
-                        {c.next_checkup_date && <span className="text-xs text-blue-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
+                        {c.next_checkup_date && new Date(c.next_checkup_date + 'T00:00:00') >= new Date(new Date().setHours(0,0,0,0)) && <span className="text-xs text-blue-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
                         {c.health_goals && <span className="text-xs text-blue-600">🎯 {c.health_goals}</span>}
                       </div>
                     )}

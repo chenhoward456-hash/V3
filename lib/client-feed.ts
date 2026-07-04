@@ -122,7 +122,12 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
   }
 
   // ── 2. 回檢提醒 ───────────────────────────────
-  if (input.nextCheckupDate) {
+  // 回檢日之後已有新血檢進來＝這次回檢已完成，別再喊「過期快去抽血」
+  // （教練後台逾期警示照跑，提醒教練設下一次日期；學員端不重複嘮叨）
+  const latestLabDate = input.labs.reduce<string | null>(
+    (acc, r) => (acc == null || r.date > acc ? r.date : acc), null)
+  const checkupFulfilled = !!(input.nextCheckupDate && latestLabDate && latestLabDate >= input.nextCheckupDate)
+  if (input.nextCheckupDate && !checkupFulfilled) {
     const d = daysBetween(today, input.nextCheckupDate)
     if (d < 0) {
       cards.push({
