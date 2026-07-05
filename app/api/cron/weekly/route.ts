@@ -19,6 +19,7 @@ import { isWeightTraining } from '@/components/client/types'
 import { pushMessage } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
 import { computeTrainingProgress } from '@/lib/training-progress'
+import { computeFatigueFlag, getCycleState, getTaipeiDateStr, FATIGUE_RECENT_WINDOW_DAYS, FATIGUE_BASELINE_WINDOW_DAYS, type PeriodizedPlan } from '@/lib/periodization'
 import { generateWeeklyAIReport, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import crypto from 'crypto'
 import { sendNewsletterEmail } from '@/lib/email'
@@ -346,6 +347,45 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── 3b. 疲勞旗標前置查詢（訓練週期化第二波） ──
+    // wellness 要看「連 2 週」+ 各自的 30 天基線 → 需要 7+7+30 = 44 天窗（獨立查詢，
+    // 不動上面共用的 30 天 wellness 查詢——那份還餵營養引擎，改窗會汙染輸入）。
+    const fatigueWindowDays = FATIGUE_RECENT_WINDOW_DAYS * 2 + FATIGUE_BASELINE_WINDOW_DAYS // 44
+    const fatigueSince = new Date(today.getTime() - (fatigueWindowDays - 1) * DAY_MS).toISOString().split('T')[0]
+    const { data: fatigueWellnessData } = await supabase
+      .from('daily_wellness')
+      .select('client_id, date, sleep_quality, energy_level, training_drive')
+      .gte('date', fatigueSince)
+    const fatigueWellnessByClient = new Map<string, NonNullable<typeof fatigueWellnessData>>()
+    for (const w of fatigueWellnessData || []) {
+      const arr = fatigueWellnessByClient.get(w.client_id) || []
+      arr.push(w)
+      fatigueWellnessByClient.set(w.client_id, arr)
+    }
+
+    // 14 天冷卻：沒有 per-client 提醒紀錄表（不開新表），改查近 13 天內的 weekly_digest
+    // 通知內容有沒有已經帶過「某某：疲勞旗標」——有就這週不重複轟。
+    // 限制：靠訊息前綴字串比對（`${name}：疲勞旗標`），前綴改字或學員同名會失效。
+    const cooldownSince = new Date(today.getTime() - 13 * DAY_MS).toISOString().split('T')[0]
+    const { data: recentDigests } = await supabase
+      .from('coach_notifications')
+      .select('date, content')
+      .eq('type', 'weekly_digest')
+      .gte('date', cooldownSince)
+    const recentFatigueLines: string[] = []
+    for (const d of recentDigests || []) {
+      try {
+        const items = JSON.parse(d.content)
+        if (Array.isArray(items)) {
+          for (const it of items) {
+            if (typeof it === 'string' && it.includes('：疲勞旗標')) recentFatigueLines.push(it)
+          }
+        }
+      } catch { /* 舊格式非 JSON → 忽略 */ }
+    }
+    const fatigueOnCooldown = (name: string) => recentFatigueLines.some(l => l.startsWith(`${name}：疲勞旗標`))
+    const taipeiToday = getTaipeiDateStr(today)
+
     // ── 4. 產生教練端通知摘要 ──
     const alertItems: string[] = []
 
@@ -391,6 +431,36 @@ export async function GET(request: NextRequest) {
         const elapsed = Math.floor((today.getTime() - new Date(client.quarterly_cycle_start).getTime()) / DAY_MS)
         if (elapsed >= 80 && elapsed < 90) {
           alertItems.push(`${client.name}：季度週期剩餘 ${90 - elapsed} 天，提醒安排血檢`)
+        }
+      }
+
+      // ── 訓練週期化第二波：疲勞旗標 + 續排提醒（只講話，絕不自動改課表） ──
+      const plan = (client.training_plan ?? null) as PeriodizedPlan | null
+      const cycle = getCycleState(plan, taipeiToday)
+      if (cycle) {
+        // 續排提醒：週期已結束 or 本週 = 最後一週 → 提醒排下一塊
+        if (cycle.ended) {
+          alertItems.push(`${client.name}：課表週期已結束（原 ${cycle.totalWeeks} 週），記得排下一塊（可套公版）`)
+        } else if (cycle.week === cycle.totalWeeks) {
+          alertItems.push(`${client.name}：課表週期本週結束，記得排下一塊（可套公版）`)
+        }
+
+        // 疲勞旗標：flagged 且距排定 deload ≥2 週（沒排 deload 視為「遠」，提前建議才有意義；
+        // deload 已過或正在 deload 週 → 不提，避免剛減量完還在轟）
+        const deloadWeek = typeof plan?.mesocycle?.deloadWeek === 'number' ? Math.floor(plan.mesocycle.deloadWeek) : null
+        const deloadFarEnough = !cycle.ended && (deloadWeek == null || deloadWeek - cycle.week >= 2)
+        if (deloadFarEnough && !fatigueOnCooldown(client.name)) {
+          const flag = computeFatigueFlag({
+            wellness: fatigueWellnessByClient.get(client.id) || [],
+            weights: bodyByClient.get(client.id) || [],
+            goalType: client.goal_type ?? null,
+            isPrep: !!client.prep_phase,
+            todayTaipei: taipeiToday,
+          })
+          if (flag?.flagged) {
+            const suffix = flag.confidence === 'low' ? '（訊號單一，僅供參考）' : ''
+            alertItems.push(`${client.name}：疲勞旗標｜${flag.reasons.join('、')}——考慮把減量週提前${suffix}`)
+          }
         }
       }
     }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { getCycleState, type PeriodizedPlan } from '@/lib/periodization'
 
 /**
  * RecoveryDashboard — 恢復評估儀表板
@@ -65,6 +66,8 @@ interface RecoveryDashboardProps {
   clientId: string
   // 近期感受（給 7 天趨勢迷你圖用）；每筆取 sleep/energy/training_drive 平均
   recentWellness?: { date: string; sleep_quality?: number | null; energy_level?: number | null; training_drive?: number | null }[]
+  // 課表（有 mesocycle 時判斷本週是否為排定減量週 → 判決卡加一行說明；沒有就什麼都不顯示）
+  trainingPlan?: PeriodizedPlan | null
 }
 
 // ── 常數映射 ──
@@ -131,7 +134,7 @@ function SystemBar({ name, icon, system }: { name: string; icon: string; system:
   )
 }
 
-export default function RecoveryDashboard({ clientId, recentWellness }: RecoveryDashboardProps) {
+export default function RecoveryDashboard({ clientId, recentWellness, trainingPlan }: RecoveryDashboardProps) {
   const [data, setData] = useState<RecoveryAssessmentData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -218,6 +221,9 @@ export default function RecoveryDashboard({ clientId, recentWellness }: Recovery
         .join('；') || null)
     : null
 
+  // 排定減量週？（純日曆判定；沒 mesocycle → null → 不顯示）
+  const isScheduledDeloadWeek = getCycleState(trainingPlan)?.isDeloadWeek === true
+
   // ── 7 天感受趨勢迷你圖：每天 (睡眠+精力+想練)/可得項 平均，看方向 ──
   const trend7 = (recentWellness ?? [])
     .filter(w => w.sleep_quality != null || w.energy_level != null || w.training_drive != null)
@@ -247,6 +253,9 @@ export default function RecoveryDashboard({ clientId, recentWellness }: Recovery
             <span className="text-lg leading-none mt-0.5">{verdict.emoji}</span>
             <div className="min-w-0">
               <p className={`text-sm font-bold leading-snug ${verdict.text}`}>{verdict.headline}</p>
+              {isScheduledDeloadWeek && (
+                <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">本週為減量週，課表已調整</p>
+              )}
               <p className="text-xs text-gray-600 mt-0.5 leading-snug">🏋️ {verdict.trainRx}</p>
               {driverLine && <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">主要因為：{driverLine}</p>}
             </div>
