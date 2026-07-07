@@ -1,14 +1,16 @@
 'use client'
 
 import { useMemo } from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { WellnessData } from './types'
 import { useMeasuredContainer } from '@/hooks/useMeasuredContainer'
+import DashboardChart from '@/components/charts/DashboardChart'
 
 interface WellnessTrendProps {
   wellness: WellnessData[]
 }
 
+// 示範：改用共用 DashboardChart wrapper（原本 inline recharts）。
+// 行為不變：三條線(睡眠/精力/心情)、Y 軸固定 1-5、圖例、圓點；配色改走 DESIGN token。
 export default function WellnessTrend({ wellness }: WellnessTrendProps) {
   const { ref: chartRef, measured } = useMeasuredContainer()
   const chartData = useMemo(() => {
@@ -33,20 +35,23 @@ export default function WellnessTrend({ wellness }: WellnessTrendProps) {
         </div>
       ) : (
         <div ref={chartRef} style={{ height: 256 }}>
-        {measured && (
-        <ResponsiveContainer width="100%" height={256}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" fontSize={12} />
-            <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} fontSize={12} />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="睡眠品質" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
-            <Line type="monotone" dataKey="精力水平" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
-            <Line type="monotone" dataKey="心情" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
-          </LineChart>
-        </ResponsiveContainer>
-        )}
+          {measured && (
+            <DashboardChart
+              data={chartData}
+              xKey="date"
+              type="line"
+              height={256}
+              yDomain={[1, 5]}
+              yTicks={[1, 2, 3, 4, 5]}
+              legend
+              dots
+              series={[
+                { key: '睡眠品質', color: '#2563EB' },
+                { key: '精力水平', color: '#F59E0B' },
+                { key: '心情', color: '#10B981' },
+              ]}
+            />
+          )}
         </div>
       )}
     </div>

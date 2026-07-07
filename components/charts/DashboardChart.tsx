@@ -2,7 +2,7 @@
 
 import {
   ResponsiveContainer, AreaChart, BarChart, LineChart,
-  Area, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  Area, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts'
 
 // Tremor 味的統一儀表板圖表，但建在專案既有的 recharts 3 上（不引入衝突的 @tremor/react ＝ recharts 2）。
@@ -20,6 +20,10 @@ interface DashboardChartProps {
   height?: number
   yWidth?: number
   showGrid?: boolean
+  yDomain?: [number | 'auto' | 'dataMin' | 'dataMax', number | 'auto' | 'dataMin' | 'dataMax']
+  yTicks?: number[]
+  legend?: boolean       // 多條線時開圖例
+  dots?: boolean         // line 是否顯示資料點
   className?: string
 }
 
@@ -44,7 +48,8 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export default function DashboardChart({
-  data, xKey, series, type = 'area', height = 220, yWidth = 32, showGrid = true, className,
+  data, xKey, series, type = 'area', height = 220, yWidth = 32, showGrid = true,
+  yDomain, yTicks, legend = false, dots = false, className,
 }: DashboardChartProps) {
   const color = (s: Series, i: number) => s.color || PALETTE[i % PALETTE.length] || BRAND
   const commonAxis = {
@@ -55,24 +60,25 @@ export default function DashboardChart({
 
   const grid = showGrid ? <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} /> : null
   const x = <XAxis dataKey={xKey} {...commonAxis} />
-  const y = <YAxis width={yWidth} {...commonAxis} />
+  const y = <YAxis width={yWidth} domain={yDomain} ticks={yTicks} {...commonAxis} />
   const tip = <Tooltip content={<ChartTooltip />} cursor={{ stroke: GRID }} />
+  const leg = legend ? <Legend wrapperStyle={{ fontSize: 12 }} iconType="plainline" /> : null
 
   return (
     <div className={className}>
       <ResponsiveContainer width="100%" height={height}>
         {type === 'bar' ? (
           <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-            {grid}{x}{y}{tip}
+            {grid}{x}{y}{tip}{leg}
             {series.map((s, i) => (
               <Bar key={s.key} dataKey={s.key} name={s.name || s.key} fill={color(s, i)} radius={[4, 4, 0, 0]} />
             ))}
           </BarChart>
         ) : type === 'line' ? (
           <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-            {grid}{x}{y}{tip}
+            {grid}{x}{y}{tip}{leg}
             {series.map((s, i) => (
-              <Line key={s.key} type="monotone" dataKey={s.key} name={s.name || s.key} stroke={color(s, i)} strokeWidth={2} dot={false} />
+              <Line key={s.key} type="monotone" dataKey={s.key} name={s.name || s.key} stroke={color(s, i)} strokeWidth={2} dot={dots ? { r: 3 } : false} />
             ))}
           </LineChart>
         ) : (
@@ -85,7 +91,7 @@ export default function DashboardChart({
                 </linearGradient>
               ))}
             </defs>
-            {grid}{x}{y}{tip}
+            {grid}{x}{y}{tip}{leg}
             {series.map((s, i) => (
               <Area key={s.key} type="monotone" dataKey={s.key} name={s.name || s.key}
                 stroke={color(s, i)} strokeWidth={2} fill={`url(#grad-${s.key})`} />
