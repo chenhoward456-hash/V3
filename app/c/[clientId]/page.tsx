@@ -27,6 +27,7 @@ const WellnessTrend = dynamic(() => import('@/components/client/WellnessTrend'),
 const TrainingLog = dynamic(() => import('@/components/client/TrainingLog'), { ssr: false })
 import TodayWorkout from '@/components/client/TodayWorkout'
 import { isWeightTraining, TRAINING_TYPES } from '@/components/client/types'
+import { labelToTrainingType } from '@/lib/training-split'
 import NutritionLog from '@/components/client/NutritionLog'
 import CompWarRoom from '@/components/client/CompWarRoom'
 import CutHealthCard from '@/components/client/CutHealthCard'
@@ -437,21 +438,12 @@ export default function ClientDashboard() {
     const dow = jsDay === 0 ? 7 : jsDay
     const todayPlan = plan.days.find((d: any) => d.dayOfWeek === dow)
     if (!todayPlan) return 'rest'
-    // 將課表 label 映射到 training_type
-    const label = (todayPlan.label || '').toLowerCase()
-    if (/upper|上肢/.test(label)) return 'upper_body'
-    if (/lower|下肢/.test(label)) return 'legs'
-    if (/push|推/.test(label)) return 'push'
-    if (/pull|拉|背/.test(label)) return 'pull'
-    if (/leg|腿/.test(label)) return 'legs'
-    if (/chest|胸/.test(label)) return 'chest'
-    if (/shoulder|肩/.test(label)) return 'shoulder'
-    if (/arm|手臂|二頭|三頭/.test(label)) return 'arms'
-    if (/full|全身/.test(label)) return 'full_body'
-    if (/cardio|有氧|跑/.test(label)) return 'cardio'
-    if (/rest|休息/.test(label)) return 'rest'
-    return null
+    // 將課表 label 映射到 training_type（共用邏輯，見 lib/training-split）
+    return labelToTrainingType(todayPlan.label)
   }, [clientData?.client?.training_plan])
+
+  // 課表卡手動切分化時，連動下方訓練紀錄表單的預選類型（null = 沿用 todayPlanType）
+  const [switchedTrainingType, setSwitchedTrainingType] = useState<string | null>(null)
 
   // 統一判斷今天是否為訓練日：已填記錄優先，沒填就看課表
   // 這樣碳水循環在你還沒填記錄時就能正確顯示訓練日碳水
@@ -1511,7 +1503,7 @@ export default function ClientDashboard() {
         {/* 今日訓練計畫（教練指導用戶 + 有訓練計畫） */}
         {view === 'training' && c.training_enabled && c.training_plan && c.subscription_tier === 'coached' && (
           <SectionErrorBoundary name="today-workout">
-          <TodayWorkout trainingPlan={c.training_plan} todayTrainingType={todayTraining?.training_type} />
+          <TodayWorkout trainingPlan={c.training_plan} todayTrainingType={todayTraining?.training_type} onOverrideTypeChange={setSwitchedTrainingType} />
           </SectionErrorBoundary>
         )}
         {view === 'training' && c.training_enabled && !c.training_plan && c.subscription_tier === 'coached' && (
@@ -1543,6 +1535,7 @@ export default function ClientDashboard() {
               carbsRestDay={c.carbs_rest_day}
               simpleMode={c.simple_mode}
               todayPlanType={todayPlanType}
+              overrideType={switchedTrainingType}
               trainingPlan={c.training_plan}
               tier={c.subscription_tier || 'free'}
             />
