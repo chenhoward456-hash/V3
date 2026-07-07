@@ -40,22 +40,25 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('請求過於頻繁，請稍後再試', 429)
     }
 
-    // lab_results 白名單（欄位真相對過 live DB information_schema，別依 SCHEMA.md）：
-    // 省掉 client_id，其餘前端/報告/AI 都會讀到（custom_advice/custom_target repo 無 DDL 但 prod 有、漏了會讓客製建議消失）
-    const { data: client, error: clientError } = await supabase
-      .from('clients')
-      .select(`*, lab_results (id, test_name, value, unit, reference_range, date, status, created_at, custom_advice, custom_target, coach_interpretation), supplements (*)`)
-      .eq('unique_code', clientId)
-      .single()
-    
-    if (clientError) {
+    // 首屏資料一次撈完：改用單一 RPC get_client_dashboard，把原本 ~9 支跨區 PostgREST 請求
+    // (東京函式↔孟買DB 每支各一次來回) 合併成 1 支。資料抓取進 RPC（含 lab_results 白名單、各表 flag/日期窗、
+    // 30天/90筆上限，與原本逐支查詢完全一致，筆數已對 live prod 驗過）；gate/去 PII/濾 active 補品等
+    // 業務邏輯仍留在這裡，行為不變。
+    const { data: dash, error: dashError } = await supabase
+      .rpc('get_client_dashboard', { p_code: clientId })
+
+    if (dashError) {
+      logger.error('GET /api/clients rpc error', dashError)
+      return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
+    }
+
+    const dashData = dash as Record<string, any> | null
+    const client = dashData?.client as Record<string, any> | undefined
+
+    if (!dashData || !client) {
       return createErrorResponse('找不到客戶資料', 404)
     }
 
-    if (!client) {
-      return createErrorResponse('客戶資料不存在', 404)
-    }
-    
     // 檢查是否停用
     if (client.is_active === false) {
       return createErrorResponse('此帳號已暫停，請聯繫教練', 403)
@@ -66,107 +69,8 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('客戶資料已過期', 403)
     }
     
-    // 根據已開啟功能平行查詢資料
-    const today = new Date().toISOString().split('T')[0]
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0]
-
-    // 建立需要執行的查詢（用 async 包裝確保回傳 Promise）
-    interface SupabaseQueryResult {
-      data: Record<string, unknown>[] | null
-      error: { message: string; code?: string } | null
-    }
-
-    const queryEntries: { key: string; query: Promise<SupabaseQueryResult> }[] = []
-
-    const wrap = (q: PromiseLike<SupabaseQueryResult>) => new Promise<SupabaseQueryResult>((resolve) => q.then(resolve))
-
-    // 補品相關（supplement_enabled）
-    if (client.supplement_enabled) {
-      queryEntries.push({
-        key: 'todayLogs',
-        query: wrap(supabase.from('supplement_logs').select('id, supplement_id, client_id, date, completed').eq('client_id', client.id).eq('date', today)),
-      })
-      queryEntries.push({
-        key: 'recentLogs',
-        // 只取 streak/達成率需要的欄位（去掉 client_id 等）→ 30 天 ~360 筆瘦身
-        query: wrap(supabase.from('supplement_logs').select('id, supplement_id, date, completed').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
-      })
-    }
-
-    // 體組成（body_composition_enabled）
-    if (client.body_composition_enabled) {
-      queryEntries.push({
-        key: 'bodyData',
-        query: wrap(supabase.from('body_composition').select('id, client_id, date, weight, height, body_fat, muscle_mass, visceral_fat, inbody_weight').eq('client_id', client.id).order('date', { ascending: false }).limit(90)),
-      })
-    }
-
-    // 每日感受（wellness_enabled）
-    if (client.wellness_enabled) {
-      queryEntries.push({
-        key: 'wellness',
-        query: wrap(supabase.from('daily_wellness').select('id, date, sleep_quality, energy_level, mood, note, hunger, digestion, training_drive, period_start, cognitive_clarity, stress_level, resting_hr, hrv, wearable_sleep_score, respiratory_rate, device_recovery_score').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
-      })
-    }
-
-    // 訓練（training_enabled）
-    if (client.training_enabled) {
-      queryEntries.push({
-        key: 'trainingLogs',
-        query: wrap(supabase.from('training_logs').select('id, client_id, date, training_type, rpe').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
-      })
-      // 逐組紀錄(120 天, ~150 筆) 已移出首屏：由 below-fold 的 TrainingProgressCardLazy
-      // 自己打 /api/training-sets-range 抓，不再塞進首屏 payload。
-    }
-
-    // 飲食（nutrition_enabled）
-    if (client.nutrition_enabled) {
-      queryEntries.push({
-        key: 'nutritionLogs',
-        query: wrap(supabase.from('nutrition_logs').select('id, date, compliant, note, protein_grams, carbs_grams, fat_grams, calories, water_ml, sodium_mg').eq('client_id', client.id).gte('date', thirtyDaysAgoStr).order('date', { ascending: false })),
-      })
-    }
-
-    // 最近一次 macro 自動調整（給「為你更新」卡片說明用）
-    queryEntries.push({
-      key: 'recentMacroAdjustment',
-      query: wrap(
-        supabase
-          .from('macro_adjustment_log')
-          .select('applied_at, applied_by, trigger_source, old_macros, new_macros, reason')
-          .eq('client_id', client.id)
-          .order('applied_at', { ascending: false })
-          .limit(1)
-      ),
-    })
-
-    // 最近一則教練週度訊息（給「為你更新」頂部卡片用）— 點推播進來看得到完整內容
-    // 只取近 14 天：超過就不該再假裝是「本週」調整置頂（與血檢/macro 卡片的新鮮度窗一致）
-    const coachMsgCutoff = new Date(Date.now() - 14 * 86_400_000).toISOString()
-    queryEntries.push({
-      key: 'recentCoachMessage',
-      query: wrap(
-        supabase
-          .from('coach_messages')
-          .select('id, title, body, mode, created_at')
-          .eq('client_id', client.id)
-          .is('read_at', null)              // 已讀（學員關過）的不再回 → 跨裝置一致
-          .gte('created_at', coachMsgCutoff)
-          .order('created_at', { ascending: false })
-          .limit(1)
-      ),
-    })
-
-    // 平行執行所有查詢
-    const results = await Promise.all(queryEntries.map(e => e.query))
-    const resolved: Record<string, Record<string, unknown>[]> = {}
-    for (let i = 0; i < queryEntries.length; i++) {
-      const { data, error } = results[i]
-      if (error) logger.warn(`查詢 ${queryEntries[i].key} 失敗`, { error })
-      resolved[queryEntries[i].key] = data || []
-    }
+    // （原本這裡逐支平行查詢 supplement_logs/body_composition/daily_wellness/training_logs/
+    //   nutrition_logs/macro_adjustment_log/coach_messages，已整批搬進 get_client_dashboard RPC。）
 
     // 過濾出 active 的補品（未封存）— 學員端打卡、計算依據都只看 active
     // 封存的補品仍在 DB，由 /api/supplements/history 端點專門查詢用於 timeline 顯示
@@ -176,21 +80,22 @@ export async function GET(request: NextRequest) {
     const clientWithActiveSupplements = {
       ...clientSafe,
       has_line_binding: !!line_user_id,
-      supplements: Array.isArray(client.supplements)
-        ? client.supplements.filter((s: { archived_at?: string | null }) => !s.archived_at)
+      lab_results: Array.isArray(dashData.lab_results) ? dashData.lab_results : [],
+      supplements: Array.isArray(dashData.supplements)
+        ? dashData.supplements.filter((s: { archived_at?: string | null }) => !s.archived_at)
         : [],
     }
 
     return createSuccessResponse({
       client: clientWithActiveSupplements,
-      todayLogs: resolved.todayLogs || [],
-      bodyData: resolved.bodyData || [],
-      wellness: resolved.wellness || [],
-      recentLogs: resolved.recentLogs || [],
-      trainingLogs: resolved.trainingLogs || [],
-      nutritionLogs: resolved.nutritionLogs || [],
-      recentMacroAdjustment: resolved.recentMacroAdjustment?.[0] || null,
-      recentCoachMessage: resolved.recentCoachMessage?.[0] || null,
+      todayLogs: dashData.todayLogs || [],
+      bodyData: dashData.bodyData || [],
+      wellness: dashData.wellness || [],
+      recentLogs: dashData.recentLogs || [],
+      trainingLogs: dashData.trainingLogs || [],
+      nutritionLogs: dashData.nutritionLogs || [],
+      recentMacroAdjustment: dashData.recentMacroAdjustment || null,
+      recentCoachMessage: dashData.recentCoachMessage || null,
     })
     
   } catch (error) {
