@@ -59,11 +59,12 @@ interface TrainingLogProps {
   carbsRestDay?: number | null
   simpleMode?: boolean
   todayPlanType?: string | null
+  overrideType?: string | null  // 上方課表卡手動切分化時同步預選訓練類型
   trainingPlan?: any
   tier?: string
 }
 
-export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode, todayPlanType, trainingPlan, tier }: TrainingLogProps) {
+export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode, todayPlanType, overrideType, trainingPlan, tier }: TrainingLogProps) {
   const { ref: rpeChartRef, measured: rpeChartMeasured } = useMeasuredContainer()
   const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
@@ -228,6 +229,12 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
       setForm({ training_type: todayPlanType ?? null, duration: null, sets: null, rpe: null, compound_weight: null, compound_reps: null, note: '' })
     }
   }, [todayTraining, todayPlanType])
+
+  // 上方課表卡手動切分化 → 只改訓練類型，其他已填欄位不動；已有今日記錄則不覆蓋
+  useEffect(() => {
+    if (todayTraining || overrideType == null) return
+    setForm(f => f.training_type === overrideType ? f : { ...f, training_type: overrideType })
+  }, [overrideType, todayTraining])
 
   const isRest = form.training_type === 'rest'
   const isCardio = form.training_type === 'cardio'

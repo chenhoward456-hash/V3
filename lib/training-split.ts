@@ -7,6 +7,32 @@
  * 把課表某一天的 label（例：「Push Day」「拉日」「腿」）映射到 training_type。
  * 對不到回 null（呼叫端自行決定要不要當 rest 或忽略）。
  */
+// training_type → 中文簡稱 + emoji（跟 components/client/types.ts 的 TRAINING_TYPES 對齊，
+// 抽這份是為了 lib 層不反向依賴 components）
+const TYPE_DISPLAY: Record<string, { zh: string; emoji: string }> = {
+  push: { zh: '推', emoji: '🫸' },
+  pull: { zh: '拉', emoji: '🫷' },
+  legs: { zh: '腿', emoji: '🦵' },
+  full_body: { zh: '全身', emoji: '🏋️' },
+  upper_body: { zh: '上肢', emoji: '🤸' },
+  cardio: { zh: '有氧', emoji: '🏃' },
+  chest: { zh: '胸', emoji: '💪' },
+  shoulder: { zh: '肩', emoji: '🏔️' },
+  arms: { zh: '手臂', emoji: '💪🏼' },
+  rest: { zh: '休息', emoji: '😴' },
+}
+
+/**
+ * 把課表某一天的 label（例：「Push Day」）顯示成中文簡稱。
+ * 對不到 training_type 時回原 label（保留教練自訂命名）。
+ */
+export function splitDisplayLabel(label: string | null | undefined, withEmoji = false): string {
+  const type = labelToTrainingType(label)
+  const d = type ? TYPE_DISPLAY[type] : null
+  if (!d) return label || ''
+  return withEmoji ? `${d.emoji} ${d.zh}` : d.zh
+}
+
 export function labelToTrainingType(label: string | null | undefined): string | null {
   const l = (label || '').toLowerCase()
   if (!l) return null

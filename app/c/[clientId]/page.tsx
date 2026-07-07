@@ -442,6 +442,9 @@ export default function ClientDashboard() {
     return labelToTrainingType(todayPlan.label)
   }, [clientData?.client?.training_plan])
 
+  // 課表卡手動切分化時，連動下方訓練紀錄表單的預選類型（null = 沿用 todayPlanType）
+  const [switchedTrainingType, setSwitchedTrainingType] = useState<string | null>(null)
+
   // 統一判斷今天是否為訓練日：已填記錄優先，沒填就看課表
   // 這樣碳水循環在你還沒填記錄時就能正確顯示訓練日碳水
   const isTrainingDayResolved = useMemo(() => {
@@ -1500,7 +1503,7 @@ export default function ClientDashboard() {
         {/* 今日訓練計畫（教練指導用戶 + 有訓練計畫） */}
         {view === 'training' && c.training_enabled && c.training_plan && c.subscription_tier === 'coached' && (
           <SectionErrorBoundary name="today-workout">
-          <TodayWorkout trainingPlan={c.training_plan} todayTrainingType={todayTraining?.training_type} />
+          <TodayWorkout trainingPlan={c.training_plan} todayTrainingType={todayTraining?.training_type} onOverrideTypeChange={setSwitchedTrainingType} />
           </SectionErrorBoundary>
         )}
         {view === 'training' && c.training_enabled && !c.training_plan && c.subscription_tier === 'coached' && (
@@ -1532,6 +1535,7 @@ export default function ClientDashboard() {
               carbsRestDay={c.carbs_rest_day}
               simpleMode={c.simple_mode}
               todayPlanType={todayPlanType}
+              overrideType={switchedTrainingType}
               trainingPlan={c.training_plan}
               tier={c.subscription_tier || 'free'}
             />

@@ -1,21 +1,22 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type { TrainingPlan, TrainingPlanExercise } from '@/hooks/useClientData'
 import { getCycleState, applyDeloadToDay, getTaipeiDayOfWeek } from '@/lib/periodization'
-import { labelToTrainingType } from '@/lib/training-split'
+import { labelToTrainingType, splitDisplayLabel } from '@/lib/training-split'
 
 interface TodayWorkoutProps {
   trainingPlan: TrainingPlan
   todayTrainingType?: string | null  // 今天實際記錄的訓練類型（有記錄時覆蓋課表）
+  onOverrideTypeChange?: (type: string | null) => void  // 手動切分化時通知父層同步記錄表單
 }
 
 const DAY_LABELS: Record<number, string> = {
   1: '週一', 2: '週二', 3: '週三', 4: '週四', 5: '週五', 6: '週六', 7: '週日',
 }
 
-export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayWorkoutProps) {
+export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverrideTypeChange }: TodayWorkoutProps) {
   const [showFullPlan, setShowFullPlan] = useState(false)
   // 手動切換的分化（null = 沿用預設）。點課表卡上方的分化 chip 才會設值。
   const [overrideDow, setOverrideDow] = useState<number | null>(null)
@@ -59,11 +60,18 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
 
   // 顯示的分化 ≠ 今天星期原定 → 提示（不管是自動跟記錄還是手動切）
   const isSwitched = effectiveDow != null && effectiveDow !== todayDow
-  const scheduledLabel = trainingDays.find(d => d.dayOfWeek === todayDow)?.label ?? '休息'
+  const scheduledDay = trainingDays.find(d => d.dayOfWeek === todayDow)
+  const scheduledLabel = scheduledDay ? splitDisplayLabel(scheduledDay.label) : '休息'
   // 清掉手動切換後會回到的預設分化（記錄優先，否則星期）
-  const defaultLabel = defaultDow != null
-    ? trainingDays.find(d => d.dayOfWeek === defaultDow)?.label ?? '休息'
-    : '休息'
+  const defaultDay = defaultDow != null ? trainingDays.find(d => d.dayOfWeek === defaultDow) : null
+  const defaultLabel = defaultDay ? splitDisplayLabel(defaultDay.label) : '休息'
+
+  // 手動切分化 → 通知父層把下方「記錄動作明細」的訓練類型也預選好（沒切=null，父層沿用預設）
+  useEffect(() => {
+    if (!onOverrideTypeChange) return
+    const day = overrideDow != null ? trainingDays.find(d => d.dayOfWeek === overrideDow) : null
+    onOverrideTypeChange(day ? labelToTrainingType(day.label) : null)
+  }, [overrideDow, trainingDays, onOverrideTypeChange])
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
@@ -76,7 +84,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
               {isActualRest
                 ? '今天休息'
                 : showPlan
-                ? `今日訓練 — ${todayPlan!.label}`
+                ? `今日訓練 — ${splitDisplayLabel(todayPlan!.label)}`
                 : '今天是休息日'}
             </h3>
             {isActualRest && (
@@ -84,7 +92,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
             )}
             {!isActualRest && isSwitched && (
               <p className="text-[11px] text-blue-600 mt-0.5">
-                目前顯示 {todayPlan!.label}（今天原定：{scheduledLabel}）
+                目前顯示 {splitDisplayLabel(todayPlan!.label)}（今天原定：{scheduledLabel}）
               </p>
             )}
             {trainingPlan.name && (
@@ -129,7 +137,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
                       : 'bg-slate-100 text-gray-600 hover:bg-slate-200'
                   }`}
                 >
-                  {d.label}
+                  {splitDisplayLabel(d.label, true)}
                   {isScheduled && (
                     <span className={active ? 'ml-1 text-blue-100' : 'ml-1 text-blue-500'}>·今天</span>
                   )}
@@ -263,7 +271,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType }: TodayW
                 }`}
               >
                 <p className={`text-xs font-semibold mb-1.5 ${isToday ? 'text-blue-700' : 'text-gray-700'}`}>
-                  {DAY_LABELS[dow]} — {day.label}
+                  {DAY_LABELS[dow]} — {splitDisplayLabel(day.label)}
                   {isToday && <span className="ml-1 text-blue-600">(今天)</span>}
                 </p>
                 <div className="space-y-0.5">
