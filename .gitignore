@@ -36,3 +36,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .gstack/
+
+# Serwist 產生的 service worker（build 時生成，別 commit）
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
