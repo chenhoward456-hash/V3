@@ -27,6 +27,7 @@ const WellnessTrend = dynamic(() => import('@/components/client/WellnessTrend'),
 const TrainingLog = dynamic(() => import('@/components/client/TrainingLog'), { ssr: false })
 import TodayWorkout from '@/components/client/TodayWorkout'
 import { isWeightTraining, TRAINING_TYPES } from '@/components/client/types'
+import { labelToTrainingType } from '@/lib/training-split'
 import NutritionLog from '@/components/client/NutritionLog'
 import CompWarRoom from '@/components/client/CompWarRoom'
 import CutHealthCard from '@/components/client/CutHealthCard'
@@ -437,20 +438,8 @@ export default function ClientDashboard() {
     const dow = jsDay === 0 ? 7 : jsDay
     const todayPlan = plan.days.find((d: any) => d.dayOfWeek === dow)
     if (!todayPlan) return 'rest'
-    // 將課表 label 映射到 training_type
-    const label = (todayPlan.label || '').toLowerCase()
-    if (/upper|上肢/.test(label)) return 'upper_body'
-    if (/lower|下肢/.test(label)) return 'legs'
-    if (/push|推/.test(label)) return 'push'
-    if (/pull|拉|背/.test(label)) return 'pull'
-    if (/leg|腿/.test(label)) return 'legs'
-    if (/chest|胸/.test(label)) return 'chest'
-    if (/shoulder|肩/.test(label)) return 'shoulder'
-    if (/arm|手臂|二頭|三頭/.test(label)) return 'arms'
-    if (/full|全身/.test(label)) return 'full_body'
-    if (/cardio|有氧|跑/.test(label)) return 'cardio'
-    if (/rest|休息/.test(label)) return 'rest'
-    return null
+    // 將課表 label 映射到 training_type（共用邏輯，見 lib/training-split）
+    return labelToTrainingType(todayPlan.label)
   }, [clientData?.client?.training_plan])
 
   // 統一判斷今天是否為訓練日：已填記錄優先，沒填就看課表
