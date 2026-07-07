@@ -15,6 +15,7 @@ const config: Config = {
         primary: {
           DEFAULT: '#2563EB',
           dark: '#1E40AF',
+          foreground: '#ffffff',
         },
         secondary: '#F59E0B',
         success: '#10B981',
@@ -35,6 +36,18 @@ const config: Config = {
           DEFAULT: '#E8E5E0',
           subtle: '#F3F1ED',
         },
+        // shadcn/ui 語意色 — 全部對到現有 DESIGN token（品牌藍/暖灰/中性），
+        // additive：不覆蓋上面任何既有 key，只補 shadcn 元件會用到的名稱。
+        background: '#FEFDFB',
+        foreground: '#2D3748',
+        input: '#E8E5E0',
+        ring: '#2563EB',
+        'secondary-foreground': '#ffffff',
+        muted: { DEFAULT: '#F3F1ED', foreground: '#718096' },
+        accent: { DEFAULT: '#F9F7F4', foreground: '#2D3748' },
+        destructive: { DEFAULT: '#EF4444', foreground: '#ffffff' },
+        card: { DEFAULT: '#ffffff', foreground: '#2D3748' },
+        popover: { DEFAULT: '#ffffff', foreground: '#2D3748' },
       },
       fontFamily: {
         sans: [
@@ -95,6 +108,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [require('tailwindcss-animate')],
 }
 export default config
