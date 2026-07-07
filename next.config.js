@@ -1,5 +1,14 @@
 const { withSentryConfig } = require('@sentry/nextjs')
 
+// Serwist：build 時把 app/sw.ts 編成 public/sw.js，快取版本自動管理（不用再手動 bump CACHE_NAME）。
+// register:false ＝沿用 LayoutShell 既有的手動 navigator.serviceWorker.register('/sw.js')，避免重複註冊。
+const withSerwist = require('@serwist/next').default({
+  swSrc: 'app/sw.ts',
+  swDest: 'public/sw.js',
+  register: false,
+  reloadOnOnline: true,
+})
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -72,9 +81,11 @@ const nextConfig = {
   },
 }
 
+const configWithPwa = withSerwist(nextConfig)
+
 module.exports = process.env.NEXT_PUBLIC_SENTRY_DSN
-  ? withSentryConfig(nextConfig, {
+  ? withSentryConfig(configWithPwa, {
       silent: true,
       hideSourceMaps: true,
     })
-  : nextConfig
+  : configWithPwa
