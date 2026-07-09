@@ -46,7 +46,7 @@ import SupplementStrategyCard from '@/components/client/SupplementStrategyCard'
 import SeeTabSection from '@/components/client/SeeTabSection'
 import TodayOverviewCard from '@/components/client/TodayOverviewCard'
 import CoachMessageBanner from '@/components/client/CoachMessageBanner'
-import WeeklyTaskCard from '@/components/client/WeeklyTaskCard'
+import TodayHeadline from '@/components/client/TodayHeadline'
 import MyPlanSection from '@/components/client/MyPlanSection'
 import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
@@ -832,8 +832,21 @@ export default function ClientDashboard() {
           <CoachMessageBanner msg={clientData.recentCoachMessage} clientCode={c.unique_code} />
         )}
 
-        {/* 當週任務 — weekly cron 生成的 top-3 行動任務（行動優先、置頂）*/}
-        {isToday && <WeeklyTaskCard data={c.weekly_tasks} />}
+        {/* 今日主線 — 首屏脊椎：一句判定 + 今天一個動作（吸收原「本週任務」判定，收斂多卡為一個聲音）*/}
+        {view === 'home' && isToday && (
+          <TodayHeadline
+            prepPhase={c.prep_phase || null}
+            competitionDate={c.competition_date || null}
+            isCompetition={isCompetition}
+            targetWeight={c.target_weight ?? null}
+            isTrainingDay={isTrainingDayResolved}
+            carbsTrainingDay={c.carbs_training_day ?? null}
+            carbsRestDay={c.carbs_rest_day ?? null}
+            carbsTarget={c.carbs_target ?? null}
+            weeklyTasks={c.weekly_tasks}
+            hasAttention={!!c.status && c.status !== 'normal'}
+          />
+        )}
 
         {/* 我的計畫 — 靜態參考（菜單/課表/補品/SOP）收合式，reference 層 */}
         {isToday && <MyPlanSection data={c.onboarding_notes_rendered} />}
@@ -873,6 +886,7 @@ export default function ClientDashboard() {
           <ClientHeader
             client={c}
             isCoachMode={isCoachMode}
+            hideStatusBadge={view === 'home'}
             selectedDate={selectedDate}
             isToday={isToday}
             today={today}
@@ -928,7 +942,7 @@ export default function ClientDashboard() {
                 {' · '}
                 {allDone
                   ? <span className="text-emerald-700 font-semibold">五項打卡完成，今天收工 💪</span>
-                  : <span className="text-amber-700 font-semibold tabular-nums">還有 {unlogged} 項要記</span>}
+                  : <span className="text-slate-400 tabular-nums">今天還有 {unlogged} 項可記（記了引擎才調得準）</span>}
               </p>
             </div>
           )
@@ -1171,24 +1185,32 @@ export default function ClientDashboard() {
           />
         )}
 
-        {/* === 備賽作戰室：記完今天的數據，馬上看會不會準時上台 === */}
-        {view === 'home' && isCompetition && c.competition_date && (
-          <CompWarRoom
-            bodyData={clientData.bodyData ?? EMPTY_ARRAY}
-            competitionDate={c.competition_date}
-            targetWeight={c.target_weight}
-            targetBodyFat={c.target_body_fat}
-            prepPhase={c.prep_phase}
-          />
-        )}
-
-        {/* === 本週減脂體檢：掉重速率 + 能量（減脂/備賽，體脂不參與判定） === */}
+        {/* === 完整進度（作戰室 + 減脂體檢）→ 預設收起「想看再翻」，不跟主線重複報平安 === */}
         {view === 'home' && (isCompetition || c.prep_phase === 'cut' || /cut|loss|fat|減/.test((c.goal_type || '').toLowerCase())) && (
-          <CutHealthCard
-            bodyData={clientData.bodyData ?? EMPTY_ARRAY}
-            wellness={clientData.wellness ?? EMPTY_ARRAY}
-            currentWeight={latestBodyData?.weight ?? null}
-          />
+          <details className="group mb-4">
+            <summary className="flex items-center gap-2 px-1 py-2 cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
+              <span className="text-sm font-semibold text-slate-600 flex-1">
+                🏆 看完整進度<span className="text-slate-400 font-normal">（作戰室 · 減脂體檢）</span>
+              </span>
+              <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-2 space-y-4">
+              {isCompetition && c.competition_date && (
+                <CompWarRoom
+                  bodyData={clientData.bodyData ?? EMPTY_ARRAY}
+                  competitionDate={c.competition_date}
+                  targetWeight={c.target_weight}
+                  targetBodyFat={c.target_body_fat}
+                  prepPhase={c.prep_phase}
+                />
+              )}
+              <CutHealthCard
+                bodyData={clientData.bodyData ?? EMPTY_ARRAY}
+                wellness={clientData.wellness ?? EMPTY_ARRAY}
+                currentWeight={latestBodyData?.weight ?? null}
+              />
+            </div>
+          </details>
         )}
 
         {/* 推播開通 — 下移到行動/判決卡之後（留存槓桿但不佔第一屏；gated，含 iPhone 加主畫面引導）*/}
