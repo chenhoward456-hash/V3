@@ -17,9 +17,18 @@ interface GoalDrivenStatusProps {
     carbsTrainingDay?: number | null
     carbsRestDay?: number | null
   } | null
+  /**
+   * 分頁歸屬（IA 拆分）：
+   * - 'progress'：進度分頁只顯示「上台推算 / Peak Week / 代謝壓力」等進度卡
+   * - 'plan'：計畫分頁只顯示「今日飲食目標 / 分餐蛋白 / 血檢建議」等處方卡
+   * - 'all'（預設）：全部一起（向後相容的保底）
+   */
+  section?: 'plan' | 'progress' | 'all'
 }
 
-export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMutate, initialData, dbTargets }: GoalDrivenStatusProps) {
+export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMutate, initialData, dbTargets, section = 'all' }: GoalDrivenStatusProps) {
+  const showPlan = section !== 'progress'
+  const showProgress = section !== 'plan'
   const [data, setData] = useState<any>(initialData || null)
   const [targetWeightValue, setTargetWeightValue] = useState<number | null>(null)
   const [loading, setLoading] = useState(!initialData)
@@ -43,7 +52,10 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
     const fetchSuggestion = async () => {
       try {
         const lookupId = code || clientId
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${lookupId}&autoApply=true${code ? `&code=${code}` : ''}`)
+        // 計畫分頁的 plan 實例只是鏡像顯示，不該再觸發引擎套用寫入（避免同一天在兩個分頁各寫一次 macros）；
+        // 套用由進度分頁的 progress 實例 / 頁層 runEngine 負責。
+        const applyParam = section === 'plan' ? '' : '&autoApply=true'
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${lookupId}${applyParam}${code ? `&code=${code}` : ''}`)
         if (!res.ok) {
           console.error('[GoalDrivenStatus] API 失敗:', res.status, res.statusText, 'lookupId:', lookupId)
           return
@@ -140,8 +152,9 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
   // 避免同畫面出現兩個恢復分數(61 vs 100)、互相矛盾的訓練建議(挑戰PR vs 減量)。
   const wearableInsightCard = null
 
-  // 非 goal-driven 時顯示基本引擎狀態
+  // 非 goal-driven 時顯示基本引擎狀態（屬「進度」狀態卡；計畫分頁沒有處方可給，直接不顯示）
   if (!isGoalDriven) {
+    if (!showProgress) return null
     // 如果有 deadlineInfo 但沒進入 goal-driven（例如已達標、數據不足等），顯示簡易卡片
     if (data.status === 'insufficient_data') {
       return (
@@ -238,7 +251,8 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
 
   return (
     <>
-    {gateWarningBanner}
+    {/* ══ 進度分頁：上台推算 / Peak Week / 代謝壓力（減脂狀態）══ */}
+    {showProgress && (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* 標題 */}
       <div className="flex items-center justify-between mb-4">
@@ -368,6 +382,90 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         )
       })()}
 
+      {/* 預測結果 */}
+      {dl.predictedCompWeight && (() => {
+        const compareTarget = dl.prePeakEntryWeight || targetWeightValue || 0
+        const canReach = dl.predictedCompWeight <= compareTarget + 0.5
+        const hasPeakSplit = !!dl.prePeakEntryWeight
+        return (
+          <div className={`rounded-xl px-4 py-3 text-sm font-medium ${
+            canReach ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+          }`}>
+            {canReach
+              ? `✅ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg${hasPeakSplit ? `（PW 後 → ${targetWeightValue}kg）` : ''} — 可以達標！`
+              : `⚠️ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg — 與${hasPeakSplit ? '入場目標' : '目標'}還差 ${(dl.predictedCompWeight - compareTarget).toFixed(1)}kg`
+            }
+          </div>
+        )
+      })()}
+
+      {/* Refeed 建議 */}
+      {data.refeedSuggested && (
+        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">🔄</span>
+            <p className="text-sm font-bold text-amber-700">
+              系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
+            </p>
+          </div>
+          <p className="text-xs text-amber-700">{data.refeedReason}</p>
+          <p className="text-[11px] text-amber-600 mt-1">
+            今日碳水提升至維持熱量（4-6g/kg），脂肪降低，蛋白質維持。
+          </p>
+        </div>
+      )}
+
+      {/* 穿戴裝置恢復回饋 */}
+      {wearableInsightCard}
+
+      {/* Energy Availability (RED-S) 警告 */}
+      {data.energyAvailability && data.energyAvailability.level !== 'adequate' && (
+        <div className={`mt-3 rounded-2xl p-4 ${
+          data.energyAvailability.level === 'critical'
+            ? 'bg-rose-50 border border-rose-200'
+            : 'bg-amber-50 border border-amber-200'
+        }`}>
+          <p className={`text-xs font-medium mb-1 ${
+            data.energyAvailability.level === 'critical' ? 'text-rose-600' : 'text-amber-700'
+          }`}>
+            能量可用性：{data.energyAvailability.eaKcalPerKgFFM} kcal/kg FFM/day
+          </p>
+          <p className={`text-[11px] leading-relaxed ${
+            data.energyAvailability.level === 'critical' ? 'text-rose-600' : 'text-amber-600'
+          }`}>{data.energyAvailability.warning}</p>
+        </div>
+      )}
+
+      {/* 月經週期提示 */}
+      {data.menstrualCycleNote && (
+        <div className="mt-3 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+          <p className="text-xs text-slate-600 leading-relaxed">{data.menstrualCycleNote}</p>
+        </div>
+      )}
+
+      {/* 警告 — 過合規 backstop（命中診斷/疾病名的逐條降級成安全句，備賽學員不再看到越界字） */}
+      {data.warnings && data.warnings.length > 0 && (
+        <div className="mt-3 space-y-1">
+          {data.warnings.slice(0, 5).map((w: string, i: number) => (
+            <p key={i} className="text-[11px] text-gray-500">{degradeToSafe(w).text}</p>
+          ))}
+        </div>
+      )}
+    </div>
+    )}
+
+    {/* ══ 計畫分頁：今日飲食處方 / 分餐蛋白 / 活動量 / 血檢建議 ══ */}
+    {showPlan && (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
+      {/* 標題 */}
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-2xl">🍽️</span>
+        <h2 className="text-lg font-bold text-gray-900">今日營養處方</h2>
+      </div>
+
+      {/* 血檢就緒警告橫幅（血檢異常時提醒，不擋建議） */}
+      {gateWarningBanner}
+
       {/* 飲食目標 */}
       <div className={`${colors.bg} ${colors.border} border rounded-2xl p-4 mb-3`}>
         <div className="flex items-center justify-between mb-2">
@@ -452,60 +550,6 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         </div>
       )}
 
-      {/* 預測結果 */}
-      {dl.predictedCompWeight && (() => {
-        const compareTarget = dl.prePeakEntryWeight || targetWeightValue || 0
-        const canReach = dl.predictedCompWeight <= compareTarget + 0.5
-        const hasPeakSplit = !!dl.prePeakEntryWeight
-        return (
-          <div className={`rounded-xl px-4 py-3 text-sm font-medium ${
-            canReach ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
-          }`}>
-            {canReach
-              ? `✅ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg${hasPeakSplit ? `（PW 後 → ${targetWeightValue}kg）` : ''} — 可以達標！`
-              : `⚠️ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg — 與${hasPeakSplit ? '入場目標' : '目標'}還差 ${(dl.predictedCompWeight - compareTarget).toFixed(1)}kg`
-            }
-          </div>
-        )
-      })()}
-
-      {/* Refeed 建議 */}
-      {data.refeedSuggested && (
-        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">🔄</span>
-            <p className="text-sm font-bold text-amber-700">
-              系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
-            </p>
-          </div>
-          <p className="text-xs text-amber-700">{data.refeedReason}</p>
-          <p className="text-[11px] text-amber-600 mt-1">
-            今日碳水提升至維持熱量（4-6g/kg），脂肪降低，蛋白質維持。
-          </p>
-        </div>
-      )}
-
-      {/* 穿戴裝置恢復回饋 */}
-      {wearableInsightCard}
-
-      {/* Energy Availability (RED-S) 警告 */}
-      {data.energyAvailability && data.energyAvailability.level !== 'adequate' && (
-        <div className={`mt-3 rounded-2xl p-4 ${
-          data.energyAvailability.level === 'critical'
-            ? 'bg-rose-50 border border-rose-200'
-            : 'bg-amber-50 border border-amber-200'
-        }`}>
-          <p className={`text-xs font-medium mb-1 ${
-            data.energyAvailability.level === 'critical' ? 'text-rose-600' : 'text-amber-700'
-          }`}>
-            能量可用性：{data.energyAvailability.eaKcalPerKgFFM} kcal/kg FFM/day
-          </p>
-          <p className={`text-[11px] leading-relaxed ${
-            data.energyAvailability.level === 'critical' ? 'text-rose-600' : 'text-amber-600'
-          }`}>{data.energyAvailability.warning}</p>
-        </div>
-      )}
-
       {/* 血檢驅動的營養調整 */}
       {data.labMacroModifiers && data.labMacroModifiers.length > 0 && (
         <div className="mt-3 bg-blue-50 border border-blue-200 rounded-2xl p-4">
@@ -520,22 +564,6 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         </div>
       )}
 
-      {/* 月經週期提示 */}
-      {data.menstrualCycleNote && (
-        <div className="mt-3 bg-slate-50 border border-slate-200 rounded-2xl p-4">
-          <p className="text-xs text-slate-600 leading-relaxed">{data.menstrualCycleNote}</p>
-        </div>
-      )}
-
-      {/* 警告 — 過合規 backstop（命中診斷/疾病名的逐條降級成安全句，備賽學員不再看到越界字） */}
-      {data.warnings && data.warnings.length > 0 && (
-        <div className="mt-3 space-y-1">
-          {data.warnings.slice(0, 5).map((w: string, i: number) => (
-            <p key={i} className="text-[11px] text-gray-500">{degradeToSafe(w).text}</p>
-          ))}
-        </div>
-      )}
-
       {/* 血檢複檢提醒 */}
       {data.cuttingReadinessGate?.labRetestReminder && (
         <div className="mt-3 bg-blue-50 border border-blue-200 rounded-2xl p-3">
@@ -543,6 +571,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         </div>
       )}
     </div>
+    )}
     </>
   )
 }
