@@ -1319,7 +1319,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 營養目標設定 — 免費/自主管理用戶還沒設定目標時顯示 */}
-        {view === 'data' && (isFree || isSelfManaged) && !c.calories_target && c.body_composition_enabled && (
+        {view === 'training' && (isFree || isSelfManaged) && !c.calories_target && c.body_composition_enabled && (
           <SelfManagedNutrition
             clientId={c.id}
             uniqueCode={c.unique_code}
@@ -1341,7 +1341,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 飲食目標 + 飲食紀錄 */}
-        {view === 'data' && c.nutrition_enabled && (
+        {view === 'training' && c.nutrition_enabled && (
           <SectionErrorBoundary name="nutrition">
           <CollapsibleSection
             id={isCompetition ? 'section-nutrition' : 'section-nutrition-general'}
@@ -1458,14 +1458,14 @@ export default function ClientDashboard() {
 
 
         {/* 補品策略（引擎依血檢/基因推導的「為什麼」，端給學員看）*/}
-        {view === 'more' && isToday && supplementSuggestions.length > 0 && (
+        {view === 'training' && isToday && supplementSuggestions.length > 0 && (
           <SectionErrorBoundary name="supplement-strategy">
             <SupplementStrategyCard suggestions={supplementSuggestions} />
           </SectionErrorBoundary>
         )}
 
         {/* 補品打卡 */}
-        {view === 'more' && c.supplement_enabled && (
+        {view === 'training' && c.supplement_enabled && (
           <SectionErrorBoundary name="supplements">
           <CollapsibleSection
             id="section-supplements"
@@ -1496,7 +1496,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 每日感受 */}
-        {view === 'more' && c.wellness_enabled && (
+        {view === 'lab' && c.wellness_enabled && (
           <SectionErrorBoundary name="wellness">
           <CollapsibleSection
             id="section-wellness"
@@ -2341,8 +2341,10 @@ export default function ClientDashboard() {
           { id: 'home', icon: '🎯', label: '今日' },
           { id: 'data', icon: '📈', label: '進度' },
         ]
-        if (c.training_enabled) tabs.push({ id: 'training', icon: '📋', label: '計畫' })
-        if (c.lab_enabled) tabs.push({ id: 'lab', icon: '🩺', label: '健康' })
+        // 計畫=處方（課表＋營養＋補品），健康=身體（血檢＋恢復）：任一內容存在就顯示該分頁，
+        // 不然把營養搬進「計畫」後、只有營養沒訓練的學員會看不到。
+        if (c.training_enabled || c.nutrition_enabled || c.supplement_enabled) tabs.push({ id: 'training', icon: '📋', label: '計畫' })
+        if (c.lab_enabled || c.wellness_enabled) tabs.push({ id: 'lab', icon: '🩺', label: '健康' })
         tabs.push({ id: 'more', icon: '☰', label: '更多' })
 
         // 「今日」分頁：當天該打的卡全打完 → 顯示綠點
