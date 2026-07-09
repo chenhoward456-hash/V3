@@ -887,7 +887,7 @@ export default function ClientDashboard() {
           <ClientHeader
             client={c}
             isCoachMode={isCoachMode}
-            hideStatusBadge={view === 'home'}
+            hideStatusBadge={true}
             selectedDate={selectedDate}
             isToday={isToday}
             today={today}
@@ -1186,32 +1186,24 @@ export default function ClientDashboard() {
           />
         )}
 
-        {/* === 完整進度（作戰室 + 減脂體檢）→ 預設收起「想看再翻」，不跟主線重複報平安 === */}
-        {view === 'home' && (isCompetition || c.prep_phase === 'cut' || /cut|loss|fat|減/.test((c.goal_type || '').toLowerCase())) && (
-          <details className="group mb-4">
-            <summary className="flex items-center gap-2 px-1 py-2 cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
-              <span className="text-sm font-semibold text-slate-600 flex-1">
-                🏆 看完整進度<span className="text-slate-400 font-normal">（作戰室 · 減脂體檢）</span>
-              </span>
-              <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="mt-2 space-y-4">
-              {isCompetition && c.competition_date && (
-                <CompWarRoom
-                  bodyData={clientData.bodyData ?? EMPTY_ARRAY}
-                  competitionDate={c.competition_date}
-                  targetWeight={c.target_weight}
-                  targetBodyFat={c.target_body_fat}
-                  prepPhase={c.prep_phase}
-                />
-              )}
-              <CutHealthCard
+        {/* === 「進度」分頁頭牌：你在贏嗎（作戰室 + 減脂體檢）—— 從首頁搬來，進度問句的單一去處 === */}
+        {view === 'data' && (isCompetition || c.prep_phase === 'cut' || /cut|loss|fat|減/.test((c.goal_type || '').toLowerCase())) && (
+          <div className="space-y-4 mb-4">
+            {isCompetition && c.competition_date && (
+              <CompWarRoom
                 bodyData={clientData.bodyData ?? EMPTY_ARRAY}
-                wellness={clientData.wellness ?? EMPTY_ARRAY}
-                currentWeight={latestBodyData?.weight ?? null}
+                competitionDate={c.competition_date}
+                targetWeight={c.target_weight}
+                targetBodyFat={c.target_body_fat}
+                prepPhase={c.prep_phase}
               />
-            </div>
-          </details>
+            )}
+            <CutHealthCard
+              bodyData={clientData.bodyData ?? EMPTY_ARRAY}
+              wellness={clientData.wellness ?? EMPTY_ARRAY}
+              currentWeight={latestBodyData?.weight ?? null}
+            />
+          </div>
         )}
 
         {/* 推播開通 — 下移到行動/判決卡之後（留存槓桿但不佔第一屏；gated，含 iPhone 加主畫面引導）*/}
@@ -2343,12 +2335,14 @@ export default function ClientDashboard() {
       {/* 底部導航 */}
       {(() => {
         // 真分頁：一次顯示一個畫面。點 tab = 切換畫面 + 捲回頂部（不再是捲到底）。
+        // IA 改成「使用者的問句」而非「資料種類」：今日=做什麼 / 進度=在贏嗎 / 計畫=照什麼做 / 健康=身體怎樣。
+        // 內部 view id 不動（避免大改），只換 label+icon。
         const tabs: { id: string; icon: string; label: string }[] = [
           { id: 'home', icon: '🎯', label: '今日' },
-          { id: 'data', icon: '📊', label: '數據' },
+          { id: 'data', icon: '📈', label: '進度' },
         ]
-        if (c.training_enabled) tabs.push({ id: 'training', icon: '🏋️', label: '訓練' })
-        if (c.lab_enabled) tabs.push({ id: 'lab', icon: '🩸', label: '血檢' })
+        if (c.training_enabled) tabs.push({ id: 'training', icon: '📋', label: '計畫' })
+        if (c.lab_enabled) tabs.push({ id: 'lab', icon: '🩺', label: '健康' })
         tabs.push({ id: 'more', icon: '☰', label: '更多' })
 
         // 「今日」分頁：當天該打的卡全打完 → 顯示綠點
