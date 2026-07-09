@@ -37,6 +37,8 @@ interface ClientHeaderProps {
   setShowCancelConfirm: (v: boolean) => void
   cancellingSubscription: boolean
   onCancelSubscription: () => void
+  /** 首頁隱藏教練分流用的 status 徽章（● 需要關注）——由「今日主線」承接判定，避免紅字跟綠燈打架 */
+  hideStatusBadge?: boolean
 }
 
 export default function ClientHeader({
@@ -67,6 +69,7 @@ export default function ClientHeader({
   setShowCancelConfirm,
   cancellingSubscription,
   onCancelSubscription,
+  hideStatusBadge,
 }: ClientHeaderProps) {
   const formatSelectedDate = (dateStr: string) => {
     if (dateStr === today) return '今天'
@@ -88,13 +91,15 @@ export default function ClientHeader({
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900 leading-tight">{c.name}</h1>
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-              c.status === 'normal' ? 'bg-emerald-100 text-emerald-700'
-              : c.status === 'attention' ? 'bg-amber-100 text-amber-700'
-              : 'bg-rose-100 text-rose-700'
-            }`}>
-              {c.status === 'normal' ? '● 狀態良好' : '● 需要關注'}
-            </span>
+            {!hideStatusBadge && (
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                c.status === 'normal' ? 'bg-emerald-100 text-emerald-700'
+                : c.status === 'attention' ? 'bg-amber-100 text-amber-700'
+                : 'bg-rose-100 text-rose-700'
+              }`}>
+                {c.status === 'normal' ? '● 狀態良好' : '● 需要關注'}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1">
