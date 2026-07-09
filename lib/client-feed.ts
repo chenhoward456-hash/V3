@@ -175,8 +175,17 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
     }
   }
 
-  // ── 排序：alert > 報喜 > warn > info；上限 4 ──
-  const order: Record<FeedTone, number> = { alert: 0, good: 1, warn: 2, info: 3 }
-  cards.sort((a, b) => order[a.tone] - order[b.tone])
+  // ── 排序：按「要不要行動」而非「色調嚴重度」——管家先講該做的事、監看/報喜沉下去 ──
+  // 回檢過期/今天(去抽血) → 目標調整了(要知道) → 回檢快到/偏離(多留意) → 要盯一下(純監看) → 進步了(報喜無動作)
+  // 只動排序，不改任何血檢閾值/判讀/文字。上限 4。
+  const priority = (c: FeedCard): number => {
+    if (c.id.startsWith('checkup_')) return c.tone === 'warn' ? 0 : 2 // 過期/今天=0；快到=2
+    if (c.id.startsWith('macro_')) return 1
+    if (c.id.startsWith('lab_warn_')) return 2
+    if (c.id.startsWith('lab_alert_')) return 3 // 「要盯一下·持續追蹤」＝純監看，讓給有動作的
+    if (c.id.startsWith('lab_win_')) return 4
+    return 3
+  }
+  cards.sort((a, b) => priority(a) - priority(b))
   return cards.slice(0, 4)
 }
