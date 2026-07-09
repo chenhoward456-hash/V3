@@ -1652,6 +1652,11 @@ export default function ClientDashboard() {
         </SectionErrorBoundary>}
 
         {/* 健康分數 + 健康模式進階 */}
+        {/* 感受趨勢：從 SeeTabSection(進度) 抽來「健康」分頁，跟每日感受記錄同區 */}
+        {view === 'lab' && c.wellness_enabled && (
+          <div className="mb-4"><WellnessTrend wellness={clientData.wellness || []} /></div>
+        )}
+
         {view === 'lab' && isHealthMode && healthScore && <HealthScoreBanner healthScore={healthScore} />}
         {view === 'lab' && isHealthMode && (
           <HealthModeAdvanced clientId={c.id} code={c.unique_code} />
@@ -1733,6 +1738,7 @@ export default function ClientDashboard() {
           mutateWithTargets={mutateWithTargets}
           selectedDate={selectedDate}
           today={today}
+          hideWellnessTrend={true}
         />
         )}
 

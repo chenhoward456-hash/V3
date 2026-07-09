@@ -28,6 +28,8 @@ interface SeeTabSectionProps {
   mutateWithTargets?: (targets?: Record<string, number | undefined>) => void
   selectedDate?: string
   today?: string
+  /** 感受趨勢已移到「健康」分頁；在此隱藏，避免進度頁重複 */
+  hideWellnessTrend?: boolean
 }
 
 const TABS = [
@@ -37,7 +39,7 @@ const TABS = [
 
 type TabKey = typeof TABS[number]['key']
 
-export default function SeeTabSection({ c, clientData, isFree, latestBodyData, nutritionEngineSuggestion, geneCorrections, todayTraining, isCompetition, mutate, mutateWithTargets, selectedDate, today }: SeeTabSectionProps) {
+export default function SeeTabSection({ c, clientData, isFree, latestBodyData, nutritionEngineSuggestion, geneCorrections, todayTraining, isCompetition, mutate, mutateWithTargets, selectedDate, today, hideWellnessTrend }: SeeTabSectionProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('analysis')
   const compDaysLeft = c.competition_date ? daysUntilDateTW(c.competition_date) : null
   const showPeakWeek = compDaysLeft != null && compDaysLeft >= 0 && compDaysLeft <= 14 && latestBodyData?.weight
@@ -133,7 +135,7 @@ export default function SeeTabSection({ c, clientData, isFree, latestBodyData, n
           </SectionErrorBoundary>
 
           {/* 感受趨勢 */}
-          {c.wellness_enabled && <WellnessTrend wellness={clientData.wellness || []} />}
+          {!hideWellnessTrend && c.wellness_enabled && <WellnessTrend wellness={clientData.wellness || []} />}
         </div>
       )}
 
