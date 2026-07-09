@@ -45,6 +45,8 @@ export interface TodayHeadlineProps {
   carbsTarget: number | null
   weeklyTasks: WeeklyTasksData | null
   hasAttention: boolean
+  /** 近期有在記錄（streakDays>0）——沒有伺服器判定時，決定主線是「輕判定」還是「推去開始」 */
+  recentlyActive: boolean
 }
 
 function TodayHeadlineInner({
@@ -58,6 +60,7 @@ function TodayHeadlineInner({
   carbsTarget,
   weeklyTasks,
   hasAttention,
+  recentlyActive,
 }: TodayHeadlineProps) {
   const tasks = Array.isArray(weeklyTasks?.tasks) ? weeklyTasks!.tasks : []
   const verdict = tasks[0] ?? null
@@ -75,14 +78,23 @@ function TodayHeadlineInner({
   const isNegative = NEGATIVE_RE.test(verdictText)
   const isPositive = !isNegative && POSITIVE_RE.test(verdictText)
 
-  // 今天這一件（動作，永遠具體、來自真實資料）。
+  // Fallback：沒有伺服器判定(weekly_tasks 只餵得到少數活躍者)時，主線仍要有一句話——
+  // 讓「管家」對全班成立，不只有 cron 生得出任務的人。沒在記錄的人 → 推去開始（直接對打留存）。
+  const hasServerVerdict = !!verdict
+  const startMode = !hasServerVerdict && !recentlyActive
+  const fallbackTitle = hasServerVerdict
+    ? null
+    : recentlyActive
+      ? '有在記錄，保持——資料再多一點，我就開始幫你抓趨勢'
+      : '還沒開始追蹤你的進度'
+
+  // 今天這一件（動作）：沒資料的人 → 推去開始；其餘 → 具體訓練/碳水。
   const dayLabel = isTrainingDay ? '💪 訓練日' : '😴 休息日'
   const carbPart = carbs != null ? `碳水吃滿 ${carbs}g` : null
   const doPart = isTrainingDay ? '把課表練完' : '好好恢復、別加練'
-  const actionText = [dayLabel, carbPart, doPart].filter(Boolean).join('，')
-
-  // 沒有任何可講的（無判定、無倒數、無動作）就整張不顯示，讓既有卡片接手。
-  if (!verdict && !isCompetition && carbs == null) return null
+  const actionText = startMode
+    ? '先從今天記一項開始（量體重或記一餐都行），我才幫得上你'
+    : [dayLabel, carbPart, doPart].filter(Boolean).join('，')
 
   return (
     <section className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
@@ -95,12 +107,18 @@ function TodayHeadlineInner({
         </div>
       )}
 
-      {/* 判定（一句、重用伺服器 weekly_tasks 主判定） */}
-      {verdict && (
+      {/* 判定（一句）：有伺服器 weekly_tasks 就用它；沒有就用 fallback（輕判定 / 推去開始） */}
+      {(verdict || fallbackTitle) && (
         <div className="flex items-start gap-2 mb-3">
-          <span className="text-lg leading-none mt-0.5 shrink-0">{verdict.icon || (isNegative ? '🟡' : '🟢')}</span>
-          <p className={`text-base font-bold leading-snug ${isPositive ? 'text-emerald-700' : isNegative ? 'text-amber-700' : 'text-slate-900'}`}>
-            {verdict.title}
+          <span className="text-lg leading-none mt-0.5 shrink-0">
+            {verdict ? (verdict.icon || (isNegative ? '🟡' : '🟢')) : startMode ? '👋' : '📈'}
+          </span>
+          <p className={`text-base font-bold leading-snug ${
+            verdict
+              ? (isPositive ? 'text-emerald-700' : isNegative ? 'text-amber-700' : 'text-slate-900')
+              : startMode ? 'text-blue-700' : 'text-slate-700'
+          }`}>
+            {verdict ? verdict.title : fallbackTitle}
           </p>
         </div>
       )}

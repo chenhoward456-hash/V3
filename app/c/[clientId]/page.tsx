@@ -845,6 +845,7 @@ export default function ClientDashboard() {
             carbsTarget={c.carbs_target ?? null}
             weeklyTasks={c.weekly_tasks}
             hasAttention={!!c.status && c.status !== 'normal'}
+            recentlyActive={streakDays > 0}
           />
         )}
 
