@@ -46,6 +46,8 @@ import SupplementStrategyCard from '@/components/client/SupplementStrategyCard'
 import SeeTabSection from '@/components/client/SeeTabSection'
 import TodayOverviewCard from '@/components/client/TodayOverviewCard'
 import CoachMessageBanner from '@/components/client/CoachMessageBanner'
+import WeeklyTaskCard from '@/components/client/WeeklyTaskCard'
+import MyPlanSection from '@/components/client/MyPlanSection'
 import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
 import { isCompetitionMode, isHealthMode as isHealthModeHelper } from '@/lib/client-mode'
@@ -829,6 +831,12 @@ export default function ClientDashboard() {
         {isToday && clientData.recentCoachMessage && (
           <CoachMessageBanner msg={clientData.recentCoachMessage} clientCode={c.unique_code} />
         )}
+
+        {/* 當週任務 — weekly cron 生成的 top-3 行動任務（行動優先、置頂）*/}
+        {isToday && <WeeklyTaskCard data={c.weekly_tasks} />}
+
+        {/* 我的計畫 — 靜態參考（菜單/課表/補品/SOP）收合式，reference 層 */}
+        {isToday && <MyPlanSection data={c.onboarding_notes_rendered} />}
 
         {/* 首次來訪導覽 banner（dismissible）*/}
         {isToday && <WelcomeBanner clientId={clientId as string} />}

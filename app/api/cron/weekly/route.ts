@@ -27,6 +27,7 @@ import { getClientEmail } from '@/lib/get-client-email'
 import { createLogger } from '@/lib/logger'
 import { isHealthMode } from '@/lib/client-mode'
 import { DAY_MS } from '@/lib/date-utils'
+import { generateWeeklyTasks, type WeeklyTaskInput } from '@/lib/weekly-tasks'
 
 export const maxDuration = 300
 
@@ -53,6 +54,9 @@ export async function GET(request: NextRequest) {
   if (!verifyCronAuth(request)) {
     return NextResponse.json({ error: '未授權' }, { status: 401 })
   }
+
+  // 當週任務唯讀預覽：跑生成器、只回 JSON，不寫入不推播（掛真推播前給教練眼過全體）
+  const previewTasks = request.nextUrl.searchParams.get('previewTasks') === '1'
 
   const results = {
     quarterlyResets: 0,
@@ -332,6 +336,106 @@ export async function GET(request: NextRequest) {
         results.analysisGenerated++
       } catch (err: unknown) {
         results.errors.push(`分析失敗 [${client.name}]: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+
+    // ── 當週任務生成（規則型，複用上面已取的數據；餵推播 + 學員端卡）──
+    const weeklyTasksByClient: Array<{ client_id: string; name: string; tasks: ReturnType<typeof generateWeeklyTasks> }> = []
+    for (const client of clients) {
+      const clientBody = bodyByClient.get(client.id) || []
+      const clientNutrition = nutritionByClient.get(client.id) || []
+
+      // 週均體重（複用 summaries loop 同款算法）
+      const weeklyWeights: { week: number; avgWeight: number }[] = []
+      for (let wk = 0; wk < 4; wk++) {
+        const weekEnd = new Date(today); weekEnd.setDate(today.getDate() - wk * 7)
+        const weekStart = new Date(weekEnd); weekStart.setDate(weekEnd.getDate() - 6)
+        const startStr = weekStart.toISOString().split('T')[0]
+        const endStr = weekEnd.toISOString().split('T')[0]
+        const ws = clientBody
+          .filter((b: { date: string; weight: number | null }) => b.date >= startStr && b.date <= endStr)
+          .map((b: { weight: number | null }) => b.weight)
+          .filter((w): w is number => w != null)
+        if (ws.length > 0) {
+          weeklyWeights.push({ week: wk, avgWeight: Math.round((ws.reduce((a, b) => a + b, 0) / ws.length) * 100) / 100 })
+        }
+      }
+
+      const latestBodyRec = clientBody.length > 0 ? clientBody[clientBody.length - 1] : null
+      const latestWeight = latestBodyRec?.weight ?? null
+      const daysSinceLastWeight = latestBodyRec ? Math.floor((today.getTime() - new Date(latestBodyRec.date).getTime()) / DAY_MS) : null
+      const latestNut = clientNutrition.length > 0 ? clientNutrition[clientNutrition.length - 1] : null
+      const daysSinceLastNutrition = latestNut ? Math.floor((today.getTime() - new Date(latestNut.date).getTime()) / DAY_MS) : null
+
+      // 資格看「關係 + 近期活躍」：coached／protocol（你在帶的）給 14 天寬限（涵蓋短期停記），
+      // 其他人 7 天。兩者都久未記錄的不打擾（不追已放生的學員）。
+      const isCoached = client.subscription_tier === 'coached' || client.subscription_tier === 'protocol'
+      const activeWindow = isCoached ? 14 : 7
+      const activeRecently =
+        (daysSinceLastWeight != null && daysSinceLastWeight <= activeWindow) ||
+        (daysSinceLastNutrition != null && daysSinceLastNutrition <= activeWindow)
+      if (!activeRecently) continue
+
+      const targetDateStr = client.competition_date || client.target_date || null
+      const daysToTarget = targetDateStr ? Math.floor((new Date(targetDateStr).getTime() - today.getTime()) / DAY_MS) : null
+      const weeksToTarget = daysToTarget != null && daysToTarget > 0 ? +(daysToTarget / 7).toFixed(1) : null
+      const isLatePrep = daysToTarget != null && daysToTarget <= 28
+
+      const summary = summaries.find(s => s.client_id === client.id)
+      const taskInput: WeeklyTaskInput = {
+        clientName: client.name,
+        goalType: client.goal_type ?? null,
+        daysSinceLastWeight,
+        daysSinceLastNutrition,
+        weeklyWeights,
+        weeklyWeightChangeRatePct: summary?.weekly_weight_change_rate ?? null,
+        refeedSuggested: summary?.refeed_suggested ?? false,
+        targetWeight: client.target_weight ?? null,
+        weeksToTarget,
+        isLatePrep,
+        latestWeight,
+      }
+      weeklyTasksByClient.push({ client_id: client.id, name: client.name, tasks: generateWeeklyTasks(taskInput) })
+    }
+
+    // 唯讀預覽：只回 JSON，不寫入不推播（掛真推播前給教練眼過全體調性）
+    if (previewTasks) {
+      return NextResponse.json({
+        ok: true,
+        previewTasks: true,
+        count: weeklyTasksByClient.length,
+        weeklyTasks: weeklyTasksByClient.map(w => ({
+          name: w.name,
+          tasks: w.tasks.map(t => `${t.icon} ${t.title}`),
+        })),
+      })
+    }
+
+    // ── 存當週任務 + 推播（web push 優先、不 gate LINE；只到上面過濾出的活躍學員）──
+    let taskPushCount = 0
+    for (const wt of weeklyTasksByClient) {
+      const client = clients.find(c => c.id === wt.client_id)
+      if (!client) continue
+      try {
+        // 存快照供學員端卡讀取
+        await supabase
+          .from('clients')
+          .update({ weekly_tasks: { week_of: todayStr, generated_at: today.toISOString(), tasks: wt.tasks } })
+          .eq('id', wt.client_id)
+
+        // 推播：第一條當標題、全部列進內文（web push 優先，沒綁 LINE 也送得到）
+        const top = wt.tasks[0]
+        const lineText = `📋 ${client.name} 本週任務\n\n` +
+          wt.tasks.map(t => `${t.icon} ${t.title}\n　${t.detail}`).join('\n\n')
+        const res = await sendRoutineReminder(wt.client_id, client.line_user_id || '', {
+          title: '📋 你的本週任務',
+          body: top ? `${top.icon} ${top.title}` : '本週任務已更新',
+          lineText,
+          url: '/dashboard',
+        })
+        if (res.success) taskPushCount++
+      } catch (err: unknown) {
+        results.errors.push(`當週任務推播失敗 [${client.name}]: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
 
@@ -691,7 +795,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: results.errors.length === 0,
       timestamp: today.toISOString(),
-      results: { ...results, linePushCount, aiReportCount, reviewTriggered, newsletterSent, newsletterFailed },
+      results: { ...results, linePushCount, aiReportCount, reviewTriggered, newsletterSent, newsletterFailed, taskPushCount },
       alerts: alertItems,
     })
   } catch (err: unknown) {

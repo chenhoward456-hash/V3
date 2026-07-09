@@ -74,6 +74,8 @@ export interface Client {
   weigh_in_gap_hours: number | null
   coach_last_viewed_at: string | null
   coach_weekly_note: string | null
+  weekly_tasks: { week_of: string; generated_at?: string; tasks: { key: string; priority: number; icon: string; title: string; detail: string }[] } | null
+  onboarding_notes_rendered: { sections?: { slug: string; title: string; body: string }[]; rendered_at?: string; template_id?: string } | null
   coach_summary: string | null
   next_checkup_date: string | null
   health_goals: string | null

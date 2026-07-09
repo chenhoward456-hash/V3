@@ -86,6 +86,74 @@ function computeFoodPortions(macros: {
   }
 }
 
+/**
+ * 711 超商版：半自動。離散品項無法像白飯連續調克數，故只算兩個「錨」——
+ * 蛋白錨＝即食雞胸包數／碳水錨＝御飯糰＋地瓜份數，其餘固定基礎餐。
+ * 備賽極端值（脂肪極低＋高蛋白）超商湊不準時回傳自煮 fallback 提示，不假裝湊得出。
+ * 固定基礎：茶葉蛋×2 + 無糖豆漿450 + 生菜沙拉盒 + 舒肥雞胸沙拉盒 + 嫩雞胸沙拉盒
+ */
+function computeFoodPortions711(macros: {
+  protein: number
+  fat: number
+  carb_train: number
+  carb_rest: number
+}) {
+  const BASE = { P: 84, F: 33, C: 37 }  // 每日固定基礎餐的巨量
+  const CHICKEN = { P: 23, F: 2, C: 1 } // 即食雞胸 1 包
+  const DRINK = { P: 22, F: 3, C: 12 }  // 蛋白飲 1 盒
+  const STARCH_C = 34                    // 御飯糰／地瓜 每份 ~34g 碳水
+  const BANANA_C = 23                    // 香蕉 1 根（訓練日訓後）
+
+  const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n))
+  const r = (n: number) => Math.round(n)
+
+  function forDay(carbTarget: number, isTrain: boolean) {
+    const drinks = isTrain ? 2 : 1
+    // 蛋白錨：固定基礎 + 蛋白飲之外，用即食雞胸補到 protein target
+    const chicken = clamp(r((macros.protein - BASE.P - drinks * DRINK.P) / CHICKEN.P), 0, 6)
+    // 碳水錨：目標扣掉固定/蛋白飲/雞胸/(訓練日香蕉) 帶進來的碳水，剩下用澱粉份數補
+    const carbFromProtein = BASE.C + drinks * DRINK.C + chicken * CHICKEN.C + (isTrain ? BANANA_C : 0)
+    const starchUnits = clamp(r((carbTarget - carbFromProtein) / STARCH_C), 0, 8)
+    const riceballs = r(starchUnits * 0.6)
+    const sweetpotato = Math.max(0, starchUnits - riceballs)
+    let estP = BASE.P + drinks * DRINK.P + chicken * CHICKEN.P
+    let estF = BASE.F + drinks * DRINK.F + chicken * CHICKEN.F
+    let estC = carbFromProtein + starchUnits * STARCH_C
+    // 脂肪錨：711 主蛋白（即食雞胸）低脂，脂肪常不足 → 用堅果包補到脂肪目標（每包 ~F16 C5 P5）
+    const nuts = clamp(r((macros.fat - estF) / 16), 0, 2)
+    estF += nuts * 16; estC += nuts * 5; estP += nuts * 5
+    return { drinks, chicken, riceballs, sweetpotato, banana: isTrain ? 1 : 0, nuts, estP, estF, estC }
+  }
+
+  const train = forDay(macros.carb_train, true)
+  const rest = forDay(macros.carb_rest, false)
+
+  // fallback：脂肪極低（<55g）+ 蛋白湊不足 或 休息日碳水被蛋白飲墊爆 → 建議自煮
+  const restCarbOverflow = rest.estC > macros.carb_rest * 1.25
+  const restProteinShort = rest.estP < macros.protein * 0.92
+  const needSelfCook = macros.fat < 55 && (restCarbOverflow || restProteinShort)
+
+  // 組成品項行：份數 0 的品項整行省略（不顯示「地瓜 0 條」這種）
+  const buildLines = (day: typeof train, isTrain: boolean) => {
+    const L: string[] = []
+    if (day.chicken > 0) L.push(`・即食雞胸 ${day.chicken} 包`)
+    L.push(`・蛋白飲 ${day.drinks} 盒${isTrain ? '（訓後 1 盒＋餐間）' : ''}`)
+    if (day.riceballs > 0) L.push(`・御飯糰 ${day.riceballs} 個`)
+    if (day.sweetpotato > 0) L.push(`・地瓜 ${day.sweetpotato} 條（150g／條）`)
+    if (isTrain && day.banana > 0) L.push(`・香蕉 ${day.banana} 根（訓後配蛋白飲）`)
+    if (day.nuts > 0) L.push(`・堅果包 ${day.nuts} 包（補脂肪，只吃算出來的份數）`)
+    return L.join('\n')
+  }
+
+  return {
+    p711_train_lines: buildLines(train, true),
+    p711_rest_lines: buildLines(rest, false),
+    p711_selfcook_note: needSelfCook
+      ? '⚠️ 這階段脂肪目標低、蛋白高，超商離散品項湊不準（蛋白飲會把碳水墊高）→ 休息日建議改自煮（雞胸＋無碳蛋白粉、白飯精算），訓練日超商 OK'
+      : '',
+  }
+}
+
 const DAY_LABELS: Record<number, string> = { 1: '週一', 2: '週二', 3: '週三', 4: '週四', 5: '週五', 6: '週六', 7: '週日' }
 
 function formatTrainingPlan(plan: any): string {
@@ -163,7 +231,7 @@ export async function GET(request: NextRequest) {
   // load client + latest body_composition + template
   const [clientRes, bodyRes, templateRes] = await Promise.all([
     supabase.from('clients').select('id, name, target_weight, competition_date, target_date, calories_target, protein_target, fat_target, carbs_target, carbs_training_day, carbs_rest_day, training_plan').eq('id', clientId).maybeSingle(),
-    supabase.from('body_composition').select('weight, body_fat').eq('client_id', clientId).order('date', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('body_composition').select('weight, body_fat').eq('client_id', clientId).not('weight', 'is', null).order('date', { ascending: false }).limit(1).maybeSingle(),
     templateId
       ? supabase.from('client_onboarding_notes').select('id, name, sections').eq('id', templateId).maybeSingle()
       : supabase.from('client_onboarding_notes').select('id, name, sections').order('created_at', { ascending: false }).limit(1).maybeSingle(),
@@ -199,6 +267,7 @@ export async function GET(request: NextRequest) {
 
   // 自動算食物份量（macros 變了 → 食譜自動跟著變）
   const portions = computeFoodPortions({ protein, fat, carb_train: carbTrain, carb_rest: carbRest })
+  const portions711 = computeFoodPortions711({ protein, fat, carb_train: carbTrain, carb_rest: carbRest })
 
   // 自動格式化訓練計畫
   const trainingSchedule = formatTrainingPlan(c.training_plan)
@@ -228,6 +297,8 @@ export async function GET(request: NextRequest) {
     min_fat: minFat,
     // computed food portions (rice_train / rice_rest / whey_scoops 等)
     ...portions,
+    // 711 超商版半自動份數（p711_train_chicken / p711_rest_riceballs 等）
+    ...portions711,
     // computed training schedule (從 clients.training_plan 自動 render)
     training_schedule: trainingSchedule,
   }
