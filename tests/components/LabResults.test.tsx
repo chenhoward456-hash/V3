@@ -32,7 +32,10 @@ vi.mock('lucide-react', () => ({
 }))
 
 // Mock types / lab utilities
-vi.mock('@/components/client/types', () => ({
+// 用 importOriginal 保留真實匯出（如 LAB_OPTIMAL_DISCLAIMER），只覆蓋要 mock 的那個。
+// 寫死物件會在元件新增 import 時整個檔崩掉（No "X" export is defined on the mock）。
+vi.mock('@/components/client/types', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/components/client/types')>()),
   getLabAdvice: () => 'mock advice',
 }))
 
@@ -110,6 +113,9 @@ describe('LabResults', () => {
 
   it('shows disclaimer about non-medical purpose', () => {
     render(<LabResults {...baseProps} />)
-    expect(screen.getByText(/不構成醫療診斷/)).toBeInTheDocument()
+    // 兩段免責：①頁面用途 ②「最佳」是長壽派立場非診斷標準（合規要求，兩段都要在）
+    expect(screen.getAllByText(/不構成醫療診斷/)).toHaveLength(2)
+    expect(screen.getByText(/僅供數據紀錄與趨勢追蹤/)).toBeInTheDocument()
+    expect(screen.getByText(/非醫學診斷標準/)).toBeInTheDocument()
   })
 })
