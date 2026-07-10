@@ -106,6 +106,8 @@ describe('引擎原始碼不得寫死疾病名/處方藥名/診斷語氣', () =>
   it('掃描器有效（反向哨兵，避免上面全部假綠）', () => {
     expect(scanMedicalCompliance('符合代謝症候群模式').length).toBeGreaterThan(0)
     expect(scanMedicalCompliance('惡性腫瘤').length).toBeGreaterThan(0)
-    expect(scanMedicalCompliance('系統性發炎').length).toBeGreaterThan(0)
+    // 注意：「系統性發炎」本身已於 2026-07-10 移出 deny-list（描述詞非診斷），
+    // 這裡改用「當成病在講」的句子當哨兵。界線的完整契約見 tests/lib/compliance-scrub.test.ts。
+    expect(scanMedicalCompliance('你有系統性發炎').length).toBeGreaterThan(0)
   })
 })
