@@ -135,11 +135,17 @@ describe('RecoveryDashboard', () => {
     })
   })
 
-  // ---- Five system bars ----
+  // ---- Five system bars (now inside the collapsed detail section) ----
   it('renders all five system bars with names and scores', async () => {
     mockFetchSuccess()
 
     render(<RecoveryDashboard clientId="client-1" />)
+
+    // 五大系統條改成預設收合，要先展開才看得到
+    await waitFor(() => {
+      expect(screen.getByText(/查看詳細分析/)).toBeInTheDocument()
+    })
+    fireEvent.click(screen.getByText(/查看詳細分析/))
 
     await waitFor(() => {
       // System names
@@ -195,27 +201,27 @@ describe('RecoveryDashboard', () => {
     render(<RecoveryDashboard clientId="client-1" />)
 
     await waitFor(() => {
-      expect(screen.getByText('查看詳細數據')).toBeInTheDocument()
+      expect(screen.getByText(/查看詳細分析/)).toBeInTheDocument()
     })
 
     // ACWR detail should NOT be visible yet
     expect(screen.queryByText(/當前 ACWR/)).not.toBeInTheDocument()
 
     // Click to expand
-    fireEvent.click(screen.getByText('查看詳細數據'))
+    fireEvent.click(screen.getByText(/查看詳細分析/))
 
     await waitFor(() => {
-      expect(screen.getByText('收合詳細數據')).toBeInTheDocument()
+      expect(screen.getByText('收合詳細分析')).toBeInTheDocument()
       // ACWR data should now be visible
       expect(screen.getByText(/當前 ACWR/)).toBeInTheDocument()
       expect(screen.getByText('1.15')).toBeInTheDocument()
     })
 
     // Click to collapse
-    fireEvent.click(screen.getByText('收合詳細數據'))
+    fireEvent.click(screen.getByText('收合詳細分析'))
 
     await waitFor(() => {
-      expect(screen.getByText('查看詳細數據')).toBeInTheDocument()
+      expect(screen.getByText(/查看詳細分析/)).toBeInTheDocument()
       expect(screen.queryByText(/當前 ACWR/)).not.toBeInTheDocument()
     })
   })
@@ -227,10 +233,10 @@ describe('RecoveryDashboard', () => {
     render(<RecoveryDashboard clientId="client-1" />)
 
     await waitFor(() => {
-      expect(screen.getByText('查看詳細數據')).toBeInTheDocument()
+      expect(screen.getByText(/查看詳細分析/)).toBeInTheDocument()
     })
 
-    fireEvent.click(screen.getByText('查看詳細數據'))
+    fireEvent.click(screen.getByText(/查看詳細分析/))
 
     await waitFor(() => {
       expect(screen.getByText('HRV')).toBeInTheDocument()
@@ -247,10 +253,10 @@ describe('RecoveryDashboard', () => {
     render(<RecoveryDashboard clientId="client-1" />)
 
     await waitFor(() => {
-      expect(screen.getByText('查看詳細數據')).toBeInTheDocument()
+      expect(screen.getByText(/查看詳細分析/)).toBeInTheDocument()
     })
 
-    fireEvent.click(screen.getByText('查看詳細數據'))
+    fireEvent.click(screen.getByText(/查看詳細分析/))
 
     await waitFor(() => {
       expect(screen.getByText(/Sleep trending down/)).toBeInTheDocument()
@@ -258,8 +264,8 @@ describe('RecoveryDashboard', () => {
     })
   })
 
-  // ---- No expand button when acwr and hrvZScore are null ----
-  it('hides the expand button when there is no detail data', async () => {
+  // ---- Expand button always available; five system bars show even without ACWR/z-score ----
+  it('still shows the expand button and system bars when acwr/z-score data is absent', async () => {
     const data = makeAssessmentData({
       overtrainingRisk: {
         acwr: null,
@@ -281,11 +287,18 @@ describe('RecoveryDashboard', () => {
 
     render(<RecoveryDashboard clientId="client-1" />)
 
+    // 展開按鈕恆常存在（詳細區至少有五大系統條可看）
     await waitFor(() => {
-      expect(screen.getByText('72')).toBeInTheDocument()
+      expect(screen.getByText(/查看詳細分析/)).toBeInTheDocument()
     })
 
-    expect(screen.queryByText('查看詳細數據')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText(/查看詳細分析/))
+
+    await waitFor(() => {
+      expect(screen.getByText('神經系統')).toBeInTheDocument()
+    })
+    // ACWR / z-score 沒資料時不顯示對應區塊
+    expect(screen.queryByText(/當前 ACWR/)).not.toBeInTheDocument()
   })
 
   // ---- Re-fetches when clientId changes ----

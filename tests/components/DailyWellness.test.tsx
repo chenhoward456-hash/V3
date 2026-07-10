@@ -56,28 +56,29 @@ describe('DailyWellness', () => {
     expect(screen.getByText('每日感受')).toBeInTheDocument()
   })
 
-  // ---- Renders core fields (sleep, energy, mood) ----
+  // ---- Renders core fields (sleep, energy, training drive) ----
+  // 核心三項改版為：睡眠 / 精力 / 想不想練（心情改到「更多指標」選填區）
   it('renders all three core input fields with labels', () => {
     renderWellness()
 
     expect(screen.getByText(/睡眠品質/)).toBeInTheDocument()
     expect(screen.getByText(/精力水平/)).toBeInTheDocument()
-    expect(screen.getByText(/今日心情/)).toBeInTheDocument()
+    expect(screen.getByText(/想不想練/)).toBeInTheDocument()
   })
 
   // ---- Core field options are clickable ----
   it('renders 5 options for each core field', () => {
     renderWellness()
 
-    // Sleep and mood both have labels like "很差", "普通", "很好"
-    // so there will be multiple elements. Use getAllByText.
-    expect(screen.getAllByText('很差').length).toBeGreaterThanOrEqual(2)  // sleep + mood
-    expect(screen.getAllByText('普通').length).toBeGreaterThanOrEqual(3)  // sleep + energy + mood
-    expect(screen.getAllByText('很好').length).toBeGreaterThanOrEqual(2)  // sleep + mood
+    // 三個核心欄位（睡眠/精力/想不想練）都有「普通」選項
+    expect(screen.getAllByText('普通').length).toBeGreaterThanOrEqual(3)
 
     // Unique labels per field to confirm each renders
+    expect(screen.getByText('不錯')).toBeInTheDocument()  // sleep score 4
     expect(screen.getByText('沒電')).toBeInTheDocument()  // energy score 1
     expect(screen.getByText('充沛')).toBeInTheDocument()  // energy score 4
+    expect(screen.getByText('想練')).toBeInTheDocument()  // training drive score 4
+    expect(screen.getByText('超想')).toBeInTheDocument()  // training drive score 5
   })
 
   // ---- Submit button is disabled without required fields ----
@@ -99,19 +100,11 @@ describe('DailyWellness', () => {
   it('enables the submit button after all three core fields are selected', () => {
     renderWellness()
 
-    // Select sleep quality (score 3 = "普通" under sleep)
-    // Each field has 5 buttons. We need to click one in each group.
-    // The buttons are structured: each field renders 5 buttons with emoji + label.
-    // Sleep emoji for score 4: "😌", Energy score 4: "⚡", Mood score 4: "😊"
-    const allButtons = screen.getAllByRole('button')
-
-    // Find and click buttons by their emoji content within each section
-    // Sleep: 😌 (score 4)
+    // 核心三項 = 睡眠 / 精力 / 想不想練。各選一個分數即可解鎖送出。
+    // Sleep: 😌 (score 4), Energy: ⚡ (score 4), Training drive: 💪 (score 4)
     fireEvent.click(screen.getByText('😌'))
-    // Energy: ⚡ (score 4)
     fireEvent.click(screen.getByText('⚡'))
-    // Mood: 😊 (score 4)
-    fireEvent.click(screen.getByText('😊'))
+    fireEvent.click(screen.getByText('💪'))
 
     const submitBtn = screen.getByText('記錄感受')
     expect(submitBtn).not.toBeDisabled()
@@ -152,10 +145,10 @@ describe('DailyWellness', () => {
 
     renderWellness()
 
-    // Fill all three core fields
+    // Fill all three core fields (sleep / energy / training drive)
     fireEvent.click(screen.getByText('😌')) // sleep = 4
     fireEvent.click(screen.getByText('⚡')) // energy = 4
-    fireEvent.click(screen.getByText('😊')) // mood = 4
+    fireEvent.click(screen.getByText('💪')) // training drive = 4
 
     const submitBtn = screen.getByText('記錄感受')
     fireEvent.click(submitBtn)
@@ -173,7 +166,7 @@ describe('DailyWellness', () => {
     expect(callBody.date).toBe('2026-03-12')
     expect(callBody.sleep_quality).toBe(4)
     expect(callBody.energy_level).toBe(4)
-    expect(callBody.mood).toBe(4)
+    expect(callBody.training_drive).toBe(4)
 
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith('感受已記錄！', 'success', '🎉')
@@ -200,11 +193,11 @@ describe('DailyWellness', () => {
       todayWellness: {
         sleep_quality: 4,
         energy_level: 3,
-        mood: 4,
+        training_drive: 4,
       },
     })
 
-    // The submit button should be enabled since all core fields are pre-filled
+    // The submit button should be enabled since all three core fields are pre-filled
     const submitBtn = screen.getByText('更新感受')
     expect(submitBtn).not.toBeDisabled()
   })
@@ -217,18 +210,18 @@ describe('DailyWellness', () => {
     const moreBtn = screen.getByText(/填寫更多指標/)
     fireEvent.click(moreBtn)
 
-    // Training drive should now be visible
-    expect(screen.getByText(/訓練慾望/)).toBeInTheDocument()
+    // 心情（今日心情）現在是「更多指標」選填欄，展開後才出現
+    expect(screen.getByText(/今日心情/)).toBeInTheDocument()
   })
 
   it('can collapse the extra metrics section', () => {
     renderWellness()
 
     fireEvent.click(screen.getByText(/填寫更多指標/))
-    expect(screen.getByText(/訓練慾望/)).toBeInTheDocument()
+    expect(screen.getByText(/今日心情/)).toBeInTheDocument()
 
     fireEvent.click(screen.getByText(/收起更多指標/))
-    expect(screen.queryByText(/訓練慾望/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/今日心情/)).not.toBeInTheDocument()
   })
 
   // ---- Health mode extra fields ----
@@ -254,7 +247,7 @@ describe('DailyWellness', () => {
   it('shows wearable device input section when the wearable button is clicked', () => {
     renderWellness()
 
-    const wearableBtn = screen.getByText(/填寫手錶恢復分數/)
+    const wearableBtn = screen.getByText(/填恢復分數/)
     fireEvent.click(wearableBtn)
 
     // After clicking, the section expands and shows a numeric input with placeholder "--"
@@ -313,7 +306,7 @@ describe('DailyWellness', () => {
 
     fireEvent.click(screen.getByText('😌'))
     fireEvent.click(screen.getByText('⚡'))
-    fireEvent.click(screen.getByText('😊'))
+    fireEvent.click(screen.getByText('💪'))
 
     fireEvent.click(screen.getByText('記錄感受'))
 
@@ -332,7 +325,7 @@ describe('DailyWellness', () => {
 
     fireEvent.click(screen.getByText('😌'))
     fireEvent.click(screen.getByText('⚡'))
-    fireEvent.click(screen.getByText('😊'))
+    fireEvent.click(screen.getByText('💪'))
 
     fireEvent.click(screen.getByText('記錄感受'))
 
@@ -359,7 +352,7 @@ describe('DailyWellness', () => {
 
     fireEvent.click(screen.getByText('😌'))
     fireEvent.click(screen.getByText('⚡'))
-    fireEvent.click(screen.getByText('😊'))
+    fireEvent.click(screen.getByText('💪'))
 
     fireEvent.click(screen.getByText('記錄感受'))
 

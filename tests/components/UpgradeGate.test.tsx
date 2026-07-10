@@ -113,13 +113,13 @@ describe('UpgradeGate', () => {
     })
   })
 
-  // ---- Visual styling: gradient background ----
-  it('has a gradient background container', () => {
+  // ---- Visual styling: clinical-minimal card (no gradient per DESIGN.md) ----
+  it('renders as a clinical-minimal card (white background, no gradient)', () => {
     const { container } = render(<UpgradeGate feature="Feature" />)
 
     const wrapper = container.firstElementChild as HTMLElement
-    expect(wrapper.className).toContain('bg-gradient-to-br')
-    expect(wrapper.className).toContain('from-blue-50')
+    expect(wrapper.className).toContain('bg-white')
+    expect(wrapper.className).not.toContain('bg-gradient')
   })
 
   // ---- New: Enhanced variant with currentTier ----

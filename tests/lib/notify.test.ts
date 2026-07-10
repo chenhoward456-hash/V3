@@ -97,7 +97,8 @@ describe('sendRoutineReminder', () => {
 
   it('should fall back to LINE when no push subscriptions exist', async () => {
     setupSupabaseSelect(null)
-    mockPushMessage.mockResolvedValue(undefined)
+    // notify.ts 已硬化成檢查 res.ok；成功情境要回 { ok: true, status: 200 }
+    mockPushMessage.mockResolvedValue({ ok: true, status: 200 })
 
     const result = await sendRoutineReminder(clientId, lineUserId, message)
 
@@ -111,7 +112,8 @@ describe('sendRoutineReminder', () => {
       { endpoint: 'https://push.example.com/expired2', p256dh: 'k2', auth: 'a2' },
     ])
     mockSendPushNotification.mockResolvedValue(false)
-    mockPushMessage.mockResolvedValue(undefined)
+    // notify.ts 已硬化成檢查 res.ok；成功情境要回 { ok: true, status: 200 }
+    mockPushMessage.mockResolvedValue({ ok: true, status: 200 })
 
     const result = await sendRoutineReminder(clientId, lineUserId, message)
 
@@ -152,7 +154,8 @@ describe('sendRoutineReminder', () => {
 
   it('should fall back to LINE when subscriptions array is empty', async () => {
     setupSupabaseSelect([])
-    mockPushMessage.mockResolvedValue(undefined)
+    // notify.ts 已硬化成檢查 res.ok；成功情境要回 { ok: true, status: 200 }
+    mockPushMessage.mockResolvedValue({ ok: true, status: 200 })
 
     const result = await sendRoutineReminder(clientId, lineUserId, message)
 

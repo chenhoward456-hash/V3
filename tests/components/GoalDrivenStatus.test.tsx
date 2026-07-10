@@ -377,8 +377,10 @@ describe('GoalDrivenStatus', () => {
     })
   })
 
-  // ---- Wearable insight card ----
-  it('renders wearable insight card when wearableInsight is present', async () => {
+  // ---- Wearable insight card (intentionally disabled) ----
+  // 穿戴裝置恢復卡已停用（wearableInsightCard = null）：恢復/訓練建議統一由 RecoveryDashboard
+  // 一個聲音講，避免同畫面出現兩個互相矛盾的恢復分數。即使 API 帶回 wearableInsight 也不渲染。
+  it('does NOT render the wearable insight card (feature disabled)', async () => {
     const response = buildGoalDrivenResponse({
       wearableInsight: 'Recovery is lower than usual',
       currentState: 'struggling',
@@ -391,10 +393,12 @@ describe('GoalDrivenStatus', () => {
 
     renderComponent()
 
+    // 等主卡渲染完成，再確認穿戴洞察內容沒有出現
     await waitFor(() => {
-      expect(screen.getByText(/Recovery is lower than usual/)).toBeInTheDocument()
-      expect(screen.getByText('42/100')).toBeInTheDocument()
+      expect(screen.getByText('目標體重計畫')).toBeInTheDocument()
     })
+    expect(screen.queryByText(/Recovery is lower than usual/)).not.toBeInTheDocument()
+    expect(screen.queryByText('42/100')).not.toBeInTheDocument()
   })
 
   // ---- Menstrual cycle note ----
@@ -487,7 +491,10 @@ describe('GoalDrivenStatus', () => {
     renderComponent()
 
     await waitFor(() => {
-      expect(screen.getByText(/代謝壓力：55\/100/)).toBeInTheDocument()
+      // 分數（55）現在包在 tabular-nums <span> 裡，文字被拆節點；用 function matcher 比對整段 textContent
+      expect(
+        screen.getByText((_, node) => node?.textContent?.replace(/\s/g, '') === '🔥代謝壓力：55/100'),
+      ).toBeInTheDocument()
       expect(screen.getByText(/建議安排 1 天 strategic refeed/)).toBeInTheDocument()
     })
   })
