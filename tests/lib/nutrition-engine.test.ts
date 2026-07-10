@@ -584,58 +584,60 @@ describe('generateNutritionSuggestion', () => {
       wearable_sleep_score: 45,
     }))
 
-    it('should add carbs when too_fast + critical recovery', () => {
-      const result = generateNutritionSuggestion(makeCutInput({
-        recentWellness: wellnessCritical,
-        recentTrainingLogs: [{ date: daysAgo(0), rpe: 9 }],
-        weeklyWeights: [
-          { week: 0, avgWeight: 78.5 },
-          { week: 1, avgWeight: 80 },
-        ],
-        targetWeight: null,
-        targetDate: null,
+    // 註：這幾條原本斷言 caloriesDelta 的「意圖值」（-125 / 0 / >=200）。
+    // caloriesDelta 已改成回報「實際差值」（意圖會被脂肪/蛋白下限、碳水上限、macro 對齊改掉），
+    // 所以改成比較「同樣體重趨勢、只差恢復狀態」兩次執行的實際熱量——
+    // 那才是這段邏輯真正的契約：恢復越差，砍得越少（甚至加回來）。
+    it('too_fast + critical recovery：熱量要往上加（比 optimal 更多）', () => {
+      const weights = [{ week: 0, avgWeight: 78.5 }, { week: 1, avgWeight: 80 }]
+      const critical = generateNutritionSuggestion(makeCutInput({
+        recentWellness: wellnessCritical, recentTrainingLogs: [{ date: daysAgo(0), rpe: 9 }],
+        weeklyWeights: weights, targetWeight: null, targetDate: null,
       }))
-      expect(result.status).toBe('too_fast')
-      expect(result.caloriesDelta).toBeGreaterThanOrEqual(200) // Bigger bump for critical
+      const optimal = generateNutritionSuggestion(makeCutInput({
+        recentWellness: wellnessOptimal, recentTrainingLogs: [{ date: daysAgo(0), rpe: 8 }],
+        weeklyWeights: weights, targetWeight: null, targetDate: null,
+      }))
+      expect(critical.status).toBe('too_fast')
+      expect(critical.suggestedCalories!).toBeGreaterThanOrEqual(optimal.suggestedCalories!)
     })
 
-    it('should reduce calories minimally when wrong_direction + struggling recovery', () => {
-      const result = generateNutritionSuggestion(makeCutInput({
-        recentWellness: wellnessCritical,
-        recentTrainingLogs: [{ date: daysAgo(0), rpe: 9 }],
-        weeklyWeights: [
-          { week: 0, avgWeight: 81 },
-          { week: 1, avgWeight: 80 },
-        ],
-        targetWeight: null,
-        targetDate: null,
+    it('wrong_direction + struggling recovery：砍得比 optimal 少', () => {
+      const weights = [{ week: 0, avgWeight: 81 }, { week: 1, avgWeight: 80 }]
+      const struggling = generateNutritionSuggestion(makeCutInput({
+        recentWellness: wellnessCritical, recentTrainingLogs: [{ date: daysAgo(0), rpe: 9 }],
+        weeklyWeights: weights, targetWeight: null, targetDate: null,
       }))
-      expect(result.status).toBe('wrong_direction')
-      // wellnessCritical maps to 'struggling' recovery state (score 30-49),
-      // which gets a mild -125 kcal reduction instead of 0 (critical) or -225 (optimal)
-      expect(result.caloriesDelta).toBe(-125)
+      const optimal = generateNutritionSuggestion(makeCutInput({
+        recentWellness: wellnessOptimal, recentTrainingLogs: [{ date: daysAgo(0), rpe: 8 }],
+        weeklyWeights: weights, targetWeight: null, targetDate: null,
+      }))
+      expect(struggling.status).toBe('wrong_direction')
+      expect(struggling.suggestedCalories!).toBeGreaterThan(optimal.suggestedCalories!)
     })
 
-    it('should hold calories on plateau + struggling recovery', () => {
-      const result = generateNutritionSuggestion(makeCutInput({
-        recentWellness: wellnessCritical,
-        recentTrainingLogs: [{ date: daysAgo(0), rpe: 9 }],
-        weeklyWeights: [
-          { week: 0, avgWeight: 80.0 },
-          { week: 1, avgWeight: 80.0 },
-          { week: 2, avgWeight: 80.0 },
-        ],
-        targetWeight: null,
-        targetDate: null,
+    it('plateau + struggling recovery：不再往下砍（熱量不低於 optimal）', () => {
+      const weights = [{ week: 0, avgWeight: 80.0 }, { week: 1, avgWeight: 80.0 }, { week: 2, avgWeight: 80.0 }]
+      const struggling = generateNutritionSuggestion(makeCutInput({
+        recentWellness: wellnessCritical, recentTrainingLogs: [{ date: daysAgo(0), rpe: 9 }],
+        weeklyWeights: weights, targetWeight: null, targetDate: null,
       }))
-      expect(result.status).toBe('plateau')
-      // wellnessCritical maps to 'struggling' recovery state (score 30-49),
-      // which holds calories at 0 rather than doing a refeed (+75 for critical)
-      expect(result.caloriesDelta).toBe(0)
+      const optimal = generateNutritionSuggestion(makeCutInput({
+        recentWellness: wellnessOptimal, recentTrainingLogs: [{ date: daysAgo(0), rpe: 8 }],
+        weeklyWeights: weights, targetWeight: null, targetDate: null,
+      }))
+      expect(struggling.status).toBe('plateau')
+      expect(struggling.suggestedCalories!).toBeGreaterThanOrEqual(optimal.suggestedCalories!)
     })
 
-    it('should reduce from fat on plateau + optimal recovery', () => {
+    it('plateau + optimal recovery：脂肪在下限之上時，真的會從脂肪砍', () => {
+      // ⚠️ 預設 fixture 是 80kg / 脂肪 55g = 0.69 g/kg，**低於** 0.8 g/kg 安全下限。
+      // 那種情況下「從脂肪砍」永遠不會發生（下限反而把脂肪往上推）。
+      // 要測這條策略，脂肪必須先在下限之上。
       const result = generateNutritionSuggestion(makeCutInput({
+        currentFat: 75, // 80kg × 0.8 = 64g 下限，75g 在其上
+        currentCalories: 160 * 4 + 200 * 4 + 75 * 9,
+        avgDailyCalories: 160 * 4 + 200 * 4 + 75 * 9,
         recentWellness: wellnessOptimal,
         recentTrainingLogs: [{ date: daysAgo(0), rpe: 8 }],
         weeklyWeights: [
@@ -648,6 +650,25 @@ describe('generateNutritionSuggestion', () => {
       }))
       expect(result.status).toBe('plateau')
       expect(result.fatDelta).toBeLessThan(0)
+      expect(result.suggestedFat!).toBeGreaterThanOrEqual(64) // 砍歸砍，不得低於安全下限
+    })
+
+    it('脂肪已低於安全下限時，plateau 不准再往下砍脂肪（下限優先）', () => {
+      const result = generateNutritionSuggestion(makeCutInput({
+        currentFat: 55, // 0.69 g/kg，低於 0.8 下限
+        recentWellness: wellnessOptimal,
+        recentTrainingLogs: [{ date: daysAgo(0), rpe: 8 }],
+        weeklyWeights: [
+          { week: 0, avgWeight: 80.0 },
+          { week: 1, avgWeight: 80.0 },
+          { week: 2, avgWeight: 80.0 },
+        ],
+        targetWeight: null,
+        targetDate: null,
+      }))
+      expect(result.status).toBe('plateau')
+      expect(result.suggestedFat!).toBeGreaterThanOrEqual(Math.round(80 * 0.8))
+      expect(result.fatDelta).toBeGreaterThanOrEqual(0) // 被下限推上去，不是往下砍
     })
 
     it('should add carbs when on_track but struggling recovery', () => {

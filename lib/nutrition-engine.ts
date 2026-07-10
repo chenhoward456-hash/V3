@@ -2836,11 +2836,14 @@ function generateCutSuggestion(
     suggestedCarb = maxCarbCut
   }
 
-  // Bug fix: macro 底線可能推高實際熱量超過 suggestedCal，同步修正
-  const actualMacroCal = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
-  if (actualMacroCal > suggestedCal) {
-    suggestedCal = actualMacroCal
-  }
+  // macro 與 kcal 對齊（雙向）。
+  // 原本只處理「macro 底線推高熱量 → 熱量跟上」；反過來「macro 加總低於 suggestedCal」時不管，
+  // 於是 calories_target 高於三大營養素加總，學員把碳蛋脂都吃滿也達不到熱量目標。
+  // macro 是學員真正要吃的東西 → 讓它當真相，熱量一律由它反推。
+  //
+  // ⚠️ 這裡**不改變任何實際赤字**：suggestedPro/Carb/Fat 已由上面的臨床邏輯（含脂肪/蛋白下限、
+  // 碳水上限）決定完畢，這行只是把 suggestedCal 對齊到它們，杜絕兩者長期漂移。
+  suggestedCal = Math.round(suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9)
 
   // Diet break 偵測
   const dietBreakSuggested = dietDurationWeeks != null && dietDurationWeeks >= SAFETY.DIET_BREAK_WEEKS
@@ -2985,7 +2988,11 @@ function generateCutSuggestion(
       suggestedCarbs: recalcCarb, suggestedFat: recalcFat,
       suggestedCarbsTrainingDay: otCarbsTD,
       suggestedCarbsRestDay: otCarbsRD,
-      caloriesDelta: 0, proteinDelta: recalcPro - currentPro,
+      // caloriesDelta 原本寫死 0，但 otSuggestedCal 會因為 per-kg 底線重算而變動
+      // （體重變了 → 蛋白/脂肪底線跟著變 → 熱量跟著變）。這條 return 是 autoApply: true，
+      // 會寫回 DB，回報 0 等於騙人。改回報實際差值。
+      caloriesDelta: Math.round(otSuggestedCal) - currentCal,
+      proteinDelta: recalcPro - currentPro,
       carbsDelta: recalcCarb - currentCarb, fatDelta: recalcFat - currentFat,
       estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
       dietDurationWeeks, dietBreakSuggested, warnings,
@@ -3060,10 +3067,15 @@ function generateCutSuggestion(
     suggestedFat: Math.round(suggestedFat),
     suggestedCarbsTrainingDay: suggestedCarbsTD != null ? Math.round(suggestedCarbsTD) : null,
     suggestedCarbsRestDay: suggestedCarbsRD != null ? Math.round(suggestedCarbsRD) : null,
-    caloriesDelta: calDelta,
-    proteinDelta: suggestedPro - currentPro,
-    carbsDelta: carbDelta,
-    fatDelta: fatDelta,
+    // delta 回報「實際差值」而非「意圖值」。
+    // calDelta 是調整前的意圖，之後會被脂肪/蛋白下限、碳水上限、macro 對齊改掉。
+    // 實例（85kg 男性、脂肪 50g 低於 0.8g/kg 下限）：意圖「砍 175 kcal」，
+    // 但下限把脂肪推到 68g（+162 kcal），實際變成 **加了 74 kcal** ——卡片卻顯示 -175。
+    // 方向都是反的。（同檔 recalc 路徑早就用 recalcX - currentX，這裡跟它對齊。）
+    caloriesDelta: Math.round(suggestedCal) - currentCal,
+    proteinDelta: Math.round(suggestedPro) - currentPro,
+    carbsDelta: Math.round(suggestedCarb) - currentCarb,
+    fatDelta: Math.round(suggestedFat) - currentFat,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
