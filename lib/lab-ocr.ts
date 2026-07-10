@@ -31,8 +31,9 @@ ALT/AST≈5-100 U/L、肌酸酐≈0.4-1.6 mg/dL、eGFR≈30-130 mL/min、尿酸�
 # test_name 對照表（只能用這些中文標準名稱）
 代謝：HOMA-IR, 空腹胰島素, 空腹血糖, HbA1c, 尿酸
 血脂：三酸甘油酯, ApoB, Lp(a), LDL-C, 總膽固醇, HDL-C
-肝：AST, ALT, GGT, 白蛋白
-腎：肌酸酐, BUN, eGFR
+肝：AST, ALT, GGT, 白蛋白, 總膽紅素, ALP
+腎：肌酸酐, BUN, eGFR, 尿微量白蛋白ACR
+電解質：鈉, 鉀, 氯
 甲狀腺：TSH, Free T4, Free T3
 鐵：鐵蛋白
 發炎：CRP, hs-CRP, 同半胱胺酸
@@ -50,6 +51,12 @@ ALT/AST≈5-100 U/L、肌酸酐≈0.4-1.6 mg/dL、eGFR≈30-130 mL/min、尿酸�
 丙麩氨酸轉肽酶 / γ-GT / GGT → GGT
 糖化血色素 / 糖化血紅素 / HbA1c → HbA1c
 Vitamin D / 25-OH Vitamin D → 維生素D
+總膽紅素 / 膽紅素(總) / T-Bil / TBIL / Total Bilirubin / Bilirubin Total → 總膽紅素
+鹼性磷酸酶 / 鹼性磷酸酵素 / ALP / Alk-P / ALKP / Alkaline Phosphatase → ALP
+鈉 / Na / Sodium → 鈉
+鉀 / K / Potassium → 鉀
+氯 / 氯鹽 / Cl / Chloride → 氯
+尿微量白蛋白 / 尿白蛋白肌酸酐比 / 白蛋白/肌酸酐比值 / ACR / UACR / Microalbumin/Creatinine Ratio → 尿微量白蛋白ACR
 
 # 規則
 - 單位取「同一列」印的單位（eGFR 通常 mL/min、肌酸酐 mg/dL、ALT/AST U/L），不要把別列的單位搬過來。

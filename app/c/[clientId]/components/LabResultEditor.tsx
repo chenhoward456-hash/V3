@@ -183,10 +183,17 @@ export default function LabResultEditor({
     { name: 'ALT', unit: 'U/L', reference: '<40' },
     { name: 'GGT', unit: 'U/L', reference: '<60' },
     { name: '白蛋白', unit: 'g/dL', reference: '>3.5' },
+    { name: '總膽紅素', unit: 'mg/dL', reference: '0.1-1.2' },
+    { name: 'ALP', unit: 'U/L', reference: '40-129' },
     // 腎功能
     { name: '肌酸酐', unit: 'mg/dL', reference: '0.7-1.3' },
     { name: 'BUN', unit: 'mg/dL', reference: '7-20' },
     { name: 'eGFR', unit: 'mL/min', reference: '>90' },
+    { name: '尿微量白蛋白ACR', unit: 'mg/g', reference: '<30' },
+    // 電解質
+    { name: '鈉', unit: 'mmol/L', reference: '135-145' },
+    { name: '鉀', unit: 'mmol/L', reference: '3.5-5.0' },
+    { name: '氯', unit: 'mmol/L', reference: '98-107' },
     // 甲狀腺
     { name: 'TSH', unit: 'mIU/L', reference: '0.4-4.0' },
     { name: 'Free T4', unit: 'ng/dL', reference: '0.8-1.8' },

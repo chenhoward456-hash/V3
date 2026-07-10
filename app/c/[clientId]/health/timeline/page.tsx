@@ -53,7 +53,12 @@ const CATEGORIES: Array<{ title: string; subtitle: string; tests: string[] }> = 
   {
     title: '肝腎功能',
     subtitle: '解毒 / 代謝 / 補品安全性的底線',
-    tests: ['AST', 'ALT', 'GGT', '白蛋白', 'eGFR', 'BUN', '肌酸酐'],
+    tests: ['AST', 'ALT', 'GGT', 'ALP', '總膽紅素', '白蛋白', 'eGFR', 'BUN', '肌酸酐', '尿微量白蛋白ACR'],
+  },
+  {
+    title: '電解質',
+    subtitle: '水分 / 神經肌肉傳導 — 備賽控水期會失真，看數值前先確認水分狀態',
+    tests: ['鈉', '鉀', '氯'],
   },
   {
     title: '甲狀腺 / 荷爾蒙',
@@ -121,7 +126,10 @@ function LabCard({
           <StatusDot status={status} />
           <div className="font-medium text-gray-900 truncate">{testName}</div>
         </div>
-        {inOptimal && hasData && (
+        {/* 「最佳」只在「狀態正常 + 該指標真的有定義最佳區間」時掛。
+            isInOptimalRange() 對沒定義最佳區間的指標一律回 true（語意是「正常即可」），
+            少了這兩個 gate 會讓黃燈的 ALP／沒設最佳值的 BUN 都掛綠色「最佳」標。 */}
+        {inOptimal && hasData && status === 'normal' && optimalText && (
           <span className="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
             最佳
           </span>
