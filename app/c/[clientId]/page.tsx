@@ -60,6 +60,7 @@ const GeneProfileCard = dynamic(() => import('@/components/client/GeneProfileCar
 const LabInsightsCard = dynamic(() => import('@/components/client/LabInsightsCard'), { ssr: false })
 const LabNutritionAdviceCard = dynamic(() => import('@/components/client/LabNutritionAdviceCard'), { ssr: false })
 const GoalSettings = dynamic(() => import('@/components/client/GoalSettings'), { ssr: false })
+const GoalDrivenStatus = dynamic(() => import('@/components/client/GoalDrivenStatus'), { ssr: false })
 const HealthModeAdvanced = dynamic(() => import('@/components/client/HealthModeAdvanced'), { ssr: false })
 const OnboardingGuide = dynamic(() => import('@/components/client/OnboardingGuide'), { ssr: false })
 const OnboardingChecklist = dynamic(() => import('@/components/client/OnboardingChecklist'), { ssr: false })
@@ -1338,6 +1339,26 @@ export default function ClientDashboard() {
             clientHeight={null}
             onMutate={mutate}
           />
+        )}
+
+        {/* 備賽處方（今日飲食目標 / 分餐蛋白 / 血檢建議）— 計畫分頁，與 SeeTabSection 進度分頁的 GoalDrivenStatus 共用同一元件、只是渲染另一半 */}
+        {view === 'training' && isCompetition && c.nutrition_enabled && (
+          <SectionErrorBoundary name="goal-driven-plan">
+            <GoalDrivenStatus
+              section="plan"
+              clientId={c.id}
+              code={c.unique_code}
+              isTrainingDay={isTrainingDayResolved}
+              initialData={nutritionEngineSuggestion}
+              dbTargets={{
+                calories: c.calories_target,
+                protein: c.protein_target,
+                fat: c.fat_target,
+                carbsTrainingDay: c.carbs_training_day,
+                carbsRestDay: c.carbs_rest_day,
+              }}
+            />
+          </SectionErrorBoundary>
         )}
 
         {/* 飲食目標 + 飲食紀錄 */}

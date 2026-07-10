@@ -71,6 +71,7 @@ export default function SeeTabSection({ c, clientData, isFree, latestBodyData, n
             <SectionErrorBoundary name="goal-driven">
               {(!showPeakWeek || (compDaysLeft != null && compDaysLeft > 7)) && (
                 <GoalDrivenStatus
+                  section="progress"
                   clientId={c.id}
                   code={c.unique_code}
                   isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
