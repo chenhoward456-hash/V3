@@ -636,7 +636,15 @@ const CUT_TARGETS = {
   IDEAL_MAX: -0.5,
 }
 
-const BULK_TARGETS = {
+/**
+ * 增肌期週增重速率（% 體重／週）。**全系統唯一真相**——weekly-coaching 也 import 這份，
+ * 不要各定各的（紅線 6）。
+ *
+ * MIN_RATE 以下＝停滯（該加熱量）；MAX_RATE 以上＝增太快（脂肪堆積風險，該收盈餘）。
+ * 對應的熱量調整量在下方 computeBulk* 分支：停滯 +175、掉重 +275、太快 -125，
+ * 盈餘上限 SAFETY.MAX_SURPLUS_KCAL（500）。
+ */
+export const BULK_TARGETS = {
   MIN_RATE: 0.1,   // % per week (下限，停滯)
   MAX_RATE: 0.5,   // % per week (上限，太快)
   IDEAL_MIN: 0.25,
