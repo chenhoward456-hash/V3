@@ -8,6 +8,7 @@ import { ChevronUp, ChevronDown, Search, Copy, ExternalLink, MessageSquare, X, S
 import { daysUntilDateTW, DAY_MS, getLocalDateStr } from '@/lib/date-utils'
 import { projectWeightVerdict } from '@/lib/comp-projection'
 import { isCompetitionMode, PHASE_LABELS } from '@/lib/client-mode'
+import { buildWinbackMessage, type WinbackContext } from '@/lib/winback'
 import FeatureAnnounce from '@/components/admin/FeatureAnnounce'
 
 interface Client {
@@ -170,6 +171,12 @@ export default function AdminDashboard() {
   const [feedbackText, setFeedbackText] = useState('')
   const [feedbackSaving, setFeedbackSaving] = useState(false)
   const [feedbackOriginal, setFeedbackOriginal] = useState('')
+  // 流失出手：關心草稿 modal
+  const [winbackItem, setWinbackItem] = useState<QueueItem | null>(null)
+  const [winbackMsg, setWinbackMsg] = useState('')
+  const [winbackSending, setWinbackSending] = useState(false)
+  const [winbackCopied, setWinbackCopied] = useState(false)
+  const [winbackError, setWinbackError] = useState<string | null>(null)
   const feedbackRef = useRef<HTMLTextAreaElement>(null)
 
   // 錯誤處理 & 最後更新時間
@@ -478,9 +485,22 @@ export default function AdminDashboard() {
     priority: number
     href?: string
     canNote: boolean
+    winback?: WinbackContext
   }
   const actionQueue = useMemo<QueueItem[]>(() => {
     const items: QueueItem[] = []
+    // 關心草稿要用的體重脈絡：斷聯前最後一次體重 + 週速率（近 14 天資料，和戰情室同源）
+    const weightCtx = (cid: string): { lastWeight: number | null; trendPerWeek: number | null } => {
+      const ws = recentBody
+        .filter(b => b.client_id === cid && b.weight != null)
+        .map(b => ({ d: b.date, v: b.weight }))
+        .sort((a, b) => a.d.localeCompare(b.d))
+      if (ws.length === 0) return { lastWeight: null, trendPerWeek: null }
+      const lastWeight = ws[ws.length - 1].v
+      if (ws.length < 3) return { lastWeight, trendPerWeek: null }
+      const spanDays = Math.max(1, Math.round((new Date(ws[ws.length - 1].d).getTime() - new Date(ws[0].d).getTime()) / DAY_MS))
+      return { lastWeight, trendPerWeek: ((ws[ws.length - 1].v - ws[0].v) / spanDays) * 7 }
+    }
     // 待審 AI 血檢草稿
     if (pendingDraftCount > 0) {
       items.push({ key: 'drafts', clientId: null, name: 'AI 血檢草稿', text: `${pendingDraftCount} 份待審`, icon: '🤖', tone: 'blue', priority: 1, href: '/admin/ai-audit', canNote: false })
@@ -495,7 +515,16 @@ export default function AdminDashboard() {
         : a.text.includes('RPE') ? '🏋️'
         : (a.text.includes('未活動') || a.text.includes('打卡')) ? '😴'
         : '⚠️'
-      items.push({ key: `alert-${a.clientId}-${a.text}`, clientId: a.clientId, name: a.name, text: a.text, icon, tone, priority: a.priority, href: `/admin/clients/${a.clientId}/overview`, canNote: true })
+      // 未活動類 alert → 附上關心草稿脈絡（一般 idle 情境）
+      let winback: WinbackContext | undefined
+      if (a.text.includes('未活動')) {
+        const la = lastActivityMap[a.clientId]
+        if (la) {
+          const daysSilent = Math.floor((Date.now() - new Date(la).getTime()) / DAY_MS)
+          winback = { name: a.name, situation: 'idle', daysSilent, ...weightCtx(a.clientId) }
+        }
+      }
+      items.push({ key: `alert-${a.clientId}-${a.text}`, clientId: a.clientId, name: a.name, text: a.text, icon, tone, priority: a.priority, href: `/admin/clients/${a.clientId}/overview`, canNote: true, winback })
     }
     // 訂閱到期 / 已過期（深度流失者不列：歸留存數字，不佔今日待辦）
     for (const c of clients) {
@@ -516,7 +545,7 @@ export default function AdminDashboard() {
       if (lastActivityMap[c.id]) continue // 曾經有活動 → 不算「未啟動」
       const daysSinceJoin = Math.floor((Date.now() - new Date(c.created_at).getTime()) / DAY_MS)
       if (daysSinceJoin >= 3 && daysSinceJoin <= 30) {
-        items.push({ key: `noact-${c.id}`, clientId: c.id, name: c.name, text: `加入 ${daysSinceJoin} 天從未打卡 — 該主動關懷`, icon: '🌱', tone: 'orange', priority: 1, href: `/admin/clients/${c.id}/overview`, canNote: true })
+        items.push({ key: `noact-${c.id}`, clientId: c.id, name: c.name, text: `加入 ${daysSinceJoin} 天從未打卡 — 該主動關懷`, icon: '🌱', tone: 'orange', priority: 1, href: `/admin/clients/${c.id}/overview`, canNote: true, winback: { name: c.name, situation: 'never_started', daysSilent: daysSinceJoin } })
       }
     }
     // 減脂中斷聯絡：正在減脂（diet_start_date 已設）但近期沒記錄 → 最高價值的流失訊號
@@ -533,13 +562,13 @@ export default function AdminDashboard() {
       if (daysSince < 4 || daysSince > 30) continue // 4–30 天=還救得回；>30 天已流失（歸入留存數字，不佔行動佇列）
       const weeks = Math.max(1, Math.floor((Date.now() - new Date(c.diet_start_date).getTime()) / (7 * DAY_MS)))
       cutSilentIds.add(c.id)
-      items.push({ key: `cutsilent-${c.id}`, clientId: c.id, name: c.name, text: `減脂第 ${weeks} 週但 ${daysSince} 天沒記錄 — 可能脫離`, icon: '🔻', tone: daysSince >= 7 ? 'red' : 'orange', priority: daysSince >= 7 ? 0 : 1, href: `/admin/clients/${c.id}/overview`, canNote: true })
+      items.push({ key: `cutsilent-${c.id}`, clientId: c.id, name: c.name, text: `減脂第 ${weeks} 週但 ${daysSince} 天沒記錄 — 可能脫離`, icon: '🔻', tone: daysSince >= 7 ? 'red' : 'orange', priority: daysSince >= 7 ? 0 : 1, href: `/admin/clients/${c.id}/overview`, canNote: true, winback: { name: c.name, situation: 'cut_silent', daysSilent: daysSince, weeksIntoCut: weeks, ...weightCtx(c.id) } })
     }
     // 去重：被「減脂中斷」涵蓋的人，移除泛用的「未活動」alert（同人不重複兩列）
     const deduped = items.filter(it => !(cutSilentIds.has(it.clientId || '') && it.key.startsWith('alert-') && it.text.includes('未活動')))
     // 排序：先緊急度，再依人名聚在一起（同一個人的待辦不會散落各處），最後依文字
     return deduped.sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name) || a.text.localeCompare(b.text))
-  }, [alerts, pendingDraftCount, clients, lastActivityMap])
+  }, [alerts, pendingDraftCount, clients, lastActivityMap, recentBody])
 
   // === A2：自教練上次查看後的新紀錄筆數（用已載入的近期 logs；未曾查看者不標）===
   const newSinceViewMap = useMemo<Record<string, number>>(() => {
@@ -729,6 +758,48 @@ export default function AdminDashboard() {
     } catch { showToast('儲存失敗', 'error') } finally { setFeedbackSaving(false) }
   }
 
+  // 流失出手：開草稿 → 教練過目可改 → 複製（個人 LINE 貼，免 OA 額度）或發送（走既有 send route）
+  const openWinback = (item: QueueItem) => {
+    if (!item.winback) return
+    setWinbackMsg(buildWinbackMessage(item.winback))
+    setWinbackCopied(false)
+    setWinbackError(null)
+    setWinbackItem(item)
+  }
+
+  const copyWinback = async () => {
+    try {
+      await navigator.clipboard.writeText(winbackMsg)
+      setWinbackCopied(true)
+      setTimeout(() => setWinbackCopied(false), 2000)
+    } catch { showToast('複製失敗', 'error') }
+  }
+
+  const sendWinback = async () => {
+    if (!winbackItem?.clientId || !winbackMsg.trim()) return
+    setWinbackSending(true)
+    setWinbackError(null)
+    try {
+      const res = await fetch('/api/admin/weekly-coaching/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: winbackItem.clientId, message: winbackMsg, mode: 'accountability' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        const via = data.method === 'web_push' ? '已推播到學員裝置'
+          : data.method === 'line_push' ? '已透過 LINE 送出'
+          : '已存進學員儀表板（沒開推播，他下次打開會看到）'
+        showToast(`${winbackItem.name}：${via}`, 'success')
+        setWinbackItem(null)
+      } else if (res.status === 422 && Array.isArray(data.compliance)) {
+        setWinbackError(`合規守門擋下：${data.compliance.map((h: { term: string }) => h.term).join('、')} — 改寫後再送`)
+      } else {
+        setWinbackError(data.error || '發送失敗，請重試')
+      }
+    } catch { setWinbackError('發送失敗，請重試') } finally { setWinbackSending(false) }
+  }
+
   const deleteClient = async (client: Client) => {
     if (!confirm(`確定要刪除「${client.name}」嗎？此操作無法復原，所有相關資料都會被刪除。`)) return
     try {
@@ -841,6 +912,9 @@ export default function AdminDashboard() {
                       <span className={`text-sm font-medium ${toneText} truncate`}>{item.name} — {item.text}</span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                      {item.winback && item.clientId && (
+                        <button onClick={() => openWinback(item)} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors" title="產生關心草稿" aria-label={`產生給 ${item.name} 的關心草稿`}><Send size={15} /></button>
+                      )}
                       {item.canNote && item.clientId && (
                         <button onClick={() => { const c = clients.find(x => x.id === item.clientId); if (c) openFeedback(c) }} className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="寫筆記" aria-label={`寫筆記給 ${item.name}`}><MessageSquare size={15} /></button>
                       )}
@@ -1150,6 +1224,31 @@ export default function AdminDashboard() {
             >
               <Send size={16} /> {feedbackSaving ? '儲存中...' : '送出回饋'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== 流失出手：關心草稿 modal ===== */}
+      {winbackItem && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50" onClick={() => setWinbackItem(null)} onKeyDown={e => { if (e.key === 'Escape') setWinbackItem(null) }}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-semibold text-gray-900">關心草稿</h3>
+              <button onClick={() => setWinbackItem(null)} className="p-1 text-gray-400 hover:text-gray-600" aria-label="關閉關心草稿"><X size={20} /></button>
+            </div>
+            <p className="text-sm text-gray-500 mb-3">{winbackItem.name} — {winbackItem.text}</p>
+            <textarea
+              value={winbackMsg}
+              onChange={e => setWinbackMsg(e.target.value)}
+              rows={7}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 text-sm mb-2"
+            />
+            <p className="text-xs text-gray-400 mb-3">草稿可直接改。「發送」＝App 推播優先、退 LINE，並存進學員儀表板；「複製」＝用你自己的 LINE 貼，不吃官方帳號額度。</p>
+            {winbackError && <p className="text-xs text-rose-600 mb-3">{winbackError}</p>}
+            <div className="flex gap-2">
+              <button onClick={copyWinback} className="flex-1 px-4 py-2.5 border border-slate-300 text-gray-700 rounded-lg hover:bg-slate-50 transition-colors font-medium text-sm">{winbackCopied ? '已複製 ✓' : '複製（自己貼）'}</button>
+              <button onClick={sendWinback} disabled={winbackSending || !winbackMsg.trim()} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 font-medium text-sm"><Send size={15} /> {winbackSending ? '發送中…' : '發送'}</button>
+            </div>
           </div>
         </div>
       )}
