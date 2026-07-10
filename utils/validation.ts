@@ -162,7 +162,10 @@ export function validateDate(date: string): { isValid: boolean; error: string } 
   }
 
   // 檢查日期是否在合理範圍內（1900-2100年）
-  const year = dateObj.getFullYear()
+  // ⚠️ 不能用 dateObj.getFullYear()：它讀「執行環境的時區」。上面以 +08:00 解析，
+  // 在 UTC 主機（Vercel / GitHub Actions）上 '1900-01-01' 會退回 1899-12-31 → 年份變 1899。
+  // 格式已由上面的 regex 鎖成 YYYY-MM-DD，直接從字串取年份，與時區無關。
+  const year = Number(date.slice(0, 4))
   if (year < 1900 || year > 2100) {
     return { isValid: false, error: '日期必須在 1900-2100 年之間' }
   }
