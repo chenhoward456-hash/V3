@@ -48,6 +48,8 @@ export interface ClientFeedInput {
   macroAdjustment?: MacroAdjustmentRow | null
   /** 最近一則教練週度訊息（點推播進來要看得到完整內容） */
   coachMessage?: CoachMessageRow | null
+  /** 學員 unique_code：有的話「新血檢入庫」卡帶「看完整報告」連結 */
+  clientCode?: string
   /** 覆寫「今天」，方便測試；預設為現在 */
   today?: string
 }
@@ -121,11 +123,31 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
     })
   }
 
+  const latestLabDate = input.labs.reduce<string | null>(
+    (acc, r) => (acc == null || r.date > acc ? r.date : acc), null)
+
+  // ── 1.5 新血檢入庫回聲 ─────────────────────────
+  // 全綠的新批次原本一聲不吭（只有紅字/進步/偏離會跳卡）→ 學員抽了血、系統看過了，
+  // 卻沒有任何回應。原則：每筆輸入都要有回聲。14 天內的最新批次若沒被其他血檢卡提過，補一張。
+  if (latestLabDate) {
+    const sinceLab = daysBetween(latestLabDate, today)
+    const batchCount = input.labs.filter(r => r.date === latestLabDate).length
+    const batchMentioned = cards.some(c => c.id.startsWith('lab_') && c.id.includes(latestLabDate))
+    if (sinceLab >= 0 && sinceLab <= 14 && batchCount > 0 && !batchMentioned) {
+      cards.push({
+        id: `lab_new_${latestLabDate}_${batchCount}`,
+        tone: 'good',
+        icon: '🩸',
+        title: '新血檢已入庫',
+        body: `${latestLabDate} 的 ${batchCount} 項結果都看過了，沒有需要警示的項目`,
+        ...(input.clientCode ? { cta: { label: '看完整報告', href: `/c/${input.clientCode}/report` } } : {}),
+      })
+    }
+  }
+
   // ── 2. 回檢提醒 ───────────────────────────────
   // 回檢日之後已有新血檢進來＝這次回檢已完成，別再喊「過期快去抽血」
   // （教練後台逾期警示照跑，提醒教練設下一次日期；學員端不重複嘮叨）
-  const latestLabDate = input.labs.reduce<string | null>(
-    (acc, r) => (acc == null || r.date > acc ? r.date : acc), null)
   const checkupFulfilled = !!(input.nextCheckupDate && latestLabDate && latestLabDate >= input.nextCheckupDate)
   if (input.nextCheckupDate && !checkupFulfilled) {
     const d = daysBetween(today, input.nextCheckupDate)
@@ -183,6 +205,7 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
     if (c.id.startsWith('macro_')) return 1
     if (c.id.startsWith('lab_warn_')) return 2
     if (c.id.startsWith('lab_alert_')) return 3 // 「要盯一下·持續追蹤」＝純監看，讓給有動作的
+    if (c.id.startsWith('lab_new_')) return 3   // 入庫回聲＝告知＋看報告，排在行動項後面
     if (c.id.startsWith('lab_win_')) return 4
     return 3
   }
