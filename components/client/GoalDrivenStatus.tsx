@@ -24,13 +24,17 @@ interface GoalDrivenStatusProps {
    * - 'all'（預設）：全部一起（向後相容的保底）
    */
   section?: 'plan' | 'progress' | 'all'
+  /** 目標體重（clients.target_weight）——有 initialData 時元件不自己 fetch，meta.targetWeight 拿不到，靠這個 prop 補 */
+  targetWeight?: number | string | null
 }
 
-export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMutate, initialData, dbTargets, section = 'all' }: GoalDrivenStatusProps) {
+export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMutate, initialData, dbTargets, section = 'all', targetWeight }: GoalDrivenStatusProps) {
   const showPlan = section !== 'progress'
   const showProgress = section !== 'plan'
   const [data, setData] = useState<any>(initialData || null)
-  const [targetWeightValue, setTargetWeightValue] = useState<number | null>(null)
+  const [targetWeightValue, setTargetWeightValue] = useState<number | null>(
+    targetWeight != null && Number.isFinite(Number(targetWeight)) ? Number(targetWeight) : null
+  )
   const [loading, setLoading] = useState(!initialData)
   const [overriding, setOverriding] = useState(false)
   const onMutateRef = useRef(onMutate)
@@ -63,7 +67,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         const json = await res.json()
         if (json.suggestion) {
           setData(json.suggestion)
-          setTargetWeightValue(json.meta?.targetWeight || null)
+          if (json.meta?.targetWeight) setTargetWeightValue(json.meta.targetWeight)
           if (onMutateRef.current) {
             if (json.applied) {
               const s = json.suggestion
@@ -303,7 +307,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
             </div>
             <div>
               <p className="text-[11px] text-gray-400">上台目標</p>
-              <p className="font-bold text-gray-900 tabular-nums">{targetWeightValue} kg</p>
+              <p className="font-bold text-gray-900 tabular-nums">{targetWeightValue ? `${targetWeightValue} kg` : '—'}</p>
             </div>
           </div>
           <p className="text-[11px] text-slate-400 mt-1.5 text-center">
@@ -392,7 +396,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
             canReach ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
           }`}>
             {canReach
-              ? `✅ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg${hasPeakSplit ? `（PW 後 → ${targetWeightValue}kg）` : ''} — 可以達標！`
+              ? `✅ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg${hasPeakSplit && targetWeightValue ? `（PW 後 → ${targetWeightValue}kg）` : ''} — 可以達標！`
               : `⚠️ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg — 與${hasPeakSplit ? '入場目標' : '目標'}還差 ${(dl.predictedCompWeight - compareTarget).toFixed(1)}kg`
             }
           </div>

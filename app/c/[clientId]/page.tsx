@@ -69,6 +69,7 @@ const FreeInsightTeaser = dynamic(() => import('@/components/client/FreeInsightT
 const UpgradeTrigger = dynamic(() => import('@/components/client/UpgradeTrigger'), { ssr: false })
 import { generateSupplementSuggestions, type GeneticProfile } from '@/lib/supplement-engine'
 import type { NutritionSuggestion } from '@/lib/nutrition-engine'
+import { degradeToSafe } from '@/lib/compliance-scrub'
 import { getLocalDateStr, daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 import { trackEvent } from '@/lib/analytics'
@@ -557,7 +558,9 @@ export default function ClientDashboard() {
   //   autoApply=true  → 把建議寫回 DB（首次載入用；備賽客戶一律不套用，由 GoalDrivenStatus 處理）
   //   autoApply=false → 只取得建議刷新顯示（記錄後用，不動 macros，避免雙重套用）
   const engineRunningRef = useRef(false)
-  const runEngine = useCallback(async (autoApply: boolean) => {
+  // 回聲用：上一次引擎判定的快照。只在「記錄後判定真的變了」才開口，其餘閉嘴（安靜版）。
+  const echoSnapshotRef = useRef<{ status: string; refeedSuggested: boolean } | null>(null)
+  const runEngine = useCallback(async (autoApply: boolean, echo = false) => {
     const c = clientData?.client
     if (!c || !c.nutrition_enabled || !c.goal_type) return
     if (engineRunningRef.current) return
@@ -571,7 +574,18 @@ export default function ClientDashboard() {
         return
       }
       const json = await res.json()
-      if (json.suggestion) setNutritionEngineSuggestion(json.suggestion)
+      if (json.suggestion) {
+        const next = json.suggestion as NutritionSuggestion
+        const prev = echoSnapshotRef.current
+        // 回聲：這筆記錄讓引擎判定改變 → 一句話。判定沒變 → 不吵（記錄成功已有自己的 toast）。
+        if (echo && prev && next.status !== prev.status && next.statusLabel) {
+          showToast(`這筆記錄讓判定更新了：${degradeToSafe(next.statusLabel).text}`, 'info', next.statusEmoji || '📊')
+        } else if (echo && prev && next.refeedSuggested && !prev.refeedSuggested) {
+          showToast('引擎建議安排 refeed，細節看計畫分頁', 'info', '🍚')
+        }
+        echoSnapshotRef.current = { status: next.status, refeedSuggested: !!next.refeedSuggested }
+        setNutritionEngineSuggestion(next)
+      }
       if (json.coachOverrideInfo) setCoachOverrideInfo(json.coachOverrideInfo)
       if (apply && mutate) mutate()
     } catch (err) {
@@ -579,10 +593,10 @@ export default function ClientDashboard() {
     } finally {
       engineRunningRef.current = false
     }
-  }, [clientData?.client, clientId, mutate])
+  }, [clientData?.client, clientId, mutate, showToast])
 
-  // 記錄後只刷新引擎建議顯示，不動 macros
-  const refreshEngineSuggestion = useCallback(() => { void runEngine(false) }, [runEngine])
+  // 記錄後只刷新引擎建議顯示，不動 macros；echo=true 讓判定變化時回一句話
+  const refreshEngineSuggestion = useCallback(() => { void runEngine(false, true) }, [runEngine])
 
   // 飲食記錄後：刷新 SWR + 引擎建議（讓「系統在幫我算」的回饋跟記錄動作即時連動）
   const mutateAndRefreshEngine = useCallback(() => {
@@ -847,6 +861,7 @@ export default function ClientDashboard() {
             weeklyTasks={c.weekly_tasks}
             hasAttention={!!c.status && c.status !== 'normal'}
             recentlyActive={streakDays > 0}
+            engine={nutritionEngineSuggestion}
           />
         )}
 
@@ -1096,6 +1111,8 @@ export default function ClientDashboard() {
             showQuickWeight={c.body_composition_enabled && !(latestBodyData && latestBodyData.date === selectedDate)}
             onQuickWeight={async (weight) => {
               try {
+                // 回聲素材：記之前先抓上一筆體重（此時 latestBodyData 還是舊資料）
+                const prevW = latestBodyData?.weight != null ? Number(latestBodyData.weight) : null
                 const res = await fetch('/api/body-composition', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -1103,7 +1120,15 @@ export default function ClientDashboard() {
                 })
                 if (!res.ok) throw new Error()
                 await mutate()
-                showToast('今天體重記好了 💪', 'success', '⚖️')
+                // 回聲：同一顆 toast 帶意義（跟上次比多少），不多彈一顆
+                const diff = prevW != null && Number.isFinite(prevW) ? Math.round((weight - prevW) * 10) / 10 : null
+                showToast(
+                  diff != null && diff !== 0
+                    ? `記好了 ${weight}kg，比上次 ${diff > 0 ? '+' : ''}${diff}kg`
+                    : `記好了 ${weight}kg 💪`,
+                  'success', '⚖️',
+                )
+                refreshEngineSuggestion()
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
@@ -1135,6 +1160,7 @@ export default function ClientDashboard() {
                 if (!res.ok) throw new Error()
                 await mutate()
                 showToast(compliant ? '記好了，達標 👍 已照目標填好營養素' : '記好了，明天再追上', 'success', '🍽️')
+                refreshEngineSuggestion() // 記錄後重跑引擎（只刷顯示不動 macros）；判定變了會回聲一句
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
@@ -1349,6 +1375,7 @@ export default function ClientDashboard() {
               clientId={c.id}
               code={c.unique_code}
               isTrainingDay={isTrainingDayResolved}
+              targetWeight={c.target_weight}
               initialData={nutritionEngineSuggestion}
               dbTargets={{
                 calories: c.calories_target,
@@ -1359,6 +1386,26 @@ export default function ClientDashboard() {
               }}
             />
           </SectionErrorBoundary>
+        )}
+
+        {/* 目標設定（備賽）— 從進度分頁搬來：改目標是「計畫」的事，進度只看「在贏嗎」 */}
+        {view === 'training' && isCompetition && (
+          <div className="mb-3" data-section="goal-settings">
+            <GoalSettings
+              clientId={c.id}
+              uniqueCode={c.unique_code}
+              currentGoalType={c.goal_type}
+              currentTargetWeight={c.target_weight}
+              currentTargetBodyFat={(c.target_body_fat as number) ?? null}
+              currentTargetDate={c.target_date}
+              competitionEnabled={isCompetitionMode(c.client_mode)}
+              competitionDate={c.competition_date || null}
+              prepPhase={c.prep_phase || null}
+              latestWeight={latestBodyData?.weight || null}
+              latestBodyFat={latestBodyData?.body_fat || null}
+              onMutate={mutate}
+            />
+          </div>
         )}
 
         {/* 飲食目標 + 飲食紀錄 */}
@@ -1755,7 +1802,6 @@ export default function ClientDashboard() {
           geneCorrections={geneCorrections}
           todayTraining={todayTraining}
           isCompetition={isCompetition}
-          mutate={mutate}
           mutateWithTargets={mutateWithTargets}
           selectedDate={selectedDate}
           today={today}

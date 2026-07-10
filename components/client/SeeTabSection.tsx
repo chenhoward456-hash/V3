@@ -8,8 +8,6 @@ import SystemActions from '@/components/client/SystemActions'
 import BehaviorInsights from '@/components/client/BehaviorInsights'
 import WellnessTrend from '@/components/client/WellnessTrend'
 import GoalDrivenStatus from '@/components/client/GoalDrivenStatus'
-import GoalSettings from '@/components/client/GoalSettings'
-import { isCompetitionMode } from '@/lib/client-mode'
 import { daysUntilDateTW } from '@/lib/date-utils'
 import { isWeightTraining } from '@/components/client/types'
 
@@ -24,7 +22,6 @@ interface SeeTabSectionProps {
   geneCorrections: any[]
   todayTraining?: any
   isCompetition?: boolean
-  mutate?: () => void
   mutateWithTargets?: (targets?: Record<string, number | undefined>) => void
   selectedDate?: string
   today?: string
@@ -39,7 +36,7 @@ const TABS = [
 
 type TabKey = typeof TABS[number]['key']
 
-export default function SeeTabSection({ c, clientData, isFree, latestBodyData, nutritionEngineSuggestion, geneCorrections, todayTraining, isCompetition, mutate, mutateWithTargets, selectedDate, today, hideWellnessTrend }: SeeTabSectionProps) {
+export default function SeeTabSection({ c, clientData, isFree, latestBodyData, nutritionEngineSuggestion, geneCorrections, todayTraining, isCompetition, mutateWithTargets, selectedDate, today, hideWellnessTrend }: SeeTabSectionProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('analysis')
   const compDaysLeft = c.competition_date ? daysUntilDateTW(c.competition_date) : null
   const showPeakWeek = compDaysLeft != null && compDaysLeft >= 0 && compDaysLeft <= 14 && latestBodyData?.weight
@@ -76,6 +73,7 @@ export default function SeeTabSection({ c, clientData, isFree, latestBodyData, n
                   code={c.unique_code}
                   isTrainingDay={!!(todayTraining && isWeightTraining(todayTraining.training_type))}
                   onMutate={mutateWithTargets}
+                  targetWeight={c.target_weight}
                   initialData={nutritionEngineSuggestion}
                   dbTargets={{
                     calories: c.calories_target,
@@ -86,22 +84,7 @@ export default function SeeTabSection({ c, clientData, isFree, latestBodyData, n
                   }}
                 />
               )}
-              <div className="mb-3" data-section="goal-settings">
-                <GoalSettings
-                  clientId={c.id}
-                  uniqueCode={c.unique_code}
-                  currentGoalType={c.goal_type}
-                  currentTargetWeight={c.target_weight}
-                  currentTargetBodyFat={(c.target_body_fat as number) ?? null}
-                  currentTargetDate={c.target_date}
-                  competitionEnabled={isCompetitionMode(c.client_mode)}
-                  competitionDate={c.competition_date || null}
-                  prepPhase={c.prep_phase || null}
-                  latestWeight={latestBodyData?.weight || null}
-                  latestBodyFat={latestBodyData?.body_fat || null}
-                  onMutate={mutate || (() => {})}
-                />
-              </div>
+              {/* 目標設定（GoalSettings）已搬到「計畫」分頁——進度分頁只留「在贏嗎」的觀測內容 */}
               {showPeakWeek && latestBodyData && (
                 <PeakWeekPlan
                   clientId={c.id}
