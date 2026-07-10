@@ -18,7 +18,15 @@ function Row({ card, onDismiss }: { card: FeedCard; onDismiss: (id: string) => v
       <span className={`shrink-0 w-7 h-7 rounded-lg ${s.icon} flex items-center justify-center text-sm`}>{card.icon}</span>
       <div className="min-w-0 flex-1">
         <p className={`text-sm font-semibold ${s.title} leading-tight`}>{card.title}</p>
-        <p className="text-xs text-gray-500 leading-snug">{card.body}</p>
+        <p className="text-xs text-gray-500 leading-snug">
+          {card.body}
+          {card.cta && (
+            <>
+              {' · '}
+              <a href={card.cta.href} className="text-blue-600 hover:underline font-medium">{card.cta.label} →</a>
+            </>
+          )}
+        </p>
       </div>
       <button
         onClick={() => onDismiss(card.id)}
@@ -108,7 +116,7 @@ function ForYouFeedInner({ labs, gender, nextCheckupDate, macroAdjustment, coach
 
   if (!ready) return null
 
-  const cards = buildClientFeed({ labs, gender, nextCheckupDate, macroAdjustment }).filter(c => !dismissed.has(c.id))
+  const cards = buildClientFeed({ labs, gender, nextCheckupDate, macroAdjustment, clientCode }).filter(c => !dismissed.has(c.id))
   const showCoach = coachMessage && !dismissed.has(`coach_msg_${coachMessage.id}`)
   if (cards.length === 0 && !showCoach) return null
 

@@ -93,6 +93,34 @@ describe('buildClientFeed', () => {
     expect(cards.find(c => c.id.startsWith('macro_'))).toBeUndefined()
   })
 
+  it('echoes a fresh all-normal lab batch (lab_new) with report CTA', () => {
+    const labs = [
+      lab('總膽固醇', 159, '2026-06-26', 'mg/dL'),
+      lab('三酸甘油酯', 63, '2026-06-26', 'mg/dL'),
+      lab('ALT', 30, '2026-06-26', 'U/L'),
+    ]
+    const cards = buildClientFeed({ labs, gender: '男性', today: '2026-07-10', clientCode: 'abc123' })
+    const echo = cards.find(c => c.id.startsWith('lab_new_'))
+    expect(echo).toBeDefined()
+    expect(echo!.tone).toBe('good')
+    expect(echo!.body).toContain('2026-06-26')
+    expect(echo!.body).toContain('3 項')
+    expect(echo!.cta?.href).toBe('/c/abc123/report')
+  })
+
+  it('does NOT echo lab_new when the batch already produced another lab card', () => {
+    const labs = [lab('尿酸', 9.0, '2026-06-26', 'mg/dL')] // alert 卡會提到這批
+    const cards = buildClientFeed({ labs, gender: '男性', today: '2026-07-10' })
+    expect(cards.find(c => c.id.startsWith('lab_alert_'))).toBeDefined()
+    expect(cards.find(c => c.id.startsWith('lab_new_'))).toBeUndefined()
+  })
+
+  it('does NOT echo lab_new for a stale batch (>14 days)', () => {
+    const labs = [lab('總膽固醇', 159, '2026-06-01', 'mg/dL')]
+    const cards = buildClientFeed({ labs, gender: '男性', today: '2026-07-10' })
+    expect(cards.find(c => c.id.startsWith('lab_new_'))).toBeUndefined()
+  })
+
   it('caps the feed at 4 cards', () => {
     const labs: LabResultRow[] = [
       lab('維生素D', 27, '2026-01-01'), lab('維生素D', 59, '2026-04-01'),
