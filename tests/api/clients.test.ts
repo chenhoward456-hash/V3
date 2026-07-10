@@ -17,6 +17,7 @@ const {
   mockUpdate,
   mockUpsert,
   mockFrom,
+  mockRpc,
   mockSupabase,
 } = vi.hoisted(() => {
   const mockSingle = vi.fn()
@@ -30,7 +31,8 @@ const {
   const mockUpdate = vi.fn()
   const mockUpsert = vi.fn()
   const mockFrom = vi.fn()
-  const mockSupabase = { from: mockFrom }
+  const mockRpc = vi.fn()
+  const mockSupabase = { from: mockFrom, rpc: mockRpc }
   return {
     mockSingle,
     mockMaybeSingle,
@@ -43,9 +45,29 @@ const {
     mockUpdate,
     mockUpsert,
     mockFrom,
+    mockRpc,
     mockSupabase,
   }
 })
+
+/** Build a full get_client_dashboard RPC payload around the given client object. */
+function buildDashboard(client: Record<string, any> | null, extra: Record<string, any> = {}) {
+  if (!client) return null
+  return {
+    client,
+    lab_results: [],
+    supplements: [],
+    todayLogs: [],
+    bodyData: [],
+    wellness: [],
+    recentLogs: [],
+    trainingLogs: [],
+    nutritionLogs: [],
+    recentMacroAdjustment: null,
+    recentCoachMessage: null,
+    ...extra,
+  }
+}
 
 /** Helper: make an object thenable so `wrap(q)` in the route resolves correctly. */
 function thenable(obj: Record<string, any>) {
@@ -100,6 +122,8 @@ function resetChainMocks() {
     update: mockUpdate,
     upsert: mockUpsert,
   }))
+  // GET 現在走單一 RPC get_client_dashboard，預設回「查無客戶」（null）
+  mockRpc.mockReturnValue({ data: null, error: null })
 }
 
 /**
@@ -289,44 +313,59 @@ describe('GET /api/clients', () => {
     expect(res.status).toBe(400)
   })
 
-  it('returns 404 if client is not found (supabase error)', async () => {
-    mockSingle.mockReturnValue({ data: null, error: { message: 'not found' } })
-
+  it('returns 400 for clientId that is too short (<8 chars)', async () => {
+    // code 格式收緊為 {8,20}，6 字的舊測試碼會被擋
     const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
     const res = await GET(req)
 
-    expect(res.status).toBe(404)
+    expect(res.status).toBe(400)
   })
 
-  it('returns 404 if client data is null without supabase error (line 47)', async () => {
-    // Covers the branch where clientError is falsy but client is also null
-    mockSingle.mockReturnValue({ data: null, error: null })
+  it('returns 404 if client is not found (rpc returns null)', async () => {
+    // GET 改用單一 RPC get_client_dashboard，查無客戶時整包回 null
+    mockRpc.mockReturnValue({ data: null, error: null })
 
-    const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
     const res = await GET(req)
     const json = await res.json()
 
     expect(res.status).toBe(404)
-    expect(json.error).toMatch(/不存在/)
+    expect(json.error).toMatch(/找不到/)
+  })
+
+  it('returns 404 if dashboard has no client object', async () => {
+    // dashData 存在但沒有 client → 同樣 404
+    mockRpc.mockReturnValue({ data: { client: null }, error: null })
+
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
+    const res = await GET(req)
+    const json = await res.json()
+
+    expect(res.status).toBe(404)
+    expect(json.error).toMatch(/找不到/)
+  })
+
+  it('returns 500 when the rpc errors', async () => {
+    mockRpc.mockReturnValue({ data: null, error: { message: 'rpc failed' } })
+
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
+    const res = await GET(req)
+
+    expect(res.status).toBe(500)
   })
 
   it('returns 403 if client is inactive', async () => {
-    mockSingle.mockReturnValue({
-      data: {
+    mockRpc.mockReturnValue({
+      data: buildDashboard({
         id: 'uuid-1',
-        unique_code: 'abc123',
+        unique_code: 'abcd1234',
         is_active: false,
         expires_at: null,
-        supplement_enabled: false,
-        body_composition_enabled: false,
-        wellness_enabled: false,
-        training_enabled: false,
-        nutrition_enabled: false,
-      },
+      }),
       error: null,
     })
 
-    const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
     const res = await GET(req)
     const json = await res.json()
 
@@ -335,22 +374,17 @@ describe('GET /api/clients', () => {
   })
 
   it('returns 403 if client is expired', async () => {
-    mockSingle.mockReturnValue({
-      data: {
+    mockRpc.mockReturnValue({
+      data: buildDashboard({
         id: 'uuid-1',
-        unique_code: 'abc123',
+        unique_code: 'abcd1234',
         is_active: true,
         expires_at: '2020-01-01T00:00:00Z',
-        supplement_enabled: false,
-        body_composition_enabled: false,
-        wellness_enabled: false,
-        training_enabled: false,
-        nutrition_enabled: false,
-      },
+      }),
       error: null,
     })
 
-    const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
     const res = await GET(req)
     const json = await res.json()
 
@@ -359,88 +393,96 @@ describe('GET /api/clients', () => {
   })
 
   it('allows client whose expires_at is null (never expires)', async () => {
-    const clientData = {
-      id: 'uuid-1',
-      unique_code: 'abc123',
-      is_active: true,
-      expires_at: null,
-      supplement_enabled: false,
-      body_composition_enabled: false,
-      wellness_enabled: false,
-      training_enabled: false,
-      nutrition_enabled: false,
-    }
-    mockSingle.mockReturnValue({ data: clientData, error: null })
+    mockRpc.mockReturnValue({
+      data: buildDashboard({
+        id: 'uuid-1',
+        unique_code: 'abcd1234',
+        is_active: true,
+        expires_at: null,
+      }),
+      error: null,
+    })
 
-    const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
     const res = await GET(req)
 
     expect(res.status).toBe(200)
   })
 
   it('allows client whose expires_at is in the future', async () => {
-    const clientData = {
-      id: 'uuid-1',
-      unique_code: 'abc123',
-      is_active: true,
-      expires_at: '2099-01-01T00:00:00Z',
-      supplement_enabled: false,
-      body_composition_enabled: false,
-      wellness_enabled: false,
-      training_enabled: false,
-      nutrition_enabled: false,
-    }
-    mockSingle.mockReturnValue({ data: clientData, error: null })
+    mockRpc.mockReturnValue({
+      data: buildDashboard({
+        id: 'uuid-1',
+        unique_code: 'abcd1234',
+        is_active: true,
+        expires_at: '2099-01-01T00:00:00Z',
+      }),
+      error: null,
+    })
 
-    const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
     const res = await GET(req)
 
     expect(res.status).toBe(200)
   })
 
-  it('returns client data with all enabled features queried', async () => {
-    const clientData = {
-      id: 'uuid-1',
-      unique_code: 'abc123',
-      name: 'Test Client',
-      is_active: true,
-      expires_at: null,
-      supplement_enabled: true,
-      body_composition_enabled: true,
-      wellness_enabled: true,
-      training_enabled: true,
-      nutrition_enabled: true,
-    }
+  it('returns client data from the dashboard rpc', async () => {
+    mockRpc.mockReturnValue({
+      data: buildDashboard({
+        id: 'uuid-1',
+        unique_code: 'abcd1234',
+        name: 'Test Client',
+        is_active: true,
+        expires_at: null,
+      }),
+      error: null,
+    })
 
-    mockSingle.mockReturnValue({ data: clientData, error: null })
-
-    const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
     const res = await GET(req)
     const json = await res.json()
 
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
     expect(json.data.client.name).toBe('Test Client')
-    expect(json.data.client.unique_code).toBe('abc123')
+    expect(json.data.client.unique_code).toBe('abcd1234')
   })
 
-  it('returns client data with no features enabled (no extra queries)', async () => {
-    const clientData = {
-      id: 'uuid-1',
-      unique_code: 'abc123',
-      name: 'Basic Client',
-      is_active: true,
-      expires_at: null,
-      supplement_enabled: false,
-      body_composition_enabled: false,
-      wellness_enabled: false,
-      training_enabled: false,
-      nutrition_enabled: false,
-    }
+  it('exposes has_line_binding and strips raw line_user_id (PII)', async () => {
+    mockRpc.mockReturnValue({
+      data: buildDashboard({
+        id: 'uuid-1',
+        unique_code: 'abcd1234',
+        name: 'Bound Client',
+        is_active: true,
+        expires_at: null,
+        line_user_id: 'U-secret-token',
+      }),
+      error: null,
+    })
 
-    mockSingle.mockReturnValue({ data: clientData, error: null })
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
+    const res = await GET(req)
+    const json = await res.json()
 
-    const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
+    expect(res.status).toBe(200)
+    expect(json.data.client.has_line_binding).toBe(true)
+    expect(json.data.client.line_user_id).toBeUndefined()
+  })
+
+  it('returns dashboard payload arrays passed through from the rpc', async () => {
+    mockRpc.mockReturnValue({
+      data: buildDashboard({
+        id: 'uuid-1',
+        unique_code: 'abcd1234',
+        name: 'Basic Client',
+        is_active: true,
+        expires_at: null,
+      }),
+      error: null,
+    })
+
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
     const res = await GET(req)
     const json = await res.json()
 
@@ -454,11 +496,38 @@ describe('GET /api/clients', () => {
     expect(json.data.nutritionLogs).toEqual([])
   })
 
+  it('filters out archived supplements from the dashboard', async () => {
+    mockRpc.mockReturnValue({
+      data: buildDashboard(
+        {
+          id: 'uuid-1',
+          unique_code: 'abcd1234',
+          is_active: true,
+          expires_at: null,
+        },
+        {
+          supplements: [
+            { id: 's1', archived_at: null },
+            { id: 's2', archived_at: '2024-01-01T00:00:00Z' },
+          ],
+        },
+      ),
+      error: null,
+    })
+
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
+    const res = await GET(req)
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(json.data.client.supplements).toEqual([{ id: 's1', archived_at: null }])
+  })
+
   it('returns 429 when rate limited', async () => {
     const { rateLimit } = await import('@/lib/auth-middleware')
     vi.mocked(rateLimit).mockResolvedValueOnce({ allowed: false, remaining: 0 })
 
-    const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
     const res = await GET(req)
     const json = await res.json()
 
@@ -466,46 +535,15 @@ describe('GET /api/clients', () => {
     expect(json.error).toMatch(/頻繁/)
   })
 
-  it('returns 500 when an unexpected error is thrown (catch block, line 140)', async () => {
-    mockFrom.mockImplementationOnce(() => {
+  it('returns 500 when an unexpected error is thrown (catch block)', async () => {
+    mockRpc.mockImplementationOnce(() => {
       throw new Error('unexpected crash')
     })
 
-    const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
+    const req = buildGetRequest('http://localhost/api/clients?clientId=abcd1234')
     const res = await GET(req)
 
     expect(res.status).toBe(500)
-  })
-
-  it('handles feature query errors gracefully (logs warning, returns empty arrays)', async () => {
-    const clientData = {
-      id: 'uuid-1',
-      unique_code: 'abc123',
-      is_active: true,
-      expires_at: null,
-      supplement_enabled: true,
-      body_composition_enabled: false,
-      wellness_enabled: false,
-      training_enabled: false,
-      nutrition_enabled: false,
-    }
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'clients') {
-        return { select: mockSelect }
-      }
-      // any non-clients table (supplement_logs / macro_adjustment_log / …) errors → []
-      return chainable({ data: null, error: { message: 'db error' } })
-    })
-
-    mockSingle.mockReturnValue({ data: clientData, error: null })
-
-    const req = buildGetRequest('http://localhost/api/clients?clientId=abc123')
-    const res = await GET(req)
-    const json = await res.json()
-
-    expect(res.status).toBe(200)
-    expect(json.data.todayLogs).toEqual([])
   })
 })
 

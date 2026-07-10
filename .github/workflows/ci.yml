@@ -26,6 +26,12 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      # 測試放在 build 之前：跑得快、失敗訊息比 build 明確。
+      # 環境變數由 tests/setup.ts 補假值（有些模組 import 時就建 Supabase client）。
+      # 2026-06 到 2026-07 累積了 188 個靜默失敗就是因為 CI 從來沒跑過測試。
+      - name: Unit tests
+        run: npm test
+
       - name: Build
         run: npm run build
         env:

@@ -14,6 +14,7 @@ const {
   mockFromResults,
   createMockQueryBuilder,
   mockPushMessage,
+  mockSendRoutineReminder,
   mockGenerateNutritionSuggestion,
   mockGenerateWeeklyAIReport,
   mockVerifyAdminSession,
@@ -54,6 +55,9 @@ const {
 
   const mockPushMessage = vi.fn().mockResolvedValue(undefined)
 
+  // 學員推播（本週任務／週報／90 天 review）改走 sendRoutineReminder（web push 優先、LINE 備援）
+  const mockSendRoutineReminder = vi.fn().mockResolvedValue({ success: true, method: 'web_push' })
+
   const mockGenerateNutritionSuggestion = vi.fn(() => ({
     status: 'on_track',
     message: 'Test suggestion',
@@ -76,6 +80,7 @@ const {
     mockFromResults,
     createMockQueryBuilder,
     mockPushMessage,
+    mockSendRoutineReminder,
     mockGenerateNutritionSuggestion,
     mockGenerateWeeklyAIReport,
     mockVerifyAdminSession,
@@ -91,6 +96,10 @@ vi.mock('@/lib/supabase', () => ({
 
 vi.mock('@/lib/line', () => ({
   pushMessage: mockPushMessage,
+}))
+
+vi.mock('@/lib/notify', () => ({
+  sendRoutineReminder: mockSendRoutineReminder,
 }))
 
 vi.mock('@/lib/auth-middleware', () => ({
@@ -182,6 +191,7 @@ describe('GET /api/cron/weekly', () => {
 
     // Restore default implementations after clearAllMocks
     mockPushMessage.mockResolvedValue(undefined)
+    mockSendRoutineReminder.mockResolvedValue({ success: true, method: 'web_push' })
     mockGenerateNutritionSuggestion.mockImplementation(() => ({
       status: 'on_track',
       message: 'Test suggestion',
@@ -398,12 +408,12 @@ describe('GET /api/cron/weekly', () => {
 
     expect(res.status).toBe(200)
     expect(body.results.linePushCount).toBe(1)
-    expect(mockPushMessage).toHaveBeenCalledWith('U200', expect.any(Array))
+    expect(mockSendRoutineReminder).toHaveBeenCalledWith('c1', 'U200', expect.any(Object))
   })
 
-  // ── LINE push failure (line 507) ──
+  // ── push failure (推播改走 sendRoutineReminder，錯誤字串為「推播失敗」) ──
 
-  it('should record error when LINE push fails', async () => {
+  it('should record error when the report push fails', async () => {
     const today = new Date().toISOString().split('T')[0]
     const clients = [makeClient({ id: 'c1', name: 'Push Fail Client', line_user_id: 'U-fail' })]
     mockFromResults['clients'] = { data: clients, error: null }
@@ -412,7 +422,8 @@ describe('GET /api/cron/weekly', () => {
       error: null,
     }
 
-    mockPushMessage.mockRejectedValueOnce(new Error('LINE API timeout'))
+    // sendRoutineReminder 對每次推播都 throw → 任務推播與週報推播都記錯、linePushCount 歸零
+    mockSendRoutineReminder.mockRejectedValue(new Error('LINE API timeout'))
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
@@ -421,7 +432,7 @@ describe('GET /api/cron/weekly', () => {
     expect(res.status).toBe(200)
     expect(body.results.linePushCount).toBe(0)
     expect(body.results.errors).toContainEqual(
-      expect.stringContaining('LINE 推播失敗')
+      expect.stringContaining('推播失敗')
     )
     expect(body.results.errors).toContainEqual(
       expect.stringContaining('LINE API timeout')
@@ -483,11 +494,12 @@ describe('GET /api/cron/weekly', () => {
         }),
       })
     )
-    // The push message should include AI content
-    expect(mockPushMessage).toHaveBeenCalled()
-    const pushCall = mockPushMessage.mock.calls[0]
-    const messageText = pushCall[1][0].text
-    expect(messageText).toContain('AI 分析')
+    // The report push should include AI content (find the 本週報告 push among all sendRoutineReminder calls)
+    const reportCall = mockSendRoutineReminder.mock.calls.find(
+      (c: any[]) => typeof c[2]?.lineText === 'string' && c[2].lineText.includes('本週報告')
+    )
+    expect(reportCall).toBeDefined()
+    expect(reportCall![2].lineText).toContain('AI 分析')
 
     vi.unstubAllEnvs()
     vi.stubEnv('CRON_SECRET', 'test-cron-secret')
@@ -612,10 +624,12 @@ describe('GET /api/cron/weekly', () => {
     expect(body.results.aiReportCount).toBe(0)
     // LINE push should still work
     expect(body.results.linePushCount).toBe(1)
-    // Message should NOT contain AI section
-    const pushCall = mockPushMessage.mock.calls[0]
-    const messageText = pushCall[1][0].text
-    expect(messageText).not.toContain('AI 分析')
+    // Report message should NOT contain AI section
+    const reportCall = mockSendRoutineReminder.mock.calls.find(
+      (c: any[]) => typeof c[2]?.lineText === 'string' && c[2].lineText.includes('本週報告')
+    )
+    expect(reportCall).toBeDefined()
+    expect(reportCall![2].lineText).not.toContain('AI 分析')
 
     vi.unstubAllEnvs()
     vi.stubEnv('CRON_SECRET', 'test-cron-secret')
@@ -1007,9 +1021,11 @@ describe('GET /api/cron/weekly', () => {
 
     expect(res.status).toBe(200)
     expect(body.results.reviewTriggered).toBe(1)
-    expect(mockPushMessage).toHaveBeenCalledWith('U-self', expect.arrayContaining([
-      expect.objectContaining({ type: 'text', text: expect.stringContaining('90 天') }),
-    ]))
+    expect(mockSendRoutineReminder).toHaveBeenCalledWith(
+      'c1',
+      'U-self',
+      expect.objectContaining({ lineText: expect.stringContaining('90 天') }),
+    )
   })
 
   it('should not trigger 90-day review for non-self_managed users', async () => {
@@ -1093,9 +1109,8 @@ describe('GET /api/cron/weekly', () => {
     })]
     mockFromResults['clients'] = { data: clients, error: null }
 
-    mockPushMessage
-      .mockRejectedValueOnce(new Error('Review push failed'))
-      .mockResolvedValueOnce(undefined)
+    // 90 天 review 是這位學員第一個 sendRoutineReminder 呼叫（無 body/nutrition → 不進當週任務推播）
+    mockSendRoutineReminder.mockRejectedValueOnce(new Error('Review push failed'))
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
@@ -1228,8 +1243,11 @@ describe('GET /api/cron/weekly', () => {
     const body = await res.json()
 
     expect(res.status).toBe(200)
-    expect(mockPushMessage).toHaveBeenCalled()
-    const msgText = mockPushMessage.mock.calls[0][1][0].text
+    const reportCall = mockSendRoutineReminder.mock.calls.find(
+      (c: any[]) => typeof c[2]?.lineText === 'string' && c[2].lineText.includes('本週報告')
+    )
+    expect(reportCall).toBeDefined()
+    const msgText = reportCall![2].lineText
     expect(msgText).toContain('注意事項')
     expect(msgText).toContain('Protein intake too low')
     expect(msgText).toContain('Consider more fiber')
@@ -1247,8 +1265,11 @@ describe('GET /api/cron/weekly', () => {
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     await GET(req)
 
-    expect(mockPushMessage).toHaveBeenCalled()
-    const msgText = mockPushMessage.mock.calls[0][1][0].text
+    const reportCall = mockSendRoutineReminder.mock.calls.find(
+      (c: any[]) => typeof c[2]?.lineText === 'string' && c[2].lineText.includes('本週報告')
+    )
+    expect(reportCall).toBeDefined()
+    const msgText = reportCall![2].lineText
     expect(msgText).toContain('建議熱量：2000 kcal')
     expect(msgText).toContain('建議蛋白質：150g')
   })
