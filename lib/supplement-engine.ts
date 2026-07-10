@@ -115,7 +115,9 @@ export function generateSupplementSuggestions(
         timing: '—',
         reason: `鐵蛋白 ${ferritin.value} ng/mL，顯著偏高（參考值 50-150）。高鐵蛋白增加氧化壓力與器官鐵沉積風險。${ferritin.value > 300 ? '建議與醫師討論後續追蹤方式（高鐵蛋白者醫師可能評估捐血等）。' : '建議減少紅肉攝取、避免維生素 C 與含鐵食物同時服用。'}`,
         priority: ferritin.value > 300 ? 'high' : 'medium',
-        evidence: 'Kell & Pretorius 2014 (Metallomics)：高鐵蛋白 > 200 與氧化壓力及代謝症候群相關',
+        // 合規：原文獻說明含「代謝症候群」（deny-list）→ 補品卡渲染前 degradeToSafe 會整段換掉，
+        // 學員反而看不到這條文獻。改成描述指標關聯，不點病名。
+        evidence: 'Kell & Pretorius 2014 (Metallomics)：高鐵蛋白 > 200 與氧化壓力及多項代謝指標異常相關',
         triggerTests: [ferritin.test_name],
         category: 'deficiency',
       })
@@ -371,7 +373,8 @@ export function generateSupplementSuggestions(
         name: 'Omega-3 魚油',
         dosage: 'EPA+DHA 合計 2-3g',
         timing: '隨餐服用',
-        reason: `CRP ${crp.value} mg/L，發炎指數偏高。Omega-3 有助於降低系統性發炎，改善訓練恢復。`,
+        // 合規：原文「系統性發炎」在 deny-list 內 → 補品卡渲染前的 degradeToSafe 會整段換掉
+        reason: `CRP ${crp.value} mg/L，發炎指數偏高。Omega-3 有助於降低發炎反應，改善訓練恢復。`,
         priority: crp.value > 10 ? 'high' : 'medium',
         evidence: 'Calder 2017 (Biochem Soc Trans, PMID 28900017)：Omega-3 具抗發炎作用',
         triggerTests: [crp.test_name],

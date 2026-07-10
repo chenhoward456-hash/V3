@@ -1524,7 +1524,9 @@ function checkCuttingReadiness(
   const crp = findLab(['crp', 'c-reactive', 'c反應蛋白'])
   if (crp && crp.value != null && crp.value > 3.0) {
     score -= 10
-    reasons.push(`🟡 CRP 偏高（${crp.value}）— 系統性發炎，需先消炎再減脂`)
+    // 合規：原文「系統性發炎」在 compliance deny-list 內 → 這則 warning 會被 degradeToSafe
+    // 整段換成罐頭句，學員反而看不到真正的提醒。改成描述指標事實。
+    reasons.push(`🟡 CRP 偏高（${crp.value}）— 發炎指標偏高，建議先讓它降下來再進入減脂`)
     labFlags.push(`CRP ${crp.value}`)
   }
 

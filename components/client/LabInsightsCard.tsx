@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   detectLabCrossPatterns,
   generateRetestReminders,
@@ -11,6 +11,7 @@ import {
   type LabChangeReport,
   type LabOptimizationTip,
 } from '@/lib/lab-nutrition-advisor'
+import { deepDegrade } from '@/lib/compliance-scrub'
 
 interface LabInsightsCardProps {
   labResults: Array<{
@@ -25,10 +26,23 @@ interface LabInsightsCardProps {
 }
 
 export default function LabInsightsCard({ labResults, gender, bodyFatPct }: LabInsightsCardProps) {
-  const crossPatterns = detectLabCrossPatterns(labResults, { gender, bodyFatPct })
-  const retestReminders = generateRetestReminders(labResults, { gender })
-  const changeReports = generateLabChangeReport(labResults, { gender })
-  const optimizationTips = generateLabOptimizationTips(labResults, { gender })
+  // 這張卡直接渲染在學員頁（app/c/[clientId]/page.tsx）。
+  // 2026-06 合規補 runtime backstop 時漏了它 → 引擎若寫出病名/診斷句會原樣印給學員
+  // （實際發生過：交叉分析 title「代謝症候群風險」+「符合代謝症候群模式」）。
+  // 源頭文字已清乾淨，這層是防回歸：命中紅線就換成安全句，並留 log 給教練稽核。
+  const { crossPatterns, retestReminders, changeReports, optimizationTips } = useMemo(() => {
+    const raw = {
+      crossPatterns: detectLabCrossPatterns(labResults, { gender, bodyFatPct }),
+      retestReminders: generateRetestReminders(labResults, { gender }),
+      changeReports: generateLabChangeReport(labResults, { gender }),
+      optimizationTips: generateLabOptimizationTips(labResults, { gender }),
+    }
+    const { value, hits } = deepDegrade(raw)
+    if (hits.length > 0) {
+      console.warn('[LabInsightsCard] 合規降級', hits.map(h => h.term))
+    }
+    return value
+  }, [labResults, gender, bodyFatPct])
 
   // 沒有任何資料就不渲染
   if (crossPatterns.length === 0 && retestReminders.length === 0 && changeReports.length === 0 && optimizationTips.length === 0) {

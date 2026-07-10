@@ -334,7 +334,8 @@ export function generateLabNutritionAdvice(
             'Juraschek et al. 2011 (Arthritis Care Res): Effect of vitamin C supplementation on serum uric acid',
             'Choi & Curhan 2008 (BMJ): Soft drinks, fructose, and risk of gout in men',
           ],
-          caveat: '尿酸偏高建議追蹤，與代謝症候群、心血管指標相關。減脂期過度斷食或生酮也可能暫時升高尿酸（酮體與尿酸競爭腎臟排泄）。',
+          // 合規：原文含「代謝症候群」（疾病名）。改成描述指標關聯，不點病名。
+          caveat: '尿酸偏高建議追蹤，常與血糖、血脂等代謝指標一起偏離。減脂期過度斷食或生酮也可能暫時升高尿酸（酮體與尿酸競爭腎臟排泄）。',
         })
       }
     }
@@ -1270,7 +1271,9 @@ export function generateLabNutritionAdvice(
           references: [
             'Carroll & Schade 2003 (Am Fam Physician): A practical approach to hypercalcemia',
           ],
-          caveat: '高血鈣最常見原因是副甲狀腺功能亢進或惡性腫瘤，需醫療評估。單純飲食很少造成高血鈣。',
+          // 合規：原文寫出病名（副甲狀腺功能亢進／惡性腫瘤）直接給學員看，踩紅線。
+          // 改成「不點名病因、直接導向就醫」——學員該做的動作不變，但不由系統下診斷。
+          caveat: '血鈣偏高通常不是飲食造成的，背後原因需要醫師評估。請帶這份數據找醫師討論，不要自行調整鈣質補充。',
         })
       }
     }
@@ -1414,7 +1417,8 @@ export function generateLabNutritionAdvice(
             '確保充足鈉攝取（皮質醇偏低時鈉需求可能增加）',
             '增加維生素 C 攝取（腎上腺是體內維生素 C 濃度最高的器官）',
             '小頻餐（避免長時間空腹導致低血糖）',
-            '增加甘草根茶（含甘草酸可延長皮質醇半衰期，但有高血壓者避免）',
+            // 合規：原文「有高血壓者避免」點名疾病；改成描述數值狀態，警語效力不變
+            '增加甘草根茶（含甘草酸可延長皮質醇半衰期；血壓偏高或正在服用血壓相關藥物者請先問醫師）',
           ],
           foodsToIncrease: ['適量鹽', '柑橘', '甜椒', '全蛋', '酪梨'],
           foodsToReduce: ['過量咖啡因（進一步壓榨腎上腺）'],
@@ -1787,7 +1791,8 @@ export function generateLabOptimizationTips(
           ],
           supplements: [
             { name: '肉桂萃取 (Ceylon Cinnamon)', dosage: '500-1000mg/天', timing: '隨餐', note: '改善胰島素敏感度與餐後血糖反應' },
-            { name: '小檗鹼 (Berberine)', dosage: '500mg x 2-3次/天', timing: '餐前', note: '多項 RCT 顯示可降空腹血糖，效果接近二甲雙胍' },
+            // 合規：原 note 拿補品跟處方藥（二甲雙胍）比效果 → 藥名命中 deny-list，整段被降級
+            { name: '小檗鹼 (Berberine)', dosage: '500mg x 2-3次/天', timing: '餐前', note: '多項 RCT 顯示可降空腹血糖；正在服用血糖相關藥物者請先問醫師' },
             { name: '鉻 (Chromium Picolinate)', dosage: '200-400μg/天', timing: '隨餐', note: '增強胰島素受體敏感度' },
           ],
           references: [
@@ -2113,7 +2118,8 @@ export function generateLabOptimizationTips(
           ],
           supplements: [
             { name: '植物固醇 (Plant Sterols)', dosage: '2g/天', timing: '隨餐', note: '阻斷膽固醇吸收，降低 LDL 約 10%' },
-            { name: '紅麴萃取 (Red Yeast Rice)', dosage: '1200mg/天', timing: '晚餐後', note: '含天然 Monacolin K，注意與 statin 機制相似' },
+            // 合規：原 note 含藥名 statin。安全警語（別跟降膽固醇藥疊加）保留、改成不點藥名的講法
+            { name: '紅麴萃取 (Red Yeast Rice)', dosage: '1200mg/天', timing: '晚餐後', note: '含天然 Monacolin K，作用機制與部分降膽固醇藥物相似；若你正在看診用藥，併用前請先問醫師' },
             { name: '洋車前子殼 (Psyllium)', dosage: '5-10g/天', timing: '餐前', note: '水溶性纖維，與膽酸結合促進 LDL 排泄' },
           ],
           references: ['Grundy et al. 2019 (Circulation): AHA/ACC Cholesterol guidelines'],
@@ -3030,14 +3036,16 @@ export function detectLabCrossPatterns(
         title: 'RED-S（相對能量不足）風險',
         icon: '🚨',
         severity: redSScore >= 4 ? 'critical' : 'high',
-        description: `偵測到 ${redSMarkers.length} 項相關指標異常${hasAmenorrhea ? ' + 閉經' : ''}${bodyFatPct != null && bodyFatPct < 15 ? ` + 低體脂（${bodyFatPct}%）` : ''}。這些指標同時異常高度暗示能量攝取長期不足，影響荷爾蒙、骨密度、免疫力。`,
+        // 合規：原文用「閉經」（診斷名，deny-list）→ 這段會被 degradeToSafe 換掉，
+        // 反而讓最該看到的 RED-S 警訊消失。改成陳述事實（月經已停止）而非下診斷。
+        description: `偵測到 ${redSMarkers.length} 項相關指標異常${hasAmenorrhea ? ' + 月經已停止' : ''}${bodyFatPct != null && bodyFatPct < 15 ? ` + 低體脂（${bodyFatPct}%）` : ''}。這些指標同時異常，強烈反映能量攝取長期不足，會影響荷爾蒙、骨密度、免疫力。`,
         triggeredMarkers: redSMarkers,
         actionItems: [
           '立即增加每日熱量攝取 300-500kcal',
           '確保能量可用性 > 30 kcal/kg FFM/day',
           '減少有氧訓練量，優先恢復',
           '建議諮詢運動醫學科或內分泌科',
-          ...(hasAmenorrhea ? ['閉經是 RED-S 最嚴重的警訊，需優先處理'] : []),
+          ...(hasAmenorrhea ? ['月經停止是能量不足最嚴重的警訊，請優先處理並儘快就醫'] : []),
         ],
         references: [
           'Mountjoy et al. 2018 (Br J Sports Med): IOC consensus statement on RED-S',
@@ -3076,10 +3084,13 @@ export function detectLabCrossPatterns(
     if (metSynScore >= 3) {
       patterns.push({
         pattern: 'metabolic_syndrome',
-        title: '代謝症候群風險',
+        // 合規：原本 title「代謝症候群風險」+ description「符合代謝症候群模式」＝疾病名 + 診斷句型，
+        // 而這張卡（LabInsightsCard）直接渲染給學員看。改成描述數據事實與該做的事，不下診斷。
+        // pattern id 維持 'metabolic_syndrome' 不動（內部識別用，不顯示給學員）。
+        title: '多項代謝指標同時偏離',
         icon: '⚠️',
         severity: metSynScore >= 4 ? 'high' : 'medium',
-        description: `${metSynMarkers.length} 項代謝指標同時異常，符合代謝症候群模式。胰島素敏感性較低可能是核心問題，需要從飲食結構整體調整。`,
+        description: `${metSynMarkers.length} 項代謝指標同時偏離參考範圍。胰島素敏感性偏低可能是共同原因，飲食結構值得整體調整；這組數據建議帶去給醫師看過。`,
         triggeredMarkers: metSynMarkers,
         actionItems: [
           '碳水總量減少 20-30%，優先移除精緻碳水（白飯白麵可保留，糖飲甜食先砍）',
