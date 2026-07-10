@@ -40,12 +40,17 @@ const mockSupabase = {
   }),
 }
 
+// 月報推播改走 sendRoutineReminder（web push 優先、LINE 備援），route 不再直接呼叫 pushMessage
+const { mockSendRoutineReminder } = vi.hoisted(() => ({
+  mockSendRoutineReminder: vi.fn().mockResolvedValue({ success: true, method: 'web_push' }),
+}))
+
 vi.mock('@/lib/supabase', () => ({
   createServiceSupabase: vi.fn(() => mockSupabase),
 }))
 
-vi.mock('@/lib/line', () => ({
-  pushMessage: vi.fn().mockResolvedValue(undefined),
+vi.mock('@/lib/notify', () => ({
+  sendRoutineReminder: mockSendRoutineReminder,
 }))
 
 vi.mock('@/lib/auth-middleware', () => ({
@@ -66,7 +71,6 @@ vi.mock('@/lib/logger', () => ({
 }))
 
 import { GET } from '@/app/api/cron/monthly/route'
-import { pushMessage } from '@/lib/line'
 
 function makeRequest(options?: { authHeader?: string }): NextRequest {
   const req = new NextRequest('http://localhost/api/cron/monthly', { method: 'GET' })
@@ -79,6 +83,7 @@ function makeRequest(options?: { authHeader?: string }): NextRequest {
 describe('GET /api/cron/monthly', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockSendRoutineReminder.mockResolvedValue({ success: true, method: 'web_push' })
 
     mockFromResults['clients'] = { data: [], error: null }
     mockFromResults['body_composition'] = { data: [], error: null }
@@ -215,13 +220,16 @@ describe('GET /api/cron/monthly', () => {
     expect(res.status).toBe(200)
     expect(body.reportsSent).toBe(1)
     expect(body.totalClients).toBe(1)
-    expect(pushMessage).toHaveBeenCalledWith('U400', expect.any(Array))
+    expect(mockSendRoutineReminder).toHaveBeenCalledWith(
+      'c1',
+      'U400',
+      expect.objectContaining({ lineText: expect.any(String) }),
+    )
 
     // Verify the message contains key elements
-    const msgArg = vi.mocked(pushMessage).mock.calls[0][1][0] as any
-    expect(msgArg.type).toBe('text')
-    expect(msgArg.text).toContain('Monthly Client')
-    expect(msgArg.text).toContain('成果報告')
+    const lineText = mockSendRoutineReminder.mock.calls[0][2].lineText as string
+    expect(lineText).toContain('Monthly Client')
+    expect(lineText).toContain('成果報告')
   })
 
   // ── Skip Clients Without Any Data ──
@@ -249,7 +257,7 @@ describe('GET /api/cron/monthly', () => {
 
     expect(res.status).toBe(200)
     expect(body.reportsSent).toBe(0)
-    expect(pushMessage).not.toHaveBeenCalled()
+    expect(mockSendRoutineReminder).not.toHaveBeenCalled()
   })
 
   // ── Handle LINE Push Error Gracefully ──
@@ -282,7 +290,7 @@ describe('GET /api/cron/monthly', () => {
     mockFromResults['training_logs'] = { data: [], error: null }
     mockFromResults['daily_wellness'] = { data: [], error: null }
 
-    vi.mocked(pushMessage).mockRejectedValueOnce(new Error('LINE API rate limit'))
+    mockSendRoutineReminder.mockRejectedValueOnce(new Error('LINE API rate limit'))
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
@@ -331,7 +339,7 @@ describe('GET /api/cron/monthly', () => {
 
     expect(res.status).toBe(200)
     expect(body.reportsSent).toBe(1)
-    const msgText = vi.mocked(pushMessage).mock.calls[0][1][0] as any
-    expect(msgText.text).toContain('減脂方向正確')
+    const lineText = mockSendRoutineReminder.mock.calls[0][2].lineText as string
+    expect(lineText).toContain('減脂方向正確')
   })
 })

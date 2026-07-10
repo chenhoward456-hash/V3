@@ -211,6 +211,14 @@ describe('GET /api/cron/daily', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
+    // 折疊排程會在 morning run 用 fetch 自呼叫 /api/cron/{invariants,...}。
+    // 測試環境沒有真的 server → stub 成 200，否則每支都拋錯汙染 errors/失敗判定。
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200 }))
+
+    // clearAllMocks 只清呼叫紀錄、不還原 implementation；把預設值重設回來避免測試間洩漏
+    mockSendRoutineReminder.mockResolvedValue({ success: true, method: 'web_push' })
+    mockSendPushNotification.mockResolvedValue(true)
+
     // Reset from() to the default implementation — tests that override it may
     // throw at an assertion before restoring, which would leak into later tests
     mockSupabase.from = vi.fn(defaultFromImpl)
@@ -221,6 +229,7 @@ describe('GET /api/cron/daily', () => {
     mockFromResults['daily_wellness'] = { data: [], error: null }
     mockFromResults['nutrition_logs'] = { data: [], error: null }
     mockFromResults['training_logs'] = { data: [], error: null }
+    mockFromResults['supplement_logs'] = { data: [], error: null }
 
     mockStartCronRun.mockResolvedValue({ runId: 'test-run-id', alreadyRan: false })
 
@@ -309,6 +318,10 @@ describe('GET /api/cron/daily', () => {
     mockFromResults['clients'] = { data: morningClients, error: null }
     mockFromResults['body_composition'] = { data: [], error: null }
     mockFromResults['push_subscriptions'] = { data: [{ endpoint: 'https://push.example.com', p256dh: 'key', auth: 'auth' }], error: null }
+    // 中性化「昨日漏填→隔天補推」follow-up：讓昨天的紀錄都已補齊，才不會多出補推
+    mockFromResults['nutrition_logs'] = { data: [{ client_id: 'client-1' }, { client_id: 'client-2' }], error: null }
+    mockFromResults['daily_wellness'] = { data: [{ client_id: 'client-1' }, { client_id: 'client-2' }], error: null }
+    mockFromResults['training_logs'] = { data: [{ client_id: 'client-1' }, { client_id: 'client-2' }], error: null }
 
     mockSendPushNotification.mockResolvedValue(true)
 
@@ -331,6 +344,10 @@ describe('GET /api/cron/daily', () => {
       data: [{ client_id: 'client-1' }, { client_id: 'client-2' }],
       error: null,
     }
+    // 中性化 follow-up：昨天的飲食/感受都已補齊
+    mockFromResults['nutrition_logs'] = { data: [{ client_id: 'client-1' }, { client_id: 'client-2' }], error: null }
+    mockFromResults['daily_wellness'] = { data: [{ client_id: 'client-1' }, { client_id: 'client-2' }], error: null }
+    mockFromResults['training_logs'] = { data: [{ client_id: 'client-1' }, { client_id: 'client-2' }], error: null }
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
@@ -743,11 +760,12 @@ describe('GET /api/cron/daily', () => {
       ],
       error: null,
     }
-    // No records in the last 3 days for any table
+    // 最後活動日 = today(2025-01-15) - 3 天 → gap 恰為 3，觸發第 3 天喚回一次
     mockFromResults['daily_wellness'] = { data: [], error: null }
     mockFromResults['nutrition_logs'] = { data: [], error: null }
     mockFromResults['training_logs'] = { data: [], error: null }
     mockFromResults['body_composition'] = { data: [], error: null }
+    mockFromResults['supplement_logs'] = { data: [{ client_id: 'client-1', date: '2025-01-12' }], error: null }
 
     mockGenerateSmartAlerts.mockReturnValue([])
 
@@ -755,13 +773,13 @@ describe('GET /api/cron/daily', () => {
     const res = await GET(req)
     const body = await res.json()
 
+    // 再喚醒改走 sendRoutineReminder（web push 優先、LINE 備援），不再直接 pushMessage
     expect(body.reengagementSent).toBe(1)
-    expect(mockPushMessage).toHaveBeenCalledWith('U001', [
-      {
-        type: 'text',
-        text: expect.stringContaining('Alice'),
-      },
-    ])
+    expect(mockSendRoutineReminder).toHaveBeenCalledWith(
+      'client-1',
+      'U001',
+      expect.objectContaining({ lineText: expect.stringContaining('Alice') }),
+    )
   })
 
   it('should not send re-engagement to clients who have recent records', async () => {
@@ -798,7 +816,7 @@ describe('GET /api/cron/daily', () => {
     expect(body.reengagementSent).toBe(0)
   })
 
-  it('should handle pushMessage error in re-engagement (line 417)', async () => {
+  it('should record error when re-engagement push fails', async () => {
     mockDateForHour(22)
     mockFromResults['clients'] = {
       data: [
@@ -818,10 +836,11 @@ describe('GET /api/cron/daily', () => {
     mockFromResults['nutrition_logs'] = { data: [], error: null }
     mockFromResults['training_logs'] = { data: [], error: null }
     mockFromResults['body_composition'] = { data: [], error: null }
+    // gap 3 → 觸發喚回；讓 sendRoutineReminder 拋錯 → route 記進 errors
+    mockFromResults['supplement_logs'] = { data: [{ client_id: 'client-1', date: '2025-01-12' }], error: null }
 
     mockGenerateSmartAlerts.mockReturnValue([])
-    // First pushMessage call (smart alerts) passes, re-engagement one fails
-    mockPushMessage.mockRejectedValue(new Error('re-engagement push error'))
+    mockSendRoutineReminder.mockRejectedValueOnce(new Error('re-engagement push error'))
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
@@ -889,7 +908,8 @@ describe('GET /api/cron/daily', () => {
     }
     mockFromResults['body_composition'] = { data: [], error: null }
 
-    mockPushMessage.mockRejectedValueOnce(new Error('LINE quota exceeded'))
+    // 到期提醒改走 sendRoutineReminder；讓它拋錯才會記進 errors
+    mockSendRoutineReminder.mockRejectedValueOnce(new Error('LINE quota exceeded'))
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
@@ -922,9 +942,11 @@ describe('GET /api/cron/daily', () => {
       ],
       error: null,
     }
-    mockFromResults['body_composition'] = { data: [], error: null }
+    // 里程碑改成「真的有記過才恭喜」→ 需要有記錄才會觸發 milestone 推播
+    mockFromResults['body_composition'] = { data: [{ client_id: 'd3' }], error: null }
 
-    mockPushMessage.mockRejectedValueOnce(new Error('milestone push error'))
+    // 里程碑推播改走 sendRoutineReminder；讓它拋錯才會記進 errors
+    mockSendRoutineReminder.mockRejectedValueOnce(new Error('milestone push error'))
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
@@ -1165,9 +1187,8 @@ describe('GET /api/cron/daily', () => {
     }
     mockFromResults['body_composition'] = { data: [], error: null }
 
-    // Morning reminder succeeds but milestone push fails -> errors array not empty
-    mockSendRoutineReminder.mockResolvedValue({ success: true, method: 'web_push' })
-    mockPushMessage.mockRejectedValue(new Error('milestone error'))
+    // 新用戶啟動序列推播（sendRoutineReminder）失敗 → errors 非空 → 走 failCronRun
+    mockSendRoutineReminder.mockRejectedValue(new Error('milestone error'))
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)

@@ -54,6 +54,24 @@ const PRESCRIPTION_PATTERNS: { re: RegExp; label: string }[] = [
   { re: /(停藥|加藥|減藥|換藥)/, label: '處方語氣（停藥/換藥…）' },
 ]
 
+/**
+ * 安全詞白名單：這些是正當的檢驗項目/營養名詞，但字面上「包含」某個紅線詞，
+ * 用子字串比對會誤殺。掃描前先把它們從文字中中和掉。
+ *
+ * 例：Cystatin C（胱抑素 C，腎功能指標）含 "statin"（史他汀類藥）。
+ * 不能改用字界比對解決——真正的藥名 atorvastatin / rosuvastatin 也是以 statin 結尾，
+ * 加了字界反而會漏抓真藥名。所以走白名單。
+ */
+const SAFE_TERMS = [
+  'cystatin c',
+  'cystatin',
+  // 「中風險」含「中風」→ 基因/風險分級文字（如「5-HTTLPR SS（中風險）」）曾整段被降級成罐頭句。
+  // 同理保護「高風險／低風險」不受未來新增詞影響。
+  '中風險',
+  '高風險',
+  '低風險',
+]
+
 export type ComplianceHit = { term: string; reason: string }
 
 /**
@@ -63,19 +81,28 @@ export function scanMedicalCompliance(text: string): ComplianceHit[] {
   if (!text) return []
   const hits: ComplianceHit[] = []
   const seen = new Set<string>()
-  const lower = text.toLowerCase()
+  // 中和白名單詞再比對：避免 Cystatin C 被當成藥名 statin、「中風險」被當成「中風」。
+  // 中英文都要中和（原本只中和英文，中文的「中風險」照樣誤判）。
+  // 診斷/處方語氣的 regex 仍掃原文，因為那些 pattern 不會被安全詞影響。
+  let scrubbed = text
+  for (const safe of SAFE_TERMS) {
+    scrubbed = scrubbed.replace(new RegExp(safe.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), ' ')
+  }
+  const lower = scrubbed.toLowerCase()
   const add = (term: string, reason: string) => {
     const key = `${term}|${reason}`
     if (!seen.has(key)) { seen.add(key); hits.push({ term, reason }) }
   }
 
+  // 一律比對 scrubbed（安全詞已中和），不再比對原文 text——
+  // 否則中文安全詞（「中風險」）的中和不會生效。
   for (const d of DISEASE_TERMS) {
-    if (/[A-Za-z]/.test(d) ? lower.includes(d.toLowerCase()) : text.includes(d)) {
+    if (/[A-Za-z]/.test(d) ? lower.includes(d.toLowerCase()) : scrubbed.includes(d)) {
       add(d, '疾病／臨床診斷名稱')
     }
   }
   for (const drug of DRUG_TERMS) {
-    if (/[A-Za-z]/.test(drug) ? lower.includes(drug.toLowerCase()) : text.includes(drug)) {
+    if (/[A-Za-z]/.test(drug) ? lower.includes(drug.toLowerCase()) : scrubbed.includes(drug)) {
       add(drug, '處方藥名（含用藥/劑量語境）')
     }
   }

@@ -182,7 +182,8 @@ describe('generateLabNutritionAdvice', () => {
         { gender: '男性' },
       )
       expect(result[0].caveat).toBeDefined()
-      expect(result[0].caveat).toContain('尿酸偏高不一定會痛風')
+      // 原斷言 '尿酸偏高不一定會痛風' 因醫療合規移除病名（痛風），改成不下診斷的白話
+      expect(result[0].caveat).toContain('尿酸偏高建議追蹤')
     })
   })
 
@@ -283,7 +284,8 @@ describe('generateLabNutritionAdvice', () => {
         lab('ALT', 60, 'U/L', 'attention'),
       ])
       expect(result[0].category).toBe('liver')
-      expect(result[0].caveat).toContain('NAFLD')
+      // 原斷言 'NAFLD'（非酒精性脂肪肝病名）因醫療合規移除，改斷言 ALT 特異性的白話說明
+      expect(result[0].caveat).toContain('肝臟特異性')
     })
 
     it('flags GGT with gender-specific target range', () => {
@@ -363,7 +365,8 @@ describe('generateLabNutritionAdvice', () => {
         lab('TSH', 4.5, 'mIU/L', 'attention'),
       ])
       expect(result[0].category).toBe('thyroid')
-      expect(result[0].title).toContain('甲狀腺低下')
+      // 原斷言 '甲狀腺低下'（甲狀腺功能低下病名）因醫療合規移除，改斷言不下診斷的白話標題
+      expect(result[0].title).toContain('TSH 偏高')
       expect(result[0].severity).toBe('medium')
     })
 
@@ -378,7 +381,8 @@ describe('generateLabNutritionAdvice', () => {
       const result = generateLabNutritionAdvice([
         lab('TSH', 0.2, 'mIU/L', 'attention'),
       ])
-      expect(result[0].title).toContain('甲狀腺亢進')
+      // 原斷言 '甲狀腺亢進'（甲狀腺功能亢進病名）因醫療合規移除，改斷言不下診斷的白話標題
+      expect(result[0].title).toContain('TSH 偏低')
       expect(result[0].severity).toBe('high')
     })
 
@@ -451,7 +455,8 @@ describe('generateLabNutritionAdvice', () => {
         lab('MCV', 72, 'fL', 'attention'),
       ])
       expect(result[0].category).toBe('blood')
-      expect(result[0].title).toContain('小球性')
+      // 原斷言 '小球性'（小球性貧血病名）因醫療合規移除，改斷言不下診斷的白話標題
+      expect(result[0].title).toContain('MCV 偏低')
       expect(result[0].severity).toBe('high')
     })
 
@@ -459,7 +464,8 @@ describe('generateLabNutritionAdvice', () => {
       const result = generateLabNutritionAdvice([
         lab('MCV', 108, 'fL', 'attention'),
       ])
-      expect(result[0].title).toContain('大球性')
+      // 原斷言 '大球性'（大球性貧血病名）因醫療合規移除，改斷言不下診斷的白話標題
+      expect(result[0].title).toContain('MCV 偏高')
       expect(result[0].severity).toBe('high')
     })
   })
@@ -606,7 +612,8 @@ describe('generateLabNutritionAdvice', () => {
         { gender: '女性' },
       )
       expect(result[0].title).toContain('睪固酮偏高')
-      expect(result[0].caveat).toContain('PCOS')
+      // 原斷言 'PCOS'（多囊性卵巢症候群病名）因醫療合規移除，改斷言導醫的白話 caveat
+      expect(result[0].caveat).toContain('婦產科/內分泌科')
     })
 
     it('flags low free testosterone in males', () => {

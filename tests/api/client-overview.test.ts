@@ -11,6 +11,7 @@ const { mockTableCalls, mockSupabase, createMockQueryBuilder } = vi.hoisted(() =
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       neq: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
@@ -88,10 +89,11 @@ describe('GET /api/client-overview', () => {
     mockVerifyCoachAuth.mockResolvedValue({ authorized: true })
   })
 
-  it('returns 401 when coach auth fails', async () => {
+  it('returns 401 when a non-coach queries by UUID (enumeration guard)', async () => {
+    // 非教練用 UUID 查別人 id 一律 401；學員自助查報告只能用自己的 unique_code。
     mockVerifyCoachAuth.mockResolvedValue({ authorized: false })
 
-    const req = makeGetRequest({ clientId: 'ABC123' })
+    const req = makeGetRequest({ clientId: '550e8400-e29b-41d4-a716-446655440000' })
     const res = await GET(req)
     const json = await res.json()
 

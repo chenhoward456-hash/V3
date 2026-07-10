@@ -236,7 +236,7 @@ describe('BodyComposition', () => {
   // ---- Add record button ----
   it('renders the add record button', () => {
     renderBodyComposition()
-    expect(screen.getByText(/新增身體紀錄/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /記每日體重/ })).toBeInTheDocument()
   })
 
   // ===========================================================================
@@ -250,21 +250,21 @@ describe('BodyComposition', () => {
       ],
     })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
-    expect(screen.getByText(/新增身體數據/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /記每日體重/ })).toBeInTheDocument()
   })
 
-  it('shows "更新身體數據" in modal when today record exists', () => {
+  it('shows "更新每日體重" in modal when today record exists', () => {
     renderBodyComposition({
       bodyData: [
         { date: '2026-03-12', weight: 72.5, body_fat: 18.2, muscle_mass: 32, height: 175, visceral_fat: null },
       ],
     })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
-    expect(screen.getByText(/更新身體數據/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /更新每日體重/ })).toBeInTheDocument()
   })
 
   it('pre-fills modal form with today record data', () => {
@@ -274,7 +274,7 @@ describe('BodyComposition', () => {
       ],
     })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
     const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
     const weightInput = inputs.find(i => i.value === '72.5')
@@ -284,50 +284,50 @@ describe('BodyComposition', () => {
   it('closes modal when cancel button is clicked', () => {
     renderBodyComposition({ bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
-    expect(screen.getByText(/新增身體數據/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
+    expect(screen.getByRole('heading', { name: /記每日體重/ })).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('取消'))
-    expect(screen.queryByText(/新增身體數據/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /記每日體重/ })).not.toBeInTheDocument()
   })
 
   it('closes modal when X button is clicked', () => {
     renderBodyComposition({ bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
-    expect(screen.getByText(/新增身體數據/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
+    expect(screen.getByRole('heading', { name: /記每日體重/ })).toBeInTheDocument()
 
     const xButton = screen.getByText('XIcon').closest('button')!
     fireEvent.click(xButton)
 
-    expect(screen.queryByText(/新增身體數據/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /記每日體重/ })).not.toBeInTheDocument()
   })
 
   it('closes modal when clicking the backdrop (line 485)', () => {
     renderBodyComposition({ bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
-    expect(screen.getByText(/新增身體數據/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
+    expect(screen.getByRole('heading', { name: /記每日體重/ })).toBeInTheDocument()
 
     // The backdrop is the outermost fixed div — click it
-    const backdrop = screen.getByText(/新增身體數據/).closest('.animate-slide-up')!.parentElement!
+    const backdrop = screen.getByRole('heading', { name: /記每日體重/ }).closest('.animate-slide-up')!.parentElement!
     fireEvent.click(backdrop)
 
-    expect(screen.queryByText(/新增身體數據/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /記每日體重/ })).not.toBeInTheDocument()
   })
 
   it('does NOT close modal when clicking inside modal content (stopPropagation, line 486)', () => {
     renderBodyComposition({ bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
-    expect(screen.getByText(/新增身體數據/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
+    expect(screen.getByRole('heading', { name: /記每日體重/ })).toBeInTheDocument()
 
     // Click inside the modal content area
-    const modalContent = screen.getByText(/新增身體數據/).closest('.animate-slide-up')!
+    const modalContent = screen.getByRole('heading', { name: /記每日體重/ }).closest('.animate-slide-up')!
     fireEvent.click(modalContent)
 
     // Modal should still be open
-    expect(screen.getByText(/新增身體數據/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /記每日體重/ })).toBeInTheDocument()
   })
 
   // ===========================================================================
@@ -342,7 +342,7 @@ describe('BodyComposition', () => {
         ],
       })
 
-      fireEvent.click(screen.getByText(/新增身體紀錄/))
+      fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
       // Find the date input
       const dateInput = screen.getByDisplayValue('2026-03-12') as HTMLInputElement
@@ -363,7 +363,7 @@ describe('BodyComposition', () => {
         ],
       })
 
-      fireEvent.click(screen.getByText(/新增身體紀錄/))
+      fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
       // First change to a date with record
       const dateInput = screen.getByDisplayValue('2026-03-12') as HTMLInputElement
@@ -390,17 +390,16 @@ describe('BodyComposition', () => {
         ],
       })
 
-      fireEvent.click(screen.getByText(/新增身體紀錄/))
+      fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
       const dateInput = screen.getByDisplayValue('2026-03-12') as HTMLInputElement
       fireEvent.change(dateInput, { target: { value: '2026-03-10' } })
 
-      // Weight should be filled, others empty
+      // 每日體重模式只顯示體重欄位；載入含 null 欄位的紀錄時，
+      // 體重要正確帶入 73，且不能把 null 轉成字面字串 'null'
       const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
       expect(inputs.find(i => i.value === '73')).toBeDefined()
-      // body_fat should be empty string (not 'null')
-      const emptyInputs = inputs.filter(i => i.value === '')
-      expect(emptyInputs.length).toBeGreaterThanOrEqual(3)
+      inputs.forEach(i => expect(i.value).not.toBe('null'))
     })
   })
 
@@ -410,7 +409,7 @@ describe('BodyComposition', () => {
   it('updates non-date field values in modal form', () => {
     renderBodyComposition({ bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
     const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
     // Change the weight input (first spinbutton)
@@ -430,7 +429,7 @@ describe('BodyComposition', () => {
   it('shows error toast when submitting without weight', async () => {
     renderBodyComposition({ bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
     fireEvent.click(screen.getByText(/儲存紀錄/))
 
     expect(mockShowToast).toHaveBeenCalledWith('請輸入體重', 'error')
@@ -439,7 +438,7 @@ describe('BodyComposition', () => {
   it('shows error toast for weight below 20', async () => {
     renderBodyComposition({ bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
     const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
     fireEvent.change(inputs[0], { target: { value: '10' } })
@@ -452,7 +451,7 @@ describe('BodyComposition', () => {
   it('shows error toast for weight above 300', async () => {
     renderBodyComposition({ bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
     const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
     fireEvent.change(inputs[0], { target: { value: '350' } })
@@ -475,7 +474,7 @@ describe('BodyComposition', () => {
 
     renderBodyComposition({ bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
     const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
     fireEvent.change(inputs[0], { target: { value: '72' } })
@@ -504,7 +503,7 @@ describe('BodyComposition', () => {
 
     renderBodyComposition({ bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
     const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
     fireEvent.change(inputs[0], { target: { value: '72' } })
@@ -537,7 +536,7 @@ describe('BodyComposition', () => {
     const onMutate = vi.fn()
     renderBodyComposition({ onMutate, bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
     const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
     fireEvent.change(inputs[0], { target: { value: '71.5' } })
@@ -567,7 +566,7 @@ describe('BodyComposition', () => {
     const onMutate = vi.fn()
     renderBodyComposition({ onMutate, bodyData: [{ date: '2026-03-10', weight: 73 }] })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
     const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
     fireEvent.change(inputs[0], { target: { value: '71.5' } })
@@ -941,21 +940,20 @@ describe('BodyComposition', () => {
   })
 
   // ===========================================================================
-  // MODAL IN SIMPLE MODE (line 504-508)
+  // 每日體重 MODAL 只有體重欄位（entryMode 分流後，體脂/肌肉等移到「記 InBody」）
   // ===========================================================================
-  it('shows fewer fields in modal when simpleMode is true', () => {
+  it('shows only the weight field in the daily-weight modal', () => {
     renderBodyComposition({
       simpleMode: true,
       bodyData: [{ date: '2026-03-10', weight: 73 }],
     })
 
-    fireEvent.click(screen.getByText(/新增身體紀錄/))
+    fireEvent.click(screen.getByRole('button', { name: /記每日體重/ }))
 
-    // In simple mode: date, weight, body_fat only (no muscle_mass, height, visceral_fat)
-    // Date is type="date", weight and body_fat are type="number" (spinbutton)
+    // 每日體重模式：只有 date（type="date"）+ weight（spinbutton）
+    // 體脂/肌肉/身高/內臟脂肪都改到「記 InBody」入口，不在此 modal
     const inputs = screen.getAllByRole('spinbutton') as HTMLInputElement[]
-    // Should have 2 spinbutton inputs (weight + body_fat), NOT 5
-    expect(inputs.length).toBe(2)
+    expect(inputs.length).toBe(1)
   })
 
   // ===========================================================================
