@@ -3372,6 +3372,7 @@ export default function ClientOverview() {
               goalType={client.goal_type as 'cut' | 'bulk' | null | undefined}
             />
             <LabInsightsCard
+              mode="coach"
               labResults={labResults}
               gender={(client.gender as '男性' | '女性') ?? undefined}
               bodyFatPct={bodyData.length ? bodyData[bodyData.length - 1]?.body_fat ?? null : null}

@@ -23,13 +23,18 @@ interface LabInsightsCardProps {
   }>
   gender?: '男性' | '女性'
   bodyFatPct?: number | null
+  /**
+   * 'client'（預設）= 學員看，輸出過合規降級；'coach' = 教練後台，保留完整臨床用語。
+   * 目前只有 /admin 在 render 這張卡（學員頁那顆 2026-06-12 起用 `false &&` 暫藏），
+   * 但 default 給安全值：哪天有人把學員頁那行的 false 拿掉，也不會直接把病名印給學員。
+   */
+  mode?: 'client' | 'coach'
 }
 
-export default function LabInsightsCard({ labResults, gender, bodyFatPct }: LabInsightsCardProps) {
-  // 這張卡直接渲染在學員頁（app/c/[clientId]/page.tsx）。
-  // 2026-06 合規補 runtime backstop 時漏了它 → 引擎若寫出病名/診斷句會原樣印給學員
-  // （實際發生過：交叉分析 title「代謝症候群風險」+「符合代謝症候群模式」）。
-  // 源頭文字已清乾淨，這層是防回歸：命中紅線就換成安全句，並留 log 給教練稽核。
+export default function LabInsightsCard({ labResults, gender, bodyFatPct, mode = 'client' }: LabInsightsCardProps) {
+  // 合規 backstop：引擎若寫出病名/診斷句，學員版換成安全句（實際發生過：交叉分析
+  // title「代謝症候群風險」+ description「符合代謝症候群模式」）。源頭文字已清乾淨，
+  // 這層是防回歸。教練版不降級——Howard 需要看到完整臨床語言才判讀得了。
   const { crossPatterns, retestReminders, changeReports, optimizationTips } = useMemo(() => {
     const raw = {
       crossPatterns: detectLabCrossPatterns(labResults, { gender, bodyFatPct }),
@@ -37,12 +42,28 @@ export default function LabInsightsCard({ labResults, gender, bodyFatPct }: LabI
       changeReports: generateLabChangeReport(labResults, { gender }),
       optimizationTips: generateLabOptimizationTips(labResults, { gender }),
     }
-    const { value, hits } = deepDegrade(raw)
+    if (mode === 'coach') return raw
+
+    // 文獻引用是書目，不是對學員下的宣稱。期刊名/論文標題常含病名
+    //（"Diabetes Care"、"IDF/AHA Joint Interim Statement on metabolic syndrome"），
+    // 一起降級的話，畫面上的參考文獻會變成一句罐頭句。先抽走、降級完再放回去。
+    const refs = {
+      cross: raw.crossPatterns.map(p => p.references),
+      tips: raw.optimizationTips.map(t => t.references),
+    }
+    const { value, hits } = deepDegrade({
+      ...raw,
+      crossPatterns: raw.crossPatterns.map(p => ({ ...p, references: [] as string[] })),
+      optimizationTips: raw.optimizationTips.map(t => ({ ...t, references: [] as string[] })),
+    })
+    value.crossPatterns.forEach((p, i) => { p.references = refs.cross[i] ?? [] })
+    value.optimizationTips.forEach((t, i) => { t.references = refs.tips[i] ?? [] })
+
     if (hits.length > 0) {
       console.warn('[LabInsightsCard] 合規降級', hits.map(h => h.term))
     }
     return value
-  }, [labResults, gender, bodyFatPct])
+  }, [labResults, gender, bodyFatPct, mode])
 
   // 沒有任何資料就不渲染
   if (crossPatterns.length === 0 && retestReminders.length === 0 && changeReports.length === 0 && optimizationTips.length === 0) {

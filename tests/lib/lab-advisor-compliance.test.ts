@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { generateLabNutritionAdvice, generateLabOptimizationTips } from '@/lib/lab-nutrition-advisor'
-import { scanMedicalCompliance } from '@/lib/compliance-scrub'
+import { scanMedicalCompliance, degradeToSafe } from '@/lib/compliance-scrub'
 import { LAB_THRESHOLDS } from '@/utils/labStatus'
 
 /**
@@ -128,5 +128,17 @@ describe('醫療合規回歸守門：血檢建議引擎輸出不得含病名/診
     expect(scanMedicalCompliance('他汀類藥物').length).toBeGreaterThan(0)
     // 同一句同時出現安全詞與藥名時，藥名仍要被抓到
     expect(scanMedicalCompliance('Cystatin C 正常，但仍需 rosuvastatin').length).toBeGreaterThan(0)
+  })
+})
+
+describe('文獻引用不得被合規降級吃掉', () => {
+  it('crossPatterns / optimizationTips 的 references 含英文病名（期刊名、指引標題）是正常的', () => {
+    // 例：'Alberti et al. 2009 (Circulation): IDF/AHA Joint Interim Statement on metabolic syndrome'
+    // 這是書目，不是對學員下診斷。LabInsightsCard 學員模式會把 references 抽離、不參與 deepDegrade，
+    // 否則畫面上的參考文獻會整條變成罐頭句。這裡守住「引用本身確實會命中掃描器」這個前提——
+    // 一旦不再命中，元件那段抽離邏輯就可以拿掉。
+    const citation = 'Alberti et al. 2009 (Circulation): IDF/AHA Joint Interim Statement on metabolic syndrome'
+    expect(scanMedicalCompliance(citation).length).toBeGreaterThan(0)
+    expect(degradeToSafe(citation).degraded).toBe(true)
   })
 })
