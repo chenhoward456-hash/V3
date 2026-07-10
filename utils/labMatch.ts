@@ -30,11 +30,19 @@ const TEST_ALIASES: Record<string, string[]> = {
   alt: ['alt', 'gpt', 'sgpt', '麩丙酮酸轉胺酶', 'alt(gpt)', 'gpt(alt)', 'alt/gpt', 'gpt/alt'],
   ggt: ['ggt', 'γ-gt', 'gamma-gt', 'r-gt', '丙麩氨酸轉肽酶'],
   albumin: ['白蛋白', 'albumin', 'alb'],
+  total_bilirubin: ['總膽紅素', 'total bilirubin', 'bilirubin total', 't-bil', 'tbil', 'bilirubin'],
+  alp: ['alp', 'alk-p', 'alkp', '鹼性磷酸酶', '鹼性磷酸酵素', 'alkaline phosphatase'],
 
   // ── 腎功能 ──
   creatinine: ['肌酸酐', 'creatinine', 'cre', 'cr'],
   bun: ['bun', '血尿素氮', '尿素氮', 'blood urea nitrogen'],
   egfr: ['egfr', '腎絲球過濾率', 'gfr'],
+  acr: ['尿微量白蛋白acr', '尿微量白蛋白', '尿白蛋白肌酸酐比', 'acr', 'uacr', 'microalbumin/creatinine ratio'],
+
+  // ── 電解質 ──
+  sodium: ['鈉', 'na', 'sodium'],
+  potassium: ['鉀', 'k', 'potassium'],
+  chloride: ['氯', '氯鹽', 'cl', 'chloride'],
 
   // ── 甲狀腺 ──
   tsh: ['tsh', '促甲狀腺激素', '促甲狀腺素'],

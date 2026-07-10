@@ -111,6 +111,47 @@ describe('calculateLabStatus', () => {
       expect(calculateLabStatus('鎂', 1.7)).toBe('attention') // within 1.6-2.6, below normal 1.8
       expect(calculateLabStatus('鎂', 1.5)).toBe('alert')    // outside 1.6-2.6
     })
+
+    it('should handle electrolytes (Na/K/Cl)', () => {
+      expect(calculateLabStatus('鈉', 140)).toBe('normal')     // within 135-145
+      expect(calculateLabStatus('鈉', 132)).toBe('attention')  // within 130-148
+      expect(calculateLabStatus('鈉', 128)).toBe('alert')
+      expect(calculateLabStatus('鉀', 4.2)).toBe('normal')     // within 3.5-5.0
+      expect(calculateLabStatus('鉀', 5.3)).toBe('attention')  // within 3.0-5.5
+      expect(calculateLabStatus('鉀', 5.8)).toBe('alert')
+      expect(calculateLabStatus('氯', 102)).toBe('normal')     // within 98-107
+      expect(calculateLabStatus('氯', 96)).toBe('attention')   // within 95-110
+      expect(calculateLabStatus('氯', 93)).toBe('alert')
+    })
+
+    it('should handle total bilirubin (low is NOT a risk, mild high = often Gilbert)', () => {
+      expect(calculateLabStatus('總膽紅素', 0.8)).toBe('normal')
+      expect(calculateLabStatus('總膽紅素', 0.05)).toBe('attention') // 極低仍在 attention 帶（不標紅）
+      expect(calculateLabStatus('總膽紅素', 1.6)).toBe('attention')  // Gilbert 常見帶
+      expect(calculateLabStatus('總膽紅素', 2.5)).toBe('alert')
+    })
+
+    it('should flag LOW ALP as attention (zinc deficiency / hypophosphatasia), not normal', () => {
+      expect(calculateLabStatus('ALP', 80)).toBe('normal')     // within 40-129
+      expect(calculateLabStatus('ALP', 35)).toBe('attention')  // 低 ALP 有意義 → 黃燈不是綠燈
+      expect(calculateLabStatus('ALP', 140)).toBe('attention')
+      expect(calculateLabStatus('ALP', 25)).toBe('alert')
+      expect(calculateLabStatus('ALP', 160)).toBe('alert')
+    })
+  })
+
+  describe('ACR (urine albumin-creatinine ratio, KDIGO A1/A2/A3)', () => {
+    it('should map KDIGO stages to normal/attention/alert', () => {
+      expect(calculateLabStatus('尿微量白蛋白ACR', 11)).toBe('normal')     // A1 <30
+      expect(calculateLabStatus('尿微量白蛋白ACR', 30)).toBe('normal')     // 邊界含入
+      expect(calculateLabStatus('尿微量白蛋白ACR', 120)).toBe('attention') // A2 30-300
+      expect(calculateLabStatus('尿微量白蛋白ACR', 350)).toBe('alert')     // A3 >300
+    })
+
+    it('should treat ACR as lower-is-better for optimal (<10)', () => {
+      expect(isInOptimalRange('尿微量白蛋白ACR', 8)).toBe(true)
+      expect(isInOptimalRange('尿微量白蛋白ACR', 20)).toBe(false)
+    })
   })
 
   describe('gender-specific indicators', () => {

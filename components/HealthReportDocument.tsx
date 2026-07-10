@@ -132,6 +132,13 @@ const PLAIN_WHY: { match: string[]; why: string }[] = [
   { match: ['hba1c', '糖化'], why: '近 3 個月平均血糖' },
   { match: ['睪固酮', 'testosterone'], why: '男性荷爾蒙，影響肌肉、精力、情緒' },
   { match: ['shbg'], why: '會綁住睪固酮，太高會降低可用的游離睪固酮' },
+  // 新指標放在通用「肝指標」之前：plainWhy 取第一個命中，順序決定誰贏
+  { match: ['總膽紅素', 'bilirubin', 't-bil', 'tbil'], why: '肝膽/紅血球代謝指標；輕度偏高常是體質性（Gilbert），可請醫師確認分型' },
+  { match: ['alp', '鹼性磷酸酶'], why: '肝膽與骨骼共用指標；偏低可能和鋅不足有關，偏高先分肝源或骨源' },
+  { match: ['尿微量白蛋白', 'acr', 'uacr'], why: '早期腎損傷指標；⚠️ 劇烈訓練後 24-48 小時內會假性偏高，要在非訓練日清晨採檢' },
+  { match: ['鈉', 'sodium'], why: '水分平衡指標；⚠️ 備賽控水/控鈉期間會失真，偏高多是脫水假象' },
+  { match: ['鉀', 'potassium'], why: '影響心律與肌肉收縮；⚠️ 利尿/控水期偏低多是操作假象，剛練完或採血握拳也會假性偏高' },
+  { match: ['氯', 'chloride'], why: '跟著鈉與酸鹼一起變動，很少單獨判讀' },
   { match: ['alt', 'ast', 'ggt', '肝'], why: '肝指標' },
   { match: ['鐵蛋白', 'ferritin'], why: '體內鐵儲存量' },
   { match: ['維生素d', 'vitamin d', '25-oh'], why: '免疫、骨骼、荷爾蒙都需要' },

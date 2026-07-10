@@ -39,12 +39,31 @@ export const LAB_THRESHOLDS = {
   'GGT': { normal: 60, attention: 120 },
   'GGT_female': { normal: 40, attention: 80 },
   '白蛋白': { normal: 3.5, attention: 3.0 },         // 越高越好
+  // 總膽紅素：attention 帶（1.2-2.0）以非結合型為主、其餘肝指數正常時，最常見為體質性（Gilbert，人群 3-10%）
+  // → 措辭標「偏高、建議與醫師確認分型」，不寫肝病。下界設 0：膽紅素低不是風險，不該標紅。
+  '總膽紅素': { normal: { min: 0.1, max: 1.2 }, attention: { min: 0, max: 2.0 } },
+  // ALP：成人 IFCC 常見 40-129（方法/年齡差異大；青少年生長期、孕期第三孕期生理性大幅偏高，不套此上限）。
+  // ⚠️ 低 ALP 也有意義（鋅缺乏、低磷酸酯酶症 PMID 38374822）→ attention 下界 30，讓 30-40 是黃燈而非綠燈。
+  // 性別/年齡特異區間存在（PMID 33480088），目前刻意用單一成人區間，未做 _female 分流。
+  'ALP': { normal: { min: 40, max: 129 }, attention: { min: 30, max: 150 } },
+
+  // ── 電解質 ──
+  // 正常區間為實驗室/臨床通用共識值（非單一論文），各家上下限差 1-3 單位，以送檢實驗室 reference 為準。
+  // ⚠️ 備賽 Peak Week 控水/控鈉/利尿期間三者全部失真：鈉偏高多為脫水假象、鉀偏低多為利尿假象，
+  //    不可當病理判讀（PMID 39599586 證實運動脫水擾動 Na/K/Cl）。判讀前先確認抽血當下的水分狀態。
+  '鈉': { normal: { min: 135, max: 145 }, attention: { min: 130, max: 148 } },
+  '鉀': { normal: { min: 3.5, max: 5.0 }, attention: { min: 3.0, max: 5.5 } },
+  '氯': { normal: { min: 98, max: 107 }, attention: { min: 95, max: 110 } },
 
   // ── 腎功能 ──
   '肌酸酐': { normal: { min: 0.7, max: 1.3 }, attention: { min: 0.5, max: 1.5 } },
   '肌酸酐_female': { normal: { min: 0.6, max: 1.1 }, attention: { min: 0.4, max: 1.3 } },
   'BUN': { normal: { min: 7, max: 20 }, attention: { min: 5, max: 25 } },
   'eGFR': { normal: 90, attention: 60 },             // 越高越好
+  // 尿微量白蛋白/肌酸酐比：KDIGO 分級 A1<30 / A2 30-300 / A3>300（共識硬切點），越低越好。
+  // ⚠️ 劇烈運動後 24-48h 內可出現一過性運動性白蛋白尿 → 應於非訓練日清晨首次尿採檢，否則假性升高。
+  // ⚠️ 分母是尿肌酸酐，男性肌肉量高 → 同樣白蛋白量男性數值偏低；單一 30 門檻可能低估男性。
+  '尿微量白蛋白ACR': { normal: 30, attention: 300 },
 
   // ── 甲狀腺 ──
   'TSH': { normal: { min: 0.4, max: 4.0 }, attention: { min: 0.3, max: 5.0 } },
@@ -137,9 +156,22 @@ export const LAB_OPTIMAL_RANGES: Record<string, number | { min: number; max: num
   'GGT': 30,
   'GGT_female': 25,
   '白蛋白': 4.2,                      // >4.2 = 營養狀態極佳（越高越好）
+  // ⚖️ 立場（觀察性關聯，非因果、非治療目標）：高正常膽紅素與較低 CVD/全因死亡相關
+  // （PMID 37774224 NHANES 最高四分位 HR 0.83；PMID 20693308 綜述 + UGT1A1*28 Gilbert 基因型 CVD 風險較低）。
+  // 沒有 RCT 證明人為升高膽紅素能降死亡 → 只當「關聯」，不鼓勵追高。
+  '總膽紅素': { min: 0.6, max: 1.2 },
+  // ALP 無公認最佳區間 → 不設。
+
+  // 電解質
+  // ⚖️ 立場（心血管偏好，無指引共識）：4.0-4.5 心律較穩。不當硬門檻。
+  '鉀': { min: 4.0, max: 4.5 },
+  // 鈉/氯無公認最佳區間 → 不設。
 
   // 腎功能
   'eGFR': 100,                       // >100 = 腎功能極佳（越高越好）
+  // ⚖️ 立場：KDIGO 正式切點是 30，但風險在遠低於 30 就隨 ACR 單調上升；
+  // 一般健康人群中位數約 11 mg/g（PMID 37787795，JAMA 114 世代 >900 萬人）→ <10 當優化目標。
+  '尿微量白蛋白ACR': 10,
 
   // 甲狀腺
   'TSH': { min: 1.0, max: 2.5 },     // 功能醫學最佳區間；⚠️非長壽實證(長壽家族 TSH 偏高較好 PMID 20739380/25514105)
