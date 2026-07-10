@@ -2582,3 +2582,77 @@ describe('腎蛋白封頂 × 碳循環（TD/RD 同步，不偷砍碳水）', () 
     expect(capped.suggestedCarbsRestDay!).toBeGreaterThan(uncapped.suggestedCarbsRestDay!)
   })
 })
+
+describe('增肌熱量步幅：以維持熱量的 % 表示，不寫死 kcal', () => {
+  // estimatedTDEE 由引擎自己從體重趨勢+攝取量推算，不是輸入欄位。
+  // 用「體重不動 + 已知攝取」造停滯情境：此時維持熱量 ≈ 攝取量。
+  const stalledWeights = (w: number) => [{ week: 0, avgWeight: w }, { week: 1, avgWeight: w }, { week: 2, avgWeight: w }]
+
+  it('步幅隨體型縮放：大隻的人拿到比較大的推力（原本固定 +175 對誰都一樣）', () => {
+    const small = generateNutritionSuggestion(makeBulkInput({
+      bodyWeight: 55, weeklyWeights: stalledWeights(55),
+      avgDailyCalories: 2200, currentCalories: 2200, currentProtein: 110, currentCarbs: 250, currentFat: 60,
+    }))
+    const big = generateNutritionSuggestion(makeBulkInput({
+      bodyWeight: 100, weeklyWeights: stalledWeights(100),
+      avgDailyCalories: 3600, currentCalories: 3600, currentProtein: 200, currentCarbs: 420, currentFat: 90,
+    }))
+    expect(small.status).toBe('plateau')
+    expect(big.status).toBe('plateau')
+    expect(small.caloriesDelta).toBeGreaterThan(0)
+    expect(big.caloriesDelta, '100kg 的人該拿到比 55kg 更大的熱量步幅').toBeGreaterThan(small.caloriesDelta)
+  })
+
+  it('步幅約等於維持熱量的 8%（停滯）', () => {
+    const s = generateNutritionSuggestion(makeBulkInput({
+      bodyWeight: 75, weeklyWeights: stalledWeights(75),
+      avgDailyCalories: 3000, currentCalories: 3000, currentProtein: 150, currentCarbs: 350, currentFat: 80,
+    }))
+    expect(s.status).toBe('plateau')
+    // 3000 × 8% = 240 → 取 25 的倍數 = 250；容許 macro 對齊造成的小幅偏移
+    expect(s.caloriesDelta).toBeGreaterThan(150)
+    expect(s.caloriesDelta).toBeLessThan(400)
+  })
+})
+
+describe('增肌：suggestedCalories 必須等於三大營養素加總（不能漂移）', () => {
+  const cases: Array<[string, Partial<NutritionInput>]> = [
+    ['停滯', { weeklyWeights: [{ week: 0, avgWeight: 75 }, { week: 1, avgWeight: 75 }, { week: 2, avgWeight: 75 }] }],
+    ['體重反降', { weeklyWeights: [{ week: 0, avgWeight: 74.5 }, { week: 1, avgWeight: 75 }, { week: 2, avgWeight: 75.5 }] }],
+    ['增太快', { weeklyWeights: [{ week: 0, avgWeight: 76.5 }, { week: 1, avgWeight: 75.7 }, { week: 2, avgWeight: 75 }] }],
+  ]
+  for (const [label, ov] of cases) {
+    it(`${label}：4P + 4C + 9F === suggestedCalories`, () => {
+      const s = generateNutritionSuggestion(makeBulkInput({
+        currentCalories: 3200, currentProtein: 150, currentCarbs: 380, currentFat: 80,
+        estimatedTDEE: 2900, ...ov,
+      } as any))
+      if (s.suggestedCalories == null) return
+      const sum = (s.suggestedProtein ?? 0) * 4 + (s.suggestedCarbs ?? 0) * 4 + (s.suggestedFat ?? 0) * 9
+      expect(sum, `${label} 的 macro 加總 ${sum} 應等於熱量 ${s.suggestedCalories}`).toBe(s.suggestedCalories)
+    })
+  }
+})
+
+describe('增肌：回報的 delta 必須是實際差值，不是被上限砍掉前的意圖值', () => {
+  it('熱量上限把調整砍掉時，caloriesDelta 要跟著縮水', () => {
+    // 體重反降 → 步幅 12%（大），但會撞到 TDEE + 500 的上限
+    const s = generateNutritionSuggestion(makeBulkInput({
+      bodyWeight: 75, weeklyWeights: [{ week: 0, avgWeight: 74.5 }, { week: 1, avgWeight: 75 }, { week: 2, avgWeight: 75.5 }],
+      avgDailyCalories: 3000, currentCalories: 3000, currentProtein: 150, currentCarbs: 350, currentFat: 80,
+    }))
+    expect(s.suggestedCalories).not.toBeNull()
+    expect(s.caloriesDelta, 'caloriesDelta 應等於 suggestedCalories - currentCalories')
+      .toBe(s.suggestedCalories! - 3000)
+  })
+
+  it('carbsDelta / fatDelta / proteinDelta 也一樣是實際差值', () => {
+    const s = generateNutritionSuggestion(makeBulkInput({
+      bodyWeight: 75, weeklyWeights: [{ week: 0, avgWeight: 75 }, { week: 1, avgWeight: 75 }, { week: 2, avgWeight: 75 }],
+      avgDailyCalories: 3000, currentCalories: 3000, currentProtein: 150, currentCarbs: 350, currentFat: 80,
+    }))
+    expect(s.carbsDelta).toBe((s.suggestedCarbs ?? 0) - 350)
+    expect(s.fatDelta).toBe((s.suggestedFat ?? 0) - 80)
+    expect(s.proteinDelta).toBe((s.suggestedProtein ?? 0) - 150)
+  })
+})

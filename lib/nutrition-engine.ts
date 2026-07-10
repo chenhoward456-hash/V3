@@ -651,6 +651,29 @@ export const BULK_TARGETS = {
   IDEAL_MAX: 0.5,
 }
 
+/**
+ * 增肌熱量調整**步幅**，以維持熱量（TDEE）的百分比表示。
+ *
+ * 為什麼不是固定 kcal：原本寫死 +175 / +275 / -125，不隨體型縮放——
+ * 對 55kg 女性 +175 是 TDEE 的 3.5%，對 100kg 男性只有 1.7%。同一個「停滯」處方，
+ * 效果差一倍。改成 % 之後，兩人拿到等效的推力。
+ *
+ * ⚠️ 這裡的百分比是「單次調整的步幅」，不是「總盈餘」。
+ * 文獻（Iraki 2019, PMID 31247944）給的是 **總盈餘 10–20% 維持熱量**（進階者取下緣），
+ * 那個上限由 SAFETY.MAX_SURPLUS_KCAL 在最後把關（TDEE + 500 封頂）。
+ * 步幅大小是工程選擇：夠大才推得動，夠小才不會一次衝過頭。
+ */
+export const BULK_STEP_PCT = {
+  PLATEAU: 0.08,        // 停滯：往上推一步
+  WRONG_DIRECTION: 0.12, // 增肌期體重反而在掉：盈餘明顯不足，修正幅度大一點
+  TOO_FAST: 0.05,       // 增太快：收一點盈餘
+}
+
+/** 步幅換算成整數 kcal（取 25 的倍數，數字好看也好溝通） */
+function bulkStepKcal(maintenanceKcal: number, pct: number): number {
+  return Math.round((maintenanceKcal * pct) / 25) * 25
+}
+
 // 碳循環分配比例：訓練日 60%，休息日 40%
 const CARB_CYCLE_TRAINING_RATIO = 0.6
 // CARB_CYCLE_REST_RATIO 已移除 — rest day 碳水由 carbDelta - tdChange 計算，不使用固定比例
@@ -3678,23 +3701,26 @@ function generateBulkSuggestion(
   let carbDelta = 0
   let fatDelta = 0
 
+  // 維持熱量：步幅的基準。提前算（原本在下面），因為狀態分支要用它決定調整幅度。
+  const maintenanceKcal = estimatedTDEE ?? Math.round(bw * (isMale ? 33 : 30))
+  // 步幅由 status 決定；calDelta/carbDelta 一律成對，碳水承擔全部熱量變化（4 kcal/g），
+  // 蛋白/脂肪不動 → macro 總和與 suggestedCal 才不會每調一次就漂移。
+  let baseCalDelta = 0
+  const applyStep = (kcal: number) => { baseCalDelta = kcal; calDelta = kcal; carbDelta = Math.round(kcal / 4); fatDelta = 0 }
+
   if (weeklyChangeRate > BULK_TARGETS.MAX_RATE) {
     status = 'too_fast'
     statusLabel = '增太快'
     statusEmoji = '🟡'
-    calDelta = -125
-    carbDelta = -17
-    fatDelta = 0
-    message = `體重增加速率 +${weeklyChangeRate.toFixed(2)}%/週，超過理想範圍（+0.5%），有脂肪堆積風險。系統偵測：可考慮微降熱量。`
+    applyStep(-bulkStepKcal(maintenanceKcal, BULK_STEP_PCT.TOO_FAST))
+    message = `體重增加速率 +${weeklyChangeRate.toFixed(2)}%/週，超過理想範圍（+0.5%），有脂肪堆積風險。系統偵測：可考慮微降熱量（約 ${Math.abs(baseCalDelta)}kcal）。`
   } else if (weeklyChangeRate < BULK_TARGETS.MIN_RATE) {
     if (weeklyChangeRate < 0) {
       status = 'wrong_direction'
       statusLabel = '盈餘不足'
       statusEmoji = '🔴'
-      calDelta = 275
-      carbDelta = 30
-      fatDelta = 0
-      message = `體重反而下降（${weeklyChangeRate.toFixed(2)}%/週）。熱量盈餘明顯不夠，需要增加攝取。`
+      applyStep(bulkStepKcal(maintenanceKcal, BULK_STEP_PCT.WRONG_DIRECTION))
+      message = `體重反而下降（${weeklyChangeRate.toFixed(2)}%/週）。熱量盈餘明顯不夠，建議增加攝取（約 +${baseCalDelta}kcal）。`
     } else {
       if (input.weeklyWeights.length >= 2) {
         const lastWeek = input.weeklyWeights[1].avgWeight
@@ -3703,10 +3729,8 @@ function generateBulkSuggestion(
           status = 'plateau'
           statusLabel = '增長停滯'
           statusEmoji = '🟡'
-          calDelta = 175
-          carbDelta = 22
-          fatDelta = 0
-          message = `體重近 10-14 天增長停滯（+${weeklyChangeRate.toFixed(2)}%/週）。系統偵測：可考慮增加熱量推動增長。`
+          applyStep(bulkStepKcal(maintenanceKcal, BULK_STEP_PCT.PLATEAU))
+          message = `體重近 10-14 天增長停滯（+${weeklyChangeRate.toFixed(2)}%/週）。系統偵測：可考慮增加熱量推動增長（約 +${baseCalDelta}kcal）。`
         } else {
           status = 'on_track'
           statusLabel = '進度正常'
@@ -3758,8 +3782,10 @@ function generateBulkSuggestion(
     const bfIncrease = input.bodyFatPct - input.previousBodyFatPct
     if (bfIncrease > 4) {
       // 嚴重髒增肌：強制降低盈餘
+      // 碳水要承擔全部 -200kcal（-50g × 4）。原本只減 25g（=-100kcal），
+      // 剩下 100kcal 無處著落 → calories_target 與三大營養素每次調整就漂移。
       calDelta -= 200
-      carbDelta -= 25
+      carbDelta -= 50
       status = 'too_fast'
       statusLabel = '脂肪堆積'
       statusEmoji = '🔴'
@@ -3785,16 +3811,20 @@ function generateBulkSuggestion(
 
   // 增肌 sanity check：如果現有熱量低於 TDEE 或碳水為負，代表資料異常
   // 從 TDEE + 盈餘重算，不用 delta 累加（累加爛資料只會越來越爛）
-  const bulkTDEE = estimatedTDEE ?? Math.round(bw * (isMale ? 33 : 30))
+  const bulkTDEE = maintenanceKcal
   const needsRecalc = currentCal < bulkTDEE || currentCarb <= 0
+  // 重算路徑已經直接用「TDEE × 1.10」當基準，不該再疊上以 TDEE 百分比算出來的 baseCalDelta
+  // （會變成 1.10×TDEE + 0.08×TDEE = 1.18×TDEE，多推一步）。
+  // 只保留恢復/黃體期/髒增肌這些「修正項」。
+  const modifierCalDelta = calDelta - baseCalDelta
   let suggestedCal: number
   let suggestedPro: number
   let suggestedCarb: number
   let suggestedFat: number
 
   if (needsRecalc) {
-    // 從 TDEE + 10% 盈餘重算全部巨量營養素
-    suggestedCal = Math.round(bulkTDEE * 1.10) + calDelta
+    // 從 TDEE + 10% 盈餘重算全部巨量營養素（Iraki 2019：lean bulk 總盈餘 10-20%，進階取下緣）
+    suggestedCal = Math.round(bulkTDEE * 1.10) + modifierCalDelta
     const bulkProPerKg = zoneInfo ? zoneInfo.proteinPerKg : (isMale ? SAFETY.MIN_PROTEIN_PER_KG_BULK : SAFETY.MIN_PROTEIN_PER_KG_BULK_FEMALE)
     suggestedPro = Math.max(Math.round(bw * bulkProPerKg), currentPro)
     suggestedFat = Math.max(Math.round(bw * (isMale ? SAFETY.MIN_FAT_PER_KG : SAFETY.MIN_FAT_PER_KG_FEMALE)), isMale ? 50 : 45)
@@ -3908,15 +3938,21 @@ function generateBulkSuggestion(
   const maxCarbBulkFinal = Math.round(bw * SAFETY.MAX_CARB_PER_KG_BULK)
   if (suggestedCarb > maxCarbBulkFinal) suggestedCarb = maxCarbBulkFinal
 
-  // 確保 macro 總和與 suggestedCal 一致
-  const macroCalSum = suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9
-  if (macroCalSum > suggestedCal) {
-    const maxCarbFromCal = Math.round((suggestedCal - suggestedPro * 4 - suggestedFat * 9) / 4)
-    if (maxCarbFromCal >= 50) {
-      suggestedCarb = maxCarbFromCal
-    } else {
-      suggestedCal = Math.round(suggestedPro * 4 + Math.max(50, suggestedCarb) * 4 + suggestedFat * 9)
+  // 確保 macro 總和與 suggestedCal 一致（雙向）。
+  // 原本只處理「macro 超過熱量 → 砍碳水」，macro 不足時放著不管 →
+  // calories_target 高於三大營養素加總，學員「吃滿營養素」永遠達不到「吃到熱量」。
+  {
+    const macroCalSum = suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9
+    const carbFloor = 50
+    const carbCeil = Math.round(bw * SAFETY.MAX_CARB_PER_KG_BULK)
+    if (macroCalSum !== suggestedCal) {
+      const carbFromCal = Math.round((suggestedCal - suggestedPro * 4 - suggestedFat * 9) / 4)
+      // 碳水吸收差額；撞到上/下限就夾住
+      suggestedCarb = Math.min(carbCeil, Math.max(carbFloor, carbFromCal))
     }
+    // 熱量一律由 macro 反推當最終值。碳水取整會留 1-3 kcal 誤差，
+    // 讓 macro 當真相（那才是學員實際要吃的東西），熱量跟著它走，兩者永遠對得起來。
+    suggestedCal = suggestedPro * 4 + suggestedCarb * 4 + suggestedFat * 9
   }
 
   if (status === 'on_track') {
@@ -4028,10 +4064,14 @@ function generateBulkSuggestion(
     suggestedFat: Math.round(suggestedFat),
     suggestedCarbsTrainingDay: suggestedCarbsTD != null ? Math.round(suggestedCarbsTD) : null,
     suggestedCarbsRestDay: suggestedCarbsRD != null ? Math.round(suggestedCarbsRD) : null,
-    caloriesDelta: calDelta,
-    proteinDelta: suggestedPro - currentPro,
-    carbsDelta: carbDelta,
-    fatDelta: fatDelta,
+    // delta 一律回報「實際差值」而非「意圖值」。
+    // calDelta 是調整前的意圖，之後可能被熱量上限 / 碳水上下限 / macro 對齊改掉——
+    // 回報意圖值會讓「系統幫你做了什麼」顯示 +425，實際只加了 +240。
+    // （同檔的 on_track return 早就用 validatedCal - currentCal，這裡跟它對齊。）
+    caloriesDelta: Math.round(suggestedCal) - currentCal,
+    proteinDelta: Math.round(suggestedPro) - currentPro,
+    carbsDelta: Math.round(suggestedCarb) - currentCarb,
+    fatDelta: Math.round(suggestedFat) - currentFat,
     estimatedTDEE, weeklyWeightChangeRate: weeklyChangeRate,
     dietDurationWeeks, dietBreakSuggested: false, warnings,
     currentState: 'unknown' as const, readinessScore: null, wearableInsight: null, refeedSuggested: false, refeedReason: null, refeedDays: null,
