@@ -308,4 +308,68 @@ describe('GET /api/nutrition-suggestions', () => {
     expect(res.status).toBe(500)
     expect(json.error).toContain('分析失敗')
   })
+
+  describe('coach_macro_override 到期', () => {
+    it('到期時把 previous_values 還原回 clients，而不是只解鎖（否則 coached tier 會永遠卡在覆寫值）', async () => {
+      const updates: Record<string, unknown>[] = []
+      const logs: Record<string, unknown>[] = []
+
+      const expiredClient = {
+        id: 'c1', name: '測試', unique_code: 'client001', gender: '男性', goal_type: 'cut',
+        diet_start_date: '2025-01-01', target_weight: 70, target_body_fat: 12,
+        competition_date: null, target_date: '2025-06-01',
+        calories_target: 1594, protein_target: 186, carbs_target: 100, fat_target: 50,
+        carbs_training_day: 100, carbs_rest_day: 100, prep_phase: 'peak_week',
+        activity_profile: null, subscription_tier: 'coached', competition_enabled: false,
+        client_mode: 'bodybuilding', nutrition_enabled: true,
+        gene_mthfr: null, gene_apoe: null, gene_depression_risk: null,
+        coach_macro_override: {
+          locked_at: '2026-07-10T00:00:00+08:00',
+          expires_at: '2020-01-01T00:00:00+08:00', // 已過期
+          locked_fields: ['calories_target', 'carbs_target'],
+          override_values: { calories_target: 1594, carbs_target: 100 },
+          previous_values: { calories_target: 1900, carbs_target: 177 },
+          reason: 'Peak Week 掏空日',
+        },
+      }
+
+      mockSupabase.from = vi.fn((table: string) => {
+        const chain: any = {}
+        for (const m of ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit']) chain[m] = vi.fn(() => chain)
+        chain.single = vi.fn(() => Promise.resolve({ data: table === 'clients' ? expiredClient : null, error: null }))
+        chain.update = vi.fn((patch: Record<string, unknown>) => { if (table === 'clients') updates.push(patch); return chain })
+        chain.insert = vi.fn((row: Record<string, unknown>) => { if (table === 'macro_adjustment_log') logs.push(row); return Promise.resolve({ data: null, error: null }) })
+        chain.upsert = vi.fn(() => chain)
+        chain.then = (resolve: any) => {
+          if (table === 'body_composition') {
+            return Promise.resolve({ data: [
+              { date: '2026-06-20', weight: 82.0, height: 175, body_fat: 9 },
+              { date: '2026-06-27', weight: 81.4, height: 175, body_fat: 8.5 },
+              { date: '2026-07-04', weight: 80.9, height: 175, body_fat: 8 },
+              { date: '2026-07-09', weight: 80.3, height: 175, body_fat: 7.5 },
+            ], error: null }).then(resolve)
+          }
+          if (table === 'nutrition_logs') {
+            return Promise.resolve({ data: [{ date: '2026-07-09', compliant: true, calories: 1900, protein_grams: 186, carbs_grams: 236, fat_grams: 50 }], error: null }).then(resolve)
+          }
+          return Promise.resolve({ data: [], error: null }).then(resolve)
+        }
+        return chain
+      })
+
+      const req = makeGetRequest({ clientId: 'client001' })
+      await GET(req)
+      await new Promise(r => setTimeout(r, 0)) // fire-and-forget 的 update/insert
+
+      const restore = updates.find(u => 'coach_macro_override' in u)
+      expect(restore, '到期時應該 update clients 還原並解鎖').toBeDefined()
+      expect(restore!.coach_macro_override).toBeNull()
+      expect(restore!.calories_target, '應還原覆寫前的熱量').toBe(1900)
+      expect(restore!.carbs_target, '應還原覆寫前的碳水').toBe(177)
+
+      expect(logs.length, '還原也是 macro 變更，必須寫 macro_adjustment_log').toBeGreaterThan(0)
+      expect(logs[0].applied_by).toBe('system')
+      expect(logs[0].trigger_source).toBe('manual')
+    })
+  })
 })

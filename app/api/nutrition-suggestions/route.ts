@@ -402,8 +402,34 @@ export async function GET(request: NextRequest) {
     if (coachOverride && coachOverride.expires_at) {
       const now = new Date()
       if (new Date(coachOverride.expires_at) <= now) {
-        // Override expired — clear it (fire-and-forget)
-        supabase.from('clients').update({ coach_macro_override: null }).eq('id', client.id).then(() => {})
+        // 覆寫到期：**先還原 previous_values，再解鎖**。
+        //
+        // 原本只把 coach_macro_override 設成 null，override_values 就永久留在 clients 上。
+        // 對 coached/protocol tier 特別危險：那兩種 tier 的引擎本來就不會自動套用
+        // （canAutoApply 的 !isCoachManaged），所以沒有任何東西會把數值改回來——
+        // 教練設一個「兩天的 Peak Week 掏空 macro」，兩天後鎖打開了，學員卻永遠停在掏空碳水。
+        // previous_values 一直有寫入（client-macro-adjust / admin clients route），但從沒被讀過。
+        const prev = coachOverride.previous_values
+        const restore: Record<string, number | null> = {}
+        if (prev) {
+          for (const [k, v] of Object.entries(prev)) {
+            if (v != null && Number.isFinite(Number(v))) restore[k] = Number(v)
+          }
+        }
+        const clearPatch: Record<string, unknown> = { ...restore, coach_macro_override: null }
+        supabase.from('clients').update(clearPatch).eq('id', client.id).then(() => {})
+
+        if (Object.keys(restore).length > 0) {
+          // 紅線：所有 macro 變更都要寫 macro_adjustment_log（applied_by 只能 system/coach）
+          supabase.from('macro_adjustment_log').insert({
+            client_id: client.id,
+            applied_by: 'system',
+            trigger_source: 'manual',
+            old_macros: coachOverride.override_values ?? null,
+            new_macros: restore,
+            reason: `教練覆寫到期（${coachOverride.expires_at}），自動還原覆寫前的營養目標`,
+          }).then(() => {}, () => {})
+        }
         coachOverride = null
       }
     }
