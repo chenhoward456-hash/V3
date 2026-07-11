@@ -106,6 +106,7 @@ export default function RemotePage() {
                   <span className="text-4xl font-bold" style={{ color: '#1e3a5f' }}>NT$499</span>
                   <span className="text-gray-400 text-sm"> /月</span>
                 </div>
+                <p className="text-xs text-[#1E4A73] font-medium mb-1">限時優惠：首月 NT$399</p>
                 <p className="text-xs text-gray-400 mb-6">每天不到 NT$17，比一杯超商咖啡便宜</p>
                 <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
                   <li className="flex items-start gap-2"><span className="text-[#1E4A73] mt-0.5">&#10003;</span>智能引擎 24 小時自動分析</li>
@@ -350,7 +351,7 @@ export default function RemotePage() {
               },
               {
                 q: '可以退費嗎？',
-                a: '月繳制，當月不退費，下個月可取消不續約。',
+                a: '首次付款 7 日內可全額退費（詳見退費政策）。之後為月繳制，當月不退費，下個月可取消不續約。',
               },
             ].map(({ q, a }) => (
               <div key={q} className="bg-white rounded-xl p-6 border border-gray-200">

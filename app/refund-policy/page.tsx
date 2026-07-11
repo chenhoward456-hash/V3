@@ -192,7 +192,7 @@ export default function RefundPolicyPage() {
           <p>
             <span className="font-medium text-text-primary">LINE 官方帳號：</span>
             <a
-              href="https://lin.ee/dnbucVw"
+              href="https://lin.ee/LP65rCc"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"

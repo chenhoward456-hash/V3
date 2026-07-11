@@ -30,7 +30,7 @@ export default function NutritionPage() {
             </p>
             <div className="grid md:grid-cols-3 gap-6 mt-6">
               <div className="bg-white p-4 rounded-xl border border-gray-200">
-                <p className="text-gray-400 text-xs mb-1">同半胱氨酸</p>
+                <p className="text-gray-400 text-xs mb-1">同半胱胺酸</p>
                 <p className="text-2xl font-bold" style={{color: '#2D2D2D'}}>15 → 9</p>
                 <p className="text-gray-500 text-xs mt-1">μmol/L 心血管風險</p>
               </div>
@@ -40,7 +40,7 @@ export default function NutritionPage() {
                 <p className="text-gray-500 text-xs mt-1">ng/dL</p>
               </div>
               <div className="bg-white p-4 rounded-xl border border-gray-200">
-                <p className="text-gray-400 text-xs mb-1">CRP</p>
+                <p className="text-gray-400 text-xs mb-1">hs-CRP</p>
                 <p className="text-2xl font-bold" style={{color: '#2D2D2D'}}>2.5 → 0.8</p>
                 <p className="text-gray-500 text-xs mt-1">mg/L 發炎指標</p>
               </div>
@@ -76,7 +76,7 @@ export default function NutritionPage() {
             </div>
             <div className="mt-6 text-gray-600 text-sm leading-relaxed">
               <strong className="block mb-2">效果：</strong>
-              體脂從 18% 降到 12%，代謝靈活性明顯提升。
+              體脂從 18% 降到 12%（備賽期最低 7.8%），代謝靈活性明顯提升。
             </div>
           </div>
 
@@ -94,9 +94,9 @@ export default function NutritionPage() {
               <p className="text-gray-700 text-sm leading-relaxed mb-3"><strong>我的補劑組合：</strong></p>
               <p className="text-gray-600 text-sm leading-relaxed">
                 • 維生素 D3 5000 IU（每天）<br />
-                • Omega-3 2000mg（降低 CRP）<br />
+                • Omega-3 2000mg<br />
                 • 活性 B 群（Methylfolate、Methylcobalamin）<br />
-                • 鎂 300mg + 甘氨酸 3g（睡前）
+                • 鎂 300mg + 甘胺酸 3g（睡前）
               </p>
             </div>
             <div className="mt-6 bg-yellow-50 p-4 rounded-xl border border-yellow-200">
@@ -122,13 +122,13 @@ export default function NutritionPage() {
                 • 目標睡眠時間：7-9 小時<br />
                 • 睡前 2 小時避免藍光<br />
                 • 咖啡因截止時間：下午 2 點<br />
-                • 睡前補劑：鎂 + 甘氨酸<br />
+                • 睡前補劑：鎂 + 甘胺酸<br />
                 • 用 Oura Ring 追蹤 HRV
               </p>
             </div>
             <div className="mt-6 text-gray-600 text-sm leading-relaxed">
               <strong className="block mb-2">效果：</strong>
-              HRV 從平均 45ms 提升到 65ms，睡眠品質明顯改善。
+              HRV 從平均 65ms 提升到 91ms，睡眠品質明顯改善。
             </div>
           </div>
         </div>

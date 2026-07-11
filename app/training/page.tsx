@@ -74,7 +74,7 @@ export default function TrainingPage() {
               <h4 className="text-2xl font-semibold" style={{color: '#2D2D2D'}}>神經適應：動作模式優先</h4>
             </div>
             <p className="text-gray-600 leading-relaxed text-[15px] mb-4">
-              新手的力量進步 80% 來自神經系統學習，不是肌肉變大。大腦需要學會如何徵召更多肌纖維。
+              新手的力量進步大部分來自神經系統學習，不是肌肉變大。大腦需要學會如何徵召更多肌纖維。
             </p>
             <div className="bg-gray-50 p-6 rounded-xl mt-4">
               <p className="text-gray-700 text-sm leading-relaxed mb-3"><strong>為什麼不追求重量？</strong></p>
