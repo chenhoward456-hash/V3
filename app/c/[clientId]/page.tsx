@@ -2265,31 +2265,19 @@ export default function ClientDashboard() {
         />
       )}
 
-      {/* AI 飲食顧問浮動按鈕 */}
+      {/* AI 飲食顧問浮動按鈕 — 圓形 icon-only，壓到內容的面積最小化；額度資訊進抽屜再講 */}
       {c.nutrition_enabled && (
-        <>
         <button
           onClick={() => setShowAiChat(true)}
-          className="fixed z-40 bg-[#1E4A73] text-white rounded-full shadow-lg hover:bg-[#16385A] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 px-4 py-3"
+          aria-label="AI 顧問"
+          title="AI 顧問"
+          className="fixed z-40 w-12 h-12 bg-primary text-white rounded-full shadow-lg hover:bg-primary-700 transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
           style={{ bottom: 'calc(70px + env(safe-area-inset-bottom))', right: '16px' }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          <span className="text-sm font-medium">AI 顧問</span>
-          {!c.ai_chat_enabled && (
-            <span className="text-[11px] bg-white/20 px-1.5 py-0.5 rounded-full">3次免費</span>
-          )}
         </button>
-        {!c.ai_chat_enabled && (
-          <span
-            className="fixed z-40 text-[11px] text-primary-400 whitespace-nowrap pointer-events-none"
-            style={{ bottom: 'calc(56px + env(safe-area-inset-bottom))', right: '16px' }}
-          >
-            免費每月 3 次，升級後無限使用
-          </span>
-        )}
-        </>
       )}
 
 

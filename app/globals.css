@@ -18,6 +18,8 @@
     line-height: 1.6;
     overflow-x: hidden;
     letter-spacing: 0.01em;
+    /* DESIGN.md：數字一律等寬（tabular-nums）——全域治本，元件不必再逐一加 class */
+    font-variant-numeric: tabular-nums;
   }
 
   html {
