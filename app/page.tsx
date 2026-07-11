@@ -424,7 +424,7 @@ export default function HomePage() {
             <p className="text-center text-gray-500 mb-14">Howard 本人 6 年系統追蹤的真實數據</p>
             <div className="grid md:grid-cols-4 gap-6 mb-10">
               {[
-                { label: 'HRV（心率變異）', before: '65 ms', after: '91 ms', change: '+40%', color: 'text-green-600' },
+                { label: 'HRV（心率變異）', before: '65 ms', after: '105 ms', change: '+62%', color: 'text-green-600' },
                 { label: '靜息心率', before: '58 bpm', after: '52 bpm', change: '-10%', color: 'text-green-600' },
                 { label: 'HOMA-IR（胰島素阻抗）', before: '偏高', after: '0.49', change: '正常', color: 'text-green-600' },
                 { label: 'Testosterone', before: '515', after: '625 ng/dL', change: '+21%', color: 'text-green-600' },

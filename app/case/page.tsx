@@ -18,18 +18,18 @@ const HERO_STATS = [
   { value: '6 年', label: '完整追蹤' },
   { value: '7.8%', label: '體脂' },
   { value: '14 項', label: '血檢回測' },
-  { value: '91ms', label: 'HRV · ELITE' },
+  { value: '105ms', label: 'HRV · ELITE' },
 ]
 
 // 轉變前後症狀對照
 const BEFORE_SYMPTOMS = ['嚴重落髮（頭頂明顯稀疏）', '圓潤浮腫的臉型', '全身性慢性發炎', '持續疲勞、無動力', 'hs-CRP 發炎指標異常']
-const AFTER_SYMPTOMS = ['頭髮恢復濃密', '精實體態（FFMI 23.6）', '發炎指標正常化', '精力充沛、高效能', 'HRV 達菁英等級（91ms）']
+const AFTER_SYMPTOMS = ['頭髮恢復濃密', '精實體態（FFMI 23.6）', '發炎指標正常化', '精力充沛、高效能', 'HRV 達菁英等級（105ms）']
 
 // 時間軸
 const TIMELINE = [
   { year: '2020 年初', phase: '系統崩潰期', desc: '嚴重落髮、浮腫、慢性疲勞', stat: 'hs-CRP 偏高', statNote: '發炎指標異常', tone: 'rose' as const },
   { year: '2022 年', phase: '系統修復期', desc: '開始系統化訓練與營養介入', stat: 'Testosterone 515 ng/dL', statNote: '荷爾蒙偏低，緩步回升', tone: 'amber' as const },
-  { year: '2026 年', phase: '系統優化完成', desc: '代謝、荷爾蒙、自律神經全面到位', stat: 'T 625 · HOMA-IR 0.49 · HRV 91', statNote: 'ELITE 等級', tone: 'emerald' as const },
+  { year: '2026 年', phase: '系統優化完成', desc: '代謝、荷爾蒙、自律神經全面到位', stat: 'T 625 · HOMA-IR 0.49 · HRV 105', statNote: 'ELITE 等級', tone: 'emerald' as const },
 ]
 
 // 達到 Howard 最佳標準的指標（藍標＝正常之上的最佳化區）。陳胤豪本人真實 lab_results。
@@ -68,7 +68,7 @@ const BEFORE_AFTER = [
 
 // Zone 2 實測
 const ZONE2 = [
-  { metric: 'HRV', from: '65', to: '91', unit: 'ms', delta: '+40%', note: '副交感活性強，壓力恢復力佳' },
+  { metric: 'HRV', from: '65', to: '105', unit: 'ms', delta: '+62%', note: '副交感活性強，壓力恢復力佳' },
   { metric: '靜息心率', from: '58', to: '52', unit: 'bpm', delta: '-10%', note: '心臟效率提升，心肺強化' },
   { metric: '深層睡眠', from: '18', to: '24', unit: '%', delta: '+33%', note: '神經系統穩定，深睡比例高' },
 ]

@@ -105,7 +105,7 @@ export default function HowItWorksPage() {
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">我自己就是第一個案例</h2>
         <p className="text-slate-600 leading-relaxed mb-4">
           我不是只賣系統，我先在自己身上跑了 6 年。2020 年我的身體崩過一次：嚴重落髮、慢性發炎、持續疲勞。
-          用這套系統一路修到現在——<b className="text-slate-900">7.8% 體脂、HRV 從 65 升到 91ms、HOMA-IR 0.49、血檢幾乎全項落在最佳區</b>。
+          用這套系統一路修到現在——<b className="text-slate-900">7.8% 體脂、HRV 從 65 升到 105ms、HOMA-IR 0.49、血檢幾乎全項落在最佳區</b>。
           包含原始檢驗單（未修圖）的完整紀錄都公開。
         </p>
         <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 mb-5">

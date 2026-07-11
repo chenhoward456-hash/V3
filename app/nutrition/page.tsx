@@ -128,7 +128,7 @@ export default function NutritionPage() {
             </div>
             <div className="mt-6 text-gray-600 text-sm leading-relaxed">
               <strong className="block mb-2">效果：</strong>
-              HRV 從平均 65ms 提升到 91ms，睡眠品質明顯改善。
+              HRV 從平均 65ms 提升到 105ms，睡眠品質明顯改善。
             </div>
           </div>
         </div>
