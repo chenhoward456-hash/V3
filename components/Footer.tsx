@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Instagram, MessageCircle, MapPin, Mail, Phone } from 'lucide-react'
 
 export default function Footer() {
   return (
@@ -22,7 +23,7 @@ export default function Footer() {
               <li><Link href="/remote" className="hover:text-white transition-colors inline-block py-1.5">遠端追蹤方案</Link></li>
               <li><Link href="/action" className="hover:text-white transition-colors inline-block py-1.5">實體訓練方案</Link></li>
               <li><Link href="/diagnosis" className="hover:text-white transition-colors inline-block py-1.5">免費系統分析</Link></li>
-              <li><Link href="/case" className="hover:text-white transition-colors inline-block py-1.5">個案追蹤</Link></li>
+              <li><Link href="/case" className="hover:text-white transition-colors inline-block py-1.5">我的故事</Link></li>
             </ul>
           </div>
 
@@ -43,18 +44,30 @@ export default function Footer() {
             <h4 className="text-white font-semibold mb-4">聯絡方式</h4>
             <ul className="space-y-1 text-sm">
               <li>
-                <a href="https://instagram.com/chenhoward" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors inline-block py-1.5">
-                  📷 @chenhoward
+                <a href="https://instagram.com/chenhoward" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors inline-flex items-center gap-2 py-1.5">
+                  <Instagram size={14} className="shrink-0" /> @chenhoward
                 </a>
               </li>
               <li>
-                <Link href="/line" className="hover:text-white transition-colors inline-block py-1.5">
-                  💬 LINE 官方帳號
+                <Link href="/line" className="hover:text-white transition-colors inline-flex items-center gap-2 py-1.5">
+                  <MessageCircle size={14} className="shrink-0" /> LINE 官方帳號
                 </Link>
               </li>
-              <li className="text-gray-400">📍 Coolday Fitness 北屯館</li>
-              <li className="text-gray-400">📧 chenhoward456@gmail.com</li>
-              <li className="text-gray-400">📞 0978-185-268</li>
+              <li>
+                <a href="https://maps.google.com/?q=Coolday+Fitness+北屯館" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors inline-flex items-center gap-2 py-1.5">
+                  <MapPin size={14} className="shrink-0" /> Coolday Fitness 北屯館
+                </a>
+              </li>
+              <li>
+                <a href="mailto:chenhoward456@gmail.com" className="text-gray-400 hover:text-white transition-colors inline-flex items-center gap-2 py-1.5">
+                  <Mail size={14} className="shrink-0" /> chenhoward456@gmail.com
+                </a>
+              </li>
+              <li>
+                <a href="tel:+886978185268" className="text-gray-400 hover:text-white transition-colors inline-flex items-center gap-2 py-1.5">
+                  <Phone size={14} className="shrink-0" /> 0978-185-268
+                </a>
+              </li>
             </ul>
           </div>
         </div>
