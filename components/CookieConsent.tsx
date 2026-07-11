@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export default function CookieConsent() {
   const [show, setShow] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     const consent = localStorage.getItem('cookie_consent')
@@ -26,6 +28,9 @@ export default function CookieConsent() {
     setShow(false)
     window.dispatchEvent(new Event('cookie-consent-changed'))
   }
+
+  // 學員專屬頁（/c/{code}）不跳同意橫幅：不存 consent → GoogleAnalytics 也不會載
+  if (pathname?.startsWith('/c/')) return null
 
   if (!show) return null
 

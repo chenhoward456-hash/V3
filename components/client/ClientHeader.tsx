@@ -39,6 +39,8 @@ interface ClientHeaderProps {
   onCancelSubscription: () => void
   /** 首頁隱藏教練分流用的 status 徽章（● 需要關注）——由「今日主線」承接判定，避免紅字跟綠燈打架 */
   hideStatusBadge?: boolean
+  /** 備賽倒數 Banner 只在今日分頁出現（含階段選擇器）；其他分頁不跟著頁首重複 */
+  showCountdown?: boolean
 }
 
 export default function ClientHeader({
@@ -70,6 +72,7 @@ export default function ClientHeader({
   cancellingSubscription,
   onCancelSubscription,
   hideStatusBadge,
+  showCountdown = true,
 }: ClientHeaderProps) {
   const formatSelectedDate = (dateStr: string) => {
     if (dateStr === today) return '今天'
@@ -322,7 +325,7 @@ export default function ClientHeader({
       )}
 
       {/* 備賽倒數 Banner */}
-      {isCompetition && c.competition_date && (() => {
+      {showCountdown && isCompetition && c.competition_date && (() => {
         const daysLeft = daysUntilDateTW(c.competition_date)
         const phase = c.prep_phase || 'off_season'
         const urgencyBg = daysLeft <= 7 ? 'bg-rose-50 border-rose-200' : daysLeft <= 14 ? 'bg-amber-50 border-amber-200' : daysLeft <= 30 ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'

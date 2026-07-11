@@ -155,14 +155,19 @@ function TodayHeadlineInner({
 
   return (
     <section className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
-      {/* 目標 + 倒數 */}
-      {(phaseLabel || (isCompetition && daysLeft != null) || targetWeight) && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 mb-2.5">
-          {phaseLabel && <span className="font-medium text-slate-600">{phaseLabel}</span>}
-          {isCompetition && daysLeft != null && daysLeft >= 0 && <span>· 剩 {daysLeft} 天</span>}
-          {targetWeight != null && targetWeight !== '' && <span>· 目標 {targetWeight}kg</span>}
-        </div>
-      )}
+      {/* 目標 + 倒數 — 備賽客戶的階段/倒數由下方備賽倒數卡講（同屏不講兩次），這裡只補目標 */}
+      {(() => {
+        const chips = [
+          !isCompetition && phaseLabel,
+          targetWeight != null && targetWeight !== '' && `目標 ${targetWeight}kg`,
+        ].filter(Boolean) as string[]
+        if (chips.length === 0) return null
+        return (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 mb-2.5 tabular-nums">
+            {chips.map((t, i) => <span key={t} className={i === 0 ? 'font-medium text-slate-600' : ''}>{i > 0 ? `· ${t}` : t}</span>)}
+          </div>
+        )
+      })()}
 
       {/* 判定（一句）：引擎說偏離軌道 → 聽引擎（最新記錄）；否則 weekly_tasks；再不然 fallback。
           語意用 CSS 色點承接（emoji 依 DESIGN.md 全數移除）：amber=要留意、emerald=在軌道、blue=推去開始、slate=中性 */}

@@ -865,10 +865,10 @@ export default function ClientDashboard() {
         )}
 
         {/* 我的計畫 — 靜態參考（菜單/課表/補品/SOP）收合式，reference 層 */}
-        {isToday && <MyPlanSection data={c.onboarding_notes_rendered} />}
+        {view === 'home' && isToday && <MyPlanSection data={c.onboarding_notes_rendered} />}
 
         {/* 首次來訪導覽 banner（dismissible）*/}
-        {isToday && <WelcomeBanner clientId={clientId as string} />}
+        {view === 'home' && isToday && <WelcomeBanner clientId={clientId as string} />}
 
         {/* 推播開通 — 已下移到行動/判決卡之後（開通推播=留存槓桿，但別佔掉第一屏；gated）*/}
 
@@ -903,6 +903,7 @@ export default function ClientDashboard() {
             client={c}
             isCoachMode={isCoachMode}
             hideStatusBadge={true}
+            showCountdown={view === 'home'}
             selectedDate={selectedDate}
             isToday={isToday}
             today={today}
@@ -943,17 +944,11 @@ export default function ClientDashboard() {
           if (daily.length === 0) return null
           const unlogged = daily.filter(v => !v).length
           const allDone = unlogged === 0
-          // 碳水用「飲食卡上的目標」（碳循環時=當日訓練/休息日值），跟飲食卡+達標一致
-          const carbs = (c.carbs_training_day && c.carbs_rest_day)
-            ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day)
-            : c.carbs_target
           return (
             <div className={`border rounded-2xl p-4 mb-3 flex items-center gap-2.5 ${allDone ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
               <p className="text-sm text-gray-700 leading-snug">
                 <span className="font-semibold text-gray-900">今日重點</span>
-                {c.nutrition_enabled && (
-                  <span className="text-gray-500"> · {isTrainingDayResolved ? '訓練日' : '休息日'}{carbs != null ? `，碳水 ${carbs}g` : ''}</span>
-                )}
+                {/* 訓練日/碳水已由上方 TodayHeadline 講過，這裡不重複（去重複頁首） */}
                 {' · '}
                 {allDone
                   ? <span className="text-emerald-700 font-semibold">五項打卡完成，今天收工</span>

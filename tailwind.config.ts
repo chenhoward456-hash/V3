@@ -16,6 +16,14 @@ const config: Config = {
           DEFAULT: '#2563EB',
           dark: '#1E40AF',
           foreground: '#ffffff',
+          // 完整色階（對齊 DESIGN.md：hover=blue-700、淺底=blue-50），
+          // 讓 blue-* 死值可以 1:1 換成 primary-* token
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          400: '#60A5FA',
+          500: '#3B82F6',
+          600: '#2563EB',
+          700: '#1D4ED8',
         },
         secondary: '#F59E0B',
         success: '#10B981',
