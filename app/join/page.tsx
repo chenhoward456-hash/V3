@@ -165,7 +165,7 @@ function JoinPageInner() {
     return `w-full px-4 py-3 border-2 rounded-xl text-base focus:outline-none transition-colors ${
       hasError
         ? 'border-red-400 bg-red-50/30 focus:border-red-500'
-        : 'border-gray-200 focus:border-[#2563eb]'
+        : 'border-gray-200 focus:border-[#1E4A73]'
     } ${base || ''}`
   }
 
@@ -341,7 +341,7 @@ function JoinPageInner() {
           </div>
           <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#2563eb] rounded-full transition-all duration-500 ease-out"
+              className="h-full bg-[#1E4A73] rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -350,13 +350,13 @@ function JoinPageInner() {
               <div key={label} className="flex items-center gap-1.5">
                 <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
                   i + 1 <= currentStep
-                    ? 'bg-[#2563eb] text-white'
+                    ? 'bg-[#1E4A73] text-white'
                     : 'bg-gray-200 text-gray-400'
                 }`}>
                   {i + 1 <= currentStep ? '\u2713' : i + 1}
                 </div>
                 <span className={`text-xs transition-colors ${
-                  i + 1 <= currentStep ? 'text-[#2563eb] font-semibold' : 'text-gray-400'
+                  i + 1 <= currentStep ? 'text-[#1E4A73] font-semibold' : 'text-gray-400'
                 }`}>
                   {label}
                 </span>
@@ -368,7 +368,7 @@ function JoinPageInner() {
 
       {/* Header */}
       <div className="text-center mb-12">
-        <div className="inline-block bg-[#2563eb]/10 text-[#2563eb] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
+        <div className="inline-block bg-[#1E4A73]/10 text-[#1E4A73] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
           自助加入
         </div>
         <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: '#1e3a5f' }}>
@@ -388,9 +388,9 @@ function JoinPageInner() {
             key={tier}
             className={`relative bg-white rounded-2xl border-2 p-5 transition-all ${isLineOnly ? '' : 'cursor-pointer'} hover:shadow-lg ${
               selectedTier === tier
-                ? 'border-[#2563eb] shadow-md'
+                ? 'border-[#1E4A73] shadow-md'
                 : plan.highlight
-                ? 'border-[#2563eb]/50 shadow-sm'
+                ? 'border-[#1E4A73]/50 shadow-sm'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
             onClick={() => !isLineOnly && handleSelectPlan(tier)}
@@ -413,7 +413,7 @@ function JoinPageInner() {
                 <div className="text-center">
                   <div className="flex items-baseline justify-center gap-1.5">
                     <span className="line-through text-gray-400 text-sm">NT${plan.priceLabel}</span>
-                    <span className="text-2xl font-bold text-blue-600">NT${plan.promoPrice}</span>
+                    <span className="text-2xl font-bold text-primary-600">NT${plan.promoPrice}</span>
                     <span className="text-xs text-gray-400">/首月</span>
                   </div>
                   <span className="text-xs text-gray-500">次月起 NT${plan.priceLabel}/月</span>
@@ -453,11 +453,11 @@ function JoinPageInner() {
                 onClick={(e) => { e.stopPropagation(); handleSelectPlan(tier) }}
                 className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors ${
                   selectedTier === tier
-                    ? 'bg-[#2563eb] text-white'
+                    ? 'bg-[#1E4A73] text-white'
                     : plan.price === 0
                     ? 'bg-green-500 text-white hover:bg-green-600'
                     : plan.highlight
-                    ? 'bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20'
+                    ? 'bg-[#1E4A73]/10 text-[#1E4A73] hover:bg-[#1E4A73]/20'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -474,7 +474,7 @@ function JoinPageInner() {
         <div className="text-center mb-6 -mt-6">
           <button
             onClick={() => handleSelectPlan('free')}
-            className="text-sm text-gray-400 hover:text-[#2563eb] transition-colors"
+            className="text-sm text-gray-400 hover:text-[#1E4A73] transition-colors"
           >
             還沒準備好？先從免費方案開始 &rarr;
           </button>
@@ -498,7 +498,7 @@ function JoinPageInner() {
                   placeholder="your@email.com"
                   value={waitlistEmail}
                   onChange={(e) => setWaitlistEmail(e.target.value)}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#2563eb] transition-colors"
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4A73] transition-colors"
                 />
                 <button
                   onClick={async () => {
@@ -513,7 +513,7 @@ function JoinPageInner() {
                       trackEvent('upgrade_cta_clicked', { type: 'waitlist', tier: 'self_managed' })
                     } catch {}
                   }}
-                  className="bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1d4ed8] transition-colors whitespace-nowrap"
+                  className="bg-[#1E4A73] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#16385A] transition-colors whitespace-nowrap"
                 >
                   加入候補
                 </button>
@@ -536,7 +536,7 @@ function JoinPageInner() {
               {isFree && '（免費）'}
               <button
                 onClick={() => { setFormStep('plans'); setSelectedTier(null) }}
-                className="text-[#2563eb] hover:underline ml-2"
+                className="text-[#1E4A73] hover:underline ml-2"
               >
                 更改
               </button>
@@ -588,7 +588,7 @@ function JoinPageInner() {
                     placeholder="0912345678"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
                   />
                 </div>
               )}
@@ -604,7 +604,7 @@ function JoinPageInner() {
                       onClick={() => setGender(g)}
                       className={`py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
                         gender === g
-                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                          ? 'border-[#1E4A73] bg-[#1E4A73]/10 text-[#1E4A73]'
                           : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                       }`}
                     >
@@ -647,7 +647,7 @@ function JoinPageInner() {
                       onClick={() => setGoalType(key)}
                       className={`py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
                         goalType === key
-                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                          ? 'border-[#1E4A73] bg-[#1E4A73]/10 text-[#1E4A73]'
                           : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                       }`}
                     >
@@ -702,7 +702,7 @@ function JoinPageInner() {
                 <button
                   type="button"
                   onClick={() => setShowOptionalFields(true)}
-                  className="w-full text-center text-sm text-[#2563eb] hover:underline py-2"
+                  className="w-full text-center text-sm text-[#1E4A73] hover:underline py-2"
                 >
                   填寫更多資料（選填，計算更準確）
                 </button>
@@ -753,7 +753,7 @@ function JoinPageInner() {
                     min="30"
                     max="300"
                     step="0.1"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
                   />
                 </div>
                 <div>
@@ -769,7 +769,7 @@ function JoinPageInner() {
                     min="3"
                     max="60"
                     step="0.1"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
                   />
                 </div>
               </div>
@@ -796,7 +796,7 @@ function JoinPageInner() {
                       onClick={() => setActivityLevel(key)}
                       className={`py-2.5 rounded-xl text-sm transition-all border-2 ${
                         activityLevel === key
-                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb] font-semibold'
+                          ? 'border-[#1E4A73] bg-[#1E4A73]/10 text-[#1E4A73] font-semibold'
                           : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                       }`}
                     >
@@ -818,7 +818,7 @@ function JoinPageInner() {
                       onClick={() => setTrainingDays(String(d))}
                       className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all border-2 ${
                         parseInt(trainingDays) === d
-                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                          ? 'border-[#1E4A73] bg-[#1E4A73]/10 text-[#1E4A73]'
                           : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
                       }`}
                     >
@@ -847,15 +847,15 @@ function JoinPageInner() {
                   type="checkbox"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#2563eb] focus:ring-[#2563eb]"
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#1E4A73] focus:ring-[#1E4A73]"
                 />
                 <span className="text-xs text-gray-500 leading-relaxed">
                   我已閱讀並同意{' '}
-                  <Link href="/terms" target="_blank" className="text-[#2563eb] hover:underline">服務條款</Link>、
-                  <Link href="/privacy" target="_blank" className="text-[#2563eb] hover:underline">隱私政策</Link>、
-                  <Link href="/refund-policy" target="_blank" className="text-[#2563eb] hover:underline">退費政策</Link>
+                  <Link href="/terms" target="_blank" className="text-[#1E4A73] hover:underline">服務條款</Link>、
+                  <Link href="/privacy" target="_blank" className="text-[#1E4A73] hover:underline">隱私政策</Link>、
+                  <Link href="/refund-policy" target="_blank" className="text-[#1E4A73] hover:underline">退費政策</Link>
                   {' '}及{' '}
-                  <Link href="/medical-disclaimer" target="_blank" className="text-[#2563eb] hover:underline">醫療免責聲明</Link>
+                  <Link href="/medical-disclaimer" target="_blank" className="text-[#1E4A73] hover:underline">醫療免責聲明</Link>
                 </span>
               </label>
 
@@ -866,7 +866,7 @@ function JoinPageInner() {
                 className={`w-full py-4 rounded-xl font-bold text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2 flex items-center justify-center gap-2 ${
                   isFree
                     ? 'bg-green-500 text-white hover:bg-green-600'
-                    : 'bg-[#2563eb] text-white hover:bg-[#1d4ed8]'
+                    : 'bg-[#1E4A73] text-white hover:bg-[#16385A]'
                 }`}
               >
                 {isSubmitting && (
@@ -932,7 +932,7 @@ function JoinPageInner() {
                       setSelectedTier('free')
                       trackEvent('plan_downgrade_to_free', { from: selectedTier })
                     }}
-                    className="text-xs text-gray-400 hover:text-[#2563eb] transition-colors"
+                    className="text-xs text-gray-400 hover:text-[#1E4A73] transition-colors"
                   >
                     還沒準備好？先從免費方案開始 &rarr;
                   </button>
@@ -951,7 +951,7 @@ function JoinPageInner() {
       <div className="text-center mt-10">
         <p className="text-sm text-gray-400">
           想先了解系統？
-          <Link href="/diagnosis" className="text-[#2563eb] hover:underline ml-1">
+          <Link href="/diagnosis" className="text-[#1E4A73] hover:underline ml-1">
             免費系統分析體驗
           </Link>
         </p>

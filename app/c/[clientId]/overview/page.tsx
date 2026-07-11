@@ -468,7 +468,7 @@ export default function ClientOverviewPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">載入你的數據...</p>
         </div>
       </div>
@@ -481,7 +481,7 @@ export default function ClientOverviewPage() {
         <div className="text-center max-w-md">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">載入失敗</h1>
           <p className="text-gray-600 mb-4">找不到你的資料，請回首頁重試。</p>
-          <Link href={`/c/${clientId}`} className="text-blue-600 underline">回首頁</Link>
+          <Link href={`/c/${clientId}`} className="text-primary-600 underline">回首頁</Link>
         </div>
       </div>
     )
@@ -599,7 +599,7 @@ export default function ClientOverviewPage() {
                     <XAxis dataKey="label" fontSize={10} />
                     <YAxis fontSize={10} domain={['auto', 'auto']} />
                     <Tooltip />
-                    <Line type="monotone" dataKey="體重" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="體重" stroke="#1E4A73" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
                 <div className="flex gap-4 mt-2 text-xs">
@@ -636,7 +636,7 @@ export default function ClientOverviewPage() {
                     <XAxis dataKey="date" fontSize={11} />
                     <YAxis fontSize={11} domain={['auto', 'auto']} />
                     <Tooltip />
-                    <Line type="monotone" dataKey="體重" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="體重" stroke="#1E4A73" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -655,7 +655,7 @@ export default function ClientOverviewPage() {
                     <XAxis dataKey="date" fontSize={11} />
                     <YAxis fontSize={11} domain={['auto', 'auto']} />
                     <Tooltip />
-                    <Line type="monotone" dataKey="體脂" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="體脂" stroke="#1E4A73" strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -679,7 +679,7 @@ export default function ClientOverviewPage() {
                     {week.map(({ date, label, log, isToday, isFuture }) => (
                       <div
                         key={date}
-                        className={`aspect-square flex flex-col items-center justify-center rounded-lg text-xs ${isToday ? 'ring-2 ring-blue-400' : ''} ${
+                        className={`aspect-square flex flex-col items-center justify-center rounded-lg text-xs ${isToday ? 'ring-2 ring-primary-400' : ''} ${
                           isFuture ? 'bg-gray-50 text-gray-300'
                             : log ? getTypeBgColor(log.training_type)
                             : 'bg-gray-50 text-gray-400'
@@ -704,7 +704,7 @@ export default function ClientOverviewPage() {
                     <XAxis type="number" fontSize={11} />
                     <YAxis type="category" dataKey="name" fontSize={11} width={40} />
                     <Tooltip />
-                    <Bar dataKey="次數" fill="#2563eb" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="次數" fill="#1E4A73" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -749,7 +749,7 @@ export default function ClientOverviewPage() {
                     <YAxis fontSize={10} />
                     <Tooltip />
                     {c.calories_target && <ReferenceLine y={Number(c.calories_target)} stroke="#10b981" strokeDasharray="3 3" label={{ value: `目標 ${c.calories_target}`, fontSize: 10, fill: '#10b981' }} />}
-                    <Line type="monotone" dataKey="卡路里" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="卡路里" stroke="#1E4A73" strokeWidth={2} dot={{ r: 2 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -764,7 +764,7 @@ export default function ClientOverviewPage() {
                     <YAxis fontSize={10} />
                     <Tooltip />
                     {c.protein_target && <ReferenceLine y={Number(c.protein_target)} stroke="#10b981" strokeDasharray="3 3" label={{ value: `目標 ${c.protein_target}g`, fontSize: 10, fill: '#10b981' }} />}
-                    <Line type="monotone" dataKey="蛋白質" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="蛋白質" stroke="#1E4A73" strokeWidth={2} dot={{ r: 2 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -779,7 +779,7 @@ export default function ClientOverviewPage() {
                     <YAxis fontSize={10} />
                     <Tooltip />
                     {c.water_target && <ReferenceLine y={Number(c.water_target)} stroke="#10b981" strokeDasharray="3 3" label={{ value: `目標 ${c.water_target}ml`, fontSize: 10, fill: '#10b981' }} />}
-                    <Line type="monotone" dataKey="飲水ml" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="飲水ml" stroke="#1E4A73" strokeWidth={2} dot={{ r: 2 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -810,7 +810,7 @@ export default function ClientOverviewPage() {
                     <Tooltip />
                     <Legend />
                     {Object.keys(e1rmTrend[0] || {}).filter(k => k !== 'date').map((k, i) => {
-                      const colors = ['#2563eb', '#64748b', '#94a3b8']
+                      const colors = ['#1E4A73', '#64748b', '#94a3b8']
                       return <Line key={k} type="monotone" dataKey={k} stroke={colors[i % 3]} strokeWidth={2} dot={{ r: 3 }} connectNulls />
                     })}
                   </LineChart>
@@ -836,7 +836,7 @@ export default function ClientOverviewPage() {
                       <XAxis dataKey="week" fontSize={10} />
                       <YAxis fontSize={10} />
                       <Tooltip formatter={(v: any) => [`${v.toLocaleString()} kg`, '訓練量']} />
-                      <Bar dataKey="訓練量" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="訓練量" fill="#1E4A73" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                   <p className="text-[11px] text-gray-400 mt-2">總訓練量 = Σ (重量 × 次數)</p>
@@ -907,7 +907,7 @@ export default function ClientOverviewPage() {
                         <XAxis dataKey="date" fontSize={11} />
                         <YAxis domain={[0, 100]} fontSize={11} />
                         <Tooltip formatter={(v: any) => [`${v}%`, '服從率']} />
-                        <Line type="monotone" dataKey="服從率" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="服從率" stroke="#1E4A73" strokeWidth={2} dot={{ r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
@@ -932,7 +932,7 @@ export default function ClientOverviewPage() {
                         <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} fontSize={11} />
                         <Tooltip />
                         <Legend />
-                        <Line type="monotone" dataKey="睡眠" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} />
+                        <Line type="monotone" dataKey="睡眠" stroke="#1E4A73" strokeWidth={2} dot={{ r: 2 }} />
                         <Line type="monotone" dataKey="精力" stroke="#64748b" strokeWidth={2} dot={{ r: 2 }} />
                         <Line type="monotone" dataKey="心情" stroke="#94a3b8" strokeWidth={2} dot={{ r: 2 }} />
                       </LineChart>
@@ -979,19 +979,19 @@ export default function ClientOverviewPage() {
                   key={a.slug}
                   href={`/blog/${a.slug}`}
                   target="_blank"
-                  className="group flex items-start gap-2 p-3 rounded-xl border border-slate-200 hover:border-blue-200 hover:bg-blue-50/30 transition-colors"
+                  className="group flex items-start gap-2 p-3 rounded-xl border border-slate-200 hover:border-primary-200 hover:bg-primary-50/30 transition-colors"
                 >
                   <span className="text-base flex-shrink-0">📖</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] text-slate-500 font-medium mb-0.5">{a.metric}</p>
-                    <p className="text-xs text-gray-800 leading-snug group-hover:text-blue-700">{a.title}</p>
+                    <p className="text-xs text-gray-800 leading-snug group-hover:text-primary-700">{a.title}</p>
                   </div>
-                  <span className="text-gray-300 group-hover:text-blue-600 flex-shrink-0">→</span>
+                  <span className="text-gray-300 group-hover:text-primary-600 flex-shrink-0">→</span>
                 </Link>
               ))
             })()}
           </div>
-          <Link href="/blog" target="_blank" className="block mt-4 text-center text-xs text-blue-600 hover:underline">
+          <Link href="/blog" target="_blank" className="block mt-4 text-center text-xs text-primary-600 hover:underline">
             看完整文章列表 →
           </Link>
         </div>

@@ -47,7 +47,7 @@ function WelcomeBannerInner({ clientId }: Props) {
       <div className="flex items-center gap-1 shrink-0">
         <Link
           href={`/c/${clientId}/help`}
-          className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg whitespace-nowrap"
+          className="text-xs bg-primary-600 hover:bg-primary-700 text-white px-3 py-2 rounded-lg whitespace-nowrap"
         >
           打開 →
         </Link>

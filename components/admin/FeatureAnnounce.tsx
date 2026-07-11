@@ -53,7 +53,7 @@ export default function FeatureAnnounce() {
             <input
               type="text" value={title} onChange={e => setTitle(e.target.value)}
               placeholder="例：新功能上線"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <div>
@@ -61,7 +61,7 @@ export default function FeatureAnnounce() {
             <input
               type="text" value={body} onChange={e => setBody(e.target.value)}
               placeholder="例：現在可以在儀表板看完整健康報告了"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <div>
@@ -69,14 +69,14 @@ export default function FeatureAnnounce() {
             <input
               type="text" value={url} onChange={e => setUrl(e.target.value)}
               placeholder="/dashboard"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <p className="text-[11px] text-gray-400 mt-1">只能用同源相對路徑（如 /dashboard），外部網址會被導回首頁。</p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={send} disabled={sending}
-              className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="bg-primary-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
             >
               {sending ? '發送中…' : '發送公告推播'}
             </button>

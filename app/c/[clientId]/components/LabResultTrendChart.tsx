@@ -258,9 +258,9 @@ function LabResultTrendChart({
             <Line 
               type="monotone" 
               dataKey="value" 
-              stroke="#2563eb"
+              stroke="#1E4A73"
               strokeWidth={2}
-              dot={{ r: 4, fill: '#2563eb' }}
+              dot={{ r: 4, fill: '#1E4A73' }}
               activeDot={{ r: 6 }}
             />
           </LineChart>

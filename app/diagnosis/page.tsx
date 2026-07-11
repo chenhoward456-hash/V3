@@ -172,7 +172,7 @@ export default function DiagnosisPage() {
     <section className="max-w-4xl mx-auto px-6 py-16 md:py-20">
       {/* Header */}
       <div className="text-center mb-10">
-        <div className="inline-block bg-[#2563eb]/10 text-[#2563eb] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
+        <div className="inline-block bg-[#1E4A73]/10 text-[#1E4A73] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
           Smart Engine Demo
         </div>
         <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: '#1e3a5f' }}>
@@ -192,7 +192,7 @@ export default function DiagnosisPage() {
                 s < step || (s === 3 && result)
                   ? 'border-green-500 bg-green-500 text-white'
                   : s === step
-                  ? 'border-[#2563eb] bg-[#2563eb] text-white'
+                  ? 'border-[#1E4A73] bg-[#1E4A73] text-white'
                   : 'border-gray-200 bg-white text-gray-400'
               }`}
             >
@@ -224,7 +224,7 @@ export default function DiagnosisPage() {
                       onClick={() => setGender(g)}
                       className={`py-3.5 rounded-xl font-semibold text-base transition-all border-2 ${
                         gender === g
-                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                          ? 'border-[#1E4A73] bg-[#1E4A73]/10 text-[#1E4A73]'
                           : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                       }`}
                     >
@@ -242,7 +242,7 @@ export default function DiagnosisPage() {
                   placeholder="例如 75"
                   value={bodyWeight}
                   onChange={(e) => setBodyWeight(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
                 />
               </div>
 
@@ -254,7 +254,7 @@ export default function DiagnosisPage() {
                   placeholder="例如 175"
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
                 />
               </div>
 
@@ -266,7 +266,7 @@ export default function DiagnosisPage() {
                   placeholder="例如 18"
                   value={bodyFatPct}
                   onChange={(e) => setBodyFatPct(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
                 />
                 <p className="text-xs text-gray-400 mt-1.5">
                   不確定？跳過也可以，系統會用體重公式估算。填入體脂率可用 Katch-McArdle 公式，準確度更高。
@@ -283,7 +283,7 @@ export default function DiagnosisPage() {
                       onClick={() => setGoalType(key)}
                       className={`py-3.5 rounded-xl font-semibold text-base transition-all border-2 ${
                         goalType === key
-                          ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                          ? 'border-[#1E4A73] bg-[#1E4A73]/10 text-[#1E4A73]'
                           : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                       }`}
                     >
@@ -299,7 +299,7 @@ export default function DiagnosisPage() {
                   trackEvent('diagnosis_step1_complete', { gender, goal_type: goalType })
                 }}
                 disabled={!canProceedStep1}
-                className="w-full bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold text-base hover:bg-[#1d4ed8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed mt-4"
+                className="w-full bg-[#1E4A73] text-white py-3.5 rounded-xl font-semibold text-base hover:bg-[#16385A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed mt-4"
               >
                 下一步 →
               </button>
@@ -323,7 +323,7 @@ export default function DiagnosisPage() {
                   placeholder={goalType === 'cut' ? '例如 70' : '例如 80'}
                   value={targetWeight}
                   onChange={(e) => setTargetWeight(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
                 />
               </div>
 
@@ -337,7 +337,7 @@ export default function DiagnosisPage() {
                       onClick={() => setTrainingDays(d)}
                       className={`py-3 rounded-xl font-bold text-sm transition-all ${
                         trainingDays === d
-                          ? 'bg-[#2563eb] text-white shadow-sm'
+                          ? 'bg-[#1E4A73] text-white shadow-sm'
                           : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
                       }`}
                     >
@@ -358,7 +358,7 @@ export default function DiagnosisPage() {
                 <button
                   onClick={handleRunAnalysis}
                   disabled={!canProceedStep2}
-                  className="flex-[2] bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold text-base hover:bg-[#1d4ed8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-[2] bg-[#1E4A73] text-white py-3.5 rounded-xl font-semibold text-base hover:bg-[#16385A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   🧠 執行系統分析
                 </button>
@@ -411,10 +411,10 @@ export default function DiagnosisPage() {
                       <p className="text-[10px] text-gray-400">kcal/天</p>
                     </div>
                     {/* 目標熱量 — 直接給（先讓人爽到，不設牆。aha moment 不該被扣為人質） */}
-                    <div className="bg-[#2563eb]/5 p-3 text-center border border-[#2563eb]/20 rounded-xl">
-                      <p className="text-[10px] text-[#2563eb] mb-1">目標熱量</p>
-                      <p className="text-xl font-bold text-[#2563eb]">{result.suggestedCalories.toLocaleString()}</p>
-                      <p className="text-[10px] text-[#2563eb]">kcal/天</p>
+                    <div className="bg-[#1E4A73]/5 p-3 text-center border border-[#1E4A73]/20 rounded-xl">
+                      <p className="text-[10px] text-[#1E4A73] mb-1">目標熱量</p>
+                      <p className="text-xl font-bold text-[#1E4A73]">{result.suggestedCalories.toLocaleString()}</p>
+                      <p className="text-[10px] text-[#1E4A73]">kcal/天</p>
                     </div>
                     {/* 赤字/盈餘 — 直接給 */}
                     <div className="bg-gray-50 p-3 text-center rounded-xl">
@@ -445,7 +445,7 @@ export default function DiagnosisPage() {
 
                   {/* 選填加值：把完整報告寄到信箱（不是看結果的門票，是 bonus） */}
                   {!emailSent ? (
-                    <div className="bg-gradient-to-br from-[#2563eb]/5 to-[#2563eb]/10 border border-[#2563eb]/20 rounded-2xl p-4">
+                    <div className="bg-gradient-to-br from-[#1E4A73]/5 to-[#1E4A73]/10 border border-[#1E4A73]/20 rounded-2xl p-4">
                       <div className="text-center mb-3">
                         <p className="text-sm font-bold" style={{ color: '#1e3a5f' }}>📧 想把這份完整報告留著？（選填）</p>
                         <p className="text-xs text-gray-500 mt-1">留 Email，把目標熱量、巨量營養素、時程整份寄給你，日後好對照</p>
@@ -460,12 +460,12 @@ export default function DiagnosisPage() {
                             if (emailError) setEmailError('')
                           }}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleEmailSubmit() }}
-                          className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#2563eb] transition-colors bg-white"
+                          className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4A73] transition-colors bg-white"
                         />
                         <button
                           onClick={handleEmailSubmit}
                           disabled={emailSubmitting}
-                          className="px-6 py-3 bg-[#2563eb] text-white text-sm font-bold rounded-xl hover:bg-[#1d4ed8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                          className="px-6 py-3 bg-[#1E4A73] text-white text-sm font-bold rounded-xl hover:bg-[#16385A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                         >
                           {emailSubmitting ? '寄送中...' : '寄給我'}
                         </button>
@@ -510,7 +510,7 @@ export default function DiagnosisPage() {
                   <div className="flex flex-col sm:flex-row gap-2.5">
                     <button
                       onClick={handleCopyShareLink}
-                      className="relative flex-1 flex items-center justify-center gap-2 py-3 px-4 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:border-[#2563eb] hover:text-[#2563eb] transition-all bg-white"
+                      className="relative flex-1 flex items-center justify-center gap-2 py-3 px-4 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:border-[#1E4A73] hover:text-[#1E4A73] transition-all bg-white"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0-12.814a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0 12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
@@ -536,7 +536,7 @@ export default function DiagnosisPage() {
 
                   {/* ===== 訂閱方案 CTA ===== */}
                   <div className="border-t border-gray-100 pt-6 mt-2">
-                    <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb] rounded-2xl p-6 md:p-8 text-center">
+                    <div className="bg-gradient-to-br from-[#1e3a5f] to-[#1E4A73] rounded-2xl p-6 md:p-8 text-center">
                       <p className="text-white text-lg font-bold mb-2">
                         想讓系統每天幫你追蹤？
                       </p>
@@ -573,7 +573,7 @@ export default function DiagnosisPage() {
               <div className="text-center">
                 <button
                   onClick={handleReset}
-                  className="text-gray-400 hover:text-[#2563eb] text-sm underline transition-colors"
+                  className="text-gray-400 hover:text-[#1E4A73] text-sm underline transition-colors"
                 >
                   🔄 重新輸入資料
                 </button>

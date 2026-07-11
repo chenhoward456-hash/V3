@@ -264,7 +264,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           {!hasRecorded && lastNutrition && (
             <button
               onClick={copyLastNutrition}
-              className="text-[11px] font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full hover:bg-blue-100 transition-colors"
+              className="text-[11px] font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full hover:bg-primary-100 transition-colors"
             >
               跟昨天一樣
             </button>
@@ -360,7 +360,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                     }}
                     className={`py-2 rounded-xl text-xs font-medium transition-all ${
                       roughEstimate === est.key
-                        ? 'bg-blue-50 border-2 border-blue-200 text-blue-700'
+                        ? 'bg-primary-50 border-2 border-primary-200 text-primary-700'
                         : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -394,7 +394,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${effectiveIsTraining ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}`}
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${effectiveIsTraining ? 'bg-primary-50 text-primary-700' : 'bg-slate-100 text-slate-600'}`}
                     >
                       {effectiveIsTraining ? '訓練日' : '休息日'} {manualDayType ? '(手動)' : '(自動)'} ▾
                     </button>
@@ -408,7 +408,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                       </button>
                     )}
                     {!manualDayType && isTrainingDay && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] text-blue-700 bg-blue-50 animate-pulse">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] text-primary-700 bg-primary-50 animate-pulse">
                         從訓練紀錄偵測
                       </span>
                     )}
@@ -501,7 +501,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${effectiveIsTraining ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}`}
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${effectiveIsTraining ? 'bg-primary-50 text-primary-700' : 'bg-slate-100 text-slate-600'}`}
                     >
                       {effectiveIsTraining ? '訓練日' : '休息日'} {manualDayType ? '(手動)' : '(自動)'} ▾
                     </button>
@@ -591,7 +591,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       {(isNewUser || compliant !== null) && (
         <div className="mb-4">
           {!showNote && !note ? (
-            <button onClick={() => setShowNote(true)} className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
+            <button onClick={() => setShowNote(true)} className="text-sm text-primary-600 hover:text-primary-800 transition-colors">
               + 新增備註 <span className="text-gray-400 text-xs">（選填）</span>
             </button>
           ) : (
@@ -601,7 +601,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="今天吃了什麼？有什麼特別情況？"
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
               />
             </div>
           )}
@@ -638,7 +638,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
         <button
           onClick={handleSaveAll}
           disabled={saving}
-          className="w-full py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-colors disabled:opacity-50 mb-4"
+          className="w-full py-3 bg-primary-600 text-white font-semibold rounded-2xl hover:bg-primary-700 transition-colors disabled:opacity-50 mb-4"
         >
           {saving ? '儲存中...' : hasRecorded ? '更新飲食紀錄' : '儲存飲食紀錄'}
         </button>
@@ -657,9 +657,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
         <div className="grid grid-cols-7 gap-2">
           {weekDays.map((day) => (
             <div key={day.date} className="text-center">
-              <p className={`text-xs mb-1 ${day.isToday ? 'font-bold text-blue-600' : 'text-gray-400'}`}>{day.label}</p>
+              <p className={`text-xs mb-1 ${day.isToday ? 'font-bold text-primary-600' : 'text-gray-400'}`}>{day.label}</p>
               <div className={`w-8 h-8 mx-auto flex items-center justify-center rounded-lg text-lg ${
-                day.isToday ? 'ring-2 ring-blue-400' : ''
+                day.isToday ? 'ring-2 ring-primary-400' : ''
               } ${
                 day.log == null
                   ? 'bg-slate-50'
@@ -696,7 +696,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                           <>
                             <span className="text-[11px] text-gray-500 font-medium text-center w-full block tabular-nums">{d.protein}</span>
                             <div
-                              className={`w-full rounded-t transition-all ${reached ? 'bg-emerald-400' : 'bg-blue-300'}`}
+                              className={`w-full rounded-t transition-all ${reached ? 'bg-emerald-400' : 'bg-primary-300'}`}
                               style={{ height: `${Math.max(8, pct)}%` }}
                             />
                           </>
@@ -728,7 +728,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                       <div className="w-full flex flex-col justify-end h-12">
                         {d.water != null ? (
                           <div
-                            className={`w-full rounded-t transition-all ${reached ? 'bg-emerald-400' : 'bg-blue-300'}`}
+                            className={`w-full rounded-t transition-all ${reached ? 'bg-emerald-400' : 'bg-primary-300'}`}
                             style={{ height: `${Math.max(8, pct)}%` }}
                             title={`${d.water}ml`}
                           />

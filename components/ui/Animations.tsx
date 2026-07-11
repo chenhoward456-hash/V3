@@ -46,7 +46,7 @@ interface ProgressRingProps {
   color?: string
 }
 
-export function ProgressRing({ progress, size = 120, strokeWidth = 8, color = '#3B82F6' }: ProgressRingProps) {
+export function ProgressRing({ progress, size = 120, strokeWidth = 8, color = '#3D6E9E' }: ProgressRingProps) {
   const radius = (size - strokeWidth) / 2
   const circumference = radius * 2 * Math.PI
   const offset = circumference - (progress / 100) * circumference
@@ -107,7 +107,7 @@ export function FloatingNotification({ message, type, onClose }: FloatingNotific
 
   const colors = {
     success: 'bg-green-500',
-    info: 'bg-blue-500',
+    info: 'bg-primary-500',
     warning: 'bg-yellow-500'
   }
 

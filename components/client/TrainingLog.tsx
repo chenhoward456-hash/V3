@@ -584,7 +584,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         {/* 今日訓練準備度（簡單模式隱藏）— 中性卡 + 狀態色點，去除整片底色 */}
         {!simpleMode && readiness && readiness.recoveryScore != null && (() => {
           const intensity = readiness.recommendedIntensity
-          const dot = intensity === 'high' ? 'bg-emerald-500' : intensity === 'moderate' ? 'bg-blue-500' : intensity === 'low' ? 'bg-amber-500' : 'bg-rose-500'
+          const dot = intensity === 'high' ? 'bg-emerald-500' : intensity === 'moderate' ? 'bg-primary-500' : intensity === 'low' ? 'bg-amber-500' : 'bg-rose-500'
           const label = intensity === 'high' ? '狀態良好' : intensity === 'moderate' ? '狀態一般' : intensity === 'low' ? '恢復偏差' : '建議休息'
           return (
             <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
@@ -620,7 +620,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         )}
         {!simpleMode && readiness?.modeRecommendation && !isPlannedDeloadWeek && (() => {
           const mode = readiness.modeRecommendation
-          const dotColor = ({ purple: 'bg-slate-400', red: 'bg-rose-500', blue: 'bg-blue-500', amber: 'bg-amber-500', teal: 'bg-slate-400', green: 'bg-emerald-500' } as Record<string, string>)[mode.modeColor] || 'bg-blue-500'
+          const dotColor = ({ purple: 'bg-slate-400', red: 'bg-rose-500', blue: 'bg-primary-500', amber: 'bg-amber-500', teal: 'bg-slate-400', green: 'bg-emerald-500' } as Record<string, string>)[mode.modeColor] || 'bg-primary-500'
           const totalReasons = mode.reasons.length + mode.geneticTrainingCorrections.length
           return (
             <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
@@ -640,7 +640,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
               </div>
 
               {tier === 'self_managed' && (
-                <p className="text-[11px] text-blue-500 mb-2">
+                <p className="text-[11px] text-primary-500 mb-2">
                   <a href="/upgrade?from=self_managed&feature=personalized_sets" className="hover:underline">升級教練指導，獲得根據你的經驗、恢復和基因計算的個人化建議 →</a>
                 </p>
               )}
@@ -693,7 +693,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 onClick={() => setForm(prev => ({ ...prev, training_type: value }))}
                 className={`min-h-[44px] py-2 rounded-lg text-sm font-medium transition-all ${
                   form.training_type === value
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -708,7 +708,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 onClick={() => setForm(prev => ({ ...prev, training_type: value }))}
                 className={`min-h-[44px] py-2 rounded-lg text-sm font-medium transition-all ${
                   form.training_type === value
-                    ? value === 'rest' ? 'bg-gray-600 text-white' : 'bg-blue-600 text-white'
+                    ? value === 'rest' ? 'bg-gray-600 text-white' : 'bg-primary-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -724,7 +724,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
             <span className="text-gray-600">今天休息</span>
             <button
               onClick={() => setShowRestForm(true)}
-              className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
+              className="text-xs text-primary-500 hover:text-primary-700 transition-colors"
             >
               修改
             </button>
@@ -742,7 +742,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                   onClick={() => setCardioSubtype(cardioSubtype === value ? null : value)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     cardioSubtype === value
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -780,7 +780,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 inputMode="numeric"
                 value={form.duration ?? ''}
                 onChange={(e) => setForm(prev => ({ ...prev, duration: e.target.value ? Number(e.target.value) : null }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="60"
                 min={1}
               />
@@ -792,7 +792,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 inputMode="numeric"
                 value={form.sets ?? ''}
                 onChange={(e) => setForm(prev => ({ ...prev, sets: e.target.value ? Number(e.target.value) : null }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="20"
                 min={1}
               />
@@ -811,7 +811,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                     onClick={() => setForm(prev => ({ ...prev, rpe: score }))}
                     className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm font-medium transition-all ${
                       form.rpe === score
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-primary-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
@@ -826,7 +826,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                     onClick={() => setForm(prev => ({ ...prev, rpe: score }))}
                     className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm font-medium transition-all ${
                       form.rpe === score
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-primary-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
@@ -851,7 +851,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                   step="2.5"
                   value={form.compound_weight ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, compound_weight: e.target.value ? Number(e.target.value) : null }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                   placeholder="100"
                 />
               </div>
@@ -862,7 +862,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                   inputMode="numeric"
                   value={form.compound_reps ?? ''}
                   onChange={(e) => setForm(prev => ({ ...prev, compound_reps: e.target.value ? Number(e.target.value) : null }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                   placeholder="8"
                 />
               </div>
@@ -888,7 +888,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
             {!showDetailedSets ? (
               <button
                 onClick={() => setShowDetailedSets(true)}
-                className="w-full py-3 bg-blue-50 border border-blue-200 rounded-xl text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                className="w-full py-3 bg-primary-50 border border-primary-200 rounded-xl text-sm font-medium text-primary-700 hover:bg-primary-100 transition-colors"
               >
                 記錄每個動作（重量/次數/組數）
               </button>
@@ -901,14 +901,14 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
                 {/* 上次紀錄提示 */}
                 {lastTypeSets.length > 0 && detailedSets.length === 0 && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2">
-                    <p className="text-xs text-blue-700 mb-1">上次{form.training_type ? ` ${TRAINING_TYPES.find(t => t.value === form.training_type)?.label || form.training_type} ` : ''}紀錄：</p>
+                  <div className="bg-primary-50 border border-primary-200 rounded-lg p-2 mb-2">
+                    <p className="text-xs text-primary-700 mb-1">上次{form.training_type ? ` ${TRAINING_TYPES.find(t => t.value === form.training_type)?.label || form.training_type} ` : ''}紀錄：</p>
                     <div className="space-y-0.5">
                       {Array.from(new Set(lastTypeSets.map(s => s.exercise_name))).map(name => {
                         const sets = lastTypeSets.filter(s => s.exercise_name === name)
                         const first = sets[0]
                         return (
-                          <p key={name} className="text-[11px] text-blue-600">
+                          <p key={name} className="text-[11px] text-primary-600">
                             {name}: {first.weight}kg x {first.reps} x {first.num_sets || 1}組
                           </p>
                         )
@@ -916,7 +916,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                     </div>
                     <button
                       onClick={() => setDetailedSets(lastTypeSets.map((s, i) => ({ ...s, set_number: i + 1 })))}
-                      className="mt-1.5 text-xs font-medium text-blue-700 bg-blue-100 px-2.5 py-1 rounded-lg hover:bg-blue-200 transition-colors"
+                      className="mt-1.5 text-xs font-medium text-primary-700 bg-primary-100 px-2.5 py-1 rounded-lg hover:bg-primary-200 transition-colors"
                     >
                       複製上次紀錄
                     </button>
@@ -933,11 +933,11 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                           type="text"
                           value={set.exercise_name}
                           onChange={(e) => updateSet(i, 'exercise_name', e.target.value)}
-                          className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                          className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-400"
                           placeholder="動作名稱"
                         />
                         <span className="text-xs text-gray-400 whitespace-nowrap">#{set.set_number}</span>
-                        <button onClick={() => duplicateSet(i)} className="p-1 text-gray-400 hover:text-blue-500" title="複製這組" aria-label="複製這組">
+                        <button onClick={() => duplicateSet(i)} className="p-1 text-gray-400 hover:text-primary-500" title="複製這組" aria-label="複製這組">
                           <Copy className="w-3.5 h-3.5" />
                         </button>
                         <button onClick={() => removeSet(i)} className="p-1 text-gray-400 hover:text-rose-500" title="刪除" aria-label="刪除這組">
@@ -953,7 +953,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                             step="2.5"
                             value={set.weight ?? ''}
                             onChange={(e) => updateSet(i, 'weight', e.target.value ? Number(e.target.value) : null)}
-                            className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-400"
                             placeholder={prevSame?.weight ? String(prevSame.weight) : ''}
                           />
                         </div>
@@ -964,7 +964,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                             inputMode="numeric"
                             value={set.reps ?? ''}
                             onChange={(e) => updateSet(i, 'reps', e.target.value ? Number(e.target.value) : null)}
-                            className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-400"
                             placeholder={prevSame?.reps ? String(prevSame.reps) : ''}
                           />
                         </div>
@@ -987,7 +987,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                               if (v === '' || Number(v) < 1) updateSet(i, 'num_sets', 1)
                               else if (Number(v) > 20) updateSet(i, 'num_sets', 20)
                             }}
-                            className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            className="w-full px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-400"
                             placeholder="3"
                           />
                         </div>
@@ -1001,14 +1001,14 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
                 <button
                   onClick={() => addExercise()}
-                  className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                  className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
                 >
                   + 新增動作
                 </button>
 
                 {/* Tonnage 摘要 */}
                 {detailedSets.some(s => s.weight && s.reps) && (
-                  <div className="bg-blue-50 rounded-lg px-3 py-2 text-xs text-blue-700">
+                  <div className="bg-primary-50 rounded-lg px-3 py-2 text-xs text-primary-700">
                     總訓練量：{Math.round(detailedSets.reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0) * (s.num_sets || 1), 0)).toLocaleString()} kg
                   </div>
                 )}
@@ -1023,7 +1023,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
             <textarea
               value={form.note}
               onChange={(e) => setForm(prev => ({ ...prev, note: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
               rows={2}
               placeholder={isRest ? '今天好好休息！' : '訓練內容、感受...'}
             />
@@ -1043,7 +1043,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="w-full bg-primary-600 text-white py-3 rounded-xl font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
         >
           {submitting ? '提交中...' : todayTraining ? '更新訓練' : '記錄訓練'}
         </button>
@@ -1058,12 +1058,12 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
               <div
                 key={date}
                 className={`flex-1 text-center py-2 rounded-lg text-xs ${
-                  date === today ? 'ring-2 ring-blue-400' : ''
+                  date === today ? 'ring-2 ring-primary-400' : ''
                 } ${
                   log
                     ? log.training_type === 'rest'
                       ? 'bg-gray-100 text-gray-500'
-                      : 'bg-blue-50 text-blue-700'
+                      : 'bg-primary-50 text-primary-700'
                     : 'bg-gray-50 text-gray-400'
                 }`}
               >
@@ -1105,9 +1105,9 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 <Line
                   type="monotone"
                   dataKey="RPE"
-                  stroke="#3b82f6"
+                  stroke="#3D6E9E"
                   strokeWidth={2}
-                  dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
+                  dot={{ r: 4, fill: '#3D6E9E', strokeWidth: 2, stroke: '#fff' }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>

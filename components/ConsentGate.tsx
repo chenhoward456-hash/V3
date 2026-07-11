@@ -108,7 +108,7 @@ export default function ConsentGate({ clientId, onAccepted }: Props) {
           <button
             onClick={handleSubmit}
             disabled={!allChecked || submitting}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 font-medium text-sm"
+            className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-700 font-medium text-sm"
           >
             {submitting ? '儲存中…' : '確認並繼續'}
           </button>
@@ -145,7 +145,7 @@ function ConsentRow({
         <Link
           href={docPath}
           target="_blank"
-          className="ml-1 text-blue-600 underline font-medium"
+          className="ml-1 text-primary-600 underline font-medium"
           onClick={(e) => e.stopPropagation()}
         >
           《{docName}》

@@ -243,7 +243,7 @@ function ChangeReportSection({ reports }: { reports: LabChangeReport[] }) {
       {reports.length > 5 && (
         <button
           onClick={() => setShowAll(!showAll)}
-          className="text-[11px] text-blue-600 mt-2 underline"
+          className="text-[11px] text-primary-600 mt-2 underline"
         >
           {showAll ? '收起' : `查看全部 ${reports.length} 項`}
         </button>
@@ -274,14 +274,14 @@ function OptimizationTipItem({ tip }: { tip: LabOptimizationTip }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+    <div className="bg-primary-50 border border-primary-200 rounded-2xl p-4">
       <button onClick={() => setExpanded(!expanded)} className="w-full text-left">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div>
               <div className="flex items-center gap-1.5">
-                <p className="text-sm font-bold text-blue-700">{tip.title}</p>
-                <span className="text-[11px] px-1.5 py-0.5 rounded-full font-bold bg-blue-100 text-blue-700">可優化</span>
+                <p className="text-sm font-bold text-primary-700">{tip.title}</p>
+                <span className="text-[11px] px-1.5 py-0.5 rounded-full font-bold bg-primary-100 text-primary-700">可優化</span>
               </div>
               <p className="text-[11px] text-gray-500 mt-0.5">
                 目前 {tip.currentValue} {tip.unit}｜最佳 {tip.optimalRange}
@@ -296,7 +296,7 @@ function OptimizationTipItem({ tip }: { tip: LabOptimizationTip }) {
         <div className="mt-3 space-y-3">
           <div className="flex items-center gap-2 text-[11px] text-gray-500">
             <span className="bg-white px-2 py-0.5 rounded-full border border-gray-200">正常範圍：{tip.currentRange}</span>
-            <span className="bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 text-blue-700">最佳目標：{tip.optimalRange}</span>
+            <span className="bg-primary-100 px-2 py-0.5 rounded-full border border-primary-200 text-primary-700">最佳目標：{tip.optimalRange}</span>
           </div>
 
           {/* 優化建議 */}
@@ -305,7 +305,7 @@ function OptimizationTipItem({ tip }: { tip: LabOptimizationTip }) {
             <ul className="space-y-1">
               {tip.tips.map((item, i) => (
                 <li key={i} className="text-[11px] text-gray-700 flex gap-1">
-                  <span className="text-blue-400">•</span>
+                  <span className="text-primary-400">•</span>
                   <span>{item}</span>
                 </li>
               ))}
@@ -318,9 +318,9 @@ function OptimizationTipItem({ tip }: { tip: LabOptimizationTip }) {
               <p className="text-[11px] font-bold text-gray-700 mb-1">補品建議</p>
               <div className="space-y-1.5">
                 {tip.supplements.map((s, i) => (
-                  <div key={i} className="bg-white bg-opacity-70 border border-blue-100 rounded-xl p-2.5">
+                  <div key={i} className="bg-white bg-opacity-70 border border-primary-100 rounded-xl p-2.5">
                     <div className="flex items-start justify-between">
-                      <p className="text-[11px] font-bold text-blue-800">{s.name}</p>
+                      <p className="text-[11px] font-bold text-primary-800">{s.name}</p>
                     </div>
                     <p className="text-[11px] text-gray-600 mt-0.5">
                       {s.dosage}{s.timing ? ` · ${s.timing}` : ''}
@@ -336,7 +336,7 @@ function OptimizationTipItem({ tip }: { tip: LabOptimizationTip }) {
 
           {/* 文獻 */}
           {tip.references.length > 0 && (
-            <div className="border-t border-blue-100 pt-2">
+            <div className="border-t border-primary-100 pt-2">
               <p className="text-[11px] font-bold text-gray-400 mb-1">文獻依據</p>
               <ul className="space-y-0.5">
                 {tip.references.map((ref, i) => (
@@ -361,11 +361,11 @@ function RetestReminderSection({ reminders }: { reminders: LabRetestReminder[] }
           const isOverdue = r.isOverdue
           return (
             <div key={i} className={`rounded-xl p-3 border ${
-              isOverdue ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
+              isOverdue ? 'bg-red-50 border-red-200' : 'bg-primary-50 border-primary-200'
             }`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${isOverdue ? 'bg-rose-500' : 'bg-blue-500'}`} />
+                  <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${isOverdue ? 'bg-rose-500' : 'bg-primary-500'}`} />
                   <div>
                     <p className="text-[11px] font-bold text-gray-800">{r.testName}</p>
                     <p className="text-[11px] text-gray-500">
@@ -374,7 +374,7 @@ function RetestReminderSection({ reminders }: { reminders: LabRetestReminder[] }
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`text-[11px] font-bold ${isOverdue ? 'text-red-700' : 'text-blue-700'}`}>
+                  <p className={`text-[11px] font-bold ${isOverdue ? 'text-red-700' : 'text-primary-700'}`}>
                     {isOverdue ? '已逾期' : `建議 ${r.suggestedRetestDate}`}
                   </p>
                   <p className="text-[11px] text-gray-400">

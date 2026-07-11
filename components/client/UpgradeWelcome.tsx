@@ -273,8 +273,8 @@ export default function UpgradeWelcome({
           style={{
             background:
               upgradePath === 'any→coached'
-                ? 'linear-gradient(90deg, #8b5cf6, #6366f1, #3b82f6)'
-                : 'linear-gradient(90deg, #3b82f6, #6366f1, #8b5cf6)',
+                ? 'linear-gradient(90deg, #8b5cf6, #6366f1, #3D6E9E)'
+                : 'linear-gradient(90deg, #3D6E9E, #6366f1, #8b5cf6)',
           }}
         />
 
@@ -315,7 +315,7 @@ export default function UpgradeWelcome({
                     ? 'linear-gradient(90deg, #22c55e, #16a34a)'
                     : upgradePath === 'any→coached'
                       ? 'linear-gradient(90deg, #8b5cf6, #6366f1)'
-                      : 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                      : 'linear-gradient(90deg, #3D6E9E, #6366f1)',
                 }}
               />
             </div>
@@ -346,7 +346,7 @@ export default function UpgradeWelcome({
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300 ${
                       task.completed
                         ? 'bg-green-50/60'
-                        : 'bg-gray-50 hover:bg-blue-50/60 cursor-pointer active:scale-[0.98]'
+                        : 'bg-gray-50 hover:bg-primary-50/60 cursor-pointer active:scale-[0.98]'
                     } ${isJustCompleted ? 'scale-[1.02]' : ''}`}
                     onClick={() => handleTaskClick(task)}
                     role={task.completed ? undefined : 'button'}
@@ -406,7 +406,7 @@ export default function UpgradeWelcome({
           {!celebrating && allComplete && (
             <button
               onClick={handleDismiss}
-              className="mt-3 w-full text-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors py-2 bg-blue-50 rounded-xl"
+              className="mt-3 w-full text-center text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors py-2 bg-primary-50 rounded-xl"
             >
               全部完成
             </button>

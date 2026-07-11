@@ -60,7 +60,7 @@ export default function PwaPrompt() {
           {!expanded ? (
             <button
               onClick={() => setExpanded(true)}
-              className="text-xs font-medium text-blue-600 hover:text-blue-700"
+              className="text-xs font-medium text-primary-600 hover:text-primary-700"
             >
               看教學 →
             </button>
@@ -108,7 +108,7 @@ export default function PwaPrompt() {
 function Step({ number, icon, children }: { number: number; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 text-xs text-gray-700">
-      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-[11px]">
+      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 text-primary-600 font-bold flex items-center justify-center text-[11px]">
         {number}
       </span>
       {icon && <span className="text-gray-400 flex-shrink-0">{icon}</span>}

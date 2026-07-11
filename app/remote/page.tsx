@@ -21,7 +21,7 @@ export default function RemotePage() {
       {/* ===== Hero ===== */}
       <section className="relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #f5f7fa 0%, #ffffff 100%)' }}>
         <div className="max-w-4xl mx-auto px-6 py-16 md:py-24 text-center">
-          <div className="inline-block bg-[#2563eb]/10 text-[#2563eb] text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
+          <div className="inline-block bg-[#1E4A73]/10 text-[#1E4A73] text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
             Howard Protocol
           </div>
           <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-4" style={{ color: '#1e3a5f' }}>
@@ -53,8 +53,8 @@ export default function RemotePage() {
               <div className="p-4 bg-gray-50 border-b border-r border-gray-200 text-center">
                 <p className="text-sm font-bold text-gray-500">免費體驗</p>
               </div>
-              <div className="p-4 bg-[#2563eb]/5 border-b border-gray-200 text-center">
-                <p className="text-sm font-bold text-[#2563eb]">訂閱後</p>
+              <div className="p-4 bg-[#1E4A73]/5 border-b border-gray-200 text-center">
+                <p className="text-sm font-bold text-[#1E4A73]">訂閱後</p>
               </div>
 
               {/* Rows */}
@@ -74,7 +74,7 @@ export default function RemotePage() {
                     <p className={`text-xs ${free === '—' ? 'text-gray-300' : 'text-gray-500'}`}>{free}</p>
                   </div>
                   <div className={`p-3 text-center ${i < 5 ? 'border-b border-gray-100' : ''}`}>
-                    <p className="text-xs font-medium text-[#2563eb]">{paid}</p>
+                    <p className="text-xs font-medium text-[#1E4A73]">{paid}</p>
                   </div>
                 </div>
               ))}
@@ -96,26 +96,26 @@ export default function RemotePage() {
 
               {/* 方案 1：自主管理 NT$499 */}
               <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 flex flex-col relative">
-                <div className="absolute -top-3 left-6 bg-[#2563eb] text-white text-xs font-bold px-3 py-1 rounded-full">
+                <div className="absolute -top-3 left-6 bg-[#1E4A73] text-white text-xs font-bold px-3 py-1 rounded-full">
                   最多人選
                 </div>
                 <h3 className="text-xl font-bold mb-1" style={{ color: '#1e3a5f' }}>自主管理版</h3>
                 <p className="text-gray-400 text-sm mb-1">系統幫你管，不需要教練</p>
-                <p className="text-[#2563eb] text-xs font-medium mb-4">適合知道方向、需要工具輔助的你</p>
+                <p className="text-[#1E4A73] text-xs font-medium mb-4">適合知道方向、需要工具輔助的你</p>
                 <div className="mb-1">
                   <span className="text-4xl font-bold" style={{ color: '#1e3a5f' }}>NT$499</span>
                   <span className="text-gray-400 text-sm"> /月</span>
                 </div>
                 <p className="text-xs text-gray-400 mb-6">每天不到 NT$17，比一杯超商咖啡便宜</p>
                 <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
-                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>智能引擎 24 小時自動分析</li>
-                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>每週體重趨勢自動判讀</li>
-                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>自適應 TDEE 持續校正</li>
-                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>Refeed / Diet Break 自動觸發</li>
-                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>碳循環自動分配（訓練/休息日）</li>
-                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>月經週期智能濾鏡（女性）</li>
-                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>HRV 個人基線 + 恢復狀態調整</li>
-                  <li className="flex items-start gap-2"><span className="text-[#2563eb] mt-0.5">&#10003;</span>減脂速度動態控制</li>
+                  <li className="flex items-start gap-2"><span className="text-[#1E4A73] mt-0.5">&#10003;</span>智能引擎 24 小時自動分析</li>
+                  <li className="flex items-start gap-2"><span className="text-[#1E4A73] mt-0.5">&#10003;</span>每週體重趨勢自動判讀</li>
+                  <li className="flex items-start gap-2"><span className="text-[#1E4A73] mt-0.5">&#10003;</span>自適應 TDEE 持續校正</li>
+                  <li className="flex items-start gap-2"><span className="text-[#1E4A73] mt-0.5">&#10003;</span>Refeed / Diet Break 自動觸發</li>
+                  <li className="flex items-start gap-2"><span className="text-[#1E4A73] mt-0.5">&#10003;</span>碳循環自動分配（訓練/休息日）</li>
+                  <li className="flex items-start gap-2"><span className="text-[#1E4A73] mt-0.5">&#10003;</span>月經週期智能濾鏡（女性）</li>
+                  <li className="flex items-start gap-2"><span className="text-[#1E4A73] mt-0.5">&#10003;</span>HRV 個人基線 + 恢復狀態調整</li>
+                  <li className="flex items-start gap-2"><span className="text-[#1E4A73] mt-0.5">&#10003;</span>減脂速度動態控制</li>
                 </ul>
                 <ABTest
                   experimentId="pricing_cta"
@@ -124,7 +124,7 @@ export default function RemotePage() {
                       <>
                         <Link
                           href="/join"
-                          className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
+                          className="block text-center bg-[#1E4A73] text-white py-3.5 rounded-xl font-semibold hover:bg-[#16385A] transition-colors shadow-lg shadow-primary-500/25"
                         >
                           免費體驗 &rarr;
                         </Link>
@@ -137,7 +137,7 @@ export default function RemotePage() {
                       <>
                         <Link
                           href="/join"
-                          className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
+                          className="block text-center bg-[#1E4A73] text-white py-3.5 rounded-xl font-semibold hover:bg-[#16385A] transition-colors shadow-lg shadow-primary-500/25"
                         >
                           立即免費開始 — 名額有限 &rarr;
                         </Link>
@@ -150,7 +150,7 @@ export default function RemotePage() {
                       <>
                         <Link
                           href="/join"
-                          className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
+                          className="block text-center bg-[#1E4A73] text-white py-3.5 rounded-xl font-semibold hover:bg-[#16385A] transition-colors shadow-lg shadow-primary-500/25"
                         >
                           加入使用者行列 &rarr;
                         </Link>
@@ -164,7 +164,7 @@ export default function RemotePage() {
                     <>
                       <Link
                         href="/join"
-                        className="block text-center bg-[#2563eb] text-white py-3.5 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors shadow-lg shadow-blue-500/25"
+                        className="block text-center bg-[#1E4A73] text-white py-3.5 rounded-xl font-semibold hover:bg-[#16385A] transition-colors shadow-lg shadow-primary-500/25"
                       >
                         免費體驗 &rarr;
                       </Link>
@@ -386,7 +386,7 @@ export default function RemotePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             NT$499/月，讓系統幫你管理
           </h2>
-          <p className="text-blue-200 text-lg mb-10">
+          <p className="text-primary-200 text-lg mb-10">
             先免費體驗系統分析，覺得有用再訂閱
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

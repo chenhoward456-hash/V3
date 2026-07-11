@@ -97,7 +97,7 @@ function getRecommendedTier(from?: string | null): Tier | null {
 
 function FeatureCell({ value }: { value: string | boolean }) {
   if (typeof value === 'string') {
-    return <span className="text-xs font-medium text-blue-600">{value}</span>
+    return <span className="text-xs font-medium text-primary-600">{value}</span>
   }
   if (value) {
     return (
@@ -128,7 +128,7 @@ export default function UpgradePage() {
 function UpgradePageSkeleton() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 }
@@ -173,7 +173,7 @@ function UpgradePageInner() {
             所有方案皆可隨時升級或取消，不綁約。
           </p>
           {featureTrigger && (
-            <div className="mt-3 inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-sm px-3 py-1.5 rounded-full">
+            <div className="mt-3 inline-flex items-center gap-2 bg-primary-50 text-primary-700 text-sm px-3 py-1.5 rounded-full">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
               </svg>
@@ -288,7 +288,7 @@ function TierCard({
       className={`
         relative bg-white rounded-2xl border-2 p-5 sm:p-6 transition-all
         ${isRecommended
-          ? 'border-blue-500 shadow-lg shadow-blue-100 scale-[1.02]'
+          ? 'border-primary-500 shadow-lg shadow-primary-100 scale-[1.02]'
           : isCurrent
             ? 'border-green-300 bg-green-50/30'
             : 'border-gray-200 hover:border-gray-300'
@@ -306,7 +306,7 @@ function TierCard({
           </span>
         )}
         {isRecommended && (
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-blue-600 text-white px-2.5 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-primary-600 text-white px-2.5 py-0.5 rounded-full">
             推薦升級
           </span>
         )}
@@ -342,7 +342,7 @@ function TierCard({
           className={`
             block text-center text-sm font-bold py-3 rounded-xl transition-all
             ${isRecommended
-              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md'
+              ? 'bg-gradient-to-r from-primary-600 to-indigo-600 text-white hover:from-primary-700 hover:to-indigo-700 shadow-md'
               : 'bg-gray-900 text-white hover:bg-gray-800'
             }
           `}

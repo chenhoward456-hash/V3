@@ -106,10 +106,10 @@ function AdviceItem({ advice }: { advice: LabNutritionAdvice }) {
 
           {advice.macroAdjustment && (
             <div className="bg-white bg-opacity-70 rounded-xl p-2.5">
-              <p className="text-[11px] font-bold text-blue-700 mb-0.5">
+              <p className="text-[11px] font-bold text-primary-700 mb-0.5">
                 {advice.macroAdjustment.nutrient}調整
               </p>
-              <p className="text-[11px] text-blue-600">{advice.macroAdjustment.detail}</p>
+              <p className="text-[11px] text-primary-600">{advice.macroAdjustment.detail}</p>
             </div>
           )}
 

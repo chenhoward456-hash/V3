@@ -1373,7 +1373,7 @@ export default function ClientOverview() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">載入學員資料...</p>
         </div>
       </div>
@@ -1435,7 +1435,7 @@ export default function ClientOverview() {
             <button
               key={d}
               onClick={() => setDateRange(d)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${dateRange === d ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${dateRange === d ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
               {d} 天
             </button>
@@ -1484,7 +1484,7 @@ export default function ClientOverview() {
             {client.training_enabled && (
               <div className="bg-white/70 rounded-lg p-2 text-center">
                 <p className="text-[11px] text-gray-500">訓練</p>
-                <p className="text-lg font-bold tabular-nums text-blue-600">{keyMetrics.weekTrainingDays}天</p>
+                <p className="text-lg font-bold tabular-nums text-primary-600">{keyMetrics.weekTrainingDays}天</p>
               </div>
             )}
             {client.wellness_enabled && (
@@ -1580,7 +1580,7 @@ export default function ClientOverview() {
           {client.training_enabled && (
             <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <p className="text-xs text-gray-500 mb-1">{dateRange === '7' ? '本週' : `近${dateRange}天`}訓練</p>
-              <p className="text-3xl font-bold tabular-nums text-blue-600">{keyMetrics.weekTrainingDays} 天</p>
+              <p className="text-3xl font-bold tabular-nums text-primary-600">{keyMetrics.weekTrainingDays} 天</p>
             </div>
           )}
           {client.wellness_enabled && (
@@ -1655,9 +1655,9 @@ export default function ClientOverview() {
                   </p>
                   {keyMetrics.timeProgress != null && (
                     <div className="mt-2">
-                      <div className="h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-primary-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-blue-500 rounded-full transition-all"
+                          className="h-full bg-primary-500 rounded-full transition-all"
                           style={{ width: `${keyMetrics.timeProgress}%` }}
                         />
                       </div>
@@ -1689,7 +1689,7 @@ export default function ClientOverview() {
                     <div className="mt-2">
                       <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-blue-500 rounded-full transition-all"
+                          className="h-full bg-primary-500 rounded-full transition-all"
                           style={{ width: `${keyMetrics.weightProgress}%` }}
                         />
                       </div>
@@ -1723,7 +1723,7 @@ export default function ClientOverview() {
                     <div className="mt-2">
                       <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-blue-500 rounded-full transition-all"
+                          className="h-full bg-primary-500 rounded-full transition-all"
                           style={{ width: `${keyMetrics.bfProgress}%` }}
                         />
                       </div>
@@ -1902,8 +1902,8 @@ export default function ClientOverview() {
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                  <p className="text-[11px] text-blue-700 font-semibold tracking-wider uppercase mb-1">本週平均</p>
-                  <p className="text-2xl font-bold tabular-nums text-blue-900">{current.avg!.toFixed(1)}<span className="text-xs font-normal text-gray-500 ml-1">kg</span></p>
+                  <p className="text-[11px] text-primary-700 font-semibold tracking-wider uppercase mb-1">本週平均</p>
+                  <p className="text-2xl font-bold tabular-nums text-primary-900">{current.avg!.toFixed(1)}<span className="text-xs font-normal text-gray-500 ml-1">kg</span></p>
                   <p className="text-[11px] text-gray-500 mt-0.5">{current.count} 筆紀錄</p>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
@@ -1981,7 +1981,7 @@ export default function ClientOverview() {
                     <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
                       <span className="text-[11px] text-gray-500">{w.avg.toFixed(1)}</span>
                       <div
-                        className={`w-full rounded transition-all ${isCurrent ? 'bg-blue-500' : 'bg-blue-200'}`}
+                        className={`w-full rounded transition-all ${isCurrent ? 'bg-primary-500' : 'bg-primary-200'}`}
                         style={{ height: `${pct}%` }}
                         title={`${w.label}（${w.startDate} ~ ${w.endDate}）：${w.avg.toFixed(1)} kg · ${w.count} 筆`}
                       />
@@ -2084,7 +2084,7 @@ export default function ClientOverview() {
                             } catch {/* silent */}
                           }}
                           disabled={quickSaving}
-                          className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors ${client.auto_adjust_enabled ? 'bg-white border border-slate-300 text-gray-600 hover:bg-slate-50' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                          className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors ${client.auto_adjust_enabled ? 'bg-white border border-slate-300 text-gray-600 hover:bg-slate-50' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
                         >
                           {quickSaving ? '套用中…' : client.auto_adjust_enabled ? '手動立即套用（通常不需）' : '一鍵套用建議'}
                         </button>
@@ -2209,7 +2209,7 @@ export default function ClientOverview() {
             <button
               onClick={() => openQuickAction(quickAction === 'calories' ? null as any : 'calories')}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                quickAction === 'calories' ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                quickAction === 'calories' ? 'bg-primary-600 text-white border-primary-600' : 'bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100'
               }`}
             >
               改熱量
@@ -2217,7 +2217,7 @@ export default function ClientOverview() {
             <button
               onClick={() => openQuickAction(quickAction === 'phase' ? null as any : 'phase')}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                quickAction === 'phase' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50'
+                quickAction === 'phase' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50'
               }`}
             >
               切階段
@@ -2234,34 +2234,34 @@ export default function ClientOverview() {
 
           {/* 改熱量 inline editor */}
           {quickAction === 'calories' && (
-            <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <div className="mt-3 p-4 bg-primary-50 border border-primary-200 rounded-xl">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs text-blue-700 font-semibold">調整每日總熱量目標（kcal）</p>
+                <p className="text-xs text-primary-700 font-semibold">調整每日總熱量目標（kcal）</p>
                 <button onClick={() => setQuickAction(null)} className="text-xs text-gray-500 hover:text-gray-700">取消</button>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setCaloriesDraft(prev => Math.max(1000, (prev || 2000) - 100))}
-                  className="px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-bold text-blue-700 hover:bg-blue-100"
+                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
                 >−100</button>
                 <button
                   onClick={() => setCaloriesDraft(prev => Math.max(1000, (prev || 2000) - 50))}
-                  className="px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-bold text-blue-700 hover:bg-blue-100"
+                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
                 >−50</button>
                 <input
                   type="number"
                   value={caloriesDraft ?? ''}
                   onChange={e => setCaloriesDraft(e.target.value ? parseInt(e.target.value) : null)}
-                  className="flex-1 px-3 py-2 border border-blue-300 rounded-lg text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="flex-1 px-3 py-2 border border-primary-300 rounded-lg text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary-400"
                   placeholder="例如 2000"
                 />
                 <button
                   onClick={() => setCaloriesDraft(prev => Math.min(5000, (prev || 2000) + 50))}
-                  className="px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-bold text-blue-700 hover:bg-blue-100"
+                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
                 >+50</button>
                 <button
                   onClick={() => setCaloriesDraft(prev => Math.min(5000, (prev || 2000) + 100))}
-                  className="px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-bold text-blue-700 hover:bg-blue-100"
+                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
                 >+100</button>
               </div>
               <div className="flex items-center justify-between mt-3">
@@ -2278,7 +2278,7 @@ export default function ClientOverview() {
                 <button
                   disabled={quickSaving || !caloriesDraft || caloriesDraft < 1000 || caloriesDraft > 5000}
                   onClick={() => saveQuickAction({ calories_target: String(caloriesDraft) }, `熱量改為 ${caloriesDraft} kcal`)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   {quickSaving ? '儲存中...' : '儲存'}
                 </button>
@@ -2300,7 +2300,7 @@ export default function ClientOverview() {
                     onClick={() => setPhaseDraft(opt.value)}
                     className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
                       phaseDraft === opt.value
-                        ? 'bg-blue-600 text-white border-blue-600'
+                        ? 'bg-primary-600 text-white border-primary-600'
                         : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
@@ -2315,7 +2315,7 @@ export default function ClientOverview() {
                 <button
                   disabled={quickSaving || !phaseDraft || phaseDraft === client?.prep_phase}
                   onClick={() => saveQuickAction({ prep_phase: phaseDraft }, `階段改為 ${PHASE_LABELS[phaseDraft] || phaseDraft}`)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   {quickSaving ? '儲存中...' : '儲存'}
                 </button>
@@ -2369,8 +2369,8 @@ export default function ClientOverview() {
               disabled={summaryLoading}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 summaryLoading
-                  ? 'bg-blue-300 text-white cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'bg-primary-300 text-white cursor-not-allowed'
+                  : 'bg-primary-600 text-white hover:bg-primary-700'
               }`}
             >
               {summaryLoading ? '生成中...' : coachSummary ? '重新生成' : '生成教練建議'}
@@ -2379,7 +2379,7 @@ export default function ClientOverview() {
 
           {summaryLoading && (
             <div className="flex items-center gap-3 py-4">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
               <p className="text-sm text-slate-700">AI 正在分析學員數據...</p>
             </div>
           )}
@@ -2398,9 +2398,9 @@ export default function ClientOverview() {
         {/* ===== 本週報告 ===== */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-blue-900">{dateRange === '7' ? '本週' : `近 ${dateRange} 天`}報告</h3>
+            <h3 className="text-sm font-semibold text-primary-900">{dateRange === '7' ? '本週' : `近 ${dateRange} 天`}報告</h3>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-blue-600 font-medium">{weeklyReport.weekLabel}</span>
+              <span className="text-xs text-primary-600 font-medium">{weeklyReport.weekLabel}</span>
               <button
                 onClick={() => {
                   const text = `📋 ${client.name} 週報（${weeklyReport.weekLabel}）\n\n${weeklyReport.summary}`
@@ -2410,7 +2410,7 @@ export default function ClientOverview() {
                   })
                 }}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  copied ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
+                  copied ? 'bg-emerald-500 text-white' : 'bg-primary-600 text-white hover:bg-primary-700'
                 }`}
               >
                 {copied ? '已複製' : '複製文字'}
@@ -2424,7 +2424,7 @@ export default function ClientOverview() {
                   })
                 }}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  copiedTraining ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
+                  copiedTraining ? 'bg-emerald-500 text-white' : 'bg-primary-600 text-white hover:bg-primary-700'
                 }`}
               >
                 {copiedTraining ? '已複製' : '訓練端摘要'}
@@ -2438,7 +2438,7 @@ export default function ClientOverview() {
                   })
                 }}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  copiedAi ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
+                  copiedAi ? 'bg-emerald-500 text-white' : 'bg-primary-600 text-white hover:bg-primary-700'
                 }`}
               >
                 {copiedAi ? '已複製' : 'AI 完整摘要'}
@@ -2450,7 +2450,7 @@ export default function ClientOverview() {
             {client.training_enabled && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
                 <p className="text-xs text-gray-500 mb-0.5">訓練天數</p>
-                <p className="text-2xl font-bold tabular-nums text-blue-700">{weeklyReport.trainingDays}</p>
+                <p className="text-2xl font-bold tabular-nums text-primary-700">{weeklyReport.trainingDays}</p>
                 {weeklyReport.avgRpe && <p className="text-xs text-gray-400">RPE {weeklyReport.avgRpe}</p>}
               </div>
             )}
@@ -2654,7 +2654,7 @@ export default function ClientOverview() {
                   className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                     suggestionApplied
                       ? 'bg-emerald-500 text-white'
-                      : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
+                      : 'bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50'
                   }`}
                 >
                   {suggestionApplied ? '已套用' : applyingsuggestion ? '套用中...' : '一鍵套用'}
@@ -2706,7 +2706,7 @@ export default function ClientOverview() {
                       <XAxis dataKey="date" fontSize={11} />
                       <YAxis domain={[0, 100]} fontSize={11} />
                       <Tooltip formatter={(v: any) => [`${v}%`, '服從率']} />
-                      <Line type="monotone" dataKey="服從率" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                      <Line type="monotone" dataKey="服從率" stroke="#3D6E9E" strokeWidth={2} dot={{ r: 3 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
@@ -2727,7 +2727,7 @@ export default function ClientOverview() {
                       <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} fontSize={11} />
                       <Tooltip />
                       <Legend />
-                      <Line type="monotone" dataKey="睡眠" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} />
+                      <Line type="monotone" dataKey="睡眠" stroke="#3D6E9E" strokeWidth={2} dot={{ r: 2 }} />
                       <Line type="monotone" dataKey="精力" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} />
                       <Line type="monotone" dataKey="心情" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} />
                     </LineChart>
@@ -2771,7 +2771,7 @@ export default function ClientOverview() {
                     {client.protein_target && (
                       <Line type="monotone" dataKey={() => client.protein_target} stroke="#ef4444" strokeDasharray="5 5" dot={false} name="目標" />
                     )}
-                    <Bar dataKey="蛋白質" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="蛋白質" fill="#3D6E9E" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
                 {client.protein_target && (
@@ -3037,7 +3037,7 @@ export default function ClientOverview() {
                       <div
                         key={date}
                         className={`aspect-square flex flex-col items-center justify-center rounded-lg text-xs ${
-                          isToday ? 'ring-2 ring-blue-400' : ''
+                          isToday ? 'ring-2 ring-primary-400' : ''
                         } ${
                           isFuture ? 'bg-gray-50 text-gray-300'
                             : isDeloadWeek && log ? 'bg-slate-100 border border-slate-200'
@@ -3066,7 +3066,7 @@ export default function ClientOverview() {
                     <XAxis type="number" fontSize={11} />
                     <YAxis type="category" dataKey="name" fontSize={11} width={40} />
                     <Tooltip />
-                    <Bar dataKey="次數" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="次數" fill="#3D6E9E" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -3202,7 +3202,7 @@ export default function ClientOverview() {
                 <Tooltip formatter={(v: any) => [`${v} kg`, '']} />
                 <Legend />
                 {e1rmTrend.exercises.map((ex: string, i: number) => {
-                  const colors: Record<string, string> = { '深蹲': '#3b82f6', '臥推': '#ef4444', '硬舉': '#22c55e', '肩推': '#f59e0b' }
+                  const colors: Record<string, string> = { '深蹲': '#3D6E9E', '臥推': '#ef4444', '硬舉': '#22c55e', '肩推': '#f59e0b' }
                   const fallbackColors = ['#6366f1', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6']
                   const color = Object.entries(colors).find(([k]) => ex.includes(k))?.[1] || fallbackColors[i % fallbackColors.length]
                   return (
@@ -3319,7 +3319,7 @@ export default function ClientOverview() {
                       'bg-gray-100 text-gray-600'
                     }`}>{s.priority === 'high' ? '強烈建議' : s.priority === 'medium' ? '建議' : '可考慮'}</span>
                     <span className={`px-2.5 py-0.5 text-[11px] rounded-full ${
-                      s.category === 'deficiency' ? 'bg-blue-100 text-blue-700' :
+                      s.category === 'deficiency' ? 'bg-primary-100 text-primary-700' :
                       s.category === 'hormonal' ? 'bg-slate-100 text-slate-600' :
                       s.category === 'performance' ? 'bg-slate-100 text-slate-600' :
                       'bg-slate-100 text-slate-600'
@@ -3378,11 +3378,11 @@ export default function ClientOverview() {
 
         {/* ===== 教練備註 ===== */}
         {client.coach_summary && (
-          <div className="bg-blue-50 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-blue-800 mb-2">教練備註</h3>
+          <div className="bg-primary-50 rounded-2xl p-5">
+            <h3 className="text-sm font-semibold text-primary-800 mb-2">教練備註</h3>
             <p className="text-sm text-gray-700 whitespace-pre-line">{client.coach_summary}</p>
             {client.health_goals && (
-              <p className="text-xs text-gray-600 mt-3 pt-3 border-t border-blue-100">目標：{client.health_goals}</p>
+              <p className="text-xs text-gray-600 mt-3 pt-3 border-t border-primary-100">目標：{client.health_goals}</p>
             )}
           </div>
         )}
@@ -3395,7 +3395,7 @@ export default function ClientOverview() {
         >
           <button
             onClick={() => setShowCompose(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-primary-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-primary-700 transition-colors"
           >
             發訊息
           </button>
@@ -3422,13 +3422,13 @@ export default function ClientOverview() {
               rows={4}
               autoFocus
               placeholder="這週體重控制得不錯，碳水可以再加一點…"
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 mb-2"
             />
             <p className="text-xs text-gray-400 mb-3">學員打開 app 最上面就會看到這則訊息（有開推播會同時收到通知）。</p>
             <button
               onClick={sendCoachMessage}
               disabled={composeBusy || !composeMsg.trim()}
-              className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-40 transition-colors"
+              className="w-full bg-primary-600 text-white py-3 rounded-xl font-bold hover:bg-primary-700 disabled:opacity-40 transition-colors"
             >
               {composeBusy ? '送出中…' : '送出'}
             </button>

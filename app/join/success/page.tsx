@@ -32,7 +32,7 @@ export default function JoinSuccessPage() {
     <Suspense
       fallback={
         <section className="max-w-2xl mx-auto px-6 py-16 md:py-24 text-center">
-          <div className="inline-block w-12 h-12 border-4 border-[#2563eb]/20 border-t-[#2563eb] rounded-full animate-spin mb-6" />
+          <div className="inline-block w-12 h-12 border-4 border-[#1E4A73]/20 border-t-[#1E4A73] rounded-full animate-spin mb-6" />
           <p className="text-gray-500">載入中...</p>
         </section>
       }
@@ -239,7 +239,7 @@ function JoinSuccessContent() {
       {/* Loading */}
       {status === 'loading' && (
         <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-[#2563eb]/20 border-t-[#2563eb] rounded-full animate-spin mb-6" />
+          <div className="inline-block w-12 h-12 border-4 border-[#1E4A73]/20 border-t-[#1E4A73] rounded-full animate-spin mb-6" />
           <h1 className="text-2xl font-bold mb-3" style={{ color: '#1e3a5f' }}>
             正在開通你的帳號...
           </h1>
@@ -274,10 +274,10 @@ function JoinSuccessContent() {
           </p>
 
           {/* Unique Code Card */}
-          <div className="bg-white border-2 border-[#2563eb] rounded-2xl p-8 mb-8 shadow-sm">
+          <div className="bg-white border-2 border-[#1E4A73] rounded-2xl p-8 mb-8 shadow-sm">
             <p className="text-sm text-gray-500 mb-3">你的專屬代碼</p>
             <div
-              className="text-4xl md:text-5xl font-bold font-mono tracking-[4px] text-[#2563eb] mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+              className="text-4xl md:text-5xl font-bold font-mono tracking-[4px] text-[#1E4A73] mb-4 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={handleCopy}
               title="點擊複製"
             >
@@ -285,7 +285,7 @@ function JoinSuccessContent() {
             </div>
             <button
               onClick={handleCopy}
-              className="text-sm text-gray-500 hover:text-[#2563eb] transition-colors"
+              className="text-sm text-gray-500 hover:text-[#1E4A73] transition-colors"
             >
               {copied ? '已複製 ✓' : '點擊複製代碼'}
             </button>
@@ -336,7 +336,7 @@ function JoinSuccessContent() {
 
           {/* What's Unlocked - for paid tiers */}
           {isPaid && (
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-6 mb-8 text-left">
+            <div className="bg-gradient-to-br from-indigo-50 to-primary-50 border border-indigo-200 rounded-2xl p-6 mb-8 text-left">
               <p className="text-sm font-semibold text-gray-800 mb-4">
                 {isUpgrade ? '🔓 新解鎖的功能' : '🔓 你已解鎖的功能'}
               </p>
@@ -362,7 +362,7 @@ function JoinSuccessContent() {
 
           {/* Nutrition Targets Summary */}
           {isFree && targets && (
-            <div className="bg-gradient-to-br from-blue-50 to-amber-50 border border-blue-200 rounded-2xl p-5 mb-6 text-left">
+            <div className="bg-gradient-to-br from-primary-50 to-amber-50 border border-primary-200 rounded-2xl p-5 mb-6 text-left">
               <p className="text-sm font-semibold text-gray-800 mb-3">
                 系統已幫你算好每日營養目標
               </p>
@@ -379,7 +379,7 @@ function JoinSuccessContent() {
                 </div>
                 <div className="bg-white rounded-xl p-3 text-center shadow-sm">
                   <p className="text-[10px] text-gray-500">碳水</p>
-                  <p className="text-lg font-bold text-blue-500">{targets.carbs}</p>
+                  <p className="text-lg font-bold text-primary-500">{targets.carbs}</p>
                   <p className="text-[10px] text-gray-400">g</p>
                 </div>
                 <div className="bg-white rounded-xl p-3 text-center shadow-sm">
@@ -415,7 +415,7 @@ function JoinSuccessContent() {
               <p className="text-sm font-semibold text-gray-700 mb-3">接下來要做什麼？</p>
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600 shrink-0">1</span>
+                  <span className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-600 shrink-0">1</span>
                   <p className="text-sm text-gray-600"><strong>每天量體重</strong>，在儀表板輸入或用 LINE 傳數字</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -442,7 +442,7 @@ function JoinSuccessContent() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600 shrink-0">2</span>
+                  <span className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-600 shrink-0">2</span>
                   <p className="text-sm text-gray-600">
                     <strong>記錄你的第一筆體重</strong>，進儀表板輸入或 LINE 傳數字
                   </p>
@@ -477,7 +477,7 @@ function JoinSuccessContent() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600 shrink-0">2</span>
+                  <span className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-600 shrink-0">2</span>
                   <p className="text-sm text-gray-600">
                     <strong>記錄你的第一筆體重</strong>，進儀表板輸入或 LINE 傳數字
                   </p>
@@ -501,7 +501,7 @@ function JoinSuccessContent() {
           {/* CTA */}
           <Link
             href={`/c/${uniqueCode}`}
-            className="inline-block bg-[#2563eb] text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-[#1d4ed8] transition-colors shadow-lg mb-6"
+            className="inline-block bg-[#1E4A73] text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-[#16385A] transition-colors shadow-lg mb-6"
           >
             進入我的儀表板 →
           </Link>
@@ -517,13 +517,13 @@ function JoinSuccessContent() {
 
           {/* 免費體驗升級提示 */}
           {isFree && (
-            <div className="mt-8 bg-[#2563eb]/5 border border-[#2563eb]/20 rounded-xl p-4">
-              <p className="text-sm text-[#2563eb] font-medium">
+            <div className="mt-8 bg-[#1E4A73]/5 border border-[#1E4A73]/20 rounded-xl p-4">
+              <p className="text-sm text-[#1E4A73] font-medium">
                 想要訓練追蹤、感受紀錄等完整功能？隨時可升級
               </p>
               <Link
                 href="/remote"
-                className="text-xs text-[#2563eb] hover:underline mt-1 inline-block"
+                className="text-xs text-[#1E4A73] hover:underline mt-1 inline-block"
               >
                 查看付費方案 →
               </Link>
@@ -547,7 +547,7 @@ function JoinSuccessContent() {
           <div className="flex gap-3 justify-center">
             <Link
               href="/join"
-              className="bg-[#2563eb] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors"
+              className="bg-[#1E4A73] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#16385A] transition-colors"
             >
               重新選擇方案
             </Link>

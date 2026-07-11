@@ -335,10 +335,10 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
           {/* 巨量營養素調整 */}
           {advice.macroAdjustment && (
             <div className="bg-white bg-opacity-70 rounded-xl p-2.5">
-              <p className="text-[11px] font-bold text-blue-700 mb-0.5">
+              <p className="text-[11px] font-bold text-primary-700 mb-0.5">
                 {advice.macroAdjustment.nutrient}調整
               </p>
-              <p className="text-[11px] text-blue-600">{advice.macroAdjustment.detail}</p>
+              <p className="text-[11px] text-primary-600">{advice.macroAdjustment.detail}</p>
             </div>
           )}
 
@@ -368,7 +368,7 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
 function GradeBadge({ grade, size = 'sm' }: { grade: string; size?: 'sm' | 'lg' }) {
   const colors: Record<string, string> = {
     A: 'bg-emerald-100 text-emerald-700 border-emerald-300',
-    B: 'bg-blue-100 text-blue-700 border-blue-300',
+    B: 'bg-primary-100 text-primary-700 border-primary-300',
     C: 'bg-amber-100 text-amber-700 border-amber-300',
     D: 'bg-red-100 text-red-700 border-red-300',
   }

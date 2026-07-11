@@ -75,13 +75,13 @@ export default function ActionPage() {
             },
           ].map(({ num, title, desc, details }) => (
             <div key={num} className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-              <span className="text-xs font-bold text-[#2563eb] bg-[#2563eb]/10 px-3 py-1 rounded-full">{num}</span>
+              <span className="text-xs font-bold text-[#1E4A73] bg-[#1E4A73]/10 px-3 py-1 rounded-full">{num}</span>
               <h3 className="text-xl font-bold mt-4 mb-3" style={{ color: '#1e3a5f' }}>{title}</h3>
               <p className="text-gray-600 text-sm mb-4 leading-relaxed">{desc}</p>
               <ul className="space-y-2">
                 {details.map(d => (
                   <li key={d} className="flex items-start gap-2 text-gray-500 text-xs">
-                    <span className="text-[#2563eb] mt-0.5">✓</span>{d}
+                    <span className="text-[#1E4A73] mt-0.5">✓</span>{d}
                   </li>
                 ))}
               </ul>
@@ -127,7 +127,7 @@ export default function ActionPage() {
 
       {/* 引用 */}
       <section className="max-w-3xl mx-auto px-6 py-16">
-        <blockquote className="border-l-4 border-[#2563eb]/30 pl-8 py-4">
+        <blockquote className="border-l-4 border-[#1E4A73]/30 pl-8 py-4">
           <p className="italic text-gray-600 text-lg leading-relaxed">
             「我曾經也走過發炎、脫髮與迷茫，所以我比任何人都希望這套系統能幫你找回主控權。」
           </p>
@@ -160,13 +160,13 @@ export default function ActionPage() {
         <div className="grid md:grid-cols-2 gap-8 text-center">
           <div>
             <strong className="block mb-2 text-sm" style={{ color: '#1e3a5f' }}>Instagram</strong>
-            <a href="https://www.instagram.com/chenhoward/" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#2563eb] transition-colors text-sm">
+            <a href="https://www.instagram.com/chenhoward/" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#1E4A73] transition-colors text-sm">
               @chenhoward →
             </a>
           </div>
           <div>
             <strong className="block mb-2 text-sm" style={{ color: '#1e3a5f' }}>LINE 官方帳號</strong>
-            <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#2563eb] transition-colors text-sm">
+            <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#1E4A73] transition-colors text-sm">
               加入好友 →
             </a>
           </div>

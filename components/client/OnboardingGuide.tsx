@@ -159,7 +159,7 @@ export default function OnboardingGuide({ clientId, clientName, tier, features, 
               <div
                 key={i}
                 className={`h-1 flex-1 rounded-full transition-colors ${
-                  i <= step ? 'bg-blue-500' : 'bg-gray-200'
+                  i <= step ? 'bg-primary-500' : 'bg-gray-200'
                 }`}
               />
             ))}
@@ -186,7 +186,7 @@ export default function OnboardingGuide({ clientId, clientName, tier, features, 
                 if (isLast) dismiss()
                 else setStep(step + 1)
               }}
-              className="flex-1 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+              className="flex-1 py-3 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition-colors flex items-center justify-center gap-1"
             >
               {isLast ? '開始使用' : '下一步'}
               {!isLast && <ChevronRight size={16} />}

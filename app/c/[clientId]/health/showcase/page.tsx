@@ -153,7 +153,7 @@ export default function ShowcasePage() {
             </div>
             <div className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${
               healthScore.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
-              healthScore.grade === 'B' ? 'bg-blue-100 text-blue-800' :
+              healthScore.grade === 'B' ? 'bg-primary-100 text-primary-800' :
               healthScore.grade === 'C' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
             }`}>
               Grade {healthScore.grade}
@@ -165,7 +165,7 @@ export default function ShowcasePage() {
                   <div className="text-[11px] text-gray-500 mt-0.5">{p.label}</div>
                   <div className={`text-sm font-bold mt-0.5 ${
                     p.score >= 80 ? 'text-emerald-700' :
-                    p.score >= 65 ? 'text-blue-700' :
+                    p.score >= 65 ? 'text-primary-700' :
                     p.score >= 50 ? 'text-amber-700' : 'text-rose-700'
                   }`}>
                     {Math.round(p.score)}
@@ -300,7 +300,7 @@ export default function ShowcasePage() {
             href="https://line.me/R/ti/p/@howard"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-full text-sm transition-colors"
+            className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium px-6 py-3 rounded-full text-sm transition-colors"
           >
             💬 加 LINE 聊聊
           </a>
@@ -315,7 +315,7 @@ export default function ShowcasePage() {
       <section className="px-5 max-w-md mx-auto pb-8 text-center">
         <Link
           href={`/c/${clientId}/health/timeline`}
-          className="text-xs text-gray-500 hover:text-blue-700 underline"
+          className="text-xs text-gray-500 hover:text-primary-700 underline"
         >
           看 Howard 完整健康儀表板 →
         </Link>

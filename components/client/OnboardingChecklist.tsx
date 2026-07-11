@@ -160,7 +160,7 @@ export default function OnboardingChecklist({
     <div className="mb-4 animate-fade-in-up">
       <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200">
         {/* Gradient top border */}
-        <div className="h-1 bg-blue-600" />
+        <div className="h-1 bg-primary-600" />
 
         <div className="p-4">
           {/* Header */}
@@ -197,7 +197,7 @@ export default function OnboardingChecklist({
                   width: `${progressPercent}%`,
                   background: allComplete
                     ? 'linear-gradient(90deg, #22c55e, #16a34a)'
-                    : 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                    : 'linear-gradient(90deg, #3D6E9E, #6366f1)',
                 }}
               />
             </div>
@@ -226,7 +226,7 @@ export default function OnboardingChecklist({
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300 ${
                       item.completed
                         ? 'bg-emerald-50/60'
-                        : 'bg-slate-50 hover:bg-blue-50/60 cursor-pointer active:scale-[0.98]'
+                        : 'bg-slate-50 hover:bg-primary-50/60 cursor-pointer active:scale-[0.98]'
                     } ${isJustCompleted ? 'scale-[1.02]' : ''}`}
                     onClick={() => handleNavigate(item)}
                     role={item.completed ? undefined : 'button'}

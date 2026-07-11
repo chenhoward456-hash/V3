@@ -100,7 +100,7 @@ export default function ReferralCard({ clientId }: ReferralCardProps) {
 
         {/* Referral code display + copy */}
         <div className="flex items-center gap-2 mb-3">
-          <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-mono text-sm font-bold text-blue-700 tracking-wider text-center select-all tabular-nums">
+          <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-mono text-sm font-bold text-primary-700 tracking-wider text-center select-all tabular-nums">
             {code}
           </div>
           <button
@@ -108,7 +108,7 @@ export default function ReferralCard({ clientId }: ReferralCardProps) {
             className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
               copied
                 ? 'bg-emerald-600 text-white'
-                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+                : 'bg-primary-600 text-white hover:bg-primary-700 active:scale-95'
             }`}
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}

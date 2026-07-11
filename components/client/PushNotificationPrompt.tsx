@@ -32,7 +32,7 @@ function PushNotificationPromptInner({ code, debug = false }: { code: string; de
   // 測試模式：不管支援/權限/訂閱狀態，一律顯示並印出診斷，方便確認卡在哪一關
   if (debug) {
     return (
-      <div className="bg-white border border-blue-200 rounded-2xl p-4 shadow-sm mb-3 text-sm">
+      <div className="bg-white border border-primary-200 rounded-2xl p-4 shadow-sm mb-3 text-sm">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-lg">🔔</span>
           <span className="font-semibold text-gray-900">推播提醒（測試模式）</span>
@@ -48,7 +48,7 @@ function PushNotificationPromptInner({ code, debug = false }: { code: string; de
           <button
             onClick={async () => { const ok = await subscribe(); if (ok) setJustEnabled(true) }}
             disabled={busy || !supported}
-            className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="bg-primary-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50"
           >
             {busy ? '開啟中…' : supported ? '開啟提醒（訂閱）' : '此裝置不支援'}
           </button>
@@ -75,17 +75,17 @@ function PushNotificationPromptInner({ code, debug = false }: { code: string; de
   // iPhone Safari：尚未「加入主畫面」→ 不隱藏，改教他怎麼開（否則 iOS 用戶永遠開不了通知）
   if (needsInstall) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 shadow-sm flex items-start gap-3">
+      <div className="bg-primary-50 border border-primary-200 rounded-2xl p-4 shadow-sm flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-blue-900">想收到打卡提醒？先把這頁加到主畫面</p>
-          <ol className="text-xs text-blue-800/90 mt-1.5 space-y-1 list-decimal list-inside">
+          <p className="text-sm font-semibold text-primary-900">想收到打卡提醒？先把這頁加到主畫面</p>
+          <ol className="text-xs text-primary-800/90 mt-1.5 space-y-1 list-decimal list-inside">
             <li>點底部工具列的「分享」<Share size={12} className="inline-block align-[-1px]" /></li>
             <li>選「加入主畫面」</li>
             <li>從桌面圖示重新打開這個 App，就能開啟提醒</li>
           </ol>
-          <p className="text-[11px] text-blue-700/70 mt-2">iPhone 限制：只有從主畫面圖示打開才能收推播通知。</p>
+          <p className="text-[11px] text-primary-700/70 mt-2">iPhone 限制：只有從主畫面圖示打開才能收推播通知。</p>
         </div>
-        <button onClick={close} aria-label="關閉" className="text-blue-400 hover:text-blue-600 text-sm shrink-0">✕</button>
+        <button onClick={close} aria-label="關閉" className="text-primary-400 hover:text-primary-600 text-sm shrink-0">✕</button>
       </div>
     )
   }
@@ -105,7 +105,7 @@ function PushNotificationPromptInner({ code, debug = false }: { code: string; de
             if (ok) setJustEnabled(true)
           }}
           disabled={busy}
-          className="mt-3 inline-flex items-center gap-1.5 bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="mt-3 inline-flex items-center gap-1.5 bg-primary-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50"
         >
           {busy ? '開啟中…' : '開啟提醒'}
         </button>

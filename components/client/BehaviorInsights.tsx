@@ -135,16 +135,16 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
 
               {/* 上下文 CTA：在第一個有意義的 insight 後面推升級（僅免費用戶） */}
               {isFree && hasMeaningfulInsight && idx === 0 && insights.length >= 2 && (
-                <div className="mt-2 mb-1 bg-blue-600 rounded-xl px-4 py-3 text-center">
+                <div className="mt-2 mb-1 bg-primary-600 rounded-xl px-4 py-3 text-center">
                   <p className="text-xs text-white font-bold mb-1 tabular-nums">
                     系統發現了 {totalCount} 個與你有關的行為模式
                   </p>
-                  <p className="text-[11px] text-blue-100 mb-2">
+                  <p className="text-[11px] text-primary-100 mb-2">
                     升級後解鎖完整分析 — 包含跨維度交叉比對、趨勢預測、個人化建議
                   </p>
                   <Link
                     href="/upgrade"
-                    className="inline-block bg-white text-blue-700 text-xs font-bold px-5 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="inline-block bg-white text-primary-700 text-xs font-bold px-5 py-2 rounded-lg hover:bg-primary-50 transition-colors"
                   >
                     查看完整分析
                   </Link>

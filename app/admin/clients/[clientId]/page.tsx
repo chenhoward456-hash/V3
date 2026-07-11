@@ -847,7 +847,7 @@ export default function ClientEditor() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">載入中...</p>
         </div>
       </div>
@@ -860,7 +860,7 @@ export default function ClientEditor() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">找不到學員資料</h1>
           {error && <p className="text-rose-500 mb-4 text-sm">{error}</p>}
-          <Link href="/admin" className="text-blue-600 hover:text-blue-800">
+          <Link href="/admin" className="text-primary-600 hover:text-primary-800">
             返回後台
           </Link>
         </div>
@@ -883,7 +883,7 @@ export default function ClientEditor() {
               </h1>
             </div>
             {clientId !== 'new' && (
-              <Link href={`/admin/clients/${clientId}/overview`} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+              <Link href={`/admin/clients/${clientId}/overview`} className="text-primary-600 hover:text-primary-800 text-sm font-medium">
                 總覽
               </Link>
             )}
@@ -1005,7 +1005,7 @@ export default function ClientEditor() {
                   return (
                     <div
                       key={i}
-                      className={`flex-1 rounded transition-all ${isCurrent ? 'bg-blue-500' : 'bg-blue-200'}`}
+                      className={`flex-1 rounded transition-all ${isCurrent ? 'bg-primary-500' : 'bg-primary-200'}`}
                       style={{ height: `${pct}%` }}
                       title={`${w.label}（${w.startDate} ~ ${w.endDate}）: ${w.avg.toFixed(1)} kg（${w.count} 筆）`}
                     />
@@ -1049,7 +1049,7 @@ export default function ClientEditor() {
               onClick={() => setActiveTab(tab.key)}
               className={`flex-1 min-w-0 px-3 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.key
-                  ? 'bg-white text-blue-700 shadow-sm'
+                  ? 'bg-white text-primary-700 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -1077,7 +1077,7 @@ export default function ClientEditor() {
                     type="text"
                     value={client.name}
                     onChange={(e) => updateClient('name', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
@@ -1093,7 +1093,7 @@ export default function ClientEditor() {
                       const a = ageFromBirthYear(ad)
                       if (a != null) updateClient('age', a)
                     }}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     {client.birth_year != null
@@ -1106,7 +1106,7 @@ export default function ClientEditor() {
                   <select
                     value={client.gender}
                     onChange={(e) => updateClient('gender', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="女性">女性</option>
                     <option value="男性">男性</option>
@@ -1117,7 +1117,7 @@ export default function ClientEditor() {
                   <select
                     value={client.status}
                     onChange={(e) => updateClient('status', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="normal">正常</option>
                     <option value="attention">需要關注</option>
@@ -1134,7 +1134,7 @@ export default function ClientEditor() {
                     type="number" step="0.1" placeholder="例：62.5"
                     value={startBody.weight}
                     onChange={(e) => setStartBody(s => ({ ...s, weight: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
@@ -1143,7 +1143,7 @@ export default function ClientEditor() {
                     type="number" step="0.1" placeholder="例：165"
                     value={startBody.height}
                     onChange={(e) => setStartBody(s => ({ ...s, height: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
@@ -1152,7 +1152,7 @@ export default function ClientEditor() {
                     type="number" step="0.1" placeholder="例：22"
                     value={startBody.bodyFat}
                     onChange={(e) => setStartBody(s => ({ ...s, bodyFat: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 {/* 即時 TDEE / 營養素估算（不需存檔，當場檢查換算） */}
@@ -1191,8 +1191,8 @@ export default function ClientEditor() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">訂閱方案</label>
                   <div className="grid grid-cols-3 gap-2 mb-2">
                     {([['free', '免費體驗', '$0', 'border-slate-300 bg-slate-50 text-gray-700'],
-                       ['self_managed', '自主管理', '$499', 'border-blue-300 bg-blue-50 text-blue-700'],
-                       ['coached', '教練指導', '$2999', 'border-blue-500 bg-blue-50 text-blue-700']] as const).map(([tier, label, price, style]) => (
+                       ['self_managed', '自主管理', '$499', 'border-primary-300 bg-primary-50 text-primary-700'],
+                       ['coached', '教練指導', '$2999', 'border-primary-500 bg-primary-50 text-primary-700']] as const).map(([tier, label, price, style]) => (
                       <button
                         key={tier}
                         onClick={() => {
@@ -1225,7 +1225,7 @@ export default function ClientEditor() {
                         }}
                         className={`p-3 rounded-xl border text-center transition-all ${
                           client.subscription_tier === tier
-                            ? style + ' ring-2 ring-offset-1 ring-blue-500'
+                            ? style + ' ring-2 ring-offset-1 ring-primary-500'
                             : 'border-slate-200 bg-white text-gray-500 hover:border-slate-300'
                         }`}
                       >
@@ -1280,7 +1280,7 @@ export default function ClientEditor() {
                             const params = new URLSearchParams({ tier: 'coached', name: client.name || '' })
                             setUpgradeLink(`${origin}/pay?${params.toString()}`)
                           }}
-                          className="w-full py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          className="w-full py-2 text-xs font-semibold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                         >
                           產生付款連結
                         </button>
@@ -1295,7 +1295,7 @@ export default function ClientEditor() {
                               setUpgradeCopied(true)
                               setTimeout(() => setUpgradeCopied(false), 2000)
                             }}
-                            className="w-full py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            className="w-full py-2 text-xs font-semibold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                           >
                             {upgradeCopied ? '已複製' : '複製連結（丟 LINE 給客戶）'}
                           </button>
@@ -1366,19 +1366,19 @@ export default function ClientEditor() {
                     type="date"
                     value={client.expires_at ? new Date(client.expires_at).toISOString().split('T')[0] : ''}
                     onChange={(e) => setClient({ ...client, expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                   <button
                     onClick={() => { const d = new Date(); d.setMonth(d.getMonth() + 1); setClient({ ...client, expires_at: d.toISOString() }) }}
-                    className="px-3 py-2 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap"
+                    className="px-3 py-2 text-xs bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors whitespace-nowrap"
                   >+1 月</button>
                   <button
                     onClick={() => { const d = new Date(); d.setMonth(d.getMonth() + 3); setClient({ ...client, expires_at: d.toISOString() }) }}
-                    className="px-3 py-2 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap"
+                    className="px-3 py-2 text-xs bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors whitespace-nowrap"
                   >+3 月</button>
                   <button
                     onClick={() => { const d = new Date(); d.setFullYear(d.getFullYear() + 1); setClient({ ...client, expires_at: d.toISOString() }) }}
-                    className="px-3 py-2 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap"
+                    className="px-3 py-2 text-xs bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors whitespace-nowrap"
                   >+1 年</button>
                 </div>
                 {client.expires_at && (() => {
@@ -1436,7 +1436,7 @@ export default function ClientEditor() {
                     <button
                       onClick={() => updateClient(key, !(client as any)[key])}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        (client as any)[key] ? 'bg-blue-600' : 'bg-gray-300'
+                        (client as any)[key] ? 'bg-primary-600' : 'bg-gray-300'
                       }`}
                     >
                       <span
@@ -1495,7 +1495,7 @@ export default function ClientEditor() {
                       type="date"
                       value={compQuickSetupDate}
                       onChange={(e) => setCompQuickSetupDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     />
                   </div>
                   <div>
@@ -1506,7 +1506,7 @@ export default function ClientEditor() {
                       value={compQuickSetupWeight}
                       onChange={(e) => setCompQuickSetupWeight(e.target.value)}
                       placeholder="例如：65.0"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     />
                   </div>
                   <div>
@@ -1514,7 +1514,7 @@ export default function ClientEditor() {
                     <select
                       value={compQuickSetupGoalType}
                       onChange={(e) => setCompQuickSetupGoalType(e.target.value as 'cut' | 'bulk')}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     >
                       <option value="cut">減脂</option>
                       <option value="bulk">增肌</option>
@@ -1543,7 +1543,7 @@ export default function ClientEditor() {
                     setCompQuickSetupSuccess(`已啟用：${enabled.join('、')}，目標類型：${compQuickSetupGoalType === 'cut' ? '減脂' : '增肌'}，活動型態：高能量通量`)
                     setTimeout(() => setCompQuickSetupSuccess(''), 5000)
                   }}
-                  className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+                  className="w-full py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors"
                 >
                   一鍵套用備賽預設
                 </button>
@@ -1665,10 +1665,10 @@ export default function ClientEditor() {
                       value={client.calories_target ?? ''}
                       onChange={(e) => updateClient('calories_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="2200"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                     {client.coach_macro_override && systemSuggestion?.suggestedCalories != null && (
-                      <p className="text-[11px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCalories.toLocaleString()} kcal</p>
+                      <p className="text-[11px] text-primary-500 mt-0.5">系統建議：{systemSuggestion.suggestedCalories.toLocaleString()} kcal</p>
                     )}
                   </div>
                   <div>
@@ -1678,10 +1678,10 @@ export default function ClientEditor() {
                       value={client.protein_target ?? ''}
                       onChange={(e) => updateClient('protein_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="120"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                     {client.coach_macro_override && systemSuggestion?.suggestedProtein != null && (
-                      <p className="text-[11px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedProtein}g</p>
+                      <p className="text-[11px] text-primary-500 mt-0.5">系統建議：{systemSuggestion.suggestedProtein}g</p>
                     )}
                   </div>
                   <div>
@@ -1691,10 +1691,10 @@ export default function ClientEditor() {
                       value={client.carbs_target ?? ''}
                       onChange={(e) => updateClient('carbs_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="250"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                     {client.coach_macro_override && systemSuggestion?.suggestedCarbs != null && (
-                      <p className="text-[11px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedCarbs}g</p>
+                      <p className="text-[11px] text-primary-500 mt-0.5">系統建議：{systemSuggestion.suggestedCarbs}g</p>
                     )}
                   </div>
                   <div>
@@ -1704,10 +1704,10 @@ export default function ClientEditor() {
                       value={client.fat_target ?? ''}
                       onChange={(e) => updateClient('fat_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="60"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                     {client.coach_macro_override && systemSuggestion?.suggestedFat != null && (
-                      <p className="text-[11px] text-blue-500 mt-0.5">系統建議：{systemSuggestion.suggestedFat}g</p>
+                      <p className="text-[11px] text-primary-500 mt-0.5">系統建議：{systemSuggestion.suggestedFat}g</p>
                     )}
                   </div>
                   <div>
@@ -1717,7 +1717,7 @@ export default function ClientEditor() {
                       value={client.water_target ?? ''}
                       onChange={(e) => updateClient('water_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="2500"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                 </div>
@@ -1739,7 +1739,7 @@ export default function ClientEditor() {
                           value={client.carbs_training_day ?? ''}
                           onChange={(e) => updateClient('carbs_training_day', e.target.value ? Number(e.target.value) : null)}
                           placeholder="300"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <div>
@@ -1749,7 +1749,7 @@ export default function ClientEditor() {
                           value={client.carbs_rest_day ?? ''}
                           onChange={(e) => updateClient('carbs_rest_day', e.target.value ? Number(e.target.value) : null)}
                           placeholder="100"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                     </div>
@@ -1772,7 +1772,7 @@ export default function ClientEditor() {
                     type="checkbox"
                     checked={lockMacros}
                     onChange={(e) => setLockMacros(e.target.checked)}
-                    className="w-4 h-4 mt-0.5 accent-blue-600 shrink-0"
+                    className="w-4 h-4 mt-0.5 accent-primary-600 shrink-0"
                   />
                   <span className="text-xs text-gray-600 leading-snug">
                     <b>鎖定此 macro，不讓系統自動調整</b><br />
@@ -1795,7 +1795,7 @@ export default function ClientEditor() {
                           onClick={() => setOverrideDurationDays(opt.value)}
                           className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
                             overrideDurationDays === opt.value
-                              ? 'bg-blue-600 text-white'
+                              ? 'bg-primary-600 text-white'
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
                         >
@@ -1809,7 +1809,7 @@ export default function ClientEditor() {
                         value={overrideReason}
                         onChange={(e) => setOverrideReason(e.target.value)}
                         placeholder="鎖定原因（選填，例如：備賽最後衝刺 / 此人低碳反效）"
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
                   </>
@@ -1835,7 +1835,7 @@ export default function ClientEditor() {
                       value={client.target_weight ?? ''}
                       onChange={(e) => updateClient('target_weight', e.target.value ? Number(e.target.value) : null)}
                       placeholder={isCompetitionMode(client.client_mode) ? '例如：65.0' : '例如：65.0'}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                   <div>
@@ -1846,7 +1846,7 @@ export default function ClientEditor() {
                       value={client.body_fat_target ?? ''}
                       onChange={(e) => updateClient('body_fat_target', e.target.value ? Number(e.target.value) : null)}
                       placeholder="例如：15.0"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                   {!isCompetitionMode(client.client_mode) && (
@@ -1856,7 +1856,7 @@ export default function ClientEditor() {
                         type="date"
                         value={client.target_date || ''}
                         onChange={(e) => setClient({ ...client, target_date: e.target.value || null })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
                   )}
@@ -1876,7 +1876,7 @@ export default function ClientEditor() {
                     const isAbove = client.target_weight ? client.target_weight > rec.recommendedHigh + 0.5 : false
                     const isOutOfRange = isBelow || isAbove
                     return (
-                      <div className={`mt-2 p-3 rounded-lg text-xs border ${isOutOfRange ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-100'}`}>
+                      <div className={`mt-2 p-3 rounded-lg text-xs border ${isOutOfRange ? 'bg-amber-50 border-amber-200' : 'bg-primary-50 border-primary-100'}`}>
                         <p className="font-semibold text-gray-700 mb-1">體態推算（依最新紀錄）</p>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600">
                           <span>最新體重</span><span className="font-medium text-gray-800">{rec.currentWeight} kg</span>
@@ -1885,12 +1885,12 @@ export default function ClientEditor() {
                           <span>脂肪量</span><span className="font-medium text-gray-800">{rec.fatMass} kg</span>
                           {rec.ffmi !== null && <><span>FFMI</span><span className="font-medium text-gray-800">{rec.ffmi} kg/m²</span></>}
                         </div>
-                        <div className="mt-2 pt-2 border-t border-blue-200">
+                        <div className="mt-2 pt-2 border-t border-primary-200">
                           <p className="text-gray-600">
                             {rec.mode === 'competition' ? '建議上台體重範圍' : '建議健康體重範圍'}
                             <span className="ml-1 text-xs text-gray-400">（目標體脂 {rec.targetBFLow}–{rec.targetBFHigh}%）</span>
                           </p>
-                          <p className="text-base font-bold text-blue-700 mt-0.5">
+                          <p className="text-base font-bold text-primary-700 mt-0.5">
                             {rec.recommendedLow} – {rec.recommendedHigh} kg
                           </p>
                           {client.target_weight && (
@@ -1925,7 +1925,7 @@ export default function ClientEditor() {
                     type="date"
                     value={client.quarterly_cycle_start || ''}
                     onChange={(e) => updateClient('quarterly_cycle_start', e.target.value || null)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                   {client.quarterly_cycle_start && (() => {
                     const start = new Date(client.quarterly_cycle_start)
@@ -1956,7 +1956,7 @@ export default function ClientEditor() {
                     <select
                       value={client.gene_mthfr || ''}
                       onChange={(e) => updateClient('gene_mthfr', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="">未檢測</option>
                       <option value="normal">正常</option>
@@ -1972,7 +1972,7 @@ export default function ClientEditor() {
                     <select
                       value={client.gene_apoe || ''}
                       onChange={(e) => updateClient('gene_apoe', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="">未檢測</option>
                       <option value="e2/e2">e2/e2</option>
@@ -1990,7 +1990,7 @@ export default function ClientEditor() {
                     <select
                       value={client.gene_depression_risk || ''}
                       onChange={(e) => updateClient('gene_depression_risk', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="">未檢測</option>
                       <option value="LL">LL（長/長）— 低風險</option>
@@ -2008,7 +2008,7 @@ export default function ClientEditor() {
                       value={client.gene_notes || ''}
                       onChange={(e) => updateClient('gene_notes', e.target.value || null)}
                       placeholder="其他基因相關資訊..."
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                 </div>
@@ -2029,7 +2029,7 @@ export default function ClientEditor() {
                       type="date"
                       value={client.competition_date || ''}
                       onChange={(e) => updateClient('competition_date', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                     {client.competition_date && (
                       <p className="text-xs text-amber-600 mt-1 font-medium">
@@ -2042,7 +2042,7 @@ export default function ClientEditor() {
                     <select
                       value={client.prep_phase || 'off_season'}
                       onChange={(e) => updateClient('prep_phase', e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                       {(client.client_mode === 'athletic' ? ATHLETIC_PHASE_OPTIONS : BODYBUILDING_PHASE_OPTIONS).map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -2059,7 +2059,7 @@ export default function ClientEditor() {
                         value={client.weigh_in_gap_hours ?? ''}
                         onChange={(e) => updateClient('weigh_in_gap_hours', e.target.value ? parseInt(e.target.value) : null)}
                         placeholder="例如：24"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                       <p className="text-xs text-gray-500 mt-1">影響超補償期的碳水計算策略</p>
                     </div>
@@ -2087,7 +2087,7 @@ export default function ClientEditor() {
                     onChange={(e) => updateClient('coach_weekly_note', e.target.value)}
                     rows={3}
                     placeholder="例如：這週體重控制得不錯，繼續保持！碳水可以再多吃一點。"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50"
                   />
                 </div>
                 <div>
@@ -2097,7 +2097,7 @@ export default function ClientEditor() {
                     onChange={(e) => updateClient('coach_summary', e.target.value)}
                     rows={5}
                     placeholder="本月健康分析..."
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
@@ -2106,7 +2106,7 @@ export default function ClientEditor() {
                     type="date"
                     value={client.next_checkup_date || ''}
                     onChange={(e) => updateClient('next_checkup_date', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
@@ -2116,7 +2116,7 @@ export default function ClientEditor() {
                     onChange={(e) => updateClient('health_goals', e.target.value)}
                     rows={3}
                     placeholder="例如：同半胱胺酸降到 8 以下"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
               </div>
@@ -2244,7 +2244,7 @@ export default function ClientEditor() {
                       onClick={() => updateClient('training_experience', opt.value)}
                       className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
                         client.training_experience === opt.value
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-primary-600 text-white'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
@@ -2292,14 +2292,14 @@ export default function ClientEditor() {
                       }}
                       rows={12}
                       placeholder={`計畫名稱：5天分化 — 減脂期\n\n週一 Push Day\n啞鈴臥推 | 4組 | 8-10下 | RPE 8 | 主項\n上斜啞鈴飛鳥 | 3組 | 12-15下 | RPE 7 | 胸肌上部\n\n週二 Pull Day\n引體向上 | 4組 | 6-8下 | RPE 8 | 主項\n坐姿划船 | 3組 | 10-12下 | RPE 7 | 背厚度\n\n週三 Leg Day\n深蹲 | 4組 | 6-8下 | RPE 9 | 主項\n腿推 | 3組 | 10-12下 | RPE 7`}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
                     />
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => parseTrainingPlanText(trainingPlanText)}
-                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                      className="px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors"
                     >
                       解析並套用
                     </button>
@@ -2358,13 +2358,13 @@ export default function ClientEditor() {
                           )
                         })()}
                         {(client.training_plan.days || []).map((day: any, di: number) => (
-                          <div key={di} className="bg-blue-50 rounded-lg p-3">
-                            <p className="text-sm font-semibold text-blue-800 mb-2">
+                          <div key={di} className="bg-primary-50 rounded-lg p-3">
+                            <p className="text-sm font-semibold text-primary-800 mb-2">
                               {DAY_LABELS[day.dayOfWeek] || `Day ${day.dayOfWeek}`} — {day.label}
                             </p>
                             <table className="w-full text-xs">
                               <thead>
-                                <tr className="text-gray-500 border-b border-blue-100">
+                                <tr className="text-gray-500 border-b border-primary-100">
                                   <th className="text-left py-1 pr-2">動作</th>
                                   <th className="text-center py-1 px-1">組x次</th>
                                   <th className="text-center py-1 px-1">RPE</th>
@@ -2373,7 +2373,7 @@ export default function ClientEditor() {
                               </thead>
                               <tbody>
                                 {(day.exercises || []).map((ex: any, ei: number) => (
-                                  <tr key={ei} className="border-b border-blue-50 last:border-b-0">
+                                  <tr key={ei} className="border-b border-primary-50 last:border-b-0">
                                     <td className="py-1 pr-2 font-medium text-gray-800">{ex.name}</td>
                                     <td className="py-1 px-1 text-center text-gray-600">
                                       {ex.sets && ex.reps ? `${ex.sets}x${ex.reps}` : ex.sets || ex.reps || '-'}
@@ -2403,7 +2403,7 @@ export default function ClientEditor() {
                 <h2 className="text-lg font-medium text-gray-900">血檢數據</h2>
                 <button
                   onClick={addLabResult}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
                 >
                   新增檢測項目
                 </button>
@@ -2423,7 +2423,7 @@ export default function ClientEditor() {
                           type="text"
                           value={result.test_name}
                           onChange={(e) => updateLabResult(index, 'test_name', e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <div>
@@ -2433,7 +2433,7 @@ export default function ClientEditor() {
                           step="0.01"
                           value={result.value}
                           onChange={(e) => updateLabResult(index, 'value', Number(e.target.value))}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <div>
@@ -2442,7 +2442,7 @@ export default function ClientEditor() {
                           type="text"
                           value={result.unit}
                           onChange={(e) => updateLabResult(index, 'unit', e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <div>
@@ -2451,7 +2451,7 @@ export default function ClientEditor() {
                           type="text"
                           value={result.reference_range}
                           onChange={(e) => updateLabResult(index, 'reference_range', e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <div>
@@ -2459,7 +2459,7 @@ export default function ClientEditor() {
                         <select
                           value={result.status}
                           onChange={(e) => updateLabResult(index, 'status', e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                           <option value="normal">正常</option>
                           <option value="attention">注意</option>
@@ -2472,7 +2472,7 @@ export default function ClientEditor() {
                           type="date"
                           value={result.date}
                           onChange={(e) => updateLabResult(index, 'date', e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <div className="lg:col-span-2">
@@ -2482,7 +2482,7 @@ export default function ClientEditor() {
                           onChange={(e) => updateLabResult(index, 'custom_advice', e.target.value)}
                           rows={2}
                           placeholder="留空則使用預設建議"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <div>
@@ -2492,7 +2492,7 @@ export default function ClientEditor() {
                           value={result.custom_target || ''}
                           onChange={(e) => updateLabResult(index, 'custom_target', e.target.value)}
                           placeholder="留空則使用預設範圍"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <div className="lg:col-span-3">
@@ -2504,7 +2504,7 @@ export default function ClientEditor() {
                           onChange={(e) => updateLabResult(index, 'coach_interpretation', e.target.value)}
                           rows={3}
                           placeholder="這個指標的趨勢觀察、與其他指標的關聯、生活方式調整建議（教練筆記非醫療診斷）"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50"
                         />
                       </div>
                     </div>
@@ -2535,7 +2535,7 @@ export default function ClientEditor() {
                 <h2 className="text-lg font-medium text-gray-900">補品清單</h2>
                 <button
                   onClick={addSupplement}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
                 >
                   新增補品
                 </button>
@@ -2574,7 +2574,7 @@ export default function ClientEditor() {
                                 updateSupplement(index, 'coach_rationale', s.rationaleStarter)
                               }
                             }}
-                            className="ml-2 text-xs text-blue-600 hover:text-blue-800 font-normal"
+                            className="ml-2 text-xs text-primary-600 hover:text-primary-800 font-normal"
                             title="從名稱自動填入劑量、時間、rationale 起手式"
                           >
                             套用建議
@@ -2585,7 +2585,7 @@ export default function ClientEditor() {
                           value={supplement.name}
                           onChange={(e) => updateSupplement(index, 'name', e.target.value)}
                           list={`supplement-names-${index}`}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                         <datalist id={`supplement-names-${index}`}>
                           {SUPPLEMENT_NAMES.map(n => <option key={n} value={n} />)}
@@ -2611,7 +2611,7 @@ export default function ClientEditor() {
                           type="text"
                           value={supplement.dosage}
                           onChange={(e) => updateSupplement(index, 'dosage', e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <div>
@@ -2619,7 +2619,7 @@ export default function ClientEditor() {
                         <select
                           value={supplement.timing}
                           onChange={(e) => updateSupplement(index, 'timing', e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                           <option value="早餐">早餐</option>
                           <option value="午餐">午餐</option>
@@ -2634,7 +2634,7 @@ export default function ClientEditor() {
                           type="text"
                           value={supplement.why || ''}
                           onChange={(e) => updateSupplement(index, 'why', e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                     </div>
@@ -2651,7 +2651,7 @@ export default function ClientEditor() {
                             type="date"
                             value={supplement.started_at || ''}
                             onChange={(e) => updateSupplement(index, 'started_at', e.target.value || null)}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                           />
                         </div>
                         <div>
@@ -2661,7 +2661,7 @@ export default function ClientEditor() {
                             value={supplement.mode_context || ''}
                             onChange={(e) => updateSupplement(index, 'mode_context', e.target.value || null)}
                             placeholder={client.client_mode || '自動帶入目前 mode'}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                           />
                         </div>
                       </div>
@@ -2680,7 +2680,7 @@ export default function ClientEditor() {
                         onChange={(e) => updateSupplement(index, 'coach_rationale', e.target.value)}
                         rows={2}
                         placeholder="例：游離睪固酮 72.8（最佳 150-220）偏低 + 鋅是 aromatase 抑制 + 雌二醇 42 偏高，雙效介入"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 text-sm"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50 text-sm"
                       />
                     </div>
                     <div className="mt-4 flex items-center justify-between">
@@ -2731,7 +2731,7 @@ export default function ClientEditor() {
             onClick={handleSave}
             disabled={saving}
             className={`relative px-6 py-2 text-white rounded-lg transition-colors disabled:opacity-50 ${
-              hasUnsavedChanges ? 'bg-rose-600 hover:bg-rose-700' : 'bg-blue-600 hover:bg-blue-700'
+              hasUnsavedChanges ? 'bg-rose-600 hover:bg-rose-700' : 'bg-primary-600 hover:bg-primary-700'
             }`}
           >
             {hasUnsavedChanges && (

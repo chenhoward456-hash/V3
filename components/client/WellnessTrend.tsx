@@ -46,7 +46,7 @@ export default function WellnessTrend({ wellness }: WellnessTrendProps) {
               legend
               dots
               series={[
-                { key: '睡眠品質', color: '#2563EB' },
+                { key: '睡眠品質', color: '#1E4A73' },
                 { key: '精力水平', color: '#F59E0B' },
                 { key: '心情', color: '#10B981' },
               ]}

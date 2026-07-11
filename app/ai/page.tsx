@@ -82,7 +82,7 @@ function AIAdvisorContent() {
     <section className="max-w-3xl mx-auto px-4 py-10 md:py-16 flex flex-col" style={{ minHeight: 'calc(100vh - 200px)' }}>
       {/* Header */}
       <div className="text-center mb-8">
-        <div className="inline-block bg-[#2563eb]/10 text-[#2563eb] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
+        <div className="inline-block bg-[#1E4A73]/10 text-[#1E4A73] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
           AI 私人顧問
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
@@ -99,8 +99,8 @@ function AIAdvisorContent() {
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4" style={{ minHeight: '300px', maxHeight: '55vh' }}>
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center py-12">
-              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <div className="w-16 h-16 bg-primary-50 rounded-2xl flex items-center justify-center mb-4">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1E4A73" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
               </div>
@@ -115,7 +115,7 @@ function AIAdvisorContent() {
                   <button
                     key={q}
                     onClick={() => { setInput(q); inputRef.current?.focus() }}
-                    className="text-left text-sm text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-[#2563eb] px-4 py-3 rounded-xl transition-colors border border-gray-100"
+                    className="text-left text-sm text-gray-600 bg-gray-50 hover:bg-primary-50 hover:text-[#1E4A73] px-4 py-3 rounded-xl transition-colors border border-gray-100"
                   >
                     {q}
                   </button>
@@ -129,7 +129,7 @@ function AIAdvisorContent() {
               <div
                 className={`max-w-[85%] md:max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                   msg.role === 'user'
-                    ? 'bg-[#2563eb] text-white rounded-br-md'
+                    ? 'bg-[#1E4A73] text-white rounded-br-md'
                     : 'bg-gray-100 text-gray-800 rounded-bl-md'
                 }`}
               >
@@ -163,12 +163,12 @@ function AIAdvisorContent() {
               onKeyDown={handleKeyDown}
               placeholder="輸入你的問題..."
               rows={1}
-              className="flex-1 resize-none px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#2563eb] transition-colors"
+              className="flex-1 resize-none px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4A73] transition-colors"
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || loading}
-              className="bg-[#2563eb] text-white p-3 rounded-xl hover:bg-[#1d4ed8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+              className="bg-[#1E4A73] text-white p-3 rounded-xl hover:bg-[#16385A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13" />

@@ -64,7 +64,7 @@ const SimpleBatchEdit = ({ data, onSave }: SimpleBatchEditProps) => {
           <h2 className="text-2xl font-semibold text-gray-900">📝 批量編輯</h2>
           <button
             onClick={() => setIsEditing(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
             <Edit3 size={16} className="mr-2" />
             開始編輯
@@ -101,7 +101,7 @@ const SimpleBatchEdit = ({ data, onSave }: SimpleBatchEditProps) => {
           </button>
           <button
             onClick={handleSave}
-            className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
             <Save size={16} className="mr-1" />
             保存

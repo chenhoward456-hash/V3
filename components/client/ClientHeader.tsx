@@ -134,7 +134,7 @@ export default function ClientHeader({
                   <button
                     onClick={() => !isFree && onToggleFeature('simple_mode')}
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
-                      c.simple_mode ? 'bg-blue-500' : 'bg-gray-300'
+                      c.simple_mode ? 'bg-primary-500' : 'bg-gray-300'
                     } ${isFree ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -178,7 +178,7 @@ export default function ClientHeader({
                           onToggleFeature(key)
                         }}
                         className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
-                          !!(c as Record<string, unknown>)[key] ? 'bg-blue-500' : 'bg-gray-300'
+                          !!(c as Record<string, unknown>)[key] ? 'bg-primary-500' : 'bg-gray-300'
                         } ${isLockedOn ? 'opacity-50 cursor-not-allowed' : ''} ${isLockedOff ? 'opacity-40 cursor-pointer' : ''}`}
                       >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -199,7 +199,7 @@ export default function ClientHeader({
                   <button
                     onClick={() => onToggleFeature('email_newsletter_opt_in')}
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
-                      c.email_newsletter_opt_in ? 'bg-blue-500' : 'bg-gray-300'
+                      c.email_newsletter_opt_in ? 'bg-primary-500' : 'bg-gray-300'
                     }`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -261,11 +261,11 @@ export default function ClientHeader({
                   onChange={(e) => setPinInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
                   placeholder="輸入教練密碼"
-                  className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${pinError ? 'border-red-400' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${pinError ? 'border-red-400' : 'border-gray-300'}`}
                   autoFocus
                 />
                 {pinError && <p className="text-xs text-red-500 mt-1">密碼錯誤</p>}
-                <button onClick={handlePinSubmit} className="w-full mt-2 bg-blue-600 text-white py-1.5 rounded-lg text-sm hover:bg-blue-700">解鎖</button>
+                <button onClick={handlePinSubmit} className="w-full mt-2 bg-primary-600 text-white py-1.5 rounded-lg text-sm hover:bg-primary-700">解鎖</button>
               </div>
             )}
           </div>
@@ -283,7 +283,7 @@ export default function ClientHeader({
               const picker = document.getElementById('date-picker') as HTMLInputElement
               if (picker) { picker.showPicker?.(); picker.focus() }
             }}
-            className={`text-sm font-semibold px-3 py-1 rounded-full transition-colors ${isToday ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
+            className={`text-sm font-semibold px-3 py-1 rounded-full transition-colors ${isToday ? 'text-primary-600' : 'text-gray-600 hover:text-primary-600'}`}
           >
             {formatSelectedDate(selectedDate)}
           </button>

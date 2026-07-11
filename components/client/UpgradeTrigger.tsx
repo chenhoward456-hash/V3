@@ -58,7 +58,7 @@ function SparkleIcon() {
 function ChartIcon() {
   return (
     <svg
-      className="w-5 h-5 text-blue-400"
+      className="w-5 h-5 text-primary-400"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -228,7 +228,7 @@ export default function UpgradeTrigger({
     >
       <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
         {/* Decorative gradient bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-primary-600" />
 
         {/* Close button */}
         <button
@@ -251,7 +251,7 @@ export default function UpgradeTrigger({
 
             {/* Text */}
             <div className="flex-1 min-w-0 pr-4">
-              <p className="text-[11px] font-semibold text-blue-600 uppercase tracking-wide mb-1">
+              <p className="text-[11px] font-semibold text-primary-600 uppercase tracking-wide mb-1">
                 {trigger.title}
               </p>
               <p className="text-sm text-gray-700 leading-relaxed">
@@ -265,7 +265,7 @@ export default function UpgradeTrigger({
             <Link
               href={trigger.link}
               onClick={handleCtaClick}
-              className="inline-flex items-center gap-1.5 bg-blue-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-all"
+              className="inline-flex items-center gap-1.5 bg-primary-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-primary-700 transition-all"
             >
               {trigger.cta}
             </Link>

@@ -82,7 +82,7 @@ export default function SleepRegularityPage() {
       <div className="max-w-2xl mx-auto px-5 py-12 md:py-16">
         {/* Hero */}
         <header className="mb-8">
-          <p className="text-sm font-semibold text-blue-600 mb-3">免費工具 · 睡眠</p>
+          <p className="text-sm font-semibold text-primary-600 mb-3">免費工具 · 睡眠</p>
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-snug mb-4">
             你這週的起床時間，
             <br />
@@ -103,7 +103,7 @@ export default function SleepRegularityPage() {
             <button
               type="button"
               onClick={copyWeekdays}
-              className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
             >
               平日都一樣？套用週一
             </button>
@@ -133,7 +133,7 @@ export default function SleepRegularityPage() {
           <button
             type="button"
             onClick={handleCalculate}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold px-6 py-3.5 rounded-xl"
+            className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors text-white font-bold px-6 py-3.5 rounded-xl"
           >
             算我的漂移
           </button>
@@ -178,7 +178,7 @@ export default function SleepRegularityPage() {
           <ol className="space-y-3">
             {CHECKLIST.map((item, i) => (
               <li key={item.title} className="bg-white border border-slate-200 rounded-2xl p-5 flex gap-4">
-                <span className="shrink-0 w-8 h-8 rounded-full border border-blue-600 bg-blue-50 text-blue-600 font-bold text-sm flex items-center justify-center tabular-nums">
+                <span className="shrink-0 w-8 h-8 rounded-full border border-primary-600 bg-primary-50 text-primary-600 font-bold text-sm flex items-center justify-center tabular-nums">
                   {i + 1}
                 </span>
                 <div>
@@ -201,7 +201,7 @@ export default function SleepRegularityPage() {
                   href={c.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-blue-600 hover:text-blue-700 transition-colors"
+                  className="text-xs text-primary-600 hover:text-primary-700 transition-colors"
                 >
                   {c.cite} ↗
                 </a>
@@ -223,7 +223,7 @@ export default function SleepRegularityPage() {
           <Link
             href="/diagnosis"
             onClick={() => trackEvent('cta_click', { source: 'tools_sleep', destination: 'diagnosis' })}
-            className="inline-block bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold px-8 py-4 rounded-xl"
+            className="inline-block bg-primary-600 hover:bg-primary-700 transition-colors text-white font-bold px-8 py-4 rounded-xl"
           >
             免費體驗系統分析
           </Link>
@@ -243,7 +243,7 @@ function TimeRow({
   onChange: (key: keyof DayEntry, value: string) => void
 }) {
   const cls =
-    'w-full px-3 py-2.5 border border-slate-200 rounded-lg text-slate-900 tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white'
+    'w-full px-3 py-2.5 border border-slate-200 rounded-lg text-slate-900 tabular-nums focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent bg-white'
   return (
     <>
       <span className="text-sm font-medium text-slate-600 text-center">{label}</span>

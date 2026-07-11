@@ -111,8 +111,8 @@ export default function GoalSettings({
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-            <Target size={16} className="text-blue-600" />
+          <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center">
+            <Target size={16} className="text-primary-600" />
           </div>
           <div className="text-left">
             <p className="text-sm font-semibold text-gray-800">目標設定</p>
@@ -140,7 +140,7 @@ export default function GoalSettings({
                   onClick={() => setGoalType(key)}
                   className={`py-2 px-1 rounded-xl text-xs transition-all border-2 ${
                     goalType === key
-                      ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 font-semibold'
                       : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                   }`}
                 >
@@ -166,7 +166,7 @@ export default function GoalSettings({
                 min="30"
                 max="300"
                 step="0.1"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 transition-colors"
               />
             </div>
             <div>
@@ -182,7 +182,7 @@ export default function GoalSettings({
                 min="3"
                 max="60"
                 step="0.1"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 transition-colors"
               />
             </div>
           </div>
@@ -198,7 +198,7 @@ export default function GoalSettings({
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 transition-colors"
             />
             <p className="text-[11px] text-gray-400 mt-1">
               {competitionEnabled
@@ -208,8 +208,8 @@ export default function GoalSettings({
           </div>
 
           {goalType === 'recomp' && (
-            <div className="bg-blue-50 rounded-xl p-3">
-              <p className="text-xs text-blue-700 leading-relaxed">
+            <div className="bg-primary-50 rounded-xl p-3">
+              <p className="text-xs text-primary-700 leading-relaxed">
                 <strong>體態重組</strong>：適合體重 OK 但想降體脂、增肌肉的人。
                 系統會用接近 TDEE 的熱量 + 高蛋白策略，幫你同時減脂增肌。
                 建議填寫目標體脂率。
@@ -247,7 +247,7 @@ export default function GoalSettings({
               saved
                 ? 'bg-green-500 text-white'
                 : hasChanges
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                ? 'bg-primary-600 text-white hover:bg-primary-700'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >

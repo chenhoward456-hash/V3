@@ -65,7 +65,7 @@ export default function InstallPage() {
             <p className="text-base font-bold text-gray-900 mb-1">全部設定好了！</p>
             <p className="text-sm text-gray-500 mb-4">每天早上會提醒你量體重，點一下就記好。</p>
             {code && (
-              <Link href={`/c/${code}`} className="inline-block bg-blue-600 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-blue-700 transition-colors">
+              <Link href={`/c/${code}`} className="inline-block bg-primary-600 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-primary-700 transition-colors">
                 打開我的主控台 →
               </Link>
             )}
@@ -80,7 +80,7 @@ export default function InstallPage() {
                   <li>點最下面中間的「分享」鍵 <span className="font-mono">⬆️</span></li>
                   <li>往下滑，選「<b>加入主畫面</b>」→ 右上「加入」</li>
                   <li>回桌面點開新出現的「<b>Howard</b>」圖示</li>
-                  <li className="text-blue-700 font-medium">⚠️ 一定要從那個圖示打開，這頁才會變成 App</li>
+                  <li className="text-primary-700 font-medium">⚠️ 一定要從那個圖示打開，這頁才會變成 App</li>
                 </ol>
                 <p className="text-xs text-gray-400 mt-3">從圖示打開後，回到這一頁就會跳出「開啟通知」。</p>
               </div>
@@ -94,7 +94,7 @@ export default function InstallPage() {
                 <button
                   onClick={() => subscribe()}
                   disabled={busy}
-                  className="w-full bg-blue-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="w-full bg-primary-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-primary-700 disabled:opacity-50 transition-colors"
                 >
                   {busy ? '開啟中…' : '開啟通知'}
                 </button>
@@ -124,7 +124,7 @@ export default function InstallPage() {
             )}
 
             {code && (
-              <Link href={`/c/${code}`} className="block text-center text-sm text-blue-600 font-medium hover:underline">
+              <Link href={`/c/${code}`} className="block text-center text-sm text-primary-600 font-medium hover:underline">
                 先打開我的主控台 →
               </Link>
             )}

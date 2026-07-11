@@ -92,12 +92,12 @@ export async function sendLoginLinkEmail({
       html: `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;">
-    <tr><td style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:40px 30px;text-align:center;">
+    <tr><td style="background:linear-gradient(135deg,#1e3a5f,#1E4A73);padding:40px 30px;text-align:center;">
       <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">你的登入連結</h1>
       <p style="color:rgba(255,255,255,.8);font-size:14px;margin:0;">${escapeHTML(name)}，點下面就能回到你的儀表板</p>
     </td></tr>
     <tr><td style="padding:40px 30px;text-align:center;">
-      <a href="${escapeHTML(dashboardUrl)}" style="display:inline-block;background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:14px 40px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:16px;">進入我的儀表板</a>
+      <a href="${escapeHTML(dashboardUrl)}" style="display:inline-block;background:linear-gradient(135deg,#1e3a5f,#1E4A73);color:#fff;padding:14px 40px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:16px;">進入我的儀表板</a>
       <p style="font-size:12px;color:#94a3b8;margin:20px 0 0;line-height:1.6;">把這封信留著，之後忘記網址隨時可以點回來。<br/>如果不是你本人要求登入，忽略這封信即可。</p>
     </td></tr>
     <tr><td style="padding:20px 30px;border-top:1px solid #e2e8f0;text-align:center;">
@@ -192,7 +192,7 @@ function buildWelcomeEmailHTML({
 <body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
     <tr>
-      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+      <td style="background: linear-gradient(135deg, #1e3a5f, #1E4A73); padding: 40px 30px; text-align: center;">
         <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">歡迎加入 Howard Protocol</h1>
         <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，你的帳號已開通！</p>
       </td>
@@ -205,9 +205,9 @@ function buildWelcomeEmailHTML({
               <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">你的方案</p>
               <p style="font-size:18px; color:#1e3a5f; font-weight:bold; margin:0 0 20px 0;">${escapeHTML(tierName)}</p>
               <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">你的專屬代碼</p>
-              <p style="font-size:28px; color:#2563eb; font-weight:bold; font-family:monospace; letter-spacing:2px; margin:0 0 24px 0;">${escapeHTML(uniqueCode)}</p>
+              <p style="font-size:28px; color:#1E4A73; font-weight:bold; font-family:monospace; letter-spacing:2px; margin:0 0 24px 0;">${escapeHTML(uniqueCode)}</p>
               <a href="${escapeHTML(dashboardUrl)}"
-                 style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #2563eb); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
+                 style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #1E4A73); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
                 進入你的儀表板
               </a>
               <p style="font-size:11px; color:#94a3b8; margin:16px 0 0 0;">
@@ -265,7 +265,7 @@ function buildWelcomeEmailHTML({
                 追蹤 IG 獲得更多訓練與營養內容
               </p>
               <p style="font-size:12px; margin:0;">
-                <a href="https://instagram.com/chenhoward" style="color:#2563eb; text-decoration:none; font-weight:500;">@chenhoward →</a>
+                <a href="https://instagram.com/chenhoward" style="color:#1E4A73; text-decoration:none; font-weight:500;">@chenhoward →</a>
               </p>
             </td>
           </tr>
@@ -305,7 +305,7 @@ function buildPurchaseEmailHTML({
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
     <!-- Header -->
     <tr>
-      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+      <td style="background: linear-gradient(135deg, #1e3a5f, #1E4A73); padding: 40px 30px; text-align: center;">
         <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">購買成功 ✅</h1>
         <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">感謝你的支持！你的電子書已準備好下載。</p>
       </td>
@@ -324,7 +324,7 @@ function buildPurchaseEmailHTML({
                 睡眠與神經系統優化實戰手冊
               </p>
               <a href="${downloadUrl}"
-                 style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #2563eb); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
+                 style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #1E4A73); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
                 📥 下載電子書
               </a>
               <p style="font-size:11px; color:#94a3b8; margin:16px 0 0 0;">
@@ -339,14 +339,14 @@ function buildPurchaseEmailHTML({
     <!-- Full Report Link -->
     <tr>
       <td style="padding: 0 30px 30px;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff; border-radius:12px; border:1px solid #bfdbfe;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F0F5FA; border-radius:12px; border:1px solid #bfdbfe;">
           <tr>
             <td style="padding: 20px 24px; text-align:center;">
-              <p style="font-size:14px; color:#1e40af; margin:0 0 12px 0; font-weight:500;">
+              <p style="font-size:14px; color:#16385A; margin:0 0 12px 0; font-weight:500;">
                 📊 你的完整分析報告也可以在這裡查看
               </p>
               <a href="${successUrl}"
-                 style="display:inline-block; background:#ffffff; color:#2563eb; padding:10px 24px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px; border:1px solid #bfdbfe;">
+                 style="display:inline-block; background:#ffffff; color:#1E4A73; padding:10px 24px; border-radius:8px; text-decoration:none; font-weight:600; font-size:14px; border:1px solid #bfdbfe;">
                 查看分析報告 →
               </a>
             </td>
@@ -594,7 +594,7 @@ function buildDay3EmailHTML({
 <body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
     <tr>
-      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+      <td style="background: linear-gradient(135deg, #1e3a5f, #1E4A73); padding: 40px 30px; text-align: center;">
         <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">第 3 天，做得好！</h1>
         <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，持續記錄就是最大的進步</p>
       </td>
@@ -607,10 +607,10 @@ function buildDay3EmailHTML({
         <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 16px 0;">
           你已經加入 Howard Protocol 第 3 天了。不管你目前記錄了幾天，最重要的是<strong>每天記錄體重</strong>——這是所有數據分析的基礎。
         </p>
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff; border-radius:12px; border:1px solid #bfdbfe; margin:0 0 24px 0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F0F5FA; border-radius:12px; border:1px solid #bfdbfe; margin:0 0 24px 0;">
           <tr>
             <td style="padding: 20px 24px;">
-              <p style="font-size:14px; color:#1e40af; margin:0 0 8px 0; font-weight:600;">
+              <p style="font-size:14px; color:#16385A; margin:0 0 8px 0; font-weight:600;">
                 為什麼前 14 天很重要？
               </p>
               <p style="font-size:13px; color:#334155; line-height:1.6; margin:0;">
@@ -621,7 +621,7 @@ function buildDay3EmailHTML({
         </table>
         <p style="text-align:center;">
           <a href="${escapeHTML(dashboardUrl)}"
-             style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #2563eb); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
+             style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #1E4A73); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
             前往記錄體重
           </a>
         </p>
@@ -715,7 +715,7 @@ function buildDay7EmailHTML({
 <body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
     <tr>
-      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+      <td style="background: linear-gradient(135deg, #1e3a5f, #1E4A73); padding: 40px 30px; text-align: center;">
         <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">一週達成！</h1>
         <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，你已經比大多數人更有紀律</p>
       </td>
@@ -738,21 +738,21 @@ function buildDay7EmailHTML({
                 <tr>
                   <td style="padding:8px 0;">
                     <p style="font-size:14px; color:#334155; margin:0;">
-                      <span style="color:#2563eb; font-weight:bold;">AI 教練回饋</span> — 根據你的數據趨勢，自動給出飲食與訓練建議
+                      <span style="color:#1E4A73; font-weight:bold;">AI 教練回饋</span> — 根據你的數據趨勢，自動給出飲食與訓練建議
                     </p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:8px 0;">
                     <p style="font-size:14px; color:#334155; margin:0;">
-                      <span style="color:#2563eb; font-weight:bold;">訓練追蹤</span> — 記錄每次訓練，搭配體重與熱量數據做全面分析
+                      <span style="color:#1E4A73; font-weight:bold;">訓練追蹤</span> — 記錄每次訓練，搭配體重與熱量數據做全面分析
                     </p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:8px 0;">
                     <p style="font-size:14px; color:#334155; margin:0;">
-                      <span style="color:#2563eb; font-weight:bold;">進階圖表</span> — 7 天移動平均、體重變化率等深度分析
+                      <span style="color:#1E4A73; font-weight:bold;">進階圖表</span> — 7 天移動平均、體重變化率等深度分析
                     </p>
                   </td>
                 </tr>
@@ -762,7 +762,7 @@ function buildDay7EmailHTML({
         </table>
         <p style="text-align:center;">
           <a href="${escapeHTML(dashboardUrl)}"
-             style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #2563eb); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
+             style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #1E4A73); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
             查看你的儀表板
           </a>
         </p>
@@ -859,7 +859,7 @@ function buildDay14EmailHTML({
 <body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
     <tr>
-      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+      <td style="background: linear-gradient(135deg, #1e3a5f, #1E4A73); padding: 40px 30px; text-align: center;">
         <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">兩週達成！</h1>
         <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，你的數據已經開始發揮價值</p>
       </td>
@@ -872,10 +872,10 @@ function buildDay14EmailHTML({
         <p style="font-size:15px; color:#334155; line-height:1.7; margin:0 0 16px 0;">
           恭喜你持續追蹤兩週了！這不是一件容易的事——你已經展現了真正改變體態的決心。
         </p>
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff; border-radius:12px; border:1px solid #bfdbfe; margin:0 0 24px 0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F0F5FA; border-radius:12px; border:1px solid #bfdbfe; margin:0 0 24px 0;">
           <tr>
             <td style="padding: 20px 24px;">
-              <p style="font-size:14px; color:#1e40af; margin:0 0 8px 0; font-weight:600;">
+              <p style="font-size:14px; color:#16385A; margin:0 0 8px 0; font-weight:600;">
                 14 天數據 = TDEE 校正已就緒
               </p>
               <p style="font-size:13px; color:#334155; line-height:1.6; margin:0;">
@@ -894,28 +894,28 @@ function buildDay14EmailHTML({
                 <tr>
                   <td style="padding:8px 0;">
                     <p style="font-size:14px; color:#334155; margin:0;">
-                      <span style="color:#2563eb; font-weight:bold;">TDEE 校正報告</span> — 知道你每天真正消耗多少卡路里
+                      <span style="color:#1E4A73; font-weight:bold;">TDEE 校正報告</span> — 知道你每天真正消耗多少卡路里
                     </p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:8px 0;">
                     <p style="font-size:14px; color:#334155; margin:0;">
-                      <span style="color:#2563eb; font-weight:bold;">AI 飲食建議</span> — 根據你的數據趨勢，自動調整熱量與巨量營養素
+                      <span style="color:#1E4A73; font-weight:bold;">AI 飲食建議</span> — 根據你的數據趨勢，自動調整熱量與巨量營養素
                     </p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:8px 0;">
                     <p style="font-size:14px; color:#334155; margin:0;">
-                      <span style="color:#2563eb; font-weight:bold;">趨勢分析圖表</span> — 7 天移動平均、體重變化率一目瞭然
+                      <span style="color:#1E4A73; font-weight:bold;">趨勢分析圖表</span> — 7 天移動平均、體重變化率一目瞭然
                     </p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:8px 0;">
                     <p style="font-size:14px; color:#334155; margin:0;">
-                      <span style="color:#2563eb; font-weight:bold;">教練監督</span> — 讓專業教練根據你的數據調整計畫
+                      <span style="color:#1E4A73; font-weight:bold;">教練監督</span> — 讓專業教練根據你的數據調整計畫
                     </p>
                   </td>
                 </tr>
@@ -925,13 +925,13 @@ function buildDay14EmailHTML({
         </table>
         <p style="text-align:center; margin:0 0 12px 0;">
           <a href="${escapeHTML(pricingUrl)}"
-             style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #2563eb); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
+             style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #1E4A73); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
             查看升級方案
           </a>
         </p>
         <p style="text-align:center;">
           <a href="${escapeHTML(dashboardUrl)}"
-             style="display:inline-block; color:#2563eb; padding:8px 24px; text-decoration:none; font-size:14px;">
+             style="display:inline-block; color:#1E4A73; padding:8px 24px; text-decoration:none; font-size:14px;">
             或繼續使用免費版 →
           </a>
         </p>
@@ -1040,7 +1040,7 @@ function buildExpiryWarningEmailHTML({
 <body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
     <tr>
-      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+      <td style="background: linear-gradient(135deg, #1e3a5f, #1E4A73); padding: 40px 30px; text-align: center;">
         <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">自動續訂通知</h1>
         <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，你的方案即將自動續訂</p>
       </td>
@@ -1053,7 +1053,7 @@ function buildExpiryWarningEmailHTML({
               <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">目前方案</p>
               <p style="font-size:18px; color:#1e3a5f; font-weight:bold; margin:0 0 16px 0;">${escapeHTML(tierName)}</p>
               <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">下次扣款</p>
-              <p style="font-size:32px; color:#2563eb; font-weight:bold; margin:0;">${escapeHTML(renewLabel)}</p>
+              <p style="font-size:32px; color:#1E4A73; font-weight:bold; margin:0;">${escapeHTML(renewLabel)}</p>
             </td>
           </tr>
         </table>
@@ -1163,7 +1163,7 @@ function buildCancellationEmailHTML({
 <body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
     <tr>
-      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+      <td style="background: linear-gradient(135deg, #1e3a5f, #1E4A73); padding: 40px 30px; text-align: center;">
         <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">已取消定期扣款</h1>
         <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，你的帳號仍可繼續使用</p>
       </td>
@@ -1176,7 +1176,7 @@ function buildCancellationEmailHTML({
               <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">原訂閱方案</p>
               <p style="font-size:18px; color:#1e3a5f; font-weight:bold; margin:0 0 16px 0;">${escapeHTML(tierName)}</p>
               <p style="font-size:13px; color:#64748b; margin:0 0 8px 0;">可使用至</p>
-              <p style="font-size:24px; color:#2563eb; font-weight:bold; margin:0;">${escapeHTML(expiryDate)}</p>
+              <p style="font-size:24px; color:#1E4A73; font-weight:bold; margin:0;">${escapeHTML(expiryDate)}</p>
             </td>
           </tr>
         </table>
@@ -1277,7 +1277,7 @@ function buildWinBackEmailHTML({
 <body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
     <tr>
-      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+      <td style="background: linear-gradient(135deg, #1e3a5f, #1E4A73); padding: 40px 30px; text-align: center;">
         <h1 style="color:#ffffff; font-size:24px; margin:0 0 8px 0;">我們幫你保留了一切</h1>
         <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">${escapeHTML(name)}，你的數據隨時可以繼續使用</p>
       </td>
@@ -1327,7 +1327,7 @@ function buildWinBackEmailHTML({
         </table>
         <p style="text-align:center;">
           <a href="${escapeHTML(pricingUrl)}"
-             style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #2563eb); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
+             style="display:inline-block; background:linear-gradient(135deg, #1e3a5f, #1E4A73); color:#ffffff; padding:14px 40px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
             重新開始
           </a>
         </p>
@@ -1425,11 +1425,11 @@ function buildNewsletterEmailHTML({
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
           <tr>
             <td style="padding: 20px 24px;">
-              <p style="font-size:11px; color:#2563eb; font-weight:600; margin:0 0 6px 0; text-transform:uppercase; letter-spacing:0.5px;">${escapeHTML(p.category)} · ${escapeHTML(p.readTime)}</p>
+              <p style="font-size:11px; color:#1E4A73; font-weight:600; margin:0 0 6px 0; text-transform:uppercase; letter-spacing:0.5px;">${escapeHTML(p.category)} · ${escapeHTML(p.readTime)}</p>
               <p style="font-size:17px; color:#1e3a5f; font-weight:bold; margin:0 0 8px 0; line-height:1.4;">${escapeHTML(p.title)}</p>
               <p style="font-size:13px; color:#64748b; margin:0 0 16px 0; line-height:1.6;">${escapeHTML(p.description.slice(0, 120))}${p.description.length > 120 ? '...' : ''}</p>
               <a href="${siteUrl}/blog/${encodeURIComponent(p.slug)}"
-                 style="display:inline-block; background:#2563eb; color:#ffffff; padding:8px 20px; border-radius:8px; text-decoration:none; font-weight:600; font-size:13px;">
+                 style="display:inline-block; background:#1E4A73; color:#ffffff; padding:8px 20px; border-radius:8px; text-decoration:none; font-weight:600; font-size:13px;">
                 閱讀全文 →
               </a>
             </td>
@@ -1448,7 +1448,7 @@ function buildNewsletterEmailHTML({
 <body style="margin:0; padding:0; background-color:#f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:0 auto; background-color:#ffffff;">
     <tr>
-      <td style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 40px 30px; text-align: center;">
+      <td style="background: linear-gradient(135deg, #1e3a5f, #1E4A73); padding: 40px 30px; text-align: center;">
         <h1 style="color:#ffffff; font-size:22px; margin:0 0 8px 0;">本週精選文章</h1>
         <p style="color:rgba(255,255,255,0.8); font-size:14px; margin:0;">嗨 ${escapeHTML(name)}，這週有新的訓練與營養知識</p>
       </td>

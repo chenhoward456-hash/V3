@@ -16,7 +16,7 @@ const LazyChart = memo(({
   data,
   height = 100,
   width = 100,
-  stroke = '#3b82f6',
+  stroke = '#3D6E9E',
   strokeWidth = 2
 }: LazyChartProps) => {
   // 等容器實際量到寬度才掛 ResponsiveContainer，避免 width(-1) 警告

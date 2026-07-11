@@ -253,7 +253,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-gray-900">目標體重計畫</h2>
         <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-          isAheadOfSchedule ? 'bg-blue-100 text-blue-700' : colors.badge
+          isAheadOfSchedule ? 'bg-primary-100 text-primary-700' : colors.badge
         }`}>
           {isAheadOfSchedule ? '進度超前' : safetyLabels[dl.safetyLevel || 'normal']}
         </span>
@@ -470,7 +470,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           <p className="text-xs font-semibold text-gray-700">今日飲食目標</p>
           {hasCarbCycling && (
             <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-              isTrainingDay ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+              isTrainingDay ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 text-slate-600'
             }`}>
               {isTrainingDay ? '訓練日' : '休息日'}
             </span>
@@ -550,11 +550,11 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
 
       {/* 血檢驅動的營養調整 */}
       {data.labMacroModifiers && data.labMacroModifiers.length > 0 && (
-        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-2xl p-4">
-          <p className="text-xs font-medium text-blue-700 mb-2">血檢指標建議</p>
+        <div className="mt-3 bg-primary-50 border border-primary-200 rounded-2xl p-4">
+          <p className="text-xs font-medium text-primary-700 mb-2">血檢指標建議</p>
           <div className="space-y-1">
             {data.labMacroModifiers.map((mod: any, i: number) => (
-              <p key={i} className="text-[11px] text-blue-600 leading-relaxed">
+              <p key={i} className="text-[11px] text-primary-600 leading-relaxed">
                 {mod.reason}
               </p>
             ))}
@@ -564,8 +564,8 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
 
       {/* 血檢複檢提醒 */}
       {data.cuttingReadinessGate?.labRetestReminder && (
-        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-2xl p-3">
-          <p className="text-xs text-blue-700 leading-relaxed">{data.cuttingReadinessGate.labRetestReminder}</p>
+        <div className="mt-3 bg-primary-50 border border-primary-200 rounded-2xl p-3">
+          <p className="text-xs text-primary-700 leading-relaxed">{data.cuttingReadinessGate.labRetestReminder}</p>
         </div>
       )}
     </div>

@@ -112,8 +112,8 @@ export default function StandardsComparisonPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-          <p className="text-sm text-blue-900 leading-relaxed">
+        <div className="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-6">
+          <p className="text-sm text-primary-900 leading-relaxed">
             <strong>為什麼會有「兩套標準」？</strong>
             <br />
             一般醫院檢驗報告上的「正常範圍」是基於人群統計的<strong>疾病門檻</strong> — 過了線才算病。

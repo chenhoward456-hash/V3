@@ -178,14 +178,14 @@ function TodayHeadlineInner({
               ? 'bg-amber-500'
               : verdict
                 ? (isPositive ? 'bg-emerald-500' : isNegative ? 'bg-amber-500' : 'bg-slate-300')
-                : startMode ? 'bg-blue-500' : 'bg-slate-300'
+                : startMode ? 'bg-primary-500' : 'bg-slate-300'
           }`} />
           <p className={`text-base font-bold leading-snug ${
             engineTitle
               ? 'text-amber-700'
               : verdict
                 ? (isPositive ? 'text-emerald-700' : isNegative ? 'text-amber-700' : 'text-slate-900')
-                : startMode ? 'text-blue-700' : 'text-slate-700'
+                : startMode ? 'text-primary-700' : 'text-slate-700'
           }`}>
             {engineTitle ?? (verdict ? verdict.title : fallbackTitle)}
           </p>

@@ -56,18 +56,18 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => { setEmail(e.target.value); if (error) setError(null) }}
               onKeyDown={(e) => { if (e.key === 'Enter') submit() }}
-              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 transition-colors"
             />
             {error && <p className="text-xs text-rose-500 mt-1.5">{error}</p>}
             <button
               onClick={submit}
               disabled={submitting}
-              className="mt-3 w-full bg-blue-600 text-white font-medium py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="mt-3 w-full bg-primary-600 text-white font-medium py-3 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50"
             >
               {submitting ? '寄送中…' : '寄登入連結給我'}
             </button>
             <p className="text-[11px] text-slate-400 mt-3 leading-snug">
-              還沒有帳號？<a href="/diagnosis" className="text-blue-600">先免費試算你的數字 →</a>
+              還沒有帳號？<a href="/diagnosis" className="text-primary-600">先免費試算你的數字 →</a>
             </p>
           </div>
         )}

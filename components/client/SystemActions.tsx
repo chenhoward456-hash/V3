@@ -125,7 +125,7 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
                 action.type === 'warning'
                   ? 'bg-amber-50 text-amber-800'
                   : action.type === 'adjustment'
-                  ? 'bg-blue-50 text-blue-800'
+                  ? 'bg-primary-50 text-primary-800'
                   : 'bg-gray-50 text-gray-700'
               }`}
             >

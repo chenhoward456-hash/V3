@@ -173,7 +173,7 @@ export default function PostCompetitionRecovery({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => setShowDatePicker(true)}
-              className="flex items-center justify-center gap-1.5 bg-blue-600 text-white text-xs font-semibold py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+              className="flex items-center justify-center gap-1.5 bg-primary-600 text-white text-xs font-semibold py-2.5 rounded-xl hover:bg-primary-700 transition-colors"
             >
               <Calendar size={14} />
               設定下一場比賽日期
@@ -191,14 +191,14 @@ export default function PostCompetitionRecovery({
 
       {/* Inline date picker for setting next competition */}
       {showDatePicker && (
-        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-2xl p-4">
+        <div className="mt-4 bg-primary-50 border border-primary-200 rounded-2xl p-4">
           <p className="text-sm font-semibold text-gray-800 mb-2">設定下一場比賽日期</p>
           <input
             type="date"
             value={nextCompDate}
             onChange={(e) => setNextCompDate(e.target.value)}
             min={new Date().toISOString().split('T')[0]}
-            className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-blue-500 transition-colors mb-3"
+            className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary-500 transition-colors mb-3"
           />
           {error && (
             <p className="text-xs text-rose-600 mb-2">{error}</p>
@@ -227,7 +227,7 @@ export default function PostCompetitionRecovery({
                 }
               }}
               disabled={saving || !nextCompDate}
-              className="flex-1 bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="flex-1 bg-primary-600 text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50"
             >
               {saving ? '儲存中...' : '確認'}
             </button>
@@ -246,7 +246,7 @@ export default function PostCompetitionRecovery({
         <div className="mt-4 flex gap-2">
           <button
             onClick={() => setShowDatePicker(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold py-2.5 rounded-xl hover:bg-blue-100 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-primary-50 border border-primary-200 text-primary-700 text-xs font-semibold py-2.5 rounded-xl hover:bg-primary-100 transition-colors"
           >
             <Calendar size={14} />
             設定下一場比賽

@@ -159,7 +159,7 @@ export default function SelfManagedNutrition({
               onClick={() => setSelectedGoal('cut')}
               className={`p-3 rounded-2xl border-2 transition-all text-left ${
                 selectedGoal === 'cut'
-                  ? 'border-blue-500 bg-blue-50'
+                  ? 'border-primary-500 bg-primary-50'
                   : 'border-slate-200 bg-gray-50 hover:border-gray-300'
               }`}
             >
@@ -170,7 +170,7 @@ export default function SelfManagedNutrition({
               onClick={() => setSelectedGoal('recomp')}
               className={`p-3 rounded-2xl border-2 transition-all text-left ${
                 selectedGoal === 'recomp'
-                  ? 'border-blue-500 bg-blue-50'
+                  ? 'border-primary-500 bg-primary-50'
                   : 'border-slate-200 bg-gray-50 hover:border-gray-300'
               }`}
             >
@@ -181,7 +181,7 @@ export default function SelfManagedNutrition({
               onClick={() => setSelectedGoal('bulk')}
               className={`p-3 rounded-2xl border-2 transition-all text-left ${
                 selectedGoal === 'bulk'
-                  ? 'border-blue-500 bg-blue-50'
+                  ? 'border-primary-500 bg-primary-50'
                   : 'border-slate-200 bg-gray-50 hover:border-gray-300'
               }`}
             >
@@ -205,29 +205,29 @@ export default function SelfManagedNutrition({
                     value={bodyWeight}
                     onChange={(e) => setBodyWeight(e.target.value)}
                     placeholder="70"
-                    className="w-full px-3 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-gray-700 font-medium block mb-1">體脂率 (%) <span className="text-blue-500">推薦</span></label>
+                  <label className="text-[11px] text-gray-700 font-medium block mb-1">體脂率 (%) <span className="text-primary-500">推薦</span></label>
                   <input
                     type="number"
                     inputMode="decimal"
                     value={bodyFatPct}
                     onChange={(e) => setBodyFatPct(e.target.value)}
                     placeholder="20"
-                    className={`w-full px-3 py-2.5 border rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 ${bodyFatPct ? 'bg-gray-50 border-slate-200' : 'bg-blue-50/50 border-blue-200'}`}
+                    className={`w-full px-3 py-2.5 border rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 ${bodyFatPct ? 'bg-gray-50 border-slate-200' : 'bg-primary-50/50 border-primary-200'}`}
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-gray-700 font-medium block mb-1">身高 (cm) <span className="text-blue-500">推薦</span></label>
+                  <label className="text-[11px] text-gray-700 font-medium block mb-1">身高 (cm) <span className="text-primary-500">推薦</span></label>
                   <input
                     type="number"
                     inputMode="decimal"
                     value={height}
                     onChange={(e) => setHeight(e.target.value)}
                     placeholder="170"
-                    className={`w-full px-3 py-2.5 border rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 ${height ? 'bg-gray-50 border-slate-200' : 'bg-blue-50/50 border-blue-200'}`}
+                    className={`w-full px-3 py-2.5 border rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 ${height ? 'bg-gray-50 border-slate-200' : 'bg-primary-50/50 border-primary-200'}`}
                   />
                 </div>
               </div>
@@ -256,7 +256,7 @@ export default function SelfManagedNutrition({
                   onClick={() => setSelectedActivity('sedentary')}
                   className={`p-3 rounded-2xl border-2 transition-all text-left ${
                     selectedActivity === 'sedentary'
-                      ? 'border-blue-500 bg-blue-50'
+                      ? 'border-primary-500 bg-primary-50'
                       : 'border-slate-200 bg-gray-50 hover:border-gray-300'
                   }`}
                 >
@@ -267,7 +267,7 @@ export default function SelfManagedNutrition({
                   onClick={() => setSelectedActivity('moderate')}
                   className={`p-3 rounded-2xl border-2 transition-all text-left ${
                     selectedActivity === 'moderate'
-                      ? 'border-blue-500 bg-blue-50'
+                      ? 'border-primary-500 bg-primary-50'
                       : 'border-slate-200 bg-gray-50 hover:border-gray-300'
                   }`}
                 >
@@ -278,7 +278,7 @@ export default function SelfManagedNutrition({
                   onClick={() => setSelectedActivity('high_energy_flux')}
                   className={`p-3 rounded-2xl border-2 transition-all text-left ${
                     selectedActivity === 'high_energy_flux'
-                      ? 'border-blue-500 bg-blue-50'
+                      ? 'border-primary-500 bg-primary-50'
                       : 'border-slate-200 bg-gray-50 hover:border-gray-300'
                   }`}
                 >
@@ -297,7 +297,7 @@ export default function SelfManagedNutrition({
                     onClick={() => setTrainingDays(d)}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
                       trainingDays === d
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-primary-600 text-white'
                         : 'bg-gray-50 text-gray-600 border border-slate-200 hover:border-gray-300'
                     }`}
                   >
@@ -321,7 +321,7 @@ export default function SelfManagedNutrition({
                       value={targetWeightInput}
                       onChange={(e) => setTargetWeightInput(e.target.value)}
                       placeholder={bodyWeight ? String(Math.round((parseFloat(bodyWeight) * 0.9) * 10) / 10) : '65'}
-                      className="w-full px-3 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400"
                     />
                   </div>
                   <div>
@@ -333,7 +333,7 @@ export default function SelfManagedNutrition({
                           onClick={() => setTargetDateOption(m as '3' | '6')}
                           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
                             targetDateOption === m
-                              ? 'bg-blue-600 text-white'
+                              ? 'bg-primary-600 text-white'
                               : 'bg-gray-50 text-gray-600 border border-slate-200 hover:border-gray-300'
                           }`}
                         >
@@ -344,7 +344,7 @@ export default function SelfManagedNutrition({
                         onClick={() => setTargetDateOption('custom')}
                         className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
                           targetDateOption === 'custom'
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-primary-600 text-white'
                             : 'bg-gray-50 text-gray-600 border border-slate-200 hover:border-gray-300'
                         }`}
                       >
@@ -359,12 +359,12 @@ export default function SelfManagedNutrition({
                     value={customTargetDate}
                     onChange={(e) => setCustomTargetDate(e.target.value)}
                     min={getLocalDateStr(new Date(Date.now() + 14 * DAY_MS))}
-                    className="w-full px-3 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400"
                   />
                 )}
                 {targetWeightInput && bodyWeight && parseFloat(targetWeightInput) < parseFloat(bodyWeight) && (
-                  <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
-                    <p className="text-[11px] text-blue-700">
+                  <div className="mt-2 bg-primary-50 border border-primary-200 rounded-xl px-3 py-2">
+                    <p className="text-[11px] text-primary-700">
                       {(() => {
                         const tw = parseFloat(targetWeightInput)
                         const bw = parseFloat(bodyWeight)
@@ -393,7 +393,7 @@ export default function SelfManagedNutrition({
             <button
               onClick={handleSetup}
               disabled={!canSubmit || submitting}
-              className="w-full py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="w-full py-3 bg-primary-600 text-white font-bold rounded-2xl hover:bg-primary-700 transition-colors disabled:opacity-50"
             >
               {submitting ? '計算中...' : '計算我的營養目標'}
             </button>
@@ -485,7 +485,7 @@ export default function SelfManagedNutrition({
             <h2 className="text-lg font-bold text-gray-900">智能營養計算</h2>
           </div>
           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-            goalType === 'cut' ? 'bg-slate-100 text-slate-600' : goalType === 'recomp' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+            goalType === 'cut' ? 'bg-slate-100 text-slate-600' : goalType === 'recomp' ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 text-slate-600'
           }`}>
             {goalType === 'cut' ? '減脂中' : goalType === 'recomp' ? '體態重組中' : '增肌中'}
           </span>
@@ -528,7 +528,7 @@ export default function SelfManagedNutrition({
         <div className="flex items-center gap-2 mb-3">
           <h2 className="text-lg font-bold text-gray-900">智能營養計算</h2>
         </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
+        <div className="bg-primary-50 border border-primary-200 rounded-xl px-4 py-3 text-sm text-primary-700">
           需要至少 2 週的體重數據，系統才能開始自動計算你的營養目標。請每天記錄體重！
         </div>
       </div>
@@ -549,7 +549,7 @@ export default function SelfManagedNutrition({
     too_fast: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-600' },
     plateau: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
     wrong_direction: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-600' },
-    goal_driven: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
+    goal_driven: { bg: 'bg-primary-50', border: 'border-primary-200', text: 'text-primary-700' },
   }
   const config = statusConfig[data.status] || statusConfig.on_track
 
@@ -668,7 +668,7 @@ export default function SelfManagedNutrition({
             <p className="text-xs font-semibold text-gray-700">今日飲食目標</p>
             {hasCarbCycling && (
               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                isTrainingDay ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+                isTrainingDay ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 text-slate-600'
               }`}>
                 {isTrainingDay ? '訓練日' : '休息日'}
               </span>
@@ -775,8 +775,8 @@ export default function SelfManagedNutrition({
 
       {/* 調整記錄 */}
       {(data.caloriesDelta !== 0 || data.proteinDelta !== 0 || data.carbsDelta !== 0 || data.fatDelta !== 0) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-3">
-          <p className="text-xs font-semibold text-blue-700 mb-2">本週自動調整</p>
+        <div className="bg-primary-50 border border-primary-200 rounded-2xl p-4 mb-3">
+          <p className="text-xs font-semibold text-primary-700 mb-2">本週自動調整</p>
           <div className="grid grid-cols-2 gap-2">
             {data.caloriesDelta !== 0 && (
               <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
@@ -811,7 +811,7 @@ export default function SelfManagedNutrition({
               </div>
             )}
           </div>
-          <p className="text-[11px] text-blue-500 mt-2">
+          <p className="text-[11px] text-primary-500 mt-2">
             系統每週根據體重趨勢自動調整，不需要教練介入
           </p>
         </div>
@@ -867,11 +867,11 @@ export default function SelfManagedNutrition({
 
       {/* 血檢驅動的營養調整 */}
       {data.labMacroModifiers && data.labMacroModifiers.length > 0 && (
-        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-2xl p-4">
-          <p className="text-xs font-medium text-blue-700 mb-2">血檢指標建議</p>
+        <div className="mt-3 bg-primary-50 border border-primary-200 rounded-2xl p-4">
+          <p className="text-xs font-medium text-primary-700 mb-2">血檢指標建議</p>
           <div className="space-y-1">
             {data.labMacroModifiers.map((mod: any, i: number) => (
-              <p key={i} className="text-[11px] text-blue-600 leading-relaxed">
+              <p key={i} className="text-[11px] text-primary-600 leading-relaxed">
                 {mod.reason}
               </p>
             ))}

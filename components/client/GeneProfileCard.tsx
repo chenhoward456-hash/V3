@@ -178,7 +178,7 @@ export default function GeneProfileCard({
                 <select
                   value={formMthfr}
                   onChange={(e) => setFormMthfr(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {MTHFR_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
@@ -192,7 +192,7 @@ export default function GeneProfileCard({
                 <select
                   value={formApoe}
                   onChange={(e) => setFormApoe(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {APOE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
@@ -206,7 +206,7 @@ export default function GeneProfileCard({
                 <select
                   value={formSerotonin}
                   onChange={(e) => setFormSerotonin(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {SEROTONIN_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
@@ -223,7 +223,7 @@ export default function GeneProfileCard({
                   onChange={(e) => setFormNotes(e.target.value)}
                   placeholder="其他基因資訊..."
                   maxLength={500}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
@@ -243,7 +243,7 @@ export default function GeneProfileCard({
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 py-2 text-sm text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="flex-1 py-2 text-sm text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50"
                 >
                   {saving ? '儲存中...' : '儲存'}
                 </button>

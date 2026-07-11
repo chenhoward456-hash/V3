@@ -32,7 +32,7 @@ export default function HealthScoreBanner({ healthScore }: HealthScoreBannerProp
             <div>
               <span className={`inline-block text-xs font-bold px-1.5 py-0.5 rounded ${
                 healthScore.grade === 'A' ? 'bg-emerald-600 text-white' :
-                healthScore.grade === 'B' ? 'bg-blue-500 text-white' :
+                healthScore.grade === 'B' ? 'bg-primary-500 text-white' :
                 healthScore.grade === 'C' ? 'bg-amber-500 text-white' :
                 'bg-rose-500 text-white'
               }`}>{healthScore.grade}</span>

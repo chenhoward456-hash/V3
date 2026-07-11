@@ -63,7 +63,7 @@ interface InsightsData {
 
 const intensityColors = {
   high: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  moderate: 'bg-blue-100 text-blue-700 border-blue-200',
+  moderate: 'bg-primary-100 text-primary-700 border-primary-200',
   low: 'bg-amber-100 text-amber-700 border-amber-200',
   rest: 'bg-rose-100 text-rose-700 border-rose-200',
 }
@@ -163,7 +163,7 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
           </div>
           <div className="space-y-2">
             {smartAlerts!.map((alert, i) => (
-              <div key={i} className={`p-3 rounded-xl text-sm ${alert.severity === 'warning' ? 'bg-amber-50 border border-amber-100' : 'bg-blue-50 border border-blue-100'}`}>
+              <div key={i} className={`p-3 rounded-xl text-sm ${alert.severity === 'warning' ? 'bg-amber-50 border border-amber-100' : 'bg-primary-50 border border-primary-100'}`}>
                 <div className="font-medium text-gray-800 mb-1">{alert.title}</div>
                 <p className="text-gray-600 text-xs leading-relaxed">{alert.message}</p>
               </div>
@@ -195,7 +195,7 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
               <div
                 className={`h-full rounded-full transition-all ${
                   trainingAdvice.recoveryScore >= 75 ? 'bg-emerald-500' :
-                  trainingAdvice.recoveryScore >= 50 ? 'bg-blue-500' :
+                  trainingAdvice.recoveryScore >= 50 ? 'bg-primary-500' :
                   trainingAdvice.recoveryScore >= 30 ? 'bg-amber-500' : 'bg-rose-500'
                 }`}
                 style={{ width: `${trainingAdvice.recoveryScore}%` }}
@@ -219,7 +219,7 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
       {trendPrediction && (
         <div className="bg-white rounded-2xl p-5 border border-slate-200">
           <div className="flex items-center gap-2 mb-3">
-            <Target size={16} className="text-blue-500" />
+            <Target size={16} className="text-primary-500" />
             <h4 className="text-sm font-semibold text-gray-900">趨勢預測</h4>
             <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
               trendPrediction.confidence === 'high' ? 'bg-emerald-50 text-emerald-600' :
@@ -254,7 +254,7 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
               <>
                 <div className="text-gray-300">→</div>
                 <div className="text-center">
-                  <p className="text-lg font-bold text-blue-600 tabular-nums">{trendPrediction.targetWeight}kg</p>
+                  <p className="text-lg font-bold text-primary-600 tabular-nums">{trendPrediction.targetWeight}kg</p>
                   <p className="text-[11px] text-gray-400">目標</p>
                 </div>
               </>
@@ -264,10 +264,10 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
           <p className="text-xs text-gray-600 leading-relaxed">{trendPrediction.message}</p>
 
           {trendPrediction.estimatedDate && (
-            <div className="mt-2 bg-blue-50 rounded-xl p-2.5 text-center">
-              <p className="text-xs text-blue-700">
+            <div className="mt-2 bg-primary-50 rounded-xl p-2.5 text-center">
+              <p className="text-xs text-primary-700">
                 預計 <span className="font-semibold">{trendPrediction.estimatedWeeksToGoal} 週</span>後達標
-                <span className="text-blue-500 ml-1">({trendPrediction.estimatedDate})</span>
+                <span className="text-primary-500 ml-1">({trendPrediction.estimatedDate})</span>
               </p>
             </div>
           )}

@@ -174,7 +174,7 @@ export default function ExportAiSummary({ client, bodyData, nutritionLogs, welln
         <button
           onClick={handleCopy}
           className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-            copied ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
+            copied ? 'bg-emerald-600 text-white' : 'bg-primary-600 text-white hover:bg-primary-700'
           }`}
         >
           {copied ? '已複製' : '複製摘要'}

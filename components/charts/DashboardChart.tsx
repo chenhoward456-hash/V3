@@ -27,8 +27,8 @@ interface DashboardChartProps {
   className?: string
 }
 
-const BRAND = '#2563EB'       // DESIGN token：primary
-const PALETTE = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#1e3a5f']
+const BRAND = '#1E4A73'       // DESIGN token：primary
+const PALETTE = ['#1E4A73', '#10B981', '#F59E0B', '#EF4444', '#1e3a5f']
 const AXIS = '#718096'        // text.muted
 const GRID = '#E8E5E0'        // border
 

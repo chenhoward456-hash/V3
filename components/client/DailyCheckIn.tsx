@@ -83,7 +83,7 @@ export default function DailyCheckIn({
         </div>
         <div className="flex items-center gap-2">
           {isCoachMode && (
-            <button onClick={onManageSupplements} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700">
+            <button onClick={onManageSupplements} className="bg-primary-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-primary-700">
               管理補品
             </button>
           )}
@@ -110,7 +110,7 @@ export default function DailyCheckIn({
               className={`h-2.5 rounded-full transition-all ${
                 todayStats.completed === todayStats.total && todayStats.total > 0
                   ? 'bg-emerald-500'
-                  : 'bg-blue-500'
+                  : 'bg-primary-500'
               }`}
               style={{ width: `${todayStats.rate}%` }}
             />
@@ -184,7 +184,7 @@ export default function DailyCheckIn({
                 className={`flex items-center p-4 rounded-xl border-2 transition-all text-left ${
                   isCompleted
                     ? 'border-emerald-300 bg-emerald-50'
-                    : 'border-slate-200 bg-white hover:border-blue-300 active:scale-[0.97]'
+                    : 'border-slate-200 bg-white hover:border-primary-300 active:scale-[0.97]'
                 } ${isToggling ? 'opacity-50' : ''}`}
               >
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 flex-shrink-0 transition-all ${
@@ -217,7 +217,7 @@ export default function DailyCheckIn({
           {!showAddForm ? (
             <button
               onClick={() => { setShowAddForm(true); setAddError(null) }}
-              className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 flex items-center justify-center transition-colors"
+              className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 flex items-center justify-center transition-colors"
             >
               <Plus size={16} className="mr-1" /> 新增補品
             </button>
@@ -243,7 +243,7 @@ export default function DailyCheckIn({
                     value={addForm.name}
                     onChange={(e) => setAddForm((p) => ({ ...p, name: e.target.value }))}
                     placeholder="例如：魚油"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     maxLength={50}
                     autoFocus
                   />
@@ -255,7 +255,7 @@ export default function DailyCheckIn({
                     value={addForm.dosage}
                     onChange={(e) => setAddForm((p) => ({ ...p, dosage: e.target.value }))}
                     placeholder="例如：1000mg"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                     maxLength={30}
                   />
                 </div>
@@ -266,7 +266,7 @@ export default function DailyCheckIn({
                   <select
                     value={addForm.timing}
                     onChange={(e) => setAddForm((p) => ({ ...p, timing: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                   >
                     {TIMING_OPTIONS.map((t) => (
                       <option key={t} value={t}>{t}</option>
@@ -321,7 +321,7 @@ export default function DailyCheckIn({
                     }
                   }}
                   disabled={addLoading}
-                  className="flex-1 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                  className="flex-1 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
                 >
                   {addLoading && <Loader2 size={14} className="animate-spin" />}
                   {addLoading ? '新增中...' : '新增'}

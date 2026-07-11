@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     <p style="font-size:32px;margin:0 0 16px;">✅</p>
     <h1 style="font-size:20px;color:#1e3a5f;margin:0 0 8px;">已取消訂閱</h1>
     <p style="font-size:14px;color:#64748b;margin:0 0 24px;">你不會再收到每週電子報。</p>
-    <a href="https://howard456.vercel.app" style="color:#2563eb;font-size:14px;text-decoration:none;">回到首頁 →</a>
+    <a href="https://howard456.vercel.app" style="color:#1E4A73;font-size:14px;text-decoration:none;">回到首頁 →</a>
   </div>
 </body>
 </html>`,

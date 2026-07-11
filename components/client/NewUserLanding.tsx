@@ -138,7 +138,7 @@ export default function NewUserLanding({
                 placeholder="例如 73.5"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
-                className="mt-2 w-full px-4 py-3 text-2xl font-bold border border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                className="mt-2 w-full px-4 py-3 text-2xl font-bold border border-slate-200 rounded-xl focus:border-primary-500 focus:outline-none"
                 autoFocus
               />
             </label>
@@ -146,7 +146,7 @@ export default function NewUserLanding({
             <button
               type="submit"
               disabled={submitting || !weight}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-semibold py-3 rounded-xl transition-colors"
+              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 text-white font-semibold py-3 rounded-xl transition-colors"
             >
               {submitting ? '記錄中…' : '記錄體重'}
             </button>
@@ -159,19 +159,19 @@ export default function NewUserLanding({
         <p className="text-sm font-semibold text-gray-900 mb-3">接下來會發生什麼</p>
         <div className="space-y-2.5 text-xs text-gray-600">
           <div className="flex gap-2 items-start">
-            <span className="bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">1</span>
+            <span className="bg-primary-100 text-primary-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">1</span>
             <span><b className="text-gray-800">今天</b>：先打第一筆體重，認識介面。其他先別管。</span>
           </div>
           <div className="flex gap-2 items-start">
-            <span className="bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">2</span>
+            <span className="bg-primary-100 text-primary-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">2</span>
             <span><b className="text-gray-800">第 3 天</b>：解鎖飲食記錄。看你想不想加。</span>
           </div>
           <div className="flex gap-2 items-start">
-            <span className="bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">3</span>
+            <span className="bg-primary-100 text-primary-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">3</span>
             <span><b className="text-gray-800">第 7 天</b>：你會看到體重趨勢線。第一次數據說話。</span>
           </div>
           <div className="flex gap-2 items-start">
-            <span className="bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">4</span>
+            <span className="bg-primary-100 text-primary-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">4</span>
             <span><b className="text-gray-800">第 14 天</b>：完整儀表板解鎖，週平均 + Howard 解讀句。</span>
           </div>
         </div>
@@ -181,13 +181,13 @@ export default function NewUserLanding({
       {/* 想看完整版 escape hatch */}
       <button
         onClick={unlockFullDashboard}
-        className="w-full bg-white border border-dashed border-gray-300 hover:border-blue-300 rounded-2xl p-4 text-left flex items-center justify-between gap-3 group transition-colors"
+        className="w-full bg-white border border-dashed border-gray-300 hover:border-primary-300 rounded-2xl p-4 text-left flex items-center justify-between gap-3 group transition-colors"
       >
         <div>
           <p className="text-sm font-semibold text-gray-800">我已經熟悉這類系統，給我完整版</p>
           <p className="text-[11px] text-gray-500 mt-1">解鎖全部功能：飲食、訓練、補品、感受、AI 分析</p>
         </div>
-        <ChevronRight size={20} className="text-gray-400 group-hover:text-blue-500 flex-shrink-0" />
+        <ChevronRight size={20} className="text-gray-400 group-hover:text-primary-500 flex-shrink-0" />
       </button>
 
       {/* Help + LINE 提醒 */}

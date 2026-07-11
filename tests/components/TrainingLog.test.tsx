@@ -159,7 +159,7 @@ describe('TrainingLog', () => {
     const pushBtn = screen.getByText(/^推$/)
     fireEvent.click(pushBtn)
 
-    expect(pushBtn).toHaveClass('bg-blue-600')
+    expect(pushBtn).toHaveClass('bg-primary-600')
   })
 
   // ---- Duration and sets inputs appear for non-rest types ----
@@ -201,7 +201,7 @@ describe('TrainingLog', () => {
     const rpe8Btn = screen.getByRole('button', { name: '8' })
     fireEvent.click(rpe8Btn)
 
-    expect(rpe8Btn).toHaveClass('bg-blue-600')
+    expect(rpe8Btn).toHaveClass('bg-primary-600')
   })
 
   // ---- Submit without type shows error ----
@@ -374,7 +374,7 @@ describe('TrainingLog', () => {
     })
 
     expect((screen.getByPlaceholderText('60') as HTMLInputElement).value).toBe('60')
-    expect(screen.getByRole('button', { name: '8' })).toHaveClass('bg-blue-600')
+    expect(screen.getByRole('button', { name: '8' })).toHaveClass('bg-primary-600')
   })
 
   // ---- Readiness display ----

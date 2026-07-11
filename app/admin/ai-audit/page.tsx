@@ -120,7 +120,7 @@ export default function AiAuditPage() {
   function tierColor(t: string | null) {
     if (t === 'protocol') return 'bg-emerald-100 text-emerald-800'
     if (t === 'concierge') return 'bg-slate-100 text-slate-600'
-    if (t === 'coached') return 'bg-blue-100 text-blue-800'
+    if (t === 'coached') return 'bg-primary-100 text-primary-800'
     if (t === 'self_managed') return 'bg-gray-100 text-gray-700'
     return 'bg-gray-50 text-gray-500'
   }
@@ -175,7 +175,7 @@ export default function AiAuditPage() {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="搜尋客戶名 / panel 日期 / mode / unique code..."
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           {/* 篩選 row */}
           <div className="flex flex-wrap gap-2 items-center text-xs">
@@ -190,7 +190,7 @@ export default function AiAuditPage() {
                 onClick={() => setShowFilter(f.key)}
                 className={`px-2.5 py-1 rounded ${
                   showFilter === f.key
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-slate-50 border border-slate-200 text-gray-700 hover:bg-slate-100'
                 }`}
               >
@@ -205,7 +205,7 @@ export default function AiAuditPage() {
                 onClick={() => setTierFilter(t)}
                 className={`px-2.5 py-1 rounded ${
                   tierFilter === t
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-slate-50 border border-slate-200 text-gray-700 hover:bg-slate-100'
                 }`}
               >
@@ -354,7 +354,7 @@ export default function AiAuditPage() {
                       <div className="pt-2 border-t border-slate-200">
                         <Link
                           href={`/c/${entry.client.unique_code}/health/timeline`}
-                          className="text-xs text-blue-600 hover:underline"
+                          className="text-xs text-primary-600 hover:underline"
                           target="_blank"
                         >
                           → 查看學員 timeline

@@ -52,7 +52,7 @@ export default function HowItWorksPage() {
       {/* HERO */}
       <section className="bg-slate-900 text-white px-5 py-14 md:py-20">
         <div className="max-w-3xl mx-auto">
-          <p className="text-xs tracking-[0.2em] text-blue-400 font-medium mb-5">THE HOWARD PROTOCOL · 系統怎麼運作</p>
+          <p className="text-xs tracking-[0.2em] text-primary-400 font-medium mb-5">THE HOWARD PROTOCOL · 系統怎麼運作</p>
           <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-5">
             這套系統，<br className="hidden md:block" />到底在幫你做什麼？
           </h1>
@@ -60,7 +60,7 @@ export default function HowItWorksPage() {
             一套數據驅動的體態與健康管理系統，給認真想改變、但每天都在用感覺做決定的人。
             不用先付錢、不用先約諮詢——這一頁看完，你就知道系統怎麼運作、為什麼有效、適不適合你。
           </p>
-          <Link href="/diagnosis" className="inline-block mt-8 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold px-7 py-3.5 rounded-xl">
+          <Link href="/diagnosis" className="inline-block mt-8 bg-primary-600 hover:bg-primary-700 transition-colors text-white font-bold px-7 py-3.5 rounded-xl">
             先免費試 30 秒 →
           </Link>
         </div>
@@ -92,7 +92,7 @@ export default function HowItWorksPage() {
               <div key={p.title} className="rounded-2xl border border-slate-200 bg-white p-5">
                 <div className="text-2xl mb-2">{p.icon}</div>
                 <div className="font-semibold text-slate-900">{p.title}</div>
-                <div className="text-xs text-blue-600 mb-2">{p.sub}</div>
+                <div className="text-xs text-primary-600 mb-2">{p.sub}</div>
                 <div className="text-sm text-slate-600 leading-relaxed">{p.body}</div>
               </div>
             ))}
@@ -113,22 +113,22 @@ export default function HowItWorksPage() {
             也誠實說一件事：備賽減到 7.8% 那麼瘦，睪固酮確實會掉。這是激進減脂的代價，所以系統才會內建「依體脂自動收手」。看得到代價、也防得住，才是真的系統。
           </p>
         </div>
-        <Link href="/case" className="text-sm text-blue-600 font-medium hover:underline">看完整的 6 年數據紀錄與血檢鐵證 →</Link>
+        <Link href="/case" className="text-sm text-primary-600 font-medium hover:underline">看完整的 6 年數據紀錄與血檢鐵證 →</Link>
       </section>
 
       {/* 方案 */}
       <section className="px-5 py-12 md:py-16 bg-slate-50">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">方案差在哪（快速概覽）</h2>
-          <p className="text-slate-500 mb-8">全部月繳制，不綁約，隨時取消。下面是快速概覽，<Link href="/remote" className="text-blue-600 font-medium hover:underline">完整方案與定價在這裡 →</Link></p>
+          <p className="text-slate-500 mb-8">全部月繳制，不綁約，隨時取消。下面是快速概覽，<Link href="/remote" className="text-primary-600 font-medium hover:underline">完整方案與定價在這裡 →</Link></p>
           <div className="grid sm:grid-cols-2 gap-3">
             {TIERS.map(t => (
-              <div key={t.name} className={`rounded-2xl border p-5 ${t.highlight ? 'border-blue-300 bg-blue-50/40' : 'border-slate-200 bg-white'}`}>
+              <div key={t.name} className={`rounded-2xl border p-5 ${t.highlight ? 'border-primary-300 bg-primary-50/40' : 'border-slate-200 bg-white'}`}>
                 <div className="flex items-baseline justify-between mb-1">
                   <span className="font-semibold text-slate-900">{t.name}</span>
                   <span className="text-sm"><b className="text-slate-900">{t.price}</b><span className="text-slate-400 text-xs">{t.priceNote}</span></span>
                 </div>
-                <div className="text-xs text-blue-600 mb-2">給{t.who}</div>
+                <div className="text-xs text-primary-600 mb-2">給{t.who}</div>
                 <div className="text-sm text-slate-600 leading-relaxed">{t.what}</div>
               </div>
             ))}
@@ -156,7 +156,7 @@ export default function HowItWorksPage() {
           <p className="text-slate-300 mb-8 leading-relaxed">
             不用註冊、不用信用卡、不用先加 LINE。輸入性別、體重、目標，系統直接算出你的 TDEE、每日參考熱量和預估達標時程——這就是付費學員每天在用的同一顆引擎。
           </p>
-          <Link href="/diagnosis" className="inline-block bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold px-8 py-4 rounded-xl text-lg">
+          <Link href="/diagnosis" className="inline-block bg-primary-600 hover:bg-primary-700 transition-colors text-white font-bold px-8 py-4 rounded-xl text-lg">
             免費系統分析 →
           </Link>
           <p className="text-xs text-slate-500 mt-4">試完覺得準，再決定要不要讓系統每天幫你追蹤。</p>

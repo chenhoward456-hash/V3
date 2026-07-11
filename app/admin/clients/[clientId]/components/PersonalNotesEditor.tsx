@@ -109,7 +109,7 @@ export default function PersonalNotesEditor({ clientId }: { clientId: string }) 
         </div>
         <button
           onClick={() => { resetForm(); setShowAdd(!showAdd) }}
-          className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+          className="px-3 py-1.5 bg-primary-600 text-white text-sm rounded hover:bg-primary-700"
         >
           {showAdd ? '取消' : '+ 新增'}
         </button>

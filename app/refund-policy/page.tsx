@@ -23,13 +23,13 @@ export default function RefundPolicyPage() {
 
         {/* 台灣消保法說明 */}
         <div
-          className="bg-blue-50 border border-blue-200 rounded-3xl p-8"
+          className="bg-primary-50 border border-primary-200 rounded-3xl p-8"
           style={{ boxShadow: '0 2px 12px rgba(0, 0, 0, 0.04)' }}
         >
-          <h3 className="text-xl font-bold mb-4 text-blue-800">
+          <h3 className="text-xl font-bold mb-4 text-primary-800">
             台灣消費者保護法說明
           </h3>
-          <p className="text-blue-700 leading-relaxed">
+          <p className="text-primary-700 leading-relaxed">
             根據中華民國《消費者保護法》第 19 條規定，通訊交易或訪問交易之消費者，得於收受商品或接受服務後七日內，以退回商品或書面通知方式解除契約，無須說明理由及負擔任何費用或對價。本退費政策依據上述法規精神制定，確保您的消費權益受到完整保障。
           </p>
         </div>

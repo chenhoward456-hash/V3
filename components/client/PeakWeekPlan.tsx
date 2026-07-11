@@ -61,7 +61,7 @@ interface PeakWeekPlanProps {
 const phaseColors: Record<string, { bg: string; text: string; border: string; badge: string }> = {
   depletion: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', badge: 'bg-rose-100 text-rose-700' },
   fat_load: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700' },
-  carb_load: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', badge: 'bg-blue-100 text-blue-700' },
+  carb_load: { bg: 'bg-primary-50', text: 'text-primary-700', border: 'border-primary-200', badge: 'bg-primary-100 text-primary-700' },
   taper: { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', badge: 'bg-slate-100 text-slate-600' },
   show_day: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700' },
 }
@@ -245,7 +245,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                           <div className="flex flex-wrap gap-2 mb-1.5 text-[11px]">
                             {meal.carbs > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-gray-600">碳 {meal.carbs}g</span>}
                             {meal.protein > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-gray-600">蛋 {meal.protein}g</span>}
-                            {meal.waterMl > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-blue-600">水 {meal.waterMl}ml</span>}
+                            {meal.waterMl > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-primary-600">水 {meal.waterMl}ml</span>}
                             {meal.sodiumMg > 0 && <span className="bg-white/80 px-1.5 py-0.5 rounded text-slate-600 font-bold">鈉 {meal.sodiumMg}mg</span>}
                           </div>
                         )}
@@ -277,7 +277,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                 <div className="flex justify-between text-xs">
                   <span className="text-white">碳 {focusPlan.carbs}g</span>
                   <span className="text-white">蛋 {focusPlan.protein}g</span>
-                  <span className="text-blue-300">水 ~{(focusPlan.water / 1000).toFixed(1)}L</span>
+                  <span className="text-primary-300">水 ~{(focusPlan.water / 1000).toFixed(1)}L</span>
                   <span className="text-slate-300 font-bold">鈉 ~{focusPlan.sodiumMg}mg</span>
                 </div>
                 <p className="text-[11px] text-gray-500 mt-1">鈉大部分集中在上台前 1.5 小時</p>
@@ -416,7 +416,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                   <td className="text-right py-1.5 px-1.5 text-gray-700">{day.protein}g</td>
                   <td className="text-right py-1.5 px-1.5 text-gray-700">{day.fat}g</td>
                   <td className="text-right py-1.5 px-1.5 text-gray-700">{day.calories}</td>
-                  <td className="text-right py-1.5 px-1.5 text-blue-600 font-semibold">{(day.water / 1000).toFixed(1)}L</td>
+                  <td className="text-right py-1.5 px-1.5 text-primary-600 font-semibold">{(day.water / 1000).toFixed(1)}L</td>
                   <td className="text-right py-1.5 px-1.5 text-gray-500">{day.expectedWeight ? `${day.expectedWeight}` : '--'}</td>
                 </tr>
               )
@@ -464,7 +464,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                     }
                   }}
                   placeholder="--"
-                  className={`w-full text-center text-xs px-1 py-1.5 rounded-lg border tabular-nums ${isSpillover ? 'border-rose-400 bg-rose-50' : 'border-gray-200 bg-white'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                  className={`w-full text-center text-xs px-1 py-1.5 rounded-lg border tabular-nums ${isSpillover ? 'border-rose-400 bg-rose-50' : 'border-gray-200 bg-white'} focus:outline-none focus:ring-1 focus:ring-primary-500`}
                 />
                 {gain !== null && <p className={`text-[11px] mt-0.5 tabular-nums ${gain > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{gain > 0 ? '+' : ''}{gain.toFixed(1)}</p>}
               </div>
@@ -513,7 +513,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                 <div className="flex-1 flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
                   <span>碳{day.carbs}g</span>
                   <span>{day.calories}kcal</span>
-                  <span className="text-blue-500 font-semibold">水{(day.water / 1000).toFixed(1)}L</span>
+                  <span className="text-primary-500 font-semibold">水{(day.water / 1000).toFixed(1)}L</span>
                   {day.expectedWeight && <span className="text-gray-400">{day.expectedWeight}kg</span>}
                 </div>
 
@@ -529,7 +529,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                     <div><span className="text-gray-500">蛋白質：</span><strong>{day.protein}g</strong></div>
                     <div><span className="text-gray-500">脂肪：</span><strong>{day.fat}g</strong></div>
                     <div><span className="text-gray-500">熱量：</span><strong>{day.calories} kcal</strong></div>
-                    <div><span className="text-blue-600">飲水：</span><strong className="text-blue-700">{(day.water / 1000).toFixed(1)}L</strong></div>
+                    <div><span className="text-primary-600">飲水：</span><strong className="text-primary-700">{(day.water / 1000).toFixed(1)}L</strong></div>
                     <div><span className="text-slate-600">鈉：</span><strong className="text-slate-700 tabular-nums">{day.sodiumMg}mg</strong></div>
                   </div>
 
@@ -545,7 +545,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                             <div className="flex flex-wrap gap-1.5 my-0.5">
                               {meal.carbs > 0 && <span className="text-[11px] text-gray-500">碳{meal.carbs}g</span>}
                               {meal.protein > 0 && <span className="text-[11px] text-gray-500">蛋{meal.protein}g</span>}
-                              {meal.waterMl > 0 && <span className="text-[11px] text-blue-500">水{meal.waterMl}ml</span>}
+                              {meal.waterMl > 0 && <span className="text-[11px] text-primary-500">水{meal.waterMl}ml</span>}
                               {meal.sodiumMg > 0 && <span className="text-[11px] text-slate-600 font-bold">鈉{meal.sodiumMg}mg</span>}
                             </div>
                             <div className="text-gray-500">

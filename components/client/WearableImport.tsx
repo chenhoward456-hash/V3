@@ -287,7 +287,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
             onClick={() => setImportMode('direct')}
             className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
               importMode === 'direct'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-primary-600 text-white'
                 : 'bg-white text-gray-500 border border-slate-200 hover:bg-slate-50'
             }`}
           >
@@ -297,7 +297,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
             onClick={() => setImportMode('csv')}
             className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
               importMode === 'csv'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-primary-600 text-white'
                 : 'bg-white text-gray-500 border border-slate-200 hover:bg-slate-50'
             }`}
           >
@@ -365,7 +365,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
               <button
                 onClick={handleGarminSync}
                 disabled={syncing}
-                className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                className="w-full bg-primary-600 text-white py-3 rounded-xl font-medium hover:bg-primary-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {syncing ? (
                   <>
@@ -388,7 +388,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
                 <button
                   onClick={handleGarminConnect}
                   disabled={garminLoading}
-                  className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                  className="w-full bg-primary-600 text-white py-3 rounded-xl font-medium hover:bg-primary-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
                 >
                   {garminLoading ? (
                     <>
@@ -421,12 +421,12 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
                   onClick={() => { setFormat(opt.value); reset() }}
                   className={`flex-1 py-2.5 px-2 rounded-xl text-center transition-all ${
                     format === opt.value
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'bg-white text-gray-600 hover:bg-slate-50 border border-slate-200'
                   }`}
                 >
                   <span className="block text-sm font-medium">{opt.label}</span>
-                  <span className={`block text-[11px] mt-0.5 ${format === opt.value ? 'text-blue-100' : 'text-gray-400'}`}>
+                  <span className={`block text-[11px] mt-0.5 ${format === opt.value ? 'text-primary-100' : 'text-gray-400'}`}>
                     {opt.desc}
                   </span>
                 </button>
@@ -547,7 +547,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
             <button
               onClick={handleImport}
               disabled={importing}
-              className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-40"
+              className="w-full bg-primary-600 text-white py-3 rounded-xl font-medium hover:bg-primary-700 transition-colors disabled:opacity-40"
             >
               {importing ? '匯入中...' : '確認匯入'}
             </button>

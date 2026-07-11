@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     scope: '/',
     display: 'standalone',
     background_color: '#f8fafc',
-    theme_color: '#2563eb',
+    theme_color: '#1E4A73',
     icons: [
       { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' },
       { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },

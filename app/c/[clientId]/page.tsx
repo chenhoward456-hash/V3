@@ -648,7 +648,7 @@ export default function ClientDashboard() {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 transition-colors mb-3"
+            className="block bg-primary-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-primary-700 transition-colors mb-3"
           >
             用 Safari 開啟
           </a>
@@ -656,7 +656,7 @@ export default function ClientDashboard() {
             onClick={() => {
               if (navigator.clipboard) navigator.clipboard.writeText(url)
             }}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-primary-600 hover:underline"
           >
             複製網址
           </button>
@@ -724,7 +724,7 @@ export default function ClientDashboard() {
           <p className="text-gray-600 mb-4">{isSuspended ? '請聯繫你的教練重新啟用' : isExpired ? '你的方案已到期，續約後即可繼續使用。' : error.message}</p>
           {isExpired && (
             <div className="space-y-3 mt-4">
-              <a href="/pay?tier=self_managed" className="block bg-[#2563eb] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#1d4ed8] transition-colors text-sm">
+              <a href="/pay?tier=self_managed" className="block bg-[#1E4A73] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#16385A] transition-colors text-sm">
                 續約自主管理版 NT$499/月
               </a>
               <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="block bg-[#06C755] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#05b04d] transition-colors text-sm">
@@ -799,9 +799,9 @@ export default function ClientDashboard() {
           }
           if (daysLeft <= 7) {
             return (
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
-                <p className="text-sm font-semibold text-blue-700">下次扣款日：{new Date(c.expires_at).toLocaleDateString('zh-TW')}</p>
-                <p className="text-xs text-blue-600 mt-1">系統將自動續訂，無需手動操作。如需取消，請至右上角設定。</p>
+              <div className="bg-primary-50 border border-primary-200 rounded-2xl p-4 mb-4">
+                <p className="text-sm font-semibold text-primary-700">下次扣款日：{new Date(c.expires_at).toLocaleDateString('zh-TW')}</p>
+                <p className="text-xs text-primary-600 mt-1">系統將自動續訂，無需手動操作。如需取消，請至右上角設定。</p>
               </div>
             )
           }
@@ -1039,7 +1039,7 @@ export default function ClientDashboard() {
                       }
                     }}
                     disabled={updatingPhase}
-                    className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 text-left px-4"
+                    className="w-full bg-primary-600 text-white font-bold py-3 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 text-left px-4"
                   >
                     <div className="flex items-center gap-3">
                       <div>
@@ -1062,8 +1062,8 @@ export default function ClientDashboard() {
 
           {/* 新手引導 — 只有完全沒數據的新用戶才看到（營養設定移到 DO section 後） */}
           {view === 'home' && !latestBodyData && (!clientData.nutritionLogs || clientData.nutritionLogs.length === 0) && (
-            <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-              <p className="text-sm text-blue-700 font-medium">歡迎！往下滑開始記錄你的第一筆數據</p>
+            <div className="bg-primary-50 border border-primary-100 rounded-xl px-4 py-3">
+              <p className="text-sm text-primary-700 font-medium">歡迎！往下滑開始記錄你的第一筆數據</p>
             </div>
           )}
 
@@ -1251,7 +1251,7 @@ export default function ClientDashboard() {
               <p className="text-lg font-bold tracking-tight mt-1 text-slate-900">完整數據儀表板</p>
               <p className="text-xs text-slate-500 mt-0.5">趨勢、日曆、累積成果</p>
             </div>
-            <span className="text-2xl text-blue-600 font-light">→</span>
+            <span className="text-2xl text-primary-600 font-light">→</span>
           </div>
         </Link>
         )}
@@ -1426,8 +1426,8 @@ export default function ClientDashboard() {
             {isCoachMode && coachOverrideInfo && nutritionEngineSuggestion && (
               nutritionEngineSuggestion.suggestedCalories != null || nutritionEngineSuggestion.suggestedProtein != null
             ) && (
-              <div className="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 mb-2">
-                <p className="text-[11px] text-blue-500">
+              <div className="bg-primary-50 border border-primary-100 rounded-xl px-3 py-2 mb-2">
+                <p className="text-[11px] text-primary-500">
                   系統建議：{nutritionEngineSuggestion.suggestedCalories?.toLocaleString() ?? '—'} kcal / P {nutritionEngineSuggestion.suggestedProtein ?? '—'}g / C {nutritionEngineSuggestion.suggestedCarbs ?? '—'}g / F {nutritionEngineSuggestion.suggestedFat ?? '—'}g
                 </p>
               </div>
@@ -1747,7 +1747,7 @@ export default function ClientDashboard() {
               <>
                 <button
                   onClick={() => setShowCoachSummary(!showCoachSummary)}
-                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                  className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800 transition-colors"
                 >
                   <ChevronDown size={12} className={`transition-transform ${showCoachSummary ? 'rotate-180' : ''}`} />
                   {showCoachSummary ? '收起健康分析' : '查看健康分析'}
@@ -1757,8 +1757,8 @@ export default function ClientDashboard() {
                     <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{c.coach_summary}</p>
                     {(c.next_checkup_date || c.health_goals) && (
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 pt-2 border-t border-amber-200/50">
-                        {c.next_checkup_date && new Date(c.next_checkup_date + 'T00:00:00') >= new Date(new Date().setHours(0,0,0,0)) && <span className="text-xs text-blue-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
-                        {c.health_goals && <span className="text-xs text-blue-600">🎯 {c.health_goals}</span>}
+                        {c.next_checkup_date && new Date(c.next_checkup_date + 'T00:00:00') >= new Date(new Date().setHours(0,0,0,0)) && <span className="text-xs text-primary-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
+                        {c.health_goals && <span className="text-xs text-primary-600">🎯 {c.health_goals}</span>}
                       </div>
                     )}
                   </div>
@@ -2098,7 +2098,7 @@ export default function ClientDashboard() {
                 trackEvent('upgrade_cta_clicked', { source: 'streak_prompt', streak_days: streakDays })
                 trackConversion('pricing_cta', peekVariant('pricing_cta') ?? 'original', 'click_upgrade')
               }}
-              className="block text-center bg-blue-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors"
+              className="block text-center bg-primary-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-primary-700 transition-colors"
             >
               <ABTest
                 experimentId="pricing_cta"
@@ -2166,7 +2166,7 @@ export default function ClientDashboard() {
                   <Link
                     href={`/upgrade?from=${c.subscription_tier}`}
                     onClick={() => trackEvent('upgrade_cta_clicked', { source: 'locked_features' })}
-                    className="block text-center bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+                    className="block text-center bg-primary-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-primary-700 transition-colors"
                   >
                     升級自主管理版 NT$499/月
                   </Link>
@@ -2179,7 +2179,7 @@ export default function ClientDashboard() {
                   <Link
                     href={`/upgrade?from=self_managed`}
                     onClick={() => trackEvent('upgrade_cta_clicked', { source: 'locked_features_self_managed' })}
-                    className="block text-center bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+                    className="block text-center bg-primary-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-primary-700 transition-colors"
                   >
                     升級教練方案解鎖 →
                   </Link>
@@ -2197,7 +2197,7 @@ export default function ClientDashboard() {
         {view === 'lab' && isToday && (c.lab_results?.length ?? 0) > 0 && (
           <Link
             href={`/c/${c.unique_code}/report`}
-            className="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:border-blue-300 hover:shadow transition-all"
+            className="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:border-primary-300 hover:shadow transition-all"
           >
             <div className="flex items-center gap-3 min-w-0">
               <div className="text-2xl leading-none">📄</div>
@@ -2206,7 +2206,7 @@ export default function ClientDashboard() {
                 <p className="text-xs text-gray-500 mt-0.5">本次重點、血檢趨勢、補品、下次回診建議——可列印存檔</p>
               </div>
             </div>
-            <span className="text-blue-600 text-sm shrink-0">開啟 →</span>
+            <span className="text-primary-600 text-sm shrink-0">開啟 →</span>
           </Link>
         )}
 
@@ -2270,7 +2270,7 @@ export default function ClientDashboard() {
         <>
         <button
           onClick={() => setShowAiChat(true)}
-          className="fixed z-40 bg-[#2563eb] text-white rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 px-4 py-3"
+          className="fixed z-40 bg-[#1E4A73] text-white rounded-full shadow-lg hover:bg-[#16385A] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 px-4 py-3"
           style={{ bottom: 'calc(70px + env(safe-area-inset-bottom))', right: '16px' }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -2283,7 +2283,7 @@ export default function ClientDashboard() {
         </button>
         {!c.ai_chat_enabled && (
           <span
-            className="fixed z-40 text-[11px] text-blue-400 whitespace-nowrap pointer-events-none"
+            className="fixed z-40 text-[11px] text-primary-400 whitespace-nowrap pointer-events-none"
             style={{ bottom: 'calc(56px + env(safe-area-inset-bottom))', right: '16px' }}
           >
             免費每月 3 次，升級後無限使用

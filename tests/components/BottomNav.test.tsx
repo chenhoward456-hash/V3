@@ -56,7 +56,7 @@ describe('BottomNav', () => {
     const homeButton = screen.getByText('首頁').closest('button')
 
     // Active tab should have blue text class
-    expect(wellnessButton?.className).toContain('text-blue-600')
+    expect(wellnessButton?.className).toContain('text-primary-600')
     // Inactive tab should have gray text class
     expect(homeButton?.className).toContain('text-gray-400')
   })
@@ -65,12 +65,12 @@ describe('BottomNav', () => {
     const { rerender } = render(<BottomNav {...defaultProps} activeTab="home" />)
 
     const homeButton = screen.getByText('首頁').closest('button')
-    expect(homeButton?.className).toContain('text-blue-600')
+    expect(homeButton?.className).toContain('text-primary-600')
 
     rerender(<BottomNav {...defaultProps} activeTab="training" />)
 
     const trainingButton = screen.getByText('訓練').closest('button')
-    expect(trainingButton?.className).toContain('text-blue-600')
+    expect(trainingButton?.className).toContain('text-primary-600')
     expect(homeButton?.className).toContain('text-gray-400')
   })
 

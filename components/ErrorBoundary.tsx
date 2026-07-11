@@ -48,7 +48,7 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
             </p>
             <button
               onClick={this.resetErrorBoundary}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 bg-primary-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-primary-700 transition-colors"
             >
               重新整理
             </button>

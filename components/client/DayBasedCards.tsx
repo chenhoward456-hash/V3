@@ -102,7 +102,7 @@ export default function DayBasedCards({
             </p>
             <button
               onClick={() => setShowAiChat(true)}
-              className="inline-flex items-center gap-1.5 bg-[#2563eb] text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-[#1d4ed8] transition-colors"
+              className="inline-flex items-center gap-1.5 bg-[#1E4A73] text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-[#16385A] transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />

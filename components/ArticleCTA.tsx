@@ -49,7 +49,7 @@ export default function ArticleCTA({ articleTitle, slug, relatedArticles, freeRe
       )}
       
       {/* 主要 CTA — 導向線上訂閱 */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-10 text-center border-2 border-blue-200">
+      <div className="bg-gradient-to-br from-primary-50 to-indigo-50 rounded-2xl p-10 text-center border-2 border-primary-200">
         <h3 className="text-2xl font-bold mb-3" style={{color: '#2D2D2D'}}>
           準備好讓「教練 + 數據」幫你把方向定對？
         </h3>
@@ -58,7 +58,7 @@ export default function ArticleCTA({ articleTitle, slug, relatedArticles, freeRe
         </p>
         <Link
           href="/join"
-          className="inline-block bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:bg-blue-700 hover:-translate-y-1 transition-all"
+          className="inline-block bg-primary-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:bg-primary-700 hover:-translate-y-1 transition-all"
         >
           查看線上訂閱方案
         </Link>
@@ -72,7 +72,7 @@ export default function ArticleCTA({ articleTitle, slug, relatedArticles, freeRe
         <p className="text-sm text-gray-500 mb-2">想直接跟教練聊？</p>
         <LineButton
           source="blog_post"
-          className="inline-block text-blue-600 font-medium hover:underline"
+          className="inline-block text-primary-600 font-medium hover:underline"
         >
           透過 LINE 預約免費諮詢 →
         </LineButton>

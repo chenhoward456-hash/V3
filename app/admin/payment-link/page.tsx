@@ -55,7 +55,7 @@ export default function PaymentLinkPage() {
                 onClick={() => setTier(t.key)}
                 className={`py-3 rounded-xl text-sm font-semibold transition-all border-2 ${
                   tier === t.key
-                    ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                    ? 'border-[#1E4A73] bg-[#1E4A73]/10 text-[#1E4A73]'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -74,7 +74,7 @@ export default function PaymentLinkPage() {
             placeholder="client@email.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
           />
         </div>
 
@@ -88,7 +88,7 @@ export default function PaymentLinkPage() {
             placeholder="王小明"
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
           />
         </div>
 
@@ -96,7 +96,7 @@ export default function PaymentLinkPage() {
         <button
           onClick={generateLink}
           disabled={!email.trim()}
-          className="w-full py-4 rounded-xl font-bold text-base bg-[#2563eb] text-white hover:bg-[#1d4ed8] transition-colors disabled:opacity-50"
+          className="w-full py-4 rounded-xl font-bold text-base bg-[#1E4A73] text-white hover:bg-[#16385A] transition-colors disabled:opacity-50"
         >
           產生 NT${selectedPlan?.price} 付款連結
         </button>

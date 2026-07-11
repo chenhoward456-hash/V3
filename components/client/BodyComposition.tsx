@@ -448,11 +448,11 @@ export default function BodyComposition({
   return (
     <>
       {nutritionAdjusted && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-slide-in-down bg-blue-600">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-slide-in-down bg-primary-600">
           <div>
             <p className="text-sm font-medium">營養目標已自動調整</p>
             {nutritionAdjusted.calories && (
-              <p className="text-xs text-blue-100 mt-0.5">
+              <p className="text-xs text-primary-100 mt-0.5">
                 {nutritionAdjusted.calories} kcal　P {nutritionAdjusted.protein || '--'}g　C {nutritionAdjusted.carbs || '--'}g　F {nutritionAdjusted.fat || '--'}g
               </p>
             )}
@@ -476,7 +476,7 @@ export default function BodyComposition({
             {firstRecordInsight.calories && (
               <div className="bg-slate-50 rounded-xl p-3 text-center">
                 <p className="text-[11px] text-gray-500">每日熱量預算</p>
-                <p className="text-xl font-bold text-blue-600 tabular-nums">{firstRecordInsight.calories} <span className="text-sm font-normal">kcal</span></p>
+                <p className="text-xl font-bold text-primary-600 tabular-nums">{firstRecordInsight.calories} <span className="text-sm font-normal">kcal</span></p>
               </div>
             )}
             {firstRecordInsight.protein && (
@@ -489,13 +489,13 @@ export default function BodyComposition({
           {firstRecordInsight.targetGap != null && firstRecordInsight.weeksToGoal != null && (
             <div className="bg-slate-50 rounded-xl p-3 mb-3">
               <p className="text-sm text-gray-700 leading-relaxed">
-                距離目標還有 <span className="font-bold text-blue-600 tabular-nums">{firstRecordInsight.targetGap} kg</span>，
+                距離目標還有 <span className="font-bold text-primary-600 tabular-nums">{firstRecordInsight.targetGap} kg</span>，
                 以每週 {goalType === 'bulk' ? '0.25' : '0.5'} kg 的速度，
-                預估 <span className="font-bold text-blue-600">{firstRecordInsight.weeksToGoal <= 4 ? `${firstRecordInsight.weeksToGoal} 週` : `約 ${Math.round(firstRecordInsight.weeksToGoal / 4.3)} 個月`}</span>可達成。
+                預估 <span className="font-bold text-primary-600">{firstRecordInsight.weeksToGoal <= 4 ? `${firstRecordInsight.weeksToGoal} 週` : `約 ${Math.round(firstRecordInsight.weeksToGoal / 4.3)} 個月`}</span>可達成。
               </p>
             </div>
           )}
-          <div className="bg-blue-600 text-white rounded-xl p-3 text-center">
+          <div className="bg-primary-600 text-white rounded-xl p-3 text-center">
             <p className="text-sm font-bold">明天再量一次，系統就能開始追蹤你的{goalType === 'bulk' ? '增肌' : '減脂'}進度</p>
           </div>
 
@@ -614,12 +614,12 @@ export default function BodyComposition({
         {/* 體重波動科學解釋（簡單模式隱藏） */}
         {!simpleMode && weightFluctuationNote && (
           <div className={`rounded-xl px-4 py-3 mb-4 flex items-start gap-2 ${
-            weightFluctuationNote.color === 'blue' ? 'bg-blue-50 border border-blue-100' :
+            weightFluctuationNote.color === 'blue' ? 'bg-primary-50 border border-primary-100' :
             weightFluctuationNote.color === 'green' ? 'bg-emerald-50 border border-emerald-100' :
             'bg-amber-50 border border-amber-100'
           }`}>
             <p className={`text-xs leading-relaxed ${
-              weightFluctuationNote.color === 'blue' ? 'text-blue-700' :
+              weightFluctuationNote.color === 'blue' ? 'text-primary-700' :
               weightFluctuationNote.color === 'green' ? 'text-emerald-700' :
               'text-amber-700'
             }`}>
@@ -630,8 +630,8 @@ export default function BodyComposition({
 
         {/* 空白狀態引導 */}
         {bodyData.length < 7 && (
-          <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-4">
-            <p className="text-xs text-blue-700">
+          <div className="bg-primary-50 border border-primary-100 rounded-xl px-4 py-3 mb-4">
+            <p className="text-xs text-primary-700">
               {bodyData.length === 0
                 ? '記錄你的第一筆身體數據，開始追蹤變化'
                 : `再記錄 ${7 - bodyData.length} 天就能看到完整的趨勢線`}
@@ -689,8 +689,8 @@ export default function BodyComposition({
               <div className="flex items-start gap-2">
                 <div className="flex-1">
                   <p className="text-xs font-semibold text-gray-800">{nudgeTitle}</p>
-                  <p className="text-xs text-blue-700 leading-relaxed mt-0.5">{nudgeDesc}</p>
-                  <a href={`/join?tier=self_managed&from=free&trigger=${nudgeFeature}`} className="text-xs text-blue-600 font-semibold hover:underline mt-1.5 inline-block">
+                  <p className="text-xs text-primary-700 leading-relaxed mt-0.5">{nudgeDesc}</p>
+                  <a href={`/join?tier=self_managed&from=free&trigger=${nudgeFeature}`} className="text-xs text-primary-600 font-semibold hover:underline mt-1.5 inline-block">
                     了解自主管理方案（$499/月）→
                   </a>
                 </div>
@@ -714,7 +714,7 @@ export default function BodyComposition({
                 key={type}
                 onClick={() => setTrendType(type)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                  trendType === type ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                  trendType === type ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'
                 }`}
               >
                 {type === 'weight' ? '體重趨勢' : '體脂趨勢'}
@@ -724,7 +724,7 @@ export default function BodyComposition({
         )}
 
         <div className="h-64 w-full min-w-0">
-          <LazyChart data={trendData[simpleMode ? 'weight' : trendType] || []} height={256} stroke="#3b82f6" strokeWidth={2} />
+          <LazyChart data={trendData[simpleMode ? 'weight' : trendType] || []} height={256} stroke="#3D6E9E" strokeWidth={2} />
         </div>
 
         {/* 體重軌跡 vs 目標體重（備賽模式） */}
@@ -733,7 +733,7 @@ export default function BodyComposition({
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-medium text-gray-700">體重軌跡 vs 目標</p>
               <div className="flex items-center gap-3 text-[11px] text-gray-400">
-                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-400 inline-block rounded" /> 實際</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-primary-400 inline-block rounded" /> 實際</span>
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-orange-400 inline-block rounded" /> 7日均</span>
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-400 inline-block rounded" style={{borderTop: '2px dashed #9ca3af', height: 0}} /> 預測</span>
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-red-400 inline-block rounded" style={{borderTop: '2px dashed #f87171', height: 0}} /> 目標</span>
@@ -762,7 +762,7 @@ export default function BodyComposition({
                     strokeWidth={1.5}
                     label={{ value: `目標 ${targetWeight}kg`, position: 'right', fontSize: 10, fill: '#f87171' }}
                   />
-                  <Line type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2, fill: '#3b82f6' }} connectNulls={false} />
+                  <Line type="monotone" dataKey="actual" stroke="#3D6E9E" strokeWidth={1.5} dot={{ r: 2, fill: '#3D6E9E' }} connectNulls={false} />
                   <Line type="monotone" dataKey="ma7" stroke="#f97316" strokeWidth={2} dot={{ r: 2, fill: '#f97316' }} connectNulls={false} />
                   <Line type="monotone" dataKey="predicted" stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="4 3" dot={{ r: 2, fill: '#9ca3af' }} connectNulls={false} />
                 </LineChart>
@@ -798,7 +798,7 @@ export default function BodyComposition({
                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                 : trajectoryData.predictedWeight > targetWeight
                   ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                  : 'bg-blue-50 text-blue-700 border border-blue-200'
+                  : 'bg-primary-50 text-primary-700 border border-primary-200'
             }`}>
               {trajectoryData.onTrack
                 ? `在軌道上！照目前趨勢，${trajectoryData.isComp ? '比賽日' : '目標日'}可以達到目標體重`
@@ -823,7 +823,7 @@ export default function BodyComposition({
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-gray-700">體重 7 日移動平均</p>
               <div className="flex items-center gap-3 text-xs text-gray-400">
-                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-400 inline-block rounded" /> 實際</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-primary-400 inline-block rounded" /> 實際</span>
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-orange-400 inline-block rounded border-dashed" style={{borderTop: '2px dashed #fb923c', height: 0}} /> 7日均</span>
               </div>
             </div>
@@ -843,7 +843,7 @@ export default function BodyComposition({
                       title={`7日均: ${d.ma7}kg`}
                     />
                     <div
-                      className="absolute w-2 h-2 bg-blue-500 rounded-full z-10"
+                      className="absolute w-2 h-2 bg-primary-500 rounded-full z-10"
                       style={{ bottom: `${rawPct}%`, transform: 'translateY(50%)' }}
                       title={`${d.value}kg`}
                     />
@@ -879,7 +879,7 @@ export default function BodyComposition({
               })
               setShowModal(true)
             }}
-            className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+            className="flex-1 bg-primary-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center justify-center"
           >
             <Scale size={18} className="mr-2" /> 記每日體重
           </button>
@@ -900,7 +900,7 @@ export default function BodyComposition({
                 })
                 setShowModal(true)
               }}
-              className="flex-1 bg-white border border-blue-600 text-blue-600 py-3 px-4 rounded-xl font-medium hover:bg-blue-50 transition-colors flex items-center justify-center"
+              className="flex-1 bg-white border border-primary-600 text-primary-600 py-3 px-4 rounded-xl font-medium hover:bg-primary-50 transition-colors flex items-center justify-center"
             >
               <Activity size={18} className="mr-2" /> 記 InBody
             </button>
@@ -915,8 +915,8 @@ export default function BodyComposition({
           <div className="bg-white w-full max-w-lg rounded-t-2xl p-6 animate-slide-up shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                  <Plus size={16} className="text-blue-600" />
+                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center mr-3">
+                  <Plus size={16} className="text-primary-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900">{entryMode === 'inbody' ? '記錄 InBody' : (isUpdate ? '更新每日體重' : '記每日體重')}</h3>
               </div>
@@ -926,8 +926,8 @@ export default function BodyComposition({
             </div>
 
             {entryMode === 'inbody' && (
-              <div className="mb-4 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-                <p className="text-xs text-blue-700 leading-relaxed">InBody 在晚上、吃飽量都沒關係——它只看自己跟上次 InBody 的趨勢，<b>不會影響你的每日體重趨勢</b>。每日體重請另外用「記每日體重」、固定早晨空腹量。</p>
+              <div className="mb-4 bg-primary-50 border border-primary-100 rounded-xl px-4 py-3">
+                <p className="text-xs text-primary-700 leading-relaxed">InBody 在晚上、吃飽量都沒關係——它只看自己跟上次 InBody 的趨勢，<b>不會影響你的每日體重趨勢</b>。每日體重請另外用「記每日體重」、固定早晨空腹量。</p>
               </div>
             )}
 
@@ -976,7 +976,7 @@ export default function BodyComposition({
                           setForm(prev => ({ ...prev, [key]: val }))
                         }
                       }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                       placeholder={required ? `請輸入${label.split(' ')[0]}` : '選填'}
                     />
                     {unit && <span className="absolute right-3 top-3 text-gray-500 text-sm">{unit}</span>}
@@ -986,7 +986,7 @@ export default function BodyComposition({
             </div>
 
             <div className="mt-6 space-y-3">
-              <button onClick={handleSubmit} className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-medium hover:bg-blue-700 transition-all flex items-center justify-center shadow-lg">
+              <button onClick={handleSubmit} className="w-full bg-primary-600 text-white py-4 px-6 rounded-xl font-medium hover:bg-primary-700 transition-all flex items-center justify-center shadow-lg">
                 <Plus size={20} className="mr-2" /> {isUpdate ? '更新紀錄' : '儲存紀錄'}
               </button>
               <button onClick={() => setShowModal(false)} className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-200 transition-all">

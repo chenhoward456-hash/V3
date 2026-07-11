@@ -9,7 +9,7 @@ const TONE_STYLE: Record<FeedTone, { box: string; title: string; dot: string }> 
   good:  { box: 'bg-emerald-50/70 border-emerald-100', title: 'text-emerald-800', dot: 'bg-emerald-500' },
   alert: { box: 'bg-rose-50/70 border-rose-100',       title: 'text-rose-800',    dot: 'bg-rose-500' },
   warn:  { box: 'bg-amber-50/70 border-amber-100',     title: 'text-amber-800',   dot: 'bg-amber-500' },
-  info:  { box: 'bg-blue-50/70 border-blue-100',       title: 'text-blue-800',    dot: 'bg-blue-500' },
+  info:  { box: 'bg-primary-50/70 border-primary-100',       title: 'text-primary-800',    dot: 'bg-primary-500' },
 }
 
 function Row({ card, onDismiss }: { card: FeedCard; onDismiss: (id: string) => void }) {
@@ -24,7 +24,7 @@ function Row({ card, onDismiss }: { card: FeedCard; onDismiss: (id: string) => v
           {card.cta && (
             <>
               {' · '}
-              <a href={card.cta.href} className="text-blue-600 hover:underline font-medium">{card.cta.label} →</a>
+              <a href={card.cta.href} className="text-primary-600 hover:underline font-medium">{card.cta.label} →</a>
             </>
           )}
         </p>
@@ -47,22 +47,22 @@ function CoachMessageCard({ msg, onDismiss }: { msg: CoachMessageRow; onDismiss:
   const isAccount = msg.mode === 'accountability'
   const cleanTitle = (msg.title || '').replace(/^(💬|👋)\s*/u, '').trim() || 'Howard 的本週訊息'
   return (
-    <div className="relative px-4 py-3 rounded-2xl border border-blue-200 bg-blue-50/60 mb-2">
+    <div className="relative px-4 py-3 rounded-2xl border border-primary-200 bg-primary-50/60 mb-2">
       <button
         onClick={() => onDismiss(id)}
-        className="absolute top-2.5 right-2.5 text-blue-300 hover:text-blue-500 transition-colors p-1"
+        className="absolute top-2.5 right-2.5 text-primary-300 hover:text-primary-500 transition-colors p-1"
         aria-label="關閉"
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
       <div className="flex items-center gap-2 mb-1.5 pr-6">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-blue-900 leading-tight">{cleanTitle}</p>
-          {dateStr && <p className="text-[11px] text-blue-400 leading-tight">{dateStr} · 教練</p>}
+          <p className="text-sm font-semibold text-primary-900 leading-tight">{cleanTitle}</p>
+          {dateStr && <p className="text-[11px] text-primary-400 leading-tight">{dateStr} · 教練</p>}
         </div>
       </div>
       <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed max-h-72 overflow-y-auto">{msg.body}</p>
-      <p className="text-[11px] text-blue-400/80 mt-2 leading-snug">本訊息為健身/營養指導，非醫療診斷或處方；身體不適請就醫。</p>
+      <p className="text-[11px] text-primary-400/80 mt-2 leading-snug">本訊息為健身/營養指導，非醫療診斷或處方；身體不適請就醫。</p>
     </div>
   )
 }

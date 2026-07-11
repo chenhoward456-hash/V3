@@ -81,7 +81,7 @@ export default function NutritionStrategyCard({
 
         <Link
           href="/upgrade?from=free&feature=nutrition_strategy"
-          className="block text-center bg-blue-600 text-white text-xs font-semibold py-2 rounded-xl hover:bg-blue-700 transition-colors"
+          className="block text-center bg-primary-600 text-white text-xs font-semibold py-2 rounded-xl hover:bg-primary-700 transition-colors"
         >
           升級自主管理版 — NT$499/月
         </Link>

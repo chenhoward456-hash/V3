@@ -246,7 +246,7 @@ export default function LabResultEditor({
                     type="text"
                     value={result.test_name}
                     onChange={(e) => handleUpdate(result.id, 'test_name', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="檢測項目"
                   />
                   <div className="flex items-center gap-2">
@@ -255,14 +255,14 @@ export default function LabResultEditor({
                       step="0.1"
                       value={result.value}
                       onChange={(e) => handleUpdate(result.id, 'value', Number(e.target.value))}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       placeholder="數值"
                     />
                     <input
                       type="text"
                       value={result.unit}
                       onChange={(e) => handleUpdate(result.id, 'unit', e.target.value)}
-                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       placeholder="單位"
                     />
                   </div>
@@ -270,7 +270,7 @@ export default function LabResultEditor({
                     type="text"
                     value={result.reference_range}
                     onChange={(e) => handleUpdate(result.id, 'reference_range', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="參考範圍"
                   />
                 </div>
@@ -279,7 +279,7 @@ export default function LabResultEditor({
                     type="date"
                     value={result.date}
                     onChange={(e) => handleUpdate(result.id, 'date', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(result.status)}`}>
                     {getStatusIcon(result.status)} {result.status === 'normal' ? '正常' : result.status === 'attention' ? '注意' : '警示'}
@@ -319,7 +319,7 @@ export default function LabResultEditor({
                 <div className="flex gap-2">
                   <button
                     onClick={() => setEditingId(result.id)}
-                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                    className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 transition-colors"
                   >
                     編輯
                   </button>
@@ -369,7 +369,7 @@ export default function LabResultEditor({
               type="text"
               value={newResult.test_name}
               onChange={(e) => setNewResult(prev => ({ ...prev, test_name: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="檢測項目"
             />
             <div className="flex items-center gap-2">
@@ -378,14 +378,14 @@ export default function LabResultEditor({
                 step="0.1"
                 value={newResult.value}
                 onChange={(e) => setNewResult(prev => ({ ...prev, value: Number(e.target.value) }))}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="數值"
               />
               <input
                 type="text"
                 value={newResult.unit}
                 onChange={(e) => setNewResult(prev => ({ ...prev, unit: e.target.value }))}
-                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="單位"
               />
             </div>
@@ -393,7 +393,7 @@ export default function LabResultEditor({
               type="text"
               value={newResult.reference_range}
               onChange={(e) => setNewResult(prev => ({ ...prev, reference_range: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="參考範圍"
             />
           </div>
@@ -402,7 +402,7 @@ export default function LabResultEditor({
               type="date"
               value={newResult.date}
               onChange={(e) => setNewResult(prev => ({ ...prev, date: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <button
               onClick={handleAdd}

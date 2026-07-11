@@ -210,7 +210,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
             />
             <h2 className="text-2xl font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">血檢數據紀錄</h2>
           </button>
-          <button onClick={(e) => { e.stopPropagation(); openModal() }} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700 flex items-center">
+          <button onClick={(e) => { e.stopPropagation(); openModal() }} className="bg-primary-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-primary-700 flex items-center">
             <Plus size={16} className="mr-1" /> 新增血檢
           </button>
         </div>
@@ -274,13 +274,13 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                 const optimalRange = canOptimize ? getOptimalRangeText(latest.test_name) : null
                 const statusColor = latest.status !== 'normal'
                   ? (latest.status === 'attention' ? 'border-amber-200 bg-amber-50' : 'border-rose-200 bg-rose-50')
-                  : isOptimal ? 'border-emerald-200 bg-emerald-50' : 'border-blue-100 bg-blue-50'
+                  : isOptimal ? 'border-emerald-200 bg-emerald-50' : 'border-primary-100 bg-primary-50'
                 const dotColor = latest.status !== 'normal'
                   ? (latest.status === 'attention' ? 'bg-amber-500' : 'bg-rose-500')
-                  : isOptimal ? 'bg-emerald-500' : 'bg-blue-500'
+                  : isOptimal ? 'bg-emerald-500' : 'bg-primary-500'
                 const lineColor = latest.status !== 'normal'
                   ? (latest.status === 'attention' ? '#f59e0b' : '#f43f5e')
-                  : isOptimal ? '#10b981' : '#3b82f6'
+                  : isOptimal ? '#10b981' : '#3D6E9E'
 
                 // 變化計算
                 let changeText = ''
@@ -311,7 +311,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                           onClick={() => {
                             window.dispatchEvent(new CustomEvent('open-ai-chat', { detail: { prompt: `我的${latest.test_name}數值是 ${latest.value} ${latest.unit}，參考範圍是 ${latest.reference_range}，這代表什麼？我該怎麼做？` } }))
                           }}
-                          className="text-[11px] text-blue-500 hover:text-blue-700 font-medium ml-1"
+                          className="text-[11px] text-primary-500 hover:text-primary-700 font-medium ml-1"
                         >
                           問 AI →
                         </button>
@@ -322,11 +322,11 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                     )}
                     <p className="text-xs text-gray-400 mt-1">
                       參考範圍：{latest.custom_target || latest.reference_range}
-                      {optimalRange && <span className="text-blue-500">｜最佳：{optimalRange}</span>}
+                      {optimalRange && <span className="text-primary-500">｜最佳：{optimalRange}</span>}
                     </p>
                     <button
                       onClick={() => openModal(undefined, latest)}
-                      className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                      className="mt-2 text-xs text-primary-600 hover:text-primary-800 flex items-center"
                     >
                       <Plus size={12} className="mr-0.5" /> 新增此指標紀錄
                     </button>
@@ -409,7 +409,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                           }))
                         }
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 mb-2"
                     >
                       {existingTestNames.length > 0 && (
                         <optgroup label="已有指標">
@@ -428,47 +428,47 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                       <option value="__new__">自行輸入...</option>
                     </select>
                     {!existingTestNames.includes(form.test_name) && !presetTests.some(t => t.name === form.test_name) && (
-                      <input type="text" value={form.test_name} onChange={(e) => setForm(p => ({ ...p, test_name: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="輸入新指標名稱" />
+                      <input type="text" value={form.test_name} onChange={(e) => setForm(p => ({ ...p, test_name: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="輸入新指標名稱" />
                     )}
                   </>
                 ) : (
-                  <input type="text" value={form.test_name} onChange={(e) => setForm(p => ({ ...p, test_name: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如：HOMA-IR" />
+                  <input type="text" value={form.test_name} onChange={(e) => setForm(p => ({ ...p, test_name: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="例如：HOMA-IR" />
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">數值 *</label>
-                  <input type="number" step="0.01" value={form.value} onChange={(e) => setForm(p => ({ ...p, value: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="number" step="0.01" value={form.value} onChange={(e) => setForm(p => ({ ...p, value: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">單位</label>
-                  <input type="text" value={form.unit} onChange={(e) => setForm(p => ({ ...p, unit: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="text" value={form.unit} onChange={(e) => setForm(p => ({ ...p, unit: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">參考範圍</label>
-                <input type="text" value={form.reference_range} onChange={(e) => setForm(p => ({ ...p, reference_range: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如：<1.4" />
+                <input type="text" value={form.reference_range} onChange={(e) => setForm(p => ({ ...p, reference_range: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="例如：<1.4" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">檢測日期 *</label>
-                <input type="date" value={form.date} onChange={(e) => setForm(p => ({ ...p, date: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="date" value={form.date} onChange={(e) => setForm(p => ({ ...p, date: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               {isCoachMode && (
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">自訂目標範圍</label>
-                    <input type="text" value={form.custom_target} onChange={(e) => setForm(p => ({ ...p, custom_target: e.target.value }))} placeholder="留空則使用預設範圍" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input type="text" value={form.custom_target} onChange={(e) => setForm(p => ({ ...p, custom_target: e.target.value }))} placeholder="留空則使用預設範圍" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">自訂建議</label>
-                    <textarea value={form.custom_advice} onChange={(e) => setForm(p => ({ ...p, custom_advice: e.target.value }))} rows={2} placeholder="留空則使用預設建議" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <textarea value={form.custom_advice} onChange={(e) => setForm(p => ({ ...p, custom_advice: e.target.value }))} rows={2} placeholder="留空則使用預設建議" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
                 </>
               )}
             </div>
             <div className="mt-4 flex gap-2">
               <button onClick={() => setShowModal(false)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">取消</button>
-              <button onClick={handleSave} className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">儲存</button>
+              <button onClick={handleSave} className="flex-1 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">儲存</button>
             </div>
           </div>
         </div>

@@ -84,7 +84,7 @@
   }
 
   .tag.blue {
-    @apply bg-blue-50/80 text-primary;
+    @apply bg-primary-50/80 text-primary;
   }
 
   .tag.green {

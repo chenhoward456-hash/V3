@@ -6,7 +6,7 @@ import { degradeToSafe } from '@/lib/compliance-scrub'
 
 const PRIORITY: Record<SupplementSuggestion['priority'], { label: string; cls: string }> = {
   high: { label: '核心', cls: 'bg-amber-100 text-amber-800' },
-  medium: { label: '建議', cls: 'bg-blue-100 text-blue-700' },
+  medium: { label: '建議', cls: 'bg-primary-100 text-primary-700' },
   low: { label: '加分', cls: 'bg-gray-100 text-gray-600' },
 }
 
@@ -82,7 +82,7 @@ export default function SupplementStrategyCard({ suggestions }: { suggestions: S
       {sorted.length > 3 && (
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="mt-3 text-xs text-blue-600 font-medium hover:underline"
+          className="mt-3 text-xs text-primary-600 font-medium hover:underline"
         >
           {expanded ? '收合' : `展開全部 ${sorted.length} 項`}
         </button>

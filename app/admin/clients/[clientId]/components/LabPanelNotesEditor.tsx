@@ -218,7 +218,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
                 <button
                   onClick={() => generateDraft(date)}
                   disabled={draftingDate === date || savingDate === date}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-lg disabled:opacity-50 flex items-center gap-1"
+                  className="bg-primary-600 hover:bg-primary-700 text-white text-sm px-3 py-1.5 rounded-lg disabled:opacity-50 flex items-center gap-1"
                   title="AI 自動生成教練觀察筆記草稿（會分析所有指標趨勢，避免 cherry-pick）"
                 >
                   {draftingDate === date ? '生成中...' : 'AI 草稿'}
@@ -226,7 +226,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
                 <button
                   onClick={() => save(date)}
                   disabled={savingDate === date || draftingDate === date}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-lg disabled:opacity-50"
+                  className="bg-primary-600 hover:bg-primary-700 text-white text-sm px-3 py-1.5 rounded-lg disabled:opacity-50"
                 >
                   {savingDate === date ? '儲存中...' : '儲存'}
                 </button>
@@ -271,7 +271,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
                   onChange={e => update(date, 'summary', e.target.value)}
                   rows={4}
                   placeholder="例：心血管風險面看 ApoB 與 hsCRP 都從上一季的注意區降到正常，但游離睪固酮仍偏低，與睡眠品質下降相關。代謝端 HOMA-IR 持平，建議維持目前策略再觀察一季..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                 />
               </div>
 
@@ -284,7 +284,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
                   onChange={e => update(date, 'priorities', e.target.value)}
                   rows={3}
                   placeholder="1) 提高睡眠時長至 7h 以上（最高優先）\n2) Omega-3 提升至 3g / day\n3) 加做 SHBG + 雌二醇追蹤"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                 />
               </div>
 
@@ -296,7 +296,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
                   type="date"
                   value={note.next_review_date || ''}
                   onChange={e => update(date, 'next_review_date', e.target.value)}
-                  className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                 />
               </div>
             </div>

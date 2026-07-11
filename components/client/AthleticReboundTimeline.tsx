@@ -85,7 +85,7 @@ export default function AthleticReboundTimeline({
           {phases.map((phase, idx) => (
             <div key={idx} className="relative flex gap-3">
               {/* Node */}
-              <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${phase.color.iconBg} ${phase.highlight ? 'ring-2 ring-blue-400 shadow-md' : ''}`}>
+              <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${phase.color.iconBg} ${phase.highlight ? 'ring-2 ring-primary-400 shadow-md' : ''}`}>
                 {phase.icon}
               </div>
 
@@ -233,7 +233,7 @@ function buildPhases(
         '電解質飲料（鈉 500-700mg/L）',
         '第一餐以液態碳水為主',
       ],
-      color: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', iconBg: 'bg-blue-100' },
+      color: { bg: 'bg-primary-50', border: 'border-primary-200', text: 'text-primary-700', iconBg: 'bg-primary-100' },
     },
     {
       label: '全面碳水超補',

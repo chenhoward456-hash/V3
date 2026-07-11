@@ -28,11 +28,11 @@ export default function NutrientSlider({ label, emoji, value, onChange, target, 
 
   // 顏色映射（避免 Tailwind JIT purge 問題）
   const colorMap: Record<string, { bg: string; text: string; slider: string }> = {
-    blue:   { bg: 'bg-blue-500', text: 'text-blue-600', slider: 'accent-blue-500' },
-    cyan:   { bg: 'bg-blue-500', text: 'text-blue-600', slider: 'accent-blue-500' },
-    orange: { bg: 'bg-blue-500', text: 'text-blue-600', slider: 'accent-blue-500' },
-    amber:  { bg: 'bg-blue-500', text: 'text-blue-600', slider: 'accent-blue-500' },
-    yellow: { bg: 'bg-blue-500', text: 'text-blue-600', slider: 'accent-blue-500' },
+    blue:   { bg: 'bg-primary-500', text: 'text-primary-600', slider: 'accent-primary-500' },
+    cyan:   { bg: 'bg-primary-500', text: 'text-primary-600', slider: 'accent-primary-500' },
+    orange: { bg: 'bg-primary-500', text: 'text-primary-600', slider: 'accent-primary-500' },
+    amber:  { bg: 'bg-primary-500', text: 'text-primary-600', slider: 'accent-primary-500' },
+    yellow: { bg: 'bg-primary-500', text: 'text-primary-600', slider: 'accent-primary-500' },
   }
   const c = colorMap[color] || colorMap.blue
 

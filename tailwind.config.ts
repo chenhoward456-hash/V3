@@ -13,17 +13,20 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#2563EB',
-          dark: '#1E40AF',
+          // 品牌主色 = 臨床海軍藍（2026-07-11 Howard 拍板，取代 Tailwind 預設藍）
+          DEFAULT: '#1E4A73',
+          dark: '#16385A',
           foreground: '#ffffff',
-          // 完整色階（對齊 DESIGN.md：hover=blue-700、淺底=blue-50），
-          // 讓 blue-* 死值可以 1:1 換成 primary-* token
-          50: '#EFF6FF',
-          100: '#DBEAFE',
-          400: '#60A5FA',
-          500: '#3B82F6',
-          600: '#2563EB',
-          700: '#1D4ED8',
+          50: '#F0F5FA',
+          100: '#DEE9F3',
+          200: '#BDD3E7',
+          300: '#93B5D5',
+          400: '#6493BE',
+          500: '#3D6E9E',
+          600: '#1E4A73',
+          700: '#16385A',
+          800: '#102A45',
+          900: '#0B1E33',
         },
         secondary: '#F59E0B',
         success: '#10B981',
@@ -49,7 +52,7 @@ const config: Config = {
         background: '#FEFDFB',
         foreground: '#2D3748',
         input: '#E8E5E0',
-        ring: '#2563EB',
+        ring: '#1E4A73',
         'secondary-foreground': '#ffffff',
         muted: { DEFAULT: '#F3F1ED', foreground: '#718096' },
         accent: { DEFAULT: '#F9F7F4', foreground: '#2D3748' },

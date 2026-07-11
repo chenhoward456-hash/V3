@@ -62,7 +62,7 @@ export default function DailyNutritionTarget({
   const statusBadge = engineStatus ? (() => {
     const map: Record<string, { label: string; color: string }> = {
       on_track: { label: '穩步執行中', color: 'bg-emerald-50 text-emerald-600' },
-      goal_driven: { label: '目標導向模式', color: 'bg-blue-50 text-blue-700' },
+      goal_driven: { label: '目標導向模式', color: 'bg-primary-50 text-primary-700' },
       too_fast: { label: '啟動護肌模式', color: 'bg-amber-50 text-amber-700' },
       plateau: { label: '突破停滯調整', color: 'bg-amber-50 text-amber-700' },
       wrong_direction: { label: '策略修正中', color: 'bg-rose-50 text-rose-600' },
@@ -92,7 +92,7 @@ export default function DailyNutritionTarget({
           <p className="text-[13px] text-gray-700 leading-relaxed">{engineStatus.message}</p>
           <button
             onClick={() => setShowExplanation(!showExplanation)}
-            className="mt-2 text-[11px] text-blue-500 hover:text-blue-700 transition-colors"
+            className="mt-2 text-[11px] text-primary-500 hover:text-primary-700 transition-colors"
           >
             {showExplanation ? '收起詳情 ▲' : '查看底層計算邏輯 ▼'}
           </button>
@@ -118,7 +118,7 @@ export default function DailyNutritionTarget({
           <button
             onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
             className={`text-[11px] font-bold px-2 py-0.5 rounded-full transition-colors ${
-              effectiveIsTraining ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
+              effectiveIsTraining ? 'bg-primary-50 text-primary-700' : 'bg-slate-100 text-slate-600'
             }`}
           >
             {effectiveIsTraining ? '訓練日' : '休息日'} ▾

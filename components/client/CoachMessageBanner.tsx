@@ -60,24 +60,24 @@ function CoachMessageBannerInner({ msg: msgProp, clientCode }: { msg?: CoachMess
   }
 
   return (
-    <div className="relative px-4 py-3.5 rounded-2xl border-2 border-blue-300 bg-blue-50 mb-4 shadow-sm">
+    <div className="relative px-4 py-3.5 rounded-2xl border-2 border-primary-300 bg-primary-50 mb-4 shadow-sm">
       <button
         onClick={dismiss}
-        className="absolute top-3 right-3 text-blue-300 hover:text-blue-500 transition-colors p-1"
+        className="absolute top-3 right-3 text-primary-300 hover:text-primary-500 transition-colors p-1"
         aria-label="我看過了"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
       <div className="flex items-center gap-2.5 mb-2 pr-7">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-blue-900 leading-tight">{cleanTitle}</p>
-          {dateStr && <p className="text-[11px] text-blue-400 leading-tight">{dateStr} · 教練 Howard</p>}
+          <p className="text-sm font-bold text-primary-900 leading-tight">{cleanTitle}</p>
+          {dateStr && <p className="text-[11px] text-primary-400 leading-tight">{dateStr} · 教練 Howard</p>}
         </div>
       </div>
       <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed max-h-[28rem] overflow-y-auto">{msg.body}</p>
       <button
         onClick={dismiss}
-        className="mt-3 w-full text-center text-xs font-medium text-blue-600 bg-white border border-blue-200 rounded-lg py-2 hover:bg-blue-50/50 transition-colors"
+        className="mt-3 w-full text-center text-xs font-medium text-primary-600 bg-white border border-primary-200 rounded-lg py-2 hover:bg-primary-50/50 transition-colors"
       >
         我看完了 ✓
       </button>

@@ -64,7 +64,7 @@ export default function BloodPanelPage() {
       <div className="max-w-2xl mx-auto px-5 py-12 md:py-16">
         {/* Hero */}
         <header className="mb-8">
-          <p className="text-sm font-semibold text-blue-600 mb-3">免費清單 · 血檢</p>
+          <p className="text-sm font-semibold text-primary-600 mb-3">免費清單 · 血檢</p>
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-snug mb-4">
             健保說你「正常」，
             <br />
@@ -91,7 +91,7 @@ export default function BloodPanelPage() {
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  <span className="shrink-0 w-8 h-8 rounded-full border border-blue-600 bg-blue-50 text-blue-600 font-bold text-sm flex items-center justify-center tabular-nums">
+                  <span className="shrink-0 w-8 h-8 rounded-full border border-primary-600 bg-primary-50 text-primary-600 font-bold text-sm flex items-center justify-center tabular-nums">
                     {i + 1}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -104,8 +104,8 @@ export default function BloodPanelPage() {
                       <span className="font-semibold text-slate-600">健保為何略過：</span>
                       {m.whyNhiSkips}
                     </p>
-                    <div className="bg-blue-50 rounded-xl px-4 py-3">
-                      <p className="text-xs font-semibold text-blue-700 mb-1">帶去問醫師</p>
+                    <div className="bg-primary-50 rounded-xl px-4 py-3">
+                      <p className="text-xs font-semibold text-primary-700 mb-1">帶去問醫師</p>
                       <p className="text-sm text-slate-700 leading-relaxed">「{m.askDoctor}」</p>
                     </div>
                   </div>
@@ -115,7 +115,7 @@ export default function BloodPanelPage() {
                     type="button"
                     onClick={() => toggleTested(m.key)}
                     className={`text-xs font-medium transition-colors ${
-                      tested ? 'text-slate-400 hover:text-slate-600' : 'text-blue-600 hover:text-blue-700'
+                      tested ? 'text-slate-400 hover:text-slate-600' : 'text-primary-600 hover:text-primary-700'
                     }`}
                   >
                     {tested ? '↩ 放回清單' : '✓ 這個我驗過了'}
@@ -136,7 +136,7 @@ export default function BloodPanelPage() {
           <button
             type="button"
             onClick={copyQuestions}
-            className="inline-block bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold px-8 py-3.5 rounded-xl"
+            className="inline-block bg-primary-600 hover:bg-primary-700 transition-colors text-white font-bold px-8 py-3.5 rounded-xl"
           >
             {copied ? '已複製 ✓' : '複製問診清單'}
           </button>
@@ -153,7 +153,7 @@ export default function BloodPanelPage() {
                   href={c.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-blue-600 hover:text-blue-700 transition-colors"
+                  className="text-xs text-primary-600 hover:text-primary-700 transition-colors"
                 >
                   {c.cite} ↗
                 </a>
@@ -175,7 +175,7 @@ export default function BloodPanelPage() {
           <Link
             href="/diagnosis"
             onClick={() => trackEvent('cta_click', { source: 'tools_blood', destination: 'diagnosis' })}
-            className="inline-block bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold px-8 py-4 rounded-xl"
+            className="inline-block bg-primary-600 hover:bg-primary-700 transition-colors text-white font-bold px-8 py-4 rounded-xl"
           >
             免費體驗系統分析
           </Link>

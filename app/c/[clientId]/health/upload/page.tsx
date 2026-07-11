@@ -314,7 +314,7 @@ export default function UploadLabsPage() {
               onClick={() => setTab(t.key)}
               className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
                 tab === t.key
-                  ? 'border-blue-600 text-blue-700'
+                  ? 'border-primary-600 text-primary-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -335,7 +335,7 @@ export default function UploadLabsPage() {
                   onChange={e => setM(s => ({ ...s, test_name: e.target.value }))}
                   list="lab-name-list"
                   placeholder="例：ApoB"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                 />
                 <datalist id="lab-name-list">
                   {KNOWN_TEST_NAMES.map(n => <option key={n} value={n} />)}
@@ -349,7 +349,7 @@ export default function UploadLabsPage() {
                   value={m.value}
                   onChange={e => setM(s => ({ ...s, value: e.target.value }))}
                   placeholder="例：42"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                 />
               </div>
               <div>
@@ -359,7 +359,7 @@ export default function UploadLabsPage() {
                   value={m.unit}
                   onChange={e => setM(s => ({ ...s, unit: e.target.value }))}
                   placeholder="例：mg/dL"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                 />
               </div>
               <div>
@@ -368,7 +368,7 @@ export default function UploadLabsPage() {
                   type="date"
                   value={m.date}
                   onChange={e => setM(s => ({ ...s, date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                 />
               </div>
               <div className="md:col-span-2">
@@ -378,13 +378,13 @@ export default function UploadLabsPage() {
                   value={m.reference_range}
                   onChange={e => setM(s => ({ ...s, reference_range: e.target.value }))}
                   placeholder="例：< 130 或 70-120"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                 />
               </div>
             </div>
             <button
               onClick={addManual}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded flex items-center gap-1"
+              className="bg-primary-600 hover:bg-primary-700 text-white text-sm px-4 py-2 rounded flex items-center gap-1"
             >
               <Plus className="w-4 h-4" /> 加入下方清單
             </button>
@@ -417,7 +417,7 @@ export default function UploadLabsPage() {
               <button
                 onClick={() => csvInputRef.current?.click()}
                 disabled={csvLoading}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded inline-flex items-center gap-1 disabled:opacity-50"
+                className="bg-primary-600 hover:bg-primary-700 text-white text-sm px-4 py-2 rounded inline-flex items-center gap-1 disabled:opacity-50"
               >
                 <Upload className="w-4 h-4" /> {csvLoading ? '解析中...' : '選擇 CSV 檔案'}
               </button>
@@ -429,7 +429,7 @@ export default function UploadLabsPage() {
         {tab === 'ocr' && (
           <div
             className={`rounded-xl border border-dashed p-6 mb-6 transition-colors ${
-              ocrDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'
+              ocrDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300 bg-white'
             }`}
             onDragEnter={e => { e.preventDefault(); setOcrDragActive(true) }}
             onDragOver={e => { e.preventDefault(); setOcrDragActive(true) }}
@@ -446,9 +446,9 @@ export default function UploadLabsPage() {
               <div className="text-center py-4">
                 {/* Animated progress */}
                 <div className="relative inline-flex items-center justify-center w-16 h-16 mb-3">
-                  <div className="absolute inset-0 rounded-full border-4 border-blue-200"></div>
-                  <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
-                  <span className="relative text-xs font-medium text-blue-700 tabular-nums">{ocrElapsedSec}s</span>
+                  <div className="absolute inset-0 rounded-full border-4 border-primary-200"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-primary-600 border-t-transparent animate-spin"></div>
+                  <span className="relative text-xs font-medium text-primary-700 tabular-nums">{ocrElapsedSec}s</span>
                 </div>
                 <p className="text-sm font-medium text-gray-800">
                   AI 正在辨識 {ocrFileCount} 個檔案...
@@ -464,7 +464,7 @@ export default function UploadLabsPage() {
               </div>
             ) : (
               <div className="text-center">
-                <Camera className={`w-12 h-12 mx-auto mb-3 ${ocrDragActive ? 'text-blue-600' : 'text-gray-400'}`} />
+                <Camera className={`w-12 h-12 mx-auto mb-3 ${ocrDragActive ? 'text-primary-600' : 'text-gray-400'}`} />
                 <p className="text-sm font-medium text-gray-800 mb-1">
                   {ocrDragActive ? '放開即可上傳' : '拖曳檔案到這裡 或點下方按鈕'}
                 </p>
@@ -485,7 +485,7 @@ export default function UploadLabsPage() {
                 />
                 <button
                   onClick={() => ocrInputRef.current?.click()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded inline-flex items-center gap-1"
+                  className="bg-primary-600 hover:bg-primary-700 text-white text-sm px-4 py-2 rounded inline-flex items-center gap-1"
                 >
                   <Upload className="w-4 h-4" /> 選擇檔案
                 </button>
@@ -533,7 +533,7 @@ export default function UploadLabsPage() {
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={() => router.push(`/c/${clientId}/health/timeline`)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-3 rounded-lg"
+                className="flex-1 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium py-3 rounded-lg"
               >
                 📊 立刻看健康趨勢儀表板
               </button>
@@ -577,7 +577,7 @@ export default function UploadLabsPage() {
               <button
                 onClick={saveAll}
                 disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded disabled:opacity-50"
+                className="bg-primary-600 hover:bg-primary-700 text-white text-sm px-4 py-2 rounded disabled:opacity-50"
               >
                 {saving ? '儲存中...' : `✅ 全部確認儲存（${rows.length}）`}
               </button>

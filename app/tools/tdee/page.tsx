@@ -45,10 +45,10 @@ const GOAL_META: Record<Goal, { label: string; sub: string; multiplier: number; 
     label: '維持',
     sub: 'TDEE x 1.0',
     multiplier: 1.0,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    ringColor: 'ring-blue-500',
+    color: 'text-primary-600',
+    bgColor: 'bg-primary-50',
+    borderColor: 'border-primary-200',
+    ringColor: 'ring-primary-500',
   },
   bulk: {
     label: '增肌',
@@ -213,7 +213,7 @@ export default function TdeeCalculatorPage() {
         <div className="space-y-1.5">
           <MacroRow label="蛋白質" grams={macros.proteinG} color="bg-red-400" />
           <MacroRow label="碳水" grams={macros.carbG} color="bg-yellow-400" />
-          <MacroRow label="脂肪" grams={macros.fatG} color="bg-blue-400" />
+          <MacroRow label="脂肪" grams={macros.fatG} color="bg-primary-400" />
         </div>
       </button>
     )
@@ -257,7 +257,7 @@ export default function TdeeCalculatorPage() {
                     className={`
                       flex-1 py-3 rounded-xl font-semibold text-sm transition-all duration-200
                       ${gender === g
-                        ? 'bg-primary text-white shadow-md shadow-blue-500/20'
+                        ? 'bg-primary text-white shadow-md shadow-primary-500/20'
                         : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       }
                     `}
@@ -327,7 +327,7 @@ export default function TdeeCalculatorPage() {
             <button
               type="button"
               onClick={handleCalculate}
-              className="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg hover:bg-primary-dark transition-colors shadow-lg shadow-blue-500/20 active:scale-[0.98] min-h-[48px]"
+              className="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg hover:bg-primary-dark transition-colors shadow-lg shadow-primary-500/20 active:scale-[0.98] min-h-[48px]"
             >
               計算 TDEE
             </button>
@@ -392,7 +392,7 @@ export default function TdeeCalculatorPage() {
                 <Link
                   href="/join"
                   onClick={handleCtaClick}
-                  className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-bold text-base hover:bg-primary-dark transition-all shadow-lg shadow-blue-500/25 min-h-[48px]"
+                  className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-bold text-base hover:bg-primary-dark transition-all shadow-lg shadow-primary-500/25 min-h-[48px]"
                 >
                   免費開始 7 天追蹤 &rarr;
                 </Link>

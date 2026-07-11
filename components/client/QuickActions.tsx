@@ -37,10 +37,10 @@ function QuickNutritionInline({ onSubmit }: { onSubmit: (compliant: boolean) => 
   const tap = async (c: boolean) => { setBusy(true); const ok = await onSubmit(c); setBusy(false); if (ok) setDone(true) }
   if (done) return null
   return (
-    <div className="flex items-center gap-2 mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+    <div className="flex items-center gap-2 mb-3 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2.5">
       <span className="text-sm text-gray-700 font-medium shrink-0">今天吃得如何</span>
       <div className="flex gap-1.5 ml-auto shrink-0">
-        <button onClick={() => tap(true)} disabled={busy} className="px-3 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition-colors">達標</button>
+        <button onClick={() => tap(true)} disabled={busy} className="px-3 py-2 rounded-lg text-sm font-bold bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40 transition-colors">達標</button>
         <button onClick={() => tap(false)} disabled={busy} className="px-3 py-2 rounded-lg text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors">沒達標</button>
       </div>
     </div>
@@ -60,7 +60,7 @@ function QuickWeightInline({ onSubmit }: { onSubmit: (w: number) => Promise<bool
     if (ok) setVal('')
   }
   return (
-    <div className="flex items-center gap-2 mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+    <div className="flex items-center gap-2 mb-3 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2.5">
       <span className="text-sm text-gray-700 font-medium shrink-0">今天體重</span>
       <input
         type="number" inputMode="decimal" step="0.1" value={val}
@@ -68,14 +68,14 @@ function QuickWeightInline({ onSubmit }: { onSubmit: (w: number) => Promise<bool
         onKeyDown={e => { if (e.key === 'Enter') submit() }}
         placeholder="--"
         aria-label="今天體重 (kg)"
-        className="flex-1 min-w-0 px-3 py-2 bg-white border border-blue-200 rounded-lg text-base font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="flex-1 min-w-0 px-3 py-2 bg-white border border-primary-200 rounded-lg text-base font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-400"
         autoComplete="off"
       />
       <span className="text-sm text-gray-400 shrink-0">kg</span>
       <button
         onClick={submit}
         disabled={busy || !val}
-        className="shrink-0 bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-colors"
+        className="shrink-0 bg-primary-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-40 transition-colors"
       >
         {busy ? '…' : '記錄'}
       </button>
@@ -90,9 +90,9 @@ function QuickSupplementInline({ onSubmit }: { onSubmit: () => Promise<boolean> 
   const tap = async () => { setBusy(true); const ok = await onSubmit(); setBusy(false); if (ok) setDone(true) }
   if (done) return null
   return (
-    <div className="flex items-center gap-2 mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+    <div className="flex items-center gap-2 mb-3 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2.5">
       <span className="text-sm text-gray-700 font-medium shrink-0">今天補品</span>
-      <button onClick={tap} disabled={busy} className="ml-auto shrink-0 px-3 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition-colors">全部吃了 ✓</button>
+      <button onClick={tap} disabled={busy} className="ml-auto shrink-0 px-3 py-2 rounded-lg text-sm font-bold bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40 transition-colors">全部吃了 ✓</button>
     </div>
   )
 }
@@ -105,7 +105,7 @@ function QuickWellnessInline({ onSubmit }: { onSubmit: (level: 'good' | 'ok' | '
   if (done) return null
   const btn = 'flex-1 py-2 rounded-lg text-sm font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-40 transition-colors'
   return (
-    <div className="mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+    <div className="mb-3 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2.5">
       <p className="text-sm text-gray-700 font-medium mb-2">今天感受如何？</p>
       <div className="flex gap-1.5">
         <button onClick={() => tap('good')} disabled={busy} className={btn}>還不錯</button>
@@ -122,9 +122,9 @@ function QuickTrainingInline({ onSubmit }: { onSubmit: (t: string) => Promise<bo
   const [done, setDone] = useState(false)
   const tap = async (t: string) => { setBusy(true); const ok = await onSubmit(t); setBusy(false); if (ok) setDone(true) }
   if (done) return null
-  const chip = 'px-3 py-1.5 rounded-lg text-sm font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-blue-50 hover:border-blue-300 disabled:opacity-40 transition-colors'
+  const chip = 'px-3 py-1.5 rounded-lg text-sm font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-primary-50 hover:border-primary-300 disabled:opacity-40 transition-colors'
   return (
-    <div className="mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+    <div className="mb-3 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2.5">
       <p className="text-sm text-gray-700 font-medium mb-2">今天練了哪裡？</p>
       <div className="flex flex-wrap gap-1.5">
         {([['push', '推'], ['pull', '拉'], ['legs', '腿'], ['full_body', '全身'], ['cardio', '有氧']] as const).map(([t, l]) => (
@@ -188,7 +188,7 @@ export default function QuickActions({ enabledSections, onNavigate, topSummary, 
             className={`flex-1 flex flex-col items-center py-2 rounded-xl text-[11px] font-medium transition-all ${
               s.completed
                 ? 'bg-emerald-50 border border-emerald-200 text-emerald-600'
-                : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-300'
+                : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-primary-50 hover:border-primary-300'
             }`}
           >
             <span className="mb-0.5 h-5 flex items-center justify-center">{s.completed ? <Check size={16} className="text-emerald-600" /> : s.icon}</span>

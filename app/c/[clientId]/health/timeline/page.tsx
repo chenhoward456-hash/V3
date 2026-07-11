@@ -545,7 +545,7 @@ export default function HealthTimelinePage() {
                 </div>
                 <div className={`text-xs font-medium mt-0.5 ${
                   healthScore.grade === 'A' ? 'text-emerald-700' :
-                  healthScore.grade === 'B' ? 'text-blue-700' :
+                  healthScore.grade === 'B' ? 'text-primary-700' :
                   healthScore.grade === 'C' ? 'text-amber-700' : 'text-rose-700'
                 }`}>
                   Grade {healthScore.grade}
@@ -560,7 +560,7 @@ export default function HealthTimelinePage() {
                   <div className="text-[11px] text-gray-500 mt-0.5">{p.label}</div>
                   <div className={`text-sm font-semibold mt-0.5 ${
                     p.score >= 80 ? 'text-emerald-700' :
-                    p.score >= 65 ? 'text-blue-700' :
+                    p.score >= 65 ? 'text-primary-700' :
                     p.score >= 50 ? 'text-amber-700' : 'text-rose-700'
                   }`}>
                     {Math.round(p.score)}
@@ -610,27 +610,27 @@ export default function HealthTimelinePage() {
           <div className="text-xs text-gray-500 mb-4">
             最近一次血檢：{latestDate}
             {uniquePanelDateCount === 1 && (
-              <span className="ml-2 text-blue-600">（僅 1 次紀錄）</span>
+              <span className="ml-2 text-primary-600">（僅 1 次紀錄）</span>
             )}
           </div>
         )}
 
         {/* 第一次上傳：解釋為什麼還看不到趨勢線 */}
         {uniquePanelDateCount === 1 && labs.length > 0 && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-2xl p-4">
+          <div className="mb-6 bg-primary-50 border border-primary-200 rounded-2xl p-4">
             <div className="flex items-start gap-3">
               <span className="text-2xl shrink-0">📈</span>
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-blue-900 mb-1">
+                <div className="text-sm font-semibold text-primary-900 mb-1">
                   你的趨勢線會在下次抽血後出現
                 </div>
-                <p className="text-xs text-blue-800 leading-relaxed">
+                <p className="text-xs text-primary-800 leading-relaxed">
                   每張 sparkline 卡目前只有 1 個點 — 那就是你剛上傳的數據。
                   <br />
                   系統的核心價值是「連續追蹤」 — <strong>下次抽血上傳後，每張卡就會出現曲線</strong>，
                   讓你看到 3 個月、6 個月、12 個月的進步軌跡。
                 </p>
-                <div className="mt-3 text-[11px] text-blue-700">
+                <div className="mt-3 text-[11px] text-primary-700">
                   💡 建議追蹤節奏：每季 1 次（每 3 個月）。
                   {client?.next_checkup_date && (
                     <span className="ml-1">
@@ -1086,19 +1086,19 @@ export default function HealthTimelinePage() {
 
 
         {/* 教育性說明 */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div className="mt-6 bg-primary-50 border border-primary-200 rounded-xl p-4">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="text-sm font-semibold text-blue-900 mb-2">
+            <h3 className="text-sm font-semibold text-primary-900 mb-2">
               為什麼 Howard 標準和你醫院的「正常範圍」不一樣？
             </h3>
             <Link
               href={`/c/${clientId}/health/standards`}
-              className="text-xs px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-800 shrink-0"
+              className="text-xs px-2 py-1 rounded bg-primary-100 hover:bg-primary-200 text-primary-800 shrink-0"
             >
               看完整對照 →
             </Link>
           </div>
-          <p className="text-xs text-blue-800 leading-relaxed">
+          <p className="text-xs text-primary-800 leading-relaxed">
             一般醫院的參考範圍是「疾病門檻」 — 過了線才算病。
             <br />
             <strong>Howard 採用的是「最佳化追蹤範圍」</strong>，參考國際長壽研究文獻，以長期健康、預防、表現優化為導向。
@@ -1106,7 +1106,7 @@ export default function HealthTimelinePage() {
             <br />
             <strong>連續追蹤趨勢比單一數字更重要</strong> — 一年一次的健檢無法做到這件事。
           </p>
-          <p className="text-[11px] text-blue-700 leading-relaxed mt-3 pt-3 border-t border-blue-200">
+          <p className="text-[11px] text-primary-700 leading-relaxed mt-3 pt-3 border-t border-primary-200">
             <strong>免責提醒：</strong>本系統提供的數值參考範圍與教練筆記僅供生活方式調整參考，
             <strong>不構成醫療診斷、治療或處方建議</strong>。
             任何指標異常或健康疑慮請諮詢您的醫師。

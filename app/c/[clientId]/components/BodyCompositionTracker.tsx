@@ -120,7 +120,7 @@ function BodyCompositionTracker({
         <h2 className="text-xl font-medium text-gray-900">🏋️ 身體數據記錄</h2>
         <button
           onClick={() => setIsAdding(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
         >
           + 新增記錄
         </button>
@@ -138,7 +138,7 @@ function BodyCompositionTracker({
                 value={newRecord.date}
                 max={new Date().toISOString().split('T')[0]}
                 onChange={(e) => setNewRecord(prev => ({ ...prev, date: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 required
               />
             </div>
@@ -149,7 +149,7 @@ function BodyCompositionTracker({
                 step="0.1"
                 value={newRecord.height ?? ''}
                 onChange={(e) => setNewRecord(prev => ({ ...prev, height: e.target.value === '' ? undefined : Number(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 required
               />
             </div>
@@ -160,7 +160,7 @@ function BodyCompositionTracker({
                 step="0.1"
                 value={newRecord.weight ?? ''}
                 onChange={(e) => setNewRecord(prev => ({ ...prev, weight: e.target.value === '' ? undefined : Number(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 required
               />
             </div>
@@ -171,7 +171,7 @@ function BodyCompositionTracker({
                 step="0.1"
                 value={newRecord.body_fat ?? ''}
                 onChange={(e) => setNewRecord(prev => ({ ...prev, body_fat: e.target.value === '' ? undefined : Number(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div>
@@ -181,7 +181,7 @@ function BodyCompositionTracker({
                 step="0.1"
                 value={newRecord.muscle_mass ?? ''}
                 onChange={(e) => setNewRecord(prev => ({ ...prev, muscle_mass: e.target.value === '' ? undefined : Number(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div>
@@ -191,7 +191,7 @@ function BodyCompositionTracker({
                 step="0.1"
                 value={newRecord.visceral_fat ?? ''}
                 onChange={(e) => setNewRecord(prev => ({ ...prev, visceral_fat: e.target.value === '' ? undefined : Number(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
           </div>
@@ -205,7 +205,7 @@ function BodyCompositionTracker({
             <button
               onClick={handleAdd}
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
             >
               {loading ? '儲存中...' : '儲存'}
             </button>

@@ -13,7 +13,7 @@ const CATEGORY_MAP: Record<string, { emoji: string; color: string }> = {
   '恢復優化': { emoji: '💤', color: '#8b5cf6' },
   '增肌策略': { emoji: '💪', color: '#f59e0b' },
   '營養策略': { emoji: '🥗', color: '#22c55e' },
-  '訓練方法': { emoji: '🏋️', color: '#3b82f6' },
+  '訓練方法': { emoji: '🏋️', color: '#3D6E9E' },
   '血檢優化': { emoji: '🩸', color: '#dc2626' },
   '運動科學': { emoji: '🧠', color: '#6366f1' },
   '系統更新': { emoji: '⚙️', color: '#64748b' },
@@ -25,7 +25,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
   const category = post?.category || ''
   const readTime = post?.readTime || ''
 
-  const cat = CATEGORY_MAP[category] || { emoji: '📝', color: '#2563eb' }
+  const cat = CATEGORY_MAP[category] || { emoji: '📝', color: '#1E4A73' }
 
   return new ImageResponse(
     (

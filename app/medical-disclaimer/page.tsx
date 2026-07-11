@@ -162,8 +162,8 @@ export default function MedicalDisclaimerPage() {
               <span>日常活動量與心率數據</span>
             </li>
           </ul>
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-2xl">
-            <p className="text-blue-800 leading-relaxed">
+          <div className="bg-primary-50 border-l-4 border-primary-500 p-4 rounded-r-2xl">
+            <p className="text-primary-800 leading-relaxed">
               <strong>重要提醒：</strong>這些數據僅供系統進行訓練與營養分析之用，不作為醫療診斷依據。若系統分析發現任何數據異常（例如血液指標超出正常範圍、月經週期嚴重不規律等），請立即諮詢您的醫師進行進一步檢查與評估。系統可能會提示您就醫，但此提示不構成醫療建議。
             </p>
           </div>

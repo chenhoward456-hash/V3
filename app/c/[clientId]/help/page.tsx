@@ -26,13 +26,13 @@ export default function HelpPage() {
     : 'free'
   const tierLabel = tier === 'free' ? '免費' : tier === 'self_managed' ? '499 自主管理' : '2999 教練指導'
   const tierColor = tier === 'free' ? 'bg-slate-100 text-slate-600'
-    : tier === 'self_managed' ? 'bg-blue-100 text-blue-700'
+    : tier === 'self_managed' ? 'bg-primary-100 text-primary-700'
     : 'bg-slate-100 text-slate-600'
 
   if (isLoading || !c) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
       </div>
     )
   }
@@ -59,7 +59,7 @@ export default function HelpPage() {
           <div className="space-y-2">
             {c.body_composition_enabled && (
               <div className="flex gap-3 items-start">
-                <span className="bg-blue-100 text-blue-700 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0">1</span>
+                <span className="bg-primary-100 text-primary-700 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0">1</span>
                 <div>
                   <p className="font-semibold">早上：量體重{c.supplement_enabled ? ' + 補品' : ''}</p>
                   <p className="text-xs text-gray-500 mt-0.5">起床上完廁所就量，最準。打開 app → 點 ⚖️ 身體數據</p>
@@ -68,7 +68,7 @@ export default function HelpPage() {
             )}
             {c.nutrition_enabled && (
               <div className="flex gap-3 items-start">
-                <span className="bg-blue-100 text-blue-700 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0">2</span>
+                <span className="bg-primary-100 text-primary-700 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0">2</span>
                 <div>
                   <p className="font-semibold">三餐後：記飲食</p>
                   <p className="text-xs text-gray-500 mt-0.5">吃完直接記，不要等。🥗 飲食紀錄</p>
@@ -77,7 +77,7 @@ export default function HelpPage() {
             )}
             {c.training_enabled && (
               <div className="flex gap-3 items-start">
-                <span className="bg-blue-100 text-blue-700 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0">3</span>
+                <span className="bg-primary-100 text-primary-700 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0">3</span>
                 <div>
                   <p className="font-semibold">訓練完：打卡 + RPE</p>
                   <p className="text-xs text-gray-500 mt-0.5">訓練類型、感受強度 1-10。🏋️ 訓練紀錄</p>
@@ -86,7 +86,7 @@ export default function HelpPage() {
             )}
             {c.wellness_enabled && (
               <div className="flex gap-3 items-start">
-                <span className="bg-blue-100 text-blue-700 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0">4</span>
+                <span className="bg-primary-100 text-primary-700 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0">4</span>
                 <div>
                   <p className="font-semibold">睡前：感受紀錄</p>
                   <p className="text-xs text-gray-500 mt-0.5">當天精力、心情、睡眠品質。😊 每日感受</p>
@@ -171,7 +171,7 @@ export default function HelpPage() {
           <div className="mt-3">
             <Link
               href={`/c/${clientId}/overview`}
-              className="block bg-blue-600 hover:bg-blue-700 rounded-xl p-4 text-white transition-colors"
+              className="block bg-primary-600 hover:bg-primary-700 rounded-xl p-4 text-white transition-colors"
             >
               <p className="text-sm font-semibold">📊 想看自己的完整數據？</p>
               <p className="text-xs opacity-90 mt-1">點這裡打開「我的完整數據」頁 →</p>
@@ -192,7 +192,7 @@ export default function HelpPage() {
                 <tr className="bg-gray-50">
                   <th className="text-left p-2 border border-slate-200 font-semibold">功能</th>
                   <th className={`text-center p-2 border border-slate-200 font-semibold ${tier === 'free' ? 'bg-slate-50' : ''}`}>免費{tier === 'free' && ' ★'}</th>
-                  <th className={`text-center p-2 border border-slate-200 font-semibold text-blue-700 ${tier === 'self_managed' ? 'bg-slate-50' : ''}`}>499 自主{tier === 'self_managed' && ' ★'}</th>
+                  <th className={`text-center p-2 border border-slate-200 font-semibold text-primary-700 ${tier === 'self_managed' ? 'bg-slate-50' : ''}`}>499 自主{tier === 'self_managed' && ' ★'}</th>
                   <th className={`text-center p-2 border border-slate-200 font-semibold text-slate-700 ${tier === 'coached' ? 'bg-slate-50' : ''}`}>2999 教練{tier === 'coached' && ' ★'}</th>
                 </tr>
               </thead>
@@ -211,7 +211,7 @@ export default function HelpPage() {
           </div>
           <p className="text-[11px] text-gray-500 leading-relaxed">
             ★ 你目前的方案。<br />
-            * 標示項目為「生活型態 / 運動表現觀察與建議」，<b>非醫療診斷、非處方藥建議</b>，最終決策請結合醫師、營養師、藥師專業判斷。詳見<Link href="/medical-disclaimer" className="text-blue-600 underline">醫療免責聲明</Link>。
+            * 標示項目為「生活型態 / 運動表現觀察與建議」，<b>非醫療診斷、非處方藥建議</b>，最終決策請結合醫師、營養師、藥師專業判斷。詳見<Link href="/medical-disclaimer" className="text-primary-600 underline">醫療免責聲明</Link>。
           </p>
           <p className="text-xs text-gray-500">想升級或諮詢方案，直接 LINE 找 Howard。</p>
         </div>

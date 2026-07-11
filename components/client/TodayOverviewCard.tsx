@@ -218,8 +218,8 @@ function generateInsight(
 const INSIGHT_STYLES: Record<DailyInsight['type'], { bg: string; border: string; text: string }> = {
   progress: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
   warning: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-  milestone: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
-  trend: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
+  milestone: { bg: 'bg-primary-50', border: 'border-primary-200', text: 'text-primary-700' },
+  trend: { bg: 'bg-primary-50', border: 'border-primary-200', text: 'text-primary-700' },
   gap: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
   neutral: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600' },
 }

@@ -22,7 +22,7 @@ function BottomNavInner({ tabs, activeTab, completedMap, isToday, onTabClick }: 
             <button
               key={tab.id}
               onClick={() => onTabClick(tab.id)}
-              className={`flex-1 flex flex-col items-center py-2 transition-colors relative ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`}
+              className={`flex-1 flex flex-col items-center py-2 transition-colors relative ${activeTab === tab.id ? 'text-primary-600' : 'text-gray-400'}`}
             >
               <span className={`text-lg leading-none transition-transform duration-200 ${activeTab === tab.id ? 'scale-110 -translate-y-0.5' : ''}`}>{tab.icon}</span>
               <span className="text-[11px] mt-0.5 font-medium">{tab.label}</span>

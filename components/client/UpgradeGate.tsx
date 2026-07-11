@@ -75,7 +75,7 @@ export default function UpgradeGate({
             <Link
               href={upgradeHref}
               onClick={() => trackEvent('upgrade_cta_clicked', { feature, tier })}
-              className="inline-block mt-2 bg-blue-600 text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-block mt-2 bg-primary-600 text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
             >
               升級{info.label} — NT${info.price}/月
             </Link>
@@ -118,7 +118,7 @@ export default function UpgradeGate({
 
             {/* Current tier context */}
             {currentTier && (
-              <p className="text-[11px] text-blue-500 font-medium mt-1.5">
+              <p className="text-[11px] text-primary-500 font-medium mt-1.5">
                 {currentTier === 'free' && tier === 'self_managed' && '免費版 → 自主管理版'}
                 {currentTier === 'free' && tier === 'coached' && '免費版 → 教練指導版'}
                 {currentTier === 'self_managed' && tier === 'coached' && '自主管理版 → 教練指導版'}
@@ -134,7 +134,7 @@ export default function UpgradeGate({
                 <ul className="space-y-1">
                   {displayBenefits.map((benefit) => (
                     <li key={benefit} className="flex items-center gap-1.5 text-xs text-gray-600">
-                      <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                      <svg className="w-3.5 h-3.5 text-primary-600 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                       </svg>
                       {benefit}
@@ -148,13 +148,13 @@ export default function UpgradeGate({
             <Link
               href={upgradeHref}
               onClick={() => trackEvent('upgrade_cta_clicked', { feature, tier, currentTier })}
-              className="inline-block mt-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors"
+              className="inline-block mt-3 bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors"
             >
               升級{info.label} — NT${info.price}/月
             </Link>
             <Link
               href={upgradeHref}
-              className="inline-block mt-1.5 text-[11px] text-blue-500 hover:text-blue-700 transition-colors"
+              className="inline-block mt-1.5 text-[11px] text-primary-500 hover:text-primary-700 transition-colors"
             >
               查看完整方案比較 →
             </Link>

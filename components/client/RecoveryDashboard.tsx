@@ -74,7 +74,7 @@ interface RecoveryDashboardProps {
 
 const stateConfig = {
   optimal: { label: '最佳狀態', color: 'text-emerald-600', bg: 'bg-emerald-500', ring: 'ring-emerald-200' },
-  good: { label: '狀態良好', color: 'text-blue-600', bg: 'bg-blue-500', ring: 'ring-blue-200' },
+  good: { label: '狀態良好', color: 'text-primary-600', bg: 'bg-primary-500', ring: 'ring-primary-200' },
   struggling: { label: '需要恢復', color: 'text-amber-700', bg: 'bg-amber-500', ring: 'ring-amber-200' },
   critical: { label: '嚴重疲勞', color: 'text-rose-600', bg: 'bg-rose-500', ring: 'ring-rose-200' },
 }
@@ -96,7 +96,7 @@ const riskLevelConfig = {
 
 const ansLabels = {
   parasympathetic_dominant: { label: '副交感主導', color: 'text-emerald-600' },
-  balanced: { label: '平衡', color: 'text-blue-600' },
+  balanced: { label: '平衡', color: 'text-primary-600' },
   sympathetic_dominant: { label: '交感主導', color: 'text-amber-700' },
   // 沒 HRV 就沒得算 → 講清楚是「缺穿戴數據」而非功能被拿掉（學員會誤以為刪掉了）
   unknown: { label: '需手錶 HRV', color: 'text-gray-400' },
@@ -104,7 +104,7 @@ const ansLabels = {
 
 const trajectoryLabels = {
   improving: { label: '改善中', color: 'text-emerald-600' },
-  stable: { label: '穩定', color: 'text-blue-600' },
+  stable: { label: '穩定', color: 'text-primary-600' },
   declining: { label: '下滑中', color: 'text-rose-600' },
   unknown: { label: '數據不足', color: 'text-gray-400' },
 }
@@ -276,7 +276,7 @@ export default function RecoveryDashboard({ clientId, recentWellness, trainingPl
               <circle cx="40" cy="40" r="34" fill="none" stroke="#f3f4f6" strokeWidth="6" />
               <circle
                 cx="40" cy="40" r="34" fill="none"
-                stroke={data.score >= 75 ? '#22c55e' : data.score >= 50 ? '#3b82f6' : data.score >= 30 ? '#f59e0b' : '#ef4444'}
+                stroke={data.score >= 75 ? '#22c55e' : data.score >= 50 ? '#3D6E9E' : data.score >= 30 ? '#f59e0b' : '#ef4444'}
                 strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={`${(data.score / 100) * 213.6} 213.6`}
@@ -390,8 +390,8 @@ export default function RecoveryDashboard({ clientId, recentWellness, trainingPl
                   <p className="text-[11px] font-medium text-gray-500 mb-1.5">相對基線 (z-score)</p>
                   <div className="grid grid-cols-2 gap-2">
                     {data.autonomicBalance.hrvZScore !== null && (
-                      <div className="bg-blue-50 rounded-lg p-2 text-center">
-                        <p className="text-[11px] text-blue-500">HRV</p>
+                      <div className="bg-primary-50 rounded-lg p-2 text-center">
+                        <p className="text-[11px] text-primary-500">HRV</p>
                         <p className={`text-sm font-bold ${
                           data.autonomicBalance.hrvZScore >= 0 ? 'text-emerald-600' : 'text-rose-600'
                         }`}>

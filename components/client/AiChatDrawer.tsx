@@ -949,8 +949,8 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="w-8 h-8 bg-primary-50 rounded-xl flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E4A73" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
@@ -996,7 +996,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
                   <button
                     key={q}
                     onClick={() => { setInput(q); inputRef.current?.focus() }}
-                    className="w-full text-left text-sm text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-[#2563eb] px-4 py-2.5 rounded-xl transition-colors border border-slate-200"
+                    className="w-full text-left text-sm text-gray-600 bg-gray-50 hover:bg-primary-50 hover:text-[#1E4A73] px-4 py-2.5 rounded-xl transition-colors border border-slate-200"
                   >
                     {q}
                   </button>
@@ -1010,7 +1010,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
               <div
                 className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                   msg.role === 'user'
-                    ? 'bg-[#2563eb] text-white rounded-br-md'
+                    ? 'bg-[#1E4A73] text-white rounded-br-md'
                     : 'bg-gray-100 text-gray-800 rounded-bl-md'
                 }`}
               >
@@ -1035,7 +1035,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
                 <div className="space-y-2">
                   <a
                     href={`/pay?tier=self_managed&name=${encodeURIComponent(clientName)}`}
-                    className="block w-full text-center bg-blue-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-blue-700 transition-colors text-sm"
+                    className="block w-full text-center bg-primary-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-primary-700 transition-colors text-sm"
                   >
                     解鎖無上限 AI 顧問 — NT$499/月
                     <span className="block text-[11px] font-normal opacity-80 mt-0.5">讓系統繼續幫你推進進度</span>
@@ -1077,7 +1077,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
                 <button
                   key={q}
                   onClick={() => { setInput(q); inputRef.current?.focus() }}
-                  className="text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full whitespace-nowrap border border-blue-200 shrink-0"
+                  className="text-[11px] bg-primary-50 hover:bg-primary-100 text-primary-700 px-2.5 py-1 rounded-full whitespace-nowrap border border-primary-200 shrink-0"
                 >
                   {q}
                 </button>
@@ -1109,7 +1109,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={loading}
-              className="p-2.5 rounded-xl border border-slate-200 text-gray-500 hover:bg-gray-50 hover:text-[#2563eb] transition-colors disabled:opacity-40 flex-shrink-0"
+              className="p-2.5 rounded-xl border border-slate-200 text-gray-500 hover:bg-gray-50 hover:text-[#1E4A73] transition-colors disabled:opacity-40 flex-shrink-0"
               title="拍照或選擇圖片"
             >
               <Camera size={16} />
@@ -1121,12 +1121,12 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
               onKeyDown={handleKeyDown}
               placeholder={pendingImage ? '描述這餐吃了什麼（選填）...' : '問我今天怎麼吃...'}
               rows={1}
-              className="flex-1 resize-none px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#2563eb] transition-colors"
+              className="flex-1 resize-none px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4A73] transition-colors"
             />
             <button
               onClick={handleSend}
               disabled={(!input.trim() && !pendingImage) || loading}
-              className="bg-[#2563eb] text-white p-2.5 rounded-xl hover:bg-[#1d4ed8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+              className="bg-[#1E4A73] text-white p-2.5 rounded-xl hover:bg-[#16385A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
             >
               <Send size={16} />
             </button>

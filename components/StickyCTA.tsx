@@ -116,12 +116,12 @@ export default function StickyCTA({ articleTitle, slug, intent = 'performance', 
               source="sticky_cta"
               articleTitle={articleTitle}
               slug={slug}
-              className="w-full inline-block bg-blue-600 text-white px-5 py-3.5 rounded-xl font-bold text-center text-base hover:bg-blue-700 transition-all"
+              className="w-full inline-block bg-primary-600 text-white px-5 py-3.5 rounded-xl font-bold text-center text-base hover:bg-primary-700 transition-all"
             />
           ) : (
             <Link
               href="/diagnosis"
-              className="w-full inline-block bg-blue-600 text-white px-5 py-3.5 rounded-xl font-bold text-center text-base hover:bg-blue-700 transition-all"
+              className="w-full inline-block bg-primary-600 text-white px-5 py-3.5 rounded-xl font-bold text-center text-base hover:bg-primary-700 transition-all"
             >
               {dynamicCopy.buttonText}
             </Link>

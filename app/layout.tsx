@@ -177,7 +177,7 @@ export default function RootLayout({
         />
         {/* PWA */}
         <ManifestLink />
-        <meta name="theme-color" content="#2563eb" />
+        <meta name="theme-color" content="#1E4A73" />
         <meta name="mobile-web-app-capable" content="yes" />
         {/* 舊版 iOS 仍看 apple- 前綴版才會以 standalone 開啟（standalone 才有 Web Push） */}
         <meta name="apple-mobile-web-app-capable" content="yes" />

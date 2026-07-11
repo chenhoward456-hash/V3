@@ -325,7 +325,7 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/diagnosis"
-                  className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition-all shadow-lg shadow-blue-500/25 text-center min-h-[48px]"
+                  className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition-all shadow-lg shadow-primary-500/25 text-center min-h-[48px]"
                 >
                   30 秒免費算出我的數字 →
                 </Link>
@@ -505,10 +505,10 @@ export default function HomePage() {
             <p className="text-center text-gray-500 mb-14">不靠意志力，靠系統幫你累積</p>
             <div className="space-y-0">
               {[
-                { day: '第 1 天', text: '填入基本資料，系統算出你的起點和每日目標', color: 'bg-blue-500' },
-                { day: '第 14 天', text: '系統根據你的真實體重趨勢，自動校正 TDEE', color: 'bg-blue-500' },
-                { day: '第 30 天', text: '第一份月報出爐，看到趨勢線的方向', color: 'bg-blue-500' },
-                { day: '第 90 天', text: '回頭看三個月的數據，你會知道每一步是怎麼走過來的', color: 'bg-blue-500' },
+                { day: '第 1 天', text: '填入基本資料，系統算出你的起點和每日目標', color: 'bg-primary-500' },
+                { day: '第 14 天', text: '系統根據你的真實體重趨勢，自動校正 TDEE', color: 'bg-primary-500' },
+                { day: '第 30 天', text: '第一份月報出爐，看到趨勢線的方向', color: 'bg-primary-500' },
+                { day: '第 90 天', text: '回頭看三個月的數據，你會知道每一步是怎麼走過來的', color: 'bg-primary-500' },
               ].map(({ day, text, color }, i) => (
                 <div key={day} className="flex gap-4 items-start">
                   <div className="flex flex-col items-center">
@@ -599,7 +599,7 @@ export default function HomePage() {
               </div>
 
               {/* 升級 $499 */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+              <div className="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-2xl font-bold text-navy">$499</span>
                   <span className="text-xs text-gray-400">/月 · 升級解鎖</span>
@@ -608,7 +608,7 @@ export default function HomePage() {
                   <li className="flex items-start gap-1.5"><span className="text-green-500">&#10003;</span>身心狀態追蹤（睡眠、能量、壓力）</li>
                   <li className="flex items-start gap-1.5"><span className="text-green-500">&#10003;</span>AI 私人顧問 — 根據你的數據回答，不是通用建議</li>
                 </ul>
-                <Link href="/join?tier=self_managed" className="inline-block text-sm font-semibold text-blue-600 hover:text-blue-800 mt-2">升級解鎖 →</Link>
+                <Link href="/join?tier=self_managed" className="inline-block text-sm font-semibold text-primary-600 hover:text-primary-800 mt-2">升級解鎖 →</Link>
               </div>
 
               <div className="mt-auto">
@@ -633,7 +633,7 @@ export default function HomePage() {
               </p>
 
               {/* 遠端 $2,999 */}
-              <div className="bg-blue-50 rounded-xl p-4 mb-6">
+              <div className="bg-primary-50 rounded-xl p-4 mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-2xl font-bold text-navy">$2,999</span>
                   <span className="text-xs text-gray-400">/月 · 全台遠端</span>
@@ -740,7 +740,7 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             每天 2 分鐘，讓系統幫你確認方向
           </h2>
-          <p className="text-blue-200 text-lg mb-4">
+          <p className="text-primary-200 text-lg mb-4">
             免費開始記錄，14 天後系統會自動告訴你接下來怎麼做
           </p>
 
@@ -765,17 +765,17 @@ export default function HomePage() {
           </div>
 
           {/* Trust signals */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-blue-300/80 text-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-primary-300/80 text-sm">
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
               不需要綁約，隨時取消
             </span>
-            <span className="hidden sm:block w-1 h-1 rounded-full bg-blue-300/40" />
+            <span className="hidden sm:block w-1 h-1 rounded-full bg-primary-300/40" />
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               30 秒開始，不需信用卡
             </span>
-            <span className="hidden sm:block w-1 h-1 rounded-full bg-blue-300/40" />
+            <span className="hidden sm:block w-1 h-1 rounded-full bg-primary-300/40" />
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
               免費版永久免費

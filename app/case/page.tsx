@@ -76,7 +76,7 @@ const ZONE2 = [
 function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
   return (
     <div className="mb-8">
-      <p className="text-xs tracking-[0.2em] text-blue-600 font-medium mb-2">{eyebrow}</p>
+      <p className="text-xs tracking-[0.2em] text-primary-600 font-medium mb-2">{eyebrow}</p>
       <h2 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">{title}</h2>
       {sub && <p className="text-slate-500 mt-3 leading-relaxed">{sub}</p>}
     </div>
@@ -95,10 +95,10 @@ export default function CasePage() {
       {/* HERO */}
       <section className="bg-slate-900 text-white px-5 py-14 md:py-20">
         <div className="max-w-3xl mx-auto">
-          <p className="text-xs tracking-[0.2em] text-blue-400 font-medium mb-5">THE HOWARD PROTOCOL · 我的故事</p>
+          <p className="text-xs tracking-[0.2em] text-primary-400 font-medium mb-5">THE HOWARD PROTOCOL · 我的故事</p>
           <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-5">
             從掉髮、亞健康，
-            <span className="block text-blue-400 mt-2">到 7.8% 體脂、血檢全項達標。</span>
+            <span className="block text-primary-400 mt-2">到 7.8% 體脂、血檢全項達標。</span>
           </h1>
           <p className="text-slate-300 text-base md:text-lg leading-relaxed max-w-xl">
             6 年完整追蹤紀錄。不是課表範本——是我把同一套系統用在自己身上、親身驗證過的東西。
@@ -216,13 +216,13 @@ export default function CasePage() {
           />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {OPTIMAL_MARKERS.map((m) => (
-              <div key={m.name} className="rounded-2xl border border-blue-100 bg-white p-4">
+              <div key={m.name} className="rounded-2xl border border-primary-100 bg-white p-4">
                 <div className="text-xs text-slate-500">{m.name}</div>
                 <div className="mt-1 flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-blue-700">{m.value}</span>
+                  <span className="text-2xl font-bold text-primary-700">{m.value}</span>
                   {m.unit && <span className="text-[11px] text-slate-400">{m.unit}</span>}
                 </div>
-                <div className="mt-1 inline-block text-[10px] font-medium text-blue-600 bg-blue-100 rounded px-1.5 py-0.5">{m.std}</div>
+                <div className="mt-1 inline-block text-[10px] font-medium text-primary-600 bg-primary-100 rounded px-1.5 py-0.5">{m.std}</div>
                 <div className="text-[11px] text-slate-500 mt-1.5 leading-snug">{m.desc}</div>
               </div>
             ))}
@@ -308,7 +308,7 @@ export default function CasePage() {
             💡 Zone 2 有氧不只是創造熱量赤字，更能提升粒線體效率、穩定核心與情緒。不重訓的人，也至少好好善待自己的心肺。
           </p>
         </div>
-        <Link href="/blog/zone-2-cardio-benefits" className="inline-block mt-4 text-sm text-blue-600 font-medium hover:underline">
+        <Link href="/blog/zone-2-cardio-benefits" className="inline-block mt-4 text-sm text-primary-600 font-medium hover:underline">
           閱讀完整文章 →
         </Link>
       </section>
@@ -335,7 +335,7 @@ export default function CasePage() {
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold mb-3">想知道你的身體能被優化到什麼程度？</h2>
           <p className="text-slate-300 mb-8 leading-relaxed">先做一次免費的系統分析，30 秒看到你的營養目標與方向。</p>
-          <Link href="/diagnosis" className="inline-block bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold px-8 py-4 rounded-xl text-lg">
+          <Link href="/diagnosis" className="inline-block bg-primary-600 hover:bg-primary-700 transition-colors text-white font-bold px-8 py-4 rounded-xl text-lg">
             免費系統分析 →
           </Link>
           <p className="text-xs text-slate-500 mt-4">不用註冊、不用付費，直接看結果</p>

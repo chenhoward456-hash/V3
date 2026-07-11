@@ -68,9 +68,9 @@ export function TDEECalibrationCard({ client }: { client: Client }) {
               <p className="text-[11px] text-gray-400">kcal</p>
             </div>
             <div className="text-center">
-              <p className="text-[11px] text-blue-600">校正後目標熱量</p>
-              <p className="text-lg font-bold text-blue-700 tabular-nums">{currentCalories.toLocaleString()}</p>
-              <p className="text-[11px] text-blue-600">kcal</p>
+              <p className="text-[11px] text-primary-600">校正後目標熱量</p>
+              <p className="text-lg font-bold text-primary-700 tabular-nums">{currentCalories.toLocaleString()}</p>
+              <p className="text-[11px] text-primary-600">kcal</p>
             </div>
           </div>
         )}

@@ -45,7 +45,7 @@ export default function PwaRedirect() {
   if (!savedCode) return null
 
   return (
-    <div className="bg-[#2563eb] text-white text-center py-3 px-4 sticky top-0 z-50">
+    <div className="bg-[#1E4A73] text-white text-center py-3 px-4 sticky top-0 z-50">
       <a
         href={`/c/${savedCode}`}
         className="text-sm font-medium hover:underline inline-flex items-center gap-1.5"

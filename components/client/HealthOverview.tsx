@@ -38,13 +38,13 @@ function getRecoveryStatus(score: number): { label: string; color: string } {
 
 function getHrStatus(hr: number): { label: string; color: string } {
   if (hr <= 60) return { label: '優秀', color: 'text-green-600' }
-  if (hr <= 72) return { label: '正常', color: 'text-blue-600' }
+  if (hr <= 72) return { label: '正常', color: 'text-primary-600' }
   return { label: '偏高', color: 'text-amber-600' }
 }
 
 function getHrvStatus(hrv: number): { label: string; color: string } {
   if (hrv >= 60) return { label: '狀態佳', color: 'text-green-600' }
-  if (hrv >= 30) return { label: '正常', color: 'text-blue-600' }
+  if (hrv >= 30) return { label: '正常', color: 'text-primary-600' }
   return { label: '偏低', color: 'text-amber-600' }
 }
 
@@ -74,9 +74,9 @@ export default function HealthOverview({
     const deltaColor = weekDelta !== null && weekDelta > 0 ? 'text-green-600' : 'text-red-500'
     const barColor = weekRate >= 80 ? 'bg-green-500' : weekRate >= 50 ? 'bg-yellow-400' : 'bg-red-400'
     cards.push(
-      <div key="supplement" className="bg-blue-50 rounded-2xl p-4">
+      <div key="supplement" className="bg-primary-50 rounded-2xl p-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium text-blue-600">本週服從率</p>
+          <p className="text-xs font-medium text-primary-600">本週服從率</p>
           {weekDelta !== null && weekDelta !== 0 && (
             <span className={`text-xs font-semibold ${deltaColor}`}>
               {weekDelta > 0 ? '↑' : '↓'}{Math.abs(weekDelta)}%
@@ -84,7 +84,7 @@ export default function HealthOverview({
           )}
         </div>
         <p className="text-3xl font-bold text-gray-900 mb-2">{weekRate}<span className="text-lg font-medium text-gray-500">%</span></p>
-        <div className="w-full h-1.5 bg-blue-100 rounded-full overflow-hidden mb-1">
+        <div className="w-full h-1.5 bg-primary-100 rounded-full overflow-hidden mb-1">
           <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${weekRate}%` }} />
         </div>
         <p className="text-xs text-gray-400">本月 {monthRate}%</p>
@@ -274,7 +274,7 @@ export default function HealthOverview({
               value={wearable?.hrv ?? null}
               max={150}
               unit="ms"
-              color="#3b82f6"
+              color="#3D6E9E"
               bgColor="bg-gray-800"
               dark
               statusLabel={hrvStatus?.label}

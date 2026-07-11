@@ -90,7 +90,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
               <p className="text-[11px] text-gray-400 mt-0.5">原定：{scheduledLabel}</p>
             )}
             {!isActualRest && isSwitched && (
-              <p className="text-[11px] text-blue-600 mt-0.5">
+              <p className="text-[11px] text-primary-600 mt-0.5">
                 目前顯示 {splitDisplayLabel(todayPlan!.label)}（今天原定：{scheduledLabel}）
               </p>
             )}
@@ -132,13 +132,13 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
                   onClick={() => setOverrideDow(d.dayOfWeek)}
                   className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
                     active
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'bg-slate-100 text-gray-600 hover:bg-slate-200'
                   }`}
                 >
                   {splitDisplayLabel(d.label, true)}
                   {isScheduled && (
-                    <span className={active ? 'ml-1 text-blue-100' : 'ml-1 text-blue-500'}>·今天</span>
+                    <span className={active ? 'ml-1 text-primary-100' : 'ml-1 text-primary-500'}>·今天</span>
                   )}
                 </button>
               )
@@ -230,7 +230,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
       {/* Toggle full weekly plan */}
       <button
         onClick={() => setShowFullPlan(!showFullPlan)}
-        className="flex items-center justify-center gap-1.5 w-full mt-3 py-2 text-xs text-blue-600 hover:text-blue-700 transition-colors"
+        className="flex items-center justify-center gap-1.5 w-full mt-3 py-2 text-xs text-primary-600 hover:text-primary-700 transition-colors"
       >
         <span>{showFullPlan ? '收合週課表' : '查看完整週課表'}</span>
         <ChevronDown size={14} className={`transition-transform ${showFullPlan ? 'rotate-180' : ''}`} />
@@ -248,12 +248,12 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
                 <div
                   key={dow}
                   className={`rounded-lg px-3 py-2 text-xs ${
-                    isToday ? 'bg-slate-100 ring-1 ring-blue-200' : 'bg-slate-50'
+                    isToday ? 'bg-slate-100 ring-1 ring-primary-200' : 'bg-slate-50'
                   }`}
                 >
                   <span className="text-gray-400">
                     {DAY_LABELS[dow]} — 休息日
-                    {isToday && <span className="ml-1 text-blue-600 font-medium">(今天)</span>}
+                    {isToday && <span className="ml-1 text-primary-600 font-medium">(今天)</span>}
                   </span>
                 </div>
               )
@@ -264,13 +264,13 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
                 key={dow}
                 className={`rounded-lg p-3 ${
                   isToday
-                    ? 'bg-blue-50 ring-1 ring-blue-200'
+                    ? 'bg-primary-50 ring-1 ring-primary-200'
                     : 'bg-slate-50'
                 }`}
               >
-                <p className={`text-xs font-semibold mb-1.5 ${isToday ? 'text-blue-700' : 'text-gray-700'}`}>
+                <p className={`text-xs font-semibold mb-1.5 ${isToday ? 'text-primary-700' : 'text-gray-700'}`}>
                   {DAY_LABELS[dow]} — {splitDisplayLabel(day.label)}
-                  {isToday && <span className="ml-1 text-blue-600">(今天)</span>}
+                  {isToday && <span className="ml-1 text-primary-600">(今天)</span>}
                 </p>
                 <div className="space-y-0.5">
                   {day.exercises.map((ex, i) => (

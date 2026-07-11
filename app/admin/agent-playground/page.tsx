@@ -132,7 +132,7 @@ export default function AgentPlayground() {
             <button
               onClick={runAgent}
               disabled={running || !userMessage.trim()}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50"
             >
               {running ? '思考中…（10-30 秒）' : 'Run Agent'}
             </button>
@@ -158,7 +158,7 @@ export default function AgentPlayground() {
                   {response.toolCalls.map((tc, i) => (
                     <details key={i} className="bg-gray-50 rounded-lg p-2">
                       <summary className="text-xs cursor-pointer font-mono">
-                        {i + 1}. <span className="text-blue-600">{tc.name}</span>
+                        {i + 1}. <span className="text-primary-600">{tc.name}</span>
                       </summary>
                       <div className="mt-2 text-xs">
                         <div className="text-gray-500 mb-1">input:</div>
@@ -195,7 +195,7 @@ export default function AgentPlayground() {
               歷史調整 ({history.length})
             </button>
             <div className="ml-auto">
-              <button onClick={activeTab === 'pending' ? loadProposals : loadHistory} className="text-xs text-blue-600 hover:underline">↻ 重新整理</button>
+              <button onClick={activeTab === 'pending' ? loadProposals : loadHistory} className="text-xs text-primary-600 hover:underline">↻ 重新整理</button>
             </div>
           </div>
 
@@ -274,9 +274,9 @@ export default function AgentPlayground() {
               {history.map((h: any) => {
                 const isAi = (h.reason || '').includes('AI 提案')
                 return (
-                  <div key={h.id} className={`border rounded-xl p-4 ${isAi ? 'border-blue-200 bg-blue-50' : 'border-slate-200 bg-slate-50'}`}>
+                  <div key={h.id} className={`border rounded-xl p-4 ${isAi ? 'border-primary-200 bg-primary-50' : 'border-slate-200 bg-slate-50'}`}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className={`text-xs font-semibold ${isAi ? 'text-blue-800' : 'text-gray-800'}`}>
+                      <span className={`text-xs font-semibold ${isAi ? 'text-primary-800' : 'text-gray-800'}`}>
                         {isAi ? 'AI 提案 → 教練核准' : '教練手動'}
                         {' · '}
                         {h.applied_by} · {h.trigger_source}

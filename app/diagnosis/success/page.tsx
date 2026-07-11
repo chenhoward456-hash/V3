@@ -14,7 +14,7 @@ export default function SuccessPage() {
       fallback={
         <section className="max-w-2xl mx-auto px-6 py-20 text-center">
           <div className="bg-white border border-gray-200 rounded-2xl p-10 shadow-sm">
-            <div className="animate-spin w-12 h-12 border-4 border-[#2563eb] border-t-transparent rounded-full mx-auto mb-6" />
+            <div className="animate-spin w-12 h-12 border-4 border-[#1E4A73] border-t-transparent rounded-full mx-auto mb-6" />
             <h1 className="text-xl font-bold mb-2" style={{ color: '#1e3a5f' }}>
               載入中...
             </h1>
@@ -104,7 +104,7 @@ function SuccessContent() {
     return (
       <section className="max-w-2xl mx-auto px-6 py-20 text-center">
         <div className="bg-white border border-gray-200 rounded-2xl p-10 shadow-sm">
-          <div className="animate-spin w-12 h-12 border-4 border-[#2563eb] border-t-transparent rounded-full mx-auto mb-6" />
+          <div className="animate-spin w-12 h-12 border-4 border-[#1E4A73] border-t-transparent rounded-full mx-auto mb-6" />
           <h1 className="text-xl font-bold mb-2" style={{ color: '#1e3a5f' }}>
             正在確認付款...
           </h1>
@@ -137,7 +137,7 @@ function SuccessContent() {
           <div className="flex gap-3 justify-center">
             <button
               onClick={() => { setRetryCount(0); setStatus('loading') }}
-              className="bg-[#2563eb] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#1d4ed8] transition-colors"
+              className="bg-[#1E4A73] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#16385A] transition-colors"
             >
               重新確認
             </button>
@@ -172,7 +172,7 @@ function SuccessContent() {
         </div>
 
         {/* 下載電子書 */}
-        <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb] rounded-2xl p-6 text-center mb-8">
+        <div className="bg-gradient-to-br from-[#1e3a5f] to-[#1E4A73] rounded-2xl p-6 text-center mb-8">
           <p className="text-white/80 text-sm mb-3">你的電子書已準備好</p>
           <a
             href={`/api/ebook/download?token=${downloadToken}`}
@@ -200,14 +200,14 @@ function SuccessContent() {
                 <p className="text-xl font-bold text-gray-900">{result.estimatedTDEE.toLocaleString()}</p>
                 <p className="text-[10px] text-gray-400">kcal/天</p>
               </div>
-              <div className="bg-[#2563eb]/5 rounded-xl p-3 text-center border border-[#2563eb]/20">
-                <p className="text-[10px] text-[#2563eb] mb-1">目標熱量</p>
-                <p className="text-xl font-bold text-[#2563eb]">{result.suggestedCalories.toLocaleString()}</p>
-                <p className="text-[10px] text-[#2563eb]">kcal/天</p>
+              <div className="bg-[#1E4A73]/5 rounded-xl p-3 text-center border border-[#1E4A73]/20">
+                <p className="text-[10px] text-[#1E4A73] mb-1">目標熱量</p>
+                <p className="text-xl font-bold text-[#1E4A73]">{result.suggestedCalories.toLocaleString()}</p>
+                <p className="text-[10px] text-[#1E4A73]">kcal/天</p>
               </div>
               <div className="bg-gray-50 rounded-xl p-3 text-center">
                 <p className="text-[10px] text-gray-400 mb-1">每日{goalType === 'cut' ? '赤字' : '盈餘'}</p>
-                <p className={`text-xl font-bold ${goalType === 'cut' ? 'text-green-600' : 'text-blue-600'}`}>
+                <p className={`text-xl font-bold ${goalType === 'cut' ? 'text-green-600' : 'text-primary-600'}`}>
                   {Math.abs(result.dailyDeficit)}
                 </p>
                 <p className="text-[10px] text-gray-400">kcal</p>
@@ -259,7 +259,7 @@ function SuccessContent() {
         )}
 
         {/* 免費版導入 CTA */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 text-center mb-4">
+        <div className="bg-gradient-to-br from-primary-50 to-indigo-50 border border-primary-200 rounded-2xl p-6 text-center mb-4">
           <p className="text-sm font-semibold text-gray-800 mb-1 leading-relaxed">
             你已經知道原理了，現在用系統來執行。
           </p>

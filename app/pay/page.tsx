@@ -100,7 +100,7 @@ function PayContent() {
   return (
     <section className="max-w-lg mx-auto px-6 py-16 md:py-20">
       {/* Plan Summary */}
-      <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2563eb] rounded-2xl p-6 text-white mb-8 text-center">
+      <div className="bg-gradient-to-br from-[#1e3a5f] to-[#1E4A73] rounded-2xl p-6 text-white mb-8 text-center">
         <p className="text-sm opacity-80 mb-1">Howard Protocol</p>
         <h1 className="text-2xl font-bold mb-2">{plan.name}</h1>
         <div className="flex items-baseline justify-center gap-1">
@@ -129,7 +129,7 @@ function PayContent() {
             <input
               type="text" placeholder="你的名字" value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
             />
           </div>
 
@@ -138,7 +138,7 @@ function PayContent() {
             <input
               type="email" placeholder="your@email.com" value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
             />
             <p className="text-xs text-gray-400 mt-1">帳號資訊會寄到這裡</p>
           </div>
@@ -150,7 +150,7 @@ function PayContent() {
             <input
               type="tel" placeholder="0912345678" value={phone}
               onChange={e => setPhone(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#2563eb] transition-colors"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-[#1E4A73] transition-colors"
             />
           </div>
 
@@ -160,7 +160,7 @@ function PayContent() {
               {(['男性', '女性'] as const).map(g => (
                 <button key={g} type="button" onClick={() => setGender(g)}
                   className={`py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
-                    gender === g ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                    gender === g ? 'border-[#1E4A73] bg-[#1E4A73]/10 text-[#1E4A73]' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                   }`}
                 >
                   {g === '男性' ? '♂ 男性' : '♀ 女性'}
@@ -175,7 +175,7 @@ function PayContent() {
               {([{ key: 'cut' as const, label: '減脂' }, { key: 'bulk' as const, label: '增肌' }]).map(({ key, label }) => (
                 <button key={key} type="button" onClick={() => setGoalType(key)}
                   className={`py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
-                    goalType === key ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                    goalType === key ? 'border-[#1E4A73] bg-[#1E4A73]/10 text-[#1E4A73]' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
                   }`}
                 >
                   {label}
@@ -191,7 +191,7 @@ function PayContent() {
           )}
 
           <button onClick={handleSubmit} disabled={isSubmitting}
-            className="w-full py-4 rounded-xl font-bold text-base bg-[#2563eb] text-white hover:bg-[#1d4ed8] transition-colors disabled:opacity-50 mt-2"
+            className="w-full py-4 rounded-xl font-bold text-base bg-[#1E4A73] text-white hover:bg-[#16385A] transition-colors disabled:opacity-50 mt-2"
           >
             {isSubmitting ? '正在跳轉至付款頁面...' : `訂閱 — NT$${plan.priceLabel}/月`}
           </button>

@@ -169,14 +169,14 @@ export default function SupplementManager({
                     type="text"
                     value={supplement.name}
                     onChange={(e) => handleUpdate(supplement.id, { name: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="補品名稱"
                   />
                   <input
                     type="text"
                     value={supplement.dosage}
                     onChange={(e) => handleUpdate(supplement.id, { dosage: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="劑量"
                   />
                 </div>
@@ -184,7 +184,7 @@ export default function SupplementManager({
                   <select
                     value={supplement.timing}
                     onChange={(e) => handleUpdate(supplement.id, { timing: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="早餐">早餐</option>
                     <option value="午餐前">午餐前</option>
@@ -197,7 +197,7 @@ export default function SupplementManager({
                     type="text"
                     value={supplement.why || ''}
                     onChange={(e) => handleUpdate(supplement.id, { why: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="目的說明"
                   />
                 </div>
@@ -229,7 +229,7 @@ export default function SupplementManager({
                 <div className="flex gap-2">
                   <button
                     onClick={() => setEditingId(supplement.id)}
-                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                    className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 transition-colors"
                   >
                     編輯
                   </button>
@@ -250,7 +250,7 @@ export default function SupplementManager({
       {!isAdding ? (
         <button
           onClick={() => setIsAdding(true)}
-          className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="w-full px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
           + 新增補品
         </button>
@@ -281,14 +281,14 @@ export default function SupplementManager({
                 type="text"
                 value={newSupplement.name}
                 onChange={(e) => setNewSupplement(prev => ({ ...prev, name: e.target.value }))}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="補品名稱"
               />
               <input
                 type="text"
                 value={newSupplement.dosage}
                 onChange={(e) => setNewSupplement(prev => ({ ...prev, dosage: e.target.value }))}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="劑量"
               />
             </div>
@@ -296,7 +296,7 @@ export default function SupplementManager({
               <select
                 value={newSupplement.timing}
                 onChange={(e) => setNewSupplement(prev => ({ ...prev, timing: e.target.value }))}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="早餐">早餐</option>
                 <option value="午餐前">午餐前</option>
@@ -309,7 +309,7 @@ export default function SupplementManager({
                 type="text"
                 value={newSupplement.why}
                 onChange={(e) => setNewSupplement(prev => ({ ...prev, why: e.target.value }))}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="目的說明"
               />
             </div>

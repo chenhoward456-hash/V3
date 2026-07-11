@@ -223,7 +223,7 @@ describe('BodyComposition', () => {
     const bodyFatBtn = screen.getByText('體脂趨勢')
     fireEvent.click(bodyFatBtn)
 
-    expect(bodyFatBtn).toHaveClass('bg-blue-600')
+    expect(bodyFatBtn).toHaveClass('bg-primary-600')
   })
 
   // ---- Trend toggle hidden in simple mode ----

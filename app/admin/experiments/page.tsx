@@ -75,7 +75,7 @@ export default function ExperimentsPage() {
                     </p>
                   </div>
                   {current && (
-                    <span className="text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                    <span className="text-xs font-semibold bg-primary-100 text-primary-700 px-3 py-1 rounded-full">
                       current: {current}
                     </span>
                   )}
@@ -97,7 +97,7 @@ export default function ExperimentsPage() {
                         key={v}
                         className={`text-xs px-3 py-1 rounded-full border ${
                           current === v
-                            ? 'bg-blue-600 text-white border-blue-600'
+                            ? 'bg-primary-600 text-white border-primary-600'
                             : 'bg-gray-50 text-gray-700 border-gray-200'
                         }`}
                       >
@@ -109,7 +109,7 @@ export default function ExperimentsPage() {
                   {/* Force variant controls */}
                   <div className="flex items-center gap-2">
                     <select
-                      className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       value={selectedForce[exp.id] || ''}
                       onChange={e =>
                         setSelectedForce(prev => ({ ...prev, [exp.id]: e.target.value }))
@@ -127,7 +127,7 @@ export default function ExperimentsPage() {
                     <button
                       onClick={() => handleForce(exp.id)}
                       disabled={!selectedForce[exp.id]}
-                      className="text-sm font-semibold bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="text-sm font-semibold bg-primary-600 text-white px-4 py-1.5 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Force
                     </button>

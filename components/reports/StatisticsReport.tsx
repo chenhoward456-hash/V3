@@ -112,7 +112,7 @@ const StatisticsReport = ({ bodyData, labResults, supplements, wellnessData }: S
         change: 0,
         unit: '天',
         icon: Calendar,
-        color: '#3b82f6'
+        color: '#3D6E9E'
       },
       {
         name: '血檢項目',
@@ -164,7 +164,7 @@ const StatisticsReport = ({ bodyData, labResults, supplements, wellnessData }: S
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="avgWeight" fill="#3b82f6" name="平均體重" />
+                <Bar dataKey="avgWeight" fill="#3D6E9E" name="平均體重" />
                 <Bar dataKey="avgBodyFat" fill="#10b981" name="平均體脂" />
                 <Bar dataKey="avgMuscleMass" fill="#f59e0b" name="平均肌肉量" />
               </BarChart>
@@ -217,7 +217,7 @@ const StatisticsReport = ({ bodyData, labResults, supplements, wellnessData }: S
                 <div className="flex items-center">
                   <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
                     <div 
-                      className="h-2 rounded-full bg-blue-600"
+                      className="h-2 rounded-full bg-primary-600"
                       style={{ width: `${supplement.compliance}%` }}
                     />
                   </div>
@@ -230,12 +230,12 @@ const StatisticsReport = ({ bodyData, labResults, supplements, wellnessData }: S
       )}
 
       {/* 總結統計 */}
-      <div className="bg-blue-50 rounded-xl p-4">
+      <div className="bg-primary-50 rounded-xl p-4">
         <div className="flex items-start">
-          <Award size={20} className="text-blue-600 mr-3 mt-1" />
+          <Award size={20} className="text-primary-600 mr-3 mt-1" />
           <div>
-            <div className="font-medium text-blue-900 mb-1">數據總結</div>
-            <div className="text-sm text-blue-800 space-y-1">
+            <div className="font-medium text-primary-900 mb-1">數據總結</div>
+            <div className="text-sm text-primary-800 space-y-1">
               <div>• 總記錄天數：{bodyData?.length || 0} 天</div>
               <div>• 血檢項目：{labResults?.length || 0} 項</div>
               <div>• 補品種類：{supplements?.length || 0} 種</div>

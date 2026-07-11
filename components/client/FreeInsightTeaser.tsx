@@ -189,7 +189,7 @@ export default function FreeInsightTeaser({
             tier: 'self_managed',
           })
         }
-        className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors"
+        className="block w-full text-center bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors"
       >
         升級自主管理方案，解鎖完整 AI 分析 — NT$499/月
       </Link>

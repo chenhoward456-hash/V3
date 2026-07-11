@@ -556,7 +556,7 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
                       <td>
                         {r.custom_target || r.reference_range || '-'}
                         {f?.optimalText && (
-                          <div className="text-small" style={{ color: '#2563eb', marginTop: 2 }}>最佳 {f.optimalText}</div>
+                          <div className="text-small" style={{ color: '#1E4A73', marginTop: 2 }}>最佳 {f.optimalText}</div>
                         )}
                       </td>
                       <td>

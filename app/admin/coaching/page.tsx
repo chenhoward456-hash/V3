@@ -102,7 +102,7 @@ export default function WeeklyCoachingPage() {
       <div className="max-w-2xl mx-auto">
         <div className="flex items-baseline justify-between mb-1">
           <h1 className="text-xl font-semibold text-slate-900">本週教練佇列</h1>
-          <a href="/admin" className="text-sm text-blue-600 hover:text-blue-700">← 後台</a>
+          <a href="/admin" className="text-sm text-primary-600 hover:text-primary-700">← 後台</a>
         </div>
         <p className="text-sm text-slate-500 mb-4">
           系統依每位學員近 14 天數據草擬本週調整。{generatedAt && `生成於 ${generatedAt}。`}勾選後一鍵批次發；「問責召回／需你看／無管道」預設不勾，請你親自確認。
@@ -119,7 +119,7 @@ export default function WeeklyCoachingPage() {
             <button
               onClick={batchSend}
               disabled={batchSending || selectableCount === 0}
-              className="ml-auto text-sm font-semibold bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40"
+              className="ml-auto text-sm font-semibold bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-40"
             >
               {batchSending ? '發送中…' : `核准並發送 (${selectableCount})`}
             </button>
@@ -130,7 +130,7 @@ export default function WeeklyCoachingPage() {
           {drafts?.map(d => {
             const hasChannel = d.hasPush || d.hasLine
             return (
-            <div key={d.clientId} className={`bg-white border rounded-2xl p-5 ${selected.has(d.clientId) ? 'border-blue-300 ring-1 ring-blue-100' : 'border-slate-200'}`}>
+            <div key={d.clientId} className={`bg-white border rounded-2xl p-5 ${selected.has(d.clientId) ? 'border-primary-300 ring-1 ring-primary-100' : 'border-slate-200'}`}>
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <input
@@ -138,7 +138,7 @@ export default function WeeklyCoachingPage() {
                     checked={selected.has(d.clientId)}
                     disabled={!hasChannel}
                     onChange={() => toggle(d.clientId)}
-                    className="w-4 h-4 accent-blue-600 shrink-0 disabled:opacity-30"
+                    className="w-4 h-4 accent-primary-600 shrink-0 disabled:opacity-30"
                     title={!hasChannel ? '無管道，無法批次發' : '勾選批次發送'}
                   />
                   <span className="font-semibold text-slate-900">{d.name}</span>
@@ -146,10 +146,10 @@ export default function WeeklyCoachingPage() {
                     ? <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">問責召回</span>
                     : <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">數據調整</span>}
                   {d.needsCoachReview && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">需你看</span>}
-                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${d.hasPush ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasPush ? '已開 Web 推播' : '未開 Web 推播'}>Push{d.hasPush ? '' : ' ✗'}</span>
-                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${d.hasLine ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasLine ? '有綁 LINE' : '沒綁 LINE'}>LINE{d.hasLine ? '' : ' ✗'}</span>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${d.hasPush ? 'bg-primary-50 text-primary-700 border-primary-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasPush ? '已開 Web 推播' : '未開 Web 推播'}>Push{d.hasPush ? '' : ' ✗'}</span>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${d.hasLine ? 'bg-primary-50 text-primary-700 border-primary-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasLine ? '有綁 LINE' : '沒綁 LINE'}>LINE{d.hasLine ? '' : ' ✗'}</span>
                 </div>
-                <a href={`/admin/clients/${d.clientId}/overview`} className="text-xs text-blue-600 hover:text-blue-700 shrink-0">學員 →</a>
+                <a href={`/admin/clients/${d.clientId}/overview`} className="text-xs text-primary-600 hover:text-primary-700 shrink-0">學員 →</a>
               </div>
 
               <p className="text-sm text-slate-700 mb-2">{d.headline}</p>
@@ -180,7 +180,7 @@ export default function WeeklyCoachingPage() {
                 <button
                   onClick={() => send(d)}
                   disabled={sending === d.clientId || batchSending || !hasChannel}
-                  className="text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40"
+                  className="text-sm font-medium bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-40"
                   title={!hasChannel ? '此學員沒有 Web 推播也沒綁 LINE，請用你的私訊' : ''}
                 >
                   {sending === d.clientId ? '發送中…' : d.hasPush ? '發送（Web 推播）' : d.hasLine ? '發送（LINE）' : '無管道可發'}

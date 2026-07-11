@@ -670,7 +670,7 @@ export default function AdminDashboard() {
 
   const copyClientUrl = (code: string) => { navigator.clipboard.writeText(`${window.location.origin}/c/${code}`).then(() => showToast('已複製學員網址', 'success')) }
   const handleLogout = async () => { await fetch('/api/admin/logout', { method: 'POST' }); router.push('/admin/login') }
-  const SortIcon = ({ column }: { column: SortKey }) => sortKey !== column ? <ChevronUp size={14} className="text-gray-300 ml-1 inline" /> : sortDir === 'asc' ? <ChevronUp size={14} className="text-blue-600 ml-1 inline" /> : <ChevronDown size={14} className="text-blue-600 ml-1 inline" />
+  const SortIcon = ({ column }: { column: SortKey }) => sortKey !== column ? <ChevronUp size={14} className="text-gray-300 ml-1 inline" /> : sortDir === 'asc' ? <ChevronUp size={14} className="text-primary-600 ml-1 inline" /> : <ChevronDown size={14} className="text-primary-600 ml-1 inline" />
   const getActivityLabel = (id: string) => { const s = clientStats[id]; if (!s?.lastActivity) return { text: '無記錄', color: 'text-gray-400' }; const d = Math.floor((Date.now() - new Date(s.lastActivity).getTime()) / DAY_MS); if (d >= 5) return { text: `${d}天未活動`, color: 'text-rose-600 font-medium' }; if (d >= 3) return { text: `${d}天前`, color: 'text-amber-600' }; if (d === 0) return { text: '今天', color: 'text-emerald-600' }; return { text: `${d}天前`, color: 'text-gray-600' } }
   const getCheckupLabel = (c: Client) => { if (!c.next_checkup_date) return { text: '未設定', color: 'text-gray-400' }; const t = new Date(); t.setHours(0,0,0,0); const ck = new Date(c.next_checkup_date); ck.setHours(0,0,0,0); const d = Math.floor((ck.getTime()-t.getTime())/DAY_MS); if (d<0) return { text: `逾期 ${Math.abs(d)}天`, color: 'text-rose-600 font-medium' }; if (d<=7) return { text: c.next_checkup_date, color: 'text-amber-600 font-medium' }; return { text: c.next_checkup_date, color: 'text-gray-600' } }
   const getTrainingLabel = (t: string) => ({ push:'推',pull:'拉',legs:'腿',full_body:'全身',cardio:'有氧',rest:'休',chest:'胸',shoulder:'肩',arms:'手' }[t] || '')
@@ -700,7 +700,7 @@ export default function AdminDashboard() {
   const getLineStatus = (c: Client) => { if (!c.line_user_id) return { label: '', color: '' }; if (!c.last_line_activity) return { label: 'LINE 已綁定', color: 'text-gray-400' }; const mins = Math.floor((Date.now() - new Date(c.last_line_activity).getTime()) / 60000); if (mins < 5) return { label: '在線', color: 'text-emerald-500' }; if (mins < 60) return { label: `${mins}分鐘前`, color: 'text-emerald-400' }; const hrs = Math.floor(mins / 60); if (hrs < 24) return { label: `${hrs}小時前`, color: 'text-gray-400' }; return { label: `${Math.floor(hrs/24)}天前`, color: 'text-gray-400' } }
   const getTierBadge = (tier: string) => {
     if (tier === 'coached') return { label: '2999', color: 'bg-slate-100 text-slate-600', dot: 'bg-slate-500' }
-    if (tier === 'self_managed') return { label: '499', color: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500' }
+    if (tier === 'self_managed') return { label: '499', color: 'bg-primary-100 text-primary-700', dot: 'bg-primary-500' }
     return { label: '免費', color: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' }
   }
   const getExpiryWarning = (c: Client) => {
@@ -853,7 +853,7 @@ export default function AdminDashboard() {
                     <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 max-h-96 overflow-y-auto">
                       <div className="p-3 border-b border-slate-200 flex items-center justify-between"><span className="text-sm font-semibold text-gray-900">通知</span><button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button></div>
                       {notifications.length === 0 ? <p className="p-4 text-sm text-gray-400 text-center">暫無通知</p> : notifications.map((n) => (
-                        <div key={n.id} className={`p-3 border-b border-slate-100 ${n.read ? '' : 'bg-blue-50/50'}`}>
+                        <div key={n.id} className={`p-3 border-b border-slate-100 ${n.read ? '' : 'bg-primary-50/50'}`}>
                           <div className="text-xs text-gray-400 mb-1">{n.date}</div>
                           <div className="text-sm font-medium text-gray-900 mb-1">{n.title}</div>
                           {n.content && (() => { try { const items = JSON.parse(n.content); return Array.isArray(items) ? <ul className="text-xs text-gray-600 space-y-0.5">{items.slice(0, 5).map((item: string, i: number) => <li key={i}>• {item}</li>)}{items.length > 5 && <li className="text-gray-400">...還有 {items.length - 5} 項</li>}</ul> : null } catch { return <p className="text-xs text-gray-600">{n.content}</p> } })()}
@@ -870,7 +870,7 @@ export default function AdminDashboard() {
                       {pendingDraftCount > 99 ? '99+' : pendingDraftCount}
                     </span>
                   )}
-                </Link><Link href="/admin/coaching" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">本週教練佇列</Link><Link href="/admin/labs" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">血檢總覽</Link><Link href="/admin/agent-playground" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">AI Agent</Link><Link href="/admin/blog" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">文章管理</Link><Link href="/admin/clients/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">新增學員</Link><button onClick={handleLogout} className="text-gray-500 hover:text-gray-700 text-sm">登出</button></div></div></div></div>
+                </Link><Link href="/admin/coaching" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">本週教練佇列</Link><Link href="/admin/labs" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">血檢總覽</Link><Link href="/admin/agent-playground" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">AI Agent</Link><Link href="/admin/blog" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">文章管理</Link><Link href="/admin/clients/new" className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-700 transition-colors">新增學員</Link><button onClick={handleLogout} className="text-gray-500 hover:text-gray-700 text-sm">登出</button></div></div></div></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         {/* ===== 錯誤提示 ===== */}
@@ -895,8 +895,8 @@ export default function AdminDashboard() {
           ) : (
             <div className="space-y-2">
               {actionQueue.map(item => {
-                const toneBox = { red: 'bg-rose-50', orange: 'bg-amber-50', yellow: 'bg-amber-50', blue: 'bg-blue-50' }[item.tone]
-                const toneText = { red: 'text-rose-700', orange: 'text-amber-700', yellow: 'text-amber-800', blue: 'text-blue-700' }[item.tone]
+                const toneBox = { red: 'bg-rose-50', orange: 'bg-amber-50', yellow: 'bg-amber-50', blue: 'bg-primary-50' }[item.tone]
+                const toneText = { red: 'text-rose-700', orange: 'text-amber-700', yellow: 'text-amber-800', blue: 'text-primary-700' }[item.tone]
                 return (
                   <div key={item.key} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl ${toneBox}`}>
                     <div className="min-w-0 flex items-center gap-2">
@@ -904,12 +904,12 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {item.winback && item.clientId && (
-                        <button onClick={() => openWinback(item)} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors" title="產生關心草稿" aria-label={`產生給 ${item.name} 的關心草稿`}><Send size={15} /></button>
+                        <button onClick={() => openWinback(item)} className="p-1.5 text-primary-600 hover:bg-primary-100 rounded-lg transition-colors" title="產生關心草稿" aria-label={`產生給 ${item.name} 的關心草稿`}><Send size={15} /></button>
                       )}
                       {item.canNote && item.clientId && (
                         <button onClick={() => { const c = clients.find(x => x.id === item.clientId); if (c) openFeedback(c) }} className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="寫筆記" aria-label={`寫筆記給 ${item.name}`}><MessageSquare size={15} /></button>
                       )}
-                      {item.href && (<Link href={item.href} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-colors" title="前往" aria-label={`前往 ${item.name}`}><ExternalLink size={15} /></Link>)}
+                      {item.href && (<Link href={item.href} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-white rounded-lg transition-colors" title="前往" aria-label={`前往 ${item.name}`}><ExternalLink size={15} /></Link>)}
                     </div>
                   </div>
                 )
@@ -1094,9 +1094,9 @@ export default function AdminDashboard() {
 
         {/* ===== 學員列表 ===== */}
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-          <div className="p-5 border-b border-slate-200"><div className="flex flex-col sm:flex-row gap-3"><div className="relative flex-1"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="搜尋學員姓名..." className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div><div className="flex gap-2 flex-wrap">
+          <div className="p-5 border-b border-slate-200"><div className="flex flex-col sm:flex-row gap-3"><div className="relative flex-1"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="搜尋學員姓名..." className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div className="flex gap-2 flex-wrap">
                   {([['all','全部'],['competition','備賽'],['coached','2999'],['self_managed','499'],['free','免費'],['attention','需關注']] as [StatusFilter, string][]).map(([k,l]) => (
-                    <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter===k?'bg-blue-600 text-white': k === 'coached' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : k === 'self_managed' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                    <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter===k?'bg-primary-600 text-white': k === 'coached' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : k === 'self_managed' ? 'bg-primary-50 text-primary-700 hover:bg-primary-100' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                       {l}
                       {k === 'coached' && summaryStats.coachedCount > 0 ? ` (${summaryStats.coachedCount})` : ''}
                       {k === 'self_managed' && summaryStats.selfManagedCount > 0 ? ` (${summaryStats.selfManagedCount})` : ''}
@@ -1104,7 +1104,7 @@ export default function AdminDashboard() {
                     </button>
                   ))}
                 </div></div></div>
-          {filteredClients.length === 0 ? <div className="p-8 text-center"><p className="text-gray-500">{search||statusFilter!=='all'?'沒有符合條件的學員':'還沒有學員資料'}</p>{!search&&statusFilter==='all'&&<Link href="/admin/clients/new" className="inline-block mt-4 text-blue-600 hover:text-blue-800 text-sm">新增第一個學員</Link>}</div> : (
+          {filteredClients.length === 0 ? <div className="p-8 text-center"><p className="text-gray-500">{search||statusFilter!=='all'?'沒有符合條件的學員':'還沒有學員資料'}</p>{!search&&statusFilter==='all'&&<Link href="/admin/clients/new" className="inline-block mt-4 text-primary-600 hover:text-primary-800 text-sm">新增第一個學員</Link>}</div> : (
             <>
             {/* 手機版卡片 */}
             <div className="sm:hidden divide-y divide-gray-100">
@@ -1159,14 +1159,14 @@ export default function AdminDashboard() {
             <div className="hidden sm:block overflow-x-auto"><table className="min-w-full"><thead><tr className="border-b border-slate-200"><th onClick={() => handleSort('name')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">學員 <SortIcon column="name" /></th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">方案</th><th onClick={() => handleSort('status')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">狀態 <SortIcon column="status" /></th><th onClick={() => handleSort('compliance')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">本週服從率 <SortIcon column="compliance" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">今日進度</th><th onClick={() => handleSort('lastActivity')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">最後活動 <SortIcon column="lastActivity" /></th><th onClick={() => handleSort('nextCheckup')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">下次回檢 <SortIcon column="nextCheckup" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th></tr></thead>
             <tbody className="divide-y divide-gray-50">{paginatedClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = isCompetitionMode(client.client_mode) && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); const att = getAttention(client); return (
               <tr key={client.id} className={`hover:bg-gray-50 transition-colors ${att.accent}`}>
-                <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-blue-600"><div className="text-sm font-medium text-gray-900">{client.name}{newSinceViewMap[client.id] > 0 && <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-medium" title={`自你上次查看後新增 ${newSinceViewMap[client.id]} 筆紀錄`}>新 {newSinceViewMap[client.id]}</span>}{client.line_user_id && <span className={`ml-1 text-[11px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" /> : <MessageSquare size={12} className="inline text-slate-400" />}</span>}{isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && <span className={`ml-1.5 text-xs rounded-full px-1.5 border ${daysToComp <= 14 ? 'text-rose-600 border-rose-200 bg-rose-50' : 'text-slate-500 border-slate-200'}`}>備賽{daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5 text-xs text-slate-500 border border-slate-200 rounded-full px-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingLabel(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className={`ml-1 text-xs font-medium ${todayNutritionMap[client.id]?'text-emerald-600':'text-amber-600'}`} title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'合規':'未合規'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) && ` · ${getPrepPhaseLabel(client.prep_phase)}`}</div></Link></td>
+                <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-primary-600"><div className="text-sm font-medium text-gray-900">{client.name}{newSinceViewMap[client.id] > 0 && <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-medium" title={`自你上次查看後新增 ${newSinceViewMap[client.id]} 筆紀錄`}>新 {newSinceViewMap[client.id]}</span>}{client.line_user_id && <span className={`ml-1 text-[11px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" /> : <MessageSquare size={12} className="inline text-slate-400" />}</span>}{isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && <span className={`ml-1.5 text-xs rounded-full px-1.5 border ${daysToComp <= 14 ? 'text-rose-600 border-rose-200 bg-rose-50' : 'text-slate-500 border-slate-200'}`}>備賽{daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5 text-xs text-slate-500 border border-slate-200 rounded-full px-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingLabel(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className={`ml-1 text-xs font-medium ${todayNutritionMap[client.id]?'text-emerald-600':'text-amber-600'}`} title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'合規':'未合規'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) && ` · ${getPrepPhaseLabel(client.prep_phase)}`}</div></Link></td>
                 <td className="px-4 py-4"><div><span className={`px-2 py-0.5 text-[11px] font-bold rounded-full ${tier.color}`}>{tier.label}</span>{expiry && <p className={`text-[11px] mt-1 ${expiry.color}`}>{expiry.text}</p>}</div></td>
                 <td className="px-5 py-4"><span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'需要關注'}</span>{att.reason && <span className={`ml-1.5 px-2 py-0.5 text-[11px] font-semibold rounded-full ${att.chip}`}>{att.reason}</span>}</td>
                 <td className="px-5 py-4">{stat?.supplementCount>0?<span className={`text-sm font-medium ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span>:<span className="text-sm text-gray-500" title="此學員未設定補品">N/A</span>}</td>
                 <td className="px-5 py-4"><div className="flex flex-wrap gap-1.5">{client.body_composition_enabled&&<span className={`text-xs ${todayBodyIds.has(client.id)?'text-emerald-600 font-medium':'text-slate-300'}`} title="體重">重</span>}{client.wellness_enabled&&<span className={`text-xs ${todayWellnessIds.has(client.id)?'text-emerald-600 font-medium':'text-slate-300'}`} title="感受">感</span>}{client.nutrition_enabled&&<span className={`text-xs ${todayNutritionMap[client.id]!==undefined?'text-emerald-600 font-medium':'text-slate-300'}`} title="飲食">食</span>}{client.training_enabled&&<span className={`text-xs ${todayTrainingMap[client.id]?'text-emerald-600 font-medium':'text-slate-300'}`} title="訓練">訓</span>}{client.supplement_enabled&&<span className={`text-xs ${todayLogIds.has(client.id)?'text-emerald-600 font-medium':'text-slate-300'}`} title="補品">補</span>}{client.lab_enabled&&<span className="text-xs text-slate-300" title="血檢追蹤已啟用">血</span>}</div></td>
                 <td className="px-5 py-4"><span className={`text-sm ${act.color}`}>{act.text}</span></td>
                 <td className="px-5 py-4"><span className={`text-sm ${ckup.color}`}>{ckup.text}</span></td>
-                <td className="px-5 py-4"><div className="flex items-center gap-1.5"><button onClick={() => openFeedback(client)} className="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors" title="快速回饋" aria-label={`寫回饋給 ${client.name}`}><MessageSquare size={15} /></button><button onClick={(e) => { e.preventDefault(); copyClientUrl(client.unique_code) }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="複製學員連結" aria-label={`複製 ${client.name} 的連結`}><Copy size={15} /></button><Link href={`/admin/clients/${client.id}`} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="編輯" aria-label={`編輯 ${client.name}`}><ExternalLink size={15} /></Link><button onClick={() => deleteClient(client)} className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="刪除學員" aria-label={`刪除 ${client.name}`}><Trash2 size={15} /></button></div></td>
+                <td className="px-5 py-4"><div className="flex items-center gap-1.5"><button onClick={() => openFeedback(client)} className="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors" title="快速回饋" aria-label={`寫回饋給 ${client.name}`}><MessageSquare size={15} /></button><button onClick={(e) => { e.preventDefault(); copyClientUrl(client.unique_code) }} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="複製學員連結" aria-label={`複製 ${client.name} 的連結`}><Copy size={15} /></button><Link href={`/admin/clients/${client.id}`} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="編輯" aria-label={`編輯 ${client.name}`}><ExternalLink size={15} /></Link><button onClick={() => deleteClient(client)} className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="刪除學員" aria-label={`刪除 ${client.name}`}><Trash2 size={15} /></button></div></td>
               </tr>) })}</tbody></table></div>
             {currentPage * PAGE_SIZE < filteredClients.length && (
               <div className="px-5 py-3 border-t border-slate-200">
@@ -1200,7 +1200,7 @@ export default function AdminDashboard() {
               onChange={e => setFeedbackText(e.target.value)}
               rows={3}
               placeholder="這週體重控制得不錯，繼續保持！碳水可以再多吃一點。"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 text-sm mb-2"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50 text-sm mb-2"
             />
             <p className="text-xs text-gray-400 mb-4">學員打開 app 第一眼就會看到這段話</p>
             {/* 快速短語 */}
@@ -1212,7 +1212,7 @@ export default function AdminDashboard() {
             <button
               onClick={saveFeedback}
               disabled={feedbackSaving}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium"
             >
               <Send size={16} /> {feedbackSaving ? '儲存中...' : '送出回饋'}
             </button>
@@ -1233,13 +1233,13 @@ export default function AdminDashboard() {
               value={winbackMsg}
               onChange={e => setWinbackMsg(e.target.value)}
               rows={7}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 text-sm mb-2"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50 text-sm mb-2"
             />
             <p className="text-xs text-gray-400 mb-3">草稿可直接改。「發送」＝App 推播優先、退 LINE，並存進學員儀表板；「複製」＝用你自己的 LINE 貼，不吃官方帳號額度。</p>
             {winbackError && <p className="text-xs text-rose-600 mb-3">{winbackError}</p>}
             <div className="flex gap-2">
               <button onClick={copyWinback} className="flex-1 px-4 py-2.5 border border-slate-300 text-gray-700 rounded-lg hover:bg-slate-50 transition-colors font-medium text-sm">{winbackCopied ? '已複製 ✓' : '複製（自己貼）'}</button>
-              <button onClick={sendWinback} disabled={winbackSending || !winbackMsg.trim()} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 font-medium text-sm"><Send size={15} /> {winbackSending ? '發送中…' : '發送'}</button>
+              <button onClick={sendWinback} disabled={winbackSending || !winbackMsg.trim()} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium text-sm"><Send size={15} /> {winbackSending ? '發送中…' : '發送'}</button>
             </div>
           </div>
         </div>

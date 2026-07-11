@@ -80,7 +80,7 @@ export default function SupplementModal({ supplements, clientId, coachHeaders, o
                 <p className="text-gray-400 text-center py-4 text-sm">尚無補品</p>
               )}
             </div>
-            <button onClick={() => openForm()} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 flex items-center justify-center">
+            <button onClick={() => openForm()} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 flex items-center justify-center">
               <Plus size={16} className="mr-1" /> 新增補品
             </button>
           </>
@@ -90,15 +90,15 @@ export default function SupplementModal({ supplements, clientId, coachHeaders, o
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">名稱 *</label>
-                <input type="text" value={form.name} onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="text" value={form.name} onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">劑量 *</label>
-                <input type="text" value={form.dosage} onChange={(e) => setForm(p => ({ ...p, dosage: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="例如：1000mg" />
+                <input type="text" value={form.dosage} onChange={(e) => setForm(p => ({ ...p, dosage: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="例如：1000mg" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">服用時間 *</label>
-                <select value={form.timing} onChange={(e) => setForm(p => ({ ...p, timing: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select value={form.timing} onChange={(e) => setForm(p => ({ ...p, timing: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
                   <option value="早餐">早餐</option>
                   <option value="午餐前">午餐前</option>
                   <option value="晚餐">晚餐</option>
@@ -107,16 +107,16 @@ export default function SupplementModal({ supplements, clientId, coachHeaders, o
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">原因</label>
-                <input type="text" value={form.why} onChange={(e) => setForm(p => ({ ...p, why: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="為什麼要吃" />
+                <input type="text" value={form.why} onChange={(e) => setForm(p => ({ ...p, why: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="為什麼要吃" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">排序</label>
-                <input type="number" value={form.sort_order} onChange={(e) => setForm(p => ({ ...p, sort_order: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="number" value={form.sort_order} onChange={(e) => setForm(p => ({ ...p, sort_order: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
             </div>
             <div className="mt-4 flex gap-2">
               <button onClick={() => setShowForm(false)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">返回</button>
-              <button onClick={handleSave} className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">儲存</button>
+              <button onClick={handleSave} className="flex-1 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">儲存</button>
             </div>
           </>
         )}

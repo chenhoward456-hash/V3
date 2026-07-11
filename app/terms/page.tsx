@@ -78,7 +78,7 @@ export default function TermsPage() {
               <li>訂閱費用依所選方案收取，付款由綠界科技（ECPay）處理。</li>
               <li>訂閱期間您可完整使用該方案對應的所有功能。</li>
               <li>訂閱到期後，系統將停止更新分析報告，但您仍可查看歷史紀錄。</li>
-              <li>退費相關規則請參閱<Link href="/refund-policy" className="text-blue-600 hover:underline">退費政策</Link>。</li>
+              <li>退費相關規則請參閱<Link href="/refund-policy" className="text-primary-600 hover:underline">退費政策</Link>。</li>
             </ul>
           </section>
 
