@@ -66,4 +66,5 @@
 |------|------|------|
 | 2026-06-13 | 建立設計系統（臨床級 premium、顏色只做語意、單一字族 Geist、放寬留白）| Howard：訓練端「不專業俐落」+ 全站 13 色系太躁。收斂為 藍+紅黃綠語意+灰，一次定北極星。 |
 | 2026-07-04 | 字體北極星改為 **body 首選 Noto Sans TC**（Inter 為拉丁 fallback），標題 h1–h6/.doc-title 的 Playfair 後面補 Noto Sans TC fallback；並修正 Typography 段落與 code 實況不符的「單一字族 Geist」記載（Geist 從未進 code）。 | 中文渲染一致性：Playfair 無中文字形，中文標題會掉進系統明體、跟內文打架（docs/PRODUCT_AUDIT_RETENTION.md 早已標記）。Howard 2026-07-04 口頭同意，屬 2026-07-02 臨床決策包收尾。 |
+| 2026-07-11 | 全站 de-AI pass（commit a610292）：emoji 規範真正落地——標題 emoji 全拔、⚠️ 前綴移除（留語意色）、🟢🟡🔴 改 CSS 色點、/admin header 收斂成一實心藍＋ghost、表格 emoji 鏈改單字 chip、MY DATA 黑卡改白卡。保留：BottomNav 導覽、LINE/推播訊息內容、DailyWellness 評分表情按鈕（待議）。 | Howard：後台/儀表板「AI 感」稽核後拍板全修。emoji-as-icon 是 AI 生成介面最大特徵。 |
 | 2026-06-22 | 學員儀表板全面執行此規範（41 個 component 收斂）：殺光漸層（卡片→白底細灰框、按鈕→實心藍）、裝飾色（靛/紫/青/粉/橙/黃）一律轉中性灰、真狀態統一 emerald/amber/rose、卡片統一 `rounded-2xl p-5`。**順序重排**：一鍵打卡上移到判決卡之前、推播開通下移、移除體重/倒數/streak 重複顯示（備賽作戰室為單一真相）。實測 prod 0 漸層/0 裝飾色。| Howard：「重新沉一次儀表板美感+順序」、選「極簡臨床做到位」。**準則可演進**：強制紀律是手段，目的是 premium+好用；未做的獨立子頁（overview/help/timeline/showcase/welcome/upload）待後續。 |
