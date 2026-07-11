@@ -16,13 +16,12 @@ export default function TrainingProgressCard({ sets }: { sets: TrainingSetRow[] 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-lg">💪</span>
         <h3 className="text-base font-semibold text-gray-900">訓練進步</h3>
       </div>
 
       {p.prsThisWeek.length > 0 && (
         <div className="mb-3 text-sm bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-amber-800">
-          🎉 本週刷新個人紀錄：<b>{p.prsThisWeek.join('、')}</b>
+          本週刷新個人紀錄：<b>{p.prsThisWeek.join('、')}</b>
         </div>
       )}
 
@@ -51,7 +50,7 @@ export default function TrainingProgressCard({ sets }: { sets: TrainingSetRow[] 
 
       {p.plateaus.length > 0 && (
         <p className="mt-3 text-xs text-amber-700">
-          ⚠️ {p.plateaus.slice(0, 3).join('、')} 已 4 週沒突破——可考慮換動作、加組數或調整重量區間，找教練聊聊。
+          {p.plateaus.slice(0, 3).join('、')} 已 4 週沒突破——可考慮換動作、加組數或調整重量區間，找教練聊聊。
         </p>
       )}
 

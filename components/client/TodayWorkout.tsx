@@ -78,7 +78,6 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">{isActualRest ? '😴' : '🏋️'}</span>
           <div>
             <h3 className="text-sm font-bold text-gray-900">
               {isActualRest
@@ -216,7 +215,6 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
         </div>
       ) : (
         <div className="bg-slate-50 rounded-xl p-6 text-center">
-          <span className="text-3xl block mb-2">🛌</span>
           <p className="text-sm text-gray-500">今天原定休息。想練別的？點上面的分化就會跳出對應動作。</p>
         </div>
       )}
@@ -225,7 +223,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
       {showPlan && (
         <p className="text-[11px] text-gray-400 mt-2 text-center">
           這是教練安排的參考課表。今天做別的分化，點上方切換即可。
-          {'\n'}想長期改課表？在 LINE 跟教練說一聲 💬
+          {'\n'}想長期改課表？在 LINE 跟教練說一聲
         </p>
       )}
 

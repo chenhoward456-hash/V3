@@ -108,7 +108,7 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
       tone: 'good',
       icon: '🎉',
       title: `${f.testName} 進步了！`,
-      body: `${f.previousValue} ${dir} ${f.latestValue}${f.unit ? ' ' + f.unit : ''}${pct != null ? `（+${pct}%）` : ''} 👏`,
+      body: `${f.previousValue} ${dir} ${f.latestValue}${f.unit ? ' ' + f.unit : ''}${pct != null ? `（+${pct}%）` : ''}`,
     })
   }
 

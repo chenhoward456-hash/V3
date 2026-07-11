@@ -90,22 +90,22 @@ function CutHealthCardInner({ bodyData, wellness, currentWeight }: CutHealthCard
   }
 
   const styles = {
-    good: { box: 'border-emerald-200', pill: 'bg-emerald-100 text-emerald-700', emoji: '🟢' },
-    watch: { box: 'border-amber-200', pill: 'bg-amber-100 text-amber-700', emoji: '🟡' },
-    risk: { box: 'border-rose-200', pill: 'bg-rose-100 text-rose-700', emoji: '🔴' },
+    good: { box: 'border-emerald-200', pill: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+    watch: { box: 'border-amber-200', pill: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
+    risk: { box: 'border-rose-200', pill: 'bg-rose-100 text-rose-700', dot: 'bg-rose-500' },
   }[level]
 
   const Chip = ({ ok, warn, label }: { ok: boolean; warn: boolean; label: string }) => (
     <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${warn ? 'bg-amber-50 text-amber-700' : ok ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
-      {warn ? '⚠️' : ok ? '✓' : '–'} {label}
+      {warn ? '' : ok ? '✓ ' : '– '}{label}
     </span>
   )
 
   return (
     <div className={`bg-white border rounded-2xl p-5 mb-4 ${styles.box}`}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-base font-semibold text-gray-900">🩺 本週減脂體檢</span>
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${styles.pill}`}>{styles.emoji} {headline}</span>
+        <span className="text-base font-semibold text-gray-900">本週減脂體檢</span>
+        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${styles.pill}`}><span className={`inline-block w-2 h-2 rounded-full ${styles.dot}`} />{headline}</span>
       </div>
 
       <div className="flex flex-wrap gap-1.5 mb-3">

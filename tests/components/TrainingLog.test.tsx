@@ -145,18 +145,18 @@ describe('TrainingLog', () => {
   it('renders all training type buttons', () => {
     renderTrainingLog()
 
-    expect(screen.getByText(/🫸 推/)).toBeInTheDocument()
-    expect(screen.getByText(/🫷 拉/)).toBeInTheDocument()
-    expect(screen.getByText(/🦵 腿/)).toBeInTheDocument()
-    expect(screen.getByText(/🏃 有氧/)).toBeInTheDocument()
-    expect(screen.getByText(/😴 休息/)).toBeInTheDocument()
+    expect(screen.getByText(/^推$/)).toBeInTheDocument()
+    expect(screen.getByText(/^拉$/)).toBeInTheDocument()
+    expect(screen.getByText(/^腿$/)).toBeInTheDocument()
+    expect(screen.getByText(/有氧/)).toBeInTheDocument()
+    expect(screen.getByText(/^休息$/)).toBeInTheDocument()
   })
 
   // ---- Selecting training type highlights it ----
   it('highlights selected training type button', () => {
     renderTrainingLog()
 
-    const pushBtn = screen.getByText(/🫸 推/)
+    const pushBtn = screen.getByText(/^推$/)
     fireEvent.click(pushBtn)
 
     expect(pushBtn).toHaveClass('bg-blue-600')
@@ -166,7 +166,7 @@ describe('TrainingLog', () => {
   it('shows duration and RPE inputs after selecting a weight training type', () => {
     renderTrainingLog()
 
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
 
     expect(screen.getByPlaceholderText('60')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('20')).toBeInTheDocument()
@@ -176,7 +176,7 @@ describe('TrainingLog', () => {
   it('hides duration and RPE inputs when rest is selected', () => {
     renderTrainingLog()
 
-    fireEvent.click(screen.getByText(/😴 休息/))
+    fireEvent.click(screen.getByText(/^休息$/))
 
     expect(screen.queryByPlaceholderText('60')).not.toBeInTheDocument()
   })
@@ -185,7 +185,7 @@ describe('TrainingLog', () => {
   it('renders RPE buttons 1-10 for weight training', () => {
     renderTrainingLog()
 
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
 
     for (const rpe of [1, 5, 8, 10]) {
       expect(screen.getByRole('button', { name: String(rpe) })).toBeInTheDocument()
@@ -196,7 +196,7 @@ describe('TrainingLog', () => {
   it('allows selecting RPE value', () => {
     renderTrainingLog()
 
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
 
     const rpe8Btn = screen.getByRole('button', { name: '8' })
     fireEvent.click(rpe8Btn)
@@ -227,7 +227,7 @@ describe('TrainingLog', () => {
 
     renderTrainingLog()
 
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     fireEvent.click(screen.getByRole('button', { name: '7' }))
     fireEvent.click(screen.getByText('記錄訓練'))
 
@@ -241,7 +241,7 @@ describe('TrainingLog', () => {
     })
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('訓練已記錄！'), 'success', '🎉')
+      expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('訓練已記錄！'), 'success')
     })
   })
 
@@ -259,7 +259,7 @@ describe('TrainingLog', () => {
 
     renderTrainingLog()
 
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     fireEvent.change(screen.getByPlaceholderText('60'), { target: { value: '45' } })
     fireEvent.click(screen.getByText('記錄訓練'))
 
@@ -273,7 +273,7 @@ describe('TrainingLog', () => {
     })
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('訓練已記錄！'), 'success', '🎉')
+      expect(mockShowToast).toHaveBeenCalledWith(expect.stringContaining('訓練已記錄！'), 'success')
     })
   })
 
@@ -291,7 +291,7 @@ describe('TrainingLog', () => {
 
     renderTrainingLog()
 
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     fireEvent.change(screen.getByPlaceholderText('60'), { target: { value: '50' } })
     fireEvent.change(screen.getByPlaceholderText('20'), { target: { value: '18' } })
     fireEvent.click(screen.getByRole('button', { name: '7' }))
@@ -311,7 +311,7 @@ describe('TrainingLog', () => {
     expect(callBody.rpe).toBe(7)
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith('訓練已記錄！', 'success', '🎉')
+      expect(mockShowToast).toHaveBeenCalledWith('訓練已記錄！', 'success')
       expect(defaultProps.onMutate).toHaveBeenCalled()
     })
   })
@@ -330,11 +330,11 @@ describe('TrainingLog', () => {
 
     renderTrainingLog()
 
-    fireEvent.click(screen.getByText(/😴 休息/))
+    fireEvent.click(screen.getByText(/^休息$/))
     fireEvent.click(screen.getByText('記錄訓練'))
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith('訓練已記錄！', 'success', '🎉')
+      expect(mockShowToast).toHaveBeenCalledWith('訓練已記錄！', 'success')
     })
   })
 
@@ -350,7 +350,7 @@ describe('TrainingLog', () => {
 
     renderTrainingLog()
 
-    fireEvent.click(screen.getByText(/😴 休息/))
+    fireEvent.click(screen.getByText(/^休息$/))
     fireEvent.click(screen.getByText('記錄訓練'))
 
     await waitFor(() => {
@@ -486,13 +486,13 @@ describe('TrainingLog', () => {
   // ---- Note textarea ----
   it('renders the note textarea', () => {
     renderTrainingLog()
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     expect(screen.getByPlaceholderText(/訓練內容/)).toBeInTheDocument()
   })
 
   it('updates note field when typing in textarea (line 635)', () => {
     renderTrainingLog()
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
 
     const textarea = screen.getByPlaceholderText(/訓練內容/) as HTMLTextAreaElement
     fireEvent.change(textarea, { target: { value: 'Felt strong today' } })
@@ -502,7 +502,7 @@ describe('TrainingLog', () => {
 
   it('shows rest day placeholder in note textarea when rest is selected', () => {
     renderTrainingLog()
-    fireEvent.click(screen.getByText(/😴 休息/))
+    fireEvent.click(screen.getByText(/^休息$/))
     expect(screen.getByPlaceholderText(/今天好好休息/)).toBeInTheDocument()
   })
 
@@ -518,7 +518,7 @@ describe('TrainingLog', () => {
 
     renderTrainingLog()
 
-    fireEvent.click(screen.getByText(/😴 休息/))
+    fireEvent.click(screen.getByText(/^休息$/))
     fireEvent.click(screen.getByText('記錄訓練'))
 
     await waitFor(() => {
@@ -531,13 +531,13 @@ describe('TrainingLog', () => {
   // ---- Simple mode ----
   it('shows expand button in simple mode for non-rest types', () => {
     renderTrainingLog({ simpleMode: true })
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     expect(screen.getByText(/展開時長\/組數\/RPE/)).toBeInTheDocument()
   })
 
   it('expands advanced fields in simple mode when clicked', () => {
     renderTrainingLog({ simpleMode: true })
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     fireEvent.click(screen.getByText(/展開時長\/組數\/RPE/))
     expect(screen.getByPlaceholderText('60')).toBeInTheDocument()
   })
@@ -554,30 +554,30 @@ describe('TrainingLog', () => {
       })
 
     renderTrainingLog({ simpleMode: true })
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     fireEvent.click(screen.getByText('記錄訓練'))
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith('訓練已記錄！', 'success', '🎉')
+      expect(mockShowToast).toHaveBeenCalledWith('訓練已記錄！', 'success')
     })
   })
 
   // ---- Carb cycling ----
   it('shows carb cycling hint when enabled and type is selected', () => {
     renderTrainingLog({ carbsTrainingDay: 250, carbsRestDay: 150 })
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     expect(screen.getByText(/今日碳水：250g（訓練日）/)).toBeInTheDocument()
   })
 
   it('shows rest day carb hint for rest selection', () => {
     renderTrainingLog({ carbsTrainingDay: 250, carbsRestDay: 150 })
-    fireEvent.click(screen.getByText(/😴 休息/))
+    fireEvent.click(screen.getByText(/^休息$/))
     expect(screen.getByText(/今日碳水：150g（休息日）/)).toBeInTheDocument()
   })
 
   it('shows rest day carbs for cardio training with carb cycling', () => {
     renderTrainingLog({ carbsTrainingDay: 250, carbsRestDay: 150 })
-    fireEvent.click(screen.getByText(/🏃 有氧/))
+    fireEvent.click(screen.getByText(/有氧/))
     expect(screen.getByText(/今日碳水：150g（休息日）/)).toBeInTheDocument()
   })
 
@@ -594,12 +594,12 @@ describe('TrainingLog', () => {
       })
 
     renderTrainingLog()
-    fireEvent.click(screen.getByText(/🏃 有氧/))
+    fireEvent.click(screen.getByText(/有氧/))
     fireEvent.change(screen.getByPlaceholderText('60'), { target: { value: '30' } })
     fireEvent.click(screen.getByText('記錄訓練'))
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith('訓練已記錄！', 'success', '🎉')
+      expect(mockShowToast).toHaveBeenCalledWith('訓練已記錄！', 'success')
     })
   })
 
@@ -999,7 +999,7 @@ describe('TrainingLog', () => {
       ]
 
       renderTrainingLog({ trainingLogs: logs })
-      fireEvent.click(screen.getByText(/🫸 推/))
+      fireEvent.click(screen.getByText(/^推$/))
 
       // All info is in a single text node: "上次推：4 天前，55 分鐘，18 組，RPE 7"
       expect(screen.getByText(/上次/)).toBeInTheDocument()
@@ -1012,7 +1012,7 @@ describe('TrainingLog', () => {
       ]
 
       renderTrainingLog({ trainingLogs: logs, simpleMode: true })
-      fireEvent.click(screen.getByText(/🫸 推/))
+      fireEvent.click(screen.getByText(/^推$/))
 
       expect(screen.queryByText(/上次推/)).not.toBeInTheDocument()
     })
@@ -1023,7 +1023,7 @@ describe('TrainingLog', () => {
       ]
 
       renderTrainingLog({ trainingLogs: logs })
-      fireEvent.click(screen.getByText(/😴 休息/))
+      fireEvent.click(screen.getByText(/^休息$/))
 
       expect(screen.queryByText(/上次休息/)).not.toBeInTheDocument()
     })
@@ -1106,7 +1106,7 @@ describe('TrainingLog', () => {
   // ===========================================================================
   it('updates sets field when entering value', () => {
     renderTrainingLog()
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     const setsInput = screen.getByPlaceholderText('20') as HTMLInputElement
     fireEvent.change(setsInput, { target: { value: '15' } })
     expect(setsInput.value).toBe('15')
@@ -1114,7 +1114,7 @@ describe('TrainingLog', () => {
 
   it('clears sets field when emptied', () => {
     renderTrainingLog()
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     const setsInput = screen.getByPlaceholderText('20') as HTMLInputElement
     fireEvent.change(setsInput, { target: { value: '15' } })
     fireEvent.change(setsInput, { target: { value: '' } })
@@ -1123,7 +1123,7 @@ describe('TrainingLog', () => {
 
   it('updates duration field when entering value', () => {
     renderTrainingLog()
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     const durationInput = screen.getByPlaceholderText('60') as HTMLInputElement
     fireEvent.change(durationInput, { target: { value: '45' } })
     expect(durationInput.value).toBe('45')
@@ -1131,7 +1131,7 @@ describe('TrainingLog', () => {
 
   it('clears duration field when emptied', () => {
     renderTrainingLog()
-    fireEvent.click(screen.getByText(/🫸 推/))
+    fireEvent.click(screen.getByText(/^推$/))
     const durationInput = screen.getByPlaceholderText('60') as HTMLInputElement
     fireEvent.change(durationInput, { target: { value: '45' } })
     fireEvent.change(durationInput, { target: { value: '' } })
@@ -1153,7 +1153,7 @@ describe('TrainingLog', () => {
       })
 
     renderTrainingLog()
-    fireEvent.click(screen.getByText(/😴 休息/))
+    fireEvent.click(screen.getByText(/^休息$/))
     fireEvent.click(screen.getByText('記錄訓練'))
 
     await waitFor(() => {

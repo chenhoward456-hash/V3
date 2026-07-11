@@ -51,7 +51,6 @@ interface TodayOverviewCardProps {
 }
 
 interface DailyInsight {
-  emoji: string
   message: string
   type: 'progress' | 'warning' | 'milestone' | 'trend' | 'gap' | 'neutral'
 }
@@ -90,7 +89,6 @@ function generateInsight(
         const label = TYPE_LABELS[type] || type
         const gain = w[0] - w[2]
         return {
-          emoji: '📈',
           message: `${label}主項連漲 3 次（+${gain}kg），保持這個節奏`,
           type: 'progress',
         }
@@ -109,7 +107,6 @@ function generateInsight(
         const poorEnergy = recentW.energy_level != null && recentW.energy_level <= 2
         if (poorSleep || poorEnergy) {
           return {
-            emoji: '⚠️',
             message: `上次訓練 RPE ${yesterday.rpe}${poorSleep ? '，睡眠品質偏低' : ''}${poorEnergy ? '，精力不足' : ''}。今天考慮降量`,
             type: 'warning',
           }
@@ -131,7 +128,6 @@ function generateInsight(
       365: '365 天。一整年。致敬。',
     }
     return {
-      emoji: '🏆',
       message: `連續 ${overallStreak} 天——${msgs[overallStreak]}`,
       type: 'milestone',
     }
@@ -149,7 +145,6 @@ function generateInsight(
       if (bfValues[0] > bfValues[1] && bfValues[1] > bfValues[2]) {
         const drop = (bfValues[0] - bfValues[2]).toFixed(1)
         return {
-          emoji: '🔥',
           message: `體脂連續下降中（-${drop}%），飲食和訓練正在起作用`,
           type: 'trend',
         }
@@ -158,7 +153,6 @@ function generateInsight(
       if (bfValues[0] < bfValues[1] && bfValues[1] < bfValues[2]) {
         const rise = (bfValues[2] - bfValues[0]).toFixed(1)
         return {
-          emoji: '📊',
           message: `體脂連續 3 次上升（+${rise}%），留意飲食或考慮調整`,
           type: 'trend',
         }
@@ -176,14 +170,12 @@ function generateInsight(
       const allUp = weights.every((w, i) => i === 0 || w >= weights[i - 1])
       if (allDown && weights[0] - weights[3] >= 0.5) {
         return {
-          emoji: '📉',
           message: `體重穩定下降中（${weights[0]}→${weights[3]}kg），趨勢正確`,
           type: 'trend',
         }
       }
       if (allUp && weights[3] - weights[0] >= 0.5) {
         return {
-          emoji: '📈',
           message: `體重連續上升（${weights[0]}→${weights[3]}kg），確認是否符合目標`,
           type: 'trend',
         }
@@ -204,7 +196,6 @@ function generateInsight(
         if (daysAgo >= 6) {
           const label = TYPE_LABELS[type] || type
           return {
-            emoji: '💡',
             message: `${label}已經 ${daysAgo} 天沒練了，考慮排進這週`,
             type: 'gap',
           }
@@ -216,7 +207,6 @@ function generateInsight(
   // ── Fallback: streak info ──
   if (overallStreak >= 3) {
     return {
-      emoji: '🔥',
       message: `連續第 ${overallStreak} 天記錄，繼續保持`,
       type: 'neutral',
     }
@@ -260,7 +250,7 @@ function TodayOverviewCardInner({
       {insight && insightStyle && (
         <div className={`${insightStyle.bg} ${insightStyle.border} border rounded-xl px-3.5 py-2.5 mb-3`}>
           <p className={`text-sm font-medium ${insightStyle.text}`}>
-            {insight.emoji} {insight.message}
+            {insight.message}
           </p>
         </div>
       )}
@@ -270,18 +260,16 @@ function TodayOverviewCardInner({
           {todayCompletedItems.length > 0 ? (
             todayCompletedItems.map(item => (
               <span key={item.label} className="inline-flex items-center gap-0.5 bg-emerald-100 text-emerald-700 rounded-full px-2 py-0.5 text-[11px] font-medium">
-                {item.icon} {item.label} ✓
+                {item.label} ✓
               </span>
             ))
           ) : (
-            <p className="text-xs text-gray-500">👋 今天還沒有紀錄</p>
+            <p className="text-xs text-gray-500">今天還沒有紀錄</p>
           )}
         </div>
         {overallStreak > 0 && (
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-full px-2.5 py-0.5 ml-2 shrink-0">
-            <span className="text-xs">🔥</span>
-            <span className="text-xs font-bold text-slate-700 tabular-nums">{overallStreak}</span>
-            <span className="text-[11px] text-gray-400">天</span>
+          <div className="flex items-center bg-slate-50 border border-slate-200 rounded-full px-2.5 py-0.5 ml-2 shrink-0">
+            <span className="text-xs font-bold text-amber-600 tabular-nums">連續 {overallStreak} 天</span>
           </div>
         )}
       </div>
@@ -296,7 +284,7 @@ function TodayOverviewCardInner({
         )
         return (
           <div className="mt-2 pt-2 border-t border-slate-100 text-xs text-slate-500 flex items-center gap-1 flex-wrap">
-            <span>🔬 FFM {rec.ffm} kg</span>
+            <span>FFM {rec.ffm} kg</span>
             <span className="text-slate-300">｜</span>
             <span>參考上台範圍</span>
             <span className="font-semibold text-slate-700 tabular-nums">{rec.recommendedLow}–{rec.recommendedHigh} kg</span>

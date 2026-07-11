@@ -107,7 +107,6 @@ export default function GeneProfileCard({
         className="w-full px-4 py-3 flex items-center justify-between text-left"
       >
         <div className="flex items-center gap-2">
-          <span className="text-lg">🧬</span>
           <span className="font-semibold text-gray-900">基因檔案</span>
           {hasAnyGene && (
             <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
@@ -128,7 +127,7 @@ export default function GeneProfileCard({
         <div className="px-4 pb-3 -mt-1">
           <div className="text-xs text-slate-600 space-y-0.5">
             {activeCorrections.slice(0, 2).map((gc, i) => (
-              <div key={i}>🧬 {gc.rule}</div>
+              <div key={i}>{gc.rule}</div>
             ))}
             {activeCorrections.length > 2 && (
               <div className="text-gray-400">+{activeCorrections.length - 2} 項修正</div>

@@ -28,7 +28,7 @@ export default function WellnessTrend({ wellness }: WellnessTrendProps) {
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">😊 感受趨勢</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">感受趨勢</h2>
       {chartData.length < 2 ? (
         <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
           資料累積中，持續記錄後會顯示趨勢

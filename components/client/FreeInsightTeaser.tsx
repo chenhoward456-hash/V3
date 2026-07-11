@@ -130,7 +130,6 @@ export default function FreeInsightTeaser({
     <div className="bg-white border border-slate-200 rounded-2xl p-5">
       {/* 標題 */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">📊</span>
         <div>
           <p className="text-sm font-semibold text-gray-800">
             本週 AI 分析完成
@@ -148,9 +147,7 @@ export default function FreeInsightTeaser({
             key={i}
             className="flex items-start gap-2 bg-slate-50 rounded-xl px-3 py-2"
           >
-            <span className="text-xs mt-0.5">
-              {i === 0 ? '⚠️' : '📉'}
-            </span>
+            <span className={`inline-block w-2 h-2 rounded-full mt-1.5 shrink-0 ${i === 0 ? 'bg-amber-500' : 'bg-slate-300'}`} />
             <p className="text-xs text-gray-700 leading-relaxed">{insight}</p>
           </div>
         ))}
@@ -197,7 +194,7 @@ export default function FreeInsightTeaser({
         升級自主管理方案，解鎖完整 AI 分析 — NT$499/月
       </Link>
       <p className="text-[11px] text-gray-400 mt-3 leading-snug">
-        ⚠️ 非醫療建議：分析與營養目標僅供參考。激進減脂、體態已偏瘦或有任何健康疑慮，請先諮詢醫師或專業教練。
+        非醫療建議：分析與營養目標僅供參考。激進減脂、體態已偏瘦或有任何健康疑慮，請先諮詢醫師或專業教練。
       </p>
     </div>
   )

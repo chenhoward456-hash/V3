@@ -754,7 +754,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
       console.error('[AiChat] Image compression failed:', err)
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `圖片處理失敗：${err instanceof Error ? err.message : '未知錯誤'}，請重新拍照或選擇其他圖片試試 🙏`,
+        content: `圖片處理失敗：${err instanceof Error ? err.message : '未知錯誤'}，請重新拍照或選擇其他圖片試試`,
       }])
     }
     // 最後才重置 file input，用 ref 比 event target 更可靠
@@ -813,7 +813,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
         if (err.quota_exceeded) {
           setMessages([
             ...newMessages,
-            { role: 'assistant', content: '本月免費體驗次數已用完 🙏\n\n你可以選擇：' },
+            { role: 'assistant', content: '本月免費體驗次數已用完\n\n你可以選擇：' },
           ])
           setQuotaExceeded(true)
           return
@@ -824,7 +824,7 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
         // Retry on 503 (overloaded) or 429 (rate limited)
         if ((res.status === 503 || res.status === 429) && attempt < MAX_CLIENT_RETRIES - 1) {
           const delay = (attempt + 1) * 3000 // 3s, 6s
-          setMessages([...newMessages, { role: 'assistant', content: `⏳ AI 伺服器忙碌中，自動重試第 ${attempt + 1} 次...` }])
+          setMessages([...newMessages, { role: 'assistant', content: `AI 伺服器忙碌中，自動重試第 ${attempt + 1} 次...` }])
           await new Promise(r => setTimeout(r, delay))
           continue
         }
@@ -976,10 +976,10 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
               : 'text-gray-400'
             }`}>
               {freeUsage.used >= freeUsage.limit
-                ? '⚠️ 本月免費額度已用完'
+                ? '本月免費額度已用完'
                 : freeUsage.used === freeUsage.limit - 1
-                ? `⚠️ 這是本月最後一次免費分析（${freeUsage.used}/${freeUsage.limit}）`
-                : `⚡ 免費 AI 顧問額度：${freeUsage.used}/${freeUsage.limit}`}
+                ? `這是本月最後一次免費分析（${freeUsage.used}/${freeUsage.limit}）`
+                : `免費 AI 顧問額度：${freeUsage.used}/${freeUsage.limit}`}
             </p>
           )}
         </div>

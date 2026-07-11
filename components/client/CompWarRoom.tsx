@@ -69,10 +69,10 @@ function CompWarRoomInner({ bodyData, competitionDate, targetWeight, targetBodyF
   const headline = parts.join('；')
 
   const styles = {
-    on: { pill: 'bg-emerald-100 text-emerald-700', emoji: '🟢', label: '進度達標' },
-    tight: { pill: 'bg-amber-100 text-amber-700', emoji: '🟡', label: '要加速' },
-    miss: { pill: 'bg-red-100 text-red-700', emoji: '🔴', label: '來不及' },
-    insufficient: { pill: 'bg-slate-100 text-slate-500', emoji: '⚪', label: '資料不足' },
+    on: { pill: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500', label: '進度達標' },
+    tight: { pill: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500', label: '要加速' },
+    miss: { pill: 'bg-rose-100 text-rose-700', dot: 'bg-rose-500', label: '來不及' },
+    insufficient: { pill: 'bg-slate-100 text-slate-500', dot: 'bg-slate-300', label: '資料不足' },
   }[level]
 
   const weightGap = curWeight != null && targetWeight != null ? Math.abs(curWeight - targetWeight) : null
@@ -81,8 +81,8 @@ function CompWarRoomInner({ bodyData, competitionDate, targetWeight, targetBodyF
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-base font-semibold text-gray-900">🏆 備賽作戰室</span>
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${styles.pill}`}>{styles.emoji} {styles.label}</span>
+          <span className="text-base font-semibold text-gray-900">備賽作戰室</span>
+          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${styles.pill}`}><span className={`inline-block w-2 h-2 rounded-full ${styles.dot}`} />{styles.label}</span>
         </div>
         <div className="text-right">
           <span className="text-2xl font-bold text-gray-900 tabular-nums">{daysLeft}</span>
@@ -121,7 +121,7 @@ function CompWarRoomInner({ bodyData, competitionDate, targetWeight, targetBodyF
 
       {(curBf != null || bf) && (
         <p className="text-[11px] text-amber-600 mt-3 leading-snug">
-          ℹ️ 體脂 InBody 量{latePrep ? '，備賽後期' : ''}低碳→肝醣與水分↓→<b>體脂%被高估</b>，以體重＋外觀＋教練判斷為準。
+          體脂 InBody 量{latePrep ? '，備賽後期' : ''}低碳→肝醣與水分↓→<b>體脂%被高估</b>，以體重＋外觀＋教練判斷為準。
         </p>
       )}
       {level === 'insufficient' && curBf == null && !bf && (

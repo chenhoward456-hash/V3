@@ -23,7 +23,7 @@ describe('QuickActions', () => {
     expect(screen.getByText('Weight')).toBeInTheDocument()
     expect(screen.getByText('Nutrition')).toBeInTheDocument()
     expect(screen.getByText('Wellness')).toBeInTheDocument()
-    // Training is completed but still shown (with ✅)
+    // Training is completed but still shown (with a check icon)
     expect(screen.getByText('Training')).toBeInTheDocument()
   })
 
@@ -44,7 +44,7 @@ describe('QuickActions', () => {
     const allDone = sections.map(s => ({ ...s, completed: true }))
     render(<QuickActions enabledSections={allDone} onNavigate={vi.fn()} />)
 
-    expect(screen.getByText('今天全部完成 💪')).toBeInTheDocument()
+    expect(screen.getByText('今天全部完成')).toBeInTheDocument()
   })
 
   it('renders nothing when enabledSections is empty', () => {

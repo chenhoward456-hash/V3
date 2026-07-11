@@ -4,18 +4,19 @@ import { memo, useState, useEffect } from 'react'
 import { buildClientFeed, type FeedCard, type FeedTone, type MacroAdjustmentRow, type CoachMessageRow } from '@/lib/client-feed'
 import type { LabResultRow } from '@/lib/lab-trend-analyzer'
 
-const TONE_STYLE: Record<FeedTone, { box: string; title: string; icon: string }> = {
-  good:  { box: 'bg-emerald-50/70 border-emerald-100', title: 'text-emerald-800', icon: 'bg-slate-100' },
-  alert: { box: 'bg-rose-50/70 border-rose-100',       title: 'text-rose-800',    icon: 'bg-slate-100' },
-  warn:  { box: 'bg-amber-50/70 border-amber-100',     title: 'text-amber-800',   icon: 'bg-slate-100' },
-  info:  { box: 'bg-blue-50/70 border-blue-100',       title: 'text-blue-800',    icon: 'bg-slate-100' },
+// 語意用 CSS 色點承接（emoji icon 依 DESIGN.md 移除；lib/client-feed 的 icon 欄位不再渲染）
+const TONE_STYLE: Record<FeedTone, { box: string; title: string; dot: string }> = {
+  good:  { box: 'bg-emerald-50/70 border-emerald-100', title: 'text-emerald-800', dot: 'bg-emerald-500' },
+  alert: { box: 'bg-rose-50/70 border-rose-100',       title: 'text-rose-800',    dot: 'bg-rose-500' },
+  warn:  { box: 'bg-amber-50/70 border-amber-100',     title: 'text-amber-800',   dot: 'bg-amber-500' },
+  info:  { box: 'bg-blue-50/70 border-blue-100',       title: 'text-blue-800',    dot: 'bg-blue-500' },
 }
 
 function Row({ card, onDismiss }: { card: FeedCard; onDismiss: (id: string) => void }) {
   const s = TONE_STYLE[card.tone]
   return (
     <div className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border ${s.box}`}>
-      <span className={`shrink-0 w-7 h-7 rounded-lg ${s.icon} flex items-center justify-center text-sm`}>{card.icon}</span>
+      <span className={`shrink-0 inline-block w-2 h-2 rounded-full ${s.dot}`} />
       <div className="min-w-0 flex-1">
         <p className={`text-sm font-semibold ${s.title} leading-tight`}>{card.title}</p>
         <p className="text-xs text-gray-500 leading-snug">
@@ -55,7 +56,6 @@ function CoachMessageCard({ msg, onDismiss }: { msg: CoachMessageRow; onDismiss:
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
       <div className="flex items-center gap-2 mb-1.5 pr-6">
-        <span className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center text-sm shrink-0">{isAccount ? '👋' : '💬'}</span>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-blue-900 leading-tight">{cleanTitle}</p>
           {dateStr && <p className="text-[11px] text-blue-400 leading-tight">{dateStr} · 教練</p>}
@@ -137,7 +137,7 @@ function ForYouFeedInner({ labs, gender, nextCheckupDate, macroAdjustment, coach
         </button>
       )}
       {hasMedical && (
-        <p className="text-[11px] text-gray-400 mt-1.5 px-1 leading-snug">⚠️ 數值僅供追蹤、非醫療診斷；有疑慮請諮詢醫師。</p>
+        <p className="text-[11px] text-gray-400 mt-1.5 px-1 leading-snug">數值僅供追蹤、非醫療診斷；有疑慮請諮詢醫師。</p>
       )}
     </div>
   )

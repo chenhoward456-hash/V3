@@ -9,11 +9,11 @@ interface HealthModeAdvancedProps {
 
 // 微營養素每日建議量
 const MICRO_TARGETS = [
-  { key: 'omega3', label: 'Omega-3 (EPA+DHA)', target: '2g', icon: '🐟', tip: '鮭魚 100g ≈ 1.8g' },
-  { key: 'vitD', label: '維生素 D', target: '2000 IU', icon: '☀️', tip: '鮭魚 100g ≈ 500 IU' },
-  { key: 'magnesium', label: '鎂', target: '400mg', icon: '🥬', tip: '南瓜子 30g ≈ 150mg' },
-  { key: 'fiber', label: '膳食纖維', target: '25-30g', icon: '🥦', tip: '蔬菜 300g + 全穀 = 25g' },
-  { key: 'zinc', label: '鋅', target: '15mg', icon: '🦪', tip: '牡蠣 6 顆 ≈ 32mg' },
+  { key: 'omega3', label: 'Omega-3 (EPA+DHA)', target: '2g', tip: '鮭魚 100g ≈ 1.8g' },
+  { key: 'vitD', label: '維生素 D', target: '2000 IU', tip: '鮭魚 100g ≈ 500 IU' },
+  { key: 'magnesium', label: '鎂', target: '400mg', tip: '南瓜子 30g ≈ 150mg' },
+  { key: 'fiber', label: '膳食纖維', target: '25-30g', tip: '蔬菜 300g + 全穀 = 25g' },
+  { key: 'zinc', label: '鋅', target: '15mg', tip: '牡蠣 6 顆 ≈ 32mg' },
 ]
 
 interface LabAdvice {
@@ -113,16 +113,15 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* 標題 */}
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-2xl">🌿</span>
         <h2 className="text-lg font-bold text-gray-900">健康優化中心</h2>
       </div>
 
       {/* Tab 切換 */}
       <div className="flex gap-1 mb-4 bg-gray-100 rounded-xl p-1">
         {[
-          { key: 'advice' as const, label: '血檢飲食', icon: '🩸', show: true },
-          { key: 'report' as const, label: '季度對比', icon: '📊', show: hasReport },
-          { key: 'micro' as const, label: '微營養素', icon: '💊', show: true },
+          { key: 'advice' as const, label: '血檢飲食', show: true },
+          { key: 'report' as const, label: '季度對比', show: hasReport },
+          { key: 'micro' as const, label: '微營養素', show: true },
         ].filter(t => t.show).map(tab => (
           <button
             key={tab.key}
@@ -133,7 +132,7 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {tab.icon} {tab.label}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -151,8 +150,8 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
             <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
               <p className="text-sm text-emerald-700">
                 {data?.report?.labComparisons?.length
-                  ? '🎉 所有血檢指標正常，目前無需特別飲食調整'
-                  : '📋 尚無血檢資料，請在本季安排血檢後上傳結果'}
+                  ? '所有血檢指標正常，目前無需特別飲食調整'
+                  : '尚無血檢資料，請在本季安排血檢後上傳結果'}
               </p>
             </div>
           )}
@@ -189,7 +188,7 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
           {/* 血檢前後對比 */}
           {data.report.labComparisons.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-700 mb-2">🔬 血檢前後對比</p>
+              <p className="text-xs font-semibold text-gray-700 mb-2">血檢前後對比</p>
               <div className="space-y-1.5">
                 {data.report.labComparisons.map((lab, i) => (
                   <div key={i} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
@@ -209,8 +208,8 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
                           {lab.current.value} {lab.unit}
                         </span>
                       )}
-                      {lab.improved === true && <span className="text-xs">✅</span>}
-                      {lab.improved === false && <span className="text-xs">⚠️</span>}
+                      {lab.improved === true && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />}
+                      {lab.improved === false && <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />}
                     </div>
                   </div>
                 ))}
@@ -221,7 +220,7 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
           {!hasReport && (
             <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
               <p className="text-sm text-gray-500">
-                📊 第一季數據收集中，下季開始後即可看到對比報告
+                第一季數據收集中，下季開始後即可看到對比報告
               </p>
             </div>
           )}
@@ -238,19 +237,16 @@ export default function HealthModeAdvanced({ clientId, code }: HealthModeAdvance
             {MICRO_TARGETS.map((micro) => (
               <div key={micro.key} className="bg-gray-50 rounded-2xl p-3">
                 <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{micro.icon}</span>
-                    <span className="text-sm font-medium text-gray-900">{micro.label}</span>
-                  </div>
+                  <span className="text-sm font-medium text-gray-900">{micro.label}</span>
                   <span className="text-sm font-bold text-emerald-700">{micro.target}</span>
                 </div>
-                <p className="text-[11px] text-gray-400 ml-7">{micro.tip}</p>
+                <p className="text-[11px] text-gray-400">{micro.tip}</p>
               </div>
             ))}
           </div>
           <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
             <p className="text-[11px] text-emerald-700">
-              💡 以上為基於運動營養研究的每日建議攝取量。搭配血檢結果，可在「血檢飲食」分頁查看個人化調整建議。
+              以上為基於運動營養研究的每日建議攝取量。搭配血檢結果，可在「血檢飲食」分頁查看個人化調整建議。
             </p>
           </div>
         </div>
@@ -282,7 +278,6 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg">{advice.icon}</span>
             <div>
               <p className={`text-sm font-bold ${textColor}`}>{advice.title}</p>
               <p className="text-[11px] text-gray-500">
@@ -298,7 +293,7 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
         <div className="mt-3 space-y-3">
           {/* 飲食調整 */}
           <div>
-            <p className="text-[11px] font-bold text-gray-700 mb-1">📋 飲食調整</p>
+            <p className="text-[11px] font-bold text-gray-700 mb-1">飲食調整</p>
             <ul className="space-y-1">
               {advice.dietaryChanges.map((change, i) => (
                 <li key={i} className="text-[11px] text-gray-700 flex gap-1">
@@ -312,7 +307,7 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
           {/* 多吃 */}
           {advice.foodsToIncrease.length > 0 && (
             <div>
-              <p className="text-[11px] font-bold text-green-700 mb-1">✅ 建議多吃</p>
+              <p className="text-[11px] font-bold text-green-700 mb-1">建議多吃</p>
               <div className="flex flex-wrap gap-1.5">
                 {advice.foodsToIncrease.map((food, i) => (
                   <span key={i} className="text-[11px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
@@ -326,7 +321,7 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
           {/* 少吃 */}
           {advice.foodsToReduce.length > 0 && (
             <div>
-              <p className="text-[11px] font-bold text-red-700 mb-1">⚠️ 建議減少</p>
+              <p className="text-[11px] font-bold text-red-700 mb-1">建議減少</p>
               <div className="flex flex-wrap gap-1.5">
                 {advice.foodsToReduce.map((food, i) => (
                   <span key={i} className="text-[11px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
@@ -341,7 +336,7 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
           {advice.macroAdjustment && (
             <div className="bg-white bg-opacity-70 rounded-xl p-2.5">
               <p className="text-[11px] font-bold text-blue-700 mb-0.5">
-                🔧 {advice.macroAdjustment.nutrient}調整
+                {advice.macroAdjustment.nutrient}調整
               </p>
               <p className="text-[11px] text-blue-600">{advice.macroAdjustment.detail}</p>
             </div>
@@ -349,14 +344,14 @@ function LabAdviceCard({ advice }: { advice: LabAdvice }) {
 
           {advice.caveat && (
             <div className="bg-gray-100 rounded-xl p-2.5">
-              <p className="text-[11px] font-bold text-gray-600 mb-0.5">⚠️ 判讀提醒</p>
+              <p className="text-[11px] font-bold text-gray-600 mb-0.5">判讀提醒</p>
               <p className="text-[11px] text-gray-500">{advice.caveat}</p>
             </div>
           )}
 
           {advice.references && advice.references.length > 0 && (
             <div className="border-t border-gray-200 pt-2">
-              <p className="text-[11px] font-bold text-gray-400 mb-1">📚 文獻依據</p>
+              <p className="text-[11px] font-bold text-gray-400 mb-1">文獻依據</p>
               <ul className="space-y-0.5">
                 {advice.references.map((ref, i) => (
                   <li key={i} className="text-[11px] text-gray-400">{ref}</li>
@@ -393,7 +388,6 @@ function ComparisonRow({ item }: { item: ComparisonItem }) {
   return (
     <div className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2.5">
       <div className="flex items-center gap-2">
-        <span className="text-base">{item.icon}</span>
         <span className="text-xs font-medium text-gray-700">{item.label}</span>
       </div>
       <div className="flex items-center gap-3">

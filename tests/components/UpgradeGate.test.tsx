@@ -37,9 +37,9 @@ describe('UpgradeGate', () => {
 
   // ---- Renders lock icon ----
   it('shows a lock icon', () => {
-    render(<UpgradeGate feature="Premium Feature" />)
+    const { container } = render(<UpgradeGate feature="Premium Feature" />)
 
-    expect(screen.getByText('🔒')).toBeInTheDocument()
+    expect(container.querySelector('svg.lucide-lock')).toBeInTheDocument()
   })
 
   // ---- Renders optional description ----

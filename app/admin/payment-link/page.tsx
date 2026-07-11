@@ -112,7 +112,7 @@ export default function PaymentLinkPage() {
               onClick={handleCopy}
               className="w-full py-2.5 rounded-xl text-sm font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors"
             >
-              {copied ? '已複製 ✓' : '複製連結'}
+              {copied ? '已複製' : '複製連結'}
             </button>
           </div>
         )}

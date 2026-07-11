@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import { Check } from 'lucide-react'
 
 interface QuickActionsProps {
-  enabledSections: { id: string; icon: string; label: string; completed: boolean }[]
+  enabledSections: { id: string; icon: ReactNode; label: string; completed: boolean }[]
   onNavigate: (sectionId: string) => void
   topSummary?: {
     weight?: string | number | null
@@ -37,11 +38,10 @@ function QuickNutritionInline({ onSubmit }: { onSubmit: (compliant: boolean) => 
   if (done) return null
   return (
     <div className="flex items-center gap-2 mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
-      <span className="text-base shrink-0">🍽️</span>
       <span className="text-sm text-gray-700 font-medium shrink-0">今天吃得如何</span>
       <div className="flex gap-1.5 ml-auto shrink-0">
-        <button onClick={() => tap(true)} disabled={busy} className="px-3 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition-colors">✅ 達標</button>
-        <button onClick={() => tap(false)} disabled={busy} className="px-3 py-2 rounded-lg text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors">😅 沒達標</button>
+        <button onClick={() => tap(true)} disabled={busy} className="px-3 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition-colors">達標</button>
+        <button onClick={() => tap(false)} disabled={busy} className="px-3 py-2 rounded-lg text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors">沒達標</button>
       </div>
     </div>
   )
@@ -61,7 +61,6 @@ function QuickWeightInline({ onSubmit }: { onSubmit: (w: number) => Promise<bool
   }
   return (
     <div className="flex items-center gap-2 mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
-      <span className="text-base shrink-0">☀️</span>
       <span className="text-sm text-gray-700 font-medium shrink-0">今天體重</span>
       <input
         type="number" inputMode="decimal" step="0.1" value={val}
@@ -92,7 +91,6 @@ function QuickSupplementInline({ onSubmit }: { onSubmit: () => Promise<boolean> 
   if (done) return null
   return (
     <div className="flex items-center gap-2 mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
-      <span className="text-base shrink-0">💊</span>
       <span className="text-sm text-gray-700 font-medium shrink-0">今天補品</span>
       <button onClick={tap} disabled={busy} className="ml-auto shrink-0 px-3 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition-colors">全部吃了 ✓</button>
     </div>
@@ -108,11 +106,11 @@ function QuickWellnessInline({ onSubmit }: { onSubmit: (level: 'good' | 'ok' | '
   const btn = 'flex-1 py-2 rounded-lg text-sm font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-40 transition-colors'
   return (
     <div className="mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
-      <p className="text-sm text-gray-700 font-medium mb-2">😊 今天感受如何？</p>
+      <p className="text-sm text-gray-700 font-medium mb-2">今天感受如何？</p>
       <div className="flex gap-1.5">
-        <button onClick={() => tap('good')} disabled={busy} className={btn}>👍 還不錯</button>
-        <button onClick={() => tap('ok')} disabled={busy} className={btn}>😐 普通</button>
-        <button onClick={() => tap('tired')} disabled={busy} className={btn}>😪 累</button>
+        <button onClick={() => tap('good')} disabled={busy} className={btn}>還不錯</button>
+        <button onClick={() => tap('ok')} disabled={busy} className={btn}>普通</button>
+        <button onClick={() => tap('tired')} disabled={busy} className={btn}>累</button>
       </div>
     </div>
   )
@@ -127,12 +125,12 @@ function QuickTrainingInline({ onSubmit }: { onSubmit: (t: string) => Promise<bo
   const chip = 'px-3 py-1.5 rounded-lg text-sm font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-blue-50 hover:border-blue-300 disabled:opacity-40 transition-colors'
   return (
     <div className="mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
-      <p className="text-sm text-gray-700 font-medium mb-2">🏋️ 今天練了哪裡？</p>
+      <p className="text-sm text-gray-700 font-medium mb-2">今天練了哪裡？</p>
       <div className="flex flex-wrap gap-1.5">
         {([['push', '推'], ['pull', '拉'], ['legs', '腿'], ['full_body', '全身'], ['cardio', '有氧']] as const).map(([t, l]) => (
           <button key={t} onClick={() => tap(t)} disabled={busy} className={chip}>{l}</button>
         ))}
-        <button onClick={() => tap('rest')} disabled={busy} className={`${chip} text-slate-500`}>😴 休息</button>
+        <button onClick={() => tap('rest')} disabled={busy} className={`${chip} text-slate-500`}>休息</button>
       </div>
     </div>
   )
@@ -151,11 +149,11 @@ export default function QuickActions({ enabledSections, onNavigate, topSummary, 
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2 text-sm text-gray-700">
             {topSummary.todayCarbs != null && (
-              <span className="text-gray-500">🍚 今天碳水 <span className="font-semibold text-slate-700 tabular-nums">{topSummary.todayCarbs}g</span>（{topSummary.isTrainingDay ? '訓練日' : '休息日'}）</span>
+              <span className="text-gray-500">今天碳水 <span className="font-semibold text-slate-700 tabular-nums">{topSummary.todayCarbs}g</span>（{topSummary.isTrainingDay ? '訓練日' : '休息日'}）</span>
             )}
           </div>
           {topSummary.streak != null && topSummary.streak >= 3 && (
-            <span className="text-xs font-bold text-slate-500 tabular-nums">🔥 {topSummary.streak}天</span>
+            <span className="text-xs font-bold text-amber-600 tabular-nums">連續 {topSummary.streak} 天</span>
           )}
         </div>
       )}
@@ -193,14 +191,14 @@ export default function QuickActions({ enabledSections, onNavigate, topSummary, 
                 : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-300'
             }`}
           >
-            <span className="text-base mb-0.5">{s.completed ? '✅' : s.icon}</span>
+            <span className="mb-0.5 h-5 flex items-center justify-center">{s.completed ? <Check size={16} className="text-emerald-600" /> : s.icon}</span>
             <span>{s.label}</span>
           </button>
         ))}
       </div>
 
       {allDone && (
-        <p className="text-center text-xs text-emerald-600 font-medium mt-2">今天全部完成 💪</p>
+        <p className="text-center text-xs text-emerald-600 font-medium mt-2">今天全部完成</p>
       )}
     </div>
   )

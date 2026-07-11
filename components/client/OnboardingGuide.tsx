@@ -165,9 +165,8 @@ export default function OnboardingGuide({ clientId, clientName, tier, features, 
             ))}
           </div>
 
-          {/* Content */}
+          {/* Content — emoji pictogram 依 DESIGN.md 移除，只留標題與說明 */}
           <div className="px-6 py-8 text-center">
-            <div className="text-5xl mb-4">{current.icon}</div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">
               {step === 0 ? `${clientName}，${current.title}` : current.title}
             </h2>

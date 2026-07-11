@@ -145,7 +145,6 @@ export default function SelfManagedNutrition({
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-2xl">🎯</span>
           <h2 className="text-lg font-bold text-gray-900">設定你的營養目標</h2>
         </div>
         <p className="text-sm text-gray-500 mb-5">
@@ -164,7 +163,6 @@ export default function SelfManagedNutrition({
                   : 'border-slate-200 bg-gray-50 hover:border-gray-300'
               }`}
             >
-              <span className="text-xl block mb-1">🔥</span>
               <p className="text-sm font-bold text-gray-900">減脂</p>
               <p className="text-[11px] text-gray-500 mt-1">降體脂、減體重</p>
             </button>
@@ -176,7 +174,6 @@ export default function SelfManagedNutrition({
                   : 'border-slate-200 bg-gray-50 hover:border-gray-300'
               }`}
             >
-              <span className="text-xl block mb-1">⚡</span>
               <p className="text-sm font-bold text-gray-900">體態重組</p>
               <p className="text-[11px] text-gray-500 mt-1">降體脂、增肌肉</p>
             </button>
@@ -188,7 +185,6 @@ export default function SelfManagedNutrition({
                   : 'border-slate-200 bg-gray-50 hover:border-gray-300'
               }`}
             >
-              <span className="text-xl block mb-1">💪</span>
               <p className="text-sm font-bold text-gray-900">增肌</p>
               <p className="text-[11px] text-gray-500 mt-1">增肌肉、提升力量</p>
             </button>
@@ -264,7 +260,6 @@ export default function SelfManagedNutrition({
                       : 'border-slate-200 bg-gray-50 hover:border-gray-300'
                   }`}
                 >
-                  <p className="text-sm font-bold text-gray-900">🖥️</p>
                   <p className="text-xs font-bold text-gray-900">久坐</p>
                   <p className="text-[11px] text-gray-500">辦公室為主</p>
                 </button>
@@ -276,7 +271,6 @@ export default function SelfManagedNutrition({
                       : 'border-slate-200 bg-gray-50 hover:border-gray-300'
                   }`}
                 >
-                  <p className="text-sm font-bold text-gray-900">🚶</p>
                   <p className="text-xs font-bold text-gray-900">一般活動</p>
                   <p className="text-[11px] text-gray-500">日常走動、通勤</p>
                 </button>
@@ -288,7 +282,6 @@ export default function SelfManagedNutrition({
                       : 'border-slate-200 bg-gray-50 hover:border-gray-300'
                   }`}
                 >
-                  <p className="text-sm font-bold text-gray-900">🏃</p>
                   <p className="text-xs font-bold text-gray-900">高活動量</p>
                   <p className="text-[11px] text-gray-500">步數多、體力活</p>
                 </button>
@@ -381,7 +374,7 @@ export default function SelfManagedNutrition({
                           : parseInt(targetDateOption)
                         const weeklyRate = diff / (months * 4.33)
                         const pct = (weeklyRate / bw * 100)
-                        return `需減 ${diff.toFixed(1)} kg，約每週 ${weeklyRate.toFixed(2)} kg（${pct.toFixed(1)}% BW/週）${pct > 1 ? ' ⚠️ 偏激進' : pct > 0.5 ? '' : ' — 很穩健'}`
+                        return `需減 ${diff.toFixed(1)} kg，約每週 ${weeklyRate.toFixed(2)} kg（${pct.toFixed(1)}% BW/週）${pct > 1 ? ' 偏激進' : pct > 0.5 ? '' : ' — 很穩健'}`
                       })()}
                     </p>
                   </div>
@@ -421,7 +414,7 @@ export default function SelfManagedNutrition({
       return (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-slate-600">🎯 目標倒數</p>
+            <p className="text-xs font-semibold text-slate-600">目標倒數</p>
             {dl.isGoalDriven && (
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">Goal-Driven</span>
             )}
@@ -447,7 +440,7 @@ export default function SelfManagedNutrition({
           </div>
           {dl.isAggressive && (
             <p className="text-[11px] text-rose-600 mt-2 text-center">
-              ⚠️ 目前速率偏激進，超過體重的 1%/週，可能流失肌肉
+              目前速率偏激進，超過體重的 1%/週，可能流失肌肉
             </p>
           )}
           {dl.extraCardioNeeded && dl.cardioNote && (
@@ -466,7 +459,7 @@ export default function SelfManagedNutrition({
 
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
-        <p className="text-xs font-semibold text-slate-600 mb-2">🎯 目標倒數</p>
+        <p className="text-xs font-semibold text-slate-600 mb-2">目標倒數</p>
         <div className="grid grid-cols-2 gap-2">
           <div className="text-center bg-slate-50 rounded-xl py-2">
             <p className="text-[11px] text-slate-500">目標體重</p>
@@ -489,13 +482,12 @@ export default function SelfManagedNutrition({
       <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">🤖</span>
             <h2 className="text-lg font-bold text-gray-900">智能營養計算</h2>
           </div>
           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
             goalType === 'cut' ? 'bg-slate-100 text-slate-600' : goalType === 'recomp' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
           }`}>
-            {goalType === 'cut' ? '🔥 減脂中' : goalType === 'recomp' ? '⚡ 體態重組中' : '💪 增肌中'}
+            {goalType === 'cut' ? '減脂中' : goalType === 'recomp' ? '體態重組中' : '增肌中'}
           </span>
         </div>
 
@@ -504,16 +496,16 @@ export default function SelfManagedNutrition({
 
         {/* 初始目標（從 InBody 計算） */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
-          <p className="text-xs font-semibold text-gray-700 mb-2">📋 今日飲食目標（InBody 初始計算）</p>
+          <p className="text-xs font-semibold text-gray-700 mb-2">今日飲食目標（InBody 初始計算）</p>
           <div className="grid grid-cols-4 gap-2">
             {[
-              { label: '熱量', value: caloriesTarget, unit: 'kcal', emoji: '🔥' },
-              { label: '蛋白質', value: proteinTarget, unit: 'g', emoji: '🥩' },
-              { label: '碳水', value: carbsTarget, unit: 'g', emoji: '🍚' },
-              { label: '脂肪', value: fatTarget, unit: 'g', emoji: '🥑' },
-            ].map(({ label, value, unit, emoji }) => (
+              { label: '熱量', value: caloriesTarget, unit: 'kcal' },
+              { label: '蛋白質', value: proteinTarget, unit: 'g' },
+              { label: '碳水', value: carbsTarget, unit: 'g' },
+              { label: '脂肪', value: fatTarget, unit: 'g' },
+            ].map(({ label, value, unit }) => (
               <div key={label} className="text-center bg-slate-50 rounded-xl py-2 px-1">
-                <p className="text-[11px] text-gray-500">{emoji} {label}</p>
+                <p className="text-[11px] text-gray-500">{label}</p>
                 <p className="text-lg font-bold text-gray-900 tabular-nums">{value || '--'}</p>
                 <p className="text-[11px] text-gray-400">{unit}</p>
               </div>
@@ -523,7 +515,7 @@ export default function SelfManagedNutrition({
 
         {/* 提示持續記錄 */}
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
-          📊 持續記錄每天體重，2 週後系統會根據真實體重變化自動校正目標
+          持續記錄每天體重，2 週後系統會根據真實體重變化自動校正目標
         </div>
       </div>
     )
@@ -534,7 +526,6 @@ export default function SelfManagedNutrition({
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-2xl">🤖</span>
           <h2 className="text-lg font-bold text-gray-900">智能營養計算</h2>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
@@ -565,19 +556,19 @@ export default function SelfManagedNutrition({
   // 穿戴裝置回饋
   const wearableInsightCard = (() => {
     if (!data.wearableInsight) return null
-    const stateConfig: Record<string, { bg: string; border: string; text: string; emoji: string; label: string }> = {
-      optimal: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', emoji: '💪', label: '恢復極佳' },
-      good: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', emoji: '👍', label: '恢復正常' },
-      struggling: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', emoji: '⚠️', label: '恢復偏低' },
-      critical: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-600', emoji: '🚨', label: '恢復不足' },
+    const stateConfig: Record<string, { bg: string; border: string; text: string; dot: string; label: string }> = {
+      optimal: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', dot: 'bg-emerald-500', label: '恢復極佳' },
+      good: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', dot: 'bg-emerald-500', label: '恢復正常' },
+      struggling: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500', label: '恢復偏低' },
+      critical: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-600', dot: 'bg-rose-500', label: '恢復不足' },
     }
     const sc = stateConfig[data.currentState] || stateConfig.good
     return (
       <div className={`mt-3 ${sc.bg} border ${sc.border} rounded-2xl p-4`}>
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <span className="text-base">⌚</span>
-            <p className={`text-xs font-bold ${sc.text}`}>{sc.emoji} {sc.label}</p>
+            <span className={`inline-block w-2 h-2 rounded-full ${sc.dot}`} />
+            <p className={`text-xs font-bold ${sc.text}`}>{sc.label}</p>
           </div>
           {data.readinessScore != null && (
             <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`}>
@@ -606,7 +597,6 @@ export default function SelfManagedNutrition({
     return (
       <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 mb-4">
         <div className="flex items-start gap-3 mb-3">
-          <span className="text-2xl flex-shrink-0">📊</span>
           <div>
             <p className="text-sm font-bold text-gray-900 mb-1">你的營養目標剛剛自動校正完畢</p>
             <p className="text-xs text-gray-600 leading-relaxed">
@@ -625,7 +615,7 @@ export default function SelfManagedNutrition({
           rel="noopener noreferrer"
           className="block w-full text-center bg-[#06C755] text-white font-bold py-3 rounded-xl hover:bg-[#05b04d] transition-colors text-sm"
         >
-          💬 加 LINE 找 Howard 教練
+          加 LINE 找 Howard 教練
         </a>
       </div>
     )
@@ -641,25 +631,24 @@ export default function SelfManagedNutrition({
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* 自助工具免責 — 法律覆蓋：AI 自動健康輸出、無教練把關，明示非醫療建議 */}
       <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-4 leading-snug">
-        ⚠️ <b>自助工具 · 非醫療建議</b>：自動計算的熱量與營養僅供參考。激進減脂、體態已偏瘦、或有任何健康疑慮，請先諮詢醫師或專業教練 —— 系統不會、也不該取代專業判斷。
+        <b>自助工具 · 非醫療建議</b>：自動計算的熱量與營養僅供參考。激進減脂、體態已偏瘦、或有任何健康疑慮，請先諮詢醫師或專業教練 —— 系統不會、也不該取代專業判斷。
       </p>
       {/* 標題 */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🤖</span>
           <h2 className="text-lg font-bold text-gray-900">智能營養計算</h2>
         </div>
         <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
           goalType === 'cut' ? 'bg-slate-100 text-slate-600' : 'bg-slate-100 text-slate-600'
         }`}>
-          {goalType === 'cut' ? '🔥 減脂中' : goalType === 'recomp' ? '⚡ 體態重組中' : '💪 增肌中'}
+          {goalType === 'cut' ? '減脂中' : goalType === 'recomp' ? '體態重組中' : '增肌中'}
         </span>
       </div>
 
       {/* 狀態 */}
       <div className={`${config.bg} ${config.border} border rounded-2xl px-4 py-3 mb-4`}>
         <p className={`text-sm font-semibold ${config.text}`}>
-          {data.statusEmoji} {data.statusLabel}
+          {data.statusLabel}
         </p>
         <p className={`text-xs ${config.text} mt-1 opacity-80`}>
           {data.message}
@@ -676,24 +665,24 @@ export default function SelfManagedNutrition({
       {data.suggestedCalories && (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-gray-700">📋 今日飲食目標</p>
+            <p className="text-xs font-semibold text-gray-700">今日飲食目標</p>
             {hasCarbCycling && (
               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                 isTrainingDay ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
               }`}>
-                {isTrainingDay ? '🏋️ 訓練日' : '🛋️ 休息日'}
+                {isTrainingDay ? '訓練日' : '休息日'}
               </span>
             )}
           </div>
           <div className="grid grid-cols-4 gap-2">
             {[
-              { label: '熱量', value: data.suggestedCalories, unit: 'kcal', emoji: '🔥' },
-              { label: '蛋白質', value: data.suggestedProtein, unit: 'g', emoji: '🥩' },
-              { label: '碳水', value: todayCarbs, unit: 'g', emoji: '🍚' },
-              { label: '脂肪', value: data.suggestedFat, unit: 'g', emoji: '🥑' },
-            ].map(({ label, value, unit, emoji }) => (
+              { label: '熱量', value: data.suggestedCalories, unit: 'kcal' },
+              { label: '蛋白質', value: data.suggestedProtein, unit: 'g' },
+              { label: '碳水', value: todayCarbs, unit: 'g' },
+              { label: '脂肪', value: data.suggestedFat, unit: 'g' },
+            ].map(({ label, value, unit }) => (
               <div key={label} className="text-center bg-slate-50 rounded-xl py-2 px-1">
-                <p className="text-[11px] text-gray-500">{emoji} {label}</p>
+                <p className="text-[11px] text-gray-500">{label}</p>
                 <p className="text-lg font-bold text-gray-900 tabular-nums">{value || '--'}</p>
                 <p className="text-[11px] text-gray-400">{unit}</p>
               </div>
@@ -714,7 +703,6 @@ export default function SelfManagedNutrition({
               <div className="mt-3 pt-3 border-t border-slate-200 space-y-1">
                 {corrections.map((gc: any, i: number) => (
                   <p key={i} className="text-[11px] text-slate-600 flex items-start gap-1">
-                    <span className="shrink-0">🧬</span>
                     <span>{gc.adjustment}</span>
                   </p>
                 ))}
@@ -745,7 +733,7 @@ export default function SelfManagedNutrition({
       {/* 分餐蛋白質指引 */}
       {data.perMealProteinGuide && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
-          <p className="text-xs font-semibold text-amber-700">🥩 分餐蛋白質指引</p>
+          <p className="text-xs font-semibold text-amber-700">分餐蛋白質指引</p>
           <p className="text-sm text-amber-900 mt-1">
             每餐 {data.perMealProteinGuide.perMealGrams.min}-{data.perMealProteinGuide.perMealGrams.max}g，
             分 {data.perMealProteinGuide.mealsPerDay.min}-{data.perMealProteinGuide.mealsPerDay.max} 餐
@@ -788,11 +776,11 @@ export default function SelfManagedNutrition({
       {/* 調整記錄 */}
       {(data.caloriesDelta !== 0 || data.proteinDelta !== 0 || data.carbsDelta !== 0 || data.fatDelta !== 0) && (
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-3">
-          <p className="text-xs font-semibold text-blue-700 mb-2">📋 本週自動調整</p>
+          <p className="text-xs font-semibold text-blue-700 mb-2">本週自動調整</p>
           <div className="grid grid-cols-2 gap-2">
             {data.caloriesDelta !== 0 && (
               <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                <span className="text-xs text-gray-600">🔥 熱量</span>
+                <span className="text-xs text-gray-600">熱量</span>
                 <span className={`text-xs font-bold tabular-nums ${data.caloriesDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.caloriesDelta > 0 ? '+' : ''}{data.caloriesDelta} kcal
                 </span>
@@ -800,7 +788,7 @@ export default function SelfManagedNutrition({
             )}
             {data.proteinDelta !== 0 && (
               <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                <span className="text-xs text-gray-600">🥩 蛋白質</span>
+                <span className="text-xs text-gray-600">蛋白質</span>
                 <span className={`text-xs font-bold tabular-nums ${data.proteinDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.proteinDelta > 0 ? '+' : ''}{data.proteinDelta}g
                 </span>
@@ -808,7 +796,7 @@ export default function SelfManagedNutrition({
             )}
             {data.carbsDelta !== 0 && (
               <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                <span className="text-xs text-gray-600">🍚 碳水</span>
+                <span className="text-xs text-gray-600">碳水</span>
                 <span className={`text-xs font-bold tabular-nums ${data.carbsDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.carbsDelta > 0 ? '+' : ''}{data.carbsDelta}g
                 </span>
@@ -816,7 +804,7 @@ export default function SelfManagedNutrition({
             )}
             {data.fatDelta !== 0 && (
               <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                <span className="text-xs text-gray-600">🥑 脂肪</span>
+                <span className="text-xs text-gray-600">脂肪</span>
                 <span className={`text-xs font-bold tabular-nums ${data.fatDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.fatDelta > 0 ? '+' : ''}{data.fatDelta}g
                 </span>
@@ -833,7 +821,6 @@ export default function SelfManagedNutrition({
       {data.refeedSuggested && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">🔄</span>
             <p className="text-sm font-bold text-amber-700">
               系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
             </p>
@@ -849,7 +836,6 @@ export default function SelfManagedNutrition({
       {data.dietBreakSuggested && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">⏸️</span>
             <p className="text-sm font-bold text-amber-700">系統偵測：可考慮安排 Diet Break</p>
           </div>
           <p className="text-xs text-amber-700">
@@ -882,7 +868,7 @@ export default function SelfManagedNutrition({
       {/* 血檢驅動的營養調整 */}
       {data.labMacroModifiers && data.labMacroModifiers.length > 0 && (
         <div className="mt-3 bg-blue-50 border border-blue-200 rounded-2xl p-4">
-          <p className="text-xs font-medium text-blue-700 mb-2">🩸 血檢指標建議</p>
+          <p className="text-xs font-medium text-blue-700 mb-2">血檢指標建議</p>
           <div className="space-y-1">
             {data.labMacroModifiers.map((mod: any, i: number) => (
               <p key={i} className="text-[11px] text-blue-600 leading-relaxed">

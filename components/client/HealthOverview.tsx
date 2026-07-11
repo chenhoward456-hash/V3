@@ -76,7 +76,7 @@ export default function HealthOverview({
     cards.push(
       <div key="supplement" className="bg-blue-50 rounded-2xl p-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium text-blue-600">💊 本週服從率</p>
+          <p className="text-xs font-medium text-blue-600">本週服從率</p>
           {weekDelta !== null && weekDelta !== 0 && (
             <span className={`text-xs font-semibold ${deltaColor}`}>
               {weekDelta > 0 ? '↑' : '↓'}{Math.abs(weekDelta)}%
@@ -97,7 +97,7 @@ export default function HealthOverview({
     const barColor = labRate >= 80 ? 'bg-green-500' : labRate >= 50 ? 'bg-yellow-400' : 'bg-red-400'
     cards.push(
       <div key="lab" className="bg-green-50 rounded-2xl p-4">
-        <p className="text-xs font-medium text-green-600 mb-2">🩸 血檢指標</p>
+        <p className="text-xs font-medium text-green-600 mb-2">血檢指標</p>
         <p className={`text-3xl font-bold mb-2 ${labTotal > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
           {labTotal > 0 ? labNormal : '--'}
           <span className="text-lg font-medium text-gray-500">{labTotal > 0 ? `/${labTotal}` : ''}</span>
@@ -125,7 +125,7 @@ export default function HealthOverview({
     cards.push(
       <div key="body" className="bg-orange-50 rounded-2xl p-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium text-orange-600">⚖️ 體脂率</p>
+          <p className="text-xs font-medium text-orange-600">體脂率</p>
           {bodyFatTrend && (
             <span className={`text-xs font-semibold ${trendColor}`}>
               {trendIcon}{bodyFatTrend.direction !== 'same' ? `${bodyFatTrend.diff}%` : '持平'}
@@ -169,16 +169,15 @@ export default function HealthOverview({
   }
 
   if (wellnessEnabled) {
-    const moodEmojis = ['', '😫', '😔', '😐', '😊', '😄']
     const moodLabels = ['', '很差', '不好', '普通', '不錯', '很好']
     cards.push(
       <div key="wellness" className="bg-purple-50 rounded-2xl p-4">
-        <p className="text-xs font-medium text-purple-600 mb-2">😊 今日感受</p>
-        <p className="text-3xl mb-2">
-          {todayMood ? moodEmojis[todayMood] : <span className="text-gray-400 font-bold">--</span>}
+        <p className="text-xs font-medium text-purple-600 mb-2">今日感受</p>
+        <p className="text-3xl font-bold text-gray-900 mb-2">
+          {todayMood ? moodLabels[todayMood] : <span className="text-gray-400">--</span>}
         </p>
         <p className="text-xs text-gray-400">
-          {todayMood ? moodLabels[todayMood] : hasWellness ? '已記錄' : '尚未記錄'}
+          {todayMood ? `心情 ${todayMood}/5` : hasWellness ? '已記錄' : '尚未記錄'}
         </p>
       </div>
     )
@@ -214,7 +213,6 @@ export default function HealthOverview({
       {/* 穿戴裝置空狀態：已填寫 wellness 但沒有任何裝置數據 */}
       {wearable && !hasWearableData && (
         <div className="bg-gray-50 rounded-2xl px-4 py-3 flex items-center gap-3">
-          <span className="text-lg shrink-0">⌚</span>
           <p className="text-xs text-gray-400 leading-relaxed">
             連結穿戴裝置可自動同步睡眠與心率數據
           </p>
@@ -224,7 +222,7 @@ export default function HealthOverview({
       {hasWearableData && (
         <div className="bg-gray-900 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-medium text-gray-400">⌚ 穿戴裝置數據</p>
+            <p className="text-xs font-medium text-gray-400">穿戴裝置數據</p>
             {wearable?.respiratory_rate != null && (
               <span className="text-[11px] text-gray-500">
                 呼吸 {wearable.respiratory_rate} 次/分
@@ -234,7 +232,6 @@ export default function HealthOverview({
           <div className="grid grid-cols-2 gap-2">
             {/* 恢復分數 / Body Battery */}
             <GaugeCard
-              icon="⚡"
               label="恢復分數"
               value={wearable?.device_recovery_score ?? null}
               max={100}
@@ -248,7 +245,6 @@ export default function HealthOverview({
 
             {/* 睡眠分數 */}
             <GaugeCard
-              icon="😴"
               label="睡眠分數"
               value={wearable?.wearable_sleep_score ?? null}
               max={100}
@@ -261,7 +257,6 @@ export default function HealthOverview({
 
             {/* 靜息心率 — max 設為 120 讓視覺比例合理 */}
             <GaugeCard
-              icon="❤️"
               label="靜息心率"
               value={wearable?.resting_hr ?? null}
               max={120}
@@ -275,7 +270,6 @@ export default function HealthOverview({
 
             {/* HRV */}
             <GaugeCard
-              icon="📊"
               label="HRV"
               value={wearable?.hrv ?? null}
               max={150}

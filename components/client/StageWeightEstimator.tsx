@@ -28,7 +28,7 @@ export default function StageWeightEstimator({ currentWeight, currentBodyFat, ta
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mt-3">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="text-sm font-bold text-gray-900">🎯 上台體重推算</h3>
+          <h3 className="text-sm font-bold text-gray-900">上台體重推算</h3>
           <p className="text-[11px] text-gray-500 mt-0.5 tabular-nums">
             根據 InBody：{currentWeight}kg / 體脂 {currentBodyFat}% / FFM {ffm.toFixed(1)}kg
           </p>
@@ -78,9 +78,9 @@ export default function StageWeightEstimator({ currentWeight, currentBodyFat, ta
           })}
         </div>
         <div className="flex justify-center gap-4 mt-2">
-          <span className="text-[11px] text-emerald-600">🟢 安全（≤0.7%/週）</span>
-          <span className="text-[11px] text-amber-600">🟡 積極（0.7-1%）</span>
-          <span className="text-[11px] text-rose-600">🔴 極限（&gt;1%）</span>
+          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600"><span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />安全（≤0.7%/週）</span>
+          <span className="inline-flex items-center gap-1 text-[11px] text-amber-600"><span className="inline-block w-2 h-2 rounded-full bg-amber-500" />積極（0.7-1%）</span>
+          <span className="inline-flex items-center gap-1 text-[11px] text-rose-600"><span className="inline-block w-2 h-2 rounded-full bg-rose-500" />極限（&gt;1%）</span>
         </div>
       </div>
 

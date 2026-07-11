@@ -1284,17 +1284,17 @@ export default function ClientOverview() {
     // 蛋白質嚴重不足（最高優先級）
     if (keyMetrics.proteinDeltaPct != null && keyMetrics.proteinDeltaPct <= -20) {
       const streak = keyMetrics.proteinMissStreak > 1 ? `，連續 ${keyMetrics.proteinMissStreak} 天未達標` : ''
-      items.push(`🥩 蛋白質嚴重不足（平均 ${keyMetrics.avgProtein}g / 目標 ${keyMetrics.proteinTarget}g，偏差 ${keyMetrics.proteinDeltaPct}%${streak}）`)
+      items.push(`蛋白質嚴重不足（平均 ${keyMetrics.avgProtein}g / 目標 ${keyMetrics.proteinTarget}g，偏差 ${keyMetrics.proteinDeltaPct}%${streak}）`)
     } else if (keyMetrics.proteinDeltaPct != null && keyMetrics.proteinDeltaPct <= -10) {
       const streak = keyMetrics.proteinMissStreak > 1 ? `，連續 ${keyMetrics.proteinMissStreak} 天未達標` : ''
-      items.push(`🥩 蛋白質偏低（平均 ${keyMetrics.avgProtein}g / 目標 ${keyMetrics.proteinTarget}g，偏差 ${keyMetrics.proteinDeltaPct}%${streak}）`)
+      items.push(`蛋白質偏低（平均 ${keyMetrics.avgProtein}g / 目標 ${keyMetrics.proteinTarget}g，偏差 ${keyMetrics.proteinDeltaPct}%${streak}）`)
     }
 
     // 體重趨勢與目標方向不符
     if (keyMetrics.weightTrend && client?.goal_type === 'cut' && keyMetrics.weightTrend === 'up') {
-      items.push(`⚖️ 體重 14 天趨勢上升，與減脂目標方向相反`)
+      items.push(`體重 14 天趨勢上升，與減脂目標方向相反`)
     } else if (keyMetrics.weightTrend && client?.goal_type === 'bulk' && keyMetrics.weightTrend === 'down') {
-      items.push(`⚖️ 體重 14 天趨勢下降，與增肌目標方向相反`)
+      items.push(`體重 14 天趨勢下降，與增肌目標方向相反`)
     }
 
     // 荷爾蒙變化追蹤（從血檢數據抓）
@@ -1319,7 +1319,7 @@ export default function ClientOverview() {
       }
     }
     if (hormoneAlerts.length > 0) {
-      items.push(`🩸 荷爾蒙下滑：${hormoneAlerts.join('、')}`)
+      items.push(`荷爾蒙下滑：${hormoneAlerts.join('、')}`)
     }
 
     if (keyMetrics.weekCompliance < 50 && supplements.length > 0) items.push(`本週補品服從率僅 ${keyMetrics.weekCompliance}%`)
@@ -1331,9 +1331,9 @@ export default function ClientOverview() {
 
     // HRV 異常：連 3 天低於基線 10% → 強烈過度訓練訊號
     if (keyMetrics.hrvLowStreak >= 3 && keyMetrics.hrvBaseline) {
-      items.push(`💓 HRV 連 ${keyMetrics.hrvLowStreak} 天低於基線 10%（基線 ${keyMetrics.hrvBaseline}ms），恢復不足`)
+      items.push(`HRV 連 ${keyMetrics.hrvLowStreak} 天低於基線 10%（基線 ${keyMetrics.hrvBaseline}ms），恢復不足`)
     } else if (keyMetrics.hrvLowStreak >= 2 && keyMetrics.hrvBaseline) {
-      items.push(`💓 HRV 連 ${keyMetrics.hrvLowStreak} 天低於基線，留意是否需 deload`)
+      items.push(`HRV 連 ${keyMetrics.hrvLowStreak} 天低於基線，留意是否需 deload`)
     }
 
     // 訓練×恢復：找出隔天精力最低的訓練類型
@@ -1341,7 +1341,7 @@ export default function ClientOverview() {
     if (validRecovery.length > 0) {
       const worst = [...validRecovery].sort((a, b) => Number(a.avgEnergy) - Number(b.avgEnergy))[0]
       if (worst && Number(worst.avgEnergy) <= 2.5) {
-        items.push(`🏋️ ${worst.type}日隔天精力僅 ${worst.avgEnergy}/5（${worst.count} 次平均），考慮降強度`)
+        items.push(`${worst.type}日隔天精力僅 ${worst.avgEnergy}/5（${worst.count} 次平均），考慮降強度`)
       }
     }
     if (client?.next_checkup_date) {
@@ -1401,7 +1401,7 @@ export default function ClientOverview() {
                   <h1 className="text-xl font-bold text-gray-900">{client.name} — 學員總覽</h1>
                   {isCompetitionMode(client.client_mode) && client.competition_date && (() => {
                     const d = daysUntilDateTW(client.competition_date)
-                    return d > 0 ? <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${d <= 14 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {d}天</span> : null
+                    return d > 0 ? <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${d <= 14 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>賽前 {d} 天</span> : null
                   })()}
                 </div>
                 <p className="text-xs text-gray-500">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) ? ` · ${PHASE_LABELS[client.prep_phase || ''] || ''}` : ''}</p>
@@ -1448,13 +1448,13 @@ export default function ClientOverview() {
         }`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">{alerts.length >= 2 ? '🔴' : alerts.length === 1 ? '🟡' : '🟢'}</span>
+              <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${alerts.length >= 2 ? 'bg-rose-500' : alerts.length === 1 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
               <div>
                 <h2 className="text-base font-bold text-gray-900">{client.name} — 快速摘要</h2>
                 <p className="text-xs text-gray-500">
                   {isCompetitionMode(client.client_mode) && client.competition_date && (() => {
                     const d = daysUntilDateTW(client.competition_date)
-                    return d > 0 ? `🏆 距比賽 ${d} 天 · ${
+                    return d > 0 ? `距比賽 ${d} 天 · ${
                       (PHASE_LABELS[client.prep_phase || ''] || client.prep_phase || '')
                     }` : '比賽已結束'
                   })()}
@@ -1558,7 +1558,7 @@ export default function ClientOverview() {
           {alerts.length > 0 && (
             <div className="bg-white/50 rounded-lg px-3 py-2">
               {alerts.map((a, i) => (
-                <p key={i} className="text-xs text-rose-700">⚠️ {a}</p>
+                <p key={i} className="text-xs text-rose-700">{a}</p>
               ))}
             </div>
           )}
@@ -1628,7 +1628,6 @@ export default function ClientOverview() {
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-lg">🎯</span>
                 <h3 className="text-sm font-semibold text-gray-900">目標進度</h3>
               </div>
               <Link href={`/admin/clients/${clientId}`} className="text-xs text-gray-500 hover:text-gray-700">
@@ -1750,13 +1749,13 @@ export default function ClientOverview() {
 
           let progressTag: { text: string; color: string } | null = null
           if (goalType === 'cut' && delta1w != null) {
-            if (delta1w < -0.1) progressTag = { text: '✅ 減重中', color: 'text-emerald-600' }
-            else if (delta1w > 0.2) progressTag = { text: '⚠️ 體重上升', color: 'text-rose-600' }
-            else progressTag = { text: '⏸ 停滯', color: 'text-amber-600' }
+            if (delta1w < -0.1) progressTag = { text: '減重中', color: 'text-emerald-600' }
+            else if (delta1w > 0.2) progressTag = { text: '體重上升', color: 'text-rose-600' }
+            else progressTag = { text: '停滯', color: 'text-amber-600' }
           } else if (goalType === 'bulk' && delta1w != null) {
-            if (delta1w > 0.1) progressTag = { text: '✅ 增重中', color: 'text-emerald-600' }
-            else if (delta1w < -0.2) progressTag = { text: '⚠️ 體重下降', color: 'text-rose-600' }
-            else progressTag = { text: '⏸ 停滯', color: 'text-amber-600' }
+            if (delta1w > 0.1) progressTag = { text: '增重中', color: 'text-emerald-600' }
+            else if (delta1w < -0.2) progressTag = { text: '體重下降', color: 'text-rose-600' }
+            else progressTag = { text: '停滯', color: 'text-amber-600' }
           }
 
           // 預估達標：用線性回歸斜率，並偵測趨勢反轉
@@ -1854,7 +1853,7 @@ export default function ClientOverview() {
               newCarbTrain = currentCarbTrain
               newCarbRest = currentCarbRest
               unfilledKcal = totalCutKcal - fatCutKcal
-              strategyNote = `🛡️ 依個人歷史：保碳水、砍脂肪 (-${Math.round(fatCutKcal)} kcal/天)` + (unfilledKcal > 50 ? `，剩 ${Math.round(unfilledKcal)} kcal 需從 cardio 取得（約 +${Math.ceil(unfilledKcal / 6)} min Zone 2）` : '')
+              strategyNote = `依個人歷史：保碳水、砍脂肪 (-${Math.round(fatCutKcal)} kcal/天)` + (unfilledKcal > 50 ? `，剩 ${Math.round(unfilledKcal)} kcal 需從 cardio 取得（約 +${Math.ceil(unfilledKcal / 6)} min Zone 2）` : '')
               // 重算 newCal（因為實際只砍 fat 那部分）
               newCal = currentCalTarget != null ? currentCalTarget - Math.round(fatCutKcal) : null
               actualKcalShift = -Math.round(fatCutKcal)
@@ -1873,7 +1872,7 @@ export default function ClientOverview() {
                 (currentCarbTarget != null && clampedCarbAvg != null ? (currentCarbTarget - clampedCarbAvg) * 4 : desiredCarbCut)
               unfilledKcal = Math.max(0, desiredCarbCut - actualCarbCut)
               if (unfilledKcal > 50) {
-                strategyNote = `⚠️ 撞個人碳水下限，剩 ${Math.round(unfilledKcal)} kcal 建議從 cardio 取得（約 +${Math.ceil(unfilledKcal / 6)} min Zone 2）`
+                strategyNote = `撞個人碳水下限，剩 ${Math.round(unfilledKcal)} kcal 建議從 cardio 取得（約 +${Math.ceil(unfilledKcal / 6)} min Zone 2）`
               }
             }
           } else {
@@ -1893,7 +1892,6 @@ export default function ClientOverview() {
             <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">📈</span>
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900">週平均體重</h3>
                     <p className="text-[11px] text-gray-400">滾動 7 天平均 · 最近 8 週 · 用來判斷有沒有在進度上</p>
@@ -1954,14 +1952,14 @@ export default function ClientOverview() {
                       </p>
                       {projectedDays != null && remainingDays != null && (
                         <p className="text-[11px] text-gray-500 mt-0.5">
-                          {projectedOverdue ? `⚠️ 比目標慢 ${projectedDays - remainingDays} 天` : `比目標快 ${remainingDays - projectedDays} 天`}
+                          {projectedOverdue ? `比目標慢 ${projectedDays - remainingDays} 天` : `比目標快 ${remainingDays - projectedDays} 天`}
                         </p>
                       )}
                       {/* 早期平台期會把 8 週斜率拖慢 → 落後其實被高估；近 4 週加速就提醒教練別只看長期 */}
                       {projectedOverdue && projectedDays != null && remainingDays != null && recentSlope != null && regressionSlope != null &&
                         (goalType === 'bulk' ? recentSlope > regressionSlope + 0.05 : recentSlope < regressionSlope - 0.05) && (
                         <p className="text-[11px] text-emerald-600 mt-1 leading-snug">
-                          📈 近 4 週已加速到 {recentSlope.toFixed(2)} kg/週（8 週平均 {regressionSlope.toFixed(2)}）→ 「慢 {projectedDays - remainingDays} 天」是被早期平台期拖到偏悲觀，實際可能更樂觀
+                          近 4 週已加速到 {recentSlope.toFixed(2)} kg/週（8 週平均 {regressionSlope.toFixed(2)}）→ 「慢 {projectedDays - remainingDays} 天」是被早期平台期拖到偏悲觀，實際可能更樂觀
                         </p>
                       )}
                       {projectedDays == null && (
@@ -2000,12 +1998,11 @@ export default function ClientOverview() {
               {kcalAdjustment != null && remainingDays != null && remainingDays > 0 && remaining != null && (
                 <div className="mt-4 pt-4 border-t border-slate-200">
                   <div className="flex items-start gap-2">
-                    <span className="text-base mt-0.5">💡</span>
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-gray-900 mb-1">動態調整建議</p>
                       {client.auto_adjust_enabled && (
                         <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1 mb-1.5">
-                          ✅ 此學員自動調整中{client.last_auto_adjust_at ? `（上次 ${String(client.last_auto_adjust_at).slice(0, 10)}）` : ''}。下方為即時參考，系統會在冷卻期後自動評估，通常不需手動套用。
+                          此學員自動調整中{client.last_auto_adjust_at ? `（上次 ${String(client.last_auto_adjust_at).slice(0, 10)}）` : ''}。下方為即時參考，系統會在冷卻期後自動評估，通常不需手動套用。
                         </p>
                       )}
                       <p className="text-xs text-gray-600 leading-relaxed">
@@ -2064,7 +2061,7 @@ export default function ClientOverview() {
                             if (currentCarbTarget != null && newCarb != null && newCarb !== currentCarbTarget) updates.carbs_target = newCarb
                             if (currentCarbTrain != null && newCarbTrain != null && newCarbTrain !== currentCarbTrain) updates.carbs_training_day = newCarbTrain
                             if (currentCarbRest != null && newCarbRest != null && newCarbRest !== currentCarbRest) updates.carbs_rest_day = newCarbRest
-                            await saveQuickAction(updates, '✓ macros 已調整')
+                            await saveQuickAction(updates, 'macros 已調整')
                             // Audit log
                             try {
                               await fetch('/api/admin/macro-adjustment-log', {
@@ -2089,13 +2086,13 @@ export default function ClientOverview() {
                           disabled={quickSaving}
                           className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors ${client.auto_adjust_enabled ? 'bg-white border border-slate-300 text-gray-600 hover:bg-slate-50' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                         >
-                          {quickSaving ? '套用中…' : client.auto_adjust_enabled ? '手動立即套用（通常不需）' : '🎯 一鍵套用建議'}
+                          {quickSaving ? '套用中…' : client.auto_adjust_enabled ? '手動立即套用（通常不需）' : '一鍵套用建議'}
                         </button>
                       )}
                       {/* 個人化保護觸發提示 */}
                       {noteFloors.triggeredNotes.length > 0 && (
                         <div className="mt-3 p-2.5 bg-emerald-50 border border-emerald-200 rounded text-xs">
-                          <p className="font-semibold text-emerald-800 mb-1">🛡️ 已套用個人歷史保護</p>
+                          <p className="font-semibold text-emerald-800 mb-1">已套用個人歷史保護</p>
                           {strategyNote && <p className="text-emerald-700 mb-1.5">{strategyNote}</p>}
                           <ul className="text-emerald-600 space-y-0.5">
                             {noteFloors.triggeredNotes.map((t, i) => (
@@ -2129,16 +2126,15 @@ export default function ClientOverview() {
           const fmtType = (t: string | null) => {
             if (!t) return '—'
             const map: Record<string, string> = {
-              cardio: '🏃 有氧', strength: '💪 重訓', mixed: '🔀 混合',
-              rest: '😴 休息', flexibility: '🧘 柔軟度', sports: '⚽ 運動',
-              push: '💥 Push', pull: '🪝 Pull', legs: '🦵 Legs', upper: '💪 Upper', lower: '🦵 Lower',
+              cardio: '有氧', strength: '重訓', mixed: '混合',
+              rest: '休息', flexibility: '柔軟度', sports: '運動',
+              push: 'Push', pull: 'Pull', legs: 'Legs', upper: 'Upper', lower: 'Lower',
             }
             return map[t] || t
           }
           return (
             <div className="bg-white border border-slate-200 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">🏋️</span>
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900">近 30 天訓練紀錄（學員回報）</h3>
                   <p className="text-[11px] text-gray-400 mt-0.5">含「痛 / 不適 / 受傷 / 酸 / 麻 / 緊」自動紅標置頂</p>
@@ -2148,7 +2144,7 @@ export default function ClientOverview() {
               {flagged.length > 0 && (
                 <div className="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-lg">
                   <p className="text-sm font-semibold text-rose-700 mb-2">
-                    ⚠️ {flagged.length} 筆紀錄含疼痛/不適關鍵字，建議優先處理
+                    {flagged.length} 筆紀錄含疼痛/不適關鍵字，建議優先處理
                   </p>
                   <div className="space-y-2">
                     {flagged.map((r: any) => (
@@ -2169,7 +2165,7 @@ export default function ClientOverview() {
               {withNotes.length > 0 && (
                 <details className="text-xs">
                   <summary className="cursor-pointer text-gray-600 font-semibold">
-                    📝 其他學員備註（{withNotes.length} 筆）
+                    其他學員備註（{withNotes.length} 筆）
                   </summary>
                   <div className="space-y-1.5 mt-2">
                     {withNotes.map((r: any) => (
@@ -2193,7 +2189,6 @@ export default function ClientOverview() {
         <div id="coach-quick-actions" className="bg-white border border-slate-200 rounded-2xl p-5 scroll-mt-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-lg">⚡</span>
               <h3 className="text-sm font-semibold text-gray-900">教練快速操作</h3>
               {client?.calories_target && (
                 <span className="text-xs text-gray-400 ml-2">
@@ -2205,7 +2200,7 @@ export default function ClientOverview() {
               <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                 quickToast.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
               }`}>
-                {quickToast.type === 'success' ? '✅' : '❌'} {quickToast.msg}
+                {quickToast.msg}
               </span>
             )}
           </div>
@@ -2217,7 +2212,7 @@ export default function ClientOverview() {
                 quickAction === 'calories' ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
               }`}
             >
-              🔥 改熱量
+              改熱量
             </button>
             <button
               onClick={() => openQuickAction(quickAction === 'phase' ? null as any : 'phase')}
@@ -2225,7 +2220,7 @@ export default function ClientOverview() {
                 quickAction === 'phase' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50'
               }`}
             >
-              📅 切階段
+              切階段
             </button>
             <button
               onClick={() => openQuickAction(quickAction === 'note' ? null as any : 'note')}
@@ -2233,7 +2228,7 @@ export default function ClientOverview() {
                 quickAction === 'note' ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
               }`}
             >
-              📝 加備註
+              加備註
             </button>
           </div>
 
@@ -2285,7 +2280,7 @@ export default function ClientOverview() {
                   onClick={() => saveQuickAction({ calories_target: String(caloriesDraft) }, `熱量改為 ${caloriesDraft} kcal`)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  {quickSaving ? '儲存中...' : '✓ 儲存'}
+                  {quickSaving ? '儲存中...' : '儲存'}
                 </button>
               </div>
             </div>
@@ -2322,7 +2317,7 @@ export default function ClientOverview() {
                   onClick={() => saveQuickAction({ prep_phase: phaseDraft }, `階段改為 ${PHASE_LABELS[phaseDraft] || phaseDraft}`)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  {quickSaving ? '儲存中...' : '✓ 儲存'}
+                  {quickSaving ? '儲存中...' : '儲存'}
                 </button>
               </div>
             </div>
@@ -2351,7 +2346,7 @@ export default function ClientOverview() {
                   onClick={() => saveQuickAction({ coach_weekly_note: noteDraft || null }, '教練備註已更新')}
                   className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  {quickSaving ? '儲存中...' : '✓ 儲存'}
+                  {quickSaving ? '儲存中...' : '儲存'}
                 </button>
               </div>
               {client?.coach_weekly_note && noteDraft !== client.coach_weekly_note && (
@@ -2367,7 +2362,6 @@ export default function ClientOverview() {
         <div className="bg-white border border-slate-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-lg">🤖</span>
               <h3 className="text-sm font-semibold text-slate-900">本週建議調整</h3>
             </div>
             <button
@@ -2404,7 +2398,7 @@ export default function ClientOverview() {
         {/* ===== 本週報告 ===== */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-blue-900">📋 {dateRange === '7' ? '本週' : `近 ${dateRange} 天`}報告</h3>
+            <h3 className="text-sm font-semibold text-blue-900">{dateRange === '7' ? '本週' : `近 ${dateRange} 天`}報告</h3>
             <div className="flex items-center gap-2">
               <span className="text-xs text-blue-600 font-medium">{weeklyReport.weekLabel}</span>
               <button
@@ -2419,7 +2413,7 @@ export default function ClientOverview() {
                   copied ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                {copied ? '已複製 ✓' : '複製文字'}
+                {copied ? '已複製' : '複製文字'}
               </button>
               <button
                 onClick={() => {
@@ -2433,7 +2427,7 @@ export default function ClientOverview() {
                   copiedTraining ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                {copiedTraining ? '已複製 ✓' : '訓練端摘要'}
+                {copiedTraining ? '已複製' : '訓練端摘要'}
               </button>
               <button
                 onClick={() => {
@@ -2447,7 +2441,7 @@ export default function ClientOverview() {
                   copiedAi ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                {copiedAi ? '已複製 ✓' : 'AI 完整摘要'}
+                {copiedAi ? '已複製' : 'AI 完整摘要'}
               </button>
             </div>
           </div>
@@ -2520,7 +2514,7 @@ export default function ClientOverview() {
             )}
             {isCompetitionMode(client.client_mode) && weeklyReport.avgCalories != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
-                <p className="text-xs text-gray-500 mb-0.5">🔥 平均熱量</p>
+                <p className="text-xs text-gray-500 mb-0.5">平均熱量</p>
                 <p className={`text-2xl font-bold tabular-nums ${client.calories_target && weeklyReport.avgCalories >= client.calories_target * 0.9 && weeklyReport.avgCalories <= client.calories_target * 1.1 ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {weeklyReport.avgCalories}
                 </p>
@@ -2529,7 +2523,7 @@ export default function ClientOverview() {
             )}
             {isCompetitionMode(client.client_mode) && weeklyReport.avgCarbs != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
-                <p className="text-xs text-gray-500 mb-0.5">🍚 平均碳水</p>
+                <p className="text-xs text-gray-500 mb-0.5">平均碳水</p>
                 <p className={`text-2xl font-bold tabular-nums ${client.carbs_target && weeklyReport.avgCarbs >= client.carbs_target * 0.9 && weeklyReport.avgCarbs <= client.carbs_target * 1.1 ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {weeklyReport.avgCarbs}g
                 </p>
@@ -2538,7 +2532,7 @@ export default function ClientOverview() {
             )}
             {isCompetitionMode(client.client_mode) && weeklyReport.avgFat != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
-                <p className="text-xs text-gray-500 mb-0.5">🥑 平均脂肪</p>
+                <p className="text-xs text-gray-500 mb-0.5">平均脂肪</p>
                 <p className={`text-2xl font-bold tabular-nums ${client.fat_target && weeklyReport.avgFat >= client.fat_target * 0.9 && weeklyReport.avgFat <= client.fat_target * 1.1 ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {weeklyReport.avgFat}g
                 </p>
@@ -2565,9 +2559,9 @@ export default function ClientOverview() {
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{suggestion.statusEmoji}</span>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900">🧮 營養分析引擎{isCompetitionMode(client.client_mode) ? ' · 僅供對照' : ''}</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">營養分析引擎{isCompetitionMode(client.client_mode) ? ' · 僅供對照' : ''}</h3>
                   <p className="text-xs text-gray-500">
-                    {suggestionMeta?.goalType === 'cut' ? '🔻 減脂模式' : '🔺 增肌模式'}
+                    {suggestionMeta?.goalType === 'cut' ? '減脂模式' : '增肌模式'}
                     {suggestion.weeklyWeightChangeRate != null && ` · 週變化 ${suggestion.weeklyWeightChangeRate > 0 ? '+' : ''}${suggestion.weeklyWeightChangeRate.toFixed(2)}%`}
                     {suggestion.estimatedTDEE && ` · 估算 TDEE ${suggestion.estimatedTDEE} kcal`}
                   </p>
@@ -2594,7 +2588,7 @@ export default function ClientOverview() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {suggestion.suggestedCalories != null && (
                     <div className="text-center">
-                      <p className="text-[11px] text-gray-500">🔥 熱量</p>
+                      <p className="text-[11px] text-gray-500">熱量</p>
                       <p className="text-lg font-bold text-gray-900">{suggestion.suggestedCalories}</p>
                       <p className={`text-xs font-medium ${suggestion.caloriesDelta > 0 ? 'text-emerald-600' : suggestion.caloriesDelta < 0 ? 'text-rose-600' : 'text-gray-400'}`}>
                         {suggestion.caloriesDelta > 0 ? '+' : ''}{suggestion.caloriesDelta} kcal
@@ -2603,7 +2597,7 @@ export default function ClientOverview() {
                   )}
                   {suggestion.suggestedProtein != null && (
                     <div className="text-center">
-                      <p className="text-[11px] text-gray-500">🥩 蛋白質</p>
+                      <p className="text-[11px] text-gray-500">蛋白質</p>
                       <p className="text-lg font-bold text-gray-900">{suggestion.suggestedProtein}g</p>
                       <p className={`text-xs font-medium ${suggestion.proteinDelta > 0 ? 'text-emerald-600' : suggestion.proteinDelta < 0 ? 'text-rose-600' : 'text-gray-400'}`}>
                         {suggestion.proteinDelta === 0 ? '維持' : `${suggestion.proteinDelta > 0 ? '+' : ''}${suggestion.proteinDelta}g`}
@@ -2612,7 +2606,7 @@ export default function ClientOverview() {
                   )}
                   {suggestion.suggestedCarbs != null && (
                     <div className="text-center">
-                      <p className="text-[11px] text-gray-500">🍚 碳水</p>
+                      <p className="text-[11px] text-gray-500">碳水</p>
                       <p className="text-lg font-bold text-gray-900">{suggestion.suggestedCarbs}g</p>
                       <p className={`text-xs font-medium ${suggestion.carbsDelta > 0 ? 'text-emerald-600' : suggestion.carbsDelta < 0 ? 'text-rose-600' : 'text-gray-400'}`}>
                         {suggestion.carbsDelta > 0 ? '+' : ''}{suggestion.carbsDelta}g
@@ -2621,7 +2615,7 @@ export default function ClientOverview() {
                   )}
                   {suggestion.suggestedFat != null && (
                     <div className="text-center">
-                      <p className="text-[11px] text-gray-500">🥑 脂肪</p>
+                      <p className="text-[11px] text-gray-500">脂肪</p>
                       <p className="text-lg font-bold text-gray-900">{suggestion.suggestedFat}g</p>
                       <p className={`text-xs font-medium ${suggestion.fatDelta > 0 ? 'text-emerald-600' : suggestion.fatDelta < 0 ? 'text-rose-600' : 'text-gray-400'}`}>
                         {suggestion.fatDelta === 0 ? '維持' : `${suggestion.fatDelta > 0 ? '+' : ''}${suggestion.fatDelta}g`}
@@ -2632,7 +2626,7 @@ export default function ClientOverview() {
                 {/* 碳循環分配 */}
                 {suggestion.suggestedCarbsTrainingDay != null && suggestion.suggestedCarbsRestDay != null && (
                   <div className="mt-3 pt-3 border-t border-slate-200">
-                    <p className="text-[11px] text-gray-500 mb-1">🔄 碳循環分配</p>
+                    <p className="text-[11px] text-gray-500 mb-1">碳循環分配</p>
                     <div className="flex gap-4 text-sm">
                       <span className="text-slate-600">訓練日：{suggestion.suggestedCarbsTrainingDay}g</span>
                       <span className="text-gray-500">休息日：{suggestion.suggestedCarbsRestDay}g</span>
@@ -2646,7 +2640,7 @@ export default function ClientOverview() {
             {suggestion.warnings?.length > 0 && (
               <div className="bg-white/50 rounded-lg px-3 py-2 mb-3">
                 {suggestion.warnings.map((w: string, i: number) => (
-                  <p key={i} className="text-xs text-amber-700">💡 {w}</p>
+                  <p key={i} className="text-xs text-amber-700">{w}</p>
                 ))}
               </div>
             )}
@@ -2663,7 +2657,7 @@ export default function ClientOverview() {
                       : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
                   }`}
                 >
-                  {suggestionApplied ? '✓ 已套用' : applyingsuggestion ? '套用中...' : '一鍵套用'}
+                  {suggestionApplied ? '已套用' : applyingsuggestion ? '套用中...' : '一鍵套用'}
                 </button>
                 <Link
                   href={`/admin/clients/${clientId}`}
@@ -2675,7 +2669,7 @@ export default function ClientOverview() {
             )}
             {isCompetitionMode(client.client_mode) && (
               <div className="bg-white/60 border border-slate-200 rounded-lg px-3 py-2 text-xs text-gray-500 leading-snug">
-                ℹ️ 比賽模式：實際營養素由下方「動態調整建議（比賽引擎 trajectory）」為準，此卡數字僅供對照、不提供套用。
+                比賽模式：實際營養素由下方「動態調整建議（比賽引擎 trajectory）」為準，此卡數字僅供對照、不提供套用。
               </div>
             )}
 
@@ -2689,13 +2683,13 @@ export default function ClientOverview() {
                 {suggestion.dietDurationWeeks != null && <span>已執行：{suggestion.dietDurationWeeks}週</span>}
               </div>
             )}
-            <p className="text-[11px] text-gray-400 mt-2">⚠️ 以上數據由系統根據體重趨勢自動運算，僅供教練參考，不構成營養指導。最終調整請依教練專業判斷。</p>
+            <p className="text-[11px] text-gray-400 mt-2">以上數據由系統根據體重趨勢自動運算，僅供教練參考，不構成營養指導。最終調整請依教練專業判斷。</p>
           </div>
         )}
 
         {/* ===== 深度圖表（收合）：營養・感受・補品 ===== */}
         <details className="group">
-          <summary className="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-900 px-1 py-2 select-none">🍽️ 營養・感受・補品 圖表（點開）</summary>
+          <summary className="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-900 px-1 py-2 select-none">營養・感受・補品 圖表（點開）</summary>
           <div className="space-y-6 mt-2">
 
         {/* ===== 第一排圖表：補品 + 感受 ===== */}
@@ -2704,7 +2698,7 @@ export default function ClientOverview() {
             {/* 補品服從率趨勢 */}
             {client.supplement_enabled && (
               <div className="bg-white border border-slate-200 rounded-2xl p-5">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">💊 補品服從率趨勢</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">補品服從率趨勢</h3>
                 {complianceTrend.length >= 2 ? (
                   <ResponsiveContainer width="100%" height={200} minWidth={0}>
                     <LineChart data={complianceTrend}>
@@ -2724,7 +2718,7 @@ export default function ClientOverview() {
             {/* 感受趨勢 */}
             {client.wellness_enabled && (
               <div className="bg-white border border-slate-200 rounded-2xl p-5">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">😊 感受趨勢</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">感受趨勢</h3>
                 {wellnessTrend.length >= 2 ? (
                   <ResponsiveContainer width="100%" height={200} minWidth={0}>
                     <LineChart data={wellnessTrend}>
@@ -2749,7 +2743,7 @@ export default function ClientOverview() {
         {/* ===== 飲食合規趨勢 ===== */}
         {client.nutrition_enabled && nutritionTrend.length >= 2 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">🍽️ 飲食合規趨勢（週）</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">飲食合規趨勢（週）</h3>
             <ResponsiveContainer width="100%" height={200} minWidth={0}>
               <BarChart data={nutritionTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -2767,7 +2761,7 @@ export default function ClientOverview() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {proteinWaterTrend.some(d => d.蛋白質 != null) && (
               <div className="bg-white border border-slate-200 rounded-2xl p-5">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">🥩 蛋白質攝取趨勢</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">蛋白質攝取趨勢</h3>
                 <ResponsiveContainer width="100%" height={200} minWidth={0}>
                   <BarChart data={proteinWaterTrend.filter(d => d.蛋白質 != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -2787,7 +2781,7 @@ export default function ClientOverview() {
             )}
             {proteinWaterTrend.some(d => d.飲水量 != null) && (
               <div className="bg-white border border-slate-200 rounded-2xl p-5">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">💧 飲水量趨勢</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">飲水量趨勢</h3>
                 <ResponsiveContainer width="100%" height={200} minWidth={0}>
                   <BarChart data={proteinWaterTrend.filter(d => d.飲水量 != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -2808,11 +2802,11 @@ export default function ClientOverview() {
         {/* ===== 備賽巨量營養素趨勢 ===== */}
         {isCompetitionMode(client.client_mode) && (macroTrend.calories.length >= 2 || macroTrend.carbs.length >= 2 || macroTrend.fat.length >= 2) && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">🏆 備賽巨量營養素趨勢</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">備賽巨量營養素趨勢</h3>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {macroTrend.calories.length >= 2 && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-2 font-medium">🔥 熱量 (kcal)</p>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">熱量 (kcal)</p>
                   <ResponsiveContainer width="100%" height={160} minWidth={0}>
                     <LineChart data={macroTrend.calories}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -2827,7 +2821,7 @@ export default function ClientOverview() {
               )}
               {macroTrend.carbs.length >= 2 && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-2 font-medium">🍚 碳水 (g)</p>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">碳水 (g)</p>
                   <ResponsiveContainer width="100%" height={160} minWidth={0}>
                     <LineChart data={macroTrend.carbs}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -2842,7 +2836,7 @@ export default function ClientOverview() {
               )}
               {macroTrend.fat.length >= 2 && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-2 font-medium">🥑 脂肪 (g)</p>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">脂肪 (g)</p>
                   <ResponsiveContainer width="100%" height={160} minWidth={0}>
                     <LineChart data={macroTrend.fat}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -2862,14 +2856,14 @@ export default function ClientOverview() {
         {/* ===== 巨量營養素偏差報告 ===== */}
         {macroDeviation && macroDeviation.dailyData.length >= 3 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">📊 巨量營養素偏差報告</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">巨量營養素偏差報告</h3>
             <p className="text-xs text-gray-400 mb-4">近 14 天每日攝取 vs 目標的偏差百分比，綠色 = ±10% 以內</p>
 
             {/* 偏差摘要卡片 */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
               {macroDeviation.avgCalDev != null && (
                 <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgCalDev) <= 10 ? 'bg-emerald-50' : Math.abs(macroDeviation.avgCalDev) <= 20 ? 'bg-amber-50' : 'bg-rose-50'}`}>
-                  <p className="text-xs text-gray-500 mb-0.5">🔥 熱量偏差</p>
+                  <p className="text-xs text-gray-500 mb-0.5">熱量偏差</p>
                   <p className={`text-xl font-bold tabular-nums ${Math.abs(macroDeviation.avgCalDev) <= 10 ? 'text-emerald-600' : Math.abs(macroDeviation.avgCalDev) <= 20 ? 'text-amber-600' : 'text-rose-600'}`}>
                     {macroDeviation.avgCalDev > 0 ? '+' : ''}{macroDeviation.avgCalDev}%
                   </p>
@@ -2878,7 +2872,7 @@ export default function ClientOverview() {
               )}
               {macroDeviation.avgProDev != null && (
                 <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgProDev) <= 10 ? 'bg-emerald-50' : Math.abs(macroDeviation.avgProDev) <= 20 ? 'bg-amber-50' : 'bg-rose-50'}`}>
-                  <p className="text-xs text-gray-500 mb-0.5">🥩 蛋白質偏差</p>
+                  <p className="text-xs text-gray-500 mb-0.5">蛋白質偏差</p>
                   <p className={`text-xl font-bold tabular-nums ${Math.abs(macroDeviation.avgProDev) <= 10 ? 'text-emerald-600' : Math.abs(macroDeviation.avgProDev) <= 20 ? 'text-amber-600' : 'text-rose-600'}`}>
                     {macroDeviation.avgProDev > 0 ? '+' : ''}{macroDeviation.avgProDev}%
                   </p>
@@ -2887,7 +2881,7 @@ export default function ClientOverview() {
               )}
               {macroDeviation.avgCarbDev != null && (
                 <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgCarbDev) <= 10 ? 'bg-emerald-50' : Math.abs(macroDeviation.avgCarbDev) <= 20 ? 'bg-amber-50' : 'bg-rose-50'}`}>
-                  <p className="text-xs text-gray-500 mb-0.5">🍚 碳水偏差</p>
+                  <p className="text-xs text-gray-500 mb-0.5">碳水偏差</p>
                   <p className={`text-xl font-bold tabular-nums ${Math.abs(macroDeviation.avgCarbDev) <= 10 ? 'text-emerald-600' : Math.abs(macroDeviation.avgCarbDev) <= 20 ? 'text-amber-600' : 'text-rose-600'}`}>
                     {macroDeviation.avgCarbDev > 0 ? '+' : ''}{macroDeviation.avgCarbDev}%
                   </p>
@@ -2896,7 +2890,7 @@ export default function ClientOverview() {
               )}
               {macroDeviation.avgFatDev != null && (
                 <div className={`rounded-xl p-3 text-center ${Math.abs(macroDeviation.avgFatDev) <= 10 ? 'bg-emerald-50' : Math.abs(macroDeviation.avgFatDev) <= 20 ? 'bg-amber-50' : 'bg-rose-50'}`}>
-                  <p className="text-xs text-gray-500 mb-0.5">🥑 脂肪偏差</p>
+                  <p className="text-xs text-gray-500 mb-0.5">脂肪偏差</p>
                   <p className={`text-xl font-bold tabular-nums ${Math.abs(macroDeviation.avgFatDev) <= 10 ? 'text-emerald-600' : Math.abs(macroDeviation.avgFatDev) <= 20 ? 'text-amber-600' : 'text-rose-600'}`}>
                     {macroDeviation.avgFatDev > 0 ? '+' : ''}{macroDeviation.avgFatDev}%
                   </p>
@@ -2908,7 +2902,7 @@ export default function ClientOverview() {
             {/* 偏差柱狀圖 — 熱量 */}
             {macroDeviation.dailyData.some((d: any) => d.calDev != null) && (
               <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-2 font-medium">🔥 每日熱量偏差 (%)（目標 {client.calories_target} kcal）</p>
+                <p className="text-xs text-gray-500 mb-2 font-medium">每日熱量偏差 (%)（目標 {client.calories_target} kcal）</p>
                 <ResponsiveContainer width="100%" height={140} minWidth={0}>
                   <BarChart data={macroDeviation.dailyData.filter((d: any) => d.calDev != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -2931,7 +2925,7 @@ export default function ClientOverview() {
             {/* 偏差柱狀圖 — 蛋白質 */}
             {macroDeviation.dailyData.some((d: any) => d.proDev != null) && (
               <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-2 font-medium">🥩 每日蛋白質偏差 (%)（目標 {client.protein_target}g）</p>
+                <p className="text-xs text-gray-500 mb-2 font-medium">每日蛋白質偏差 (%)（目標 {client.protein_target}g）</p>
                 <ResponsiveContainer width="100%" height={140} minWidth={0}>
                   <BarChart data={macroDeviation.dailyData.filter((d: any) => d.proDev != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -2955,9 +2949,9 @@ export default function ClientOverview() {
             {macroDeviation.dailyData.some((d: any) => d.carbDev != null) && (
               <div className="mb-4">
                 <p className="text-xs text-gray-500 mb-2 font-medium">
-                  🍚 每日碳水偏差 (%)
+                  每日碳水偏差 (%)
                   {client.carbs_training_day && client.carbs_rest_day
-                    ? `（🔄 訓練日 ${client.carbs_training_day}g / 休息日 ${client.carbs_rest_day}g）`
+                    ? `（訓練日 ${client.carbs_training_day}g / 休息日 ${client.carbs_rest_day}g）`
                     : `（目標 ${client.carbs_target}g）`
                   }
                 </p>
@@ -2983,7 +2977,7 @@ export default function ClientOverview() {
             {/* 偏差柱狀圖 — 脂肪 */}
             {macroDeviation.dailyData.some((d: any) => d.fatDev != null) && (
               <div>
-                <p className="text-xs text-gray-500 mb-2 font-medium">🥑 每日脂肪偏差 (%)（目標 {client.fat_target}g）</p>
+                <p className="text-xs text-gray-500 mb-2 font-medium">每日脂肪偏差 (%)（目標 {client.fat_target}g）</p>
                 <ResponsiveContainer width="100%" height={140} minWidth={0}>
                   <BarChart data={macroDeviation.dailyData.filter((d: any) => d.fatDev != null)}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -3010,7 +3004,7 @@ export default function ClientOverview() {
 
         {/* ===== 深度圖表（收合）：訓練・身體 ===== */}
         <details className="group">
-          <summary className="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-900 px-1 py-2 select-none">🏋️ 訓練・身體 圖表（點開）</summary>
+          <summary className="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-900 px-1 py-2 select-none">訓練・身體 圖表（點開）</summary>
           <div className="space-y-6 mt-2">
 
         {/* 動作進步追蹤（每動作推估 1RM/PR/停滯）— 與學員端同一引擎 */}
@@ -3023,7 +3017,7 @@ export default function ClientOverview() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 訓練日曆 */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 lg:col-span-2">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">🗓️ 訓練日曆（6 週）</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">訓練日曆（6 週）</h3>
               <div className="space-y-1">
                 <div className="grid grid-cols-7 gap-1 mb-1">
                   {['一', '二', '三', '四', '五', '六', '日'].map(d => (
@@ -3064,7 +3058,7 @@ export default function ClientOverview() {
 
             {/* 訓練類型分佈 */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">📊 訓練分佈</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">訓練分佈</h3>
               {trainingDistribution.length > 0 ? (
                 <ResponsiveContainer width="100%" height={200} minWidth={0}>
                   <BarChart data={trainingDistribution} layout="vertical">
@@ -3085,7 +3079,7 @@ export default function ClientOverview() {
         {/* RPE 趨勢 */}
         {client.training_enabled && rpeTrend.length >= 2 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">💥 RPE 趨勢</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">RPE 趨勢</h3>
             <ResponsiveContainer width="100%" height={200} minWidth={0}>
               <LineChart data={rpeTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -3102,7 +3096,7 @@ export default function ClientOverview() {
         {client.body_composition_enabled && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {bodyTrend.weight.length >= 2 && (
             <div className="bg-white border border-slate-200 rounded-2xl p-5">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">⚖️ 體重趨勢</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">體重趨勢</h3>
               <ResponsiveContainer width="100%" height={200} minWidth={0}>
                 <LineChart data={bodyTrend.weight}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -3116,7 +3110,7 @@ export default function ClientOverview() {
           )}
           {bodyTrend.bodyFat.length >= 2 && (
             <div className="bg-white border border-slate-200 rounded-2xl p-5">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">📉 體脂趨勢</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">體脂趨勢</h3>
               <ResponsiveContainer width="100%" height={200} minWidth={0}>
                 <LineChart data={bodyTrend.bodyFat}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -3133,7 +3127,7 @@ export default function ClientOverview() {
         {/* ===== 訓練 × 恢復分析 ===== */}
         {client.training_enabled && client.wellness_enabled && recoveryAnalysis.length > 0 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">🔍 訓練 × 恢復分析</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">訓練 × 恢復分析</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
@@ -3184,7 +3178,7 @@ export default function ClientOverview() {
         {/* ===== E1RM 趨勢（主項力量）===== */}
         {client.training_enabled && e1rmTrend.exercises.length > 0 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">💪 主項力量趨勢（E1RM）</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">主項力量趨勢（E1RM）</h3>
             <div className="flex flex-wrap gap-3 mb-3">
               {e1rmTrend.exercises.map((ex: string) => {
                 const change = e1rmTrend.changes[ex]
@@ -3232,7 +3226,7 @@ export default function ClientOverview() {
         {/* ===== 每週訓練量趨勢 ===== */}
         {client.training_enabled && weeklyTonnage.length >= 2 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">📈 每週訓練量趨勢</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">每週訓練量趨勢</h3>
             <ResponsiveContainer width="100%" height={220} minWidth={0}>
               <BarChart data={weeklyTonnage}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -3253,7 +3247,7 @@ export default function ClientOverview() {
         {/* ===== 每肌群週組數 ===== */}
         {client.training_enabled && muscleGroupSets.length > 0 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">🎯 每肌群週組數</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">每肌群週組數</h3>
             <ResponsiveContainer width="100%" height={Math.max(180, muscleGroupSets.length * 36)} minWidth={0}>
               <BarChart data={muscleGroupSets} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
@@ -3274,13 +3268,13 @@ export default function ClientOverview() {
 
         {/* ===== 深度圖表（收合）：血檢（預設展開，Howard 主戰場）===== */}
         <details className="group" open>
-          <summary className="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-900 px-1 py-2 select-none">🩸 血檢 圖表與建議</summary>
+          <summary className="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-900 px-1 py-2 select-none">血檢 圖表與建議</summary>
           <div className="space-y-6 mt-2">
 
         {/* ===== 血檢指標 ===== */}
         {client.lab_enabled && latestLabs.length > 0 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">🩸 血檢指標（最新）</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">血檢指標（最新）</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {latestLabs.map((lab) => (
                 <div key={lab.id} className="border border-slate-200 rounded-xl p-3">
@@ -3302,7 +3296,6 @@ export default function ClientOverview() {
         {supplementSuggestions.length > 0 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-base">💊</span>
               <h3 className="text-sm font-semibold text-gray-900">補品建議</h3>
               <span className="text-xs text-gray-400 ml-auto">依血檢數值與訓練狀態自動分析</span>
             </div>
@@ -3386,10 +3379,10 @@ export default function ClientOverview() {
         {/* ===== 教練備註 ===== */}
         {client.coach_summary && (
           <div className="bg-blue-50 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-blue-800 mb-2">📝 教練備註</h3>
+            <h3 className="text-sm font-semibold text-blue-800 mb-2">教練備註</h3>
             <p className="text-sm text-gray-700 whitespace-pre-line">{client.coach_summary}</p>
             {client.health_goals && (
-              <p className="text-xs text-gray-600 mt-3 pt-3 border-t border-blue-100">🎯 目標：{client.health_goals}</p>
+              <p className="text-xs text-gray-600 mt-3 pt-3 border-t border-blue-100">目標：{client.health_goals}</p>
             )}
           </div>
         )}
@@ -3404,13 +3397,13 @@ export default function ClientOverview() {
             onClick={() => setShowCompose(true)}
             className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors"
           >
-            💬 發訊息
+            發訊息
           </button>
           <button
             onClick={() => { openQuickAction('calories'); document.getElementById('coach-quick-actions')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
             className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 text-slate-700 text-sm font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors"
           >
-            ⚡ 調整
+            調整
           </button>
         </div>
       </div>

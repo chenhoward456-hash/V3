@@ -69,7 +69,6 @@ function CoachMessageBannerInner({ msg: msgProp, clientCode }: { msg?: CoachMess
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
       <div className="flex items-center gap-2.5 mb-2 pr-7">
-        <span className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-base shrink-0">{isAccount ? '👋' : '💬'}</span>
         <div className="min-w-0">
           <p className="text-sm font-bold text-blue-900 leading-tight">{cleanTitle}</p>
           {dateStr && <p className="text-[11px] text-blue-400 leading-tight">{dateStr} · 教練 Howard</p>}

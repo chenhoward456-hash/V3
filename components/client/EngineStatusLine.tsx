@@ -34,7 +34,6 @@ function EngineStatusLineInner({
   if (coachOverride) {
     return (
       <p className="flex items-center gap-1.5 text-[11px] text-gray-500 px-1 mb-2 leading-snug">
-        <span className="shrink-0">🔒</span>
         <span>教練手動設定 {cal}，系統不自動更動{coachOverride.reason ? `（${coachOverride.reason}）` : ''}</span>
       </p>
     )
@@ -53,7 +52,6 @@ function EngineStatusLineInner({
 
   return (
     <p className="flex items-center gap-1.5 text-[11px] text-gray-500 px-1 mb-2 leading-snug">
-      <span className="shrink-0">🔧</span>
       <span>系統自動校正中 · 目前 {cal} · {detail}</span>
     </p>
   )

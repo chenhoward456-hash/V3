@@ -129,10 +129,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
   const gateWarningBanner = gate?.blocked ? (
     <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span>🩸</span>
-          <p className="text-sm font-semibold text-amber-800">血檢指標異常</p>
-        </div>
+        <p className="text-sm font-semibold text-amber-800">血檢指標異常</p>
         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
           就緒 {gate.readinessScore}/100
         </span>
@@ -163,10 +160,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
     if (data.status === 'insufficient_data') {
       return (
         <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">📊</span>
-            <h2 className="text-lg font-bold text-gray-900">目標體重計畫</h2>
-          </div>
+          <h2 className="text-lg font-bold text-gray-900 mb-3">目標體重計畫</h2>
           <div className="bg-slate-50 rounded-xl px-4 py-3 text-sm text-gray-500">
             需要至少 2 週的體重數據，系統才能啟動自動調整。請持續記錄體重！
           </div>
@@ -177,16 +171,16 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
     if (data.status && data.statusEmoji) {
       return (
         <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">🎯</span>
-            <h2 className="text-lg font-bold text-gray-900">目標體重計畫</h2>
-          </div>
+          <h2 className="text-lg font-bold text-gray-900 mb-3">目標體重計畫</h2>
           <div className={`rounded-xl px-4 py-3 text-sm font-medium ${
             data.status === 'on_track' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
             : data.status === 'plateau' ? 'bg-amber-50 text-amber-700 border border-amber-200'
             : 'bg-rose-50 text-rose-600 border border-rose-200'
           }`}>
-            {data.statusEmoji} {data.statusLabel} — {data.message}
+            <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${
+              data.status === 'on_track' ? 'bg-emerald-500' : data.status === 'plateau' ? 'bg-amber-500' : 'bg-rose-500'
+            }`} />
+            {data.statusLabel} — {data.message}
           </div>
           {dl && (
             <div className="grid grid-cols-3 gap-2 mt-3">
@@ -209,12 +203,9 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           )}
           {data.refeedSuggested && (
             <div className="mt-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">🔄</span>
-                <p className="text-sm font-bold text-amber-700">
-                  系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
-                </p>
-              </div>
+              <p className="text-sm font-bold text-amber-700 mb-1">
+                系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
+              </p>
               <p className="text-xs text-amber-700">{data.refeedReason}</p>
               <p className="text-[11px] text-amber-600 mt-1">
                 今日碳水提升至維持熱量（4-6g/kg），脂肪降低，蛋白質維持。
@@ -260,14 +251,11 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* 標題 */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🎯</span>
-          <h2 className="text-lg font-bold text-gray-900">目標體重計畫</h2>
-        </div>
+        <h2 className="text-lg font-bold text-gray-900">目標體重計畫</h2>
         <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
           isAheadOfSchedule ? 'bg-blue-100 text-blue-700' : colors.badge
         }`}>
-          {isAheadOfSchedule ? '📈 進度超前' : safetyLabels[dl.safetyLevel || 'normal']}
+          {isAheadOfSchedule ? '進度超前' : safetyLabels[dl.safetyLevel || 'normal']}
         </span>
       </div>
 
@@ -295,7 +283,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       {/* Peak Week 體重拆分（備賽專用） */}
       {dl.prePeakEntryWeight && dl.peakWeekExpectedLoss && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
-          <p className="text-[11px] font-semibold text-slate-600 mb-1.5">💧 Peak Week 體重拆分</p>
+          <p className="text-[11px] font-semibold text-slate-600 mb-1.5">Peak Week 體重拆分</p>
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div>
               <p className="text-[11px] text-gray-400">PW 入場目標</p>
@@ -341,7 +329,8 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         <div className={`rounded-xl p-3 mb-3 ${box}`}>
           <div className="flex items-center justify-between mb-1">
             <p className={`text-xs font-bold ${titleColor}`}>
-              {isLow ? '🟢' : '🔥'} 代謝壓力：<span className="tabular-nums">{ms.score}</span>/100
+              <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${ms.level === 'high' ? 'bg-rose-500' : isLow ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              代謝壓力：<span className="tabular-nums">{ms.score}</span>/100
             </p>
             <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${badge}`}>
               {badgeText}
@@ -367,20 +356,22 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           </div>
           {/* 建議句：continue / monitor 也明確說出來，不再讓人「不知道壓到何時」*/}
           <p className="text-[11px] text-gray-600 leading-relaxed">
-            {ms.recommendation === 'continue' && '✅ 目前維持即可 — 壓力低、減脂節奏健康，安心繼續。'}
-            {ms.recommendation === 'monitor' && '👀 持續監控中 — 壓力中等但尚未到回碳門檻。'}
-            {ms.recommendation === 'refeed_1day' && `💡 建議安排 1 天 strategic refeed（碳水 ${ms.refeedCarbGPerKg}g/kg，脂肪壓低，蛋白質維持）`}
-            {ms.recommendation === 'refeed_2day' && `💡 建議安排 2 天 full refeed（碳水 ${ms.refeedCarbGPerKg}g/kg，恢復 leptin 與甲狀腺）`}
-            {ms.recommendation === 'diet_break' && '💡 建議安排 3-5 天 diet break（維持熱量，高碳水，恢復荷爾蒙和代謝率）'}
+            {ms.recommendation === 'continue' && '目前維持即可 — 壓力低、減脂節奏健康，安心繼續。'}
+            {ms.recommendation === 'monitor' && '持續監控中 — 壓力中等但尚未到回碳門檻。'}
+            {ms.recommendation === 'refeed_1day' && `建議安排 1 天 strategic refeed（碳水 ${ms.refeedCarbGPerKg}g/kg，脂肪壓低，蛋白質維持）`}
+            {ms.recommendation === 'refeed_2day' && `建議安排 2 天 full refeed（碳水 ${ms.refeedCarbGPerKg}g/kg，恢復 leptin 與甲狀腺）`}
+            {ms.recommendation === 'diet_break' && '建議安排 3-5 天 diet break（維持熱量，高碳水，恢復荷爾蒙和代謝率）'}
           </p>
-          {/* 翻牌條件：還沒到回碳時，明確告訴你「差幾分」+「什麼情況會觸發」*/}
+          {/* 翻牌條件：還沒到回碳時，收進 details，點開才看細節 */}
           {(ms.recommendation === 'continue' || ms.recommendation === 'monitor') && (
-            <div className="mt-2 pt-2 border-t border-slate-200">
-              <p className="text-[11px] text-gray-500 leading-relaxed">
-                📍 距離建議回碳還差 <span className="font-bold text-gray-700">{toRefeed}</span> 分。
+            <details className="mt-2 pt-2 border-t border-slate-200">
+              <summary className="text-[11px] text-gray-500 cursor-pointer select-none">
+                距離建議回碳還差 <span className="font-bold text-gray-700">{toRefeed}</span> 分 · 觸發條件
+              </summary>
+              <p className="text-[11px] text-gray-500 leading-relaxed mt-1.5">
                 會在以下任一情況觸發：連續停滯 ≥2 週、近 7 天能量平均 ≤2.5、連續低碳(&lt;150g) ≥5 天、或減脂滿 12 週。
               </p>
-            </div>
+            </details>
           )}
         </div>
         )
@@ -396,8 +387,8 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
             canReach ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
           }`}>
             {canReach
-              ? `✅ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg${hasPeakSplit && targetWeightValue ? `（PW 後 → ${targetWeightValue}kg）` : ''} — 可以達標！`
-              : `⚠️ 預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg — 與${hasPeakSplit ? '入場目標' : '目標'}還差 ${(dl.predictedCompWeight - compareTarget).toFixed(1)}kg`
+              ? `預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg${hasPeakSplit && targetWeightValue ? `（PW 後 → ${targetWeightValue}kg）` : ''} — 可以達標！`
+              : `預測${hasPeakSplit ? ' PW 入場' : '比賽日'} ${dl.predictedCompWeight}kg — 與${hasPeakSplit ? '入場目標' : '目標'}還差 ${(dl.predictedCompWeight - compareTarget).toFixed(1)}kg`
             }
           </div>
         )
@@ -406,12 +397,9 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       {/* Refeed 建議 */}
       {data.refeedSuggested && (
         <div className="mt-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">🔄</span>
-            <p className="text-sm font-bold text-amber-700">
-              系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
-            </p>
-          </div>
+          <p className="text-sm font-bold text-amber-700 mb-1">
+            系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
+          </p>
           <p className="text-xs text-amber-700">{data.refeedReason}</p>
           <p className="text-[11px] text-amber-600 mt-1">
             今日碳水提升至維持熱量（4-6g/kg），脂肪降低，蛋白質維持。
@@ -447,13 +435,22 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         </div>
       )}
 
-      {/* 警告 — 過合規 backstop（命中診斷/疾病名的逐條降級成安全句，備賽學員不再看到越界字） */}
+      {/* 警告 — 過合規 backstop（命中診斷/疾病名的逐條降級成安全句，備賽學員不再看到越界字）
+          長句小字牆收進 details：summary 一行講重點，預設收合；逐行 emoji 前綴（🔄💡🧪💊🔧ℹ️⚠️）render 端剝掉
+          （字串來源 lib/nutrition-engine 也供週訊/其他端使用，不動 lib 本文） */}
       {data.warnings && data.warnings.length > 0 && (
-        <div className="mt-3 space-y-1">
-          {data.warnings.slice(0, 5).map((w: string, i: number) => (
-            <p key={i} className="text-[11px] text-gray-500">{degradeToSafe(w).text}</p>
-          ))}
-        </div>
+        <details className="mt-3">
+          <summary className="text-[11px] text-gray-500 cursor-pointer select-none">
+            系統提醒 · {Math.min(data.warnings.length, 5)} 項
+          </summary>
+          <div className="mt-2 space-y-2">
+            {data.warnings.slice(0, 5).map((w: string, i: number) => (
+              <p key={i} className="text-[11px] text-gray-500 leading-relaxed">
+                {degradeToSafe(w).text.replace(/^[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}\s]+/u, '')}
+              </p>
+            ))}
+          </div>
+        </details>
       )}
     </div>
     )}
@@ -462,10 +459,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
     {showPlan && (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* 標題 */}
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-2xl">🍽️</span>
-        <h2 className="text-lg font-bold text-gray-900">今日營養處方</h2>
-      </div>
+      <h2 className="text-lg font-bold text-gray-900 mb-4">今日營養處方</h2>
 
       {/* 血檢就緒警告橫幅（血檢異常時提醒，不擋建議） */}
       {gateWarningBanner}
@@ -473,24 +467,24 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       {/* 飲食目標 */}
       <div className={`${colors.bg} ${colors.border} border rounded-2xl p-4 mb-3`}>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold text-gray-700">📋 今日飲食目標</p>
+          <p className="text-xs font-semibold text-gray-700">今日飲食目標</p>
           {hasCarbCycling && (
             <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
               isTrainingDay ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
             }`}>
-              {isTrainingDay ? '🏋️ 訓練日' : '🛋️ 休息日'}
+              {isTrainingDay ? '訓練日' : '休息日'}
             </span>
           )}
         </div>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { label: '熱量', value: todayCalories, unit: 'kcal', emoji: '🔥' },
-            { label: '蛋白質', value: dbTargets?.protein ?? data.suggestedProtein, unit: 'g', emoji: '🥩' },
-            { label: '碳水', value: todayCarbs, unit: 'g', emoji: '🍚' },
-            { label: '脂肪', value: dbTargets?.fat ?? data.suggestedFat, unit: 'g', emoji: '🥑' },
-          ].map(({ label, value, unit, emoji }) => (
+            { label: '熱量', value: todayCalories, unit: 'kcal' },
+            { label: '蛋白質', value: dbTargets?.protein ?? data.suggestedProtein, unit: 'g' },
+            { label: '碳水', value: todayCarbs, unit: 'g' },
+            { label: '脂肪', value: dbTargets?.fat ?? data.suggestedFat, unit: 'g' },
+          ].map(({ label, value, unit }) => (
             <div key={label} className="text-center bg-slate-50 rounded-xl py-2 px-1">
-              <p className="text-[11px] text-gray-500">{emoji} {label}</p>
+              <p className="text-[11px] text-gray-500">{label}</p>
               <p className="text-lg font-bold text-gray-900 tabular-nums">{value || '--'}</p>
               <p className="text-[11px] text-gray-400">{unit}</p>
             </div>
@@ -502,7 +496,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
               const tDay = dbCarbCycling ? dbTargets!.carbsTrainingDay! : data.suggestedCarbsTrainingDay
               const rDay = dbCarbCycling ? dbTargets!.carbsRestDay! : data.suggestedCarbsRestDay
               return tDay === rDay
-                ? `⏸️ 碳水 ${tDay}g（碳水偏低，暫停碳循環）`
+                ? `碳水 ${tDay}g（碳水偏低，暫停碳循環）`
                 : `碳水循環：訓練日 ${tDay}g ／ 休息日 ${rDay}g`
             })()}
           </p>
@@ -512,7 +506,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       {/* 分餐蛋白質指引 */}
       {data.perMealProteinGuide && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
-          <p className="text-xs font-semibold text-amber-700">🥩 分餐蛋白質指引</p>
+          <p className="text-xs font-semibold text-amber-700">分餐蛋白質指引</p>
           <p className="text-sm text-amber-900 mt-1">
             每餐 {data.perMealProteinGuide.perMealGrams.min}-{data.perMealProteinGuide.perMealGrams.max}g，
             分 {data.perMealProteinGuide.mealsPerDay.min}-{data.perMealProteinGuide.mealsPerDay.max} 餐
@@ -524,11 +518,11 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       {/* 有氧 / 步數參考 */}
       {(dl.suggestedCardioMinutes > 0 || dl.suggestedDailySteps > 0) && (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
-          <p className="text-xs font-semibold text-slate-600 mb-2">🏃 活動量參考</p>
+          <p className="text-xs font-semibold text-slate-600 mb-2">活動量參考</p>
           <div className="grid grid-cols-2 gap-3">
             {dl.suggestedCardioMinutes > 0 && (
               <div className="bg-slate-50 rounded-xl p-3 text-center">
-                <p className="text-[11px] text-gray-500">🚴 有氧</p>
+                <p className="text-[11px] text-gray-500">有氧</p>
                 <p className="text-2xl font-bold text-slate-900 tabular-nums">{dl.suggestedCardioMinutes}</p>
                 <p className="text-[11px] text-gray-400">分鐘/天</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">中等強度</p>
@@ -536,7 +530,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
             )}
             {dl.suggestedDailySteps > 0 && (
               <div className="bg-slate-50 rounded-xl p-3 text-center">
-                <p className="text-[11px] text-gray-500">👟 步數</p>
+                <p className="text-[11px] text-gray-500">步數</p>
                 <p className="text-2xl font-bold text-slate-900 tabular-nums">{dl.suggestedDailySteps?.toLocaleString()}</p>
                 <p className="text-[11px] text-gray-400">步/天</p>
                 <p className="text-[11px] text-gray-400 mt-0.5">含日常活動</p>
@@ -545,7 +539,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
           </div>
           {dl.extraCardioNeeded && dl.extraBurnPerDay > 0 && (
             <p className="text-[11px] text-slate-500 mt-2 text-center">
-              💡 飲食面不足，需透過活動額外消耗 {dl.extraBurnPerDay} kcal/天
+              飲食面不足，需透過活動額外消耗 {dl.extraBurnPerDay} kcal/天
             </p>
           )}
           {dl.cardioNote && (
@@ -557,7 +551,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       {/* 血檢驅動的營養調整 */}
       {data.labMacroModifiers && data.labMacroModifiers.length > 0 && (
         <div className="mt-3 bg-blue-50 border border-blue-200 rounded-2xl p-4">
-          <p className="text-xs font-medium text-blue-700 mb-2">🩸 血檢指標建議</p>
+          <p className="text-xs font-medium text-blue-700 mb-2">血檢指標建議</p>
           <div className="space-y-1">
             {data.labMacroModifiers.map((mod: any, i: number) => (
               <p key={i} className="text-[11px] text-blue-600 leading-relaxed">

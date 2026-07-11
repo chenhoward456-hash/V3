@@ -36,7 +36,6 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-2xl">🧠</span>
           <h2 className="text-lg font-bold text-gray-900">每週智能分析</h2>
         </div>
         <div className="bg-slate-50 rounded-xl px-4 py-3 text-sm text-gray-500">
@@ -51,7 +50,6 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-2xl">🧠</span>
           <h2 className="text-lg font-bold text-gray-900">每週智能分析</h2>
         </div>
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
@@ -62,16 +60,16 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
   }
 
   // 狀態對應顏色和配置
-  const statusConfig: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-    on_track: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', icon: '🟢' },
-    too_fast: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', icon: '🔴' },
-    plateau: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', icon: '🟡' },
-    wrong_direction: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', icon: '🔴' },
-    goal_driven: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: '🎯' },
-    peak_week: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: '🏆' },
-    athletic_competition: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: '🏆' },
-    athletic_rebound: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: '⚡' },
-    athletic_weigh_in: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: '⚖️' },
+  const statusConfig: Record<string, { bg: string; border: string; text: string; dot: string }> = {
+    on_track: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    too_fast: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', dot: 'bg-rose-500' },
+    plateau: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500' },
+    wrong_direction: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', dot: 'bg-rose-500' },
+    goal_driven: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', dot: 'bg-slate-400' },
+    peak_week: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', dot: 'bg-slate-400' },
+    athletic_competition: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', dot: 'bg-slate-400' },
+    athletic_rebound: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', dot: 'bg-slate-400' },
+    athletic_weigh_in: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', dot: 'bg-slate-400' },
   }
   const config = statusConfig[data.status] || statusConfig.on_track
 
@@ -95,14 +93,14 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* 標題 */}
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-2xl">🧠</span>
         <h2 className="text-lg font-bold text-gray-900">每週智能分析</h2>
       </div>
 
       {/* 主要狀態 */}
       <div className={`${config.bg} ${config.border} border rounded-2xl px-4 py-3 mb-4`}>
-        <p className={`text-sm font-semibold ${config.text}`}>
-          {data.statusEmoji} {data.statusLabel}
+        <p className={`text-sm font-semibold ${config.text} flex items-center gap-1.5`}>
+          <span className={`inline-block w-2 h-2 rounded-full ${config.dot}`} />
+          {data.statusLabel}
         </p>
         <p className={`text-xs ${config.text} mt-1 opacity-80`}>
           {data.message}
@@ -161,11 +159,11 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
       {/* 調整參考（如果有 delta） */}
       {(data.caloriesDelta != null && data.caloriesDelta !== 0) || (data.proteinDelta != null && data.proteinDelta !== 0) || (data.carbsDelta != null && data.carbsDelta !== 0) || (data.fatDelta != null && data.fatDelta !== 0) ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
-          <p className="text-xs font-semibold text-slate-700 mb-2">📋 系統分析 — 目標校正</p>
+          <p className="text-xs font-semibold text-slate-700 mb-2">系統分析 — 目標校正</p>
           <div className="grid grid-cols-2 gap-2">
             {data.caloriesDelta != null && data.caloriesDelta !== 0 && (
               <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                <span className="text-xs text-gray-600">🔥 熱量</span>
+                <span className="text-xs text-gray-600">熱量</span>
                 <span className={`text-xs font-bold tabular-nums ${data.caloriesDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.caloriesDelta > 0 ? '+' : ''}{data.caloriesDelta} kcal
                 </span>
@@ -173,7 +171,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
             )}
             {data.proteinDelta != null && data.proteinDelta !== 0 && (
               <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                <span className="text-xs text-gray-600">🥩 蛋白質</span>
+                <span className="text-xs text-gray-600">蛋白質</span>
                 <span className={`text-xs font-bold tabular-nums ${data.proteinDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.proteinDelta > 0 ? '+' : ''}{data.proteinDelta}g
                 </span>
@@ -181,7 +179,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
             )}
             {data.carbsDelta != null && data.carbsDelta !== 0 && (
               <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                <span className="text-xs text-gray-600">🍚 碳水</span>
+                <span className="text-xs text-gray-600">碳水</span>
                 <span className={`text-xs font-bold tabular-nums ${data.carbsDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.carbsDelta > 0 ? '+' : ''}{data.carbsDelta}g
                 </span>
@@ -189,7 +187,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
             )}
             {data.fatDelta != null && data.fatDelta !== 0 && (
               <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                <span className="text-xs text-gray-600">🥑 脂肪</span>
+                <span className="text-xs text-gray-600">脂肪</span>
                 <span className={`text-xs font-bold tabular-nums ${data.fatDelta > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {data.fatDelta > 0 ? '+' : ''}{data.fatDelta}g
                 </span>
@@ -206,7 +204,6 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
       {data.refeedSuggested && (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">🔄</span>
             <p className="text-sm font-bold text-slate-900">
               系統偵測：可考慮安排 {data.refeedDays} 天 Refeed
             </p>
@@ -222,7 +219,6 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
       {data.dietBreakSuggested && (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">⏸️</span>
             <p className="text-sm font-bold text-slate-900">系統偵測：可考慮安排 Diet Break</p>
           </div>
           <p className="text-xs text-slate-600">
@@ -252,7 +248,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
       {/* 血檢驅動的營養調整 */}
       {data.labMacroModifiers && data.labMacroModifiers.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
-          <p className="text-xs font-medium text-slate-700 mb-2">🩸 血檢指標建議</p>
+          <p className="text-xs font-medium text-slate-700 mb-2">血檢指標建議</p>
           <div className="space-y-1">
             {data.labMacroModifiers.map((mod: any, i: number) => (
               <p key={i} className="text-[11px] text-slate-600 leading-relaxed">

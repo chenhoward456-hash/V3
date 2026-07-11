@@ -5,7 +5,7 @@ import { ChevronDown, Check } from 'lucide-react'
 
 interface CollapsibleSectionProps {
   id: string
-  icon: string
+  icon?: string
   title: string
   isCompleted: boolean
   summaryLine?: string
@@ -78,7 +78,7 @@ export default function CollapsibleSection({
           aria-expanded={isOpen}
           aria-controls={`${id}-content`}
         >
-          <span className="text-base">{icon}</span>
+          {icon && <span className="text-base">{icon}</span>}
           <span className="text-sm font-semibold text-gray-800 flex-1 text-left">{title}</span>
           {isCompleted && (
             <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100">

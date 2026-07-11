@@ -226,7 +226,7 @@ describe('NutritionLog', () => {
     expect(callBody.calories).toBe(1865)
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith('飲食已記錄！', 'success', '🎉')
+      expect(mockShowToast).toHaveBeenCalledWith('飲食已記錄！', 'success')
       expect(defaultProps.onMutate).toHaveBeenCalled()
     })
   })

@@ -19,7 +19,6 @@ export default function HealthScoreBanner({ healthScore }: HealthScoreBannerProp
     <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-3">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">🌿</span>
           <div>
             <p className="text-xs font-semibold text-emerald-700">健康優化模式</p>
             {healthScore.daysInCycle != null && (
@@ -47,7 +46,6 @@ export default function HealthScoreBanner({ healthScore }: HealthScoreBannerProp
         {healthScore.pillars.map(p => {
           return (
             <div key={p.pillar} className="text-center">
-              <div className="text-base leading-none mb-1">{p.emoji}</div>
               <div className="w-full bg-emerald-100 rounded-full h-1.5 mb-0.5">
                 <div
                   className={`h-1.5 rounded-full transition-all ${
@@ -86,7 +84,7 @@ export default function HealthScoreBanner({ healthScore }: HealthScoreBannerProp
           return (
             <div className="mt-2 pt-2 border-t border-emerald-200">
               <p className="text-xs text-amber-600 font-medium">
-                💡 {lowest.label}分數偏低（{lowest.score}分）— {PILLAR_TIPS[lowest.pillar] || '持續改善中'}
+                {lowest.label}分數偏低（{lowest.score}分）— {PILLAR_TIPS[lowest.pillar] || '持續改善中'}
               </p>
             </div>
           )
@@ -96,7 +94,7 @@ export default function HealthScoreBanner({ healthScore }: HealthScoreBannerProp
       {healthScore.daysUntilBloodTest != null && healthScore.daysUntilBloodTest <= 21 && (
         <div className="mt-2 pt-2 border-t border-emerald-200">
           <p className="text-xs text-emerald-600 font-medium">
-            🩸 季度血檢倒數 {healthScore.daysUntilBloodTest} 天
+            季度血檢倒數 {healthScore.daysUntilBloodTest} 天
           </p>
         </div>
       )}

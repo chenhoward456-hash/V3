@@ -449,16 +449,13 @@ export default function BodyComposition({
     <>
       {nutritionAdjusted && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] text-white px-5 py-3 rounded-xl shadow-lg max-w-sm animate-slide-in-down bg-blue-600">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🎯</span>
-            <div>
-              <p className="text-sm font-medium">營養目標已自動調整</p>
-              {nutritionAdjusted.calories && (
-                <p className="text-xs text-blue-100 mt-0.5">
-                  🔥 {nutritionAdjusted.calories} kcal　P {nutritionAdjusted.protein || '--'}g　C {nutritionAdjusted.carbs || '--'}g　F {nutritionAdjusted.fat || '--'}g
-                </p>
-              )}
-            </div>
+          <div>
+            <p className="text-sm font-medium">營養目標已自動調整</p>
+            {nutritionAdjusted.calories && (
+              <p className="text-xs text-blue-100 mt-0.5">
+                {nutritionAdjusted.calories} kcal　P {nutritionAdjusted.protein || '--'}g　C {nutritionAdjusted.carbs || '--'}g　F {nutritionAdjusted.fat || '--'}g
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -466,10 +463,7 @@ export default function BodyComposition({
       {/* 第一筆體重洞察卡片 — 記完第一筆後立刻顯示有價值的分析 */}
       {firstRecordInsight && (
         <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 animate-fade-in">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">🎯</span>
-            <h3 className="text-base font-bold text-gray-900">你的起點分析</h3>
-          </div>
+          <h3 className="text-base font-bold text-gray-900 mb-3">你的起點分析</h3>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="bg-slate-50 rounded-xl p-3 text-center">
               <p className="text-[11px] text-gray-500">目前體重</p>
@@ -624,7 +618,6 @@ export default function BodyComposition({
             weightFluctuationNote.color === 'green' ? 'bg-emerald-50 border border-emerald-100' :
             'bg-amber-50 border border-amber-100'
           }`}>
-            <span className="text-sm mt-0.5">{weightFluctuationNote.color === 'green' ? '💡' : weightFluctuationNote.color === 'blue' ? '💧' : '⚖️'}</span>
             <p className={`text-xs leading-relaxed ${
               weightFluctuationNote.color === 'blue' ? 'text-blue-700' :
               weightFluctuationNote.color === 'green' ? 'text-emerald-700' :
@@ -637,8 +630,7 @@ export default function BodyComposition({
 
         {/* 空白狀態引導 */}
         {bodyData.length < 7 && (
-          <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-4 flex items-center gap-2">
-            <span className="text-blue-500 text-sm">📈</span>
+          <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-4">
             <p className="text-xs text-blue-700">
               {bodyData.length === 0
                 ? '記錄你的第一筆身體數據，開始追蹤變化'
@@ -672,23 +664,19 @@ export default function BodyComposition({
           const lastAvg = lastWeek.length > 0 ? lastWeek.reduce((a, b) => a + b, 0) / lastWeek.length : null
           const isWrongDirection = goalType === 'cut' && thisAvg != null && lastAvg != null && thisAvg > lastAvg + 0.1
 
-          let nudgeEmoji = '📊'
           let nudgeTitle = ''
           let nudgeDesc = ''
           let nudgeFeature = 'weight_analysis'
 
           if (isPlateau) {
-            nudgeEmoji = '⚖️'
             nudgeTitle = `體重停滯中 — 最近 7 筆波動僅 ${range.toFixed(1)}kg`
             nudgeDesc = '升級後系統會自動偵測停滯，並調整你的每日熱量目標突破瓶頸'
             nudgeFeature = 'plateau_break'
           } else if (isWrongDirection) {
-            nudgeEmoji = '⚠️'
             nudgeTitle = '體重趨勢往上，跟減脂目標不一致'
             nudgeDesc = '升級後系統會根據你的真實 TDEE 自動校正熱量，不用自己猜該吃多少'
             nudgeFeature = 'auto_adjust'
           } else if (weightRecords.length >= 14) {
-            nudgeEmoji = '🧠'
             nudgeTitle = `已累積 ${weightRecords.length} 筆數據，足夠啟動 AI 自動調整`
             nudgeDesc = '升級後系統每週自動分析趨勢、校正 TDEE、調整巨量營養素，你只需要繼續記錄'
             nudgeFeature = 'ai_engine'
@@ -699,7 +687,6 @@ export default function BodyComposition({
           return (
             <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 mb-4">
               <div className="flex items-start gap-2">
-                <span className="text-sm mt-0.5">{nudgeEmoji}</span>
                 <div className="flex-1">
                   <p className="text-xs font-semibold text-gray-800">{nudgeTitle}</p>
                   <p className="text-xs text-blue-700 leading-relaxed mt-0.5">{nudgeDesc}</p>
@@ -744,7 +731,7 @@ export default function BodyComposition({
         {trajectoryData && targetWeight && (
           <div className="mt-4 border-t border-slate-200 pt-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-gray-700">{trajectoryData.isComp ? '🏆' : '🎯'} 體重軌跡 vs 目標</p>
+              <p className="text-sm font-medium text-gray-700">體重軌跡 vs 目標</p>
               <div className="flex items-center gap-3 text-[11px] text-gray-400">
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-400 inline-block rounded" /> 實際</span>
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-orange-400 inline-block rounded" /> 7日均</span>
@@ -814,10 +801,10 @@ export default function BodyComposition({
                   : 'bg-blue-50 text-blue-700 border border-blue-200'
             }`}>
               {trajectoryData.onTrack
-                ? `✅ 在軌道上！照目前趨勢，${trajectoryData.isComp ? '比賽日' : '目標日'}可以達到目標體重`
+                ? `在軌道上！照目前趨勢，${trajectoryData.isComp ? '比賽日' : '目標日'}可以達到目標體重`
                 : trajectoryData.predictedWeight > targetWeight
-                  ? `⚠️ 預計比目標重 ${trajectoryData.diff.toFixed(1)} kg，需要加速減重`
-                  : `💡 預計比目標輕 ${trajectoryData.diff.toFixed(1)} kg，減重速度良好`
+                  ? `預計比目標重 ${trajectoryData.diff.toFixed(1)} kg，需要加速減重`
+                  : `預計比目標輕 ${trajectoryData.diff.toFixed(1)} kg，減重速度良好`
               }
             </div>
 
@@ -834,7 +821,7 @@ export default function BodyComposition({
         {competitionEnabled && !trajectoryData && weightMAData && weightMAData.length >= 3 && (
           <div className="mt-4 border-t border-slate-200 pt-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-gray-700">🏆 體重 7 日移動平均</p>
+              <p className="text-sm font-medium text-gray-700">體重 7 日移動平均</p>
               <div className="flex items-center gap-3 text-xs text-gray-400">
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-400 inline-block rounded" /> 實際</span>
                 <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-orange-400 inline-block rounded border-dashed" style={{borderTop: '2px dashed #fb923c', height: 0}} /> 7日均</span>
@@ -939,8 +926,7 @@ export default function BodyComposition({
             </div>
 
             {entryMode === 'inbody' && (
-              <div className="mb-4 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 flex items-start gap-2">
-                <span className="text-sm mt-0.5">💡</span>
+              <div className="mb-4 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
                 <p className="text-xs text-blue-700 leading-relaxed">InBody 在晚上、吃飽量都沒關係——它只看自己跟上次 InBody 的趨勢，<b>不會影響你的每日體重趨勢</b>。每日體重請另外用「記每日體重」、固定早晨空腹量。</p>
               </div>
             )}

@@ -35,7 +35,6 @@ function WelcomeBannerInner({ clientId }: Props) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 flex items-center justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="text-3xl shrink-0">📖</span>
         <div className="min-w-0">
           <div className="text-sm font-semibold text-slate-900 truncate">
             第一次來？看使用說明

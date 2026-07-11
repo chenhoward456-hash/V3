@@ -282,11 +282,6 @@ export default function UpgradeWelcome({
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              {celebrating ? (
-                <span className="text-lg animate-bounce">🎉</span>
-              ) : (
-                <span className="text-lg">🚀</span>
-              )}
               <div>
                 <h3 className="text-sm font-bold text-gray-900">
                   {celebrating ? '太棒了！全部完成' : `已升級至${tierLabel}！`}
@@ -329,7 +324,6 @@ export default function UpgradeWelcome({
           {/* Celebration */}
           {celebrating && (
             <div className="text-center py-3 animate-celebrate">
-              <div className="text-4xl mb-2 animate-bounce">🎊</div>
               <p className="text-sm font-semibold text-green-700">
                 所有升級任務已完成！
               </p>

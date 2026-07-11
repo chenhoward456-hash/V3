@@ -164,7 +164,7 @@ export default function AiInsightsPanel({ clientId, isTrainingDay }: AiInsightsP
           <div className="space-y-2">
             {smartAlerts!.map((alert, i) => (
               <div key={i} className={`p-3 rounded-xl text-sm ${alert.severity === 'warning' ? 'bg-amber-50 border border-amber-100' : 'bg-blue-50 border border-blue-100'}`}>
-                <div className="font-medium text-gray-800 mb-1">{alert.icon} {alert.title}</div>
+                <div className="font-medium text-gray-800 mb-1">{alert.title}</div>
                 <p className="text-gray-600 text-xs leading-relaxed">{alert.message}</p>
               </div>
             ))}

@@ -53,7 +53,6 @@ export function TDEECalibrationCard({ client }: { client: Client }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
       <div className="text-center mb-4">
-        <span className="text-3xl">🧠</span>
         <h3 className="text-base font-bold text-gray-900 mt-2">14 天智能校正完成</h3>
       </div>
 
@@ -76,7 +75,7 @@ export function TDEECalibrationCard({ client }: { client: Client }) {
           </div>
         )}
         <p className="text-xs text-gray-600 text-center leading-relaxed">
-          你的新目標已自動更新 ✓
+          你的新目標已自動更新
         </p>
       </div>
 
@@ -89,7 +88,7 @@ export function TDEECalibrationCard({ client }: { client: Client }) {
           onClick={() => trackEvent('tdee_calibration_line_click')}
           className="inline-block bg-[#06C755] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#05b04d] transition-colors"
         >
-          💬 加 LINE 找 Howard 分析
+          加 LINE 找 Howard 分析
         </a>
       </div>
 
@@ -106,7 +105,7 @@ export function TDEECalibrationCard({ client }: { client: Client }) {
           我知道了
         </button>
       ) : (
-        <p className="text-center text-xs text-emerald-600 mt-3">✓ 已確認</p>
+        <p className="text-center text-xs text-emerald-600 mt-3">已確認</p>
       )}
     </div>
   )

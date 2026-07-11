@@ -166,10 +166,7 @@ export default function PostCompetitionRecovery({
       {/* Recovery complete / Next steps */}
       {isRecoveryComplete && (
         <div className="mt-4 bg-white border border-slate-200 rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">🎉</span>
-            <p className="text-sm font-bold text-gray-800">恢復期結束，準備下一階段</p>
-          </div>
+          <p className="text-sm font-bold text-gray-800 mb-2">恢復期結束，準備下一階段</p>
           <p className="text-xs text-gray-600 mb-3">
             你的身體已經回到穩定狀態，可以開始規劃下一場比賽或切換到增肌/減脂目標。
           </p>
@@ -270,7 +267,7 @@ export default function PostCompetitionRecovery({
       {!isRecoveryComplete && (
         <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
           <p className="text-xs text-amber-700 leading-relaxed">
-            💡 賽後恢復是下一場比賽的起點。體重上升是正常的（糖原 + 水分回填），不要急著限制飲食。
+            賽後恢復是下一場比賽的起點。體重上升是正常的（糖原 + 水分回填），不要急著限制飲食。
           </p>
         </div>
       )}

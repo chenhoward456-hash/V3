@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic'
 import { useClientData, type Client, type ClientDataPayload } from '@/hooks/useClientData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { useCoachMode } from '@/hooks/useCoachMode'
-import { Lock, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react'
+import { Lock, ChevronDown, ChevronUp, ChevronRight, Scale, Utensils, Pill, Smile, Dumbbell } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
 import CollapsibleSection from '@/components/client/CollapsibleSection'
 import NewUserLanding, { shouldUseNewUserMode } from '@/components/client/NewUserLanding'
@@ -579,9 +579,9 @@ export default function ClientDashboard() {
         const prev = echoSnapshotRef.current
         // 回聲：這筆記錄讓引擎判定改變 → 一句話。判定沒變 → 不吵（記錄成功已有自己的 toast）。
         if (echo && prev && next.status !== prev.status && next.statusLabel) {
-          showToast(`這筆記錄讓判定更新了：${degradeToSafe(next.statusLabel).text}`, 'info', next.statusEmoji || '📊')
+          showToast(`這筆記錄讓判定更新了：${degradeToSafe(next.statusLabel).text}`, 'info')
         } else if (echo && prev && next.refeedSuggested && !prev.refeedSuggested) {
-          showToast('引擎建議安排 refeed，細節看計畫分頁', 'info', '🍚')
+          showToast('引擎建議安排 refeed，細節看計畫分頁', 'info')
         }
         echoSnapshotRef.current = { status: next.status, refeedSuggested: !!next.refeedSuggested }
         setNutritionEngineSuggestion(next)
@@ -812,7 +812,6 @@ export default function ClientDashboard() {
         {!c.has_line_binding && (
           <div className="bg-[#06C755]/10 border-2 border-[#06C755] rounded-2xl p-4 mb-4">
             <div className="flex items-start gap-3">
-              <span className="text-2xl shrink-0">💬</span>
               <div className="flex-1">
                 <p className="text-sm font-bold text-gray-900">還沒綁 LINE — 90% 的人 5 天內就忘了回來</p>
                 <p className="text-xs text-gray-600 mt-1 leading-relaxed">
@@ -950,15 +949,14 @@ export default function ClientDashboard() {
             : c.carbs_target
           return (
             <div className={`border rounded-2xl p-4 mb-3 flex items-center gap-2.5 ${allDone ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
-              <span className="text-lg shrink-0">{allDone ? '🎉' : '🎯'}</span>
               <p className="text-sm text-gray-700 leading-snug">
                 <span className="font-semibold text-gray-900">今日重點</span>
                 {c.nutrition_enabled && (
-                  <span className="text-gray-500"> · {isTrainingDayResolved ? '💪 訓練日' : '😴 休息日'}{carbs != null ? `，碳水 ${carbs}g` : ''}</span>
+                  <span className="text-gray-500"> · {isTrainingDayResolved ? '訓練日' : '休息日'}{carbs != null ? `，碳水 ${carbs}g` : ''}</span>
                 )}
                 {' · '}
                 {allDone
-                  ? <span className="text-emerald-700 font-semibold">五項打卡完成，今天收工 💪</span>
+                  ? <span className="text-emerald-700 font-semibold">五項打卡完成，今天收工</span>
                   : <span className="text-slate-400 tabular-nums">今天還有 {unlogged} 項可記（記了引擎才調得準）</span>}
               </p>
             </div>
@@ -1022,8 +1020,7 @@ export default function ClientDashboard() {
             return (
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-4">
                 <div className="text-center mb-3">
-                  <span className="text-3xl">🏆</span>
-                  <h3 className="text-lg font-bold text-gray-900 mt-2">比賽結束了！辛苦了！</h3>
+                  <h3 className="text-lg font-bold text-gray-900">比賽結束了！辛苦了！</h3>
                   <p className="text-sm text-gray-500 mt-1">接下來你想怎麼做？</p>
                 </div>
                 <div className="space-y-3">
@@ -1033,7 +1030,6 @@ export default function ClientDashboard() {
                     className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50 text-left px-4"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">🧘</span>
                       <div>
                         <p className="text-sm font-bold">進入賽後恢復期</p>
                         <p className="text-xs font-normal opacity-80">2-4 週 reverse diet + 漸進恢復訓練</p>
@@ -1051,7 +1047,6 @@ export default function ClientDashboard() {
                     className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 text-left px-4"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">🎯</span>
                       <div>
                         <p className="text-sm font-bold">直接備下一場比賽</p>
                         <p className="text-xs font-normal opacity-80">設定日期，系統自動開始備賽倒數</p>
@@ -1073,7 +1068,7 @@ export default function ClientDashboard() {
           {/* 新手引導 — 只有完全沒數據的新用戶才看到（營養設定移到 DO section 後） */}
           {view === 'home' && !latestBodyData && (!clientData.nutritionLogs || clientData.nutritionLogs.length === 0) && (
             <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-              <p className="text-sm text-blue-700 font-medium">👋 歡迎！往下滑開始記錄你的第一筆數據</p>
+              <p className="text-sm text-blue-700 font-medium">歡迎！往下滑開始記錄你的第一筆數據</p>
             </div>
           )}
 
@@ -1081,11 +1076,11 @@ export default function ClientDashboard() {
         {view === 'home' && isToday && (
           <QuickActions
             enabledSections={[
-              ...(c.body_composition_enabled ? [{ id: 'section-body', icon: '⚖️', label: '體重', completed: !!latestBodyData && latestBodyData.date === selectedDate }] : []),
-              ...(c.nutrition_enabled ? [{ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: '🥗', label: '飲食', completed: !!todayNutrition }] : []),
-              ...(c.supplement_enabled ? [{ id: 'section-supplements', icon: '💊', label: '補品', completed: todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total }] : []),
-              ...(c.wellness_enabled ? [{ id: 'section-wellness', icon: '😊', label: '感受', completed: !!todayWellness }] : []),
-              ...(c.training_enabled ? [{ id: 'section-training', icon: '🏋️', label: '訓練', completed: !!todayTraining }] : []),
+              ...(c.body_composition_enabled ? [{ id: 'section-body', icon: <Scale size={16} className="text-slate-500" />, label: '體重', completed: !!latestBodyData && latestBodyData.date === selectedDate }] : []),
+              ...(c.nutrition_enabled ? [{ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: <Utensils size={16} className="text-slate-500" />, label: '飲食', completed: !!todayNutrition }] : []),
+              ...(c.supplement_enabled ? [{ id: 'section-supplements', icon: <Pill size={16} className="text-slate-500" />, label: '補品', completed: todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total }] : []),
+              ...(c.wellness_enabled ? [{ id: 'section-wellness', icon: <Smile size={16} className="text-slate-500" />, label: '感受', completed: !!todayWellness }] : []),
+              ...(c.training_enabled ? [{ id: 'section-training', icon: <Dumbbell size={16} className="text-slate-500" />, label: '訓練', completed: !!todayTraining }] : []),
             ]}
             topSummary={{
               weight: latestBodyData?.weight,
@@ -1126,8 +1121,8 @@ export default function ClientDashboard() {
                 showToast(
                   diff != null && diff !== 0
                     ? `記好了 ${weight}kg，比上次 ${diff > 0 ? '+' : ''}${diff}kg`
-                    : `記好了 ${weight}kg 💪`,
-                  'success', '⚖️',
+                    : `記好了 ${weight}kg`,
+                  'success',
                 )
                 refreshEngineSuggestion()
                 return true
@@ -1160,7 +1155,7 @@ export default function ClientDashboard() {
                 })
                 if (!res.ok) throw new Error()
                 await mutate()
-                showToast(compliant ? '記好了，達標 👍 已照目標填好營養素' : '記好了，明天再追上', 'success', '🍽️')
+                showToast(compliant ? '記好了，達標，已照目標填好營養素' : '記好了，明天再追上', 'success')
                 refreshEngineSuggestion() // 記錄後重跑引擎（只刷顯示不動 macros）；判定變了會回聲一句
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
@@ -1176,7 +1171,7 @@ export default function ClientDashboard() {
                   body: JSON.stringify({ clientId, supplementId: s.id, date: today, completed: true }),
                 })))
                 await mutate()
-                showToast('補品今天全部標完成 💊', 'success', '💊')
+                showToast('補品今天全部標完成', 'success')
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
@@ -1192,7 +1187,7 @@ export default function ClientDashboard() {
                 })
                 if (!res.ok) throw new Error()
                 await mutate()
-                showToast('今天感受記好了 😊', 'success', '😊')
+                showToast('今天感受記好了', 'success')
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
@@ -1207,7 +1202,7 @@ export default function ClientDashboard() {
                 })
                 if (!res.ok) throw new Error()
                 await mutate()
-                showToast(trainingType === 'rest' ? '今天休息日,記好了 😴' : '今天訓練記好了 💪', 'success', '🏋️')
+                showToast(trainingType === 'rest' ? '今天休息日，記好了' : '今天訓練記好了', 'success')
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
@@ -1253,15 +1248,15 @@ export default function ClientDashboard() {
         {view === 'data' && (
         <Link
           href={`/c/${c.unique_code}/overview`}
-          className="block bg-zinc-900 rounded-2xl p-5 text-white hover:bg-zinc-800 transition-colors mb-3"
+          className="block bg-white border border-slate-200 rounded-2xl p-5 hover:bg-slate-50 transition-colors mb-3"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-400 font-semibold">My Data</p>
-              <p className="text-lg font-bold tracking-tight mt-1">完整數據儀表板</p>
-              <p className="text-xs text-zinc-400 mt-0.5">趨勢、日曆、累積成果</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500 font-semibold">My Data</p>
+              <p className="text-lg font-bold tracking-tight mt-1 text-slate-900">完整數據儀表板</p>
+              <p className="text-xs text-slate-500 mt-0.5">趨勢、日曆、累積成果</p>
             </div>
-            <span className="text-2xl text-emerald-400 font-light">→</span>
+            <span className="text-2xl text-blue-600 font-light">→</span>
           </div>
         </Link>
         )}
@@ -1305,7 +1300,6 @@ export default function ClientDashboard() {
           <SectionErrorBoundary name="body-composition">
           <CollapsibleSection
             id="section-body"
-            icon="⚖️"
             title="身體數據"
             isCompleted={!!latestBodyData && latestBodyData.date === selectedDate}
             summaryLine={latestBodyData ? `體重 ${latestBodyData.weight ?? '--'} kg${latestBodyData.body_fat ? ` | 體脂 ${latestBodyData.body_fat}%` : ''}` : undefined}
@@ -1414,7 +1408,6 @@ export default function ClientDashboard() {
           <SectionErrorBoundary name="nutrition">
           <CollapsibleSection
             id={isCompetition ? 'section-nutrition' : 'section-nutrition-general'}
-            icon="🥗"
             title="飲食紀錄"
             isCompleted={!!todayNutrition}
             summaryLine={todayNutrition ? `${todayNutrition.calories ? `${todayNutrition.calories} kcal` : ''}${c.calories_target ? ` / ${c.calories_target} kcal` : ''}${todayNutrition.compliant === true ? ' ✓ 合規' : todayNutrition.compliant === false ? ' ✗ 未合規' : ''}` : undefined}
@@ -1538,7 +1531,6 @@ export default function ClientDashboard() {
           <SectionErrorBoundary name="supplements">
           <CollapsibleSection
             id="section-supplements"
-            icon="💊"
             title="補品打卡"
             isCompleted={todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total}
             summaryLine={todaySupplementStats.total > 0 ? `${todaySupplementStats.completed}/${todaySupplementStats.total} 已完成` : undefined}
@@ -1569,7 +1561,6 @@ export default function ClientDashboard() {
           <SectionErrorBoundary name="wellness">
           <CollapsibleSection
             id="section-wellness"
-            icon="😊"
             title="每日感受"
             isCompleted={!!todayWellness}
             summaryLine={todayWellness ? `睡眠 ${todayWellness.sleep_quality ?? '--'}/5 | 精力 ${todayWellness.energy_level ?? '--'}/5 | 想練 ${todayWellness.training_drive ?? '--'}/5` : undefined}
@@ -1610,7 +1601,6 @@ export default function ClientDashboard() {
           <SectionErrorBoundary name="training">
           <CollapsibleSection
             id="section-training"
-            icon="🏋️"
             title="訓練紀錄"
             isCompleted={!!todayTraining}
             summaryLine={todayTraining ? `${(() => { const t = TRAINING_TYPES.find(x => x.value === todayTraining.training_type); return t ? `${t.emoji} ${t.label}` : '訓練' })()}${todayTraining.rpe ? ` · RPE ${todayTraining.rpe}` : ''}` : undefined}

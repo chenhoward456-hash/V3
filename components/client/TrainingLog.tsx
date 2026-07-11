@@ -242,11 +242,11 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
   // 有氧子類型
   const CARDIO_SUBTYPES = [
-    { value: '登階機', emoji: '🪜' },
-    { value: '走路', emoji: '🚶' },
-    { value: '跑步', emoji: '🏃' },
-    { value: '單車', emoji: '🚴' },
-    { value: '其他', emoji: '⚡' },
+    { value: '登階機' },
+    { value: '走路' },
+    { value: '跑步' },
+    { value: '單車' },
+    { value: '其他' },
   ]
   const [cardioSubtype, setCardioSubtype] = useState<string | null>(() => {
     // 從 note 裡解析已存的有氧類型
@@ -370,17 +370,17 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           const diff = tonnage - prevTonnage
           const pct = Math.round((diff / prevTonnage) * 100)
           if (diff > 0) {
-            progressMsg = ` 📈 比上次多 ${Math.round(diff).toLocaleString()}kg（+${pct}%）`
+            progressMsg = ` 比上次多 ${Math.round(diff).toLocaleString()}kg（+${pct}%）`
           } else if (diff === 0) {
-            progressMsg = ' 🔒 跟上次一樣穩'
+            progressMsg = ' 跟上次一樣穩'
           }
         }
       }
 
-      const streakMsg = weekActiveDays >= 4 ? ` 🔥 本週第 ${weekActiveDays} 天！` : weekActiveDays >= 2 ? ` 💪 本週第 ${weekActiveDays} 天` : ''
+      const streakMsg = weekActiveDays >= 2 ? ` 本週第 ${weekActiveDays} 天` : ''
       const tonnageMsg = tonnage > 0 ? ` · ${Math.round(tonnage).toLocaleString()}kg` : ''
 
-      showToast(`訓練已記錄！${tonnageMsg}${progressMsg}${streakMsg}`, 'success', '🎉')
+      showToast(`訓練已記錄！${tonnageMsg}${progressMsg}${streakMsg}`, 'success')
 
       // 顯示恢復警告（如果有）
       if (result.recoveryWarning) {
@@ -432,10 +432,6 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
     return { days, trainingDays, weightDays, cardioDays, totalDuration, totalSets, avgRpe }
   }, [trainingLogs, today])
-
-  const getTypeEmoji = (type: string) => {
-    return TRAINING_TYPES.find(t => t.value === type)?.emoji || ''
-  }
 
   const getTypeLabel = (type: string) => {
     return TRAINING_TYPES.find(t => t.value === type)?.label || type
@@ -510,7 +506,6 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         return {
           type,
           label: getTypeLabel(type),
-          emoji: getTypeEmoji(type),
           count: s.count,
           avgRpe: s.count > 0 ? (s.avgRpe / s.count).toFixed(1) : '--',
           avgDuration: s.count > 0 ? Math.round(s.avgDuration / s.count) : 0,
@@ -646,13 +641,13 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
               {tier === 'self_managed' && (
                 <p className="text-[11px] text-blue-500 mb-2">
-                  🔒 <a href="/upgrade?from=self_managed&feature=personalized_sets" className="hover:underline">升級教練指導，獲得根據你的經驗、恢復和基因計算的個人化建議 →</a>
+                  <a href="/upgrade?from=self_managed&feature=personalized_sets" className="hover:underline">升級教練指導，獲得根據你的經驗、恢復和基因計算的個人化建議 →</a>
                 </p>
               )}
 
               {mode.sameSplitWarning && (
                 <div className="text-xs bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-3 py-2 mb-2">
-                  ⚠️ {mode.sameSplitWarning}
+                  {mode.sameSplitWarning}
                 </div>
               )}
               <details className="text-xs">
@@ -674,12 +669,12 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                   {/* 信號依據 */}
                   {mode.reasons.map((r, i) => (
                     <div key={`r-${i}`} className="opacity-80">
-                      {r.emoji} {r.description}
+                      {r.description}
                     </div>
                   ))}
                   {mode.geneticTrainingCorrections.map((g, i) => (
                     <div key={`g-${i}`} className="text-slate-700">
-                      {g.emoji} {g.gene} {g.variant}：{g.effect}
+                      {g.gene} {g.variant}：{g.effect}
                     </div>
                   ))}
                 </div>
@@ -692,7 +687,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">重訓</p>
           <div className="grid grid-cols-4 gap-2">
-            {TRAINING_TYPES.filter(t => isWeightTraining(t.value)).map(({ value, label, emoji }) => (
+            {TRAINING_TYPES.filter(t => isWeightTraining(t.value)).map(({ value, label }) => (
               <button
                 key={value}
                 onClick={() => setForm(prev => ({ ...prev, training_type: value }))}
@@ -702,12 +697,12 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {emoji} {label}
+                {label}
               </button>
             ))}
           </div>
           <div className="grid grid-cols-2 gap-2 mt-2">
-            {TRAINING_TYPES.filter(t => !isWeightTraining(t.value)).map(({ value, label, emoji }) => (
+            {TRAINING_TYPES.filter(t => !isWeightTraining(t.value)).map(({ value, label }) => (
               <button
                 key={value}
                 onClick={() => setForm(prev => ({ ...prev, training_type: value }))}
@@ -717,7 +712,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {emoji} {label}
+                {label}
               </button>
             ))}
           </div>
@@ -726,7 +721,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         {/* 休息日已儲存：顯示簡潔訊息 */}
         {isRest && todayTraining && todayTraining.training_type === 'rest' && !showRestForm ? (
           <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
-            <span className="text-gray-600">今天休息 😴</span>
+            <span className="text-gray-600">今天休息</span>
             <button
               onClick={() => setShowRestForm(true)}
               className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
@@ -741,7 +736,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">有氧類型</p>
             <div className="flex gap-2 flex-wrap">
-              {CARDIO_SUBTYPES.map(({ value, emoji }) => (
+              {CARDIO_SUBTYPES.map(({ value }) => (
                 <button
                   key={value}
                   onClick={() => setCardioSubtype(cardioSubtype === value ? null : value)}
@@ -751,7 +746,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  {emoji} {value}
+                  {value}
                 </button>
               ))}
             </div>
@@ -761,7 +756,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         {/* 碳循環提示（簡單模式隱藏） */}
         {!simpleMode && hasCarbCycling && form.training_type && (
           <div className="rounded-xl px-4 py-2.5 text-sm font-medium bg-slate-50 border border-slate-100 text-slate-700">
-            🔄 今日碳水：{isWeightTraining(form.training_type) ? `${carbsTrainingDay}g（訓練日）` : `${carbsRestDay}g（休息日）`}
+            今日碳水：{isWeightTraining(form.training_type) ? `${carbsTrainingDay}g（訓練日）` : `${carbsRestDay}g（休息日）`}
           </div>
         )}
 
@@ -1073,7 +1068,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                 }`}
               >
                 <div className="font-medium">{label}</div>
-                <div className="text-base mt-0.5">{log ? getTypeEmoji(log.training_type) : '·'}</div>
+                <div className="text-xs font-medium mt-0.5">{log ? getTypeLabel(log.training_type) : '·'}</div>
               </div>
             ))}
           </div>
@@ -1128,7 +1123,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
             <p className="text-xs font-medium text-gray-500 mb-2">Sleep x Training Insight</p>
             <p className="flex items-center gap-2 text-sm text-gray-900">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-              <span>{insights.bestRecovery.emoji} {insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）</span>
+              <span>{insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）</span>
             </p>
             {/* Mini bar chart: 各訓練類型的隔天精力 */}
             {insights.typeAnalysis.filter(t => t.avgNextEnergy != null).length >= 2 && (
@@ -1159,7 +1154,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
               onClick={() => setShowInsights(!showInsights)}
               className="w-full flex items-center justify-between text-sm font-medium text-gray-700"
             >
-              <span>🔍 訓練洞察</span>
+              <span>訓練洞察</span>
               <span className="text-gray-400 text-xs">{showInsights ? '收起' : '展開'}</span>
             </button>
 
@@ -1171,13 +1166,13 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                     {insights.bestRecovery && insights.bestRecovery.avgNextEnergy != null && (
                       <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
                         <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                        <span>{insights.bestRecovery.emoji} {insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）</span>
+                        <span>{insights.bestRecovery.label}日後恢復最好（隔天精力 {insights.bestRecovery.avgNextEnergy.toFixed(1)}/5）</span>
                       </div>
                     )}
                     {insights.worstRecovery && insights.worstRecovery.avgNextEnergy != null && (
                       <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
                         <span className="inline-block w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                        <span>{insights.worstRecovery.emoji} {insights.worstRecovery.label}日後恢復最差（隔天精力 {insights.worstRecovery.avgNextEnergy.toFixed(1)}/5）</span>
+                        <span>{insights.worstRecovery.label}日後恢復最差（隔天精力 {insights.worstRecovery.avgNextEnergy.toFixed(1)}/5）</span>
                       </div>
                     )}
                   </div>
@@ -1190,7 +1185,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                     {insights.typeAnalysis.map((t) => (
                       <div key={t.type} className="bg-gray-50 rounded-xl px-4 py-3">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">{t.emoji} {t.label}</span>
+                          <span className="text-sm font-medium">{t.label}</span>
                           <span className="text-xs text-gray-500">{t.count} 次 · 均 RPE {t.avgRpe} · {t.avgDuration} 分鐘</span>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
@@ -1221,7 +1216,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
                         <div key={i} className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
                           <span className="flex items-center gap-2 text-gray-700">
                             <span className="inline-block w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                            {formatDate(d.date)} {getTypeEmoji(d.type)} {getTypeLabel(d.type)}
+                            {formatDate(d.date)} {getTypeLabel(d.type)}
                           </span>
                           <span className="text-gray-500 text-xs">{d.reason}</span>
                         </div>

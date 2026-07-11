@@ -154,7 +154,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
           ...prev,
           [date]: (json.data.findingsBrief || []) as FindingBrief[],
         }))
-        setSavedMsg(`✨ 草稿已生成（分析 ${json.data.findingsCount} 個指標）— 請審核後按「儲存」`)
+        setSavedMsg(`草稿已生成（分析 ${json.data.findingsCount} 個指標）— 請審核後按「儲存」`)
         setTimeout(() => setSavedMsg(null), 6000)
       } else {
         setSavedMsg(`生成失敗：${json?.error || '未知錯誤'}`)
@@ -168,11 +168,11 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
 
   function severityStyle(sev: FindingBrief['severity']): { bg: string; text: string; label: string } {
     switch (sev) {
-      case 'critical':  return { bg: 'bg-rose-100',    text: 'text-rose-800',    label: '🚨 critical' }
-      case 'attention': return { bg: 'bg-amber-100',   text: 'text-amber-800',   label: '⚠️ attention' }
-      case 'watch':     return { bg: 'bg-slate-100',   text: 'text-slate-700',   label: '👀 watch' }
-      case 'improving': return { bg: 'bg-emerald-50',  text: 'text-emerald-700', label: '📈 improving' }
-      case 'optimal':   return { bg: 'bg-emerald-100', text: 'text-emerald-800', label: '✅ optimal' }
+      case 'critical':  return { bg: 'bg-rose-100',    text: 'text-rose-800',    label: 'critical' }
+      case 'attention': return { bg: 'bg-amber-100',   text: 'text-amber-800',   label: 'attention' }
+      case 'watch':     return { bg: 'bg-slate-100',   text: 'text-slate-700',   label: 'watch' }
+      case 'improving': return { bg: 'bg-emerald-50',  text: 'text-emerald-700', label: 'improving' }
+      case 'optimal':   return { bg: 'bg-emerald-100', text: 'text-emerald-800', label: 'optimal' }
     }
   }
 
@@ -180,7 +180,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-6">
         <h2 className="text-lg font-medium text-gray-900 mb-2">
-          🩺 整組血檢觀察筆記（教練 Notes）
+          整組血檢觀察筆記（教練 Notes）
         </h2>
         <p className="text-sm text-gray-500">
           先在上方新增至少一筆血檢資料，這裡就會列出每個檢測日期供你寫教練觀察筆記。
@@ -193,7 +193,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
     <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-6">
       <div>
         <h2 className="text-lg font-medium text-gray-900">
-          🩺 整組血檢觀察筆記（教練 Notes）
+          整組血檢觀察筆記（教練 Notes）
         </h2>
         <p className="text-sm text-gray-500 mt-1">
           NT$4,999 Protocol 層的核心交付 — 每次抽血後寫一段教練觀察筆記、生活方式調整優先序、下次追蹤日期。**本內容為教練建議，非醫療診斷或處方。**
@@ -221,7 +221,7 @@ export default function LabPanelNotesEditor({ clientUniqueCode, labResults }: Pr
                   className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-lg disabled:opacity-50 flex items-center gap-1"
                   title="AI 自動生成教練觀察筆記草稿（會分析所有指標趨勢，避免 cherry-pick）"
                 >
-                  {draftingDate === date ? '生成中...' : '✨ AI 草稿'}
+                  {draftingDate === date ? '生成中...' : 'AI 草稿'}
                 </button>
                 <button
                   onClick={() => save(date)}

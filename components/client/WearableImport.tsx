@@ -12,9 +12,9 @@ type Format = 'garmin' | 'apple' | 'json'
 type ImportMode = 'direct' | 'csv'
 
 const FORMAT_OPTIONS: { value: Format; label: string; desc: string; accept: string }[] = [
-  { value: 'garmin', label: '⌚ Garmin Connect', desc: 'CSV 匯出檔', accept: '.csv' },
-  { value: 'apple', label: '🍎 Apple 健康', desc: 'CSV 匯出（需第三方 app）', accept: '.csv' },
-  { value: 'json', label: '📋 JSON 格式', desc: '通用 JSON 陣列', accept: '.json' },
+  { value: 'garmin', label: 'Garmin Connect', desc: 'CSV 匯出檔', accept: '.csv' },
+  { value: 'apple', label: 'Apple 健康', desc: 'CSV 匯出（需第三方 app）', accept: '.csv' },
+  { value: 'json', label: 'JSON 格式', desc: '通用 JSON 陣列', accept: '.json' },
 ]
 
 interface GarminStatus {
@@ -263,7 +263,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
         onClick={() => setOpen(true)}
         className="w-full py-2.5 text-sm text-slate-600 font-medium bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
       >
-        📥 匯入穿戴裝置歷史數據 <span className="text-gray-400 text-xs">（Garmin / Apple Health）</span>
+        匯入穿戴裝置歷史數據 <span className="text-gray-400 text-xs">（Garmin / Apple Health）</span>
       </button>
     )
   }
@@ -271,7 +271,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
   return (
     <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-900">📥 匯入穿戴裝置數據</h3>
+        <h3 className="text-sm font-bold text-slate-900">匯入穿戴裝置數據</h3>
         <button
           onClick={() => { setOpen(false); reset() }}
           className="text-xs text-gray-400 hover:text-gray-600"
@@ -291,7 +291,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
                 : 'bg-white text-gray-500 border border-slate-200 hover:bg-slate-50'
             }`}
           >
-            🔗 直接連線
+            直接連線
           </button>
           <button
             onClick={() => setImportMode('csv')}
@@ -301,7 +301,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
                 : 'bg-white text-gray-500 border border-slate-200 hover:bg-slate-50'
             }`}
           >
-            📄 上傳檔案
+            上傳檔案
           </button>
         </div>
       )}
@@ -356,7 +356,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
               {result && (
                 <div className="bg-emerald-50 rounded-xl p-3 text-sm">
                   <p className="text-emerald-700 font-medium">
-                    ✅ 成功同步 {result.imported} 天的數據
+                    成功同步 {result.imported} 天的數據
                   </p>
                 </div>
               )}
@@ -373,7 +373,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
                     同步中...
                   </>
                 ) : (
-                  <>🔄 一鍵同步 Garmin 數據</>
+                  <>一鍵同步 Garmin 數據</>
                 )}
               </button>
             </>
@@ -381,7 +381,6 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
             <>
               {/* 未連線 — 引導授權 */}
               <div className="bg-white rounded-xl p-4 space-y-3 text-center">
-                <div className="text-3xl">⌚</div>
                 <p className="text-sm font-medium text-gray-700">連線你的 Garmin 帳號</p>
                 <p className="text-xs text-gray-400">
                   授權後即可一鍵同步數據，不需要手動匯出 CSV
@@ -397,7 +396,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
                       連線中...
                     </>
                   ) : (
-                    <>🔗 連線 Garmin Connect</>
+                    <>連線 Garmin Connect</>
                   )}
                 </button>
                 <p className="text-[11px] text-gray-400">
@@ -494,7 +493,7 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
             >
               {file ? (
                 <span className="text-sm text-slate-900 font-medium">
-                  📄 {file.name} <span className="text-gray-400 font-normal">({(file.size / 1024).toFixed(1)} KB)</span>
+                  {file.name} <span className="text-gray-400 font-normal">({(file.size / 1024).toFixed(1)} KB)</span>
                 </span>
               ) : (
                 <span className="text-sm text-gray-400">
@@ -533,11 +532,11 @@ export default function WearableImport({ clientId, onImported }: WearableImportP
           {result && (
             <div className="bg-emerald-50 rounded-xl p-3 text-sm">
               <p className="text-emerald-700 font-medium">
-                ✅ 成功匯入 {result.imported} 天的數據
+                成功匯入 {result.imported} 天的數據
               </p>
               {result.skipped > 0 && (
                 <p className="text-amber-600 text-xs mt-1">
-                  ⚠️ {result.skipped} 筆跳過（格式錯誤或範圍外）
+                  {result.skipped} 筆跳過（格式錯誤或範圍外）
                 </p>
               )}
             </div>

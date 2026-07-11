@@ -8,7 +8,6 @@ interface SystemActionsProps {
 }
 
 interface ActionItem {
-  emoji: string
   text: string
   type: 'adjustment' | 'info' | 'warning'
 }
@@ -28,14 +27,12 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
     if (s.proteinDelta !== 0) parts.push(`蛋白質 ${s.proteinDelta > 0 ? '+' : ''}${s.proteinDelta}g`)
     if (parts.length > 0) {
       actions.push({
-        emoji: '🔧',
         text: `系統根據你的體重趨勢微調了 ${parts.join('、')}`,
         type: 'adjustment',
       })
     }
   } else if (s.status === 'on_track') {
     actions.push({
-      emoji: '✅',
       text: '目前進度正常，系統維持現有目標不動',
       type: 'info',
     })
@@ -44,7 +41,6 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
   // 2. TDEE 校正
   if (s.estimatedTDEE) {
     actions.push({
-      emoji: '📊',
       text: `你的估計 TDEE 為 ${s.estimatedTDEE.toLocaleString()} kcal（系統根據體重變化持續校正）`,
       type: 'info',
     })
@@ -53,7 +49,6 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
   // 3. Refeed 建議
   if (s.refeedSuggested && s.refeedReason) {
     actions.push({
-      emoji: '🍚',
       text: `系統建議安排 Refeed — ${s.refeedReason}`,
       type: 'warning',
     })
@@ -62,7 +57,6 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
   // 4. Diet Break
   if (s.dietBreakSuggested) {
     actions.push({
-      emoji: '⏸️',
       text: `已連續減脂 ${s.dietDurationWeeks} 週，系統建議安排 1-2 週 Diet Break`,
       type: 'warning',
     })
@@ -71,7 +65,6 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
   // 5. 代謝壓力
   if (s.metabolicStress && s.metabolicStress.score >= 45) {
     actions.push({
-      emoji: '🌡️',
       text: `代謝壓力偏高（${s.metabolicStress.score}/100），系統已納入調整考量`,
       type: 'warning',
     })
@@ -80,7 +73,6 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
   // 6. 減脂閘門
   if (s.cuttingReadinessGate?.blocked) {
     actions.push({
-      emoji: '🚦',
       text: `減脂閘門啟動 — ${s.cuttingReadinessGate.recommendation}`,
       type: 'warning',
     })
@@ -89,7 +81,6 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
   // 7. 恢復期
   if (prepPhase === 'recovery') {
     actions.push({
-      emoji: '🧘',
       text: '恢復期模式：系統自動提高熱量至維持 +10%，保護荷爾蒙恢復',
       type: 'info',
     })
@@ -98,7 +89,6 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
   // 8. 基因修正
   if (s.geneticCorrections.length > 0) {
     actions.push({
-      emoji: '🧬',
       text: `已套用 ${s.geneticCorrections.length} 項基因修正（${s.geneticCorrections.map(g => g.rule).join('、')}）`,
       type: 'info',
     })
@@ -107,7 +97,6 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
   // 9. 血檢驅動調整
   if (s.labMacroModifiers.length > 0) {
     actions.push({
-      emoji: '🩸',
       text: `已根據血檢結果調整 ${s.labMacroModifiers.length} 項營養素`,
       type: 'info',
     })
@@ -120,32 +109,35 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">⚙️</span>
-        <h2 className="text-base font-bold text-gray-900">系統幫你做了什麼</h2>
-      </div>
+      {/* 收合：維持原本預設展開，點標題可收起 */}
+      <details open>
+        <summary className="cursor-pointer select-none list-none">
+          <h2 className="text-base font-bold text-gray-900 inline">
+            系統幫你做了什麼 · {visible.length} 項
+          </h2>
+        </summary>
 
-      <div className="space-y-2">
-        {visible.map((action, i) => (
-          <div
-            key={i}
-            className={`flex items-start gap-2 px-3 py-2 rounded-xl text-xs ${
-              action.type === 'warning'
-                ? 'bg-amber-50 text-amber-800'
-                : action.type === 'adjustment'
-                ? 'bg-blue-50 text-blue-800'
-                : 'bg-gray-50 text-gray-700'
-            }`}
-          >
-            <span className="shrink-0 mt-0.5">{action.emoji}</span>
-            <span className="leading-relaxed">{action.text}</span>
-          </div>
-        ))}
-      </div>
+        <div className="space-y-2 mt-3">
+          {visible.map((action, i) => (
+            <div
+              key={i}
+              className={`px-3 py-2 rounded-xl text-xs ${
+                action.type === 'warning'
+                  ? 'bg-amber-50 text-amber-800'
+                  : action.type === 'adjustment'
+                  ? 'bg-blue-50 text-blue-800'
+                  : 'bg-gray-50 text-gray-700'
+              }`}
+            >
+              <span className="leading-relaxed">{action.text}</span>
+            </div>
+          ))}
+        </div>
 
-      <p className="text-[11px] text-gray-400 mt-2 text-center">
-        以上調整由引擎根據你的數據自動執行
-      </p>
+        <p className="text-[11px] text-gray-400 mt-2 text-center">
+          以上調整由引擎根據你的數據自動執行
+        </p>
+      </details>
     </div>
   )
 }

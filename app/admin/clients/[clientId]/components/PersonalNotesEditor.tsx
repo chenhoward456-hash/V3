@@ -104,7 +104,7 @@ export default function PersonalNotesEditor({ clientId }: { clientId: string }) 
     <div className="bg-white border border-slate-200 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h2 className="text-lg font-medium text-gray-900">🧠 個人化記憶（AI Agent 紅線）</h2>
+          <h2 className="text-lg font-medium text-gray-900">個人化記憶（AI Agent 紅線）</h2>
           <p className="text-xs text-gray-500 mt-0.5">AI 每次提案前都會讀這些；weight ≥ 8 = 絕對禁區</p>
         </div>
         <button

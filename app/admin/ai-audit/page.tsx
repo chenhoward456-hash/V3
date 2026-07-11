@@ -174,7 +174,7 @@ export default function AiAuditPage() {
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="🔍 搜尋客戶名 / panel 日期 / mode / unique code..."
+            placeholder="搜尋客戶名 / panel 日期 / mode / unique code..."
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {/* 篩選 row */}
@@ -235,17 +235,15 @@ export default function AiAuditPage() {
             <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center">
               {data.counts.total === 0 ? (
                 <>
-                  <div className="text-5xl mb-3 opacity-60">✨</div>
                   <div className="text-sm font-medium text-gray-700 mb-1">
                     還沒有任何 AI 草稿紀錄
                   </div>
                   <div className="text-xs text-gray-500 mb-3 max-w-sm mx-auto leading-relaxed">
-                    去學員血檢 tab 按「✨ AI 草稿」，或讓學員上傳血檢自動觸發草稿，紀錄會出現在這裡。
+                    去學員血檢 tab 按「AI 草稿」，或讓學員上傳血檢自動觸發草稿，紀錄會出現在這裡。
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="text-3xl mb-2 opacity-60">🔍</div>
                   <div className="text-sm text-gray-600">沒有符合條件的紀錄</div>
                   <div className="text-xs text-gray-400 mt-1">切換上方篩選器看看</div>
                 </>
@@ -348,7 +346,7 @@ export default function AiAuditPage() {
 
                     {!entry.coach && (
                       <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                        此草稿尚未儲存到 panel note — 可能是教練按了「✨ AI 草稿」但沒按「儲存」
+                        此草稿尚未儲存到 panel note — 可能是教練按了「AI 草稿」但沒按「儲存」
                       </div>
                     )}
 

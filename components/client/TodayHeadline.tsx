@@ -146,7 +146,7 @@ function TodayHeadlineInner({
       : '還沒開始追蹤你的進度'
 
   // 今天這一件（動作）：沒資料的人 → 推去開始；其餘 → 具體訓練/碳水。
-  const dayLabel = isTrainingDay ? '💪 訓練日' : '😴 休息日'
+  const dayLabel = isTrainingDay ? '訓練日' : '休息日'
   const carbPart = carbs != null ? `碳水吃滿 ${carbs}g` : null
   const doPart = isTrainingDay ? '把課表練完' : '好好恢復、別加練'
   const actionText = startMode
@@ -164,14 +164,17 @@ function TodayHeadlineInner({
         </div>
       )}
 
-      {/* 判定（一句）：引擎說偏離軌道 → 聽引擎（最新記錄）；否則 weekly_tasks；再不然 fallback */}
+      {/* 判定（一句）：引擎說偏離軌道 → 聽引擎（最新記錄）；否則 weekly_tasks；再不然 fallback。
+          語意用 CSS 色點承接（emoji 依 DESIGN.md 全數移除）：amber=要留意、emerald=在軌道、blue=推去開始、slate=中性 */}
       {(engineTitle || verdict || fallbackTitle) && (
         <div className="flex items-start gap-2 mb-3">
-          <span className="text-lg leading-none mt-0.5 shrink-0">
-            {engineTitle
-              ? (engine?.statusEmoji || '🟡')
-              : verdict ? (verdict.icon || (isNegative ? '🟡' : '🟢')) : startMode ? '👋' : '📈'}
-          </span>
+          <span className={`inline-block w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+            engineTitle
+              ? 'bg-amber-500'
+              : verdict
+                ? (isPositive ? 'bg-emerald-500' : isNegative ? 'bg-amber-500' : 'bg-slate-300')
+                : startMode ? 'bg-blue-500' : 'bg-slate-300'
+          }`} />
           <p className={`text-base font-bold leading-snug ${
             engineTitle
               ? 'text-amber-700'
@@ -213,7 +216,7 @@ function TodayHeadlineInner({
         <ul className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
           {extraTasks.map((t) => (
             <li key={t.key} className="flex gap-2 text-xs text-slate-600 leading-snug">
-              <span className="shrink-0">{t.icon}</span>
+              <span className="inline-block w-1 h-1 rounded-full bg-slate-300 mt-1.5 shrink-0" />
               <span>{t.title}</span>
             </li>
           ))}

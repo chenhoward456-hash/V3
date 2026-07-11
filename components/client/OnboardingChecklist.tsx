@@ -166,11 +166,6 @@ export default function OnboardingChecklist({
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              {celebrating ? (
-                <span className="text-lg animate-bounce">🎉</span>
-              ) : (
-                <span className="text-lg">📋</span>
-              )}
               <div>
                 <h3 className="text-sm font-bold text-gray-900">
                   {celebrating ? '太棒了！全部完成' : '新手任務'}
@@ -211,7 +206,6 @@ export default function OnboardingChecklist({
           {/* Celebration message */}
           {celebrating && (
             <div className="text-center py-3 animate-celebrate">
-              <div className="text-4xl mb-2 animate-bounce">🎊</div>
               <p className="text-sm font-semibold text-emerald-700">
                 所有新手任務已完成！
               </p>

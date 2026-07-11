@@ -168,7 +168,7 @@ export default function ExportAiSummary({ client, bodyData, nutritionLogs, welln
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-slate-900">🤖 帶著你的數據問 AI</p>
+          <p className="text-sm font-semibold text-slate-900">帶著你的數據問 AI</p>
           <p className="text-[11px] text-slate-600 mt-0.5">一鍵匯出你的健康摘要，貼到 ChatGPT / Claude 討論</p>
         </div>
         <button
@@ -177,7 +177,7 @@ export default function ExportAiSummary({ client, bodyData, nutritionLogs, welln
             copied ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
           }`}
         >
-          {copied ? '已複製 ✓' : '複製摘要'}
+          {copied ? '已複製' : '複製摘要'}
         </button>
       </div>
     </div>

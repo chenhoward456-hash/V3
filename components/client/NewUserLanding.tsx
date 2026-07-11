@@ -118,7 +118,7 @@ export default function NewUserLanding({
                 <Check size={20} />
               </div>
               <div>
-                <p className="text-sm font-semibold">第一筆紀錄完成 ✅</p>
+                <p className="text-sm font-semibold">第一筆紀錄完成</p>
                 <p className="text-xs text-emerald-600 mt-0.5">明天起床後再打一次，連續 3 天解鎖飲食記錄</p>
               </div>
             </div>
@@ -129,7 +129,7 @@ export default function NewUserLanding({
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
             <label className="block">
-              <span className="text-sm font-semibold text-gray-900">⚖️ 今天的體重 (kg)</span>
+              <span className="text-sm font-semibold text-gray-900">今天的體重 (kg)</span>
               <p className="text-[11px] text-gray-500 mt-0.5">早上起床、上完廁所、空腹量最準</p>
               <input
                 type="number"
@@ -156,7 +156,7 @@ export default function NewUserLanding({
 
       {/* 接下來會發生什麼 */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5">
-        <p className="text-sm font-semibold text-gray-900 mb-3">📅 接下來會發生什麼</p>
+        <p className="text-sm font-semibold text-gray-900 mb-3">接下來會發生什麼</p>
         <div className="space-y-2.5 text-xs text-gray-600">
           <div className="flex gap-2 items-start">
             <span className="bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">1</span>
@@ -193,12 +193,10 @@ export default function NewUserLanding({
       {/* Help + LINE 提醒 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Link href={helpUrl} className="bg-white border border-slate-200 rounded-2xl p-5 transition-colors">
-          <p className="text-2xl mb-1">📖</p>
           <p className="text-sm font-semibold text-gray-800">完整使用說明</p>
           <p className="text-[11px] text-gray-500 mt-1">5 分鐘讀完</p>
         </Link>
         <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
-          <p className="text-2xl mb-1">💬</p>
           <p className="text-sm font-semibold text-emerald-900">{client.has_line_binding ? 'LINE 已綁定 ✓' : 'LINE 還沒綁？'}</p>
           <p className="text-[11px] text-emerald-700 mt-1">{client.has_line_binding ? '可直接傳體重數字記錄' : '綁了就能用 LINE 快速回報體重'}</p>
         </div>

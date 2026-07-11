@@ -492,8 +492,9 @@ describe('GoalDrivenStatus', () => {
 
     await waitFor(() => {
       // 分數（55）現在包在 tabular-nums <span> 裡，文字被拆節點；用 function matcher 比對整段 textContent
+      // （2026-07 去 AI 感：🔥/🟢 前綴改為 CSS 色點，textContent 不再含 emoji）
       expect(
-        screen.getByText((_, node) => node?.textContent?.replace(/\s/g, '') === '🔥代謝壓力：55/100'),
+        screen.getByText((_, node) => node?.textContent?.replace(/\s/g, '') === '代謝壓力：55/100'),
       ).toBeInTheDocument()
       expect(screen.getByText(/建議安排 1 天 strategic refeed/)).toBeInTheDocument()
     })

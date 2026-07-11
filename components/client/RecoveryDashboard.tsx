@@ -79,12 +79,12 @@ const stateConfig = {
   critical: { label: '嚴重疲勞', color: 'text-rose-600', bg: 'bg-rose-500', ring: 'ring-rose-200' },
 }
 
-const systemLabels: Record<string, { icon: string; name: string }> = {
-  neural: { icon: '🧠', name: '神經系統' },
-  muscular: { icon: '💪', name: '肌肉骨骼' },
-  metabolic: { icon: '🔥', name: '代謝狀態' },
-  hormonal: { icon: '🧬', name: '荷爾蒙' },
-  psychological: { icon: '🧘', name: '心理狀態' },
+const systemLabels: Record<string, { name: string }> = {
+  neural: { name: '神經系統' },
+  muscular: { name: '肌肉骨骼' },
+  metabolic: { name: '代謝狀態' },
+  hormonal: { name: '荷爾蒙' },
+  psychological: { name: '心理狀態' },
 }
 
 const riskLevelConfig = {
@@ -95,33 +95,24 @@ const riskLevelConfig = {
 }
 
 const ansLabels = {
-  parasympathetic_dominant: { label: '副交感主導', icon: '😌', color: 'text-emerald-600' },
-  balanced: { label: '平衡', icon: '⚖️', color: 'text-blue-600' },
-  sympathetic_dominant: { label: '交感主導', icon: '⚡', color: 'text-amber-700' },
+  parasympathetic_dominant: { label: '副交感主導', color: 'text-emerald-600' },
+  balanced: { label: '平衡', color: 'text-blue-600' },
+  sympathetic_dominant: { label: '交感主導', color: 'text-amber-700' },
   // 沒 HRV 就沒得算 → 講清楚是「缺穿戴數據」而非功能被拿掉（學員會誤以為刪掉了）
-  unknown: { label: '需手錶 HRV', icon: '⌚', color: 'text-gray-400' },
+  unknown: { label: '需手錶 HRV', color: 'text-gray-400' },
 }
 
 const trajectoryLabels = {
-  improving: { label: '改善中', icon: '📈', color: 'text-emerald-600' },
-  stable: { label: '穩定', icon: '➡️', color: 'text-blue-600' },
-  declining: { label: '下滑中', icon: '📉', color: 'text-rose-600' },
-  unknown: { label: '數據不足', icon: '❓', color: 'text-gray-400' },
+  improving: { label: '改善中', color: 'text-emerald-600' },
+  stable: { label: '穩定', color: 'text-blue-600' },
+  declining: { label: '下滑中', color: 'text-rose-600' },
+  unknown: { label: '數據不足', color: 'text-gray-400' },
 }
 
-const categoryIcons: Record<string, string> = {
-  sleep: '😴',
-  nutrition: '🍎',
-  training: '🏋️',
-  stress: '🧘',
-  medical: '🏥',
-}
-
-function SystemBar({ name, icon, system }: { name: string; icon: string; system: SystemRecovery }) {
+function SystemBar({ name, system }: { name: string; system: SystemRecovery }) {
   const config = stateConfig[system.state]
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm w-5 text-center shrink-0">{icon}</span>
       <span className="text-xs text-gray-600 w-16 shrink-0">{name}</span>
       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
@@ -203,12 +194,12 @@ export default function RecoveryDashboard({ clientId, recentWellness, trainingPl
 
   // ── 一句話判決：恢復端最該回答的「今天該怎麼練」（紅綠燈）+ 具體訓練處方 ──
   const verdict = data.score >= 75
-    ? { emoji: '🟢', box: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-900', headline: '恢復好 → 照表全力練', trainRx: '可挑戰 PR、加重量；今天身體準備好了' }
+    ? { dot: 'bg-emerald-500', box: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-900', headline: '恢復好 → 照表全力練', trainRx: '可挑戰 PR、加重量；今天身體準備好了' }
     : data.score >= 50
-    ? { emoji: '🟡', box: 'bg-amber-50 border-amber-200', text: 'text-amber-900', headline: '恢復普通 → 照練但別逞強', trainRx: '主項照常、先別追 PR；輔助組數收一點' }
+    ? { dot: 'bg-amber-500', box: 'bg-amber-50 border-amber-200', text: 'text-amber-900', headline: '恢復普通 → 照練但別逞強', trainRx: '主項照常、先別追 PR；輔助組數收一點' }
     : data.score >= 30
-    ? { emoji: '🟠', box: 'bg-amber-100 border-amber-300', text: 'text-amber-900', headline: '恢復偏低 → 今天降量', trainRx: '主項降到 7-8 成重量、每項少 1-2 組' }
-    : { emoji: '🔴', box: 'bg-rose-50 border-rose-200', text: 'text-rose-900', headline: '恢復差 → 今天別硬上', trainRx: '改輕鬆有氧／活動度，或直接休一天' }
+    ? { dot: 'bg-amber-600', box: 'bg-amber-100 border-amber-300', text: 'text-amber-900', headline: '恢復偏低 → 今天降量', trainRx: '主項降到 7-8 成重量、每項少 1-2 組' }
+    : { dot: 'bg-rose-500', box: 'bg-rose-50 border-rose-200', text: 'text-rose-900', headline: '恢復差 → 今天別硬上', trainRx: '改輕鬆有氧／活動度，或直接休一天' }
   // 驅動原因：列出所有「在扣分」的系統(<65)的主因，最多兩條 → 讓綜合分數一眼說得通，
   // 不只給一條最低的(會漏掉同樣在拉低分數的另一個系統，分數看起來莫名)。恢復好(綠)就不囉嗦。
   const driverLine = data.score < 75
@@ -241,7 +232,7 @@ export default function RecoveryDashboard({ clientId, recentWellness, trainingPl
       {/* 頂部：綜合分數 */}
       <div className="p-4 pb-3">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-base font-semibold text-gray-900">🔬 今天的恢復</p>
+          <p className="text-base font-semibold text-gray-900">今天的恢復</p>
           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${config.color} ${config.ring} ring-1`}>
             {config.label}
           </span>
@@ -250,13 +241,13 @@ export default function RecoveryDashboard({ clientId, recentWellness, trainingPl
         {/* 一句話判決 — 恢復端最該回答的「今天該怎麼練」+ 具體訓練處方 */}
         <div className={`px-3 py-2.5 rounded-xl border ${verdict.box} mb-3`}>
           <div className="flex items-start gap-2.5">
-            <span className="text-lg leading-none mt-0.5">{verdict.emoji}</span>
+            <span className={`inline-block w-2 h-2 rounded-full mt-1.5 shrink-0 ${verdict.dot}`} />
             <div className="min-w-0">
               <p className={`text-sm font-bold leading-snug ${verdict.text}`}>{verdict.headline}</p>
               {isScheduledDeloadWeek && (
                 <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">本週為減量週，課表已調整</p>
               )}
-              <p className="text-xs text-gray-600 mt-0.5 leading-snug">🏋️ {verdict.trainRx}</p>
+              <p className="text-xs text-gray-600 mt-0.5 leading-snug">{verdict.trainRx}</p>
               {driverLine && <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">主要因為：{driverLine}</p>}
             </div>
           </div>
@@ -302,19 +293,16 @@ export default function RecoveryDashboard({ clientId, recentWellness, trainingPl
           <div className="flex-1 grid grid-cols-1 gap-1.5">
             {/* 軌跡 */}
             <div className="flex items-center gap-1.5">
-              <span className="text-sm">{traj.icon}</span>
               <span className="text-xs text-gray-500">趨勢</span>
               <span className={`text-xs font-semibold ml-auto ${traj.color}`}>{traj.label}</span>
             </div>
             {/* 自律神經 */}
             <div className="flex items-center gap-1.5">
-              <span className="text-sm">{ans.icon}</span>
               <span className="text-xs text-gray-500">自律神經</span>
               <span className={`text-xs font-semibold ml-auto ${ans.color}`}>{ans.label}</span>
             </div>
             {/* 過訓風險 */}
             <div className="flex items-center gap-1.5">
-              <span className="text-sm">🚦</span>
               <span className="text-xs text-gray-500">過訓風險</span>
               <span className={`text-xs font-semibold ml-auto ${risk.color}`}>{risk.label}</span>
             </div>
@@ -328,7 +316,7 @@ export default function RecoveryDashboard({ clientId, recentWellness, trainingPl
           <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
             {topRecommendations.map((rec, i) => (
               <div key={i} className="flex items-start gap-1.5">
-                <span className="text-xs mt-0.5">{categoryIcons[rec.category] || '💡'}</span>
+                <span className="text-gray-400 text-xs mt-0.5">·</span>
                 <p className="text-xs text-gray-600 leading-relaxed">{rec.message}</p>
               </div>
             ))}
@@ -357,7 +345,7 @@ export default function RecoveryDashboard({ clientId, recentWellness, trainingPl
               <div className="space-y-1.5">
                 {Object.entries(data.systems).map(([key, system]) => {
                   const info = systemLabels[key]
-                  return <SystemBar key={key} name={info.name} icon={info.icon} system={system} />
+                  return <SystemBar key={key} name={info.name} system={system} />
                 })}
               </div>
               {/* ACWR 區塊 */}

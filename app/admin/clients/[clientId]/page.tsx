@@ -8,7 +8,7 @@ import { calcRecommendedStageWeight, type RecommendedStageWeightResult, calculat
 import { minguoToAD, adToMinguo, ageFromBirthYear } from '@/utils/age'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { getDefaultFeatures, type SubscriptionTier } from '@/lib/tier-defaults'
-import { isCompetitionMode, isHealthMode, ALL_CLIENT_MODES, MODE_LABELS, MODE_EMOJIS, MODE_CONFIG, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS } from '@/lib/client-mode'
+import { isCompetitionMode, isHealthMode, ALL_CLIENT_MODES, MODE_LABELS, MODE_CONFIG, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS } from '@/lib/client-mode'
 import LabPanelNotesEditor from './components/LabPanelNotesEditor'
 import PersonalNotesEditor from './components/PersonalNotesEditor'
 import ArchivedSupplementsList from './components/ArchivedSupplementsList'
@@ -226,15 +226,15 @@ export default function ClientEditor() {
     return { weeks, current, previous, delta1w, delta4w, totalEntries: withWeight.length }
   }, [bodyDataEntries])
 
-  const tabs: { key: EditorTab; label: string; icon: string }[] = useMemo(() => {
+  const tabs: { key: EditorTab; label: string }[] = useMemo(() => {
     if (!client) return []
-    const t: { key: EditorTab; label: string; icon: string }[] = [
-      { key: 'basic', label: '基本資料', icon: '👤' },
-      { key: 'features', label: '功能 / 目標', icon: '⚙️' },
-      { key: 'notes', label: '教練筆記', icon: '💬' },
+    const t: { key: EditorTab; label: string }[] = [
+      { key: 'basic', label: '基本資料' },
+      { key: 'features', label: '功能 / 目標' },
+      { key: 'notes', label: '教練筆記' },
     ]
-    if (client.lab_enabled) t.push({ key: 'lab', label: '血檢', icon: '🩸' })
-    if (client.supplement_enabled) t.push({ key: 'supplements', label: '補品', icon: '💊' })
+    if (client.lab_enabled) t.push({ key: 'lab', label: '血檢' })
+    if (client.supplement_enabled) t.push({ key: 'supplements', label: '補品' })
     return t
   }, [client?.lab_enabled, client?.supplement_enabled])
 
@@ -884,7 +884,7 @@ export default function ClientEditor() {
             </div>
             {clientId !== 'new' && (
               <Link href={`/admin/clients/${clientId}/overview`} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                📊 總覽
+                總覽
               </Link>
             )}
           </div>
@@ -902,7 +902,6 @@ export default function ClientEditor() {
         {/* 保存成功 Toast */}
         {successMsg && (
           <div className="fixed top-4 right-4 z-50 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-[slideIn_0.3s_ease-out]">
-            <span className="text-lg">✓</span>
             <span className="text-sm font-medium">{successMsg}</span>
           </div>
         )}
@@ -919,13 +918,13 @@ export default function ClientEditor() {
           // 進度方向判斷
           let progressTag: { text: string; color: string } | null = null
           if (goal === 'cut' && delta1w != null) {
-            if (delta1w < -0.1) progressTag = { text: '✅ 減重中', color: 'text-emerald-600' }
-            else if (delta1w > 0.2) progressTag = { text: '⚠️ 體重上升', color: 'text-rose-600' }
-            else progressTag = { text: '⏸ 停滯', color: 'text-amber-600' }
+            if (delta1w < -0.1) progressTag = { text: '減重中', color: 'text-emerald-600' }
+            else if (delta1w > 0.2) progressTag = { text: '體重上升', color: 'text-rose-600' }
+            else progressTag = { text: '停滯', color: 'text-amber-600' }
           } else if (goal === 'bulk' && delta1w != null) {
-            if (delta1w > 0.1) progressTag = { text: '✅ 增重中', color: 'text-emerald-600' }
-            else if (delta1w < -0.2) progressTag = { text: '⚠️ 體重下降', color: 'text-rose-600' }
-            else progressTag = { text: '⏸ 停滯', color: 'text-amber-600' }
+            if (delta1w > 0.1) progressTag = { text: '增重中', color: 'text-emerald-600' }
+            else if (delta1w < -0.2) progressTag = { text: '體重下降', color: 'text-rose-600' }
+            else progressTag = { text: '停滯', color: 'text-amber-600' }
           }
 
           // 預期達標日（用 4 週速度推算）
@@ -946,7 +945,7 @@ export default function ClientEditor() {
             <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-900">📈 週平均體重</h2>
+                  <h2 className="text-sm font-semibold text-gray-900">週平均體重</h2>
                   <p className="text-[11px] text-gray-400">滾動 7 天平均，最近 8 週</p>
                 </div>
                 {progressTag && (
@@ -1023,7 +1022,7 @@ export default function ClientEditor() {
                 <div className="mt-3 pt-3 border-t border-slate-200 text-xs">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-gray-600">
                     {targetDate && remainingDays != null && (
-                      <span>📅 目標日期：{targetDate}（剩 {remainingDays} 天）</span>
+                      <span>目標日期：{targetDate}（剩 {remainingDays} 天）</span>
                     )}
                     {projectedDays != null && (
                       <span className={
@@ -1031,7 +1030,7 @@ export default function ClientEditor() {
                           ? 'text-rose-600 font-semibold'
                           : 'text-emerald-700 font-semibold'
                       }>
-                        🎯 預估達標：{projectedDays} 天後
+                        預估達標：{projectedDays} 天後
                         {remainingDays != null && projectedDays > remainingDays && '（趕不上）'}
                       </span>
                     )}
@@ -1054,8 +1053,7 @@ export default function ClientEditor() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <span className="mr-1">{tab.icon}</span>
-              <span className="hidden sm:inline">{tab.label}</span>
+              <span>{tab.label}</span>
             </button>
           ))}
           {/* Issue 1: Unsaved changes indicator in tab bar */}
@@ -1178,7 +1176,7 @@ export default function ClientEditor() {
                   const goalLabel = client.goal_type ? ({ cut: '減脂', bulk: '增肌', recomp: '體態重組' } as Record<string, string>)[client.goal_type] : '體態重組（未設目標，預設）'
                   return (
                     <div className="md:col-span-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                      <div className="text-sm font-semibold text-emerald-900 mb-1">📊 即時估算 · {goalLabel} · {preview.method === 'katch_mcardle' ? 'Katch-McArdle（用體脂）' : '簡化公式'}</div>
+                      <div className="text-sm font-semibold text-emerald-900 mb-1">即時估算 · {goalLabel} · {preview.method === 'katch_mcardle' ? 'Katch-McArdle（用體脂）' : '簡化公式'}</div>
                       <div className="text-sm text-emerald-800 tabular-nums">
                         TDEE ≈ <b>{preview.estimatedTDEE}</b> kcal　→　目標熱量 <b>{preview.calories}</b> kcal（{preview.deficit >= 0 ? `赤字 ${preview.deficit}` : `盈餘 ${-preview.deficit}`} kcal）
                       </div>
@@ -1299,7 +1297,7 @@ export default function ClientEditor() {
                             }}
                             className="w-full py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                           >
-                            {upgradeCopied ? '已複製 ✓' : '複製連結（丟 LINE 給客戶）'}
+                            {upgradeCopied ? '已複製' : '複製連結（丟 LINE 給客戶）'}
                           </button>
                         </div>
                       )}
@@ -1398,7 +1396,7 @@ export default function ClientEditor() {
                 <div>
                   <h2 className="text-lg font-medium text-gray-900">帳號權限</h2>
                   <p className="text-sm text-gray-500 mt-1">
-                    {client.is_active ? '學員可正常使用 app' : '⛔ 已停用 — 學員打開網址會看到「帳號已暫停」'}
+                    {client.is_active ? '學員可正常使用 app' : '已停用 — 學員打開網址會看到「帳號已暫停」'}
                   </p>
                 </div>
                 <button
@@ -1474,7 +1472,7 @@ export default function ClientEditor() {
                             : 'text-gray-500 hover:text-gray-700'
                         }`}
                       >
-                        {MODE_EMOJIS[mode as keyof typeof MODE_EMOJIS]} {MODE_LABELS[mode as keyof typeof MODE_LABELS]}
+                        {MODE_LABELS[mode as keyof typeof MODE_LABELS]}
                       </button>
                     ))}
                   </div>
@@ -1488,7 +1486,7 @@ export default function ClientEditor() {
             {/* ===== Issue 5: Competition Prep Quick Setup ===== */}
             {isCompetitionMode(client.client_mode) && !client.calories_target && !client.protein_target && (
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                <h2 className="text-lg font-medium text-gray-900 mb-1">🏆 備賽快速設定</h2>
+                <h2 className="text-lg font-medium text-gray-900 mb-1">備賽快速設定</h2>
                 <p className="text-xs text-gray-400 mb-4">一鍵開啟所有備賽功能並設定基礎參數</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div>
@@ -1518,8 +1516,8 @@ export default function ClientEditor() {
                       onChange={(e) => setCompQuickSetupGoalType(e.target.value as 'cut' | 'bulk')}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
-                      <option value="cut">🔻 減脂</option>
-                      <option value="bulk">🔺 增肌</option>
+                      <option value="cut">減脂</option>
+                      <option value="bulk">增肌</option>
                     </select>
                   </div>
                 </div>
@@ -1560,7 +1558,7 @@ export default function ClientEditor() {
             {/* ===== Issue 3: Unified Nutrition Settings ===== */}
             {client.nutrition_enabled && (
               <div className="bg-white border border-slate-200 rounded-2xl p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-1">🥗 營養設定</h2>
+                <h2 className="text-lg font-medium text-gray-900 mb-1">營養設定</h2>
                 <p className="text-xs text-gray-400 mb-4">所有營養相關設定集中在此，設定後學員會看到目標對比</p>
 
                 {/* Override Banner */}
@@ -1568,7 +1566,6 @@ export default function ClientEditor() {
                   <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">🔒</span>
                         <div>
                           <p className="text-sm font-medium text-amber-800">教練覆寫模式啟動中</p>
                           <p className="text-xs text-amber-600">
@@ -1622,8 +1619,8 @@ export default function ClientEditor() {
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     >
                       <option value="">未設定</option>
-                      <option value="cut">🔻 減脂</option>
-                      <option value="bulk">🔺 增肌</option>
+                      <option value="cut">減脂</option>
+                      <option value="bulk">增肌</option>
                     </select>
                   </div>
                   <div>
@@ -1634,8 +1631,8 @@ export default function ClientEditor() {
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     >
                       <option value="">預設（中等活動量）</option>
-                      <option value="sedentary">🪑 上班族</option>
-                      <option value="high_energy_flux">⚡ 高能量通量</option>
+                      <option value="sedentary">上班族</option>
+                      <option value="high_energy_flux">高能量通量</option>
                     </select>
                   </div>
                   <div>
@@ -1824,7 +1821,7 @@ export default function ClientEditor() {
             {client.body_composition_enabled && (
               <div className="bg-white border border-slate-200 rounded-2xl p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">
-                  {isCompetitionMode(client.client_mode) ? '🎯 目標上台體重' : '🎯 目標體重'}
+                  {isCompetitionMode(client.client_mode) ? '目標上台體重' : '目標體重'}
                 </h2>
                 <p className="text-xs text-gray-400 mb-4">
                   {isCompetitionMode(client.client_mode) ? '設定比賽日目標體重，系統會自動推算建議範圍' : '設定目標體重，系統會依體組成推算健康體重範圍'}
@@ -1880,7 +1877,7 @@ export default function ClientEditor() {
                     const isOutOfRange = isBelow || isAbove
                     return (
                       <div className={`mt-2 p-3 rounded-lg text-xs border ${isOutOfRange ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-100'}`}>
-                        <p className="font-semibold text-gray-700 mb-1">🔬 體態推算（依最新紀錄）</p>
+                        <p className="font-semibold text-gray-700 mb-1">體態推算（依最新紀錄）</p>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600">
                           <span>最新體重</span><span className="font-medium text-gray-800">{rec.currentWeight} kg</span>
                           <span>最新體脂率</span><span className="font-medium text-gray-800">{rec.currentBF}%</span>
@@ -1899,10 +1896,10 @@ export default function ClientEditor() {
                           {client.target_weight && (
                             <p className={`mt-1 ${isOutOfRange ? 'text-amber-600 font-medium' : 'text-emerald-600'}`}>
                               {isBelow
-                                ? `⚠️ 手動目標 ${client.target_weight} kg 低於建議下限 ${(rec.recommendedLow - client.target_weight).toFixed(1)} kg，可能壓縮 FFM`
+                                ? `手動目標 ${client.target_weight} kg 低於建議下限 ${(rec.recommendedLow - client.target_weight).toFixed(1)} kg，可能壓縮 FFM`
                                 : isAbove
-                                ? `⚠️ 手動目標 ${client.target_weight} kg 高於建議上限 ${(client.target_weight - rec.recommendedHigh).toFixed(1)} kg，${rec.mode === 'competition' ? '上台體脂可能偏高' : '體脂可能高於健康目標'}`
-                                : `✅ 手動目標 ${client.target_weight} kg 在建議範圍內`}
+                                ? `手動目標 ${client.target_weight} kg 高於建議上限 ${(client.target_weight - rec.recommendedHigh).toFixed(1)} kg，${rec.mode === 'competition' ? '上台體脂可能偏高' : '體脂可能高於健康目標'}`
+                                : `手動目標 ${client.target_weight} kg 在建議範圍內`}
                             </p>
                           )}
                           {rec.fatToLose !== null && (
@@ -1920,7 +1917,7 @@ export default function ClientEditor() {
             {/* Health Mode Settings -- 健康模式季度週期 */}
             {isHealthMode(client.client_mode) && (
               <div className="bg-white border border-slate-200 rounded-2xl p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-1">🌿 健康模式設定</h2>
+                <h2 className="text-lg font-medium text-gray-900 mb-1">健康模式設定</h2>
                 <p className="text-xs text-gray-400 mb-4">每 90 天一個季度週期，配合季度血檢追蹤健康進步</p>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">本季週期起始日</label>
@@ -1951,7 +1948,7 @@ export default function ClientEditor() {
             {/* Genetic Risk Profile — 基因風險欄位 */}
             {isHealthMode(client.client_mode) && (
               <div className="bg-white border border-slate-200 rounded-2xl p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-1">🧬 基因風險設定</h2>
+                <h2 className="text-lg font-medium text-gray-900 mb-1">基因風險設定</h2>
                 <p className="text-xs text-gray-400 mb-4">根據基因檢測結果設定，系統會自動調整補品建議與 AI 顧問回覆</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -2022,7 +2019,7 @@ export default function ClientEditor() {
             {isCompetitionMode(client.client_mode) && (
               <div className="bg-white border border-slate-200 rounded-2xl p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-1">
-                  {MODE_EMOJIS[client.client_mode as keyof typeof MODE_EMOJIS] || '🏆'} 備賽設定
+                  備賽設定
                 </h2>
                 <p className="text-xs text-gray-400 mb-4">設定比賽日期與備賽階段</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2083,7 +2080,7 @@ export default function ClientEditor() {
               <h2 className="text-lg font-medium text-gray-900 mb-4">教練備註</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">💬 本週回饋給學員</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">本週回饋給學員</label>
                   <p className="text-xs text-gray-400 mb-1">學員打開 app 第一眼就會看到，建議每週更新</p>
                   <textarea
                     value={client.coach_weekly_note || ''}
@@ -2135,8 +2132,8 @@ export default function ClientEditor() {
               const fmtType = (t: string | null) => {
                 if (!t) return '—'
                 const map: Record<string, string> = {
-                  cardio: '🏃 有氧', strength: '💪 重訓', mixed: '🔀 混合',
-                  rest: '😴 休息', flexibility: '🧘 柔軟度', sports: '⚽ 運動',
+                  cardio: '有氧', strength: '重訓', mixed: '混合',
+                  rest: '休息', flexibility: '柔軟度', sports: '運動',
                 }
                 return map[t] || t
               }
@@ -2144,7 +2141,7 @@ export default function ClientEditor() {
                 <div className="bg-white border border-slate-200 rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h2 className="text-lg font-medium text-gray-900">🏋️ 近 30 天訓練紀錄（學員回報）</h2>
+                      <h2 className="text-lg font-medium text-gray-900">近 30 天訓練紀錄（學員回報）</h2>
                       <p className="text-xs text-gray-400 mt-0.5">學員打卡時填寫的 note 會顯示在這裡；含「痛 / 不適 / 受傷」等字會被標紅</p>
                     </div>
                     {trainingHistoryLoading && <span className="text-xs text-gray-400">載入中…</span>}
@@ -2153,7 +2150,7 @@ export default function ClientEditor() {
                   {flagged.length > 0 && (
                     <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
                       <p className="text-sm font-semibold text-rose-700 mb-2">
-                        ⚠️ {flagged.length} 筆紀錄含疼痛/不適關鍵字，建議優先處理
+                        {flagged.length} 筆紀錄含疼痛/不適關鍵字，建議優先處理
                       </p>
                       <div className="space-y-2">
                         {flagged.map(r => (
@@ -2173,7 +2170,7 @@ export default function ClientEditor() {
 
                   {withNotes.length > 0 && (
                     <div className="mb-3">
-                      <p className="text-xs font-medium text-gray-500 mb-2">📝 其他學員備註（{withNotes.length} 筆）</p>
+                      <p className="text-xs font-medium text-gray-500 mb-2">其他學員備註（{withNotes.length} 筆）</p>
                       <div className="space-y-1.5">
                         {withNotes.map(r => (
                           <div key={r.id} className="border border-slate-200 rounded p-2 text-sm bg-slate-50">
@@ -2234,7 +2231,7 @@ export default function ClientEditor() {
             {/* 訓練經驗等級 */}
             {client.training_enabled && (
               <div className="bg-white border border-slate-200 rounded-2xl p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-2">📊 訓練經驗</h2>
+                <h2 className="text-lg font-medium text-gray-900 mb-2">訓練經驗</h2>
                 <p className="text-xs text-gray-400 mb-3">影響建議組數：新手多練動作、進階少量高強度</p>
                 <div className="flex gap-2">
                   {([
@@ -2264,7 +2261,7 @@ export default function ClientEditor() {
               <div className="bg-white border border-slate-200 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-lg font-medium text-gray-900">🏋️ 週間訓練計畫</h2>
+                    <h2 className="text-lg font-medium text-gray-900">週間訓練計畫</h2>
                     <p className="text-xs text-gray-400 mt-1">學員會在首頁看到「今日訓練」卡片</p>
                   </div>
                   {client.training_plan && (
@@ -2500,7 +2497,7 @@ export default function ClientEditor() {
                       </div>
                       <div className="lg:col-span-3">
                         <label className="block text-sm font-medium text-slate-700 mb-2">
-                          🔬 教練觀察筆記（Longevity Protocol）
+                          教練觀察筆記（Longevity Protocol）
                         </label>
                         <textarea
                           value={result.coach_interpretation || ''}
@@ -2580,7 +2577,7 @@ export default function ClientEditor() {
                             className="ml-2 text-xs text-blue-600 hover:text-blue-800 font-normal"
                             title="從名稱自動填入劑量、時間、rationale 起手式"
                           >
-                            ✨ 套用建議
+                            套用建議
                           </button>
                         </label>
                         <input
@@ -2596,13 +2593,13 @@ export default function ClientEditor() {
                         {/* 指徵對帳：依這位學員自己的血檢/基因，標這項補品有沒有數據指徵 */}
                         {supplement.name?.trim() && (() => {
                           const v = auditSupplement(supplement.name, client.lab_results || [], { gene_mthfr: client.gene_mthfr, gene_apoe: client.gene_apoe })
-                          const style = v.status === 'indicated' ? { box: 'bg-emerald-50 border-emerald-200 text-emerald-800', icon: '🟢', label: '有指徵' }
-                            : v.status === 'caution' ? { box: 'bg-rose-50 border-rose-200 text-rose-800', icon: '🔴', label: '注意' }
-                            : v.status === 'no-indication' ? { box: 'bg-amber-50 border-amber-200 text-amber-800', icon: '🟡', label: '無數據指徵' }
-                            : { box: 'bg-slate-50 border-slate-200 text-slate-600', icon: '🔵', label: '生活型/目標' }
+                          const style = v.status === 'indicated' ? { box: 'bg-emerald-50 border-emerald-200 text-emerald-800', dot: 'bg-emerald-500', label: '有指徵' }
+                            : v.status === 'caution' ? { box: 'bg-rose-50 border-rose-200 text-rose-800', dot: 'bg-rose-500', label: '注意' }
+                            : v.status === 'no-indication' ? { box: 'bg-amber-50 border-amber-200 text-amber-800', dot: 'bg-amber-500', label: '無數據指徵' }
+                            : { box: 'bg-slate-50 border-slate-200 text-slate-600', dot: 'bg-slate-400', label: '生活型/目標' }
                           return (
                             <div className={`mt-2 text-xs border rounded-lg px-2.5 py-1.5 ${style.box}`}>
-                              <span className="font-semibold">{style.icon} {style.label}</span>
+                              <span className="font-semibold inline-flex items-center gap-1.5"><span className={`inline-block w-2 h-2 rounded-full ${style.dot}`} />{style.label}</span>
                               <span className="ml-1.5 opacity-90">{v.basis}</span>
                             </div>
                           )
@@ -2645,7 +2642,7 @@ export default function ClientEditor() {
                     {/* 子區塊：版本管理 */}
                     <div className="mt-4 pt-4 border-t border-slate-200">
                       <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                        📅 版本管理
+                        版本管理
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -2673,7 +2670,7 @@ export default function ClientEditor() {
                     {/* 子區塊：教練筆記 */}
                     <div className="mt-4 pt-4 border-t border-slate-200">
                       <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-wide mb-2">
-                        🧬 教練 Rationale
+                        教練 Rationale
                       </div>
                       <label className="block text-xs text-gray-600 mb-1">
                         為什麼開這個 — 連結哪個血檢指標
@@ -2704,7 +2701,7 @@ export default function ClientEditor() {
                         className="text-amber-700 hover:text-amber-900 text-sm border border-amber-300 px-3 py-1 rounded"
                         title="封存（保留歷史，不從 DB 刪除）"
                       >
-                        {supplement.id ? '📦 封存' : '取消新增'}
+                        {supplement.id ? '封存' : '取消新增'}
                       </button>
                     </div>
                   </div>

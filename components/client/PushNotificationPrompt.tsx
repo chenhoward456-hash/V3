@@ -1,6 +1,7 @@
 'use client'
 
 import { memo, useEffect, useState } from 'react'
+import { Share } from 'lucide-react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 const DISMISS_KEY = 'push_prompt_dismissed'
@@ -64,7 +65,7 @@ function PushNotificationPromptInner({ code, debug = false }: { code: string; de
   if (justEnabled) {
     return (
       <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-800">
-        ✅ 提醒已開啟，打卡提醒和達標通知會直接推到這台裝置
+        提醒已開啟，打卡提醒和達標通知會直接推到這台裝置
       </div>
     )
   }
@@ -75,11 +76,10 @@ function PushNotificationPromptInner({ code, debug = false }: { code: string; de
   if (needsInstall) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 shadow-sm flex items-start gap-3">
-        <div className="text-2xl leading-none mt-0.5">📲</div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-blue-900">想收到打卡提醒？先把這頁加到主畫面</p>
           <ol className="text-xs text-blue-800/90 mt-1.5 space-y-1 list-decimal list-inside">
-            <li>點底部工具列的「分享」<span className="font-mono">⬆️</span></li>
+            <li>點底部工具列的「分享」<Share size={12} className="inline-block align-[-1px]" /></li>
             <li>選「加入主畫面」</li>
             <li>從桌面圖示重新打開這個 App，就能開啟提醒</li>
           </ol>
@@ -94,7 +94,6 @@ function PushNotificationPromptInner({ code, debug = false }: { code: string; de
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex items-start gap-3">
-      <div className="text-2xl leading-none mt-0.5">🔔</div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-900">開啟提醒，別斷了你的進度</p>
         <p className="text-xs text-gray-500 mt-0.5">

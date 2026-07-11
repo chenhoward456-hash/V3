@@ -169,7 +169,7 @@ describe('DailyWellness', () => {
     expect(callBody.training_drive).toBe(4)
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith('感受已記錄！', 'success', '🎉')
+      expect(mockShowToast).toHaveBeenCalledWith('感受已記錄！', 'success')
       expect(defaultProps.onMutate).toHaveBeenCalled()
     })
   })

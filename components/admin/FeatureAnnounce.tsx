@@ -16,7 +16,7 @@ export default function FeatureAnnounce() {
   const [result, setResult] = useState<string | null>(null)
 
   const send = async () => {
-    if (!title.trim() || !body.trim()) { setResult('⚠️ 標題和內容都要填'); return }
+    if (!title.trim() || !body.trim()) { setResult('標題和內容都要填'); return }
     if (!window.confirm(`確定發送這則公告推播給所有開了推播的學員？\n\n${title}\n${body}`)) return
     setSending(true); setResult(null)
     try {
@@ -26,11 +26,11 @@ export default function FeatureAnnounce() {
         body: JSON.stringify({ title: title.trim(), body: body.trim(), url: url.trim() || undefined }),
       })
       const data = await res.json()
-      if (!res.ok) { setResult(`❌ ${data.error || '發送失敗'}`); return }
-      setResult(`✅ 已送達 ${data.sent}/${data.total} 位訂閱者${data.expired ? `（清掉 ${data.expired} 個失效訂閱）` : ''}`)
+      if (!res.ok) { setResult(data.error || '發送失敗'); return }
+      setResult(`已送達 ${data.sent}/${data.total} 位訂閱者${data.expired ? `（清掉 ${data.expired} 個失效訂閱）` : ''}`)
       if (data.sent > 0) { setTitle(''); setBody('') }
     } catch {
-      setResult('❌ 發送失敗，請稍後再試')
+      setResult('發送失敗，請稍後再試')
     } finally {
       setSending(false)
     }
@@ -42,7 +42,7 @@ export default function FeatureAnnounce() {
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between text-left"
       >
-        <span className="text-base font-semibold text-gray-900">📢 發布功能公告（推播給學員）</span>
+        <span className="text-base font-semibold text-gray-900">發布功能公告（推播給學員）</span>
         <span className="text-gray-400 text-sm">{open ? '收合 ▴' : '展開 ▾'}</span>
       </button>
 
@@ -52,7 +52,7 @@ export default function FeatureAnnounce() {
             <label className="block text-xs font-medium text-gray-600 mb-1">標題</label>
             <input
               type="text" value={title} onChange={e => setTitle(e.target.value)}
-              placeholder="例：新功能上線 🎉"
+              placeholder="例：新功能上線"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

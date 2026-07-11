@@ -56,16 +56,16 @@ export default function WeeklyCoachingPage() {
 
   // 單筆發送，回傳結果字串（批次與單發共用）
   const sendOne = async (d: Draft): Promise<string> => {
-    if (!d.hasPush && !d.hasLine) return '❌ 無管道（用你私訊）'
+    if (!d.hasPush && !d.hasLine) return '無管道（用你私訊）'
     try {
       const res = await fetch('/api/admin/weekly-coaching/send', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId: d.clientId, message: d.studentMessage, mode: d.mode }),
       })
       const data = await res.json()
-      if (!res.ok || !data.success) return data.method === 'skipped' ? '❌ 沒有可用管道' : '❌ 發送失敗'
-      return data.method === 'web_push' ? '✅ 已推 Web Push' : '✅ 已發 LINE'
-    } catch { return '❌ 發送失敗' }
+      if (!res.ok || !data.success) return data.method === 'skipped' ? '沒有可用管道' : '發送失敗'
+      return data.method === 'web_push' ? '已推 Web Push' : '已發 LINE'
+    } catch { return '發送失敗' }
   }
 
   const send = async (d: Draft) => {
@@ -87,7 +87,7 @@ export default function WeeklyCoachingPage() {
       setSentResult(p => ({ ...p, [d.clientId]: '發送中…' }))
       const r = await sendOne(d)
       setSentResult(p => ({ ...p, [d.clientId]: r }))
-      r.startsWith('✅') ? ok++ : fail++
+      r.startsWith('已') ? ok++ : fail++
       // 發完取消勾選，避免重複發
       setSelected(prev => { const n = new Set(prev); n.delete(d.clientId); return n })
     }
@@ -146,8 +146,8 @@ export default function WeeklyCoachingPage() {
                     ? <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">問責召回</span>
                     : <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">數據調整</span>}
                   {d.needsCoachReview && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">需你看</span>}
-                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${d.hasPush ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasPush ? '已開 Web 推播' : '未開 Web 推播'}>🌐{d.hasPush ? '' : '✗'}</span>
-                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${d.hasLine ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasLine ? '有綁 LINE' : '沒綁 LINE'}>💬{d.hasLine ? '' : '✗'}</span>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${d.hasPush ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasPush ? '已開 Web 推播' : '未開 Web 推播'}>Push{d.hasPush ? '' : ' ✗'}</span>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${d.hasLine ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`} title={d.hasLine ? '有綁 LINE' : '沒綁 LINE'}>LINE{d.hasLine ? '' : ' ✗'}</span>
                 </div>
                 <a href={`/admin/clients/${d.clientId}/overview`} className="text-xs text-blue-600 hover:text-blue-700 shrink-0">學員 →</a>
               </div>
@@ -156,7 +156,7 @@ export default function WeeklyCoachingPage() {
 
               {d.flags.length > 0 && (
                 <div className="mb-2 flex flex-wrap gap-1">
-                  {d.flags.map((f, i) => <span key={i} className="text-[11px] text-rose-700 bg-rose-50 border border-rose-100 rounded px-1.5 py-0.5">🚩 {f}</span>)}
+                  {d.flags.map((f, i) => <span key={i} className="text-[11px] text-rose-700 bg-rose-50 border border-rose-100 rounded px-1.5 py-0.5">{f}</span>)}
                 </div>
               )}
 
@@ -189,7 +189,7 @@ export default function WeeklyCoachingPage() {
                   onClick={() => copy(d.clientId, d.studentMessage)}
                   className="text-sm font-medium bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-lg hover:border-slate-300 transition-colors"
                 >
-                  {copied === d.clientId ? '✓ 已複製' : '複製（自己貼）'}
+                  {copied === d.clientId ? '已複製' : '複製（自己貼）'}
                 </button>
                 {sentResult[d.clientId] && <span className="text-xs text-slate-600">{sentResult[d.clientId]}</span>}
               </div>

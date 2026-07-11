@@ -128,7 +128,7 @@ export default function DailyCheckIn({
             }}
             className="w-full py-2.5 bg-emerald-50 border-2 border-emerald-200 text-emerald-700 text-sm font-semibold rounded-2xl hover:bg-emerald-100 transition-all active:scale-[0.98]"
           >
-            ✅ 全部完成
+            全部完成
           </button>
         </div>
       )}

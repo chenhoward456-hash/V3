@@ -425,7 +425,7 @@ export default function LabResults({ labResults, isCoachMode, clientId, coachHea
                           ))}
                         </optgroup>
                       )}
-                      <option value="__new__">✏️ 自行輸入...</option>
+                      <option value="__new__">自行輸入...</option>
                     </select>
                     {!existingTestNames.includes(form.test_name) && !presetTests.some(t => t.name === form.test_name) && (
                       <input type="text" value={form.test_name} onChange={(e) => setForm(p => ({ ...p, test_name: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="輸入新指標名稱" />

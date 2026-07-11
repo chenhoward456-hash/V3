@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Lock } from 'lucide-react'
 
 interface NutritionStrategyCardProps {
   client: {
@@ -52,10 +52,7 @@ export default function NutritionStrategyCard({
   if (isFree) {
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
-        <div className="flex items-center gap-2 mb-2.5">
-          <span className="text-lg">📋</span>
-          <h3 className="text-sm font-bold text-gray-900">你的飲食策略</h3>
-        </div>
+        <h3 className="text-sm font-bold text-gray-900 mb-2.5">你的飲食策略</h3>
 
         {modeDescription && (
           <p className="text-xs text-gray-600 mb-2">
@@ -73,7 +70,7 @@ export default function NutritionStrategyCard({
         {/* Locked features section */}
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-3">
           <div className="flex items-start gap-2">
-            <span className="text-sm shrink-0">🔒</span>
+            <Lock size={14} className="text-slate-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-[11px] text-gray-500 leading-relaxed">
                 碳循環自動排程、血檢飲食調整、基因保護機制 — 升級自主管理方案解鎖
@@ -127,10 +124,7 @@ export default function NutritionStrategyCard({
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-2.5">
-        <span className="text-lg">📋</span>
-        <h3 className="text-sm font-bold text-gray-900">你的飲食策略</h3>
-      </div>
+      <h3 className="text-sm font-bold text-gray-900 mb-2.5">你的飲食策略</h3>
 
       {/* Current mode */}
       {modeDescription && (
@@ -154,7 +148,7 @@ export default function NutritionStrategyCard({
       {/* Lab-based modifiers */}
       {hasLabModifiers && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mt-2.5">
-          <p className="text-[11px] font-semibold text-slate-900 mb-1.5">🩸 根據你的血檢：</p>
+          <p className="text-[11px] font-semibold text-slate-900 mb-1.5">根據你的血檢：</p>
           <div className="space-y-1">
             {labMacroModifiers!.map((mod, i) => (
               <p key={i} className="text-[11px] text-slate-600 leading-relaxed">

@@ -27,7 +27,6 @@ function WeeklyTaskCardInner({ data }: { data: WeeklyTasksData | null }) {
   return (
     <section className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
       <div className="flex items-center gap-2 mb-3.5">
-        <span className="text-base leading-none">📋</span>
         <h2 className="text-sm font-semibold text-slate-900">本週任務</h2>
         <span className="ml-auto text-[11px] text-slate-400">{data.tasks.length} 件</span>
       </div>

@@ -30,8 +30,8 @@ interface SeeTabSectionProps {
 }
 
 const TABS = [
-  { key: 'analysis', label: '📊 分析', emoji: '📊' },
-  { key: 'tools', label: '🛠️ 工具', emoji: '🛠️' },
+  { key: 'analysis', label: '分析' },
+  { key: 'tools', label: '工具' },
 ] as const
 
 type TabKey = typeof TABS[number]['key']

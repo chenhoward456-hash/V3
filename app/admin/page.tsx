@@ -65,7 +65,7 @@ type StatusFilter = 'all' | 'normal' | 'attention' | 'competition' | 'coached' |
 
 // ── 進度判定：用近 14 天體重趨勢 vs 目標方向，算出「有沒有效果」──
 type ProgressLevel = 'on_track' | 'slow' | 'reverse' | 'insufficient'
-interface ProgressVerdict { level: ProgressLevel; emoji: string; label: string; detail: string; rank: number; pill: string }
+interface ProgressVerdict { level: ProgressLevel; dot: string; label: string; detail: string; rank: number; pill: string }
 
 const FLAT_KG_PER_WEEK = 0.12 // 每週變化 < 此值視為「持平」
 
@@ -75,7 +75,7 @@ function computeProgress(
   targetWeight: number | null,
   weights: { date: string; weight: number }[], // 已按日期升冪
 ): ProgressVerdict {
-  const insufficient = (detail: string): ProgressVerdict => ({ level: 'insufficient', emoji: '⚪', label: '資料不足', detail, rank: 2, pill: 'bg-slate-100 text-slate-500' })
+  const insufficient = (detail: string): ProgressVerdict => ({ level: 'insufficient', dot: 'bg-slate-300', label: '資料不足', detail, rank: 2, pill: 'bg-slate-100 text-slate-500' })
   if (!weights || weights.length === 0) return insufficient('14 天沒量體重')
   if (weights.length < 3) return insufficient(`14 天只量 ${weights.length} 次`)
   const first = weights[0], last = weights[weights.length - 1]
@@ -91,18 +91,18 @@ function computeProgress(
   const toGoal = targetWeight != null ? `　距目標 ${(targetWeight - last.weight) > 0 ? '+' : ''}${(targetWeight - last.weight).toFixed(1)}kg` : ''
 
   if (isCut) {
-    if (perWeek <= -FLAT_KG_PER_WEEK) return { level: 'on_track', emoji: '🟢', label: '減脂中', detail: `${mag}（${perWeek.toFixed(1)}kg/週）${toGoal}`, rank: 3, pill: 'bg-emerald-100 text-emerald-700' }
-    if (perWeek >= FLAT_KG_PER_WEEK) return { level: 'reverse', emoji: '🔴', label: '不減反增', detail: `${mag}${toGoal}`, rank: 0, pill: 'bg-rose-100 text-rose-700' }
-    return { level: 'slow', emoji: '🟡', label: '停滯', detail: `${mag} 幾乎沒動${toGoal}`, rank: 1, pill: 'bg-amber-100 text-amber-700' }
+    if (perWeek <= -FLAT_KG_PER_WEEK) return { level: 'on_track', dot: 'bg-emerald-500', label: '減脂中', detail: `${mag}（${perWeek.toFixed(1)}kg/週）${toGoal}`, rank: 3, pill: 'bg-emerald-100 text-emerald-700' }
+    if (perWeek >= FLAT_KG_PER_WEEK) return { level: 'reverse', dot: 'bg-rose-500', label: '不減反增', detail: `${mag}${toGoal}`, rank: 0, pill: 'bg-rose-100 text-rose-700' }
+    return { level: 'slow', dot: 'bg-amber-500', label: '停滯', detail: `${mag} 幾乎沒動${toGoal}`, rank: 1, pill: 'bg-amber-100 text-amber-700' }
   }
   if (isBulk) {
-    if (perWeek >= FLAT_KG_PER_WEEK) return { level: 'on_track', emoji: '🟢', label: '增重中', detail: `${mag}（+${perWeek.toFixed(1)}kg/週）${toGoal}`, rank: 3, pill: 'bg-emerald-100 text-emerald-700' }
-    if (perWeek <= -FLAT_KG_PER_WEEK) return { level: 'reverse', emoji: '🔴', label: '不增反掉', detail: `${mag}${toGoal}`, rank: 0, pill: 'bg-rose-100 text-rose-700' }
-    return { level: 'slow', emoji: '🟡', label: '沒長', detail: `${mag} 幾乎沒動${toGoal}`, rank: 1, pill: 'bg-amber-100 text-amber-700' }
+    if (perWeek >= FLAT_KG_PER_WEEK) return { level: 'on_track', dot: 'bg-emerald-500', label: '增重中', detail: `${mag}（+${perWeek.toFixed(1)}kg/週）${toGoal}`, rank: 3, pill: 'bg-emerald-100 text-emerald-700' }
+    if (perWeek <= -FLAT_KG_PER_WEEK) return { level: 'reverse', dot: 'bg-rose-500', label: '不增反掉', detail: `${mag}${toGoal}`, rank: 0, pill: 'bg-rose-100 text-rose-700' }
+    return { level: 'slow', dot: 'bg-amber-500', label: '沒長', detail: `${mag} 幾乎沒動${toGoal}`, rank: 1, pill: 'bg-amber-100 text-amber-700' }
   }
   // 維持 / 健康
-  if (Math.abs(perWeek) < FLAT_KG_PER_WEEK) return { level: 'on_track', emoji: '🟢', label: '維持穩定', detail: `${mag}${toGoal}`, rank: 3, pill: 'bg-emerald-100 text-emerald-700' }
-  return { level: 'slow', emoji: '🟡', label: '體重漂移', detail: `${mag}${toGoal}`, rank: 1, pill: 'bg-amber-100 text-amber-700' }
+  if (Math.abs(perWeek) < FLAT_KG_PER_WEEK) return { level: 'on_track', dot: 'bg-emerald-500', label: '維持穩定', detail: `${mag}${toGoal}`, rank: 3, pill: 'bg-emerald-100 text-emerald-700' }
+  return { level: 'slow', dot: 'bg-amber-500', label: '體重漂移', detail: `${mag}${toGoal}`, rank: 1, pill: 'bg-amber-100 text-amber-700' }
 }
 
 // ── 連續記錄天數：和學員端同定義（任一紀錄都算），結算到今天或昨天 ──
@@ -480,7 +480,6 @@ export default function AdminDashboard() {
     clientId: string | null
     name: string
     text: string
-    icon: string
     tone: 'red' | 'orange' | 'yellow' | 'blue'
     priority: number
     href?: string
@@ -503,18 +502,11 @@ export default function AdminDashboard() {
     }
     // 待審 AI 血檢草稿
     if (pendingDraftCount > 0) {
-      items.push({ key: 'drafts', clientId: null, name: 'AI 血檢草稿', text: `${pendingDraftCount} 份待審`, icon: '🤖', tone: 'blue', priority: 1, href: '/admin/ai-audit', canNote: false })
+      items.push({ key: 'drafts', clientId: null, name: 'AI 血檢草稿', text: `${pendingDraftCount} 份待審`, tone: 'blue', priority: 1, href: '/admin/ai-audit', canNote: false })
     }
     // 既有 alerts → 行動項（依文字選 icon）
     for (const a of alerts) {
       const tone: QueueItem['tone'] = a.priority === 0 ? 'red' : a.priority === 1 ? 'orange' : 'yellow'
-      const icon = a.text.includes('回檢') ? '🩸'
-        : a.text.includes('體重') ? '📉'
-        : (a.text.includes('合規') || a.text.includes('服從')) ? '🍽️'
-        : a.text.includes('能量') ? '🔋'
-        : a.text.includes('RPE') ? '🏋️'
-        : (a.text.includes('未活動') || a.text.includes('打卡')) ? '😴'
-        : '⚠️'
       // 未活動類 alert → 附上關心草稿脈絡（一般 idle 情境）
       let winback: WinbackContext | undefined
       if (a.text.includes('未活動')) {
@@ -524,7 +516,7 @@ export default function AdminDashboard() {
           winback = { name: a.name, situation: 'idle', daysSilent, ...weightCtx(a.clientId) }
         }
       }
-      items.push({ key: `alert-${a.clientId}-${a.text}`, clientId: a.clientId, name: a.name, text: a.text, icon, tone, priority: a.priority, href: `/admin/clients/${a.clientId}/overview`, canNote: true, winback })
+      items.push({ key: `alert-${a.clientId}-${a.text}`, clientId: a.clientId, name: a.name, text: a.text, tone, priority: a.priority, href: `/admin/clients/${a.clientId}/overview`, canNote: true, winback })
     }
     // 訂閱到期 / 已過期（深度流失者不列：歸留存數字，不佔今日待辦）
     for (const c of clients) {
@@ -533,8 +525,8 @@ export default function AdminDashboard() {
       const idle = la ? Math.floor((Date.now() - new Date(la).getTime()) / DAY_MS) : Math.floor((Date.now() - new Date(c.created_at).getTime()) / DAY_MS)
       if (!c.is_active || idle > 30) continue
       const d = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / DAY_MS)
-      if (d < 0) items.push({ key: `exp-${c.id}`, clientId: c.id, name: c.name, text: `方案已過期 ${-d} 天`, icon: '⏰', tone: 'red', priority: 0, href: `/admin/clients/${c.id}`, canNote: true })
-      else if (d <= 7) items.push({ key: `exp-${c.id}`, clientId: c.id, name: c.name, text: `方案 ${d} 天後到期`, icon: '⏰', tone: 'orange', priority: 1, href: `/admin/clients/${c.id}`, canNote: true })
+      if (d < 0) items.push({ key: `exp-${c.id}`, clientId: c.id, name: c.name, text: `方案已過期 ${-d} 天`, tone: 'red', priority: 0, href: `/admin/clients/${c.id}`, canNote: true })
+      else if (d <= 7) items.push({ key: `exp-${c.id}`, clientId: c.id, name: c.name, text: `方案 ${d} 天後到期`, tone: 'orange', priority: 1, href: `/admin/clients/${c.id}`, canNote: true })
     }
     // 新加入但從未打卡（加入 3–30 天、有開通追蹤、零活動）→ 啟動沒接住，最該主動關懷
     for (const c of clients) {
@@ -545,7 +537,7 @@ export default function AdminDashboard() {
       if (lastActivityMap[c.id]) continue // 曾經有活動 → 不算「未啟動」
       const daysSinceJoin = Math.floor((Date.now() - new Date(c.created_at).getTime()) / DAY_MS)
       if (daysSinceJoin >= 3 && daysSinceJoin <= 30) {
-        items.push({ key: `noact-${c.id}`, clientId: c.id, name: c.name, text: `加入 ${daysSinceJoin} 天從未打卡 — 該主動關懷`, icon: '🌱', tone: 'orange', priority: 1, href: `/admin/clients/${c.id}/overview`, canNote: true, winback: { name: c.name, situation: 'never_started', daysSilent: daysSinceJoin } })
+        items.push({ key: `noact-${c.id}`, clientId: c.id, name: c.name, text: `加入 ${daysSinceJoin} 天從未打卡 — 該主動關懷`, tone: 'orange', priority: 1, href: `/admin/clients/${c.id}/overview`, canNote: true, winback: { name: c.name, situation: 'never_started', daysSilent: daysSinceJoin } })
       }
     }
     // 減脂中斷聯絡：正在減脂（diet_start_date 已設）但近期沒記錄 → 最高價值的流失訊號
@@ -562,7 +554,7 @@ export default function AdminDashboard() {
       if (daysSince < 4 || daysSince > 30) continue // 4–30 天=還救得回；>30 天已流失（歸入留存數字，不佔行動佇列）
       const weeks = Math.max(1, Math.floor((Date.now() - new Date(c.diet_start_date).getTime()) / (7 * DAY_MS)))
       cutSilentIds.add(c.id)
-      items.push({ key: `cutsilent-${c.id}`, clientId: c.id, name: c.name, text: `減脂第 ${weeks} 週但 ${daysSince} 天沒記錄 — 可能脫離`, icon: '🔻', tone: daysSince >= 7 ? 'red' : 'orange', priority: daysSince >= 7 ? 0 : 1, href: `/admin/clients/${c.id}/overview`, canNote: true, winback: { name: c.name, situation: 'cut_silent', daysSilent: daysSince, weeksIntoCut: weeks, ...weightCtx(c.id) } })
+      items.push({ key: `cutsilent-${c.id}`, clientId: c.id, name: c.name, text: `減脂第 ${weeks} 週但 ${daysSince} 天沒記錄 — 可能脫離`, tone: daysSince >= 7 ? 'red' : 'orange', priority: daysSince >= 7 ? 0 : 1, href: `/admin/clients/${c.id}/overview`, canNote: true, winback: { name: c.name, situation: 'cut_silent', daysSilent: daysSince, weeksIntoCut: weeks, ...weightCtx(c.id) } })
     }
     // 去重：被「減脂中斷」涵蓋的人，移除泛用的「未活動」alert（同人不重複兩列）
     const deduped = items.filter(it => !(cutSilentIds.has(it.clientId || '') && it.key.startsWith('alert-') && it.text.includes('未活動')))
@@ -681,7 +673,7 @@ export default function AdminDashboard() {
   const SortIcon = ({ column }: { column: SortKey }) => sortKey !== column ? <ChevronUp size={14} className="text-gray-300 ml-1 inline" /> : sortDir === 'asc' ? <ChevronUp size={14} className="text-blue-600 ml-1 inline" /> : <ChevronDown size={14} className="text-blue-600 ml-1 inline" />
   const getActivityLabel = (id: string) => { const s = clientStats[id]; if (!s?.lastActivity) return { text: '無記錄', color: 'text-gray-400' }; const d = Math.floor((Date.now() - new Date(s.lastActivity).getTime()) / DAY_MS); if (d >= 5) return { text: `${d}天未活動`, color: 'text-rose-600 font-medium' }; if (d >= 3) return { text: `${d}天前`, color: 'text-amber-600' }; if (d === 0) return { text: '今天', color: 'text-emerald-600' }; return { text: `${d}天前`, color: 'text-gray-600' } }
   const getCheckupLabel = (c: Client) => { if (!c.next_checkup_date) return { text: '未設定', color: 'text-gray-400' }; const t = new Date(); t.setHours(0,0,0,0); const ck = new Date(c.next_checkup_date); ck.setHours(0,0,0,0); const d = Math.floor((ck.getTime()-t.getTime())/DAY_MS); if (d<0) return { text: `逾期 ${Math.abs(d)}天`, color: 'text-rose-600 font-medium' }; if (d<=7) return { text: c.next_checkup_date, color: 'text-amber-600 font-medium' }; return { text: c.next_checkup_date, color: 'text-gray-600' } }
-  const getTrainingEmoji = (t: string) => ({ push:'🫸',pull:'🫷',legs:'🦵',full_body:'🏋️',cardio:'🏃',rest:'😴',chest:'💪',shoulder:'🏔️',arms:'💪🏼' }[t] || '')
+  const getTrainingLabel = (t: string) => ({ push:'推',pull:'拉',legs:'腿',full_body:'全身',cardio:'有氧',rest:'休',chest:'胸',shoulder:'肩',arms:'手' }[t] || '')
   const getComplianceColor = (r: number) => r >= 80 ? 'text-emerald-600' : r >= 50 ? 'text-amber-600' : 'text-rose-600'
   // 一眼判斷「誰要顧」：融合 血檢狀態 + 多久沒打卡 + 服從率 + 回檢逾期 → 取最該注意的 1-2 條。
   // 紅=要立刻處理、黃=該關注、綠=正常。學員列表左緣的色條 + 原因標籤就是這個。
@@ -871,14 +863,14 @@ export default function AdminDashboard() {
                   )}
                 </div>
                 {lastUpdated && <span className="text-[11px] text-gray-400 flex items-center gap-1"><Clock size={10} />{lastUpdated.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })} 更新</span>}
-                <Link href="/admin/ai-audit" className="relative bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">
-                  ✨ AI Audit
+                <Link href="/admin/ai-audit" className="relative bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">
+                  AI Audit
                   {pendingDraftCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[11px] font-bold rounded-full min-w-[18px] h-[18px] inline-flex items-center justify-center px-1">
                       {pendingDraftCount > 99 ? '99+' : pendingDraftCount}
                     </span>
                   )}
-                </Link><Link href="/admin/coaching" className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-slate-900 transition-colors">📋 本週教練佇列</Link><Link href="/admin/labs" className="bg-rose-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-rose-700 transition-colors">🩸 血檢總覽</Link><Link href="/admin/agent-playground" className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-700 transition-colors">🤖 AI Agent</Link><Link href="/admin/blog" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">文章管理</Link><Link href="/admin/clients/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">新增學員</Link><button onClick={handleLogout} className="text-gray-500 hover:text-gray-700 text-sm">登出</button></div></div></div></div>
+                </Link><Link href="/admin/coaching" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">本週教練佇列</Link><Link href="/admin/labs" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">血檢總覽</Link><Link href="/admin/agent-playground" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">AI Agent</Link><Link href="/admin/blog" className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm transition-colors">文章管理</Link><Link href="/admin/clients/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">新增學員</Link><button onClick={handleLogout} className="text-gray-500 hover:text-gray-700 text-sm">登出</button></div></div></div></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         {/* ===== 錯誤提示 ===== */}
@@ -892,14 +884,14 @@ export default function AdminDashboard() {
         {/* ===== 今日行動佇列（預設收合，只留還活著、真能動的）===== */}
         <details className="bg-white border border-slate-200 rounded-2xl mb-4">
           <summary className="cursor-pointer select-none px-5 py-4 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">📋 今日行動佇列</h2>
+            <h2 className="text-lg font-bold text-gray-900">今日行動佇列</h2>
             <span className="text-xs text-gray-400">
-              {actionQueue.length === 0 ? '無待辦 ✅' : (() => { const urgent = actionQueue.filter(i => i.priority === 0).length; return `${actionQueue.length} 件${urgent > 0 ? ` · ${urgent} 緊急` : ''} · 展開 ▾` })()}
+              {actionQueue.length === 0 ? '無待辦' : (() => { const urgent = actionQueue.filter(i => i.priority === 0).length; return `${actionQueue.length} 件${urgent > 0 ? ` · ${urgent} 緊急` : ''} · 展開 ▾` })()}
             </span>
           </summary>
           <div className="px-5 pb-5">
           {actionQueue.length === 0 ? (
-            <p className="text-sm text-gray-400 py-1">今天沒有待辦 ✅ 一切正常</p>
+            <p className="text-sm text-gray-400 py-1">今天沒有待辦，一切正常</p>
           ) : (
             <div className="space-y-2">
               {actionQueue.map(item => {
@@ -908,7 +900,6 @@ export default function AdminDashboard() {
                 return (
                   <div key={item.key} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl ${toneBox}`}>
                     <div className="min-w-0 flex items-center gap-2">
-                      <span className="shrink-0">{item.icon}</span>
                       <span className={`text-sm font-medium ${toneText} truncate`}>{item.name} — {item.text}</span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -951,7 +942,7 @@ export default function AdminDashboard() {
           <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-base font-semibold text-gray-900">🎯 戰情室</span>
+                <span className="text-base font-semibold text-gray-900">戰情室</span>
                 <span className="text-xs text-gray-400">近 7 天有在動 · 需關注的排前面</span>
               </div>
               <span className="text-xs text-gray-400">{progressBoard.length} 人活躍</span>
@@ -969,27 +960,27 @@ export default function AdminDashboard() {
                           <span className={`px-1.5 py-0.5 text-[11px] font-bold rounded-full shrink-0 ${tier.color}`}>{tier.label}</span>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {streak >= 2 && <span className="text-[11px] font-bold text-amber-500" title={`連續記錄 ${streak} 天`}>🔥{streak}</span>}
+                          {streak >= 2 && <span className="text-[11px] font-medium text-amber-600" title={`連續記錄 ${streak} 天`}>連{streak}天</span>}
                           <span className="text-[11px] text-gray-400">{idleText}</span>
                         </div>
                       </div>
                       <div className="mb-1">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${verdict.pill}`}>{verdict.emoji} {verdict.label}</span>
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${verdict.pill}`}><span className={`inline-block w-2 h-2 rounded-full ${verdict.dot}`} />{verdict.label}</span>
                       </div>
                       <p className="text-[11px] text-gray-500 leading-snug min-h-[2.2em]">{verdict.detail}</p>
                     </Link>
                     {!pushClientIds.has(c.id) && (
                       <div className="mt-1.5 -mb-0.5">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700" title="沒開推播提醒＝沒人提醒他每天記，最該優先帶他開通知">🔕 沒開提醒</span>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700" title="沒開推播提醒＝沒人提醒他每天記，最該優先帶他開通知">沒開提醒</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-                      <div className="flex items-center gap-1">
-                        {c.body_composition_enabled && <span className={`text-xs ${todayBodyIds.has(c.id) ? 'opacity-100' : 'opacity-25'}`} title="體重">⚖️</span>}
-                        {c.nutrition_enabled && <span className={`text-xs ${todayNutritionMap[c.id] !== undefined ? 'opacity-100' : 'opacity-25'}`} title="飲食">🥗</span>}
-                        {c.training_enabled && <span className={`text-xs ${todayTrainingMap[c.id] ? 'opacity-100' : 'opacity-25'}`} title="訓練">🏋️</span>}
-                        {c.wellness_enabled && <span className={`text-xs ${todayWellnessIds.has(c.id) ? 'opacity-100' : 'opacity-25'}`} title="感受">😊</span>}
-                        {c.supplement_enabled && <span className={`text-xs ${todayLogIds.has(c.id) ? 'opacity-100' : 'opacity-25'}`} title="補品">💊</span>}
+                      <div className="flex items-center gap-1.5">
+                        {c.body_composition_enabled && <span className={`text-xs ${todayBodyIds.has(c.id) ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="體重">重</span>}
+                        {c.nutrition_enabled && <span className={`text-xs ${todayNutritionMap[c.id] !== undefined ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="飲食">食</span>}
+                        {c.training_enabled && <span className={`text-xs ${todayTrainingMap[c.id] ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="訓練">訓</span>}
+                        {c.wellness_enabled && <span className={`text-xs ${todayWellnessIds.has(c.id) ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="感受">感</span>}
+                        {c.supplement_enabled && <span className={`text-xs ${todayLogIds.has(c.id) ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="補品">補</span>}
                       </div>
                       <button onClick={() => openFeedback(c)} className="flex items-center gap-1 px-2 py-1 text-[11px] text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors" title="寫回饋">
                         <MessageSquare size={12} /> {c.coach_weekly_note ? '改回饋' : '回饋'}
@@ -1029,16 +1020,17 @@ export default function AdminDashboard() {
                       {stat?.supplementCount ? <span className={`font-medium ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span> : null}
                     </div>
                     {wv && (
-                      <div className={`mt-1.5 text-[11px] font-medium ${wv.onTrack ? 'text-emerald-600' : 'text-amber-600'}`}>
-                        {wv.onTrack ? '🟢' : '🟡'} 體重{wv.onTrack ? '會準時' : `落後 ${wv.gap.toFixed(1)}kg`}（預測 {wv.projected.toFixed(1)}kg）
+                      <div className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-medium ${wv.onTrack ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${wv.onTrack ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                        <span>體重{wv.onTrack ? '會準時' : `落後 ${wv.gap.toFixed(1)}kg`}（預測 {wv.projected.toFixed(1)}kg）</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-1 mt-2">
-                      {c.body_composition_enabled && <span className={`text-xs ${todayBodyIds.has(c.id) ? 'opacity-100' : 'opacity-30'}`}>⚖️</span>}
-                      {c.nutrition_enabled && <span className={`text-xs ${todayNutritionMap[c.id] !== undefined ? 'opacity-100' : 'opacity-30'}`}>🥗</span>}
-                      {c.training_enabled && <span className={`text-xs ${todayTrainingMap[c.id] ? 'opacity-100' : 'opacity-30'}`}>🏋️</span>}
-                      {c.supplement_enabled && <span className={`text-xs ${todayLogIds.has(c.id) ? 'opacity-100' : 'opacity-30'}`}>💊</span>}
-                      {c.wellness_enabled && <span className={`text-xs ${todayWellnessIds.has(c.id) ? 'opacity-100' : 'opacity-30'}`}>😊</span>}
+                    <div className="flex items-center gap-1.5 mt-2">
+                      {c.body_composition_enabled && <span className={`text-xs ${todayBodyIds.has(c.id) ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="體重">重</span>}
+                      {c.nutrition_enabled && <span className={`text-xs ${todayNutritionMap[c.id] !== undefined ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="飲食">食</span>}
+                      {c.training_enabled && <span className={`text-xs ${todayTrainingMap[c.id] ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="訓練">訓</span>}
+                      {c.supplement_enabled && <span className={`text-xs ${todayLogIds.has(c.id) ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="補品">補</span>}
+                      {c.wellness_enabled && <span className={`text-xs ${todayWellnessIds.has(c.id) ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="感受">感</span>}
                     </div>
                   </Link>
                 )
@@ -1055,7 +1047,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {spotlightClients.stars.length > 0 && (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-                    <p className="text-sm font-semibold text-emerald-800 mb-2">🌟 今日表現好</p>
+                    <p className="text-sm font-semibold text-emerald-800 mb-2">今日表現好</p>
                     <div className="space-y-1.5">{spotlightClients.stars.map(s => (
                       <Link key={s.id} href={`/admin/clients/${s.id}/overview`} className="flex items-center justify-between px-3 py-2 bg-white/60 rounded-lg hover:bg-white/80 transition-colors">
                         <span className="text-sm font-medium text-emerald-700">{s.name}</span>
@@ -1066,7 +1058,7 @@ export default function AdminDashboard() {
                 )}
                 {spotlightClients.struggling.length > 0 && (
                   <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4">
-                    <p className="text-sm font-semibold text-rose-800 mb-2">⚠️ 需要關注</p>
+                    <p className="text-sm font-semibold text-rose-800 mb-2">需要關注</p>
                     <div className="space-y-1.5">{spotlightClients.struggling.map(s => (
                       <div key={s.id} className="flex items-center justify-between px-3 py-2 bg-white/60 rounded-lg">
                         <Link href={`/admin/clients/${s.id}/overview`} className="text-sm font-medium text-rose-700 hover:underline">{s.name}</Link>
@@ -1082,17 +1074,17 @@ export default function AdminDashboard() {
             )}
             {retentionStats.churnRisk.length > 0 && (
               <div>
-                <p className="text-[11px] text-gray-400 mb-1.5">📉 久未活動（≥10 天）— 退訂前先接觸（💰 = 付費）</p>
+                <p className="text-[11px] text-gray-400 mb-1.5">久未活動（≥10 天）— 退訂前先接觸</p>
                 <div className="flex flex-wrap gap-1.5">
                   {retentionStats.churnRisk.slice(0, 12).map(c => (
-                    <Link key={c.id} href={`/admin/clients/${c.id}/overview`} className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors">{c.name} · {c.days}天{c.paying ? ' 💰' : ''}</Link>
+                    <Link key={c.id} href={`/admin/clients/${c.id}/overview`} className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors">{c.name} · {c.days}天{c.paying ? ' · 付費' : ''}</Link>
                   ))}
                 </div>
               </div>
             )}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[11px] text-gray-400">📋 本週摘要（可複製）</p>
+                <p className="text-[11px] text-gray-400">本週摘要（可複製）</p>
                 <button onClick={() => { navigator.clipboard?.writeText(weeklyDigest); showToast('已複製本週摘要', 'success') }} className="text-[11px] bg-gray-800 text-white px-2.5 py-1 rounded-lg hover:bg-gray-700 transition-colors">複製</button>
               </div>
               <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans bg-gray-50 rounded-lg p-3 leading-relaxed">{weeklyDigest}</pre>
@@ -1105,7 +1097,7 @@ export default function AdminDashboard() {
           <div className="p-5 border-b border-slate-200"><div className="flex flex-col sm:flex-row gap-3"><div className="relative flex-1"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="搜尋學員姓名..." className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div><div className="flex gap-2 flex-wrap">
                   {([['all','全部'],['competition','備賽'],['coached','2999'],['self_managed','499'],['free','免費'],['attention','需關注']] as [StatusFilter, string][]).map(([k,l]) => (
                     <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter===k?'bg-blue-600 text-white': k === 'coached' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : k === 'self_managed' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                      {k === 'competition' ? '🏆 ' : k === 'coached' ? '💎 ' : k === 'self_managed' ? '📊 ' : ''}{l}
+                      {l}
                       {k === 'coached' && summaryStats.coachedCount > 0 ? ` (${summaryStats.coachedCount})` : ''}
                       {k === 'self_managed' && summaryStats.selfManagedCount > 0 ? ` (${summaryStats.selfManagedCount})` : ''}
                       {k === 'free' && summaryStats.freeCount > 0 ? ` (${summaryStats.freeCount})` : ''}
@@ -1123,25 +1115,25 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-base font-semibold text-gray-900">{client.name}</span>
                         <span className={`px-1.5 py-0.5 text-[11px] font-bold rounded-full ${tier.color}`}>{tier.label}</span>
-                        {client.line_user_id && <span className={`text-[11px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? '🟢' : '💬'}</span>}
+                        {client.line_user_id && <span className={`text-[11px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" /> : <MessageSquare size={12} className="inline text-slate-400" />}</span>}
                         {isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && (
-                          <span className={`px-2 py-0.5 text-[11px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
-                            🏆 {daysToComp}天
+                          <span className={`text-xs rounded-full px-1.5 border ${daysToComp <= 14 ? 'text-rose-600 border-rose-200 bg-rose-50' : 'text-slate-500 border-slate-200'}`}>
+                            備賽{daysToComp}d
                           </span>
                         )}
                         {expiry && <span className={`text-[11px] font-medium ${expiry.color}`}>{expiry.text}</span>}
                         <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'關注'}</span>
-                        {att.reason && <span className={`px-2 py-0.5 text-[11px] font-semibold rounded-full ${att.chip}`}>⚠️ {att.reason}</span>}
+                        {att.reason && <span className={`px-2 py-0.5 text-[11px] font-semibold rounded-full ${att.chip}`}>{att.reason}</span>}
                       </div>
                       {stat?.supplementCount>0?<span className={`text-lg font-bold ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span>:<span className="text-sm text-gray-300">--</span>}
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        {client.body_composition_enabled&&<span className={`text-sm ${todayBodyIds.has(client.id)?'opacity-100':'opacity-30'}`}>⚖️</span>}
-                        {client.wellness_enabled&&<span className={`text-sm ${todayWellnessIds.has(client.id)?'opacity-100':'opacity-30'}`}>😊</span>}
-                        {client.nutrition_enabled&&<span className={`text-sm ${todayNutritionMap[client.id]!==undefined?'opacity-100':'opacity-30'}`}>🥗</span>}
-                        {client.training_enabled&&<span className={`text-sm ${todayTrainingMap[client.id]?'opacity-100':'opacity-30'}`}>🏋️</span>}
-                        {client.supplement_enabled&&<span className={`text-sm ${todayLogIds.has(client.id)?'opacity-100':'opacity-30'}`}>💊</span>}
+                        {client.body_composition_enabled&&<span className={`text-xs ${todayBodyIds.has(client.id)?'text-emerald-600 font-medium':'text-slate-300'}`} title="體重">重</span>}
+                        {client.wellness_enabled&&<span className={`text-xs ${todayWellnessIds.has(client.id)?'text-emerald-600 font-medium':'text-slate-300'}`} title="感受">感</span>}
+                        {client.nutrition_enabled&&<span className={`text-xs ${todayNutritionMap[client.id]!==undefined?'text-emerald-600 font-medium':'text-slate-300'}`} title="飲食">食</span>}
+                        {client.training_enabled&&<span className={`text-xs ${todayTrainingMap[client.id]?'text-emerald-600 font-medium':'text-slate-300'}`} title="訓練">訓</span>}
+                        {client.supplement_enabled&&<span className={`text-xs ${todayLogIds.has(client.id)?'text-emerald-600 font-medium':'text-slate-300'}`} title="補品">補</span>}
                       </div>
                       <div className="flex items-center gap-3 text-xs">
                         <span className={act.color}>{act.text}</span>
@@ -1167,11 +1159,11 @@ export default function AdminDashboard() {
             <div className="hidden sm:block overflow-x-auto"><table className="min-w-full"><thead><tr className="border-b border-slate-200"><th onClick={() => handleSort('name')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">學員 <SortIcon column="name" /></th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">方案</th><th onClick={() => handleSort('status')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">狀態 <SortIcon column="status" /></th><th onClick={() => handleSort('compliance')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">本週服從率 <SortIcon column="compliance" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">今日進度</th><th onClick={() => handleSort('lastActivity')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">最後活動 <SortIcon column="lastActivity" /></th><th onClick={() => handleSort('nextCheckup')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">下次回檢 <SortIcon column="nextCheckup" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th></tr></thead>
             <tbody className="divide-y divide-gray-50">{paginatedClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = isCompetitionMode(client.client_mode) && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); const att = getAttention(client); return (
               <tr key={client.id} className={`hover:bg-gray-50 transition-colors ${att.accent}`}>
-                <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-blue-600"><div className="text-sm font-medium text-gray-900">{client.name}{newSinceViewMap[client.id] > 0 && <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-medium" title={`自你上次查看後新增 ${newSinceViewMap[client.id]} 筆紀錄`}>🆕 {newSinceViewMap[client.id]}</span>}{client.line_user_id && <span className={`ml-1 text-[11px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? '🟢' : '💬'}</span>}{isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && <span className={`ml-1.5 px-1.5 py-0.5 text-[11px] font-bold rounded-full ${daysToComp <= 14 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>🏆 {daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingEmoji(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className="ml-1" title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'🥗':'🍔'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) && ` · ${getPrepPhaseLabel(client.prep_phase)}`}<span className="ml-1.5 inline-flex gap-0.5">{client.body_composition_enabled&&<span title="體重/體態">⚖️</span>}{client.wellness_enabled&&<span title="每日感受">😊</span>}{client.nutrition_enabled&&<span title="飲食">🥗</span>}{client.training_enabled&&<span title="訓練">🏋️</span>}{client.supplement_enabled&&<span title="補品">💊</span>}{client.lab_enabled&&<span title="血檢">🩸</span>}</span></div></Link></td>
+                <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-blue-600"><div className="text-sm font-medium text-gray-900">{client.name}{newSinceViewMap[client.id] > 0 && <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-medium" title={`自你上次查看後新增 ${newSinceViewMap[client.id]} 筆紀錄`}>新 {newSinceViewMap[client.id]}</span>}{client.line_user_id && <span className={`ml-1 text-[11px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" /> : <MessageSquare size={12} className="inline text-slate-400" />}</span>}{isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && <span className={`ml-1.5 text-xs rounded-full px-1.5 border ${daysToComp <= 14 ? 'text-rose-600 border-rose-200 bg-rose-50' : 'text-slate-500 border-slate-200'}`}>備賽{daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5 text-xs text-slate-500 border border-slate-200 rounded-full px-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingLabel(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className={`ml-1 text-xs font-medium ${todayNutritionMap[client.id]?'text-emerald-600':'text-amber-600'}`} title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'合規':'未合規'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) && ` · ${getPrepPhaseLabel(client.prep_phase)}`}</div></Link></td>
                 <td className="px-4 py-4"><div><span className={`px-2 py-0.5 text-[11px] font-bold rounded-full ${tier.color}`}>{tier.label}</span>{expiry && <p className={`text-[11px] mt-1 ${expiry.color}`}>{expiry.text}</p>}</div></td>
-                <td className="px-5 py-4"><span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'需要關注'}</span>{att.reason && <span className={`ml-1.5 px-2 py-0.5 text-[11px] font-semibold rounded-full ${att.chip}`}>⚠️ {att.reason}</span>}</td>
+                <td className="px-5 py-4"><span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${!client.is_active ? 'bg-gray-200 text-gray-500' : client.status==='normal'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'}`}>{!client.is_active ? '已停用' : client.status==='normal'?'正常':'需要關注'}</span>{att.reason && <span className={`ml-1.5 px-2 py-0.5 text-[11px] font-semibold rounded-full ${att.chip}`}>{att.reason}</span>}</td>
                 <td className="px-5 py-4">{stat?.supplementCount>0?<span className={`text-sm font-medium ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span>:<span className="text-sm text-gray-500" title="此學員未設定補品">N/A</span>}</td>
-                <td className="px-5 py-4"><div className="flex flex-wrap gap-1">{client.body_composition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayBodyIds.has(client.id)?'bg-emerald-50 text-emerald-600':'bg-gray-50 text-gray-300'}`} title="體重">⚖️</span>}{client.wellness_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayWellnessIds.has(client.id)?'bg-emerald-50 text-emerald-600':'bg-gray-50 text-gray-300'}`} title="感受">😊</span>}{client.nutrition_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayNutritionMap[client.id]!==undefined?'bg-emerald-50 text-emerald-600':'bg-gray-50 text-gray-300'}`} title="飲食">🥗</span>}{client.training_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayTrainingMap[client.id]?'bg-emerald-50 text-emerald-600':'bg-gray-50 text-gray-300'}`} title="訓練">🏋️</span>}{client.supplement_enabled&&<span className={`text-xs px-1.5 py-0.5 rounded ${todayLogIds.has(client.id)?'bg-emerald-50 text-emerald-600':'bg-gray-50 text-gray-300'}`} title="補品">💊</span>}</div></td>
+                <td className="px-5 py-4"><div className="flex flex-wrap gap-1.5">{client.body_composition_enabled&&<span className={`text-xs ${todayBodyIds.has(client.id)?'text-emerald-600 font-medium':'text-slate-300'}`} title="體重">重</span>}{client.wellness_enabled&&<span className={`text-xs ${todayWellnessIds.has(client.id)?'text-emerald-600 font-medium':'text-slate-300'}`} title="感受">感</span>}{client.nutrition_enabled&&<span className={`text-xs ${todayNutritionMap[client.id]!==undefined?'text-emerald-600 font-medium':'text-slate-300'}`} title="飲食">食</span>}{client.training_enabled&&<span className={`text-xs ${todayTrainingMap[client.id]?'text-emerald-600 font-medium':'text-slate-300'}`} title="訓練">訓</span>}{client.supplement_enabled&&<span className={`text-xs ${todayLogIds.has(client.id)?'text-emerald-600 font-medium':'text-slate-300'}`} title="補品">補</span>}{client.lab_enabled&&<span className="text-xs text-slate-300" title="血檢追蹤已啟用">血</span>}</div></td>
                 <td className="px-5 py-4"><span className={`text-sm ${act.color}`}>{act.text}</span></td>
                 <td className="px-5 py-4"><span className={`text-sm ${ckup.color}`}>{ckup.text}</span></td>
                 <td className="px-5 py-4"><div className="flex items-center gap-1.5"><button onClick={() => openFeedback(client)} className="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors" title="快速回饋" aria-label={`寫回饋給 ${client.name}`}><MessageSquare size={15} /></button><button onClick={(e) => { e.preventDefault(); copyClientUrl(client.unique_code) }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="複製學員連結" aria-label={`複製 ${client.name} 的連結`}><Copy size={15} /></button><Link href={`/admin/clients/${client.id}`} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="編輯" aria-label={`編輯 ${client.name}`}><ExternalLink size={15} /></Link><button onClick={() => deleteClient(client)} className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="刪除學員" aria-label={`刪除 ${client.name}`}><Trash2 size={15} /></button></div></td>

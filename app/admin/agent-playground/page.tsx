@@ -102,7 +102,7 @@ export default function AgentPlayground() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">🤖 AI Agent Playground</h1>
+            <h1 className="text-2xl font-bold">AI Agent Playground</h1>
             <p className="text-sm text-gray-500">Phase 1 MVP — 測試 AI Agent tool use + propose flow</p>
           </div>
           <Link href="/admin" className="text-sm text-gray-600 hover:text-gray-900">← 返回後台</Link>
@@ -127,33 +127,33 @@ export default function AgentPlayground() {
           />
           <div className="flex items-center justify-between mt-3">
             <div className="text-xs text-gray-400">
-              💡 試試：「我膝蓋有點痛 cardio 還要做嗎」、「我這週吃比較多但體重沒升」、「我下週出國 3 天不能準備餐」
+              試試：「我膝蓋有點痛 cardio 還要做嗎」、「我這週吃比較多但體重沒升」、「我下週出國 3 天不能準備餐」
             </div>
             <button
               onClick={runAgent}
               disabled={running || !userMessage.trim()}
               className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {running ? '🧠 思考中…（10-30 秒）' : '🚀 Run Agent'}
+              {running ? '思考中…（10-30 秒）' : 'Run Agent'}
             </button>
           </div>
         </div>
 
         {error && (
           <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-6 text-sm text-rose-700">
-            ❌ {error}
+            {error}
           </div>
         )}
 
         {/* Response */}
         {response && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
-            <h2 className="text-sm font-semibold mb-3">📝 AI 回應</h2>
+            <h2 className="text-sm font-semibold mb-3">AI 回應</h2>
             <div className="bg-gray-50 rounded-lg p-3 text-sm whitespace-pre-wrap mb-4 leading-relaxed">{response.finalText}</div>
 
             {response.toolCalls.length > 0 && (
               <>
-                <h3 className="text-xs font-semibold text-gray-600 mb-2">🛠️ Tool Calls ({response.toolCalls.length})</h3>
+                <h3 className="text-xs font-semibold text-gray-600 mb-2">Tool Calls ({response.toolCalls.length})</h3>
                 <div className="space-y-2">
                   {response.toolCalls.map((tc, i) => (
                     <details key={i} className="bg-gray-50 rounded-lg p-2">
@@ -184,7 +184,7 @@ export default function AgentPlayground() {
                 activeTab === 'pending' ? 'bg-amber-100 text-amber-800' : 'text-gray-500 hover:bg-gray-50'
               }`}
             >
-              ⏳ Pending ({proposals.length})
+              Pending ({proposals.length})
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -192,7 +192,7 @@ export default function AgentPlayground() {
                 activeTab === 'history' ? 'bg-emerald-100 text-emerald-800' : 'text-gray-500 hover:bg-gray-50'
               }`}
             >
-              📜 歷史調整 ({history.length})
+              歷史調整 ({history.length})
             </button>
             <div className="ml-auto">
               <button onClick={activeTab === 'pending' ? loadProposals : loadHistory} className="text-xs text-blue-600 hover:underline">↻ 重新整理</button>
@@ -212,7 +212,7 @@ export default function AgentPlayground() {
                 <div key={p.id} className={`border rounded-xl p-4 ${isNote ? 'border-slate-200 bg-slate-50' : 'border-amber-200 bg-amber-50'}`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className={`text-xs font-semibold ${isNote ? 'text-slate-700' : 'text-amber-800'}`}>
-                      {p.clients?.name ?? p.client_id} · {isNote ? '📝 個人筆記提案' : 'macros 調整提案'} · by {p.proposed_by}
+                      {p.clients?.name ?? p.client_id} · {isNote ? '個人筆記提案' : 'macros 調整提案'} · by {p.proposed_by}
                     </span>
                     <span className="text-[11px] text-gray-500">{new Date(p.proposed_at).toLocaleString('zh-TW')}</span>
                   </div>
@@ -244,7 +244,7 @@ export default function AgentPlayground() {
 
                   {p.safety_check_result?.warnings?.length > 0 && (
                     <div className="bg-amber-100 rounded p-2 mb-3 text-xs text-amber-800">
-                      ⚠️ {p.safety_check_result.warnings.join('; ')}
+                      {p.safety_check_result.warnings.join('; ')}
                     </div>
                   )}
 
@@ -256,9 +256,9 @@ export default function AgentPlayground() {
                     className="w-full px-2 py-1 border border-slate-200 rounded text-xs mb-2"
                   />
                   <div className="flex gap-2">
-                    <button onClick={() => actOnProposal(p.id, 'approve')} className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded hover:bg-emerald-700">✓ 核准套用</button>
-                    <button onClick={() => actOnProposal(p.id, 'reject')} className="px-3 py-1.5 bg-rose-600 text-white text-xs font-semibold rounded hover:bg-rose-700">✗ 拒絕</button>
-                    <button onClick={() => actOnProposal(p.id, 'discuss')} className="px-3 py-1.5 bg-amber-600 text-white text-xs font-semibold rounded hover:bg-amber-700">💬 再聊</button>
+                    <button onClick={() => actOnProposal(p.id, 'approve')} className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded hover:bg-emerald-700">核准套用</button>
+                    <button onClick={() => actOnProposal(p.id, 'reject')} className="px-3 py-1.5 bg-rose-600 text-white text-xs font-semibold rounded hover:bg-rose-700">拒絕</button>
+                    <button onClick={() => actOnProposal(p.id, 'discuss')} className="px-3 py-1.5 bg-amber-600 text-white text-xs font-semibold rounded hover:bg-amber-700">再聊</button>
                   </div>
                 </div>
               )})}
@@ -277,7 +277,7 @@ export default function AgentPlayground() {
                   <div key={h.id} className={`border rounded-xl p-4 ${isAi ? 'border-blue-200 bg-blue-50' : 'border-slate-200 bg-slate-50'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className={`text-xs font-semibold ${isAi ? 'text-blue-800' : 'text-gray-800'}`}>
-                        {isAi ? '🤖 AI 提案 → 教練核准' : '👤 教練手動'}
+                        {isAi ? 'AI 提案 → 教練核准' : '教練手動'}
                         {' · '}
                         {h.applied_by} · {h.trigger_source}
                       </span>
@@ -304,7 +304,7 @@ export default function AgentPlayground() {
 
                     {h.hit_boundary && (
                       <div className="bg-rose-100 rounded p-2 mt-2 text-xs text-rose-800">
-                        ⚠️ 撞邊界：{h.boundary_detail}
+                        撞邊界：{h.boundary_detail}
                       </div>
                     )}
                   </div>

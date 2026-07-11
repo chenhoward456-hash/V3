@@ -14,7 +14,6 @@ interface ProgressJourneyProps {
 
 interface ProgressMetric {
   label: string
-  emoji: string
   current: string
   previous: string
   change: string
@@ -89,7 +88,6 @@ export default function ProgressJourney({
       const isRecovery = prepPhase === 'recovery'
       metrics.push({
         label: '體重',
-        emoji: '⚖️',
         current: `${thisAvg.toFixed(1)}kg`,
         previous: `${lastAvg.toFixed(1)}kg`,
         change: `${change > 0 ? '+' : ''}${change.toFixed(1)}kg`,
@@ -107,7 +105,6 @@ export default function ProgressJourney({
       const change = thisRate - lastRate
       metrics.push({
         label: '飲食合規',
-        emoji: '🥗',
         current: `${thisRate}%`,
         previous: `${lastRate}%`,
         change: `${change > 0 ? '+' : ''}${change}%`,
@@ -125,7 +122,6 @@ export default function ProgressJourney({
       const change = thisAvg - lastAvg
       metrics.push({
         label: '蛋白質',
-        emoji: '🥩',
         current: `${thisAvg}g`,
         previous: `${lastAvg}g`,
         change: `${change > 0 ? '+' : ''}${change}g`,
@@ -143,7 +139,6 @@ export default function ProgressJourney({
       const change = thisAvg - lastAvg
       metrics.push({
         label: '睡眠',
-        emoji: '😴',
         current: `${thisAvg.toFixed(1)}/5`,
         previous: `${lastAvg.toFixed(1)}/5`,
         change: `${change > 0 ? '+' : ''}${change.toFixed(1)}`,
@@ -161,7 +156,6 @@ export default function ProgressJourney({
       const change = thisAvg - lastAvg
       metrics.push({
         label: '精力',
-        emoji: '⚡',
         current: `${thisAvg.toFixed(1)}/5`,
         previous: `${lastAvg.toFixed(1)}/5`,
         change: `${change > 0 ? '+' : ''}${change.toFixed(1)}`,
@@ -178,7 +172,6 @@ export default function ProgressJourney({
       const change = thisDays - lastDays
       metrics.push({
         label: '訓練',
-        emoji: '🏋️',
         current: `${thisDays}天`,
         previous: `${lastDays}天`,
         change: `${change > 0 ? '+' : ''}${change}天`,
@@ -208,16 +201,13 @@ export default function ProgressJourney({
     : '本週比較辛苦，先確保睡眠和飲食基本到位'
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-5 mb-4">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">📈</span>
-          <h2 className="text-base font-bold text-gray-900">你的進度</h2>
-        </div>
+        <h2 className="text-base font-bold text-gray-900">你的進度</h2>
         {streak >= 3 && (
           <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
-            🔥 連續 {streak} 天
+            連續 {streak} 天
           </span>
         )}
       </div>
@@ -243,7 +233,7 @@ export default function ProgressJourney({
           return (
             <div key={m.label} className={`${bgColor} rounded-2xl p-3`}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-gray-500">{m.emoji} {m.label}</span>
+                <span className="text-xs text-gray-500">{m.label}</span>
                 <span className={`text-[11px] font-bold ${trendColor}`}>
                   {trendIcon} {m.change}
                 </span>

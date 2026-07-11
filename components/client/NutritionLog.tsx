@@ -138,7 +138,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       })
       if (!res.ok) throw new Error('記錄失敗')
       onMutate()
-      showToast('飲食已記錄！', 'success', '🎉')
+      showToast('飲食已記錄！', 'success')
     } catch {
       showToast('記錄失敗，請重試', 'error')
     } finally {
@@ -238,7 +238,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     }
 
     if (calOk && proteinOk && macroIssues.length === 0) {
-      return { status: 'compliant' as const, label: '已合規', hint: '營養素接近目標 👍', color: 'green' }
+      return { status: 'compliant' as const, label: '已合規', hint: '營養素接近目標', color: 'green' }
     }
     if (calOk && macroIssues.length > 0) {
       return { status: 'partial' as const, label: '部分達標', hint: macroIssues.join('、'), color: 'amber' }
@@ -253,14 +253,14 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
     if (!proteinOk) {
       return { status: 'partial' as const, label: '部分達標', hint: '蛋白質待補', color: 'amber' }
     }
-    return { status: 'compliant' as const, label: '已合規', hint: '營養素接近目標 👍', color: 'green' }
+    return { status: 'compliant' as const, label: '已合規', hint: '營養素接近目標', color: 'green' }
   }, [caloriesTarget, computedCalories, proteinInput, proteinTarget, carbsInput, effectiveCarbsTarget, fatInput, fatTarget, sodiumTarget, sodiumInput])
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold text-gray-900">🍽️ 飲食紀錄</h2>
+          <h2 className="text-lg font-bold text-gray-900">飲食紀錄</h2>
           {!hasRecorded && lastNutrition && (
             <button
               onClick={copyLastNutrition}
@@ -303,7 +303,6 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                   : 'bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <span className="text-xl">✅</span>
               <span>照計畫吃</span>
             </button>
             <button
@@ -314,7 +313,6 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                   : 'bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <span className="text-xl">❌</span>
               <span>沒照計畫</span>
             </button>
           </div>
@@ -391,14 +389,14 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           {(caloriesTarget || (!simpleMode && (effectiveCarbsTarget || fatTarget))) && (
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-slate-600">{simpleMode ? '🔥 今日熱量' : (competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 今日巨量營養素')}</p>
+                <p className="text-xs font-semibold text-slate-600">{simpleMode ? '今日熱量' : (competitionEnabled ? '備賽巨量營養素' : '今日巨量營養素')}</p>
                 {!simpleMode && carbsCyclingEnabled && (
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
                       className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${effectiveIsTraining ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}`}
                     >
-                      🔄 {effectiveIsTraining ? '訓練日' : '休息日'} {manualDayType ? '(手動)' : '(自動)'} ▾
+                      {effectiveIsTraining ? '訓練日' : '休息日'} {manualDayType ? '(手動)' : '(自動)'} ▾
                     </button>
                     {manualDayType && (
                       <button
@@ -420,7 +418,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
               <div className={`grid ${simpleMode ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3'} gap-3`}>
                 {caloriesTarget && (
                   <div className="text-center">
-                    <p className="text-[11px] text-gray-500 mb-1">🔥 熱量</p>
+                    <p className="text-[11px] text-gray-500 mb-1">熱量</p>
                     <p className={`text-lg font-bold tabular-nums ${computedCalories && computedCalories >= caloriesTarget * 0.9 && computedCalories <= caloriesTarget * 1.1 ? 'text-emerald-600' : computedCalories ? 'text-amber-700' : 'text-gray-300'}`}>
                       {computedCalories ?? '--'}
                     </p>
@@ -435,7 +433,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                 )}
                 {!simpleMode && effectiveCarbsTarget && (
                   <div className="text-center">
-                    <p className="text-[11px] text-gray-500 mb-1">🍚 碳水</p>
+                    <p className="text-[11px] text-gray-500 mb-1">碳水</p>
                     <p className={`text-lg font-bold tabular-nums ${carbsInput && Number(carbsInput) >= effectiveCarbsTarget * 0.9 && Number(carbsInput) <= effectiveCarbsTarget * 1.1 ? 'text-emerald-600' : Number(carbsInput) ? 'text-amber-700' : 'text-gray-300'}`}>
                       {carbsInput ? `${Number(carbsInput)}g` : '--'}
                     </p>
@@ -450,7 +448,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                 )}
                 {!simpleMode && fatTarget && (
                   <div className="text-center">
-                    <p className="text-[11px] text-gray-500 mb-1">🥑 脂肪</p>
+                    <p className="text-[11px] text-gray-500 mb-1">脂肪</p>
                     <p className={`text-lg font-bold tabular-nums ${fatInput && Number(fatInput) >= fatTarget * 0.9 && Number(fatInput) <= fatTarget * 1.1 ? 'text-emerald-600' : Number(fatInput) ? 'text-amber-700' : 'text-gray-300'}`}>
                       {fatInput ? `${Number(fatInput)}g` : '--'}
                     </p>
@@ -469,7 +467,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
 
           {proteinTarget && (
             <NutrientSlider
-              label="蛋白質" emoji="🥩"
+              label="蛋白質"
               value={proteinInput} onChange={setProteinInput}
               target={proteinTarget} unit="g"
               max={Math.max(300, (proteinTarget || 150) * 1.5)} step={5}
@@ -478,7 +476,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           )}
           {waterTarget && (
             <NutrientSlider
-              label="飲水量" emoji="💧"
+              label="飲水量"
               value={waterInput} onChange={setWaterInput}
               target={waterTarget} unit="ml"
               max={Math.max(5000, (waterTarget || 2500) * 1.5)} step={100}
@@ -487,7 +485,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           )}
           {sodiumTarget && (
             <NutrientSlider
-              label="鈉" emoji="🧂"
+              label="鈉"
               value={sodiumInput} onChange={setSodiumInput}
               target={sodiumTarget} unit="mg"
               max={Math.max(6000, Math.round(sodiumTarget * 1.5))} step={100}
@@ -498,14 +496,14 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           {(effectiveCarbsTarget || fatTarget) && (!simpleMode || showAdvanced) && (
             <div className="border-t border-slate-200 pt-3 mt-1 space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-slate-600">{competitionEnabled ? '🏆 備賽巨量營養素' : '🍽️ 巨量營養素'}</p>
+                <p className="text-xs font-semibold text-slate-600">{competitionEnabled ? '備賽巨量營養素' : '巨量營養素'}</p>
                 {carbsCyclingEnabled && carbsTrainingDay && carbsRestDay && (
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => setManualDayType(effectiveIsTraining ? 'rest' : 'training')}
                       className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${effectiveIsTraining ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}`}
                     >
-                      🔄 {effectiveIsTraining ? '訓練日' : '休息日'} {manualDayType ? '(手動)' : '(自動)'} ▾
+                      {effectiveIsTraining ? '訓練日' : '休息日'} {manualDayType ? '(手動)' : '(自動)'} ▾
                     </button>
                     {manualDayType && (
                       <button
@@ -520,14 +518,14 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                 )}
               </div>
               <NutrientSlider
-                label="碳水" emoji="🍚"
+                label="碳水"
                 value={carbsInput} onChange={setCarbsInput}
                 target={effectiveCarbsTarget} unit="g"
                 max={Math.max(500, (effectiveCarbsTarget || 250) * 1.5)} step={5}
                 color="amber"
               />
               <NutrientSlider
-                label="脂肪" emoji="🥑"
+                label="脂肪"
                 value={fatInput} onChange={setFatInput}
                 target={fatTarget} unit="g"
                 max={Math.max(200, (fatTarget || 80) * 2)} step={5}
@@ -536,7 +534,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
               {/* 自動計算熱量顯示 */}
               <div className="bg-slate-50 rounded-xl px-4 py-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">🔥 熱量（自動計算）</span>
+                  <span className="text-sm text-gray-600">熱量（自動計算）</span>
                   <span className={`text-lg font-bold tabular-nums ${
                     computedCalories && effectiveCalorieTarget && computedCalories >= effectiveCalorieTarget * 0.9 && computedCalories <= effectiveCalorieTarget * 1.1
                       ? 'text-emerald-600'
@@ -580,7 +578,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
               autoComplianceStatus.color === 'amber' ? 'bg-amber-50 text-amber-700' :
               'bg-rose-50 text-rose-600'
             }`}>
-              <span>{autoComplianceStatus.color === 'green' ? '✅' : autoComplianceStatus.color === 'amber' ? '⚠️' : '❌'}</span>
+              <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${
+                autoComplianceStatus.color === 'green' ? 'bg-emerald-500' : autoComplianceStatus.color === 'amber' ? 'bg-amber-500' : 'bg-rose-500'
+              }`} />
               <span>{autoComplianceStatus.hint}</span>
             </div>
           )}
@@ -611,7 +611,6 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
       {/* 巨量營養素填寫鼓勵 */}
       {(isNewUser || compliant !== null) && hasTargets && !computedCalories && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-3 flex items-start gap-2">
-          <span className="text-sm mt-0.5">📝</span>
           <div>
             <p className="text-xs text-slate-900 font-medium">填入今天的營養素數據，系統能更準確追蹤你的進度</p>
             <p className="text-[11px] text-slate-500 mt-0.5">只需輸入蛋白質和碳水，熱量會自動計算</p>
@@ -627,7 +626,6 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           .filter((l: any) => l.compliant != null && l.calories == null)
         return recentWithoutMacros.length >= 3 && !computedCalories ? (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-3 flex items-start gap-2">
-            <span className="text-sm mt-0.5">💡</span>
             <p className="text-xs text-amber-700">
               你已連續 {recentWithoutMacros.length} 天沒有填寫營養素數據。填入實際攝取量可以幫助系統判斷是否需要調整你的目標。
             </p>
@@ -642,7 +640,7 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
           disabled={saving}
           className="w-full py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-colors disabled:opacity-50 mb-4"
         >
-          {saving ? '儲存中...' : hasRecorded ? '更新飲食紀錄' : '💾 儲存飲食紀錄'}
+          {saving ? '儲存中...' : hasRecorded ? '更新飲食紀錄' : '儲存飲食紀錄'}
         </button>
       )}
 
@@ -669,7 +667,9 @@ export default function NutritionLog({ todayNutrition, nutritionLogs, clientId, 
                     ? 'bg-emerald-50'
                     : 'bg-rose-50'
               }`}>
-                {day.log == null ? '' : day.log.compliant ? '✅' : '❌'}
+                {day.log == null ? '' : (
+                  <span className={`inline-block w-2 h-2 rounded-full ${day.log.compliant ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                )}
               </div>
             </div>
           ))}

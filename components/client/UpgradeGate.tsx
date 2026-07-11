@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { Lock } from 'lucide-react'
 import { trackEvent } from '@/lib/analytics'
 
 interface UpgradeGateProps {
@@ -65,7 +66,7 @@ export default function UpgradeGate({
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-4">
         <div className="flex items-start gap-3">
-          <span className="text-xl shrink-0">🔒</span>
+          <Lock size={16} className="text-slate-400 shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-gray-800">{feature}</p>
             {description && (
@@ -96,7 +97,7 @@ export default function UpgradeGate({
           {/* Overlay badge */}
           <div className="absolute inset-0 flex items-center justify-center bg-black/10">
             <div className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg flex items-center gap-2">
-              <span className="text-base">🔒</span>
+              <Lock size={14} className="text-slate-500" />
               <span className="text-sm font-semibold text-gray-700">
                 升級後解鎖
               </span>
@@ -108,7 +109,7 @@ export default function UpgradeGate({
       {/* Content section */}
       <div className="p-4">
         <div className="flex items-start gap-3">
-          {!hasPreview && <span className="text-xl shrink-0">🔒</span>}
+          {!hasPreview && <Lock size={16} className="text-slate-400 shrink-0 mt-0.5" />}
           <div className="flex-1">
             <p className="text-sm font-semibold text-gray-800">{feature}</p>
             {description && (

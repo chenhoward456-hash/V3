@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { Lock } from 'lucide-react'
 import type { BehaviorInsight } from '@/lib/insight-engine'
 
 interface BehaviorInsightsProps {
@@ -34,9 +35,9 @@ const confidenceLabels: Record<string, { label: string; color: string }> = {
 
 // 模糊化的假 insight（免費用戶看到被鎖住的預覽）
 const BLURRED_PREVIEWS = [
-  { emoji: '💓', title: '高強度訓練後 HRV 下降', category: 'training_recovery' },
-  { emoji: '🌙', title: '補品與睡眠品質連動', category: 'supplement_effect' },
-  { emoji: '🧠', title: '整體狀態趨勢分析', category: 'trend' },
+  { title: '高強度訓練後 HRV 下降', category: 'training_recovery' },
+  { title: '補品與睡眠品質連動', category: 'supplement_effect' },
+  { title: '整體狀態趨勢分析', category: 'trend' },
 ]
 
 export default function BehaviorInsights({ clientId, code, isFree }: BehaviorInsightsProps) {
@@ -97,7 +98,6 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">💡</span>
         <h2 className="text-base font-bold text-gray-900">你的數據告訴你</h2>
         <span className="text-[11px] text-gray-400 ml-auto">根據近 14 天行為數據</span>
       </div>
@@ -111,7 +111,6 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
             <div key={insight.id}>
               <div className={`${colors.bg} ${colors.border} border rounded-2xl px-4 py-3`}>
                 <div className="flex items-start gap-2.5">
-                  <span className="text-xl shrink-0 mt-0.5">{insight.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className={`text-sm font-bold ${colors.text}`}>{insight.title}</p>
@@ -166,16 +165,15 @@ export default function BehaviorInsights({ clientId, code, isFree }: BehaviorIns
                 key={i}
                 className={`${colors.bg} ${colors.border} border rounded-2xl px-4 py-3 relative overflow-hidden`}
               >
-                <div className="flex items-center gap-2.5 blur-[6px] select-none pointer-events-none">
-                  <span className="text-xl">{preview.emoji}</span>
+                <div className="blur-[6px] select-none pointer-events-none">
                   <div>
                     <p className={`text-sm font-bold ${colors.text}`}>{preview.title}</p>
                     <p className="text-xs text-gray-500">根據你的數據分析，這個模式值得關注...</p>
                   </div>
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center bg-white/30">
-                  <span className="text-xs font-bold text-gray-500 bg-white/80 px-3 py-1.5 rounded-full">
-                    🔒 升級解鎖
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-gray-500 bg-white/80 px-3 py-1.5 rounded-full">
+                    <Lock size={12} className="text-slate-400" /> 升級解鎖
                   </span>
                 </div>
               </div>

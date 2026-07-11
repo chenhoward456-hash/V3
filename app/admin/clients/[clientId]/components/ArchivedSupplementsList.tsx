@@ -99,7 +99,7 @@ export default function ArchivedSupplementsList({ clientUniqueCode, refreshKey }
       >
         <div>
           <h3 className="text-base font-medium text-gray-900">
-            📦 過去 protocol（已封存）
+            過去 protocol（已封存）
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
             {items.length} 筆歷史紀錄 — 開始 / 停止日期 / 取代關係

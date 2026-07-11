@@ -49,7 +49,6 @@ export default function PwaPrompt() {
       </button>
 
       <div className="flex items-start gap-3">
-        <div className="text-2xl flex-shrink-0">📱</div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-800 mb-1">
             加到主畫面，一鍵開啟

@@ -34,7 +34,6 @@ export default function SupplementStrategyCard({ suggestions }: { suggestions: S
         className="w-full flex items-center gap-2 text-left"
         aria-expanded={open}
       >
-        <span className="text-lg">💊</span>
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-semibold text-gray-900">你的個人化補品策略</span>
           {!open && (
@@ -65,7 +64,7 @@ export default function SupplementStrategyCard({ suggestions }: { suggestions: S
             </div>
             {s.reason && <p className="text-xs text-gray-700 mt-1.5 leading-relaxed">{degradeToSafe(s.reason).text}</p>}
             {s.evidence && (
-              <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">📄 {s.evidence}</p>
+              <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{s.evidence}</p>
             )}
             {s.triggerTests && s.triggerTests.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">

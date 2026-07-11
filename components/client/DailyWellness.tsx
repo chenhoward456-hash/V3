@@ -150,7 +150,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
       })
       if (!response.ok) throw new Error('提交失敗')
       onMutate()
-      showToast('感受已記錄！', 'success', '🎉')
+      showToast('感受已記錄！', 'success')
     } catch {
       showToast('提交失敗，請重試', 'error')
     } finally {
@@ -160,20 +160,20 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
 
   // 核心三項（所有模式必填）— 睡眠 / 精力 / 想不想練，是「今天該怎麼練」最相關的三個
   const coreFields: { key: 'sleep_quality' | 'energy_level' | 'training_drive'; label: string; options: { score: number; emoji: string; label: string }[] }[] = [
-    { key: 'sleep_quality',    label: '😴 睡眠品質',   options: SLEEP_OPTIONS },
-    { key: 'energy_level',     label: '⚡ 精力水平',   options: ENERGY_OPTIONS },
-    { key: 'training_drive',   label: '💪 想不想練',   options: TRAINING_DRIVE_OPTIONS },
+    { key: 'sleep_quality',    label: '睡眠品質',   options: SLEEP_OPTIONS },
+    { key: 'energy_level',     label: '精力水平',   options: ENERGY_OPTIONS },
+    { key: 'training_drive',   label: '想不想練',   options: TRAINING_DRIVE_OPTIONS },
   ]
 
   // 進階指標（選填；心情、健康模式額外指標）
   const extraFields: { key: 'mood' | 'cognitive_clarity' | 'stress_level'; label: string; options: { score: number; emoji: string; label: string }[]; groupLabel?: string }[] = [
-    { key: 'mood', label: '😊 今日心情', options: MOOD_OPTIONS },
+    { key: 'mood', label: '今日心情', options: MOOD_OPTIONS },
   ]
 
   if (healthModeEnabled) {
     extraFields.push(
-      { key: 'cognitive_clarity', label: '🧠 認知清晰度', options: COGNITIVE_OPTIONS, groupLabel: '🌿 健康模式指標' },
-      { key: 'stress_level',     label: '😰 壓力指數',   options: STRESS_OPTIONS },
+      { key: 'cognitive_clarity', label: '認知清晰度', options: COGNITIVE_OPTIONS, groupLabel: '健康模式指標' },
+      { key: 'stress_level',     label: '壓力指數',   options: STRESS_OPTIONS },
     )
   }
 
@@ -247,7 +247,7 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
                 onClick={() => setShowMore(true)}
                 className="w-full py-2.5 text-sm text-blue-600 font-medium bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
               >
-                📋 填寫更多指標 <span className="text-gray-400 text-xs">（選填，讓分析更精準）</span>
+                填寫更多指標 <span className="text-gray-400 text-xs">（選填，讓分析更精準）</span>
               </button>
             ) : (
               <>
@@ -298,13 +298,13 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
             className="w-full py-2.5 text-sm text-blue-600 font-medium bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
           >
             {form.device_recovery_score != null
-              ? <>⌚ 手錶恢復分數：{form.device_recovery_score} <span className="text-gray-400 text-xs">（點開修改）</span></>
-              : <>⌚ 有戴 WHOOP/Oura/Garmin？填恢復分數 <span className="text-gray-400 text-xs">（選填）</span></>}
+              ? <>手錶恢復分數：{form.device_recovery_score} <span className="text-gray-400 text-xs">（點開修改）</span></>
+              : <>有戴 WHOOP/Oura/Garmin？填恢復分數 <span className="text-gray-400 text-xs">（選填）</span></>}
           </button>
         ) : (
           <div className="border-t border-slate-200 pt-3 space-y-3">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs font-semibold text-slate-700">⌚ 穿戴裝置恢復分數</p>
+              <p className="text-xs font-semibold text-slate-700">穿戴裝置恢復分數</p>
               <button
                 onClick={() => setShowWearable(false)}
                 className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
@@ -422,7 +422,6 @@ export default function DailyWellness({ todayWellness, clientId, date, healthMod
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="text-lg">🩸</span>
                 <span className={`text-sm font-medium ${form.period_start ? 'text-blue-700' : 'text-gray-600'}`}>
                   今天月經來了
                 </span>

@@ -50,7 +50,7 @@ export default function HealthReport({ client, latestBodyData, bmi, weekRate, mo
         onClick={handlePrint}
         className="w-full bg-gray-800 text-white py-3 rounded-xl font-medium hover:bg-gray-900 transition-colors mb-20"
       >
-        📄 匯出健康報告
+        匯出健康報告
       </button>
 
       {/* 隱藏的列印區塊 */}

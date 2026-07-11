@@ -110,12 +110,13 @@ describe('HealthOverview', () => {
   })
 
   // ---- Renders wellness/mood card ----
-  it('renders today mood emoji when todayMood is provided', () => {
+  it('renders today mood label when todayMood is provided', () => {
     renderOverview()
 
     expect(screen.getByText(/今日感受/)).toBeInTheDocument()
-    // todayMood = 4 -> emoji 😊
-    expect(screen.getByText('😊')).toBeInTheDocument()
+    // todayMood = 4 -> label 不錯
+    expect(screen.getByText('不錯')).toBeInTheDocument()
+    expect(screen.getByText('心情 4/5')).toBeInTheDocument()
   })
 
   it('shows "尚未記錄" when no mood and no wellness', () => {

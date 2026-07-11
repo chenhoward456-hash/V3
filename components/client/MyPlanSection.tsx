@@ -30,7 +30,6 @@ function MyPlanSectionInner({ data }: { data: OnboardingRendered | null }) {
   return (
     <section className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-base leading-none">📁</span>
         <h2 className="text-sm font-semibold text-slate-900">我的計畫</h2>
         <span className="ml-auto text-[11px] text-slate-400">{sections.length} 份</span>
       </div>

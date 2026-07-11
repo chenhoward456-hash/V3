@@ -145,14 +145,14 @@ export default function ClientHeader({
 
                 {/* 功能開關 */}
                 {([
-                  { key: 'body_composition_enabled', label: '體重/體態', icon: '⚖️' },
-                  { key: 'nutrition_enabled', label: '飲食追蹤', icon: '🥗' },
-                  { key: 'wellness_enabled', label: '每日感受', icon: '😊' },
-                  { key: 'training_enabled', label: '訓練追蹤', icon: '🏋️' },
-                  { key: 'supplement_enabled', label: '補品管理', icon: '💊' },
-                  { key: 'lab_enabled', label: '血檢追蹤', icon: '🩸' },
-                  { key: 'ai_chat_enabled', label: 'AI 顧問', icon: '🤖' },
-                ] as const).map(({ key, label, icon }) => {
+                  { key: 'body_composition_enabled', label: '體重/體態' },
+                  { key: 'nutrition_enabled', label: '飲食追蹤' },
+                  { key: 'wellness_enabled', label: '每日感受' },
+                  { key: 'training_enabled', label: '訓練追蹤' },
+                  { key: 'supplement_enabled', label: '補品管理' },
+                  { key: 'lab_enabled', label: '血檢追蹤' },
+                  { key: 'ai_chat_enabled', label: 'AI 顧問' },
+                ] as const).map(({ key, label }) => {
                   const FREE_LOCKED_ON = ['body_composition_enabled', 'nutrition_enabled'] as const
                   const isLockedOn = isFree && (FREE_LOCKED_ON as readonly string[]).includes(key)
                   const isLockedOff = isFree && !(FREE_LOCKED_ON as readonly string[]).includes(key)
@@ -160,9 +160,9 @@ export default function ClientHeader({
                   return (
                     <div key={key} className="flex items-center justify-between py-1.5">
                       <span className="text-sm text-gray-700">
-                        {icon} {label}
+                        {label}
                         {isLockedOn && <span className="text-[11px] text-gray-400 ml-1">預設</span>}
-                        {isLockedOff && <span className="text-[11px] text-gray-400 ml-1">🔒</span>}
+                        {isLockedOff && <Lock size={11} className="inline-block ml-1 text-gray-400" aria-label="升級解鎖" />}
                       </span>
                       <button
                         onClick={() => {
@@ -190,7 +190,7 @@ export default function ClientHeader({
                 <div className="border-t border-gray-100 my-3" />
                 <div className="flex items-center justify-between py-1.5">
                   <div>
-                    <p className="text-sm text-gray-700">📬 每週電子報</p>
+                    <p className="text-sm text-gray-700">每週電子報</p>
                     <p className="text-[11px] text-gray-400 mt-0.5">每週收到最新訓練與營養文章</p>
                   </div>
                   <button
@@ -316,7 +316,6 @@ export default function ClientHeader({
       {/* 明日預覽 Banner */}
       {selectedDate > today && (
         <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3 mb-3 flex items-center gap-2">
-          <span className="text-base">🔮</span>
           <p className="text-sm font-semibold text-slate-900">明日預覽模式</p>
           <p className="text-xs text-slate-600 ml-auto">查看明天的 Peak Week 計畫</p>
         </div>
@@ -332,7 +331,6 @@ export default function ClientHeader({
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">🏆</span>
                   <button
                     onClick={() => setShowPhaseSelector(!showPhaseSelector)}
                     className="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600 flex items-center gap-1 transition-all active:scale-95"

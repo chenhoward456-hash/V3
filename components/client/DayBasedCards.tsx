@@ -42,7 +42,6 @@ export default function DayBasedCards({
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
         <div className="flex items-start gap-3">
-          <span className="text-xl flex-shrink-0">🧠</span>
           <div>
             <p className="text-sm font-bold text-gray-900 mb-1">系統正在學習你的代謝特性</p>
             <p className="text-xs text-gray-600 leading-relaxed mb-2">
@@ -66,7 +65,6 @@ export default function DayBasedCards({
     return (
       <RetentionCard onDismiss={() => {}} id="day3">
         <div className="flex items-start gap-3">
-          <span className="text-xl flex-shrink-0">🎯</span>
           <div className="flex-1">
             <p className="text-sm font-bold text-gray-900 mb-2">你已連續記錄 {Math.min(totalLogDays, daysSinceSignup)} 天</p>
             <div className="space-y-1.5 mb-3">
@@ -97,7 +95,6 @@ export default function DayBasedCards({
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
         <div className="flex items-start gap-3">
-          <span className="text-xl flex-shrink-0">🤖</span>
           <div className="flex-1">
             <p className="text-sm font-bold text-gray-900 mb-1">試試 AI 私人顧問</p>
             <p className="text-xs text-gray-600 leading-relaxed mb-3">

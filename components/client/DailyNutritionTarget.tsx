@@ -48,10 +48,10 @@ export default function DailyNutritionTarget({
   if (!effectiveCalories && !proteinTarget && !effectiveCarbsTarget && !fatTarget) return null
 
   const items = [
-    { label: '熱量', value: effectiveCalories, unit: 'kcal', emoji: '🔥' },
-    { label: '蛋白質', value: proteinTarget, unit: 'g', emoji: '🥩' },
-    { label: '碳水', value: effectiveCarbsTarget, unit: 'g', emoji: '🍚' },
-    { label: '脂肪', value: fatTarget, unit: 'g', emoji: '🥑' },
+    { label: '熱量', value: effectiveCalories, unit: 'kcal' },
+    { label: '蛋白質', value: proteinTarget, unit: 'g' },
+    { label: '碳水', value: effectiveCarbsTarget, unit: 'g' },
+    { label: '脂肪', value: fatTarget, unit: 'g' },
   ].filter(item => item.value)
 
   if (items.length === 0) return null
@@ -81,7 +81,6 @@ export default function DailyNutritionTarget({
         <div className="mb-4 bg-white border border-slate-200 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm">💡</span>
               <span className="text-xs font-bold text-slate-900">系統調整通知</span>
             </div>
             {statusBadge && (
@@ -107,7 +106,6 @@ export default function DailyNutritionTarget({
 
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">📋</span>
           <h2 className="text-base font-bold text-gray-900">今日飲食目標</h2>
           {/* 狀態徽章 — 常駐顯示 */}
           {statusBadge && !hasProtocolUpdate && (
@@ -123,7 +121,7 @@ export default function DailyNutritionTarget({
               effectiveIsTraining ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
             }`}
           >
-            {effectiveIsTraining ? '🏋️ 訓練日' : '🛋️ 休息日'} ▾
+            {effectiveIsTraining ? '訓練日' : '休息日'} ▾
           </button>
         )}
       </div>
@@ -131,9 +129,9 @@ export default function DailyNutritionTarget({
         <div className={`grid gap-2 ${
           { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4' }[items.length] || 'grid-cols-4'
         }`}>
-          {items.map(({ label, value, unit, emoji }) => (
+          {items.map(({ label, value, unit }) => (
             <div key={label} className="text-center bg-white rounded-xl py-2 px-1">
-              <p className="text-[11px] text-gray-500">{emoji} {label}</p>
+              <p className="text-[11px] text-gray-500">{label}</p>
               <p className="text-lg font-bold text-gray-900 tabular-nums">{value || '--'}</p>
               <p className="text-[11px] text-gray-400">{unit}</p>
             </div>
@@ -148,7 +146,6 @@ export default function DailyNutritionTarget({
           <div className="mt-3 pt-3 border-t border-slate-200 space-y-1">
             {geneticCorrections.map((gc, i) => (
               <p key={i} className="text-[11px] text-slate-600 flex items-start gap-1">
-                <span className="shrink-0">🧬</span>
                 <span>{gc.adjustment}</span>
               </p>
             ))}

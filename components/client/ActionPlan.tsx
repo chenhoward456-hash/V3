@@ -23,11 +23,10 @@ export default function ActionPlan({ healthGoals, nextCheckupDate, coachSummary,
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-20">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">📋 你的行動計畫</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">你的行動計畫</h2>
       <div className="space-y-3">
         {healthGoals && (
           <div className="flex items-start">
-            <span className="mr-2 flex-shrink-0">🎯</span>
             <p className="text-sm text-gray-700">
               <span className="font-medium">目標：</span>{healthGoals}
             </p>
@@ -35,7 +34,6 @@ export default function ActionPlan({ healthGoals, nextCheckupDate, coachSummary,
         )}
         {nextCheckupDate && (
           <div className="flex items-start">
-            <span className="mr-2 flex-shrink-0">📅</span>
             <p className="text-sm text-gray-700">
               <span className="font-medium">下次回檢：</span>
               <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
@@ -47,7 +45,6 @@ export default function ActionPlan({ healthGoals, nextCheckupDate, coachSummary,
         )}
         {topSupplements && topSupplements.length > 0 && (
           <div className="flex items-start">
-            <span className="mr-2 flex-shrink-0">💊</span>
             <p className="text-sm text-gray-700">
               <span className="font-medium">今日重點：</span>
               {topSupplements.map(s => s.name).join('、')}
