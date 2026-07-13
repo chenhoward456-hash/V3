@@ -4655,7 +4655,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
             'Citrulline 6-8g（增強血管擴張 + pump）',
             `蜂蜜 ${Math.round(meal3Carbs * 0.8)}g（直接擠著喝）`,
             '舒跑 / 運動飲料 200-300ml',
-            `鹽 500-800mg（直接加在蜂蜜或運動飲料裡）`,
+            `額外加鹽 ~600mg（約 1/4 茶匙，加在蜂蜜或運動飲料裡）— 含運動飲料本身的鈉，這餐共約 900mg`,
             'Caffeine 200mg（增強 pump + 專注力）',
           ],
           note: '上台前唯一一次「額外加鈉」＋快碳＋pump（Helms guideline #11：上台前小量加鈉配 pump 可急性改善外觀）。全天就這一次刻意加鈉，配蜂蜜/運動飲料一起',
@@ -4774,9 +4774,9 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
       ...(todayPlan.pumpUpNote ? [`💪 ${todayPlan.pumpUpNote}`] : []),
       ...(todayPlan.expectedWeight ? [`⚖️ 預估體重 ${todayPlan.expectedWeight}kg — ${todayPlan.weightNote}`] : []),
       '⚠️ 重要：不要突然斷水或斷鈉！醛固酮反彈會導致皮下水分滯留，效果適得其反',
-      // 女性黃體期警告：水分操控效果不穩定
+      // 女性黃體期警告：體重/外觀判讀會被荷爾蒙干擾（本協議不做水分操控）
       ...(isFemale && cycleInfo?.inLutealPhase ? [
-        '🩸 ⚠️ 目前處於黃體期 — 孕酮升高會導致額外水分滯留，Peak Week 水分操控效果可能不如預期。視覺評估時需考慮荷爾蒙因素，不要過度反應體重數字。',
+        '🩸 ⚠️ 目前處於黃體期 — 孕酮升高會導致額外水分滯留，Peak Week 的體重與外觀判讀可能失真。視覺評估時需考慮荷爾蒙因素，不要過度反應體重數字（本協議不做水分操控，這是生理性波動，不需要也不應該用限水去「修正」）。',
       ] : []),
       // 碳水超補量說明（體重調整 + 女性調整）
       ...(loadingCarb !== baseLoadingCarb ? [
