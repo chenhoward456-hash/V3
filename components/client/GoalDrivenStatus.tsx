@@ -290,7 +290,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
               <p className="font-bold text-slate-900 tabular-nums">{dl.prePeakEntryWeight} kg</p>
             </div>
             <div>
-              <p className="text-[11px] text-gray-400">PW 預估可脫</p>
+              <p className="text-[11px] text-gray-400">PW 自然波動</p>
               <p className="font-bold text-slate-900 tabular-nums">-{dl.peakWeekExpectedLoss} kg</p>
             </div>
             <div>
@@ -299,7 +299,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
             </div>
           </div>
           <p className="text-[11px] text-slate-400 mt-1.5 text-center">
-            水分操作預估（{Math.round((dl.peakWeekWaterCutPct || 0.02) * 100)}% BW），實際依個人反應調整
+            自然波動預估（{((dl.peakWeekWaterCutPct || 0.005) * 100).toFixed(1)}% BW）— 乾相靠賽前減脂，非水分操作
           </p>
         </div>
       )}

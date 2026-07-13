@@ -67,7 +67,7 @@ const phaseColors: Record<string, { bg: string; text: string; border: string; ba
 }
 
 const phaseLabels: Record<string, string> = {
-  depletion: '碳水耗竭',
+  depletion: '低碳日',
   fat_load: '脂肪補充',
   carb_load: '碳水超補',
   taper: '微調日',
@@ -146,8 +146,8 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
       {geneDepressionRisk && (geneDepressionRisk === 'high' || geneDepressionRisk === 'moderate') && (
         <div className={`mb-4 px-3 py-2 rounded-xl text-xs flex items-center gap-2 ${geneDepressionRisk === 'high' ? 'bg-amber-50 border border-amber-200 text-amber-700' : 'bg-slate-50 border border-slate-200 text-slate-700'}`}>
           <span>
-            因 5-HTTLPR {geneDepressionRisk === 'high' ? 'SS' : 'SL'} 基因型，碳水耗竭期已
-            {geneDepressionRisk === 'high' ? '縮短至 2 天並增加碳水 +1-2g/kg' : '縮短至 3 天並增加碳水 +0.5g/kg'}
+            因 5-HTTLPR {geneDepressionRisk === 'high' ? 'SS' : 'SL'} 基因型，低碳期已
+            {geneDepressionRisk === 'high' ? '縮短至 2 天，碳水拉高到 3.5g/kg（比一般人的 2.5 更高）' : '縮短至 3 天，碳水拉高到 3.0g/kg（比一般人的 2.5 更高）'}
             ，以保護情緒穩定與血清素水平。
           </span>
         </div>
@@ -280,7 +280,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                   <span className="text-primary-300">水 ~{(focusPlan.water / 1000).toFixed(1)}L</span>
                   <span className="text-slate-300 font-bold">鈉 ~{focusPlan.sodiumMg}mg</span>
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1">鈉大部分集中在上台前 1.5 小時</p>
+                <p className="text-[11px] text-gray-500 mt-1">鈉維持平常鹹度；上台前額外加一次配 pump。水喝到不渴、不限水</p>
               </div>
             </div>
           ) : (
@@ -455,9 +455,11 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                     setDailyWeights(prev => ({ ...prev, [day.date]: val }))
                     if (isCarb && val) {
                       const w = parseFloat(val)
-                      const threshold = bodyWeight > 90 ? 2.5 : 2.0
+                      // 取引擎兩性閾值中較保守者（引擎：女 1.0 / 男 1.5），寧可早一步提示；
+                      // 正式判定仍以引擎的 spillOverWarning 為準（引擎比的是 Day 7 基線，非前一天）
+                      const threshold = 1.0
                       if (prevDayWeight && w - prevDayWeight > threshold) {
-                        setSpilloverNote(`Day ${day.daysOut}：體重增幅 ${(w - prevDayWeight).toFixed(1)}kg 超過閾值 ${threshold}kg，建議降碳水至 5-7g/kg`)
+                        setSpilloverNote(`Day ${day.daysOut}：比前一天增加 ${(w - prevDayWeight).toFixed(1)}kg（超過 ${threshold}kg）→ 留意溢出，明天碳水可能要降約 30%（正式判定看引擎）`)
                       } else {
                         setSpilloverNote(null)
                       }
@@ -595,10 +597,11 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
           <p className="text-xs text-amber-700 font-medium mb-1">Peak Week 關鍵注意事項</p>
           <ul className="text-[11px] text-amber-600 space-y-1">
             <li>• 碳水超補期選精緻高 GI 碳水（白飯、白吐司、年糕），避免高纖食物</li>
+            <li>• <strong>水、鈉全程維持習慣量，不脱水、不刻意加減</strong> — 乾相靠賽前減脂，不靠水分操作（天然選手脱水會被弄扁）；上台前才額外加一次鈉配 pump</li>
             <li>• <strong>不要突然斷水或斷鈉</strong> — 醛固酮反彈會導致皮下水分滯留，肌肉反而看起來更水</li>
             <li>• 碳水超補後體重增加 1-2kg 屬正常（1g 肝醣結合 3g 水分），不是變胖，表示超補成功</li>
             <li>• 維持肌酸補充 — 停肌酸會流失細胞內水分，肌肉飽滿度下降</li>
-            <li>• Day 3 起不做重訓 — 任何訓練都會消耗超補的肝醣</li>
+            <li>• Day 3 起停正式重訓；賽前 2 天做輕 pump 循環（15-20 下不力竭）把碳導進肌肉</li>
             <li>• 如有腹脹、腸胃不適，減少單餐碳水量並增加餐數</li>
           </ul>
         </div>
@@ -606,7 +609,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
 
       <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-3">
         <p className="text-[11px] text-gray-500 leading-relaxed">
-          此計畫由系統根據文獻公式自動產生，僅供教練與選手參考，不構成醫療建議。Peak Week 涉及水分與鈉操作，請務必在教練監督下執行。
+          此計畫由系統根據文獻公式自動產生，僅供教練與選手參考，不構成醫療建議。Peak Week 涉及飲食與訓練調整，請在教練監督下執行。
         </p>
       </div>
     </div>

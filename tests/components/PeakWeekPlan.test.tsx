@@ -93,8 +93,9 @@ describe('PeakWeekPlan', () => {
     await waitFor(() => {
       expect(screen.getByText('今日計畫')).toBeInTheDocument()
     })
-    // "碳水耗竭" appears in both today card and timeline
-    const badges = screen.getAllByText('碳水耗竭')
+    // "低碳日" appears in both today card and timeline
+    // （2026-07 天然協議：原本叫「碳水耗竭」，改協議後不再做極端掏空，phase 正名為「低碳日」）
+    const badges = screen.getAllByText('低碳日')
     expect(badges.length).toBeGreaterThanOrEqual(1)
   })
 

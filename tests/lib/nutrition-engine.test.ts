@@ -1494,8 +1494,8 @@ describe('generateNutritionSuggestion', () => {
         ],
       }))
       const carbLoad = result.peakWeekPlan!.find(d => d.phase === 'carb_load')
-      // Female loading carb = 6.5 g/kg vs male 9.0
-      expect(carbLoad!.carbsGPerKg).toBe(6.5)
+      // Female loading carb = 4.0 g/kg vs male 5.0（Helms 保守基準，非 g/kg 體重公式）
+      expect(carbLoad!.carbsGPerKg).toBe(4.0)
       expect(result.warnings.some(w => w.includes('女性碳水超補量'))).toBe(true)
     })
 

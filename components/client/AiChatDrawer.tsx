@@ -464,8 +464,8 @@ ${geneticProfile.notes ? `- 備註：${geneticProfile.notes}` : ''}
 ## 🏆🧬 備賽×基因交叉注意事項
 ${prepPhase === 'cut' && (geneticProfile.mthfr === 'heterozygous' || geneticProfile.mthfr === 'homozygous') ? `- **MTHFR + 減脂期**：熱量赤字加重甲基化壓力。確保活性葉酸充足，多攝取深色蔬菜（菠菜、青花菜）。同半胱胺酸可能升高，注意心血管保護。` : ''}
 ${prepPhase === 'cut' && (geneticProfile.serotonin === 'SS' || geneticProfile.serotonin === 'SL' || geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high') ? `- **5-HTTLPR ${geneticProfile.serotonin || 'SL/SS'} + 減脂期**：長期熱量赤字導致皮質醇升高、血清素下降。此基因型選手備賽心理風險高於常人。飲食上確保色胺酸來源（火雞、蛋、乳清蛋白），不要過度限制碳水（維持最低腦部血清素合成需求），重視睡眠與壓力管理。出現持續情緒低落時建議與教練溝通調整計畫。` : ''}
-${prepPhase === 'peak_week' && (geneticProfile.apoe === 'e3/e4' || geneticProfile.apoe === 'e4/e4') ? `- **APOE4 + Peak Week**：脂肪補充日避免大量飽和脂肪（牛油、奶油），改用 MCT 油、橄欖油、酪梨等。水鈉操控期間注意電解質平衡，此基因型心血管風險較高，極端脫水需格外謹慎。` : ''}
-${prepPhase === 'peak_week' && (geneticProfile.serotonin === 'SS' || geneticProfile.serotonin === 'SL' || geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high') ? `- **5-HTTLPR ${geneticProfile.serotonin || 'SL/SS'} + Peak Week**：Peak Week 極端飲食操控（碳水耗竭→超補）對神經傳導物質波動大。此基因型選手可能出現劇烈情緒擺盪，屬正常反應。碳水超補日情緒會明顯改善。營養計算機已自動縮短耗竭期並提高耗竭期碳水量。` : ''}
+${prepPhase === 'peak_week' && (geneticProfile.apoe === 'e3/e4' || geneticProfile.apoe === 'e4/e4') ? `- **APOE4 + Peak Week**：脂肪補充日避免大量飽和脂肪（牛油、奶油），改用 MCT 油、橄欖油、酪梨等。本系統 Peak Week **不做脱水/水鈉操控**（水鈉全程維持習慣量），電解質維持正常即可，不需要也不應該極端限水。` : ''}
+${prepPhase === 'peak_week' && (geneticProfile.serotonin === 'SS' || geneticProfile.serotonin === 'SL' || geneticProfile.depressionRisk === 'moderate' || geneticProfile.depressionRisk === 'high') ? `- **5-HTTLPR ${geneticProfile.serotonin || 'SL/SS'} + Peak Week**：碳水起伏對神經傳導物質仍有影響，此基因型選手情緒波動可能較大，屬正常反應，碳水回補後會明顯改善。系統已自動為此基因型**縮短低碳期並把低碳日的碳水拉得比一般人更高**（保護血清素）。另外本協議本來就不做極端掏空，情緒風險已比傳統做法低。` : ''}
 ` : ''}
 ${nutritionEngineStatus ? `## 營養引擎分析
 - 狀態：${nutritionEngineStatus.statusLabel || (({ on_track: '進度正常', too_fast: '減脂過快', plateau: '停滯期', wrong_direction: '方向偏離', insufficient_data: '數據不足', low_compliance: '合規率低', peak_week: 'Peak Week', goal_driven: '目標導向' } as Record<string, string>)[nutritionEngineStatus.status] || nutritionEngineStatus.status)}${nutritionEngineStatus.currentState ? `（${nutritionEngineStatus.currentState}）` : ''}
@@ -557,12 +557,11 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
 ### 代謝適應與 Diet Break
 - Trexler 2014: 代謝適應機制，diet break 與 reverse diet 策略
 - Byrne 2018 (MATADOR): 間歇性能量限制（2週限制+2週維持）優於連續限制，更多脂肪流失（12.9% vs 8.4%）
-### Peak Week
-- Escalante 2021: 碳水超補 8-12g/kg、水分操控、鈉控制
-- Barakat 2022: 碳水耗竭→超補效果實證（肌肉厚度+2%, 皮下-2%）
-- Homer & Helms 2024: 水分操控可減 1.5-3% BW，碳水負荷個體差異 3-12g/kg
-- Kistler 2024: 碳水超補敘事回顧
-- Tarnopolsky 1995: 女性肌肉肝醣超補反應約為男性 50-70%
+### Peak Week（天然選手版 — 本系統採用 Helms / 3DMJ 協議。下列文獻僅供背景，**絕不可拿來建議脱水或狂灌碳水**）
+- Helms《The Muscle & Strength Pyramid: Nutrition》Ch.7（**本系統實際依據**）：台上外觀 90% 來自賽前把脂肪減到位，peak week 頂多 modest；充碳以個人 refeed 量為基準 + 每日視覺校準，**不套 g/kg 體重公式**；**不脱水、不斷鈉、不加鉀**（天然選手做這些多半被弄扁）；避免造成肌肉損傷的耗竭訓練（會損害儲糖）；唯一水鈉操作＝上台前小量加鈉配 pump。
+- Barakat 2022 / Kistler 2024: 碳水超補可增肌肉厚度（+2%）、皮下 -2%；但個體差異極大（範圍寬達 3-12g/kg）→ 正因如此**要從保守量起手 + 視覺校準**，不可直接套上限（過量會 spill over，線條被蓋掉）。
+- Homer & Helms 2024: 該文獻同時指出「**脱水狀態下充碳，肌肉內儲水大幅減少**」——脱水與充碳互相抵消。**不可據此建議脱水變乾。**
+- Tarnopolsky 1995: 女性肌肉肝醣超補反應約為男性 50-70%（故女性基準較保守）
 ### 荷爾蒙與 RED-S
 - Loucks 2003: 能量可用性 <30 kcal/kg FFM/天 → 荷爾蒙功能障礙閾值
 - Mountjoy 2018 (IOC): RED-S 診斷需 3+ 個月無月經
@@ -614,11 +613,13 @@ ${coachSummary ? `- 教練評估：${coachSummary.slice(0, 150)}` : ''}
 16. 當學員問體重變化（變重/變輕/停滯）時，優先引用體重趨勢數據回答，結合飲食合規率、睡眠、水分等因素分析原因
 17. 如果有教練備註，你的建議方向要跟教練一致，不要與教練的評估矛盾
 17b. **絕不編造具體日期、絕不把過去當未來**：context 最上方有「今天日期」。不要自己生出抽血日、回診日、或任何具體日曆日期（例如「2026-06-14 抽血」）；尤其不要把「今天日期」之前的日期講成「即將」「這週末」「該去」。要建議時間時，一律用相對描述（「比賽前 2-3 週」「最後衝刺階段」「下次回檢時」），或只引用 context 明確提供且尚未過期的日期。編造或搞錯日期會誤導學員、損害信任。
-18. **Peak Week 問題**：如果學員在 Peak Week 階段，你需要理解並解釋以下機制：
-    - 耗竭期（比賽前 7-4 天）：碳水極低（1.1g/kg），但水載（75mL/kg）和鈉（3000mg）刻意維持高量，目的是壓制 ADH（抗利尿激素）。此階段體重不掉甚至微漲是正常的，因為在大量灌水。要告訴學員：「耗竭期的目的是清空肝醣，不是讓體重掉。體重是 Taper 那天的事。」
-    - 超補期（比賽前 3-2 天）：碳水爆量（男 9.0g/kg、女 6.5g/kg），每 1g 碳水帶 3-4g 水進肌肉，體重會上升 1-3kg，這是肌肉飽滿的表現，不是變胖。
-    - Taper（比賽前 1 天）：水從 100mL/kg 驟降至 40mL/kg（-60%），鈉從 3500mg 降至 1000mg。前 5-6 天的水載已讓腎臟習慣大量排水（ADH 被壓制），突然減少攝取但排出不減 → 體重快速下降 1-2kg。
-    - **重要**：不要只說「這是正常的」，要解釋為什麼是正常的。學員需要理解水載→ADH壓制→Taper排水的因果關係才能安心。
+18. **Peak Week 問題**（天然選手 back-load 版，依 Helms《營養金字塔》— 這是系統目前實際採用的協議，不要講舊的灌水/切水那套）：
+    - 低碳日（比賽前 7-4 天）：碳水維持接近平常減脂日（~2.5g/kg），**不做極端掏空**。理由：備賽末期肝醣本來就已經半空，額外的掏空日 + 高量耗竭訓練反而造成肌肉損傷，會**損害**後續儲糖。訓練照常但不力竭（RIR 1-2），避免長肌長離心動作。
+    - 超補期（比賽前 3-2 天）：碳水提高到保守起點（男 ~5.0g/kg、女 ~4.0g/kg），**依每天的飽滿度視覺校準**，不用體重公式狂灌。灌過頭會 spill over（碳水和水溢到皮下）→ 肌肉是飽了但線條被蓋掉，看起來反而更胖。每 1g 碳水帶 3-4g 水進肌肉，體重上升 1-2kg 是肌肉飽滿，不是變胖。
+    - Taper（比賽前 1 天）：碳水略收，維持飽滿。
+    - **水和鈉全程維持習慣量**：不灌水、不切水、不斷鈉、不加鉀。目標是尿液淡黃、drink to thirst。
+    - **最重要、學員最常問**：天然選手**不脱水**。任何為了「變乾」的限水、斷鈉、加鉀、利尿、三溫暖，**沒有生理根據**，多數只會把人弄扁——而且脱水狀態下充碳，肌肉儲水反而**大減**（自相矛盾）。乾相靠的是賽前把脂肪減到位（90% 的台上外觀來自這裡），不是最後一週的水分戲法。全程唯一的鈉操作是「上台前額外加一次鈉配 pump」。
+    - 如果學員問「要不要斷水/斷鈉/脱水變乾」，**明確告訴他不要**，並解釋上面的道理。
 19. **體重停滯問題**：當學員問為什麼體重沒掉時，不要只說「正常波動」。要根據數據分析具體原因：
     - 鈉攝取變化 → 水滯留（看飲食紀錄）
     - 訓練後肌肉微損傷 → 發炎修復帶水（看 RPE 和訓練紀錄）

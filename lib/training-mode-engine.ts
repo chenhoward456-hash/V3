@@ -592,11 +592,11 @@ export function getTrainingModeRecommendation(input: TrainingModeInput): Trainin
   if (prepPhase === 'peak_week' || input.peakWeekDaysOut != null) {
     // Day 3-0 已被 Phase 1 攔截，這裡處理 Day 4-7
     if (input.peakWeekDaysOut != null && input.peakWeekDaysOut >= 6) {
-      // Day 7-6：耗竭訓練，允許但降量
+      // Day 7-6：正常訓練但不力竭（不做耗竭 — 肌肉損傷會損害後續儲糖）
       scores.reduced_volume += 20
       scores.high_volume -= 10
       reasons.push({ signal: '備賽階段', emoji: '🏆',
-        description: `Peak Week Day ${input.peakWeekDaysOut}：耗竭訓練期，控制訓練量` })
+        description: `Peak Week Day ${input.peakWeekDaysOut}：正常訓練但不力竭（RIR 1-2），避免肌肉損傷影響儲糖` })
     } else if (input.peakWeekDaysOut != null && input.peakWeekDaysOut >= 4) {
       // Day 5-4：輕量/休息傾向
       scores.reduced_volume += 30

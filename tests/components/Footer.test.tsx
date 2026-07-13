@@ -28,7 +28,7 @@ describe('Footer', () => {
       { text: '遠端追蹤方案', href: '/remote' },
       { text: '實體訓練方案', href: '/action' },
       { text: '免費系統分析', href: '/diagnosis' },
-      { text: '個案追蹤', href: '/case' },
+      { text: '我的故事', href: '/case' },
     ]
 
     serviceLinks.forEach(({ text, href }) => {

@@ -74,7 +74,7 @@
  * [12] Escalante G, Stevenson SW, Barakat C, Aragon AA, Schoenfeld BJ (2021).
  *      Peak week recommendations for bodybuilders: an evidence based approach.
  *      BMC Sports Sci Med Rehabil, 13:68. doi:10.1186/s13102-021-00296-y
- *      → 碳水超補 8-12 g/kg、水分操控、鈉操控的系統性建議；
+ *      → ⚠️ 該文獻的「碳水超補 8-12 g/kg、水分操控、鈉操控」本系統**不採用**（見 PEAK_WEEK 常數）；
  *        建議操控最少變量並預先實驗
  *
  * [13] Barakat C, Escalante G, Stevenson SW, et al. (2022). Can bodybuilding
@@ -86,7 +86,7 @@
  * [14] Homer KA, Cross MR, Helms ER (2024). Peak week carbohydrate manipulation
  *      practices in physique athletes: a narrative review. Sports Med Open,
  *      10(1):8. doi:10.1186/s40798-024-00674-z
- *      → 碳水操控 3-12 g/kg；水分切割 ~1.5-3% BW
+ *      → 碳水 3-12 g/kg 範圍極寬（故本系統保守起手+視覺校準）；⚠️「水分切割 ~1.5-3% BW」**不採用**（天然選手脱水會被弄扁）
  *
  * ── 動態能量密度 ──
  * [15] Hall KD (2008). What is the required energy deficit per unit weight loss?
@@ -274,7 +274,7 @@ export interface NutritionSuggestion {
     suggestedDailySteps?: number     // 建議每日步數
     cardioNote?: string              // 有氧建議說明
     // Peak Week 體重三層拆分（備賽專用）
-    peakWeekWaterCutPct?: number     // 預估 Peak Week 淨脫重百分比（預設 2%）
+    peakWeekWaterCutPct?: number     // Peak Week 自然波動（肝醣/腸道）百分比（預設 0.5%，非脱水操作）
     prePeakEntryWeight?: number      // Peak Week 入場目標體重
     dietWeightToLose?: number        // 需要靠飲食減掉的量 (kg)
     peakWeekExpectedLoss?: number    // Peak Week 預估可處理的量 (kg)
@@ -705,12 +705,13 @@ const GENETIC = {
 
   // 憂鬱基因 + Peak Week 耗竭期 → 縮短/緩和
   // [G1] 碳水耗竭 → 腦部血清素急降 → 高風險者可能嚴重情緒崩潰
-  DEPRESSION_DEPLETION_DAYS_HIGH: 2,        // SS 高風險：耗竭期從 4 天縮為 2 天
-  DEPRESSION_DEPLETION_DAYS_MODERATE: 3,    // SL 中風險：耗竭期從 4 天縮為 3 天
-  DEPRESSION_DEPLETION_CARB_HIGH: 2.0,      // SS：2.0 g/kg（最大保護，接受耗竭效果較差）
-  DEPRESSION_DEPLETION_CARB_MODERATE: 1.5,  // SL：1.5 g/kg（平衡保護與耗竭效果）
-  // 設計邏輯：各基因型的耗竭期總碳水攝取量趨近一致
-  // LL: 1.1 × 4 days × 82kg = 361g  |  SL: 1.5 × 3 days × 82kg = 369g  |  SS: 2.0 × 2 days × 82kg = 328g
+  DEPRESSION_DEPLETION_DAYS_HIGH: 2,        // SS 高風險：低碳期從 4 天縮為 2 天
+  DEPRESSION_DEPLETION_DAYS_MODERATE: 3,    // SL 中風險：低碳期從 4 天縮為 3 天
+  // ⚠️ 這兩個值必須「高於」PEAK_WEEK.DEPLETION_CARB_G_PER_KG（目前 2.5），
+  //    否則保護層會反轉成傷害（高風險者碳水反而比一般人低）。改基準時要一起改。
+  DEPRESSION_DEPLETION_CARB_HIGH: 3.5,      // SS：3.5 g/kg（高於基準 2.5，最大保護血清素）
+  DEPRESSION_DEPLETION_CARB_MODERATE: 3.0,  // SL：3.0 g/kg（高於基準 2.5，平衡保護）
+  // 設計邏輯：風險越高 → 低碳期越短 + 碳水越高（雙重保護）
 }
 
 // 基因修正層：根據基因資料調整巨量營養素
@@ -808,54 +809,56 @@ function getApoe4FatWarnings(
   }
 }
 
-// Peak Week 常數 [12] Escalante 2021 + [13] Barakat 2022 + [14] Homer/Helms 2024 + [15] Kistler 2024 narrative review
+// Peak Week 常數 — 天然選手 back-load 導向 [14] Homer/Helms 2024 + [15] Kistler 2024 narrative review
+// ⚠️ 天然健美核心原則（Helms / Team 3DMJ, 《The Muscle & Strength Pyramid: Nutrition》Ch.7）：
+//   1) 90% 靠賽前多年訓練 + 減脂到位，peak week 只 modest；做壞反而扣分。
+//   2) 別用 g/kg 體重公式灌碳（那是耐力運動員的）；長期低碳者儲糖 tank 縮小，
+//      以近期 refeed 攝取為基準、寧保守起手 + 視覺校準往上（寧 flat 再加，不要 spill over）。
+//   3) 不脱水、不加鉀減鈉——這些是用藥圈沿用、對天然選手沒生理根據、多半把人弄扁 (P208-209)。
+//      全程維持習慣水/鈉，唯一操作＝上台前加一次鈉配 pump。
 const PEAK_WEEK = {
-  // 碳水耗竭期 (Day 7-4)：低碳 + 高脂補充肌內三酸甘油酯 (IMT)
-  DEPLETION_CARB_G_PER_KG: 1.1,    // Barakat 2022: 1.0-1.2 g/kg
-  DEPLETION_PROTEIN_G_PER_KG: 2.5,  // 自然選手優化（原 3.2 → 2.5）：MPS 天花板低，多吃無益
-  DEPLETION_FAT_G_PER_KG: 1.5,     // Barakat 2022: ~1.56 g/kg；高脂補 IMT（1.2-1.8 range）
+  // 低碳日 (Day 7-4)：維持接近平常減脂日碳水，不極端耗竭
+  // Helms: depletion 非必要（末期本已半空）；別在 peak 早期壓極低碳（升壓力、爛訓練、無額外好處）
+  DEPLETION_CARB_G_PER_KG: 2.5,    // 接近平常減脂日，不極端掏空（原 1.1 極低碳已移除）
+  DEPLETION_PROTEIN_G_PER_KG: 2.5,  // 自然選手優化：MPS 天花板低，多吃無益
+  DEPLETION_FAT_G_PER_KG: 1.5,     // 中等脂肪維持熱量，避免耗竭期過度飢餓/皮質醇
 
-  // 碳水超補期 (Day 3-2)
-  // [15] Kistler 2024 review：建議範圍 3-12 g/kg，個體差異大
-  // 基準值用 Homer 2024 的 9.0 g/kg（~80kg 受試者），但需依體重調整：
-  // >90kg 選手絕對量過高（>810g）會造成 GI distress，需降低 g/kg
-  LOADING_CARB_G_PER_KG: 9.0,      // 基準值（≤90kg），>90kg 由 generatePeakWeekPlan 動態降低
-  LOADING_CARB_G_PER_KG_FEMALE: 6.5, // 女性肝醣超補反應通常較男性保守（Tarnopolsky 1995 +0% vs 男 +41%；惟 James 2001 在等量 CHO/kg LBM 下無差異）— 採保守基準，數值待 Howard 複核
-  LOADING_PROTEIN_G_PER_KG: 1.6,   // Escalante 2021: ~1.6 g/kg；降低蛋白為碳水騰空間，最大化肝醣超補
+  // 碳水超補期 (Day 3-2) — 保守起手，看飽滿度校準往上
+  // Helms: 以 refeed 攝取為基準（非體重公式）；9g/kg 對 80kg=720g 會 spill over 糊掉線條
+  LOADING_CARB_G_PER_KG: 5.0,      // 保守起點（≈ refeed 1.5-2×）；視覺校準，別衝 g/kg 上限（原 9.0 移除）
+  LOADING_CARB_G_PER_KG_FEMALE: 4.0, // 女性肝醣超補反應較保守
+  LOADING_PROTEIN_G_PER_KG: 1.6,   // 降低蛋白為碳水騰空間
   LOADING_FAT_G_PER_KG: 0.65,      // 低脂最大化碳水吸收
-  LOADING_FAT_G_PER_KG_FEMALE: 1.0, // 女性超補期脂肪不低於 1.0 g/kg（Loucks 2003: 雌激素合成需求）
+  LOADING_FAT_G_PER_KG_FEMALE: 1.0, // 女性超補期脂肪不低於 1.0 g/kg（Loucks 2003）
 
-  // Taper (Day 1)
-  TAPER_CARB_G_PER_KG: 5.5,        // Barakat 2022: 5.46 g/kg（基準值，會隨 loadingCarb 等比調整）
-  TAPER_CARB_G_PER_KG_FEMALE: 4.0, // 女性按超補比例等比縮減（6.5/9.0 × 5.5 ≈ 4.0）
-  TAPER_PROTEIN_G_PER_KG: 2.3,     // 自然選手優化（原 2.8 → 2.3）
+  // Taper (Day 1) — 略收維持飽滿（隨 loadingCarb 等比：5.0 × 3.5/5.0 = 3.5）
+  TAPER_CARB_G_PER_KG: 3.5,
+  TAPER_CARB_G_PER_KG_FEMALE: 2.8,
+  TAPER_PROTEIN_G_PER_KG: 2.3,
   TAPER_FAT_G_PER_KG: 1.1,         // 中等脂肪防止 IMT 流失
 
   // 比賽日
   SHOW_CARB_G_PER_KG: 2.0,         // 小餐維持；依視覺評估彈性調整
-  SHOW_PROTEIN_G_PER_KG: 2.2,      // 自然選手優化（原 3.0 → 2.2）：賽日重點是碳水 pump
+  SHOW_PROTEIN_G_PER_KG: 2.2,      // 賽日重點是碳水 pump
   SHOW_FAT_G_PER_KG: 0.5,
 
-  // 水分操控 — 多數自然選手策略：一開始中度灌水壓 ADH → 超補期拉到最高 → Day 1 驟降
-  // ADH 被壓越久（6 天 vs 2 天），切水後身體繼續排水的窗口越大、效果越穩定
-  // 搭配碳水對比（低→高）：碳水超補理論上把水拉進肌肉（肝醣滲透壓），皮下水繼續被排掉
-  // ⚠️ [15] Kistler 2024 review 指出：先前 ICW/ECW 轉移的研究使用單頻 BIA，
-  // 無法準確區分細胞內外水分（需多頻 BIA 或 BIS）。水分重分佈的方向可能正確，
-  // 但精確機制尚未被 RCT 驗證。目前協議仍基於理論框架 + 實務經驗，非確定性證據。
-  WATER_BASELINE: 75,      // Day 7-4：75 mL/kg（中度灌水，從 Day 7 就開始壓 ADH）
-  WATER_LOADING: 100,      // Day 3-2：100 mL/kg（搭配碳水超補，最大化水分進入肌肉細胞）
-  WATER_TAPER: 40,         // Day 1：40 mL/kg（從 100→40 = 急降 60%，ADH 壓了 6 天來不及回升）
-  WATER_SHOW: 10,          // 比賽日：由時間軸協議控制（~800ml 總計），此值為 fallback
+  // 水分 — 全程維持習慣量、不做灌水/切水操作 (Helms P209)
+  // 脱水去「變乾」無生理根據、天然選手會被弄扁；且脱水狀態充碳→肌肉儲水大減，自相矛盾。
+  // 目標：尿液淡黃、drink to thirst。~40 mL/kg ≈ 一般習慣量（80kg → ~3.2L）。
+  WATER_BASELINE: 40,      // 全程維持習慣量
+  WATER_LOADING: 40,       // 不 loading，維持習慣
+  WATER_TAPER: 40,         // 不切水，維持習慣
+  WATER_SHOW: 40,          // 賽日 drink to thirst（≈ 習慣量）
 
-  // 鈉目標（mg/天）— 鈉跟著水走，水高鈉就高；避免稀釋性低血鈉
-  // 耗竭期：低碳→胰島素低→腎臟排鈉增加 + 水量較高 → 鈉需 3000mg 以上
-  SODIUM_BASELINE: 3000,     // 耗竭期（配合 75mL/kg 水量，Na/水比=400+mg/L，安全）
-  SODIUM_LOADING: 3500,      // 超補期（SGLT-1 + 高碳水 → 鈉幫助葡萄糖+水進入肌肉細胞）
-  SODIUM_SHOW: 1000,         // 比賽日由時間軸協議控制（集中在最後 1.5 小時）
+  // 鈉（mg/天）— 全程維持習慣量，不做 loading/depleting (Helms P208)
+  // 加鉀減鈉是用藥圈做法、天然選手反效果。唯一操作＝上台前額外加一次（見比賽日時間軸）。
+  SODIUM_BASELINE: 3000,     // 習慣量
+  SODIUM_LOADING: 3000,      // 不加載，維持習慣
+  SODIUM_SHOW: 3000,         // 維持習慣；上台前另加一次（時間軸內）
 
-  // 鉀離子目標（mg/天）— Barakat 2022: ~6246 mg/day during loading
+  // 鉀（mg/天）— 維持正常飲食量，不加載（Helms 明確反對加鉀）
   POTASSIUM_BASELINE: 3500,  // 正常飲食鉀攝取
-  POTASSIUM_LOADING: 6000,   // 超補期加鉀促進水分進入肌肉細胞
+  POTASSIUM_LOADING: 3500,   // 不加載，維持正常
 }
 
 // ===== 動態能量密度計算 =====
@@ -2280,10 +2283,11 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     deadlineInfo = { daysLeft, weeksLeft: Math.round(weeksLeft * 10) / 10, weightToLose: Math.round(weightToLose * 10) / 10, requiredRatePerWeek: Math.round(requiredRatePerWeek * 100) / 100, isAggressive }
 
     // Peak Week 體重三層拆分（備賽 + 減脂模式）— 僅 bodybuilding，athletic 不適用
-    // [14] Homer/Helms 2024: 水分操控可減 ~1.5-3% BW；取 2% 為保守估計
-    // [12] Escalante 2021: depletion → loading → taper → show day
+    // ⚠️ 不靠脱水達標（Helms P209：脱水去「變乾」無生理根據、天然選手會被弄扁）。
+    //   Peak week 晨重的小幅下降主要來自肝醣/腸道排空的自然波動，非刻意水分操作；
+    //   脂肪目標仍須靠 peak week 前的減脂達成，這裡只扣一個保守的自然波動量。
     if (input.prepPhase && input.goalType === 'cut' && daysLeft > 7 && input.clientMode !== 'athletic') {
-      const waterCutPct = 0.02  // 預設 2%，保守估計 [14]
+      const waterCutPct = 0.005  // 僅自然肝醣/腸道波動 ~0.5%，非脱水操作
       const peakWeekExpectedLoss = Math.round(thisWeekAvg * waterCutPct * 10) / 10
       const prePeakEntryWeight = Math.round((input.targetWeight! + peakWeekExpectedLoss) * 10) / 10
       const dietWeightToLose = Math.round((thisWeekAvg - prePeakEntryWeight) * 10) / 10
@@ -4227,9 +4231,10 @@ function generateAthleticCompetition(input: NutritionInput): NutritionSuggestion
 }
 
 // ===== Peak Week 引擎 =====
-// 基於 Escalante 2021 [12] + Barakat 2022 [13] + Homer/Helms 2024 [14] + Kistler 2024 [15]
-// [15] 指出：碳水超補有效（肌肉厚度 +2%, 皮下 -2%），但水分 ICW/ECW 轉移的精確機制尚缺嚴格 RCT
-// 每日協議含：巨量營養素、水分、鈉、鉀、纖維、訓練、食物選擇、肌酸、Posing、Pump-up
+// 天然選手 back-load 協議（依 Helms《The Muscle & Strength Pyramid: Nutrition》Ch.7）
+// 碳水超補有效（肌肉厚度 +2%, 皮下 -2%）；但**不做**掏空、脱水、鈉鉀操控——那些對天然選手
+// 沒有生理根據（見 PEAK_WEEK 常數的說明）。每日協議含：巨量營養素、水分、鈉、鉀、纖維、
+// 訓練、食物選擇、肌酸、Posing、Pump-up
 
 function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo?: MenstrualCycleInfo): NutritionSuggestion {
   const bw = input.bodyWeight
@@ -4244,17 +4249,16 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
   const pwLabMacroMods = pwLabModResult?.macroModifiers ?? []
   const pwLabTrainingMods = pwLabModResult?.trainingModifiers ?? []
 
-  // 碳水超補量依體重動態調整 [15] Kistler 2024：3-12 g/kg 範圍，個體差異大
-  // 重量級選手 (>90kg) 絕對碳水量過高（>810g）會造成腸胃不適，需降低 g/kg
-  // 男性基準 9.0 g/kg（Homer 2024, ~80kg）；女性基準 6.5 g/kg（Tarnopolsky 1995）
+  // 碳水超補量依體重「比例」調整（重量級絕對量過高會 GI distress）
+  // ⚠️ 用比例、不用絕對減量：舊的 -1.0/-1.5 是為 9.0 基準設計的，套到保守基準會把
+  //    超補量壓到低於低碳日，還會讓防溢 override 反而變成「調升」。
   const baseLoadingCarb = isFemale ? PEAK_WEEK.LOADING_CARB_G_PER_KG_FEMALE : PEAK_WEEK.LOADING_CARB_G_PER_KG
-  const loadingCarb = bw > 100 ? baseLoadingCarb - 1.5   // >100kg: 男 7.5, 女 5.0
-    : bw > 90 ? baseLoadingCarb - 1.0                     // 90-100kg: 男 8.0, 女 5.5
-    : baseLoadingCarb                                      // ≤90kg: 男 9.0, 女 6.5
+  // 依體重「比例」下修（重量級絕對量過高會 GI distress）；下方 phase 護欄會再夾住不得低於低碳日
+  const loadingCarbRaw = bw > 100 ? Math.round(baseLoadingCarb * 0.75 * 10) / 10   // >100kg: 男 3.8, 女 3.0
+    : bw > 90 ? Math.round(baseLoadingCarb * 0.85 * 10) / 10                        // 90-100kg: 男 4.3, 女 3.4
+    : baseLoadingCarb                                                                // ≤90kg: 男 5.0, 女 4.0
   const loadingFat = isFemale ? PEAK_WEEK.LOADING_FAT_G_PER_KG_FEMALE : PEAK_WEEK.LOADING_FAT_G_PER_KG
-  // Taper 碳水等比縮減：loadingCarb × (基準taper/基準loading)
   const baseTaperCarb = isFemale ? PEAK_WEEK.TAPER_CARB_G_PER_KG_FEMALE : PEAK_WEEK.TAPER_CARB_G_PER_KG
-  const taperCarb = Math.round(loadingCarb * (baseTaperCarb / baseLoadingCarb) * 10) / 10
 
   // 基因修正層（Peak Week）
   const geneticCorrections: GeneticCorrection[] = []
@@ -4306,25 +4310,47 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     })
   }
 
+  // ⚠️ Phase 落差護欄（必須在基因區之後算，因為基因保護會把低碳日抬到 3.0-3.5）
+  //    若不夾住：重量級/女性比例下修後的「超補量」可能低於低碳日 → 超補期形同不存在，
+  //    還會踩掉血清素保護。所有 phase 的順序必須恆為：低碳 < 過渡 < 超補，且低碳 ≤ taper ≤ 超補。
+  // 超補日至少比低碳日高 PHASE_GAP；但**不得超過該性別的基準量**——否則基因保護（把低碳日
+  // 抬到 3.0-3.5）會默默廢掉「女性較保守」與「重量級 GI 護欄」（女性 SS 曾被抬到 4.5 > 女性基準 4.0）
+  const PHASE_GAP = 0.5
+  const loadingCarb = Math.min(
+    Math.max(loadingCarbRaw, Math.round((depletionCarbGPerKg + PHASE_GAP) * 10) / 10),
+    baseLoadingCarb,
+  )
+  // Taper：略收，但必須**嚴格高於**低碳日——只用 max(等比, depletion) 會讓 taper 塌回整週最低，
+  // 等於上台前一天吃最少碳、飽滿度掉光，正是 Helms 協議最不想要的結果。上限不超過超補日。
+  const taperCarb = Math.min(
+    Math.max(
+      Math.round(loadingCarb * (baseTaperCarb / baseLoadingCarb) * 10) / 10,
+      Math.round((depletionCarbGPerKg + 0.3) * 10) / 10,
+    ),
+    loadingCarb,
+  )
+
   // ===== 體重預測 =====
   // 生理學基礎：1g 肝醣結合 2.7-3g 水分（Fernández-Elías 2015）
   // 完全耗竭可清空 ~400g 肌肉肝醣 + 100g 肝臟肝醣 = ~500g
   // 500g 肝醣 + 1500g 水 ≈ 2.0kg 流失（理論最大值，實際約 1.0-1.5kg）
   // 超補可儲存 600-700g 肝醣 + 1.8-2.1kg 水分 ≈ 2.5-2.8kg 增加
+  // ⚠️ 曲線已依新協議重算：不做極端掏空（碳水只到 2.5 g/kg）、全程不脱水
+  //    → 前段降幅比舊版小很多，賽日也不會因切水再掉一截
   const weightDeltaMap: Record<number, { delta: number; note: string }> = {
     7: { delta: 0, note: '基準體重' },
-    6: { delta: -0.3, note: '肝醣開始消耗，體重微降' },
-    5: { delta: -0.7, note: '肝醣持續消耗 + 脂肪補充 IMT' },
-    4: { delta: -1.0, note: '肝醣接近耗盡，體重最低點' },
-    3: { delta: -0.2, note: '碳水超補開始，肝醣+水分快速回填' },
-    2: { delta: 0.8, note: '肝醣超補高峰，體重顯著增加（正常！）' },
-    1: { delta: 1.2, note: '肝醣飽和 + 細胞內水分最大化' },
-    0: { delta: 0.5, note: '水分微調後，肌肉飽滿但皮下水分減少' },
+    6: { delta: -0.2, note: '肝醣小幅消耗' },
+    5: { delta: -0.4, note: '肝醣持續小幅消耗 + 脂肪補充 IMT' },
+    4: { delta: -0.5, note: '低碳期體重低點（不做極端掏空，降幅本來就小）' },
+    3: { delta: 0.2, note: '碳水回補開始，肝醣+水分回填' },
+    2: { delta: 0.8, note: '肝醣超補，體重上升（正常！）' },
+    1: { delta: 1.0, note: '肝醣飽和，肌肉飽滿' },
+    0: { delta: 0.9, note: '維持飽滿；不脱水，所以體重不會再掉一截' },
   }
   // Bug fix M11: 基因縮短 depletion 時，過渡日不會完全耗竭肝醣
   if (depletionCutoffDay > 4) {
     for (let d = depletionCutoffDay - 1; d >= 4; d--) {
-      weightDeltaMap[d] = { delta: -0.3, note: '過渡期：碳水中等（3.5g/kg），肝醣部分回填' }
+      weightDeltaMap[d] = { delta: -0.2, note: '過渡期：碳水中等，肝醣部分回填' }
     }
   }
   // 女性體重變化較小（肝醣超補反應約男性 50-70%）
@@ -4361,8 +4387,14 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
 
     if (baselineRecord && day2Record) {
       const weightGain = day2Record.weight - baselineRecord.weight
-      const threshold = isFemale ? 1.3 : 2.0
-      const reducedCarb = isFemale ? 5.0 : 7.0
+      // 閾值配合保守充碳量下修（5.0g/kg 下體重增幅本來就小，舊的 +2.0kg 幾乎永不觸發）
+      const threshold = isFemale ? 1.0 : 1.5
+      // 防溢：相對「當日超補量」降 30%，但**不得低於低碳日**
+      //（否則「超補期（已調降）」的碳水會比低碳日還少，且踩掉基因血清素保護）
+      const reducedCarb = Math.max(
+        Math.round(loadingCarb * 0.7 * 10) / 10,
+        depletionCarbGPerKg,
+      )
 
       if (weightGain > threshold) {
         day2CarbOverride = reducedCarb
@@ -4428,17 +4460,18 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
 
     let day: PeakWeekDay
 
-    // 區分耗竭期和 IMT 脂肪補充期
-    // Day 7-6：高強度耗竭訓練（真正的碳水耗竭）
-    // Day 5-4：訓練強度降低，重點轉為高脂補充 IMT（肌內三酸甘油酯）
+    // 區分低碳期和 IMT 脂肪補充期
+    // Day 7-6：正常訓練但不力竭（Helms：肌肉損傷會損害儲糖；末期本已半空，不需額外耗竭）
+    // Day 5-4：訓練減量，重點轉為高脂補充 IMT（肌內三酸甘油酯）
     const isIMTPhase = d >= depletionCutoffDay && d <= 5
 
     if (d >= depletionCutoffDay) {
+      // Helms: 避免造成肌肉損傷的訓練（高量、力竭、長肌長離心）會損害儲糖；末期本已半空、不需額外耗竭
       const trainingMap: Record<number, string> = {
-        7: '耗竭訓練：上半身（高次數 >12RM，巨組），每肌群 3-4 組',
-        6: '耗竭訓練：下半身（高次數 >12RM，巨組），每肌群 3-4 組',
-        5: '輕量全身訓練（每組 >15 次）— 重點已轉為 IMT 補充，不需極度耗竭',
-        4: '輕量 pump / 完全休息（從今天起不再做重訓）',
+        7: '正常訓練，留 1-2 下不到力竭（RIR 1-2）；避免長肌長離心（RDL、早安、深飛鳥）以免肌肉損傷損害儲糖',
+        6: '正常訓練，留 1-2 下不到力竭（RIR 1-2）；避免造成明顯痠痛的動作',
+        5: '減量訓練（量降 ~20%，維持刺激但不力竭）',
+        4: '輕量 pump / 休息（賽前 2-3 天最後一次較正式訓練後即停）',
       }
       const posingMap: Record<number, string> = {
         7: 'Posing 練習 15 分鐘（正常強度，同時消耗肝醣）',
@@ -4455,14 +4488,14 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
             : '碳水來源：纖維蔬菜為主（花椰菜、蘆筍、菠菜）；脂肪來源：酪梨、堅果、橄欖油（補充 IMT）')
       day = {
         daysOut: d, date: dateStr,
-        label: isIMTPhase ? `Day ${d} — 脂肪補充 IMT` : `Day ${d} — 碳水耗竭期`,
+        label: isIMTPhase ? `Day ${d} — 脂肪補充 IMT` : `Day ${d} — 低碳日`,
         phase: isIMTPhase ? 'fat_load' : 'depletion',
         carbsGPerKg: depletionCarbGPerKg,
         proteinGPerKg: PEAK_WEEK.DEPLETION_PROTEIN_G_PER_KG,
         fatGPerKg: PEAK_WEEK.DEPLETION_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_BASELINE,
         sodiumMg: PEAK_WEEK.SODIUM_BASELINE,
-        sodiumNote: `鈉攝取（${PEAK_WEEK.SODIUM_BASELINE}mg）— 配合灌水策略，鈉跟著水走避免低血鈉。低碳期胰島素低、腎臟排鈉增加，鈉需足量`,
+        sodiumNote: `鈉維持習慣量（~${PEAK_WEEK.SODIUM_BASELINE}mg）— 全程不刻意加減，保持恆定`,
         fiberNote: d <= 5 ? '開始減少纖維（目標 <15g）— 碳水來源選低纖維蔬菜（去莖花椰菜、櫛瓜、蘆筍尖）' : '正常纖維攝取',
         trainingNote: trainingMap[d] || '休息',
         carbs: Math.round(bw * depletionCarbGPerKg),
@@ -4478,9 +4511,9 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         weightNote: wd.note,
       }
     } else if (d >= 4 && d < depletionCutoffDay) {
-      // 基因修正（SL/SS）縮短耗竭期後，多出的中間日 → IMT 脂肪補充 + 漸進碳水提升
-      // 避免直接跳入全量碳水超補（9 g/kg），改用中間碳水（3.5 g/kg）平穩過渡
-      const transitionCarbGPerKg = 3.5
+      // 基因修正（SL/SS）縮短低碳期後，多出的中間日 → 漸進碳水提升，平穩過渡
+      // 動態取「低碳日與超補日的中間值」，避免寫死造成過渡日碳水反而高於超補日
+      const transitionCarbGPerKg = Math.round(((depletionCarbGPerKg + loadingCarb) / 2) * 10) / 10
       day = {
         daysOut: d, date: dateStr,
         label: `Day ${d} — IMT 脂肪補充 + 過渡`,
@@ -4506,7 +4539,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         weightNote: wd.note,
       }
     } else if (d >= 2) {
-      // Day 3-2：碳水超補 + 鈉加載 + 鉀加載
+      // Day 3-2：碳水超補（鈉、鉀維持習慣量，不加載）
       // Day 2 碳水溢出防護：如果 Day 3 體重增幅超過閾值，自動降低 Day 2 碳水
       const effectiveCarb = (d === 2 && day2CarbOverride != null) ? day2CarbOverride : loadingCarb
       day = {
@@ -4520,14 +4553,16 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         fatGPerKg: loadingFat,
         waterMlPerKg: PEAK_WEEK.WATER_LOADING,
         sodiumMg: PEAK_WEEK.SODIUM_LOADING,
-        sodiumNote: `鈉加載（${PEAK_WEEK.SODIUM_LOADING}mg）— 鈉經 SGLT-1 幫助葡萄糖進入肌肉細胞，搭配高碳水最大化肝醣超補`,
+        sodiumNote: `鈉維持習慣量（~${PEAK_WEEK.SODIUM_LOADING}mg）— 不加載；充碳靠碳水本身把水拉進肌肉`,
         fiberNote: '極低纖維（<10g），避免腹脹影響比賽日外觀',
-        trainingNote: '完全休息（任何訓練都會重新消耗肝醣，破壞超補效果）',
+        trainingNote: d === 2
+          ? '輕 pump 循環：2-3 輪 × 15-20 下、RIR 4-5、≤30 分鐘（把碳水導進肌肉，不造成損傷）'
+          : '完全休息或極輕 pump（保存肝醣）',
         carbs: Math.round(bw * effectiveCarb),
         protein: Math.round(bw * PEAK_WEEK.LOADING_PROTEIN_G_PER_KG),
         fat: Math.round(bw * loadingFat),
         calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_LOADING),
-        potassiumNote: `鉀加載 ~${PEAK_WEEK.POTASSIUM_LOADING}mg（香蕉、馬鈴薯、椰子水）— 鉀幫助水分進入肌肉細胞`,
+        potassiumNote: `正常鉀攝取（~${PEAK_WEEK.POTASSIUM_BASELINE}mg，天然來源如香蕉、馬鈴薯）— 不加載`,
         foodNote: isFemale
           ? `精緻高 GI 碳水為主：白飯、白吐司、年糕、蜂蜜、果醬。分 6-7 餐進食（女性超補量 ${effectiveCarb}g/kg，少量多餐更易執行）`
           : '精緻高 GI 碳水為主：白飯、白吐司、年糕、麻糬、蜂蜜、果醬。分 5-6 餐進食，避免單餐過量導致腸胃不適',
@@ -4548,14 +4583,14 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         fatGPerKg: PEAK_WEEK.TAPER_FAT_G_PER_KG,
         waterMlPerKg: PEAK_WEEK.WATER_TAPER,
         sodiumMg: PEAK_WEEK.SODIUM_BASELINE,
-        sodiumNote: `鈉回到基線（${PEAK_WEEK.SODIUM_BASELINE}mg）— 從超補期的高鈉緩降，不要突然斷鈉，避免醛固酮反彈導致皮下積水`,
+        sodiumNote: `鈉維持習慣量（~${PEAK_WEEK.SODIUM_BASELINE}mg）— 全程恆定，不要突然斷鈉，避免醛固酮反彈導致皮下積水`,
         fiberNote: '極低纖維（<8g），避免腹脹',
         trainingNote: '完全休息（不要做任何訓練）',
         carbs: Math.round(bw * taperCarb),
         protein: Math.round(bw * PEAK_WEEK.TAPER_PROTEIN_G_PER_KG),
         fat: Math.round(bw * PEAK_WEEK.TAPER_FAT_G_PER_KG),
         calories: 0, water: Math.round(bw * PEAK_WEEK.WATER_TAPER),
-        potassiumNote: `維持高鉀 ~${PEAK_WEEK.POTASSIUM_LOADING}mg（延續超補期策略）`,
+        potassiumNote: `正常鉀攝取（~${PEAK_WEEK.POTASSIUM_BASELINE}mg）`,
         foodNote: '延續精緻碳水但量減半；少量多餐；晚餐前最後一餐加少許鹹食',
         creatineNote: '維持肌酸 5g/天',
         supplementNote: supplementTaper,
@@ -4565,9 +4600,8 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
       }
     } else {
       // Day 0：比賽日 — 完整時間軸協議
-      // 策略核心：前半段碳水為主（不加鈉） → 後半段鈉+簡單糖 dump → pump → 上台
-      // 生理學：早期碳水進入肌肉不需要鈉（GLUT-4 insulin-mediated），
-      //         最後 1-2 小時才加鈉（SGLT-1 + 血管充盈 + pump 效果）
+      // 策略核心（Helms）：全程維持習慣鹹度 + drink to thirst；上台前額外加一次鈉配 pump。
+      // 幾小餐好消化碳（每 2-3h），一半在預賽前吃完、一半留決賽前；不做前段斷鈉/限水。
 
       // 根據體重計算各餐份量
       const meal1Carbs = Math.round(bw * 1.0)     // 起床大餐：1.0 g/kg
@@ -4586,50 +4620,51 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
           timeLabel: '起床（上台前 7 小時）',
           relativeHours: -7,
           carbs: meal1Carbs, protein: meal1Protein, fat: 5,
-          waterMl: 300, sodiumMg: 0,
+          waterMl: 500, sodiumMg: 1000,
           emoji: '🌅',
           items: [
             '量體重（目標體重確認）',
             `白飯 / 地瓜 ${meal1Carbs}g 碳水`,
             `蛋白質 ${meal1Protein}g（雞胸 / 水煮蛋）`,
-            '水 300ml（小口喝）',
+            '正常鹹度（跟平常一樣，別特意加或減）',
+            '水喝到不渴',
           ],
-          note: '不加鈉 — 早期碳水經 GLUT-4 路徑進入肌肉，不需要鈉輔助。過早加鈉可能造成皮下水分滯留',
+          note: '維持平常鹹度（Helms：賽日餐反映平常攝取）；水 drink to thirst，尿液淡黃即可',
         },
         {
           timeLabel: '上台前 3 小時',
           relativeHours: -3,
           carbs: meal2Carbs, protein: meal2Protein, fat: 3,
-          waterMl: 200, sodiumMg: 200,
+          waterMl: 400, sodiumMg: 800,
           emoji: '🍌',
           items: [
             `蜂蜜 + 香蕉（碳水 ${meal2Carbs}g）`,
             `蛋白質 ${meal2Protein}g`,
-            '水 200ml',
-            '微量鈉 ~200mg（少許鹽）',
+            '水喝到不渴',
+            '正常鹹度（跟平常一樣）',
           ],
-          note: '開始微量鈉 — 為最後的鈉 dump 做準備，避免突然大量鈉攝入造成不適',
+          note: '維持平常鹹度；drink to thirst。偏扁→這餐碳可多一點，偏水→碳收一點',
         },
         {
           timeLabel: '上台前 1-1.5 小時',
           relativeHours: -1.5,
           carbs: meal3Carbs, protein: 0, fat: 0,
-          waterMl: 250, sodiumMg: 700,
+          waterMl: 300, sodiumMg: 900,
           emoji: '⚡',
           items: [
             'Citrulline 6-8g（增強血管擴張 + pump）',
             `蜂蜜 ${Math.round(meal3Carbs * 0.8)}g（直接擠著喝）`,
             '舒跑 / 運動飲料 200-300ml',
-            `鹽 500-800mg（直接加在蜂蜜或運動飲料裡）`,
+            `額外加鹽 ~600mg（約 1/4 茶匙，加在蜂蜜或運動飲料裡）— 含運動飲料本身的鈉，這餐共約 900mg`,
             'Caffeine 200mg（增強 pump + 專注力）',
           ],
-          note: '鈉 dump — SGLT-1 鈉-葡萄糖共轉運體：鈉+糖同時攝入，最大化葡萄糖進入肌肉。鹹+甜一起灌下去，血管充盈感會非常明顯',
+          note: '上台前唯一一次「額外加鈉」＋快碳＋pump（Helms guideline #11：上台前小量加鈉配 pump 可急性改善外觀）。全天就這一次刻意加鈉，配蜂蜜/運動飲料一起',
         },
         {
           timeLabel: '上台前 30-45 分鐘 — Pump Up',
           relativeHours: -0.5,
           carbs: pumpSnackCarbs, protein: 0, fat: 0,
-          waterMl: 50, sodiumMg: 100,
+          waterMl: 100, sodiumMg: 300,
           emoji: '💪',
           items: [
             '彈力帶 + 輕啞鈴',
@@ -4659,18 +4694,18 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
         carbsGPerKg: Math.round(totalShowCarbs / bw * 10) / 10,
         proteinGPerKg: Math.round(totalShowProtein / bw * 10) / 10,
         fatGPerKg: Math.round(totalShowFat / bw * 10) / 10,
-        waterMlPerKg: 10,  // Bug fix M9: 比賽日固定 10 mL/kg（不反算），與其他天的語義一致
-        sodiumMg: 1000,  // 總計 ~1000mg，大部分在最後 1.5 小時
-        sodiumNote: '鈉集中在最後 1.5 小時 — 前半段不加鈉，上台前 dump 鹽+蜂蜜+運動飲料，最大化 SGLT-1 效果和血管充盈',
+        waterMlPerKg: PEAK_WEEK.WATER_SHOW,  // 賽日 drink to thirst（≈習慣量），不限水
+        sodiumMg: PEAK_WEEK.SODIUM_SHOW,  // 3000 = 時間軸各餐總和（1000+800+900+300）；與其他天同為習慣量，賽日不斷鈉
+        sodiumNote: '全程維持習慣鹹度，上台前額外加一次（約半茶匙鹽）配 pump — Helms 版，不做前段斷鈉',
         fiberNote: '幾乎零纖維（全部吃精緻碳水）',
         trainingNote: '後台 pump-up（詳見時間軸）',
         carbs: totalShowCarbs,
         protein: totalShowProtein,
         fat: totalShowFat,
         calories: 0,
-        water: 800,  // 總計約 800ml（不含運動飲料）
+        water: Math.round(bw * PEAK_WEEK.WATER_SHOW),  // drink to thirst（≈習慣量），不限水
         potassiumNote: '從運動飲料和香蕉自然攝取即可',
-        foodNote: '比賽日所有食物依時間軸進食（詳見下方完整時間軸）',
+        foodNote: '比賽日所有食物依時間軸進食（詳見下方時間軸）。時間軸列的是各餐配水；餐間口渴就喝，全天不限水',
         creatineNote: '比賽日可省略肌酸（非必要）',
         supplementNote: [
           'Citrulline 6-8g（上台前 1-1.5 小時）— 一氧化氮前驅物，增強血管擴張',
@@ -4739,13 +4774,13 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
       ...(todayPlan.pumpUpNote ? [`💪 ${todayPlan.pumpUpNote}`] : []),
       ...(todayPlan.expectedWeight ? [`⚖️ 預估體重 ${todayPlan.expectedWeight}kg — ${todayPlan.weightNote}`] : []),
       '⚠️ 重要：不要突然斷水或斷鈉！醛固酮反彈會導致皮下水分滯留，效果適得其反',
-      // 女性黃體期警告：水分操控效果不穩定
+      // 女性黃體期警告：體重/外觀判讀會被荷爾蒙干擾（本協議不做水分操控）
       ...(isFemale && cycleInfo?.inLutealPhase ? [
-        '🩸 ⚠️ 目前處於黃體期 — 孕酮升高會導致額外水分滯留，Peak Week 水分操控效果可能不如預期。視覺評估時需考慮荷爾蒙因素，不要過度反應體重數字。',
+        '🩸 ⚠️ 目前處於黃體期 — 孕酮升高會導致額外水分滯留，Peak Week 的體重與外觀判讀可能失真。視覺評估時需考慮荷爾蒙因素，不要過度反應體重數字（本協議不做水分操控，這是生理性波動，不需要也不應該用限水去「修正」）。',
       ] : []),
       // 碳水超補量說明（體重調整 + 女性調整）
       ...(loadingCarb !== baseLoadingCarb ? [
-        `📋 碳水超補量已依體重調整：${loadingCarb}g/kg（基準 ${baseLoadingCarb}g/kg）— 體重 ${bw}kg 時絕對量為 ${Math.round(bw * loadingCarb)}g，維持在腸胃可負荷範圍（Kistler 2024: 建議範圍 3-12g/kg）`,
+        `📋 碳水超補量已調整：${loadingCarb}g/kg（基準 ${baseLoadingCarb}g/kg）— 依體重下修，並確保仍高於低碳日${depletionCarbGPerKg > PEAK_WEEK.DEPLETION_CARB_G_PER_KG ? '（你的基因型已把低碳日碳水拉高）' : ''}。體重 ${bw}kg 時絕對量為 ${Math.round(bw * loadingCarb)}g，維持在腸胃可負荷範圍`,
       ] : []),
       ...(isFemale ? [
         `📋 女性碳水超補量已調整為 ${loadingCarb}g/kg（男性基準 ${PEAK_WEEK.LOADING_CARB_G_PER_KG}g/kg）— 女性肝醣超補反應通常較男性保守，過量碳水多半只增加腸胃不適而非更多肝醣儲存。`,
