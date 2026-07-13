@@ -82,9 +82,10 @@ describe('Peak Week phase 落差不變式（24 組：性別 × 體重 × 血清�
           // 核心：超補日一定要比低碳日高（否則「超補期」形同不存在）
           expect(minLoad).toBeGreaterThan(maxLow)
 
-          // Taper 夾在低碳與超補之間
+          // Taper 夾在低碳與超補之間，且必須「嚴格」高於低碳日
+          //（用 >= 會放行「taper 塌回整週最低碳」= 上台前一天飽滿度掉光）
           for (const t of c.taper) {
-            expect(t).toBeGreaterThanOrEqual(maxLow)
+            expect(t).toBeGreaterThan(maxLow)
             expect(t).toBeLessThanOrEqual(minLoad)
           }
 
@@ -131,30 +132,41 @@ describe('基因血清素保護方向（不可反轉）', () => {
   })
 })
 
-describe('防溢 override（Day 2 碳水調降）', () => {
-  it('觸發後：碳水必須真的「降」（< 超補日），且不得低於低碳日', () => {
-    const bw = 80
-    const day7 = daysFromNow(0)   // 距比賽 7 天 = 今天（targetDate = +7）
-    const day2 = daysFromNow(5)   // 距比賽 2 天
+describe('防溢 override（Day 2 碳水調降）— 24 組全跑', () => {
+  // ⚠️ 這裡一定要跑滿 24 組：只跑「男 80kg 無基因型」會漏掉 bug——
+  //    那組 loadingCarb=5.0，就算沒有下限保護，0.7×5.0=3.5 仍高於低碳日 2.5，測試不會紅。
+  //    真正會破的是帶血清素基因型者（低碳日被抬到 3.0-3.5）。
+  for (const gender of GENDERS) {
+    for (const bodyWeight of WEIGHTS) {
+      for (const serotonin of SEROTONINS) {
+        const label = `${gender} ${bodyWeight}kg ${serotonin ?? 'LL(無風險)'}`
 
-    const input = peakInput({
-      bodyWeight: bw,
-      peakWeekDailyWeights: [
-        { date: day7, weight: bw },
-        { date: day2, weight: bw + 3.0 },  // 暴增 3kg → 必定觸發防溢
-      ],
-    } as Partial<NutritionInput>)
+        it(`${label}：調降後 < 超補日，且不得低於低碳日`, () => {
+          const day7 = daysFromNow(0)   // 距比賽 7 天 = 今天（targetDate = +7）
+          const day2 = daysFromNow(5)   // 距比賽 2 天
 
-    const plan = generateNutritionSuggestion(input).peakWeekPlan!
-    const d2 = plan.find(d => d.daysOut === 2)!
-    const d3 = plan.find(d => d.daysOut === 3)!
-    const maxLow = Math.max(...plan.filter(d => d.phase === 'depletion').map(d => d.carbsGPerKg as number))
+          const plan = generateNutritionSuggestion(peakInput({
+            gender,
+            bodyWeight,
+            ...(serotonin ? { geneticProfile: { serotonin } as NutritionInput['geneticProfile'] } : {}),
+            peakWeekDailyWeights: [
+              { date: day7, weight: bodyWeight },
+              { date: day2, weight: bodyWeight + 3.0 },  // 暴增 3kg → 必定觸發防溢
+            ],
+          } as Partial<NutritionInput>)).peakWeekPlan!
 
-    // 真的調降了（低於未調降的超補日 Day 3）
-    expect(d2.carbsGPerKg as number).toBeLessThan(d3.carbsGPerKg as number)
-    // 但沒有降破低碳日（否則「超補期(已調降)」會比低碳日還少，還會踩掉基因保護）
-    expect(d2.carbsGPerKg as number).toBeGreaterThanOrEqual(maxLow)
-  })
+          const d2 = plan.find(d => d.daysOut === 2)!
+          const d3 = plan.find(d => d.daysOut === 3)!
+          const maxLow = Math.max(...plan.filter(d => d.phase === 'depletion').map(d => d.carbsGPerKg as number))
+
+          // 真的調降了（低於未調降的超補日 Day 3）
+          expect(d2.carbsGPerKg as number).toBeLessThan(d3.carbsGPerKg as number)
+          // 但沒有降破低碳日（否則「超補期(已調降)」比低碳日還少，還會踩掉基因血清素保護）
+          expect(d2.carbsGPerKg as number).toBeGreaterThanOrEqual(maxLow)
+        })
+      }
+    }
+  }
 })
 
 describe('比賽日鈉：day-level 與時間軸必須一致，且不得低於平日（＝不斷鈉）', () => {

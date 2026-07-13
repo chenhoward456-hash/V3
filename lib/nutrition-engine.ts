@@ -74,7 +74,7 @@
  * [12] Escalante G, Stevenson SW, Barakat C, Aragon AA, Schoenfeld BJ (2021).
  *      Peak week recommendations for bodybuilders: an evidence based approach.
  *      BMC Sports Sci Med Rehabil, 13:68. doi:10.1186/s13102-021-00296-y
- *      → 碳水超補 8-12 g/kg、水分操控、鈉操控的系統性建議；
+ *      → ⚠️ 該文獻的「碳水超補 8-12 g/kg、水分操控、鈉操控」本系統**不採用**（見 PEAK_WEEK 常數）；
  *        建議操控最少變量並預先實驗
  *
  * [13] Barakat C, Escalante G, Stevenson SW, et al. (2022). Can bodybuilding
@@ -86,7 +86,7 @@
  * [14] Homer KA, Cross MR, Helms ER (2024). Peak week carbohydrate manipulation
  *      practices in physique athletes: a narrative review. Sports Med Open,
  *      10(1):8. doi:10.1186/s40798-024-00674-z
- *      → 碳水操控 3-12 g/kg；水分切割 ~1.5-3% BW
+ *      → 碳水 3-12 g/kg 範圍極寬（故本系統保守起手+視覺校準）；⚠️「水分切割 ~1.5-3% BW」**不採用**（天然選手脱水會被弄扁）
  *
  * ── 動態能量密度 ──
  * [15] Hall KD (2008). What is the required energy deficit per unit weight loss?
@@ -274,7 +274,7 @@ export interface NutritionSuggestion {
     suggestedDailySteps?: number     // 建議每日步數
     cardioNote?: string              // 有氧建議說明
     // Peak Week 體重三層拆分（備賽專用）
-    peakWeekWaterCutPct?: number     // 預估 Peak Week 淨脫重百分比（預設 2%）
+    peakWeekWaterCutPct?: number     // Peak Week 自然波動（肝醣/腸道）百分比（預設 0.5%，非脱水操作）
     prePeakEntryWeight?: number      // Peak Week 入場目標體重
     dietWeightToLose?: number        // 需要靠飲食減掉的量 (kg)
     peakWeekExpectedLoss?: number    // Peak Week 預估可處理的量 (kg)
@@ -4231,9 +4231,10 @@ function generateAthleticCompetition(input: NutritionInput): NutritionSuggestion
 }
 
 // ===== Peak Week 引擎 =====
-// 基於 Escalante 2021 [12] + Barakat 2022 [13] + Homer/Helms 2024 [14] + Kistler 2024 [15]
-// [15] 指出：碳水超補有效（肌肉厚度 +2%, 皮下 -2%），但水分 ICW/ECW 轉移的精確機制尚缺嚴格 RCT
-// 每日協議含：巨量營養素、水分、鈉、鉀、纖維、訓練、食物選擇、肌酸、Posing、Pump-up
+// 天然選手 back-load 協議（依 Helms《The Muscle & Strength Pyramid: Nutrition》Ch.7）
+// 碳水超補有效（肌肉厚度 +2%, 皮下 -2%）；但**不做**掏空、脱水、鈉鉀操控——那些對天然選手
+// 沒有生理根據（見 PEAK_WEEK 常數的說明）。每日協議含：巨量營養素、水分、鈉、鉀、纖維、
+// 訓練、食物選擇、肌酸、Posing、Pump-up
 
 function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo?: MenstrualCycleInfo): NutritionSuggestion {
   const bw = input.bodyWeight
@@ -4312,10 +4313,20 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
   // ⚠️ Phase 落差護欄（必須在基因區之後算，因為基因保護會把低碳日抬到 3.0-3.5）
   //    若不夾住：重量級/女性比例下修後的「超補量」可能低於低碳日 → 超補期形同不存在，
   //    還會踩掉血清素保護。所有 phase 的順序必須恆為：低碳 < 過渡 < 超補，且低碳 ≤ taper ≤ 超補。
-  const PHASE_GAP = 1.0  // 超補日至少比低碳日高 1.0 g/kg
-  const loadingCarb = Math.max(loadingCarbRaw, Math.round((depletionCarbGPerKg + PHASE_GAP) * 10) / 10)
+  // 超補日至少比低碳日高 PHASE_GAP；但**不得超過該性別的基準量**——否則基因保護（把低碳日
+  // 抬到 3.0-3.5）會默默廢掉「女性較保守」與「重量級 GI 護欄」（女性 SS 曾被抬到 4.5 > 女性基準 4.0）
+  const PHASE_GAP = 0.5
+  const loadingCarb = Math.min(
+    Math.max(loadingCarbRaw, Math.round((depletionCarbGPerKg + PHASE_GAP) * 10) / 10),
+    baseLoadingCarb,
+  )
+  // Taper：略收，但必須**嚴格高於**低碳日——只用 max(等比, depletion) 會讓 taper 塌回整週最低，
+  // 等於上台前一天吃最少碳、飽滿度掉光，正是 Helms 協議最不想要的結果。上限不超過超補日。
   const taperCarb = Math.min(
-    Math.max(Math.round(loadingCarb * (baseTaperCarb / baseLoadingCarb) * 10) / 10, depletionCarbGPerKg),
+    Math.max(
+      Math.round(loadingCarb * (baseTaperCarb / baseLoadingCarb) * 10) / 10,
+      Math.round((depletionCarbGPerKg + 0.3) * 10) / 10,
+    ),
     loadingCarb,
   )
 
@@ -4769,7 +4780,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
       ] : []),
       // 碳水超補量說明（體重調整 + 女性調整）
       ...(loadingCarb !== baseLoadingCarb ? [
-        `📋 碳水超補量已依體重調整：${loadingCarb}g/kg（基準 ${baseLoadingCarb}g/kg）— 體重 ${bw}kg 時絕對量為 ${Math.round(bw * loadingCarb)}g，維持在腸胃可負荷範圍（Kistler 2024: 建議範圍 3-12g/kg）`,
+        `📋 碳水超補量已調整：${loadingCarb}g/kg（基準 ${baseLoadingCarb}g/kg）— 依體重下修，並確保仍高於低碳日${depletionCarbGPerKg > PEAK_WEEK.DEPLETION_CARB_G_PER_KG ? '（你的基因型已把低碳日碳水拉高）' : ''}。體重 ${bw}kg 時絕對量為 ${Math.round(bw * loadingCarb)}g，維持在腸胃可負荷範圍`,
       ] : []),
       ...(isFemale ? [
         `📋 女性碳水超補量已調整為 ${loadingCarb}g/kg（男性基準 ${PEAK_WEEK.LOADING_CARB_G_PER_KG}g/kg）— 女性肝醣超補反應通常較男性保守，過量碳水多半只增加腸胃不適而非更多肝醣儲存。`,

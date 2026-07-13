@@ -299,7 +299,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
             </div>
           </div>
           <p className="text-[11px] text-slate-400 mt-1.5 text-center">
-            自然波動預估（{Math.round((dl.peakWeekWaterCutPct || 0.005) * 100)}% BW）— 乾相靠賽前減脂，非水分操作
+            自然波動預估（{((dl.peakWeekWaterCutPct || 0.005) * 100).toFixed(1)}% BW）— 乾相靠賽前減脂，非水分操作
           </p>
         </div>
       )}

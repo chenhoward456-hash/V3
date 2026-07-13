@@ -455,9 +455,11 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                     setDailyWeights(prev => ({ ...prev, [day.date]: val }))
                     if (isCarb && val) {
                       const w = parseFloat(val)
-                      const threshold = 1.5
+                      // 取引擎兩性閾值中較保守者（引擎：女 1.0 / 男 1.5），寧可早一步提示；
+                      // 正式判定仍以引擎的 spillOverWarning 為準（引擎比的是 Day 7 基線，非前一天）
+                      const threshold = 1.0
                       if (prevDayWeight && w - prevDayWeight > threshold) {
-                        setSpilloverNote(`Day ${day.daysOut}：體重增幅 ${(w - prevDayWeight).toFixed(1)}kg 超過閾值 ${threshold}kg，明天碳水降約 30%（防止溢出到皮下、蓋掉線條）`)
+                        setSpilloverNote(`Day ${day.daysOut}：比前一天增加 ${(w - prevDayWeight).toFixed(1)}kg（超過 ${threshold}kg）→ 留意溢出，明天碳水可能要降約 30%（正式判定看引擎）`)
                       } else {
                         setSpilloverNote(null)
                       }
