@@ -689,16 +689,16 @@ export function generateSupplementSuggestions(
       })
     }
 
-    // 備賽 + 任何基因風險：電解質管理（脫水期尤其重要）
+    // 備賽：維持習慣電解質攝取（本協議不脱水、不操控水鈉）
     if (isPeakWeek) {
       const alreadyHasElectrolytes = suggestions.some(s => s.name.includes('電解質'))
       if (!alreadyHasElectrolytes) {
         suggestions.push({
           name: '電解質（鈉鉀鎂配方）',
-          dosage: '依 Peak Week 計畫調整',
+          dosage: '維持平常量即可',
           timing: '全天分次攝取',
-          reason: 'Peak Week 水鈉操控期間電解質平衡至關重要。基因風險者（特別是心血管相關 APOE4）需更謹慎監控電解質狀態，避免極端脫水。',
-          priority: 'high',
+          reason: 'Peak Week 全程維持習慣的水分與鈉攝取（不脱水、不斷鈉、不加鉀）。此補劑僅用於維持日常電解質平衡穩定，不作為任何脱水或水分操控用途。',
+          priority: 'low',
           evidence: 'Chappell & Simper 2018 (Sports (Basel), PMID 30352979)：自然健美備賽 Peak Week 問卷調查',
           triggerTests: [],
           category: 'performance',
