@@ -338,6 +338,8 @@ export async function GET(request: NextRequest) {
             return filtered.length > 0 ? filtered : undefined
           })()
         : undefined,
+      // 教練自訂 Peak Week 逐日課表（教練設定優先於引擎 — 紅線 3）
+      coachPeakWeekPlan: client.coach_peak_week_plan ?? null,
     }
 
     // 9. 執行引擎

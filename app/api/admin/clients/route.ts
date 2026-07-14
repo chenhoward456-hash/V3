@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
       'health_goals', 'quarterly_cycle_start',
       'gene_mthfr', 'gene_apoe', 'gene_depression_risk', 'gene_notes',
       'training_plan', 'training_experience',
+      'coach_peak_week_plan',
     ]
     const sanitizedClientData: Record<string, unknown> = {}
     if (clientData && typeof clientData === 'object') {
@@ -211,6 +212,7 @@ export async function PUT(request: NextRequest) {
       'health_goals', 'quarterly_cycle_start',
       'gene_mthfr', 'gene_apoe', 'gene_depression_risk', 'gene_notes',
       'training_plan', 'training_experience',
+      'coach_peak_week_plan',
     ]
     const sanitizedClientData: Record<string, unknown> = {}
     if (clientData && typeof clientData === 'object') {

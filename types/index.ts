@@ -110,6 +110,26 @@ export interface Client {
     previous_values?: Record<string, number | null>
     reason?: string | null
   } | null
+  /**
+   * 教練自訂 Peak Week 逐日課表（教練設定優先於引擎）。
+   * null = 完全照引擎公式。有值時引擎會逐日覆寫（只覆寫有填的欄位）。
+   */
+  coach_peak_week_plan: {
+    days: {
+      date: string          // ISO date，必填
+      label?: string
+      carbs?: number        // g
+      protein?: number      // g
+      fat?: number          // g
+      water?: number        // mL
+      sodiumMg?: number
+      trainingNote?: string
+      foodNote?: string
+      coachNote?: string
+    }[]
+    authoredAt?: string
+    authorNote?: string
+  } | null
   next_checkup_date: string | null
   quarterly_cycle_start: string | null
   created_at: string

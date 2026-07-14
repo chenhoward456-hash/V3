@@ -8,6 +8,10 @@ interface PeakWeekDay {
   date: string
   label: string
   phase: 'depletion' | 'fat_load' | 'carb_load' | 'taper' | 'show_day'
+  /** 這天是否被教練的自訂課表覆寫 */
+  coachOverride?: boolean
+  /** 教練備註（自訂課表才有） */
+  coachNote?: string
   carbs: number
   protein: number
   fat: number
@@ -128,7 +132,14 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
       {/* 標題 */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-gray-900">Peak Week 計畫</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-gray-900">Peak Week 計畫</h2>
+          {plan.some(d => d.coachOverride) && (
+            <span className="text-[11px] font-medium text-primary-700 bg-primary-50 border border-primary-200 px-2 py-0.5 rounded-full">
+              教練自訂
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setExpandAll(!expandAll); if (!expandAll) setExpandedDay(null) }}
@@ -317,6 +328,14 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                 <p className="font-semibold text-gray-700 mb-0.5">訓練</p>
                 <p className="text-gray-600">{focusPlan.trainingNote}</p>
               </div>
+
+              {/* 教練備註（自訂課表才有，例如「晚上看外觀決定隔天碳水」） */}
+              {focusPlan.coachNote && (
+                <div className="bg-primary-50 border border-primary-200 rounded-lg px-3 py-2">
+                  <p className="font-semibold text-primary-800 mb-0.5">教練備註</p>
+                  <p className="text-primary-700">{focusPlan.coachNote}</p>
+                </div>
+              )}
 
               {/* Posing */}
               {focusPlan.posingNote && (

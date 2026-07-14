@@ -218,6 +218,33 @@ export interface NutritionInput {
 
   // Peak Week 每日實際體重（用於碳水超補溢出回饋機制）
   peakWeekDailyWeights?: { date: string; weight: number }[]
+
+  // 教練自訂 Peak Week 逐日課表（clients.coach_peak_week_plan）
+  // 教練設定優先於引擎（CLAUDE.md 紅線 3）：有課表時逐日覆寫引擎產生的計畫，
+  // 只覆寫教練「有填」的欄位，其餘 fallback 引擎值。
+  // 存在理由：peak week 最吃教練的個人判斷（學員實測充碳量、要用哪種節奏、
+  // low 是碳循環還是單一值…），這些通用公式算不出來。
+  coachPeakWeekPlan?: CoachPeakWeekPlan | null
+}
+
+/** 教練自訂 Peak Week 課表 — date 以外全部選填，只有填了的欄位才覆寫引擎值 */
+export interface CoachPeakWeekPlanDay {
+  date: string          // ISO date，必填（對應到引擎那天）
+  label?: string
+  carbs?: number        // g（絕對值；g/kg 由引擎依體重回推）
+  protein?: number      // g
+  fat?: number          // g
+  water?: number        // mL
+  sodiumMg?: number
+  trainingNote?: string
+  foodNote?: string
+  coachNote?: string    // 教練備註（例：拍基準照 / 晚上看外觀定隔天）
+}
+
+export interface CoachPeakWeekPlan {
+  days: CoachPeakWeekPlanDay[]
+  authoredAt?: string
+  authorNote?: string
 }
 
 export interface NutritionSuggestion {
@@ -371,7 +398,11 @@ export interface GeneticCorrection {
 export interface PeakWeekDay {
   daysOut: number       // 距比賽天數（7=7天前, 0=比賽日）
   date: string          // ISO date
-  label: string         // 例如 'Day 7 - 碳水耗竭 + 上半身'
+  label: string         // 例如 'Day 3 - 低碳日'
+  /** 這天是否被教練的自訂課表覆寫（前端用來標示「教練自訂」） */
+  coachOverride?: boolean
+  /** 教練備註（例：拍基準照 / 晚上看外觀決定隔天） */
+  coachNote?: string
   phase: 'depletion' | 'fat_load' | 'carb_load' | 'taper' | 'show_day'
   carbsGPerKg: number
   proteinGPerKg: number
@@ -4734,6 +4765,49 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     }
 
     plan.push(day)
+  }
+
+  // ===== 教練自訂課表覆寫（教練設定優先於引擎 — CLAUDE.md 紅線 3）=====
+  // 為什麼需要：peak week 是全備賽流程裡最吃教練個人判斷的一段——學員實測灌多少碳才圓滿、
+  // 要用哪種節奏（峰值放賽前 2 天還是 1 天）、他的 low 是碳循環還是單一值……通用公式算不出來。
+  // 行為：只覆寫教練「有填」的欄位，其餘沿用引擎值；熱量與 g/kg 依覆寫後的值重算。
+  const coachDays = input.coachPeakWeekPlan?.days
+  if (coachDays?.length) {
+    for (const day of plan) {
+      const c = coachDays.find(d => d.date === day.date)
+      if (!c) continue
+      day.coachOverride = true
+      if (c.label) day.label = c.label
+      if (c.carbs != null) {
+        day.carbs = Math.round(c.carbs)
+        day.carbsGPerKg = Math.round((c.carbs / bw) * 10) / 10
+      }
+      if (c.protein != null) {
+        day.protein = Math.round(c.protein)
+        day.proteinGPerKg = Math.round((c.protein / bw) * 10) / 10
+      }
+      if (c.fat != null) {
+        day.fat = Math.round(c.fat)
+        day.fatGPerKg = Math.round((c.fat / bw) * 10) / 10
+      }
+      if (c.water != null) {
+        day.water = Math.round(c.water)
+        day.waterMlPerKg = Math.round(c.water / bw)
+      }
+      if (c.sodiumMg != null) day.sodiumMg = Math.round(c.sodiumMg)
+      if (c.trainingNote) day.trainingNote = c.trainingNote
+      if (c.foodNote) day.foodNote = c.foodNote
+      if (c.coachNote) day.coachNote = c.coachNote
+      // 熱量一律由覆寫後的 macro 重算，否則畫面會出現「三大營養素加總 ≠ 熱量」
+      day.calories = Math.round(day.protein * 4 + day.carbs * 4 + day.fat * 9)
+    }
+
+    // 防溢 override 與教練值衝突時，教練優先——但警告要改口徑，
+    // 不能還說「系統已自動調降」（實際上沒有，教練值蓋過去了）
+    const day2 = plan.find(p => p.daysOut === 2)
+    if (spillOverWarning && day2?.coachOverride) {
+      spillOverWarning = `⚠️ Day 2 晨重增幅超過閾值（可能溢出），但 Day 2 碳水已由教練自訂為 ${day2.carbs}g — 系統不自動調降。請依當晚視覺評估決定是否要收碳。`
+    }
   }
 
   // 找到今天的計畫（使用 UTC+8 避免時區問題）

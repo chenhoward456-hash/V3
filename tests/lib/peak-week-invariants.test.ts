@@ -188,6 +188,60 @@ describe('比賽日鈉：day-level 與時間軸必須一致，且不得低於平
   })
 })
 
+describe('教練自訂課表覆寫（教練設定優先於引擎 — 紅線 3）', () => {
+  const bw = 80
+  const day2Date = daysFromNow(5)   // targetDate = +7 → 這天 daysOut = 2
+
+  it('教練填的欄位覆寫引擎值；沒填的 fallback 引擎值', () => {
+    const engineDay2 = generateNutritionSuggestion(peakInput())
+      .peakWeekPlan!.find(d => d.daysOut === 2)!
+
+    const coachDay2 = generateNutritionSuggestion(peakInput({
+      coachPeakWeekPlan: {
+        days: [{ date: day2Date, label: '峰值', carbs: 440, trainingNote: '輕 pump 循環' }],
+      },
+    } as Partial<NutritionInput>)).peakWeekPlan!.find(d => d.daysOut === 2)!
+
+    // 教練有填的 → 覆寫
+    expect(coachDay2.carbs).toBe(440)
+    expect(coachDay2.label).toBe('峰值')
+    expect(coachDay2.trainingNote).toBe('輕 pump 循環')
+    expect(coachDay2.coachOverride).toBe(true)
+
+    // 教練沒填的 → 沿用引擎值
+    expect(coachDay2.protein).toBe(engineDay2.protein)
+    expect(coachDay2.fat).toBe(engineDay2.fat)
+    expect(coachDay2.sodiumMg).toBe(engineDay2.sodiumMg)
+    expect(coachDay2.waterMlPerKg).toBe(engineDay2.waterMlPerKg)
+
+    // g/kg 與熱量依覆寫後的值重算（否則畫面會出現「三大營養素加總 ≠ 熱量」）
+    expect(coachDay2.carbsGPerKg).toBeCloseTo(440 / bw, 1)
+    expect(coachDay2.calories).toBe(
+      Math.round(coachDay2.protein * 4 + 440 * 4 + coachDay2.fat * 9)
+    )
+  })
+
+  it('沒有教練課表時行為完全不變（不影響既有學員）', () => {
+    const engine = generateNutritionSuggestion(peakInput()).peakWeekPlan!
+    const withNull = generateNutritionSuggestion(peakInput({
+      coachPeakWeekPlan: null,
+    } as Partial<NutritionInput>)).peakWeekPlan!
+
+    expect(withNull).toEqual(engine)
+    expect(withNull.every(d => !d.coachOverride)).toBe(true)
+  })
+
+  it('只覆寫日期有對到的那幾天，其他天完全不動', () => {
+    const plan = generateNutritionSuggestion(peakInput({
+      coachPeakWeekPlan: { days: [{ date: day2Date, carbs: 440 }] },
+    } as Partial<NutritionInput>)).peakWeekPlan!
+
+    const overridden = plan.filter(d => d.coachOverride)
+    expect(overridden.length).toBe(1)
+    expect(overridden[0].daysOut).toBe(2)
+  })
+})
+
 describe('水分：全程不做灌水/切水（天然協議）', () => {
   it('每一天的 waterMlPerKg 都相同——沒有任何一天被拉高或砍掉', () => {
     const plan = generateNutritionSuggestion(peakInput()).peakWeekPlan!

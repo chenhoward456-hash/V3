@@ -104,6 +104,23 @@ interface Client {
 
   training_plan: any | null
   training_experience: 'beginner' | 'intermediate' | 'advanced' | null
+  /** 教練自訂 Peak Week 逐日課表（優先於引擎公式；null = 照引擎） */
+  coach_peak_week_plan: {
+    days: {
+      date: string
+      label?: string
+      carbs?: number
+      protein?: number
+      fat?: number
+      water?: number
+      sodiumMg?: number
+      trainingNote?: string
+      foodNote?: string
+      coachNote?: string
+    }[]
+    authoredAt?: string
+    authorNote?: string
+  } | null
 
   lab_results: LabResult[]
   supplements: Supplement[]
@@ -132,6 +149,10 @@ export default function ClientEditor() {
   const [trainingPlanText, setTrainingPlanText] = useState('')
   const [trainingPlanParseError, setTrainingPlanParseError] = useState('')
   const [showTrainingPlanPreview, setShowTrainingPlanPreview] = useState(true)
+  // 教練自訂 Peak Week 逐日課表（教練設定優先於引擎）
+  const [peakWeekPlanText, setPeakWeekPlanText] = useState('')
+  const [peakWeekParseError, setPeakWeekParseError] = useState('')
+  const [loadingPeakDraft, setLoadingPeakDraft] = useState(false)
 
   // Issue 1: Unsaved changes tracking
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -290,6 +311,7 @@ export default function ClientEditor() {
         gene_depression_risk: null,
         gene_notes: null,
         training_plan: null,
+        coach_peak_week_plan: null,
         training_experience: 'intermediate',
 
         lab_results: [],
@@ -803,6 +825,143 @@ export default function ClientEditor() {
       setTrainingPlanText(serializeTrainingPlan(client.training_plan))
     }
   }, [client?.training_plan])
+
+  // ===== 教練自訂 Peak Week 逐日課表 =====
+  // 為什麼要有：peak week 最吃教練判斷（學員實測灌多少碳才圓滿、峰值放賽前 2 天還是 1 天、
+  // low 是碳循環還是單一值…），通用引擎算不出來。有課表 → 引擎逐日覆寫（只覆寫有填的欄位）。
+  const serializePeakWeekPlan = (plan: any): string => {
+    if (!plan?.days?.length) return ''
+    const lines: string[] = []
+    if (plan.authorNote) { lines.push(`備註：${plan.authorNote}`); lines.push('') }
+    for (const d of plan.days) {
+      if (!d?.date) continue
+      const [, m, dd] = d.date.split('-')
+      const md = `${parseInt(m)}/${parseInt(dd)}`
+      const macro: string[] = []
+      if (d.carbs != null) macro.push(`碳${d.carbs}`)
+      if (d.protein != null) macro.push(`蛋${d.protein}`)
+      if (d.fat != null) macro.push(`脂${d.fat}`)
+      if (d.water != null) macro.push(`水${d.water}`)
+      if (d.sodiumMg != null) macro.push(`鈉${d.sodiumMg}`)
+      const segs: string[] = []
+      if (macro.length) segs.push(macro.join(' '))
+      if (d.trainingNote) segs.push(`訓練：${d.trainingNote}`)
+      if (d.foodNote) segs.push(`食物：${d.foodNote}`)
+      if (d.coachNote) segs.push(`備註：${d.coachNote}`)
+      lines.push([`${md} ${d.label || ''}`.trim(), ...segs].join(' | '))
+    }
+    return lines.join('\n')
+  }
+
+  const parsePeakWeekText = (text: string) => {
+    setPeakWeekParseError('')
+    if (!text.trim()) {
+      updateClient('coach_peak_week_plan', null)
+      return
+    }
+    try {
+      const compYear = client?.competition_date
+        ? parseInt(client.competition_date.split('-')[0])
+        : new Date().getFullYear()
+      const pad = (s: string) => s.padStart(2, '0')
+      const days: any[] = []
+      let authorNote = ''
+
+      for (const raw of text.split('\n')) {
+        const line = raw.trim()
+        if (!line) continue
+
+        // 頂部備註行（不以日期開頭）
+        if (!/^\d/.test(line)) {
+          const tn = line.match(/^備註[\s：:]+(.+)$/)
+          if (tn) { authorNote = tn[1].trim() }
+          continue
+        }
+
+        // 日期：7/23 或 2026-07-23
+        const dm = line.match(/^(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}\/\d{1,2})\s*(.*)$/)
+        if (!dm) continue
+        let date: string
+        if (dm[1].includes('/')) {
+          const [mm, dd] = dm[1].split('/')
+          date = `${compYear}-${pad(mm)}-${pad(dd)}`
+        } else {
+          const [yy, mm, dd] = dm[1].split('-')
+          date = `${yy}-${pad(mm)}-${pad(dd)}`
+        }
+
+        const parts = dm[2].split(/[|｜]/).map(s => s.trim()).filter(Boolean)
+        const day: any = { date }
+
+        // 第一段若不是「欄位：值」也不是數值段 → 當作 label
+        if (parts.length && !/^(訓練|食物|備註)[\s：:]/.test(parts[0]) && !/[碳蛋脂水鈉]\s*\d/.test(parts[0])) {
+          day.label = parts.shift()!.trim()
+        }
+
+        for (const p of parts) {
+          const tr = p.match(/^訓練[\s：:]+(.+)$/); if (tr) { day.trainingNote = tr[1].trim(); continue }
+          const fo = p.match(/^食物[\s：:]+(.+)$/); if (fo) { day.foodNote = fo[1].trim(); continue }
+          const no = p.match(/^備註[\s：:]+(.+)$/); if (no) { day.coachNote = no[1].trim(); continue }
+          const carb = p.match(/碳\s*(\d+)/); if (carb) day.carbs = parseInt(carb[1])
+          const pro = p.match(/蛋\s*(\d+)/); if (pro) day.protein = parseInt(pro[1])
+          const fat = p.match(/脂\s*(\d+)/); if (fat) day.fat = parseInt(fat[1])
+          const wat = p.match(/水\s*(\d+)/); if (wat) day.water = parseInt(wat[1])
+          const na = p.match(/鈉\s*(\d+)/); if (na) day.sodiumMg = parseInt(na[1])
+        }
+        days.push(day)
+      }
+
+      if (days.length === 0) {
+        setPeakWeekParseError('沒有解析到任何一天。每行格式：7/23 Low·訓練日 | 碳236 蛋186 脂50 | 訓練：... | 備註：...')
+        return
+      }
+
+      const plan: any = { days, authoredAt: new Date().toISOString() }
+      if (authorNote) plan.authorNote = authorNote
+      updateClient('coach_peak_week_plan', plan)
+    } catch {
+      setPeakWeekParseError('解析失敗，請檢查格式')
+    }
+  }
+
+  // 一鍵把引擎算出來的 7 天當草稿載進來（教練再手改）
+  const loadEnginePeakDraft = async () => {
+    if (!client?.unique_code) return
+    setLoadingPeakDraft(true)
+    setPeakWeekParseError('')
+    try {
+      const res = await fetch(`/api/nutrition-suggestions?clientId=${client.unique_code}&code=${client.unique_code}`)
+      const json = await res.json()
+      const enginePlan = json?.suggestion?.peakWeekPlan
+      if (!enginePlan?.length) {
+        setPeakWeekParseError('引擎目前沒有 peak week 計畫（需要比賽日期，且距比賽 ≤ 14 天）')
+        return
+      }
+      setPeakWeekPlanText(serializePeakWeekPlan({
+        days: enginePlan.map((d: any) => ({
+          date: d.date,
+          label: d.label,
+          carbs: d.carbs,
+          protein: d.protein,
+          fat: d.fat,
+          water: d.water,
+          sodiumMg: d.sodiumMg,
+          trainingNote: d.trainingNote,
+        })),
+      }))
+    } catch {
+      setPeakWeekParseError('載入引擎草稿失敗')
+    } finally {
+      setLoadingPeakDraft(false)
+    }
+  }
+
+  // Initialize peak week plan text from existing data
+  useEffect(() => {
+    if (client?.coach_peak_week_plan && !peakWeekPlanText) {
+      setPeakWeekPlanText(serializePeakWeekPlan(client.coach_peak_week_plan))
+    }
+  }, [client?.coach_peak_week_plan])
 
   // Fetch system nutrition suggestions for displaying alongside override
   useEffect(() => {
@@ -2252,6 +2411,97 @@ export default function ClientEditor() {
                       <div className="text-[11px] mt-0.5 opacity-75">{opt.desc}</div>
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Peak Week 逐日課表（教練自訂，優先於引擎公式） */}
+            {client.competition_enabled && client.competition_date && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-medium text-gray-900">Peak Week 逐日課表</h2>
+                    <p className="text-xs text-gray-400 mt-1">
+                      教練自訂，優先於引擎公式。學員在「進度」分頁的 Peak Week 卡看到（距比賽 ≤ 14 天才顯示）
+                    </p>
+                  </div>
+                  {client.coach_peak_week_plan && (
+                    <button
+                      onClick={() => {
+                        if (confirm('確定清除自訂課表？清除後回到引擎公式版。')) {
+                          updateClient('coach_peak_week_plan', null)
+                          setPeakWeekPlanText('')
+                        }
+                      }}
+                      className="text-xs text-rose-500 hover:text-rose-700 transition-colors"
+                    >
+                      清除課表
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={loadEnginePeakDraft}
+                      disabled={loadingPeakDraft}
+                      className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50"
+                    >
+                      {loadingPeakDraft ? '載入中…' : '載入引擎草稿'}
+                    </button>
+                    <span className="text-[11px] text-gray-400">先拿引擎算的 7 天當底稿，再手改成你的判斷</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      逐日課表（格式見下方說明）
+                    </label>
+                    <textarea
+                      value={peakWeekPlanText}
+                      onChange={(e) => {
+                        setPeakWeekPlanText(e.target.value)
+                        setPeakWeekParseError('')
+                      }}
+                      rows={10}
+                      placeholder={`備註：依 Helms Ch.7 節奏，峰值放賽前 2 天\n\n7/23 Low·訓練日 | 碳236 蛋186 脂50 | 訓練：最後一次較重的訓練 | 備註：拍基準照\n7/24 峰值 | 碳440 蛋150 脂40 | 訓練：輕 pump 循環 15-20下 | 備註：晚上看外觀\n7/25 收 | 碳340 | 訓練：全身 pump 含腿 + 狠練 posing | 備註：晚上判讀決定賽日\n7/26 賽日 | 碳300 鈉3000 | 訓練：短 pump（腿只小腿） | 備註：上台前補 2g 鈉`}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => parsePeakWeekText(peakWeekPlanText)}
+                      className="px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                      解析並套用
+                    </button>
+                    <span className="text-xs text-gray-400">
+                      解析後按最下方「保存」才會存入資料庫
+                    </span>
+                  </div>
+
+                  {peakWeekParseError && (
+                    <p className="text-sm text-rose-600">{peakWeekParseError}</p>
+                  )}
+
+                  {(client.coach_peak_week_plan?.days?.length ?? 0) > 0 && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                      <p className="text-xs text-emerald-700">
+                        ✓ 已套用 {client.coach_peak_week_plan!.days.length} 天自訂課表（存檔後生效；學員端該日會標示「教練自訂」）
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="bg-gray-50 rounded-lg px-3 py-2">
+                    <p className="text-[11px] text-gray-400 leading-relaxed">
+                      格式：每行一天 —「<strong>日期 標籤 | 碳X 蛋X 脂X 水X 鈉X | 訓練：… | 食物：… | 備註：…</strong>」，各段以 | 分隔。
+                      日期可寫 <strong>7/23</strong> 或 <strong>2026-07-23</strong>。
+                      <br />
+                      <strong>只有填了的欄位才覆寫引擎值</strong>，沒填的沿用引擎算的（例如只寫「碳440」就只改碳水，蛋白/脂肪/水/鈉照引擎）。
+                      <br />
+                      第一行可寫「備註：…」記錄你的用意（例如為什麼峰值放這天）。沒有這張課表 → 完全照引擎公式，行為不變。
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
