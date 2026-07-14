@@ -11,6 +11,8 @@ interface QuickActionsProps {
     daysLeft?: number | null
     todayCarbs?: number | null
     isTrainingDay?: boolean
+    /** Peak week 期間當天的階段標籤（如「🔺 峰值」「賽日」）；有值時取代訓練日/休息日 */
+    peakLabel?: string | null
     streak?: number | null
   }
   /** 一鍵記今天體重：今天還沒量時，直接在最上面打一個數字就好（不用展開、不用開 modal） */
@@ -149,7 +151,7 @@ export default function QuickActions({ enabledSections, onNavigate, topSummary, 
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2 text-sm text-gray-700">
             {topSummary.todayCarbs != null && (
-              <span className="text-gray-500">今天碳水 <span className="font-semibold text-slate-700 tabular-nums">{topSummary.todayCarbs}g</span>（{topSummary.isTrainingDay ? '訓練日' : '休息日'}）</span>
+              <span className="text-gray-500">今天碳水 <span className="font-semibold text-slate-700 tabular-nums">{topSummary.todayCarbs}g</span>（{topSummary.peakLabel || (topSummary.isTrainingDay ? '訓練日' : '休息日')}）</span>
             )}
           </div>
           {topSummary.streak != null && topSummary.streak >= 3 && (

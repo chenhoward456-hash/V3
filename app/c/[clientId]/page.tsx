@@ -545,6 +545,14 @@ export default function ClientDashboard() {
 
   // 營養引擎分析結果（傳給 AI Chat 用）
   const [nutritionEngineSuggestion, setNutritionEngineSuggestion] = useState<NutritionSuggestion | null>(null)
+
+  // Peak week 期間，「今天要吃多少」的真相是 peakWeekPlan（教練自訂或引擎版），不是 clients 表的 macro 設定。
+  // 因為 coached/protocol tier 的 macro 不會被 autoApply 改（那道保護是對的，不然引擎會亂改教練設的值），
+  // 所以今日卡若直接讀 macro，會出現「今日卡說碳水 100g、Peak Week 卡說 440g」的矛盾。
+  const peakDayForSelected = useMemo(
+    () => nutritionEngineSuggestion?.peakWeekPlan?.find(d => d.date === selectedDate) ?? null,
+    [nutritionEngineSuggestion?.peakWeekPlan, selectedDate]
+  )
   const [coachOverrideInfo, setCoachOverrideInfo] = useState<{
     expiresAt: string | null
     reason: string | null
@@ -1080,10 +1088,13 @@ export default function ClientDashboard() {
             topSummary={{
               weight: latestBodyData?.weight,
               daysLeft: c.competition_date ? daysUntilDateTW(c.competition_date) : null,
-              todayCarbs: (c.carbs_training_day && c.carbs_rest_day)
-                ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day)
-                : c.carbs_target, // 跟飲食卡/今日指令/達標一致（碳循環當日值）
+              // Peak week 期間優先用當天的 peak 計畫（教練自訂 > 引擎），否則走碳循環當日值
+              todayCarbs: peakDayForSelected?.carbs
+                ?? ((c.carbs_training_day && c.carbs_rest_day)
+                  ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day)
+                  : c.carbs_target),
               isTrainingDay: isTrainingDayResolved,
+              peakLabel: peakDayForSelected?.label ?? null,
               streak: overallStreak,
             }}
             onNavigate={(sectionId) => {
@@ -1128,19 +1139,25 @@ export default function ClientDashboard() {
               try {
                 // 「達標」= 今天照飲食卡上看到的目標吃 → 碳循環時用當日(訓練/休息)值，
                 // 例：訓練日 = carbs_training_day(236)，不是 base 177、更不是引擎另算的 301。熱量跟著巨量算、水分一起填。
-                const effCarbs = (c.carbs_training_day && c.carbs_rest_day)
-                  ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day)
-                  : c.carbs_target
-                const effCals = (c.protein_target != null && effCarbs != null && c.fat_target != null)
-                  ? Math.round(c.protein_target * 4 + effCarbs * 4 + c.fat_target * 9)
+                // Peak week 期間「達標」= 照 peak 計畫吃（教練自訂 > 引擎），不是 macro 設定值，
+                // 否則學員按「達標」會記成 100g，但他實際照計畫吃了 440g
+                const effCarbs = peakDayForSelected?.carbs
+                  ?? ((c.carbs_training_day && c.carbs_rest_day)
+                    ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day)
+                    : c.carbs_target)
+                const effProtein = peakDayForSelected?.protein ?? c.protein_target
+                const effFat = peakDayForSelected?.fat ?? c.fat_target
+                const effWater = peakDayForSelected?.water ?? c.water_target
+                const effCals = (effProtein != null && effCarbs != null && effFat != null)
+                  ? Math.round(effProtein * 4 + effCarbs * 4 + effFat * 9)
                   : (c.calories_target ?? null)
                 const macros = compliant
                   ? {
                       calories: effCals,
-                      protein_grams: c.protein_target ?? null,
+                      protein_grams: effProtein ?? null,
                       carbs_grams: effCarbs ?? null,
-                      fat_grams: c.fat_target ?? null,
-                      water_ml: c.water_target ?? null,
+                      fat_grams: effFat ?? null,
+                      water_ml: effWater ?? null,
                     }
                   : {}
                 const res = await fetch('/api/nutrition-logs', {
