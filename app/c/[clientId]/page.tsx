@@ -13,6 +13,7 @@ import CollapsibleSection from '@/components/client/CollapsibleSection'
 import NewUserLanding, { shouldUseNewUserMode } from '@/components/client/NewUserLanding'
 import QuickActions from '@/components/client/QuickActions'
 import EngineStatusLine from '@/components/client/EngineStatusLine'
+import PostCompetitionRecovery from '@/components/client/PostCompetitionRecovery'
 import UpgradeGate from '@/components/client/UpgradeGate'
 import UpgradeWelcome from '@/components/client/UpgradeWelcome'
 import HealthOverview from '@/components/client/HealthOverview'
@@ -1035,7 +1036,7 @@ export default function ClientDashboard() {
                     <div className="flex items-center gap-3">
                       <div>
                         <p className="text-sm font-bold">進入賽後恢復期</p>
-                        <p className="text-xs font-normal opacity-80">2-4 週 reverse diet + 漸進恢復訓練</p>
+                        <p className="text-xs font-normal opacity-80">熱量直接回到維持量 · 重訓不停</p>
                       </div>
                     </div>
                   </button>
@@ -1065,6 +1066,34 @@ export default function ClientDashboard() {
                   </button>
                 </div>
               </div>
+            )
+          })()}
+
+          {/* 賽後恢復卡 — Recovery Diet（不是 reverse diet），數字來自 lib/recovery-diet.ts 引擎 */}
+          {view === 'home' && c.prep_phase === 'recovery' && (() => {
+            const s = nutritionEngineSuggestion
+            const daysPost = c.competition_date ? Math.max(0, -daysUntilDateTW(c.competition_date)) : 0
+            return (
+              <SectionErrorBoundary name="賽後恢復">
+                <PostCompetitionRecovery
+                  daysPostCompetition={daysPost}
+                  onSetNextCompetition={() => handlePrepPhaseChange('off_season')}
+                  recovery={
+                    s?.postCompetitionRecovery
+                      ? {
+                          phaseLabel: s.statusLabel?.split('·')[1]?.trim() ?? '',
+                          calories: s.suggestedCalories,
+                          protein: s.suggestedProtein,
+                          carbs: s.suggestedCarbs,
+                          fat: s.suggestedFat,
+                          maintenanceCalories: s.estimatedTDEE,
+                          regainRatePctPerWeek: s.weeklyWeightChangeRate,
+                          eaBreached: s.energyAvailability?.level === 'critical',
+                        }
+                      : null
+                  }
+                />
+              </SectionErrorBoundary>
             )
           })()}
 

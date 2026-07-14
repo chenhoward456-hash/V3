@@ -121,6 +121,7 @@ import { type GeneticProfile, getSerotoninRiskLevel } from './supplement-engine'
 import { checkPeakWeekTrainingConflicts, formatPeakTrainingConflict } from './peak-week-training-check'
 import { generateRecoveryAssessment, type RecoveryAssessment, type RecoveryState as RecoveryEngineState } from './recovery-engine'
 import type { PrepPhase } from './client-mode'
+import { generateRecoveryDiet, RECOVERY_PHASE_LABELS, type RecoveryDietInput } from './recovery-diet'
 
 // ===== 類型定義 =====
 
@@ -948,6 +949,97 @@ function getFallbackTDEEMultiplier(activityProfile: string | undefined, isMale: 
 }
 
 // ===== 空結果模板 =====
+
+/**
+ * 賽後恢復：把 recovery-diet 引擎的結果包成 NutritionSuggestion。
+ *
+ * ⚠️ 這取代了舊的 reverse diet 邏輯（三段倍率 ×1.10/×1.15/×1.20）。那套沒有實證支持——
+ * 詳見 lib/recovery-diet.ts 檔頭。核心差異：第 1 週直接回到維持熱量，不做慢速爬升。
+ */
+type RecoveryStateFields = Pick<
+  NutritionSuggestion,
+  'currentState' | 'readinessScore' | 'wearableInsight' | 'refeedSuggested' | 'refeedReason' | 'refeedDays' | 'recoveryAssessment'
+>
+
+function buildRecoverySuggestion(
+  input: NutritionInput,
+  daysSinceComp: number,
+  gateInfo: CuttingReadinessResult,
+  stateFields: RecoveryStateFields,
+): NutritionSuggestion {
+  const recoveryInput: RecoveryDietInput = {
+    bodyWeight: input.bodyWeight,
+    gender: input.gender,
+    bodyFatPct: input.bodyFatPct ?? null,
+    height: input.height ?? null,
+    // DB 目前沒有存「賽前基線體脂」；null 會讓引擎 fallback 到 athletic 區間上緣（男 17 / 女 25）
+    baselineBodyFatPct: null,
+    daysSinceCompetition: daysSinceComp,
+    trainingDaysPerWeek: input.trainingDaysPerWeek,
+    activityProfile: input.activityProfile,
+    weeklyWeights: input.weeklyWeights,
+    currentCalories: input.currentCalories,
+    cardioMinutesPerDay: null,
+  }
+
+  const r = generateRecoveryDiet(recoveryInput)
+
+  const warnings = [...r.warnings, ...r.trainingGuidance]
+  if (gateInfo.blocked) warnings.push(...gateInfo.reasons)
+
+  const dayLabel = daysSinceComp > 0 ? `比賽已結束 ${daysSinceComp} 天。` : '賽後恢復期（未設定比賽日期）。'
+  const message =
+    `${dayLabel}目前狀態：${RECOVERY_PHASE_LABELS[r.phase]}。` +
+    `這是 Recovery Diet（恢復飲食）不是 reverse diet —— 熱量直接回到維持量 ${r.maintenanceCalories} kcal，` +
+    `不做每週小幅爬升。恢復是靠體重與能量可用性回升帶動的，慢慢爬只會拖長恢復期。` +
+    (r.actions.length > 0 ? ` 現在要做的：${r.actions[0]}` : '')
+
+  return {
+    status: 'on_track' as const,
+    statusLabel: `賽後恢復 · ${RECOVERY_PHASE_LABELS[r.phase]}`,
+    statusEmoji: '🔄',
+    message,
+    warnings,
+    suggestedCalories: r.calories,
+    suggestedProtein: r.protein,
+    suggestedCarbs: r.carbs,
+    suggestedFat: r.fat,
+    suggestedCarbsTrainingDay: null,
+    suggestedCarbsRestDay: null,
+    caloriesDelta: input.currentCalories != null ? r.calories - input.currentCalories : 0,
+    proteinDelta: input.currentProtein != null ? r.protein - input.currentProtein : 0,
+    carbsDelta: input.currentCarbs != null ? r.carbs - input.currentCarbs : 0,
+    fatDelta: input.currentFat != null ? r.fat - input.currentFat : 0,
+    estimatedTDEE: r.maintenanceCalories,
+    weeklyWeightChangeRate: r.regainRatePctPerWeek,
+    dietDurationWeeks: 0,
+    dietBreakSuggested: false,
+    bodyFatZoneInfo: null,
+    labMacroModifiers: [],
+    labTrainingModifiers: [],
+    energyAvailability: r.energyAvailability
+      ? {
+          eaKcalPerKgFFM: r.energyAvailability.eaKcalPerKgFFM,
+          level: r.energyAvailability.breached ? 'critical' : 'adequate',
+          warning: r.energyAvailability.breached
+            ? `能量可用性低於底線 ${r.energyAvailability.floor} kcal/kg 瘦體重`
+            : null,
+        }
+      : null,
+    deadlineInfo: null,
+    autoApply: true,
+    tdeeAnomalyDetected: false,
+    peakWeekPlan: null,
+    metabolicStress: null,
+    menstrualCycleNote: null,
+    perMealProteinGuide: buildPerMealProteinGuide(input.bodyWeight, r.protein),
+    geneticCorrections: [],
+    postCompetitionRecovery: true, // 標記讓 API route 重設 water_target
+    recoveryWater: r.water,
+    cuttingReadinessGate: gateInfo.blocked ? gateInfo : null,
+    ...stateFields,
+  }
+}
 
 function emptyResult(overrides: Partial<NutritionSuggestion>): NutritionSuggestion {
   return {
@@ -2020,56 +2112,9 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   // daysLeft < 0：比賽已結束 → 進入賽後恢復模式（不再卡在 Day 0）
   // Fix #4: prepPhase === 'recovery' 也可觸發賽後恢復，即使沒有 targetDate
   if (!input.targetDate && input.prepPhase === 'recovery') {
-    const bw = input.bodyWeight
-    const estimatedMaintenance = Math.round(bw * 33)
-    // Bug fix M4: 與有 targetDate 的恢復路徑對齊（+10%，蛋白質 1.8/1.6，脂肪有 floor）
-    const isMaleRecovery = input.gender !== '女性'
-    const recoveryCals = Math.round(estimatedMaintenance * 1.10)
-    const recoveryProtein = Math.round(bw * (isMaleRecovery ? 1.8 : 1.6))
-    const recoveryFat = Math.max(isMaleRecovery ? 50 : 45, Math.round(bw * 0.9))
-    const recoveryCarbs = Math.round((recoveryCals - recoveryProtein * 4 - recoveryFat * 9) / 4)
-    const recoveryWater = Math.round(bw * 40)
-
-    // 在恢復期早回前先跑 cutting gate，提供血檢異常資訊（不阻擋恢復策略）
+    // 沒有比賽日 → 無法得知賽後第幾天，一律以「第 1 週：回到維持熱量」處理
     const recoveryGateInfo = checkCuttingReadiness(input, currentState, readinessScore, null)
-    const recoveryWarnings = [
-      '🔄 賽後恢復期：優先恢復腸胃功能和荷爾蒙平衡',
-      '⚠️ 避免暴食 — 比賽後 leptin 急降，飢餓感會很強，用高蛋白+高纖維穩定食慾',
-      `📈 目前恢復倍率 ×1.0（維持量 ${estimatedMaintenance} → ${recoveryCals} kcal）`,
-      '🍽️ 以維持量進食，避免高脂高糖，讓腸胃重新適應正常食物量',
-    ]
-    if (recoveryGateInfo.blocked) {
-      recoveryWarnings.push(...recoveryGateInfo.reasons)
-    }
-
-    return {
-      status: 'on_track' as const,
-      statusLabel: '賽後恢復',
-      statusEmoji: '🔄',
-      message: `目前為賽後恢復期（反向飲食 Phase 1）。無比賽日期記錄，使用預設恢復策略：維持量進食，漸進提升熱量。建議教練設定比賽日期以啟用精確恢復計畫。`,
-      warnings: recoveryWarnings,
-      suggestedCalories: recoveryCals,
-      suggestedProtein: recoveryProtein,
-      suggestedCarbs: Math.max(recoveryCarbs, 150),
-      suggestedFat: recoveryFat,
-      suggestedCarbsTrainingDay: null,
-      suggestedCarbsRestDay: null,
-      caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
-      estimatedTDEE: estimatedMaintenance, weeklyWeightChangeRate: 0,
-      dietDurationWeeks: 0, dietBreakSuggested: false,
-      bodyFatZoneInfo: null,
-      labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
-      deadlineInfo: null,
-      autoApply: true, tdeeAnomalyDetected: false,
-      peakWeekPlan: null, metabolicStress: null,
-      menstrualCycleNote: null,
-      perMealProteinGuide: buildPerMealProteinGuide(bw, recoveryProtein),
-      geneticCorrections: [],
-      postCompetitionRecovery: true,
-      recoveryWater,
-      cuttingReadinessGate: recoveryGateInfo.blocked ? recoveryGateInfo : null,
-      ...stateFields,
-    }
+    return buildRecoverySuggestion(input, 0, recoveryGateInfo, stateFields)
   }
 
   let previewPeakWeekPlan: PeakWeekDay[] | null = null
@@ -2081,68 +2126,13 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     const rawDaysLeft = Math.round((target.getTime() - nowTWDate.getTime()) / (1000 * 60 * 60 * 24))
 
     // 比賽已結束 → 賽後恢復模式（rawDaysLeft < 0 = 比賽日已過）
+    // ⚠️ 2026-07-15 改：舊版是 reverse diet（×1.10/×1.15/×1.20 三段倍率、第 8 天後凍結）。
+    // 那套沒有實證支持，已整支換成 Recovery Diet（lib/recovery-diet.ts）：第 1 週直接回維持熱量，
+    // 用 EA 底線 + 體脂過衝當煞車、體重回增速率當方向盤。改常數前先讀 recovery-diet.ts 檔頭的引用。
     if (rawDaysLeft < 0) {
       const daysSinceComp = Math.abs(rawDaysLeft)
-      // 賽後恢復：漸進式提升熱量，避免暴食反彈
-      // 第 1-3 天：維持量 ×1.0（腸胃重新適應）
-      // 第 4-7 天：維持量 ×1.1（逐步提升）
-      // 第 8+ 天：維持量 ×1.2（正常反向飲食起點）
-      // 賽後恢復：起始 +10%，漸進到 +20% [Trexler 2017]
-      // 蛋白質 1.8 g/kg（盈餘下不需高蛋白）[Helms 2014, Morton 2018]
-      // 碳水最大化驅動 leptin 恢復 [Dirlewanger 2000, Fagerberg 2018]
-      const recoveryMultiplier = daysSinceComp <= 3 ? 1.10 : daysSinceComp <= 7 ? 1.15 : 1.20
-      const bw = input.bodyWeight
-      const isMaleRecovery = input.gender !== '女性'
-      const estimatedMaintenance = Math.round(bw * 33) // 粗估維持量
-      const recoveryCals = Math.round(estimatedMaintenance * recoveryMultiplier)
-      const recoveryProtein = Math.round(bw * (isMaleRecovery ? 1.8 : 1.6))
-      const recoveryFat = Math.max(isMaleRecovery ? 50 : 45, Math.round(bw * 0.9))
-      const recoveryCarbs = Math.round((recoveryCals - recoveryProtein * 4 - recoveryFat * 9) / 4)
-
-      const recoveryWater = Math.round(bw * 40) // 恢復期正常水量 40ml/kg
-
-      // 在恢復期早回前先跑 cutting gate，提供血檢異常資訊（不阻擋恢復策略）
       const recoveryGateInfo = checkCuttingReadiness(input, currentState, readinessScore, null)
-      const recoveryWarnings = [
-        '🔄 賽後恢復期：優先恢復腸胃功能和荷爾蒙平衡',
-        '⚠️ 避免暴食 — 比賽後 leptin 急降，飢餓感會很強，用高蛋白+高纖維穩定食慾',
-        `📈 目前恢復倍率 ×${recoveryMultiplier}（維持量 ${estimatedMaintenance} → ${recoveryCals} kcal）`,
-        ...(daysSinceComp <= 3 ? ['🍽️ 第 1-3 天：以維持量進食，避免高脂高糖，讓腸胃重新適應正常食物量'] : []),
-        ...(daysSinceComp > 3 && daysSinceComp <= 7 ? ['🍽️ 第 4-7 天：每日增加 100-150kcal，以碳水為主（恢復肝醣和代謝率）'] : []),
-        ...(daysSinceComp > 7 ? ['🍽️ 第 8+ 天：進入正式反向飲食，每週增加 100-200kcal 直到新維持量'] : []),
-      ]
-      if (recoveryGateInfo.blocked) {
-        recoveryWarnings.push(...recoveryGateInfo.reasons)
-      }
-
-      return {
-        status: 'on_track' as const,
-        statusLabel: '賽後恢復',
-        statusEmoji: '🔄',
-        message: `比賽已結束 ${daysSinceComp} 天。目前為賽後恢復期（反向飲食 Phase ${daysSinceComp <= 3 ? 1 : daysSinceComp <= 7 ? 2 : 3}），漸進提升熱量避免暴食反彈。建議教練設定新的目標或清除比賽日期。`,
-        warnings: recoveryWarnings,
-        suggestedCalories: recoveryCals,
-        suggestedProtein: recoveryProtein,
-        suggestedCarbs: Math.max(recoveryCarbs, 150), // 恢復期碳水不低於 150g
-        suggestedFat: recoveryFat,
-        suggestedCarbsTrainingDay: null,
-        suggestedCarbsRestDay: null,
-        caloriesDelta: 0, proteinDelta: 0, carbsDelta: 0, fatDelta: 0,
-        estimatedTDEE: estimatedMaintenance, weeklyWeightChangeRate: 0,
-        dietDurationWeeks: 0, dietBreakSuggested: false,
-        bodyFatZoneInfo: null,
-        labMacroModifiers: [], labTrainingModifiers: [], energyAvailability: null,
-        deadlineInfo: null,
-        autoApply: true, tdeeAnomalyDetected: false,
-        peakWeekPlan: null, metabolicStress: null,
-        menstrualCycleNote: null,
-        perMealProteinGuide: buildPerMealProteinGuide(bw, recoveryProtein),
-        geneticCorrections: [],
-        postCompetitionRecovery: true, // 標記讓 API route 重設 water_target
-        recoveryWater,
-        cuttingReadinessGate: recoveryGateInfo.blocked ? recoveryGateInfo : null,
-        ...stateFields, // 包含 refeedSuggested, refeedReason, refeedDays, currentState, readinessScore 等
-      }
+      return buildRecoverySuggestion(input, daysSinceComp, recoveryGateInfo, stateFields)
     }
 
     const daysLeft = Math.max(0, rawDaysLeft)
