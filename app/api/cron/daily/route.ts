@@ -18,6 +18,7 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { pushMessage, unlinkRichMenuFromUser } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
 import { sendPushNotification } from '@/lib/web-push'
+import { buildPeakMorningReminder, buildPeakEveningReminder } from '@/lib/peak-week-reminders'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
@@ -86,6 +87,32 @@ function getTaiwanDate(): string {
 
 function getTaiwanHour(): number {
   return parseInt(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei', hour: 'numeric', hour12: false }))
+}
+
+/** 教練自訂 peak week 課表的一天（clients.coach_peak_week_plan.days[]） */
+type PeakPlanDayRow = {
+  date: string
+  label?: string
+  carbs?: number
+  trainingNote?: string
+  coachNote?: string
+}
+
+/** 兩個日期字串之間差幾天（用 UTC+8 錨定，避免主機時區把日期推移一天） */
+function daysBetweenTW(fromDateStr: string, toDateStr: string): number {
+  const from = new Date(`${fromDateStr}T00:00:00+08:00`).getTime()
+  const to = new Date(`${toDateStr}T00:00:00+08:00`).getTime()
+  if (Number.isNaN(from) || Number.isNaN(to)) return NaN
+  return Math.round((to - from) / 86400000)
+}
+
+/** 與引擎的 phase 分段一致：7-4 低碳/IMT、3-2 充碳、1 taper、0 賽日 */
+function inferPhaseFromDaysOut(daysOut: number): 'depletion' | 'fat_load' | 'carb_load' | 'taper' | 'show_day' {
+  if (daysOut === 0) return 'show_day'
+  if (daysOut === 1) return 'taper'
+  if (daysOut <= 3) return 'carb_load'
+  if (daysOut <= 5) return 'fat_load'
+  return 'depletion'
 }
 
 export async function GET(request: NextRequest) {
@@ -618,7 +645,7 @@ export async function GET(request: NextRequest) {
   // 取得所有已綁定 LINE 的活躍學員
   const { data: clients, error } = await supabase
     .from('clients')
-    .select('id, name, line_user_id, subscription_tier, body_composition_enabled, nutrition_enabled, training_enabled, wellness_enabled')
+    .select('id, name, unique_code, line_user_id, subscription_tier, body_composition_enabled, nutrition_enabled, training_enabled, wellness_enabled, client_mode, competition_date, coach_peak_week_plan')
     .eq('is_active', true)
     .not('line_user_id', 'is', null)
 
@@ -634,6 +661,46 @@ export async function GET(request: NextRequest) {
   // 判斷早上或晚上
   const isMorning = isMorningRun
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+
+  // ── Peak Week 每日提醒（備賽最後 7 天，含比賽當天）──
+  // Helms Ch.7：「你在賽前一晚看起來如何，決定了 80% 的碳水判斷。」
+  // 而視覺評估有紀律要求（固定燈光/時間/餐數、跟基準照並排比）——沒人提醒就會忘，
+  // 忘了，peak week 最重要的那個決策就只能用猜的。
+  try {
+    const peakTargets = (clients as Array<{
+      id: string; name: string; unique_code?: string; client_mode?: string | null
+      competition_date?: string | null
+      coach_peak_week_plan?: { days?: PeakPlanDayRow[] } | null
+    }>).filter(c => {
+      if (!c.competition_date || c.client_mode === 'athletic') return false
+      const dl = daysBetweenTW(today, c.competition_date)
+      return dl >= 0 && dl <= 7
+    })
+
+    for (const client of peakTargets) {
+      const daysOut = daysBetweenTW(today, client.competition_date!)
+      const coachDay = (client.coach_peak_week_plan?.days ?? []).find(d => d.date === today)
+      const day = {
+        daysOut,
+        label: coachDay?.label,
+        phase: inferPhaseFromDaysOut(daysOut),
+        carbs: coachDay?.carbs,
+        trainingNote: coachDay?.trainingNote,
+        coachNote: coachDay?.coachNote,
+      }
+
+      const reminder = isMorning ? buildPeakMorningReminder(day) : buildPeakEveningReminder(day)
+      if (!reminder) continue
+
+      const ok = await sendWebPushOnly(client.id, {
+        ...reminder,
+        url: client.unique_code ? `${siteUrl}/c/${client.unique_code}` : `${siteUrl}/dashboard`,
+      })
+      if (ok) { sent++; webPushUsed++ }
+    }
+  } catch (e) {
+    errors.push(`peak_week_reminder: ${(e as Error)?.message ?? 'unknown'}`)
+  }
 
   if (isMorning) {
     // ── 早上提醒：量體重（僅 Web Push，不消耗 LINE 額度）──
