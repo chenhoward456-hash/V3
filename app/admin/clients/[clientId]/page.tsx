@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { calcRecommendedStageWeight, type RecommendedStageWeightResult, calculateInitialTargets } from '@/lib/nutrition-engine'
 import { minguoToAD, adToMinguo, ageFromBirthYear } from '@/utils/age'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
+import { buildBackLoadPlan } from '@/lib/peak-week-templates'
 import { getDefaultFeatures, type SubscriptionTier } from '@/lib/tier-defaults'
 import { isCompetitionMode, isHealthMode, ALL_CLIENT_MODES, MODE_LABELS, MODE_CONFIG, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS } from '@/lib/client-mode'
 import LabPanelNotesEditor from './components/LabPanelNotesEditor'
@@ -1007,6 +1008,41 @@ export default function ClientEditor() {
       setPeakWeekPlanText(serializePeakWeekPlan(client.coach_peak_week_plan))
     }
   }, [client?.coach_peak_week_plan])
+
+  // 套用 Helms Back-Load 節奏模板
+  // 節奏是可複製的（哪天低碳、哪天灌峰值、哪天收），會變的是「量」——
+  // 所以量取自「他的實測檔案」，訓練日/休息日取自「他的課表」。
+  const applyBackLoadTemplate = () => {
+    setPeakWeekParseError('')
+    if (!client?.competition_date) {
+      setPeakWeekParseError('需要先設定比賽日期')
+      return
+    }
+    const latestRecord = (client.peak_week_history ?? [])
+      .slice()
+      .sort((a, b) => (b.competitionDate ?? '').localeCompare(a.competitionDate ?? ''))[0]
+
+    const bw = latestBodyComp?.weight ?? latestRecord?.bodyWeight ?? 80
+    // 峰值：優先用實測量；沒有就用引擎的保守起點（5.0 g/kg 男 / 4.0 g/kg 女）
+    const peakCarbs = latestRecord?.peakCarbs
+      ?? Math.round(bw * (client.gender === '女性' ? 4.0 : 5.0))
+
+    const days = buildBackLoadPlan({
+      competitionDate: client.competition_date,
+      peakCarbs,
+      trainingDayCarbs: client.carbs_training_day ?? client.carbs_target ?? Math.round(bw * 3),
+      restDayCarbs: client.carbs_rest_day ?? client.carbs_target ?? Math.round(bw * 1.5),
+      protein: client.protein_target ?? Math.round(bw * 2.3),
+      fat: client.fat_target ?? Math.round(bw * 0.6),
+      trainingPlan: client.training_plan,
+    })
+
+    const authorNote = latestRecord?.peakCarbs
+      ? `Helms Back-Load 節奏（峰值放賽前 2 天，讓水分有一整晚+一個白天平衡）。峰值 ${peakCarbs}g 來自 ${latestRecord.competitionDate} 的實測（結果：${latestRecord.visualResult === 'full_hard' ? '飽而硬' : latestRecord.visualResult === 'spilled' ? '溢出' : '偏扁'}），不是體重公式。`
+      : `Helms Back-Load 節奏。⚠️ 峰值 ${peakCarbs}g 是引擎的保守起點（沒有實測檔案）— 比完賽記得回來補一筆，下次才會準。`
+
+    setPeakWeekPlanText(serializePeakWeekPlan({ days, authorNote }))
+  }
 
   // 賽後補一筆實測記錄（下次備賽的基準）
   const addPeakHistoryRecord = () => {
@@ -2639,7 +2675,13 @@ export default function ClientEditor() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={applyBackLoadTemplate}
+                      className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                      套用 Helms Back-Load 節奏
+                    </button>
                     <button
                       onClick={loadEnginePeakDraft}
                       disabled={loadingPeakDraft}
@@ -2647,12 +2689,16 @@ export default function ClientEditor() {
                     >
                       {loadingPeakDraft ? '載入中…' : '載入引擎草稿'}
                     </button>
-                    <span className="text-[11px] text-gray-400">
-                      {(client.peak_week_history ?? []).length > 0
-                        ? '充碳日會用他的實測量，不是公式值'
-                        : '先拿引擎算的 7 天當底稿，再手改成你的判斷'}
-                    </span>
                   </div>
+                  <p className="text-[11px] text-gray-400 leading-relaxed -mt-1">
+                    <strong>Back-Load 節奏</strong>：Day7-3 照平常碳循環（不壓低）→ Day3 最後一次較重訓練 →
+                    <strong> Day2 峰值</strong> → Day1 收到 75% → 賽日看外觀。
+                    <strong>峰值用他的實測量</strong>（
+                    {(client.peak_week_history ?? []).length > 0
+                      ? `${[...(client.peak_week_history ?? [])].sort((a, b) => (b.competitionDate ?? '').localeCompare(a.competitionDate ?? ''))[0]?.peakCarbs}g，來自實測檔案`
+                      : '還沒有實測檔案 → 會用引擎公式值，比完賽記得回來補一筆'}
+                    ），訓練日/休息日自動對齊他的課表。
+                  </p>
 
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
