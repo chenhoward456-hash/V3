@@ -118,6 +118,7 @@ import {
 
 import { getLabMacroModifiers, detectLabCrossPatterns, type LabMacroModifier, type LabTrainingModifier } from './lab-nutrition-advisor'
 import { type GeneticProfile, getSerotoninRiskLevel } from './supplement-engine'
+import { checkPeakWeekTrainingConflicts, formatPeakTrainingConflict } from './peak-week-training-check'
 import { generateRecoveryAssessment, type RecoveryAssessment, type RecoveryState as RecoveryEngineState } from './recovery-engine'
 import type { PrepPhase } from './client-mode'
 
@@ -225,6 +226,10 @@ export interface NutritionInput {
   // 存在理由：peak week 最吃教練的個人判斷（學員實測充碳量、要用哪種節奏、
   // low 是碳循環還是單一值…），這些通用公式算不出來。
   coachPeakWeekPlan?: CoachPeakWeekPlan | null
+
+  // 週間訓練課表（clients.training_plan）— 用來檢查 peak week 有沒有排到會造成肌肉損傷的動作
+  // （Helms：肌肉損傷會損害肝醣儲存 → 把充碳做掉一半；賽日還要站著 posing）
+  trainingPlan?: { days?: { dayOfWeek: number; label?: string; exercises?: { name?: string }[] }[] } | null
 }
 
 /** 教練自訂 Peak Week 課表 — date 以外全部選填，只有填了的欄位才覆寫引擎值 */
@@ -4836,6 +4841,12 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     dietBreakSuggested: false,
     warnings: [
       '⚠️ Peak Week 期間營養素每日不同，請嚴格按照每日計畫執行',
+      // 訓練衝突：週間課表在 peak week 排到會造成肌肉損傷的動作（硬舉/深蹲/RDL/早安/深飛鳥…）
+      // Helms：肌肉損傷會直接損害肝醣儲存 → 把接下來的充碳做掉一半；賽日還要站著 posing
+      ...checkPeakWeekTrainingConflicts(
+        input.trainingPlan,
+        plan.map(d => ({ date: d.date, daysOut: d.daysOut })),
+      ).map(formatPeakTrainingConflict),
       `💧 今日飲水目標：${(todayPlan.water / 1000).toFixed(1)}L（${todayPlan.waterMlPerKg} mL/kg）`,
       `🧂 ${todayPlan.sodiumNote}`,
       `🥬 纖維：${todayPlan.fiberNote}`,

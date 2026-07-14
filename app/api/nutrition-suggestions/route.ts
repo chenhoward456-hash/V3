@@ -340,6 +340,8 @@ export async function GET(request: NextRequest) {
         : undefined,
       // 教練自訂 Peak Week 逐日課表（教練設定優先於引擎 — 紅線 3）
       coachPeakWeekPlan: client.coach_peak_week_plan ?? null,
+      // 週間訓練課表 — 供 peak week 訓練衝突檢查（賽前排到硬舉/深蹲會損害儲糖）
+      trainingPlan: client.training_plan ?? null,
     }
 
     // 9. 執行引擎
