@@ -104,6 +104,24 @@ interface Client {
 
   training_plan: any | null
   training_experience: 'beginner' | 'intermediate' | 'advanced' | null
+  /**
+   * 個人 Peak Week 實測檔案（賽後回填，下次當基準）。
+   * Helms guideline #2：充碳的有效範圍是 3-12 g/kg（四倍差距），公式算不出個人反應，只有實測知道。
+   * ⚠️ 刻意不自動套進引擎公式（那會變成另一個寫死的數字）；只讓草稿更聰明 + 攤給教練看。
+   */
+  peak_week_history: {
+    competitionDate: string
+    competitionName?: string
+    bodyWeight?: number
+    peakCarbs?: number
+    peakCarbsGPerKg?: number
+    peakDayOffset?: number
+    protocol?: string
+    visualResult?: 'flat' | 'full_hard' | 'spilled'
+    weightDeltaKg?: number
+    placement?: string
+    notes?: string
+  }[] | null
   /** 教練自訂 Peak Week 逐日課表（優先於引擎公式；null = 照引擎） */
   coach_peak_week_plan: {
     days: {
@@ -153,6 +171,14 @@ export default function ClientEditor() {
   const [peakWeekPlanText, setPeakWeekPlanText] = useState('')
   const [peakWeekParseError, setPeakWeekParseError] = useState('')
   const [loadingPeakDraft, setLoadingPeakDraft] = useState(false)
+  // 個人 Peak 實測檔案（賽後回填，下次當基準）
+  const [showPeakHistoryForm, setShowPeakHistoryForm] = useState(false)
+  const emptyPeakRecord = {
+    competitionDate: '', competitionName: '', bodyWeight: '', peakCarbs: '',
+    visualResult: 'full_hard' as 'flat' | 'full_hard' | 'spilled',
+    weightDeltaKg: '', placement: '', notes: '',
+  }
+  const [peakHistoryDraft, setPeakHistoryDraft] = useState(emptyPeakRecord)
 
   // Issue 1: Unsaved changes tracking
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -312,6 +338,7 @@ export default function ClientEditor() {
         gene_notes: null,
         training_plan: null,
         coach_peak_week_plan: null,
+        peak_week_history: [],
         training_experience: 'intermediate',
 
         lab_results: [],
@@ -937,17 +964,35 @@ export default function ClientEditor() {
         setPeakWeekParseError('引擎目前沒有 peak week 計畫（需要比賽日期，且距比賽 ≤ 14 天）')
         return
       }
+      const days = enginePlan.map((d: any) => ({
+        date: d.date,
+        label: d.label,
+        carbs: d.carbs,
+        protein: d.protein,
+        fat: d.fat,
+        water: d.water,
+        sodiumMg: d.sodiumMg,
+        trainingNote: d.trainingNote,
+      }))
+
+      // 有實測檔案 → 充碳日直接用「他上次實測的量」當草稿，而不是引擎的通用公式。
+      // 理由（Helms guideline #2）：充碳有效範圍 3-12 g/kg 是四倍差距，公式算不出個人反應。
+      // ⚠️ 只是「草稿更聰明」，不是自動決定 —— 教練仍要看視覺校準。
+      const latestRecord = (client?.peak_week_history ?? [])
+        .slice()
+        .sort((a, b) => (b.competitionDate ?? '').localeCompare(a.competitionDate ?? ''))[0]
+      if (latestRecord?.peakCarbs) {
+        for (const d of days) {
+          const src = enginePlan.find((e: any) => e.date === d.date)
+          if (src?.phase === 'carb_load') d.carbs = latestRecord.peakCarbs
+        }
+      }
+
       setPeakWeekPlanText(serializePeakWeekPlan({
-        days: enginePlan.map((d: any) => ({
-          date: d.date,
-          label: d.label,
-          carbs: d.carbs,
-          protein: d.protein,
-          fat: d.fat,
-          water: d.water,
-          sodiumMg: d.sodiumMg,
-          trainingNote: d.trainingNote,
-        })),
+        days,
+        ...(latestRecord?.peakCarbs
+          ? { authorNote: `充碳日已用你的實測量 ${latestRecord.peakCarbs}g（${latestRecord.competitionDate} ${latestRecord.competitionName ?? ''}，結果：${latestRecord.visualResult === 'full_hard' ? '飽而硬' : latestRecord.visualResult === 'spilled' ? '溢出' : '偏扁'}），不是引擎公式值。仍請依當天視覺校準。` }
+          : {}),
       }))
     } catch {
       setPeakWeekParseError('載入引擎草稿失敗')
@@ -962,6 +1007,29 @@ export default function ClientEditor() {
       setPeakWeekPlanText(serializePeakWeekPlan(client.coach_peak_week_plan))
     }
   }, [client?.coach_peak_week_plan])
+
+  // 賽後補一筆實測記錄（下次備賽的基準）
+  const addPeakHistoryRecord = () => {
+    const d = peakHistoryDraft
+    if (!d.competitionDate || !d.peakCarbs) return
+    const bw = parseFloat(d.bodyWeight) || undefined
+    const carbs = parseInt(d.peakCarbs)
+    if (!Number.isFinite(carbs)) return
+    const record = {
+      competitionDate: d.competitionDate,
+      ...(d.competitionName ? { competitionName: d.competitionName } : {}),
+      ...(bw ? { bodyWeight: bw } : {}),
+      peakCarbs: carbs,
+      ...(bw ? { peakCarbsGPerKg: Math.round((carbs / bw) * 100) / 100 } : {}),
+      visualResult: d.visualResult,
+      ...(d.weightDeltaKg ? { weightDeltaKg: parseFloat(d.weightDeltaKg) } : {}),
+      ...(d.placement ? { placement: d.placement } : {}),
+      ...(d.notes ? { notes: d.notes } : {}),
+    }
+    updateClient('peak_week_history', [...(client?.peak_week_history ?? []), record])
+    setShowPeakHistoryForm(false)
+    setPeakHistoryDraft(emptyPeakRecord)
+  }
 
   // Fetch system nutrition suggestions for displaying alongside override
   useEffect(() => {
@@ -2441,6 +2509,136 @@ export default function ClientEditor() {
                 </div>
 
                 <div className="space-y-3">
+                  {/* 個人實測檔案 — 賽後回填，下次的基準（Helms guideline #2） */}
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-xs font-semibold text-amber-800">實測檔案（下次的基準）</p>
+                      <button
+                        onClick={() => setShowPeakHistoryForm(!showPeakHistoryForm)}
+                        className="text-[11px] text-amber-700 hover:text-amber-900 underline"
+                      >
+                        {showPeakHistoryForm ? '取消' : '+ 賽後補一筆'}
+                      </button>
+                    </div>
+
+                    {(client.peak_week_history ?? []).length === 0 && !showPeakHistoryForm && (
+                      <p className="text-[11px] text-amber-700 leading-relaxed">
+                        還沒有紀錄。<strong>比完賽記得回來補一筆</strong> — 充碳的有效範圍是 3–12 g/kg（<strong>四倍差距</strong>），
+                        公式永遠算不出「這個人灌多少會圓滿、灌多少會溢出」，<strong>只有實測知道</strong>。
+                        有了這筆，下次「載入引擎草稿」會直接用他的實測量當充碳日。
+                      </p>
+                    )}
+
+                    {(client.peak_week_history ?? [])
+                      .slice()
+                      .sort((a, b) => (b.competitionDate ?? '').localeCompare(a.competitionDate ?? ''))
+                      .map((h, i) => (
+                        <div key={`${h.competitionDate}-${i}`} className="text-[11px] text-amber-900 py-1.5 border-t border-amber-200 first:border-0 first:pt-0">
+                          <span className="font-semibold tabular-nums">{h.competitionDate}</span>
+                          {h.competitionName ? ` · ${h.competitionName}` : ''}
+                          {h.bodyWeight ? ` · ${h.bodyWeight}kg` : ''}
+                          <div className="mt-0.5">
+                            灌 <strong className="tabular-nums">{h.peakCarbs}g</strong>
+                            {h.peakCarbsGPerKg ? <span className="tabular-nums">（{h.peakCarbsGPerKg} g/kg）</span> : null}
+                            {' → '}
+                            <strong>
+                              {h.visualResult === 'full_hard' ? '飽而硬 ✅' : h.visualResult === 'spilled' ? '溢出 🔴' : '偏扁 🟡'}
+                            </strong>
+                            {h.weightDeltaKg != null ? <span className="tabular-nums"> · 晨重 {h.weightDeltaKg > 0 ? '+' : ''}{h.weightDeltaKg}kg</span> : null}
+                            {h.placement ? ` · ${h.placement}` : ''}
+                          </div>
+                          {h.notes && <div className="text-amber-700 mt-0.5 leading-relaxed">{h.notes}</div>}
+                        </div>
+                      ))}
+
+                    {showPeakHistoryForm && (
+                      <div className="mt-2 pt-2 border-t border-amber-200 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="date"
+                            value={peakHistoryDraft.competitionDate}
+                            onChange={(e) => setPeakHistoryDraft({ ...peakHistoryDraft, competitionDate: e.target.value })}
+                            className="px-2 py-1.5 text-xs border border-amber-300 rounded-lg bg-white"
+                          />
+                          <input
+                            placeholder="比賽名稱（選填）"
+                            value={peakHistoryDraft.competitionName}
+                            onChange={(e) => setPeakHistoryDraft({ ...peakHistoryDraft, competitionName: e.target.value })}
+                            className="px-2 py-1.5 text-xs border border-amber-300 rounded-lg bg-white"
+                          />
+                          <input
+                            type="number"
+                            placeholder="賽前體重 kg"
+                            value={peakHistoryDraft.bodyWeight}
+                            onChange={(e) => setPeakHistoryDraft({ ...peakHistoryDraft, bodyWeight: e.target.value })}
+                            className="px-2 py-1.5 text-xs border border-amber-300 rounded-lg bg-white tabular-nums"
+                          />
+                          <input
+                            type="number"
+                            placeholder="峰值灌了幾 g 碳水 *"
+                            value={peakHistoryDraft.peakCarbs}
+                            onChange={(e) => setPeakHistoryDraft({ ...peakHistoryDraft, peakCarbs: e.target.value })}
+                            className="px-2 py-1.5 text-xs border border-amber-300 rounded-lg bg-white tabular-nums"
+                          />
+                          <input
+                            type="number"
+                            step="0.1"
+                            placeholder="灌完晨重變化 kg"
+                            value={peakHistoryDraft.weightDeltaKg}
+                            onChange={(e) => setPeakHistoryDraft({ ...peakHistoryDraft, weightDeltaKg: e.target.value })}
+                            className="px-2 py-1.5 text-xs border border-amber-300 rounded-lg bg-white tabular-nums"
+                          />
+                          <input
+                            placeholder="名次（選填）"
+                            value={peakHistoryDraft.placement}
+                            onChange={(e) => setPeakHistoryDraft({ ...peakHistoryDraft, placement: e.target.value })}
+                            className="px-2 py-1.5 text-xs border border-amber-300 rounded-lg bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <p className="text-[11px] text-amber-800 mb-1">台上外觀（最重要的一格）</p>
+                          <div className="flex gap-1.5">
+                            {([
+                              { v: 'flat', label: '偏扁 🟡', hint: '下次灌更多' },
+                              { v: 'full_hard', label: '飽而硬 ✅', hint: '這個量對了' },
+                              { v: 'spilled', label: '溢出 🔴', hint: '下次收一點' },
+                            ] as const).map(o => (
+                              <button
+                                key={o.v}
+                                onClick={() => setPeakHistoryDraft({ ...peakHistoryDraft, visualResult: o.v })}
+                                className={`flex-1 py-1.5 rounded-lg text-[11px] transition-colors ${
+                                  peakHistoryDraft.visualResult === o.v
+                                    ? 'bg-amber-600 text-white'
+                                    : 'bg-white text-amber-700 border border-amber-300 hover:bg-amber-100'
+                                }`}
+                                title={o.hint}
+                              >
+                                {o.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <textarea
+                          placeholder="筆記：這次哪裡對、哪裡要改（例：峰值放賽前 1 天只隔一晚，水分沒平衡完 → 下次改放賽前 2 天）"
+                          value={peakHistoryDraft.notes}
+                          onChange={(e) => setPeakHistoryDraft({ ...peakHistoryDraft, notes: e.target.value })}
+                          rows={3}
+                          className="w-full px-2 py-1.5 text-xs border border-amber-300 rounded-lg bg-white"
+                        />
+
+                        <button
+                          onClick={addPeakHistoryRecord}
+                          disabled={!peakHistoryDraft.competitionDate || !peakHistoryDraft.peakCarbs}
+                          className="w-full py-1.5 bg-amber-600 text-white text-xs rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-40"
+                        >
+                          加入實測檔案（記得按最下方「保存」）
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex items-center gap-2">
                     <button
                       onClick={loadEnginePeakDraft}
@@ -2449,7 +2647,11 @@ export default function ClientEditor() {
                     >
                       {loadingPeakDraft ? '載入中…' : '載入引擎草稿'}
                     </button>
-                    <span className="text-[11px] text-gray-400">先拿引擎算的 7 天當底稿，再手改成你的判斷</span>
+                    <span className="text-[11px] text-gray-400">
+                      {(client.peak_week_history ?? []).length > 0
+                        ? '充碳日會用他的實測量，不是公式值'
+                        : '先拿引擎算的 7 天當底稿，再手改成你的判斷'}
+                    </span>
                   </div>
 
                   <div>
