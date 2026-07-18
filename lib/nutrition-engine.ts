@@ -237,6 +237,7 @@ export interface NutritionInput {
 export interface CoachPeakWeekPlanDay {
   date: string          // ISO date，必填（對應到引擎那天）
   label?: string
+  phaseLabel?: string   // 覆寫階段 chip 文字（例：「過渡」）；不動 label 敘述、不動數字
   carbs?: number        // g（絕對值；g/kg 由引擎依體重回推）
   protein?: number      // g
   fat?: number          // g
@@ -410,6 +411,8 @@ export interface PeakWeekDay {
   /** 教練備註（例：拍基準照 / 晚上看外觀決定隔天） */
   coachNote?: string
   phase: 'depletion' | 'fat_load' | 'carb_load' | 'taper' | 'show_day'
+  /** 教練覆寫的階段 chip 文字（例：Helms 後置下 fat_load 兩天實為「過渡」）。前端 badge 優先讀這個，沒填才 fallback 到 phase 對應標籤 */
+  phaseLabel?: string
   carbsGPerKg: number
   proteinGPerKg: number
   fatGPerKg: number
@@ -4773,6 +4776,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
       if (!c) continue
       day.coachOverride = true
       if (c.label) day.label = c.label
+      if (c.phaseLabel) day.phaseLabel = c.phaseLabel
       if (c.carbs != null) {
         day.carbs = Math.round(c.carbs)
         day.carbsGPerKg = Math.round((c.carbs / bw) * 10) / 10

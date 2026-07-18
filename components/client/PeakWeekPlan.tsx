@@ -10,6 +10,8 @@ interface PeakWeekDay {
   date: string
   label: string
   phase: 'depletion' | 'fat_load' | 'carb_load' | 'taper' | 'show_day'
+  /** 教練覆寫的階段 chip 文字；有填時 badge 優先顯示這個 */
+  phaseLabel?: string
   /** 這天是否被教練的自訂課表覆寫 */
   coachOverride?: boolean
   /** 教練備註（自訂課表才有） */
@@ -196,7 +198,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${phaseColors[focusPlan.phase]?.badge || 'bg-gray-100 text-gray-600'}`}>
-                {phaseLabels[focusPlan.phase] || focusPlan.phase}
+                {focusPlan.phaseLabel || phaseLabels[focusPlan.phase] || focusPlan.phase}
               </span>
               <span className="text-sm font-semibold text-gray-700">{focusLabel}</span>
             </div>
@@ -498,7 +500,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                   </td>
                   <td className="py-1.5 px-1.5">
                     <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-bold ${colors.badge}`}>
-                      {phaseLabels[day.phase]}
+                      {day.phaseLabel || phaseLabels[day.phase]}
                     </span>
                   </td>
                   <td className="text-right py-1.5 px-1.5 text-gray-700">{day.carbs}g</td>
@@ -598,7 +600,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                 </div>
 
                 <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${colors.badge}`}>
-                  {phaseLabels[day.phase]}
+                  {day.phaseLabel || phaseLabels[day.phase]}
                 </span>
 
                 <div className="flex-1 flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
