@@ -37,6 +37,7 @@ import { ForYouFeed } from '@/components/client/ForYouFeed'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManagedNutrition'), { ssr: false })
 const NutritionStrategyCard = dynamic(() => import('@/components/client/NutritionStrategyCard'), { ssr: false })
+const NutritionTrend = dynamic(() => import('@/components/client/NutritionTrend'), { ssr: false })
 import PwaPrompt from '@/components/client/PwaPrompt'
 import ClientHeader from '@/components/client/ClientHeader'
 import WelcomeBanner from '@/components/client/WelcomeBanner'
@@ -1554,6 +1555,16 @@ export default function ClientDashboard() {
               simpleMode={c.simple_mode}
               sodiumTarget={c.prep_phase === 'peak_week' ? c.sodium_target : null}
               onMutate={mutateAndRefreshEngine}
+            />
+            <NutritionTrend
+              nutritionLogs={clientData.nutritionLogs || []}
+              caloriesTarget={c.calories_target}
+              proteinTarget={c.protein_target}
+              carbsTarget={c.carbs_target}
+              fatTarget={c.fat_target}
+              simpleMode={c.simple_mode}
+              competitionEnabled={isCompetitionMode(c.client_mode)}
+              competitionDate={c.competition_date}
             />
           </CollapsibleSection>
           </SectionErrorBoundary>
