@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { getLocalDateStr, daysUntilDateTW } from '@/lib/date-utils'
+import { useMeasuredContainer } from '@/hooks/useMeasuredContainer'
+import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList, CartesianGrid } from 'recharts'
 
 interface PeakWeekDay {
   daysOut: number
@@ -78,6 +80,15 @@ const phaseLabels: Record<string, string> = {
   show_day: '比賽日',
 }
 
+// 碳水後載節奏圖用：每階段代表色（語意＝備賽階段，對齊 phaseColors）
+const phaseHex: Record<string, string> = {
+  depletion: '#fb7185',
+  fat_load: '#fbbf24',
+  carb_load: '#3D6E9E',
+  taper: '#94a3b8',
+  show_day: '#f59e0b',
+}
+
 export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeight, previewDate, onMutate, geneDepressionRisk }: PeakWeekPlanProps) {
   const [plan, setPlan] = useState<PeakWeekDay[] | null>(null)
   const [loading, setLoading] = useState(true)
@@ -85,6 +96,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
   const [expandAll, setExpandAll] = useState(false)
   const [dailyWeights, setDailyWeights] = useState<Record<string, string>>({})
   const [spilloverNote, setSpilloverNote] = useState<string | null>(null)
+  const { ref: rhythmRef, measured: rhythmMeasured } = useMeasuredContainer()
 
   const todayStr = getLocalDateStr()
   const focusDate = previewDate || todayStr
@@ -127,6 +139,20 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
   const focusPlan = plan.find(d => d.date === focusDate)
   const daysLeft = Math.max(0, daysUntilDateTW(competitionDate))
   const focusLabel = previewDate ? '明日計畫' : '今日計畫'
+
+  // 碳水後載節奏圖資料（此處 plan 已保證非空）
+  const rhythmData = plan.map(d => {
+    const dObj = new Date(d.date + 'T12:00:00')
+    return {
+      date: `${dObj.getMonth() + 1}/${dObj.getDate()}`,
+      carbs: d.carbs,
+      calories: d.calories,
+      phase: d.phase,
+      phaseLabel: phaseLabels[d.phase] || d.phase,
+      isToday: d.date === todayStr,
+    }
+  })
+  const legendPhases = plan.map(d => d.phase).filter((p, i, arr) => arr.indexOf(p) === i)
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
@@ -384,6 +410,50 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
           )}
         </div>
       )}
+
+      {/* ===== 碳水後載節奏圖（Helms back-load 一眼看形狀）===== */}
+      <div className="mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-gray-500">碳水後載節奏</p>
+          <div className="flex flex-wrap gap-x-2.5 gap-y-1 justify-end">
+            {legendPhases.map(p => (
+              <span key={p} className="flex items-center gap-1 text-[11px] text-gray-400">
+                <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: phaseHex[p] }} />
+                {phaseLabels[p]}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="h-48 w-full min-w-0" ref={rhythmRef}>
+          {rhythmMeasured && (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={rhythmData} margin={{ top: 18, right: 6, left: -14, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                <XAxis dataKey="date" fontSize={10} tick={{ fill: '#9ca3af' }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} />
+                <YAxis fontSize={10} tick={{ fill: '#9ca3af' }} tickLine={false} axisLine={false} width={38} unit="g" />
+                <Tooltip
+                  cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                  contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderRadius: 8, border: 'none', fontSize: 12 }}
+                  labelStyle={{ color: '#ccc' }}
+                  formatter={(value: any, _n: any, item: any) => [`${value}g 碳水 · ${item?.payload?.calories ?? '--'} kcal`, item?.payload?.phaseLabel || '']}
+                />
+                <Bar dataKey="carbs" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                  {rhythmData.map((d, i) => (
+                    <Cell
+                      key={i}
+                      fill={phaseHex[d.phase] || '#94a3b8'}
+                      stroke={d.isToday ? '#111827' : undefined}
+                      strokeWidth={d.isToday ? 1.5 : 0}
+                    />
+                  ))}
+                  <LabelList dataKey="carbs" position="top" fontSize={10} fill="#6b7280" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+        <p className="text-[11px] text-gray-400 mt-1 text-center">低碳打底 → 逐步超補 → 賽日回收；黑框＝今天</p>
+      </div>
 
       {/* ===== 7 天總覽表 ===== */}
       <div className="mb-2">
