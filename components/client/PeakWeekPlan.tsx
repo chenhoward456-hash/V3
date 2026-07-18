@@ -12,6 +12,8 @@ interface PeakWeekDay {
   phase: 'depletion' | 'fat_load' | 'carb_load' | 'taper' | 'show_day'
   /** 教練覆寫的階段 chip 文字；有填時 badge 優先顯示這個 */
   phaseLabel?: string
+  /** 教練覆寫的階段 chip 顏色鍵（對應 phaseColors）；有填時色彩優先用這個 */
+  phaseColorKey?: string
   /** 這天是否被教練的自訂課表覆寫 */
   coachOverride?: boolean
   /** 教練備註（自訂課表才有） */
@@ -72,6 +74,8 @@ const phaseColors: Record<string, { bg: string; text: string; border: string; ba
   carb_load: { bg: 'bg-primary-50', text: 'text-primary-700', border: 'border-primary-200', badge: 'bg-primary-100 text-primary-700' },
   taper: { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', badge: 'bg-slate-100 text-slate-600' },
   show_day: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700' },
+  // 教練覆寫用：碳循環維持期（不壓低、非 peak week 獨立階段）＝中性灰
+  cycle: { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', badge: 'bg-slate-100 text-slate-600' },
 }
 
 const phaseLabels: Record<string, string> = {
@@ -89,7 +93,12 @@ const phaseHex: Record<string, string> = {
   carb_load: '#3D6E9E',
   taper: '#94a3b8',
   show_day: '#f59e0b',
+  cycle: '#94a3b8',
 }
+
+// 教練覆寫優先：chip 文字與顏色鍵都先看教練覆寫，沒填才 fallback 到引擎 phase
+const dayLabel = (d: { phaseLabel?: string; phase: string }) => d.phaseLabel || phaseLabels[d.phase] || d.phase
+const dayColorKey = (d: { phaseColorKey?: string; phase: string }) => d.phaseColorKey || d.phase
 
 export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeight, previewDate, onMutate, geneDepressionRisk }: PeakWeekPlanProps) {
   const [plan, setPlan] = useState<PeakWeekDay[] | null>(null)
@@ -150,11 +159,16 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
       carbs: d.carbs,
       calories: d.calories,
       phase: d.phase,
-      phaseLabel: phaseLabels[d.phase] || d.phase,
+      colorKey: dayColorKey(d),
+      phaseLabel: dayLabel(d),
       isToday: d.date === todayStr,
     }
   })
-  const legendPhases = plan.map(d => d.phase).filter((p, i, arr) => arr.indexOf(p) === i)
+  // 圖例：以「顯示文字」去重（帶各自顏色），這樣覆寫後圖例跟 badge 一致
+  const legendItems = rhythmData.reduce((acc, d) => {
+    if (!acc.some(a => a.label === d.phaseLabel)) acc.push({ label: d.phaseLabel, color: phaseHex[d.colorKey] || '#94a3b8' })
+    return acc
+  }, [] as { label: string; color: string }[])
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
@@ -194,11 +208,11 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
 
       {/* ===== 焦點日重點卡片 ===== */}
       {focusPlan && (
-        <div className={`${phaseColors[focusPlan.phase]?.bg || 'bg-gray-50'} ${phaseColors[focusPlan.phase]?.border || 'border-slate-200'} border rounded-2xl p-4 mb-5`}>
+        <div className={`${phaseColors[dayColorKey(focusPlan)]?.bg || 'bg-gray-50'} ${phaseColors[dayColorKey(focusPlan)]?.border || 'border-slate-200'} border rounded-2xl p-4 mb-5`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${phaseColors[focusPlan.phase]?.badge || 'bg-gray-100 text-gray-600'}`}>
-                {focusPlan.phaseLabel || phaseLabels[focusPlan.phase] || focusPlan.phase}
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${phaseColors[dayColorKey(focusPlan)]?.badge || 'bg-gray-100 text-gray-600'}`}>
+                {dayLabel(focusPlan)}
               </span>
               <span className="text-sm font-semibold text-gray-700">{focusLabel}</span>
             </div>
@@ -418,10 +432,10 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-semibold text-gray-500">碳水後載節奏</p>
           <div className="flex flex-wrap gap-x-2.5 gap-y-1 justify-end">
-            {legendPhases.map(p => (
-              <span key={p} className="flex items-center gap-1 text-[11px] text-gray-400">
-                <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: phaseHex[p] }} />
-                {phaseLabels[p]}
+            {legendItems.map(item => (
+              <span key={item.label} className="flex items-center gap-1 text-[11px] text-gray-400">
+                <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: item.color }} />
+                {item.label}
               </span>
             ))}
           </div>
@@ -443,7 +457,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                   {rhythmData.map((d, i) => (
                     <Cell
                       key={i}
-                      fill={phaseHex[d.phase] || '#94a3b8'}
+                      fill={phaseHex[d.colorKey] || '#94a3b8'}
                       stroke={d.isToday ? '#111827' : undefined}
                       strokeWidth={d.isToday ? 1.5 : 0}
                     />
@@ -481,7 +495,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
             {plan.map((day) => {
               const isFocus = day.date === focusDate
               const isPast = day.date < todayStr
-              const colors = phaseColors[day.phase] || phaseColors.depletion
+              const colors = phaseColors[dayColorKey(day)] || phaseColors.depletion
               const dateObj = new Date(day.date + 'T12:00:00')
               const dateLabel = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`
               const weekDay = ['日', '一', '二', '三', '四', '五', '六'][dateObj.getDay()]
@@ -500,7 +514,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                   </td>
                   <td className="py-1.5 px-1.5">
                     <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-bold ${colors.badge}`}>
-                      {day.phaseLabel || phaseLabels[day.phase]}
+                      {dayLabel(day)}
                     </span>
                   </td>
                   <td className="text-right py-1.5 px-1.5 text-gray-700">{day.carbs}g</td>
@@ -577,7 +591,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
           const isFocus = day.date === focusDate
           const isPast = day.date < todayStr
           const isExpanded = expandAll || expandedDay === idx
-          const colors = phaseColors[day.phase] || phaseColors.depletion
+          const colors = phaseColors[dayColorKey(day)] || phaseColors.depletion
           const dateObj = new Date(day.date + 'T12:00:00')
           const dateLabel = dateObj.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })
           const weekDayLabel = ['日', '一', '二', '三', '四', '五', '六'][dateObj.getDay()]
@@ -600,7 +614,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
                 </div>
 
                 <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${colors.badge}`}>
-                  {day.phaseLabel || phaseLabels[day.phase]}
+                  {dayLabel(day)}
                 </span>
 
                 <div className="flex-1 flex items-center gap-2 text-[11px] text-gray-500 flex-wrap">
