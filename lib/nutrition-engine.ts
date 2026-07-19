@@ -359,6 +359,8 @@ export interface NutritionSuggestion {
 
   // Peak Week 每日計畫（僅 peak_week 狀態時有值）
   peakWeekPlan: PeakWeekDay[] | null
+  // 教練整體備賽備註（coach_peak_week_plan.authorNote），前端頂部「作戰筆記」顯示
+  peakWeekAuthorNote?: string | null
 
   // 基因修正紀錄（已套用到建議值中，前端可顯示）
   geneticCorrections: GeneticCorrection[]
@@ -2579,6 +2581,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   // 9.5 Peak Week 預覽計畫注入（距比賽 >8 天時提前生成供預覽）
   if (previewPeakWeekPlan) {
     result.peakWeekPlan = previewPeakWeekPlan
+    result.peakWeekAuthorNote = input.coachPeakWeekPlan?.authorNote ?? null
   }
 
   // 10. TDEE 異常 → 關閉 autoApply（數據不可信，需教練確認）
@@ -4878,7 +4881,7 @@ function generatePeakWeekPlan(input: NutritionInput, daysLeft: number, cycleInfo
     deadlineInfo: { daysLeft, weeksLeft: Math.round(daysLeft / 7 * 10) / 10, weightToLose: 0, requiredRatePerWeek: 0, isAggressive: false },
     autoApply: true, tdeeAnomalyDetected: false,
     labMacroModifiers: pwLabMacroMods, labTrainingModifiers: pwLabTrainingMods, energyAvailability: null,
-    peakWeekPlan: plan, metabolicStress: null,
+    peakWeekPlan: plan, peakWeekAuthorNote: input.coachPeakWeekPlan?.authorNote ?? null, metabolicStress: null,
     menstrualCycleNote: cycleInfo?.note ?? null,
     perMealProteinGuide: buildPerMealProteinGuide(bw, todayPlan.protein),  // Bug fix M8: 用當天實際蛋白質，非固定 depletion 值
     geneticCorrections,

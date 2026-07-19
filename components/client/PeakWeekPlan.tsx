@@ -107,6 +107,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
   const [expandAll, setExpandAll] = useState(false)
   const [dailyWeights, setDailyWeights] = useState<Record<string, string>>({})
   const [spilloverNote, setSpilloverNote] = useState<string | null>(null)
+  const [authorNote, setAuthorNote] = useState<string | null>(null)
   const { ref: rhythmRef, measured: rhythmMeasured } = useMeasuredContainer()
 
   const todayStr = getLocalDateStr()
@@ -121,6 +122,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
         const data = await res.json()
         if (data.suggestion?.peakWeekPlan) {
           setPlan(data.suggestion.peakWeekPlan)
+          setAuthorNote(data.suggestion.peakWeekAuthorNote ?? null)
           const focusIdx = data.suggestion.peakWeekPlan.findIndex((d: PeakWeekDay) => d.date === focusDate)
           if (focusIdx >= 0) setExpandedDay(focusIdx)
           // 如果成功 autoApply，刷新 client 資料讓下面的營養區塊也更新
@@ -194,6 +196,17 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
           </span>
         </div>
       </div>
+
+      {/* 教練整體備賽備註（作戰筆記）——來自 coach_peak_week_plan.authorNote */}
+      {authorNote && (
+        <details open className="mb-4 rounded-xl border border-primary-200 bg-primary-50/60 px-3.5 py-2.5">
+          <summary className="cursor-pointer list-none text-xs font-bold text-primary-800 flex items-center justify-between">
+            <span>📋 備賽作戰筆記</span>
+            <span className="text-[10px] font-normal text-primary-500">點我收合／展開</span>
+          </summary>
+          <p className="mt-2 text-[13px] leading-relaxed text-primary-800 whitespace-pre-line">{authorNote}</p>
+        </details>
+      )}
 
       {/* 基因風險提示 */}
       {geneDepressionRisk && (geneDepressionRisk === 'high' || geneDepressionRisk === 'moderate') && (
