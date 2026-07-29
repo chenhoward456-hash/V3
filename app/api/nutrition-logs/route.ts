@@ -154,3 +154,118 @@ export async function POST(request: NextRequest) {
     return createErrorResponse('伺服器錯誤', 500)
   }
 }
+
+/**
+ * PATCH — 記錄「實際攝取」的巨量營養素，用來覆寫/累加當天 nutrition_logs。
+ *
+ * 為什麼要跟 POST 分開：POST 是 upsert 整列，沒帶到的欄位會被寫成 null——
+ * 一旦「達標」按鈕照 macro 設定自動帶了目標值進 nutrition_logs（見 page.tsx onQuickNutrition），
+ * 使用者若只想改碳水，用 POST 會把蛋白/脂肪/水/備註全清掉。
+ * PATCH 只動有帶進來的欄位（其餘保留），讓「實秤」能安全覆寫「自動帶的目標值」。
+ *
+ * mode='set' → 把該欄位設成傳入值（拖進度條：今天吃到哪）
+ * mode='add' → 在現有值上累加（+記一餐：把這餐的巨量加上去）
+ */
+export async function PATCH(request: NextRequest) {
+  const ip = getClientIP(request)
+  const { allowed } = await rateLimit(`nutrition:${ip}`, 30, 60_000)
+  if (!allowed) return NextResponse.json({ error: '請求過於頻繁，請稍後再試' }, { status: 429 })
+
+  try {
+    const body = await request.json()
+    const { clientId, date, mode } = body
+
+    if (!clientId || !date) {
+      return createErrorResponse('缺少客戶 ID 或日期', 400)
+    }
+    if (mode !== 'set' && mode !== 'add') {
+      return createErrorResponse('mode 必須為 set 或 add', 400)
+    }
+
+    // 只處理實際攝取的巨量欄位；每個都選填，帶了才動
+    const fieldSpecs: { key: 'protein_grams' | 'carbs_grams' | 'fat_grams' | 'calories' | 'water_ml'; max: number }[] = [
+      { key: 'protein_grams', max: 1000 },
+      { key: 'carbs_grams', max: 2000 },
+      { key: 'fat_grams', max: 500 },
+      { key: 'calories', max: 10000 },
+      { key: 'water_ml', max: 10000 },
+    ]
+
+    const provided: Partial<Record<typeof fieldSpecs[number]['key'], number>> = {}
+    for (const { key, max } of fieldSpecs) {
+      const v = body[key]
+      if (v === undefined || v === null) continue
+      const validation = validateNumericField(v, 0, max, key)
+      if (!validation.isValid) return createErrorResponse(validation.error, 400)
+      provided[key] = Number(v)
+    }
+
+    if (Object.keys(provided).length === 0) {
+      return createErrorResponse('沒有要更新的營養素欄位', 400)
+    }
+
+    const { data: client, error: clientError } = await supabaseAdmin
+      .from('clients')
+      .select('id, is_active, expires_at')
+      .eq('unique_code', clientId)
+      .single()
+
+    if (clientError || !client) {
+      return createErrorResponse('找不到客戶', 404)
+    }
+    if (client.is_active === false) {
+      return createErrorResponse('帳號已暫停', 403)
+    }
+    if (client.expires_at && new Date(client.expires_at) < new Date()) {
+      return createErrorResponse('帳號已過期', 403)
+    }
+
+    // 讀現有列，決定要 update（保留未帶欄位）還是 insert
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from('nutrition_logs')
+      .select('id, protein_grams, carbs_grams, fat_grams, calories, water_ml')
+      .eq('client_id', client.id)
+      .eq('date', date)
+      .maybeSingle()
+
+    if (existingError) {
+      return createErrorResponse('查詢飲食紀錄失敗', 500)
+    }
+
+    // 只組出「有帶進來」的欄位；set=覆寫、add=在現有值上累加
+    const patch: Record<string, number> = {}
+    for (const [key, value] of Object.entries(provided)) {
+      if (mode === 'add') {
+        const prev = existing ? Number((existing as Record<string, unknown>)[key] ?? 0) : 0
+        patch[key] = Math.round((prev + value) * 100) / 100
+      } else {
+        patch[key] = value
+      }
+    }
+
+    let saved
+    if (existing) {
+      const { data, error } = await supabaseAdmin
+        .from('nutrition_logs')
+        .update(patch)
+        .eq('id', existing.id)
+        .select()
+        .single()
+      if (error) return createErrorResponse('更新飲食紀錄失敗', 500)
+      saved = data
+    } else {
+      const { data, error } = await supabaseAdmin
+        .from('nutrition_logs')
+        .insert({ client_id: client.id, date, ...patch })
+        .select()
+        .single()
+      if (error) return createErrorResponse('新增飲食紀錄失敗', 500)
+      saved = data
+    }
+
+    return createSuccessResponse(saved, '實際攝取已更新')
+
+  } catch (error) {
+    return createErrorResponse('伺服器錯誤', 500)
+  }
+}

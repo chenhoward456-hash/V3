@@ -33,6 +33,7 @@ import NutritionLog from '@/components/client/NutritionLog'
 import CompWarRoom from '@/components/client/CompWarRoom'
 import CutHealthCard from '@/components/client/CutHealthCard'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
+import TodayNutritionIntake from '@/components/client/TodayNutritionIntake'
 import { ForYouFeed } from '@/components/client/ForYouFeed'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManagedNutrition'), { ssr: false })
@@ -764,6 +765,11 @@ export default function ClientDashboard() {
   const isSelfManaged = c.subscription_tier === 'self_managed'
   const isFree = c.subscription_tier === 'free'
 
+  // 首頁「今日營養攝取」卡是否顯示 → 決定要不要拿掉 QuickActions 的飲食 tile 與達標入口
+  // （避免重複記錄；沒 target 的學員這張卡不出現，仍保留舊 tile 才不會沒地方記飲食）
+  const hasNutritionTargets = !!(c.calories_target || c.protein_target || c.carbs_target || c.fat_target || c.carbs_training_day || c.carbs_rest_day)
+  const showNutritionIntake = c.nutrition_enabled && !isFree && hasNutritionTargets
+
   // 新人模式：完全沒打卡資料 + 沒按過 escape hatch → 簡化首頁
   const useNewUserMode = isToday && shouldUseNewUserMode(clientData)
   if (useNewUserMode) {
@@ -1110,7 +1116,8 @@ export default function ClientDashboard() {
           <QuickActions
             enabledSections={[
               ...(c.body_composition_enabled ? [{ id: 'section-body', icon: <Scale size={16} className="text-slate-500" />, label: '體重', completed: !!latestBodyData && latestBodyData.date === selectedDate }] : []),
-              ...(c.nutrition_enabled ? [{ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: <Utensils size={16} className="text-slate-500" />, label: '飲食', completed: !!todayNutrition }] : []),
+              // 有新「今日營養攝取」卡時拿掉飲食 tile（重複）；沒卡的學員（無 target）保留舊 tile 才有地方記
+              ...((c.nutrition_enabled && !showNutritionIntake) ? [{ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: <Utensils size={16} className="text-slate-500" />, label: '飲食', completed: !!todayNutrition }] : []),
               ...(c.supplement_enabled ? [{ id: 'section-supplements', icon: <Pill size={16} className="text-slate-500" />, label: '補品', completed: todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total }] : []),
               ...(c.wellness_enabled ? [{ id: 'section-wellness', icon: <Smile size={16} className="text-slate-500" />, label: '感受', completed: !!todayWellness }] : []),
               ...(c.training_enabled ? [{ id: 'section-training', icon: <Dumbbell size={16} className="text-slate-500" />, label: '訓練', completed: !!todayTraining }] : []),
@@ -1164,7 +1171,7 @@ export default function ClientDashboard() {
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
-            showQuickNutrition={c.nutrition_enabled && !todayNutrition}
+            showQuickNutrition={c.nutrition_enabled && !todayNutrition && !showNutritionIntake}
             onQuickNutrition={async (compliant) => {
               try {
                 // 「達標」= 今天照飲食卡上看到的目標吃 → 碳循環時用當日(訓練/休息)值，
@@ -1250,6 +1257,42 @@ export default function ClientDashboard() {
             }}
           />
         )}
+
+        {/* === 今日營養攝取：4 個 macro 進度條 + 記錄（拖進度條 / ＋記一餐）=== */}
+        {/* Howard 反映首頁營養只有碳水一個數字、只能按達標/沒達標，會忘記今天吃多少。 */}
+        {/* 這張卡讓他看已吃/還差、拖進度條或記一餐把「實秤」覆寫掉「達標」自動帶的目標值。 */}
+        {view === 'home' && isToday && showNutritionIntake && (() => {
+            // 當日碳水目標：Peak Week 當日計畫 > 碳循環當日值 > 固定目標（與 QuickActions/onQuickNutrition 同一套解析）
+            const effCarbs = peakDayForSelected?.carbs
+              ?? ((c.carbs_training_day && c.carbs_rest_day)
+                ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day)
+                : c.carbs_target)
+            const effProtein = peakDayForSelected?.protein ?? c.protein_target
+            const effFat = peakDayForSelected?.fat ?? c.fat_target
+            // 熱量目標＝當日三大巨量加總（碳水用碳循環當日值）→ 三大滿格時熱量條剛好滿，彼此一致。
+            // 不用固定 calories_target（Howard 2026-07-29 拍板）。巨量不齊時 fallback calories_target。
+            const macroSum = (effProtein != null && effCarbs != null && effFat != null)
+              ? Math.round(effProtein * 4 + effCarbs * 4 + effFat * 9)
+              : null
+            const effCals = macroSum ?? c.calories_target ?? null
+            const dayLabel = peakDayForSelected?.label
+              ?? ((c.carbs_training_day && c.carbs_rest_day) ? (isTrainingDayResolved ? '訓練日' : '休息日') : null)
+            return (
+              <SectionErrorBoundary name="today-nutrition-intake">
+                <TodayNutritionIntake
+                  clientCode={c.unique_code}
+                  date={today}
+                  caloriesTarget={effCals}
+                  proteinTarget={effProtein}
+                  carbsTarget={effCarbs}
+                  fatTarget={effFat}
+                  intake={todayNutrition}
+                  dayLabel={dayLabel}
+                  onMutate={mutateAndRefreshEngine}
+                />
+              </SectionErrorBoundary>
+            )
+          })()}
 
         {/* === 「進度」分頁頭牌：你在贏嗎（作戰室 + 減脂體檢）—— 從首頁搬來，進度問句的單一去處 === */}
         {view === 'data' && (isCompetition || c.prep_phase === 'cut' || /cut|loss|fat|減/.test((c.goal_type || '').toLowerCase())) && (
