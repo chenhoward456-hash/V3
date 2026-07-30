@@ -1641,11 +1641,15 @@ export async function GET(request: NextRequest) {
   let reengagementSent = 0
   if (!isMorning) {
     const since31 = new Date(Date.now() - 31 * 86_400_000).toISOString().slice(0, 10)
-    const { data: activeClients } = await supabase
-      .from('clients')
-      .select('id, name, line_user_id')
-      .eq('is_active', true)
-      .not('line_user_id', 'is', null)
+    // 可通知 = 有綁 LINE **或** 有 Web Push 訂閱。
+    // （原本只收 line_user_id not null → 沒綁 LINE 但開了推播的學員（例：Eddie）
+    //   一則喚回都收不到，跟 sendRoutineReminder「Web Push 優先」的設計自相矛盾。）
+    const [{ data: allActiveClients }, { data: pushSubRows }] = await Promise.all([
+      supabase.from('clients').select('id, name, line_user_id').eq('is_active', true),
+      supabase.from('push_subscriptions').select('client_id'),
+    ])
+    const pushableIds = new Set((pushSubRows ?? []).map((r: { client_id: string }) => r.client_id))
+    const activeClients = (allActiveClients ?? []).filter(c => c.line_user_id || pushableIds.has(c.id))
 
     if (activeClients && activeClients.length > 0) {
       // 近 31 天各表最後活動日 → 每位學員的最後打卡日
@@ -1676,7 +1680,7 @@ export async function GET(request: NextRequest) {
               lineText: `${c.name}，一週沒記錄了。\n\n你之前的數據都還在，接著記就能看出這週的變化。卡住的話直接回我，我幫你。`,
             }
         try {
-          await sendRoutineReminder(c.id, c.line_user_id, { ...msg, url: '/dashboard' })
+          await sendRoutineReminder(c.id, c.line_user_id ?? '', { ...msg, url: '/dashboard' })
           reengagementSent++
         } catch (err: unknown) {
           errors.push(`再喚醒失敗 [${c.name}]: ${err instanceof Error ? err.message : String(err)}`)
