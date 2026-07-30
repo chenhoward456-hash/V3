@@ -33,6 +33,11 @@ export const maxDuration = 300
 
 const logger = createLogger('cron-weekly')
 
+/** 停止記錄幾天就進教練警報。週報是週日跑，設 4 天才不會讓週一掉線的人拖到下下週才被看見。 */
+const SILENCE_ALERT_DAYS = 4
+/** 從未打卡者：加入幾天內還算「啟動失敗要救」，超過就不再佔摘要版面 */
+const NEVER_LOGGED_ALERT_DAYS = 21
+
 function parseSerotoninField(value: string | null): { serotonin?: 'LL' | 'SL' | 'SS'; depressionRisk?: 'low' | 'moderate' | 'high' } {
   if (!value) return {}
   if (value === 'LL' || value === 'SL' || value === 'SS') return { serotonin: value }
@@ -62,6 +67,7 @@ export async function GET(request: NextRequest) {
     quarterlyResets: 0,
     analysisGenerated: 0,
     alertsGenerated: 0,
+    silenceAlerts: 0,
     errors: [] as string[],
   }
 
@@ -492,8 +498,38 @@ export async function GET(request: NextRequest) {
 
     // ── 4. 產生教練端通知摘要 ──
     const alertItems: string[] = []
+    // 沉默警報獨立收集：這是最該出手的一類，摘要要擺最前面
+    const silenceItems: string[] = []
 
     for (const client of clients) {
+      // ── 沉默警報 ──
+      // 下面每一條規則都要「有資料」才會觸發（停滯要 ≥4 筆體重、合規要 ≥5 筆飲食、能量要 3 筆…），
+      // 所以「完全停止記錄」的人反而一則警報都產不出來——而那正是最該被撈回來的人。
+      const lastLogDate = [
+        ...(bodyByClient.get(client.id) || []),
+        ...(nutritionByClient.get(client.id) || []),
+        ...(trainingByClient.get(client.id) || []),
+        ...(wellnessByClient.get(client.id) || []),
+      ].reduce<string | null>((max, r: { date: string }) => (!max || r.date > max ? r.date : max), null)
+
+      if (lastLogDate) {
+        const silentDays = Math.floor((today.getTime() - new Date(lastLogDate).getTime()) / DAY_MS)
+        if (silentDays >= SILENCE_ALERT_DAYS) {
+          const tail = silentDays >= 14
+            ? '——自動喚回已經無效，直接約談'
+            : silentDays >= 7
+              ? '——3/7 天自動喚回都送過了，該你親自出手'
+              : '——剛開始掉線，現在拉最省力'
+          silenceItems.push(`${client.name}：停止記錄 ${silentDays} 天（最後 ${lastLogDate}）${tail}`)
+        }
+      } else if (client.created_at) {
+        // 近 30 天完全沒資料：只喊「剛加入還沒啟動」的。更久以前就沒動的不再佔版面（叫不回來的鬼魂）。
+        const joinedDays = Math.floor((today.getTime() - new Date(client.created_at).getTime()) / DAY_MS)
+        if (joinedDays <= NEVER_LOGGED_ALERT_DAYS) {
+          silenceItems.push(`${client.name}：加入 ${joinedDays} 天從未打卡——啟動失敗，主動關懷`)
+        }
+      }
+
       // 體重停滯
       const bodyLogs = (bodyByClient.get(client.id) || []).filter((b: { date: string }) => b.date >= fourteenStr)
       if (bodyLogs.length >= 4) {
@@ -569,23 +605,44 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    results.alertsGenerated = alertItems.length
+    // 沉默的人排最前面（其餘規則的順序不動）
+    const digestItems = [...silenceItems, ...alertItems]
+    results.alertsGenerated = digestItems.length
+    results.silenceAlerts = silenceItems.length
 
     // 寫入 coach_notifications 表（如果存在）
-    if (alertItems.length > 0) {
+    if (digestItems.length > 0) {
       const { error: notifErr } = await supabase
         .from('coach_notifications')
         .insert({
           date: todayStr,
           type: 'weekly_digest',
-          title: `每週摘要 — ${alertItems.length} 項需注意`,
-          content: JSON.stringify(alertItems),
+          title: `每週摘要 — ${digestItems.length} 項需注意`,
+          content: JSON.stringify(digestItems),
           read: false,
         })
 
       if (notifErr) {
         logger.warn('coach_notifications 寫入失敗', { error: notifErr.message })
         results.errors.push(`coach_notifications 寫入失敗: ${notifErr.message}`)
+      }
+
+      // 推一則到教練自己的 LINE。原本摘要只寫進 DB，要主動去 /admin 才看得到 →
+      // 實際結果就是 40 天沒人看。每週一則（LINE 免費額度 200/月，這佔 4 則）。
+      const coachLineId = process.env.COACH_LINE_USER_ID
+      if (coachLineId) {
+        const shown = digestItems.slice(0, 12)
+        const more = digestItems.length - shown.length
+        const text = [
+          `📋 本週教練摘要 ${todayStr}`,
+          silenceItems.length > 0 ? `\n🔴 ${silenceItems.length} 人掉線中：` : '',
+          ...shown.map(i => `• ${i}`),
+          more > 0 ? `…還有 ${more} 項` : '',
+          '\n草稿與一鍵關心：/admin/coaching',
+        ].filter(Boolean).join('\n')
+        await pushMessage(coachLineId, [{ type: 'text', text }]).catch((err: unknown) => {
+          logger.warn('教練摘要推播失敗', { error: err instanceof Error ? err.message : String(err) })
+        })
       }
     }
 

@@ -796,10 +796,18 @@ export async function GET(request: NextRequest) {
         const hadTraining = new Set((yTrainingRes.data || []).map((t: { client_id: string }) => t.client_id))
         const hadWellness = new Set((yWellnessRes.data || []).map((w: { client_id: string }) => w.client_id))
 
+        // 教練晨報看的是「所有活躍學員」，不是上面那份「有綁 LINE 才收得到提醒」的名單——
+        // 否則沒綁 LINE 的學員（例：Eddie）等於從教練視野裡整個消失。
+        const { data: digestClients } = await supabase
+          .from('clients')
+          .select('id, name, body_composition_enabled, nutrition_enabled, training_enabled, wellness_enabled')
+          .eq('is_active', true)
+        const coachViewClients = digestClients ?? clients
+
         const digestLines: string[] = []
 
         // 1. Clients who missed records yesterday
-        const missedClients = clients.filter(c => {
+        const missedClients = coachViewClients.filter(c => {
           const missed: string[] = []
           if (c.body_composition_enabled && !hadWeight.has(c.id)) missed.push('體重')
           if (c.nutrition_enabled && !hadNutrition.has(c.id)) missed.push('飲食')
@@ -826,11 +834,11 @@ export async function GET(request: NextRequest) {
           digestLines.push('')
           digestLines.push('⚠️ 需關注：')
           for (const w of lowEnergy) {
-            const name = clients.find(c => c.id === w.client_id)?.name || '未知'
+            const name = coachViewClients.find(c => c.id === w.client_id)?.name || '未知'
             digestLines.push(`  • ${name}：精力 ${w.energy_level}/5`)
           }
           for (const t of highRPE) {
-            const name = clients.find(c => c.id === t.client_id)?.name || '未知'
+            const name = coachViewClients.find(c => c.id === t.client_id)?.name || '未知'
             digestLines.push(`  • ${name}：RPE ${t.rpe}`)
           }
         }
@@ -852,7 +860,7 @@ export async function GET(request: NextRequest) {
           if (weights.length >= 7) {
             const range = Math.max(...weights) - Math.min(...weights)
             if (range <= 0.2) {
-              const name = clients.find(c => c.id === cid)?.name || '未知'
+              const name = coachViewClients.find(c => c.id === cid)?.name || '未知'
               plateauClients.push(name)
             }
           }
