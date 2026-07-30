@@ -69,8 +69,10 @@ export default function TodayNutritionIntake({
   // 拖進度條放手 → set 覆寫（連同重算的熱量一起寫，避免熱量條跟巨量對不上）
   const commitSet = useCallback(async (next: typeof eaten) => {
     setSaving(true)
+    const kcal = round(next.protein_grams * 4 + next.carbs_grams * 4 + next.fat_grams * 9)
+    // 熱量條樂觀更新：不等 SWR 回抓（否則按完達標熱量會停在舊值好幾秒）
+    setEaten(prev => ({ ...prev, calories: kcal }))
     try {
-      const kcal = round(next.protein_grams * 4 + next.carbs_grams * 4 + next.fat_grams * 9)
       const res = await fetch('/api/nutrition-logs', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -99,6 +101,25 @@ export default function TodayNutritionIntake({
       setSaving(false)
     }
   }, [clientCode, date, flashSaved, onMutate, intake])
+
+  // 一鍵定位：「達標」= 拉條跳到目標值，「沒達標」= 歸零（懶得拖拉條時用）
+  const setMacro = useCallback((key: MacroKey, v: number) => {
+    const next = { ...eaten, [key]: round(v) }
+    setEaten(next)
+    commitSet(next)
+  }, [eaten, commitSet])
+
+  // 三個巨量一次全部對齊目標（只打一次 API）
+  const hitAllTargets = useCallback(() => {
+    const next = {
+      ...eaten,
+      protein_grams: proteinTarget != null ? round(proteinTarget) : eaten.protein_grams,
+      carbs_grams: carbsTarget != null ? round(carbsTarget) : eaten.carbs_grams,
+      fat_grams: fatTarget != null ? round(fatTarget) : eaten.fat_grams,
+    }
+    setEaten(next)
+    commitSet(next)
+  }, [eaten, commitSet, proteinTarget, carbsTarget, fatTarget])
 
   // + 記一餐 → add 累加（伺服器端在現有值上加，跟 LINE 記餐同路徑）
   const submitMeal = useCallback(async () => {
@@ -161,7 +182,7 @@ export default function TodayNutritionIntake({
           )}
         </div>
       </div>
-      <p className="text-[11px] text-slate-400 mb-4">拖進度條設今天吃到哪，或按「＋記一餐」累加</p>
+      <p className="text-[11px] text-slate-400 mb-4">拖進度條設今天吃到哪；懶得拉就按「達標」直接對齊目標，或按「＋記一餐」累加</p>
 
       {/* 熱量：巨量算出來的，只顯示不拖 */}
       {caloriesTarget != null && (
@@ -200,7 +221,7 @@ export default function TodayNutritionIntake({
                 onPointerUp={() => commitSet({ ...eaten, [key]: round(eaten[key]) })}
                 onKeyUp={() => commitSet({ ...eaten, [key]: round(eaten[key]) })}
                 disabled={saving}
-                className="w-full h-2.5 appearance-none rounded-full cursor-pointer disabled:opacity-60
+                className="w-full appearance-none bg-transparent cursor-pointer disabled:opacity-60
                   [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4
                   [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white
                   [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-primary-600
@@ -208,25 +229,69 @@ export default function TodayNutritionIntake({
                   [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full
                   [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-primary-600"
                 style={{
-                  background: `linear-gradient(to right, ${over ? '#e11d48' : '#1E4A73'} ${pct}%, #e2e8f0 ${pct}%)`,
+                  // 手機端 globals.css 把 input 撐到 min-height:44px（觸控區），
+                  // 所以軌道用置中的 10px 色帶畫，看起來才是細拉條、手指還是有 44px 好按
+                  background: `linear-gradient(to right, ${over ? '#e11d48' : '#1E4A73'} ${pct}%, #e2e8f0 ${pct}%) center / 100% 10px no-repeat`,
+                  borderRadius: 9999,
                 }}
               />
-              <p className="text-[11px] mt-1 tabular-nums">
-                {over ? (
-                  <span className="text-rose-600">超標 +{round(value - target)}{unit}</span>
-                ) : remaining <= 0 ? (
-                  <span className="text-emerald-600">已達標</span>
-                ) : (
-                  <span className="text-slate-400">還差 {round(remaining)}{unit}</span>
-                )}
-              </p>
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <p className="text-[11px] tabular-nums">
+                  {over ? (
+                    <span className="text-rose-600">超標 +{round(value - target)}{unit}</span>
+                  ) : remaining <= 0 ? (
+                    <span className="text-emerald-600">已達標</span>
+                  ) : (
+                    <span className="text-slate-400">還差 {round(remaining)}{unit}</span>
+                  )}
+                </p>
+                {/* 一鍵定位：懶得拉拉條時直接按 */}
+                <div className="flex gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setMacro(key, target)}
+                    disabled={saving}
+                    aria-pressed={round(value) === round(target)}
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors disabled:opacity-50 ${
+                      round(value) === round(target)
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                        : 'bg-white border-slate-200 text-slate-500 hover:border-primary-300 hover:text-primary-600'
+                    }`}
+                  >
+                    達標
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMacro(key, 0)}
+                    disabled={saving}
+                    aria-pressed={round(value) === 0}
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors disabled:opacity-50 ${
+                      round(value) === 0
+                        ? 'bg-slate-100 border-slate-300 text-slate-600'
+                        : 'bg-white border-slate-200 text-slate-500 hover:border-primary-300 hover:text-primary-600'
+                    }`}
+                  >
+                    沒達標
+                  </button>
+                </div>
+              </div>
             </div>
           )
         })}
       </div>
 
+      {/* 三個巨量一次達標（今天照目標吃完，一鍵） */}
+      <button
+        type="button"
+        onClick={hitAllTargets}
+        disabled={saving}
+        className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-50 border border-slate-200 text-slate-700 hover:bg-primary-50 hover:border-primary-300 disabled:opacity-50 transition-colors"
+      >
+        今天照目標吃 · 全部達標
+      </button>
+
       {/* ＋記一餐 */}
-      <div className="mt-4 pt-4 border-t border-slate-100">
+      <div className="mt-3 pt-4 border-t border-slate-100">
         {!showMeal ? (
           <button
             onClick={() => setShowMeal(true)}

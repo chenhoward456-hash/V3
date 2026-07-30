@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, Fragment } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type { TrainingPlan, TrainingPlanExercise } from '@/hooks/useClientData'
 import { getCycleState, applyDeloadToDay, getTaipeiDayOfWeek } from '@/lib/periodization'
@@ -171,7 +171,6 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
                 <th className="text-left py-2 px-3 font-medium">動作</th>
                 <th className="text-center py-2 px-2 font-medium">組x次</th>
                 <th className="text-center py-2 px-2 font-medium">RPE</th>
-                <th className="text-left py-2 px-2 font-medium">備註</th>
               </tr>
             </thead>
             <tbody>
@@ -181,16 +180,18 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
                   originalSets?: string
                   originalRpe?: string
                 }
+                const hasNote = !!(ex.note && ex.note.trim())
                 return (
-                <tr key={i} className="border-b border-slate-200 last:border-b-0">
-                  <td className="py-2 px-3 font-medium text-gray-800">{ex.name}</td>
-                  <td className="py-2 px-2 text-center text-gray-600 tabular-nums">
+                <Fragment key={i}>
+                <tr className={hasNote ? '' : 'border-b border-slate-200 last:border-b-0'}>
+                  <td className={`px-3 font-medium text-gray-800 ${hasNote ? 'pt-2 pb-1' : 'py-2'}`}>{ex.name}</td>
+                  <td className={`px-2 text-center align-top text-gray-600 tabular-nums ${hasNote ? 'pt-2 pb-1' : 'py-2'}`}>
                     {ex.originalSets && (
                       <span className="line-through text-gray-300 mr-1">{ex.originalSets}</span>
                     )}
                     {ex.sets && ex.reps ? `${ex.sets}x${ex.reps}` : ex.sets || ex.reps || '-'}
                   </td>
-                  <td className="py-2 px-2 text-center">
+                  <td className={`px-2 text-center align-top ${hasNote ? 'pt-2 pb-1' : 'py-2'}`}>
                     {ex.originalRpe && (
                       <span className="line-through text-gray-300 text-[11px] mr-1 tabular-nums">{ex.originalRpe}</span>
                     )}
@@ -206,8 +207,16 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
                       <span className="text-gray-300">-</span>
                     )}
                   </td>
-                  <td className="py-2 px-2 text-gray-500 max-w-[100px] truncate">{ex.note || ''}</td>
                 </tr>
+                {/* 備註獨立一列（colSpan 全寬、不截字、可換行）：教練寫的動作提醒要看得完 */}
+                {hasNote && (
+                  <tr className="border-b border-slate-200 last:border-b-0">
+                    <td colSpan={3} className="px-3 pb-2 text-[12px] leading-relaxed text-slate-600 whitespace-pre-wrap break-words">
+                      {ex.note}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
                 )
               })}
             </tbody>
@@ -275,7 +284,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
                 <div className="space-y-0.5">
                   {day.exercises.map((ex, i) => (
                     <div key={i} className="flex items-center gap-2 text-[11px] text-gray-600">
-                      <span className="font-medium text-gray-700 min-w-0 truncate flex-1">{ex.name}</span>
+                      <span className="font-medium text-gray-700 min-w-0 flex-1 break-words">{ex.name}</span>
                       <span className="text-gray-400 shrink-0">
                         {ex.sets && ex.reps ? `${ex.sets}x${ex.reps}` : ''}
                         {ex.rpe ? ` @${ex.rpe}` : ''}
