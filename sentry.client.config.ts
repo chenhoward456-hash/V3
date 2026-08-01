@@ -16,5 +16,10 @@ Sentry.init({
     'ResizeObserver loop',
     'Non-Error promise rejection',
     /Loading chunk \d+ failed/,
+    // IG / FB / LINE 內建瀏覽器注入的腳本自己噴的錯，不是我們的 code
+    'webkit.messageHandlers',
+    '_AutofillCallbackHandler',
+    'instantSearchSDKJSBridgeClearHighlight',
+    /^Java(script)? exception occurred/i,
   ],
 })
