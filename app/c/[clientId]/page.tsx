@@ -451,6 +451,8 @@ export default function ClientDashboard() {
 
   // 課表卡手動切分化時，連動下方訓練紀錄表單的預選類型（null = 沿用 todayPlanType）
   const [switchedTrainingType, setSwitchedTrainingType] = useState<string | null>(null)
+  // 課表卡目前顯示的是哪一天（dayOfWeek）。拉A / 拉B 同類型，記錄表單要靠這個才知道帶哪一天的動作
+  const [selectedPlanDow, setSelectedPlanDow] = useState<number | null>(null)
 
   // 統一判斷今天是否為訓練日：已填記錄優先，沒填就看課表
   // 這樣碳水循環在你還沒填記錄時就能正確顯示訓練日碳水
@@ -1681,7 +1683,7 @@ export default function ClientDashboard() {
         {/* 今日訓練計畫（教練指導用戶 + 有訓練計畫） */}
         {view === 'training' && c.training_enabled && c.training_plan && c.subscription_tier === 'coached' && (
           <SectionErrorBoundary name="today-workout">
-          <TodayWorkout trainingPlan={c.training_plan} todayTrainingType={todayTraining?.training_type} onOverrideTypeChange={setSwitchedTrainingType} />
+          <TodayWorkout trainingPlan={c.training_plan} todayTrainingType={todayTraining?.training_type} onOverrideTypeChange={setSwitchedTrainingType} onSelectedDayChange={setSelectedPlanDow} />
           </SectionErrorBoundary>
         )}
         {view === 'training' && c.training_enabled && !c.training_plan && c.subscription_tier === 'coached' && (
@@ -1713,6 +1715,7 @@ export default function ClientDashboard() {
               simpleMode={c.simple_mode}
               todayPlanType={todayPlanType}
               overrideType={switchedTrainingType}
+              planDayOfWeek={selectedPlanDow}
               trainingPlan={c.training_plan}
               tier={c.subscription_tier || 'free'}
             />

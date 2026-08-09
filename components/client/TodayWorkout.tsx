@@ -10,13 +10,16 @@ interface TodayWorkoutProps {
   trainingPlan: TrainingPlan
   todayTrainingType?: string | null  // 今天實際記錄的訓練類型（有記錄時覆蓋課表）
   onOverrideTypeChange?: (type: string | null) => void  // 手動切分化時通知父層同步記錄表單
+  // 目前顯示的是課表裡哪一天（dayOfWeek）。同一個分化可能有兩天（拉A/拉B），
+  // 只傳 type 沒辦法讓下方記錄表單分辨，所以要一起傳 dayOfWeek。
+  onSelectedDayChange?: (dayOfWeek: number | null) => void
 }
 
 const DAY_LABELS: Record<number, string> = {
   1: '週一', 2: '週二', 3: '週三', 4: '週四', 5: '週五', 6: '週六', 7: '週日',
 }
 
-export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverrideTypeChange }: TodayWorkoutProps) {
+export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverrideTypeChange, onSelectedDayChange }: TodayWorkoutProps) {
   const [showFullPlan, setShowFullPlan] = useState(false)
   // 手動切換的分化（null = 沿用預設）。點課表卡上方的分化 chip 才會設值。
   const [overrideDow, setOverrideDow] = useState<number | null>(null)
@@ -34,11 +37,34 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
   // 今天實際記錄的類型 → 對應到課表裡哪一天的分化（例：記錄 pull → Pull Day）
   const recordedDow = useMemo(() => {
     if (!todayTrainingType || todayTrainingType === 'rest') return null
+    // 同一個類型可能排兩天（例：拉A 背厚度 / 拉B 背寬度）。
+    // 今天星期原本就排這個類型 → 直接用今天，不要退回去抓排在最前面的那一天。
+    const todayDay = trainingDays.find(d => d.dayOfWeek === todayDow)
+    if (todayDay && labelToTrainingType(todayDay.label) === todayTrainingType) return todayDow
     const match = trainingDays.find(d => labelToTrainingType(d.label) === todayTrainingType)
     return match?.dayOfWeek ?? null
-  }, [todayTrainingType, trainingDays])
+  }, [todayTrainingType, trainingDays, todayDow])
 
   const hasScheduledToday = trainingDays.some(d => d.dayOfWeek === todayDow)
+
+  // 同一個分化排兩天時（拉A 背厚度 / 拉B 背寬度），兩個 chip 都只顯示「拉」→ 使用者
+  // 分不出自己切到哪一天，切換後的標題也是「目前顯示 拉（今天原定：拉）」。
+  // 有重複的類型才補上星期當識別；只排一天的維持原本簡潔顯示。
+  const duplicatedTypes = useMemo(() => {
+    const count: Record<string, number> = {}
+    for (const d of trainingDays) {
+      const key = labelToTrainingType(d.label) || d.label || ''
+      count[key] = (count[key] || 0) + 1
+    }
+    return new Set(Object.keys(count).filter(k => count[k] > 1))
+  }, [trainingDays])
+
+  const dayLabelOf = (day: { label?: string; dayOfWeek: number } | null | undefined, withEmoji = false) => {
+    if (!day) return ''
+    const base = splitDisplayLabel(day.label, withEmoji)
+    const key = labelToTrainingType(day.label) || day.label || ''
+    return duplicatedTypes.has(key) ? `${base}·${DAY_LABELS[day.dayOfWeek] ?? ''}` : base
+  }
 
   // 預設選哪個分化：①已記錄 → 記錄對應的分化 ②否則 → 今天星期排定的分化
   const defaultDow = recordedDow ?? (hasScheduledToday ? todayDow : null)
@@ -61,10 +87,10 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
   // 顯示的分化 ≠ 今天星期原定 → 提示（不管是自動跟記錄還是手動切）
   const isSwitched = effectiveDow != null && effectiveDow !== todayDow
   const scheduledDay = trainingDays.find(d => d.dayOfWeek === todayDow)
-  const scheduledLabel = scheduledDay ? splitDisplayLabel(scheduledDay.label) : '休息'
+  const scheduledLabel = scheduledDay ? dayLabelOf(scheduledDay) : '休息'
   // 清掉手動切換後會回到的預設分化（記錄優先，否則星期）
   const defaultDay = defaultDow != null ? trainingDays.find(d => d.dayOfWeek === defaultDow) : null
-  const defaultLabel = defaultDay ? splitDisplayLabel(defaultDay.label) : '休息'
+  const defaultLabel = defaultDay ? dayLabelOf(defaultDay) : '休息'
 
   // 手動切分化 → 通知父層把下方「記錄動作明細」的訓練類型也預選好（沒切=null，父層沿用預設）
   useEffect(() => {
@@ -72,6 +98,11 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
     const day = overrideDow != null ? trainingDays.find(d => d.dayOfWeek === overrideDow) : null
     onOverrideTypeChange(day ? labelToTrainingType(day.label) : null)
   }, [overrideDow, trainingDays, onOverrideTypeChange])
+
+  // 一併把「目前是課表哪一天」告訴父層——拉A / 拉B 同類型，靠 dayOfWeek 才分得出來
+  useEffect(() => {
+    onSelectedDayChange?.(effectiveDow)
+  }, [effectiveDow, onSelectedDayChange])
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
@@ -83,7 +114,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
               {isActualRest
                 ? '今天休息'
                 : showPlan
-                ? `今日訓練 — ${splitDisplayLabel(todayPlan!.label)}`
+                ? `今日訓練 — ${dayLabelOf(todayPlan)}`
                 : '今天是休息日'}
             </h3>
             {isActualRest && (
@@ -91,7 +122,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
             )}
             {!isActualRest && isSwitched && (
               <p className="text-[11px] text-primary-600 mt-0.5">
-                目前顯示 {splitDisplayLabel(todayPlan!.label)}（今天原定：{scheduledLabel}）
+                目前顯示 {dayLabelOf(todayPlan)}（今天原定：{scheduledLabel}）
               </p>
             )}
             {trainingPlan.name && (
@@ -136,7 +167,7 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
                       : 'bg-slate-100 text-gray-600 hover:bg-slate-200'
                   }`}
                 >
-                  {splitDisplayLabel(d.label, true)}
+                  {dayLabelOf(d, true)}
                   {isScheduled && (
                     <span className={active ? 'ml-1 text-primary-100' : 'ml-1 text-primary-500'}>·今天</span>
                   )}

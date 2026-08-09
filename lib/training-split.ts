@@ -49,3 +49,24 @@ export function labelToTrainingType(label: string | null | undefined): string | 
   if (/rest|休息/.test(l)) return 'rest'
   return null
 }
+
+// ─────────────────────────────────────────────
+// 主項（compound lift）
+// ─────────────────────────────────────────────
+// 一個訓練類型的「預設主項」。舊的 training_logs 沒有 compound_lift 欄位，
+// 讀取時視為這裡的預設值——當初就是照這張表顯示的。
+export const DEFAULT_COMPOUND_LIFT: Record<string, string> = {
+  push: '臥推', pull: '槓鈴划船', legs: '深蹲',
+  chest: '臥推', shoulder: '肩推', arms: '彎舉',
+  full_body: '深蹲', upper_body: '臥推',
+}
+
+// 這筆訓練紀錄的主項是哪個動作。
+// ⚠️ 同一個分化可以排兩天（拉A 槓鈴划船 / 拉B 加重引體），主項不同。
+// 只用 training_type 比對會把兩個不同動作的重量混成同一條進步曲線。
+export function compoundLiftOf(
+  log: { compound_lift?: string | null; training_type?: string | null }
+): string | null {
+  if (log.compound_lift) return log.compound_lift
+  return (log.training_type && DEFAULT_COMPOUND_LIFT[log.training_type]) || null
+}

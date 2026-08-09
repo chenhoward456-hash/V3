@@ -110,6 +110,54 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 3) 每個動作各自的「上次」
+    //    同一個分化可能排兩天（例：拉A 背厚度 / 拉B 背寬度），只看 lastSameType
+    //    會抓到另一天的動作清單與重量。改成逐動作找它自己的上一次紀錄。
+    const sinceDate = new Date(date + 'T00:00:00Z')
+    sinceDate.setUTCDate(sinceDate.getUTCDate() - 120)
+    const sinceStr = sinceDate.toISOString().slice(0, 10)
+
+    const { data: recentSets, error: recentError } = await supabaseAdmin
+      .from('training_sets')
+      .select('exercise_name, muscle_group, weight, reps, rpe, is_main_lift, date, set_number')
+      .eq('client_id', resolvedId)
+      .lt('date', date)
+      .gte('date', sinceStr)
+      .order('date', { ascending: false })
+      .order('set_number', { ascending: true })
+
+    if (recentError) {
+      logger.warn('lastByExercise query failed', { message: recentError.message, code: recentError.code })
+    }
+
+    const lastByExercise: Record<string, {
+      exercise_name: string
+      muscle_group: string | null
+      date: string
+      weight: number | null
+      reps: number | null
+      num_sets: number
+    }> = {}
+
+    for (const s of recentSets ?? []) {
+      const key = s.exercise_name as string
+      const existing = lastByExercise[key]
+      if (!existing) {
+        // rows 已按日期新到舊排序 → 第一次遇到的就是最近一次
+        lastByExercise[key] = {
+          exercise_name: key,
+          muscle_group: (s.muscle_group as string) ?? null,
+          date: s.date as string,
+          weight: s.weight as number | null,
+          reps: s.reps as number | null,
+          num_sets: 1,
+        }
+      } else if (existing.date === s.date) {
+        existing.num_sets += 1   // 同一天的其他組 → 累加組數
+      }
+      // 更舊日期的同名動作直接忽略
+    }
+
     return createSuccessResponse({
       client_id: resolvedId,
       date,
@@ -118,6 +166,7 @@ export async function GET(request: NextRequest) {
         date: lastSameTypeDate,
         sets: lastSameTypeSets,
       },
+      lastByExercise,
     })
 
   } catch (error) {

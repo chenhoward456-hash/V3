@@ -2,6 +2,7 @@
 
 import { memo, useMemo } from 'react'
 import { calcRecommendedStageWeight } from '@/lib/stage-weight'
+import { compoundLiftOf } from '@/lib/training-split'
 
 interface CompletedItem {
   icon: string
@@ -15,6 +16,7 @@ interface TrainingLog {
   sets?: number | null
   rpe?: number | null
   compound_weight?: number | null
+  compound_lift?: string | null
   compound_reps?: number | null
 }
 
@@ -74,22 +76,25 @@ function generateInsight(
   // ── Priority 1: Training progress (compound lift trending up) ──
   const typesWithCompound = activeLogs.filter(l => l.compound_weight != null && l.compound_weight > 0)
   if (typesWithCompound.length >= 3) {
-    // Group by training_type, check last 3 of same type
-    const typeGroups: Record<string, TrainingLog[]> = {}
+    // 依「主項動作」分組，不是依 training_type。
+    // 同一個分化可以排兩天（拉A 槓鈴划船 / 拉B 加重引體），照 type 分會把
+    // 兩個不同動作的重量混在一起比，得出假的「連漲 3 次」。
+    const liftGroups: Record<string, TrainingLog[]> = {}
     for (const l of typesWithCompound) {
-      if (!typeGroups[l.training_type]) typeGroups[l.training_type] = []
-      typeGroups[l.training_type].push(l)
+      const lift = compoundLiftOf(l)
+      if (!lift) continue
+      if (!liftGroups[lift]) liftGroups[lift] = []
+      liftGroups[lift].push(l)
     }
-    for (const [type, logs] of Object.entries(typeGroups)) {
+    for (const [lift, logs] of Object.entries(liftGroups)) {
       if (logs.length < 3) continue
       const last3 = logs.slice(0, 3) // already sorted desc
       const w = last3.map(l => l.compound_weight!)
       // Check if strictly increasing (oldest to newest)
       if (w[2] < w[1] && w[1] < w[0]) {
-        const label = TYPE_LABELS[type] || type
         const gain = w[0] - w[2]
         return {
-          message: `${label}主項連漲 3 次（+${gain}kg），保持這個節奏`,
+          message: `${lift}連漲 3 次（+${gain}kg），保持這個節奏`,
           type: 'progress',
         }
       }

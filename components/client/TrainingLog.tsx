@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Copy, Trash2 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useMeasuredContainer } from '@/hooks/useMeasuredContainer'
@@ -8,6 +8,7 @@ import { TRAINING_TYPES, isWeightTraining } from './types'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 import { getCycleState } from '@/lib/periodization'
+import { DEFAULT_COMPOUND_LIFT, compoundLiftOf } from '@/lib/training-split'
 
 interface ModeReason {
   signal: string
@@ -60,11 +61,12 @@ interface TrainingLogProps {
   simpleMode?: boolean
   todayPlanType?: string | null
   overrideType?: string | null  // 上方課表卡手動切分化時同步預選訓練類型
+  planDayOfWeek?: number | null  // 上方課表卡目前顯示的是課表哪一天（拉A/拉B 同類型，靠這個分辨）
   trainingPlan?: any
   tier?: string
 }
 
-export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode, todayPlanType, overrideType, trainingPlan, tier }: TrainingLogProps) {
+export default function TrainingLog({ todayTraining, trainingLogs, wellness, clientId, date, onMutate, carbsTrainingDay, carbsRestDay, simpleMode, todayPlanType, overrideType, planDayOfWeek, trainingPlan, tier }: TrainingLogProps) {
   const { ref: rpeChartRef, measured: rpeChartMeasured } = useMeasuredContainer()
   const today = date || getLocalDateStr()
   const [submitting, setSubmitting] = useState(false)
@@ -117,11 +119,32 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   const [detailedSets, setDetailedSets] = useState<ExerciseSet[]>([])
   const [showDetailedSets, setShowDetailedSets] = useState(false)
   const [lastTypeSets, setLastTypeSets] = useState<ExerciseSet[]>([])
+  // 每個動作各自的上一次紀錄（不限同一天的分化）。key = 動作名稱
+  const [lastByExercise, setLastByExercise] = useState<Record<string, ExerciseSet>>({})
   const [detailedLoaded, setDetailedLoaded] = useState(false)
+  // 目前已載入的組合（類型|課表哪一天|日期），換組合才重抓
+  const loadKeyRef = useRef('')
+
+  // 課表裡「現在要看的那一天」：上方課表卡有切分化就跟著切，沒切就用今天星期。
+  // 用 dayOfWeek 而不是訓練類型——拉A / 拉B 同類型，只看類型會固定抓到排在前面的那天。
+  const selectedPlanDay = useMemo(() => {
+    if (!trainingPlan?.days?.length) return null
+    const now = new Date()
+    const taipeiStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
+    const taipeiDate = new Date(taipeiStr + 'T12:00:00')
+    const jsDay = taipeiDate.getDay()
+    const dow = planDayOfWeek ?? (jsDay === 0 ? 7 : jsDay)
+    return trainingPlan.days.find((d: any) => d.dayOfWeek === dow) ?? null
+  }, [trainingPlan, planDayOfWeek])
 
   // 載入今日已存的動作明細 + 上次同類型
+  // 用 key（類型＋課表哪一天＋日期）擋重複請求，而不是用「載入過就不再載」的旗標。
+  // 舊寫法有競態：非同步抓完之後，另一個「重置」effect 會把剛帶進來的清空 → 明細變空的。
   useEffect(() => {
-    if (!showDetailedSets || detailedLoaded || !form.training_type) return
+    if (!showDetailedSets || !form.training_type) return
+    const key = `${form.training_type}|${planDayOfWeek ?? ''}|${today}`
+    if (loadKeyRef.current === key) return
+    loadKeyRef.current = key
     setDetailedLoaded(true)
     const loadSets = async () => {
       try {
@@ -154,43 +177,41 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         }
         const todaySets = groupSets(data.data?.sets || [])
         const prevSets = groupSets(data.data?.lastSameType?.sets || [])
+        const byExercise: Record<string, ExerciseSet> = data.data?.lastByExercise || {}
+
+        const planDay = selectedPlanDay
+
         if (todaySets.length > 0) {
+          // ① 今天已經存過 → 照存的
           setDetailedSets(todaySets)
+        } else if (planDay?.exercises?.length > 0) {
+          // ② 課表當骨架（動作與組數照課表），重量／次數用「這個動作自己的上一次」補
+          setDetailedSets(planDay.exercises.map((ex: any, i: number) => {
+            const setsMatch = ex.sets?.match(/(\d+)/)
+            const repsMatch = ex.reps?.match(/(\d+)/)
+            const prev = byExercise[ex.name]
+            return {
+              exercise_name: ex.name,
+              muscle_group: prev?.muscle_group || '',
+              set_number: i + 1,
+              num_sets: setsMatch ? parseInt(setsMatch[1]) : (prev?.num_sets ?? 3),
+              weight: prev?.weight ?? null,
+              reps: repsMatch ? parseInt(repsMatch[1]) : (prev?.reps ?? null),
+              rpe: null,
+              is_main_lift: i === 0,
+            }
+          }))
         } else if (prevSets.length > 0) {
+          // ③ 沒課表才退回「上次同類型」
           setDetailedSets(prevSets.map(s => ({ ...s, rpe: null })))
-        } else if (trainingPlan?.days?.length > 0) {
-          // Fallback: 從課表帶入今天的動作
-          const now = new Date()
-          const taipeiStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
-          const taipeiDate = new Date(taipeiStr + 'T12:00:00')
-          const jsDay = taipeiDate.getDay()
-          const dow = jsDay === 0 ? 7 : jsDay
-          const todayPlan = trainingPlan.days.find((d: any) => d.dayOfWeek === dow)
-          if (todayPlan?.exercises?.length > 0) {
-            setDetailedSets(todayPlan.exercises.map((ex: any, i: number) => {
-              const setsMatch = ex.sets?.match(/(\d+)/)
-              const repsMatch = ex.reps?.match(/(\d+)/)
-              return {
-                exercise_name: ex.name,
-                muscle_group: '',
-                set_number: i + 1,
-                num_sets: setsMatch ? parseInt(setsMatch[1]) : 3,
-                weight: null,  // 重量留空讓客戶填
-                reps: repsMatch ? parseInt(repsMatch[1]) : null,
-                rpe: null,
-                is_main_lift: i === 0,
-              }
-            }))
-          }
         }
+
         setLastTypeSets(prevSets.map(s => ({ ...s, rpe: null })))
+        setLastByExercise(byExercise)
       } catch { /* silent */ }
     }
     loadSets()
-  }, [showDetailedSets, detailedLoaded, form.training_type, clientId, today])
-
-  // 重置 detailedLoaded when training type changes
-  useEffect(() => { setDetailedLoaded(false); setDetailedSets([]); setLastTypeSets([]) }, [form.training_type])
+  }, [showDetailedSets, form.training_type, planDayOfWeek, clientId, today, selectedPlanDay])
 
   const addExercise = (name: string = '', muscleGroup: string = '') => {
     const nextSet = detailedSets.length > 0 ? Math.max(...detailedSets.map(s => s.set_number)) + 1 : 1
@@ -255,19 +276,30 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
     return match ? match[1] : null
   })
 
-  // 主項名稱對應（根據訓練類型）
-  const COMPOUND_LIFT: Record<string, string> = {
-    push: '臥推', pull: '槓鈴划船', legs: '深蹲',
-    chest: '臥推', shoulder: '肩推', arms: '彎舉',
-    full_body: '深蹲', upper_body: '臥推',
-  }
-  const compoundLiftName = form.training_type ? COMPOUND_LIFT[form.training_type] : null
+  // 主項名稱對應（根據訓練類型）——共用定義見 lib/training-split
+  const COMPOUND_LIFT = DEFAULT_COMPOUND_LIFT
+  // 課表當天的主項＝第一個正式動作（暖身／posing／真空不算）。
+  // 同一個分化可能排兩天（拉A 槓鈴划船 / 拉B 加重引體），主項不同——
+  // 所以優先用課表那天的，抓不到才退回「一個類型配一個固定主項」的舊對照表。
+  const planMainLift = useMemo(() => {
+    const ex = selectedPlanDay?.exercises?.find(
+      (e: any) => !/^90\/90|posing|真空/i.test(e?.name || '')
+    )
+    return (ex?.name as string) ?? null
+  }, [selectedPlanDay])
 
-  // 主項歷史紀錄（最近 5 次同類型，有填 compound_weight 的）
+  const compoundLiftName = planMainLift ?? (form.training_type ? COMPOUND_LIFT[form.training_type] : null)
+
+  // 主項歷史紀錄（最近 5 次「同一個動作」，有填 compound_weight 的）
+  // 舊資料沒有 compound_lift → 視為該 type 的預設主項，才不會把兩個不同動作的重量混成一條曲線
   const compoundHistory = useMemo(() => {
     if (!form.training_type || !compoundLiftName) return []
     return (trainingLogs || [])
-      .filter((l: any) => l.training_type === form.training_type && l.compound_weight != null && l.date !== today)
+      .filter((l: any) =>
+        l.training_type === form.training_type &&
+        l.compound_weight != null &&
+        l.date !== today &&
+        compoundLiftOf(l) === compoundLiftName)
       .sort((a: any, b: any) => b.date.localeCompare(a.date))
       .slice(0, 5)
   }, [form.training_type, trainingLogs, today, compoundLiftName])
@@ -311,6 +343,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           rpe: isRest ? null : (form.rpe || null),
           compound_weight: isRest || isCardio ? null : (form.compound_weight || null),
           compound_reps: isRest || isCardio ? null : (form.compound_reps || null),
+          // 記下這個重量是哪個動作的，之後才比得出「同一個動作」的進步
+          compound_lift: isRest || isCardio ? null : (compoundLiftName || null),
           note: (isCardio && cardioSubtype ? `[有氧:${cardioSubtype}] ` : '') + (form.note || '') || null
         })
       })
@@ -925,7 +959,10 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
 
                 {/* 動作列表 */}
                 {detailedSets.map((set, i) => {
-                  const prevSame = lastTypeSets.find(s => s.exercise_name === set.exercise_name && s.set_number === set.set_number)
+                  // 「上次」照動作名稱找它自己的上一次，不綁 set_number、也不綁同一天的分化
+                  // （舊版用 set_number 比對，動作換位置就對不上；用同類型會抓到另一個拉日）
+                  const prevSame = lastByExercise[set.exercise_name]
+                    ?? lastTypeSets.find(s => s.exercise_name === set.exercise_name)
                   return (
                     <div key={i} className="bg-white rounded-lg p-2.5 border border-gray-100 space-y-1.5">
                       <div className="flex items-center gap-2">

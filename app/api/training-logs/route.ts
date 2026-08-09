@@ -82,6 +82,8 @@ export async function POST(request: NextRequest) {
     const { clientId, date, training_type, duration, sets, rpe, note } = parsed.data
     const compound_weight = body.compound_weight ?? null
     const compound_reps = body.compound_reps ?? null
+    // 這筆主項重量是哪個動作（拉A 槓鈴划船 / 拉B 加重引體）。沒帶就留 NULL＝該 type 的預設主項
+    const compound_lift = typeof body.compound_lift === 'string' ? body.compound_lift.slice(0, 100) : null
 
     // Post-schema conditional validation
     if (training_type !== 'rest') {
@@ -183,12 +185,14 @@ export async function POST(request: NextRequest) {
       upsertData.rpe = null
       upsertData.compound_weight = null
       upsertData.compound_reps = null
+      upsertData.compound_lift = null
     } else {
       upsertData.duration = duration ?? null
       upsertData.sets = sets ?? null
       upsertData.rpe = rpe ?? null
       upsertData.compound_weight = typeof compound_weight === 'number' ? compound_weight : null
       upsertData.compound_reps = typeof compound_reps === 'number' ? compound_reps : null
+      upsertData.compound_lift = compound_lift
     }
 
     const { data: training, error: trainingError } = await supabaseAdmin
