@@ -21,7 +21,7 @@
 90% 的人只練了 1/3。
 
 作者：Howard｜CSCS 認證教練
-網址：howardprotocol.com
+網址：howard456.vercel.app
 版次：VOL. 01 · 2026
 ```
 
@@ -466,7 +466,7 @@ HRV 不是「心跳快慢」，是 **心跳之間時間間隔的變化幅度**�
 接下來怎麼走，是你的選擇。
 
 如果想知道目前最該優先優化什麼，可以填一份免費診斷（5 分鐘）：
-👉 **howardprotocol.com/diagnosis**
+👉 **howard456.vercel.app/diagnosis**
 
 不管你下一步是什麼 — 這份 PDF 是你的，希望它能幫你少走幾年彎路。
 
@@ -480,7 +480,7 @@ HRV 不是「心跳快慢」，是 **心跳之間時間間隔的變化幅度**�
 - CSCS（美國肌力與體能訓練協會）認證教練
 - 6+ 年系統開發經驗
 - 帶過數百名學員從新手到進階
-- 網站：howardprotocol.com
+- 網站：howard456.vercel.app
 - LINE：@howardprotocol
 
 ### 動作篇即將上線

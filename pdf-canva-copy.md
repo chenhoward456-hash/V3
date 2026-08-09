@@ -19,7 +19,7 @@
 10 年累積下來差很多。
 
 作者：Howard｜CSCS 認證教練
-網址：howardprotocol.com
+網址：howard456.vercel.app
 版次：VOL. 01 · 2026
 ```
 
@@ -76,7 +76,7 @@
 ③ 牆面背屈測試 ≥ 35°，不足者優先處理踝活動度
 ④ 徒手版本未通過前不進行負重深蹲
 
-頁腳：HOWARD PROTOCOL · howardprotocol.com
+頁腳：HOWARD PROTOCOL · howard456.vercel.app
 ```
 
 ---
@@ -395,14 +395,14 @@ STEP 01 · 免費
 5 分鐘智能診斷
 5 分鐘填完，看你目前的訓練/恢復/營養狀態，以及最該優先優化的環節。
 按鈕：開始診斷 →
-連結：howardprotocol.com/diagnosis
+連結：howard456.vercel.app/diagnosis
 
 CTA 卡片 2（深藍底）：
 STEP 02 · NT$499/月
 自主管理版系統
 24 小時智能引擎自動追蹤體重、HRV、訓練狀態，自動調整熱量與碳水分配。
 按鈕：了解方案 →
-連結：howardprotocol.com/remote
+連結：howard456.vercel.app/remote
 
 頁腳：© 2026 HOWARD PROTOCOL · 內容僅供參考，不構成醫療建議
 ```
@@ -416,7 +416,7 @@ STEP 02 · NT$499/月
 CSCS（美國肌力與體能訓練協會）認證教練
 6+ 年系統開發經驗
 帶過數百名學員從新手到進階
-網站：howardprotocol.com
+網站：howard456.vercel.app
 LINE：@howardprotocol
 
 免責聲明

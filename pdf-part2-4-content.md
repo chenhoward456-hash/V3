@@ -471,7 +471,7 @@ HRV 不是「心跳快慢」，是 **心跳之間時間間隔的變化幅度**�
 接下來怎麼走，是你的選擇。
 
 如果想知道目前最該優先優化什麼，可以填一份免費診斷（5 分鐘）：
-👉 **howardprotocol.com/diagnosis**
+👉 **howard456.vercel.app/diagnosis**
 
 不管你下一步是什麼 — 這份 PDF 是你的，希望它能幫你少走幾年彎路。
 
@@ -520,10 +520,10 @@ HRV 不是「心跳快慢」，是 **心跳之間時間間隔的變化幅度**�
 
 #### 路徑 B：直接用系統
 你可以從免費診斷開始，5 分鐘看你目前最該優化什麼：
-👉 [免費診斷 · howardprotocol.com/diagnosis]
+👉 [免費診斷 · howard456.vercel.app/diagnosis]
 
 如果診斷結果顯示你卡在「需要系統化追蹤」，可以直接訂閱 499 自主管理版：
-👉 [howardprotocol.com/remote]
+👉 [howard456.vercel.app/remote]
 
 ### 最後一段
 這份 PDF 不管你訂不訂，都是你的。

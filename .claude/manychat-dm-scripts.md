@@ -72,7 +72,7 @@
 ```
 這是免費身體組成分析工具 👇
 
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=tdee
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=tdee
 
 三分鐘完成，你會看到你的 TDEE。
 
@@ -89,7 +89,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 很多學員跟我說，光是知道自己真正的 TDEE，第一個月就突破了卡關。
 
 三分鐘就能完成，試試看 👇
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=tdee_reminder
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=tdee_reminder
 ```
 
 **訊息 4（48 小時後，仍未互動才發）**
@@ -98,7 +98,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 最後分享一個東西，我不會再打擾你了 :)
 
 這是我自己六年的體態數據追蹤紀錄：
-https://howardprotocol.com/case
+https://howard456.vercel.app/case
 
 看完你就會知道，為什麼「用數據管理身體」跟一般的減肥方法完全不同。
 
@@ -120,7 +120,7 @@ https://howardprotocol.com/case
 ```
 來！這是免費體態診斷工具 👇
 
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=diagnosis
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=diagnosis
 
 填完基本資料（體重、身高、活動量），馬上算出你的 TDEE。
 
@@ -146,7 +146,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 ```
 對了，如果你好奇「數據化管理身體」到底是什麼感覺，可以看看我自己的故事 👇
 
-https://howardprotocol.com/case
+https://howard456.vercel.app/case
 
 六年的數據全部公開，包括我發現慢性發炎的過程。
 ```
@@ -199,7 +199,7 @@ Howard Protocol 的 AI 飲食顧問可以做到這件事。
 ✅ 飲食數據分析
 
 或者你也可以先做免費體態診斷，算出你的基礎數字 👇
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=carb_cycling
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=carb_cycling
 ```
 
 **訊息 4（48 小時後）**
@@ -210,7 +210,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 如果試了之後有任何問題，都可以直接回覆這則訊息。
 
 或者你想看看其他學員的成果？👇
-https://howardprotocol.com/case
+https://howard456.vercel.app/case
 ```
 
 ---
@@ -228,7 +228,7 @@ https://howardprotocol.com/case
 
 先分享我自己的——我連續追蹤身體數據六年，包括體重、體脂、血液報告、荷爾蒙...全部公開在這裡 👇
 
-https://howardprotocol.com/case
+https://howard456.vercel.app/case
 
 重點是：過程不是一帆風順的。我中間發現了慢性發炎、荷爾蒙失衡，這些都是靠數據才抓到的。
 ```
@@ -251,10 +251,10 @@ https://howardprotocol.com/case
 ```
 如果你想了解哪個方案適合你，可以看這裡 👇
 
-https://howardprotocol.com/remote
+https://howard456.vercel.app/remote
 
 或者先從免費體態診斷開始，了解你現在的身體狀況：
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=case
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=case
 
 有問題隨時問我！
 ```
@@ -288,7 +288,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 但如果你的飲食和訓練都沒有大改變，而體重就是不動，建議先確認一下你的 TDEE 有沒有算對。
 
 免費體態診斷可以幫你重新算 👇
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=plateau_2w
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=plateau_2w
 ```
 
 如果選「1-3 個月」：
@@ -298,7 +298,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 這時候需要做的不是「吃更少」，而是策略性地調整（比如碳循環、飲食休息日）。
 
 建議先確認你目前的 TDEE 和基礎數字 👇
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=plateau_1m
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=plateau_1m
 ```
 
 如果選「超過 3 個月」：
@@ -313,7 +313,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 我自己就是靠血液報告發現慢性發炎的。
 
 建議先做免費體態診斷看看基礎數字 👇
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=plateau_3m
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=plateau_3m
 
 如果情況比較複雜，教練指導方案（NT$2,999/月）包含血液報告分析。
 ```
@@ -323,7 +323,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 ```
 對了，這是我自己六年的體態數據追蹤紀錄，包括我自己卡關的經歷 👇
 
-https://howardprotocol.com/case
+https://howard456.vercel.app/case
 
 看完你可能會發現，你的卡關原因跟你想的不一樣。
 ```
@@ -336,7 +336,7 @@ https://howardprotocol.com/case
 有時候光是開始記錄，就能發現問題在哪。
 
 免費註冊，不需要信用卡 👇
-https://howardprotocol.com/join?plan=free&utm_source=ig&utm_medium=manychat&utm_campaign=plateau_free
+https://howard456.vercel.app/join?plan=free&utm_source=ig&utm_medium=manychat&utm_campaign=plateau_free
 ```
 
 ---
@@ -367,7 +367,7 @@ CSCS 教練每週檢視數據 + LINE 一對一
 → 每天不到 NT$100，比一堂私人教練課便宜
 
 完整比較在這裡 👇
-https://howardprotocol.com/remote?utm_source=ig&utm_medium=manychat&utm_campaign=plans
+https://howard456.vercel.app/remote?utm_source=ig&utm_medium=manychat&utm_campaign=plans
 ```
 
 > [快速回覆] 我想了解 $499 / 我想了解 $2,999 / 先看免費方案
@@ -381,7 +381,7 @@ https://howardprotocol.com/remote?utm_source=ig&utm_medium=manychat&utm_campaign
 大部分學員從這裡開始。AI 飲食顧問可以 24 小時隨時問，系統會自動分析你的飲食數據。
 
 首月 NT$399 優惠中，月繳制，隨時可取消 👇
-https://howardprotocol.com/join?plan=self_managed&utm_source=ig&utm_medium=manychat&utm_campaign=plan_499
+https://howard456.vercel.app/join?plan=self_managed&utm_source=ig&utm_medium=manychat&utm_campaign=plan_499
 ```
 
 如果選 $2,999：
@@ -393,7 +393,7 @@ https://howardprotocol.com/join?plan=self_managed&utm_source=ig&utm_medium=manyc
 如果你有血液報告，也可以一起分析。
 
 有興趣的話可以加 LINE 詳談 👇
-https://howardprotocol.com/remote?utm_source=ig&utm_medium=manychat&utm_campaign=plan_2999
+https://howard456.vercel.app/remote?utm_source=ig&utm_medium=manychat&utm_campaign=plan_2999
 ```
 
 如果選免費：
@@ -401,7 +401,7 @@ https://howardprotocol.com/remote?utm_source=ig&utm_medium=manychat&utm_campaign
 免費方案完全不用付錢，也不需要信用卡。
 
 先用免費方案建立追蹤習慣，之後想升級隨時可以 👇
-https://howardprotocol.com/join?plan=free&utm_source=ig&utm_medium=manychat&utm_campaign=plan_free
+https://howard456.vercel.app/join?plan=free&utm_source=ig&utm_medium=manychat&utm_campaign=plan_free
 ```
 
 **訊息 3（48 小時後，未點連結才發）**
@@ -412,7 +412,7 @@ https://howardprotocol.com/join?plan=free&utm_source=ig&utm_medium=manychat&utm_
 不管你選哪個方案，第一步都一樣：了解你現在的身體狀況。
 
 這個免費體態診斷只要三分鐘 👇
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=plans_fallback
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=plans_fallback
 
 做完你會更清楚自己需要什麼。
 ```
@@ -447,7 +447,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 那時候訓練和飲食都做對了，但身體就是沒有反應。直到看了血液報告才找到原因。
 
 完整故事在這裡 👇
-https://howardprotocol.com/case
+https://howard456.vercel.app/case
 
 如果你有最近的血液報告，歡迎跟我分享，我可以幫你看看。
 ```
@@ -460,7 +460,7 @@ https://howardprotocol.com/case
 Howard 會根據你的血液數據，調整你的營養和補劑建議。
 
 如果你想先了解基本的體態狀況，免費體態診斷也是一個好的開始 👇
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=blood
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=blood
 
 有問題隨時問我！
 ```
@@ -481,7 +481,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 不管你的目標是減脂、增肌、還是改善體態，第一步都一樣：了解你現在的身體狀況。
 
 這個免費體態診斷只要三分鐘 👇
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=start
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=start
 
 填完你會馬上看到你的 TDEE！
 ```
@@ -494,7 +494,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 很多人做完之後跟我說：「原來我的 TDEE 跟我以為的差這麼多！」
 
 三分鐘就能完成，免費的 👇
-https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=start_reminder
+https://howard456.vercel.app/diagnosis?utm_source=ig&utm_medium=manychat&utm_campaign=start_reminder
 ```
 
 **訊息 3（48 小時後，已完成診斷但未註冊）**
@@ -503,7 +503,7 @@ https://howardprotocol.com/diagnosis?utm_source=ig&utm_medium=manychat&utm_campa
 看到你的分析結果了嗎？
 
 如果你想要保存結果、開始追蹤體重和飲食，免費方案馬上就能開通，不需要信用卡 👇
-https://howardprotocol.com/join?plan=free&utm_source=ig&utm_medium=manychat&utm_campaign=start_join
+https://howard456.vercel.app/join?plan=free&utm_source=ig&utm_medium=manychat&utm_campaign=start_join
 
 想要 AI 飲食顧問幫你分析數據？自主管理方案首月只要 NT$399。
 

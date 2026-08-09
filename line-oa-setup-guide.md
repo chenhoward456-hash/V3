@@ -169,7 +169,7 @@ PDF Part 3「碳水循環」那頁有完整分配表。
 標題：🎯 免費診斷 · 5 分鐘
 副標：看你目前最該優化什麼
 按鈕：開始診斷
-連結：https://howardprotocol.com/diagnosis
+連結：https://howard456.vercel.app/diagnosis
 ```
 
 **Bubble 3**：
@@ -244,7 +244,7 @@ PDF Part 3「碳水循環」那頁有完整分配表。
 • 過度訓練早期偵測
 • Refeed 自動觸發
 按鈕：了解方案
-連結：https://howardprotocol.com/remote
+連結：https://howard456.vercel.app/remote
 ```
 
 **Bubble 3**（卡片訊息）：
@@ -258,7 +258,7 @@ PDF Part 3「碳水循環」那頁有完整分配表。
 • 每月 1 次視訊
 • 限收 20 人
 按鈕：了解方案
-連結：https://howardprotocol.com/remote
+連結：https://howard456.vercel.app/remote
 ```
 
 **Bubble 4**：
