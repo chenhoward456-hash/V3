@@ -1149,7 +1149,14 @@ export default function ClientDashboard() {
               const v = toView[sectionId]
               if (v) { setView(v); window.scrollTo({ top: 0, behavior: 'smooth' }) }
             }}
-            showQuickWeight={c.body_composition_enabled && !(latestBodyData && latestBodyData.date === selectedDate)}
+            // 記完不要把整行收掉——學員會找不到自己填了什麼、也沒地方改（2026-08-10 Sean 回報）。
+            // 一律顯示；已記過就由 todayWeight 走「數值 + 改」那一態。
+            showQuickWeight={!!c.body_composition_enabled}
+            todayWeight={
+              latestBodyData && latestBodyData.date === selectedDate && latestBodyData.weight != null
+                ? Number(latestBodyData.weight)
+                : null
+            }
             onQuickWeight={async (weight) => {
               try {
                 // 回聲素材：記之前先抓上一筆體重（此時 latestBodyData 還是舊資料）

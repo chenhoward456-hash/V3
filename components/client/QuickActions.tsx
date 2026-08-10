@@ -15,9 +15,11 @@ interface QuickActionsProps {
     peakLabel?: string | null
     streak?: number | null
   }
-  /** 一鍵記今天體重：今天還沒量時，直接在最上面打一個數字就好（不用展開、不用開 modal） */
+  /** 一鍵記今天體重：直接在最上面打一個數字就好（不用展開、不用開 modal） */
   showQuickWeight?: boolean
   onQuickWeight?: (weight: number) => Promise<boolean>
+  /** 今天已記的體重；有值就顯示數值＋「改」，而不是把整行藏起來 */
+  todayWeight?: number | null
   /** 一鍵記今天飲食：今天還沒記時，達標/沒達標兩顆按鈕，把「填一張表」降成一下 */
   showQuickNutrition?: boolean
   onQuickNutrition?: (compliant: boolean) => Promise<boolean>
@@ -49,18 +51,44 @@ function QuickNutritionInline({ onSubmit }: { onSubmit: (compliant: boolean) => 
   )
 }
 
-/** 早上打開就能直接記體重的一行輸入 — 砍掉「展開區塊→滑過圖表→開 modal→存」那 6 步 */
-function QuickWeightInline({ onSubmit }: { onSubmit: (w: number) => Promise<boolean> }) {
+/** 早上打開就能直接記體重的一行輸入 — 砍掉「展開區塊→滑過圖表→開 modal→存」那 6 步
+ *
+ * ⚠️ 記完不要把整行藏起來。舊版條件是「今天還沒量才顯示」，學員記完之後入口整個消失，
+ * 只剩底部一顆綠色打勾 chip → 他看不到自己填了什麼、也找不到地方改，會以為功能壞了
+ * （2026-08-10 Sean 實際回報）。改成記完顯示數值 + 一顆「改」，要改再回到輸入態。 */
+function QuickWeightInline({ onSubmit, recordedWeight }: { onSubmit: (w: number) => Promise<boolean>; recordedWeight?: number | null }) {
   const [val, setVal] = useState('')
   const [busy, setBusy] = useState(false)
+  const [editing, setEditing] = useState(false)
   const submit = async () => {
     const w = parseFloat(val)
     if (isNaN(w) || w < 20 || w > 300) return
     setBusy(true)
     const ok = await onSubmit(w)
     setBusy(false)
-    if (ok) setVal('')
+    if (ok) { setVal(''); setEditing(false) }
   }
+
+  // 今天已經記過 → 顯示記了多少，不要讓入口消失
+  if (recordedWeight != null && !editing) {
+    return (
+      <div className="flex items-center gap-2 mb-3 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2.5">
+        <span className="text-sm text-gray-700 font-medium shrink-0">今天體重</span>
+        <span className="ml-auto flex items-center gap-1.5 shrink-0">
+          <span className="text-base font-bold text-slate-800 tabular-nums">{recordedWeight}</span>
+          <span className="text-sm text-gray-400">kg</span>
+          <Check className="w-4 h-4 text-emerald-500" />
+        </span>
+        <button
+          onClick={() => { setVal(String(recordedWeight)); setEditing(true) }}
+          className="shrink-0 ml-2 px-3 py-2 rounded-lg text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 transition-colors"
+        >
+          改
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex items-center gap-2 mb-3 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2.5">
       <span className="text-sm text-gray-700 font-medium shrink-0">今天體重</span>
@@ -138,7 +166,7 @@ function QuickTrainingInline({ onSubmit }: { onSubmit: (t: string) => Promise<bo
   )
 }
 
-export default function QuickActions({ enabledSections, onNavigate, topSummary, showQuickWeight, onQuickWeight, showQuickNutrition, onQuickNutrition, showQuickSupplements, onQuickSupplements, showQuickWellness, onQuickWellness, showQuickTraining, onQuickTraining }: QuickActionsProps) {
+export default function QuickActions({ enabledSections, onNavigate, topSummary, showQuickWeight, onQuickWeight, todayWeight, showQuickNutrition, onQuickNutrition, showQuickSupplements, onQuickSupplements, showQuickWellness, onQuickWellness, showQuickTraining, onQuickTraining }: QuickActionsProps) {
   if (enabledSections.length === 0) return null
 
   const completedCount = enabledSections.filter(s => s.completed).length
@@ -161,7 +189,7 @@ export default function QuickActions({ enabledSections, onNavigate, topSummary, 
       )}
 
       {/* 一鍵記今天體重（今天還沒量才出現） */}
-      {showQuickWeight && onQuickWeight && <QuickWeightInline onSubmit={onQuickWeight} />}
+      {showQuickWeight && onQuickWeight && <QuickWeightInline onSubmit={onQuickWeight} recordedWeight={todayWeight} />}
 
       {/* 一鍵記今天飲食達標（今天還沒記才出現） */}
       {showQuickNutrition && onQuickNutrition && <QuickNutritionInline onSubmit={onQuickNutrition} />}
