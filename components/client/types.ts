@@ -61,6 +61,11 @@ export interface TrainingLog {
   sets: number | null
   rpe: number | null
   note: string | null
+  /** 主項重量／次數，以及那筆重量是哪個動作（拉A 槓鈴划船 / 拉B 加重引體）。
+   *  舊資料 compound_lift 為 NULL，讀取時用 compoundLiftOf() 視為該 type 的預設主項。 */
+  compound_weight?: number | null
+  compound_reps?: number | null
+  compound_lift?: string | null
 }
 
 export const TRAINING_TYPES = [

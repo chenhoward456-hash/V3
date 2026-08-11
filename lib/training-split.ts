@@ -61,6 +61,16 @@ export const DEFAULT_COMPOUND_LIFT: Record<string, string> = {
   full_body: '深蹲', upper_body: '臥推',
 }
 
+// 課表某一天的主項＝第一個「正式」動作。暖身／posing／真空不算。
+// ⚠️ 單一真相：TrainingLog 的主項顯示與 QuickActions 的一格記重量都走這支，別各寫一份 regex。
+const NON_MAIN_LIFT = /^90\/90|posing|真空|暖身|warm/i
+export function mainLiftOfPlanDay(
+  day: { exercises?: { name?: string }[] } | null | undefined
+): string | null {
+  const ex = day?.exercises?.find((e) => e?.name && !NON_MAIN_LIFT.test(e.name))
+  return ex?.name ?? null
+}
+
 // 這筆訓練紀錄的主項是哪個動作。
 // ⚠️ 同一個分化可以排兩天（拉A 槓鈴划船 / 拉B 加重引體），主項不同。
 // 只用 training_type 比對會把兩個不同動作的重量混成同一條進步曲線。

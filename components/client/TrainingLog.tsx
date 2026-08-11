@@ -8,7 +8,7 @@ import { TRAINING_TYPES, isWeightTraining } from './types'
 import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 import { getCycleState } from '@/lib/periodization'
-import { DEFAULT_COMPOUND_LIFT, compoundLiftOf } from '@/lib/training-split'
+import { DEFAULT_COMPOUND_LIFT, compoundLiftOf, mainLiftOfPlanDay } from '@/lib/training-split'
 
 interface ModeReason {
   signal: string
@@ -281,12 +281,7 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   // 課表當天的主項＝第一個正式動作（暖身／posing／真空不算）。
   // 同一個分化可能排兩天（拉A 槓鈴划船 / 拉B 加重引體），主項不同——
   // 所以優先用課表那天的，抓不到才退回「一個類型配一個固定主項」的舊對照表。
-  const planMainLift = useMemo(() => {
-    const ex = selectedPlanDay?.exercises?.find(
-      (e: any) => !/^90\/90|posing|真空/i.test(e?.name || '')
-    )
-    return (ex?.name as string) ?? null
-  }, [selectedPlanDay])
+  const planMainLift = useMemo(() => mainLiftOfPlanDay(selectedPlanDay), [selectedPlanDay])
 
   const compoundLiftName = planMainLift ?? (form.training_type ? COMPOUND_LIFT[form.training_type] : null)
 

@@ -32,6 +32,16 @@ interface QuickActionsProps {
   /** 一鍵訓練：選肌群即標記今天練了（休息=rest） */
   showQuickTraining?: boolean
   onQuickTraining?: (trainingType: string) => Promise<boolean>
+  /** 今天課表的主項動作名稱；有值才會在選完分化後就地問一格重量 */
+  todayMainLift?: string | null
+  /** 今天已記的訓練類型（null = 還沒記）。有記但還沒填主項重量時，重新整理後仍能補填 */
+  todayTrainingType?: string | null
+  /** 今天已記的主項重量 */
+  todayCompoundWeight?: number | null
+  /** 那個主項上一次幾公斤（當 placeholder 參考） */
+  lastMainLiftWeight?: number | null
+  /** 記主項重量（寫進 training_logs.compound_weight + compound_lift） */
+  onQuickCompoundWeight?: (weight: number) => Promise<boolean>
 }
 
 /** 一鍵記飲食達標 — 把「展開→填蛋白/水/碳水→存」降成一下；之後要補細項仍可進卡片(同日 upsert) */
@@ -146,11 +156,91 @@ function QuickWellnessInline({ onSubmit }: { onSubmit: (level: 'good' | 'ok' | '
   )
 }
 
-/** 一鍵訓練 — 選肌群即標記今天練了（要記重量/組數再進訓練分頁）*/
-function QuickTrainingInline({ onSubmit }: { onSubmit: (t: string) => Promise<boolean> }) {
+/** 一鍵訓練 — 選肌群即標記今天練了。
+ *
+ * ⚠️ 選完不要直接消失：舊版點完 return null，要記重量得「進訓練分頁 → 展開明細 → 填一整張表」，
+ * 成本高過當下回饋 → 實際結果是連系統設計者自己都從 2026-06 起停記強度（compound_weight/RPE 全 NULL，
+ * PR 停在 4 月），備賽 4 個月無法回答「掉了多少肌力」。
+ * 改成選完就地問一格主項重量：一個數字，帶上次幾公斤當參考。要記細項仍可進訓練分頁。 */
+function QuickTrainingInline({
+  onSubmit, mainLift, lastWeight, onWeight, loggedType, loggedWeight,
+}: {
+  onSubmit: (t: string) => Promise<boolean>
+  mainLift?: string | null
+  lastWeight?: number | null
+  onWeight?: (w: number) => Promise<boolean>
+  loggedType?: string | null
+  loggedWeight?: number | null
+}) {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
-  const tap = async (t: string) => { setBusy(true); const ok = await onSubmit(t); setBusy(false); if (ok) setDone(true) }
+  // 今天已經記了分化、但主項重量還空著 → 直接進「補一格重量」那態（重新整理後也還在）
+  const needsWeight = !!loggedType && loggedType !== 'rest' && loggedType !== 'cardio'
+    && loggedWeight == null && !!mainLift && !!onWeight
+  const [picked, setPicked] = useState<string | null>(needsWeight ? loggedType! : null)
+  const [val, setVal] = useState('')
+  const [saved, setSaved] = useState<number | null>(null)
+  const tap = async (t: string) => {
+    setBusy(true); const ok = await onSubmit(t); setBusy(false)
+    if (!ok) return
+    // 重訓且知道主項 → 就地問一格重量；有氧/休息沒有主項可問，直接收起來
+    if (onWeight && mainLift && t !== 'rest' && t !== 'cardio') setPicked(t)
+    else setDone(true)
+  }
+  const submitWeight = async () => {
+    const w = parseFloat(val)
+    if (isNaN(w) || w <= 0 || w > 500) return
+    setBusy(true); const ok = await onWeight!(w); setBusy(false)
+    if (ok) setSaved(w)
+  }
+
+  // 今天記過而且重量也有了 → 這張卡沒事做，收起來
+  if (loggedType && loggedWeight != null && !picked) return null
+  // 有氧/休息日記過了也不用問重量
+  if (loggedType && !needsWeight && !picked) return null
+
+  if (picked && !done) {
+    return (
+      <div className="mb-3 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2.5">
+        {saved != null ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700 font-medium">主項 {mainLift}</span>
+            <span className="ml-auto flex items-center gap-1.5">
+              <span className="text-base font-bold text-slate-800 tabular-nums">{saved}</span>
+              <span className="text-sm text-gray-400">kg</span>
+              <Check className="w-4 h-4 text-emerald-500" />
+            </span>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-gray-700 font-medium mb-2">
+              主項 {mainLift}
+              {lastWeight != null && <span className="text-gray-400 font-normal">　上次 {lastWeight}kg</span>}
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="number" inputMode="decimal" step="0.5" value={val}
+                onChange={e => setVal(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') submitWeight() }}
+                placeholder={lastWeight != null ? String(lastWeight) : '--'}
+                aria-label={`${mainLift} 重量 (kg)`}
+                className="flex-1 min-w-0 px-3 py-2 bg-white border border-primary-200 rounded-lg text-base font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                autoComplete="off"
+              />
+              <span className="text-sm text-gray-400 shrink-0">kg</span>
+              <button onClick={submitWeight} disabled={busy || !val}
+                className="shrink-0 bg-primary-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-40 transition-colors">
+                {busy ? '…' : '記'}
+              </button>
+              <button onClick={() => setDone(true)}
+                className="shrink-0 text-xs text-gray-400 hover:text-gray-600 transition-colors px-1">跳過</button>
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
   if (done) return null
   const chip = 'px-3 py-1.5 rounded-lg text-sm font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-primary-50 hover:border-primary-300 disabled:opacity-40 transition-colors'
   return (
@@ -166,7 +256,7 @@ function QuickTrainingInline({ onSubmit }: { onSubmit: (t: string) => Promise<bo
   )
 }
 
-export default function QuickActions({ enabledSections, onNavigate, topSummary, showQuickWeight, onQuickWeight, todayWeight, showQuickNutrition, onQuickNutrition, showQuickSupplements, onQuickSupplements, showQuickWellness, onQuickWellness, showQuickTraining, onQuickTraining }: QuickActionsProps) {
+export default function QuickActions({ enabledSections, onNavigate, topSummary, showQuickWeight, onQuickWeight, todayWeight, showQuickNutrition, onQuickNutrition, showQuickSupplements, onQuickSupplements, showQuickWellness, onQuickWellness, showQuickTraining, onQuickTraining, todayMainLift, lastMainLiftWeight, onQuickCompoundWeight, todayTrainingType, todayCompoundWeight }: QuickActionsProps) {
   if (enabledSections.length === 0) return null
 
   const completedCount = enabledSections.filter(s => s.completed).length
@@ -197,7 +287,16 @@ export default function QuickActions({ enabledSections, onNavigate, topSummary, 
       {/* 一鍵補品 / 感受 / 訓練（今天還沒記才出現）— 五項都能在首頁一下完成 */}
       {showQuickSupplements && onQuickSupplements && <QuickSupplementInline onSubmit={onQuickSupplements} />}
       {showQuickWellness && onQuickWellness && <QuickWellnessInline onSubmit={onQuickWellness} />}
-      {showQuickTraining && onQuickTraining && <QuickTrainingInline onSubmit={onQuickTraining} />}
+      {showQuickTraining && onQuickTraining && (
+        <QuickTrainingInline
+          onSubmit={onQuickTraining}
+          mainLift={todayMainLift}
+          lastWeight={lastMainLiftWeight}
+          onWeight={onQuickCompoundWeight}
+          loggedType={todayTrainingType}
+          loggedWeight={todayCompoundWeight}
+        />
+      )}
 
       {/* 進度條 */}
       <div className="flex gap-1 mb-3">

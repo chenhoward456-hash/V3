@@ -84,6 +84,8 @@ export interface Client {
       detail?: string | null; evidence?: string | null; sample?: string | null
       confidence?: 'high' | 'medium' | 'low' | null
       caveat?: string | null; measured_on?: string | null
+      /** 教練 pin 到首頁定錨的那一條（最多一條） */
+      pinned?: boolean
     }[]
     gaps?: string[]
   } | null

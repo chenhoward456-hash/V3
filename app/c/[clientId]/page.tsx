@@ -28,7 +28,8 @@ const WellnessTrend = dynamic(() => import('@/components/client/WellnessTrend'),
 const TrainingLog = dynamic(() => import('@/components/client/TrainingLog'), { ssr: false })
 import TodayWorkout from '@/components/client/TodayWorkout'
 import { isWeightTraining, TRAINING_TYPES } from '@/components/client/types'
-import { labelToTrainingType } from '@/lib/training-split'
+import { labelToTrainingType, mainLiftOfPlanDay, compoundLiftOf, DEFAULT_COMPOUND_LIFT } from '@/lib/training-split'
+import { getTaipeiDayOfWeek } from '@/lib/periodization'
 import NutritionLog from '@/components/client/NutritionLog'
 import CompWarRoom from '@/components/client/CompWarRoom'
 import CutHealthCard from '@/components/client/CutHealthCard'
@@ -52,6 +53,7 @@ import CoachMessageBanner from '@/components/client/CoachMessageBanner'
 import TodayHeadline from '@/components/client/TodayHeadline'
 import MyPlanSection from '@/components/client/MyPlanSection'
 import BodyProfileCard from '@/components/client/BodyProfileCard'
+import BodyProfileAnchor from '@/components/client/BodyProfileAnchor'
 import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
 import { isCompetitionMode, isHealthMode as isHealthModeHelper } from '@/lib/client-mode'
@@ -449,6 +451,23 @@ export default function ClientDashboard() {
     // 將課表 label 映射到 training_type（共用邏輯，見 lib/training-split）
     return labelToTrainingType(todayPlan.label)
   }, [clientData?.client?.training_plan])
+
+  // 首頁一鍵訓練的「主項 + 上次幾公斤」：主項取課表當天第一個正式動作（抓不到才退回
+  // 一個 type 一個固定主項的舊對照表），上次重量取同一個動作最近一筆 compound_weight。
+  // 只有這兩個都算得出來，選完分化才問得出「一格數字」。
+  const quickMainLift = useMemo(() => {
+    const plan = clientData?.client?.training_plan
+    const dow = getTaipeiDayOfWeek()
+    const todayPlan = plan?.days?.find((d: { dayOfWeek: number }) => d.dayOfWeek === dow)
+    const name = mainLiftOfPlanDay(todayPlan)
+      ?? (todayPlanType ? DEFAULT_COMPOUND_LIFT[todayPlanType] : null)
+      ?? null
+    if (!name) return { name: null, lastWeight: null }
+    const prev = (clientData?.trainingLogs || [])
+      .filter((l: any) => l.compound_weight != null && l.date !== today && compoundLiftOf(l) === name)
+      .sort((a: any, b: any) => b.date.localeCompare(a.date))[0]
+    return { name, lastWeight: prev?.compound_weight != null ? Number(prev.compound_weight) : null }
+  }, [clientData?.client?.training_plan, clientData?.trainingLogs, todayPlanType, today])
 
   // 課表卡手動切分化時，連動下方訓練紀錄表單的預選類型（null = 沿用 todayPlanType）
   const [switchedTrainingType, setSwitchedTrainingType] = useState<string | null>(null)
@@ -952,6 +971,15 @@ export default function ClientDashboard() {
         </div>
 
         {/* 🎯 今日教練指令 — 首頁最上面一句話：今天該幹嘛 + 還剩幾項沒打卡（打完變慶祝） */}
+        {/* 身體檔案定錨 — 擺在「今日重點」之上：先回答「你的身體目前告訴我們什麼」（目的），
+            再問「你今天要記什麼」（手段）。原本首頁只有後者，主從是顛倒的。 */}
+        {view === 'home' && isToday && (
+          <BodyProfileAnchor
+            data={c.body_profile}
+            onOpen={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+          />
+        )}
+
         {view === 'home' && isToday && (() => {
           const daily = [
             c.body_composition_enabled ? !!(latestBodyData && latestBodyData.date === selectedDate) : null,
@@ -1250,7 +1278,11 @@ export default function ClientDashboard() {
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
-            showQuickTraining={c.training_enabled && !todayTraining}
+            // 不再用 !todayTraining 當開關——那會在記完 mutate() 後把整個元件卸載，
+            // 「順手補一格主項重量」還沒問就消失了。改由元件自己依 loggedType/loggedWeight 決定顯示什麼。
+            showQuickTraining={!!c.training_enabled}
+            todayTrainingType={todayTraining?.training_type ?? null}
+            todayCompoundWeight={todayTraining?.compound_weight != null ? Number(todayTraining.compound_weight) : null}
             onQuickTraining={async (trainingType) => {
               try {
                 // 一鍵訓練：選肌群=同時標記今天練了；要記重量/組數再進訓練分頁
@@ -1262,6 +1294,28 @@ export default function ClientDashboard() {
                 if (!res.ok) throw new Error()
                 await mutate()
                 showToast(trainingType === 'rest' ? '今天休息日，記好了' : '今天訓練記好了', 'success')
+                return true
+              } catch { showToast('記錄失敗，請重試', 'error'); return false }
+            }}
+            todayMainLift={quickMainLift.name}
+            lastMainLiftWeight={quickMainLift.lastWeight}
+            onQuickCompoundWeight={async (weight) => {
+              try {
+                // 選完分化就地補主項重量：只有一格數字，是強度資料唯一撐得住每天做的成本。
+                // 同日 upsert，training_type 帶回去避免被判成 rest。
+                const res = await fetch('/api/training-logs', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    clientId, date: today,
+                    training_type: todayTraining?.training_type ?? todayPlanType,
+                    compound_weight: weight,
+                    compound_lift: quickMainLift.name,
+                  }),
+                })
+                if (!res.ok) throw new Error()
+                await mutate()
+                showToast('主項重量記好了', 'success')
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
