@@ -51,6 +51,7 @@ import TodayOverviewCard from '@/components/client/TodayOverviewCard'
 import CoachMessageBanner from '@/components/client/CoachMessageBanner'
 import TodayHeadline from '@/components/client/TodayHeadline'
 import MyPlanSection from '@/components/client/MyPlanSection'
+import BodyProfileCard from '@/components/client/BodyProfileCard'
 import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
 import { isCompetitionMode, isHealthMode as isHealthModeHelper } from '@/lib/client-mode'
@@ -1814,6 +1815,10 @@ export default function ClientDashboard() {
           } : null}
         />
         </SectionErrorBoundary>}
+
+        {/* 身體檔案 — 放「健康」分頁的最上面（這一頁回答的問題就是「我身體怎樣」）。
+            這是實測不是公式，所以擺在血檢/感受趨勢之前當這一頁的定錨。 */}
+        {view === 'lab' && <BodyProfileCard data={c.body_profile} />}
 
         {/* 健康分數 + 健康模式進階 */}
         {/* 感受趨勢：從 SeeTabSection(進度) 抽來「健康」分頁，跟每日感受記錄同區 */}

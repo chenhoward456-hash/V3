@@ -76,6 +76,17 @@ export interface Client {
   coach_weekly_note: string | null
   weekly_tasks: { week_of: string; generated_at?: string; tasks: { key: string; priority: number; icon: string; title: string; detail: string }[] } | null
   onboarding_notes_rendered: { sections?: { slug: string; title: string; body: string }[]; rendered_at?: string; template_id?: string } | null
+  /** 身體檔案：只放被該學員自己資料驗證過的條目（每條帶 evidence/sample/confidence） */
+  body_profile: {
+    updated_at?: string
+    entries?: {
+      key: string; label: string; value: string
+      detail?: string | null; evidence?: string | null; sample?: string | null
+      confidence?: 'high' | 'medium' | 'low' | null
+      caveat?: string | null; measured_on?: string | null
+    }[]
+    gaps?: string[]
+  } | null
   coach_summary: string | null
   next_checkup_date: string | null
   health_goals: string | null
