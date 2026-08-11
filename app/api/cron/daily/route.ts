@@ -1642,6 +1642,60 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ===== 早期習慣斷點（晚上執行）=====
+  // 2026-08-11 補的結構性缺口：新學員記完第一筆之後，系統對他就沒有任何機制了。
+  //   · 啟動序列 → 只發給「從未記過」的（第 1/2/3 天）
+  //   · 里程碑   → 只發給「免費用戶」（那條是寫來推銷升級的）
+  //   · 沉默喚回 → 要停滿 3 天才動
+  // → 付費學員第 2 天就斷掉時，三個機制都不管他。而第 2-7 天正是習慣養成最脆弱的窗口。
+  //   （實例：Sean 8/9 加入、8/10 四項全記、8/11 整天零紀錄，一則提醒都收不到。）
+  //
+  // 這裡只處理最窄的情況：**加入 14 天內 + 昨天有記 + 今天還沒記**。
+  // 不是每晚轟炸——習慣正在斷的那一天才出手，而且只在前兩週。
+  let habitBreakNudges = 0
+  if (!isMorning) {
+    const todayStr = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10)
+    const yesterdayStr = new Date(Date.now() + 8 * 3600_000 - 86_400_000).toISOString().slice(0, 10)
+    const joinedSince = new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10)
+
+    const [{ data: newbies }, { data: pushRows }] = await Promise.all([
+      supabase.from('clients').select('id, name, line_user_id, created_at')
+        .eq('is_active', true).gte('created_at', joinedSince + 'T00:00:00Z'),
+      supabase.from('push_subscriptions').select('client_id'),
+    ])
+    const pushable = new Set((pushRows ?? []).map((r: { client_id: string }) => r.client_id))
+    const candidates = (newbies ?? []).filter(c => c.line_user_id || pushable.has(c.id))
+
+    if (candidates.length > 0) {
+      const ids = candidates.map(c => c.id)
+      const loggedYesterday = new Set<string>()
+      const loggedToday = new Set<string>()
+      for (const table of ['body_composition', 'nutrition_logs', 'training_logs', 'daily_wellness'] as const) {
+        const { data } = await supabase.from(table).select('client_id, date')
+          .in('client_id', ids).in('date', [yesterdayStr, todayStr])
+        for (const r of (data ?? []) as Array<{ client_id: string; date: string }>) {
+          if (r.date === yesterdayStr) loggedYesterday.add(r.client_id)
+          if (r.date === todayStr) loggedToday.add(r.client_id)
+        }
+      }
+
+      for (const c of candidates) {
+        if (!loggedYesterday.has(c.id) || loggedToday.has(c.id)) continue
+        try {
+          await sendRoutineReminder(c.id, c.line_user_id ?? '', {
+            title: '別讓它斷在第二天',
+            body: '今天量個體重就好，10 秒',
+            lineText: `${c.name}，你昨天有記，今天還沒。\n\n今天只要量個體重就好，其他都可以先不管——那一個數字比其他全部加起來重要，因為我要用它算你真正的消耗。\n\n連續才有趨勢，斷一天就要重新累積。`,
+            url: '/dashboard',
+          })
+          habitBreakNudges++
+        } catch (err: unknown) {
+          errors.push(`habit_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
+        }
+      }
+    }
+  }
+
   // ===== 沉默用戶喚回（晚上執行）=====
   // 只在「停打卡剛好第 3 天 / 第 7 天」各喚回一次（loss aversion：別讓進度斷掉）。
   // 不每晚轟炸、不打擾早已死掉的帳號（gap>7 不發）；曾有記錄者才喚（從未記過走啟動序列）。
@@ -1749,6 +1803,7 @@ export async function GET(request: NextRequest) {
     expiryReminders,
     milestonesSent,
     activationNudges,
+    habitBreakNudges,
     emailDripSent,
     emailDripFailed,
     referralsCompleted,
