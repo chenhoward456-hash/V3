@@ -46,6 +46,7 @@ export type SkipCategory =
   | 'cooldown'         // 冷卻中 — 無需動作
   | 'trend_reversed'   // 趨勢反轉 — 需教練判斷 (refeed 抖動 vs 真反轉)
   | 'stale_data'       // 最新體重 >14 天沒記錄 — 暫停建議，先請學員回來記錄
+  | 'target_unrealistic' // 目標日期/體重在生理上不可能達成 — 需教練重設目標，不是調熱量
   | 'on_track'         // 進度跟得上 — 無需動作
   | 'too_small'        // 調整 < 50 kcal — 無需動作
 
@@ -87,20 +88,37 @@ const MAX_DEFICIT_AT_BF_FLOOR = 500  // 低於體脂下限時，每日赤字上�
 const MTHFR_DEFICIT_REDUCTION = { homozygous: 150, heterozygous: 100 } as const // 赤字收窄 kcal
 const SEROTONIN_CARB_FLOOR = { high: 120, moderate: 100 } as const // 碳水最低下限 g（保護 5-HT 合成）
 
+// ── 目標可行性上限 ──
+// 2026-08-11 修：孫凡鈞 target_date 剩 4 天、還差 9kg → neededRate 15.17 kg/週、
+// 加 16131 kcal/天，直接寫進 DB（calories_target 19070 / carbs 4402）。
+// 根因：needed rate 沒有任何合理性檢查，而且 max_loss_per_week 只在 goalType==='cut' 時檢查，
+// 增肌方向完全沒有上限、熱量也沒有天花板。
+// 這跟先前修過的「賽期已過 → 產出 -10kg/週」是同一個洞的另一半（那次只補了減脂側）。
+//
+// 原則：**目標不可能達成時，不要用熱量硬追** —— 問題出在目標設定，該回報給教練重設，
+// 不是把熱量推到荒謬值。
+const MAX_FEASIBLE_RATE_PCT_BW = 0.015  // 每週體重變化上限（1.5% BW/週，已含新手/回增的寬鬆情況）
+const ABS_MAX_FEASIBLE_RATE = 2.0       // 每週絕對上限 kg（大體重者也不該超過）
+
 // 性別正規化：cron 傳中文（'女性'/'男性'），測試傳英文（'female'/'male'）。兩者都要認，
 // 否則女性會套到男性體脂下限(10%) → 低體脂赤字保護被靜默繞過（RED-S 風險）。
 function isFemaleGender(gender: string | null | undefined): boolean {
   return gender === 'female' || gender === '女性' || gender === 'F' || gender === 'f'
 }
 
-type ResolvedBounds = { min_calories: number; min_protein_per_kg: number; max_loss_per_week: number; min_loss_per_week: number }
+type ResolvedBounds = { min_calories: number; max_calories: number; min_protein_per_kg: number; max_loss_per_week: number; max_gain_per_week: number; min_loss_per_week: number }
 
 function getDefaultBounds(currentWeight: number, gender: string | null): ResolvedBounds {
   const isFemale = isFemaleGender(gender)
   return {
     min_calories: isFemale ? 1200 : 1500,
+    // 熱量天花板：任何路徑都不該把 target 推過這個值（見 MAX_FEASIBLE_RATE 註解的 19070 事件）。
+    // 45 kcal/kg 已涵蓋大量訓練的增肌期；再高就是引擎算錯而不是真需求。
+    max_calories: Math.max(3000, Math.round(currentWeight * 45)),
     min_protein_per_kg: 1.8,
     max_loss_per_week: Math.max(0.5, currentWeight * 0.01),
+    // 增肌上限：0.5% BW/週已是積極的 lean bulk；再快多半是脂肪與水
+    max_gain_per_week: Math.max(0.25, currentWeight * 0.005),
     min_loss_per_week: 0.3,
   }
 }
@@ -235,6 +253,27 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   const neededRatePerWeek = -remainingKg / (remainingDays / 7)
   const currentRatePerWeek = traj.regressionSlope ?? traj.delta1w ?? 0
 
+  // 目標可行性：needed rate 超過生理上限 → 目標本身不可能達成，不該用熱量硬追。
+  // 不調整、標記需教練重設目標（日期或體重），而不是產出荒謬的熱量指令。
+  const feasibleRateCap = Math.min(
+    ABS_MAX_FEASIBLE_RATE,
+    Math.max(0.5, traj.currentAvg * MAX_FEASIBLE_RATE_PCT_BW)
+  )
+  if (Math.abs(neededRatePerWeek) > feasibleRateCap) {
+    const dirWord = neededRatePerWeek > 0 ? '增' : '減'
+    return {
+      ...empty(
+        `目標不可行：剩 ${remainingDays} 天要${dirWord} ${Math.abs(remainingKg).toFixed(1)}kg`
+        + `（需 ${Math.abs(neededRatePerWeek).toFixed(1)}kg/週，上限 ${feasibleRateCap.toFixed(1)}）`
+        + ` → 請教練重設目標日期或目標體重，不調整熱量`,
+        'target_unrealistic'
+      ),
+      currentRatePerWeek,
+      neededRatePerWeek,
+      trajectoryData: traj,
+    }
+  }
+
   const gap = neededRatePerWeek - currentRatePerWeek
   if (Math.abs(gap) < SIGNIFICANT_GAP_KG_PER_WEEK) {
     return {
@@ -291,10 +330,12 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
 
   const defaults = getDefaultBounds(traj.currentAvg, input.gender ?? null)
   const userBounds = input.bounds ?? {}
-  const bounds: { min_calories: number; min_protein_per_kg: number; max_loss_per_week: number; min_loss_per_week: number } = {
+  const bounds: ResolvedBounds = {
     min_calories: userBounds.min_calories ?? defaults.min_calories,
+    max_calories: (userBounds as { max_calories?: number }).max_calories ?? defaults.max_calories,
     min_protein_per_kg: userBounds.min_protein_per_kg ?? defaults.min_protein_per_kg,
     max_loss_per_week: userBounds.max_loss_per_week ?? defaults.max_loss_per_week,
+    max_gain_per_week: (userBounds as { max_gain_per_week?: number }).max_gain_per_week ?? defaults.max_gain_per_week,
     min_loss_per_week: userBounds.min_loss_per_week ?? defaults.min_loss_per_week,
   }
 
@@ -309,6 +350,14 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
     boundaryNotes.push(`撞 max_loss_per_week (${bounds.max_loss_per_week} kg/週)，限縮調整幅度`)
   }
 
+  // 撞 max_gain_per_week (長太快 → 收熱量)。原本只有減脂側有上限，增肌側完全沒有守門。
+  if (input.goalType !== 'cut' && projectedRate > bounds.max_gain_per_week) {
+    const allowedRate = bounds.max_gain_per_week
+    finalKcalAdjustment = Math.round((allowedRate - currentRatePerWeek) * 7700 / 7)
+    hitBoundary = true
+    boundaryNotes.push(`撞 max_gain_per_week (${bounds.max_gain_per_week.toFixed(2)} kg/週)，限縮調整幅度`)
+  }
+
   // 撞 min_calories
   const proposedCal = input.currentCalories + finalKcalAdjustment
   let newCal = proposedCal
@@ -317,6 +366,12 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
     finalKcalAdjustment = newCal - input.currentCalories
     hitBoundary = true
     boundaryNotes.push(`撞 min_calories (${bounds.min_calories} kcal)，無法再砍 — 建議加有氧、延目標日或改目標體重`)
+  } else if (proposedCal > bounds.max_calories) {
+    // 最後一道保險：不管上游怎麼算，寫進 DB 的熱量都不會超過天花板
+    newCal = bounds.max_calories
+    finalKcalAdjustment = newCal - input.currentCalories
+    hitBoundary = true
+    boundaryNotes.push(`撞 max_calories (${bounds.max_calories} kcal)，無法再加 — 建議延目標日或改目標體重`)
   }
 
   newCal = Math.round(newCal / 10) * 10

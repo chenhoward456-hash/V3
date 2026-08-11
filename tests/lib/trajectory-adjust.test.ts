@@ -123,3 +123,74 @@ describe('computeTrajectoryAdjustment — 基因 + 體脂安全層', () => {
     }
   })
 })
+
+// ── 目標可行性 / 增肌上限 / 熱量天花板（2026-08-11 補洞）──
+// 真實事故：孫凡鈞 target_date 剩 4 天、還差 9kg（bulk）→ 引擎算出需 15.17kg/週、
+// 加 16131 kcal/天，直接寫進 DB（calories_target 19070 / carbs_target 4402）。
+// 根因：needed rate 沒有合理性檢查，且 max_loss_per_week 只在 goalType==='cut' 時檢查。
+describe('目標不可行時不用熱量硬追', () => {
+  it('剩 4 天要增 9kg → 不調整，標記 target_unrealistic 交給教練重設目標', () => {
+    const r = computeTrajectoryAdjustment(baseInput({
+      goalType: 'bulk',
+      bodyDataEntries: flatEntries(84),
+      targetWeight: 93,
+      targetDate: dateInDays(4),
+      currentCalories: 2939,
+      currentCarbs: 367,
+    }))
+    expect(r.shouldAdjust).toBe(false)
+    expect(r.skipCategory).toBe('target_unrealistic')
+    expect(r.newMacros).toBeNull()
+    expect(r.reason).toContain('目標不可行')
+  })
+
+  it('減脂側同樣擋：剩 5 天要掉 8kg → 不調整', () => {
+    const r = computeTrajectoryAdjustment(baseInput({
+      bodyDataEntries: flatEntries(82),
+      targetWeight: 74,
+      targetDate: dateInDays(5),
+    }))
+    expect(r.shouldAdjust).toBe(false)
+    expect(r.skipCategory).toBe('target_unrealistic')
+  })
+
+  it('可行的目標不受影響（回歸保護）', () => {
+    const r = computeTrajectoryAdjustment(baseInput())
+    expect(r.skipCategory).not.toBe('target_unrealistic')
+    expect(r.shouldAdjust).toBe(true)
+  })
+})
+
+describe('增肌側上限與熱量天花板', () => {
+  it('bulk 進度落後但目標仍可行時，加幅被 max_gain_per_week 收住', () => {
+    // 80kg → max_gain_per_week = 0.4 kg/週。目標 84kg / 60 天 ≈ 需 0.47 kg/週
+    const r = computeTrajectoryAdjustment(baseInput({
+      goalType: 'bulk',
+      bodyDataEntries: flatEntries(80),
+      targetWeight: 84,
+      targetDate: dateInDays(60),
+      currentCalories: 2600,
+      currentCarbs: 300,
+    }))
+    expect(r.shouldAdjust).toBe(true)
+    expect(r.hitBoundary).toBe(true)
+    expect(r.boundaryDetail).toContain('max_gain_per_week')
+    // 撞上限後的每週增重不會超過 0.4kg → 每日加幅 ≤ 0.4*7700/7 = 440
+    expect(r.kcalAdjustment!).toBeLessThanOrEqual(440)
+  })
+
+  it('寫進 DB 的熱量永遠不超過天花板（80kg → 3600 kcal）', () => {
+    const r = computeTrajectoryAdjustment(baseInput({
+      goalType: 'bulk',
+      bodyDataEntries: flatEntries(80),
+      targetWeight: 84,
+      targetDate: dateInDays(60),
+      currentCalories: 3500,
+      currentCarbs: 400,
+      bounds: { max_gain_per_week: 5 } as never,  // 故意放寬速率上限，只測天花板這一層
+    }))
+    if (r.shouldAdjust) {
+      expect(r.newMacros!.calories_target).toBeLessThanOrEqual(80 * 45)
+    }
+  })
+})
