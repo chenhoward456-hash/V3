@@ -56,15 +56,26 @@ export interface EngineActionInput {
 // 這幾種引擎狀態＝真的偏離軌道，才用引擎覆蓋「今天就一件」；其餘照走 weekly_tasks，不打架。
 const OFF_TRACK_STATUSES = new Set(['too_fast', 'plateau', 'wrong_direction', 'low_compliance'])
 
-/** 引擎狀態 → 今天一個具體動作。只用引擎算好的數字，不發明 macro。 */
-function engineActionText(e: EngineActionInput): string | null {
+/** 引擎狀態 → 今天一個具體動作。只用引擎算好的數字，不發明 macro。
+ *
+ * ⚠️ 2026-08-11 修：too_fast / plateau 原本寫死減脂語意，增肌學員看到的是相反的指令——
+ * 陳胤豪（bulk）判定 chip 顯示「增太快」、行動句卻是「掉太快了，今天把目標吃滿別壓熱量」，
+ * 照做會增更快，而且跟引擎自己算的「可考慮微降熱量 150kcal」互相打架。
+ * 引擎層早就懂 bulk（見 project_v3_bulk_no_cut），是 UI 文案層假設了減脂。
+ * plateau 同理：減脂停滯要加有氧，增肌停滯是「沒長大」——要加熱量，不是加有氧。 */
+function engineActionText(e: EngineActionInput, goalType?: string | null): string | null {
+  const isBulk = goalType === 'bulk'
   if (e.refeedSuggested) {
     return `照計畫安排 refeed（把碳水吃回來的恢復日${e.refeedDays ? `，約 ${e.refeedDays} 天` : ''}）——細節看計畫分頁的今日營養處方`
   }
   switch (e.status) {
     case 'too_fast':
-      return '掉太快了——今天把目標吃滿，別自己再壓熱量'
+      return isBulk
+        ? '增太快了——體重衝過頭多半是脂肪跟水，今天照目標吃就好，別再多加'
+        : '掉太快了——今天把目標吃滿，別自己再壓熱量'
     case 'plateau': {
+      // 增肌停滯＝沒長大，加有氧只會更難長；要的是把熱量吃滿（引擎才有依據往上調）
+      if (isBulk) return '體重卡住了——今天先把目標熱量吃滿、記錄記齊，長不動多半是沒吃夠'
       const di = e.deadlineInfo
       if (di?.extraCardioNeeded && di.suggestedCardioMinutes) {
         return `卡住了——今天加 ${di.suggestedCardioMinutes} 分鐘中等強度有氧${di.suggestedDailySteps ? `（或走到 ${di.suggestedDailySteps.toLocaleString()} 步）` : ''}，飲食照目標別亂砍`
@@ -72,7 +83,9 @@ function engineActionText(e: EngineActionInput): string | null {
       return '卡住了——今天照目標吃滿、把記錄記齊，引擎才判斷得準'
     }
     case 'wrong_direction':
-      return '方向不對——今天先回到目標吃法，並把飲食記錄記齊'
+      return isBulk
+        ? '方向不對——體重在往下掉，今天先回到目標吃法，並把飲食記錄記齊'
+        : '方向不對——今天先回到目標吃法，並把飲食記錄記齊'
     case 'low_compliance':
       return '這週依從掉了——今天就照目標吃、照實記，一天就好'
     default:
@@ -81,6 +94,8 @@ function engineActionText(e: EngineActionInput): string | null {
 }
 
 export interface TodayHeadlineProps {
+  /** cut / bulk / recomp —— 決定 too_fast / plateau 的行動句方向（增肌與減脂相反）*/
+  goalType?: string | null
   prepPhase: string | null
   competitionDate: string | null
   isCompetition: boolean
@@ -98,6 +113,7 @@ export interface TodayHeadlineProps {
 }
 
 function TodayHeadlineInner({
+  goalType,
   prepPhase,
   competitionDate,
   isCompetition,
@@ -130,7 +146,7 @@ function TodayHeadlineInner({
   // 引擎即時覆蓋：真的偏離軌道（或引擎建議 refeed）時，主線聽引擎的——它吃的是最新記錄，
   // 比週更的 weekly_tasks 新鮮。顏色直接用 status 決定（不靠關鍵字正則），文字過 degradeToSafe。
   const engineOff = !!engine && OFF_TRACK_STATUSES.has(engine.status)
-  const engineAction = engine && (engineOff || engine.refeedSuggested) ? engineActionText(engine) : null
+  const engineAction = engine && (engineOff || engine.refeedSuggested) ? engineActionText(engine, goalType) : null
   const engineTitle = engineOff ? degradeToSafe(engine!.statusLabel || '狀態要留意').text : null
   const engineDetailRaw = engineOff && engine?.message ? degradeToSafe(engine.message).text : null
   const engineDetail = engineDetailRaw && engineDetailRaw.length > 90 ? `${engineDetailRaw.slice(0, 90)}…` : engineDetailRaw

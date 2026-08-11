@@ -887,6 +887,7 @@ export default function ClientDashboard() {
         {/* 今日主線 — 首屏脊椎：一句判定 + 今天一個動作（吸收原「本週任務」判定，收斂多卡為一個聲音）*/}
         {view === 'home' && isToday && (
           <TodayHeadline
+            goalType={c.goal_type ?? null}
             prepPhase={c.prep_phase || null}
             competitionDate={c.competition_date || null}
             isCompetition={isCompetition}
