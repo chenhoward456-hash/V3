@@ -75,13 +75,16 @@ interface ForYouFeedProps {
   coachMessage?: CoachMessageRow | null
   /** 學員 unique_code：關閉教練訊息時回寫 read_at（跨裝置一致） */
   clientCode?: string
+  /** 體重紀錄 + 目標體重：產「今天記錄的回聲」卡（讓記錄留下痕跡，不是 toast 飛走） */
+  bodyData?: Array<{ date: string; weight: number | string | null }>
+  targetWeight?: number | string | null
 }
 
 /**
  * 「為你更新」精簡卡片流 — 每則一行重點、預設只顯示 3 則、合規免責收底部。
  * 關掉存 localStorage；事件 id 變了會重新出現。
  */
-function ForYouFeedInner({ labs, gender, nextCheckupDate, macroAdjustment, coachMessage, clientCode }: ForYouFeedProps) {
+function ForYouFeedInner({ labs, gender, nextCheckupDate, macroAdjustment, coachMessage, clientCode, bodyData, targetWeight }: ForYouFeedProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [ready, setReady] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -116,7 +119,7 @@ function ForYouFeedInner({ labs, gender, nextCheckupDate, macroAdjustment, coach
 
   if (!ready) return null
 
-  const cards = buildClientFeed({ labs, gender, nextCheckupDate, macroAdjustment, clientCode }).filter(c => !dismissed.has(c.id))
+  const cards = buildClientFeed({ labs, gender, nextCheckupDate, macroAdjustment, clientCode, bodyData, targetWeight }).filter(c => !dismissed.has(c.id))
   const showCoach = coachMessage && !dismissed.has(`coach_msg_${coachMessage.id}`)
   if (cards.length === 0 && !showCoach) return null
 

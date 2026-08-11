@@ -139,3 +139,61 @@ describe('buildClientFeed', () => {
     expect(cards.length).toBeLessThanOrEqual(4)
   })
 })
+
+// ── 今天記錄的回聲（2026-08-11）──
+// 為什麼要有：記錄的回饋原本只有一個 toast，飛走就什麼都沒留 → 學員下次打開，
+// 畫面上沒有任何「我上次來留下的東西」。這張卡把他的紀錄變成他的答案並留到明天。
+describe('今天記錄的回聲卡', () => {
+  const base = { labs: [], today: '2026-08-14' }
+
+  it('今天有記 → 出現回聲卡，帶「比昨天」「7天平均」「距目標」', () => {
+    const cards = buildClientFeed({
+      ...base,
+      targetWeight: 77,
+      bodyData: [
+        { date: '2026-08-10', weight: 86.5 },
+        { date: '2026-08-11', weight: 87.1 },
+        { date: '2026-08-12', weight: 86.3 },
+        { date: '2026-08-13', weight: 86.8 },
+        { date: '2026-08-14', weight: 86.2 },
+      ],
+    })
+    const echo = cards.find(c => c.id.startsWith('logged_weight_'))
+    expect(echo).toBeDefined()
+    expect(echo!.title).toContain('86.2')
+    expect(echo!.body).toContain('比昨天 -0.6')
+    expect(echo!.body).toContain('7 天平均')
+    expect(echo!.body).toContain('距目標 77')
+  })
+
+  it('今天沒記 → 不出現（不催、不佔版面）', () => {
+    const cards = buildClientFeed({
+      ...base,
+      bodyData: [{ date: '2026-08-13', weight: 86.8 }],
+    })
+    expect(cards.find(c => c.id.startsWith('logged_weight_'))).toBeUndefined()
+  })
+
+  it('只有第一筆 → 不談平均也不談變化，講「這是你的起點」', () => {
+    const cards = buildClientFeed({
+      ...base,
+      bodyData: [{ date: '2026-08-14', weight: 86.5 }],
+    })
+    const echo = cards.find(c => c.id.startsWith('logged_weight_'))
+    expect(echo!.body).toContain('起點')
+    expect(echo!.body).not.toContain('平均')
+  })
+
+  it('少於 3 筆不講 7 天平均（樣本不足不亂講）', () => {
+    const cards = buildClientFeed({
+      ...base,
+      bodyData: [
+        { date: '2026-08-13', weight: 86.8 },
+        { date: '2026-08-14', weight: 86.2 },
+      ],
+    })
+    const echo = cards.find(c => c.id.startsWith('logged_weight_'))
+    expect(echo!.body).toContain('比昨天')
+    expect(echo!.body).not.toContain('平均')
+  })
+})

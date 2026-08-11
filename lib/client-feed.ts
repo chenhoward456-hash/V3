@@ -50,6 +50,10 @@ export interface ClientFeedInput {
   coachMessage?: CoachMessageRow | null
   /** 學員 unique_code：有的話「新血檢入庫」卡帶「看完整報告」連結 */
   clientCode?: string
+  /** 體重紀錄（新到舊或舊到新都可，內部自己排）——用來產「今天記錄的回聲」卡 */
+  bodyData?: Array<{ date: string; weight: number | string | null }>
+  /** 目標體重：有的話回聲卡會講「距離目標還有多少」 */
+  targetWeight?: number | string | null
   /** 覆寫「今天」，方便測試；預設為現在 */
   today?: string
 }
@@ -197,12 +201,64 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
     }
   }
 
+  // ── 今天記錄的回聲 ──────────────────────────
+  // 為什麼要有這張卡：記錄產生的回饋原本只有一個 toast，飛走就什麼都沒留。
+  // 學員下次打開時，畫面上沒有任何「我上次來留下的東西」——這是不回來的理由之一
+  // （打開 App 的四個理由：只有這裡有／這裡最快／它會叫我／上次留了東西在那）。
+  // 這張卡把「他的紀錄」變成「他的答案」，而且留到明天，不是閃一下。
+  // 誠實原則：資料不夠就不講。只有 1 筆不談平均、沒目標不談距離。
+  const bw = (input.bodyData ?? [])
+    .map(b => ({ date: b.date, weight: num(b.weight) }))
+    .filter((b): b is { date: string; weight: number } => b.weight != null)
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  const todayEntry = bw.find(b => b.date === today)
+  if (todayEntry) {
+    const prior = bw.filter(b => b.date < today)
+    const prev = prior[prior.length - 1]
+    const bits: string[] = []
+
+    if (prev) {
+      const diff = todayEntry.weight - prev.weight
+      const gap = daysBetween(prev.date, today)
+      const sign = diff > 0 ? '+' : ''
+      bits.push(`比${gap === 1 ? '昨天' : `上次（${gap} 天前）`} ${sign}${diff.toFixed(1)}`)
+    }
+
+    // 7 天平均：含今天往前 7 天，至少 3 筆才有意義
+    const weekAgo = new Date(new Date(today + 'T00:00:00').getTime() - 6 * 86_400_000)
+      .toISOString().slice(0, 10)
+    const week = bw.filter(b => b.date >= weekAgo && b.date <= today)
+    if (week.length >= 3) {
+      const avg = week.reduce((sum, b) => sum + b.weight, 0) / week.length
+      bits.push(`7 天平均 ${avg.toFixed(1)}（${week.length} 筆）`)
+    }
+
+    const target = num(input.targetWeight)
+    if (target != null) {
+      const remain = todayEntry.weight - target
+      if (Math.abs(remain) >= 0.1) bits.push(`距目標 ${target} 還有 ${Math.abs(remain).toFixed(1)}`)
+      else bits.push(`已達目標 ${target}`)
+    }
+
+    cards.push({
+      id: `logged_weight_${today}_${todayEntry.weight}`,
+      tone: 'info',
+      icon: '⚖️',
+      title: `你今天記了 ${todayEntry.weight} kg`,
+      body: bits.length > 0
+        ? bits.join(' · ')
+        : '這是你的起點，之後所有判斷都跟它比',
+    })
+  }
+
   // ── 排序：按「要不要行動」而非「色調嚴重度」——管家先講該做的事、監看/報喜沉下去 ──
   // 回檢過期/今天(去抽血) → 目標調整了(要知道) → 回檢快到/偏離(多留意) → 要盯一下(純監看) → 進步了(報喜無動作)
   // 只動排序，不改任何血檢閾值/判讀/文字。上限 4。
   const priority = (c: FeedCard): number => {
     if (c.id.startsWith('checkup_')) return c.tone === 'warn' ? 0 : 2 // 過期/今天=0；快到=2
     if (c.id.startsWith('macro_')) return 1
+    if (c.id.startsWith('logged_')) return 1  // 今天的紀錄回聲：他剛做的事，要看得到
     if (c.id.startsWith('lab_warn_')) return 2
     if (c.id.startsWith('lab_alert_')) return 3 // 「要盯一下·持續追蹤」＝純監看，讓給有動作的
     if (c.id.startsWith('lab_new_')) return 3   // 入庫回聲＝告知＋看報告，排在行動項後面

@@ -1033,6 +1033,8 @@ export default function ClientDashboard() {
                 nextCheckupDate={c.next_checkup_date}
                 macroAdjustment={clientData.recentMacroAdjustment ?? null}
                 clientCode={c.unique_code}
+                bodyData={clientData.bodyData ?? EMPTY_ARRAY}
+                targetWeight={c.target_weight}
               />
             </SectionErrorBoundary>
           )}
