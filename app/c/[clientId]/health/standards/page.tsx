@@ -80,8 +80,8 @@ const COMPARISONS: CompareRow[] = [
   {
     testName: '游離睪固酮（男）', unit: 'pg/mL', category: '甲狀腺 / 荷爾蒙',
     hospitalNormal: rangeToText((LAB_THRESHOLDS as any)['游離睪固酮']?.normal),
-    howardOptimal: rangeToText(LAB_OPTIMAL_RANGES['游離睪固酮']),
-    why: '真正可用的睪固酮 — 比總睪固酮更重要。SHBG 升高會壓低這個數字即使總睪固酮正常。'
+    howardOptimal: '看趨勢，不設目標值',
+    why: '真正可用的睪固酮 — 比總睪固酮更重要。SHBG 升高會壓低這個數字即使總睪固酮正常。⚠️ 這一項的絕對值取決於檢驗方法（免疫法／平衡透析／計算式尺度不同），不同實驗室之間不能直接比較，所以我們不設目標值；固定同一家、同一時間抽，看自己的變化才準。'
   },
   {
     testName: 'TSH', unit: 'mIU/L', category: '甲狀腺 / 荷爾蒙',
