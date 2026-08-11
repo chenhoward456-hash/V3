@@ -1262,7 +1262,9 @@ export default function ClientDashboard() {
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
-            showQuickWellness={c.wellness_enabled && !todayWellness}
+            // 記完不要整行收掉（同體重／訓練）——學員看不到自己記了什麼、也沒地方改
+            showQuickWellness={!!c.wellness_enabled}
+            todayEnergyLevel={todayWellness?.energy_level ?? null}
             onQuickWellness={async (level) => {
               try {
                 // 一鍵感受：好/普通/累 → 對應睡眠+精力+心情；要記睡眠分數/HRV 再進感受分頁

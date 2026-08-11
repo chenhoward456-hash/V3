@@ -29,6 +29,8 @@ interface QuickActionsProps {
   /** 一鍵感受：好/普通/累，對應睡眠+精力+心情 */
   showQuickWellness?: boolean
   onQuickWellness?: (level: 'good' | 'ok' | 'tired') => Promise<boolean>
+  /** 今天已記的精力分數（1-5）；有值就顯示記了什麼＋可改，而不是整行消失 */
+  todayEnergyLevel?: number | null
   /** 一鍵訓練：選肌群即標記今天練了（休息=rest） */
   showQuickTraining?: boolean
   onQuickTraining?: (trainingType: string) => Promise<boolean>
@@ -137,13 +139,38 @@ function QuickSupplementInline({ onSubmit }: { onSubmit: () => Promise<boolean> 
   )
 }
 
-/** 一鍵感受 — 好/普通/累 一下完成（粗估，要記睡眠分數/HRV 再進感受分頁）*/
-function QuickWellnessInline({ onSubmit }: { onSubmit: (level: 'good' | 'ok' | 'tired') => Promise<boolean> }) {
+/** 一鍵感受 — 好/普通/累 一下完成（粗估，要記睡眠分數/HRV 再進感受分頁）
+ *
+ * 同體重／訓練那兩處的原則：記完不要整行消失。原本點完 return null，
+ * 學員在畫面上看不到自己今天記了什麼，也沒有改的入口。 */
+const ENERGY_LABEL: Record<number, string> = { 5: '還不錯', 4: '還不錯', 3: '普通', 2: '累', 1: '累' }
+function QuickWellnessInline({
+  onSubmit, loggedEnergy,
+}: {
+  onSubmit: (level: 'good' | 'ok' | 'tired') => Promise<boolean>
+  loggedEnergy?: number | null
+}) {
   const [busy, setBusy] = useState(false)
-  const [done, setDone] = useState(false)
-  const tap = async (l: 'good' | 'ok' | 'tired') => { setBusy(true); const ok = await onSubmit(l); setBusy(false); if (ok) setDone(true) }
-  if (done) return null
+  const [editing, setEditing] = useState(false)
+  const tap = async (l: 'good' | 'ok' | 'tired') => {
+    setBusy(true); const ok = await onSubmit(l); setBusy(false); if (ok) setEditing(false)
+  }
   const btn = 'flex-1 py-2 rounded-lg text-sm font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-40 transition-colors'
+
+  if (loggedEnergy != null && !editing) {
+    return (
+      <div className="flex items-center gap-2 mb-3 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2.5">
+        <span className="text-sm text-gray-700 font-medium shrink-0">今天感受</span>
+        <span className="ml-auto flex items-center gap-1.5 shrink-0">
+          <span className="text-sm font-bold text-slate-800">{ENERGY_LABEL[loggedEnergy] ?? loggedEnergy}</span>
+          <Check className="w-4 h-4 text-emerald-500" />
+        </span>
+        <button onClick={() => setEditing(true)}
+          className="shrink-0 ml-2 px-3 py-2 rounded-lg text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 transition-colors">改</button>
+      </div>
+    )
+  }
+
   return (
     <div className="mb-3 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2.5">
       <p className="text-sm text-gray-700 font-medium mb-2">今天感受如何？</p>
@@ -256,7 +283,7 @@ function QuickTrainingInline({
   )
 }
 
-export default function QuickActions({ enabledSections, onNavigate, topSummary, showQuickWeight, onQuickWeight, todayWeight, showQuickNutrition, onQuickNutrition, showQuickSupplements, onQuickSupplements, showQuickWellness, onQuickWellness, showQuickTraining, onQuickTraining, todayMainLift, lastMainLiftWeight, onQuickCompoundWeight, todayTrainingType, todayCompoundWeight }: QuickActionsProps) {
+export default function QuickActions({ enabledSections, onNavigate, topSummary, showQuickWeight, onQuickWeight, todayWeight, showQuickNutrition, onQuickNutrition, showQuickSupplements, onQuickSupplements, showQuickWellness, onQuickWellness, todayEnergyLevel, showQuickTraining, onQuickTraining, todayMainLift, lastMainLiftWeight, onQuickCompoundWeight, todayTrainingType, todayCompoundWeight }: QuickActionsProps) {
   if (enabledSections.length === 0) return null
 
   const completedCount = enabledSections.filter(s => s.completed).length
@@ -286,7 +313,7 @@ export default function QuickActions({ enabledSections, onNavigate, topSummary, 
 
       {/* 一鍵補品 / 感受 / 訓練（今天還沒記才出現）— 五項都能在首頁一下完成 */}
       {showQuickSupplements && onQuickSupplements && <QuickSupplementInline onSubmit={onQuickSupplements} />}
-      {showQuickWellness && onQuickWellness && <QuickWellnessInline onSubmit={onQuickWellness} />}
+      {showQuickWellness && onQuickWellness && <QuickWellnessInline onSubmit={onQuickWellness} loggedEnergy={todayEnergyLevel} />}
       {showQuickTraining && onQuickTraining && (
         <QuickTrainingInline
           onSubmit={onQuickTraining}

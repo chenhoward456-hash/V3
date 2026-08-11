@@ -891,6 +891,32 @@ export async function GET(request: NextRequest) {
           }
         }
 
+        // 方案到期倒數 — 原本到期提醒只推給學員（而且只推有綁 LINE 的），教練端完全沒有視野：
+        // 2026-08-11 靠人工查 DB 才發現震宣 7 天後就到期。續約是教練的決定，他得先看得到。
+        const { data: expiringClients } = await supabase
+          .from('clients')
+          .select('name, expires_at, subscription_tier')
+          .eq('is_active', true)
+          .neq('subscription_tier', 'free')
+          .not('expires_at', 'is', null)
+        const expiringSoon = (expiringClients || [])
+          .map((c: { name: string; expires_at: string; subscription_tier: string }) => ({
+            ...c, days: daysUntilDateTW(c.expires_at),
+          }))
+          .filter(c => c.days <= 14)
+          .sort((a, b) => a.days - b.days)
+        if (expiringSoon.length > 0) {
+          digestLines.push('')
+          digestLines.push('📅 方案到期：')
+          for (const ec of expiringSoon) {
+            digestLines.push(
+              ec.days < 0 ? `  • ${ec.name}：已過期 ${Math.abs(ec.days)} 天`
+              : ec.days === 0 ? `  • ${ec.name}：今天到期`
+              : `  • ${ec.name}：${ec.days} 天後到期`
+            )
+          }
+        }
+
         // Only send if there are actionable items
         if (digestLines.length > 0) {
           const header = `☀️ 教練晨報 ${today}\n\n`
