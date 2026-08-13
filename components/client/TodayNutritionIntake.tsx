@@ -189,6 +189,24 @@ export default function TodayNutritionIntake({
         <CalorieBar eaten={eaten.calories} target={caloriesTarget} />
       )}
 
+      {/* 漏填提醒：熱量是三大巨量反算的（P×4+C×4+F×9），漏一格熱量就整天錯，而且畫面看起來
+          像「他吃很少」。2026-08-11 實例：Sean 蛋白 185／碳水 230 都按了達標、脂肪停在 0
+          → 熱量顯示 1660（實際 2245），教練據此以為他少吃 600 大卡。
+          規則：已經開始記（至少一項 >0）但仍有項目掛 0 → 講出來還差多少熱量沒計入。 */}
+      {(() => {
+        const started = rows.some(r => r.target != null && eaten[r.key] > 0)
+        const missing = rows.filter(r => r.target != null && eaten[r.key] === 0)
+        if (!started || missing.length === 0) return null
+        const uncounted = missing.reduce(
+          (sum, r) => sum + (r.target ?? 0) * (r.key === 'fat_grams' ? 9 : 4), 0
+        )
+        return (
+          <p className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+            {missing.map(r => r.label).join('、')}還沒記 — 照目標算的話，上面的熱量少計了約 {round(uncounted)} 大卡
+          </p>
+        )
+      })()}
+
       {/* 三大巨量：可拖的進度條 */}
       <div className="space-y-4 mt-4">
         {rows.map(({ key, label, target, unit }) => {
