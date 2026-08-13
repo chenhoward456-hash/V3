@@ -1472,9 +1472,10 @@ export async function GET(request: NextRequest) {
   // 每人 30 則/月壓到 4 則/月（免費額度只有 200 則/月，見 project_v3_line_quota）。
   let smartAlertsSent = 0
   if (!isMorning && dayOfWeek === 7) {
-    // 取得過去 7 天數據做智能分析
+    // 撈 28 天：警示要「跟他自己的前三週比」才講得出他不知道的事，
+    // 只有 7 天就只能套通用門檻（見 lib/ai-insights.ts 的重寫說明）。
     const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 28)
     const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
 
     const [nutRes, wellRes, trainRes, bodyRes] = await Promise.all([

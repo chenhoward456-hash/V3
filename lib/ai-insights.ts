@@ -635,93 +635,153 @@ export interface SmartAlert {
   icon: string
 }
 
+/** 近 7 天 vs 之前的基線。傳進來的 logs 是 28 天窗口（cron 撈 28 天）。 */
+function splitWindow<T extends { date: string }>(logs: T[], todayStr: string) {
+  const d = new Date(todayStr + 'T00:00:00')
+  d.setDate(d.getDate() - 6)
+  const cut = d.toISOString().split('T')[0]
+  return {
+    recent: logs.filter(l => l.date >= cut),
+    baseline: logs.filter(l => l.date < cut),
+  }
+}
+
+/**
+ * 智慧警示 —— 2026-08-13 重寫。
+ *
+ * 舊版每條規則都是「他的一個數字 + 一段課本」，例如
+ *   「近 7 天訓練了 6 天。充足的休息對肌肉生長和恢復至關重要，建議安排 1-2 天完全休息。」
+ * Howard 的評語：「靠杯，這個大家都知道吧！」——他是對的。通用衛教誰都給得起，
+ * 而且絕對門檻（≥6 天、波動 >2kg）對每個人都一樣，講不出他不知道的事。
+ *
+ * 重寫的三條原則：
+ *   ① **跟他自己的基線比**，不是跟課本的門檻比（前 3 週 vs 近 7 天）
+ *   ② **交叉不同來源的資料**（訓練頻率 × 精力、體重波動 × 記錄天數）——
+ *      這是通用建議永遠做不到的，也是「他自己的資料」唯一的優勢
+ *   ③ **只講事實與對照，不給處方**。處方是教練的工作；自動訊息給建議
+ *      既踩合規線又會跟教練的判斷打架。
+ * 資料不夠算基線時 → 退回描述事實，不硬掰對照。
+ */
 export function generateSmartAlerts(data: InsightData): SmartAlert[] {
   const alerts: SmartAlert[] = []
   const { nutritionLogs, wellnessLogs, trainingLogs, bodyLogs } = data
-
-  // 1. 連續未記錄
   const today = new Date().toISOString().split('T')[0]
+
+  const nut = splitWindow(nutritionLogs, today)
+  const well = splitWindow(wellnessLogs, today)
+  const train = splitWindow(trainingLogs, today)
+
+  const fmt = (n: number, digits = 1) => n.toFixed(digits)
+
+  // 1. 連續未記錄（事實 + 他自己的記錄習慣）
   const threeDaysAgo = new Date()
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
   const threeDaysStr = threeDaysAgo.toISOString().split('T')[0]
-
   const recentRecords = nutritionLogs.filter(n => n.date >= threeDaysStr && n.date <= today)
   if (recentRecords.length === 0 && nutritionLogs.length > 0) {
+    const before = nut.baseline.length
     alerts.push({
       type: 'no_record',
       severity: 'warning',
-      title: '連續 3 天未記錄飲食',
-      message: '持續記錄是進步的關鍵！即使沒有完美執行，記錄下來也能幫助分析趨勢。',
+      title: '連續 3 天沒記飲食',
+      message: before > 0
+        ? `你前三週記了 ${before} 天，這三天是 0。斷掉的那幾天沒有數據，趨勢就會出現空洞。`
+        : '這三天沒有飲食紀錄。沒有數據的日子，判斷就只能用猜的。',
       icon: '📝',
     })
   }
 
-  // 2. 體重異常波動
-  const last7Body = bodyLogs.slice(-7)
-  const weights = last7Body.filter(b => b.weight != null).map(b => b.weight!)
-  if (weights.length >= 3) {
-    const maxDiff = Math.max(...weights) - Math.min(...weights)
-    if (maxDiff > 2) {
+  // 2. 體重波動（跟他自己平常的波動比）
+  const recentW = bodyLogs.filter(b => b.weight != null).slice(-7).map(b => b.weight!)
+  if (recentW.length >= 3) {
+    const spread = Math.max(...recentW) - Math.min(...recentW)
+    const baseW = bodyLogs.filter(b => b.weight != null).slice(0, -7).map(b => b.weight!)
+    const baseSpread = baseW.length >= 3 ? Math.max(...baseW) - Math.min(...baseW) : null
+    if (spread > 2) {
       alerts.push({
         type: 'weight_anomaly',
         severity: 'warning',
-        title: '體重波動較大',
-        message: `近 7 天體重波動 ${maxDiff.toFixed(1)}kg。可能原因：水分攝取變化、鈉攝取、經期、腸胃狀態。建議觀察趨勢而非單日數字。`,
+        title: '體重波動比平常大',
+        message: baseSpread != null
+          ? `近 7 天最高最低差 ${fmt(spread)}kg（${fmt(Math.min(...recentW))}–${fmt(Math.max(...recentW))}），你前三週的落差是 ${fmt(baseSpread)}kg。單日數字受水分和食物影響大，看 7 天平均比較準。`
+          : `近 7 天最高最低差 ${fmt(spread)}kg（${fmt(Math.min(...recentW))}–${fmt(Math.max(...recentW))}）。單日數字受水分和食物影響大，看 7 天平均比較準。`,
         icon: '⚖️',
       })
     }
   }
 
-  // 3. 睡眠品質下降
-  const last7Wellness = wellnessLogs.slice(-7)
-  const last3Sleep = last7Wellness.slice(-3).map(w => w.sleep_quality).filter(v => v != null) as number[]
+  // 3. 睡眠（近 3 天低 + 跟自己的基線對照）
+  const last3Sleep = well.recent.slice(-3).map(w => w.sleep_quality).filter(v => v != null) as number[]
   if (last3Sleep.length >= 3 && last3Sleep.every(s => s <= 2)) {
+    const baseSleep = calcAvg(well.baseline.map(w => w.sleep_quality))
     alerts.push({
       type: 'sleep_decline',
       severity: 'warning',
-      title: '連續 3 天睡眠品質差',
-      message: '睡眠不足會影響恢復和減脂效率。建議：1) 睡前 1 小時減少藍光 2) 補充鎂 3) 控制咖啡因在下午 2 點前。',
+      title: '連 3 天睡眠自評偏低',
+      message: baseSleep != null
+        ? `連 3 天都是 ${last3Sleep.join('、')}（滿分 5），你前三週平均 ${fmt(baseSleep)}。恢復掉下去時，訓練和食慾都會跟著受影響。`
+        : `連 3 天都是 ${last3Sleep.join('、')}（滿分 5）。`,
       icon: '😴',
     })
   }
 
-  // 4. 精力持續低迷
-  const last3Energy = last7Wellness.slice(-3).map(w => w.energy_level).filter(v => v != null) as number[]
+  // 4. 精力（近 3 天低 + 交叉同期訓練量）
+  const last3Energy = well.recent.slice(-3).map(w => w.energy_level).filter(v => v != null) as number[]
   if (last3Energy.length >= 3 && last3Energy.every(e => e <= 2)) {
+    const baseEnergy = calcAvg(well.baseline.map(w => w.energy_level))
+    const trainedRecent = train.recent.filter(t => t.training_type && t.training_type !== 'rest').length
+    const parts = [`連 3 天精力都是 ${last3Energy.join('、')}（滿分 5）`]
+    if (baseEnergy != null) parts.push(`你前三週平均 ${fmt(baseEnergy)}`)
+    if (trainedRecent > 0) parts.push(`同期練了 ${trainedRecent} 天`)
     alerts.push({
       type: 'energy_low',
       severity: 'warning',
-      title: '連續 3 天精力偏低',
-      message: '可能原因：熱量赤字過大、睡眠不足、過度訓練。建議：1) 確認熱量攝取足夠 2) 考慮安排 refeed day 3) 增加碳水攝取。',
+      title: '精力連 3 天偏低',
+      message: parts.join('，') + '。',
       icon: '⚡',
     })
   }
 
-  // 5. 過度訓練風險
-  const last7Training = trainingLogs.slice(-7)
-  const consecutiveTraining = last7Training.filter(t => t.training_type && t.training_type !== 'rest').length
-  if (consecutiveTraining >= 6) {
+  // 5. 訓練頻率（比自己的基線高才講，並帶上同期精力）
+  const trainedRecent = train.recent.filter(t => t.training_type && t.training_type !== 'rest').length
+  const restRecent = train.recent.filter(t => t.training_type === 'rest').length
+  if (trainedRecent >= 6) {
+    const baseDays = train.baseline.filter(t => t.training_type && t.training_type !== 'rest').length
+    const baseWeeks = train.baseline.length > 0 ? Math.max(1, Math.round(train.baseline.length / 7)) : 0
+    const basePerWeek = baseWeeks > 0 ? baseDays / baseWeeks : null
+    const energyRecent = calcAvg(well.recent.map(w => w.energy_level))
+    const energyBase = calcAvg(well.baseline.map(w => w.energy_level))
+
+    const parts = [`近 7 天練了 ${trainedRecent} 天、休息 ${restRecent} 天`]
+    if (basePerWeek != null) parts.push(`你前三週平均一週 ${fmt(basePerWeek)} 天`)
+    if (energyRecent != null && energyBase != null) {
+      parts.push(`同期精力自評 ${fmt(energyBase)} → ${fmt(energyRecent)}`)
+    }
     alerts.push({
       type: 'overtraining',
       severity: 'warning',
-      title: '訓練頻率偏高',
-      message: `近 7 天訓練了 ${consecutiveTraining} 天。充足的休息對肌肉生長和恢復至關重要，建議安排 1-2 天完全休息。`,
+      title: '訓練密度比平常高',
+      message: parts.join('，') + '。',
       icon: '🏋️',
     })
   }
 
-  // 6. 飲食偏離目標
+  // 6. 熱量偏離（跟目標比，也跟他自己前三週比）
   if (data.client.caloriesTarget) {
-    const last7Nutrition = nutritionLogs.slice(-7)
-    const avgCal = calcAvg(last7Nutrition.map(n => n.calories))
-    if (avgCal != null && Math.abs(avgCal - data.client.caloriesTarget) > data.client.caloriesTarget * 0.15) {
-      const direction = avgCal > data.client.caloriesTarget ? '超過' : '低於'
-      const diff = Math.abs(Math.round(avgCal - data.client.caloriesTarget))
+    const target = data.client.caloriesTarget
+    const avgCal = calcAvg(nut.recent.map(n => n.calories))
+    if (avgCal != null && Math.abs(avgCal - target) > target * 0.15) {
+      const over = avgCal > target
+      const diff = Math.abs(Math.round(avgCal - target))
+      const baseCal = calcAvg(nut.baseline.map(n => n.calories))
+      const parts = [`近 7 天平均 ${Math.round(avgCal)} kcal，${over ? '高於' : '低於'}目標 ${diff}`]
+      if (baseCal != null) parts.push(`前三週平均 ${Math.round(baseCal)}`)
+      parts.push(`記錄天數 ${nut.recent.length}/7`)
       alerts.push({
         type: 'nutrition_drift',
         severity: 'info',
-        title: `平均熱量${direction}目標`,
-        message: `近 7 天平均熱量 ${Math.round(avgCal)} kcal，${direction}目標 ${diff} kcal。${direction === '超過' ? '建議檢視是否有隱藏熱量（醬料、飲料）。' : '注意避免熱量赤字過大影響代謝。'}`,
+        title: `平均熱量${over ? '高於' : '低於'}目標`,
+        message: parts.join('，') + '。',
         icon: '🔥',
       })
     }

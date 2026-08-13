@@ -387,6 +387,16 @@ describe('compareLabResults', () => {
 // ════════════════════════════════════════════
 
 describe('generateSmartAlerts', () => {
+  // 警示改用「近 N 天的日期窗口」判斷（不是取最後 N 筆）——10 天前記的 3 筆低分
+  // 不該被當成「連續 3 天」。所以測資日期必須相對今天產生。
+  function recentDates(n: number): string[] {
+    return Array.from({ length: n }, (_, i) => {
+      const d = new Date()
+      d.setDate(d.getDate() - (n - 1 - i))
+      return d.toISOString().split('T')[0]
+    })
+  }
+
   function makeInsightData(overrides?: Partial<InsightData>): InsightData {
     return {
       client: makeClient(),
@@ -409,7 +419,7 @@ describe('generateSmartAlerts', () => {
     const weightAlert = alerts.find(a => a.type === 'weight_anomaly')
     expect(weightAlert).toBeDefined()
     expect(weightAlert!.severity).toBe('warning')
-    expect(weightAlert!.message).toContain('波動')
+    expect(weightAlert!.message).toContain('最高最低差')
   })
 
   it('should not generate weight anomaly when fluctuation <= 2kg', () => {
@@ -424,10 +434,11 @@ describe('generateSmartAlerts', () => {
   })
 
   it('should generate sleep decline alert when 3 consecutive days with score <= 2', () => {
+    const [d1, d2, d3] = recentDates(3)
     const wellnessLogs: WellnessEntry[] = [
-      { date: '2024-01-01', sleep_quality: 1, mood: 3, energy_level: 3, stress: 3, hunger: 3, digestion: 3 },
-      { date: '2024-01-02', sleep_quality: 2, mood: 3, energy_level: 3, stress: 3, hunger: 3, digestion: 3 },
-      { date: '2024-01-03', sleep_quality: 1, mood: 3, energy_level: 3, stress: 3, hunger: 3, digestion: 3 },
+      { date: d1, sleep_quality: 1, mood: 3, energy_level: 3, stress: 3, hunger: 3, digestion: 3 },
+      { date: d2, sleep_quality: 2, mood: 3, energy_level: 3, stress: 3, hunger: 3, digestion: 3 },
+      { date: d3, sleep_quality: 1, mood: 3, energy_level: 3, stress: 3, hunger: 3, digestion: 3 },
     ]
     const data = makeInsightData({ wellnessLogs })
     const alerts = generateSmartAlerts(data)
@@ -435,10 +446,11 @@ describe('generateSmartAlerts', () => {
   })
 
   it('should generate energy low alert when 3 consecutive days with energy <= 2', () => {
+    const [e1, e2, e3] = recentDates(3)
     const wellnessLogs: WellnessEntry[] = [
-      { date: '2024-01-01', energy_level: 1, sleep_quality: 4, mood: 3, stress: 3, hunger: 3, digestion: 3 },
-      { date: '2024-01-02', energy_level: 2, sleep_quality: 4, mood: 3, stress: 3, hunger: 3, digestion: 3 },
-      { date: '2024-01-03', energy_level: 2, sleep_quality: 4, mood: 3, stress: 3, hunger: 3, digestion: 3 },
+      { date: e1, energy_level: 1, sleep_quality: 4, mood: 3, stress: 3, hunger: 3, digestion: 3 },
+      { date: e2, energy_level: 2, sleep_quality: 4, mood: 3, stress: 3, hunger: 3, digestion: 3 },
+      { date: e3, energy_level: 2, sleep_quality: 4, mood: 3, stress: 3, hunger: 3, digestion: 3 },
     ]
     const data = makeInsightData({ wellnessLogs })
     const alerts = generateSmartAlerts(data)
@@ -446,8 +458,9 @@ describe('generateSmartAlerts', () => {
   })
 
   it('should generate overtraining alert when >= 6 training days in last 7', () => {
-    const trainingLogs: TrainingEntry[] = Array.from({ length: 7 }, (_, i) => ({
-      date: `2024-01-0${i + 1}`,
+    const days = recentDates(7)
+    const trainingLogs: TrainingEntry[] = days.map((date, i) => ({
+      date,
       training_type: i < 6 ? 'strength' : 'rest',
       duration: 60,
       rpe: 7,
@@ -472,7 +485,7 @@ describe('generateSmartAlerts', () => {
     const alerts = generateSmartAlerts(data)
     const drift = alerts.find(a => a.type === 'nutrition_drift')
     expect(drift).toBeDefined()
-    expect(drift!.message).toContain('超過')
+    expect(drift!.message).toContain('高於')
   })
 
   it('should return empty array when all data is healthy', () => {
@@ -590,5 +603,83 @@ describe('generateLabComparisonSummary', () => {
     ]
     const result = await generateLabComparisonSummary(comparisons)
     expect(result).toBe('AI mock response')
+  })
+})
+
+// ── 重寫後的守門（2026-08-13）──
+// 舊版每條規則是「他的一個數字 + 一段課本」。新版三條原則：跟自己的基線比、
+// 交叉不同來源的資料、只講事實不給處方。以下測試就是守這三條。
+describe('generateSmartAlerts — 用他自己的資料講話', () => {
+  function dates(n: number, offsetFromToday = 0): string[] {
+    return Array.from({ length: n }, (_, i) => {
+      const d = new Date()
+      d.setDate(d.getDate() - offsetFromToday - (n - 1 - i))
+      return d.toISOString().split('T')[0]
+    })
+  }
+
+  it('訓練頻率警示要帶「他自己的前三週平均」，不是只講門檻', () => {
+    const recent = dates(7).map((date, i) => ({
+      date, training_type: i < 6 ? 'strength' : 'rest', duration: 60, rpe: 7, note: null,
+    }))
+    // 前三週：每週只練 3 天 → 基線 3 天/週
+    const baseline = dates(21, 7).map((date, i) => ({
+      date, training_type: i % 7 < 3 ? 'strength' : 'rest', duration: 60, rpe: 7, note: null,
+    }))
+    const alerts = generateSmartAlerts({
+      client: makeClient(), nutritionLogs: [], wellnessLogs: [], bodyLogs: [],
+      trainingLogs: [...baseline, ...recent],
+    })
+    const a = alerts.find(x => x.type === 'overtraining')
+    expect(a).toBeDefined()
+    expect(a!.message).toContain('前三週平均')
+    // 不再給通用處方
+    expect(a!.message).not.toContain('建議')
+    expect(a!.message).not.toContain('至關重要')
+  })
+
+  it('沒有基線資料時只描述事實，不硬掰對照', () => {
+    const recent = dates(7).map((date, i) => ({
+      date, training_type: i < 6 ? 'strength' : 'rest', duration: 60, rpe: 7, note: null,
+    }))
+    const alerts = generateSmartAlerts({
+      client: makeClient(), nutritionLogs: [], wellnessLogs: [], bodyLogs: [], trainingLogs: recent,
+    })
+    const a = alerts.find(x => x.type === 'overtraining')
+    expect(a).toBeDefined()
+    expect(a!.message).toContain('近 7 天練了 6 天')
+    expect(a!.message).not.toContain('前三週平均')
+  })
+
+  it('熱量偏離要同時帶目標差距與他自己前三週的平均', () => {
+    const recent = dates(7).map(date => makeNutritionLog({ date, calories: 1600 }))
+    const baseline = dates(21, 7).map(date => makeNutritionLog({ date, calories: 2200 }))
+    const alerts = generateSmartAlerts({
+      client: makeClient({ caloriesTarget: 2250 }),
+      nutritionLogs: [...baseline, ...recent],
+      wellnessLogs: [], trainingLogs: [], bodyLogs: [],
+    })
+    const a = alerts.find(x => x.type === 'nutrition_drift')
+    expect(a).toBeDefined()
+    expect(a!.message).toContain('前三週平均 2200')
+    expect(a!.message).toContain('記錄天數')
+  })
+
+  it('所有警示都不給處方（合規＋不跟教練判斷打架）', () => {
+    const recent = dates(7).map((date, i) => ({
+      date, training_type: i < 6 ? 'strength' : 'rest', duration: 60, rpe: 7, note: null,
+    }))
+    const wellness = dates(3).map(date => ({
+      date, energy_level: 1, sleep_quality: 1, mood: 3, stress: 3, hunger: 3, digestion: 3,
+    }))
+    const alerts = generateSmartAlerts({
+      client: makeClient({ caloriesTarget: 2000 }),
+      nutritionLogs: dates(7).map(date => makeNutritionLog({ date, calories: 1400 })),
+      wellnessLogs: wellness, trainingLogs: recent, bodyLogs: [],
+    })
+    expect(alerts.length).toBeGreaterThan(0)
+    for (const a of alerts) {
+      expect(a.message).not.toMatch(/建議：|補充鎂|咖啡因|refeed day/)
+    }
   })
 })
