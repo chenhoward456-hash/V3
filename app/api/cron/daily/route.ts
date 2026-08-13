@@ -1461,9 +1461,13 @@ export async function GET(request: NextRequest) {
     logger.info('Referral automation completed', { completed: referralsCompleted, expired: referralsExpired })
   }
 
-  // ===== 智能警示推播（晚上執行）=====
+  // ===== 智能警示推播（每週日晚上，一週一次）=====
+  // 2026-08-13 從「每天晚上」改成「一週一次」：原本每晚重跑同一組規則，
+  // 內容幾乎不會變 → 學員連續兩天收到一模一樣的「近 7 天訓練了 6 天」（陳胤豪實例）。
+  // 這類警示看的本來就是 7 天窗口，一週結算一次剛好；也把 LINE 額度從
+  // 每人 30 則/月壓到 4 則/月（免費額度只有 200 則/月，見 project_v3_line_quota）。
   let smartAlertsSent = 0
-  if (!isMorning) {
+  if (!isMorning && dayOfWeek === 0) {
     // 取得過去 7 天數據做智能分析
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
@@ -1485,12 +1489,14 @@ export async function GET(request: NextRequest) {
     const allTrain = trainRes.data || []
     const allBody = bodyRes.data || []
 
+    const { data: alertPushRows } = await supabase.from('push_subscriptions').select('client_id')
+    const alertPushable = new Set((alertPushRows ?? []).map((r: { client_id: string }) => r.client_id))
+
     // 取得學員的目標設定
     const { data: allClientsFull } = await supabase
       .from('clients')
       .select('id, name, line_user_id, calories_target, protein_target, carbs_target, fat_target, goal_type, target_weight, gender')
       .eq('is_active', true)
-      .not('line_user_id', 'is', null)
 
     if (allClientsFull) {
       for (const c of allClientsFull) {
@@ -1515,6 +1521,9 @@ export async function GET(request: NextRequest) {
           bodyLogs: allBody.filter((b: { client_id: string }) => b.client_id === c.id),
         }
 
+        // 可通知＝有綁 LINE 或有 Web Push 訂閱（與沉默喚回／習慣斷點同一套判定）
+        if (!c.line_user_id && !alertPushable.has(c.id)) continue
+
         const alerts = generateSmartAlerts(insightData)
         // 只推送 warning 級別的警示，避免打擾
         const warnings = alerts.filter(a => a.severity === 'warning')
@@ -1526,7 +1535,13 @@ export async function GET(request: NextRequest) {
           ].join('\n\n')
 
           try {
-            await pushMessage(c.line_user_id, [{ type: 'text', text: alertMsg }])
+            // 走 sendRoutineReminder：Web Push 優先、沒訂閱才退 LINE，省免費額度
+            await sendRoutineReminder(c.id, c.line_user_id ?? '', {
+              title: warnings.length === 1 ? `${warnings[0].icon} ${warnings[0].title}` : '📋 本週有幾項要注意',
+              body: warnings[0].title,
+              lineText: alertMsg,
+              url: '/dashboard',
+            })
             smartAlertsSent++
           } catch (err: unknown) {
             errors.push(`alert_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
