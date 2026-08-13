@@ -22,6 +22,7 @@ import { buildPeakMorningReminder, buildPeakEveningReminder } from '@/lib/peak-w
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
+import { getTaipeiDayOfWeek } from '@/lib/periodization'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import {
   sendDay3Email,
@@ -534,8 +535,11 @@ export async function GET(request: NextRequest) {
   //       AND 距上次荷爾蒙血檢 ≥ 12 週
   // 24 小時 dedupe：同一學員 7 天內只 push 一次
   let retestReminderCount = 0
-  const dayOfWeek = new Date().getDay() // 0 = Sunday
-  if (isMorningRun && dayOfWeek === 0) {
+  // ⚠️ 用台北時區的星期，不能用 new Date().getDay()（那是伺服器的 UTC 星期）：
+  // 台北週日早上 5-8 點 → UTC 還是週六 21-24 點 → getDay() 回 6，
+  // 「週日早上」的排程在那個時段會整段不觸發。getTaipeiDayOfWeek 回 1(一)~7(日)。
+  const dayOfWeek = getTaipeiDayOfWeek() // 1 = Monday ... 7 = Sunday
+  if (isMorningRun && dayOfWeek === 7) {
     try {
       const { data: wellnessClients } = await supabase
         .from('clients')
@@ -1467,7 +1471,7 @@ export async function GET(request: NextRequest) {
   // 這類警示看的本來就是 7 天窗口，一週結算一次剛好；也把 LINE 額度從
   // 每人 30 則/月壓到 4 則/月（免費額度只有 200 則/月，見 project_v3_line_quota）。
   let smartAlertsSent = 0
-  if (!isMorning && dayOfWeek === 0) {
+  if (!isMorning && dayOfWeek === 7) {
     // 取得過去 7 天數據做智能分析
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)

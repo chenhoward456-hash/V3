@@ -157,7 +157,10 @@ let mockHour = 8 // default morning
 
 // Mock Date to control Taiwan time behavior
 const RealDate = Date
-function mockDateForHour(hour: number) {
+// dateStr 預設 2025-01-15（週三）。需要驗「每週日才跑」的排程時傳週日日期，
+// 例如 2025-01-19。route 用 getTaipeiDayOfWeek() 判斷星期，它讀的是
+// toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })。
+function mockDateForHour(hour: number, dateStr = '2025-01-15') {
   mockHour = hour
   // We override toLocaleString to return a controlled hour
   const origToLocaleString = RealDate.prototype.toLocaleString
@@ -168,8 +171,8 @@ function mockDateForHour(hour: number) {
     return origToLocaleString.call(this, locale, options)
   })
   vi.spyOn(Date.prototype, 'toLocaleDateString').mockImplementation(function (this: Date, locale?: any, options?: any) {
-    if (locale === 'sv-SE' && options?.timeZone === 'Asia/Taipei') {
-      return '2025-01-15'
+    if (options?.timeZone === 'Asia/Taipei' && (locale === 'sv-SE' || locale === 'en-CA')) {
+      return dateStr
     }
     return RealDate.prototype.toLocaleDateString.call(this, locale, options)
   })
@@ -572,8 +575,10 @@ describe('GET /api/cron/daily', () => {
 
   // ── Smart Alerts (evening, lines 253-326) ──
 
-  it('should send smart alerts when warnings are generated (evening)', async () => {
-    mockDateForHour(22)
+  // 智慧警示 2026-08-13 起改為「每週日晚上」一週一次（原本每晚都發，
+  // 學員會連兩天收到一模一樣的內容），且改走 sendRoutineReminder（web push 優先）。
+  it('should send smart alerts when warnings are generated (Sunday evening)', async () => {
+    mockDateForHour(22, '2025-01-19') // 週日
     mockFromResults['clients'] = {
       data: [
         {
@@ -603,12 +608,31 @@ describe('GET /api/cron/daily', () => {
     const body = await res.json()
 
     expect(body.smartAlertsSent).toBe(1)
-    expect(mockPushMessage).toHaveBeenCalledWith('U001', [
-      {
-        type: 'text',
-        text: expect.stringContaining('Weight spike'),
-      },
+    expect(mockSendRoutineReminder).toHaveBeenCalledWith(
+      'client-1',
+      'U001',
+      expect.objectContaining({ lineText: expect.stringContaining('Weight spike') }),
+    )
+  })
+
+  it('should NOT send smart alerts on a non-Sunday evening', async () => {
+    mockDateForHour(22, '2025-01-15') // 週三
+    mockFromResults['clients'] = {
+      data: [{ id: 'client-1', name: 'Alice', line_user_id: 'U001', subscription_tier: 'coached',
+        body_composition_enabled: false, nutrition_enabled: false, training_enabled: false, wellness_enabled: false }],
+      error: null,
+    }
+    mockFromResults['daily_wellness'] = { data: [], error: null }
+    mockFromResults['nutrition_logs'] = { data: [], error: null }
+    mockFromResults['training_logs'] = { data: [], error: null }
+    mockFromResults['body_composition'] = { data: [], error: null }
+    mockGenerateSmartAlerts.mockReturnValue([
+      { severity: 'warning', icon: '!', title: 'Weight spike', message: 'Check your weight' },
     ])
+
+    const res = await GET(makeRequest({ authHeader: 'Bearer test-cron-secret' }))
+    const body = await res.json()
+    expect(body.smartAlertsSent).toBe(0)
   })
 
   it('should not send smart alerts when no warnings generated', async () => {
@@ -643,8 +667,8 @@ describe('GET /api/cron/daily', () => {
     expect(body.smartAlertsSent).toBe(0)
   })
 
-  it('should handle pushMessage error in smart alerts', async () => {
-    mockDateForHour(22)
+  it('should handle send error in smart alerts', async () => {
+    mockDateForHour(22, '2025-01-19') // 週日
     mockFromResults['clients'] = {
       data: [
         {
@@ -667,7 +691,7 @@ describe('GET /api/cron/daily', () => {
     mockGenerateSmartAlerts.mockReturnValue([
       { severity: 'warning', icon: '!', title: 'Alert', message: 'Issue' },
     ])
-    mockPushMessage.mockRejectedValueOnce(new Error('LINE API error'))
+    mockSendRoutineReminder.mockRejectedValueOnce(new Error('LINE API error'))
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
@@ -678,7 +702,7 @@ describe('GET /api/cron/daily', () => {
   })
 
   it('should filter insight data per client for smart alerts', async () => {
-    mockDateForHour(22)
+    mockDateForHour(22, '2025-01-19') // 週日
     mockFromResults['clients'] = {
       data: [
         {
