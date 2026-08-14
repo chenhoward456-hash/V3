@@ -30,6 +30,20 @@ export interface OnboardingRendered {
  *  存 localStorage（顯示偏好，不是資料，不值得為它打 DB）。 */
 const SEEN_KEY = 'plan_seen_rendered_at'
 
+/**
+ * 只解析 `**粗體**`，其餘原樣輸出。
+ *
+ * 計畫內容是教練用純文字寫的，裡面本來就會用 ** 標重點——之前直接丟進 <pre>，
+ * 學員看到的是滿滿的星號。不為了這個引 markdown 套件（要防 XSS、要管樣式，不划算）。
+ */
+function renderBody(text: string) {
+  return text.split(/(\*\*[^*\n]+\*\*)/g).map((part, i) =>
+    part.length > 4 && part.startsWith('**') && part.endsWith('**')
+      ? <strong key={i} className="font-semibold text-slate-800">{part.slice(2, -2)}</strong>
+      : <span key={i}>{part}</span>
+  )
+}
+
 function MyPlanSectionInner({ data }: { data: OnboardingRendered | null }) {
   const sections = data?.sections
   const renderedAt = data?.rendered_at ?? ''
@@ -92,7 +106,7 @@ function MyPlanSectionInner({ data }: { data: OnboardingRendered | null }) {
                 <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
               </button>
               {isOpen && (
-                <pre className="whitespace-pre-wrap font-sans text-xs text-slate-600 leading-relaxed pb-3">{s.body}</pre>
+                <pre className="whitespace-pre-wrap font-sans text-xs text-slate-600 leading-relaxed pb-3">{renderBody(s.body)}</pre>
               )}
             </li>
           )
