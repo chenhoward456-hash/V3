@@ -693,14 +693,15 @@ describe('BodyComposition', () => {
   // ===========================================================================
   describe('competition mode trajectory', () => {
     // Helper: create enough body data for trajectory calculation
+    // ⚠️ 日期必須相對「今天」產生，不能寫死 2026-03——比賽日是 today+30，
+    //    寫死的話兩者會隨時間越離越遠，撞上 comp-projection 的外推上限（84 天）而不給預測。
     function makeTrajectoryBodyData() {
       const data = []
       for (let i = 30; i >= 1; i--) {
-        const day = String(31 - i).padStart(2, '0')
-        const month = i > 20 ? '02' : '03'
-        const dayNum = i > 20 ? String(28 - (i - 21)).padStart(2, '0') : String(31 - i).padStart(2, '0')
+        const d = new Date()
+        d.setDate(d.getDate() - i)
         data.push({
-          date: `2026-${month}-${dayNum}`,
+          date: d.toISOString().split('T')[0],
           weight: 75 - (30 - i) * 0.05,
           body_fat: 18,
           muscle_mass: 32,
@@ -731,8 +732,8 @@ describe('BodyComposition', () => {
       expect(screen.getAllByText(/目標體重/).length).toBeGreaterThanOrEqual(1)
       expect(screen.getByText(/預測比賽日體重/)).toBeInTheDocument()
       expect(screen.getByText(/距離比賽/)).toBeInTheDocument()
-      // Target weight value
-      expect(screen.getByText('72 kg')).toBeInTheDocument()
+      // Target weight value（預測值也可能剛好是 72 kg，所以不用 getByText 的唯一性）
+      expect(screen.getAllByText('72 kg').length).toBeGreaterThanOrEqual(1)
     })
 
     it('exercises the trajectory Tooltip formatter (line 343-346, target line 350)', () => {
