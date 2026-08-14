@@ -89,9 +89,18 @@ export default function ClientHeader({
       {/* 標題 + 頭像 */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-lg shrink-0">
-            {c.name.charAt(0)}
-          </div>
+          {/* 有設頭像照片就用照片，沒有就維持姓名首字 */}
+          {c.avatar_url ? (
+            <img
+              src={c.avatar_url}
+              alt={c.name}
+              className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-lg shrink-0">
+              {c.name.charAt(0)}
+            </div>
+          )}
           <div>
             <h1 className="text-xl font-bold text-gray-900 leading-tight">{c.name}</h1>
             {!hideStatusBadge && (
@@ -332,6 +341,15 @@ export default function ClientHeader({
         return (
           <div className={`${urgencyBg} border rounded-2xl p-4 mb-3`}>
             <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {/* 目標照片：倒數天數旁邊放你上台的樣子，兩件事綁在一起看 */}
+                {c.goal_photo_url && (
+                  <img
+                    src={c.goal_photo_url}
+                    alt="目標狀態"
+                    className="w-16 h-20 rounded-xl object-cover shrink-0 border border-slate-200"
+                  />
+                )}
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <button
@@ -345,6 +363,7 @@ export default function ClientHeader({
                 <p className="text-xs text-gray-500">
                   {new Date(c.competition_date).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
+              </div>
               </div>
               <div className="text-right">
                 <p className="text-3xl font-black text-gray-900 tabular-nums">{Math.max(0, daysLeft)}</p>

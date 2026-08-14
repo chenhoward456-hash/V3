@@ -36,6 +36,10 @@ export interface Client {
   id: string
   unique_code: string
   name: string
+  // 方形臉部特寫，用在 40px 圓形頭像；NULL＝用姓名首字
+  avatar_url: string | null
+  // 直式全身照，顯示在備賽倒數卡旁邊；NULL＝不顯示
+  goal_photo_url: string | null
   age: number | null
   gender: string | null
   status: string | null

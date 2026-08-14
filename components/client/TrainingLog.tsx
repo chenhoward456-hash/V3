@@ -142,7 +142,10 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
   // 舊寫法有競態：非同步抓完之後，另一個「重置」effect 會把剛帶進來的清空 → 明細變空的。
   useEffect(() => {
     if (!showDetailedSets || !form.training_type) return
-    const key = `${form.training_type}|${planDayOfWeek ?? ''}|${today}`
+    // key 要把「課表是哪一天」算進去：課表是非同步來的，第一次跑到這裡時
+    // trainingPlan 可能還沒到（selectedPlanDay = null）。不放進 key 的話，
+    // 課表到了之後 key 沒變 → 被下面那行擋掉 → 明細永遠空的。
+    const key = `${form.training_type}|${selectedPlanDay?.dayOfWeek ?? planDayOfWeek ?? ''}|${today}`
     if (loadKeyRef.current === key) return
     loadKeyRef.current = key
     setDetailedLoaded(true)
@@ -204,6 +207,10 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         } else if (prevSets.length > 0) {
           // ③ 沒課表才退回「上次同類型」
           setDetailedSets(prevSets.map(s => ({ ...s, rpe: null })))
+        } else {
+          // 三個來源都是空的——多半是課表還在路上。解鎖 key，等資料到了再帶一次，
+          // 不然這次的空結果會把後面所有機會都鎖死。
+          loadKeyRef.current = ''
         }
 
         setLastTypeSets(prevSets.map(s => ({ ...s, rpe: null })))
