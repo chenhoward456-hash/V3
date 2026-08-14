@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       // 所有學員，按建立時間倒序（只選必要欄位）
       supabase
         .from('clients')
-        .select('id, unique_code, name, age, gender, status, is_active, expires_at, subscription_tier, client_mode, competition_enabled, health_mode_enabled, body_composition_enabled, nutrition_enabled, wellness_enabled, training_enabled, supplement_enabled, lab_enabled, ai_chat_enabled, simple_mode, goal_type, diet_start_date, prep_phase, competition_date, next_checkup_date, target_weight, target_date, coach_last_viewed_at, coach_weekly_note, created_at, line_user_id, last_line_activity')
+        .select('id, unique_code, name, age, gender, status, is_active, expires_at, subscription_tier, client_mode, competition_enabled, health_mode_enabled, body_composition_enabled, nutrition_enabled, wellness_enabled, training_enabled, supplement_enabled, lab_enabled, ai_chat_enabled, simple_mode, goal_type, diet_start_date, prep_phase, competition_date, next_checkup_date, target_weight, target_date, coach_last_viewed_at, coach_weekly_note, created_at, line_user_id, last_line_activity, onboarding_notes_rendered, health_screening')
         .order('created_at', { ascending: false })
         .limit(500),
 

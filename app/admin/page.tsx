@@ -37,6 +37,8 @@ interface Client {
   target_weight: number | null
   target_date: string | null
   is_active: boolean
+  onboarding_notes_rendered?: { sections?: unknown[] } | null
+  health_screening?: { screened_at?: string } | null
   subscription_tier: 'free' | 'self_managed' | 'coached'
   line_user_id: string | null
   last_line_activity: string | null
@@ -692,12 +694,21 @@ export default function AdminDashboard() {
     else if (c.status === 'attention') reasons.push({ sev: 2, text: '血檢關注' })
     if (s && s.supplementCount > 0 && s.weekRate < 50) reasons.push({ sev: 2, text: `服從率 ${s.weekRate}%` })
     if (c.next_checkup_date) { const t = new Date(); t.setHours(0, 0, 0, 0); const ck = new Date(c.next_checkup_date); ck.setHours(0, 0, 0, 0); const d = Math.floor((ck.getTime() - t.getTime()) / DAY_MS); if (d < 0) reasons.push({ sev: 2, text: `回檢逾期${Math.abs(d)}天` }) }
+    // 教練自己的待辦（不是學員的問題）—— 這兩件事以前要一個一個點進去才發現：
+    // 2026-08-14 查下來 William/張承鈞/陳胤豪 都是 0 段計畫頁，學員打開系統看不到「我該幹嘛」。
+    if (!(c.onboarding_notes_rendered?.sections?.length)) reasons.push({ sev: 1, text: '無計畫頁' })
+    if (!c.health_screening?.screened_at) reasons.push({ sev: 1, text: '未健康篩檢' })
     if (reasons.length === 0) return { level: 'ok', reason: '', accent: '', chip: '' }
     reasons.sort((a, b) => b.sev - a.sev)
-    const reason = reasons.slice(0, 2).map(r => r.text).join(' · ')
-    return reasons[0].sev >= 3
-      ? { level: 'alert', reason, accent: 'border-l-4 border-rose-400', chip: 'bg-rose-50 text-rose-700' }
-      : { level: 'watch', reason, accent: 'border-l-4 border-amber-400', chip: 'bg-amber-50 text-amber-700' }
+    // 學員問題（sev>=2）最多兩條，教練自己的設定待辦（sev 1）另外附一條 ——
+    // 否則「無計畫頁」永遠被「N 天沒打卡」擠掉，等於沒做。
+    const issues = reasons.filter(r => r.sev >= 2).slice(0, 2)
+    const todos = reasons.filter(r => r.sev === 1).slice(0, 1)
+    const reason = [...issues, ...todos].map(r => r.text).join(' · ')
+    if (reasons[0].sev >= 3) return { level: 'alert', reason, accent: 'border-l-4 border-rose-400', chip: 'bg-rose-50 text-rose-700' }
+    if (reasons[0].sev >= 2) return { level: 'watch', reason, accent: 'border-l-4 border-amber-400', chip: 'bg-amber-50 text-amber-700' }
+    // sev 1 = 教練的設定待辦，不是學員出事 → 中性灰，不佔用紅黃（DESIGN.md：顏色只做語意）
+    return { level: 'todo', reason, accent: 'border-l-4 border-slate-300', chip: 'bg-slate-100 text-slate-600' }
   }
   const getPrepPhaseLabel = (p: string | null) => PHASE_LABELS[p || ''] || p || ''
   const getLineStatus = (c: Client) => { if (!c.line_user_id) return { label: '', color: '' }; if (!c.last_line_activity) return { label: 'LINE 已綁定', color: 'text-gray-400' }; const mins = Math.floor((Date.now() - new Date(c.last_line_activity).getTime()) / 60000); if (mins < 5) return { label: '在線', color: 'text-emerald-500' }; if (mins < 60) return { label: `${mins}分鐘前`, color: 'text-emerald-400' }; const hrs = Math.floor(mins / 60); if (hrs < 24) return { label: `${hrs}小時前`, color: 'text-gray-400' }; return { label: `${Math.floor(hrs/24)}天前`, color: 'text-gray-400' } }
