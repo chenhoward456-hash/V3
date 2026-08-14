@@ -15,6 +15,7 @@ import LabPanelNotesEditor from './components/LabPanelNotesEditor'
 import {
   isScreened, needsProfessionalReferral, referralReasons, type HealthScreening,
 } from '@/lib/health-screening'
+import MacroAdjustmentHistory from '@/components/admin/MacroAdjustmentHistory'
 import PersonalNotesEditor from './components/PersonalNotesEditor'
 import ArchivedSupplementsList from './components/ArchivedSupplementsList'
 import { SUPPLEMENT_NAMES, findSuggestion } from '@/lib/supplement-catalog'
@@ -49,6 +50,8 @@ interface Supplement {
   coach_rationale?: string | null
   mode_context?: string | null
 }
+
+const MACRO_FIELDS_UI = ['calories_target', 'protein_target', 'carbs_target', 'fat_target', 'carbs_training_day', 'carbs_rest_day'] as const
 
 const SCREENING_ITEMS: { key: keyof HealthScreening; label: string; hint: string }[] = [
   { key: 'chronic_condition', label: '慢性疾病', hint: '糖尿病、腎臟、心血管、甲狀腺、肝膽等' },
@@ -227,6 +230,7 @@ export default function ClientEditor() {
   // Timed Coach Override state
   const [overrideDurationDays, setOverrideDurationDays] = useState<number | null>(null)
   const [overrideReason, setOverrideReason] = useState('')
+  const [macroChangeReason, setMacroChangeReason] = useState('')
   const [lockMacros, setLockMacros] = useState(false) // 預設不鎖：改 macro 後仍交給系統自動調整；勾選才鎖定
   const [systemSuggestion, setSystemSuggestion] = useState<{
     suggestedCalories?: number | null
@@ -543,6 +547,7 @@ export default function ClientEditor() {
             supplements: client.supplements,
             override_duration_days: overrideDurationDays,
             override_reason: overrideReason || null,
+            macro_change_reason: macroChangeReason.trim() || null,
             lock_macros: lockMacros,
             startingBody: startingBodyPayload,
           }),
@@ -581,6 +586,16 @@ export default function ClientEditor() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
     return Array.from(array, (byte) => chars[byte % chars.length]).join('')
   }
+
+  // macro 有沒有被改動 —— 決定要不要問教練「為什麼」（法規/多教練防護：數字要留得下判斷依據）
+  const macroChanged = useMemo(() => {
+    if (!client || !initialClientRef.current) return false
+    try {
+      const init = JSON.parse(initialClientRef.current) as Record<string, unknown>
+      const norm = (v: unknown) => (v == null || v === '' ? '' : String(Number(v)))
+      return MACRO_FIELDS_UI.some(f => norm(init[f]) !== norm((client as unknown as Record<string, unknown>)[f]))
+    } catch { return false }
+  }, [client])
 
   // Issue 1: Track unsaved changes by comparing current state to initial snapshot
   useEffect(() => {
@@ -2039,6 +2054,24 @@ export default function ClientEditor() {
                   </>
                 )}
 
+                {/* 改了數字才問「為什麼」—— 不改就不出現，不增加日常負擔。
+                    寫進 macro_adjustment_log.reason，之後回頭看得出當時依據（多教練共用時尤其重要）。*/}
+                {macroChanged && (
+                  <div className="mt-5 bg-amber-50/60 border border-amber-200 rounded-lg p-3">
+                    <label className="block text-xs font-medium text-amber-900 mb-1.5">這次為什麼調整？（選填，會寫進調整紀錄）</label>
+                    <input
+                      type="text"
+                      value={macroChangeReason}
+                      onChange={(e) => setMacroChangeReason(e.target.value)}
+                      placeholder="例如：體重連兩週沒動 / 他回報下午很餓 / 賽期倒數改後載"
+                      className="w-full px-3 py-1.5 border border-amber-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    />
+                    <p className="text-[11px] text-amber-700/80 mt-1.5 leading-snug">
+                      不填也能存。但留一句，三個月後你（或別的教練）才知道當時是依什麼改的。
+                    </p>
+                  </div>
+                )}
+
                 {/* 鎖定設定（預設不鎖 = 信任系統自動調整；勾選才鎖死你的值）*/}
                 <div className="flex items-center gap-3 mt-5 mb-3">
                   <div className="h-px bg-gray-200 flex-1"></div>
@@ -2092,6 +2125,9 @@ export default function ClientEditor() {
                     </div>
                   </>
                 )}
+
+                {/* 誰依什麼改過這個人的數字 —— log 一直有在寫，之前後台看不到 */}
+                {clientId !== 'new' && client.id && <MacroAdjustmentHistory clientId={client.id} />}
               </div>
             )}
 

@@ -138,7 +138,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { clientId, clientData, labResults, supplements, override_duration_days, override_reason, startingBody, lock_macros } = body
+    const { clientId, clientData, labResults, supplements, override_duration_days, override_reason, macro_change_reason, startingBody, lock_macros } = body
 
     if (!clientId) {
       return NextResponse.json({ error: '缺少 clientId' }, { status: 400 })
@@ -326,7 +326,13 @@ export async function PUT(request: NextRequest) {
           trigger_source: 'manual',
           old_macros: oldMacros,
           new_macros: newMacros,
-          reason: `教練後台手動編輯（admin UI）：${actuallyChanged.join('、')}`,
+          // 教練填的理由擺前面（那是人的判斷，機器描述只是佐證）
+          reason: [
+            typeof macro_change_reason === 'string' && macro_change_reason.trim()
+              ? macro_change_reason.trim().slice(0, 300)
+              : null,
+            `教練後台手動編輯（admin UI）：${actuallyChanged.join('、')}`,
+          ].filter(Boolean).join('｜'),
           trajectory_data: null,
           hit_boundary: false,
         })
