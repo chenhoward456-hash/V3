@@ -61,7 +61,7 @@ interface CoachNotification {
 
 type SortKey = 'name' | 'status' | 'compliance' | 'lastActivity' | 'nextCheckup'
 type SortDir = 'asc' | 'desc'
-type StatusFilter = 'all' | 'normal' | 'attention' | 'competition' | 'coached' | 'self_managed' | 'free'
+type StatusFilter = 'all' | 'normal' | 'attention' | 'competition' | 'coached' | 'self_managed' | 'free' | 'inactive'
 
 // ── 進度判定：用近 14 天體重趨勢 vs 目標方向，算出「有沒有效果」──
 type ProgressLevel = 'on_track' | 'slow' | 'reverse' | 'insufficient'
@@ -319,24 +319,26 @@ export default function AdminDashboard() {
   }, [clients, allLogs, allSupplements, lastActivityMap])
 
   const summaryStats = useMemo(() => {
-    const totalClients = clients.length
-    const todayActive = clients.filter(c => todayLogIds.has(c.id) || todayWellnessIds.has(c.id) || !!todayTrainingMap[c.id] || todayNutritionMap[c.id] !== undefined || todayBodyIds.has(c.id)).length
-    const needAttention = clients.filter(c => c.status !== 'normal').length
+    // 停用帳號一律不進統計——「學員 27 / 免費 17」那種數字是假的規模，會讓人誤判要顧幾個人
+    const live = clients.filter(c => c.is_active)
+    const totalClients = live.length
+    const todayActive = live.filter(c => todayLogIds.has(c.id) || todayWellnessIds.has(c.id) || !!todayTrainingMap[c.id] || todayNutritionMap[c.id] !== undefined || todayBodyIds.has(c.id)).length
+    const needAttention = live.filter(c => c.status !== 'normal').length
     const rates = Object.values(clientStats).filter(s => s.supplementCount > 0).map(s => s.weekRate)
     const avgCompliance = rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0
-    const competitionCount = clients.filter(c => isCompetitionMode(c.client_mode)).length
-    const coachedCount = clients.filter(c => c.subscription_tier === 'coached').length
-    const selfManagedCount = clients.filter(c => c.subscription_tier === 'self_managed').length
-    const freeCount = clients.filter(c => c.subscription_tier === 'free').length
-    const expiringCount = clients.filter(c => { if (!c.expires_at) return false; const d = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / DAY_MS); return d <= 7 && d >= 0 }).length
-    const expiredCount = clients.filter(c => { if (!c.expires_at) return false; return new Date(c.expires_at).getTime() < Date.now() }).length
+    const competitionCount = live.filter(c => isCompetitionMode(c.client_mode)).length
+    const coachedCount = live.filter(c => c.subscription_tier === 'coached').length
+    const selfManagedCount = live.filter(c => c.subscription_tier === 'self_managed').length
+    const freeCount = live.filter(c => c.subscription_tier === 'free').length
+    const expiringCount = live.filter(c => { if (!c.expires_at) return false; const d = Math.ceil((new Date(c.expires_at).getTime() - Date.now()) / DAY_MS); return d <= 7 && d >= 0 }).length
+    const expiredCount = live.filter(c => { if (!c.expires_at) return false; return new Date(c.expires_at).getTime() < Date.now() }).length
     return { totalClients, todayActive, needAttention, avgCompliance, competitionCount, coachedCount, selfManagedCount, freeCount, expiringCount, expiredCount }
   }, [clients, clientStats, todayLogIds, todayWellnessIds, todayTrainingMap, todayNutritionMap, todayBodyIds])
 
   // === 備賽倒數（距比賽最近的排最前） ===
   const competitionClients = useMemo(() => {
     return clients
-      .filter(c => isCompetitionMode(c.client_mode) && c.competition_date)
+      .filter(c => c.is_active && isCompetitionMode(c.client_mode) && c.competition_date)
       .map(c => {
         const daysLeft = daysUntilDateTW(c.competition_date!)
         return { ...c, daysLeft }
@@ -584,8 +586,8 @@ export default function AdminDashboard() {
   const retentionStats = useMemo(() => {
     const now = Date.now()
     const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0)
-    const paying = clients.filter(c => c.subscription_tier === 'coached' || c.subscription_tier === 'self_managed').length
-    const newThisMonth = clients.filter(c => new Date(c.created_at).getTime() >= monthStart.getTime()).length
+    const paying = clients.filter(c => c.is_active && (c.subscription_tier === 'coached' || c.subscription_tier === 'self_managed')).length
+    const newThisMonth = clients.filter(c => c.is_active && new Date(c.created_at).getTime() >= monthStart.getTime()).length
     const churnRisk = clients
       .filter(c => {
         if (!c.is_active) return false
@@ -625,7 +627,8 @@ export default function AdminDashboard() {
   const handleSort = (key: SortKey) => { if (sortKey === key) setSortDir(p => p === 'asc' ? 'desc' : 'asc'); else { setSortKey(key); setSortDir(key === 'name' ? 'asc' : 'desc') } }
 
   const filteredClients = useMemo(() => {
-    let list = [...clients]
+    // 預設不列停用帳號（要看時用 status=inactive 篩選）——列表塞滿一年沒動的人，真正要顧的那幾個就被埋掉了
+    let list = statusFilter === 'inactive' ? clients.filter(c => !c.is_active) : clients.filter(c => c.is_active)
     if (search.trim()) { const q = search.trim().toLowerCase(); list = list.filter(c => c.name.toLowerCase().includes(q)) }
     if (statusFilter === 'normal') list = list.filter(c => c.status === 'normal')
     else if (statusFilter === 'attention') list = list.filter(c => c.status !== 'normal')
@@ -1095,7 +1098,7 @@ export default function AdminDashboard() {
         {/* ===== 學員列表 ===== */}
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           <div className="p-5 border-b border-slate-200"><div className="flex flex-col sm:flex-row gap-3"><div className="relative flex-1"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="搜尋學員姓名..." className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" /></div><div className="flex gap-2 flex-wrap">
-                  {([['all','全部'],['competition','備賽'],['coached','2999'],['self_managed','499'],['free','免費'],['attention','需關注']] as [StatusFilter, string][]).map(([k,l]) => (
+                  {([['all','全部'],['competition','備賽'],['coached','2999'],['self_managed','499'],['free','免費'],['attention','需關注'],['inactive','已停用']] as [StatusFilter, string][]).map(([k,l]) => (
                     <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter===k?'bg-primary-600 text-white': k === 'coached' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : k === 'self_managed' ? 'bg-primary-50 text-primary-700 hover:bg-primary-100' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                       {l}
                       {k === 'coached' && summaryStats.coachedCount > 0 ? ` (${summaryStats.coachedCount})` : ''}
