@@ -1,5 +1,6 @@
 import { Resend } from 'resend'
 import { createLogger } from '@/lib/logger'
+import { LINE_OA_ID, LINE_ADD_FRIEND_URL } from './line-links'
 
 const log = createLogger('email')
 
@@ -180,8 +181,8 @@ function buildWelcomeEmailHTML({
   tierName: string
 }): string {
   const bindMessage = `綁定 ${uniqueCode}`
-  const lineAddFriendUrl = 'https://lin.ee/LP65rCc'
-  const lineBindDeeplink = `https://line.me/R/oaMessage/%40howardprotocol/?${encodeURIComponent(bindMessage)}`
+  const lineAddFriendUrl = LINE_ADD_FRIEND_URL
+  const lineBindDeeplink = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent(bindMessage)}`
   return `<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -434,8 +435,8 @@ function buildLineBindReminderEmailHTML({
   uniqueCode: string
 }): string {
   const bindMessage = `綁定 ${uniqueCode}`
-  const lineAddFriendUrl = 'https://lin.ee/LP65rCc'
-  const lineBindDeeplink = `https://line.me/R/oaMessage/%40howardprotocol/?${encodeURIComponent(bindMessage)}`
+  const lineAddFriendUrl = LINE_ADD_FRIEND_URL
+  const lineBindDeeplink = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent(bindMessage)}`
   return `<!DOCTYPE html>
 <html lang="zh-TW">
 <head>

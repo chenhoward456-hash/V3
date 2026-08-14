@@ -45,6 +45,7 @@ import ClientHeader from '@/components/client/ClientHeader'
 import WelcomeBanner from '@/components/client/WelcomeBanner'
 import HealthScoreBanner from '@/components/client/HealthScoreBanner'
 import ProgressJourney from '@/components/client/ProgressJourney'
+import { lineBindDeeplink } from '@/lib/line-links'
 import PushNotificationPrompt from '@/components/client/PushNotificationPrompt'
 import SupplementStrategyCard from '@/components/client/SupplementStrategyCard'
 import SeeTabSection from '@/components/client/SeeTabSection'
@@ -865,7 +866,7 @@ export default function ClientDashboard() {
                     ① 加好友
                   </a>
                   <a
-                    href={`https://line.me/R/oaMessage/%40howardprotocol/?${encodeURIComponent(`綁定 ${c.unique_code}`)}`}
+                    href={lineBindDeeplink(c.unique_code)}
                     className="block text-center bg-white text-[#06C755] text-xs font-bold py-2.5 rounded-lg border-2 border-[#06C755] hover:bg-[#06C755]/5 transition-colors"
                   >
                     ② 一鍵綁定
@@ -898,7 +899,7 @@ export default function ClientDashboard() {
             carbsTarget={c.carbs_target ?? null}
             weeklyTasks={c.weekly_tasks}
             hasAttention={!!c.status && c.status !== 'normal'}
-            recentlyActive={streakDays > 0}
+            recentlyActive={overallStreak > 0}
             engine={nutritionEngineSuggestion}
           />
         )}
@@ -2043,7 +2044,7 @@ export default function ClientDashboard() {
         {view === 'more' && c.created_at && (() => {
           const daysSinceSignup = Math.floor((Date.now() - new Date(c.created_at).getTime()) / DAY_MS)
           if (daysSinceSignup < 7) return null
-          if (c.subscription_tier === 'free' && streakDays < 7) return null
+          if (c.subscription_tier === 'free' && overallStreak < 7) return null
           return <ReferralCard clientId={c.unique_code} />
         })()}
 
@@ -2256,12 +2257,12 @@ export default function ClientDashboard() {
         })()}
 
         {/* 免費用戶升級提示（使用數據後提示） */}
-        {view === 'more' && isFree && streakDays >= 3 && (
+        {view === 'more' && isFree && overallStreak >= 3 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
             <div className="text-center mb-3">
               <span className="text-2xl">🎯</span>
               <p className="text-sm font-bold text-gray-800 mt-1">
-                你已經連續記錄 {streakDays} 天了！
+                你已經連續記錄 {overallStreak} 天了！
               </p>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
                 你的數據已經開始累積趨勢了。升級後 AI 能根據這些數據幫你判斷進度、調整方向——不用自己猜。
@@ -2270,7 +2271,7 @@ export default function ClientDashboard() {
             <Link
               href={`/upgrade?from=${c.subscription_tier}`}
               onClick={() => {
-                trackEvent('upgrade_cta_clicked', { source: 'streak_prompt', streak_days: streakDays })
+                trackEvent('upgrade_cta_clicked', { source: 'streak_prompt', streak_days: overallStreak })
                 trackConversion('pricing_cta', peekVariant('pricing_cta') ?? 'original', 'click_upgrade')
               }}
               className="block text-center bg-primary-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-primary-700 transition-colors"
@@ -2289,7 +2290,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 自主管理用戶升級教練指導提示 */}
-        {view === 'more' && isSelfManaged && streakDays >= 7 && (
+        {view === 'more' && isSelfManaged && overallStreak >= 7 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
             <div className="text-center mb-3">
               <span className="text-2xl">👑</span>
@@ -2297,14 +2298,14 @@ export default function ClientDashboard() {
                 想讓教練幫你看數據？
               </p>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                你已經累積了 {streakDays} 天的數據。升級教練指導方案，每週由 CSCS 教練審閱你的進度、調整營養計畫。
+                你已經累積了 {overallStreak} 天的數據。升級教練指導方案，每週由 CSCS 教練審閱你的進度、調整營養計畫。
               </p>
             </div>
             <a
               href="https://lin.ee/LP65rCc"
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => trackEvent('upgrade_cta_clicked', { source: 'coached_prompt', streak_days: streakDays })}
+              onClick={() => trackEvent('upgrade_cta_clicked', { source: 'coached_prompt', streak_days: overallStreak })}
               className="block text-center bg-[#06C755] text-white text-sm font-bold py-3 rounded-xl hover:bg-[#05b04d] transition-all"
             >
               加 LINE 諮詢升級 — NT$2,999/月
@@ -2546,7 +2547,7 @@ export default function ClientDashboard() {
           recoveryAssessment={nutritionEngineSuggestion?.recoveryAssessment ?? undefined}
           coachSummary={c.coach_summary as string | null}
           coachWeeklyNote={c.coach_weekly_note as string | null}
-          streakDays={streakDays}
+          streakDays={overallStreak}
           streakMessage={streakMessage}
           targetWeight={c.target_weight as number | null}
           targetBodyFat={(c.target_body_fat as number) ?? null}

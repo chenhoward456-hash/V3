@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { trackEvent } from '@/lib/analytics'
+import { lineBindDeeplink } from '@/lib/line-links'
 
 const TIER_NAMES: Record<string, string> = {
   free: '免費體驗',
@@ -311,7 +312,7 @@ function JoinSuccessContent() {
                 ① 加入 LINE 好友
               </a>
               <a
-                href={`https://line.me/R/oaMessage/%40howardprotocol/?${encodeURIComponent(`綁定 ${uniqueCode}`)}`}
+                href={lineBindDeeplink(uniqueCode)}
                 className="block w-full bg-white text-[#06C755] font-bold text-center py-3.5 rounded-xl border-2 border-[#06C755] hover:bg-[#06C755]/5 transition-colors"
               >
                 ② 點此一鍵送出綁定

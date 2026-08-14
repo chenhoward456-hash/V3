@@ -11,6 +11,7 @@ import {
   LAB_THRESHOLDS,
 } from '@/utils/labStatus'
 import { calculateHealthScore } from '@/lib/health-score-engine'
+import { LINE_ADD_FRIEND_URL } from '@/lib/line-links'
 
 interface LabRow {
   test_name: string
@@ -297,7 +298,7 @@ export default function ShowcasePage() {
             含教練觀察筆記 / AI 對話 / LINE 即時通知
           </p>
           <a
-            href="https://line.me/R/ti/p/@howard"
+            href={LINE_ADD_FRIEND_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium px-6 py-3 rounded-full text-sm transition-colors"
