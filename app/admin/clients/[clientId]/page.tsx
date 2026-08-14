@@ -1,5 +1,6 @@
 'use client'
 
+
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useParams, useRouter } from 'next/navigation'
@@ -11,6 +12,9 @@ import { buildBackLoadPlan } from '@/lib/peak-week-templates'
 import { getDefaultFeatures, type SubscriptionTier } from '@/lib/tier-defaults'
 import { isCompetitionMode, isHealthMode, ALL_CLIENT_MODES, MODE_LABELS, MODE_CONFIG, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS } from '@/lib/client-mode'
 import LabPanelNotesEditor from './components/LabPanelNotesEditor'
+import {
+  isScreened, needsProfessionalReferral, referralReasons, type HealthScreening,
+} from '@/lib/health-screening'
 import PersonalNotesEditor from './components/PersonalNotesEditor'
 import ArchivedSupplementsList from './components/ArchivedSupplementsList'
 import { SUPPLEMENT_NAMES, findSuggestion } from '@/lib/supplement-catalog'
@@ -46,6 +50,14 @@ interface Supplement {
   mode_context?: string | null
 }
 
+const SCREENING_ITEMS: { key: keyof HealthScreening; label: string; hint: string }[] = [
+  { key: 'chronic_condition', label: '慢性疾病', hint: '糖尿病、腎臟、心血管、甲狀腺、肝膽等' },
+  { key: 'on_medication', label: '規則性服藥', hint: '含長期處方藥、荷爾蒙類、精神科用藥' },
+  { key: 'pregnant_or_lactating', label: '懷孕或哺乳', hint: '熱量與微量營養素需求不同，且不適用赤字' },
+  { key: 'recent_surgery', label: '近期手術或重大傷病', hint: '半年內；恢復期營養需求由醫療端主導' },
+  { key: 'eating_disorder_history', label: '飲食失調病史', hint: '限制型飲食與數字追蹤對此族群風險高' },
+]
+
 interface Client {
   id: string
   unique_code: string
@@ -58,6 +70,7 @@ interface Client {
   coach_weekly_note: string
   next_checkup_date: string
   health_goals: string
+  health_screening: HealthScreening | null
   training_enabled: boolean
   nutrition_enabled: boolean
   body_composition_enabled: boolean
@@ -301,6 +314,7 @@ export default function ClientEditor() {
         coach_weekly_note: '',
         next_checkup_date: '',
         health_goals: '',
+        health_screening: null,
         training_enabled: false,
         nutrition_enabled: false,
         body_composition_enabled: true,
@@ -427,6 +441,7 @@ export default function ClientEditor() {
         coach_weekly_note: client.coach_weekly_note || null,
         next_checkup_date: client.next_checkup_date || null,
         health_goals: client.health_goals || null,
+        health_screening: client.health_screening,
         training_enabled: client.training_enabled,
         nutrition_enabled: client.nutrition_enabled,
         body_composition_enabled: client.body_composition_enabled,
@@ -2338,6 +2353,97 @@ export default function ClientEditor() {
           <div className="space-y-6">
             {/* 🧠 個人化記憶（AI Agent 讀的紅線）*/}
             <PersonalNotesEditor clientId={client.id} />
+
+            {/* 入會健康篩檢 —— 決定學員端的營養目標要不要降級為「參考範圍＋轉介」。
+                多教練上線後，別的教練不一定有同樣的判斷力，所以這道 gate 靠系統不靠自覺。 */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6">
+              <div className="flex items-baseline gap-2 mb-1">
+                <h2 className="text-lg font-medium text-gray-900">入會健康篩檢</h2>
+                {!isScreened(client.health_screening) && (
+                  <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+                    尚未篩檢
+                  </span>
+                )}
+                {needsProfessionalReferral(client.health_screening) && (
+                  <span className="text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5">
+                    需轉介專業
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mb-4">
+                勾選任一項 → 學員端不再顯示精確的每日目標，改成參考範圍並提示先諮詢醫師或營養師。
+                你仍然可以照常設定 macros，這只影響學員看到的呈現方式。
+              </p>
+
+              <div className="space-y-2">
+                {SCREENING_ITEMS.map(({ key, label, hint }) => {
+                  const checked = client.health_screening?.[key] === true
+                  return (
+                    <label key={key} className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          const next: HealthScreening = {
+                            ...(client.health_screening ?? {}),
+                            [key]: e.target.checked,
+                            screened_at: new Date().toISOString().split('T')[0],
+                            screened_by: 'coach',
+                          }
+                          updateClient('health_screening', next)
+                        }}
+                        className="mt-0.5 w-4 h-4 shrink-0 rounded border-slate-300"
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm text-gray-800">{label}</span>
+                        <span className="block text-[11px] text-gray-400">{hint}</span>
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">補充說明（只有教練看得到）</label>
+                <textarea
+                  value={client.health_screening?.note || ''}
+                  onChange={(e) => updateClient('health_screening', {
+                    ...(client.health_screening ?? {}),
+                    note: e.target.value,
+                    screened_at: client.health_screening?.screened_at ?? new Date().toISOString().split('T')[0],
+                    screened_by: client.health_screening?.screened_by ?? 'coach',
+                  })}
+                  rows={2}
+                  placeholder="例如：高血壓服藥中，已請他先找家醫科評估飲食"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                />
+              </div>
+
+              {!isScreened(client.health_screening) && (
+                <button
+                  type="button"
+                  onClick={() => updateClient('health_screening', {
+                    screened_at: new Date().toISOString().split('T')[0],
+                    screened_by: 'coach',
+                    chronic_condition: false, on_medication: false,
+                    pregnant_or_lactating: false, recent_surgery: false,
+                    eating_disorder_history: false,
+                  })}
+                  className="mt-4 w-full py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                >
+                  以上皆無 · 標記為已篩檢
+                </button>
+              )}
+
+              {isScreened(client.health_screening) && (
+                <p className="mt-3 text-[11px] text-gray-400">
+                  篩檢於 {client.health_screening?.screened_at}
+                  {referralReasons(client.health_screening).length > 0 && (
+                    <> · 命中：{referralReasons(client.health_screening).join('、')}</>
+                  )}
+                </p>
+              )}
+            </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">教練備註</h2>
