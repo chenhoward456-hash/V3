@@ -46,6 +46,7 @@ import WelcomeBanner from '@/components/client/WelcomeBanner'
 import HealthScoreBanner from '@/components/client/HealthScoreBanner'
 import ProgressJourney from '@/components/client/ProgressJourney'
 import { lineBindDeeplink } from '@/lib/line-links'
+import CoachNoteText from '@/components/client/CoachNoteText'
 import PushNotificationPrompt from '@/components/client/PushNotificationPrompt'
 import SupplementStrategyCard from '@/components/client/SupplementStrategyCard'
 import SeeTabSection from '@/components/client/SeeTabSection'
@@ -1916,9 +1917,7 @@ export default function ClientDashboard() {
                 </span>
               )}
             </div>
-            {c.coach_weekly_note && (
-              <p className="text-sm text-gray-700 leading-relaxed mb-2">{c.coach_weekly_note}</p>
-            )}
+            {c.coach_weekly_note && <CoachNoteText note={c.coach_weekly_note as string} />}
             {c.coach_summary && (
               <>
                 <button
