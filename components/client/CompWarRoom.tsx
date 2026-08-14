@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 import { daysUntilDateTW } from '@/lib/date-utils'
-import { projectMetricToDate, projectWeightVerdict } from '@/lib/comp-projection'
+import { projectMetricToDate, projectWeightVerdict, metricSlopePerWeek } from '@/lib/comp-projection'
 
 interface BodyPoint { date: string; weight: number | null; body_fat: number | null }
 
@@ -36,6 +36,9 @@ function CompWarRoomInner({ bodyData, competitionDate, targetWeight, targetBodyF
   // 體重：走共用的 projectWeightVerdict（14 天窗、容差 1.0kg）→ 與教練端 /admin 備賽倒數完全一致
   const wv = projectWeightVerdict(wRows, competitionDate, targetWeight)
   const w = wv ? { projected: wv.projected, slopePerWeek: wv.slopePerWeek } : null
+  // 距賽超過 12 週時 projectWeightVerdict 回 null（外推不可信）——這時仍要給速率，
+  // 否則有天天量的人會看到「多記幾天才能預測趨勢」，那是說謊。
+  const slopeOnly = wv ? null : metricSlopePerWeek(wRows)
   const wj = wv ? { ok: wv.onTrack, gap: wv.gap } : null
   const bf = projectMetric(bfRows, competitionDate, 60)
   const curWeight = latest(wRows)
@@ -97,7 +100,7 @@ function CompWarRoomInner({ bodyData, competitionDate, targetWeight, targetBodyF
       {/* 體重（主、可靠）+ 體脂（次、參考） */}
       <div className="space-y-2">
         <div className="bg-slate-50 rounded-xl p-3">
-          <p className="text-[11px] text-gray-400 mb-0.5">體重 · 現在 → 上台{w?.slopePerWeek != null ? `（${w.slopePerWeek > 0 ? '+' : ''}${w.slopePerWeek.toFixed(1)} kg/週）` : ''}</p>
+          <p className="text-[11px] text-gray-400 mb-0.5">體重 · 現在 → 上台{(w?.slopePerWeek ?? slopeOnly) != null ? `（${(w?.slopePerWeek ?? slopeOnly)! > 0 ? '+' : ''}${(w?.slopePerWeek ?? slopeOnly)!.toFixed(1)} kg/週）` : ''}</p>
           <p className="text-sm text-gray-700">
             <span className="font-bold text-gray-900 tabular-nums">{curWeight != null ? curWeight.toFixed(1) : '--'}</span>
             <span className="text-gray-400"> → {targetWeight ?? '--'} kg</span>
@@ -107,6 +110,8 @@ function CompWarRoomInner({ bodyData, competitionDate, targetWeight, targetBodyF
             <p className={`text-xs mt-1 font-medium ${wj ? (wj.ok ? 'text-emerald-600' : 'text-rose-500') : 'text-gray-500'}`}>
               比賽日預測 <span className="tabular-nums">{w.projected.toFixed(1)} kg</span>{wj ? (wj.ok ? ' ✓ 達標' : `（仍差 ${(w.projected - (targetWeight ?? 0)).toFixed(1)}）`) : ''}
             </p>
+          ) : slopeOnly != null ? (
+            <p className="text-xs mt-1 text-gray-500">距比賽還有 {daysLeft} 天，現在看速率就好 — 預測太遠不準</p>
           ) : (
             <p className="text-xs mt-1 text-amber-600">多記幾天才能預測趨勢</p>
           )}

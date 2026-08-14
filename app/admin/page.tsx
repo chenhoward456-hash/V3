@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronUp, ChevronDown, Search, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2, Clock } from 'lucide-react'
 import { daysUntilDateTW, DAY_MS, getLocalDateStr } from '@/lib/date-utils'
-import { projectWeightVerdict } from '@/lib/comp-projection'
+import { projectWeightVerdict, metricSlopePerWeek } from '@/lib/comp-projection'
 import { isCompetitionMode, PHASE_LABELS } from '@/lib/client-mode'
 import { buildWinbackMessage, type WinbackContext } from '@/lib/winback'
 import FeatureAnnounce from '@/components/admin/FeatureAnnounce'
@@ -1008,9 +1008,13 @@ export default function AdminDashboard() {
                 const stat = clientStats[c.id]
                 const urgencyColor = c.daysLeft <= 7 ? 'text-rose-600' : c.daysLeft <= 14 ? 'text-amber-600' : c.daysLeft <= 30 ? 'text-amber-600' : 'text-gray-700'
                 // 會不會準時上台（體重主導；體脂量測後期失真，不用來判定）
+                const bodyPts = recentBody.filter(b => b.client_id === c.id).map(b => ({ date: b.date, value: b.weight }))
                 const wv = c.competition_date
-                  ? projectWeightVerdict(recentBody.filter(b => b.client_id === c.id).map(b => ({ date: b.date, value: b.weight })), c.competition_date, c.target_weight)
+                  ? projectWeightVerdict(bodyPts, c.competition_date, c.target_weight)
                   : null
+                // 距賽太遠時 wv 是 null（外推不可信，見 comp-projection 的 MAX_HORIZON_DAYS）——
+                // 那個階段要看的不是「比賽日會幾公斤」，是「現在長多快」。
+                const slope = wv ? null : metricSlopePerWeek(bodyPts)
                 return (
                   <Link key={c.id} href={`/admin/clients/${c.id}/overview`}
                     className={`bg-slate-50 rounded-xl p-4 transition-colors block ${c.daysLeft <= 3 ? 'ring-2 ring-rose-400 animate-pulse' : ''}`}>
@@ -1022,12 +1026,17 @@ export default function AdminDashboard() {
                       <span className="text-gray-500">{getPrepPhaseLabel(c.prep_phase)} {c.target_weight ? `· 目標 ${c.target_weight}kg` : ''}</span>
                       {stat?.supplementCount ? <span className={`font-medium ${getComplianceColor(stat.weekRate)}`}>{stat.weekRate}%</span> : null}
                     </div>
-                    {wv && (
+                    {wv ? (
                       <div className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-medium ${wv.onTrack ? 'text-emerald-600' : 'text-amber-600'}`}>
                         <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${wv.onTrack ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                         <span>體重{wv.onTrack ? '會準時' : `落後 ${wv.gap.toFixed(1)}kg`}（預測 {wv.projected.toFixed(1)}kg）</span>
                       </div>
-                    )}
+                    ) : slope != null ? (
+                      <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-slate-500 tabular-nums">
+                        <span className="inline-block w-2 h-2 rounded-full shrink-0 bg-slate-300" />
+                        <span>近 3 週 {slope > 0 ? '+' : ''}{slope.toFixed(2)} kg/週</span>
+                      </div>
+                    ) : null}
                     <div className="flex items-center gap-1.5 mt-2">
                       {c.body_composition_enabled && <span className={`text-xs ${todayBodyIds.has(c.id) ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="體重">重</span>}
                       {c.nutrition_enabled && <span className={`text-xs ${todayNutritionMap[c.id] !== undefined ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="飲食">食</span>}
