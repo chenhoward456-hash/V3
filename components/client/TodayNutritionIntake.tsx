@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { needsProfessionalReferral, REFERRAL_NOTICE, toReferenceRange, type HealthScreening } from '@/lib/health-screening'
 
 interface IntakeRow {
   calories?: number | null
@@ -10,6 +11,8 @@ interface IntakeRow {
 }
 
 interface TodayNutritionIntakeProps {
+  /** 入會健康篩檢；命中風險項目時營養目標降級為參考範圍＋轉介提示 */
+  healthScreening?: HealthScreening | null
   clientCode: string
   date: string
   caloriesTarget?: number | null
@@ -38,7 +41,9 @@ export default function TodayNutritionIntake({
   intake,
   dayLabel,
   onMutate,
+  healthScreening,
 }: TodayNutritionIntakeProps) {
+  const referralNeeded = needsProfessionalReferral(healthScreening)
   // 本地「已吃」狀態：拖進度條即時更新，放手才寫 DB
   const [eaten, setEaten] = useState({
     protein_grams: intake?.protein_grams ?? 0,
@@ -183,6 +188,20 @@ export default function TodayNutritionIntake({
         </div>
       </div>
       <p className="text-[11px] text-slate-400 mb-4">拖進度條設今天吃到哪；懶得拉就按「達標」直接對齊目標，或按「＋記一餐」累加</p>
+
+      {/* 健康篩檢降級：入會填的健康狀況命中風險項目時，這張卡不以「你的目標」呈現，
+          改成參考範圍＋轉介專業。刻意不顯示任何病名或個別狀況（畫面可能被他人看見）。 */}
+      {referralNeeded && (
+        <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+          <p className="text-[12px] font-medium text-amber-900">先請專業評估再照著吃</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-amber-800">{REFERRAL_NOTICE}</p>
+          {caloriesTarget != null && toReferenceRange(caloriesTarget) && (
+            <p className="mt-1.5 text-[11px] text-amber-900">
+              一般參考範圍：<span className="font-semibold tabular-nums">{toReferenceRange(caloriesTarget)}</span> kcal／天
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 熱量：巨量算出來的，只顯示不拖 */}
       {caloriesTarget != null && (

@@ -89,6 +89,13 @@ export interface Client {
     }[]
     gaps?: string[]
   } | null
+  /** 入會健康篩檢（見 lib/health-screening.ts）。NULL 或缺 screened_at = 尚未篩檢 */
+  health_screening: {
+    screened_at?: string; screened_by?: string
+    chronic_condition?: boolean; on_medication?: boolean
+    pregnant_or_lactating?: boolean; recent_surgery?: boolean
+    eating_disorder_history?: boolean; note?: string | null
+  } | null
   coach_summary: string | null
   next_checkup_date: string | null
   health_goals: string | null

@@ -1349,6 +1349,7 @@ export default function ClientDashboard() {
             return (
               <SectionErrorBoundary name="today-nutrition-intake">
                 <TodayNutritionIntake
+              healthScreening={c.health_screening}
                   clientCode={c.unique_code}
                   date={today}
                   caloriesTarget={effCals}
