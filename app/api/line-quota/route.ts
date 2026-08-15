@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic'
 /**
  * GET /api/line-quota
  * 給「賴助手」bot 拉的 LINE 學員 OA 推播配額水位（server 對 server）。
- * 免費方案 500 則 push/月，2026-06 曾月中爆掉 silent fail — 這支讓 bot
+ * ⚠️ 免費方案實測是 **200 則/月**（不是註解原本寫的 500，2026-08-15 更正；LINE 台灣
+ * Communication Plan 已調降）。2026-06 曾月中爆掉 silent fail — 這支讓 bot
  * 的每日自檢/週報能盯水位，別再等推不出去才發現。
  * 認證：同 coach-digest（verifyCoachAuth）。
  */

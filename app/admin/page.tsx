@@ -694,6 +694,10 @@ export default function AdminDashboard() {
     else if (c.status === 'attention') reasons.push({ sev: 2, text: '血檢關注' })
     if (s && s.supplementCount > 0 && s.weekRate < 50) reasons.push({ sev: 2, text: `服從率 ${s.weekRate}%` })
     if (c.next_checkup_date) { const t = new Date(); t.setHours(0, 0, 0, 0); const ck = new Date(c.next_checkup_date); ck.setHours(0, 0, 0, 0); const d = Math.floor((ck.getTime() - t.getTime()) / DAY_MS); if (d < 0) reasons.push({ sev: 2, text: `回檢逾期${Math.abs(d)}天` }) }
+    // ⚠️ 完全收不到通知 —— 系統對他等於不存在：每日提醒、教練訊息、週報全部送不到。
+    // 這比「幾天沒打卡」更根本（他可能是想用但沒被叫醒），所以吃 sev 2 進學員問題那一格。
+    if (!c.line_user_id && !pushClientIds.has(c.id)) reasons.push({ sev: 2, text: '收不到通知' })
+
     // 教練自己的待辦（不是學員的問題）—— 這兩件事以前要一個一個點進去才發現：
     // 2026-08-14 查下來 William/張承鈞/陳胤豪 都是 0 段計畫頁，學員打開系統看不到「我該幹嘛」。
     if (!(c.onboarding_notes_rendered?.sections?.length)) reasons.push({ sev: 1, text: '無計畫頁' })
