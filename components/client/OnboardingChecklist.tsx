@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Check, ChevronRight, X } from 'lucide-react'
+import { lineBindDeeplink } from '@/lib/line-links'
 
 interface OnboardingChecklistProps {
   clientId: string
+  /** 學員代碼 —— 綁定深連結要帶它（見下方 line 那一項） */
+  uniqueCode: string
   clientName: string
   tier: string
   // Actual data to detect completion
@@ -30,6 +33,7 @@ interface ChecklistItem {
 
 export default function OnboardingChecklist({
   clientId,
+  uniqueCode,
   clientName,
   tier,
   hasWeight,
@@ -95,7 +99,12 @@ export default function OnboardingChecklist({
       label: '綁定 LINE',
       completed: hasLineBinding,
       sectionId: null,
-      externalUrl: 'https://lin.ee/LP65rCc',
+      // ⚠️ 2026-08-16 修：原本只開加好友短連結（lin.ee/...），**沒有第二步**。
+      // 學員點了會加好友，但沒有人告訴他還要輸入「綁定 <代碼>」→ line_user_id 永遠是 null
+      // → 這一項永遠不會打勾。林宥任的新手任務卡在 3/5 很可能就是這樣來的
+      // （而且加好友卻沒綁定，webhook 會把他當「新 follower」跑 nurture 序列）。
+      // 改用帶代碼的深連結：已加好友 → 直接開對話框帶好訊息；還沒加 → LINE 會先導加好友。
+      externalUrl: lineBindDeeplink(uniqueCode),
     },
   ]
 

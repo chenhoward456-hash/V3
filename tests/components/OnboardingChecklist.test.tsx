@@ -22,6 +22,7 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock })
 // ---------------------------------------------------------------------------
 const baseProps = {
   clientId: 'test-123',
+  uniqueCode: 'TESTCODE',
   clientName: 'Alice',
   tier: 'self_managed',
   hasWeight: false,
@@ -157,5 +158,16 @@ describe('OnboardingChecklist', () => {
     act(() => { vi.advanceTimersByTime(3000) })
 
     expect(baseProps.onDismiss).toHaveBeenCalled()
+  })
+
+  it('綁定 LINE 那一項要帶學員代碼（只給加好友連結的話學員永遠綁不起來）', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    render(<OnboardingChecklist {...baseProps} hasLineBinding={false} />)
+    fireEvent.click(screen.getByText('綁定 LINE'))
+    expect(openSpy).toHaveBeenCalled()
+    const url = String(openSpy.mock.calls[0][0])
+    expect(url).toContain('oaMessage')          // 是帶訊息的深連結，不是純加好友
+    expect(decodeURIComponent(url)).toContain('綁定 TESTCODE')
+    openSpy.mockRestore()
   })
 })

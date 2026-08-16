@@ -1816,6 +1816,7 @@ export default function ClientDashboard() {
           return (
             <OnboardingChecklist
               clientId={clientId as string}
+              uniqueCode={c.unique_code}
               clientName={c.name}
               tier={c.subscription_tier || 'free'}
               hasWeight={hasWeight}
