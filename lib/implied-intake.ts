@@ -41,6 +41,8 @@ export type IntakeReconciliation = {
   slopePerWeek: number
   /** 這個目標下「照計畫走」該有的斜率（kg/週） */
   expectedRatePerWeek: number
+  /** 教練設定的目標熱量（拿來跟 impliedDaily 比，判斷是「處方錯」還是「執行偏離」） */
+  targetCalories: number
   weightPoints: number
   nutritionLogs: number
 }
@@ -117,6 +119,7 @@ export function reconcileIntake(
     gap: impliedDaily - loggedDaily,
     slopePerWeek: slope * 7,
     expectedRatePerWeek,
+    targetCalories,
     weightPoints: recent.length,
     nutritionLogs: logs.length,
   }
@@ -138,4 +141,56 @@ export function reconciliationMessage(r: IntakeReconciliation): string {
   }
   return `紀錄平均 ${loggedDaily} kcal，但體重變化推算實際約 ${impliedDaily} kcal（少 ${Math.abs(gap)}）。` +
     `可能是吃得比記的少，或消耗比估的高 —— 先別再往下減，跟教練確認一次。`
+}
+
+/**
+ * 實際攝取與處方差多少就算「執行偏離」。
+ * ⚠️ 一開始設 300，被 William 的案例打臉：他 implied 2930 / 處方 3150（差 220），
+ * 落在容差內被判成「處方要調」—— 但他體重 19 天完全不動，原因正是那少吃的 220
+ * 剛好抵掉 bulk 的 surplus。**他只要真的吃到 3150 就會開始長，處方是對的。**
+ * 門檻改 200：只要兩邊有可觀落差（不論方向），問題就在執行，別動處方。
+ */
+const EXECUTION_GAP_KCAL = 200
+
+/**
+ * 體重偏離目標時，該動「處方」還是該修「執行」？
+ *
+ * ⚠️ 2026-08-16 血淋淋的教訓（Howard：「在明知我亂吃的情況下，你怎麼會幫我調降成這樣？」）：
+ *
+ * 引擎只看體重。體重漲太快時，它唯一算得出來的解釋是「處方給太高」，於是往下砍。
+ * 但那個推論**預設了學員照處方吃**。Howard 的處方是 3000、體重反推實際約 3456 ——
+ * 真正的原因是執行超出處方，不是處方錯。
+ *
+ * 兩種情況的處理方式完全相反：
+ *   · 處方太高（照吃還是漲）→ 砍處方 ✅
+ *   · 執行超出（沒照吃）    → 修執行，**處方不動** ✅
+ *
+ * 砍錯邊的代價：他照樣吃 3456，落差從 456 變成 826，數字更難看但行為沒變；
+ * 而萬一他真的照新處方吃，等於一次砍掉 826 kcal，太陡。
+ */
+export function prescriptionVerdict(r: IntakeReconciliation | null): {
+  adjustPrescription: boolean
+  reason: string
+} {
+  if (!r) return { adjustPrescription: true, reason: '資料不足以判斷執行落差，照原邏輯處理' }
+
+  const overTarget = r.impliedDaily - r.targetCalories
+  if (overTarget > EXECUTION_GAP_KCAL) {
+    return {
+      adjustPrescription: false,
+      reason: `體重顯示實際攝取約 ${r.impliedDaily} kcal，比處方 ${r.targetCalories} 高 ${Math.round(overTarget)} —— ` +
+        `這是執行超出處方，不是處方太高。先讓實際吃的對上處方，砍處方只會讓落差更大。`,
+    }
+  }
+  if (overTarget < -EXECUTION_GAP_KCAL) {
+    return {
+      adjustPrescription: false,
+      reason: `體重顯示實際攝取約 ${r.impliedDaily} kcal，比處方 ${r.targetCalories} 低 ${Math.round(-overTarget)} —— ` +
+        `他沒吃到處方。調處方數字沒有意義，要處理的是為什麼吃不到。`,
+    }
+  }
+  return {
+    adjustPrescription: true,
+    reason: `實際攝取(${r.impliedDaily}) 與處方(${r.targetCalories}) 相符，體重仍偏離目標 → 處方本身要調`,
+  }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { reconcileIntake, isGapSignificant, reconciliationMessage } from '@/lib/implied-intake'
+import { reconcileIntake, isGapSignificant, reconciliationMessage, prescriptionVerdict } from '@/lib/implied-intake'
 
 const DAY = 86400000
 
@@ -96,5 +96,35 @@ describe('從體重反推實際攝取', () => {
     expect(msg).toContain('要嘛')       // 紀錄漏了 / 目標要調，兩個都講
     expect(msg).not.toContain('說謊')
     expect(msg).not.toContain('低報')
+  })
+})
+
+describe('該動處方還是該修執行（2026-08-16 我砍錯邊的教訓）', () => {
+  it('Howard：處方 3000、實際約 3456 → 不該砍處方', () => {
+    const w = weightSeries('2026-08-03', 14, 80.5, 0.18)
+    const n = nutritionSeries('2026-08-03', 12, 3145)
+    const v = prescriptionVerdict(reconcileIntake(w, n, 3000, 'bulk'))
+    expect(v.adjustPrescription).toBe(false)
+    expect(v.reason).toContain('執行超出處方')
+  })
+
+  it('照處方吃但體重還是偏離 → 處方真的要調', () => {
+    // 目標 3000、bulk 該有 +0.2kg/週，實際 +0.25 → implied 幾乎等於處方
+    const w = weightSeries('2026-08-01', 21, 80, 0.036)
+    const n = nutritionSeries('2026-08-01', 20, 3000)
+    const v = prescriptionVerdict(reconcileIntake(w, n, 3000, 'bulk'))
+    expect(v.adjustPrescription).toBe(true)
+  })
+
+  it('吃不到處方（William 型）→ 也不該動處方數字', () => {
+    const w = weightSeries('2026-07-02', 19, 71.8, 0)
+    const n = nutritionSeries('2026-07-02', 10, 2230)
+    const v = prescriptionVerdict(reconcileIntake(w, n, 3150, 'bulk'))
+    expect(v.adjustPrescription).toBe(false)
+    expect(v.reason).toContain('沒吃到處方')
+  })
+
+  it('資料不足 → 不改變原有行為', () => {
+    expect(prescriptionVerdict(null).adjustPrescription).toBe(true)
   })
 })

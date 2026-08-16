@@ -17,6 +17,7 @@ import type { BodyComposition, NutritionLog, TrainingLog, DailyWellness } from '
 import { createServiceSupabase } from '@/lib/supabase'
 import { pushMessage, unlinkRichMenuFromUser } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
+import { reconcileIntake, prescriptionVerdict } from '@/lib/implied-intake'
 import { sendPushNotification } from '@/lib/web-push'
 import { buildPeakMorningReminder, buildPeakEveningReminder } from '@/lib/peak-week-reminders'
 import { verifyAdminSession } from '@/lib/auth-middleware'
@@ -178,6 +179,7 @@ export async function GET(request: NextRequest) {
   let autoAdjustResults = {
     evaluated: 0, applied: 0, boundaryHit: 0,
     gatedByCuttingReadiness: 0, gatedByMetabolicStress: 0, gatedByTdeeAnomaly: 0, gatedByEngineAutoApply: 0,
+      skippedExecutionGap: 0,
     errors: [] as string[],
   }
   try {
@@ -425,6 +427,36 @@ export async function GET(request: NextRequest) {
         // 用來端到端驗證自動化；其他付費學員維持「提案 → 教練核准」保護。
         const autoApplyIds = (process.env.AUTO_APPLY_CLIENT_IDS || '').split(',').map(s => s.trim()).filter(Boolean)
         const forceAutoApply = autoApplyIds.includes(c.id)
+
+        // ⚠️ 2026-08-16：砍處方之前先分清楚「處方錯」還是「執行偏離」。
+        // 引擎只看體重，體重漲快時它唯一的解釋是「處方太高」—— 但那預設了學員照處方吃。
+        // Howard 的處方 3000、體重反推實際約 3456，真正的問題是沒照吃；砍到 2630 只會讓
+        // 落差從 456 變 826，行為完全不變。（他本人的原話：「在明知我亂吃的情況下，
+        // 你怎麼會幫我調降成這樣？」）
+        const recon = reconcileIntake(
+          bodyData.map((b: any) => ({ date: b.date, weight: b.weight })),
+          nutrition.map((n: any) => ({ date: n.date, calories: n.calories })),
+          Number(c.calories_target),
+          c.goal_type,
+        )
+        const verdict = prescriptionVerdict(recon)
+        if (!verdict.adjustPrescription) {
+          await supabase.from('macro_adjustment_log').insert({
+            client_id: c.id,
+            applied_by: 'system',
+            trigger_source: 'trajectory',
+            old_macros: {
+              calories_target: c.calories_target ? Number(c.calories_target) : null,
+              carbs_target: c.carbs_target ? Number(c.carbs_target) : null,
+            },
+            new_macros: { _skipped: true, would_have_been: trajResult.newMacros },
+            reason: `軌跡建議調整但未套用（執行落差）：${verdict.reason}`,
+            trajectory_data: trajResult.trajectoryData,
+            hit_boundary: false,
+          })
+          autoAdjustResults.skippedExecutionGap++
+          continue
+        }
 
         // Tier 分流：coached/protocol 走 propose 流程、self_managed（與白名單）走 auto-apply
         if ((tier === 'coached' || tier === 'protocol') && !forceAutoApply) {
