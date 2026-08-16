@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronRight, Check } from 'lucide-react'
 import type { Client, ClientDataPayload } from '@/hooks/useClientData'
 import type { KeyedMutator } from 'swr'
 import PushNotificationPrompt from '@/components/client/PushNotificationPrompt'
+import LineBindGate, { shouldShowLineGate } from '@/components/client/LineBindGate'
+import { lineBindDeeplink } from '@/lib/line-links'
 
 interface Props {
   client: Client
@@ -44,6 +46,14 @@ export default function NewUserLanding({
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // 先建通知管道，再談記錄 —— 沒綁定的話之後每一則提醒都送不到（見 LineBindGate）
+  const [gateReady, setGateReady] = useState(false)
+  const [showGate, setShowGate] = useState(false)
+  useEffect(() => {
+    setShowGate(shouldShowLineGate(!!client.has_line_binding))
+    setGateReady(true)
+  }, [client.has_line_binding])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -87,6 +97,18 @@ export default function NewUserLanding({
 
   const firstName = client.name || '你'
   const helpUrl = `/c/${client.unique_code}/help`
+
+  // 綁定關卡：擋在記錄引導之前（避免 SSR/localStorage 閃爍，等 effect 判定完才渲染）
+  if (!gateReady) return null
+  if (showGate) {
+    return (
+      <LineBindGate
+        clientName={firstName}
+        uniqueCode={client.unique_code}
+        onSkip={() => setShowGate(false)}
+      />
+    )
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
@@ -196,10 +218,21 @@ export default function NewUserLanding({
           <p className="text-sm font-semibold text-gray-800">完整使用說明</p>
           <p className="text-[11px] text-gray-500 mt-1">5 分鐘讀完</p>
         </Link>
-        <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
-          <p className="text-sm font-semibold text-emerald-900">{client.has_line_binding ? 'LINE 已綁定 ✓' : 'LINE 還沒綁？'}</p>
-          <p className="text-[11px] text-emerald-700 mt-1">{client.has_line_binding ? '可直接傳體重數字記錄' : '綁了就能用 LINE 快速回報體重'}</p>
-        </div>
+        {client.has_line_binding ? (
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+            <p className="text-sm font-semibold text-emerald-900">LINE 已綁定 ✓</p>
+            <p className="text-[11px] text-emerald-700 mt-1">可直接傳體重數字記錄</p>
+          </div>
+        ) : (
+          // ⚠️ 原本這裡是一段**不能點的文字**，學員看到「LINE 還沒綁？」卻沒有任何路可走
+          <a
+            href={lineBindDeeplink(client.unique_code)}
+            className="block bg-emerald-50 border border-emerald-200 rounded-2xl p-4 hover:bg-emerald-100 transition-colors"
+          >
+            <p className="text-sm font-semibold text-emerald-900">LINE 還沒綁 — 點這裡綁定</p>
+            <p className="text-[11px] text-emerald-700 mt-1">綁了才收得到提醒，也能直接傳訊息記體重</p>
+          </a>
+        )}
       </div>
     </div>
   )
