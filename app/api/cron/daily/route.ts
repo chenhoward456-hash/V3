@@ -296,6 +296,8 @@ export async function GET(request: NextRequest) {
           weeklyWeights,
           nutritionCompliance,
           avgDailyCalories,
+          // 原始序列 → 引擎判斷這些數字是不是「一鍵達標」帶進來的（見 lib/nutrition-data-quality）
+          dailyCalorieLog: withCal.map((n: any) => Number(n.calories)),
           trainingDaysPerWeek,
           prepPhase: c.prep_phase || undefined,
           clientMode: (c.client_mode as any) || undefined,

@@ -120,6 +120,7 @@ import { getLabMacroModifiers, detectLabCrossPatterns, type LabMacroModifier, ty
 import { type GeneticProfile, getSerotoninRiskLevel } from './supplement-engine'
 import { checkPeakWeekTrainingConflicts, formatPeakTrainingConflict } from './peak-week-training-check'
 import { generateRecoveryAssessment, type RecoveryAssessment, type RecoveryState as RecoveryEngineState } from './recovery-engine'
+import { assessNutritionQuality } from './nutrition-data-quality'
 import type { PrepPhase } from './client-mode'
 import { generateRecoveryDiet, RECOVERY_PHASE_LABELS, type RecoveryDietInput } from './recovery-diet'
 
@@ -155,6 +156,9 @@ export interface NutritionInput {
   weeklyWeights: { week: number; avgWeight: number }[]  // week 0 = 本週, 1 = 上週, 2 = 前2週...
   nutritionCompliance: number  // 飲食合規率 %
   avgDailyCalories: number | null  // 近 2 週平均每日攝取
+  /** 近 2 週每日熱量原始序列。用來判斷紀錄是不是「一鍵達標」帶進來的（見 nutrition-data-quality）。
+   *  沒給的話品質檢查會略過，行為與舊版相同。 */
+  dailyCalorieLog?: Array<number | null> | null
   trainingDaysPerWeek: number
 
   // 備賽階段（可選）
@@ -2256,7 +2260,12 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   // B) Adaptive TDEE（飲食記錄 + 體重變化反推）
   // avgDailyCalories 只在記錄率 ≥ 50%（7/14 天）時才有值（在 API route 過濾）
   let adaptiveTDEE: number | null = null
-  if (input.avgDailyCalories != null) {
+  // ⚠️ 2026-08-16：先確認飲食紀錄「像不像真的量的」。學員端那顆「照目標吃・全部達標」
+  //    會把三個巨量填成目標值，寫進 DB 後跟真實測量無法分辨。拿它回推 TDEE 會得出
+  //    「他的代謝剛好等於處方」的循環論證 —— 永遠發現不了實際多吃/少吃。
+  //    看不出是真的量的就退回公式 TDEE，判斷交給體重趨勢（體重不會說謊）。
+  const nutritionQuality = assessNutritionQuality(input.dailyCalorieLog ?? [], input.currentCalories)
+  if (input.avgDailyCalories != null && !nutritionQuality.looksAutoFilled) {
     adaptiveTDEE = Math.round(input.avgDailyCalories - (weeklyChange * tdeeDensity / 7))
     // 防止極端體重波動導致 adaptiveTDEE 負數或離譜高
     adaptiveTDEE = Math.max(800, Math.min(adaptiveTDEE, 8000))
