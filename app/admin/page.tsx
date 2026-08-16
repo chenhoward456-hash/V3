@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { ChevronUp, ChevronDown, Search, Copy, ExternalLink, MessageSquare, X, Send, Trophy, Bell, RefreshCw, Trash2, Clock } from 'lucide-react'
 import { daysUntilDateTW, DAY_MS, getLocalDateStr } from '@/lib/date-utils'
 import { projectWeightVerdict, metricSlopePerWeek } from '@/lib/comp-projection'
+import { reconcileIntake, isGapSignificant } from '@/lib/implied-intake'
 import { isCompetitionMode, PHASE_LABELS } from '@/lib/client-mode'
 import { buildWinbackMessage, type WinbackContext } from '@/lib/winback'
 import FeatureAnnounce from '@/components/admin/FeatureAnnounce'
@@ -35,6 +36,7 @@ interface Client {
   prep_phase: string | null
   coach_weekly_note: string | null
   target_weight: number | null
+  calories_target?: number | null
   target_date: string | null
   is_active: boolean
   onboarding_notes_rendered?: { sections?: unknown[] } | null
@@ -49,7 +51,7 @@ interface TrainingLogRecord { client_id: string; training_type: string }
 interface SupplementLog { client_id: string; supplement_id: string; date: string; completed: boolean }
 interface SupplementRecord { id: string; client_id: string }
 interface BodyRecord { client_id: string; date: string; weight: number }
-interface NutritionRecord { client_id: string; date: string; compliant: boolean | null }
+interface NutritionRecord { client_id: string; date: string; compliant: boolean | null; calories?: number | null }
 interface WellnessRecord { client_id: string; date: string; energy_level: number }
 interface RPERecord { client_id: string; date: string; rpe: number }
 
@@ -697,6 +699,19 @@ export default function AdminDashboard() {
     // ⚠️ 完全收不到通知 —— 系統對他等於不存在：每日提醒、教練訊息、週報全部送不到。
     // 這比「幾天沒打卡」更根本（他可能是想用但沒被叫醒），所以吃 sev 2 進學員問題那一格。
     if (!c.line_user_id && !pushClientIds.has(c.id)) reasons.push({ sev: 2, text: '收不到通知' })
+
+    // 紀錄與體重對不上 —— 學員照著記，但身體顯示的不是那個數字。
+    // 兩種可能都要留著：①紀錄漏了 ②熱量設定本身錯了（張承鈞就是後者）。見 lib/implied-intake。
+    const recon = reconcileIntake(
+      recentBody.filter(b => b.client_id === c.id).map(b => ({ date: b.date, weight: b.weight })),
+      recentNutrition.filter(n => n.client_id === c.id).map(n => ({ date: n.date, calories: n.calories ?? null })),
+      c.calories_target ?? 0,
+      c.goal_type,
+      14, // dashboard 只抓近 14 天
+    )
+    if (isGapSignificant(recon)) {
+      reasons.push({ sev: 2, text: `紀錄差 ${recon!.gap > 0 ? '+' : ''}${recon!.gap}kcal` })
+    }
 
     // 教練自己的待辦（不是學員的問題）—— 這兩件事以前要一個一個點進去才發現：
     // 2026-08-14 查下來 William/張承鈞/陳胤豪 都是 0 段計畫頁，學員打開系統看不到「我該幹嘛」。

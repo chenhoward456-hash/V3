@@ -194,3 +194,62 @@ describe('增肌側上限與熱量天花板', () => {
     }
   })
 })
+
+describe('階段轉換：8 週回歸被 V 字洗掉（2026-08-16 陳胤豪真實案例）', () => {
+  /** 產生每日體重：先降 daysDown 天，再升 daysUp 天 */
+  function vShape(from: number, downPerDay: number, daysDown: number, upPerDay: number, daysUp: number) {
+    const out: Array<{ date: string; weight: number }> = []
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const total = daysDown + daysUp
+    let w = from
+    for (let i = 0; i < total; i++) {
+      const d = new Date(today.getTime() - (total - 1 - i) * 86400000)
+      w += i < daysDown ? downPerDay : upPerDay
+      out.push({ date: d.toISOString().slice(0, 10), weight: +w.toFixed(2) })
+    }
+    return out
+  }
+
+  const base = {
+    goalType: 'bulk' as const,
+    targetWeight: 86,
+    targetDate: '2027-02-13',
+    currentCalories: 3000,
+    currentProtein: 175,
+    currentFat: 85,
+    currentCarbs: 385,
+    currentCarbsTrainingDay: 420,
+    currentCarbsRestDay: 350,
+    gender: 'male',
+    bounds: null,
+    lastAdjustAt: null,
+  }
+
+  it('備賽減脂→賽後增肌的 V 字，不能被平均成「進度跟得上」', () => {
+    // 前 28 天每天 -0.1（84 → 81.2），後 28 天每天 +0.065（→ 83.0）
+    const body = vShape(84, -0.1, 28, 0.065, 28)
+    const r = computeTrajectoryAdjustment({ ...base, bodyDataEntries: body })
+
+    // 8 週回歸會把 V 字抵消趨近 0；取近 3 週後必須看得到「在漲」
+    expect(r.currentRatePerWeek).not.toBeNull()
+    expect(r.currentRatePerWeek!).toBeGreaterThan(0.3)
+    expect(r.shouldAdjust).toBe(true)
+    expect(r.kcalAdjustment!).toBeLessThan(0)   // bulk 漲太快 → 往下砍
+  })
+
+  it('cut 取較嚴格側：近期掉太快時不能被舊的平緩段稀釋', () => {
+    // 前 28 天幾乎不動，後 28 天每天 -0.12（掉很快）
+    const body = vShape(80, 0.005, 28, -0.12, 28)
+    const r = computeTrajectoryAdjustment({
+      ...base, goalType: 'cut', targetWeight: 74, bodyDataEntries: body,
+    })
+    expect(r.currentRatePerWeek!).toBeLessThan(-0.5)
+  })
+
+  it('單一方向的資料，兩種窗口結論一致（不因這個修改而變動）', () => {
+    const body = vShape(80, 0.03, 28, 0.03, 28)   // 全程穩定微升
+    const r = computeTrajectoryAdjustment({ ...base, bodyDataEntries: body })
+    expect(r.currentRatePerWeek!).toBeGreaterThan(0.1)
+    expect(r.currentRatePerWeek!).toBeLessThan(0.35)
+  })
+})

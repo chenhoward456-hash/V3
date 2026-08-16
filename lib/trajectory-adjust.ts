@@ -132,7 +132,10 @@ function cooldownDaysFor(targetDate: string | null): number {
   return 14
 }
 
-function computeWeeklyAverages(entries: Array<{ date: string; weight: number | null }>) {
+function computeWeeklyAverages(
+  entries: Array<{ date: string; weight: number | null }>,
+  goalTypeForSlope: string | null,
+) {
   const withWeight = entries
     .filter(e => e.weight != null && !Number.isNaN(Number(e.weight)))
     .map(e => ({ date: e.date, weight: Number(e.weight) }))
@@ -167,18 +170,40 @@ function computeWeeklyAverages(entries: Array<{ date: string; weight: number | n
   const delta1w = previous ? current.avg! - previous.avg! : null
   const delta4w = fourWeeksAgo ? current.avg! - fourWeeksAgo.avg! : null
 
-  let regressionSlope: number | null = null
-  const points = weeks.map((w, idx) => ({ x: idx, y: w.avg })).filter(p => p.y != null) as Array<{ x: number; y: number }>
-  if (points.length >= 3) {
-    const n = points.length
-    const meanX = points.reduce((s, p) => s + p.x, 0) / n
-    const meanY = points.reduce((s, p) => s + p.y, 0) / n
+  const slopeOf = (pts: Array<{ x: number; y: number }>): number | null => {
+    if (pts.length < 3) return null
+    const n = pts.length
+    const meanX = pts.reduce((s, p) => s + p.x, 0) / n
+    const meanY = pts.reduce((s, p) => s + p.y, 0) / n
     let num = 0, den = 0
-    for (const p of points) {
+    for (const p of pts) {
       num += (p.x - meanX) * (p.y - meanY)
       den += (p.x - meanX) ** 2
     }
-    if (den > 0) regressionSlope = num / den
+    return den > 0 ? num / den : null
+  }
+
+  const points = weeks.map((w, idx) => ({ x: idx, y: w.avg })).filter(p => p.y != null) as Array<{ x: number; y: number }>
+  const slope8w = slopeOf(points)
+
+  // ⚠️ 2026-08-16：8 週回歸會被「階段轉換」洗掉。
+  // 陳胤豪備賽減脂到 7/20 的 78.5、賽後增肌到 8/16 的 83.0 —— 一個 V 字，
+  // 8 週回歸算出 +0.08 kg/週（「進度跟得上」），實際近三週是 +0.49。
+  // 差點讓引擎在他每週漲 0.5 公斤時什麼都不做。
+  //
+  // 修法不靠 diet_start_date（那個欄位常年沒更新，他的還停在 2026-02-22），
+  // 改成同時算近 3 週，取「對安全更嚴格」的那個：
+  //   bulk/recomp → 取較大值（漲越快越危險）
+  //   cut         → 取較小值（掉越快越危險）
+  // 不管資料長什麼形狀，引擎都不會低估風險。
+  const slope3w = slopeOf(points.slice(-3).map((p, i) => ({ x: i, y: p.y })))
+  let regressionSlope: number | null = slope8w
+  if (slope8w != null && slope3w != null) {
+    regressionSlope = goalTypeForSlope === 'cut'
+      ? Math.min(slope8w, slope3w)
+      : Math.max(slope8w, slope3w)
+  } else {
+    regressionSlope = slope3w ?? slope8w
   }
 
   const trendReversed = delta1w != null && delta4w != null &&
@@ -191,6 +216,8 @@ function computeWeeklyAverages(entries: Array<{ date: string; weight: number | n
     delta1w,
     delta4w,
     regressionSlope,
+    slope8w,
+    slope3w,
     trendReversed,
   }
 }
@@ -217,7 +244,7 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
     return empty('未設定當前 calories_target', 'no_calories')
   }
 
-  const traj = computeWeeklyAverages(input.bodyDataEntries)
+  const traj = computeWeeklyAverages(input.bodyDataEntries, input.goalType)
   if (!traj || traj.weeksOfData < 3) {
     return { ...empty('體重資料不足 3 週（單週 outlier 容易騙引擎）', 'no_body_data'), trajectoryData: traj }
   }
