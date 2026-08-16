@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -51,6 +51,18 @@ interface TrainingLogRecord { client_id: string; training_type: string }
 interface SupplementLog { client_id: string; supplement_id: string; date: string; completed: boolean }
 interface SupplementRecord { id: string; client_id: string }
 interface BodyRecord { client_id: string; date: string; weight: number }
+interface ProposalItem {
+  id: string
+  client_id: string
+  proposed_at: string
+  expires_at: string | null
+  proposal_type: string
+  current_state: Record<string, number | null> | null
+  proposed_changes: Record<string, number | null> | null
+  reasoning: string | null
+  clients?: { name?: string } | null
+}
+
 interface NutritionRecord { client_id: string; date: string; compliant: boolean | null; calories?: number | null }
 interface WellnessRecord { client_id: string; date: string; energy_level: number }
 interface RPERecord { client_id: string; date: string; rpe: number }
@@ -142,6 +154,11 @@ export default function AdminDashboard() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [pendingDraftCount, setPendingDraftCount] = useState(0)
+  // 引擎的 macro 提案（coached tier 走「提案 → 教練核准」）。
+  // ⚠️ 2026-08-16：這個機制一直在跑，但**後台從來沒有地方顯示** —— 6 筆從 6-7 月
+  //    躺到過期沒人處理，Howard 以為「系統沒在自動調整」，其實是提案掉進黑洞。
+  const [proposals, setProposals] = useState<ProposalItem[]>([])
+  const [actingProposal, setActingProposal] = useState<string | null>(null)
   const [allLogs, setAllLogs] = useState<SupplementLog[]>([])
   const [allSupplements, setAllSupplements] = useState<SupplementRecord[]>([])
   const [todayWellnessIds, setTodayWellnessIds] = useState<Set<string>>(new Set())
@@ -201,6 +218,34 @@ export default function AdminDashboard() {
     const t = setInterval(fetchPending, 30_000)
     return () => { cancelled = true; clearInterval(t) }
   }, [])
+
+  // 引擎的 macro 提案
+  const loadProposals = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/proposals?status=pending')
+      const json = await res.json()
+      if (json?.success) setProposals((json.data ?? []) as ProposalItem[])
+    } catch { /* ignore */ }
+  }, [])
+  useEffect(() => { loadProposals() }, [loadProposals])
+
+  const actOnProposal = useCallback(async (id: string, action: 'approve' | 'reject') => {
+    setActingProposal(id)
+    try {
+      const res = await fetch('/api/admin/proposals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proposal_id: id, action }),
+      })
+      if (!res.ok) throw new Error()
+      await loadProposals()
+      await fetchData()
+    } catch {
+      alert('操作失敗，請重試')
+    } finally {
+      setActingProposal(null)
+    }
+  }, [loadProposals])
 
   useEffect(() => {
     fetch('/api/admin/verify')
@@ -491,6 +536,8 @@ export default function AdminDashboard() {
     href?: string
     canNote: boolean
     winback?: WinbackContext
+    proposalId?: string
+    proposalReason?: string | null
   }
   const actionQueue = useMemo<QueueItem[]>(() => {
     const items: QueueItem[] = []
@@ -506,6 +553,28 @@ export default function AdminDashboard() {
       const spanDays = Math.max(1, Math.round((new Date(ws[ws.length - 1].d).getTime() - new Date(ws[0].d).getTime()) / DAY_MS))
       return { lastWeight, trendPerWeek: ((ws[ws.length - 1].v - ws[0].v) / spanDays) * 7 }
     }
+    // 引擎的 macro 提案 —— 排最前面：這是唯一「點一下就完成」的待辦，
+    // 而且拖著不處理等於自動化沒發生（提案有 expires_at，過期就作廢）。
+    for (const p of proposals) {
+      const cal = p.proposed_changes?.calories_target
+      const oldCal = p.current_state?.calories_target
+      const delta = cal != null && oldCal != null ? cal - oldCal : null
+      const txt = cal != null
+        ? `引擎建議熱量 ${oldCal ?? '?'} → ${cal}${delta != null ? `（${delta > 0 ? '+' : ''}${delta}）` : ''}`
+        : '引擎有調整建議'
+      items.push({
+        key: `proposal-${p.id}`,
+        clientId: p.client_id,
+        name: p.clients?.name ?? '學員',
+        text: txt,
+        tone: 'blue',
+        priority: 0,
+        canNote: false,
+        proposalId: p.id,
+        proposalReason: p.reasoning,
+      })
+    }
+
     // 待審 AI 血檢草稿
     if (pendingDraftCount > 0) {
       items.push({ key: 'drafts', clientId: null, name: 'AI 血檢草稿', text: `${pendingDraftCount} 份待審`, tone: 'blue', priority: 1, href: '/admin/ai-audit', canNote: false })
@@ -566,7 +635,7 @@ export default function AdminDashboard() {
     const deduped = items.filter(it => !(cutSilentIds.has(it.clientId || '') && it.key.startsWith('alert-') && it.text.includes('未活動')))
     // 排序：先緊急度，再依人名聚在一起（同一個人的待辦不會散落各處），最後依文字
     return deduped.sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name) || a.text.localeCompare(b.text))
-  }, [alerts, pendingDraftCount, clients, lastActivityMap, recentBody])
+  }, [alerts, pendingDraftCount, clients, lastActivityMap, recentBody, proposals])
 
   // === A2：自教練上次查看後的新紀錄筆數（用已載入的近期 logs；未曾查看者不標）===
   const newSinceViewMap = useMemo<Record<string, number>>(() => {
@@ -933,9 +1002,35 @@ export default function AdminDashboard() {
                 return (
                   <div key={item.key} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl ${toneBox}`}>
                     <div className="min-w-0 flex items-center gap-2">
-                      <span className={`text-sm font-medium ${toneText} truncate`}>{item.name} — {item.text}</span>
+                      <span className={`text-sm font-medium ${toneText} ${item.proposalId ? '' : 'truncate'}`}>
+                        {item.name} — {item.text}
+                        {/* 提案要看得到「為什麼」才敢按批准 */}
+                        {item.proposalReason && (
+                          <span className="block mt-1 text-[11px] font-normal text-slate-500 leading-snug line-clamp-3">
+                            {item.proposalReason}
+                          </span>
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                      {item.proposalId && (
+                        <>
+                          <button
+                            onClick={() => actOnProposal(item.proposalId!, 'approve')}
+                            disabled={actingProposal === item.proposalId}
+                            className="px-2.5 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {actingProposal === item.proposalId ? '…' : '套用'}
+                          </button>
+                          <button
+                            onClick={() => actOnProposal(item.proposalId!, 'reject')}
+                            disabled={actingProposal === item.proposalId}
+                            className="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            不要
+                          </button>
+                        </>
+                      )}
                       {item.winback && item.clientId && (
                         <button onClick={() => openWinback(item)} className="p-1.5 text-primary-600 hover:bg-primary-100 rounded-lg transition-colors" title="產生關心草稿" aria-label={`產生給 ${item.name} 的關心草稿`}><Send size={15} /></button>
                       )}

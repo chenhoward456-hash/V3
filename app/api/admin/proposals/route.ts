@@ -108,6 +108,30 @@ export async function POST(request: NextRequest) {
     }
 
     if (Object.keys(clientUpdates).length > 1) {
+      // ⚠️ 2026-08-16：教練批准後若 coach_macro_override 還鎖著舊值，
+      //    nutrition-suggestions 會在下次跑時把 macro「還原」回 override_values —— 教練剛核准的
+      //    調整被系統默默吃掉。所以套用時要把 override 的值同步成新值（鎖繼續有效，只是內容更新）。
+      const { data: cur } = await supabase
+        .from('clients')
+        .select('coach_macro_override')
+        .eq('id', proposal.client_id)
+        .maybeSingle<{ coach_macro_override: Record<string, any> | null }>()
+
+      const ov = cur?.coach_macro_override
+      if (ov && typeof ov === 'object') {
+        const lockedFields: string[] = Array.isArray(ov.locked_fields) ? ov.locked_fields : []
+        const nextValues = { ...(ov.override_values ?? {}) }
+        for (const f of lockedFields) {
+          if (clientUpdates[f] != null) nextValues[f] = clientUpdates[f]
+        }
+        clientUpdates.coach_macro_override = {
+          ...ov,
+          override_values: nextValues,
+          locked_at: now,
+          reason: `${ov.reason ?? ''}｜${now.slice(0, 10)} 教練核准引擎提案後同步鎖定值`.slice(0, 500),
+        }
+      }
+
       const { error: updErr } = await supabase
         .from('clients')
         .update(clientUpdates)
