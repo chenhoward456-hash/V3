@@ -17,7 +17,7 @@ import type { BodyComposition, NutritionLog, TrainingLog, DailyWellness } from '
 import { createServiceSupabase } from '@/lib/supabase'
 import { pushMessage, unlinkRichMenuFromUser } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
-import { reconcileIntake, prescriptionVerdict } from '@/lib/implied-intake'
+import { estimateActualIntake, prescriptionVerdict } from '@/lib/implied-intake'
 import { sendPushNotification } from '@/lib/web-push'
 import { buildPeakMorningReminder, buildPeakEveningReminder } from '@/lib/peak-week-reminders'
 import { verifyAdminSession } from '@/lib/auth-middleware'
@@ -433,13 +433,17 @@ export async function GET(request: NextRequest) {
         // Howard 的處方 3000、體重反推實際約 3456，真正的問題是沒照吃；砍到 2630 只會讓
         // 落差從 456 變 826，行為完全不變。（他本人的原話：「在明知我亂吃的情況下，
         // 你怎麼會幫我調降成這樣？」）
-        const recon = reconcileIntake(
+        // ⚠️ 用「只靠體重」的估算，不要求飲食紀錄 —— 絕大多數學員不記飲食
+        //    （近 21 天全班飲食天數只有體重的 57%），若卡在飲食資料，
+        //    他們會落到「資料不足 → 照原邏輯」而被引擎照樣砍處方。
+        const est = estimateActualIntake(
           bodyData.map((b: any) => ({ date: b.date, weight: b.weight })),
-          nutrition.map((n: any) => ({ date: n.date, calories: n.calories })),
           Number(c.calories_target),
           c.goal_type,
         )
-        const verdict = prescriptionVerdict(recon)
+        const verdict = prescriptionVerdict(
+          est ? { impliedDaily: est.impliedDaily, targetCalories: Number(c.calories_target) } : null,
+        )
         if (!verdict.adjustPrescription) {
           await supabase.from('macro_adjustment_log').insert({
             client_id: c.id,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { reconcileIntake, isGapSignificant, reconciliationMessage, prescriptionVerdict } from '@/lib/implied-intake'
+import { reconcileIntake, isGapSignificant, reconciliationMessage, prescriptionVerdict, estimateActualIntake } from '@/lib/implied-intake'
 
 const DAY = 86400000
 
@@ -126,5 +126,39 @@ describe('該動處方還是該修執行（2026-08-16 我砍錯邊的教訓）',
 
   it('資料不足 → 不改變原有行為', () => {
     expect(prescriptionVerdict(null).adjustPrescription).toBe(true)
+  })
+})
+
+describe('只靠體重估實際攝取（學員不記飲食也要能判斷）', () => {
+  it('零飲食紀錄也算得出來', () => {
+    const w = weightSeries('2026-08-03', 14, 80.5, 0.18)
+    const r = estimateActualIntake(w, 3000, 'bulk')
+    expect(r).not.toBeNull()
+    expect(r!.impliedDaily).toBeGreaterThan(3900)
+  })
+
+  it('⭐ 不記飲食的人不會被誤判成「處方要調」', () => {
+    // 這是修正前的真實破口：reconcileIntake 因為沒有飲食紀錄回 null
+    // → prescriptionVerdict 落到「資料不足 → 照原邏輯」→ 引擎照樣砍處方
+    const w = weightSeries('2026-08-03', 14, 80.5, 0.18)
+    const viaNutrition = reconcileIntake(w, [], 3000, 'bulk')   // 沒有飲食紀錄
+    expect(viaNutrition).toBeNull()
+    expect(prescriptionVerdict(viaNutrition).adjustPrescription).toBe(true)  // ← 舊行為（會砍）
+
+    const est = estimateActualIntake(w, 3000, 'bulk')!
+    const v = prescriptionVerdict({ impliedDaily: est.impliedDaily, targetCalories: 3000 })
+    expect(v.adjustPrescription).toBe(false)                    // ← 新行為（擋下）
+    expect(v.reason).toContain('執行超出處方')
+  })
+
+  it('體重筆數不足仍然回 null（不硬猜）', () => {
+    expect(estimateActualIntake(weightSeries('2026-08-01', 5, 80, 0.1), 3000, 'bulk')).toBeNull()
+  })
+
+  it('照計畫走的人：估出來的攝取接近處方', () => {
+    const w = weightSeries('2026-08-01', 21, 80, 0.0286)  // ≈ +0.2kg/週，正好是 bulk 預期
+    const r = estimateActualIntake(w, 3000, 'bulk')!
+    expect(Math.abs(r.impliedDaily - 3000)).toBeLessThan(200)
+    expect(prescriptionVerdict({ impliedDaily: r.impliedDaily, targetCalories: 3000 }).adjustPrescription).toBe(true)
   })
 })

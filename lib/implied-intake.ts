@@ -125,6 +125,61 @@ export function reconcileIntake(
   }
 }
 
+
+/**
+ * ⭐ 只靠體重估「實際每日攝取」—— **完全不需要飲食紀錄**。
+ *
+ * 2026-08-19 Howard：「這個模式真的偏難誒」。他說對了，而且數據站在他那邊：
+ * 近 21 天全部學員加起來，飲食記錄天數只有體重的 57%；Sean 體重 48% 但飲食 10%；
+ * 連 Howard 自己（CSCS 教練＋系統作者）的 67% 都是按「達標」鈕填出來的假數字。
+ *
+ * **如果一個迴圈需要連設計者都做不到的行為，壞的是迴圈不是人。**
+ *
+ * 關鍵是：`impliedDaily` 的公式本來就只用到體重 ——
+ *   目標熱量對應「該有的速率」，實際速率偏離多少就換算成多吃/少吃多少。
+ * 飲食紀錄只在「跟紀錄對帳」時才需要（reconcileIntake），
+ * 而**判斷該調處方還是該修執行，用這支就夠了**。
+ *
+ * 沒有這支的話，不記飲食的人會落到 `prescriptionVerdict` 的「資料不足 → 照原邏輯」
+ * 分支，引擎照樣砍他們的處方 —— 而那正是絕大多數學員。
+ */
+export function estimateActualIntake(
+  weights: WeightRow[],
+  targetCalories: number,
+  goalType: string | null,
+  windowDays = 21,
+): { impliedDaily: number; slopePerWeek: number; expectedRatePerWeek: number; weightPoints: number } | null {
+  if (!Number.isFinite(targetCalories) || targetCalories <= 0) return null
+
+  const valid = weights
+    .filter(w => w.weight != null)
+    .map(w => ({ date: w.date, value: w.weight as number }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+  if (valid.length < MIN_WEIGHT_POINTS) return null
+
+  const lastMs = new Date(valid[valid.length - 1].date + 'T00:00:00').getTime()
+  const recent = valid.filter(v => new Date(v.date + 'T00:00:00').getTime() >= lastMs - windowDays * DAY)
+  if (recent.length < MIN_WEIGHT_POINTS) return null
+
+  const firstMs = new Date(recent[0].date + 'T00:00:00').getTime()
+  if ((lastMs - firstMs) / DAY < MIN_SPAN_DAYS) return null
+
+  const slope = slopePerDay(recent.map(v => ({
+    x: (new Date(v.date + 'T00:00:00').getTime() - firstMs) / DAY,
+    y: v.value,
+  })))
+  if (slope == null) return null
+
+  const expectedRatePerWeek = EXPECTED_RATE[goalType ?? ''] ?? 0
+  const rateGapPerWeek = slope * 7 - expectedRatePerWeek
+  return {
+    impliedDaily: Math.round(targetCalories + rateGapPerWeek * KCAL_PER_KG / 7),
+    slopePerWeek: slope * 7,
+    expectedRatePerWeek,
+    weightPoints: recent.length,
+  }
+}
+
 export function isGapSignificant(r: IntakeReconciliation | null): boolean {
   return !!r && Math.abs(r.gap) >= MIN_GAP_KCAL
 }
@@ -168,10 +223,9 @@ const EXECUTION_GAP_KCAL = 200
  * 砍錯邊的代價：他照樣吃 3456，落差從 456 變成 826，數字更難看但行為沒變；
  * 而萬一他真的照新處方吃，等於一次砍掉 826 kcal，太陡。
  */
-export function prescriptionVerdict(r: IntakeReconciliation | null): {
-  adjustPrescription: boolean
-  reason: string
-} {
+export function prescriptionVerdict(
+  r: { impliedDaily: number; targetCalories: number } | null,
+): { adjustPrescription: boolean; reason: string } {
   if (!r) return { adjustPrescription: true, reason: '資料不足以判斷執行落差，照原邏輯處理' }
 
   const overTarget = r.impliedDaily - r.targetCalories

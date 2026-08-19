@@ -984,27 +984,37 @@ export default function ClientDashboard() {
           />
         )}
 
+        {/* 今日重點：**體重是唯一的必做**，其餘全是加分。
+            ⚠️ 2026-08-19 改（Howard：「這個模式真的偏難誒」）—— 他說對了，數據也站在他那邊：
+            近 21 天全班飲食記錄天數只有體重的 57%，Sean 體重 48% 但飲食 10%，
+            連 Howard 自己的 67% 都是按「達標」鈕填的假數字。
+            而系統真正需要的只有體重（見 lib/implied-intake 的 estimateActualIntake：
+            判斷該調處方還是修執行，只靠體重就算得出來）。
+            原本寫「今天還有 N 項可記」把五件事並列，等於每天給四個失敗理由。 */}
         {view === 'home' && isToday && (() => {
-          const daily = [
-            c.body_composition_enabled ? !!(latestBodyData && latestBodyData.date === selectedDate) : null,
+          if (!c.body_composition_enabled) return null
+          const weightDone = !!(latestBodyData && latestBodyData.date === selectedDate)
+          const extras = [
             c.nutrition_enabled ? !!todayNutrition : null,
             (c.supplement_enabled && (c.supplements || []).length > 0) ? (todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total) : null,
             c.wellness_enabled ? !!todayWellness : null,
             c.training_enabled ? !!todayTraining : null,
           ].filter(v => v !== null) as boolean[]
-          if (daily.length === 0) return null
-          const unlogged = daily.filter(v => !v).length
-          const allDone = unlogged === 0
+          const extrasDone = extras.filter(Boolean).length
           return (
-            <div className={`border rounded-2xl p-4 mb-3 flex items-center gap-2.5 ${allDone ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
+            <div className={`border rounded-2xl p-4 mb-3 ${weightDone ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
               <p className="text-sm text-gray-700 leading-snug">
-                <span className="font-semibold text-gray-900">今日重點</span>
-                {/* 訓練日/碳水已由上方 TodayHeadline 講過，這裡不重複（去重複頁首） */}
+                <span className="font-semibold text-gray-900">今天只有一件必做</span>
                 {' · '}
-                {allDone
-                  ? <span className="text-emerald-700 font-semibold">五項打卡完成，今天收工</span>
-                  : <span className="text-slate-400 tabular-nums">今天還有 {unlogged} 項可記（記了引擎才調得準）</span>}
+                {weightDone
+                  ? <span className="text-emerald-700 font-semibold">體重記好了，今天就算完成</span>
+                  : <span className="text-slate-500">量早晨體重（其他都是加分，沒空就跳過）</span>}
               </p>
+              {weightDone && extras.length > 0 && (
+                <p className="text-[11px] text-slate-400 mt-1 tabular-nums">
+                  另外記了 {extrasDone}/{extras.length} 項加分的 —— 記了我更看得懂你的狀況，但不記也不影響判斷
+                </p>
+              )}
             </div>
           )
         })()}
