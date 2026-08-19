@@ -7,6 +7,7 @@ import { isCompetitionMode } from '@/lib/client-mode'
 import { calculateInitialTargets } from '@/lib/nutrition-engine'
 import { createLogger } from '@/lib/logger'
 import { writeAuditLog } from '@/lib/audit'
+import { checkGoalSafety } from '@/lib/goal-safety'
 
 const logger = createLogger('api-clients')
 
@@ -418,6 +419,39 @@ export async function PUT(request: NextRequest) {
 
     if (goal_type && ['cut', 'bulk', 'recomp'].includes(goal_type)) {
       updates.goal_type = goal_type
+    }
+
+    // ⚠️ 2026-08-19：這裡原本只檢查數值範圍（30–300kg），**不檢查速率** ——
+    //    「八週掉二十公斤」是合法輸入。學員自己設目標時沒有教練在旁邊看，
+    //    所以速率安全性必須由系統擋（見 lib/goal-safety）。
+    if (target_weight != null && target_date) {
+      // 查最新體重來算速率。⚠️ 查不到就用 null 讓 checkGoalSafety 走「沒有體重」分支
+      // （放行 + 提示先量一次）—— 不能因為這支查詢失敗就讓整個「改目標」掛掉。
+      let latestWeight: number | null = null
+      try {
+        const { data: latestBody } = await supabase
+          .from('body_composition')
+          .select('weight')
+          .eq('client_id', client.id)
+          .not('weight', 'is', null)
+          .order('date', { ascending: false })
+          .limit(1)
+          .maybeSingle<{ weight: number }>()
+        if (latestBody?.weight != null) latestWeight = Number(latestBody.weight)
+      } catch { /* 查不到就當沒有體重資料 */ }
+
+      const check = checkGoalSafety(
+        latestWeight,
+        Number(target_weight),
+        String(target_date),
+        goal_type ?? null,
+      )
+      if (!check.ok) {
+        return NextResponse.json(
+          { error: check.message ?? '這個目標超出安全範圍', suggestion: check.suggestion ?? null },
+          { status: 422 },
+        )
+      }
     }
 
     if (target_weight && typeof target_weight === 'number' && target_weight > 30 && target_weight < 300) {

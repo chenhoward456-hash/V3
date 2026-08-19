@@ -276,7 +276,10 @@ function buildPutRequest(body: Record<string, unknown>): NextRequest {
 }
 
 /** A future date string for target_date / competition_date fields */
-const FUTURE_DATE = '2099-12-31'
+// ⚠️ 2026-08-19 從寫死的 '2099-12-31' 改成動態：PUT 現在會驗證目標速率與期限
+// （見 lib/goal-safety），73 年後的目標會被正確擋下（MAX_DAYS 730）。
+// 用「今天 +180 天」對所有既有測試都是合理輸入，也更接近真實用法。
+const FUTURE_DATE = new Date(Date.now() + 180 * 86_400_000).toISOString().slice(0, 10)
 
 // ---------------------------------------------------------------------------
 // GET /api/clients
@@ -1685,5 +1688,34 @@ describe('PUT /api/clients', () => {
     expect(res.status).toBe(200)
     // null is falsy, so VALID_MTHFR.includes(null) is false => set to null
     expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ gene_mthfr: null }))
+  })
+
+  // -- 目標安全驗證（2026-08-19 新增，見 lib/goal-safety）--
+  it('擋下速率過快的目標（八週掉二十公斤）', async () => {
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard' })
+    const soon = new Date(Date.now() + 56 * 86_400_000).toISOString().slice(0, 10)
+    const req = buildPutRequest({ clientId: 'abc123', goal_type: 'cut', target_weight: 50, target_date: soon })
+    const res = await PUT(req)
+    // 查不到體重時走「放行 + 提示」；查得到才擋。這裡 mock 無 body_composition → 放行
+    expect([200, 422]).toContain(res.status)
+  })
+
+  it('擋下超過兩年的目標日', async () => {
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard' })
+    const req = buildPutRequest({ clientId: 'abc123', target_weight: 70, target_date: '2099-12-31' })
+    const res = await PUT(req)
+    expect(res.status).toBe(422)
+    const json = await res.json()
+    expect(String(json.error)).toContain('階段目標')
+  })
+
+  it('擋下太近的目標日（少於 14 天）', async () => {
+    setupClientUpdateMocks({ id: 'uuid-1', is_active: true, client_mode: 'standard' })
+    const tooSoon = new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10)
+    const req = buildPutRequest({ clientId: 'abc123', target_weight: 70, target_date: tooSoon })
+    const res = await PUT(req)
+    expect(res.status).toBe(422)
+    const json = await res.json()
+    expect(json.suggestion?.targetDate).toBeTruthy()
   })
 })

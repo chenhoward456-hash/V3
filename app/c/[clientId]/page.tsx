@@ -54,6 +54,7 @@ import TodayOverviewCard from '@/components/client/TodayOverviewCard'
 import CoachMessageBanner from '@/components/client/CoachMessageBanner'
 import TodayHeadline from '@/components/client/TodayHeadline'
 import MyPlanSection from '@/components/client/MyPlanSection'
+import MyGoalEditor from '@/components/client/MyGoalEditor'
 import BodyProfileCard from '@/components/client/BodyProfileCard'
 import BodyProfileAnchor from '@/components/client/BodyProfileAnchor'
 import DayBasedCards from '@/components/client/DayBasedCards'
@@ -1007,6 +1008,29 @@ export default function ClientDashboard() {
             </div>
           )
         })()}
+
+        {/* 我的目標 —— 學員自己能改（目標＝他想要什麼；每天吃什麼＝處方，仍由教練設定）。
+            放進度分頁：他來看「我在贏嗎」的時候，正好是會想調目標的時機。 */}
+        {view === 'data' && isToday && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs text-slate-400 mb-0.5">我的目標</p>
+                <p className="text-sm text-gray-800 tabular-nums">
+                  {c.target_weight != null ? `${c.target_weight} kg` : '還沒設定'}
+                  {c.target_date && <span className="text-slate-400"> · {c.target_date}</span>}
+                </p>
+              </div>
+              <MyGoalEditor
+                clientCode={c.unique_code}
+                currentWeight={latestBodyData?.weight != null ? Number(latestBodyData.weight) : null}
+                targetWeight={c.target_weight != null ? Number(c.target_weight) : null}
+                targetDate={c.target_date ?? null}
+                onSaved={() => mutate()}
+              />
+            </div>
+          </div>
+        )}
 
         {/* ===== INSIGHT: 每日洞察 + 完成進度（進「數據」分頁看） ===== */}
           {view === 'data' && isToday && (
