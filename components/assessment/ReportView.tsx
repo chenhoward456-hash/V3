@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import type { AssessmentReport } from '@/lib/assessment-report'
 
 /**
@@ -130,6 +129,10 @@ export default function ReportView({
         </div>
       )}
 
+      {/* ⚠️ 2026-08-21：CTA 刻意**不放連結**。
+          這份報告是健身房的服務，成交發生在現場而不是線上；
+          原本連到 /join（Howard Protocol 的線上方案）是定位錯誤 ——
+          而且這條線之後要給館內其他教練用，別人的會員不該被導去某個人的個人生意。 */}
       {showCta && (
         <div className="bg-primary-600 rounded-2xl p-5 text-white">
           <p className="text-base font-bold leading-snug">這份計畫要有人幫你盯數字嗎？</p>
@@ -137,9 +140,9 @@ export default function ReportView({
             上面的數字是系統依你這次體測算的。真正難的不是知道要做什麼，
             是十二週之後還在做 —— 那是教練的工作。
           </p>
-          <Link href="/join" className="mt-4 block text-center bg-white text-primary-700 text-sm font-bold py-3 rounded-xl">
-            我想了解教練課
-          </Link>
+          <p className="text-sm text-white/90 mt-3 font-medium">
+            想開始的話，直接跟今天幫你做體測的教練說一聲就可以。
+          </p>
         </div>
       )}
 
