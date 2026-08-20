@@ -12,7 +12,8 @@ import type { InBodyReading } from '@/lib/inbody-ocr'
  * 教練當場對著螢幕講解，或把內容傳給會員。
  * **教練不需要會判讀** —— 系統把判斷做完了，他只要念。
  *
- * ⚠️ 這頁不寫任何資料庫。體測報表含個資，保存政策定案前一律不落地。
+ * ⚠️ 存的東西刻意最少：**不存原始照片、不存報表上的 ID/姓名**，只存體組成數值
+ * 與報告快照，外加一個不可猜的 token 給會員看。存的理由是「三個月後能比對」。
  */
 
 const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string }[] = [
@@ -29,9 +30,11 @@ export default function AdminAssessmentPage() {
   const [report, setReport] = useState<AssessmentReport | null>(null)
   const [activity, setActivity] = useState<ActivityLevel>('light')
   const [preview, setPreview] = useState<string | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const run = async (file: File) => {
-    setBusy(true); setError(null); setReport(null); setReading(null)
+    setBusy(true); setError(null); setReport(null); setReading(null); setToken(null)
     setPreview(URL.createObjectURL(file))
     try {
       const b64 = await new Promise<string>((res, rej) => {
@@ -49,6 +52,7 @@ export default function AdminAssessmentPage() {
       if (!r.ok) { setError(json?.error ?? '讀取失敗'); if (json?.reading) setReading(json.reading); return }
       setReading(json.reading)
       setReport(json.report)
+      setToken(json.token ?? null)
     } catch (e) {
       setError(e instanceof Error ? e.message : '出錯了')
     } finally {
@@ -147,6 +151,31 @@ export default function AdminAssessmentPage() {
           <div className="bg-slate-100 border border-slate-200 rounded-xl p-3">
             <p className="text-xs text-slate-600 leading-relaxed">
               這幾項讀不到，報告會少對應的段落：{report.missing.join('、')}
+            </p>
+          </div>
+        )}
+
+        {/* 給會員的連結 —— 教練直接傳 LINE */}
+        {token && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-4">
+            <p className="text-[11px] text-slate-400 mb-1.5">傳這個連結給會員</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 min-w-0 text-xs text-gray-800 bg-slate-50 rounded-lg px-3 py-2 truncate">
+                {typeof window !== 'undefined' ? `${window.location.origin}/assessment/${token}` : `/assessment/${token}`}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard?.writeText(`${window.location.origin}/assessment/${token}`)
+                  setCopied(true); setTimeout(() => setCopied(false), 1800)
+                }}
+                className="shrink-0 px-3 py-2 text-xs font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                {copied ? '已複製' : '複製'}
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
+              不需要登入就能看。報告存的是這次的快照 —— 之後判讀邏輯更新，他手上這份不會變。
             </p>
           </div>
         )}
