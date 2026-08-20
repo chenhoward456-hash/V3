@@ -32,6 +32,17 @@ const READING: InBodyReading = {
   history: [], uncertain: [],
 }
 
+/** 與 /assessment/[token] 一致：去品牌（見該頁註解） */
+export const metadata = {
+  title: '體測報告',
+  description: '你的體組成分析與後續建議。',
+  robots: { index: false, follow: false },
+  authors: [] as never[],
+  keywords: [] as never[],
+  openGraph: { title: '體測報告', description: '你的體組成分析與後續建議。', siteName: '', images: [] as never[] },
+  twitter: { card: 'summary' as const, title: '體測報告', images: [] as never[] },
+}
+
 export default function AssessmentDemoPage() {
   const report = buildAssessmentReport({ reading: READING, activity: 'light' })
   return (

@@ -16,9 +16,32 @@ export const dynamic = 'force-dynamic'
  * 要他先註冊才能看自己的身體數據，那是把摩擦放在最錯的位置。
  */
 
+/**
+ * ⚠️ 2026-08-21 完全去品牌（Howard 決定）。
+ *
+ * 根 layout 的 metadata 掛的是「Howard Protocol」個人品牌（含 OG 圖是他本人照片）。
+ * 這份報告要給館內其他教練用，會員拿到一份掛著某個教練個人品牌的東西不合適 ——
+ * 分享到 LINE 時預覽卡也會是那樣。
+ *
+ * 所以整組覆寫成中性的：標題、描述、OG、Twitter 卡全部不提任何品牌或人名。
+ * 之後若要掛場館品牌，改這一處即可。
+ */
 export const metadata = {
-  title: '你的體測報告',
+  title: '體測報告',
+  description: '你的體組成分析與後續建議。',
   robots: { index: false, follow: false },   // 不進搜尋引擎
+  // 根 layout 的 author/keywords 會被繼承下來（"Howard Chen" + 一串個人品牌關鍵字）→ 清掉
+  authors: [] as never[],
+  keywords: [] as never[],
+  openGraph: {
+    title: '體測報告',
+    description: '你的體組成分析與後續建議。',
+    type: 'article' as const,
+    locale: 'zh_TW',
+    siteName: '',
+    images: [] as never[],
+  },
+  twitter: { card: 'summary' as const, title: '體測報告', description: '你的體組成分析與後續建議。', images: [] as never[] },
 }
 
 export default async function AssessmentTokenPage({
