@@ -66,6 +66,13 @@ export default async function AssessmentTokenPage({
 
   if (!data || data.revoked_at) notFound()
 
+  // 記一次瀏覽。⚠️ 只記次數與時間，不記 IP、裝置或任何識別資訊 ——
+  // 這是要回答「會員到底有沒有點開」，不是要追蹤人。
+  // fire-and-forget：計數失敗不能影響會員看報告。
+  void supabase.rpc('increment_assessment_view', { p_token: token }).then(
+    ({ error }) => { if (error) console.error('[assessment] 計數失敗', error.message) },
+  )
+
   const r = data.reading
 
   return (

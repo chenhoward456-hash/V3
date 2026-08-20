@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import ReportView from '@/components/assessment/ReportView'
 import type { AssessmentReport, ActivityLevel } from '@/lib/assessment-report'
 import type { InBodyReading } from '@/lib/inbody-ocr'
@@ -33,6 +33,20 @@ export default function AdminAssessmentPage() {
   const [token, setToken] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  // 已產生的報告 + 打開次數 —— 這是「這條線有沒有效」的唯一客觀訊號
+  type Row = { token: string; createdAt: string; measuredAt: string | null; label: string | null; viewCount: number; firstViewedAt: string | null; revoked: boolean; hint: string }
+  const [rows, setRows] = useState<Row[]>([])
+  const [summary, setSummary] = useState<{ total: number; opened: number; openRate: number | null } | null>(null)
+
+  const loadList = useCallback(async () => {
+    try {
+      const r = await fetch('/api/assessment/list')
+      const j = await r.json()
+      if (j?.success) { setRows(j.rows ?? []); setSummary(j.summary ?? null) }
+    } catch { /* 列表載不出來不影響主要功能 */ }
+  }, [])
+  useEffect(() => { loadList() }, [loadList])
+
   const run = async (file: File) => {
     setBusy(true); setError(null); setReport(null); setReading(null); setToken(null)
     setPreview(URL.createObjectURL(file))
@@ -53,6 +67,7 @@ export default function AdminAssessmentPage() {
       setReading(json.reading)
       setReport(json.report)
       setToken(json.token ?? null)
+      loadList()
     } catch (e) {
       setError(e instanceof Error ? e.message : '出錯了')
     } finally {
@@ -178,6 +193,51 @@ export default function AdminAssessmentPage() {
               不需要登入就能看。報告存的是這次的快照 —— 之後判讀邏輯更新，他手上這份不會變。
             </p>
           </div>
+        )}
+
+        {/* 已產生的報告 —— 打開率是這條線有沒有效的唯一客觀訊號 */}
+        {rows.length > 0 && (
+          <details className="bg-white border border-slate-200 rounded-2xl p-5">
+            <summary className="cursor-pointer text-sm font-medium text-gray-800 select-none">
+              已產生 {summary?.total ?? rows.length} 份
+              {summary?.openRate != null && (
+                <span className="ml-2 text-[11px] font-normal text-slate-500 tabular-nums">
+                  · {summary.opened} 份被打開（{summary.openRate}%）
+                </span>
+              )}
+            </summary>
+            <div className="mt-3 space-y-2">
+              {rows.map(row => (
+                <div key={row.token} className="flex items-center justify-between gap-3 border-b border-slate-50 pb-2">
+                  <div className="min-w-0">
+                    <p className="text-xs text-gray-800 truncate">
+                      {row.label || row.hint || '（未命名）'}
+                    </p>
+                    <p className="text-[11px] text-slate-400 tabular-nums">
+                      {row.createdAt.slice(0, 10)}
+                      {row.measuredAt && row.measuredAt !== row.createdAt.slice(0, 10) && ` · 測於 ${row.measuredAt}`}
+                    </p>
+                  </div>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <span className={`text-xs tabular-nums ${row.viewCount > 0 ? 'text-emerald-700 font-medium' : 'text-slate-400'}`}>
+                      {row.viewCount > 0 ? `看了 ${row.viewCount} 次` : '還沒打開'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(`${window.location.origin}/assessment/${row.token}`)
+                        setCopied(true); setTimeout(() => setCopied(false), 1500)
+                      }}
+                      className="text-[11px] text-primary-600 hover:text-primary-800 transition-colors"
+                    >複製</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">
+              只記打開次數，不記 IP 或裝置。沒有人打開的話，這條線的前提就不成立 —— 那比報告寫得好不好更重要。
+            </p>
+          </details>
         )}
 
         {report && (
