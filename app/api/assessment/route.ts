@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
     weeks?: number
     /** 教練自己記的識別（暱稱／後四碼）。⚠️ 不要放真實姓名 */
     label?: string
+    /** 複測：上一次報告的 token。有的話報告會多一段「上次到現在變了什麼」 */
+    previousToken?: string
   }
   try { body = await request.json() } catch { return NextResponse.json({ error: '格式錯誤' }, { status: 400 }) }
 
@@ -62,12 +64,27 @@ export async function POST(request: NextRequest) {
     }, { status: 422 })
   }
 
+  // 複測：把上一次的讀數撈出來做比對。
+  // ⚠️ 用「教練手上的舊連結」來識別同一個人，而不是存姓名 ——
+  //    這樣既能追蹤變化，又不用在資料庫裡放身分資訊。
+  let previous = null
+  if (body.previousToken) {
+    const supabase = createServiceSupabase()
+    const { data: prev } = await supabase
+      .from('assessments')
+      .select('reading')
+      .eq('token', body.previousToken)
+      .maybeSingle<{ reading: typeof reading }>()
+    previous = prev?.reading ?? null
+  }
+
   const report = buildAssessmentReport({
     reading,
     gender: body.gender ?? null,
     age: body.age ?? null,
     activity: body.activity ?? 'light',
     weeks: body.weeks,
+    previous,
   })
 
   // 存快照並產出給會員的連結。

@@ -29,6 +29,7 @@ export default function AdminAssessmentPage() {
   const [reading, setReading] = useState<InBodyReading | null>(null)
   const [report, setReport] = useState<AssessmentReport | null>(null)
   const [activity, setActivity] = useState<ActivityLevel>('light')
+  const [previousToken, setPreviousToken] = useState('')
   const [preview, setPreview] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -60,7 +61,7 @@ export default function AdminAssessmentPage() {
       const r = await fetch('/api/assessment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: [{ mediaType: file.type, data: b64 }], activity }),
+        body: JSON.stringify({ files: [{ mediaType: file.type, data: b64 }], activity, previousToken: previousToken.trim() || undefined }),
       })
       const json = await r.json()
       if (!r.ok) { setError(json?.error ?? '讀取失敗'); if (json?.reading) setReading(json.reading); return }
@@ -101,6 +102,27 @@ export default function AdminAssessmentPage() {
               ))}
             </div>
             <span className="block text-[11px] text-slate-400 mt-1.5">這會影響每日熱量的計算。</span>
+          </label>
+
+          {/* 複測：貼上一次的連結就能比對。
+              用教練手上的舊連結識別同一個人 —— 不需要在資料庫存姓名。 */}
+          <label className="block mb-3">
+            <span className="block text-xs text-slate-500 mb-1.5">
+              這是複測嗎？貼上他上一次的連結（選填）
+            </span>
+            <input
+              type="text" value={previousToken}
+              onChange={e => {
+                const v = e.target.value.trim()
+                // 貼整條網址也可以，自己抓最後一段
+                setPreviousToken(v.includes('/assessment/') ? v.split('/assessment/')[1].split(/[?#]/)[0] : v)
+              }}
+              placeholder="貼上次的網址，或直接貼 token"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            <span className="block text-[11px] text-slate-400 mt-1.5">
+              有的話報告最上面會多一段「上次到現在變了什麼」—— 那段比現況重要。
+            </span>
           </label>
 
           <label className="block">
@@ -230,6 +252,12 @@ export default function AdminAssessmentPage() {
                       }}
                       className="text-[11px] text-primary-600 hover:text-primary-800 transition-colors"
                     >複製</button>
+                    <button
+                      type="button"
+                      onClick={() => { setPreviousToken(row.token); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                      className="text-[11px] text-slate-500 hover:text-primary-600 transition-colors"
+                      title="把這份當成上一次，接著拍新的做比對"
+                    >當上次</button>
                   </div>
                 </div>
               ))}

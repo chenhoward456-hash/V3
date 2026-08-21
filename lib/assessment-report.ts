@@ -50,6 +50,8 @@ export type ReportInput = {
   activity?: ActivityLevel
   /** 目標期程（週），預設 12 */
   weeks?: number
+  /** 上一次的體測讀數 —— 有的話會產出「這段時間變了什麼」 */
+  previous?: InBodyReading | null
 }
 
 export type KeyStat = {
@@ -61,7 +63,20 @@ export type KeyStat = {
   soWhat: string
 }
 
+/** 兩次體測之間的變化 —— 這才是機器印不出來的東西（它不記得你） */
+export type ProgressComparison = {
+  fromDate: string | null
+  toDate: string | null
+  weeks: number | null
+  /** 一句話：這段時間真正發生了什麼 */
+  verdict: string
+  /** 逐項變化，只列有意義的 */
+  changes: { label: string; from: number; to: number; delta: number; unit: string; tone: 'good' | 'watch' | 'neutral' }[]
+}
+
 export type AssessmentReport = {
+  /** 兩次體測的比對。第一次測沒有這個 */
+  comparison?: ProgressComparison | null
   /** 一句話結論 */
   headline: string
   /** 支撐那句話的說明 */
@@ -106,6 +121,92 @@ function resolveGender(input: ReportInput): 'male' | 'female' {
   const g = input.reading.gender ?? ''
   if (g.includes('女')) return 'female'
   return 'male'
+}
+
+/**
+ * 兩次體測的比對。
+ *
+ * ⚠️ 為什麼這段比報告本身重要（2026-08-21 Howard：「我不認為這個報告就能有多有差異」）：
+ * 他說得對 —— 單一份報告不是差異化，好教練口頭也講得出來。
+ *
+ * ⚠️⚠️ **我一開始寫「因為機器不記得你」，那是錯的，Howard 當場指正**：
+ * ACCUNIQ 報表右下角就有「身體組成變化」，會印出最近四次的
+ * 體重／骨骼肌重／體脂肪百分比。機器記得。
+ *
+ * 真正的差別在別的地方：
+ *   1. 機器記 **3 個指標、4 個點**；腹圍、分部位脂肪、內臟脂肪的變化它不留
+ *   2. 機器 **只給一條折線，不解釋** —— 「掉了 2.8 公斤脂肪但肌肉一克沒少，
+ *      這是最好的那種變化」這句話它講不出來
+ *   3. 機器的紀錄 **綁在那台機器上**，印在一張會被丟掉的紙上；
+ *      我們的綁在連結上，會員手機隨時打得開
+ *   4. 那區 OCR 實測會整組讀錯（日期位移），所以我們自己存的比對反而更可靠
+ *
+ * 判讀重點：**體重變化本身沒有意義，脂肪與肌肉分別怎麼動才有。**
+ * 掉了 3 公斤但肌肉掉 1.5 是壞事；體重沒動但脂肪掉 2 公斤是好事。
+ */
+function buildComparison(now: InBodyReading, prev: InBodyReading): ProgressComparison | null {
+  if (now.weight == null || prev.weight == null) return null
+
+  const from = prev.measured_at, to = now.measured_at
+  const weeks = from && to
+    ? Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000 / 7)
+    : null
+
+  const changes: ProgressComparison['changes'] = []
+  const push = (
+    label: string, a: number | null | undefined, b: number | null | undefined,
+    unit: string, betterWhen: 'down' | 'up',
+  ) => {
+    if (a == null || b == null) return
+    const delta = round1(b - a)
+    if (Math.abs(delta) < 0.1) return
+    const good = betterWhen === 'down' ? delta < 0 : delta > 0
+    changes.push({ label, from: a, to: b, delta, unit, tone: good ? 'good' : 'watch' })
+  }
+
+  push('體脂肪', prev.body_fat_mass, now.body_fat_mass, 'kg', 'down')
+  push('骨骼肌', prev.skeletal_muscle, now.skeletal_muscle, 'kg', 'up')
+  push('腹圍', prev.waist_cm, now.waist_cm, 'cm', 'down')
+  push('體重', prev.weight, now.weight, 'kg', 'down')
+  push('體脂率', prev.body_fat_pct, now.body_fat_pct, '%', 'down')
+
+  // ── 一句話：分開看脂肪與肌肉，不要只講體重 ──
+  const fatDelta = now.body_fat_mass != null && prev.body_fat_mass != null
+    ? round1(now.body_fat_mass - prev.body_fat_mass) : null
+  const muscleDelta = now.skeletal_muscle != null && prev.skeletal_muscle != null
+    ? round1(now.skeletal_muscle - prev.skeletal_muscle) : null
+  const waistDelta = now.waist_cm != null && prev.waist_cm != null
+    ? round1(now.waist_cm - prev.waist_cm) : null
+
+  const span = weeks ? `這 ${weeks} 週` : '上次到現在'
+  let verdict: string
+
+  if (fatDelta != null && muscleDelta != null) {
+    if (fatDelta <= -0.5 && muscleDelta >= -0.3) {
+      verdict = `${span}你掉了 ${Math.abs(fatDelta)} 公斤脂肪，肌肉${muscleDelta >= 0.3 ? `還多了 ${muscleDelta} 公斤` : '幾乎沒動'}。` +
+        `這是最好的那種變化 —— 體重計看不出差別，但身體組成整個往對的方向走。`
+    } else if (fatDelta <= -0.5 && muscleDelta < -0.3) {
+      verdict = `${span}掉了 ${Math.abs(fatDelta)} 公斤脂肪，但肌肉也少了 ${Math.abs(muscleDelta)} 公斤。` +
+        `脂肪有掉是好事，不過肌肉跟著走代表速度或蛋白質要調 —— 這個要處理。`
+    } else if (fatDelta >= 0.5 && muscleDelta >= 0.3) {
+      verdict = `${span}肌肉多了 ${muscleDelta} 公斤，脂肪也多了 ${fatDelta} 公斤。` +
+        `如果這段時間目標是增肌，方向是對的，只是可以再乾淨一點。`
+    } else if (fatDelta >= 0.5) {
+      verdict = `${span}脂肪增加了 ${fatDelta} 公斤，肌肉沒有跟上。這通常不是努力的問題，是熱量或執行的細節。`
+    } else {
+      verdict = `${span}身體組成變化不大。這不算失敗 —— 但如果目標是往下，那要調整的是做法不是決心。`
+    }
+  } else {
+    const wd = round1(now.weight - prev.weight)
+    verdict = `${span}體重${wd === 0 ? '沒有變化' : wd < 0 ? `掉了 ${Math.abs(wd)} 公斤` : `增加了 ${wd} 公斤`}。` +
+      `這次沒讀到完整的體脂與肌肉數據，所以只能看體重 —— 那個數字單獨看意義有限。`
+  }
+
+  if (waistDelta != null && waistDelta <= -1) {
+    verdict += ` 另外腹圍少了 ${Math.abs(waistDelta)} 公分，那是衣服會先有感覺的地方。`
+  }
+
+  return { fromDate: from, toDate: to, weeks, verdict, changes }
 }
 
 export function buildAssessmentReport(input: ReportInput): AssessmentReport {
@@ -296,5 +397,7 @@ export function buildAssessmentReport(input: ReportInput): AssessmentReport {
         { title: '想加消耗就加走路，不要拿掉重訓', detail: '有氧幫你花熱量，重訓幫你保住肌肉 —— 兩件不同的事。' },
       ]
 
-  return { headline, headlineDetail, keyStats: keyStats.slice(0, 3), goal, nutrition, training, missing, warnings }
+  const comparison = input.previous ? buildComparison(r, input.previous) : null
+
+  return { comparison, headline, headlineDetail, keyStats: keyStats.slice(0, 3), goal, nutrition, training, missing, warnings }
 }

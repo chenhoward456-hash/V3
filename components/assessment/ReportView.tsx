@@ -29,7 +29,7 @@ export default function ReportView({
   meta: { measuredAt?: string | null; gender?: string | null; age?: number | null; height?: number | null; weight?: number | null }
   showCta?: boolean
 }) {
-  const { headline, headlineDetail, keyStats, goal, nutrition, training } = report
+  const { comparison, headline, headlineDetail, keyStats, goal, nutrition, training } = report
 
   return (
     <div className="space-y-4">
@@ -43,6 +43,36 @@ export default function ReportView({
             .filter(Boolean).join(' · ')}
         </p>
       </div>
+
+      {/* 這段時間變了什麼 —— 有上一次資料才出現。
+          擺在「一句話」前面：複測的人真正想知道的是「我做的有沒有用」，
+          而不是再被講一次現況。 */}
+      {comparison && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <p className="text-[11px] text-slate-400 mb-1.5">
+            上次到現在
+            {comparison.fromDate && comparison.toDate && (
+              <span className="tabular-nums"> · {comparison.fromDate} → {comparison.toDate}</span>
+            )}
+          </p>
+          <p className="text-base font-bold text-gray-900 leading-snug">{comparison.verdict}</p>
+          {comparison.changes.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              {comparison.changes.map(c => (
+                <div key={c.label} className="flex items-baseline justify-between text-sm tabular-nums">
+                  <span className="text-slate-500">{c.label}</span>
+                  <span className="text-slate-600">
+                    {c.from} → {c.to} {c.unit}
+                    <b className={`ml-2 ${c.tone === 'good' ? 'text-emerald-700' : c.tone === 'watch' ? 'text-amber-700' : 'text-slate-500'}`}>
+                      {c.delta > 0 ? '+' : ''}{c.delta}
+                    </b>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 一句話 —— 會員唯一會記住的東西 */}
       <div className="bg-white border-l-4 border-l-primary-600 border border-slate-200 rounded-2xl p-5">

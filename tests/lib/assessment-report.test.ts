@@ -125,3 +125,61 @@ describe('體測報告判讀', () => {
     expect(r.headline).toContain('不錯的位置')
   })
 })
+
+describe('複測比對（Howard：「一份報告不是差異化」→ 差在第二次）', () => {
+  /** 三個月前：91.7kg、體脂 26.2%、骨骼肌 37.8、腹圍 98.6 */
+  const PREV: InBodyReading = blank({
+    measured_at: '2026-05-15', weight: 91.7, body_fat_pct: 26.2, body_fat_mass: 24.0,
+    skeletal_muscle: 37.8, lean_mass: 67.7, waist_cm: 98.6, smi: 8.7,
+  })
+
+  it('⭐ 掉脂肪、肌肉沒掉 → 講成「最好的那種變化」', () => {
+    const now = blank({
+      measured_at: '2026-08-15', weight: 88.9, body_fat_pct: 23.2, body_fat_mass: 20.6,
+      skeletal_muscle: 37.9, lean_mass: 68.3, waist_cm: 95.1,
+    })
+    const c = buildAssessmentReport({ reading: now, previous: PREV }).comparison!
+    expect(c.verdict).toContain('3.4')          // 脂肪掉 3.4
+    expect(c.verdict).toContain('最好的那種變化')
+    expect(c.verdict).toContain('腹圍')          // 腹圍掉 3.5 也要講
+    expect(c.weeks).toBe(13)
+  })
+
+  it('⭐ 體重掉但肌肉也掉 → 要點出來，不能只報喜', () => {
+    const now = blank({
+      weight: 87.5, body_fat_pct: 24.5, body_fat_mass: 21.4,
+      skeletal_muscle: 35.9, lean_mass: 66.1, measured_at: '2026-08-15',
+    })
+    const c = buildAssessmentReport({ reading: now, previous: PREV }).comparison!
+    expect(c.verdict).toContain('肌肉也少了')
+    expect(c.verdict).toContain('這個要處理')
+    expect(c.changes.find(x => x.label === '骨骼肌')?.tone).toBe('watch')
+  })
+
+  it('體重沒動但脂肪掉了 → 仍然是好事（體重單獨看沒意義）', () => {
+    const now = blank({
+      weight: 91.7, body_fat_pct: 24.6, body_fat_mass: 22.6,
+      skeletal_muscle: 39.0, lean_mass: 69.1, measured_at: '2026-08-15',
+    })
+    const c = buildAssessmentReport({ reading: now, previous: PREV }).comparison!
+    expect(c.verdict).toContain('最好的那種變化')
+    // 體重沒變 → 不列進變化清單
+    expect(c.changes.find(x => x.label === '體重')).toBeUndefined()
+  })
+
+  it('幾乎沒變 → 不責備，但點出要調做法', () => {
+    const now = blank({ measured_at: '2026-08-15', body_fat_mass: 23.9, skeletal_muscle: 37.8 })
+    const c = buildAssessmentReport({ reading: now, previous: PREV }).comparison!
+    expect(c.verdict).toContain('變化不大')
+    expect(c.verdict).toContain('不算失敗')
+  })
+
+  it('沒有上一次 → 不產生比對段落', () => {
+    expect(buildAssessmentReport({ reading: REAL }).comparison).toBeNull()
+  })
+
+  it('上一次缺體重 → 不硬比', () => {
+    const c = buildAssessmentReport({ reading: REAL, previous: blank({ weight: null }) }).comparison
+    expect(c).toBeNull()
+  })
+})
