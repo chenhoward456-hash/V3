@@ -136,3 +136,65 @@ export function assessAttendance(input: string, today: Date = new Date()): Atten
     lastDate: last,
   }
 }
+
+// ─────────────────────────────────────────────────────────
+// 批次：一次看完所有學員，排序出「這週該顧誰」
+// ─────────────────────────────────────────────────────────
+
+/**
+ * ⚠️ 為什麼要批次（2026-08-21 Howard：「我一天六堂課六小時，
+ * 那我要用什麼樣的時間去最簡化記錄的步驟？」＋「選出核心學生更用心對待」）：
+ *
+ * 一個一個貼進來檢查，那本身就是負擔。而且**不該讓教練決定誰是核心** ——
+ * 「決定」本身就是認知成本，一天六堂課的人沒有那個餘裕。
+ *
+ * 正確的順序是：系統用零輸入的資料（出席）把人排序，
+ * 教練只看最上面那兩三個。**篩選交給系統，時間留給人。**
+ */
+
+export type BatchRow = { name: string; risk: AttendanceRisk }
+
+const LEVEL_ORDER: Record<AttendanceRisk['level'], number> = {
+  alert: 0,   // 還救得回來，最該花時間
+  watch: 1,   // 剛開始變慢，成本最低的介入點
+  gone: 2,    // 已經斷了，救回機率低但值得一通電話
+  ok: 3,
+}
+
+/**
+ * 解析多人資料。格式刻意寬鬆 —— 教練從行事曆或 BookFast 複製出來
+ * 不會是乾淨格式。規則只有一條：**不含日期的那行當作名字**，
+ * 接下來的日期都算他的，直到下一個名字出現。
+ */
+export function assessBatch(input: string, today: Date = new Date()): BatchRow[] {
+  const lines = input.split('\n').map(l => l.trim()).filter(Boolean)
+  const groups: { name: string; dates: string[] }[] = []
+  const hasDate = (l: string) => /\d{1,4}[-/]\d{1,2}([-/]\d{1,2})?/.test(l)
+
+  for (const line of lines) {
+    if (!hasDate(line)) {
+      groups.push({ name: line.replace(/[:：,，]\s*$/, ''), dates: [] })
+    } else {
+      if (groups.length === 0) groups.push({ name: '（未命名）', dates: [] })
+      groups[groups.length - 1].dates.push(line)
+    }
+  }
+
+  const rows: BatchRow[] = []
+  for (const g of groups) {
+    if (g.dates.length === 0) continue
+    const risk = assessAttendance(g.dates.join('\n'), today)
+    if (risk) rows.push({ name: g.name, risk })
+  }
+
+  // alert → watch → gone → ok；同級的話越久沒來的排前面
+  return rows.sort((a, b) => {
+    const d = LEVEL_ORDER[a.risk.level] - LEVEL_ORDER[b.risk.level]
+    return d !== 0 ? d : b.risk.daysSinceLast - a.risk.daysSinceLast
+  })
+}
+
+/** 這批人裡，這週真正需要動作的有幾個 */
+export function needsAction(rows: BatchRow[]): BatchRow[] {
+  return rows.filter(r => r.risk.level !== 'ok')
+}

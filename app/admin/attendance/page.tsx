@@ -1,112 +1,127 @@
 'use client'
 
 import { useState } from 'react'
-import { assessAttendance, type AttendanceRisk } from '@/lib/attendance-risk'
+import { assessBatch, needsAction, type AttendanceRisk } from '@/lib/attendance-risk'
 
 /**
- * 出席節奏檢查 —— 貼上某個學員的上課日期，看他離「消失」多遠。
+ * 出席節奏檢查 —— 貼上上課日期，系統排序出「這週該顧誰」。
  *
- * ⚠️ 為什麼是「貼上」而不是接 BookFast（2026-08-21）：
- * Howard 的痛點是「買五十堂上不到一半就消失」，軌跡是
- * 「開始忙了 → 取消率變多 → 最後就不約課了」。
+ * ⚠️ 設計的兩個前提（2026-08-21 Howard 的原話）：
+ * ①「我一天六堂課六小時，要用什麼時間去最簡化記錄的步驟？」
+ *   → **出席是唯一零輸入的訊號**（BookFast／行事曆本來就有），
+ *     所以起點必須是它，不是要教練另外記東西。
+ * ②「選出核心學生，更用心去對待他們」
+ *   → 方向對，但**不該讓教練決定誰是核心** —— 決定本身就是認知成本。
+ *     系統用資料排序，教練只看最上面那兩三個。
  *
- * **但訊號準不準還沒驗證過。** 先用他手上現成的歷史案例貼進來看，
- * 判準對了再談自動化 —— 反過來做的話，可能接了半天串接一個沒用的指標。
- * 資料來源不管是 Google 行事曆、BookFast 還是報表，複製貼上都能用。
+ * 不接 BookFast API 是刻意的：訊號準不準還沒驗證，先貼歷史案例試，
+ * 判準對了再談自動化。
  */
 
-const LEVEL_STYLE: Record<AttendanceRisk['level'], { box: string; text: string; label: string }> = {
-  ok:    { box: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-800', label: '節奏正常' },
-  watch: { box: 'bg-amber-50 border-amber-200',     text: 'text-amber-900',   label: '開始變慢' },
-  alert: { box: 'bg-rose-50 border-rose-200',       text: 'text-rose-900',    label: '快掉了' },
-  gone:  { box: 'bg-slate-100 border-slate-300',    text: 'text-slate-700',   label: '已經斷了' },
+const LEVEL_STYLE: Record<AttendanceRisk['level'], { box: string; text: string; label: string; chip: string }> = {
+  alert: { box: 'bg-rose-50 border-rose-200',    text: 'text-rose-900',    label: '快掉了',   chip: 'bg-rose-600 text-white' },
+  watch: { box: 'bg-amber-50 border-amber-200',  text: 'text-amber-900',   label: '開始變慢', chip: 'bg-amber-500 text-white' },
+  gone:  { box: 'bg-slate-100 border-slate-300', text: 'text-slate-700',   label: '已經斷了', chip: 'bg-slate-500 text-white' },
+  ok:    { box: 'bg-white border-slate-200',     text: 'text-slate-600',   label: '正常',     chip: 'bg-slate-200 text-slate-600' },
 }
+
+const SAMPLE = `王小明
+2026-06-02, 2026-06-05, 2026-06-09, 2026-06-12, 2026-06-16, 2026-06-19
+2026-06-23, 2026-06-26, 2026-07-01, 2026-07-08, 2026-07-22
+
+李小華
+2026-07-15, 2026-07-18, 2026-07-22, 2026-07-25, 2026-07-29
+2026-08-01, 2026-08-05, 2026-08-08, 2026-08-12, 2026-08-15, 2026-08-19
+
+陳大文
+2026-05-06, 2026-05-13, 2026-05-20, 2026-05-27, 2026-06-03, 2026-06-10`
 
 export default function AttendancePage() {
   const [raw, setRaw] = useState('')
-  const [name, setName] = useState('')
-  const result = assessAttendance(raw)
+  const rows = assessBatch(raw)
+  const todo = needsAction(rows)
 
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="max-w-lg mx-auto px-4 py-8 space-y-4">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">出席節奏檢查</h1>
+          <h1 className="text-xl font-bold text-gray-900">這週該顧誰</h1>
           <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-            貼上某個學員的上課日期（行事曆、BookFast、報表都行），看他離「不約課」還有多遠。
+            貼上學員的上課日期（BookFast、行事曆、報表都行），系統排出優先順序。
             <br />
-            先拿已經掉線的舊案例試，看這個判準抓不抓得到 —— 準了再談自動接系統。
+            不用你決定誰是核心 —— 先看最上面那兩三個就好。
           </p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-5">
-          <label className="block mb-3">
-            <span className="block text-xs text-slate-500 mb-1.5">學員（只給你自己看，不會存）</span>
-            <input
-              type="text" value={name} onChange={e => setName(e.target.value)}
-              placeholder="暱稱或代號"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </label>
           <label className="block">
             <span className="block text-xs text-slate-500 mb-1.5">
-              上課日期（一行一個，或用逗號分隔）
+              一行名字，接著他的上課日期（可以多行）
             </span>
             <textarea
               value={raw} onChange={e => setRaw(e.target.value)}
-              rows={8}
-              placeholder={'2026-06-03\n2026-06-07\n2026/6/12\n6/18'}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-primary-500"
+              rows={10}
+              placeholder={SAMPLE}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
-            <span className="block text-[11px] text-slate-400 mt-1.5">
-              格式隨便：2026-08-21 / 2026/8/21 / 8/21 都讀得懂，重複的會自動去掉。
-            </span>
           </label>
+          <div className="flex items-center gap-3 mt-2">
+            <button
+              type="button" onClick={() => setRaw(SAMPLE)}
+              className="text-[11px] text-primary-600 hover:text-primary-800 transition-colors"
+            >填入範例看看</button>
+            {raw && (
+              <button
+                type="button" onClick={() => setRaw('')}
+                className="text-[11px] text-slate-400 hover:text-slate-600 transition-colors"
+              >清空</button>
+            )}
+          </div>
         </div>
 
-        {result && (
+        {rows.length > 0 && (
           <>
-            <div className={`border rounded-2xl p-5 ${LEVEL_STYLE[result.level].box}`}>
-              <div className="flex items-baseline justify-between mb-2">
-                <span className={`text-sm font-bold ${LEVEL_STYLE[result.level].text}`}>
-                  {name ? `${name} — ` : ''}{LEVEL_STYLE[result.level].label}
-                </span>
-                <span className="text-[11px] text-slate-500 tabular-nums">{result.sessions} 堂</span>
-              </div>
-              <p className={`text-sm leading-relaxed ${LEVEL_STYLE[result.level].text}`}>
-                {result.summary}
+            <div className="flex items-baseline justify-between px-1">
+              <p className="text-sm font-medium text-gray-800">
+                {todo.length > 0 ? `${todo.length} 個要處理` : '全部正常'}
               </p>
-              <p className="text-sm text-slate-700 mt-3 leading-relaxed font-medium">
-                {result.action}
-              </p>
+              <p className="text-[11px] text-slate-400 tabular-nums">共 {rows.length} 人</p>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-2xl p-5">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs tabular-nums">
-                {([
-                  ['最後一堂', result.lastDate],
-                  ['距今', `${result.daysSinceLast} 天`],
-                  ['平常間隔', result.baselineGapDays != null ? `${result.baselineGapDays} 天` : '資料不足'],
-                  ['最近間隔', result.recentGapDays != null ? `${result.recentGapDays} 天` : '資料不足'],
-                ] as [string, string][]).map(([l, v]) => (
-                  <div key={l} className="flex justify-between border-b border-slate-50 py-1">
-                    <span className="text-slate-500">{l}</span>
-                    <span className="text-gray-900">{v}</span>
+            {rows.map(({ name, risk }) => {
+              const st = LEVEL_STYLE[risk.level]
+              return (
+                <div key={name} className={`border rounded-2xl p-4 ${st.box}`}>
+                  <div className="flex items-baseline justify-between gap-2 mb-1.5">
+                    <span className="text-sm font-bold text-gray-900">{name}</span>
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${st.chip}`}>
+                      {st.label}
+                    </span>
                   </div>
-                ))}
-              </div>
-              <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">
-                平常間隔用<b>中位數</b>不用平均 —— 一次出國或受傷造成的長間隔不該把基準線拉歪。
-                主訊號看「間隔」不看「取消次數」：取消代表還有意願（約了才能取消），
-                <b>不約課才是真正的訊號</b>。
-              </p>
-            </div>
+                  <p className={`text-xs leading-relaxed ${st.text}`}>{risk.summary}</p>
+                  {risk.level !== 'ok' && (
+                    <p className="text-xs text-slate-700 mt-2 leading-relaxed font-medium">{risk.action}</p>
+                  )}
+                  <p className="text-[10px] text-slate-400 mt-2 tabular-nums">
+                    {risk.sessions} 堂 · 最後 {risk.lastDate} · 距今 {risk.daysSinceLast} 天
+                    {risk.baselineGapDays != null && ` · 平常每 ${risk.baselineGapDays} 天`}
+                  </p>
+                </div>
+              )
+            })}
+
+            <p className="text-[11px] text-slate-400 leading-relaxed pb-6">
+              排序規則：快掉了 → 開始變慢 → 已經斷了 → 正常。
+              「快掉了」排最前面不是因為最嚴重，是因為那是還救得回來、而且成本最低的時間點。
+            </p>
           </>
         )}
 
-        {raw.trim() && !result && (
+        {raw.trim() && rows.length === 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-            <p className="text-xs text-amber-900">讀不出日期。確認格式是 2026-08-21 或 8/21 這種。</p>
+            <p className="text-xs text-amber-900 leading-relaxed">
+              讀不出資料。格式是「一行名字，下面接日期」—— 按上面的「填入範例看看」對照一下。
+            </p>
           </div>
         )}
       </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { assessAttendance } from '@/lib/attendance-risk'
+import { assessAttendance, assessBatch, needsAction } from '@/lib/attendance-risk'
 
 const TODAY = new Date('2026-08-21T00:00:00Z')
 
@@ -106,5 +106,57 @@ describe('模擬時抓到的兩個判準問題（2026-08-21）', () => {
     const last = new Date(dates[dates.length - 1] + 'T00:00:00')
     const r = assessAttendance(dates.join('\n'), new Date(last.getTime() + 25 * 86_400_000))!
     expect(r.level).toBe('gone')
+  })
+})
+
+describe('批次分流（教練一天六堂課，沒空一個一個查）', () => {
+  const INPUT = `王小明
+2026-06-02, 2026-06-05, 2026-06-09, 2026-06-12, 2026-06-16, 2026-06-19
+2026-06-23, 2026-06-26, 2026-07-01, 2026-07-08, 2026-07-22
+
+李小華
+2026-07-15, 2026-07-18, 2026-07-22, 2026-07-25, 2026-07-29
+2026-08-01, 2026-08-05, 2026-08-08, 2026-08-12, 2026-08-15, 2026-08-19
+
+陳大文
+2026-05-06, 2026-05-13, 2026-05-20, 2026-05-27, 2026-06-03, 2026-06-10`
+
+  it('⭐ 該顧的排最前面，正常的沉到後面', () => {
+    const rows = assessBatch(INPUT, TODAY)
+    expect(rows).toHaveLength(3)
+    expect(rows[0].name).not.toBe('李小華')          // 李小華節奏正常
+    expect(rows[rows.length - 1].name).toBe('李小華')
+  })
+
+  it('needsAction 只留下要處理的 —— 那才是教練要看的清單', () => {
+    const todo = needsAction(assessBatch(INPUT, TODAY))
+    expect(todo.length).toBeLessThan(3)
+    expect(todo.every(r => r.risk.level !== 'ok')).toBe(true)
+  })
+
+  it('alert 排在 gone 前面（還救得回來的優先，不是最嚴重的優先）', () => {
+    const rows = assessBatch(INPUT, TODAY)
+    const iAlert = rows.findIndex(r => r.risk.level === 'alert')
+    const iGone = rows.findIndex(r => r.risk.level === 'gone')
+    if (iAlert >= 0 && iGone >= 0) expect(iAlert).toBeLessThan(iGone)
+  })
+
+  it('格式寬鬆：名字後面接逗號、日期跨多行都讀得懂', () => {
+    const rows = assessBatch('張三：\n2026-08-01, 2026-08-05\n2026-08-09', TODAY)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].name).toBe('張三')
+    expect(rows[0].risk.sessions).toBe(3)
+  })
+
+  it('沒有名字的資料不會炸，歸到「未命名」', () => {
+    const rows = assessBatch('2026-08-01\n2026-08-05\n2026-08-09', TODAY)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].name).toBe('（未命名）')
+  })
+
+  it('只有名字沒日期的人會被略過，不佔清單', () => {
+    const rows = assessBatch('王小明\n李小華\n2026-08-01, 2026-08-05, 2026-08-09', TODAY)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].name).toBe('李小華')
   })
 })
