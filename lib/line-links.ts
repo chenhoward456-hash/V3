@@ -18,3 +18,17 @@ export const LINE_ADD_FRIEND_URL = 'https://lin.ee/LP65rCc'
 export function lineBindDeeplink(uniqueCode: string): string {
   return `https://line.me/R/oaMessage/${encodeURIComponent(LINE_OA_ID)}/?${encodeURIComponent(`綁定 ${uniqueCode}`)}`
 }
+
+/**
+ * Howard 本人的 LINE user ID（系統要推東西給教練時用）。
+ *
+ * ⚠️ 2026-08-23：`COACH_LINE_USER_ID` 這支環境變數本機沒設，
+ * 而 `app/api/cron/daily` 的教練晨報是 `if (coachLineId)` —— 沒設就整段靜靜跳過，
+ * 不報錯也不留痕跡。所以「晨報寫好了」跟「晨報有送出去」是兩回事。
+ * free-trial 那支路由早就自己硬寫了一份 fallback，等於已經有人踩過同一個坑，
+ * 只是各寫各的（違反紅線 6）。集中到這裡，兩邊共用同一個真相。
+ *
+ * 環境變數優先，讓 fallback 只是保險而不是設定。
+ */
+export const COACH_LINE_USER_ID =
+  process.env.COACH_LINE_USER_ID || 'U3b425b2d1572d197d0992945323881e5'

@@ -24,6 +24,7 @@ import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
 import { getTaipeiDayOfWeek } from '@/lib/periodization'
+import { COACH_LINE_USER_ID } from '@/lib/line-links'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import {
   sendDay3Email,
@@ -818,7 +819,15 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 教練晨間摘要：推送昨日學員狀態到教練 LINE ──
-    const coachLineId = process.env.COACH_LINE_USER_ID
+    //
+    // ⚠️ 2026-08-23（Howard：「我有時候都會忘記開」）：
+    // 這封晨報是他不用打開後台就能知道狀況的唯一管道，但原本有兩個破口——
+    //   1. 讀 `process.env.COACH_LINE_USER_ID`，沒設就整段靜靜跳過。改用 lib/line-links
+    //      的共用常數（環境變數優先、有 fallback），確保真的送得出去。
+    //   2. 內容全是「昨天誰沒記錄」這種流水帳，而且**沒有任何連結**——
+    //      就算他看到了也點不進後台。現在開頭補一句「N 個人需要你出手」＋掉線名單，
+    //      結尾補可點的 /admin 連結。
+    const coachLineId = COACH_LINE_USER_ID
     if (coachLineId) {
       try {
         const yesterday = new Date()
@@ -847,6 +856,38 @@ export async function GET(request: NextRequest) {
         const coachViewClients = digestClients ?? clients
 
         const digestLines: string[] = []
+
+        // 0. 掉線名單 —— 這是他真正該開後台的理由，所以排在最前面。
+        //    定義跟 /admin 戰情室同一條線：3-30 天沒任何紀錄（>30 天是叫不回來的鬼魂，
+        //    歸留存數字不歸晨報，天天唸只會讓整封信變成雜訊被略過）。
+        const offlineSince = new Date(Date.now() - 31 * DAY_MS).toISOString().split('T')[0]
+        const [oBody, oNut, oTrain, oWell] = await Promise.all([
+          supabase.from('body_composition').select('client_id, date').gte('date', offlineSince),
+          supabase.from('nutrition_logs').select('client_id, date').gte('date', offlineSince),
+          supabase.from('training_logs').select('client_id, date').gte('date', offlineSince),
+          supabase.from('daily_wellness').select('client_id, date').gte('date', offlineSince),
+        ])
+        const lastActive: Record<string, string> = {}
+        for (const rows of [oBody.data, oNut.data, oTrain.data, oWell.data]) {
+          for (const r of (rows ?? []) as { client_id: string; date: string }[]) {
+            if (!lastActive[r.client_id] || r.date > lastActive[r.client_id]) lastActive[r.client_id] = r.date
+          }
+        }
+        const todayMs = Date.parse(today)
+        const offline = coachViewClients
+          .map(c => {
+            const la = lastActive[c.id]
+            const days = la ? Math.round((todayMs - Date.parse(la)) / DAY_MS) : null
+            return { name: c.name, days }
+          })
+          .filter((x): x is { name: string; days: number } => x.days != null && x.days >= 3 && x.days <= 30)
+          .sort((a, b) => b.days - a.days)
+
+        if (offline.length > 0) {
+          digestLines.push(`🚨 ${offline.length} 個人掉線了：`)
+          offline.forEach(o => digestLines.push(`  • ${o.name}：${o.days} 天沒動`))
+          digestLines.push('')
+        }
 
         // 1. Clients who missed records yesterday
         const missedClients = coachViewClients.filter(c => {
@@ -935,10 +976,16 @@ export async function GET(request: NextRequest) {
 
         // Only send if there are actionable items
         if (digestLines.length > 0) {
-          const header = `☀️ 教練晨報 ${today}\n\n`
-          const digestText = header + digestLines.join('\n')
+          // 開頭一句先講結論（跟 /admin 首頁的「今日主線」同一句話），
+          // 結尾給可點連結——沒有連結的通知等於還是要他自己想起來去開後台。
+          const lead = offline.length > 0
+            ? `${offline.length} 個人需要你出手`
+            : '沒人掉線，其餘看下面'
+          const header = `☀️ 教練晨報 ${today}\n${lead}\n\n`
+          const footer = `\n\n👉 打開後台：${siteUrl}/admin`
+          const digestText = header + digestLines.join('\n').replace(/\n+$/, '') + footer
           await pushMessage(coachLineId, [{ type: 'text', text: digestText }])
-          logger.info(`Coach digest sent: ${digestLines.length} lines`)
+          logger.info(`Coach digest sent: ${digestLines.length} lines, ${offline.length} offline`)
         }
       } catch (err) {
         logger.error('Coach digest error:', err)

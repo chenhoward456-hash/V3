@@ -10,7 +10,7 @@ import { CURRENT_CONSENT_VERSIONS } from '@/lib/consent-versions'
 import crypto from 'crypto'
 import { pushMessage } from '@/lib/line'
 
-const COACH_LINE_ID = process.env.COACH_LINE_USER_ID || 'U3b425b2d1572d197d0992945323881e5'
+import { COACH_LINE_USER_ID as COACH_LINE_ID } from '@/lib/line-links'
 
 const log = createLogger('free-trial')
 

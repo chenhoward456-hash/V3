@@ -80,8 +80,34 @@ type SortDir = 'asc' | 'desc'
 type StatusFilter = 'all' | 'normal' | 'attention' | 'competition' | 'coached' | 'self_managed' | 'free' | 'inactive'
 
 // ── 進度判定：用近 14 天體重趨勢 vs 目標方向，算出「有沒有效果」──
-type ProgressLevel = 'on_track' | 'slow' | 'reverse' | 'insufficient'
+type ProgressLevel = 'on_track' | 'slow' | 'reverse' | 'insufficient' | 'offline'
 interface ProgressVerdict { level: ProgressLevel; dot: string; label: string; detail: string; rank: number; pill: string }
+
+/**
+ * 掉線判定 —— rank -1，排在所有體重判定之前。
+ *
+ * ⚠️ 2026-08-23：戰情室原本只收「近 7 天有在動」的人，等於**最需要出手的人整個看不到**。
+ * Howard 說「想更直覺知道學員狀況」，但畫面上排前面的是還在乖乖記錄的那幾個，
+ * 掉線 9 天的萬哲鴻、17 天的張承鈞被推到最下面的表格裡。
+ *
+ * 一個人 3 天沒動，他的體重趨勢就已經是舊聞了 —— 這時候該講的不是「他減脂中」
+ * 而是「他不見了」。所以掉線直接覆蓋體重判定，但把最後已知的趨勢留在 detail 裡，
+ * 教練還是看得出他消失前是往哪個方向走。
+ *
+ * >30 天的不進來（跟行動佇列同一條線）：那是叫不回來的鬼魂，歸留存數字不歸戰情室。
+ */
+const OFFLINE_MIN_DAYS = 3
+function offlineVerdict(daysIdle: number, base: ProgressVerdict): ProgressVerdict {
+  const severe = daysIdle >= 7
+  return {
+    level: 'offline',
+    dot: severe ? 'bg-rose-500' : 'bg-amber-500',
+    label: `掉線 ${daysIdle} 天`,
+    detail: base.level === 'insufficient' ? base.detail : `消失前：${base.label}．${base.detail}`,
+    rank: severe ? -2 : -1,
+    pill: severe ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700',
+  }
+}
 
 const FLAT_KG_PER_WEEK = 0.12 // 每週變化 < 此值視為「持平」
 
@@ -443,14 +469,49 @@ export default function AdminDashboard() {
         const daysIdle = last ? Math.floor((now - new Date(last).getTime()) / DAY_MS) : Infinity
         return { c, daysIdle }
       })
-      .filter(r => r.daysIdle <= 7)
-      .map(r => ({
-        ...r,
-        verdict: computeProgress(r.c.goal_type, r.c.prep_phase, r.c.target_weight, byClient[r.c.id] || []),
-        streak: computeStreak(datesByClient[r.c.id] || new Set()),
-      }))
-      .sort((a, b) => a.verdict.rank - b.verdict.rank || a.daysIdle - b.daysIdle || a.c.name.localeCompare(b.c.name))
+      // 收到 30 天（原本只收 7 天 → 掉線的人整個不在畫面上，見 offlineVerdict 的說明）
+      .filter(r => r.daysIdle <= 30)
+      .map(r => {
+        const base = computeProgress(r.c.goal_type, r.c.prep_phase, r.c.target_weight, byClient[r.c.id] || [])
+        return {
+          ...r,
+          verdict: r.daysIdle >= OFFLINE_MIN_DAYS ? offlineVerdict(r.daysIdle, base) : base,
+          streak: computeStreak(datesByClient[r.c.id] || new Set()),
+        }
+      })
+      .sort((a, b) => a.verdict.rank - b.verdict.rank || b.daysIdle - a.daysIdle || a.c.name.localeCompare(b.c.name))
   }, [clients, recentBody, recentNutrition, recentWellness, recentRPE, lastActivityMap])
+
+  /**
+   * 今日主線 —— 一句話講完「今天這攤長怎樣」。
+   *
+   * ⚠️ 2026-08-23 Howard：「可以更直覺讓我知道學員狀況嗎」。
+   * 問題不是資訊不夠，是要知道狀況得先展開收合的佇列、再掃九個數字，
+   * 而那九個數字裡「今日活躍 / 需關注 / 流失風險」是同一件事的三種定義，
+   * 加起來對不上，人腦要現場換算。
+   *
+   * 這裡只做一件事：把戰情室已經算好的判定 groupBy 成一句人話。
+   * **不新增任何資料來源**，所以它跟下面的卡片永遠講同一套話。
+   */
+  const todayLine = useMemo(() => {
+    const offline = progressBoard.filter(r => r.verdict.level === 'offline')
+    const reverse = progressBoard.filter(r => r.verdict.level === 'reverse')
+    const slow = progressBoard.filter(r => r.verdict.level === 'slow')
+    const onTrack = progressBoard.filter(r => r.verdict.level === 'on_track')
+    const thin = progressBoard.filter(r => r.verdict.level === 'insufficient')
+    // 需要出手 = 掉線 + 反向。停滯先觀察，不催教練動手。
+    const needAction = [...offline, ...reverse]
+    const parts: string[] = []
+    if (offline.length) parts.push(`掉線 ${offline.length}`)
+    if (reverse.length) parts.push(`反向 ${reverse.length}`)
+    if (slow.length) parts.push(`停滯 ${slow.length}`)
+    if (onTrack.length) parts.push(`上軌道 ${onTrack.length}`)
+    if (thin.length) parts.push(`資料不足 ${thin.length}`)
+    const headline = needAction.length === 0
+      ? (progressBoard.length === 0 ? '目前沒有在追蹤的學員' : `沒人卡住，${progressBoard.length} 個人都在跑`)
+      : `${needAction.length} 個人需要你出手`
+    return { headline, breakdown: parts.join('　·　'), needAction, allGood: needAction.length === 0 }
+  }, [progressBoard])
 
   const alerts = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -942,7 +1003,10 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-slate-200"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex items-center justify-between h-16"><div><h1 className="text-xl font-bold text-gray-900">教練儀表板</h1><p className="text-sm text-gray-500">Howard 健康管理系統</p></div><div className="flex items-center gap-3">
+      {/* ⚠️ 2026-08-23：原本 header 是單行 flex + h-16 固定高，手機上七個導覽鍵擠不下，
+          「教練儀表板」被折成兩行、按鈕變成直排單字。改成小螢幕直向堆疊、
+          導覽列自己橫向捲動（各項 shrink-0 + whitespace-nowrap），大螢幕維持原本單行。 */}
+      <div className="bg-white border-b border-slate-200"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:h-16 sm:py-0"><div className="shrink-0"><h1 className="text-xl font-bold text-gray-900 whitespace-nowrap">教練儀表板</h1><p className="text-sm text-gray-500 whitespace-nowrap">Howard 健康管理系統</p></div><div className="flex items-center gap-3 overflow-x-auto -mx-4 px-4 pb-1 sm:mx-0 sm:px-0 sm:pb-0 sm:overflow-visible [&>*]:shrink-0 [&_a]:whitespace-nowrap [&_button]:whitespace-nowrap">
                 <button onClick={runWeeklyCron} disabled={runningCron} className="flex items-center gap-1 text-gray-500 hover:text-gray-700 text-sm disabled:opacity-50" title="手動執行每週分析">
                   <RefreshCw size={15} className={runningCron ? 'animate-spin' : ''} /> {runningCron ? '分析中...' : '每週分析'}
                 </button>
@@ -980,6 +1044,42 @@ export default function AdminDashboard() {
           <div className="mb-4 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 flex items-center justify-between">
             <span className="text-sm text-rose-700">{error}</span>
             <button onClick={() => { setError(null); setLoading(true); fetchData() }} className="text-sm font-medium text-rose-600 hover:text-rose-800 px-3 py-1 bg-rose-100 rounded-lg hover:bg-rose-200 transition-colors">重試</button>
+          </div>
+        )}
+
+        {/* ===== 今日主線：打開後第一眼要答的問題是「今天誰需要我」 ===== */}
+        {!loading && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
+            <p className="text-[11px] text-slate-400 tabular-nums mb-1">
+              {new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })}
+            </p>
+            <p className={`text-xl font-bold ${todayLine.allGood ? 'text-gray-900' : 'text-rose-700'}`}>
+              {todayLine.headline}
+            </p>
+            {todayLine.breakdown && (
+              <p className="text-xs text-slate-500 mt-1 tabular-nums">{todayLine.breakdown}</p>
+            )}
+
+            {/* 需要出手的人直接列在這裡、不收合 —— 收起來就等於沒有 */}
+            {todayLine.needAction.length > 0 && (
+              <div className="mt-3 space-y-1.5">
+                {todayLine.needAction.map(({ c, verdict }) => (
+                  <div key={c.id} className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
+                    <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${verdict.dot}`} />
+                    <Link href={`/admin/clients/${c.id}/overview`} className="text-sm font-semibold text-gray-900 shrink-0 hover:text-primary-700 transition-colors">
+                      {c.name}
+                    </Link>
+                    <span className="text-xs text-slate-500 truncate">{verdict.label}</span>
+                    <button
+                      onClick={() => openFeedback(c)}
+                      className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+                    >
+                      <MessageSquare size={12} /> 出手
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1071,9 +1171,9 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-base font-semibold text-gray-900">戰情室</span>
-                <span className="text-xs text-gray-400">近 7 天有在動 · 需關注的排前面</span>
+                <span className="text-xs text-gray-400">掉線的排最前面 · 30 天以上不列</span>
               </div>
-              <span className="text-xs text-gray-400">{progressBoard.length} 人活躍</span>
+              <span className="text-xs text-gray-400 tabular-nums">{progressBoard.length} 人</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {progressBoard.map(({ c, daysIdle, verdict, streak }) => {
