@@ -110,7 +110,7 @@ describe('蛋白判定：用絕對 g/kg 下限，不用「打到目標的幾成�
     const d = computeWeeklyCoachingDraft(baseInput())
     const b = d.bullets.join(' ')
     expect(b).toMatch(/夠用/)
-    expect(b).toMatch(/高於 1\.6 g\/kg/)
+    expect(b).toMatch(/高於 1\.6 g\/kg 體重/)
     expect(d.adjustments.join(' ')).not.toMatch(/蛋白/)
   })
 
@@ -119,16 +119,57 @@ describe('蛋白判定：用絕對 g/kg 下限，不用「打到目標的幾成�
     input.nutrition = input.nutrition.map(n => ({ ...n, protein_grams: 100 })) // 1.39 g/kg
     const d = computeWeeklyCoachingDraft(input)
     expect(d.adjustments.join(' ')).toMatch(/蛋白拉到至少/)
-    expect(d.bullets.join(' ')).toMatch(/低於 1\.6 g\/kg 下限/)
+    expect(d.bullets.join(' ')).toMatch(/低於 1\.6 g\/kg 體重下限/)
   })
 
-  it('減脂期用較高的 2.3 g/kg 下限（熱量赤字要保肌）', () => {
+  // ⚠️ 這組測試 2026-08-23 改過。舊版把減脂下限 2.3 套在總體重上，等於假設每個人 0% 體脂，
+  // 門檻高了約 25%，把健康的攝取量誤報成掉肌風險（Sean 85.7kg 吃 185g 被誤標）。
+  // Helms 2014 / ISSN position stand 的 2.3-3.1 講的是**淨體重**。
+  it('減脂 + 有體脂 → 門檻算在淨體重上，不是總體重', () => {
     const input = baseInput()
     input.client = { ...input.client, goal_type: 'cut', prep_phase: 'cut' }
-    input.nutrition = input.nutrition.map(n => ({ ...n, protein_grams: 150 })) // 2.08 g/kg < 2.3
+    // 72kg × 20% 體脂 → 淨體重 57.6kg，門檻 = 2.3 × 57.6 = 132.5g
+    input.weights = input.weights.map(w => ({ ...w, body_fat: 20 }))
+    input.nutrition = input.nutrition.map(n => ({ ...n, protein_grams: 150 })) // 2.6 g/kg 淨體重 → 夠
+    const d = computeWeeklyCoachingDraft(input)
+    expect(d.adjustments.join(' ')).not.toMatch(/蛋白/)
+    expect(d.bullets.join(' ')).toMatch(/淨體重/)
+    // 舊規則（2.3 × 72 = 165.6g）會誤判成不足 —— 守住這個回歸
+    expect(d.bullets.join(' ')).not.toMatch(/掉肌風險/)
+  })
+
+  it('減脂 + 有體脂 + 真的吃太少 → 仍然抓得到', () => {
+    const input = baseInput()
+    input.client = { ...input.client, goal_type: 'cut', prep_phase: 'cut' }
+    input.weights = input.weights.map(w => ({ ...w, body_fat: 20 })) // 淨體重 57.6，門檻 132.5g
+    input.nutrition = input.nutrition.map(n => ({ ...n, protein_grams: 110 }))
     const d = computeWeeklyCoachingDraft(input)
     expect(d.adjustments.join(' ')).toMatch(/蛋白拉到至少/)
     expect(d.bullets.join(' ')).toMatch(/減脂掉肌風險/)
+  })
+
+  it('減脂 + 沒體脂 → 退回 1.8 g/kg 總體重的替代門檻（≈20% 體脂者的 2.3 g/kg 淨體重）', () => {
+    const input = baseInput()
+    input.client = { ...input.client, goal_type: 'cut', prep_phase: 'cut' }
+    // 72kg × 1.8 = 129.6g 門檻
+    input.nutrition = input.nutrition.map(n => ({ ...n, protein_grams: 150 })) // 2.08 g/kg → 高於替代門檻
+    const d = computeWeeklyCoachingDraft(input)
+    expect(d.adjustments.join(' ')).not.toMatch(/蛋白/)
+    expect(d.bullets.join(' ')).toMatch(/1\.8 g\/kg 體重/)
+
+    input.nutrition = input.nutrition.map(n => ({ ...n, protein_grams: 120 })) // 1.67 g/kg → 低於
+    const d2 = computeWeeklyCoachingDraft(input)
+    expect(d2.adjustments.join(' ')).toMatch(/蛋白拉到至少/)
+  })
+
+  it('體脂欄填錯（0 或 99）不能污染門檻 → 退回體重替代值', () => {
+    const input = baseInput()
+    input.client = { ...input.client, goal_type: 'cut', prep_phase: 'cut' }
+    input.weights = input.weights.map(w => ({ ...w, body_fat: 0 }))
+    input.nutrition = input.nutrition.map(n => ({ ...n, protein_grams: 150 }))
+    const d = computeWeeklyCoachingDraft(input)
+    expect(d.bullets.join(' ')).toMatch(/1\.8 g\/kg 體重/)
+    expect(d.bullets.join(' ')).not.toMatch(/淨體重/)
   })
 })
 
