@@ -29,6 +29,13 @@ export function lineBindDeeplink(uniqueCode: string): string {
  * 只是各寫各的（違反紅線 6）。集中到這裡，兩邊共用同一個真相。
  *
  * 環境變數優先，讓 fallback 只是保險而不是設定。
+ *
+ * ⚠️ 也讀 `ADMIN_LINE_USER_ID`：`lib/line.ts` 的 pushMessage 在 V3 官方帳號月配額爆掉（429）時，
+ * 會借道 howard-line-bot 把訊息送到 Howard —— 但那段是用 `to === ADMIN_LINE_USER_ID` 當條件。
+ * 兩支環境變數指的是同一個人，一旦哪天只改了其中一支，晨報會**安靜地失去配額備援**：
+ * 推不出去、也不會借道、也不報錯。所以在這裡就把兩者串成同一個真相。
  */
 export const COACH_LINE_USER_ID =
-  process.env.COACH_LINE_USER_ID || 'U3b425b2d1572d197d0992945323881e5'
+  process.env.COACH_LINE_USER_ID ||
+  process.env.ADMIN_LINE_USER_ID ||
+  'U3b425b2d1572d197d0992945323881e5'

@@ -806,6 +806,40 @@ export default function AdminDashboard() {
   const paginatedClients = filteredClients.slice(0, currentPage * PAGE_SIZE)
 
   const copyClientUrl = (code: string) => { navigator.clipboard.writeText(`${window.location.origin}/c/${code}`).then(() => showToast('已複製學員網址', 'success')) }
+
+  /**
+   * 補發教練晨報（Howard：「我有時候都會忘記開」）。
+   *
+   * 刻意做成**兩步**：先預覽、確認內容才發。
+   * 不是怕發錯人（只會發給他自己），是因為這封信的價值全在「開頭那句準不準」——
+   * 讓他看得到系統要替他講什麼，比按一下就送出去有用。
+   * 走 /api/admin/coach-digest，跟排程同一條 loadCoachDigest，所以預覽 = 明早會送的那封。
+   */
+  const [digestText, setDigestText] = useState<string | null>(null)
+  const [digestOpen, setDigestOpen] = useState(false)
+  const [digestBusy, setDigestBusy] = useState(false)
+
+  const previewDigest = async () => {
+    setDigestBusy(true)
+    try {
+      const r = await fetch('/api/admin/coach-digest')
+      const j = await r.json()
+      if (!r.ok) { showToast(j?.error ?? '讀取失敗', 'error'); return }
+      if (j.empty) { showToast('今天沒東西好報，不會發空信', 'success'); return }
+      setDigestText(j.text); setDigestOpen(true)
+    } catch { showToast('讀取失敗', 'error') } finally { setDigestBusy(false) }
+  }
+
+  const sendDigest = async () => {
+    setDigestBusy(true)
+    try {
+      const r = await fetch('/api/admin/coach-digest', { method: 'POST' })
+      const j = await r.json()
+      if (!r.ok) { showToast(j?.error ?? '發送失敗', 'error'); return }
+      showToast(j.sent ? '晨報已發到你的 LINE' : '今天沒東西好報', 'success')
+      setDigestOpen(false)
+    } catch { showToast('發送失敗', 'error') } finally { setDigestBusy(false) }
+  }
   const handleLogout = async () => { await fetch('/api/admin/logout', { method: 'POST' }); router.push('/admin/login') }
   const SortIcon = ({ column }: { column: SortKey }) => sortKey !== column ? <ChevronUp size={14} className="text-gray-300 ml-1 inline" /> : sortDir === 'asc' ? <ChevronUp size={14} className="text-primary-600 ml-1 inline" /> : <ChevronDown size={14} className="text-primary-600 ml-1 inline" />
   const getActivityLabel = (id: string) => { const s = clientStats[id]; if (!s?.lastActivity) return { text: '無記錄', color: 'text-gray-400' }; const d = Math.floor((Date.now() - new Date(s.lastActivity).getTime()) / DAY_MS); if (d >= 5) return { text: `${d}天未活動`, color: 'text-rose-600 font-medium' }; if (d >= 3) return { text: `${d}天前`, color: 'text-amber-600' }; if (d === 0) return { text: '今天', color: 'text-emerald-600' }; return { text: `${d}天前`, color: 'text-gray-600' } }
@@ -1078,6 +1112,35 @@ export default function AdminDashboard() {
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* 補發晨報 —— 這頁的內容，用 LINE 再送自己一份 */}
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <button
+                type="button" onClick={previewDigest} disabled={digestBusy}
+                className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-primary-600 transition-colors disabled:opacity-50"
+              >
+                <Send size={12} /> {digestBusy ? '處理中…' : '把這些補發到我的 LINE'}
+              </button>
+            </div>
+
+            {digestOpen && digestText && (
+              <div className="mt-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <p className="text-[11px] text-slate-400 mb-2">
+                  這就是明天早上會自動送的那一封（同一支程式產生，不是另外寫的預覽）
+                </p>
+                <pre className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap font-sans max-h-64 overflow-y-auto">{digestText}</pre>
+                <div className="flex items-center gap-2 mt-3">
+                  <button
+                    type="button" onClick={sendDigest} disabled={digestBusy}
+                    className="px-3 py-1.5 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+                  >{digestBusy ? '發送中…' : '發送'}</button>
+                  <button
+                    type="button" onClick={() => setDigestOpen(false)}
+                    className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                  >關閉</button>
+                </div>
               </div>
             )}
           </div>

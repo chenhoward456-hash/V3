@@ -24,7 +24,7 @@ import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
 import { createLogger } from '@/lib/logger'
 import { getTaipeiDayOfWeek } from '@/lib/periodization'
-import { COACH_LINE_USER_ID } from '@/lib/line-links'
+import { COACH_LINE_USER_ID, loadCoachDigest } from '@/lib/coach-digest'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import {
   sendDay3Email,
@@ -820,172 +820,18 @@ export async function GET(request: NextRequest) {
 
     // ── 教練晨間摘要：推送昨日學員狀態到教練 LINE ──
     //
-    // ⚠️ 2026-08-23（Howard：「我有時候都會忘記開」）：
-    // 這封晨報是他不用打開後台就能知道狀況的唯一管道，但原本有兩個破口——
-    //   1. 讀 `process.env.COACH_LINE_USER_ID`，沒設就整段靜靜跳過。改用 lib/line-links
-    //      的共用常數（環境變數優先、有 fallback），確保真的送得出去。
-    //   2. 內容全是「昨天誰沒記錄」這種流水帳，而且**沒有任何連結**——
-    //      就算他看到了也點不進後台。現在開頭補一句「N 個人需要你出手」＋掉線名單，
-    //      結尾補可點的 /admin 連結。
+    // ⚠️ 2026-08-23（Howard：「我有時候都會忘記開」「你直接發一封我看」）：
+    // 內容產生器已抽到 `lib/coach-digest.ts` —— 原本埋在這支排程裡，
+    // 導致唯一觸發方式是跑整支 daily cron（會推播給所有學員），沒辦法預覽也沒辦法測。
+    // 現在 cron 與 /api/admin/coach-digest 走同一條 loadCoachDigest，
+    // **後台按預覽看到的就是這裡會送出去的那一封**。
     const coachLineId = COACH_LINE_USER_ID
     if (coachLineId) {
       try {
-        const yesterday = new Date()
-        yesterday.setDate(yesterday.getDate() - 1)
-        const yesterdayStr = yesterday.toISOString().split('T')[0]
-
-        // Query yesterday's data
-        const [yWeightRes, yNutritionRes, yTrainingRes, yWellnessRes] = await Promise.all([
-          supabase.from('body_composition').select('client_id, weight').eq('date', yesterdayStr),
-          supabase.from('nutrition_logs').select('client_id').eq('date', yesterdayStr),
-          supabase.from('training_logs').select('client_id, rpe').eq('date', yesterdayStr),
-          supabase.from('daily_wellness').select('client_id, energy_level').eq('date', yesterdayStr),
-        ])
-
-        const hadWeight = new Set((yWeightRes.data || []).map((w: { client_id: string }) => w.client_id))
-        const hadNutrition = new Set((yNutritionRes.data || []).map((n: { client_id: string }) => n.client_id))
-        const hadTraining = new Set((yTrainingRes.data || []).map((t: { client_id: string }) => t.client_id))
-        const hadWellness = new Set((yWellnessRes.data || []).map((w: { client_id: string }) => w.client_id))
-
-        // 教練晨報看的是「所有活躍學員」，不是上面那份「有綁 LINE 才收得到提醒」的名單——
-        // 否則沒綁 LINE 的學員（例：Eddie）等於從教練視野裡整個消失。
-        const { data: digestClients } = await supabase
-          .from('clients')
-          .select('id, name, body_composition_enabled, nutrition_enabled, training_enabled, wellness_enabled')
-          .eq('is_active', true)
-        const coachViewClients = digestClients ?? clients
-
-        const digestLines: string[] = []
-
-        // 0. 掉線名單 —— 這是他真正該開後台的理由，所以排在最前面。
-        //    定義跟 /admin 戰情室同一條線：3-30 天沒任何紀錄（>30 天是叫不回來的鬼魂，
-        //    歸留存數字不歸晨報，天天唸只會讓整封信變成雜訊被略過）。
-        const offlineSince = new Date(Date.now() - 31 * DAY_MS).toISOString().split('T')[0]
-        const [oBody, oNut, oTrain, oWell] = await Promise.all([
-          supabase.from('body_composition').select('client_id, date').gte('date', offlineSince),
-          supabase.from('nutrition_logs').select('client_id, date').gte('date', offlineSince),
-          supabase.from('training_logs').select('client_id, date').gte('date', offlineSince),
-          supabase.from('daily_wellness').select('client_id, date').gte('date', offlineSince),
-        ])
-        const lastActive: Record<string, string> = {}
-        for (const rows of [oBody.data, oNut.data, oTrain.data, oWell.data]) {
-          for (const r of (rows ?? []) as { client_id: string; date: string }[]) {
-            if (!lastActive[r.client_id] || r.date > lastActive[r.client_id]) lastActive[r.client_id] = r.date
-          }
-        }
-        const todayMs = Date.parse(today)
-        const offline = coachViewClients
-          .map(c => {
-            const la = lastActive[c.id]
-            const days = la ? Math.round((todayMs - Date.parse(la)) / DAY_MS) : null
-            return { name: c.name, days }
-          })
-          .filter((x): x is { name: string; days: number } => x.days != null && x.days >= 3 && x.days <= 30)
-          .sort((a, b) => b.days - a.days)
-
-        if (offline.length > 0) {
-          digestLines.push(`🚨 ${offline.length} 個人掉線了：`)
-          offline.forEach(o => digestLines.push(`  • ${o.name}：${o.days} 天沒動`))
-          digestLines.push('')
-        }
-
-        // 1. Clients who missed records yesterday
-        const missedClients = coachViewClients.filter(c => {
-          const missed: string[] = []
-          if (c.body_composition_enabled && !hadWeight.has(c.id)) missed.push('體重')
-          if (c.nutrition_enabled && !hadNutrition.has(c.id)) missed.push('飲食')
-          if (c.training_enabled && !hadTraining.has(c.id)) missed.push('訓練')
-          if (c.wellness_enabled && !hadWellness.has(c.id)) missed.push('感受')
-          return missed.length > 0
-        })
-        if (missedClients.length > 0) {
-          digestLines.push('📋 昨日未記錄：')
-          for (const mc of missedClients.slice(0, 10)) {
-            const missed: string[] = []
-            if (mc.body_composition_enabled && !hadWeight.has(mc.id)) missed.push('體重')
-            if (mc.nutrition_enabled && !hadNutrition.has(mc.id)) missed.push('飲食')
-            if (mc.training_enabled && !hadTraining.has(mc.id)) missed.push('訓練')
-            if (mc.wellness_enabled && !hadWellness.has(mc.id)) missed.push('感受')
-            digestLines.push(`  • ${mc.name}：${missed.join('、')}`)
-          }
-        }
-
-        // 2. Low energy or high RPE
-        const lowEnergy = (yWellnessRes.data || []).filter((w: { client_id: string; energy_level: number | null }) => w.energy_level != null && w.energy_level <= 2)
-        const highRPE = (yTrainingRes.data || []).filter((t: { client_id: string; rpe: number | null }) => t.rpe != null && t.rpe >= 9)
-        if (lowEnergy.length > 0 || highRPE.length > 0) {
-          digestLines.push('')
-          digestLines.push('⚠️ 需關注：')
-          for (const w of lowEnergy) {
-            const name = coachViewClients.find(c => c.id === w.client_id)?.name || '未知'
-            digestLines.push(`  • ${name}：精力 ${w.energy_level}/5`)
-          }
-          for (const t of highRPE) {
-            const name = coachViewClients.find(c => c.id === t.client_id)?.name || '未知'
-            digestLines.push(`  • ${name}：RPE ${t.rpe}`)
-          }
-        }
-
-        // 3. Weight plateau alerts (>7 days no change ±0.2kg)
-        const recentWeightsRes = await supabase
-          .from('body_composition')
-          .select('client_id, weight, date')
-          .gte('date', new Date(Date.now() - 10 * DAY_MS).toISOString().split('T')[0])
-          .order('date', { ascending: false })
-        const weightsByClient: Record<string, number[]> = {}
-        for (const w of (recentWeightsRes.data || [])) {
-          if (w.weight == null) continue
-          if (!weightsByClient[w.client_id]) weightsByClient[w.client_id] = []
-          weightsByClient[w.client_id].push(w.weight)
-        }
-        const plateauClients: string[] = []
-        for (const [cid, weights] of Object.entries(weightsByClient)) {
-          if (weights.length >= 7) {
-            const range = Math.max(...weights) - Math.min(...weights)
-            if (range <= 0.2) {
-              const name = coachViewClients.find(c => c.id === cid)?.name || '未知'
-              plateauClients.push(name)
-            }
-          }
-        }
-        if (plateauClients.length > 0) {
-          digestLines.push('')
-          digestLines.push('📊 體重停滯（>7天 ±0.2kg）：')
-          plateauClients.forEach(name => digestLines.push(`  • ${name}`))
-        }
-
-        // 4. Competition countdowns (<30 days)
-        const { data: compClients } = await supabase
-          .from('clients')
-          .select('name, competition_date')
-          .eq('is_active', true)
-          .in('client_mode', ['bodybuilding', 'athletic'])
-          .not('competition_date', 'is', null)
-        const urgentComp = (compClients || []).filter((c: { name: string; competition_date: string }) => {
-          const days = daysUntilDateTW(c.competition_date)
-          return days > 0 && days <= 30
-        })
-        if (urgentComp.length > 0) {
-          digestLines.push('')
-          digestLines.push('🏆 備賽倒數：')
-          for (const cc of urgentComp) {
-            const days = daysUntilDateTW(cc.competition_date)
-            digestLines.push(`  • ${cc.name}：${days} 天`)
-          }
-        }
-
-        // Only send if there are actionable items
-        if (digestLines.length > 0) {
-          // 開頭一句先講結論（跟 /admin 首頁的「今日主線」同一句話），
-          // 結尾給可點連結——沒有連結的通知等於還是要他自己想起來去開後台。
-          const lead = offline.length > 0
-            ? `${offline.length} 個人需要你出手`
-            : '沒人掉線，其餘看下面'
-          const header = `☀️ 教練晨報 ${today}\n${lead}\n\n`
-          const footer = `\n\n👉 打開後台：${siteUrl}/admin`
-          const digestText = header + digestLines.join('\n').replace(/\n+$/, '') + footer
-          await pushMessage(coachLineId, [{ type: 'text', text: digestText }])
-          logger.info(`Coach digest sent: ${digestLines.length} lines, ${offline.length} offline`)
+        const digest = await loadCoachDigest(supabase, { today, adminUrl: siteUrl })
+        if (digest.text) {
+          await pushMessage(coachLineId, [{ type: 'text', text: digest.text }])
+          logger.info(`Coach digest sent: ${digest.offline.length} offline`)
         }
       } catch (err) {
         logger.error('Coach digest error:', err)
