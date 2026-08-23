@@ -26,7 +26,8 @@ export type WeeklyCoachingClient = {
 
 export type WCInput = {
   client: WeeklyCoachingClient
-  weights: { date: string; weight: number | string | null }[]
+  // body_fat 選填：有量到才算得出淨體重，減脂蛋白下限要用它當分母（見蛋白判定區塊）
+  weights: { date: string; weight: number | string | null; body_fat?: number | string | null }[]
   nutrition: { date: string; compliant?: boolean | null; calories?: number | string | null; protein_grams?: number | string | null }[]
   training: { date: string; training_type: string | null }[]
   wellness: { date: string; energy_level?: number | null }[]
@@ -246,29 +247,70 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
 
   // 2) 蛋白攝取
   //
-  // 判定基準改成「絕對 g/kg 下限」，不再用「打到目標的 90%」。
+  // 判定基準＝「絕對 g/kg 下限」，不用「打到目標的 90%」。
   // 原因：沒有任何研究支持百分比門檻；實證錨點是絕對量。
-  //   - 增肌 1.6 g/kg：Morton 2018 meta-analysis（49 RCT / 1863 人）顯示 FFM 增益在 ~1.6 g/kg 打平（PMID 28698222，共識）
-  //   - 減脂 2.3 g/kg：ISSN position stand，熱量赤字下要拉高才保得住淨體重（PMID 28642676，共識）
   // 90% 門檻只在「目標本身訂得遠高於下限」時才安全：目標若剛好訂 1.6，90% 會掉到 1.44 → 低於門檻卻判達標。
-  const PROTEIN_FLOOR_G_PER_KG = { bulk: 1.6, cut: 2.3 } as const
+  //
+  // ⚠️ 2026-08-23 修正**分母**（Howard 質疑「Sean 2.2 g/kg 還不錯吧，要這麼嚴格？」——他是對的）：
+  // 原本把減脂下限 2.3 套在**總體重**上。但這個數字的出處講的是**淨體重**：
+  //   - Helms, Aragon & Fitschen 2014 JISSN（PMID 24092765）：2.3–3.1 g/kg **LBM**，
+  //     且明講「越瘦、赤字越大取越高端」。
+  //   - ISSN position stand（PMID 28642676）：一般族群 1.4–2.0 g/kg **體重**；
+  //     低熱量狀態下的訓練者才引用上面那個 2.3–3.1 g/kg **FFM**。
+  // 對 20% 體脂的人，2.3 g/kg LBM ≈ 1.84 g/kg 總體重 —— 舊門檻等於把每個人當成 0% 體脂，
+  // 硬生生高了約 25%，把完全健康的攝取量誤標成「減脂掉肌風險」。
+  // 實例：Sean 85.7kg 吃 185g，若體脂 20% → 2.7 g/kg LBM，穩穩在 Helms 區間中段，卻被判低於下限。
+  //
+  // 修法：有體脂就用淨體重當分母；沒體脂用 1.8 g/kg 總體重當替代（≈20% 體脂者的 2.3 g/kg LBM）。
+  // 增肌側的 1.6 不動 —— Morton 2018 meta（49 RCT／1863 人，PMID 28698222）那個數字本來就是總體重。
+  const BULK_FLOOR_PER_KG_BW = 1.6
+  const CUT_FLOOR_PER_KG_LBM = 2.3
+  const CUT_FLOOR_PER_KG_BW_PROXY = 1.8
+
   const pTarget = num(client.protein_target)
   const pAvg = avg(n14.map(x => num(x.protein_grams)!).filter(v => v != null))
   const bwForProtein = ws.length ? ws[ws.length - 1].v : null
+  // 體脂不會天天量 → 取「最近一筆有量到的」，不要求跟體重同一天。
+  // 範圍過濾擋掉打錯的值（3% 以下／60% 以上不是人類的體脂，多半是填錯欄位）。
+  const latestBf = input.weights
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .reduce<number | null>((acc, r) => {
+      const v = num(r.body_fat)
+      return v != null && v > 3 && v < 60 ? v : acc
+    }, null)
+  const lbm = bwForProtein != null && latestBf != null ? bwForProtein * (1 - latestBf / 100) : null
+
   if (pTarget && pAvg != null) {
     const cutting = client.goal_type === 'cut' || client.prep_phase === 'cut'
-    const floorPerKg = cutting ? PROTEIN_FLOOR_G_PER_KG.cut : PROTEIN_FLOOR_G_PER_KG.bulk
-    const floorG = bwForProtein != null ? floorPerKg * bwForProtein : null
+    let floorG: number | null = null
+    let basisStr = ''
+    if (cutting) {
+      if (lbm != null) {
+        floorG = CUT_FLOOR_PER_KG_LBM * lbm
+        basisStr = `${CUT_FLOOR_PER_KG_LBM} g/kg 淨體重`
+      } else if (bwForProtein != null) {
+        floorG = CUT_FLOOR_PER_KG_BW_PROXY * bwForProtein
+        basisStr = `${CUT_FLOOR_PER_KG_BW_PROXY} g/kg 體重`
+      }
+    } else if (bwForProtein != null) {
+      floorG = BULK_FLOOR_PER_KG_BW * bwForProtein
+      basisStr = `${BULK_FLOOR_PER_KG_BW} g/kg 體重`
+    }
+
     const perKg = bwForProtein != null ? pAvg / bwForProtein : null
-    const perKgStr = perKg != null ? `${perKg.toFixed(1)} g/kg` : ''
+    // 有淨體重就兩個都報 —— 教練要看得出門檻是拿什麼當分母算的
+    const perKgStr = lbm != null && perKg != null
+      ? `${perKg.toFixed(1)} g/kg 體重、${(pAvg / lbm).toFixed(1)} g/kg 淨體重`
+      : perKg != null ? `${perKg.toFixed(1)} g/kg` : ''
 
     if (floorG != null && pAvg < floorG) {
       // 真的低於實證下限 → 這才是要調的
-      adjustments.push(`蛋白拉到至少 ${Math.round(floorG)}g（${floorPerKg} g/kg 下限，近期平均才 ${Math.round(pAvg)}g）`)
-      bullets.push(`🍗 蛋白平均 ${Math.round(pAvg)}g（${perKgStr}）→ 低於 ${floorPerKg} g/kg 下限，${cutting ? '減脂掉肌風險' : '不利增肌'}`)
+      adjustments.push(`蛋白拉到至少 ${Math.round(floorG)}g（${basisStr}下限，近期平均才 ${Math.round(pAvg)}g）`)
+      bullets.push(`🍗 蛋白平均 ${Math.round(pAvg)}g（${perKgStr}）→ 低於 ${basisStr}下限，${cutting ? '減脂掉肌風險' : '不利增肌'}`)
     } else if (pAvg < pTarget * 0.95) {
       // 高於實證下限、但沒吃到教練設定值 → 陳述事實，不說「達標」也不叫他改
-      bullets.push(`🍗 蛋白平均 ${Math.round(pAvg)}g／目標 ${pTarget}g（${perKgStr}）→ 沒吃滿目標，但已高於 ${floorPerKg} g/kg 下限，夠用`)
+      bullets.push(`🍗 蛋白平均 ${Math.round(pAvg)}g／目標 ${pTarget}g（${perKgStr}）→ 沒吃滿目標，但已高於 ${basisStr}下限，夠用`)
     } else {
       bullets.push(`🍗 蛋白 ${Math.round(pAvg)}g／目標 ${pTarget}g${perKgStr ? `（${perKgStr}）` : ''} → 達標`)
     }
@@ -304,11 +346,23 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
   }
 
   // 4) 訓練頻率 / 休息
+  //
+  // ⚠️ 2026-08-23：原本寫「訓練 5 天、休息 0 天」——但「休息 0」其實是
+  // **沒人手動記過休息日**，不是他 14 天沒休息。5+0 加起來對不上 14 天，
+  // 學員看了只會覺得這數字是亂算的。改成把「沒記錄」明講出來。
   const trained = t14.filter(x => x.training_type && x.training_type !== 'rest')
   const rests = t14.filter(x => x.training_type === 'rest')
+  const unlogged = Math.max(0, 14 - t14.length)
   if (t14.length >= 4) {
-    bullets.push(`🏋️ 近 14 天訓練 ${trained.length} 天、休息 ${rests.length} 天`)
-    if (trained.length >= 10 && rests.length <= 1) adjustments.push('排 1 個固定休息日（高頻深切恢復遲早撞牆）')
+    bullets.push(
+      `🏋️ 近 14 天訓練 ${trained.length} 天` +
+      (rests.length > 0 ? `、記錄休息 ${rests.length} 天` : '') +
+      (unlogged > 0 ? `（另有 ${unlogged} 天沒記錄）` : ''),
+    )
+    // 只在記錄夠完整時才敢說「你沒排休息日」——沒記錄不等於沒休息
+    if (trained.length >= 10 && rests.length <= 1 && unlogged <= 2) {
+      adjustments.push('排 1 個固定休息日（高頻深切恢復遲早撞牆）')
+    }
   }
 
   // 5) 恢復（含趨勢；連續偏低或走下坡 → 旗標給教練 + 標記需介入）

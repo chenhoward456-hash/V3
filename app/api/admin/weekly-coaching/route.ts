@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
   // 批次撈近 21 天數據（一次查、依 client_id 分組，避免 N 次往返）
   const [bodyR, nutR, trnR, welR, labR, pushR] = await Promise.all([
-    supabase.from('body_composition').select('client_id, date, weight').in('client_id', ids).gte('date', since),
+    supabase.from('body_composition').select('client_id, date, weight, body_fat').in('client_id', ids).gte('date', since),
     supabase.from('nutrition_logs').select('client_id, date, compliant, calories, protein_grams').in('client_id', ids).gte('date', since),
     supabase.from('training_logs').select('client_id, date, training_type').in('client_id', ids).gte('date', since),
     supabase.from('daily_wellness').select('client_id, date, energy_level').in('client_id', ids).gte('date', since),
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
   const drafts = clients.map(c => {
     const input: WCInput = {
       client: c,
-      weights: (bodyByC.get(c.id) || []).map(r => ({ date: r.date, weight: r.weight })),
+      weights: (bodyByC.get(c.id) || []).map(r => ({ date: r.date, weight: r.weight, body_fat: r.body_fat })),
       nutrition: (nutByC.get(c.id) || []).map(r => ({ date: r.date, compliant: r.compliant, calories: r.calories, protein_grams: r.protein_grams })),
       training: (trnByC.get(c.id) || []).map(r => ({ date: r.date, training_type: r.training_type })),
       wellness: (welByC.get(c.id) || []).map(r => ({ date: r.date, energy_level: r.energy_level })),
