@@ -17,6 +17,7 @@ import {
   handlePostback,
   handleNaturalNutrition,
   handleNaturalTraining,
+  handleNaturalLog,
 } from '@/lib/line-handlers'
 import { buildDay0Messages, enrollSubscriber, unenrollSubscriber } from '@/lib/nurture-sequence'
 import { handleAdminAgentMessage, handleAgentProposalPostback, handleCoachActionPostback } from '@/lib/agent-line'
@@ -822,5 +823,19 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     return
   }
 
-  // 已綁定用戶的非指令訊息：不自動回覆，讓教練在 LINE OA 後台手動回
+  // ── 自然語言記錄（最後一道，2026-08-24）──
+  //
+  // ⚠️ 這裡原本是「已綁定用戶的非指令訊息：不自動回覆」——
+  // 也就是學員只要打出不在上面約 40 個關鍵字裡的字，系統就完全沉默：不回、不存、不問。
+  // 實測（line_webhook_debug_log 120 則）：Sean 因此全部改用按鈕，
+  // 一天要送 10 則訊息才記得完三件事，而兩條既有的 AI 解析路徑一次都沒被觸發過。
+  //
+  // 插在最後 = 既有分支優先順序完全不動，這支只接管本來什麼都不會發生的訊息。
+  // 回 false（解析不出／判定是閒聊發問）就退回原本的沉默，讓 Howard 自己回。
+  if (client) {
+    const handled = await handleNaturalLog(event.replyToken, client, text, supabase)
+    if (handled) return
+  }
+
+  // 到這裡代表真的讀不懂也不是記錄 → 維持原本行為：不自動回覆，讓教練在 LINE OA 後台手動回
 }

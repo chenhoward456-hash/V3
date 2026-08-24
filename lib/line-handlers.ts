@@ -11,6 +11,10 @@ import { createLogger } from '@/lib/logger'
 import { DAY_MS } from '@/lib/date-utils'
 import { markConverted } from '@/lib/nurture-sequence'
 import { rateLimit } from '@/lib/auth-middleware'
+import {
+  NL_LOG_MODEL, NL_SYSTEM_PROMPT, extractJSON, validateNL, hasAnything, confirmText, textFromContent,
+  type NLParsed,
+} from '@/lib/line-nl-log'
 
 const log = createLogger('LINE-Handlers')
 
@@ -593,7 +597,7 @@ export async function handleNaturalTraining(
 訓練描述：${text}`,
       }],
     })
-    const aiText = resp.content[0].type === 'text' ? resp.content[0].text : ''
+    const aiText = textFromContent(resp.content)
     const m = aiText.match(/\{[\s\S]*\}/)
     if (!m) throw new Error('no json')
     parsed = JSON.parse(m[0])
@@ -1006,7 +1010,7 @@ export async function handleNaturalNutrition(
       ],
     })
 
-    const aiText = aiResponse.content[0].type === 'text' ? aiResponse.content[0].text : ''
+    const aiText = textFromContent(aiResponse.content)
     const jsonMatch = aiText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       await replyMessage(replyToken, [{ type: 'text', text: '無法辨識食物內容，請描述更具體一點，例如：\n「吃了雞胸 200g 白飯一碗」' }])
@@ -1085,4 +1089,109 @@ export async function handleNaturalNutrition(
     log.error('Natural nutrition error:', err)
     await replyMessage(replyToken, [{ type: 'text', text: '記錄失敗，請稍後再試' }])
   }
+}
+
+// ═══════════════════════════════════════
+// 自然語言記錄：一則訊息記完一天
+//
+// ⚠️ 這支只接管「原本會被靜靜忽略」的訊息（webhook 最後一行的
+// 「已綁定用戶的非指令訊息：不自動回覆」）。所有既有關鍵字分支順序不變。
+// 也就是說它只可能把沉默變成回應，不可能弄壞既有流程。
+// 動機與實測資料見 lib/line-nl-log.ts 開頭。
+// ═══════════════════════════════════════
+export async function handleNaturalLog(
+  replyToken: string,
+  client: LineClient,
+  text: string,
+  supabase: SupabaseClient
+): Promise<boolean> {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) return false
+
+  // 一天 40 次夠一個人記三餐＋改口誤，又擋得住有人拿它當聊天機器人
+  const { allowed } = await rateLimit(`line-nl-log:${client.id}`, 40, 24 * 60 * 60_000)
+  if (!allowed) return false
+
+  let parsed: NLParsed | null = null
+  try {
+    const Anthropic = (await import('@anthropic-ai/sdk')).default
+    const anthropic = new Anthropic({ apiKey })
+    const resp = await anthropic.messages.create({
+      model: NL_LOG_MODEL,
+      max_tokens: 500,
+      system: NL_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: text }],
+    })
+    const raw = textFromContent(resp.content)
+    parsed = extractJSON(raw)
+  } catch (e) {
+    log.error('natural log parse failed', { error: e })
+    return false
+  }
+  if (!parsed) return false
+
+  // 不是在記錄（發問／閒聊／講計畫）→ 交還給原本的行為（沉默，讓 Howard 自己回）。
+  // 這條刻意不回話：學員問「下週能改課表嗎」，機器人回一句罐頭比不回更糟。
+  if (parsed.not_a_log) return false
+
+  const w = validateNL(parsed)
+  if (!hasAnything(w)) {
+    // 讀不出任何可寫的東西 → 只在模型有具體疑問時反問一句，否則沉默
+    if (parsed.ask) {
+      await replyMessage(replyToken, [{ type: 'text', text: parsed.ask }])
+      return true
+    }
+    return false
+  }
+
+  const today = getTaiwanDate()
+  const written: string[] = []
+  const failed: string[] = []
+
+  if (w.weight != null) {
+    const { error } = await supabase.from('body_composition')
+      .upsert({ client_id: client.id, date: today, weight: w.weight }, { onConflict: 'client_id,date' })
+    error ? failed.push('體重') : written.push('weight')
+    if (error) log.error('nl weight upsert failed', { error })
+  }
+
+  if (w.training && client.training_enabled) {
+    // 只寫有值的欄位 —— 學員只說「今天推日」時不該把既有的 duration/rpe 洗掉
+    const row: Record<string, unknown> = { client_id: client.id, date: today, training_type: w.training.training_type }
+    if (w.training.duration != null) row.duration = w.training.duration
+    if (w.training.rpe != null) row.rpe = w.training.rpe
+    const { error } = await supabase.from('training_logs').upsert(row, { onConflict: 'client_id,date' })
+    error ? failed.push('訓練') : written.push('training')
+    if (error) log.error('nl training upsert failed', { error })
+  }
+
+  if (w.nutrition) {
+    const row: Record<string, unknown> = { client_id: client.id, date: today }
+    if (w.nutrition.compliant != null) row.compliant = w.nutrition.compliant
+    if (w.nutrition.calories != null) row.calories = w.nutrition.calories
+    if (w.nutrition.protein_grams != null) row.protein_grams = w.nutrition.protein_grams
+    const { error } = await supabase.from('nutrition_logs').upsert(row, { onConflict: 'client_id,date' })
+    error ? failed.push('飲食') : written.push('nutrition')
+    if (error) log.error('nl nutrition upsert failed', { error })
+  }
+
+  if (w.wellness && client.wellness_enabled) {
+    const row: Record<string, unknown> = { client_id: client.id, date: today }
+    if (w.wellness.sleep_quality != null) row.sleep_quality = w.wellness.sleep_quality
+    if (w.wellness.energy_level != null) row.energy_level = w.wellness.energy_level
+    if (w.wellness.mood != null) row.mood = w.wellness.mood
+    const { error } = await supabase.from('daily_wellness').upsert(row, { onConflict: 'client_id,date' })
+    error ? failed.push('身心') : written.push('wellness')
+    if (error) log.error('nl wellness upsert failed', { error })
+  }
+
+  if (written.length === 0) {
+    // 全部寫失敗才報錯；部分失敗在下面照實講，不要謊稱都記好了
+    await replyMessage(replyToken, [{ type: 'text', text: '存檔出了點問題，請再試一次或開 App 🙏' }])
+    return true
+  }
+
+  const tail = failed.length > 0 ? `\n⚠️ ${failed.join('、')}沒存成功，麻煩開 App 補一下` : ''
+  await replyMessage(replyToken, [{ type: 'text', text: confirmText(w) + tail, quickReply: QR_AFTER_RECORD }])
+  return true
 }
