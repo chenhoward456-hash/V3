@@ -762,7 +762,8 @@ export async function GET(request: NextRequest) {
         batch.map(client =>
           sendWebPushOnly(client.id, {
             title: `☀️ 早安 ${client.name}！`,
-            body: '別忘了量體重喔',
+            // 順便提醒他們可以用 LINE 一句話記完（做了但沒人知道＝等於沒做）
+            body: '別忘了量體重喔 — 也可以直接在 LINE 打一句「81.5 今天腿日」',
             url: `${siteUrl}/dashboard`,
           })
         )

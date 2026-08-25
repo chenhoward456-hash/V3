@@ -215,9 +215,20 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   }
 
   // Menu command
+  //
+  // ⚠️ 2026-08-26（Howard：「可是他們怎麼知道可以在賴上怎麼紀錄」）：
+  // 原本只回「請點選下方按鈕」—— 學員因此以為 LINE 只能按按鈕。
+  // 實測 Sean 送進來的 120 則訊息全部是按鈕，一天要按 10 次才記得完三件事。
+  // 自然語言那條路已經開了，但沒人告訴他們，等於沒開。選單是他們最常看到的地方。
   if (text === '選單' || text === '功能' || text === '指令' || text === 'help' || text === '?') {
     await replyMessage(event.replyToken, [
-      { type: 'text', text: '請點選下方按鈕 👇', quickReply: QR_MAIN },
+      {
+        type: 'text',
+        text: client
+          ? '直接打一句話就能記，例如：\n「81.5 今天腿日 45分 RPE7 飲食達標」\n\n不用背格式，記到什麼算什麼，我會把實際記進去的值念回去給你確認。\n\n想用按鈕也可以 👇'
+          : '請點選下方按鈕 👇',
+        quickReply: QR_MAIN,
+      },
     ])
     return
   }
