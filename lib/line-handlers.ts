@@ -1207,3 +1207,69 @@ export async function handleNaturalLog(
   await replyMessage(replyToken, [{ type: 'text', text: confirmText(w) + tail, quickReply: QR_AFTER_RECORD }])
   return true
 }
+
+// ═══════════════════════════════════════
+// 教練自己記資料：不走 AI Agent 的快速通道
+//
+// ⚠️ 2026-08-26（Howard 實測「82.8今天推日 75分rpe9」）：
+// webhook 的 admin 分支寫著「Admin 任何訊息都走 Agent」，
+// 所以他打自己的訓練紀錄會被當成教練指令丟給 Agent —— 跑了 24.1 秒。
+// 要記自己的資料得先打 `/raw`，那個前綴沒人記得住。
+//
+// 他也是學員（陳胤豪），記自己的資料是每天的事，不該比學員還麻煩。
+// 這條在 Agent 之前攔一手：判定是「在記錄」就直接寫、快速回覆；
+// 判不出來或像是指令就交還給 Agent，行為不變。
+// ═══════════════════════════════════════
+
+/** 明顯是教練指令而不是自我記錄的字眼 —— 命中就直接讓 Agent 處理，不浪費一次模型呼叫 */
+const COACH_COMMAND_HINTS = /幫我|幫忙|查|看一下|列出|清單|待審|發給|寄給|提案|批准|怎麼|為什麼|嗎[？?]?$|[？?]$/
+
+/**
+ * 一則教練訊息的長度上限；超過就當指令交還給 Agent。
+ *
+ * ⚠️ 第一版設 80，但那是英文的直覺 —— 中文一個字算一個長度，
+ * 80 個中文字是很長一段話。實測真實的記錄都在 40 字內：
+ *   「82.8今天推日 75分rpe9」= 18
+ *   「85.7 今天推日45分鐘RPE7 飲食達標 睡眠精力心情都3」= 30
+ * 而「今天跟震宣討論了他回歸之後的計畫…」那種交代事情的是 63 字，
+ * 用 80 會漏放。設 45，寧可漏判交還給 Agent（行為不變）也不要誤判成記錄。
+ */
+const COACH_LOG_MAX_LEN = 45
+
+/**
+ * 判斷這則訊息是「教練指令」還是「教練在記自己的資料」。
+ *
+ * 抽成純函式是為了可測 —— 判錯的代價是把指令寫成他自己的紀錄，
+ * 例如「把震宣的碳水改成 250」被記成「教練今天吃了 250g 碳水」。
+ *
+ * @param otherClientNames 其他在籍學員的名字（不含教練本人）
+ */
+export function isCoachCommand(text: string, otherClientNames: string[]): boolean {
+  if (text.length > COACH_LOG_MAX_LEN) return true
+  if (COACH_COMMAND_HINTS.test(text)) return true
+  // 提到別人 → 是關於別人的指令，不是記自己的
+  return otherClientNames.some(n => n && text.includes(n))
+}
+
+export async function tryCoachQuickLog(
+  replyToken: string,
+  text: string,
+  supabase: SupabaseClient,
+): Promise<boolean> {
+  const adminLineId = process.env.ADMIN_LINE_USER_ID
+  if (!adminLineId) return false
+
+  const adminClient = await getClientByLineId(adminLineId, supabase)
+  if (!adminClient) return false
+
+  const { data: others } = await supabase
+    .from('clients').select('name').eq('is_active', true)
+  const otherNames = (others ?? [])
+    .map((o: { name: string | null }) => o.name)
+    .filter((n): n is string => !!n && n !== adminClient.name)
+
+  if (isCoachCommand(text, otherNames)) return false
+
+  // 交給跟學員完全同一支解析器：not_a_log 或讀不出可寫的東西就回 false
+  return handleNaturalLog(replyToken, adminClient, text, supabase)
+}

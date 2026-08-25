@@ -9,6 +9,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { replyMessage, pushMessage } from '@/lib/line'
 import { runAgent } from '@/lib/agent-runner'
+import { tryCoachQuickLog } from '@/lib/line-handlers'
 import { createServiceSupabase } from '@/lib/supabase'
 
 async function dbg(action: string, error?: string) {
@@ -58,6 +59,17 @@ export async function handleAdminAgentMessage(
   if (/^(list|proposals|待審|清單)$/i.test(userText)) {
     await listPendingProposalsToAdmin(event.replyToken, supabase)
     return
+  }
+
+  // Pre-route 2：教練在記自己的資料 → 直接寫，不走 Agent
+  // （見 lib/line-handlers.ts 的 tryCoachQuickLog：判不出來就回 false，交還給下面的 Agent）
+  try {
+    if (await tryCoachQuickLog(event.replyToken, userText, supabase)) {
+      await dbg('coach_quick_log')
+      return
+    }
+  } catch (e) {
+    await dbg('coach_quick_log_failed', e instanceof Error ? e.message : String(e))
   }
 
   const startMs = Date.now()

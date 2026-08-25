@@ -123,7 +123,9 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentRunResult> {
 
   for (let turn = 0; turn < maxTurns; turn++) {
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      // 2026-08-26：從 claude-sonnet-4-6 升到 Sonnet 5 —— 教練端實測一輪對話 24.1 秒，
+      // 而 Agent 一次要跑兩輪（初次 + 工具回傳後）。新版更快也更準。
+      model: 'claude-sonnet-5',
       max_tokens: 4096,
       // System prompt + tools 用 prompt caching（5 分鐘 TTL）
       // 5 分鐘內重複呼叫只收 10% 的 input cost

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SupabaseClient } from '@supabase/supabase-js'
-import { verifyLineSignature, replyMessage, qr, unlinkRichMenuFromUser, switchRichMenuForUser, getUserProfile } from '@/lib/line'
+import { verifyLineSignature, replyMessage, qr, unlinkRichMenuFromUser, switchRichMenuForUser, getUserProfile, showLoadingIndicator } from '@/lib/line'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
 import {
@@ -198,6 +198,10 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
       text = escapeMatch[2].trim() || '選單'
     } else {
       const cleaned = text.replace(/^@(ai|a)\s+/i, '').trim()
+      // Agent 要跑 20 秒以上，先讓 LINE 顯示「輸入中…」——
+      // 沒有這個，教練看到的是完全沒反應（Howard 2026-08-26 回報「沒已讀」）。
+      // 不吃推播配額，失敗也不影響下面的流程。
+      showLoadingIndicator(userId, 30).catch(() => {})
       await handleAdminAgentMessage(
         { replyToken: event.replyToken, message: { text: cleaned } },
         supabase,

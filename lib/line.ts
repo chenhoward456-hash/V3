@@ -101,6 +101,27 @@ export async function replyMessage(replyToken: string, messages: LineMessage[]) 
   return lineAPI('/message/reply', { replyToken, messages })
 }
 
+/**
+ * 顯示「輸入中…」動畫（LINE Chat Loading API）。
+ *
+ * ⚠️ 2026-08-26：教練端 AI Agent 實測跑 24.1 秒，那段時間對話裡**完全沒有反應**，
+ * Howard 的回報是「沒已讀」—— 他以為訊息沒進來，實際上系統正在跑。
+ * 這支讓 LINE 立刻顯示輸入中的三個點，使用者看得到「它在做事」。
+ *
+ * 重點：**這支不吃推播配額**（不是 message API），跟 200 則／月無關。
+ * 失敗不影響主流程，所以吞掉錯誤就好。
+ *
+ * loadingSeconds 只能是 5 的倍數、上限 60。
+ */
+export async function showLoadingIndicator(userId: string, loadingSeconds = 30): Promise<void> {
+  try {
+    const secs = Math.min(60, Math.max(5, Math.round(loadingSeconds / 5) * 5))
+    await lineAPI('/chat/loading/start', { chatId: userId, loadingSeconds: secs })
+  } catch (err) {
+    logger.warn('顯示輸入中指示器失敗（不影響主流程）', { err: err instanceof Error ? err.message : String(err) })
+  }
+}
+
 /** 推播訊息給特定用戶 */
 export async function pushMessage(to: string, messages: LineMessage[]) {
   const res = await lineAPI('/message/push', { to, messages })
