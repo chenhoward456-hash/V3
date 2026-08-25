@@ -13,6 +13,7 @@
  * cron 與 `/api/admin/coach-digest` 都走同一條，**預覽看到的就是排程會送的**。
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { daysUntilDateTW, DAY_MS } from './date-utils'
 import { COACH_LINE_USER_ID } from './line-links'
 
@@ -166,10 +167,15 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   }
 }
 
-/** 最小 supabase 介面 —— 只為了讓這支不用 import 整包 client 型別 */
-type QueryLike = {
-  from: (t: string) => any // eslint-disable-line @typescript-eslint/no-explicit-any
-}
+/**
+ * ⚠️ 2026-08-26：這裡原本是 `from: (t: string) => any` 加一行
+ * `// eslint-disable-line @typescript-eslint/no-explicit-any`。
+ * 那條規則在本專案的 ESLint 設定裡**沒有定義**，於是 next build 對「停用一條不存在的規則」
+ * 本身報 Error → build exit 1 → **連續 5 次 production 部署失敗**。
+ * tsc 不跑 ESLint，所以 pre-commit 的 tsc 一路綠燈，我卻以為東西上線了。
+ * 用真正的型別，不需要 any 也不需要停用任何規則。
+ */
+type QueryLike = SupabaseClient
 
 /**
  * 抓資料 + 組信。cron 與 `/api/admin/coach-digest` 共用，

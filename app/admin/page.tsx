@@ -833,6 +833,32 @@ export default function AdminDashboard() {
     } catch { showToast('讀取失敗', 'error') } finally { setDigestBusy(false) }
   }
 
+  /**
+   * 巨量健全性稽核。
+   *
+   * ⚠️ 為什麼要有這顆按鈕（2026-08-26）：8/23 我幫震宣設碳循環時，
+   * 只顧著把訓練日碳水拉高，沒算休息日會掉到 1697 kcal。
+   * 同一批掃描還挖出萬哲鴻／謝佳峻比賽後 30 天還卡在備賽巨量。
+   * 問題不是算不出來，是**沒人記得檢查另一端**——所以做成隨時能按的東西。
+   * 只讀不寫：改數字是教練的決定。
+   */
+  const [auditRes, setAuditRes] = useState<
+    { scanned: number; high: number; findings: { clientId: string; name: string; rule: string; severity: string; message: string }[] } | null
+  >(null)
+  const [auditOpen, setAuditOpen] = useState(false)
+  const [auditBusy, setAuditBusy] = useState(false)
+
+  const runAudit = async () => {
+    setAuditBusy(true)
+    try {
+      const r = await fetch('/api/admin/macro-audit')
+      const j = await r.json()
+      if (!r.ok) { showToast(j?.error ?? '掃描失敗', 'error'); return }
+      setAuditRes(j); setAuditOpen(true)
+      if (j.findings.length === 0) showToast(`${j.scanned} 位學員全部通過`, 'success')
+    } catch { showToast('掃描失敗', 'error') } finally { setAuditBusy(false) }
+  }
+
   const sendDigest = async () => {
     setDigestBusy(true)
     try {
@@ -1118,15 +1144,55 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* 補發晨報 —— 這頁的內容，用 LINE 再送自己一份 */}
-            <div className="mt-3 pt-3 border-t border-slate-100">
+            {/* 補發晨報 + 巨量稽核 */}
+            <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-2">
               <button
                 type="button" onClick={previewDigest} disabled={digestBusy}
                 className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-primary-600 transition-colors disabled:opacity-50"
               >
                 <Send size={12} /> {digestBusy ? '處理中…' : '把這些補發到我的 LINE'}
               </button>
+              <button
+                type="button" onClick={runAudit} disabled={auditBusy}
+                className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-primary-600 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={12} className={auditBusy ? 'animate-spin' : ''} />
+                {auditBusy ? '掃描中…' : '檢查所有人的營養設定'}
+              </button>
             </div>
+
+            {auditOpen && auditRes && (
+              <div className="mt-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[11px] text-slate-500 tabular-nums">
+                    掃了 {auditRes.scanned} 位
+                    {auditRes.findings.length === 0
+                      ? ' · 全部通過'
+                      : ` · ${auditRes.findings.length} 項待確認${auditRes.high > 0 ? `（${auditRes.high} 項要緊）` : ''}`}
+                  </p>
+                  <button type="button" onClick={() => setAuditOpen(false)}
+                    className="text-[11px] text-slate-400 hover:text-slate-600">關閉</button>
+                </div>
+                {auditRes.findings.length === 0 ? (
+                  <p className="text-[11px] text-emerald-700">碳循環對得上處方、低碳日不過低、蛋白脂肪都在實證範圍內、沒有過期的備賽設定。</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {auditRes.findings.map((f, i) => (
+                      <div key={`${f.clientId}-${f.rule}-${i}`}
+                        className={`flex items-start gap-2 px-2.5 py-1.5 rounded-lg ${f.severity === 'high' ? 'bg-rose-50' : 'bg-amber-50'}`}>
+                        <span className={`mt-1 inline-block w-1.5 h-1.5 rounded-full shrink-0 ${f.severity === 'high' ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                        <p className="text-[11px] leading-snug text-slate-700">
+                          <Link href={`/admin/clients/${f.clientId}/overview`}
+                            className="font-semibold text-gray-900 hover:text-primary-700">{f.name}</Link>
+                          <span className="text-slate-400"> · </span>{f.message}
+                        </p>
+                      </div>
+                    ))}
+                    <p className="text-[10px] text-slate-400 pt-1">只檢查不改動 — 要調數字進學員頁面自己改。</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {digestOpen && digestText && (
               <div className="mt-2 bg-slate-50 border border-slate-200 rounded-xl p-3">

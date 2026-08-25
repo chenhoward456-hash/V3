@@ -1,8 +1,16 @@
 #!/bin/sh
-# pre-commit hook：commit 前先跑 TypeScript 編譯
-# 避免推到 main 才發現 TS error 導致 Vercel deploy fail
+# pre-commit hook：commit 前先跑 TypeScript 編譯 + ESLint
+#
+# ⚠️ 2026-08-26：這支原本只跑 tsc，註解寫著「避免推到 main 才發現 error 導致 Vercel deploy fail」——
+# 但它擋不住 ESLint。實際發生的事：lib/coach-digest.ts 寫了一行
+#   // eslint-disable-line @typescript-eslint/no-explicit-any
+# 那條規則在本專案的 ESLint 設定裡沒有定義，`next build` 會對「停用一條不存在的規則」
+# 本身報 Error → build exit 1。
+# tsc 全綠、2867 支測試全綠，**但連續 5 次 production 部署失敗**，
+# 而我以為東西都上線了，還叫 Howard 去 production 驗。
+#
+# tsc 不等於 build。`next build` 會跑 ESLint，所以這裡也要跑。
 
-# 只看 staged TS/TSX 檔；沒改 TS 直接放行
 staged_ts=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' | head -1)
 if [ -z "$staged_ts" ]; then
   exit 0
@@ -10,9 +18,7 @@ fi
 
 echo "🔍 pre-commit: 跑 npx tsc --noEmit..."
 output=$(npx tsc --noEmit 2>&1)
-exit_code=$?
-
-if [ $exit_code -ne 0 ]; then
+if [ $? -ne 0 ]; then
   echo ""
   echo "❌ TypeScript 編譯失敗，commit 被擋住"
   echo ""
@@ -21,6 +27,20 @@ if [ $exit_code -ne 0 ]; then
   echo "修好再 commit。要強制跳過：git commit --no-verify"
   exit 1
 fi
-
 echo "✅ tsc pass"
+
+echo "🔍 pre-commit: 跑 npm run lint（next build 會跑這個，tsc 擋不住）..."
+lint_output=$(npm run lint 2>&1)
+# 只擋 Error，Warning 放行（repo 裡本來就有一批既有 warning）
+if echo "$lint_output" | grep -q "Error:"; then
+  echo ""
+  echo "❌ ESLint 有 Error，commit 被擋住 —— 這種錯會讓 Vercel build 失敗"
+  echo ""
+  echo "$lint_output" | grep -B2 "Error:" | head -20
+  echo ""
+  echo "修好再 commit。要強制跳過：git commit --no-verify"
+  exit 1
+fi
+echo "✅ lint pass（無 Error）"
+
 exit 0

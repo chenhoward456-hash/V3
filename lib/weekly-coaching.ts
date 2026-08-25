@@ -13,6 +13,17 @@
 // 兩支引擎對「什麼叫停滯」必須講同一套話，否則學員在儀表板和週訊會收到互相矛盾的判定。
 import { BULK_TARGETS } from './nutrition-engine'
 
+/**
+ * 蛋白質下限 —— **全系統唯一真相**（紅線 6：共用常數別各定各的）。
+ * lib/macro-audit.ts 的稽核也 import 這裡，否則週訊說「夠用」、稽核說「太低」，
+ * 教練會收到兩套互相矛盾的判定。
+ *
+ * 出處與「為什麼分母是淨體重」的完整說明見下方蛋白判定區塊的註解。
+ */
+export const BULK_FLOOR_PER_KG_BW = 1.6
+export const CUT_FLOOR_PER_KG_LBM = 2.3
+export const CUT_FLOOR_PER_KG_BW_PROXY = 1.8
+
 export type WeeklyCoachingClient = {
   name: string
   goal_type?: string | null
@@ -263,9 +274,6 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
   //
   // 修法：有體脂就用淨體重當分母；沒體脂用 1.8 g/kg 總體重當替代（≈20% 體脂者的 2.3 g/kg LBM）。
   // 增肌側的 1.6 不動 —— Morton 2018 meta（49 RCT／1863 人，PMID 28698222）那個數字本來就是總體重。
-  const BULK_FLOOR_PER_KG_BW = 1.6
-  const CUT_FLOOR_PER_KG_LBM = 2.3
-  const CUT_FLOOR_PER_KG_BW_PROXY = 1.8
 
   const pTarget = num(client.protein_target)
   const pAvg = avg(n14.map(x => num(x.protein_grams)!).filter(v => v != null))
