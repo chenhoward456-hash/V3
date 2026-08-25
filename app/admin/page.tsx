@@ -413,7 +413,10 @@ export default function AdminDashboard() {
   // === 備賽倒數（距比賽最近的排最前） ===
   const competitionClients = useMemo(() => {
     return clients
-      .filter(c => c.is_active && isCompetitionMode(c.client_mode) && c.competition_date)
+      // ⚠️ 2026-08-26：原本沒看 competition_enabled ——
+      // 教練把備賽關掉了，人還是掛在備賽倒數上（萬哲鴻／謝佳峻比賽日過了 30 天還在榜上倒數負天數）。
+      // client_mode 是長期身分（健美選手），competition_enabled 才是「現在有沒有在備賽」。
+      .filter(c => c.is_active && isCompetitionMode(c.client_mode) && c.competition_date && c.competition_enabled !== false)
       .map(c => {
         const daysLeft = daysUntilDateTW(c.competition_date!)
         return { ...c, daysLeft }
