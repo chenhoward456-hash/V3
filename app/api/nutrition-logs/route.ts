@@ -254,9 +254,22 @@ export async function PATCH(request: NextRequest) {
       if (error) return createErrorResponse('更新飲食紀錄失敗', 500)
       saved = data
     } else {
+      // ⚠️ 一定要顯式帶 compliant: null（2026-08-25 震宣案例）。
+      //
+      // `nutrition_logs.compliant` 的**資料庫預設值是 true**。這個 insert 分支原本
+      // 只帶巨量欄位，於是每一筆從這條路徑新建的列都被記成「今天達標」——
+      // 即使學員按的是「沒達標」（把巨量歸零）或只是拖了一下進度條。
+      //
+      // 震宣 8/25 09:20 的實際紀錄：四個巨量全 0、compliant = true。
+      // 他一口食物都沒記，系統卻認定他達標。
+      // 全庫掃出 10 筆這種列（跨 6 位學員），會直接灌水服從率並誤導引擎。
+      //
+      // compliant 是「學員自己回答有沒有做到」，只有他答了才該有值。
+      // 沒答就是 null（不知道），不是 true。POST 那條本來就強制帶（見上面的驗證），
+      // 破口只在這裡。
       const { data, error } = await supabaseAdmin
         .from('nutrition_logs')
-        .insert({ client_id: client.id, date, ...patch })
+        .insert({ client_id: client.id, date, compliant: null, ...patch })
         .select()
         .single()
       if (error) return createErrorResponse('新增飲食紀錄失敗', 500)

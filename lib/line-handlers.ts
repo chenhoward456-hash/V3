@@ -177,7 +177,11 @@ export async function handleQuickWater(replyToken: string, client: LineClient | 
   const { error } = await supabase
     .from('nutrition_logs')
     .upsert(
-      { client_id: client.id, date: today, water_ml: newWater, compliant: existing ? undefined : true },
+      // ⚠️ 2026-08-25：原本新列會帶 compliant: true —— **記水量不等於飲食達標**。
+      // 學員只是回報喝了 500ml，系統卻順手記成「今天飲食有做到」，灌水服從率。
+      // 跟 nutrition_logs.compliant 的 DEFAULT true 是同一類問題（見該欄位的 migration）。
+      // 現在欄位可為 null＝「還沒回答」，新列就讓它留白，等學員自己按達標／未達標。
+      { client_id: client.id, date: today, water_ml: newWater, compliant: existing ? undefined : null },
       { onConflict: 'client_id,date' }
     )
 
