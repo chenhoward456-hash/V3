@@ -53,6 +53,7 @@ export default function TodayNutritionIntake({
   })
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [showMeal, setShowMeal] = useState(false)
   const [meal, setMeal] = useState({ carbs: '', protein: '', fat: '' })
 
@@ -92,10 +93,14 @@ export default function TodayNutritionIntake({
         }),
       })
       if (!res.ok) throw new Error()
+      setSaveError(null)
       flashSaved()
       onMutate?.()
     } catch {
-      // 寫失敗就回到 intake 真值
+      // ⚠️ 2026-08-25：這裡原本只把值彈回去、**什麼都不說**。
+      // 學員看到的是「我拉了它自己跳回來」——分不出是存檔失敗還是系統不讓他改，
+      // 震宣的原話就是「被控制住了」。失敗要講出來。
+      setSaveError('沒存進去 — 檢查一下網路，再拉一次')
       setEaten({
         protein_grams: intake?.protein_grams ?? 0,
         carbs_grams: intake?.carbs_grams ?? 0,
@@ -189,6 +194,23 @@ export default function TodayNutritionIntake({
       </div>
       <p className="text-[11px] text-slate-400 mb-4">拖進度條設今天吃到哪；懶得拉就按「達標」直接對齊目標，或按「＋記一餐」累加</p>
 
+      {saveError && (
+        <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2">
+          <p className="text-[11px] text-rose-700">{saveError}</p>
+        </div>
+      )}
+
+      {/* ⚠️ 2026-08-25：碳循環的當日目標會隨「今天記了什麼訓練」改變 ——
+          震宣早上看到訓練日 271g、照著吃，中午記了有氧之後目標變成休息日 108g，
+          他瞬間從沒吃夠變成超標。目標被回溯改掉又沒人解釋，他的感受是「被控制住了」。
+          規則本身是對的（碳水跟著重訓走），但一定要講出來為什麼。 */}
+      {dayLabel === '休息日' && (
+        <p className="mb-3 text-[11px] leading-relaxed text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+          今天記的是有氧或休息 → 碳水目標用休息日的量。
+          <span className="text-slate-400">碳水跟著重訓走，這是碳循環的設計；等你記了重訓就會換回訓練日的量。</span>
+        </p>
+      )}
+
       {/* 健康篩檢降級：入會填的健康狀況命中風險項目時，這張卡不以「你的目標」呈現，
           改成參考範圍＋轉介專業。刻意不顯示任何病名或個別狀況（畫面可能被他人看見）。 */}
       {referralNeeded && (
@@ -234,7 +256,13 @@ export default function TodayNutritionIntake({
           const remaining = target - value
           const over = value > target
           const pct = Math.min((value / target) * 100, 100)
-          const sliderMax = Math.max(round(target * 1.5), round(value), 1)
+          // ⚠️ 2026-08-25（震宣：「我改不了我的食物營養素」「被控制住了」「拉不了」）：
+          // 原本是 max(target×1.5, value)。當 value 已經 ≥ target×1.5 時，
+          // 上限**剛好等於目前值** → 拉桿頂在最右邊，往右一格都拉不動，
+          // 學員再多吃就記不進去了。
+          // 震宣的實況：有氧日碳水目標 108（×1.5 = 162），他已經吃 162 → 上限 162 → 卡死。
+          // 修法：上限永遠比目前值高一截，怎麼吃都記得進去。
+          const sliderMax = Math.max(round(target * 1.5), round(value * 1.3), round(value) + 20, 1)
           return (
             <div key={key}>
               <div className="flex items-baseline justify-between mb-1.5">
