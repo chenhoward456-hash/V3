@@ -24,6 +24,19 @@ interface TodayNutritionIntakeProps {
   intake?: IntakeRow | null
   /** 訓練日 / 休息日 / Peak Week 階段標籤 */
   dayLabel?: string | null
+  /**
+   * 簡化模式：三條拉桿預設收起來，只留熱量條 + 兩顆按鈕。
+   *
+   * ⚠️ 2026-08-26（震宣：「介面感覺更複雜了」）：
+   * 這張卡一張就有 11 個可點的東西（3 拉桿 + 6 顆達標/沒達標 + 全部達標 + 記一餐），
+   * 而他停課兩個半月剛回來、第一天就撞上。
+   * 他要的是五秒記完，不是一個要拖三根拉桿的儀表板 ——
+   * 而且他上一輪就是**紀錄先斷、人才斷**。
+   *
+   * 刻意不做成全站預設：想拖細項的學員（備賽的人）不該被拿掉工具。
+   * 由教練逐人開關（clients.simple_mode），開了才簡化。
+   */
+  simpleMode?: boolean
   onMutate?: () => void
 }
 
@@ -40,6 +53,7 @@ export default function TodayNutritionIntake({
   fatTarget,
   intake,
   dayLabel,
+  simpleMode,
   onMutate,
   healthScreening,
 }: TodayNutritionIntakeProps) {
@@ -55,6 +69,8 @@ export default function TodayNutritionIntake({
   const [savedFlash, setSavedFlash] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [showMeal, setShowMeal] = useState(false)
+  // 簡化模式下拉桿預設收起來；學員想調細項自己展開
+  const [showSliders, setShowSliders] = useState(false)
   const [meal, setMeal] = useState({ carbs: '', protein: '', fat: '' })
 
   // intake 變了（SWR 重新抓 / 換日）→ 同步本地
@@ -192,7 +208,11 @@ export default function TodayNutritionIntake({
           )}
         </div>
       </div>
-      <p className="text-[11px] text-slate-400 mb-4">拖進度條設今天吃到哪；懶得拉就按「達標」直接對齊目標，或按「＋記一餐」累加</p>
+      <p className="text-[11px] text-slate-400 mb-4">
+        {simpleMode
+          ? '照目標吃就按下面那顆；吃多吃少按「＋記一餐」補進去'
+          : '拖進度條設今天吃到哪；懶得拉就按「達標」直接對齊目標，或按「＋記一餐」累加'}
+      </p>
 
       {saveError && (
         <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2">
@@ -248,8 +268,8 @@ export default function TodayNutritionIntake({
         )
       })()}
 
-      {/* 三大巨量：可拖的進度條 */}
-      <div className="space-y-4 mt-4">
+      {/* 三大巨量：可拖的進度條（簡化模式下收起來） */}
+      <div className={`space-y-4 mt-4 ${simpleMode && !showSliders ? 'hidden' : ''}`}>
         {rows.map(({ key, label, target, unit }) => {
           if (target == null) return null
           const value = eaten[key]
@@ -354,6 +374,14 @@ export default function TodayNutritionIntake({
       >
         今天照目標吃 · 全部達標
       </button>
+      {simpleMode && (
+        <div className="mt-2">
+          <button
+            type="button" onClick={() => setShowSliders(v => !v)}
+            className="text-[11px] text-slate-400 hover:text-primary-600 transition-colors"
+          >{showSliders ? '收起細項' : '想自己調三大巨量？點這裡'}</button>
+        </div>
+      )}
 
       {/* ＋記一餐 */}
       <div className="mt-3 pt-4 border-t border-slate-100">

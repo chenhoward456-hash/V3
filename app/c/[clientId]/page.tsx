@@ -1399,6 +1399,7 @@ export default function ClientDashboard() {
                   fatTarget={effFat}
                   intake={todayNutrition}
                   dayLabel={dayLabel}
+                  simpleMode={c.simple_mode}
                   onMutate={mutateAndRefreshEngine}
                 />
               </SectionErrorBoundary>

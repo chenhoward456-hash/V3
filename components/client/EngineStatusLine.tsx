@@ -31,10 +31,16 @@ function EngineStatusLineInner({
   const cal = <b className="text-gray-700">{caloriesTarget} kcal</b>
 
   // 教練鎖定 → 引擎不動，明講
+  //
+  // ⚠️ 2026-08-26：這裡原本把 `coachOverride.reason` 整段印給學員看。
+  // 那個欄位是**寫給教練與未來維護者的內部備註** —— 裡面有引擎 bug 的描述、
+  // 改動的來龍去脈，甚至有 Howard 對我講的原話（含髒話）。震宣的頁面上實際出現過。
+  // 學員要知道的只有「這組數字是教練定的，系統不會自己改」，理由不該外流。
+  // 想給學員看的說明請走 coach_weekly_note / personal_notes，那些本來就是對外的。
   if (coachOverride) {
     return (
       <p className="flex items-center gap-1.5 text-[11px] text-gray-500 px-1 mb-2 leading-snug">
-        <span>教練手動設定 {cal}，系統不自動更動{coachOverride.reason ? `（${coachOverride.reason}）` : ''}</span>
+        <span>教練手動設定 {cal}，系統不自動更動</span>
       </p>
     )
   }

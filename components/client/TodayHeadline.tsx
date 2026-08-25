@@ -208,11 +208,16 @@ function TodayHeadlineInner({
         </div>
       )}
 
-      {/* 今天就一件（動作） */}
+      {/* 今天的重點（動作）
+          ⚠️ 2026-08-26：這裡原本寫「今天就一件：」，但下面的 QuickActions 也有一句
+          「今天只有一件必做 · 量早晨體重」—— 同一個畫面上兩句「只有一件」，
+          講的還是不同件事（一個是訓練/營養方向，一個是必做的紀錄動作）。
+          震宣回報「介面感覺更複雜了」，互相打架的指令比多一個按鈕更糟。
+          必做的那件留給 QuickActions（它才是真的只有一件），這裡改成「訓練與飲食的重點」。 */}
       {actionText && (
         <div className="rounded-xl bg-slate-50 px-3.5 py-3">
           <p className="text-sm text-slate-800 leading-relaxed">
-            <span className="font-semibold text-slate-900">今天就一件：</span>
+            <span className="font-semibold text-slate-900">今天的重點：</span>
             {actionText}。
             {isPositive && !engineAction && <span className="text-slate-500"> 其他照走、別亂改。</span>}
           </p>
