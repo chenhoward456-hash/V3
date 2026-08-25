@@ -480,11 +480,16 @@ export default function ClientDashboard() {
   // 統一判斷今天是否為訓練日：已填記錄優先，沒填就看課表
   // 這樣碳水循環在你還沒填記錄時就能正確顯示訓練日碳水
   const isTrainingDayResolved = useMemo(() => {
+    // ⚠️ 2026-08-26：兩條路徑必須用同一條規則，否則同一天會有兩種答案。
+    // 原本第 2 條寫 `todayPlanType !== 'rest' → true`，於是課表排「有氧日」的早上
+    // 顯示訓練日碳水，等學員記了有氧、第 1 條的 isWeightTraining('cardio') 判 false，
+    // 目標當場砍半 —— 震宣 8/25 遇到的就是這個，他的感受是「被控制住了」。
+    // labelToTrainingType 回傳的字彙跟 training_logs.training_type 相同，直接共用判定。
+    //
     // 1. 已填訓練記錄 → 用記錄判斷
     if (todayTraining) return isWeightTraining(todayTraining.training_type)
-    // 2. 沒填 → 看課表今天排什麼
-    if (todayPlanType && todayPlanType !== 'rest') return true
-    if (todayPlanType === 'rest') return false
+    // 2. 沒填 → 看課表今天排什麼（同一條規則，有氧／休息都算低碳日）
+    if (todayPlanType) return isWeightTraining(todayPlanType)
     // 3. 都沒有 → 預設休息日
     return false
   }, [todayTraining, todayPlanType])

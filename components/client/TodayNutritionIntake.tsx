@@ -206,8 +206,8 @@ export default function TodayNutritionIntake({
           規則本身是對的（碳水跟著重訓走），但一定要講出來為什麼。 */}
       {dayLabel === '休息日' && (
         <p className="mb-3 text-[11px] leading-relaxed text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
-          今天記的是有氧或休息 → 碳水目標用休息日的量。
-          <span className="text-slate-400">碳水跟著重訓走，這是碳循環的設計；等你記了重訓就會換回訓練日的量。</span>
+          今天是有氧或休息日 → 碳水目標用休息日的量。
+          <span className="text-slate-400">碳水跟著重訓走，這是碳循環的設計；記了重訓就會換成訓練日的量。</span>
         </p>
       )}
 
