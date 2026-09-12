@@ -13,6 +13,7 @@ import { markConverted } from '@/lib/nurture-sequence'
 import { rateLimit } from '@/lib/auth-middleware'
 import {
   NL_LOG_MODEL, NL_SYSTEM_PROMPT, extractJSON, validateNL, hasAnything, confirmText, textFromContent,
+  CALORIES_MIN, CALORIES_MAX,
   type NLParsed,
 } from '@/lib/line-nl-log'
 
@@ -254,6 +255,73 @@ export async function handleQuickProtein(replyToken: string, client: LineClient 
 }
 
 // ═══════════════════════════════════════
+// Quick record: Calories
+// ═══════════════════════════════════════
+
+/**
+ * 一天吃了多少大卡。
+ *
+ * ## 為什麼有這支（2026-09-12）
+ *
+ * Sean 8/31 在 LINE 上這樣打：
+ *
+ *   09:02 記飲食 → 09:02 未達標 → 09:02「大概多1.200大卡」
+ *   09:04「200大卡 多吃」→ 09:04「多吃啦幹你娘」
+ *
+ * **他有回報數字，系統只存了 compliant=false，三句全部掉在地上。**
+ * 原因是 handleQuickCompliance 存完之後只丟「記訓練/記身心/記水量/狀態」四個按鈕，
+ * 從頭到尾沒問過他吃多少 —— 學員主動給的資料沒有接口可以進來。
+ *
+ * 後果不只是少一筆：`estimateActualIntake` 靠回報熱量反推真實 TDEE，
+ * 沒有熱量就只剩體重曲線，引擎對這個人是瞎的。Sean 至今 0 筆有數字的營養紀錄。
+ *
+ * 所以 compliance 存完要**接著問**，而且學員接下來打的裸數字要接得住。
+ */
+export async function handleQuickCalories(replyToken: string, client: LineClient | null, calories: number, supabase: SupabaseClient) {
+  if (!client) {
+    await replyMessage(replyToken, [
+      {
+        type: 'text',
+        text: '此功能需綁定帳號 🔒\n輸入「綁定 [學員代碼]」或查看方案加入 👇',
+        quickReply: { items: [qr('💰 查看方案', '查看方案'), qr('🔗 我有代碼', '我要綁定')] },
+      },
+    ])
+    return
+  }
+
+  // 範圍外一律不寫（同 line-nl-log.ts 的原則：寧可沒記到也不要記錯，
+  // 這個數字會直接餵進 TDEE / 趨勢引擎）
+  if (!Number.isFinite(calories) || calories < CALORIES_MIN || calories > CALORIES_MAX) {
+    await replyMessage(replyToken, [
+      { type: 'text', text: `熱量數值不合理，請輸入 ${CALORIES_MIN}~${CALORIES_MAX} 大卡` },
+    ])
+    return
+  }
+
+  const today = getTaiwanDate()
+  const { error } = await supabase
+    .from('nutrition_logs')
+    .upsert({ client_id: client.id, date: today, calories: Math.round(calories) }, { onConflict: 'client_id,date' })
+
+  if (error) {
+    log.error('Quick calories error:', error)
+    await replyMessage(replyToken, [{ type: 'text', text: '記錄失敗，請稍後再試' }])
+    return
+  }
+
+  const target = client.calories_target
+  let msg = `✅ 已記錄熱量：${Math.round(calories)} 大卡`
+  if (target) {
+    const diff = Math.round(calories) - target
+    const sign = diff >= 0 ? '+' : ''
+    msg += `（目標 ${target}，${sign}${diff}）`
+  }
+  msg += '\n\n順手記個蛋白質更準 👉 打「蛋白 180」'
+
+  await replyMessage(replyToken, [{ type: 'text', text: msg, quickReply: QR_AFTER_RECORD }])
+}
+
+// ═══════════════════════════════════════
 // Quick record: Diet compliance
 // ═══════════════════════════════════════
 
@@ -280,22 +348,34 @@ export async function handleQuickCompliance(replyToken: string, client: LineClie
     return
   }
 
-  const afterCompliance = {
-    items: [
-      qr('🏋️ 記訓練', '記訓練'),
-      qr('😊 記身心', '記身心'),
-      qr('💧 記水量', '記水量'),
-      qr('📊 今日狀態', '狀態'),
-    ],
-  }
+  // ⚠️ 存完不要就這樣結束 —— 這裡原本只丟「記訓練/記身心/記水量/狀態」四個按鈕，
+  // 等於告訴學員「飲食記完了」。但 compliant 只是一個布林，引擎拿它推不出任何東西。
+  // Sean 8/31 就是在這一步之後自己打了「大概多1.200大卡」而系統沒接（見 handleQuickCalories）。
+  // 所以這裡改成**接著問數字**，並把估算選項用他自己的 calories_target 生出來。
+  const head = compliant ? '✅ 今日飲食已標記「達標」' : '❌ 今日飲食已標記「未達標」'
 
   await replyMessage(replyToken, [
     {
       type: 'text',
-      text: compliant ? '✅ 今日飲食已標記「達標」' : '❌ 今日飲食已標記「未達標」',
-      quickReply: afterCompliance,
+      text: `${head}\n\n大概吃了多少大卡？直接打數字就好（例：2200）\n算不出來就跳過，體重一樣會抓趨勢。`,
+      quickReply: { items: calorieQuickReplies(client.calories_target) },
     },
   ])
+}
+
+/**
+ * 熱量估算按鈕 —— 用學員自己的目標生，不要給一組跟他無關的數字。
+ * 沒設 calories_target 就退回通用級距。
+ */
+export function calorieQuickReplies(target: number | null) {
+  const base = target && target >= 1200 && target <= 5000 ? target : 2000
+  const round100 = (n: number) => Math.round(n / 100) * 100
+  const options = [round100(base - 400), round100(base), round100(base + 400)]
+    .filter(n => n >= CALORIES_MIN && n <= CALORIES_MAX)
+  return [
+    ...options.map(n => qr(`約 ${n}`, `熱量 ${n}`)),
+    qr('跳過', '跳過熱量'),
+  ]
 }
 
 // ═══════════════════════════════════════
@@ -513,6 +593,10 @@ function buildOnboardingGuide(name: string, tier: string, uniqueCode: string): s
     '「練了背 一小時 蠻累的大概8」→ 拉日 60分 RPE8',
     '「飲食今天破功」→ 記未達標',
     '「早上量85.7」→ 記體重',
+    '「今天2200大卡」或直接打「2200」→ 記今天吃的熱量',
+    '',
+    '⚠️ 熱量請給**今天的總數**，不要給「多吃了幾百卡」——',
+    '我拿總數才反推得出你真正的代謝，差值算不了。',
     '',
     '**不用背格式，也不用一次講完。** 記到什麼算什麼，',
     '我會把實際記進去的值念回去給你確認。',

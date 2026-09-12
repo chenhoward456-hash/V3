@@ -8,6 +8,7 @@ import {
   handleQuickWeight,
   handleQuickWater,
   handleQuickProtein,
+  handleQuickCalories,
   handleQuickCompliance,
   handleQuickTraining,
   handleQuickWellness,
@@ -18,7 +19,9 @@ import {
   handleNaturalNutrition,
   handleNaturalTraining,
   handleNaturalLog,
+  calorieQuickReplies,
 } from '@/lib/line-handlers'
+import { classifyCalorieInput, bareNumberIsCalories } from '@/lib/line-nl-log'
 import { buildDay0Messages, enrollSubscriber, unenrollSubscriber } from '@/lib/nurture-sequence'
 import { handleAdminAgentMessage, handleAgentProposalPostback, handleCoachActionPostback } from '@/lib/agent-line'
 
@@ -635,6 +638,43 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     return
   }
 
+  // ── Quick records: calories ──
+  // 判斷邏輯在 lib/line-nl-log.ts 的 classifyCalorieInput（純函式、有測試）。
+  // 這裡只負責分派 —— 「多 1200 大卡」是差值不是總量，寫進去會歪掉 TDEE 引擎，
+  // 所以 delta 一律反問而不是猜（Sean 2026-08-31 就是打這種句子）。
+  const calorieIntent = classifyCalorieInput(text)
+  if (calorieIntent?.kind === 'absolute') {
+    await handleQuickCalories(event.replyToken, client, calorieIntent.calories, supabase)
+    return
+  }
+  if (calorieIntent?.kind === 'delta' && client) {
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '我需要的是「今天總共吃多少」，不是多/少多少 🙏\n直接打總數就好，例如：2200',
+        quickReply: { items: calorieQuickReplies(client.calories_target) },
+      },
+    ])
+    return
+  }
+  if (calorieIntent?.kind === 'skip') {
+    await replyMessage(event.replyToken, [
+      {
+        type: 'text',
+        text: '好，那就先這樣 👌',
+        quickReply: {
+          items: [
+            qr('🏋️ 記訓練', '記訓練'),
+            qr('😊 記身心', '記身心'),
+            qr('💧 記水量', '記水量'),
+            qr('📊 今日狀態', '狀態'),
+          ],
+        },
+      },
+    ])
+    return
+  }
+
   // ── Quick records: diet compliance ──
   if (text === '達標' || text === '飲食達標') {
     await handleQuickCompliance(event.replyToken, client, true, supabase)
@@ -817,6 +857,16 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
       await handleQuickWeight(event.replyToken, client, weight, supabase)
       return
     }
+  }
+
+  // ── Bare number as today's calories (bound users only) ──
+  // 體重分支(30–200)在上面已經先吃過，這裡只認「明顯是一天總熱量」的量級。
+  // 下界 BARE_CALORIES_MIN=800：200–800 之間的裸數字可能是水量 ml / 蛋白 g / 單餐熱量，
+  // 猜錯會污染 TDEE 引擎，所以不猜（見 lib/line-nl-log.ts）。
+  const bareCalories = bareNumberIsCalories(text)
+  if (bareCalories != null && client) {
+    await handleQuickCalories(event.replyToken, client, bareCalories, supabase)
+    return
   }
 
   // 未綁定用戶發送無法辨識的文字 → 引導選單

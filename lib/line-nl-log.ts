@@ -44,6 +44,24 @@
 
 export const NL_LOG_MODEL = 'claude-opus-5'
 
+/**
+ * 熱量可寫入範圍（大卡）。一處真相 —— LINE 路徑上所有接熱量的地方都用這組（紅線 6）：
+ * `validateNL()`（自然語言）與 `handleQuickCalories()`（「熱量 2200」指令、追問回覆）。
+ * 下界 200 是為了讓「單餐」也能記；上界 10000 對齊 app/api/nutrition-logs 的驗證。
+ */
+export const CALORIES_MIN = 200
+export const CALORIES_MAX = 10000
+
+/**
+ * 裸數字要被當成「今天的總熱量」的下界。
+ *
+ * ⚠️ 故意比 CALORIES_MIN 高很多。webhook 裡 30–200 已經被體重分支吃走，
+ * 200–800 之間的裸數字語意含糊（可能是水量 ml、蛋白 g、單餐熱量），
+ * 猜錯會把垃圾餵進 TDEE 引擎。所以裸數字只認「明顯是一天總熱量」的量級，
+ * 其餘一律交給自然語言那層去問清楚。
+ */
+export const BARE_CALORIES_MIN = 800
+
 /** training_logs.training_type 的 DB CHECK 白名單（改這裡前先 grep，紅線 6） */
 export const ALLOWED_TRAINING_TYPES = [
   'push', 'pull', 'legs', 'full_body', 'upper_body',
@@ -125,7 +143,7 @@ export function validateNL(parsed: NLParsed): NLWrite {
   if (n) {
     const nut: NonNullable<NLWrite['nutrition']> = {}
     if (typeof n.compliant === 'boolean') nut.compliant = n.compliant
-    const cal = clampInt(n.calories, 200, 10000)
+    const cal = clampInt(n.calories, CALORIES_MIN, CALORIES_MAX)
     if (cal != null) nut.calories = cal
     const pro = clampInt(n.protein_grams, 1, 500)
     if (pro != null) nut.protein_grams = pro
@@ -241,4 +259,68 @@ export function extractJSON(raw: string): NLParsed | null {
   } catch {
     return null
   }
+}
+
+/**
+ * 把學員打的熱量字串轉成數字。
+ *
+ * 要處理真實輸入而不是理想輸入：Sean 打過「1.200大卡」——
+ * 那是千分位被打成點，不是 1.2 大卡。規則是「兩位以內 + 點 + 剛好三位數」視為千分位。
+ * 其餘照常 parseFloat；解不出來或不是有限數就回 null（由呼叫端決定要不要問）。
+ */
+export function parseCalorieNumber(raw: string): number | null {
+  const cleaned = raw.replace(/[,\uFF0C\s]/g, '')
+  // ⚠️ 一定要先擋空字串：Number('') === 0 而 0 是有限數，
+  // 會讓「解不出來」偽裝成「他今天吃 0 大卡」一路流下去。
+  if (!/\d/.test(cleaned)) return null
+  const thousands = cleaned.match(/^(\d{1,2})\.(\d{3})$/)
+  const n = thousands ? Number(thousands[1] + thousands[2]) : Number(cleaned)
+  return Number.isFinite(n) ? n : null
+}
+
+/**
+ * 學員打的這句話，是不是在講「今天吃多少大卡」？
+ *
+ * 抽成純函式是為了能測 —— 這段判斷原本散在 webhook 的 40 個分支中間，
+ * 而它決定的是「要不要把一個數字寫進 nutrition_logs.calories」，
+ * 那個欄位會被 estimateActualIntake 拿去反推 TDEE 再去改學員的熱量處方。
+ * 判錯的代價不是少一筆紀錄，是整條引擎跟著歪。
+ *
+ * - `absolute`：可以直接寫（呼叫端仍要過 handleQuickCalories 的範圍檢查）
+ * - `delta`：句子裡是「多/少 N 大卡」的差值 —— **絕對不能當總量寫**，要反問
+ * - `skip`：學員按了「跳過」
+ * - `null`：跟熱量無關，交還給後面的分支
+ */
+export type CalorieIntent =
+  | { kind: 'absolute'; calories: number }
+  | { kind: 'delta' }
+  | { kind: 'skip' }
+
+const DELTA_WORDS = /(多|少|超過|超|差|不足|剩)/
+const CAL_UNIT = /(大卡|kcal|卡路里|卡)/i
+
+export function classifyCalorieInput(text: string): CalorieIntent | null {
+  const t = text.trim()
+  if (t === '跳過熱量') return { kind: 'skip' }
+
+  // 差值優先判 —— 「大概多1.200大卡」如果先被絕對值規則吃掉就會寫成當日總量 1200。
+  // Sean 2026-08-31 打的就是這句。
+  if (DELTA_WORDS.test(t) && CAL_UNIT.test(t)) return { kind: 'delta' }
+
+  const m =
+    t.match(/^(?:熱量|卡路里|大卡)\s*([\d,.\uFF0C]+)$/i) ||
+    t.match(/^([\d,.\uFF0C]+)\s*(?:大卡|kcal|卡)$/i)
+  if (m) {
+    const n = parseCalorieNumber(m[1])
+    if (n != null) return { kind: 'absolute', calories: n }
+  }
+  return null
+}
+
+/** 裸數字要不要當成今天的總熱量（體重分支 30–200 已在 webhook 更早處理掉） */
+export function bareNumberIsCalories(text: string): number | null {
+  const m = text.trim().match(/^(\d{3,5})$/)
+  if (!m) return null
+  const n = parseInt(m[1], 10)
+  return n >= BARE_CALORIES_MIN && n <= CALORIES_MAX ? n : null
 }
