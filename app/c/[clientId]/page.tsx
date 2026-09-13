@@ -925,9 +925,6 @@ export default function ClientDashboard() {
           />
         )}
 
-        {/* 我的計畫 — 靜態參考（菜單/課表/補品/SOP）收合式，reference 層 */}
-        {view === 'home' && isToday && <MyPlanSection data={c.onboarding_notes_rendered} />}
-
         {/* 首次來訪導覽 banner（dismissible）*/}
         {view === 'home' && isToday && <WelcomeBanner clientId={clientId as string} isNew={isNewClient} />}
 
@@ -1419,6 +1416,14 @@ export default function ClientDashboard() {
               </SectionErrorBoundary>
             )
           })()}
+
+        {/* 我的計畫 — 靜態參考（菜單/課表/補品/SOP）收合式，reference 層
+            ⚠️ 2026-09-14：這張卡原本排在第 2 位（TodayHeadline 之後），實測 林宥任 的手機畫面：
+            「今天只有一件必做 · 量早晨體重」落在第 1.0 個螢幕、體重輸入框在第 1.3 個螢幕 ——
+            他每天打開就是要量體重，卻得先滑過 886px 才看得到指令、1094px 才碰得到框。
+            這張卡自己的註解就寫「reference 層」：菜單/課表/SOP 是教練更新時才讀的東西，不是每天的動作。
+            參考資料排在每日動作後面。（原本 QuickActions 上面那句「擺在判決卡前面」只搬了一半。） */}
+        {view === 'home' && isToday && <MyPlanSection data={c.onboarding_notes_rendered} />}
 
         {/* === 「進度」分頁頭牌：你在贏嗎（作戰室 + 減脂體檢）—— 從首頁搬來，進度問句的單一去處 === */}
         {view === 'data' && (isCompetition || c.prep_phase === 'cut' || /cut|loss|fat|減/.test((c.goal_type || '').toLowerCase())) && (
