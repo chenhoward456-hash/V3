@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { getLabAdvice } from '@/components/client/types'
 import { generateSupplementSuggestions, type SupplementSuggestion } from '@/lib/supplement-engine'
 import { analyzeLabs } from '@/lib/lab-trend-analyzer'
+import { isGeneticOnce } from '@/lib/lab-due'
 import { isCompetitionMode, isHealthMode } from '@/lib/client-mode'
 
 // ---------------------------------------------------------------------------
@@ -728,13 +729,12 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
 
         {/* ── 建議下次回診追蹤項目（依本次數據自動整理；只挑需追蹤的，穩定/基因型不重驗）── */}
         {latestLabs.length > 0 && (() => {
-          // 基因型指標一次檢測即可、終生不太變，不列入重驗（如 Lp(a)/APOE/MTHFR）
-          const GENETIC_ONCE = ['lp(a)', 'lpa', '脂蛋白', 'apoe', 'mthfr']
+          // 基因型指標一次檢測即可、終生不太變，不列入重驗（如 Lp(a)/APOE/MTHFR）。
+          // 清單在 lib/lab-due.ts —— 教練晨報的「這次要盯」用同一份（紅線 6）。
           const retest = latestLabs.map(r => {
             const f = findingByName.get(r.test_name)
             if (!f) return null
-            const nameL = r.test_name.toLowerCase()
-            if (GENETIC_ONCE.some(g => nameL.includes(g))) return null
+            if (isGeneticOnce(r.test_name)) return null
             const s = f.latestStatus ?? r.status
             if (s === 'alert' || s === 'attention') return { name: r.test_name, reason: '追蹤這次數值的變化趨勢' }
             if (f.trend === 'declining' && f.inOptimal === false && f.changePercent != null && Math.abs(f.changePercent) >= 20) {

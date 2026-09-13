@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildCoachDigest, type CoachDigestInput } from '@/lib/coach-digest'
+import { evaluateLabDue } from '@/lib/lab-due'
 
 /**
  * 這支的輸出是「每天早上真的會推到 Howard 手機上的那封信」，
@@ -20,6 +21,7 @@ const base = (o: Partial<CoachDigestInput> = {}): CoachDigestInput => ({
   lastActiveByClient: { a: '2026-08-23', b: '2026-08-23' },
   recentWeights: [],
   competitions: [],
+  labsDue: [],
   adminUrl: 'https://example.com',
   ...o,
 })
@@ -112,5 +114,31 @@ describe('教練晨報', () => {
     const flat = (n: number) => Array.from({ length: n }, () => ({ client_id: 'a', weight: 80 }))
     expect(buildCoachDigest(base({ recentWeights: flat(6) })).text).toBeNull()
     expect(buildCoachDigest(base({ recentWeights: flat(7) })).text).toContain('體重停滯')
+  })
+})
+
+describe('血檢到期', () => {
+  // 2026-09-13 的真實狀況：這兩個人的回檢日都過了，而唯一會顯示的地方是
+  // 要他自己想起來去開的 /admin/labs。信裡沒有 = 等於沒有。
+  const overdue = (name: string, date: string) =>
+    evaluateLabDue({ id: name, name, gender: '男性', next_checkup_date: date, labs: [] }, '2026-08-23').item
+
+  it('逾期的血檢要進開頭那句 —— 不能第一行說「沒人掉線」就把它藏在下面', () => {
+    const d = buildCoachDigest(base({ labsDue: [overdue('謝佳峻', '2026-07-25')] }))
+    expect(d.text).toContain('血檢逾期')
+    expect(d.text).not.toContain('沒人掉線')
+  })
+
+  it('排在「昨日未記錄」前面 —— 有期限的事優先於例行雜訊', () => {
+    const d = buildCoachDigest(base({
+      yesterdayNutritionIds: [],
+      labsDue: [overdue('謝佳峻', '2026-07-25')],
+    }))
+    expect(d.text!.indexOf('🩸')).toBeLessThan(d.text!.indexOf('昨日未記錄'))
+  })
+
+  it('沒人到期就整段不出現，不發空標題', () => {
+    const d = buildCoachDigest(base({ yesterdayNutritionIds: [], labsDue: [] }))
+    expect(d.text).not.toContain('🩸')
   })
 })

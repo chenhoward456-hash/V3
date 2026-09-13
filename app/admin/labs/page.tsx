@@ -17,6 +17,8 @@ interface LabClient {
   nextCheckupDate: string | null
   checkupDaysUntil: number | null
   dueForRetest: boolean
+  /** 學員頁的 next_checkup_date 與報告總結的 next_review_date 打架 */
+  conflictingDates?: boolean
   criticalCount: number
   attentionCount: number
   improvingCount: number
@@ -150,6 +152,11 @@ export default function AdminLabsOverviewPage() {
                     <div className="min-w-0">
                       <span className="font-medium text-gray-900">{c.name}</span>
                       <span className={`ml-2 text-xs ${overdue ? 'text-rose-600' : 'text-orange-600'}`}>{reason}</span>
+                      {/* 回檢日有兩個來源（學員頁 / 報告總結），不一致時上面顯示的是較早的那個。
+                          不標出來的話，教練會以為自己設的日期沒生效。 */}
+                      {c.conflictingDates && (
+                        <p className="mt-0.5 text-xs text-gray-400">兩處回檢日不一致，已取較早的</p>
+                      )}
                     </div>
                     <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
                   </Link>

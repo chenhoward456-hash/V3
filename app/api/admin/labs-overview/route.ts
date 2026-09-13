@@ -6,6 +6,7 @@ import {
   createSuccessResponse,
 } from '@/lib/auth-middleware'
 import { analyzeLabs, selectKeyFindings, type LabResultRow } from '@/lib/lab-trend-analyzer'
+import { evaluateLabDue } from '@/lib/lab-due'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,19 +22,32 @@ export async function GET(request: NextRequest) {
     const { authorized, error: authError } = await verifyCoachAuth(request)
     if (!authorized) return createErrorResponse(authError || '權限不足', 403)
 
-    const { data: clients, error } = await supabase
-      .from('clients')
-      .select('id, name, unique_code, gender, next_checkup_date, lab_results(test_name, value, unit, date, status)')
-      .eq('lab_enabled', true)
-      .eq('is_active', true)
+    const [{ data: clients, error }, panelNotesRes] = await Promise.all([
+      supabase
+        .from('clients')
+        .select('id, name, unique_code, gender, next_checkup_date, lab_results(test_name, value, unit, date, status)')
+        .eq('lab_enabled', true)
+        .eq('is_active', true),
+      // 回檢日有兩個來源（見 lib/lab-due.ts 檔頭），這頁原本只看 clients.next_checkup_date，
+      // 所以陳胤豪 panel note 上排的 09-03 從來沒被這頁算進去過。
+      supabase.from('lab_panel_notes').select('client_id, panel_date, next_review_date'),
+    ])
 
     if (error) {
       console.error('[labs-overview] error:', error)
       return createErrorResponse('讀取失敗', 500)
     }
 
-    const todayMs = Date.now()
-    const dayMs = 86400000
+    // 台灣日（UTC+8）；lab-due 的判定全部用日期字串比，不吃執行環境時區
+    const today = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+    const latestPanelReview: Record<string, { panelDate: string; nextReview: string | null }> = {}
+    for (const r of (panelNotesRes.data ?? []) as { client_id: string; panel_date: string; next_review_date: string | null }[]) {
+      const cur = latestPanelReview[r.client_id]
+      if (!cur || r.panel_date > cur.panelDate) {
+        latestPanelReview[r.client_id] = { panelDate: r.panel_date, nextReview: r.next_review_date }
+      }
+    }
 
     type ClientRow = {
       id: string
@@ -51,31 +65,29 @@ export async function GET(request: NextRequest) {
       const key = selectKeyFindings(findings)
 
       const dates = [...new Set(labs.map(l => l.date))].filter(Boolean).sort()
-      const latestDate = dates.length ? dates[dates.length - 1] : null
-      const daysSinceLatest = latestDate
-        ? Math.round((todayMs - new Date(latestDate + 'T00:00:00').getTime()) / dayMs)
-        : null
 
-      let checkupDaysUntil: number | null = null
-      if (c.next_checkup_date) {
-        checkupDaysUntil = Math.round((new Date(c.next_checkup_date + 'T00:00:00').getTime() - todayMs) / dayMs)
-      }
-
-      // 該回檢：已設回檢日且 ≤14 天/逾期，或最新一次抽血超過 120 天
-      const dueForRetest =
-        (checkupDaysUntil !== null && checkupDaysUntil <= 14) ||
-        (daysSinceLatest !== null && daysSinceLatest > 120)
+      // 判定交給 lib/lab-due.ts —— 這頁跟教練晨報必須講同一件事（紅線 6）
+      const { item: due, due: dueForRetest } = evaluateLabDue({
+        id: c.id,
+        name: c.name,
+        unique_code: c.unique_code,
+        gender: c.gender,
+        next_checkup_date: c.next_checkup_date,
+        panel_next_review_date: latestPanelReview[c.id]?.nextReview ?? null,
+        labs,
+      }, today)
 
       return {
         clientId: c.id,
         name: c.name,
         uniqueCode: c.unique_code,
-        latestDate,
-        daysSinceLatest,
+        latestDate: due.latestDate,
+        daysSinceLatest: due.daysSinceLatest,
         panelCount: dates.length,
-        nextCheckupDate: c.next_checkup_date,
-        checkupDaysUntil,
+        nextCheckupDate: due.dueDate,
+        checkupDaysUntil: due.daysUntil,
         dueForRetest,
+        conflictingDates: due.conflictingDates,
         criticalCount: key.critical.length,
         attentionCount: key.attention.length,
         improvingCount: key.improving.length,

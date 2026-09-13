@@ -16,6 +16,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { daysUntilDateTW, DAY_MS } from './date-utils'
 import { COACH_LINE_USER_ID } from './line-links'
+import { findLabsDue, formatLabDueLines, type LabDueItem, type LabDueClientInput } from './lab-due'
+import type { LabResultRow } from './lab-trend-analyzer'
 
 export { COACH_LINE_USER_ID }
 
@@ -51,6 +53,8 @@ export type CoachDigestInput = {
   recentWeights: { client_id: string; weight: number | null }[]
   /** 30 天內的比賽 */
   competitions: { name: string; competition_date: string }[]
+  /** 該回檢的血檢（已由 findLabsDue 算好、依急迫度排序） */
+  labsDue: LabDueItem[]
   /** 後台網址（信尾的可點連結） */
   adminUrl: string
 }
@@ -65,7 +69,7 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   const {
     today, clients, yesterdayWeightIds, yesterdayNutritionIds,
     yesterdayTraining, yesterdayWellness, lastActiveByClient,
-    recentWeights, competitions, adminUrl,
+    recentWeights, competitions, labsDue, adminUrl,
   } = input
 
   const hadWeight = new Set(yesterdayWeightIds)
@@ -90,6 +94,18 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   if (offline.length > 0) {
     lines.push(`🚨 ${offline.length} 個人掉線了：`)
     offline.forEach(o => lines.push(`  • ${o.name}：${o.days} 天沒動`))
+    lines.push('')
+  }
+
+  // 0.5 血檢到期 —— 排在「昨日未記錄」前面，因為這是有期限、會過期的事。
+  //
+  // ⚠️ 這段存在的唯一理由是**投遞**：`/admin/labs` 早就會算「該回檢」，
+  // 但那要他自己想起來去開後台。他的原話是「我都懶得開後台」，
+  // 結果謝佳峻的回檢日 09-08 過了 5 天沒有任何人知道。
+  if (labsDue.length > 0) {
+    const overdue = labsDue.filter(l => l.daysUntil !== null && l.daysUntil < 0).length
+    lines.push(overdue > 0 ? `🩸 血檢：${overdue} 個逾期` : '🩸 血檢該回檢了：')
+    for (const l of labsDue) lines.push(...formatLabDueLines(l))
     lines.push('')
   }
 
@@ -159,7 +175,16 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
 
   // 開頭先講結論（跟 /admin 首頁「今日主線」同一句話），
   // 結尾給可點連結 —— 沒有連結的通知等於還是要他自己想起來去開後台。
-  const lead = offline.length > 0 ? `${offline.length} 個人需要你出手` : '沒人掉線，其餘看下面'
+  // 逾期的血檢跟掉線一樣是「要他出手」，所以也要進開頭那句，
+  // 否則整封信的第一行會說「沒人掉線」而把逾期 49 天的回檢藏在下面。
+  const overdueLabs = labsDue.filter(l => l.daysUntil !== null && l.daysUntil < 0).length
+  const leadBits: string[] = []
+  if (offline.length > 0) leadBits.push(`${offline.length} 個人掉線`)
+  if (overdueLabs > 0) leadBits.push(`${overdueLabs} 個血檢逾期`)
+  const lead =
+    leadBits.length === 0 ? '沒人掉線，其餘看下面'
+    : overdueLabs === 0 ? `${offline.length} 個人需要你出手`
+    : `${leadBits.join('、')}，要你出手`
   const body = lines.join('\n').replace(/\n+$/, '')
   return {
     text: `☀️ 教練晨報 ${today}\n${lead}\n\n${body}\n\n👉 打開後台：${adminUrl}/admin`,
@@ -190,7 +215,7 @@ export async function loadCoachDigest(
   const offlineSince = new Date(Date.parse(today) - (OFFLINE_MAX_DAYS + 1) * DAY_MS).toISOString().split('T')[0]
   const plateauSince = new Date(Date.parse(today) - 10 * DAY_MS).toISOString().split('T')[0]
 
-  const [yW, yN, yT, yWe, clientsRes, oBody, oNut, oTrain, oWell, recentW, comps] = await Promise.all([
+  const [yW, yN, yT, yWe, clientsRes, oBody, oNut, oTrain, oWell, recentW, comps, labClientsRes, panelNotesRes] = await Promise.all([
     supabase.from('body_composition').select('client_id').eq('date', yesterdayStr),
     supabase.from('nutrition_logs').select('client_id').eq('date', yesterdayStr),
     supabase.from('training_logs').select('client_id, rpe').eq('date', yesterdayStr),
@@ -209,6 +234,13 @@ export async function loadCoachDigest(
       .eq('is_active', true)
       .in('client_mode', ['bodybuilding', 'athletic'])
       .not('competition_date', 'is', null),
+    // 血檢：只撈 lab_enabled 的人，連 lab_results 一起帶回來
+    // （跟 /api/admin/labs-overview 同一個查法，兩邊算出來的東西才會一致）
+    supabase.from('clients')
+      .select('id, name, unique_code, gender, next_checkup_date, lab_results(test_name, value, unit, date, status)')
+      .eq('lab_enabled', true)
+      .eq('is_active', true),
+    supabase.from('lab_panel_notes').select('client_id, panel_date, next_review_date'),
   ])
 
   const lastActiveByClient: Record<string, string> = {}
@@ -220,8 +252,35 @@ export async function loadCoachDigest(
     }
   }
 
+  // 每位學員取「最新一份 panel note」的 next_review_date —— 舊的那些已經被新的取代
+  const latestPanelReview: Record<string, { panelDate: string; nextReview: string | null }> = {}
+  for (const r of (panelNotesRes.data ?? []) as { client_id: string; panel_date: string; next_review_date: string | null }[]) {
+    const cur = latestPanelReview[r.client_id]
+    if (!cur || r.panel_date > cur.panelDate) {
+      latestPanelReview[r.client_id] = { panelDate: r.panel_date, nextReview: r.next_review_date }
+    }
+  }
+  type LabClientRow = {
+    id: string
+    name: string
+    unique_code: string | null
+    gender: string | null
+    next_checkup_date: string | null
+    lab_results: LabResultRow[] | null
+  }
+  const labDueInput: LabDueClientInput[] = ((labClientsRes.data ?? []) as LabClientRow[]).map(c => ({
+    id: c.id,
+    name: c.name,
+    unique_code: c.unique_code,
+    gender: c.gender,
+    next_checkup_date: c.next_checkup_date,
+    panel_next_review_date: latestPanelReview[c.id]?.nextReview ?? null,
+    labs: c.lab_results ?? [],
+  }))
+
   return buildCoachDigest({
     today,
+    labsDue: findLabsDue(labDueInput, today),
     clients: (clientsRes.data ?? []) as DigestClient[],
     yesterdayWeightIds: ((yW.data ?? []) as { client_id: string }[]).map(r => r.client_id),
     yesterdayNutritionIds: ((yN.data ?? []) as { client_id: string }[]).map(r => r.client_id),
