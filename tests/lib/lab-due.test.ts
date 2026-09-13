@@ -166,3 +166,34 @@ describe('formatLabDueLines：寫進信裡長怎樣', () => {
     expect(formatLabDueLines(item).join('\n')).toContain('回檢日不一致')
   })
 })
+
+describe('開單摘要進晨報', () => {
+  const TPL = [
+    { name: 'Testosterone 總睪固酮', price: 300, priority: 'must' },
+    { name: 'Free Testosterone 游離睪固酮', price: 400, priority: 'must' },
+    { name: '25-OH Vitamin D Total', price: 700, priority: 'must' },
+  ]
+
+  it('該回檢的人要順便講「這次開什麼、多少錢」—— 不然只講了一半', () => {
+    const { item } = evaluateLabDue(c({
+      name: '陳胤豪',
+      next_checkup_date: '2026-09-03',
+      templateItems: TPL,
+      templateBasePrice: 3600,
+      labs: [
+        { test_name: '睪固酮', value: 403.92, date: '2026-03-20' },
+        { test_name: 'SHBG', value: 38.4, date: '2026-03-20' },
+      ],
+    }), TODAY)
+    const text = formatLabDueLines(item).join('\n')
+    expect(text).toContain('這次開')
+    expect(text).toContain('公版全開')
+    expect(text).toContain('省：')
+  })
+
+  it('沒有對應公版就不出開單建議，不要硬掰', () => {
+    const { item } = evaluateLabDue(c({ next_checkup_date: '2026-09-03' }), TODAY)
+    expect(item.order).toBeNull()
+    expect(formatLabDueLines(item).join('\n')).not.toContain('這次開')
+  })
+})

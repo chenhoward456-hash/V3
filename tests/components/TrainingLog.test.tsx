@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import TrainingLog from '@/components/client/TrainingLog'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 // ---------------------------------------------------------------------------
 // Mock dependencies
@@ -1048,9 +1049,14 @@ describe('TrainingLog', () => {
   // WEEKLY SUMMARY DETAILS (lines 683-691)
   // ===========================================================================
   describe('weekly summary details', () => {
+    // ⚠️ 這裡一定要用「本地日」不能用 toISOString()。
+    // toISOString() 給的是 UTC 日，在台灣（UTC+8）凌晨 0-8 點會回傳前一天。
+    // 週摘要是用本地日算「這週」，所以每逢週一凌晨，這個「今天」會落在上一週而被濾掉
+    // —— 2026-09-14（一）00:29 實際踩到。這不是隨機 flaky，是固定會壞的時段。
+    const localToday = () => getLocalDateStr(new Date())
+
     it('shows cardio days count when cardio logs exist', () => {
-      const now = new Date()
-      const todayStr = now.toISOString().split('T')[0]
+      const todayStr = localToday()
       const logs = [
         { date: todayStr, training_type: 'push', duration: 60, sets: 20, rpe: 8 },
         { date: todayStr, training_type: 'cardio', duration: 30, sets: null, rpe: null },
@@ -1063,8 +1069,7 @@ describe('TrainingLog', () => {
     })
 
     it('shows total sets when weight training sets exist', () => {
-      const now = new Date()
-      const todayStr = now.toISOString().split('T')[0]
+      const todayStr = localToday()
       const logs = [
         { date: todayStr, training_type: 'push', duration: 60, sets: 20, rpe: 8 },
         { date: todayStr, training_type: 'pull', duration: 55, sets: 18, rpe: 7 },

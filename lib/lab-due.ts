@@ -24,6 +24,7 @@
  */
 
 import { analyzeLabs, selectKeyFindings, type LabResultRow } from './lab-trend-analyzer'
+import { buildLabOrder, type LabOrderPlan, type TemplateItem } from './lab-order'
 import { DAY_MS } from './date-utils'
 
 /** 幾天內到期就開始提醒（跟 /admin/labs 原本的 dueForRetest 同一條線） */
@@ -63,6 +64,10 @@ export type LabDueClientInput = {
   /** 最新一筆 lab_panel_notes.next_review_date */
   panel_next_review_date?: string | null
   labs: LabResultRow[]
+  /** 這位學員適用的公版加驗清單（lab_panel_templates.add_on_items） */
+  templateItems?: TemplateItem[]
+  /** 公版底盤價 */
+  templateBasePrice?: number | null
 }
 
 export type LabWatchItem = {
@@ -89,6 +94,8 @@ export type LabDueItem = {
   /** 兩個「下次抽血日」欄位不一致 —— 該去對帳 */
   conflictingDates: boolean
   watch: LabWatchItem[]
+  /** 這次建議開哪幾項（減法引擎，見 lib/lab-order.ts）；沒公版就是 null */
+  order: LabOrderPlan | null
 }
 
 /** 'YYYY-MM-DD' 兩個日期字串相差幾天。兩邊都是 UTC 午夜，所以不吃時區。 */
@@ -185,6 +192,15 @@ export function evaluateLabDue(
         !!c.panel_next_review_date &&
         c.next_checkup_date !== c.panel_next_review_date,
       watch,
+      order: c.templateItems?.length
+        ? buildLabOrder({
+            labs: c.labs ?? [],
+            templateItems: c.templateItems,
+            basePrice: c.templateBasePrice,
+            gender: normalizeGender(c.gender),
+            today,
+          })
+        : null,
     },
   }
 }
@@ -210,6 +226,26 @@ export function formatLabDueLines(item: LabDueItem): string[] {
   }
   if (item.conflictingDates) {
     lines.push('      ⚠️ 學員頁與報告總結的回檢日不一致，去對一下')
+  }
+
+  // 開單摘要 —— 這是「該回檢」跟「所以要開什麼」之間那條斷掉的線。
+  // Howard：「我還是只能問你啊，那系統存在的意義是什麼？」——他手上要的是這幾行。
+  const o = item.order
+  if (o && o.must.length > 0) {
+    const unknown = o.must.filter(l => l.price == null).length
+    const baseNote = o.basePackage.skippable ? '、底盤可不開' : ''
+    lines.push(
+      `      💰 這次開 ${o.must.length} 項約 ${o.mustCost.toLocaleString()} 元` +
+      `${unknown > 0 ? `（另 ${unknown} 項價格未知）` : ''}` +
+      `${baseNote}　←　公版全開要 ${(o.templateCost + (o.basePackage.price ?? 0)).toLocaleString()}`,
+    )
+    lines.push(`         開：${o.must.map(l => `${l.label}${l.price != null ? ` ${l.price}` : ' ?'}`).join('、')}`)
+    if (o.skip.length > 0) {
+      lines.push(`         省：${o.skip.map(l => l.label).join('、')}`)
+    }
+    if (o.defer.length > 0) {
+      lines.push(`         有錢再加（純基準線，共 ${(o.fullCost - o.mustCost).toLocaleString()}）：${o.defer.map(l => l.label).join('、')}`)
+    }
   }
   return lines
 }

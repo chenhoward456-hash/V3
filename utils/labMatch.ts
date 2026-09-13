@@ -73,10 +73,18 @@ const TEST_ALIASES: Record<string, string[]> = {
   // ── 荷爾蒙 ──
   testosterone: ['睪固酮', 'testosterone', '總睪固酮', 'total testosterone'],
   free_testosterone: ['游離睪固酮', 'free testosterone'],
+  // 生物可利用睪固酮／游離睪固酮都算得出來（見 lib/lab-derive.ts），
+  // 有 canonical ID 才能讓開單引擎認出「這項不用花錢驗」。
+  bioavailable_testosterone: ['生物可利用睪固酮', 'bioavailable testosterone', 'bioavailable t', 'bio-t'],
+  prolactin: ['prolactin', '催乳激素', '泌乳素', 'prl'],
   cortisol: ['皮質醇', 'cortisol', '可體松'],
   dheas: ['dhea-s', 'dheas', '脫氫表雄酮硫酸鹽', '硫酸脫氫異雄固酮', 'dhea'],
   estradiol: ['雌二醇', 'estradiol', 'e2'],
   shbg: ['shbg', '性荷爾蒙結合球蛋白'],
+
+  // ⚠️ ApoE 是基因型（終身一次），跟 ApoB 是完全不同的東西；
+  // normalize 後 'apoe' 與 'apob' 不會互撞。
+  apoe: ['apoe', 'apo e', 'apoe genotyping', '載脂蛋白e基因型'],
 
   // ── 其他 ──
   omega3: ['omega-3 index', 'omega3 index', 'omega3', 'epa+dha'],

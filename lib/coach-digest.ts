@@ -18,6 +18,7 @@ import { daysUntilDateTW, DAY_MS } from './date-utils'
 import { COACH_LINE_USER_ID } from './line-links'
 import { findLabsDue, formatLabDueLines, type LabDueItem, type LabDueClientInput } from './lab-due'
 import type { LabResultRow } from './lab-trend-analyzer'
+import type { TemplateItem } from './lab-order'
 
 export { COACH_LINE_USER_ID }
 
@@ -215,7 +216,7 @@ export async function loadCoachDigest(
   const offlineSince = new Date(Date.parse(today) - (OFFLINE_MAX_DAYS + 1) * DAY_MS).toISOString().split('T')[0]
   const plateauSince = new Date(Date.parse(today) - 10 * DAY_MS).toISOString().split('T')[0]
 
-  const [yW, yN, yT, yWe, clientsRes, oBody, oNut, oTrain, oWell, recentW, comps, labClientsRes, panelNotesRes] = await Promise.all([
+  const [yW, yN, yT, yWe, clientsRes, oBody, oNut, oTrain, oWell, recentW, comps, labClientsRes, panelNotesRes, templatesRes] = await Promise.all([
     supabase.from('body_composition').select('client_id').eq('date', yesterdayStr),
     supabase.from('nutrition_logs').select('client_id').eq('date', yesterdayStr),
     supabase.from('training_logs').select('client_id, rpe').eq('date', yesterdayStr),
@@ -241,6 +242,8 @@ export async function loadCoachDigest(
       .eq('lab_enabled', true)
       .eq('is_active', true),
     supabase.from('lab_panel_notes').select('client_id, panel_date, next_review_date'),
+    // 開單公版：性別 × 目標導向。沒有對應公版的人就不出開單建議（不是錯誤）
+    supabase.from('lab_panel_templates').select('gender, goal_orientation, add_on_items, base_price'),
   ])
 
   const lastActiveByClient: Record<string, string> = {}
@@ -268,15 +271,32 @@ export async function loadCoachDigest(
     next_checkup_date: string | null
     lab_results: LabResultRow[] | null
   }
-  const labDueInput: LabDueClientInput[] = ((labClientsRes.data ?? []) as LabClientRow[]).map(c => ({
-    id: c.id,
-    name: c.name,
-    unique_code: c.unique_code,
-    gender: c.gender,
-    next_checkup_date: c.next_checkup_date,
-    panel_next_review_date: latestPanelReview[c.id]?.nextReview ?? null,
-    labs: c.lab_results ?? [],
-  }))
+  type TemplateRow = {
+    gender: string | null
+    goal_orientation: string | null
+    add_on_items: TemplateItem[] | null
+    base_price: number | null
+  }
+  const templates = (templatesRes.data ?? []) as TemplateRow[]
+  // 目標導向優先（比賽/健體客群），找不到就退一般健康
+  const templateFor = (gender: string | null) =>
+    templates.find(t => t.gender === (gender || '男性') && t.goal_orientation === 'target')
+    ?? templates.find(t => t.gender === (gender || '男性'))
+
+  const labDueInput: LabDueClientInput[] = ((labClientsRes.data ?? []) as LabClientRow[]).map(c => {
+    const tpl = templateFor(c.gender)
+    return {
+      id: c.id,
+      name: c.name,
+      unique_code: c.unique_code,
+      gender: c.gender,
+      next_checkup_date: c.next_checkup_date,
+      panel_next_review_date: latestPanelReview[c.id]?.nextReview ?? null,
+      labs: c.lab_results ?? [],
+      templateItems: tpl?.add_on_items ?? undefined,
+      templateBasePrice: tpl?.base_price ?? null,
+    }
+  })
 
   return buildCoachDigest({
     today,
