@@ -86,11 +86,15 @@ export default function ClientHeader({
 
   return (
     <>
-      {/* 標題 + 頭像 */}
-      <div className="flex items-center justify-between mb-3">
+      {/* 標題 + 頭像
+          ⚠️ 2026-09-14：這一列存在的理由是「知道現在看的是誰的頁面」——
+          那是**教練**切學員時需要的資訊。學員在自己的手機上打開自己的儀表板，
+          不需要被告知自己叫什麼名字，而它佔掉 52px＋間距，把每天要按的體重框往下推。
+          （實測 林宥任：體重框落在第 0.89 屏，這塊是剩下最大的一塊。）
+          所以照身分分流：教練模式維持大頭貼＋姓名，學員端只留功能圖示。 */}
+      <div className={`flex items-center justify-between ${isCoachMode ? 'mb-3' : 'mb-1'}`}>
         <div className="flex items-center gap-3">
-          {/* 有設頭像照片就用照片，沒有就維持姓名首字 */}
-          {c.avatar_url ? (
+          {isCoachMode && (c.avatar_url ? (
             <img
               src={c.avatar_url}
               alt={c.name}
@@ -100,9 +104,9 @@ export default function ClientHeader({
             <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-lg shrink-0">
               {c.name.charAt(0)}
             </div>
-          )}
+          ))}
           <div>
-            <h1 className="text-xl font-bold text-gray-900 leading-tight">{c.name}</h1>
+            {isCoachMode && <h1 className="text-xl font-bold text-gray-900 leading-tight">{c.name}</h1>}
             {!hideStatusBadge && (
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                 c.status === 'normal' ? 'bg-emerald-100 text-emerald-700'
