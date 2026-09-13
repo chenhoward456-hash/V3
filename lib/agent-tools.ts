@@ -4,6 +4,11 @@
  * Phase 1 scope:
  *   - Single client: 陳胤豪 (ai_agent_enabled = true)
  *   - 3 tools: read_client_state, propose_macro_adjustment, add_personal_note
+ *
+ * 2026-09-14（方案 B）：加了 6 個唯讀分析工具，實作在 `lib/agent-tools-analysis.ts`。
+ * 起因是 Howard「我還是只能問你啊，那系統存在的意義是什麼？」——
+ * 引擎都在 lib/ 裡，只是沒接給 agent。寫入工具刻意不加：動手走
+ * `lib/line-coach-commands.ts` 的確定性指令，一條寫入路徑就好。
  *   - All proposals require coach approval before applying
  *
  * Safety architecture:
@@ -17,6 +22,10 @@
 
 import { createServiceSupabase } from '@/lib/supabase'
 import { computeTrajectoryAdjustment, type MacroBounds } from '@/lib/trajectory-adjust'
+import {
+  analyzeWeightTrend, estimateTrueIntake, checkTrainingFrequency,
+  buildLabOrderForClient, listLabsDue, listProposalsForAgent,
+} from '@/lib/agent-tools-analysis'
 
 const supabase = createServiceSupabase()
 
@@ -29,7 +38,7 @@ export const AGENT_TOOLS = [
     input_schema: {
       type: 'object' as const,
       properties: {
-        client_id: { type: 'string', description: '學員 UUID' },
+        client_id: { type: 'string', description: '學員 UUID、unique_code 或名字（教練通常會直接講名字）' },
       },
       required: ['client_id'],
     },
@@ -90,10 +99,21 @@ export const AGENT_TOOLS = [
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-async function resolveClientId(idOrCode: string): Promise<string | null> {
-  if (UUID_RE.test(idOrCode)) return idOrCode
-  const { data } = await supabase.from('clients').select('id').eq('unique_code', idOrCode).maybeSingle()
-  return data?.id ?? null
+/**
+ * UUID / unique_code / **名字** 都要能找到人。
+ *
+ * ⚠️ 2026-09-14：原本只認 UUID 與 unique_code。實測 agent 被問
+ * 「震宣體重都沒動是怎樣」時，用名字呼叫 read_client_state 直接失敗，
+ * 只好在回覆最後跟教練要 client_id —— 教練在 LINE 上不可能知道 UUID。
+ * 新的分析工具一開始就吃名字，這支不跟上就會出現「有些工具認得他、有些不認得」。
+ */
+async function resolveClientId(ref: string): Promise<string | null> {
+  if (UUID_RE.test(ref)) return ref
+  for (const col of ['unique_code', 'name'] as const) {
+    const { data } = await supabase.from('clients').select('id').eq(col, ref).maybeSingle()
+    if (data?.id) return data.id
+  }
+  return null
 }
 
 export async function readClientState(clientIdOrCode: string) {
@@ -373,6 +393,65 @@ export async function addPersonalNote(input: {
   }
 }
 
+/**
+ * 唯讀分析工具（2026-09-14 方案 B）。
+ *
+ * 每一個都只是包既有引擎，沒有新判斷邏輯 —— 新邏輯會變成第二個真相來源，
+ * 跟學員畫面上看到的各說各話（紅線 6）。
+ * `client` 一律收「名字或 unique_code」，教練在 LINE 上不會打 UUID。
+ */
+export const ANALYSIS_TOOLS = [
+  {
+    name: 'analyze_weight_trend',
+    description: '體重趨勢：7/14/28 天三個窗的回歸斜率（kg/週），加上要達成目標所需的速率。學員問「體重怎麼都不動」「掉太慢」一律先用這個。三個窗不一致時以長窗為準，短窗多半是量測噪音。',
+    input_schema: {
+      type: 'object' as const,
+      properties: { client: { type: 'string', description: '學員名字或 unique_code' } },
+      required: ['client'],
+    },
+  },
+  {
+    name: 'estimate_true_intake',
+    description: '反推學員真實攝取與代謝（TDEE）：拿回報熱量與體重斜率倒推。回答「他是不是偷吃」「處方開得對不對」。需要有熱量數字的飲食紀錄，只有達標/未達標算不出來（會明白回報算不出來，不要自己編）。',
+    input_schema: {
+      type: 'object' as const,
+      properties: { client: { type: 'string', description: '學員名字或 unique_code' } },
+      required: ['client'],
+    },
+  },
+  {
+    name: 'check_training_frequency',
+    description: '訓練頻率：期間內幾次、每週幾次、最後一次是哪天、幾天沒練。體重不動時要先排除「他根本沒在練」再談熱量。',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        client: { type: 'string', description: '學員名字或 unique_code' },
+        days: { type: 'number', description: '回看幾天，預設 30' },
+      },
+      required: ['client'],
+    },
+  },
+  {
+    name: 'build_lab_order',
+    description: '這次血檢該開哪幾項、多少錢。會先扣掉不用驗的（基因型驗過的、算得出來的、最近驗過且在最佳範圍的、要等上游結果的），分「必開／可延後／不用開」三組並附價格。問「要驗什麼」「太貴」用這個。',
+    input_schema: {
+      type: 'object' as const,
+      properties: { client: { type: 'string', description: '學員名字或 unique_code' } },
+      required: ['client'],
+    },
+  },
+  {
+    name: 'list_labs_due',
+    description: '誰的血檢該回檢了（含逾期幾天、這次要盯哪幾項）。問「誰該抽血」用這個。',
+    input_schema: { type: 'object' as const, properties: {}, required: [] },
+  },
+  {
+    name: 'list_pending_proposals',
+    description: '還等教練處理的引擎提案。⚠️ 唯讀 —— 要套用請教練自己回「套用 <名字>」、要退掉回「不要 <名字>」，agent 不直接寫入學員處方。',
+    input_schema: { type: 'object' as const, properties: {}, required: [] },
+  },
+]
+
 // ========== Tool dispatcher ==========
 
 export async function executeAgentTool(name: string, input: any) {
@@ -383,6 +462,19 @@ export async function executeAgentTool(name: string, input: any) {
       return await proposeMacroAdjustment(input)
     case 'add_personal_note':
       return await addPersonalNote(input)
+    // ── 唯讀分析（lib/agent-tools-analysis.ts）──
+    case 'analyze_weight_trend':
+      return await analyzeWeightTrend(supabase, input.client)
+    case 'estimate_true_intake':
+      return await estimateTrueIntake(supabase, input.client)
+    case 'check_training_frequency':
+      return await checkTrainingFrequency(supabase, input.client, input.days ?? 30)
+    case 'build_lab_order':
+      return await buildLabOrderForClient(supabase, input.client)
+    case 'list_labs_due':
+      return await listLabsDue(supabase)
+    case 'list_pending_proposals':
+      return await listProposalsForAgent(supabase)
     default:
       return { error: `unknown tool: ${name}` }
   }

@@ -6,7 +6,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import { AGENT_TOOLS, executeAgentTool } from './agent-tools'
+import { AGENT_TOOLS, ANALYSIS_TOOLS, executeAgentTool } from './agent-tools'
 import { HOWARD_VOICE_CORE, HOWARD_TRAINING_VOICE } from './howard-voice'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -49,10 +49,28 @@ const SYSTEM_PROMPT = `你是 Howard 教練的 AI 助理，協助管理學員的
 
 **不確定時**：寧可問學員「要不要我幫你記下來？」也不要自動寫。
 
+# 分析工具（2026-09-14 新增，教練問「為什麼」時用）
+這些全部唯讀，不會改到任何資料，該用就用不要客氣：
+- **analyze_weight_trend** — 「體重都沒動是怎樣」「掉太慢」。回 7/14/28 天三個窗的斜率。
+  ⚠️ 三個窗不一致時以**長窗**為準並明說短窗是噪音，不要挑一個對你的論點有利的窗。
+- **estimate_true_intake** — 「他是不是偷吃」「處方開得對嗎」。反推真實代謝。
+  ⚠️ 回的是**區間**不是單一數字。區間跨過處方時工具會說「不一致」，
+  那就照實講資料還不夠，**不要自己選一邊**。
+- **check_training_frequency** — 體重不動時**先排除「他根本沒在練」再談熱量**。
+  這是最常被跳過的一步：熱量處方是對著代謝開的，而代謝跟著訓練走。
+- **build_lab_order** — 「這次要驗什麼」「血檢太貴」。已經扣掉不用驗的，附價格與理由。
+- **list_labs_due** — 「誰該抽血了」。
+- **list_pending_proposals** — 「有什麼等我處理」。
+
+⚠️ **這些工具不會寫入任何東西，你也不要假裝寫了。**
+要套用提案請叫教練在 LINE 回「套用 <名字>」、退掉回「不要 <名字>」——
+那條路是確定性的，由他自己打那個字，不經過你。
+
 # 工具使用順序
 標準 flow：
 1. **判斷意圖**：純打招呼（你好/嗨/Hi）或閒聊 → 直接回應，**不要呼叫 tool**（省 token）
-2. 涉及體重/macros/數據 → read_client_state（必做）
+2. 教練問「某某學員怎麼了／為什麼」→ 直接用上面的分析工具，通常比 read_client_state 便宜也更準
+3. 涉及體重/macros/數據 → read_client_state（必做）
 3. 思考：要 propose 嗎？還是只要對話回答？還是需要先 add_personal_note 記下新資訊？
 4. 如要提案：propose_macro_adjustment
 5. 如有新發現的歷史/偏好：add_personal_note
@@ -134,7 +152,9 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentRunResult> {
         { type: 'text', text: HOWARD_TRAINING_VOICE, cache_control: { type: 'ephemeral' } },
         { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
       ] as any,
-      tools: AGENT_TOOLS as any,
+      // 2026-09-14：唯讀分析工具（方案 B）跟原本的提案工具一起帶上。
+      // 分兩個常數是因為「會寫入」跟「只會讀」該看得出來，不是為了分檔案。
+      tools: [...AGENT_TOOLS, ...ANALYSIS_TOOLS] as any,
       messages,
     })
 
