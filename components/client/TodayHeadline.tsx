@@ -19,6 +19,10 @@ import type { WeeklyTasksData } from './WeeklyTaskCard'
  * DESIGN.md：白卡 + slate 邊框 + rounded-2xl；顏色只做語意（emerald=在軌道/綠燈，amber=要留意）。
  */
 
+/**
+ * ⚠️ 這些是**備賽詞彙**，只有要上台的人聽得懂。
+ * 非備賽學員一律走下面的 GOAL_LABEL —— 見 chips 那段的說明。
+ */
 const PHASE_LABEL: Record<string, string> = {
   cut: '減脂期',
   peak_week: 'Peak Week',
@@ -29,6 +33,23 @@ const PHASE_LABEL: Record<string, string> = {
   preparation: '準備期',
   weigh_in: '過磅',
   rebound: '反彈期',
+}
+
+/**
+ * 非備賽學員看的階段標籤。用 `goal_type`（他自己選的方向），不是 `prep_phase`。
+ *
+ * ⚠️ 2026-09-14：`prep_phase` 的預設值是 `off_season`，而且**每一筆 client 都有**。
+ * 原本 chips 寫 `!isCompetition && phaseLabel`，於是每一個非備賽學員
+ * 的首屏第一個字都是「休賽期」—— 林宥任是律師、打籃球、目標 82kg 減脂中，
+ * 「休賽期」對他沒有任何意義，那是給要上台的人講的話。
+ * 備賽客戶反而不顯示（他們的階段由下方備賽倒數卡講，同屏不講兩次），
+ * 等於這個標籤精準地只講給聽不懂的人聽。
+ */
+const GOAL_LABEL: Record<string, string> = {
+  cut: '減脂中',
+  bulk: '增肌中',
+  recomp: '增肌減脂同時',
+  maintenance: '維持中',
 }
 
 // 從伺服器判定的文字/圖示判語意色（純呈現，不改任何引擎邏輯）。
@@ -132,7 +153,11 @@ function TodayHeadlineInner({
   const extraTasks = tasks.slice(1)
 
   const daysLeft = competitionDate ? daysUntilDateTW(competitionDate) : null
-  const phaseLabel = prepPhase ? PHASE_LABEL[prepPhase] ?? null : null
+  // 備賽的人講階段（PHASE_LABEL），其他人講方向（GOAL_LABEL）。
+  // 對不到就不顯示 —— 寧可空著也不要丟一個他看不懂的詞。
+  const phaseLabel = isCompetition
+    ? (prepPhase ? PHASE_LABEL[prepPhase] ?? null : null)
+    : (goalType ? GOAL_LABEL[goalType] ?? null : null)
 
   const carbs = (carbsTrainingDay && carbsRestDay)
     ? (isTrainingDay ? carbsTrainingDay : carbsRestDay)
@@ -174,6 +199,7 @@ function TodayHeadlineInner({
       {/* 目標 + 倒數 — 備賽客戶的階段/倒數由下方備賽倒數卡講（同屏不講兩次），這裡只補目標 */}
       {(() => {
         const chips = [
+          // 備賽客戶的階段由下方備賽倒數卡講，同屏不講兩次
           !isCompetition && phaseLabel,
           targetWeight != null && targetWeight !== '' && `目標 ${targetWeight}kg`,
         ].filter(Boolean) as string[]
