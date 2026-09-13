@@ -2,6 +2,7 @@
 
 import { memo, useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { planTitle } from '@/lib/plan-title'
 
 /**
  * 我的計畫（reference 層）— 把 onboarding 產生的靜態參考（菜單／課表／補品／SOP）收在一處。
@@ -94,6 +95,9 @@ function MyPlanSectionInner({ data }: { data: OnboardingRendered | null }) {
       {listOpen && <ul className="divide-y divide-slate-100">
         {sections.map((s) => {
           const isOpen = openSlug === s.slug
+          // emoji 移除、警示語意改用色點承接（DESIGN.md；同 TodayHeadline 的做法）。
+          // 在渲染層做而不改 onboarding_notes_rendered —— 那是 per-client 的 production 資料。
+          const { text: titleText, tone } = planTitle(s.title)
           return (
             <li key={s.slug}>
               <button
@@ -102,7 +106,10 @@ function MyPlanSectionInner({ data }: { data: OnboardingRendered | null }) {
                 className="w-full flex items-center gap-2 py-2.5 text-left"
                 aria-expanded={isOpen}
               >
-                <span className="text-sm text-slate-800 flex-1 min-w-0 truncate">{s.title}</span>
+                {tone === 'warn' && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" aria-label="要留意" />
+                )}
+                <span className="text-sm text-slate-800 flex-1 min-w-0 truncate">{titleText}</span>
                 <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
               </button>
               {isOpen && (

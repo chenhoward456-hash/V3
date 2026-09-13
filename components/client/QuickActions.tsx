@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { Check } from 'lucide-react'
+import { Check, ChevronRight } from 'lucide-react'
 
 interface QuickActionsProps {
   enabledSections: { id: string; icon: ReactNode; label: string; completed: boolean }[]
@@ -325,7 +325,16 @@ export default function QuickActions({ enabledSections, onNavigate, topSummary, 
         />
       )}
 
-      {/* 進度條 */}
+      {/* 進度條 ＋ 這一列要幹嘛
+          ⚠️ 2026-09-14：上面是「就地記」的表單（今天體重／今天感受如何／今天練了哪裡），
+          下面這一列是「跳到明細」的導覽，兩邊字一模一樣（體重／感受／訓練），
+          在畫面上讀起來像同一件事講兩次。加一行說明 + 每顆按鈕加箭頭，把兩者分開。 */}
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[11px] text-slate-400">
+          今天完成 <span className="tabular-nums">{completedCount}/{enabledSections.length}</span>
+        </span>
+        <span className="text-[11px] text-slate-400">點下面看明細 ↓</span>
+      </div>
       <div className="flex gap-1 mb-3">
         {enabledSections.map(s => (
           <div
@@ -348,7 +357,7 @@ export default function QuickActions({ enabledSections, onNavigate, topSummary, 
             }`}
           >
             <span className="mb-0.5 h-5 flex items-center justify-center">{s.completed ? <Check size={16} className="text-emerald-600" /> : s.icon}</span>
-            <span>{s.label}</span>
+            <span className="flex items-center gap-0.5">{s.label}<ChevronRight size={11} className="opacity-40" /></span>
           </button>
         ))}
       </div>
