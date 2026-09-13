@@ -43,6 +43,7 @@ const NutritionTrend = dynamic(() => import('@/components/client/NutritionTrend'
 import PwaPrompt from '@/components/client/PwaPrompt'
 import ClientHeader from '@/components/client/ClientHeader'
 import WelcomeBanner from '@/components/client/WelcomeBanner'
+import { isNewUser } from '@/lib/user-tenure'
 import HealthScoreBanner from '@/components/client/HealthScoreBanner'
 import ProgressJourney from '@/components/client/ProgressJourney'
 import { lineBindDeeplink } from '@/lib/line-links'
@@ -101,6 +102,19 @@ export default function ClientDashboard() {
   }, [])
 
   const { data: clientData, error, isLoading, mutate } = useClientData(clientId as string)
+
+  // 新手導覽的判準：**他有沒有留下東西**，不是這台裝置記不記得他。
+  // 只看 localStorage 會讓換手機／清資料／Safari 換 PWA 的老用戶被當成第一天報到
+  // （實測 林宥任 連續 33 天還是被「歡迎加入」蓋滿畫面）。見 lib/user-tenure.ts。
+  const isNewClient = useMemo(() => isNewUser({
+    createdAt: clientData?.client?.created_at,
+    logDates: [
+      ...(clientData?.bodyData ?? []).map(b => b.date),
+      ...(clientData?.nutritionLogs ?? []).map(n => n.date),
+      ...(clientData?.trainingLogs ?? []).map(t => t.date),
+      ...(clientData?.wellness ?? []).map(w => w.date),
+    ],
+  }), [clientData?.client?.created_at, clientData?.bodyData, clientData?.nutritionLogs, clientData?.trainingLogs, clientData?.wellness])
 
   // 儲存 clientId 到 localStorage + cookie，讓 PWA 從主畫面開啟時能跳轉到儀表板
   useEffect(() => {
@@ -915,7 +929,7 @@ export default function ClientDashboard() {
         {view === 'home' && isToday && <MyPlanSection data={c.onboarding_notes_rendered} />}
 
         {/* 首次來訪導覽 banner（dismissible）*/}
-        {view === 'home' && isToday && <WelcomeBanner clientId={clientId as string} />}
+        {view === 'home' && isToday && <WelcomeBanner clientId={clientId as string} isNew={isNewClient} />}
 
         {/* 推播開通 — 已下移到行動/判決卡之後（開通推播=留存槓桿，但別佔掉第一屏；gated）*/}
 
@@ -2435,6 +2449,7 @@ export default function ClientDashboard() {
       </div>
 
       <OnboardingGuide
+        isNew={isNewClient}
         clientId={clientId as string}
         clientName={c.name}
         tier={c.subscription_tier!}

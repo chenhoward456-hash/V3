@@ -4,28 +4,34 @@ import { memo, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { X } from 'lucide-react'
 
-const STORAGE_KEY = 'hp_welcome_completed'
+// ⚠️ 原本是全站共用一把 `hp_welcome_completed` —— 教練在同一台裝置看過任何一個學員的頁面，
+// 這張卡就對所有學員消失了。綁 clientId。
+const storageKeyFor = (clientId: string) => `hp_welcome_completed_${clientId}`
 
 interface Props {
   clientId: string
+  /** 他還是新手嗎（見 lib/user-tenure.ts）。false 就整張不出現。 */
+  isNew?: boolean
 }
 
-function WelcomeBannerInner({ clientId }: Props) {
+function WelcomeBannerInner({ clientId, isNew = true }: Props) {
   // 預設不顯示，hydration 後才檢查 localStorage（避免 SSR mismatch）
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    // 資料先講話：記錄過東西的人不需要「第一次來？」（見 lib/user-tenure.ts）
+    if (!isNew) return
     try {
-      const completed = window.localStorage.getItem(STORAGE_KEY)
+      const completed = window.localStorage.getItem(storageKeyFor(clientId))
       if (!completed) setVisible(true)
     } catch {
       // localStorage 不可用 → 不顯示，避免 noisy
     }
-  }, [])
+  }, [clientId, isNew])
 
   function dismiss() {
     try {
-      window.localStorage.setItem(STORAGE_KEY, new Date().toISOString())
+      window.localStorage.setItem(storageKeyFor(clientId), new Date().toISOString())
     } catch {}
     setVisible(false)
   }

@@ -108,7 +108,7 @@ function buildFreeSteps(
   return steps
 }
 
-export default function OnboardingGuide({ clientId, clientName, tier, features, nutritionTargets, goalInfo }: OnboardingGuideProps) {
+export default function OnboardingGuide({ clientId, clientName, tier, features, nutritionTargets, goalInfo, isNew = true }: OnboardingGuideProps & { isNew?: boolean }) {
   const [show, setShow] = useState(false)
   const [step, setStep] = useState(0)
 
@@ -116,6 +116,11 @@ export default function OnboardingGuide({ clientId, clientName, tier, features, 
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+    // ⚠️ localStorage 是裝置層的。只看它的話，換手機／清資料／Safari 換到 PWA
+    // 都會讓一個用了一個月的人重新被當成第一天報到 ——
+    // 實測 林宥任（連續 33 天、四項全記）打開第一眼就是「歡迎加入」蓋滿畫面。
+    // 先問資料：他留下過東西就不是新人，裝置記不記得他不重要。
+    if (!isNew) return
     const done = localStorage.getItem(storageKey)
     if (done) return
     // cookie 同意橫幅處理完才開導覽，避免兩個遮罩同時疊在畫面上
@@ -126,7 +131,7 @@ export default function OnboardingGuide({ clientId, clientName, tier, features, 
     const onConsent = () => setShow(true)
     window.addEventListener('cookie-consent-changed', onConsent)
     return () => window.removeEventListener('cookie-consent-changed', onConsent)
-  }, [storageKey])
+  }, [storageKey, isNew])
 
   const dismiss = () => {
     setShow(false)

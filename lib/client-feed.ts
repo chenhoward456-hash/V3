@@ -189,15 +189,43 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
       const parts: string[] = []
       if (oldCal != null && newCal != null && oldCal !== newCal) parts.push(`熱量 ${oldCal}→${newCal} kcal`)
       if (oldC != null && newC != null && oldC !== newC) parts.push(`碳水 ${oldC}→${newC} g`)
-      const changeStr = parts.length ? parts.join('、') : '營養目標'
-      const reasonStr = adj.reason ? `原因：${adj.reason}` : '系統依你的進度自動微調。'
-      cards.push({
-        id: `macro_${adj.applied_at}`,
-        tone: 'info',
-        icon: '🎯',
-        title: '你的目標自動調整了',
-        body: `${changeStr} · ${reasonStr}`,
-      })
+      // ⚠️ 2026-09-14：cron 對「引擎想調但決定不調」的情況**也會寫一筆 log**
+      // （`new_macros: { _skipped: true, would_have_been: ... }`，見 app/api/cron/daily/route.ts
+      // 的執行落差閘門）。那種 row 一樣是 applied_by=system + trigger_source=trajectory，
+      // 於是整個被當成「調整了」渲染給學員看。實測 林宥任 的畫面上長這樣：
+      //
+      //   標題「你的目標自動調整了」
+      //   內文「營養目標 · 原因：軌跡建議調整但**未套用**（執行落差）：…」
+      //
+      // 標題說調了、內文說沒調，同一張卡自相矛盾，而且「軌跡／執行落差／處方」
+      // 是引擎內部詞彙，不是學員的話。分成兩種卡，並且把內部前綴拿掉。
+      const skipped = (adj.new_macros as Record<string, unknown> | null)?._skipped === true
+      const reasonRaw = (adj.reason ?? '').replace(/^軌跡建議調整但未套用（執行落差）：\s*/, '').trim()
+
+      if (skipped) {
+        // 沒有可讀的理由就整張不出 —— 「你的目標沒有變」本身不是資訊
+        if (!reasonRaw) {
+          // 什麼都不推
+        } else {
+          cards.push({
+            id: `macro_${adj.applied_at}`,
+            tone: 'info',
+            icon: '🎯',
+            title: '你的目標沒有動，這是原因',
+            body: reasonRaw,
+          })
+        }
+      } else {
+        const changeStr = parts.length ? parts.join('、') : '營養目標'
+        const reasonStr = reasonRaw ? `原因：${reasonRaw}` : '系統依你的進度自動微調。'
+        cards.push({
+          id: `macro_${adj.applied_at}`,
+          tone: 'info',
+          icon: '🎯',
+          title: '你的目標自動調整了',
+          body: `${changeStr} · ${reasonStr}`,
+        })
+      }
     }
   }
 
