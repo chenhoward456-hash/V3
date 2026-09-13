@@ -371,7 +371,7 @@ export default function ClientOverview() {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, count]) => ({
         date: new Date(date).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }),
-        服從率: Math.round((count / total) * 100),
+        補品服從率: Math.round((count / total) * 100),
       }))
   }, [supplements, supplementLogs, dateRange])
 
@@ -1238,7 +1238,7 @@ export default function ClientOverview() {
       for (const s of supplements) {
         lines.push(`  ${s.name}${s.dosage ? ` ${s.dosage}` : ''}${s.timing ? `（${s.timing}）` : ''}`)
       }
-      if (km.weekCompliance != null) lines.push(`  服從率 ${km.weekCompliance}%`)
+      if (km.weekCompliance != null) lines.push(`  補品服從率 ${km.weekCompliance}%`)
       lines.push('')
     }
 
@@ -2705,8 +2705,8 @@ export default function ClientOverview() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" fontSize={11} />
                       <YAxis domain={[0, 100]} fontSize={11} />
-                      <Tooltip formatter={(v: any) => [`${v}%`, '服從率']} />
-                      <Line type="monotone" dataKey="服從率" stroke="#3D6E9E" strokeWidth={2} dot={{ r: 3 }} />
+                      <Tooltip formatter={(v: any) => [`${v}%`, '補品服從率']} />
+                      <Line type="monotone" dataKey="補品服從率" stroke="#3D6E9E" strokeWidth={2} dot={{ r: 3 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (

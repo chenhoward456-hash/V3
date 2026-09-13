@@ -399,6 +399,11 @@ export default function AdminDashboard() {
     const totalClients = live.length
     const todayActive = live.filter(c => todayLogIds.has(c.id) || todayWellnessIds.has(c.id) || !!todayTrainingMap[c.id] || todayNutritionMap[c.id] !== undefined || todayBodyIds.has(c.id)).length
     const needAttention = live.filter(c => c.status !== 'normal').length
+    // ⚠️ 2026-09-14：這個數字**只算補品**。`weekRate` 是補品有沒有吃，
+    // 而 `supplementCount > 0` 把「沒有補品方案的人」整個排除在外。
+    // 於是林宥任（四項幾乎天天記、25 天有 24 天填了熱量）顯示 `--`、完全不進平均，
+    // 18 天沒練的震宣顯示 9%。標成「服從率」會讓人以為它在講記錄狀況，它沒有。
+    // 隔壁的「今日活躍」才是記錄面的真實訊號。
     const rates = Object.values(clientStats).filter(s => s.supplementCount > 0).map(s => s.weekRate)
     const avgCompliance = rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0
     const competitionCount = live.filter(c => isCompetitionMode(c.client_mode)).length
@@ -447,7 +452,7 @@ export default function AdminDashboard() {
         let daysSince = Infinity
         if (stat.lastActivity) daysSince = Math.floor((today.getTime() - new Date(stat.lastActivity).getTime()) / DAY_MS)
         if (daysSince >= 5 && stat.supplementCount > 0) struggling.push({ id: client.id, name: client.name, reason: daysSince === Infinity ? '從未打卡' : `${daysSince} 天未活動` })
-        else if (stat.weekRate < 50 && stat.supplementCount > 0) struggling.push({ id: client.id, name: client.name, reason: `服從率 ${stat.weekRate}%` })
+        else if (stat.weekRate < 50 && stat.supplementCount > 0) struggling.push({ id: client.id, name: client.name, reason: `補品服從率 ${stat.weekRate}%` })
       }
     }
     return { stars: stars.slice(0, 3), struggling: struggling.slice(0, 5) }
@@ -530,7 +535,7 @@ export default function AdminDashboard() {
         let daysSince = Infinity
         if (stat.lastActivity) daysSince = Math.floor((today.getTime() - new Date(stat.lastActivity).getTime()) / DAY_MS)
         if (daysSince >= 5 && stat.supplementCount > 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: daysSince === Infinity ? '從未打卡' : `${daysSince}天未活動`, color: 'text-rose-600 bg-rose-50', priority: 0 })
-        if (stat.weekRate < 50 && stat.supplementCount > 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `本週服從率 ${stat.weekRate}%`, color: 'text-amber-700 bg-amber-50', priority: 2 })
+        if (stat.weekRate < 50 && stat.supplementCount > 0) items.push({ clientId: client.id, name: client.name, uniqueCode: client.unique_code, text: `本週補品服從率 ${stat.weekRate}%`, color: 'text-amber-700 bg-amber-50', priority: 2 })
       }
       if (client.next_checkup_date) {
         const checkup = new Date(client.next_checkup_date); checkup.setHours(0, 0, 0, 0)
@@ -745,7 +750,7 @@ export default function AdminDashboard() {
     const d = new Date()
     const lines: string[] = []
     lines.push(`【本週教練摘要 ${d.getMonth() + 1}/${d.getDate()}】`)
-    lines.push(`學員 ${summaryStats.totalClients} 人（付費 ${retentionStats.paying}）· 今日活躍 ${summaryStats.todayActive} · 平均服從率 ${summaryStats.avgCompliance}%`)
+    lines.push(`學員 ${summaryStats.totalClients} 人（付費 ${retentionStats.paying}）· 今日活躍 ${summaryStats.todayActive} · 平均補品服從率 ${summaryStats.avgCompliance}%`)
     if (pendingDraftCount > 0) lines.push(`🤖 ${pendingDraftCount} 份血檢草稿待審`)
     if (alerts.length > 0) {
       lines.push(`⚠️ 需關注 ${alerts.length} 項：`)
@@ -887,7 +892,7 @@ export default function AdminDashboard() {
     else if (idle >= 5) reasons.push({ sev: 2, text: `${idle}天沒打卡` })
     if (c.status === 'alert') reasons.push({ sev: 3, text: '血檢警示' })
     else if (c.status === 'attention') reasons.push({ sev: 2, text: '血檢關注' })
-    if (s && s.supplementCount > 0 && s.weekRate < 50) reasons.push({ sev: 2, text: `服從率 ${s.weekRate}%` })
+    if (s && s.supplementCount > 0 && s.weekRate < 50) reasons.push({ sev: 2, text: `補品服從率 ${s.weekRate}%` })
     if (c.next_checkup_date) { const t = new Date(); t.setHours(0, 0, 0, 0); const ck = new Date(c.next_checkup_date); ck.setHours(0, 0, 0, 0); const d = Math.floor((ck.getTime() - t.getTime()) / DAY_MS); if (d < 0) reasons.push({ sev: 2, text: `回檢逾期${Math.abs(d)}天` }) }
     // ⚠️ 完全收不到通知 —— 系統對他等於不存在：每日提醒、教練訊息、週報全部送不到。
     // 這比「幾天沒打卡」更根本（他可能是想用但沒被叫醒），所以吃 sev 2 進學員問題那一格。
@@ -1286,7 +1291,7 @@ export default function AdminDashboard() {
             <MiniStat label="付費" value={retentionStats.paying} />
             <MiniStat label="今日活躍" value={summaryStats.todayActive} />
             <MiniStat label="需關注" value={summaryStats.needAttention} tone={summaryStats.needAttention > 0 ? 'red' : undefined} />
-            <MiniStat label="服從率" value={`${summaryStats.avgCompliance}%`} />
+            <MiniStat label="補品服從率" value={`${summaryStats.avgCompliance}%`} />
             <MiniStat label="本月新增" value={`+${retentionStats.newThisMonth}`} tone="green" />
             <MiniStat label="流失風險" value={retentionStats.churnRisk.length} tone={retentionStats.churnRisk.length > 0 ? 'orange' : undefined} />
             <MiniStat label="推播開通" value={`${retentionStats.pushOn}/${retentionStats.activeCount}`} tone={retentionStats.pushOn === 0 ? 'orange' : 'green'} />
@@ -1525,7 +1530,7 @@ export default function AdminDashboard() {
               ) })}
             </div>
             {/* 桌面版表格 */}
-            <div className="hidden sm:block overflow-x-auto"><table className="min-w-full"><thead><tr className="border-b border-slate-200"><th onClick={() => handleSort('name')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">學員 <SortIcon column="name" /></th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">方案</th><th onClick={() => handleSort('status')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">狀態 <SortIcon column="status" /></th><th onClick={() => handleSort('compliance')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">本週服從率 <SortIcon column="compliance" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">今日進度</th><th onClick={() => handleSort('lastActivity')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">最後活動 <SortIcon column="lastActivity" /></th><th onClick={() => handleSort('nextCheckup')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">下次回檢 <SortIcon column="nextCheckup" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th></tr></thead>
+            <div className="hidden sm:block overflow-x-auto"><table className="min-w-full"><thead><tr className="border-b border-slate-200"><th onClick={() => handleSort('name')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">學員 <SortIcon column="name" /></th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">方案</th><th onClick={() => handleSort('status')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">狀態 <SortIcon column="status" /></th><th onClick={() => handleSort('compliance')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">本週補品服從率 <SortIcon column="compliance" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase select-none">今日進度</th><th onClick={() => handleSort('lastActivity')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">最後活動 <SortIcon column="lastActivity" /></th><th onClick={() => handleSort('nextCheckup')} className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-50 select-none">下次回檢 <SortIcon column="nextCheckup" /></th><th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th></tr></thead>
             <tbody className="divide-y divide-gray-50">{paginatedClients.map(client => { const stat = clientStats[client.id]; const act = getActivityLabel(client.id); const ckup = getCheckupLabel(client); const lineStatus = getLineStatus(client); const daysToComp = isCompetitionMode(client.client_mode) && client.competition_date ? daysUntilDateTW(client.competition_date) : null; const tier = getTierBadge(client.subscription_tier); const expiry = getExpiryWarning(client); const att = getAttention(client); return (
               <tr key={client.id} className={`hover:bg-gray-50 transition-colors ${att.accent}`}>
                 <td className="px-5 py-4"><Link href={`/admin/clients/${client.id}/overview`} className="hover:text-primary-600"><div className="text-sm font-medium text-gray-900">{client.name}{newSinceViewMap[client.id] > 0 && <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-medium" title={`自你上次查看後新增 ${newSinceViewMap[client.id]} 筆紀錄`}>新 {newSinceViewMap[client.id]}</span>}{client.line_user_id && <span className={`ml-1 text-[11px] ${lineStatus.color}`} title={`LINE ${lineStatus.label}`}>{lineStatus.label === '在線' ? <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" /> : <MessageSquare size={12} className="inline text-slate-400" />}</span>}{isCompetitionMode(client.client_mode) && daysToComp && daysToComp > 0 && <span className={`ml-1.5 text-xs rounded-full px-1.5 border ${daysToComp <= 14 ? 'text-rose-600 border-rose-200 bg-rose-50' : 'text-slate-500 border-slate-200'}`}>備賽{daysToComp}d</span>}{client.training_enabled&&todayTrainingMap[client.id]&&<span className="ml-1.5 text-xs text-slate-500 border border-slate-200 rounded-full px-1.5" title={`今日訓練：${todayTrainingMap[client.id]}`}>{getTrainingLabel(todayTrainingMap[client.id])}</span>}{client.nutrition_enabled&&todayNutritionMap[client.id]!==undefined&&<span className={`ml-1 text-xs font-medium ${todayNutritionMap[client.id]?'text-emerald-600':'text-amber-600'}`} title={`今日飲食：${todayNutritionMap[client.id]?'合規':'未合規'}`}>{todayNutritionMap[client.id]?'合規':'未合規'}</span>}</div><div className="text-xs text-gray-400 mt-0.5">{client.age}歲 · {client.gender}{isCompetitionMode(client.client_mode) && ` · ${getPrepPhaseLabel(client.prep_phase)}`}</div></Link></td>
