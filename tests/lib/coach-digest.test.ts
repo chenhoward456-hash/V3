@@ -22,6 +22,7 @@ const base = (o: Partial<CoachDigestInput> = {}): CoachDigestInput => ({
   recentWeights: [],
   competitions: [],
   labsDue: [],
+  proposals: [],
   adminUrl: 'https://example.com',
   ...o,
 })

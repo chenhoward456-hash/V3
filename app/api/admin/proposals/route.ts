@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
+import { actOnProposal, sweepExpiredProposals, type ProposalAction } from '@/lib/proposal-actions'
 
 export const dynamic = 'force-dynamic'
 const supabase = createServiceSupabase()
@@ -13,6 +14,10 @@ function checkAuth(request: NextRequest): boolean {
 // GET: list pending proposals
 export async function GET(request: NextRequest) {
   if (!checkAuth(request)) return NextResponse.json({ error: '未授權' }, { status: 401 })
+
+  // 先把過了 expires_at 卻還掛 pending 的掃成 expired ——
+  // 沒這步，這頁的「待審」會把屍體算進去（Sean 那 10 筆就是這樣長出來的）。
+  await sweepExpiredProposals(supabase)
 
   const { searchParams } = new URL(request.url)
   const statusFilter = searchParams.get('status') ?? 'pending'
@@ -39,132 +44,40 @@ export async function GET(request: NextRequest) {
 }
 
 // POST: act on a proposal (approve / reject / discuss)
+//
+// ⚠️ 實作在 `lib/proposal-actions.ts` —— LINE 晨報的「回一個字就套用」走同一支（紅線 6）。
+// 這裡只做驗證與轉譯。特別是 coach_macro_override 同步那段（2026-08-16 的坑）
+// 必須只有一份，兩邊各寫一次一定有一邊會漏。
 export async function POST(request: NextRequest) {
   if (!checkAuth(request)) return NextResponse.json({ error: '未授權' }, { status: 401 })
 
   try {
     const body = await request.json()
-    const { proposal_id, action, review_note } = body
+    const { proposal_id, action, review_note, allow_expired } = body
 
     if (!proposal_id || !action) return NextResponse.json({ error: '缺少 proposal_id 或 action' }, { status: 400 })
     if (!['approve', 'reject', 'discuss'].includes(action)) {
       return NextResponse.json({ error: 'action 必須是 approve/reject/discuss' }, { status: 400 })
     }
 
-    const { data: proposal, error: fetchErr } = await supabase
-      .from('pending_proposals')
-      .select('*')
-      .eq('id', proposal_id)
-      .single()
+    const result = await actOnProposal(supabase, {
+      proposalId: proposal_id,
+      action: action as ProposalAction,
+      reviewNote: review_note ?? null,
+      // 後台看得到完整內容，教練勾了就讓他覆蓋過期保護
+      allowExpired: allow_expired === true,
+    })
 
-    if (fetchErr || !proposal) return NextResponse.json({ error: '找不到提案' }, { status: 404 })
-    if (proposal.status !== 'pending') {
-      return NextResponse.json({ error: `提案已是 ${proposal.status} 狀態，無法再處理` }, { status: 400 })
+    if (!result.ok) {
+      const status = result.code === 'not_found' ? 404 : result.code === 'write_failed' ? 500 : 400
+      return NextResponse.json({ error: result.reason, code: result.code }, { status })
     }
 
-    const now = new Date().toISOString()
-
-    if (action === 'reject' || action === 'discuss') {
-      const newStatus = action === 'reject' ? 'rejected' : 'discussing'
-      await supabase
-        .from('pending_proposals')
-        .update({ status: newStatus, reviewed_by: 'coach', reviewed_at: now, review_note: review_note ?? null })
-        .eq('id', proposal_id)
-      return NextResponse.json({ success: true, status: newStatus })
-    }
-
-    // 兩種 proposal type 分別處理：personal_note 寫進 personal_notes、其他寫進 clients + log
-    if (proposal.proposal_type === 'personal_note') {
-      const ch = (proposal.proposed_changes ?? {}) as any
-      const { error: insErr } = await supabase.from('personal_notes').insert({
-        client_id: proposal.client_id,
-        added_by: 'ai_agent',
-        category: ch.category,
-        note: ch.note,
-        weight: ch.weight ?? 5,
-        relevant_until: ch.relevant_until ?? null,
-        source_proposal_id: proposal.id,
-      })
-      if (insErr) return NextResponse.json({ error: 'personal_notes 寫入失敗: ' + insErr.message }, { status: 500 })
-
-      await supabase
-        .from('pending_proposals')
-        .update({
-          status: 'approved',
-          reviewed_by: 'coach',
-          reviewed_at: now,
-          review_note: review_note ?? null,
-        })
-        .eq('id', proposal_id)
-      return NextResponse.json({ success: true, status: 'approved', type: 'personal_note' })
-    }
-
-    // approve: apply changes + write to macro_adjustment_log + update clients
-    const changes = proposal.proposed_changes as Record<string, number>
-    const clientUpdates: Record<string, any> = { last_auto_adjust_at: now }
-    const trackedFields = ['calories_target', 'protein_target', 'carbs_target', 'fat_target', 'carbs_training_day', 'carbs_rest_day', 'cardio_minutes_per_day']
-    for (const f of trackedFields) {
-      if (changes[f] != null) clientUpdates[f] = changes[f]
-    }
-
-    if (Object.keys(clientUpdates).length > 1) {
-      // ⚠️ 2026-08-16：教練批准後若 coach_macro_override 還鎖著舊值，
-      //    nutrition-suggestions 會在下次跑時把 macro「還原」回 override_values —— 教練剛核准的
-      //    調整被系統默默吃掉。所以套用時要把 override 的值同步成新值（鎖繼續有效，只是內容更新）。
-      const { data: cur } = await supabase
-        .from('clients')
-        .select('coach_macro_override')
-        .eq('id', proposal.client_id)
-        .maybeSingle<{ coach_macro_override: Record<string, any> | null }>()
-
-      const ov = cur?.coach_macro_override
-      if (ov && typeof ov === 'object') {
-        const lockedFields: string[] = Array.isArray(ov.locked_fields) ? ov.locked_fields : []
-        const nextValues = { ...(ov.override_values ?? {}) }
-        for (const f of lockedFields) {
-          if (clientUpdates[f] != null) nextValues[f] = clientUpdates[f]
-        }
-        clientUpdates.coach_macro_override = {
-          ...ov,
-          override_values: nextValues,
-          locked_at: now,
-          reason: `${ov.reason ?? ''}｜${now.slice(0, 10)} 教練核准引擎提案後同步鎖定值`.slice(0, 500),
-        }
-      }
-
-      const { error: updErr } = await supabase
-        .from('clients')
-        .update(clientUpdates)
-        .eq('id', proposal.client_id)
-      if (updErr) return NextResponse.json({ error: 'apply clients 失敗: ' + updErr.message }, { status: 500 })
-    }
-
-    const { data: logRow, error: logErr } = await supabase
-      .from('macro_adjustment_log')
-      .insert({
-        client_id: proposal.client_id,
-        applied_by: 'coach',
-        trigger_source: 'manual',
-        old_macros: proposal.current_state,
-        new_macros: proposal.proposed_changes,
-        reason: `AI 提案教練核准：${proposal.reasoning}` + (review_note ? `\n[教練註記] ${review_note}` : ''),
-        trajectory_data: { ai_proposal_id: proposal.id, ...((proposal.trajectory_data as any) ?? {}) },
-      })
-      .select()
-      .single()
-
-    await supabase
-      .from('pending_proposals')
-      .update({
-        status: 'approved',
-        reviewed_by: 'coach',
-        reviewed_at: now,
-        review_note: review_note ?? null,
-        applied_log_id: logRow?.id ?? null,
-      })
-      .eq('id', proposal_id)
-
-    return NextResponse.json({ success: true, status: 'approved', applied_log_id: logRow?.id ?? null })
+    return NextResponse.json({
+      success: true,
+      status: result.status,
+      applied_log_id: result.appliedLogId ?? null,
+    })
   } catch (err) {
     console.error('[proposals POST] error:', err)
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })

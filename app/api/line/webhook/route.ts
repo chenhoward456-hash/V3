@@ -22,6 +22,7 @@ import {
   calorieQuickReplies,
 } from '@/lib/line-handlers'
 import { classifyCalorieInput, bareNumberIsCalories } from '@/lib/line-nl-log'
+import { tryCoachCommand } from '@/lib/line-coach-commands'
 import { buildDay0Messages, enrollSubscriber, unenrollSubscriber } from '@/lib/nurture-sequence'
 import { handleAdminAgentMessage, handleAgentProposalPostback, handleCoachActionPostback } from '@/lib/agent-line'
 
@@ -195,6 +196,12 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   // 教練端 AI Agent 攔截（Phase 2a）
   // Admin 任何訊息都走 Agent，要 escape 回舊 flow 用 /raw 或 /menu 前綴
   if (userId === process.env.ADMIN_LINE_USER_ID) {
+    // ⚠️ 確定性指令要排在 AI Agent 前面。
+    // 這幾個字（套用/不要/提案）會**寫學員的 macros**，而 agent 一輪要 20-24 秒、
+    // 且是 LLM 在猜意圖 —— 「不要再幫他加碳水了」被理解成 reject 只是時間問題。
+    // tryCoachCommand 認不出來會回 false，原封不動往下走 agent，行為跟以前一樣。
+    if (await tryCoachCommand(event.replyToken, text, supabase)) return
+
     const escapeMatch = text.match(/^\/(raw|menu)\s*(.*)$/i)
     if (escapeMatch) {
       // /raw 後接的內容走舊學員 flow

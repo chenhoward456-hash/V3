@@ -17,6 +17,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { daysUntilDateTW, DAY_MS } from './date-utils'
 import { COACH_LINE_USER_ID } from './line-links'
 import { findLabsDue, formatLabDueLines, type LabDueItem, type LabDueClientInput } from './lab-due'
+import { listActionableProposals, describeProposal, type ProposalRow } from './proposal-actions'
 import type { LabResultRow } from './lab-trend-analyzer'
 import type { TemplateItem } from './lab-order'
 
@@ -56,6 +57,8 @@ export type CoachDigestInput = {
   competitions: { name: string; competition_date: string }[]
   /** 該回檢的血檢（已由 findLabsDue 算好、依急迫度排序） */
   labsDue: LabDueItem[]
+  /** 還等著他處理的引擎提案（已掃掉過期的） */
+  proposals: { name: string; clientId: string; items: ProposalRow[] }[]
   /** 後台網址（信尾的可點連結） */
   adminUrl: string
 }
@@ -70,7 +73,7 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   const {
     today, clients, yesterdayWeightIds, yesterdayNutritionIds,
     yesterdayTraining, yesterdayWellness, lastActiveByClient,
-    recentWeights, competitions, labsDue, adminUrl,
+    recentWeights, competitions, labsDue, proposals, adminUrl,
   } = input
 
   const hadWeight = new Set(yesterdayWeightIds)
@@ -107,6 +110,21 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
     const overdue = labsDue.filter(l => l.daysUntil !== null && l.daysUntil < 0).length
     lines.push(overdue > 0 ? `🩸 血檢：${overdue} 個逾期` : '🩸 血檢該回檢了：')
     for (const l of labsDue) lines.push(...formatLabDueLines(l))
+    lines.push('')
+  }
+
+  // 0.6 等你處理的提案 —— 排在血檢後面、例行雜訊前面。
+  //
+  // ⚠️ 存在理由同血檢那段：**投遞**。引擎從 8/24 到 9/05 幫 Sean 連提 10 筆，
+  // 一筆都沒被處理，因為唯一的出口是 /admin。
+  // 現在每一條都附可以直接回的指令（見 lib/line-coach-commands.ts）。
+  if (proposals.length > 0) {
+    lines.push(`📥 ${proposals.length} 個人有提案等你：`)
+    for (const p of proposals) {
+      lines.push(`  • ${p.name}：${describeProposal(p.items[0])}`)
+      if (p.items.length > 1) lines.push(`      ⚠️ 還有 ${p.items.length - 1} 筆，多半是同一個決定被重算，別一次全套`)
+    }
+    lines.push('     回「套用 <名字>」就改、「不要 <名字>」就退掉')
     lines.push('')
   }
 
@@ -182,9 +200,10 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   const leadBits: string[] = []
   if (offline.length > 0) leadBits.push(`${offline.length} 個人掉線`)
   if (overdueLabs > 0) leadBits.push(`${overdueLabs} 個血檢逾期`)
+  if (proposals.length > 0) leadBits.push(`${proposals.length} 個提案等你`)
   const lead =
     leadBits.length === 0 ? '沒人掉線，其餘看下面'
-    : overdueLabs === 0 ? `${offline.length} 個人需要你出手`
+    : overdueLabs === 0 && proposals.length === 0 ? `${offline.length} 個人需要你出手`
     : `${leadBits.join('、')}，要你出手`
   const body = lines.join('\n').replace(/\n+$/, '')
   return {
@@ -298,9 +317,23 @@ export async function loadCoachDigest(
     }
   })
 
+  // 提案：先掃過期（不掃的話這裡會數到屍體），再依學員分組
+  const actionable = await listActionableProposals(supabase)
+  const proposalNames: Record<string, string> = {}
+  if (actionable.length > 0) {
+    const { data } = await supabase.from('clients').select('id, name')
+      .in('id', [...new Set(actionable.map(p => p.client_id))])
+    for (const c of (data ?? []) as { id: string; name: string }[]) proposalNames[c.id] = c.name
+  }
+  const grouped: Record<string, ProposalRow[]> = {}
+  for (const p of actionable) (grouped[p.client_id] ||= []).push(p)
+
   return buildCoachDigest({
     today,
     labsDue: findLabsDue(labDueInput, today),
+    proposals: Object.entries(grouped).map(([clientId, items]) => ({
+      clientId, name: proposalNames[clientId] ?? '?', items,
+    })),
     clients: (clientsRes.data ?? []) as DigestClient[],
     yesterdayWeightIds: ((yW.data ?? []) as { client_id: string }[]).map(r => r.client_id),
     yesterdayNutritionIds: ((yN.data ?? []) as { client_id: string }[]).map(r => r.client_id),

@@ -25,6 +25,7 @@ import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib
 import { createLogger } from '@/lib/logger'
 import { getTaipeiDayOfWeek } from '@/lib/periodization'
 import { COACH_LINE_USER_ID, loadCoachDigest } from '@/lib/coach-digest'
+import { listActionableProposals, sweepExpiredProposals } from '@/lib/proposal-actions'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import {
   sendDay3Email,
@@ -126,6 +127,12 @@ export async function GET(request: NextRequest) {
   const supabase = createServiceSupabase()
   const hour = getTaiwanHour()
   const today = getTaiwanDate()
+
+  // 每次跑先掃掉過期提案。`expires_at` 有預設 24h 但從來沒有東西執行它 ——
+  // 於是 /admin 的「待審」和晨報都在數屍體（2026-09-14 實測 10 筆全過期）。
+  // 掃完之後「status=pending」才真的等於「還等你處理」。
+  const { swept: expiredProposals } = await sweepExpiredProposals(supabase)
+  if (expiredProposals > 0) logger.info(`Swept ${expiredProposals} expired proposals`)
   const isMorningRun = hour >= 5 && hour < 12
   const cronJobType = isMorningRun ? 'daily_morning' as const : 'daily_evening' as const
 
@@ -466,16 +473,16 @@ export async function GET(request: NextRequest) {
         // Tier 分流：coached/protocol 走 propose 流程、self_managed（與白名單）走 auto-apply
         if ((tier === 'coached' || tier === 'protocol') && !forceAutoApply) {
           // 寫 pending_proposals 等教練審核
-          // 先檢查 24h 內是否有未審 proposal，避免重複
-          const { data: existing } = await supabase
-            .from('pending_proposals')
-            .select('id')
-            .eq('client_id', c.id)
-            .eq('status', 'pending')
-            .gte('proposed_at', new Date(Date.now() - 24 * 3600 * 1000).toISOString())
-            .limit(1)
-            .maybeSingle()
-          if (existing) continue
+          //
+          // ⚠️ 2026-09-14：原本的去重是「24h 內有沒有 pending」
+          // （`.gte(proposed_at, now-24h)`）—— 25 小時前那筆擋不住今天這筆，
+          // 加上沒有任何東西掃過期，結果是**每天長一筆**：
+          // Sean 8/24–9/05 累積 10 筆 pending，每一筆的 current_state 都還是 2250，
+          // 因為前一筆從來沒被套用。那不是連續調整，是同一個決定被重算十次。
+          // 現在 sweepExpiredProposals 會先把屍體掃掉，所以「還是 pending」＝「還有效」，
+          // 去重看這個就對了，不要再加時間窗。
+          const actionable = await listActionableProposals(supabase, { clientId: c.id })
+          if (actionable.length > 0) continue
 
           const { data: proposal } = await supabase
             .from('pending_proposals')
