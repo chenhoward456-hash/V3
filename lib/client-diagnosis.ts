@@ -57,7 +57,7 @@ export type DiagnosisInput = {
 
 export type DiagnosisCode =
   | 'offline'             // 人不見了
-  | 'training_stopped'    // 訓練停了
+  | 'no_training_data'    // 沒有訓練紀錄（⚠️ 不等於沒練）
   | 'execution_gap'       // 吃的比回報多（或少）
   | 'prescription'        // 處方本身要調
   | 'no_food_data'        // 缺飲食紀錄，問不出來
@@ -69,6 +69,11 @@ export type Diagnosis = {
   cause: string
   /** 要做什麼。刻意跟 cause 分開 —— 看到原因不等於知道下一步。 */
   action: string
+  /**
+   * 附註：會降低判斷把握度但本身不是原因的事（目前只有訓練紀錄缺口）。
+   * ⚠️ 刻意跟 cause 分開：「我看不到」不可以印成「他沒做」。
+   */
+  note?: string
 }
 
 const uniqDays = (rows: { date: string }[]) =>
@@ -107,28 +112,27 @@ export function diagnoseClient(input: DiagnosisInput): Diagnosis {
     }
   }
 
-  // ── 1. 有在練嗎 ──
-  // 代謝跟著訓練走。訓練停了而熱量處方沒跟著改，那個處方就不再對應他的身體，
-  // 這時談吃多吃少都是錯的層級。
+  // ── 訓練紀錄缺口：**註記，不是診斷** ──
+  //
+  // ⚠️ 2026-09-14 Howard 當場推翻我的第一版：「其實他們都有練，只是他們都沒有紀錄而已」。
+  // 第一版把「沒有訓練紀錄」直接讀成「沒在練」，對震宣與 Sean 各輸出一句
+  // 「18 天沒練 → 槓桿是訓練不是熱量」—— 那是我自己推的因果，不是資料說的。
+  // **缺紀錄 ≠ 沒做。** 這是這個產品最常見的一種錯：把「我看不到」講成「他沒做」。
+  //
+  // 所以訓練空窗降級成 note：它讓代謝變成未知（影響判斷的把握度），
+  // 但它本身不是原因，也不該蓋過「吃的跟回報對不對得上」——
+  // 後者只用體重與回報熱量算，完全不依賴訓練紀錄，反而是這裡最硬的證據。
+  let note: string | undefined
   if (input.trainingEnabled !== false) {
     const real = input.trainingLogs
       .filter(t => t.training_type && t.training_type !== 'rest')
       .map(t => t.date).sort()
     const last = real[real.length - 1]
     const gap = last ? days(last) : null
-    if (gap == null) {
-      return {
-        code: 'training_stopped',
-        cause: '完全沒有訓練紀錄',
-        action: '先確認他到底有沒有在練 —— 沒有的話熱量處方是對著一個不存在的代謝開的',
-      }
-    }
-    if (gap >= TRAINING_GAP_DAYS) {
-      return {
-        code: 'training_stopped',
-        cause: `${gap} 天沒練`,
-        action: '槓桿是訓練不是熱量。對沒在練的人砍熱量只會讓他不玩了',
-      }
+    if (gap == null || gap >= TRAINING_GAP_DAYS) {
+      note = gap == null
+        ? `近 ${input.windowDays ?? 30} 天沒有訓練紀錄（不代表他沒練，可能只是沒記）`
+        : `${gap} 天沒有訓練紀錄（不代表他沒練，可能只是沒記）`
     }
   }
 
@@ -139,11 +143,12 @@ export function diagnoseClient(input: DiagnosisInput): Diagnosis {
       code: 'no_food_data',
       cause: `近期只有 ${withCal.length} 筆飲食紀錄有熱量數字`,
       action: '在問「為什麼」之前先要到數字。只有達標/未達標推不出任何東西',
+      note,
     }
   }
 
   if (caloriesTarget == null) {
-    return { code: 'no_food_data', cause: '沒設熱量目標', action: '先把處方設起來，不然沒有東西可以對帳' }
+    return { code: 'no_food_data', cause: '沒設熱量目標', action: '先把處方設起來，不然沒有東西可以對帳', note }
   }
 
   const est = estimateActualIntake(input.weights, caloriesTarget, goalType)
@@ -162,6 +167,7 @@ export function diagnoseClient(input: DiagnosisInput): Diagnosis {
       action: gap > 0
         ? '不是處方太高。砍處方只會讓落差更大 —— 要處理的是回報跟實際對不上'
         : '他沒吃到處方。調數字沒有意義，要處理的是為什麼吃不到',
+      note,
     }
   }
 
@@ -173,10 +179,21 @@ export function diagnoseClient(input: DiagnosisInput): Diagnosis {
         code: 'prescription',
         cause: `實際吃的對上處方了，但體重 ${est.slopePerWeek >= 0 ? '+' : ''}${est.slopePerWeek.toFixed(2)}kg/週（該 ${est.expectedRatePerWeek >= 0 ? '+' : ''}${est.expectedRatePerWeek.toFixed(2)}）`,
         action: '這次是處方本身要調，可以動數字',
+        note,
       }
     }
   }
 
+  // 什麼都對，但訓練沒紀錄 → 那才是唯一還缺的東西
+  // ⚠️ `note` 也要一起回：呼叫端不該因為「這次它剛好升級成 cause」就要分兩種情況讀。
+  if (note) {
+    return {
+      code: 'no_training_data',
+      cause: note,
+      action: '數據面沒問題。缺的是訓練紀錄 —— 有了才算得出他的代謝，不然處方是用體重反推的',
+      note,
+    }
+  }
   return { code: 'on_track', cause: '在軌道上', action: '不用動' }
 }
 

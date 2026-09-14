@@ -1348,6 +1348,10 @@ export default function AdminDashboard() {
                         <div className="mt-1.5 pl-2 border-l-2 border-slate-200">
                           <p className="text-[11px] font-medium text-slate-700 leading-snug">{diagnosis.cause}</p>
                           <p className="text-[11px] text-slate-500 leading-snug mt-0.5">→ {diagnosis.action}</p>
+                          {/* 訓練紀錄缺口是附註不是原因 —— 視覺上也要比 cause 弱（見 lib/client-diagnosis.ts） */}
+                          {diagnosis.note && diagnosis.note !== diagnosis.cause && (
+                            <p className="text-[11px] text-slate-400 leading-snug mt-0.5">{diagnosis.note}</p>
+                          )}
                         </div>
                       )}
 

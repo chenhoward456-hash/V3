@@ -30,7 +30,7 @@ const base = (o: Partial<DiagnosisInput> = {}): DiagnosisInput => ({
   ...o,
 })
 
-describe('順序：人還在嗎 → 有在練嗎 → 吃對了嗎 → 才輪到處方', () => {
+describe('順序：人還在嗎 → 吃對了嗎 → 處方 ；訓練紀錄只是 note', () => {
   it(`🚨 ${OFFLINE_DAYS} 天沒任何紀錄 → offline，蓋過其他所有判斷`, () => {
     // 第一版沒有這條，9 個學員有 5 個被診斷成「沒有訓練紀錄 → 確認他有沒有在練」，
     // 而那 5 個是失聯 30-51 天的人。對不見的人分析訓練頻率是解錯的問題。
@@ -50,33 +50,58 @@ describe('順序：人還在嗎 → 有在練嗎 → 吃對了嗎 → 才輪到�
     expect(d.cause).not.toContain('從來')
   })
 
-  it(`🚨 沒練蓋過吃 —— ${TRAINING_GAP_DAYS} 天沒練時不可以回執行落差`, () => {
-    // 震宣的真實情境：飲食 20/20 天有記、吃到處方，但 18 天沒練。
-    // 這時談熱量是錯的層級：代謝跟著訓練走。
+  it('🚨🚨 缺訓練紀錄不可以被講成「沒在練」—— Howard 當場推翻的第一版', () => {
+    // 他的原話：「其實他們都有練，只是他們都沒有紀錄而已，超級靠北。」
+    // 第一版把沒有訓練 log 讀成沒訓練，對震宣與 Sean 各輸出一句
+    // 「18 天沒練 → 槓桿是訓練不是熱量」。那是推論不是資料。
+    // 缺紀錄只降低把握度（note），不能當成原因（cause），更不能蓋過吃的對帳。
     const d = diagnoseClient(base({
       trainingLogs: [{ date: ago(18), training_type: 'legs' }],
       weights: series(20, () => 82.8),
     }))
-    expect(d.code).toBe('training_stopped')
-    expect(d.cause).toContain('18 天沒練')
-    expect(d.action).toContain('訓練')
+    expect(d.code).not.toBe('no_training_data')
+    expect(d.note ?? '').toContain('不代表他沒練')
+    expect(d.cause).not.toContain('沒練')
   })
 
-  it('沒開訓練功能的人不要拿「沒練」當原因', () => {
+  it('🚨 缺訓練紀錄不可以蓋過「吃的跟回報對不對得上」', () => {
+    // 執行落差只用體重＋回報熱量算，完全不依賴訓練紀錄 —— 反而是最硬的證據。
+    const d = diagnoseClient(base({
+      goalType: 'bulk', caloriesTarget: 3000,
+      weights: series(20, i => 80 + i * 0.1),
+      nutritionLogs: Array.from({ length: 14 }, (_, i) => ({ date: ago(i), calories: 3089 })),
+      trainingLogs: [],
+    }))
+    expect(d.code).toBe('execution_gap')
+    expect(d.note ?? '').toContain('不代表他沒練')
+  })
+
+  it('沒開訓練功能的人連 note 都不要掛', () => {
     const d = diagnoseClient(base({ trainingEnabled: false, trainingLogs: [] }))
-    expect(d.code).not.toBe('training_stopped')
+    expect(d.note).toBeUndefined()
   })
 
-  it('訓練空窗還在正常範圍內就不算問題', () => {
+  it('訓練空窗還在正常範圍內就沒有 note', () => {
     const d = diagnoseClient(base({ trainingLogs: [{ date: ago(TRAINING_GAP_DAYS - 1), training_type: 'push' }] }))
-    expect(d.code).not.toBe('training_stopped')
+    expect(d.note).toBeUndefined()
   })
 
-  it('rest 不算練 —— 打卡休息日不能拿來充當有在訓練', () => {
+  it('rest 不算有紀錄的訓練 —— 但那也只是 note', () => {
     const d = diagnoseClient(base({
       trainingLogs: [{ date: ago(1), training_type: 'rest' }, { date: ago(20), training_type: 'push' }],
     }))
-    expect(d.code).toBe('training_stopped')
+    expect(d.note ?? '').toContain('不代表他沒練')
+  })
+
+  it('數據面都對、只缺訓練紀錄 → 那才輪到 no_training_data', () => {
+    const d = diagnoseClient(base({
+      goalType: 'cut', caloriesTarget: 2000,
+      weights: series(20, i => 85 - i * 0.07),
+      nutritionLogs: Array.from({ length: 14 }, (_, i) => ({ date: ago(i), calories: 2000 })),
+      trainingLogs: [],
+    }))
+    expect(['no_training_data', 'execution_gap', 'prescription']).toContain(d.code)
+    expect(d.note ?? d.cause).toContain('不代表他沒練')
   })
 
   it(`飲食有熱量的天數 < ${MIN_CALORIE_DAYS} → 先要數字，不要硬推`, () => {
