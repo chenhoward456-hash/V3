@@ -1199,7 +1199,17 @@ export async function handleNaturalLog(
   replyToken: string,
   client: LineClient,
   text: string,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  /**
+   * 代記模式：教練替學員記時傳學員名字，確認訊息會標明是記給誰。
+   *
+   * ⚠️ 2026-09-14 Howard：「Eddie 都用私人賴，他感覺不想綁」。
+   * 他是唯一真付費的學員、天天回報，但回報進的是 Howard 的私人 LINE，
+   * 系統一筆都拿不到（52 天「沒記錄」不是他不配合，是他的話進不來）。
+   * 逼他綁官方帳號是拿產品的方便去換掉一段還在運作的關係 —— 不划算。
+   * 改成教練代記：Howard 本來就在看那些訊息，順手轉一行進來。
+   */
+  onBehalfOf?: string,
 ): Promise<boolean> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return false
@@ -1288,7 +1298,10 @@ export async function handleNaturalLog(
   }
 
   const tail = failed.length > 0 ? `\n⚠️ ${failed.join('、')}沒存成功，麻煩開 App 補一下` : ''
-  await replyMessage(replyToken, [{ type: 'text', text: confirmText(w) + tail, quickReply: QR_AFTER_RECORD }])
+  // 代記時不要掛學員用的快捷鈕（那些按下去會記到教練自己頭上）
+  await replyMessage(replyToken, onBehalfOf
+    ? [{ type: 'text', text: `已幫 ${onBehalfOf} 記：\n${confirmText(w)}${tail}` }]
+    : [{ type: 'text', text: confirmText(w) + tail, quickReply: QR_AFTER_RECORD }])
   return true
 }
 

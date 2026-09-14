@@ -26,11 +26,13 @@ import {
   listActionableProposals, actOnProposal, describeProposal, isProposalExpired,
   type ProposalRow,
 } from './proposal-actions'
+import { handleNaturalLog, type LineClient } from './line-handlers'
 
 export type CoachCommand =
   | { kind: 'list_proposals' }
   | { kind: 'approve'; name: string }
   | { kind: 'reject'; name: string }
+  | { kind: 'proxy_log'; name: string; content: string }
 
 /**
  * 這句話是不是教練指令？
@@ -43,14 +45,31 @@ export type CoachCommand =
  */
 /** 便宜的形狀檢查：連動詞都沒有就不用查 DB 了 */
 export function looksLikeCoachCommand(text: string): boolean {
-  return /^(提案|待辦|待審|有什麼等我)$/.test(text.trim())
-    || /^(套用|採用|同意|批准|不要|退掉|退回|拒絕)\s*\S/.test(text.trim())
+  const t = text.trim()
+  return /^(提案|待辦|待審|有什麼等我)$/.test(t)
+    || /^(套用|採用|同意|批准|不要|退掉|退回|拒絕)\s*\S/.test(t)
+    || /^(代記|幫記)\s*\S/.test(t)
 }
 
 export function parseCoachCommand(text: string, knownNames: string[]): CoachCommand | null {
   const t = text.trim()
 
   if (/^(提案|待辦|待審|有什麼等我)$/.test(t)) return { kind: 'list_proposals' }
+
+  // 代記：`代記 Eddie 85.2 早餐雞胸便當`
+  //
+  // ⚠️ 需要**明確的動詞**，不能只靠「名字開頭」。
+  // 「Eddie 這週怎樣」「Eddie 的碳水改 250」都是以名字開頭卻完全不是要記錄的句子，
+  // 少了動詞會把教練的問句寫成學員的紀錄（同 isCoachCommand 那道防線的理由）。
+  const proxy = t.match(/^(?:代記|幫記)\s+(\S+)\s+([\s\S]+)$/)
+  if (proxy) {
+    const name = proxy[1].trim()
+    const content = proxy[2].trim()
+    if (content && knownNames.some(n => n && n === name)) {
+      return { kind: 'proxy_log', name, content }
+    }
+    return null
+  }
 
   const m = t.match(/^(套用|採用|同意|批准|不要|退掉|退回|拒絕)\s*(.+)$/)
   if (!m) return null
@@ -94,6 +113,33 @@ export async function tryCoachCommand(
 
   const command = parseCoachCommand(text, Object.values(nameOf))
   if (!command) return false
+
+  // ── 代記：把學員在私訊裡講的話，原句轉進他自己的紀錄 ──
+  if (command.kind === 'proxy_log') {
+    const targetId = Object.keys(nameOf).find(id => nameOf[id] === command.name)
+    if (!targetId) {
+      await replyMessage(replyToken, [{ type: 'text', text: `找不到學員「${command.name}」` }])
+      return true
+    }
+    const { data: target } = await supabase
+      .from('clients')
+      .select('id, name, unique_code, protein_target, water_target, calories_target, subscription_tier, training_enabled, wellness_enabled, gender, lab_enabled')
+      .eq('id', targetId)
+      .maybeSingle<LineClient>()
+    if (!target) {
+      await replyMessage(replyToken, [{ type: 'text', text: `讀不到 ${command.name} 的資料` }])
+      return true
+    }
+    const ok = await handleNaturalLog(replyToken, target, command.content, supabase, command.name)
+    if (!ok) {
+      await replyMessage(replyToken, [{
+        type: 'text',
+        text: `這句我讀不出可以記的東西：「${command.content}」\n`
+          + '可以寫得像學員自己講的話，例如：代記 Eddie 早上量 85.2、午餐雞胸便當、練了推',
+      }])
+    }
+    return true
+  }
 
   const actionable = await listActionableProposals(supabase)
 

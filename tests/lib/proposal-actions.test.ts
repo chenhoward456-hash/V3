@@ -112,3 +112,41 @@ describe('parseCoachCommand：一句話會不會動到學員處方', () => {
     expect(parseCoachCommand('不要再幫他加碳水了', NAMES)).toBeNull()
   })
 })
+
+describe('代記：教練替不肯綁 LINE 的學員記', () => {
+  const NAMES = ['Sean', '震宣', '林宥任', 'Eddie']
+
+  it('明確動詞 + 名字 + 內容才算', () => {
+    expect(parseCoachCommand('代記 Eddie 早上量 85.2', NAMES))
+      .toEqual({ kind: 'proxy_log', name: 'Eddie', content: '早上量 85.2' })
+    expect(parseCoachCommand('幫記 Eddie 午餐雞胸便當', NAMES))
+      .toEqual({ kind: 'proxy_log', name: 'Eddie', content: '午餐雞胸便當' })
+  })
+
+  it('🚨 不可以只靠「名字開頭」判斷 —— 那會把教練的問句寫成學員的紀錄', () => {
+    // 這正是 isCoachCommand 那道防線存在的理由，代記這條路不能繞過它
+    expect(parseCoachCommand('Eddie 這週怎樣', NAMES)).toBeNull()
+    expect(parseCoachCommand('Eddie 的碳水改成 250', NAMES)).toBeNull()
+    expect(parseCoachCommand('Eddie 85.2', NAMES)).toBeNull()
+  })
+
+  it('名字要對得上在籍學員', () => {
+    expect(parseCoachCommand('代記 某某某 85.2', NAMES)).toBeNull()
+  })
+
+  it('沒有內容不算 —— 只打「代記 Eddie」記不了任何東西', () => {
+    expect(parseCoachCommand('代記 Eddie', NAMES)).toBeNull()
+    expect(parseCoachCommand('代記 Eddie   ', NAMES)).toBeNull()
+  })
+
+  it('多行內容要完整帶過去（學員常常一次講好幾件事）', () => {
+    const r = parseCoachCommand('代記 Eddie 早上 85.2\n午餐雞胸便當\n晚上練推', NAMES)
+    expect(r).toMatchObject({ kind: 'proxy_log', name: 'Eddie' })
+    expect((r as { content: string }).content).toContain('晚上練推')
+  })
+
+  it('形狀檢查放行代記，但把關仍在 parseCoachCommand', () => {
+    expect(looksLikeCoachCommand('代記 Eddie 85.2')).toBe(true)
+    expect(looksLikeCoachCommand('Eddie 這週怎樣')).toBe(false)
+  })
+})
