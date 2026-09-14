@@ -107,9 +107,10 @@ export async function GET(request: NextRequest) {
         .order('date', { ascending: true }),
 
       // 近 14 天飲食合規（用於合規率警告）＋ calories（用於「紀錄 vs 體重」對帳，見 lib/implied-intake）
+      // ＋三大營養素：Howard 2026-09-14「除了 7 天的體重平均以外，營養素的攝取平均我也需要知道」
       supabase
         .from('nutrition_logs')
-        .select('client_id, date, compliant, calories')
+        .select('client_id, date, compliant, calories, protein_grams, carbs_grams, fat_grams')
         .gte('date', fourteenDaysAgoStr)
         .order('date', { ascending: true }),
 
@@ -133,7 +134,8 @@ export async function GET(request: NextRequest) {
       supabase.from('body_composition').select('client_id, date').gte('date', ninetyDaysAgoStr),
       supabase.from('nutrition_logs').select('client_id, date').gte('date', ninetyDaysAgoStr),
       supabase.from('daily_wellness').select('client_id, date').gte('date', ninetyDaysAgoStr),
-      supabase.from('training_logs').select('client_id, date').gte('date', ninetyDaysAgoStr),
+      // ⚠️ 要帶 training_type：判「幾天沒練」時 rest 不能算成有練（見 lib/client-diagnosis.ts）
+      supabase.from('training_logs').select('client_id, date, training_type').gte('date', ninetyDaysAgoStr),
       // 已開通 Web Push 的學員（只取 client_id，用於留存/推播覆蓋率）
       supabase.from('push_subscriptions').select('client_id'),
     ])

@@ -10,6 +10,7 @@ import { projectWeightVerdict, metricSlopePerWeek } from '@/lib/comp-projection'
 import { reconcileIntake, isGapSignificant } from '@/lib/implied-intake'
 import { isCompetitionMode, PHASE_LABELS } from '@/lib/client-mode'
 import { buildWinbackMessage, type WinbackContext } from '@/lib/winback'
+import { diagnoseClient, averageNutrition } from '@/lib/client-diagnosis'
 import FeatureAnnounce from '@/components/admin/FeatureAnnounce'
 
 interface Client {
@@ -63,7 +64,8 @@ interface ProposalItem {
   clients?: { name?: string } | null
 }
 
-interface NutritionRecord { client_id: string; date: string; compliant: boolean | null; calories?: number | null }
+interface NutritionRecord { client_id: string; date: string; compliant: boolean | null; calories?: number | null; protein_grams?: number | null; carbs_grams?: number | null; fat_grams?: number | null }
+interface TrainingDateRecord { client_id: string; date: string; training_type?: string | null }
 interface WellnessRecord { client_id: string; date: string; energy_level: number }
 interface RPERecord { client_id: string; date: string; rpe: number }
 
@@ -194,6 +196,8 @@ export default function AdminDashboard() {
   const [todayNutritionMap, setTodayNutritionMap] = useState<Record<string, boolean>>({})
   const [recentBody, setRecentBody] = useState<BodyRecord[]>([])
   const [recentNutrition, setRecentNutrition] = useState<NutritionRecord[]>([])
+  // 90 天訓練日期（含型別）—— 診斷「幾天沒練」要用，rest 不算練
+  const [trainingDates, setTrainingDates] = useState<TrainingDateRecord[]>([])
   const [recentWellness, setRecentWellness] = useState<WellnessRecord[]>([])
   const [recentRPE, setRecentRPE] = useState<RPERecord[]>([])
   const [lastActivityMap, setLastActivityMap] = useState<Record<string, string>>({})
@@ -345,7 +349,8 @@ export default function AdminDashboard() {
       for (const r of (data.activityBody || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
       for (const r of (data.activityNutrition || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
       for (const r of (data.activityWellness || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
-      for (const r of (data.activityTraining || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
+      setTrainingDates((data.activityTraining || []) as TrainingDateRecord[])
+      for (const r of (data.activityTraining || []) as TrainingDateRecord[]) updateAct(r.client_id, r.date)
       for (const r of (data.supplementLogs || []) as { client_id: string; date: string }[]) updateAct(r.client_id, r.date)
       setLastActivityMap(actMap)
       setPushClientIds(new Set((data.pushClientIds || []) as string[]))
@@ -481,14 +486,34 @@ export default function AdminDashboard() {
       .filter(r => r.daysIdle <= 30)
       .map(r => {
         const base = computeProgress(r.c.goal_type, r.c.prep_phase, r.c.target_weight, byClient[r.c.id] || [])
+        const nutLogs = recentNutrition.filter(n => n.client_id === r.c.id)
         return {
           ...r,
           verdict: r.daysIdle >= OFFLINE_MIN_DAYS ? offlineVerdict(r.daysIdle, base) : base,
           streak: computeStreak(datesByClient[r.c.id] || new Set()),
+          // ⚠️ computeProgress 只看體重，產出的是「停滯 · 0.0kg/13天」這種**描述**。
+          // Howard 2026-09-14：「教練後台我寧可用你去分析也不要自己看」——
+          // 看到描述之後還要自己想「所以為什麼」，那一步正是他說他不做的。
+          // diagnoseClient 把那一步寫下來（人還在嗎→有在練嗎→吃對了嗎→才輪到處方）。
+          diagnosis: diagnoseClient({
+            goalType: r.c.goal_type,
+            caloriesTarget: r.c.calories_target ?? null,
+            trainingEnabled: r.c.training_enabled !== false,
+            weights: byClient[r.c.id] || [],
+            nutritionLogs: nutLogs.map(n => ({ date: n.date, calories: n.calories ?? null })),
+            trainingLogs: trainingDates.filter(t => t.client_id === r.c.id).map(t => ({ date: t.date, training_type: t.training_type ?? null })),
+            today: new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10),
+            windowDays: 14,
+          }),
+          nutrition7d: averageNutrition(
+            nutLogs.map(n => ({ date: n.date, calories: n.calories ?? null, protein_grams: n.protein_grams ?? null, carbs_grams: n.carbs_grams ?? null, fat_grams: n.fat_grams ?? null })),
+            new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10),
+            7,
+          ),
         }
       })
       .sort((a, b) => a.verdict.rank - b.verdict.rank || b.daysIdle - a.daysIdle || a.c.name.localeCompare(b.c.name))
-  }, [clients, recentBody, recentNutrition, recentWellness, recentRPE, lastActivityMap])
+  }, [clients, recentBody, recentNutrition, recentWellness, recentRPE, trainingDates, lastActivityMap])
 
   /**
    * 今日主線 —— 一句話講完「今天這攤長怎樣」。
@@ -1284,24 +1309,6 @@ export default function AdminDashboard() {
           </div>
         </details>
 
-        {/* ===== Compact 數字條（取代原本 8 張大卡）===== */}
-        <div className="bg-white border border-slate-200 rounded-2xl px-5 py-3 mb-4">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <MiniStat label="學員" value={summaryStats.totalClients} />
-            <MiniStat label="付費" value={retentionStats.paying} />
-            <MiniStat label="今日活躍" value={summaryStats.todayActive} />
-            <MiniStat label="需關注" value={summaryStats.needAttention} tone={summaryStats.needAttention > 0 ? 'red' : undefined} />
-            <MiniStat label="補品服從率" value={`${summaryStats.avgCompliance}%`} />
-            <MiniStat label="本月新增" value={`+${retentionStats.newThisMonth}`} tone="green" />
-            <MiniStat label="流失風險" value={retentionStats.churnRisk.length} tone={retentionStats.churnRisk.length > 0 ? 'orange' : undefined} />
-            <MiniStat label="推播開通" value={`${retentionStats.pushOn}/${retentionStats.activeCount}`} tone={retentionStats.pushOn === 0 ? 'orange' : 'green'} />
-            <MiniStat label="到期/逾期" value={summaryStats.expiringCount + summaryStats.expiredCount} tone={(summaryStats.expiringCount + summaryStats.expiredCount) > 0 ? 'rose' : undefined} />
-          </div>
-        </div>
-
-        {/* ===== 功能公告廣播（推播給學員）===== */}
-        <FeatureAnnounce />
-
         {/* ===== 戰情室：近 7 天有在動的學員，一眼看誰有效果 ===== */}
         {progressBoard.length > 0 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
@@ -1313,7 +1320,7 @@ export default function AdminDashboard() {
               <span className="text-xs text-gray-400 tabular-nums">{progressBoard.length} 人</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {progressBoard.map(({ c, daysIdle, verdict, streak }) => {
+              {progressBoard.map(({ c, daysIdle, verdict, streak, diagnosis, nutrition7d }) => {
                 const tier = getTierBadge(c.subscription_tier)
                 const idleText = daysIdle === 0 ? '今天' : `${daysIdle}天前`
                 return (
@@ -1332,7 +1339,30 @@ export default function AdminDashboard() {
                       <div className="mb-1">
                         <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${verdict.pill}`}><span className={`inline-block w-2 h-2 rounded-full ${verdict.dot}`} />{verdict.label}</span>
                       </div>
-                      <p className="text-[11px] text-gray-500 leading-snug min-h-[2.2em]">{verdict.detail}</p>
+                      <p className="text-[11px] text-gray-500 leading-snug">{verdict.detail}</p>
+
+                      {/* 為什麼會這樣 —— 描述（上面）之後緊接著原因（這裡）。
+                          Howard「我寧可用你去分析也不要自己看」：那個「所以為什麼」的推理
+                          寫在 lib/client-diagnosis.ts，不是留給他現場想。 */}
+                      {diagnosis.code !== 'on_track' && (
+                        <div className="mt-1.5 pl-2 border-l-2 border-slate-200">
+                          <p className="text-[11px] font-medium text-slate-700 leading-snug">{diagnosis.cause}</p>
+                          <p className="text-[11px] text-slate-500 leading-snug mt-0.5">→ {diagnosis.action}</p>
+                        </div>
+                      )}
+
+                      {/* 近 7 天營養素平均（Howard 2026-09-14 指名要的）。
+                          ⚠️ 一定要把「7 天記了幾天」講出來 —— 記 3 天的平均跟記 7 天的平均
+                          是完全不同強度的證據，只印一個數字會讓人把前者當後者用。 */}
+                      {nutrition7d.daysLogged > 0 && (
+                        <p className="text-[11px] text-slate-500 leading-snug mt-1.5 tabular-nums">
+                          7天均 <span className="font-medium text-slate-700">{nutrition7d.calories ?? '—'}</span>
+                          {c.calories_target ? <span className="text-slate-400">/{c.calories_target}</span> : null}
+                          {' kcal · '}
+                          P{nutrition7d.protein ?? '—'} C{nutrition7d.carbs ?? '—'} F{nutrition7d.fat ?? '—'}
+                          <span className="text-slate-400">（記 {nutrition7d.daysLogged}/7 天）</span>
+                        </p>
+                      )}
                     </Link>
                     {!pushClientIds.has(c.id) && (
                       <div className="mt-1.5 -mb-0.5">
@@ -1412,6 +1442,28 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+
+        {/* ===== Compact 數字條 —— 參考層，排在結論後面 =====
+            ⚠️ 2026-09-14 Howard：「教練後台我寧可用你去分析也不要自己看」。
+            這九個數字全部是「要他自己解讀」的東西，而他說他不做那一步。
+            排在戰情室（已經有診斷與原因）後面：先給結論，要細節的人再往下看。
+            內容一個都沒刪，只換位置。 */}
+        <div className="bg-white border border-slate-200 rounded-2xl px-5 py-3 mb-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <MiniStat label="學員" value={summaryStats.totalClients} />
+            <MiniStat label="付費" value={retentionStats.paying} />
+            <MiniStat label="今日活躍" value={summaryStats.todayActive} />
+            <MiniStat label="需關注" value={summaryStats.needAttention} tone={summaryStats.needAttention > 0 ? 'red' : undefined} />
+            <MiniStat label="補品服從率" value={`${summaryStats.avgCompliance}%`} />
+            <MiniStat label="本月新增" value={`+${retentionStats.newThisMonth}`} tone="green" />
+            <MiniStat label="流失風險" value={retentionStats.churnRisk.length} tone={retentionStats.churnRisk.length > 0 ? 'orange' : undefined} />
+            <MiniStat label="推播開通" value={`${retentionStats.pushOn}/${retentionStats.activeCount}`} tone={retentionStats.pushOn === 0 ? 'orange' : 'green'} />
+            <MiniStat label="到期/逾期" value={summaryStats.expiringCount + summaryStats.expiredCount} tone={(summaryStats.expiringCount + summaryStats.expiredCount) > 0 ? 'rose' : undefined} />
+          </div>
+        </div>
+
+        {/* ===== 功能公告廣播（推播給學員）===== */}
+        <FeatureAnnounce />
 
         {/* ===== 更多洞察（收合，預設不展開）===== */}
         <details className="bg-white border border-slate-200 rounded-2xl mb-4">
