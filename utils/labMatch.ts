@@ -103,6 +103,25 @@ for (const [id, aliases] of Object.entries(TEST_ALIASES)) {
 }
 
 /**
+ * 抓「總睪固酮」用的關鍵字與排除字 —— **一處真相**（紅線 6）。
+ *
+ * ⚠️ 2026-09-14 實際踩到：`lib/nutrition-engine.ts` 三處的排除清單是
+ * `['free', '游離', 'bioavailable']` —— 有英文 bioavailable，**沒有中文「生物可利用」**。
+ * 而系統的 canonical 名稱是「生物可利用睪固酮」，它含「睪固酮」、不含那三個字，
+ * 於是被當成總睪固酮抓走。
+ *
+ * 後果不是顯示錯字：陳胤豪的生物可利用睪固酮 182 被讀成總睪固酮
+ * （他的總睪固酮其實是 403.92），減脂安全閘門因此天天判
+ * 「🔴 睪固酮極低（182 ng/dL，安全值 ≥400）— 不適合減脂」並擋掉調整。
+ * 182 ng/dL 的總睪固酮是臨床性腺功能低下，182 的生物可利用是完全不同的尺標。
+ *
+ * `lib/supplement-indication-audit.ts` 本來就排對了 —— 同一個概念兩份定義、
+ * 只修了一份，正是紅線 6 在講的事。兩邊改用這組常數。
+ */
+export const TOTAL_TESTOSTERONE_KEYWORDS = ['testosterone', '睪固酮', '睪酮']
+export const TOTAL_TESTOSTERONE_EXCLUDE = ['free', '游離', 'bioavailable', '生物可利用']
+
+/**
  * 精確匹配血檢指標名稱（查表法，不使用 includes()）
  * @param testName 使用者輸入的血檢名稱
  * @param keywords 要匹配的關鍵字（任一關鍵字屬於同一指標即匹配）

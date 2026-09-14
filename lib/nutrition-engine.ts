@@ -117,6 +117,7 @@ import {
 } from './body-fat-zone-table'
 
 import { getLabMacroModifiers, detectLabCrossPatterns, type LabMacroModifier, type LabTrainingModifier } from './lab-nutrition-advisor'
+import { TOTAL_TESTOSTERONE_KEYWORDS, TOTAL_TESTOSTERONE_EXCLUDE } from '@/utils/labMatch'
 import { type GeneticProfile, getSerotoninRiskLevel } from './supplement-engine'
 import { checkPeakWeekTrainingConflicts, formatPeakTrainingConflict } from './peak-week-training-check'
 import { generateRecoveryAssessment, type RecoveryAssessment, type RecoveryState as RecoveryEngineState } from './recovery-engine'
@@ -1544,9 +1545,9 @@ function checkCuttingReadiness(
       return true
     })
 
-  // 睪固酮（男性）— 排除 free/bioavailable/游離 避免誤匹配
+  // 睪固酮（男性）— 關鍵字與排除字用 utils/labMatch 的共用常數（含中文「生物可利用」，見那裡的說明）
   if (isMale) {
-    const testo = findLab(['testosterone', '睪固酮', '睪酮'], ['free', '游離', 'bioavailable'])
+    const testo = findLab(TOTAL_TESTOSTERONE_KEYWORDS, TOTAL_TESTOSTERONE_EXCLUDE)
     if (testo && testo.value != null) {
       if (testo.value < 300) {
         score -= 30
@@ -1754,7 +1755,7 @@ function checkCuttingReadiness(
 
     // 睪固酮高（男性）— 荷爾蒙環境好，適合減脂
     if (isMale) {
-      const testoGood = findLab(['testosterone', '睪固酮', '睪酮'], ['free', '游離', 'bioavailable'])
+      const testoGood = findLab(TOTAL_TESTOSTERONE_KEYWORDS, TOTAL_TESTOSTERONE_EXCLUDE)
       if (testoGood && testoGood.value != null && testoGood.value >= 550) {
         score += 8
         reasons.push(`🟢 睪固酮充足（${testoGood.value} ng/dL）— 荷爾蒙環境適合減脂`)
@@ -1801,7 +1802,7 @@ function checkCuttingReadiness(
   // 絕對值在範圍內不代表沒問題，大幅下降才是真正的紅旗
   if (labs.length > 0 && labs.some(l => l.date)) {
     const trendKeywords: { keywords: string[]; exclude?: string[]; label: string; worsening: 'decrease' | 'increase' }[] = [
-      { keywords: ['testosterone', '睪固酮', '睪酮'], exclude: ['free', '游離', 'bioavailable'], label: '睪固酮', worsening: 'decrease' },
+      { keywords: TOTAL_TESTOSTERONE_KEYWORDS, exclude: TOTAL_TESTOSTERONE_EXCLUDE, label: '睪固酮', worsening: 'decrease' },
       { keywords: ['free t', 'free testosterone', '游離睪固酮'], label: '游離睪固酮', worsening: 'decrease' },
       { keywords: ['bioavailable testosterone'], label: 'Bioavailable T', worsening: 'decrease' },
       { keywords: ['shbg', '性荷爾蒙結合球蛋白'], label: 'SHBG', worsening: 'increase' },

@@ -453,6 +453,21 @@ export async function GET(request: NextRequest) {
           est ? { impliedDaily: est.impliedDaily, targetCalories: Number(c.calories_target) } : null,
         )
         if (!verdict.adjustPrescription) {
+          // ⚠️ 2026-09-14：這支 cron 一天跑兩次（vercel.json 兩條 schedule），
+          // 而這筆「建議調整但沒套用」的 log 兩次都寫 —— 近 7 天 42 筆裡一半是重複的，
+          // 同一天同一個學員同一句話寫兩遍。學員頁那張「你的目標沒有動」卡吃 7 天內的
+          // 最新一筆，重複不會改變顯示，但 log 是給人看的稽核紀錄，灌成兩倍就沒人想看了。
+          // 同一天已經寫過就跳過。
+          const { data: dupe } = await supabase
+            .from('macro_adjustment_log')
+            .select('id')
+            .eq('client_id', c.id)
+            .eq('trigger_source', 'trajectory')
+            .gte('applied_at', `${today}T00:00:00`)
+            .limit(1)
+            .maybeSingle()
+          if (dupe) { autoAdjustResults.skippedExecutionGap++; continue }
+
           await supabase.from('macro_adjustment_log').insert({
             client_id: c.id,
             applied_by: 'system',

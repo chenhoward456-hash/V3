@@ -10,6 +10,8 @@
  * 維護原則：新增補品就在 RULES 加一條；判斷一律從學員「自己的」血檢/基因走，別假設範本。
  */
 
+import { TOTAL_TESTOSTERONE_KEYWORDS, TOTAL_TESTOSTERONE_EXCLUDE } from '@/utils/labMatch'
+
 export type IndicationStatus = 'indicated' | 'lifestyle' | 'no-indication' | 'caution'
 
 export type IndicationVerdict = {
@@ -99,7 +101,7 @@ const RULES: { match: string[]; evaluate: (c: Ctx) => IndicationVerdict }[] = [
     evaluate: (c) => {
       const hits: string[] = []
       const wbc = c.lab(['白血球', 'wbc', '白細胞'])
-      const t = c.lab(['睪固酮', 'testosterone', '睪酮'], ['游離', 'free', 'bioavailable', '生物可利用'])
+      const t = c.lab(TOTAL_TESTOSTERONE_KEYWORDS, TOTAL_TESTOSTERONE_EXCLUDE)
       if (wbc?.value != null && wbc.value < 4000) hits.push(`白血球 ${wbc.value} 偏低（免疫）`)
       if (t?.value != null && t.value < 400) hits.push(`睪固酮 ${t.value} 偏低`)
       if (hits.length) return ok(hits.join('、'))
