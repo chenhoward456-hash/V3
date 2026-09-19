@@ -17,7 +17,10 @@ import type { BodyComposition, NutritionLog, TrainingLog, DailyWellness } from '
 import { createServiceSupabase } from '@/lib/supabase'
 import { pushMessage, unlinkRichMenuFromUser } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
-import { estimateActualIntake, prescriptionVerdict } from '@/lib/implied-intake'
+import {
+  estimateActualIntake, prescriptionVerdict,
+  lastCarbIncreaseDate, carbRepletionCutoff, inCarbRepletionWindow,
+} from '@/lib/implied-intake'
 import { sendPushNotification } from '@/lib/web-push'
 import { buildPeakMorningReminder, buildPeakEveningReminder } from '@/lib/peak-week-reminders'
 import { verifyAdminSession } from '@/lib/auth-middleware'
@@ -444,13 +447,33 @@ export async function GET(request: NextRequest) {
         // ⚠️ 用「只靠體重」的估算，不要求飲食紀錄 —— 絕大多數學員不記飲食
         //    （近 21 天全班飲食天數只有體重的 57%），若卡在飲食資料，
         //    他們會落到「資料不足 → 照原邏輯」而被引擎照樣砍處方。
+        //
+        // ⚠️ 2026-09-19 補上兩件這段原本不知道的事（見 lib/implied-intake.ts 的更正）：
+        //   1. **碳水回補**：碳水被往上調之後，肝醣＋水一次性回補會把真實下降蓋掉數週。
+        //      Howard 的臨床通則：「他們來之前都亂砍碳水、不算脂肪，我們一開始一定先讓
+        //      碳水吃回來、脂肪調低。這種情況下體重不掉是正常的。」
+        //      那幾天要從回歸裡丟掉，不然窗過了它們還會把斜率一路拉平。
+        //   2. **要斷定「多吃」必須有他自己記的熱量當獨立證據**，不能只靠體重反推
+        //      （那是循環論證）。沒有紀錄或紀錄跟處方對得上 → 判 undetermined，不指控。
+        const { data: macroLogRows } = await supabase
+          .from('macro_adjustment_log')
+          .select('applied_at, old_macros, new_macros')
+          .eq('client_id', c.id)
+          .gte('applied_at', new Date(Date.now() - 60 * 86400000).toISOString())
+        const carbIncrease = lastCarbIncreaseDate((macroLogRows ?? []) as never)
+
         const est = estimateActualIntake(
           bodyData.map((b: any) => ({ date: b.date, weight: b.weight })),
           Number(c.calories_target),
           c.goal_type,
+          21,
+          carbRepletionCutoff(carbIncrease),
         )
         const verdict = prescriptionVerdict(
           est ? { impliedDaily: est.impliedDaily, targetCalories: Number(c.calories_target) } : null,
+          // 上面 286 行已經算好 withCal / avgDailyCalories，用同一份不要再算一次
+          avgDailyCalories,
+          inCarbRepletionWindow(carbIncrease, today),
         )
         if (!verdict.adjustPrescription) {
           // ⚠️ 2026-09-14：這支 cron 一天跑兩次（vercel.json 兩條 schedule），

@@ -148,11 +148,21 @@ export function estimateActualIntake(
   targetCalories: number,
   goalType: string | null,
   windowDays = 21,
+  /**
+   * 這個日期之前的體重一律不算（YYYY-MM-DD）。
+   *
+   * ⚠️ 給碳水回補期用（見 CARB_REPLETION_DAYS）。只是「回補期間不下判斷」不夠 ——
+   * 窗過了之後，那幾天的體重**還留在回歸裡**，會把後面真實的下降斜率一路拉平。
+   * 震宣實測：含回補期 +0.016 kg/週（看起來完全卡住）；扣掉前 14 天 −0.535（正中目標）。
+   * 同一組資料，差別只在有沒有把被水蓋住的那幾天丟掉。
+   */
+  excludeBefore?: string | null,
 ): { impliedDaily: number; slopePerWeek: number; expectedRatePerWeek: number; weightPoints: number } | null {
   if (!Number.isFinite(targetCalories) || targetCalories <= 0) return null
 
   const valid = weights
     .filter(w => w.weight != null)
+    .filter(w => !excludeBefore || w.date.slice(0, 10) >= excludeBefore)
     .map(w => ({ date: w.date, value: w.weight as number }))
     .sort((a, b) => a.date.localeCompare(b.date))
   if (valid.length < MIN_WEIGHT_POINTS) return null
@@ -223,28 +233,182 @@ const EXECUTION_GAP_KCAL = 200
  * 砍錯邊的代價：他照樣吃 3456，落差從 456 變成 826，數字更難看但行為沒變；
  * 而萬一他真的照新處方吃，等於一次砍掉 826 kcal，太陡。
  */
-export function prescriptionVerdict(
-  r: { impliedDaily: number; targetCalories: number } | null,
-): { adjustPrescription: boolean; reason: string } {
-  if (!r) return { adjustPrescription: true, reason: '資料不足以判斷執行落差，照原邏輯處理' }
+/**
+ * 碳水往上調之後，體重不會馬上掉 —— 這是生理，不是執行問題。
+ *
+ * ## Howard 2026-09-19 的臨床通則（不是震宣個案）
+ *
+ *   「之前他們基本上都是亂砍碳水、不計算脂肪，導致身體卡在減不下來的狀態才來找我們。
+ *    我們一開始絕對會先讓他們把碳水吃回來，但脂肪一定會調得比原本低。
+ *    在這種情況下體重不掉，我後來覺得是正常的。」
+ *
+ * 機轉：每 1g 肝醣結合約 3g 水。碳水從「亂砍」拉回正常，肝醣重新填滿，
+ * 體重會**一次性往上一階**（實務上 1–2 kg），把真正的脂肪流失蓋掉好幾週。
+ *
+ * ## 實際數字（震宣，碳水 8/25 從 156 → 224，+68g/天）
+ *
+ *   含回補窗（8/26 起 21 筆）：斜率 **+0.016** kg/週 → 看起來完全卡住
+ *   扣掉前 10 天（11 筆）：    **−0.003** kg/週 → 還在階梯上
+ *   扣掉前 14 天（9 筆）：     **−0.535** kg/週 ← 幾乎正中目標 −0.50
+ *
+ * 不扣的話，引擎會判他「執行落差 542 kcal」並把那句話印在他首頁上 ——
+ * 而他飲食記 25/28 天、在超商買東西還拍熱量給教練看。**系統在冤枉一個做對的人。**
+ *
+ * ⚠️ 14 天是取自上面這組數字（10 天還在階梯上、14 天訊號才出來），
+ * 不是文獻常數。樣本只有一個人，之後有更多案例要回頭校。
+ */
+export const CARB_REPLETION_DAYS = 14
+/** 碳水一天多這麼多克才算「往上調」，小幅微調不觸發 */
+export const CARB_INCREASE_G = 30
 
-  const overTarget = r.impliedDaily - r.targetCalories
-  if (overTarget > EXECUTION_GAP_KCAL) {
+export type MacroLogRow = {
+  applied_at: string
+  old_macros: Record<string, unknown> | null
+  new_macros: Record<string, unknown> | null
+}
+
+/**
+ * 最近一次「碳水被往上調」的日期。沒有就回 null。
+ * 用來把回補期那幾天從體重趨勢裡排除（見 CARB_REPLETION_DAYS）。
+ */
+export function lastCarbIncreaseDate(log: MacroLogRow[]): string | null {
+  const num = (v: unknown) => { const n = typeof v === 'number' ? v : parseFloat(String(v)); return Number.isFinite(n) ? n : null }
+  const hits = (log ?? [])
+    .filter(m => {
+      const oldC = num(m.old_macros?.carbs_target)
+      const newC = num(m.new_macros?.carbs_target)
+      return oldC != null && newC != null && newC - oldC >= CARB_INCREASE_G
+    })
+    .map(m => m.applied_at.slice(0, 10))
+    .sort()
+  return hits.length ? hits[hits.length - 1] : null
+}
+
+/** 這個日期還在碳水回補窗內嗎（體重趨勢此時不可信） */
+export function inCarbRepletionWindow(carbIncreaseDate: string | null, today: string): boolean {
+  if (!carbIncreaseDate) return false
+  const days = (Date.parse(today) - Date.parse(carbIncreaseDate)) / DAY
+  return days >= 0 && days < CARB_REPLETION_DAYS
+}
+
+/**
+ * 回補期結束的那一天（含）。這之前的體重都被水蓋住，算趨勢時要丟掉。
+ * 沒有碳水調整就回 null（不排除任何東西）。
+ */
+export function carbRepletionCutoff(carbIncreaseDate: string | null): string | null {
+  if (!carbIncreaseDate) return null
+  return new Date(Date.parse(carbIncreaseDate) + CARB_REPLETION_DAYS * DAY).toISOString().slice(0, 10)
+}
+
+export type VerdictCause =
+  /** 他自己記的熱量就超過處方 —— 有獨立證據，可以斷定 */
+  | 'execution'
+  /** 體重沒跟上，但他記的跟處方對得上 —— **分不出來是紀錄漏了還是處方開太高** */
+  | 'undetermined'
+  /** 記錄與體重都顯示吃不到處方 */
+  | 'under-eating'
+  /** 吃的對上了、體重仍偏離 → 處方本身要調 */
+  | 'prescription'
+  /** 碳水剛往上調，肝醣＋水回補中 —— 體重趨勢此時不能用來判斷任何事 */
+  | 'carb-repletion'
+  | 'insufficient-data'
+
+/**
+ * 該調處方，還是該先處理執行？
+ *
+ * ## ⚠️ 2026-09-19 重大更正：這支以前會講它不知道的事
+ *
+ * `impliedDaily = targetCalories + (實際斜率 − EXPECTED_RATE) × 7700/7`，
+ * 而 `EXPECTED_RATE` 是**寫死的常數**（cut = −0.5 kg/週），對所有減脂學員都一樣。
+ * 所以 `impliedDaily − targetCalories` 在數學上**就等於**「沒掉到預期速度的差額」，
+ * 跟「他吃了多少」沒有任何關係。
+ *
+ * 但舊版拿它斷定「這是執行超出處方，不是處方太高」—— 那是循環論證：
+ * 前提（處方是對的、照吃就會掉 0.5）本身就是結論。
+ *
+ * **實際撞到的案例（震宣，2026-09-19）**：他飲食記 25/28 天、平均 2075（處方 2070）、
+ * 而且在超商買東西會拍熱量給 Howard 看。系統卻判他「實際吃 2612，多 542」。
+ * Howard：「他有拍給我看耶，就是這麼的自律啊！」——系統在冤枉一個做對的人，
+ * 而那句話還印在學員自己的首頁上。
+ *
+ * 同一個檔案裡的 `reconciliationMessage` 早就寫對了：
+ * 「**刻意不指控** —— 因為『紀錄漏了』和『目標設錯了』一樣可能，而且處理方式完全相反」。
+ * 兩個函式立場相反，上線的卻是斷定的那個。
+ *
+ * ## 改法：要斷定執行落差，必須有**獨立證據**
+ *
+ * 唯一的獨立證據是他自己記的熱量。`loggedDaily > 處方` 才叫執行超出 —— 那是他自己寫的。
+ * 記的跟處方對得上、體重卻沒動 → **`undetermined`**：一樣不自動砍（保留 2026-08-16
+ * 那條教訓：對亂吃的人砍處方只會讓落差更大），但**不再指控**，改成交給教練看一眼。
+ * 那也正是張承鈞案例需要的（處方 2285 > 她的 TDEE 1837，照吃反而變胖 —— 那要砍處方）。
+ *
+ * @param loggedDaily 同期飲食紀錄的每日平均熱量；沒有就傳 null
+ */
+export function prescriptionVerdict(
+  /**
+   * `reconcileIntake()` 的輸出可以直接餵進來 —— 它本來就帶 `loggedDaily`，
+   * 這支會自己讀。⚠️ 沒有這個，呼叫端就得把同一個數字再傳一次，而那是一定會忘的
+   * （2026-09-19 自己的測試第一時間就忘了）。只用體重的 `estimateActualIntake`
+   * 沒有 loggedDaily，那種情況才需要第二個參數。
+   */
+  r: { impliedDaily: number; targetCalories: number; loggedDaily?: number } | null,
+  loggedDaily?: number | null,
+  /** 還在碳水回補窗內嗎（見 inCarbRepletionWindow）。是的話體重趨勢不可信，一律不判。 */
+  carbRepletion?: boolean,
+): { adjustPrescription: boolean; reason: string; cause: VerdictCause } {
+  // ⚠️ 回補窗要**排在資料不足前面**檢查。
+  // 窗內的時候 carbRepletionCutoff 會落在未來 → 體重全被排除 → r 變 null，
+  // 於是會先撞到「資料不足 → 照原邏輯」而讓引擎照樣去砍處方 ——
+  // 那正好是這整段要防的事。「現在在回補期」本身就是有效結論，不需要體重資料。
+  if (carbRepletion) {
     return {
       adjustPrescription: false,
-      reason: `體重顯示實際攝取約 ${r.impliedDaily} kcal，比處方 ${r.targetCalories} 高 ${Math.round(overTarget)} —— ` +
-        `這是執行超出處方，不是處方太高。先讓實際吃的對上處方，砍處方只會讓落差更大。`,
+      cause: 'carb-repletion',
+      reason: `碳水剛往上調，肝醣和水分正在回補（約 ${CARB_REPLETION_DAYS} 天）—— `
+        + `這段期間體重不掉是預期內的，不代表執行或處方有問題。先等趨勢出來再判。`,
     }
   }
-  if (overTarget < -EXECUTION_GAP_KCAL) {
+
+  if (!r) return { adjustPrescription: true, reason: '資料不足以判斷執行落差，照原邏輯處理', cause: 'insufficient-data' }
+
+  const rateGapKcal = r.impliedDaily - r.targetCalories
+  const logged = loggedDaily ?? r.loggedDaily ?? null
+  const hasLog = logged != null && Number.isFinite(logged) && logged > 0
+
+  if (rateGapKcal > EXECUTION_GAP_KCAL) {
+    // 他自己記的就超過處方 → 有獨立證據，可以斷定
+    if (hasLog && (logged as number) - r.targetCalories > EXECUTION_GAP_KCAL) {
+      return {
+        adjustPrescription: false,
+        cause: 'execution',
+        reason: `他自己記的平均 ${logged} kcal 就比處方 ${r.targetCalories} 高 ${Math.round((logged as number) - r.targetCalories)}，` +
+          `體重也沒跟上 —— 這是執行超出處方。先讓實際吃的對上處方，砍處方只會讓落差更大。`,
+      }
+    }
+    // 記的跟處方對得上（或根本沒記）→ 分不出來，不猜
     return {
       adjustPrescription: false,
-      reason: `體重顯示實際攝取約 ${r.impliedDaily} kcal，比處方 ${r.targetCalories} 低 ${Math.round(-overTarget)} —— ` +
-        `他沒吃到處方。調處方數字沒有意義，要處理的是為什麼吃不到。`,
+      cause: 'undetermined',
+      reason: hasLog
+        ? `體重每週少掉約 ${(rateGapKcal * 7 / KCAL_PER_KG).toFixed(2)} kg，但他記的平均 ${logged} kcal 跟處方 ${r.targetCalories} 對得上。`
+          + `可能是紀錄漏了，也可能是處方本身開在他的維持熱量上 —— 兩者處理方式相反，先不自動調，請教練看一眼。`
+        : `體重每週少掉約 ${(rateGapKcal * 7 / KCAL_PER_KG).toFixed(2)} kg，但沒有飲食紀錄可以對帳。`
+          + `分不出是吃超過還是處方開太高，先不自動調。`,
     }
   }
+
+  if (rateGapKcal < -EXECUTION_GAP_KCAL) {
+    return {
+      adjustPrescription: false,
+      cause: 'under-eating',
+      reason: `體重掉得比預期快約 ${(-rateGapKcal * 7 / KCAL_PER_KG).toFixed(2)} kg/週 —— ` +
+        `多半是沒吃到處方。調處方數字沒有意義，要處理的是為什麼吃不到。`,
+    }
+  }
+
   return {
     adjustPrescription: true,
-    reason: `實際攝取(${r.impliedDaily}) 與處方(${r.targetCalories}) 相符，體重仍偏離目標 → 處方本身要調`,
+    cause: 'prescription',
+    reason: `體重變化與處方(${r.targetCalories})預期相符，但仍偏離目標 → 處方本身要調`,
   }
 }

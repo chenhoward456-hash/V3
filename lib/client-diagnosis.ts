@@ -25,7 +25,10 @@
  * 兩套門檻會讓後台跟學員端各說各話（紅線 6）。
  */
 
-import { estimateActualIntake, prescriptionVerdict } from './implied-intake'
+import {
+  estimateActualIntake, prescriptionVerdict,
+  lastCarbIncreaseDate, inCarbRepletionWindow, carbRepletionCutoff, type MacroLogRow,
+} from './implied-intake'
 import { DAY_MS } from './date-utils'
 
 /** 完全沒有任何紀錄幾天就算「人不見了」 */
@@ -43,6 +46,8 @@ export type DiagnosisInput = {
   weights: { date: string; weight: number | null }[]
   nutritionLogs: { date: string; calories: number | null }[]
   trainingLogs: { date: string; training_type: string | null }[]
+  /** macro 變更紀錄 —— 用來偵測碳水回補窗（見 implied-intake 的 CARB_REPLETION_DAYS） */
+  macroLog?: MacroLogRow[]
   /** 台灣日 YYYY-MM-DD */
   today: string
   /**
@@ -58,6 +63,8 @@ export type DiagnosisInput = {
 export type DiagnosisCode =
   | 'offline'             // 人不見了
   | 'no_training_data'    // 沒有訓練紀錄（⚠️ 不等於沒練）
+  | 'carb_repletion'      // 碳水剛拉回來，肝醣＋水回補中，體重趨勢不可信
+  | 'undetermined'        // 體重沒跟上，但分不出是紀錄漏了還是處方開太高
   | 'execution_gap'       // 吃的比回報多（或少）
   | 'prescription'        // 處方本身要調
   | 'no_food_data'        // 缺飲食紀錄，問不出來
@@ -151,24 +158,42 @@ export function diagnoseClient(input: DiagnosisInput): Diagnosis {
     return { code: 'no_food_data', cause: '沒設熱量目標', action: '先把處方設起來，不然沒有東西可以對帳', note }
   }
 
-  const est = estimateActualIntake(input.weights, caloriesTarget, goalType)
+  // 回補期那幾天的體重被水蓋住，要從回歸裡丟掉 —— 否則窗過了之後它們還會把斜率拉平
+  const carbIncrease = lastCarbIncreaseDate(input.macroLog ?? [])
+  const est = estimateActualIntake(
+    input.weights, caloriesTarget, goalType, 21, carbRepletionCutoff(carbIncrease),
+  )
+  // 他自己記的平均熱量：要斷定「執行超出處方」必須有這個獨立證據，
+  // 不能只靠體重沒掉就反推（見 prescriptionVerdict 檔內 2026-09-19 的更正）。
+  const loggedDaily = withCal.length
+    ? Math.round(withCal.reduce((a, r) => a + (r.calories as number), 0) / withCal.length)
+    : null
+  const repletion = inCarbRepletionWindow(carbIncrease, today)
   const verdict = prescriptionVerdict(
     est ? { impliedDaily: est.impliedDaily, targetCalories: caloriesTarget } : null,
+    loggedDaily,
+    repletion,
   )
+
+  // 碳水回補窗內：體重趨勢不可信，直接講這件事，不要往下判執行或處方
+  // （prescriptionVerdict 也把這條排在「資料不足」前面 —— 窗內 cutoff 在未來、
+  //   體重會被全排除，先撞資料不足的話引擎反而會照樣去砍處方）
+  if (repletion) {
+    return { code: 'carb_repletion', cause: verdict.reason, action: '不用動。等回補期過了趨勢才算數', note }
+  }
 
   // prescriptionVerdict 說「不要調處方」＝ 這是執行落差，不是處方錯
   if (est && !verdict.adjustPrescription) {
-    const gap = Math.round(est.impliedDaily - caloriesTarget)
-    return {
-      code: 'execution_gap',
-      cause: gap > 0
-        ? `體重反推實際吃 ${Math.round(est.impliedDaily)}，比處方 ${caloriesTarget} 多 ${gap}`
-        : `體重反推實際吃 ${Math.round(est.impliedDaily)}，比處方 ${caloriesTarget} 少 ${-gap}`,
-      action: gap > 0
-        ? '不是處方太高。砍處方只會讓落差更大 —— 要處理的是回報跟實際對不上'
-        : '他沒吃到處方。調數字沒有意義，要處理的是為什麼吃不到',
-      note,
+    // ⚠️ 不再自己重寫理由 —— 直接用 prescriptionVerdict 的判詞。
+    // 舊版在這裡把所有「不調處方」的情況都寫成「體重反推實際吃 N，比處方多 M」，
+    // 那句話假設處方是對的（循環論證），會冤枉照著吃的人（震宣 2026-09-19）。
+    if (verdict.cause === 'execution') {
+      return { code: 'execution_gap', cause: verdict.reason, action: '先讓實際吃的對上處方，再談調整', note }
     }
+    if (verdict.cause === 'under-eating') {
+      return { code: 'execution_gap', cause: verdict.reason, action: '要處理的是為什麼吃不到，不是調數字', note }
+    }
+    return { code: 'undetermined', cause: verdict.reason, action: '分不出是紀錄漏了還是處方開太高 —— 這個要你看一眼', note }
   }
 
   // ── 3. 吃得跟處方一致，體重還是偏 → 這時才輪到處方 ──

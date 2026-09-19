@@ -72,7 +72,10 @@ describe('順序：人還在嗎 → 吃對了嗎 → 處方 ；訓練紀錄只�
       nutritionLogs: Array.from({ length: 14 }, (_, i) => ({ date: ago(i), calories: 3089 })),
       trainingLogs: [],
     }))
-    expect(d.code).toBe('execution_gap')
+    // ⚠️ 2026-09-19：改判 undetermined —— 他記的 3089 跟處方 3000 對得上，
+    // 資料分不出是少記還是處方開太高。這支要護的是「訓練紀錄不可以蓋過吃的對帳」，
+    // 那點仍然成立：結論來自熱量那條路，不是訓練那條。
+    expect(d.code).toBe('undetermined')
     expect(d.note ?? '').toContain('不代表他沒練')
   })
 
@@ -113,16 +116,42 @@ describe('順序：人還在嗎 → 吃對了嗎 → 處方 ；訓練紀錄只�
     expect(d.action).toContain('數字')
   })
 
-  it('🚨 執行落差要說「不是處方太高」—— 這句在的原因是他被砍過一次', () => {
+  it('🚨 記的跟處方對得上時，不可以斷定是他多吃', () => {
     // 陳胤豪的真實情境：回報 3089、體重反推 3517、處方 3000。
+    // 舊版判「執行落差 · 不是處方太高」。但 3089 只比處方高 89 —— 資料分不出
+    // 是他少記了 400，還是他的 TDEE 比模型低。2026-09-19 震宣的案例證明這種
+    // 斷定會冤枉人（他飲食記 25/28 天、在超商還拍熱量給教練看）。
     const d = diagnoseClient(base({
       goalType: 'bulk', caloriesTarget: 3000,
-      weights: series(20, i => 80 + i * 0.1),   // 明顯增重 → 反推攝取遠高於處方
+      weights: series(20, i => 80 + i * 0.1),
       nutritionLogs: Array.from({ length: 14 }, (_, i) => ({ date: ago(i), calories: 3089 })),
       trainingLogs: Array.from({ length: 10 }, (_, i) => ({ date: ago(i), training_type: 'push' })),
     }))
+    expect(d.code).toBe('undetermined')
+    expect(d.cause).not.toContain('執行超出')
+  })
+
+  it('🚨 但他自己記的就超過處方 → 那才可以斷定（那是他自己寫的）', () => {
+    const d = diagnoseClient(base({
+      goalType: 'bulk', caloriesTarget: 3000,
+      weights: series(20, i => 80 + i * 0.1),
+      nutritionLogs: Array.from({ length: 14 }, (_, i) => ({ date: ago(i), calories: 3600 })),
+      trainingLogs: Array.from({ length: 10 }, (_, i) => ({ date: ago(i), training_type: 'push' })),
+    }))
     expect(d.code).toBe('execution_gap')
-    expect(d.action).toContain('不是處方太高')
+    expect(d.cause).toContain('他自己記的')
+  })
+
+  it('🚨 碳水剛往上調 → 體重趨勢不可信，不下任何判斷', () => {
+    // Howard 的臨床通則：學員來之前都亂砍碳水，第一步是把碳水吃回來 →
+    // 肝醣＋水回補，體重不掉是正常的。
+    const d = diagnoseClient(base({
+      weights: series(20, () => 82.5),
+      nutritionLogs: Array.from({ length: 14 }, (_, i) => ({ date: ago(i), calories: 2000 })),
+      macroLog: [{ applied_at: `${ago(3)}T01:00:00Z`, old_macros: { carbs_target: 150 }, new_macros: { carbs_target: 224 } }],
+    }))
+    expect(d.code).toBe('carb_repletion')
+    expect(d.cause).toContain('肝醣')
   })
 })
 

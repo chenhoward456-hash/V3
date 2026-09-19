@@ -104,8 +104,15 @@ describe('該動處方還是該修執行（2026-08-16 我砍錯邊的教訓）',
     const w = weightSeries('2026-08-03', 14, 80.5, 0.18)
     const n = nutritionSeries('2026-08-03', 12, 3145)
     const v = prescriptionVerdict(reconcileIntake(w, n, 3000, 'bulk'))
+    // ⭐ 這條是這支測試真正要護的東西（2026-08-16 的教訓）：**不准砍**
     expect(v.adjustPrescription).toBe(false)
-    expect(v.reason).toContain('執行超出處方')
+    // ⚠️ 2026-09-19 措辭更正：舊版斷定「執行超出處方」，但資料分不出來 ——
+    // 他記的 3145 只比處方高 145（低於門檻），體重卻說 3456。
+    // 可能是他少記了 310，也可能是他的 TDEE 比模型低（增重期一樣會這樣）。
+    // Howard 當時知道是前者，靠的是他自己知道有多吃，不是這份資料。
+    // 引擎只能說「對不起來」，不能說「是你多吃」。
+    expect(v.cause).toBe('undetermined')
+    expect(v.reason).not.toContain('執行超出處方')
   })
 
   it('照處方吃但體重還是偏離 → 處方真的要調', () => {
@@ -148,7 +155,9 @@ describe('只靠體重估實際攝取（學員不記飲食也要能判斷）', (
     const est = estimateActualIntake(w, 3000, 'bulk')!
     const v = prescriptionVerdict({ impliedDaily: est.impliedDaily, targetCalories: 3000 })
     expect(v.adjustPrescription).toBe(false)                    // ← 新行為（擋下）
-    expect(v.reason).toContain('執行超出處方')
+    // 沒有飲食紀錄就沒有獨立證據 → 只能說分不出來，不能指控（2026-09-19）
+    expect(v.cause).toBe('undetermined')
+    expect(v.reason).toContain('沒有飲食紀錄')
   })
 
   it('體重筆數不足仍然回 null（不硬猜）', () => {
