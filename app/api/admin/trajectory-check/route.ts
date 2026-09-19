@@ -132,6 +132,7 @@ export async function GET(request: NextRequest) {
     bodyFatPct: latestBf ? Number(latestBf) : null,
     targetWeight: c.target_weight ? Number(c.target_weight) : null,
     targetDate: c.competition_date || c.target_date || null,
+    isCompetition: !!c.competition_date,
     currentCalories: c.calories_target ? Number(c.calories_target) : null,
     currentProtein: c.protein_target ? Number(c.protein_target) : null,
     currentCarbs: c.carbs_target ? Number(c.carbs_target) : null,

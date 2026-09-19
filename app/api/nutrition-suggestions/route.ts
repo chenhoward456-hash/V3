@@ -260,6 +260,8 @@ export async function GET(request: NextRequest) {
       targetWeight: client.target_weight ?? null,
       targetBodyFatPct: (client.target_body_fat as number) ?? null,
       targetDate: client.competition_date || client.target_date || null,
+      // targetDate 一個欄位兼「比賽日」與「目標日」兩種語意，引擎要靠這個才知道能不能講「距比賽」
+      isCompetition: !!client.competition_date && client.competition_enabled !== false,
       currentCalories: client.calories_target ?? null,
       currentProtein: client.protein_target ?? null,
       currentCarbs: client.carbs_target ?? null,

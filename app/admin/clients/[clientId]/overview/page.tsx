@@ -1,5 +1,6 @@
 'use client'
 
+import { weeklyWeightSlope } from '@/lib/weekly-coaching'
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -916,12 +917,18 @@ export default function ClientOverview() {
     const recentBody = bodyData.filter(b => b.weight != null)
     const weekBody = recentBody.filter(b => b.date >= weekStart && b.date <= todayStr)
     const lastWeekBody = recentBody.filter(b => b.date >= lastWeekStart && b.date <= lastWeekEndStr)
+    // ⚠️ 2026-09-19：原本是「這週最後一筆 − 上週最後一筆」＝兩點相減。
+    // 體重每天上下震盪 0.2-0.5kg（水分/肝醣/腸道內容物），兩點等於把全部權重壓在
+    // 剛好最吵的那兩天上，**正負號可能整個翻掉** —— 這句話 lib/weekly-coaching.ts
+    // 的 weeklyWeightSlope 註解早就寫過，但這裡沒用它。
+    // 實際後果（震宣 2026-09-19）：這張卡寫「體重變化 +0.7kg」（增加），
+    // 同一頁下面的營養分析引擎寫「週變化 -0.44%」（下降），兩個相反。
+    // Howard：「排兩個分析，講的不一樣，又跟你講的不一樣，我到底要聽誰的？」
+    // 改用同一支回歸，全頁講同一件事。
     let weightDelta: string | null = null
-    if (weekBody.length > 0 && lastWeekBody.length > 0) {
-      const latestW = weekBody[weekBody.length - 1].weight
-      const lastW = lastWeekBody[lastWeekBody.length - 1].weight
-      weightDelta = (latestW - lastW).toFixed(1)
-    }
+    const slopePoints = [...lastWeekBody, ...weekBody].map(b => ({ d: b.date, v: b.weight as number }))
+    const wkSlope = weeklyWeightSlope(slopePoints)
+    if (wkSlope != null) weightDelta = wkSlope.toFixed(1)
 
     // 飲食合規
     const weekNutrition = nutritionLogs.filter(l => l.date >= weekStart && l.date <= todayStr)
@@ -961,7 +968,9 @@ export default function ClientOverview() {
     if (weightDelta != null) {
       const w = Number(weightDelta)
       if (Math.abs(w) >= 0.1) {
-        lines.push(`體重${w > 0 ? '增加' : '減少'} ${Math.abs(w)} kg。`)
+        lines.push(`體重趨勢 ${w > 0 ? '+' : ''}${w} kg/週（回歸斜率，非頭尾相減）。`)
+      } else {
+        lines.push('體重趨勢持平。')
       }
     }
 
@@ -989,9 +998,21 @@ export default function ClientOverview() {
       ? Math.round(weekNutritionWithFat.reduce((s: number, l: any) => s + l.fat_grams, 0) / weekNutritionWithFat.length)
       : null
 
+    // ⚠️ 2026-09-19 Howard：「前面也沒有跟我講他平均的三大營養素（碳水、蛋白質、脂肪都要有）」。
+    // avgCarbs / avgFat 這裡本來就算好了（上面幾行），只是從來沒被顯示出來 ——
+    // 於是教練看得到蛋白質卻看不到碳水脂肪，而「拿蛋白換脂肪」正好是最常見的那個行為。
     const nutrientParts: string[] = []
+    if (avgCalories != null) {
+      nutrientParts.push(`熱量平均 ${avgCalories}kcal${client?.calories_target ? `（目標 ${client.calories_target}）` : ''}`)
+    }
     if (avgProtein != null) {
       nutrientParts.push(`蛋白質平均 ${avgProtein}g${client?.protein_target ? `（目標 ${client.protein_target}g）` : ''}`)
+    }
+    if (avgCarbs != null) {
+      nutrientParts.push(`碳水平均 ${avgCarbs}g${client?.carbs_target ? `（目標 ${client.carbs_target}g）` : ''}`)
+    }
+    if (avgFat != null) {
+      nutrientParts.push(`脂肪平均 ${avgFat}g${client?.fat_target ? `（目標 ${client.fat_target}g）` : ''}`)
     }
     if (avgWater != null) {
       nutrientParts.push(`飲水平均 ${avgWater}ml${client?.water_target ? `（目標 ${client.water_target}ml）` : ''}`)
@@ -2487,11 +2508,11 @@ export default function ClientOverview() {
             )}
             {client.body_composition_enabled && weeklyReport.weightDelta != null && (
               <div className="bg-white/70 rounded-xl p-3 text-center">
-                <p className="text-xs text-gray-500 mb-0.5">體重變化</p>
+                <p className="text-xs text-gray-500 mb-0.5">體重趨勢</p>
                 <p className={`text-2xl font-bold tabular-nums ${Number(weeklyReport.weightDelta) > 0 ? 'text-rose-600' : Number(weeklyReport.weightDelta) < 0 ? 'text-emerald-600' : 'text-gray-600'}`}>
                   {Number(weeklyReport.weightDelta) > 0 ? '+' : ''}{weeklyReport.weightDelta}
                 </p>
-                <p className="text-xs text-gray-400">kg</p>
+                <p className="text-xs text-gray-400">kg/週</p>
               </div>
             )}
             {client.nutrition_enabled && weeklyReport.avgProtein != null && (
@@ -2501,6 +2522,27 @@ export default function ClientOverview() {
                   {weeklyReport.avgProtein}g
                 </p>
                 {client.protein_target && <p className="text-xs text-gray-400">目標 {client.protein_target}g</p>}
+              </div>
+            )}
+            {client.nutrition_enabled && weeklyReport.avgCalories != null && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">平均熱量</p>
+                <p className="text-2xl font-bold tabular-nums text-slate-900">{weeklyReport.avgCalories}</p>
+                {client.calories_target && <p className="text-xs text-gray-400">目標 {client.calories_target}</p>}
+              </div>
+            )}
+            {client.nutrition_enabled && weeklyReport.avgCarbs != null && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">平均碳水</p>
+                <p className="text-2xl font-bold tabular-nums text-slate-900">{weeklyReport.avgCarbs}g</p>
+                {client.carbs_target && <p className="text-xs text-gray-400">目標 {client.carbs_target}g</p>}
+              </div>
+            )}
+            {client.nutrition_enabled && weeklyReport.avgFat != null && (
+              <div className="bg-white/70 rounded-xl p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">平均脂肪</p>
+                <p className={`text-2xl font-bold tabular-nums ${client.fat_target && weeklyReport.avgFat > client.fat_target * 1.15 ? 'text-amber-600' : 'text-slate-900'}`}>{weeklyReport.avgFat}g</p>
+                {client.fat_target && <p className="text-xs text-gray-400">目標 {client.fat_target}g</p>}
               </div>
             )}
             {client.nutrition_enabled && weeklyReport.avgWater != null && (

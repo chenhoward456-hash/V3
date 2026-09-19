@@ -1,3 +1,4 @@
+import { isCompetitionMode } from '@/lib/client-mode'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyCoachAuth } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
@@ -204,6 +205,8 @@ export async function GET(request: NextRequest) {
       targetWeight: c.target_weight,
       bodyFatTarget: c.body_fat_target,
       targetDate: c.target_date,
+      // 這支的 select 沒帶 competition_date；client_mode 是長期身分，夠用來決定要不要講「比賽」
+      isCompetition: isCompetitionMode(c.client_mode),
       // macro 目標 + 鎖定狀態
       macroTargets: {
         calories: c.calories_target,

@@ -143,6 +143,16 @@ export interface NutritionInput {
   targetWeight: number | null
   targetBodyFatPct?: number | null  // 目標體脂率 %（例如 15 = 15%）
   targetDate: string | null  // 比賽日或目標日 (ISO)
+  /**
+   * targetDate 是不是「真的一場比賽」。
+   *
+   * ⚠️ 2026-09-19：沒有這個欄位之前，引擎對每個人都講「距比賽 N 天」——
+   * 震宣／Sean／林宥任 的 competition_date 都是 null，卻被講成距比賽 36/70/103 天。
+   * 那是捏造的急迫感，而且 Howard 2026-08-26 就是為了這句話把震宣的 macro 鎖住
+   * （當時原話：「寫『距比賽 60 天』但他 competition_date 是 null，根本沒有比賽」）。
+   * 一年後同一個 bug 還在，因為 targetDate 一個欄位兼兩種語意。
+   */
+  isCompetition?: boolean
 
   // 當前目標
   currentCalories: number | null
@@ -3619,12 +3629,27 @@ function generateGoalDrivenCut(
   let statusLabel = '目標驅動'
   let message = ''
 
+  // ⚠️ 2026-09-19：`daysLeft` 是**距 target_date** 的天數，不是距比賽。
+  // 但下面每個分支都寫死「距比賽 N 天」，於是對沒有比賽的人憑空生出一場比賽：
+  //   震宣（competition_date=null）→「距比賽 36 天」
+  //   Sean（null）→「距比賽 70 天」
+  //   林宥任（null）→「距比賽 103 天」
+  // 那是捏造出來的急迫感，而且 Howard 2026-08-26 就是因為這句話把震宣的 macro 鎖住
+  // （當時的理由：「寫『距比賽 60 天』但他 competition_date 是 null，根本沒有比賽」）——
+  // 一年後同一個 bug 還在。有真的比賽才講比賽，否則講「距目標日」。
+  const hasRealComp = input.isCompetition === true
+  const deadlineLabel = hasRealComp ? `距比賽 ${daysLeft} 天` : `距目標日 ${daysLeft} 天`
+
   if (aheadOfSchedule) {
     statusEmoji = '📈'
     statusLabel = '進度超前'
     // safetyLevel 已在前面用 effectiveDailyDeficit 重算過
-    message = `進度超前！赤字已從 ${requiredDailyDeficit} 放鬆至 ${effectiveDailyDeficit}kcal/天。增加碳水保護肌肉與代謝。`
-    message += ` 距比賽 ${daysLeft} 天，目標卡路里 ${actualCalories}kcal。穩穩達標。`
+    // ⚠️ 兩個數字相同時不要說「放鬆至」—— 林宥任實際印出「赤字已從 417 放鬆至 417kcal/天」，
+    // 那句話沒有任何意義，而且會讓教練以為系統做了它沒做的事。
+    message = effectiveDailyDeficit < requiredDailyDeficit
+      ? `進度超前！赤字已從 ${requiredDailyDeficit} 放鬆至 ${effectiveDailyDeficit}kcal/天。增加碳水保護肌肉與代謝。`
+      : `進度超前！維持每日赤字 ${effectiveDailyDeficit}kcal/天。`
+    message += ` ${deadlineLabel}，目標卡路里 ${actualCalories}kcal。穩穩達標。`
   } else if (shortfall > 50) {
     // Bug fix M5: 只有 shortfall > 50 才顯示「需靠活動補」，避免 1-50 kcal 時說需要活動卻沒給建議
     statusEmoji = '⚠️'
@@ -3645,17 +3670,29 @@ function generateGoalDrivenCut(
   } else if (safetyLevel === 'extreme') {
     statusEmoji = '🔥'
     message = `目標模式：每日赤字 ${requiredDailyDeficit}kcal（極限），預計每週掉 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW）。`
-    message += ` 距比賽 ${daysLeft} 天，需減 ${weightToLose.toFixed(1)}kg。目標卡路里 ${actualCalories}kcal。`
+    message += ` ${deadlineLabel}，需減 ${weightToLose.toFixed(1)}kg。目標卡路里 ${actualCalories}kcal。`
     warnings.push(`🚨 每日赤字 ${requiredDailyDeficit}kcal 已超過 750kcal 極限，請確保足夠休息和蛋白質攝取`)
   } else if (safetyLevel === 'aggressive') {
     statusEmoji = '🎯'
     message = `目標模式：每日赤字 ${requiredDailyDeficit}kcal（積極），預計每週掉 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW）。`
-    message += ` 距比賽 ${daysLeft} 天，目標卡路里 ${actualCalories}kcal。可以達標。`
+    message += ` ${deadlineLabel}，目標卡路里 ${actualCalories}kcal。可以達標。`
     warnings.push(`⚡ 赤字已超過一般參考值 500kcal，備賽模式已啟用放寬限制`)
   } else {
+    // ⚠️ 2026-09-19：這裡原本印 `requiredDailyDeficit` / `requiredWeeklyLoss` ——
+    // 那是**還沒被安全上限砍過**的數字，但 `safetyLevel` 是用 `cappedDailyDeficit` 判的。
+    // 於是震宣拿到這句：「每日赤字 764kcal，預計每週掉 0.97kg（1.2% BW）。在安全範圍內」
+    // —— 1.2% 明明超過他（非備賽）的 1.0% 上限，而且 764 根本不是他實際會吃到的赤字
+    // （capped 之後是 500）。描述的是 A 計畫，蓋章的是 B 計畫。
+    // 改成一律講**實際會執行的**那組，達不到目標就直說。
+    const cappedWeeklyLoss = cappedDailyDeficit * 7 / energyDensity
+    const cappedLossPct = bw > 0 ? cappedWeeklyLoss / bw * 100 : 0
     statusEmoji = '✅'
-    message = `目標模式：每日赤字 ${requiredDailyDeficit}kcal，預計每週掉 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW）。`
-    message += ` 在安全範圍內，距比賽 ${daysLeft} 天，穩穩達標。`
+    message = `目標模式：每日赤字 ${cappedDailyDeficit}kcal，預計每週掉 ${cappedWeeklyLoss.toFixed(2)}kg（${cappedLossPct.toFixed(1)}% BW）。`
+    if (cappedDailyDeficit < requiredDailyDeficit) {
+      message += ` ⚠️ 達成目標本來需要 ${requiredDailyDeficit}kcal/天（${weeklyLossPct.toFixed(1)}% BW），超過安全上限 ${maxWeeklyLossPct}%，已鎖在上限 —— ${deadlineLabel}，照這個速度到不了，要延時程或改目標體重。`
+    } else {
+      message += ` 在安全範圍內，${deadlineLabel}，穩穩達標。`
+    }
   }
 
   // 如果實際體重趨勢偏離目標，追加提示
