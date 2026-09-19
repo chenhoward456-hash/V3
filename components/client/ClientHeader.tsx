@@ -342,6 +342,60 @@ export default function ClientHeader({
         const daysLeft = daysUntilDateTW(c.competition_date)
         const phase = c.prep_phase || 'off_season'
         const urgencyBg = daysLeft <= 7 ? 'bg-rose-50 border-rose-200' : daysLeft <= 14 ? 'bg-amber-50 border-amber-200' : daysLeft <= 30 ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'
+
+        // ⚠️ 2026-09-19：遠期倒數收成一行。
+        //
+        // 實測陳胤豪自己的頁面：這張卡佔 114px，內容是「休賽期 / 2027年7月31日 / 315 / 天後比賽」。
+        // **315 天的倒數不是資訊，是家具** —— 它每天只變 1，而且沒有任何事可做，
+        // 卻天天把每日記錄往下推。Howard：「每天做的事情基本上都一樣，我到底要這系統幹嘛」。
+        //
+        // 門檻取 168 天（24 週）—— 不是隨便抓的：那是天然備賽減脂期的典型長度，
+        // 也正好是 Howard 自己的計畫（2027-07-31 賽期回推 24 週 = 2027-02-13 減脂起跑）。
+        // 過了那條線，倒數才開始驅動行為；在那之前它只是一個日期。
+        //
+        // ⚠️ 功能一個都不砍：階段選擇器照樣點得開，只是收在一行裡。
+        const FULL_COUNTDOWN_DAYS = 168
+        if (daysLeft > FULL_COUNTDOWN_DAYS) {
+          return (
+            <div className="bg-white border border-slate-200 rounded-2xl px-4 py-2 mb-3">
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  onClick={() => setShowPhaseSelector(!showPhaseSelector)}
+                  className="px-2 py-0.5 font-bold rounded-full bg-slate-100 text-slate-600 flex items-center gap-1 transition-all active:scale-95 shrink-0"
+                >
+                  {PHASE_LABELS[phase] || phase}
+                  <ChevronDown className={`w-3 h-3 transition-transform ${showPhaseSelector ? 'rotate-180' : ''}`} />
+                </button>
+                <span className="text-slate-400 truncate tabular-nums">
+                  {new Date(c.competition_date).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  {' · '}{daysLeft} 天
+                </span>
+              </div>
+              {showPhaseSelector && (
+                <div className="mt-3 pt-3 border-t border-gray-200/60">
+                  <p className="text-xs text-gray-500 mb-2 font-medium">切換備賽階段</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(c.client_mode === 'athletic' ? ATHLETIC_PHASE_OPTIONS : BODYBUILDING_PHASE_OPTIONS).map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => onPrepPhaseChange(opt.value)}
+                        disabled={updatingPhase || opt.value === phase}
+                        className={`px-2 py-2 rounded-lg text-xs font-medium transition-all ${
+                          opt.value === phase
+                            ? 'bg-gray-900 text-white shadow-sm'
+                            : 'bg-white/80 text-gray-700 hover:bg-white hover:shadow-sm active:scale-95'
+                        } ${updatingPhase ? 'opacity-50' : ''}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        }
+
         return (
           <div className={`${urgencyBg} border rounded-2xl p-4 mb-3`}>
             <div className="flex items-center justify-between">
