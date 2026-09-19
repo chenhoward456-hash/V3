@@ -30,13 +30,19 @@ export async function GET(request: NextRequest) {
   if (ids.length === 0) return NextResponse.json({ drafts: [], generatedAt: now })
 
   // 批次撈近 21 天數據（一次查、依 client_id 分組，避免 N 次往返）
-  const [bodyR, nutR, trnR, welR, labR, pushR] = await Promise.all([
+  const [bodyR, nutR, trnR, welR, labR, pushR, macroR] = await Promise.all([
     supabase.from('body_composition').select('client_id, date, weight, body_fat').in('client_id', ids).gte('date', since),
     supabase.from('nutrition_logs').select('client_id, date, compliant, calories, protein_grams').in('client_id', ids).gte('date', since),
     supabase.from('training_logs').select('client_id, date, training_type').in('client_id', ids).gte('date', since),
     supabase.from('daily_wellness').select('client_id, date, energy_level').in('client_id', ids).gte('date', since),
     supabase.from('lab_results').select('client_id, test_name, value, status, date').in('client_id', ids).gte('date', since),
     supabase.from('push_subscriptions').select('client_id').in('client_id', ids),
+    // 碳水回補期偵測：碳水被往上調之後那兩週的體重是水，不能拿來跟學員講趨勢
+    // （見 lib/implied-intake.ts 的 CARB_REPLETION_DAYS）
+    supabase.from('macro_adjustment_log')
+      .select('client_id, applied_at, old_macros, new_macros')
+      .in('client_id', ids)
+      .gte('applied_at', new Date(Date.now() - 60 * 86_400_000).toISOString()),
   ])
   const pushSet = new Set((pushR.data || []).map((r: { client_id: string }) => r.client_id))
 
@@ -46,6 +52,7 @@ export async function GET(request: NextRequest) {
     return m
   }
   const bodyByC = group(bodyR.data), nutByC = group(nutR.data), trnByC = group(trnR.data), welByC = group(welR.data), labByC = group(labR.data)
+  const macroByC = group(macroR.data)
 
   const drafts = clients.map(c => {
     const input: WCInput = {
@@ -55,6 +62,7 @@ export async function GET(request: NextRequest) {
       training: (trnByC.get(c.id) || []).map(r => ({ date: r.date, training_type: r.training_type })),
       wellness: (welByC.get(c.id) || []).map(r => ({ date: r.date, energy_level: r.energy_level })),
       labs: (labByC.get(c.id) || []).map(r => ({ test_name: r.test_name, value: r.value, status: r.status, date: r.date })),
+      macroLog: (macroByC.get(c.id) || []).map(r => ({ applied_at: r.applied_at, old_macros: r.old_macros, new_macros: r.new_macros })),
       now,
     }
     const draft = computeWeeklyCoachingDraft(input)

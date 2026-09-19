@@ -11,6 +11,7 @@
 
 // 增肌速率門檻的唯一真相在 nutrition-engine（紅線 6：共用常數別各定各的）。
 // 兩支引擎對「什麼叫停滯」必須講同一套話，否則學員在儀表板和週訊會收到互相矛盾的判定。
+import { lastCarbIncreaseDate, carbRepletionCutoff, inCarbRepletionWindow, type MacroLogRow } from './implied-intake'
 import { BULK_TARGETS } from './nutrition-engine'
 
 /**
@@ -43,6 +44,12 @@ export type WCInput = {
   training: { date: string; training_type: string | null }[]
   wellness: { date: string; energy_level?: number | null }[]
   labs: { test_name: string; value: number | string | null; status?: string | null; date?: string | null }[]
+  /**
+   * macro 變更紀錄。用來偵測碳水回補期 —— 碳水被往上調之後，肝醣＋水回補會把
+   * 真實的脂肪流失蓋掉約兩週，那段的體重趨勢不能拿來跟學員講「你持平」。
+   * 見 lib/implied-intake.ts 的 CARB_REPLETION_DAYS。沒傳就等於沒有這個資訊。
+   */
+  macroLog?: MacroLogRow[]
   now: string // YYYY-MM-DD（台灣日）
 }
 
@@ -150,15 +157,33 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
   const hasConcreteCalorieAction = cTarget != null && cAvg != null
 
   // 1) 體重趨勢（近 14 天最小平方回歸斜率，見 weeklyWeightSlope 的說明）
-  const ws = w14.map(x => ({ d: x.date, v: num(x.weight)! })).filter(x => x.v != null).sort((a, b) => a.d.localeCompare(b.d))
+  const allWs = w14.map(x => ({ d: x.date, v: num(x.weight)! })).filter(x => x.v != null).sort((a, b) => a.d.localeCompare(b.d))
+
+  // ⚠️ 2026-09-19：碳水回補期的體重要丟掉，否則會跟學員講一件假的事。
+  // Howard 的臨床通則：「他們來之前都亂砍碳水、不算脂肪，我們第一件事一定是把碳水
+  // 吃回來、脂肪調低 —— 這種情況下體重不掉是正常的。」每 1g 肝醣綁約 3g 水。
+  // 震宣實測（碳水 8/25 156→224）：含回補期斜率 +0.02（草稿寫「持平」＝暗示他卡住），
+  // 扣掉前 14 天是 −0.54（正中目標）。**他一直在掉，只是被水蓋住。**
+  const carbIncrease = lastCarbIncreaseDate(input.macroLog ?? [])
+  const repletionCutoff = carbRepletionCutoff(carbIncrease)
+  const inRepletion = inCarbRepletionWindow(carbIncrease, now)
+  const ws = repletionCutoff ? allWs.filter(x => x.d.slice(0, 10) >= repletionCutoff) : allWs
+
+  if (inRepletion) {
+    // 窗內：沒有可信的趨勢可講，直接講原因，不要下「持平/卡住」的結論
+    bullets.push(`⚖️ 碳水剛往上調，肝醣和水分回補中 —— 這兩週體重不掉是預期內的，先不看趨勢`)
+  }
+
   let weightNote = ''
   const slope = weeklyWeightSlope(ws)
-  if (ws.length >= 3 && slope != null) {
+  if (!inRepletion && ws.length >= 3 && slope != null) {
     const first = ws[0], last = ws[ws.length - 1]
     const perWeek = slope
     // 門檻用 0.05kg/週：0.09kg/週 說「持平」會跟下一行的「有在漲」自相矛盾
     const dir = perWeek < -0.05 ? '下降' : perWeek > 0.05 ? '上升' : '持平'
-    weightNote = `體重 ${first.v}→${last.v}（趨勢約 ${perWeek >= 0 ? '+' : ''}${perWeek.toFixed(2)}kg/週，${dir}）`
+    const repletionNote = repletionCutoff && allWs.length > ws.length
+      ? `（已扣掉碳水回補的前 ${allWs.length - ws.length} 筆）` : ''
+    weightNote = `體重 ${first.v}→${last.v}（趨勢約 ${perWeek >= 0 ? '+' : ''}${perWeek.toFixed(2)}kg/週，${dir}）${repletionNote}`
     bullets.push(`⚖️ ${weightNote}`)
 
     // 備賽/減脂：對照目標速率
@@ -314,7 +339,22 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
 
     if (floorG != null && pAvg < floorG) {
       // 真的低於實證下限 → 這才是要調的
-      adjustments.push(`蛋白拉到至少 ${Math.round(floorG)}g（${basisStr}下限，近期平均才 ${Math.round(pAvg)}g）`)
+      //
+      // ⚠️ 2026-09-19 紅線 3（教練設定優先於引擎）：要他拉到的數字**不可以低於教練開的處方**。
+      // 舊版直接報 floorG，震宣實際長這樣：處方 P170、實證下限 148（1.8 × 82.45）、
+      // 他吃 138 → 草稿跟他說「蛋白拉到至少 148g」。那是引擎把教練的 170 往下砍成 148，
+      // 而且那句話會直接發給學員。取兩者較大的。
+      const goalG = Math.max(Math.round(floorG), pTarget)
+      adjustments.push(
+        goalG > Math.round(floorG)
+          ? `蛋白拉到 ${goalG}g（教練設定；近期平均才 ${Math.round(pAvg)}g，已低於 ${basisStr}下限 ${Math.round(floorG)}g）`
+          : `蛋白拉到至少 ${goalG}g（${basisStr}下限，近期平均才 ${Math.round(pAvg)}g）`,
+      )
+      // 教練開的處方本身低於實證下限 → 那是要教練看的事，不是叫學員照著吃
+      if (pTarget < floorG) {
+        flags.push(`蛋白處方 ${pTarget}g 低於 ${basisStr}下限 ${Math.round(floorG)}g`)
+        needsReview = true
+      }
       bullets.push(`🍗 蛋白平均 ${Math.round(pAvg)}g（${perKgStr}）→ 低於 ${basisStr}下限，${cutting ? '減脂掉肌風險' : '不利增肌'}`)
     } else if (pAvg < pTarget * 0.95) {
       // 高於實證下限、但沒吃到教練設定值 → 陳述事實，不說「達標」也不叫他改

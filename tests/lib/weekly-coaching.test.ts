@@ -118,7 +118,9 @@ describe('蛋白判定：用絕對 g/kg 下限，不用「打到目標的幾成�
     const input = baseInput()
     input.nutrition = input.nutrition.map(n => ({ ...n, protein_grams: 100 })) // 1.39 g/kg
     const d = computeWeeklyCoachingDraft(input)
-    expect(d.adjustments.join(' ')).toMatch(/蛋白拉到至少/)
+    // ⚠️ 2026-09-19 措辭改了：教練處方高於實證下限時，要他拉到的是**教練的數字**
+    // （紅線 3，見 weekly-coaching-fixes.test.ts）。這裡護的是「有抓到要補蛋白」。
+    expect(d.adjustments.join(' ')).toMatch(/蛋白拉到/)
     expect(d.bullets.join(' ')).toMatch(/低於 1\.6 g\/kg 體重下限/)
   })
 
@@ -144,7 +146,9 @@ describe('蛋白判定：用絕對 g/kg 下限，不用「打到目標的幾成�
     input.weights = input.weights.map(w => ({ ...w, body_fat: 20 })) // 淨體重 57.6，門檻 132.5g
     input.nutrition = input.nutrition.map(n => ({ ...n, protein_grams: 110 }))
     const d = computeWeeklyCoachingDraft(input)
-    expect(d.adjustments.join(' ')).toMatch(/蛋白拉到至少/)
+    // ⚠️ 2026-09-19 措辭改了：教練處方高於實證下限時，要他拉到的是**教練的數字**
+    // （紅線 3，見 weekly-coaching-fixes.test.ts）。這裡護的是「有抓到要補蛋白」。
+    expect(d.adjustments.join(' ')).toMatch(/蛋白拉到/)
     expect(d.bullets.join(' ')).toMatch(/減脂掉肌風險/)
   })
 
@@ -159,7 +163,7 @@ describe('蛋白判定：用絕對 g/kg 下限，不用「打到目標的幾成�
 
     input.nutrition = input.nutrition.map(n => ({ ...n, protein_grams: 120 })) // 1.67 g/kg → 低於
     const d2 = computeWeeklyCoachingDraft(input)
-    expect(d2.adjustments.join(' ')).toMatch(/蛋白拉到至少/)
+    expect(d2.adjustments.join(' ')).toMatch(/蛋白拉到/)
   })
 
   it('體脂欄填錯（0 或 99）不能污染門檻 → 退回體重替代值', () => {
