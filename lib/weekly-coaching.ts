@@ -21,6 +21,12 @@ import { BULK_TARGETS } from './nutrition-engine'
  *
  * 出處與「為什麼分母是淨體重」的完整說明見下方蛋白判定區塊的註解。
  */
+/**
+ * 脂肪佔總熱量的下限（%）。低於這個會壓荷爾蒙（低脂壓睪固酮，Whittaker 2021）。
+ * ⚠️ 這是**地板不是目標** —— 高於它不代表配比就對了，上限看教練的 fat_target。
+ */
+export const FAT_FLOOR_PCT = 20
+
 export const BULK_FLOOR_PER_KG_BW = 1.6
 export const CUT_FLOOR_PER_KG_LBM = 2.3
 export const CUT_FLOOR_PER_KG_BW_PROXY = 1.8
@@ -34,13 +40,14 @@ export type WeeklyCoachingClient = {
   target_weight?: number | string | null
   calories_target?: number | string | null
   protein_target?: number | string | null
+  fat_target?: number | string | null
 }
 
 export type WCInput = {
   client: WeeklyCoachingClient
   // body_fat 選填：有量到才算得出淨體重，減脂蛋白下限要用它當分母（見蛋白判定區塊）
   weights: { date: string; weight: number | string | null; body_fat?: number | string | null }[]
-  nutrition: { date: string; compliant?: boolean | null; calories?: number | string | null; protein_grams?: number | string | null }[]
+  nutrition: { date: string; compliant?: boolean | null; calories?: number | string | null; protein_grams?: number | string | null; fat_grams?: number | string | null }[]
   training: { date: string; training_type: string | null }[]
   wellness: { date: string; energy_level?: number | null }[]
   labs: { test_name: string; value: number | string | null; status?: string | null; date?: string | null }[]
@@ -361,6 +368,47 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
       bullets.push(`🍗 蛋白平均 ${Math.round(pAvg)}g／目標 ${pTarget}g（${perKgStr}）→ 沒吃滿目標，但已高於 ${basisStr}下限，夠用`)
     } else {
       bullets.push(`🍗 蛋白 ${Math.round(pAvg)}g／目標 ${pTarget}g${perKgStr ? `（${perKgStr}）` : ''} → 達標`)
+    }
+  }
+
+  // 2b) 脂肪
+  //
+  // ⚠️ 2026-09-19 Howard：「啊脂肪不用跟他說一下」。他對 —— 這支草稿以前**完全看不到脂肪**
+  // （WCInput 的 nutrition 根本沒帶 fat_grams），所以最常見的那個行為整個沒被講到：
+  // **拿蛋白換脂肪**。震宣 P138/170（少 32）F70/55（多 15）、林宥任 P154/193 F52/69，
+  // 兩個都是同一個病的兩種方向。
+  //
+  // 兩邊都要看：
+  //   上限 —— 脂肪佔掉熱量額度，蛋白就吃不到（熱量固定時這是零和的）
+  //   下限 —— 脂肪佔總熱量 20% 是荷爾蒙地板（低脂壓睪固酮，Whittaker 2021）
+  const fTarget = num(client.fat_target)
+  const fAvg = avg(n14.map(x => num(x.fat_grams)!).filter(v => v != null))
+  if (fAvg != null && cAvg != null && cAvg > 0) {
+    const fatPct = (fAvg * 9) / cAvg * 100
+    const proteinShort = pTarget != null && pAvg != null && pAvg < pTarget * 0.95
+
+    if (fatPct < FAT_FLOOR_PCT) {
+      // 地板優先講 —— 這是健康問題，不是配比問題
+      adjustments.push(`脂肪拉到至少 ${Math.round(cAvg * FAT_FLOOR_PCT / 100 / 9)}g（目前只佔熱量 ${Math.round(fatPct)}%，低於 ${FAT_FLOOR_PCT}% 會壓荷爾蒙）`)
+      bullets.push(`🥑 脂肪平均 ${Math.round(fAvg)}g，只佔熱量 ${Math.round(fatPct)}% → 低於 ${FAT_FLOOR_PCT}% 荷爾蒙地板`)
+    } else if (fTarget != null && fAvg > fTarget * 1.15) {
+      const over = Math.round(fAvg - fTarget)
+      // ⭐ Howard 2026-09-19：「應該提醒他脂肪要控制更仔細」。
+      // 為什麼是脂肪而不是別的：**1g 脂肪 9 大卡，蛋白和碳水才 4**。
+      // 同樣估錯 10g，脂肪差 90 大卡、碳水只差 40 —— 誤差被放大一倍多。
+      // 而且脂肪最常藏在秤不到的地方（炒菜的油、沾的醬、拌的醬料），
+      // 那正好是「拍超商標籤」這種記法看不到的部分（震宣就是這樣記的）。
+      // 所以脂肪不是「少吃一點」，是**這一項要抓得比其他兩項細**。
+      const careLine = '脂肪 1g 是 9 大卡、蛋白碳水才 4 —— 油和醬估錯一點熱量就差很多，這項要抓得比其他兩項細'
+      if (proteinShort) {
+        // 蛋白不足 + 脂肪超標 = 同一件事，講成「換位置」而不是兩條各自的指令。
+        // 熱量幾乎不動，比例就回來了 —— 比「少吃脂肪」「多吃蛋白」兩句分開講好執行。
+        adjustments.push(`脂肪從 ${Math.round(fAvg)}g 收回 ${fTarget}g，省下的 ${Math.round(over * 9)} 大卡換成蛋白 —— 不是吃更少，是換位置。${careLine}`)
+        bullets.push(`🥑 脂肪平均 ${Math.round(fAvg)}g／目標 ${fTarget}g（多 ${over}）＋蛋白沒吃滿 → 在拿蛋白換脂肪`)
+      } else {
+        adjustments.push(`脂肪收回 ${fTarget}g（近期平均 ${Math.round(fAvg)}g，多 ${over}）。${careLine}`)
+        bullets.push(`🥑 脂肪平均 ${Math.round(fAvg)}g／目標 ${fTarget}g → 多 ${over}g（約 ${Math.round(over * 9)} 大卡）`)
+      }
     }
   }
 

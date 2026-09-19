@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeWeeklyCoachingDraft, type WCInput } from '@/lib/weekly-coaching'
+import { computeWeeklyCoachingDraft, FAT_FLOOR_PCT, type WCInput } from '@/lib/weekly-coaching'
 
 /**
  * 週訊草稿的兩條紅線（2026-09-19）。
@@ -88,5 +88,64 @@ describe('🚨 碳水回補期不可以跟學員說「你持平」', () => {
     const a = computeWeeklyCoachingDraft(base({ weights }))
     const b = computeWeeklyCoachingDraft(base({ weights, macroLog: [] }))
     expect(a.headline).toBe(b.headline)
+  })
+})
+
+describe('脂肪（Howard 2026-09-19：「應該提醒他脂肪要控制更仔細」）', () => {
+  const feed = (o: { cal: number; p: number; f: number }) => ({
+    weights: days(14, '2026-09-05').map(date => ({ date, weight: 82.45 })),
+    nutrition: days(14, '2026-09-05').map(date => ({ date, calories: o.cal, protein_grams: o.p, fat_grams: o.f })),
+  })
+
+  it('🚨 脂肪超標 + 蛋白不足 → 要講成「換位置」，不是兩條各自的指令', () => {
+    // 震宣真實數字：熱量 2075、蛋白 138/170、脂肪 70/55
+    const d = computeWeeklyCoachingDraft(base({
+      client: { name: '震宣', goal_type: 'cut', calories_target: 2070, protein_target: 170, fat_target: 55 } as never,
+      ...feed({ cal: 2075, p: 138, f: 70 }),
+    }))
+    const adj = d.adjustments.join(' ')
+    expect(adj).toContain('換位置')
+    expect(adj).toContain('55')
+    expect(d.bullets.join(' ')).toContain('拿蛋白換脂肪')
+  })
+
+  it('🚨 要講出「為什麼脂肪要抓更細」—— 9 大卡 vs 4 大卡', () => {
+    const d = computeWeeklyCoachingDraft(base({
+      client: { name: 'A', goal_type: 'cut', calories_target: 2070, protein_target: 170, fat_target: 55 } as never,
+      ...feed({ cal: 2075, p: 138, f: 70 }),
+    }))
+    const adj = d.adjustments.join(' ')
+    expect(adj).toContain('9 大卡')
+    expect(adj).toContain('油和醬')
+  })
+
+  it(`脂肪低於 ${FAT_FLOOR_PCT}% 熱量 → 地板優先，叫他往上加不是往下砍`, () => {
+    // 2000 kcal 的 20% = 400 kcal = 44g。給 30g（13.5%）
+    const d = computeWeeklyCoachingDraft(base({
+      client: { name: 'A', goal_type: 'cut', calories_target: 2000, protein_target: 150, fat_target: 55 } as never,
+      ...feed({ cal: 2000, p: 160, f: 30 }),
+    }))
+    const adj = d.adjustments.join(' ')
+    expect(adj).toContain('脂肪拉到至少')
+    expect(adj).toContain('荷爾蒙')
+    expect(adj).not.toContain('收回')
+  })
+
+  it('🚨 脂肪低於教練目標但在地板之上 → 不要吵（Howard 的做法本來就是把脂肪調低）', () => {
+    // 林宥任真實數字：熱量 2140、脂肪 52/69 → 52×9/2140 = 21.9%，在 20% 地板之上
+    const d = computeWeeklyCoachingDraft(base({
+      client: { name: '林宥任', goal_type: 'cut', calories_target: 2121, protein_target: 193, fat_target: 69 } as never,
+      ...feed({ cal: 2140, p: 152, f: 52 }),
+    }))
+    expect(d.bullets.join(' ')).not.toContain('🥑')
+    expect(d.adjustments.join(' ')).not.toContain('脂肪')
+  })
+
+  it('沒記脂肪就不要講脂肪（不要拿 undefined 當 0）', () => {
+    const d = computeWeeklyCoachingDraft(base({
+      weights: days(14, '2026-09-05').map(date => ({ date, weight: 82.45 })),
+      nutrition: days(14, '2026-09-05').map(date => ({ date, calories: 2075, protein_grams: 170 })),
+    }))
+    expect(d.bullets.join(' ')).not.toContain('🥑')
   })
 })

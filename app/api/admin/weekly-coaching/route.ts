@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
   let clientQ = supabase
     .from('clients')
-    .select('id, name, unique_code, line_user_id, goal_type, prep_phase, competition_date, competition_enabled, target_weight, calories_target, protein_target')
+    .select('id, name, unique_code, line_user_id, goal_type, prep_phase, competition_date, competition_enabled, target_weight, calories_target, protein_target, fat_target')
     .eq('is_active', true)
   if (onlyClient) clientQ = clientQ.eq('id', onlyClient)
   const { data: clients, error } = await clientQ
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   // 批次撈近 21 天數據（一次查、依 client_id 分組，避免 N 次往返）
   const [bodyR, nutR, trnR, welR, labR, pushR, macroR] = await Promise.all([
     supabase.from('body_composition').select('client_id, date, weight, body_fat').in('client_id', ids).gte('date', since),
-    supabase.from('nutrition_logs').select('client_id, date, compliant, calories, protein_grams').in('client_id', ids).gte('date', since),
+    supabase.from('nutrition_logs').select('client_id, date, compliant, calories, protein_grams, fat_grams').in('client_id', ids).gte('date', since),
     supabase.from('training_logs').select('client_id, date, training_type').in('client_id', ids).gte('date', since),
     supabase.from('daily_wellness').select('client_id, date, energy_level').in('client_id', ids).gte('date', since),
     supabase.from('lab_results').select('client_id, test_name, value, status, date').in('client_id', ids).gte('date', since),
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     const input: WCInput = {
       client: c,
       weights: (bodyByC.get(c.id) || []).map(r => ({ date: r.date, weight: r.weight, body_fat: r.body_fat })),
-      nutrition: (nutByC.get(c.id) || []).map(r => ({ date: r.date, compliant: r.compliant, calories: r.calories, protein_grams: r.protein_grams })),
+      nutrition: (nutByC.get(c.id) || []).map(r => ({ date: r.date, compliant: r.compliant, calories: r.calories, protein_grams: r.protein_grams, fat_grams: r.fat_grams })),
       training: (trnByC.get(c.id) || []).map(r => ({ date: r.date, training_type: r.training_type })),
       wellness: (welByC.get(c.id) || []).map(r => ({ date: r.date, energy_level: r.energy_level })),
       labs: (labByC.get(c.id) || []).map(r => ({ test_name: r.test_name, value: r.value, status: r.status, date: r.date })),
