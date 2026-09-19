@@ -35,6 +35,7 @@ import CompWarRoom from '@/components/client/CompWarRoom'
 import CutHealthCard from '@/components/client/CutHealthCard'
 import DailyNutritionTarget from '@/components/client/DailyNutritionTarget'
 import TodayNutritionIntake from '@/components/client/TodayNutritionIntake'
+import DoneCollapse from '@/components/client/DoneCollapse'
 import { ForYouFeed } from '@/components/client/ForYouFeed'
 import WeeklyInsight from '@/components/client/WeeklyInsight'
 const SelfManagedNutrition = dynamic(() => import('@/components/client/SelfManagedNutrition'), { ssr: false })
@@ -1198,16 +1199,21 @@ export default function ClientDashboard() {
           )}
 
         {/* === QuickActions: 一鍵打卡（每天打開最常做的事，擺在判決卡前面，不用滑過 3 張卡才摸得到） === */}
-        {view === 'home' && isToday && (
+        {view === 'home' && isToday && (() => {
+          const sections = [
+            ...(c.body_composition_enabled ? [{ id: 'section-body', icon: <Scale size={16} className="text-slate-500" />, label: '體重', completed: !!latestBodyData && latestBodyData.date === selectedDate }] : []),
+            // 有新「今日營養攝取」卡時拿掉飲食 tile（重複）；沒卡的學員（無 target）保留舊 tile 才有地方記
+            ...((c.nutrition_enabled && !showNutritionIntake) ? [{ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: <Utensils size={16} className="text-slate-500" />, label: '飲食', completed: !!todayNutrition }] : []),
+            ...(c.supplement_enabled ? [{ id: 'section-supplements', icon: <Pill size={16} className="text-slate-500" />, label: '補品', completed: todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total }] : []),
+            ...(c.wellness_enabled ? [{ id: 'section-wellness', icon: <Smile size={16} className="text-slate-500" />, label: '感受', completed: !!todayWellness }] : []),
+            ...(c.training_enabled ? [{ id: 'section-training', icon: <Dumbbell size={16} className="text-slate-500" />, label: '訓練', completed: !!todayTraining }] : []),
+          ]
+          // 這張卡負責的每一項都記完了 → 收成一行（東西全在，點一下展開）
+          const allDone = sections.length > 0 && sections.every(x => x.completed)
+          return (
+          <DoneCollapse done={allDone} summary={`今天 ${sections.length} 項都記完了`}>
           <QuickActions
-            enabledSections={[
-              ...(c.body_composition_enabled ? [{ id: 'section-body', icon: <Scale size={16} className="text-slate-500" />, label: '體重', completed: !!latestBodyData && latestBodyData.date === selectedDate }] : []),
-              // 有新「今日營養攝取」卡時拿掉飲食 tile（重複）；沒卡的學員（無 target）保留舊 tile 才有地方記
-              ...((c.nutrition_enabled && !showNutritionIntake) ? [{ id: isCompetition ? 'section-nutrition' : 'section-nutrition-general', icon: <Utensils size={16} className="text-slate-500" />, label: '飲食', completed: !!todayNutrition }] : []),
-              ...(c.supplement_enabled ? [{ id: 'section-supplements', icon: <Pill size={16} className="text-slate-500" />, label: '補品', completed: todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total }] : []),
-              ...(c.wellness_enabled ? [{ id: 'section-wellness', icon: <Smile size={16} className="text-slate-500" />, label: '感受', completed: !!todayWellness }] : []),
-              ...(c.training_enabled ? [{ id: 'section-training', icon: <Dumbbell size={16} className="text-slate-500" />, label: '訓練', completed: !!todayTraining }] : []),
-            ]}
+            enabledSections={sections}
             topSummary={{
               weight: latestBodyData?.weight,
               daysLeft: c.competition_date ? daysUntilDateTW(c.competition_date) : null,
@@ -1377,7 +1383,9 @@ export default function ClientDashboard() {
               } catch { showToast('記錄失敗，請重試', 'error'); return false }
             }}
           />
-        )}
+          </DoneCollapse>
+          )
+        })()}
 
         {/* === 今日營養攝取：4 個 macro 進度條 + 記錄（拖進度條 / ＋記一餐）=== */}
         {/* Howard 反映首頁營養只有碳水一個數字、只能按達標/沒達標，會忘記今天吃多少。 */}
@@ -1398,8 +1406,15 @@ export default function ClientDashboard() {
             const effCals = macroSum ?? c.calories_target ?? null
             const dayLabel = peakDayForSelected?.label
               ?? ((c.carbs_training_day && c.carbs_rest_day) ? (isTrainingDayResolved ? '訓練日' : '休息日') : null)
+            // 今天已經記過飲食 → 收成一行（見 components/client/DoneCollapse.tsx）。
+            // summary 講**結果**不是講「已完成」：收起來之後那一行要還有資訊量。
+            const loggedCals = todayNutrition?.calories != null ? Math.round(Number(todayNutrition.calories)) : null
+            const nutritionSummary = loggedCals != null && effCals != null
+              ? `今天吃了 ${loggedCals} / ${effCals} kcal`
+              : loggedCals != null ? `今天吃了 ${loggedCals} kcal` : '今天的飲食記過了'
             return (
               <SectionErrorBoundary name="today-nutrition-intake">
+                <DoneCollapse done={!!todayNutrition} summary={nutritionSummary}>
                 <TodayNutritionIntake
               healthScreening={c.health_screening}
                   clientCode={c.unique_code}
@@ -1413,6 +1428,7 @@ export default function ClientDashboard() {
                   simpleMode={c.simple_mode}
                   onMutate={mutateAndRefreshEngine}
                 />
+                </DoneCollapse>
               </SectionErrorBoundary>
             )
           })()}
