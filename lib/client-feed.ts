@@ -190,7 +190,20 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
   if (adj && (adj.applied_by === 'system' || adj.trigger_source === 'trajectory' || adj.trigger_source === 'tdee_weekly')) {
     const appliedDate = adj.applied_at.slice(0, 10)
     const within = daysBetween(appliedDate, today)
-    if (within >= 0 && within <= 7) {
+    // ⚠️ 2026-09-19：「沒有新資訊」的卡只在第一天算消息，第二天起就是噪音。
+    //
+    // cron 每天都會寫一筆 log，所以「目標維持不變」「目標沒有動」這種卡
+    // 在 7 天窗裡會**連續出現七天**，每天跟學員講同一句話。
+    // Howard 的原話：「每天做的事情基本上都一樣，我到底要這系統幹嘛」——
+    // 一個每天重複「沒事發生」的介面，正是他說他不想打開的那個東西。
+    // （而且這張卡是我一小時前才加的，剛好犯了同一個病。）
+    //
+    // 真的有改到數字的調整 → 保留 7 天窗（那是他會想回頭看的事實）。
+    // 沒改到數字（gate / 執行落差）→ 只給 1 天。
+    const isNoChange = (adj.new_macros as Record<string, unknown> | null)?._blocked === true
+      || (adj.new_macros as Record<string, unknown> | null)?._skipped === true
+    const windowDays = isNoChange ? 1 : 7
+    if (within >= 0 && within <= windowDays) {
       const oldCal = pickCalories(adj.old_macros)
       const newCal = pickCalories(adj.new_macros)
       const oldC = pickCarbs(adj.old_macros)
