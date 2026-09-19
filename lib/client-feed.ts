@@ -81,6 +81,15 @@ function pickCarbs(m: Record<string, unknown> | null): number | null {
 /**
  * 產出「為你更新」卡片，已排序（最該講的在前）並上限 4 張。
  */
+/**
+ * 一張卡的內文上限（字）。
+ *
+ * 這不是排版偏好，是**產品紀律**：首頁的卡是「一句話 + 一個動作」，
+ * 需要三百字才講得完的東西不屬於這裡（那是報告頁或教練訊息）。
+ * Howard 2026-09-19 看到被 gate 的那張卡：「字那麼多看得很躁…我根本不想看」。
+ */
+export const MAX_CARD_BODY = 60
+
 export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
   const today = input.today || new Date().toISOString().slice(0, 10)
   const cards: FeedCard[] = []
@@ -200,9 +209,27 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
       // 標題說調了、內文說沒調，同一張卡自相矛盾，而且「軌跡／執行落差／處方」
       // 是引擎內部詞彙，不是學員的話。分成兩種卡，並且把內部前綴拿掉。
       const skipped = (adj.new_macros as Record<string, unknown> | null)?._skipped === true
+      // ⚠️ 2026-09-19：第二條同病的路徑。安全層擋掉調整時（`_blocked`）寫的 reason 是
+      // 「軌跡建議調整但被安全層 gate：Cutting gate blocked (score 31): 🟡 游離睪固酮次優
+      //  （72.8 pg/mL…）；🚨 荷爾蒙軸多指標異常…；🟢 胰島素敏感度頂尖…（含嚴重異常地板 -9）」
+      // —— 三百多字的引擎內部推理，整串印在學員首頁上。Howard 的原話：
+      // 「字那麼多看得很躁，也沒有什麼分段，很靠北，我根本不想看」。
+      //
+      // 這種 reason **不可能**靠清前綴變成人話（它本來就不是寫給學員看的），
+      // 所以不轉述，只講學員需要知道的那一件事：目標沒動 + 為什麼 + 去哪看細節。
+      const blocked = (adj.new_macros as Record<string, unknown> | null)?._blocked === true
       const reasonRaw = (adj.reason ?? '').replace(/^軌跡建議調整但未套用（執行落差）：\s*/, '').trim()
 
-      if (skipped) {
+      if (blocked) {
+        cards.push({
+          id: `macro_${adj.applied_at}`,
+          tone: 'info',
+          icon: '🎯',
+          title: '目標維持不變',
+          body: '引擎本來要調，但你的健康數據顯示現在不適合',
+          ...(input.clientCode ? { cta: { label: '看原因', href: `/c/${input.clientCode}/health/timeline` } } : {}),
+        })
+      } else if (skipped) {
         // 沒有可讀的理由就整張不出 —— 「你的目標沒有變」本身不是資訊
         if (!reasonRaw) {
           // 什麼都不推
@@ -294,5 +321,16 @@ export function buildClientFeed(input: ClientFeedInput): FeedCard[] {
     return 3
   }
   cards.sort((a, b) => priority(a) - priority(b))
-  return cards.slice(0, 4)
+  // ⚠️ 2026-09-19 結構性防線：**沒有任何一張卡可以在首頁倒一面牆。**
+  //
+  // 這是第三次同一種事故（`_skipped`、`_blocked`，都是把引擎內部推理直接當 body）。
+  // 前兩次都是逐條去修產生端，但產生端會一直長出來 —— 任何人加一條新的
+  // macro_adjustment_log reason，就又是一次。所以在出口統一把關。
+  //
+  // 超長就截斷而不是整張丟掉：卡片標題本身通常仍然有效
+  // （「目標維持不變」是真的），壞的只有那串轉述。
+  return cards.slice(0, 4).map(c => ({
+    ...c,
+    body: c.body.length > MAX_CARD_BODY ? c.body.slice(0, MAX_CARD_BODY - 1).trimEnd() + '…' : c.body,
+  }))
 }
