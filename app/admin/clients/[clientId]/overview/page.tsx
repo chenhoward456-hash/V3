@@ -10,11 +10,12 @@ import {
 } from 'recharts'
 import dynamic from 'next/dynamic'
 import { FileText } from 'lucide-react'
-import { daysUntilDateTW } from '@/lib/date-utils'
+import { daysUntilDateTW, getLocalDateStr } from '@/lib/date-utils'
 import { TRAINING_TYPES, isWeightTraining } from '@/components/client/types'
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 import { isCompetitionMode, isHealthMode, PHASE_LABELS, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS } from '@/lib/client-mode'
 import TrainingProgressCard from '@/components/client/TrainingProgressCard'
+import { planVolume, actualVolume, auditVolume, pushPullRatio, MUSCLE_LABEL } from '@/lib/volume-audit'
 
 const LabNutritionAdviceCard = dynamic(() => import('@/components/client/LabNutritionAdviceCard'), { ssr: false })
 const LabInsightsCard = dynamic(() => import('@/components/client/LabInsightsCard'), { ssr: false })
@@ -676,37 +677,30 @@ export default function ClientOverview() {
     })
   }, [trainingSets])
 
-  // ===== 每肌群週組數 =====
-  const muscleGroupSets = useMemo(() => {
-    if (!trainingSets.length) return []
-    // Get current week (Mon-Sun)
+  // ===== 每肌群週組數：計畫 vs 實做 =====
+  // ⚠️ 2026-09-21 重寫。原本這段靠 `s.muscle_group` 加總，但 production 的
+  //    training_sets 有 919 筆、muscle_group 填寫率 0%，所以這張圖從上線到現在永遠是空的。
+  //    改成從「動作名」推部位（lib/volume-audit.ts），919 筆立刻全部有部位、學員不用補填。
+  //    同時把「課表計畫的組數」一起算出來並排——教練要看的是落差，不是單邊數字。
+  const volumeAudit = useMemo(() => {
+    // ⚠️ 用「最近 7 天」滾動窗，不用「週一至今」。
+    //    因為週一早上看的話「週一至今」只有 0–1 天資料，卡片會整個消失或嚴重低估，
+    //    而 10–20 組／肌群／週 這個區間本來就要拿一整週去比才有意義。
+    // ⚠️ 一定要用 getLocalDateStr，不要 toISOString()。
+    //    toISOString() 回的是 UTC：台灣時間凌晨 0–8 點會算成前一天，今天練的就被漏掉。
+    //    （lib/date-utils.ts 的註解就是在講這件事。這頁其他地方還有 28 處同樣的寫法沒修。）
     const now = new Date()
-    const day = now.getDay()
-    const diff = day === 0 ? 6 : day - 1
-    const monday = new Date(now)
-    monday.setDate(now.getDate() - diff)
-    const mondayStr = monday.toISOString().split('T')[0]
-    const todayStr = now.toISOString().split('T')[0]
+    const from = new Date(now)
+    from.setDate(now.getDate() - 6)
+    const fromStr = getLocalDateStr(from)
+    const todayStr = getLocalDateStr(now)
 
-    // Count distinct sets per muscle group this week
-    const groupCounts: Record<string, number> = {}
-    for (const s of trainingSets) {
-      if (!s.muscle_group || s.date < mondayStr || s.date > todayStr) continue
-      groupCounts[s.muscle_group] = (groupCounts[s.muscle_group] || 0) + 1
-    }
-
-    const labelMap: Record<string, string> = {
-      chest: '胸', back: '背', shoulders: '肩', legs: '腿', arms: '手臂', core: '核心',
-      glutes: '臀', hamstrings: '腿後', quads: '腿前', calves: '小腿',
-    }
-
-    return Object.entries(groupCounts)
-      .map(([group, sets]) => ({
-        muscle: labelMap[group] || group,
-        組數: sets,
-      }))
-      .sort((a, b) => b.組數 - a.組數)
-  }, [trainingSets])
+    const thisWeek = trainingSets.filter((s: any) => s.date >= fromStr && s.date <= todayStr)
+    const actual = actualVolume(thisWeek)
+    const plan = planVolume(client?.training_plan)
+    const rows = auditVolume(plan, actual).filter((r) => r.plan > 0 || r.actual > 0)
+    return { plan, actual, rows, hasPlan: (plan.total ?? 0) > 0, weekStart: fromStr, weekEnd: todayStr }
+  }, [trainingSets, client?.training_plan])
 
   // ===== 飲食合規趨勢 =====
   const nutritionTrend = useMemo(() => {
@@ -3286,22 +3280,83 @@ export default function ClientOverview() {
           </div>
         )}
 
-        {/* ===== 每肌群週組數 ===== */}
-        {client.training_enabled && muscleGroupSets.length > 0 && (
+        {/* ===== 每肌群週組數：計畫 vs 實做 ===== */}
+        {/* ⚠️ 顏色紀律（DESIGN.md）：長條一律 primary 海軍藍／中性灰，
+            紅黃綠只留給「低於 10 組／超過 20 組／落差過大」這種狀態，不做裝飾。
+            舊版用 #6366f1（靛）是違規色，一併換掉。 */}
+        {client.training_enabled && volumeAudit.rows.length > 0 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">每肌群週組數</h3>
-            <ResponsiveContainer width="100%" height={Math.max(180, muscleGroupSets.length * 36)} minWidth={0}>
-              <BarChart data={muscleGroupSets} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" fontSize={11} domain={[0, 'auto']} />
-                <YAxis type="category" dataKey="muscle" fontSize={12} width={45} />
-                <Tooltip formatter={(v: any) => [`${v} 組`, '']} />
-                <ReferenceLine x={10} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: 'MEV', position: 'top', fontSize: 10, fill: '#f59e0b' }} />
-                <ReferenceLine x={20} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'MRV', position: 'top', fontSize: 10, fill: '#ef4444' }} />
-                <Bar dataKey="組數" fill="#6366f1" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-            <p className="text-[11px] text-gray-400 mt-2">本週（週一至今）各肌群組數，MEV=最小有效量（10組）、MRV=最大恢復量（20組）</p>
+            <div className="flex items-baseline justify-between mb-1">
+              <h3 className="text-sm font-semibold text-gray-900">每肌群週組數</h3>
+              <span className="text-[11px] text-slate-400 tabular-nums">最近 7 天 · {volumeAudit.weekStart} ～ {volumeAudit.weekEnd}</span>
+            </div>
+            <div className="flex items-center gap-4 text-[11px] text-slate-500 mb-4">
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-2 rounded-sm bg-slate-300" />計畫
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-2 rounded-sm bg-primary-600" />實做
+              </span>
+              <span className="text-slate-400">區間 10–20 組／肌群／週</span>
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              {volumeAudit.rows.map((r) => {
+                const max = Math.max(20, ...volumeAudit.rows.map((x) => Math.max(x.plan, x.actual)))
+                const pct = (n: number) => `${(n / max) * 100}%`
+                const flagCls =
+                  r.actualFlag === 'under' ? 'text-amber-600'
+                  : r.actualFlag === 'over' ? 'text-rose-600'
+                  : 'text-slate-400'
+                return (
+                  <div key={r.muscle} className="flex items-center gap-3">
+                    <span className="w-14 shrink-0 text-xs text-slate-600">{r.label}</span>
+                    <div className="flex-1 min-w-0 flex flex-col gap-1">
+                      {/* 計畫 */}
+                      <div className="h-2 bg-slate-100 rounded-sm overflow-hidden">
+                        <div className="h-full bg-slate-300" style={{ width: pct(r.plan) }} />
+                      </div>
+                      {/* 實做 */}
+                      <div className="h-2 bg-slate-100 rounded-sm overflow-hidden">
+                        <div className="h-full bg-primary-600" style={{ width: pct(r.actual) }} />
+                      </div>
+                    </div>
+                    <span className="w-24 shrink-0 text-right text-xs tabular-nums text-slate-500">
+                      {volumeAudit.hasPlan && <><span className="text-slate-400">{r.plan}</span><span className="text-slate-300 mx-1">/</span></>}
+                      <span className="font-medium text-slate-900">{r.actual}</span>
+                      <span className="text-slate-400 ml-0.5">組</span>
+                    </span>
+                    <span className={`w-10 shrink-0 text-right text-[11px] tabular-nums ${flagCls}`}>
+                      {volumeAudit.hasPlan && r.gap !== 0 ? (r.gap > 0 ? `+${r.gap}` : r.gap) : ''}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* 摘要列 */}
+            <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-500 tabular-nums">
+              <span>實做合計 <span className="font-medium text-slate-900">{volumeAudit.actual.total}</span> 組</span>
+              <span>推 {pushPullRatio(volumeAudit.actual).push} : 拉 {pushPullRatio(volumeAudit.actual).pull}</span>
+              <span>過頭位 {volumeAudit.actual.overhead} 組</span>
+              {volumeAudit.actual.excluded > 0 && (
+                <span className="text-slate-400">暖身／呼吸／有氧 {volumeAudit.actual.excluded} 組（不計入）</span>
+              )}
+            </div>
+
+            {!volumeAudit.hasPlan && (
+              <p className="text-[11px] text-slate-400 mt-2">這位學員還沒設訓練計畫，所以只顯示實做。設了之後這裡會出現「計畫 vs 實做」的落差。</p>
+            )}
+            {volumeAudit.actual.unresolved.length > 0 && (
+              <p className="text-[11px] text-amber-600 mt-2">
+                ⚠️ 有 {volumeAudit.actual.unresolved.length} 個動作名對不到部位，沒算進去：
+                {Array.from(new Set(volumeAudit.actual.unresolved)).slice(0, 6).join('、')}
+                　→ 補進 lib/volume-audit.ts
+              </p>
+            )}
+            <p className="text-[11px] text-gray-400 mt-2">
+              部位是從<span className="text-slate-500">動作名稱</span>推出來的（不是靠學員填 muscle_group）。暖身、呼吸、Posing、有氧不計入組數。
+            </p>
           </div>
         )}
 
