@@ -3338,7 +3338,7 @@ export default function ClientOverview() {
             <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-500 tabular-nums">
               <span>實做合計 <span className="font-medium text-slate-900">{volumeAudit.actual.total}</span> 組</span>
               <span>推 {pushPullRatio(volumeAudit.actual).push} : 拉 {pushPullRatio(volumeAudit.actual).pull}</span>
-              <span>過頭位 {volumeAudit.actual.overhead} 組</span>
+              <span>過頭位的拉 {volumeAudit.actual.overheadPull} 組<span className="text-slate-400">（背闊覆蓋）</span></span>
               {volumeAudit.actual.excluded > 0 && (
                 <span className="text-slate-400">暖身／呼吸／有氧 {volumeAudit.actual.excluded} 組（不計入）</span>
               )}
@@ -3355,7 +3355,7 @@ export default function ClientOverview() {
               </p>
             )}
             <p className="text-[11px] text-gray-400 mt-2">
-              部位是從<span className="text-slate-500">動作名稱</span>推出來的（不是靠學員填 muscle_group）。暖身、呼吸、Posing、有氧不計入組數。
+              部位是從<span className="text-slate-500">動作名稱</span>推出來的（不是靠學員填 muscle_group）。暖身、呼吸、Posing、有氧不計入組數。<br />⚠️ 計畫是<span className="text-slate-500">整週</span>的課表、實做是<span className="text-slate-500">最近 7 天</span>——窗口如果只抓到部分訓練日，落差會偏負。
             </p>
           </div>
         )}

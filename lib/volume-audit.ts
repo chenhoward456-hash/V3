@@ -40,10 +40,20 @@ export type Pattern =
 export interface ExerciseEntry {
   /** 主要部位（算組數時計 1 組） */
   muscle: Muscle
-  /** 次要部位（預設不計入組數，要算間接量時才用） */
+  /**
+   * 次要部位。
+   * ⚠️ **預設不計入組數**——「10–20 組／肌群／週」講的是直接組數，把間接量加進去會灌水。
+   *    要用的時候走 `indirectVolume()`，例如想說明「前束已經被胸推餵飽了」那種論點。
+   */
   also?: Muscle[]
   pattern: Pattern
-  /** 手臂過頭的動作（背闊覆蓋、肩屈曲活動度都看這個） */
+  /**
+   * 手臂過頭的動作。
+   * ⚠️ 2026-09-21 修：這個旗標同時標到三類——背（引體/下拉 15 個）、肩前束（肩推 10 個）、
+   *    三頭（過頭伸展 9 個）。但我當初建它的**唯一理由**是「背闊在手臂過頭那個範圍吃不夠」，
+   *    把肩推跟過頭三頭一起算進去會把那個數字灌水。
+   *    → 總數用 `overhead`，要談背闊覆蓋一律用 `overheadPull`。
+   */
   overhead?: true
   /** false = 不計入肌肥大組數（暖身、呼吸、posing、有氧） */
   volume?: false
@@ -210,6 +220,9 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '壺鈴扭轉': { muscle: 'core', pattern: 'iso' },
 
   // ── 負重行走 ────────────────────────────────────────
+  // ⚠️ 負重行走計入組數，但 pattern 標 'carry' 讓下游可以濾掉。
+  //    12 組農夫走路會顯示成「斜方 12 組」，看起來像直接練斜方——它不是，
+  //    要談「這個部位的肌肥大刺激夠不夠」時要把 carry 拿掉再看。
   '農夫': { muscle: 'traps', also: ['forearms', 'core'], pattern: 'carry' },
   '農夫走': { muscle: 'traps', also: ['forearms', 'core'], pattern: 'carry' },
   '農夫走路': { muscle: 'traps', also: ['forearms', 'core'], pattern: 'carry' },
@@ -280,13 +293,24 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '腿伸': { muscle: 'quads', pattern: 'iso' },
   '腿勾': { muscle: 'hamstrings', pattern: 'iso' },
   '深蹲機': { muscle: 'quads', also: ['glutes'], pattern: 'squat' },
-  // 反向北歐＝離心膕繩（Nordic 的反向版是股四，但中文圈「反向北歐」慣指 reverse nordic＝股四離心）
-  // ⚠️ 兩種用法都有人用，這裡照 reverse nordic 的原意記股四，備註留著讓人能改
-  '反向北歐': { muscle: 'quads', pattern: 'iso', note: 'reverse nordic＝股四離心。⚠️ 有人用這個詞指 nordic curl（膕繩），對不上就改 hamstrings' },
+  // ⭐ 2026-09-21 Howard 確認：「練股直的」。
+  //    Reverse Nordic（跪姿往後躺）＝髖伸 ＋ 膝屈，**股直肌是唯一跨髖的股四頭**，
+  //    這個姿勢把它拉到最長，所以練的是股直不是膕繩。
+  // ⛔ 不要跟 Nordic curl（膕繩離心）搞混，也不要把它當腿彎舉的替代——兩個練不同肌肉。
+  '反向北歐': { muscle: 'quads', pattern: 'iso', note: 'Reverse Nordic＝股直肌離心（Howard 2026-09-21 確認）。⛔ 不是膕繩，不可與腿彎舉互換' },
   '後腳抬高蹲': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
   '滾筒放鬆': { muscle: 'core', pattern: 'prep', volume: false },
   '90-90呼吸': { muscle: 'core', pattern: 'prep', volume: false },
   '90-90 呼吸': { muscle: 'core', pattern: 'prep', volume: false },
+
+  // 壺鈴擺盪：B 教練課表裡兩天都有，原本整個對不到
+  'swing': { muscle: 'glutes', also: ['hamstrings', 'back'], pattern: 'hinge' },
+  '壺鈴擺盪': { muscle: 'glutes', also: ['hamstrings', 'back'], pattern: 'hinge' },
+  'kettlebellswing': { muscle: 'glutes', also: ['hamstrings', 'back'], pattern: 'hinge' },
+  'kbdl': { muscle: 'hamstrings', also: ['glutes', 'back'], pattern: 'hinge' },
+  'kb硬舉': { muscle: 'hamstrings', also: ['glutes', 'back'], pattern: 'hinge' },
+  // 「六角槓」單寫（後面接重量時名字會被切到只剩這兩個字）
+  '六角槓': { muscle: 'hamstrings', also: ['glutes', 'quads', 'traps'], pattern: 'hinge' },
 
   // ── 靠資料反推判定的（2026-09-21）────────────────────
   //
@@ -401,8 +425,10 @@ export function resolveExercise(raw: string): Resolved | null {
 export interface VolumeResult {
   byMuscle: Partial<Record<Muscle, number>>
   byPattern: Partial<Record<Pattern, number>>
-  /** 手臂過頭的組數（背闊覆蓋、肩屈曲活動度看這個） */
+  /** 手臂過頭的總組數（含肩推與過頭三頭） */
   overhead: number
+  /** ⭐ 只算「過頭位的拉」——背闊覆蓋要看這個，不要看 overhead */
+  overheadPull: number
   total: number
   /** 暖身／呼吸／Posing／有氧，不計入肌肥大量 */
   excluded: number
@@ -411,7 +437,7 @@ export interface VolumeResult {
 }
 
 function emptyResult(): VolumeResult {
-  return { byMuscle: {}, byPattern: {}, overhead: 0, total: 0, excluded: 0, unresolved: [] }
+  return { byMuscle: {}, byPattern: {}, overhead: 0, overheadPull: 0, total: 0, excluded: 0, unresolved: [] }
 }
 
 function addSets(r: VolumeResult, raw: string, sets: number) {
@@ -421,7 +447,10 @@ function addSets(r: VolumeResult, raw: string, sets: number) {
   if (!countsAsVolume(e)) { r.excluded += sets; return }
   r.byMuscle[e.muscle] = (r.byMuscle[e.muscle] ?? 0) + sets
   r.byPattern[e.pattern] = (r.byPattern[e.pattern] ?? 0) + sets
-  if (e.overhead) r.overhead += sets
+  if (e.overhead) {
+    r.overhead += sets
+    if (e.muscle === 'back') r.overheadPull += sets
+  }
   r.total += sets
 }
 
@@ -511,4 +540,20 @@ export function pushPullRatio(r: VolumeResult) {
   const push = (r.byPattern.h_push ?? 0) + (r.byPattern.v_push ?? 0)
   const pull = (r.byPattern.h_pull ?? 0) + (r.byPattern.v_pull ?? 0)
   return { push, pull }
+}
+
+/**
+ * 間接量：把每個動作的次要部位也算一組。
+ * ⚠️ **不要拿這個去比 10–20 組的區間**——那個區間講的是直接組數。
+ *    這支存在的理由只有一個：要回答「這個部位是不是已經被別的動作餵飽了」。
+ *    例：肩前束直接組數只有 7，但 11 組胸推會間接練到，所以再加直接前束是重複投資。
+ */
+export function indirectVolume(items: Array<{ name: string; sets: number }>): Partial<Record<Muscle, number>> {
+  const out: Partial<Record<Muscle, number>> = {}
+  for (const it of items) {
+    const hit = resolveExercise(it.name)
+    if (!hit || !countsAsVolume(hit.entry)) continue
+    for (const m of hit.entry.also ?? []) out[m] = (out[m] ?? 0) + it.sets
+  }
+  return out
 }

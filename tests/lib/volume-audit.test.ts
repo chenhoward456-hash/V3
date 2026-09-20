@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  resolveExercise, lookupExercise, normalizeExerciseName,
+  resolveExercise, lookupExercise, normalizeExerciseName, indirectVolume,
   planVolume, actualVolume, auditVolume, pushPullRatio, flagOf,
   EXERCISE_MUSCLE_MAP,
 } from '@/lib/volume-audit'
@@ -151,5 +151,25 @@ describe('map 本身的健康檢查', () => {
   it('⚠️ 還沒判乾淨的動作不要越來越多——目前只剩 2 個', () => {
     const unsure = Object.entries(EXERCISE_MUSCLE_MAP).filter(([, v]) => v.unsure)
     expect(unsure.length).toBeLessThanOrEqual(2)
+  })
+})
+
+describe('⚠️ 2026-09-21 稽核修掉的三件', () => {
+  it('反向北歐＝股直肌離心，不是膕繩（Howard 確認「練股直的」）', () => {
+    expect(lookupExercise('反向北歐')?.muscle).toBe('quads')
+  })
+  it('⭐ overheadPull 只算背的過頭位，肩推跟過頭三頭不能混進來', () => {
+    const r = planVolume({ days: [{ exercises: [
+      { name: '引體向上', sets: 4 },        // 背・過頭 → 兩邊都算
+      { name: '槓鈴肩推', sets: 3 },        // 肩前束・過頭 → 只進 overhead
+      { name: '過頭三頭伸展', sets: 2 },     // 三頭・過頭 → 只進 overhead
+    ] }] })
+    expect(r.overhead).toBe(9)
+    expect(r.overheadPull).toBe(4)
+  })
+  it('間接量單獨算，不會混進直接組數', () => {
+    const items = [{ name: '槓鈴臥推', sets: 4 }]
+    expect(planVolume({ days: [{ exercises: items }] }).byMuscle.delts_front).toBeUndefined()
+    expect(indirectVolume(items).delts_front).toBe(4)
   })
 })
