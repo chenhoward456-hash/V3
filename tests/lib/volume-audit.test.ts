@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   resolveExercise, lookupExercise, normalizeExerciseName, indirectVolume,
-  planVolume, actualVolume, auditVolume, pushPullRatio, flagOf,
+  planVolume, actualVolume, auditVolume, pushPullRatio, flagOf, findGaps, findImbalances,
   EXERCISE_MUSCLE_MAP,
 } from '@/lib/volume-audit'
 
@@ -221,5 +221,53 @@ describe('Howard 2026-09-21 裁決', () => {
     expect(e?.muscle).toBe('glutes')
     expect(e?.also).toContain('quads')
     expect(e?.unsure).toBeUndefined()
+  })
+})
+
+describe('findGaps / findImbalances', () => {
+  const mk = (pairs: Array<[string, number]>) =>
+    actualVolume(pairs.flatMap(([n, k]) => Array.from({ length: k }, () => ({ exercise_name: n }))))
+
+  it('掛零的部位要被報出來——那正是「每肌群週組數」那張圖畫不出來的', () => {
+    const r = mk([['平板臥推', 4], ['引體向上', 4], ['深蹲', 4]])
+    const g = findGaps(r)
+    expect(g.find((x) => x.muscle === 'calves')?.severity).toBe('zero')
+    expect(g.find((x) => x.muscle === 'delts_side')?.severity).toBe('zero')
+  })
+
+  it('⚠️ 間接量餵飽的不算缺口——不然「肩前束只有 3 組」會變成永遠在響的假警報', () => {
+    // 臥推的 also 含 delts_front / triceps
+    const r = mk([['平板臥推', 8], ['上斜臥推', 6]])
+    const g = findGaps(r)
+    expect(g.find((x) => x.muscle === 'delts_front')).toBeUndefined()
+    expect(g.find((x) => x.muscle === 'triceps')).toBeUndefined()
+  })
+
+  it('⚠️ 門檻是「幾乎沒碰」(≤2)，不是「偏低」——非健美學員的量本來就比較小', () => {
+    const r = mk([['平板臥推', 4], ['引體向上', 4]])
+    // 胸 4、背 4 都低於 10–20 區間，但那是目標問題，不該報成缺口
+    expect(findGaps(r).find((x) => x.muscle === 'chest')).toBeUndefined()
+    expect(findGaps(r).find((x) => x.muscle === 'back')).toBeUndefined()
+  })
+
+  it('肩中束 17 : 肩後束 2 要被抓出來（實例：一份健體課表）', () => {
+    const r = mk([['啞鈴側平舉', 15], ['繩索提拉', 2], ['反向飛鳥', 2]])
+    const im = findImbalances(r)
+    expect(im[0].high).toBe('delts_side')
+    expect(im[0].low).toBe('delts_rear')
+    expect(im[0].ratio).toBeGreaterThanOrEqual(2.5)
+  })
+
+  it('⚠️ 兩邊都沒練不算失衡（2:0 是兩個都沒做，交給 findGaps 報）', () => {
+    const r = mk([['啞鈴側平舉', 2], ['深蹲', 10]])
+    expect(findImbalances(r).find((x) => x.high === 'delts_side')).toBeUndefined()
+  })
+
+  it('⚠️ 失衡的說明必須中性——哪一邊多是跑出來才知道的', () => {
+    const r = mk([['引體向上', 9], ['平板臥推', 3]])
+    const im = findImbalances(r).find((x) => x.high === 'back')
+    expect(im).toBeDefined()
+    // 第一版寫死「胸長期壓過背」，碰到背壓過胸的學員文案就跟數字反了
+    expect(im!.why).not.toContain('胸長期壓過背')
   })
 })

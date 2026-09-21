@@ -491,6 +491,13 @@ export function resolveExercise(raw: string): Resolved | null {
 
 export interface VolumeResult {
   byMuscle: Partial<Record<Muscle, number>>
+  /**
+   * 間接量（各動作 `also` 的部位）。
+   * ⚠️ 不要拿去比 10–20 區間——那個區間講的是直接組數。
+   *    它存在的理由只有一個：判斷「這個部位是不是已經被別的動作餵飽了」，
+   *    免得把「肩前束直接只有 3 組」報成缺口（其實 11 組胸推已經餵飽它）。
+   */
+  byMuscleIndirect: Partial<Record<Muscle, number>>
   byPattern: Partial<Record<Pattern, number>>
   /** 手臂過頭的總組數（含肩推與過頭三頭） */
   overhead: number
@@ -504,7 +511,7 @@ export interface VolumeResult {
 }
 
 function emptyResult(): VolumeResult {
-  return { byMuscle: {}, byPattern: {}, overhead: 0, overheadPull: 0, total: 0, excluded: 0, unresolved: [] }
+  return { byMuscle: {}, byMuscleIndirect: {}, byPattern: {}, overhead: 0, overheadPull: 0, total: 0, excluded: 0, unresolved: [] }
 }
 
 function addSets(r: VolumeResult, raw: string, sets: number) {
@@ -513,6 +520,7 @@ function addSets(r: VolumeResult, raw: string, sets: number) {
   const e = hit.entry
   if (!countsAsVolume(e)) { r.excluded += sets; return }
   r.byMuscle[e.muscle] = (r.byMuscle[e.muscle] ?? 0) + sets
+  for (const m of e.also ?? []) r.byMuscleIndirect[m] = (r.byMuscleIndirect[m] ?? 0) + sets
   r.byPattern[e.pattern] = (r.byPattern[e.pattern] ?? 0) + sets
   if (e.overhead) {
     r.overhead += sets
@@ -600,6 +608,96 @@ export function auditVolume(plan: VolumeResult, actual: VolumeResult): AuditRow[
       return { muscle: m, label: MUSCLE_LABEL[m], plan: p, actual: a, gap: a - p, planFlag: flagOf(p), actualFlag: flagOf(a) }
     })
     .sort((x, y) => y.plan - x.plan || y.actual - x.actual)
+}
+
+// ═══════════════════════════════════════════════════════════
+// 缺口與失衡
+// ⭐ 2026-09-21 新增。理由很實際：這兩支抓到的東西，是單看「每肌群週組數」那張圖
+//    永遠看不到的——因為那張圖只畫「有數字的部位」，掛零的整列會消失。
+//    實際案例：一份課表肩中束 17 組、肩後束 2 組；另一份肩中束直接 0 組。
+//    兩次都是全身最嚴重的問題，兩次那張圖都畫不出來。
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * 「一定要有覆蓋」的部位。
+ * ⚠️ 刻意不含斜方／前臂／內收／外展——那四個靠複合動作間接吃得到，
+ *    單獨掛零不代表有問題，列進來只會變成永遠在響的假警報。
+ */
+export const CORE_MUSCLES: Muscle[] = [
+  'chest', 'back', 'delts_front', 'delts_side', 'delts_rear',
+  'biceps', 'triceps', 'quads', 'hamstrings', 'glutes', 'calves', 'core',
+]
+
+/** 「幾乎沒碰」的上限。不是「偏低」——偏低要知道目標才判得準。 */
+export const NEARLY_NONE = 2
+
+export interface Gap {
+  muscle: Muscle
+  label: string
+  direct: number
+  indirect: number
+  /** zero = 直接跟間接都是 0；low = 直接 + 間接 ≤ 2 組，等於幾乎沒碰 */
+  severity: 'zero' | 'low'
+}
+
+/**
+ * 找掛零／嚴重偏低的部位。
+ * ⚠️ 判斷用 `direct + indirect`，不是只看 direct——
+ *    肩前束直接 3 組看起來像缺口，但 11 組胸推會間接餵到它，報出來是雜訊。
+ */
+export function findGaps(r: VolumeResult): Gap[] {
+  const out: Gap[] = []
+  for (const m of CORE_MUSCLES) {
+    const direct = r.byMuscle[m] ?? 0
+    const indirect = r.byMuscleIndirect[m] ?? 0
+    if (direct === 0 && indirect === 0) out.push({ muscle: m, label: MUSCLE_LABEL[m], direct, indirect, severity: 'zero' })
+    // ⚠️ 2026-09-21 收緊：原本門檻是「不到區間下限的一半（<5）」，實際跑一個籃球＋減脂的
+    //    學員，12 項核心部位報了 8 項——因為他的課表本來就不是健美的量。
+    //    「偏低」要知道目標才判得準，V3 沒有那個資訊；「幾乎沒碰」則是客觀的。
+    //    → 門檻收到 ≤2 組。這樣仍抓得到真正的洞（實例：一份健體課表肩後束 2 組）。
+    else if (direct + indirect <= NEARLY_NONE) out.push({ muscle: m, label: MUSCLE_LABEL[m], direct, indirect, severity: 'low' })
+  }
+  return out.sort((a, b) => (a.severity === b.severity ? a.direct - b.direct : a.severity === 'zero' ? -1 : 1))
+}
+
+/**
+ * 對立肌群的比例。
+ * ⚠️ 只放「同一個關節的兩側」，不是隨便兩個部位——
+ *    比例有意義的前提是它們本來就該互相制衡。
+ */
+// ⚠️ why 必須是**中性**的——哪一邊多是跑出來才知道的。
+//    第一版寫死「胸長期壓過背，肩會被拉到前引位置」，結果第一個真實學員是背 9 : 胸 3，
+//    文案跟數字方向相反。敘述要描述「這一對為什麼該平衡」，不是預設誰壓過誰。
+const OPPOSING: Array<{ a: Muscle; b: Muscle; why: string }> = [
+  { a: 'delts_side', b: 'delts_rear', why: '肩的側面與後面。轉 1/4 跟背面看的是後束——中束再厚，後面空的，側面還是扁的' },
+  { a: 'quads', b: 'hamstrings', why: '膝的前後側。長期偏一邊，除了外型，膝關節受力也會偏' },
+  { a: 'chest', b: 'back', why: '肩帶的前後側。長期偏一邊，肩胛的靜態位置會被拉走' },
+]
+
+export const IMBALANCE_RATIO = 2.5
+
+export interface Imbalance {
+  high: Muscle; low: Muscle
+  highLabel: string; lowLabel: string
+  highSets: number; lowSets: number
+  ratio: number
+  why: string
+}
+
+export function findImbalances(r: VolumeResult): Imbalance[] {
+  const out: Imbalance[] = []
+  for (const { a, b, why } of OPPOSING) {
+    const va = r.byMuscle[a] ?? 0
+    const vb = r.byMuscle[b] ?? 0
+    // ⚠️ 兩邊都很少的時候比例沒有意義（2 : 0 不是失衡，是兩個都沒練）→ 交給 findGaps 報
+    if (va + vb < VOLUME_MIN) continue
+    const [high, low, hv, lv] = va >= vb ? [a, b, va, vb] : [b, a, vb, va]
+    const ratio = lv === 0 ? Infinity : hv / lv
+    if (ratio >= IMBALANCE_RATIO) {
+      out.push({ high, low, highLabel: MUSCLE_LABEL[high], lowLabel: MUSCLE_LABEL[low], highSets: hv, lowSets: lv, ratio, why })
+    }
+  }
+  return out.sort((x, y) => y.ratio - x.ratio)
 }
 
 /** 推 : 拉（只算複合動作，單關節不進來） */
