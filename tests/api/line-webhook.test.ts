@@ -1101,6 +1101,54 @@ describe('POST /api/line/webhook', () => {
       )
     })
 
+    // ⭐ 2026-09-21 真實事故：bot 提示「順手記個蛋白質更準 👉 打「蛋白 180」」，
+    //    Sean 只打了「180」，裸數字路由（30–200 一律當體重）把它記成 180 kg。
+    //    他真實體重 84.9、前一筆 86.0，卡片顯示「📈 比上次 +94.0 kg」。
+    //    ⚠️ 這是同一個學員第二次被數字接口咬（上一次見 tests/lib/line-calorie-capture.test.ts）。
+    // body_composition 的 upsert 跟「查上一筆」都走同一個 chain：
+    // upsert 後面沒接 .single()（走 then），查上一筆才 maybeSingle → 用 _calls 分辨。
+    const weightMockWithPrev = (prevWeight: number) =>
+      createSupabaseMock(BOUND_CLIENT, {
+        body_composition: (calls: any[]) =>
+          calls.some((c) => c.method === 'upsert')
+            ? { data: null, error: null }
+            : { data: { weight: prevWeight, date: '2026-09-18' }, error: null },
+      })
+
+    it('⛔ 裸數字跟上次差太多就不記，改回問（Sean 的 180）', async () => {
+      mockSupabase = weightMockWithPrev(86.0)
+      vi.resetModules()
+      const mod = await import('@/app/api/line/webhook/route')
+
+      const res = await mod.POST(makeWebhookRequest({ events: [textEvent('180')] }))
+      expect(res.status).toBe(200)
+      const text = mockReplyMessage.mock.calls.at(-1)![1][0].text
+      expect(text).toContain('先不記')
+      expect(text).toContain('86.0')
+      expect(text).toContain('蛋白 180')   // 要給出正確的寫法，不然他還是只會打數字
+      expect(text).not.toContain('已記錄體重')
+    })
+
+    it('✅ 裸數字在合理範圍內照記（真的量體重的人不該被擋）', async () => {
+      mockSupabase = weightMockWithPrev(86.0)
+      vi.resetModules()
+      const mod = await import('@/app/api/line/webhook/route')
+
+      const res = await mod.POST(makeWebhookRequest({ events: [textEvent('84.9')] }))
+      expect(res.status).toBe(200)
+      expect(mockReplyMessage.mock.calls.at(-1)![1][0].text).toContain('已記錄體重')
+    })
+
+    it('✅ 明確打「體重 180」不擋——那是清楚的意圖', async () => {
+      mockSupabase = weightMockWithPrev(86.0)
+      vi.resetModules()
+      const mod = await import('@/app/api/line/webhook/route')
+
+      const res = await mod.POST(makeWebhookRequest({ events: [textEvent('體重 180')] }))
+      expect(res.status).toBe(200)
+      expect(mockReplyMessage.mock.calls.at(-1)![1][0].text).toContain('已記錄體重')
+    })
+
     it('rejects unreasonable weight values', async () => {
       mockSupabase = createSupabaseMock(BOUND_CLIENT)
       vi.resetModules()
