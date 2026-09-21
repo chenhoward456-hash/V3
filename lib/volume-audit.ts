@@ -279,6 +279,17 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '平板臥推': { muscle: 'chest', also: ['delts_front', 'triceps'], pattern: 'h_push' },
   '器械水平胸推': { muscle: 'chest', also: ['delts_front', 'triceps'], pattern: 'h_push' },
   '下胸撐體': { muscle: 'chest', also: ['triceps'], pattern: 'h_push' },
+  '器械上胸': { muscle: 'chest', pattern: 'h_push', note: '上斜器械推，上胸角度' },
+  // ⭐ Sissy squat：膝往前、髖保持伸展，所以股直肌（唯一跨髖的股四頭）在拉長端被練到。
+  //    跟腿屈伸不同——腿屈伸是屈髖位，股直肌已經縮短，吃不到那一段。
+  'sissy squat': { muscle: 'quads', pattern: 'iso', note: '髖伸展位的股四，股直肌拉長端' },
+  '西西深蹲': { muscle: 'quads', pattern: 'iso', note: '同 sissy squat' },
+  // ⚠️ unsure：相撲硬舉的主部位要 Howard 判。
+  //    Escamilla 2000/2002 測出相撲的膝伸力矩比傳統硬舉大、髖伸力矩小，內收肌活化也高
+  //    → 生物力學上它比傳統硬舉更「股四＋內收」，不是純髖主導。
+  //    但健美課表習慣把它排在腿後日當髖主導用。先記 glutes，等裁決。
+  '相撲硬舉': { muscle: 'glutes', also: ['quads', 'adductors', 'hamstrings', 'back'], pattern: 'hinge', unsure: true,
+    note: 'Escamilla：膝伸力矩>傳統硬舉、髖伸力矩<傳統硬舉。主部位待裁決' },
   '坐姿夾胸': { muscle: 'chest', pattern: 'iso' },
   '滑輪下夾胸': { muscle: 'chest', pattern: 'iso' },
   '三頭臥姿過頭伸': { muscle: 'triceps', pattern: 'iso', overhead: true },

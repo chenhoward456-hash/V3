@@ -148,9 +148,17 @@ describe('map 本身的健康檢查', () => {
       expect(v.pattern, k).toBeTruthy()
     }
   })
-  it('⚠️ 還沒判乾淨的動作不要越來越多——目前只剩 2 個', () => {
-    const unsure = Object.entries(EXERCISE_MUSCLE_MAP).filter(([, v]) => v.unsure)
-    expect(unsure.length).toBeLessThanOrEqual(2)
+  // ⚠️ 2026-09-21 改成具名白名單。原本是「不超過 2 個」，但一個純數字的上限
+  //    只會逼下一個人去放寬它。改成點名——要加新的 unsure，就得同時把它寫進這裡，
+  //    等於強迫它出現在 Howard 看得到的地方。
+  it('⚠️ 待裁決的動作必須具名登記，不能默默變多', () => {
+    const PENDING = [
+      '飛鳥',      // 胸的夾胸 vs 肩的側/後平舉，同一個字兩個部位
+      '窄握',      // 窄握臥推（胸/三頭）vs 窄握下拉（背）
+      '相撲硬舉',  // Escamilla：膝伸力矩>傳統硬舉 → 比傳統更股四；但課表習慣當髖主導排
+    ].sort()
+    const unsure = Object.entries(EXERCISE_MUSCLE_MAP).filter(([, v]) => v.unsure).map(([k]) => k).sort()
+    expect(unsure).toEqual(PENDING)
   })
 })
 

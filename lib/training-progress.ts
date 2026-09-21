@@ -106,7 +106,10 @@ const EXERCISE_ALIASES: [RegExp, string][] = [
   [/row|划船/, '划船'],
   [/lat\s*pull|pull\s*down|下拉|引體|pull\s*up|chin/, '背部下拉/引體'],
   [/curl|彎舉|二頭/, '二頭彎舉'],
-  [/tricep|三頭|下壓|push\s*down|dip|撐體/, '三頭'],
+  // ⚠️ 2026-09-21：原本的 /下壓/ 會吃掉「直臂下壓」——那是背闊的單關節動作，
+  //    被歸成三頭，1RM 進程就記到錯的動作上。lib/volume-audit.ts 記的是 back，兩套打架。
+  //    改成只吃「三頭下壓」這種帶部位的寫法。
+  [/tricep|三頭|三頭下壓|push\s*down|dip|撐體/, '三頭'],
   [/lateral|側平舉/, '側平舉'],
   [/leg\s*press|腿推/, '腿推'],
   [/leg\s*ext|腿伸|extension/, '腿伸'],
