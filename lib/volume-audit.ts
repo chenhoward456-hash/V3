@@ -289,7 +289,15 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '繩索提拉': { muscle: 'delts_side', also: ['traps'], pattern: 'iso' },
   '滑輪前平舉': { muscle: 'delts_front', pattern: 'iso' },
   '史密斯硬舉': { muscle: 'hamstrings', also: ['glutes', 'back'], pattern: 'hinge' },
-  '六角槓硬舉': { muscle: 'hamstrings', also: ['glutes', 'quads', 'traps'], pattern: 'hinge' },
+  // ⭐ 2026-09-21 稽核修正：六角槓硬舉**不是髖主導**，主要部位從腿後改成股四頭。
+  //    Stahl 2024, J Strength Cond Res 38(5):815-824（doi 10.1519/JSC.0000000000004729）
+  //    16 人 3D 動作捕捉＋測力板，六角槓硬舉 vs 背蹲舉：
+  //      · 膝伸力矩 **兩者無顯著差異**
+  //      · 髖伸力矩 **背蹲舉還比較大**
+  //      · 結論：六角槓的握把位置讓**髖與膝的力臂是平衡的**，反而是背蹲舉才偏髖主導
+  //    ⚠️ 但六角槓的膝屈曲角度比背蹲舉小（ROM 較短），所以不是深蹲的完全替代品。
+  //    ⛔ 原本記成 hamstrings 會讓「這個人有沒有膝主導主項」整個判錯。
+  '六角槓硬舉': { muscle: 'quads', also: ['glutes', 'hamstrings', 'traps', 'back'], pattern: 'hinge', note: 'Stahl 2024：膝伸力矩與背蹲舉無差異、髖伸力矩比背蹲舉小 → 髖膝平衡，不是純髖主導' },
   '腿伸': { muscle: 'quads', pattern: 'iso' },
   '腿勾': { muscle: 'hamstrings', pattern: 'iso' },
   '深蹲機': { muscle: 'quads', also: ['glutes'], pattern: 'squat' },
@@ -310,7 +318,7 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   'kbdl': { muscle: 'hamstrings', also: ['glutes', 'back'], pattern: 'hinge' },
   'kb硬舉': { muscle: 'hamstrings', also: ['glutes', 'back'], pattern: 'hinge' },
   // 「六角槓」單寫（後面接重量時名字會被切到只剩這兩個字）
-  '六角槓': { muscle: 'hamstrings', also: ['glutes', 'quads', 'traps'], pattern: 'hinge' },
+  '六角槓': { muscle: 'quads', also: ['glutes', 'hamstrings', 'traps', 'back'], pattern: 'hinge' },
 
   // ── 靠資料反推判定的（2026-09-21）────────────────────
   //
