@@ -142,6 +142,7 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   // ⭐ 直臂下壓：起始位就是肩屈曲（手臂在前上方），所以算過頭位。
   //    2026-09-20 Temu 案例踩過——把它算成水平拉會低估過頭位的覆蓋。
   '直臂下壓': { muscle: 'back', pattern: 'iso', overhead: true, note: '單關節但起始位是肩屈曲，計入過頭位' },
+  '剪刀下拉': { muscle: 'back', pattern: 'v_pull', overhead: true, note: '雙繩索交叉的下拉，軌道是垂直拉' },
 
   // ── 肩 ──────────────────────────────────────────────
   '肩推': { muscle: 'delts_front', also: ['triceps'], pattern: 'v_push', overhead: true },
