@@ -10,6 +10,8 @@ import {
 import { ChevronLeft } from 'lucide-react'
 import { useClientData } from '@/hooks/useClientData'
 import { TRAINING_TYPES } from '@/components/client/types'
+import { actualVolume, MUSCLE_LABEL } from '@/lib/volume-audit'
+import { getLocalDateStr } from '@/lib/date-utils'
 
 const getTypeBgColor = (type: string) => {
   const colors: Record<string, string> = {
@@ -368,19 +370,19 @@ export default function ClientOverviewPage() {
   }, [trainingSets])
 
   // ===== 每肌群週組數（最近一週）=====
+  // ⚠️ 2026-09-21 重寫。原本是 `s.muscle_group || '其他'`，但 training_sets 的
+  //    muscle_group 填寫率 0%，所以這張圖等於把所有組數塞進一根叫「其他」的長條。
+  //    改成從動作名推部位（lib/volume-audit.ts），也順便把暖身/呼吸/有氧排除掉。
+  // ⚠️ 日期用 getLocalDateStr，不要 toISOString()（UTC 會讓凌晨 0-8 點少算一天）。
   const muscleVolume = useMemo(() => {
     if (trainingSets.length === 0) return []
     const today = new Date()
     const start = new Date(today); start.setDate(today.getDate() - 6)
-    const startStr = start.toISOString().split('T')[0]
-    const counts: Record<string, number> = {}
-    for (const s of trainingSets) {
-      if (s.date < startStr) continue
-      const mg = s.muscle_group || '其他'
-      counts[mg] = (counts[mg] || 0) + 1
-    }
-    return Object.entries(counts)
-      .map(([肌群, 組數]) => ({ 肌群, 組數 }))
+    const startStr = getLocalDateStr(start)
+    const todayStr = getLocalDateStr(today)
+    const r = actualVolume(trainingSets.filter((s: any) => s.date >= startStr && s.date <= todayStr))
+    return (Object.entries(r.byMuscle) as [keyof typeof MUSCLE_LABEL, number][])
+      .map(([m, n]) => ({ 肌群: MUSCLE_LABEL[m], 組數: n }))
       .sort((a, b) => b.組數 - a.組數)
   }, [trainingSets])
 
@@ -851,13 +853,17 @@ export default function ClientOverviewPage() {
               {muscleVolume.length > 0 && (
                 <div className="bg-white border border-slate-200 rounded-2xl p-5">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">🎯 本週肌群組數</h3>
-                  <ResponsiveContainer width="100%" height={200}>
+                  {/* ⚠️ 高度要跟著筆數長、YAxis 要 interval={0}：
+                      不然 recharts 會自動藏掉重疊的刻度標籤（原本「胸」那根就沒有名字）。 */}
+                  <ResponsiveContainer width="100%" height={Math.max(200, muscleVolume.length * 34)}>
                     <BarChart data={muscleVolume} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" fontSize={11} />
-                      <YAxis type="category" dataKey="肌群" fontSize={11} width={60} />
+                      <XAxis type="number" fontSize={11} allowDecimals={false} />
+                      <YAxis type="category" dataKey="肌群" fontSize={11} width={60} interval={0} />
                       <Tooltip />
-                      <Bar dataKey="組數" fill="#10b981" radius={[0, 4, 4, 0]}>
+                      {/* 關掉進場動畫：DESIGN.md 的 motion 是 minimal-functional，
+                          而且動畫中途重繪會讓長條短暫消失 */}
+                      <Bar dataKey="組數" fill="#10b981" radius={[0, 4, 4, 0]} isAnimationActive={false}>
                         {muscleVolume.map((entry, i) => (
                           <Cell key={i} fill={entry.組數 >= 10 ? '#10b981' : entry.組數 >= 6 ? '#f59e0b' : '#94a3b8'} />
                         ))}
