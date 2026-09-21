@@ -15,7 +15,7 @@ import { TRAINING_TYPES, isWeightTraining } from '@/components/client/types'
 import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 import { isCompetitionMode, isHealthMode, PHASE_LABELS, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS } from '@/lib/client-mode'
 import TrainingProgressCard from '@/components/client/TrainingProgressCard'
-import { planVolume, actualVolume, auditVolume, pushPullRatio, MUSCLE_LABEL } from '@/lib/volume-audit'
+import { planVolume, actualVolume, auditVolume, pushPullRatio, findGaps, findImbalances, MUSCLE_LABEL } from '@/lib/volume-audit'
 
 const LabNutritionAdviceCard = dynamic(() => import('@/components/client/LabNutritionAdviceCard'), { ssr: false })
 const LabInsightsCard = dynamic(() => import('@/components/client/LabInsightsCard'), { ssr: false })
@@ -698,8 +698,20 @@ export default function ClientOverview() {
     const thisWeek = trainingSets.filter((s: any) => s.date >= fromStr && s.date <= todayStr)
     const actual = actualVolume(thisWeek)
     const plan = planVolume(client?.training_plan)
+    // ⚠️ 主圖只畫「有數字」的部位——掛零的整列會消失。
+    //    那正好是最該看到的東西（實例：一份課表肩中束 17 組、肩後束 2 組，
+    //    另一份肩中束直接 0 組，兩次都是全身最嚴重的問題，兩次這張圖都畫不出來）。
+    //    → 缺口跟失衡另外算，畫在摘要列下面。
     const rows = auditVolume(plan, actual).filter((r) => r.plan > 0 || r.actual > 0)
-    return { plan, actual, rows, hasPlan: (plan.total ?? 0) > 0, weekStart: fromStr, weekEnd: todayStr }
+    // ⭐ 缺口／失衡要跑在「計畫」上，不是「實做」上。
+    //    實做是最近 7 天的滾動窗，可能只抓到部分訓練日——25 組的一週幾乎每個部位都會被報，
+    //    那是窗口造成的假象，不是課表的問題。
+    //    「這份課表漏了哪個部位」問的是計畫；「這週做了多少」是上面 rows 的 gap 欄在講的。
+    //    沒設計畫的學員才退回用實做，並在 UI 標明。
+    const gapSource = (plan.total ?? 0) > 0 ? plan : actual
+    const gaps = findGaps(gapSource)
+    const imbalances = findImbalances(gapSource)
+    return { plan, actual, rows, gaps, imbalances, gapsFromPlan: (plan.total ?? 0) > 0, hasPlan: (plan.total ?? 0) > 0, weekStart: fromStr, weekEnd: todayStr }
   }, [trainingSets, client?.training_plan])
 
   // ===== 飲食合規趨勢 =====
@@ -3344,6 +3356,46 @@ export default function ClientOverview() {
               )}
             </div>
 
+            {/* ⭐ 缺口與失衡：上面那張圖畫不出來的東西 */}
+            {(volumeAudit.gaps.length > 0 || volumeAudit.imbalances.length > 0) && (
+              <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2">
+                {/* ⚠️ 上半是「最近 7 天實做」、這裡是「整份課表」，時間範圍不同——沒有這行標題會被讀成同一件事 */}
+                <div className="text-[11px] font-medium text-slate-700">
+                  課表本身
+                  <span className="font-normal text-slate-400 ml-1.5">{volumeAudit.gapsFromPlan ? '（整週計畫，不分時間窗）' : '（這位學員沒設課表，退而用最近 7 天實做）'}</span>
+                </div>
+                {volumeAudit.imbalances.map((im) => (
+                  <div key={`${im.high}-${im.low}`} className="flex items-start gap-2 text-[11px]">
+                    <span className="shrink-0 mt-px px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 font-medium">失衡</span>
+                    <span className="text-slate-600">
+                      <span className="font-medium text-slate-900 tabular-nums">{im.highLabel} {im.highSets}</span>
+                      <span className="text-slate-400 mx-1">:</span>
+                      <span className="font-medium text-slate-900 tabular-nums">{im.lowLabel} {im.lowSets}</span>
+                      <span className="text-slate-400 ml-1.5 tabular-nums">
+                        {im.ratio === Infinity ? '∞' : im.ratio.toFixed(1)}:1
+                      </span>
+                      <span className="text-slate-500 ml-2">{im.why}</span>
+                    </span>
+                  </div>
+                ))}
+                {volumeAudit.gaps.length > 0 && (
+                  <div className="flex items-start gap-2 text-[11px]">
+                    <span className="shrink-0 mt-px px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-medium">缺口</span>
+                    <span className="text-slate-600 flex flex-wrap gap-x-3 gap-y-1">
+                      {volumeAudit.gaps.map((g) => (
+                        <span key={g.muscle} className="tabular-nums">
+                          {g.severity === 'zero' ? <span className="text-rose-600 font-medium">{g.label} 0 組</span> : <>{g.label} {g.direct} 組</>}
+                          {g.indirect > 0 && <span className="text-slate-400">（間接 {g.indirect}）</span>}
+                        </span>
+                      ))}
+                    </span>
+                  </div>
+                )}
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  門檻「0 或 ≤2 組」＝幾乎沒碰（算<span className="text-slate-500">直接 ＋ 間接</span>，所以被別的動作餵飽的不會報）；斜方／前臂／內收／外展不檢查。只說數字長這樣，<span className="text-slate-500">不判斷是不是刻意的</span>。
+                </p>
+              </div>
+            )}
             {!volumeAudit.hasPlan && (
               <p className="text-[11px] text-slate-400 mt-2">這位學員還沒設訓練計畫，所以只顯示實做。設了之後這裡會出現「計畫 vs 實做」的落差。</p>
             )}
