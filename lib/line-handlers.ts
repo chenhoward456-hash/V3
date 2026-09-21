@@ -7,6 +7,7 @@
 
 import { SupabaseClient } from '@supabase/supabase-js'
 import { replyMessage, pushMessage, qr, switchRichMenuForUser } from '@/lib/line'
+import { getTaiwanDate } from '@/lib/date-utils'
 import { createLogger } from '@/lib/logger'
 import { DAY_MS } from '@/lib/date-utils'
 import { markConverted } from '@/lib/nurture-sequence'
@@ -76,9 +77,10 @@ const QR_WELLNESS = {
 // ═══════════════════════════════════════
 
 /** Taiwan timezone date string (YYYY-MM-DD) */
-export function getTaiwanDate(): string {
-  return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' })
-}
+// ⚠️ 2026-09-21：原本這裡自己有一份，cron/daily 也有一份，三處各自演化遲早分岔。
+//    收斂到 lib/date-utils，這裡 re-export 讓既有 import 不用動。
+//    （`export { X } from` 不會把 X 帶進本地作用域，本檔內部還要用，所以先 import 再 export。）
+export { getTaiwanDate }
 
 // ═══════════════════════════════════════
 // Client lookup

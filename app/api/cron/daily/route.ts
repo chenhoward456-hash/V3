@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { BodyComposition, NutritionLog, TrainingLog, DailyWellness } from '@/types'
 import { createServiceSupabase } from '@/lib/supabase'
+import { getTaiwanDate, getTaiwanHour, taiwanDateAgo } from '@/lib/date-utils'
 import { pushMessage, unlinkRichMenuFromUser } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
 import {
@@ -88,13 +89,8 @@ async function sendWebPushOnly(
   return false
 }
 
-function getTaiwanDate(): string {
-  return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' })
-}
-
-function getTaiwanHour(): number {
-  return parseInt(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei', hour: 'numeric', hour12: false }))
-}
+// ⚠️ getTaiwanDate / getTaiwanHour / taiwanDateAgo 一律走 lib/date-utils，
+//    這裡原本自己有一份複製品（line-handlers 也有），三份各自演化遲早分岔。
 
 /** 教練自訂 peak week 課表的一天（clients.coach_peak_week_plan.days[]） */
 type PeakPlanDayRow = {
@@ -213,10 +209,8 @@ export async function GET(request: NextRequest) {
       .not('target_date', 'is', null)
       .not('calories_target', 'is', null)
 
-    const fourteenDaysAgo = new Date(); fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
-    const fourteenStr = fourteenDaysAgo.toISOString().split('T')[0]
-    const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
+    const fourteenStr = taiwanDateAgo(14)
+    const sevenDaysStr = taiwanDateAgo(7)
 
     for (const c of (eligibleClients ?? [])) {
       autoAdjustResults.evaluated++
@@ -275,10 +269,8 @@ export async function GET(request: NextRequest) {
 
         const weeklyWeights: { week: number; avgWeight: number }[] = []
         for (let w = 0; w < 4; w++) {
-          const we = new Date(); we.setDate(we.getDate() - w * 7)
-          const ws = new Date(we); ws.setDate(we.getDate() - 6)
-          const wsStr = ws.toISOString().split('T')[0]
-          const weStr = we.toISOString().split('T')[0]
+          const weStr = taiwanDateAgo(w * 7)
+          const wsStr = taiwanDateAgo(w * 7 + 6)
           const ww = (bodyData as any[]).filter(b => b.date >= wsStr && b.date <= weStr && b.weight != null).map(b => Number(b.weight))
           if (ww.length > 0) weeklyWeights.push({ week: w, avgWeight: Math.round((ww.reduce((s, x) => s + x, 0) / ww.length) * 100) / 100 })
         }
@@ -632,12 +624,9 @@ export async function GET(request: NextRequest) {
         .eq('wellness_enabled', true)
         .not('line_user_id', 'is', null)
 
-      const twentyEightDaysAgo = new Date(); twentyEightDaysAgo.setDate(twentyEightDaysAgo.getDate() - 28)
-      const twentyEightStr = twentyEightDaysAgo.toISOString().split('T')[0]
-      const fourteenDaysAgo2 = new Date(); fourteenDaysAgo2.setDate(fourteenDaysAgo2.getDate() - 14)
-      const fourteenStr2 = fourteenDaysAgo2.toISOString().split('T')[0]
-      const twelveWeeksAgo = new Date(); twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 12 * 7)
-      const twelveWeeksStr = twelveWeeksAgo.toISOString().split('T')[0]
+      const twentyEightStr = taiwanDateAgo(28)
+      const fourteenStr2 = taiwanDateAgo(14)
+      const twelveWeeksStr = taiwanDateAgo(12 * 7)
 
       for (const c of (wellnessClients ?? [])) {
         try {
@@ -827,8 +816,7 @@ export async function GET(request: NextRequest) {
     //    只針對 coached/protocol tier（教練實際在盯的學員，如 Eddie/William/陳胤豪），不吵自助/免費用戶。
     //    體重不列入：昨天的空腹體重無法補量，已由上面的「量體重」晨間提醒涵蓋；這裡只追可補填的 飲食/訓練/感受。
     try {
-      const fuYday = new Date(); fuYday.setDate(fuYday.getDate() - 1)
-      const fuYdayStr = fuYday.toISOString().split('T')[0]
+      const fuYdayStr = taiwanDateAgo(1)
       const [fuNutRes, fuTrainRes, fuWellRes] = await Promise.all([
         supabase.from('nutrition_logs').select('client_id').eq('date', fuYdayStr),
         supabase.from('training_logs').select('client_id').eq('date', fuYdayStr),
@@ -901,7 +889,7 @@ export async function GET(request: NextRequest) {
     const hasTraining = new Set((trainingRes.data || []).map((t: { client_id: string }) => t.client_id))
 
     // 2. 查過去 7 天有記錄過的人（活躍用戶）
-    const sevenDaysAgo = new Date(Date.now() - 7 * DAY_MS).toISOString().split('T')[0]
+    const sevenDaysAgo = taiwanDateAgo(7)
     const { data: recentRecords } = await supabase
       .from('body_composition')
       .select('client_id')
@@ -1357,7 +1345,9 @@ export async function GET(request: NextRequest) {
       .lte('created_at', sevenDaysAgoDate.toISOString())
 
     if (pendingReferrals) {
-      const sevenDaysAgoStr = sevenDaysAgoDate.toISOString().split('T')[0]
+      // ⚠️ 上面的 sevenDaysAgoDate 是拿來比 created_at（timestamp）的，那個用 UTC 沒問題；
+      //    這裡要比的是 date 欄（日曆日），必須走台灣日曆。
+      const sevenDaysAgoStr = taiwanDateAgo(7)
 
       for (const ref of pendingReferrals) {
         try {
@@ -1451,9 +1441,7 @@ export async function GET(request: NextRequest) {
   if (!isMorning && dayOfWeek === 7) {
     // 撈 28 天：警示要「跟他自己的前三週比」才講得出他不知道的事，
     // 只有 7 天就只能套通用門檻（見 lib/ai-insights.ts 的重寫說明）。
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 28)
-    const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
+    const sevenDaysStr = taiwanDateAgo(28)   // ⚠️ 變數名是 seven，實際撈 28 天（見上面註解）
 
     const [nutRes, wellRes, trainRes, bodyRes] = await Promise.all([
       supabase.from('nutrition_logs').select('client_id, date, calories, protein_grams, carbs_grams, fat_grams, compliant')
@@ -1596,9 +1584,7 @@ export async function GET(request: NextRequest) {
       .not('subscription_tier', 'eq', 'free') // 只推給付費用戶
 
     if (insightClients) {
-      const fourteenDaysAgo = new Date()
-      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
-      const sinceStr = fourteenDaysAgo.toISOString().split('T')[0]
+      const sinceStr = taiwanDateAgo(14)
 
       for (const c of insightClients) {
         try {

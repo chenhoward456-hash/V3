@@ -120,9 +120,12 @@ vi.mock('@/lib/email', () => ({
   sendLineBindReminderEmail: vi.fn().mockResolvedValue({ success: true }),
 }))
 
-vi.mock('@/lib/date-utils', () => ({
+// ⚠️ 2026-09-21 改成 partial mock。原本整支被換掉、只留兩個 export，
+//    所以 cron 用到新的 getTaiwanDate / taiwanDateAgo 時會炸「No export is defined」。
+//    而且那些日期函式正是要驗的東西——用真的實作，只把 daysUntilDateTW 換成固定值。
+vi.mock('@/lib/date-utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/date-utils')>()),
   daysUntilDateTW: vi.fn().mockReturnValue(999),
-  DAY_MS: 86400000,
 }))
 
 const { mockGetDefaultFeatures, mockStartCronRun, mockCompleteCronRun, mockFailCronRun } = vi.hoisted(() => ({
