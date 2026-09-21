@@ -36,6 +36,8 @@ export type Pattern =
   | 'squat' | 'hinge' | 'lunge'
   | 'iso' | 'carry'
   | 'cardio' | 'prep' | 'posing'
+  /** 奧林匹克舉重的技術動作 */
+  | 'olympic'
 
 export interface ExerciseEntry {
   /** 主要部位（算組數時計 1 組） */
@@ -75,7 +77,7 @@ export const PATTERN_LABEL: Record<Pattern, string> = {
   h_push: '水平推', v_push: '垂直推', h_pull: '水平拉', v_pull: '垂直拉',
   squat: '蹲系', hinge: '髖鉸鏈', lunge: '單腳',
   iso: '單關節', carry: '負重行走',
-  cardio: '有氧', prep: '暖身／呼吸', posing: 'Posing',
+  cardio: '有氧', prep: '暖身／呼吸', posing: 'Posing', olympic: '舉重技術',
 }
 
 /**
@@ -320,6 +322,30 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   // 「六角槓」單寫（後面接重量時名字會被切到只剩這兩個字）
   '六角槓': { muscle: 'quads', also: ['glutes', 'hamstrings', 'traps', 'back'], pattern: 'hinge' },
 
+  // ── 奧林匹克舉重（Howard 自己的舉重日）────────────────
+  // ⚠️ 抓舉／翻／挺標 volume:false，**跟 Howard 自己的算法一致**——
+  //    他在 Block3-WL 把股四算 6 組（＝前蹲 3 ＋ D5 哈克蹲 3），沒有把抓舉翻的 10 組算進去。
+  //    理由：5×2 跑 65-75% 是技術與爆發訓練，不是肌肥大刺激。
+  //    但它們**確實吃恢復**，所以 pattern 標 'olympic' 讓下游看得到它存在。
+  '抓舉': { muscle: 'quads', also: ['back', 'traps', 'delts_side'], pattern: 'olympic', volume: false },
+  'snatch': { muscle: 'quads', also: ['back', 'traps'], pattern: 'olympic', volume: false },
+  '翻': { muscle: 'quads', also: ['back', 'traps'], pattern: 'olympic', volume: false },
+  'squatclean': { muscle: 'quads', also: ['back', 'traps'], pattern: 'olympic', volume: false },
+  '分腿挺': { muscle: 'delts_front', also: ['triceps', 'quads'], pattern: 'olympic', volume: false },
+  'jerk': { muscle: 'delts_front', also: ['triceps', 'quads'], pattern: 'olympic', volume: false },
+  '挺舉': { muscle: 'delts_front', also: ['triceps', 'quads'], pattern: 'olympic', volume: false },
+  '空槓': { muscle: 'core', pattern: 'prep', volume: false, note: '空槓技術複習，不吃恢復也不算量' },
+  '徒手': { muscle: 'core', pattern: 'prep', volume: false },
+  'pvc': { muscle: 'core', pattern: 'prep', volume: false },
+  // 這兩個是真的輔助訓練，照常計入
+  '前蹲': { muscle: 'quads', also: ['core'], pattern: 'squat' },
+  'frontsquat': { muscle: 'quads', also: ['core'], pattern: 'squat' },
+  '抓舉握距rdl': { muscle: 'hamstrings', also: ['glutes', 'back'], pattern: 'hinge' },
+  'snatch-griprdl': { muscle: 'hamstrings', also: ['glutes', 'back'], pattern: 'hinge' },
+  '後三角孤立': { muscle: 'delts_rear', pattern: 'iso' },
+  '俯身側平舉': { muscle: 'delts_rear', pattern: 'iso' },
+  '纜繩單臂側平舉': { muscle: 'delts_side', pattern: 'iso' },
+
   // ── 靠資料反推判定的（2026-09-21）────────────────────
   //
   // 這幾個動作名是學員自己打的，光看名字分不出來。
@@ -406,6 +432,12 @@ const KEYS_BY_LEN = Object.keys(NORMALIZED_INDEX).sort((a, b) => b.length - a.le
 
 export interface Resolved { entry: ExerciseEntry; how: 'exact' | 'stripped' | 'alt' | 'substring' }
 
+/**
+ * 會「否定整個動作」的修飾語——出現就代表那不是一組負重訓練量。
+ * ⚠️ 必須在子字串比對**之前**檢查，見 resolveExercise 的註解。
+ */
+const VOLUME_NEGATING = ['空槓', '徒手', 'pvc', '滾筒放鬆']
+
 export function resolveExercise(raw: string): Resolved | null {
   const n = normalizeExerciseName(raw)
   if (NORMALIZED_INDEX[n]) return { entry: NORMALIZED_INDEX[n], how: 'exact' }
@@ -417,6 +449,15 @@ export function resolveExercise(raw: string): Resolved | null {
   // 「A 或 B」「A / B」→ 取第一個選項（教練寫的第一個通常是主推的那個）
   for (const cand of stripped.split(/或|\/|、/).map((x) => x.trim()).filter(Boolean)) {
     if (NORMALIZED_INDEX[cand]) return { entry: NORMALIZED_INDEX[cand], how: 'alt' }
+  }
+
+  // ⭐ 修飾語優先於動作名。
+  // ⚠️ 2026-09-21 抓到的 bug：「空槓過頭深蹲（全蹲版的體檢）」被子字串比對到「深蹲」
+  //    （「空槓」跟「深蹲」都是 2 個字，長度平手時順序是隨機的），
+  //    結果 Howard 舉重日的 5 組空槓體檢被算成真的股四訓練量（股四 6 → 13）。
+  //    這類前綴會**否定整個動作的性質**，所以要在子字串比對之前先攔。
+  for (const mod of VOLUME_NEGATING) {
+    if (stripped.includes(mod)) return { entry: NORMALIZED_INDEX[mod], how: 'substring' }
   }
 
   // 最後：找最長的、包含在名字裡的 key

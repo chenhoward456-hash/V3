@@ -173,3 +173,21 @@ describe('⚠️ 2026-09-21 稽核修掉的三件', () => {
     expect(indirectVolume(items).delts_front).toBe(4)
   })
 })
+
+describe('⚠️ 修飾語優先於動作名', () => {
+  it('「空槓過頭深蹲」不是一組深蹲——空槓要贏過深蹲（兩者都 2 個字，靠長度排序會隨機）', () => {
+    const e = resolveExercise('空槓過頭深蹲（全蹲版的體檢）')!.entry
+    expect(e.volume).toBe(false)
+  })
+  it('「空槓抓舉第一拉 或 過頭深蹲」也一樣不計入', () => {
+    expect(resolveExercise('空槓抓舉第一拉 或 過頭深蹲（技術偷塞）')!.entry.volume).toBe(false)
+  })
+  it('但真的有負重的前蹲照算', () => {
+    expect(resolveExercise('前蹲 Front Squat')!.entry.muscle).toBe('quads')
+    expect(resolveExercise('前蹲 Front Squat')!.entry.volume).toBeUndefined()
+  })
+  it('⭐ 奧林匹克舉重不計入肌肥大量（跟 Howard 自己的算法一致）', () => {
+    expect(resolveExercise('抓舉（全蹲接 · 起手從膝上懸垂）')!.entry.volume).toBe(false)
+    expect(resolveExercise('翻（全蹲接 squat clean）')!.entry.pattern).toBe('olympic')
+  })
+})
