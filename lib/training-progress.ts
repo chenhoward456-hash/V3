@@ -106,12 +106,20 @@ const EXERCISE_ALIASES: [RegExp, string][] = [
   [/row|划船/, '划船'],
   [/lat\s*pull|pull\s*down|下拉|引體|pull\s*up|chin/, '背部下拉/引體'],
   [/curl|彎舉|二頭/, '二頭彎舉'],
-  [/tricep|三頭|下壓|push\s*down|dip|撐體/, '三頭'],
+  // ⚠️ 2026-09-21：原本的 /下壓/ 會吃掉「直臂下壓」——那是背闊的單關節動作，
+  //    被歸成三頭，1RM 進程就記到錯的動作上。lib/volume-audit.ts 記的是 back，兩套打架。
+  //    改成只吃「三頭下壓」這種帶部位的寫法。
+  //    ⭐ 2026-09-21 Howard 裁決：撐體算胸，不是三頭 → dip/撐體 從這條移除，
+  //    讓它自成一個動作追 1RM（撐體跟三頭下壓的負重量級本來就差一個數量級，併在一起 1RM 沒意義）。
+  [/tricep|三頭|三頭下壓|push\s*down/, '三頭'],
   [/lateral|側平舉/, '側平舉'],
   [/leg\s*press|腿推/, '腿推'],
   [/leg\s*ext|腿伸|extension/, '腿伸'],
   [/leg\s*curl|腿彎|腿後/, '腿後彎舉'],
-  [/fly|飛鳥|夾胸|machine\s*fly/, '飛鳥'],
+  // ⭐ 2026-09-21 Howard 裁決：「飛鳥」算肩、「夾胸」算胸 → 拆成兩條，
+  //    夾胸排前面先比對（「反向飛鳥夾胸超級組」那種寫法才不會被飛鳥先吃走）。
+  [/夾胸|pec\s*deck/, '夾胸'],
+  [/fly|飛鳥/, '飛鳥（肩）'],
   [/hip\s*ab|髖外展/, '髖外展'],
 ]
 export function canonicalExercise(raw: string): string {

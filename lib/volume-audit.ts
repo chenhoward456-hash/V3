@@ -103,7 +103,7 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   'dips': { muscle: 'chest', also: ['triceps'], pattern: 'h_push' },
   '雙槓撐體': { muscle: 'chest', also: ['triceps'], pattern: 'h_push' },
   '機械夾胸': { muscle: 'chest', pattern: 'iso' },
-  '機械飛鳥': { muscle: 'chest', pattern: 'iso' },
+  '機械飛鳥': { muscle: 'delts_side', pattern: 'iso', note: '同「飛鳥」裁決。⚠️「機械」「器械」是同義詞，不能一個判胸一個判肩' },
   'machinefly': { muscle: 'chest', pattern: 'iso' },
   '反向飛鳥夾胸超級組（胸）': { muscle: 'chest', pattern: 'iso' },
 
@@ -153,6 +153,11 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '坐姿槓鈴肩推': { muscle: 'delts_front', also: ['triceps'], pattern: 'v_push', overhead: true },
   '側平舉': { muscle: 'delts_side', pattern: 'iso' },
   '側飛鳥': { muscle: 'delts_side', pattern: 'iso' },
+  '反向飛鳥': { muscle: 'delts_rear', pattern: 'iso' },
+  '後飛鳥': { muscle: 'delts_rear', pattern: 'iso' },
+  '上斜飛鳥': { muscle: 'chest', pattern: 'iso', note: '躺姿有角度＝胸，不吃「飛鳥＝肩」的預設' },
+  '平板飛鳥': { muscle: 'chest', pattern: 'iso' },
+  '啞鈴飛鳥': { muscle: 'chest', pattern: 'iso', note: '慣例指躺姿胸飛鳥' },
   '啞鈴側平舉': { muscle: 'delts_side', pattern: 'iso' },
   '啞鈴坐姿側平舉': { muscle: 'delts_side', pattern: 'iso' },
   '繩索側平舉': { muscle: 'delts_side', pattern: 'iso' },
@@ -279,6 +284,16 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '平板臥推': { muscle: 'chest', also: ['delts_front', 'triceps'], pattern: 'h_push' },
   '器械水平胸推': { muscle: 'chest', also: ['delts_front', 'triceps'], pattern: 'h_push' },
   '下胸撐體': { muscle: 'chest', also: ['triceps'], pattern: 'h_push' },
+  '器械上胸': { muscle: 'chest', pattern: 'h_push', note: '上斜器械推，上胸角度' },
+  // ⭐ Sissy squat：膝往前、髖保持伸展，所以股直肌（唯一跨髖的股四頭）在拉長端被練到。
+  //    跟腿屈伸不同——腿屈伸是屈髖位，股直肌已經縮短，吃不到那一段。
+  'sissy squat': { muscle: 'quads', pattern: 'iso', note: '髖伸展位的股四，股直肌拉長端' },
+  '西西深蹲': { muscle: 'quads', pattern: 'iso', note: '同 sissy squat' },
+  // ⭐ Howard 2026-09-21 裁決：主部位＝臀。
+  // ⚠️ Escamilla 2000/2002 測出相撲的膝伸力矩比傳統硬舉大、髖伸力矩小，內收肌活化也高——
+  //    所以它的股四參與比傳統硬舉高。排在「腿後日」時，那天的膕繩量會比標題看起來少。
+  '相撲硬舉': { muscle: 'glutes', also: ['quads', 'adductors', 'hamstrings', 'back'], pattern: 'hinge',
+    note: '裁決＝臀。股四參與比傳統硬舉高（Escamilla），排腿後日要注意膕繩量被高估' },
   '坐姿夾胸': { muscle: 'chest', pattern: 'iso' },
   '滑輪下夾胸': { muscle: 'chest', pattern: 'iso' },
   '三頭臥姿過頭伸': { muscle: 'triceps', pattern: 'iso', overhead: true },
@@ -388,9 +403,11 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   // 所以比較可能是窄握臥推（補三頭）而不是窄握下拉。
   '窄握': { muscle: 'chest', also: ['triceps'], pattern: 'h_push', unsure: true, note: '25kg×12；同日無背部動作 → 判窄握臥推。若其實是窄握下拉要改成 back/v_pull' },
   // 7.5kg×15，同一天有啞鈴胸推＋器械胸推＋槓鈴肩推＋三頭。
-  // ⚠️ 這學員在別天會明確寫「側飛鳥」「機械夾胸」，代表他自己會區分；
-  //    單寫「飛鳥」＋已有兩個胸推 → 判為胸的單關節收尾。但 7.5kg×15 做側平舉也完全合理。
-  '飛鳥': { muscle: 'chest', pattern: 'iso', unsure: true, note: '7.5kg×15；同日兩個胸推 → 判胸飛鳥。也可能是側平舉（肩中束）' },
+  // ⭐ 2026-09-21 Howard 裁決：單寫「飛鳥」一律算肩（中束）。
+  //    原本判胸（那個學員 7.5kg×15、同日已有兩個胸推）。改過來之後，
+  //    ⚠️ 既有資料的胸組數會降、肩中束會升——這是修正，不是漂移。
+  //    有方向限定詞的走自己的 entry：夾胸→胸、上斜/平板飛鳥→胸、反向/後飛鳥→肩後。
+  '飛鳥': { muscle: 'delts_side', pattern: 'iso', note: 'Howard 2026-09-21 裁決：單寫飛鳥＝肩' },
 }
 
 /** 正規化：全形→半形、去空白、小寫。查表兩邊都要過這支。 */

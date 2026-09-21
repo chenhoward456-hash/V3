@@ -148,9 +148,15 @@ describe('map 本身的健康檢查', () => {
       expect(v.pattern, k).toBeTruthy()
     }
   })
-  it('⚠️ 還沒判乾淨的動作不要越來越多——目前只剩 2 個', () => {
-    const unsure = Object.entries(EXERCISE_MUSCLE_MAP).filter(([, v]) => v.unsure)
-    expect(unsure.length).toBeLessThanOrEqual(2)
+  // ⚠️ 2026-09-21 改成具名白名單。原本是「不超過 2 個」，但一個純數字的上限
+  //    只會逼下一個人去放寬它。改成點名——要加新的 unsure，就得同時把它寫進這裡，
+  //    等於強迫它出現在 Howard 看得到的地方。
+  it('⚠️ 待裁決的動作必須具名登記，不能默默變多', () => {
+    const PENDING = [
+      '窄握',  // 窄握臥推（胸/三頭）vs 窄握下拉（背）——還沒裁決
+    ].sort()
+    const unsure = Object.entries(EXERCISE_MUSCLE_MAP).filter(([, v]) => v.unsure).map(([k]) => k).sort()
+    expect(unsure).toEqual(PENDING)
   })
 })
 
@@ -189,5 +195,31 @@ describe('⚠️ 修飾語優先於動作名', () => {
   it('⭐ 奧林匹克舉重不計入肌肥大量（跟 Howard 自己的算法一致）', () => {
     expect(resolveExercise('抓舉（全蹲接 · 起手從膝上懸垂）')!.entry.volume).toBe(false)
     expect(resolveExercise('翻（全蹲接 squat clean）')!.entry.pattern).toBe('olympic')
+  })
+})
+
+// ⭐ 2026-09-21 Howard 的三項裁決。鎖起來，免得之後有人「覺得怪」就改回去。
+describe('Howard 2026-09-21 裁決', () => {
+  it('撐體算胸，不是三頭', () => {
+    for (const n of ['雙槓撐體', '下胸撐體', 'dips']) {
+      expect(resolveExercise(n)?.entry.muscle, n).toBe('chest')
+    }
+  })
+  it('單寫「飛鳥」算肩中束；有方向詞的走自己的 entry', () => {
+    expect(resolveExercise('飛鳥')?.entry.muscle).toBe('delts_side')
+    expect(resolveExercise('器械飛鳥')?.entry.muscle).toBe('delts_side')
+    expect(resolveExercise('機械飛鳥')?.entry.muscle).toBe('delts_side')
+    // 方向詞優先，別被裁決誤傷
+    expect(resolveExercise('反向飛鳥')?.entry.muscle).toBe('delts_rear')
+    expect(resolveExercise('後飛鳥')?.entry.muscle).toBe('delts_rear')
+    expect(resolveExercise('上斜飛鳥')?.entry.muscle).toBe('chest')
+    expect(resolveExercise('坐姿夾胸')?.entry.muscle).toBe('chest')
+    expect(resolveExercise('滑輪下夾胸')?.entry.muscle).toBe('chest')
+  })
+  it('相撲硬舉算臀，但 also 要留著股四（排腿後日時膕繩量會被高估）', () => {
+    const e = resolveExercise('相撲硬舉')?.entry
+    expect(e?.muscle).toBe('glutes')
+    expect(e?.also).toContain('quads')
+    expect(e?.unsure).toBeUndefined()
   })
 })
