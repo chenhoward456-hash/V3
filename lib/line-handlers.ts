@@ -97,7 +97,23 @@ export async function getClientByLineId(lineUserId: string, supabase: SupabaseCl
 // Quick record: Weight
 // ═══════════════════════════════════════
 
-export async function handleQuickWeight(replyToken: string, client: LineClient | null, weight: number, supabase: SupabaseClient) {
+/** 裸數字記體重時，跟上一筆的落差超過這個值就不記、改回問。單位 kg。 */
+export const WEIGHT_JUMP_MAX = 8
+
+/**
+ * ⚠️ 2026-09-21：`source` 是為了一個真實事故加的。
+ *    bot 提示「順手記個蛋白質更準 👉 打『蛋白 180』」，學員只打了「180」，
+ *    裸數字路由（30–200 一律當體重）把它記成 180 kg——他真實體重 84.9，
+ *    前一筆 86.0，卡片顯示「📈 比上次 +94.0 kg」。
+ *    → 'bare'（裸數字）要過離譜變化的守門；'explicit'（打「體重 180」）是明確意圖，直接記。
+ */
+export async function handleQuickWeight(
+  replyToken: string,
+  client: LineClient | null,
+  weight: number,
+  supabase: SupabaseClient,
+  source: 'bare' | 'explicit' = 'explicit',
+) {
   if (!client) {
     await replyMessage(replyToken, [
       {
@@ -115,6 +131,40 @@ export async function handleQuickWeight(replyToken: string, client: LineClient |
   }
 
   const today = getTaiwanDate()
+
+  // ⚠️ 查上一筆要在寫入「之前」——原本是先寫再查，所以離譜的數字已經進 DB 了才算得出落差。
+  const { data: prev } = await supabase
+    .from('body_composition')
+    .select('weight, date')
+    .eq('client_id', client.id)
+    .lt('date', today)
+    .order('date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  // ⭐ 裸數字的離譜變化守門。
+  //    人類體重一天不會變 8 kg（脫水＋充碳的極端操作也到不了），
+  //    所以落差超過這個數，幾乎一定是把別的東西打成體重了（蛋白 g、熱量、水量 ml）。
+  //    ⚠️ 只擋裸數字：明確打「體重 180」是清楚的意圖，不要擋他。
+  if (source === 'bare' && prev?.weight != null) {
+    const jump = Math.abs(weight - Number(prev.weight))
+    if (jump > WEIGHT_JUMP_MAX) {
+      await replyMessage(replyToken, [{
+        type: 'text',
+        text:
+          `⚠️ 這筆先不記——你上次是 ${Number(prev.weight).toFixed(1)} kg（${prev.date}），這個數字差了 ${jump.toFixed(1)} kg。\n\n` +
+          '要記哪一個？直接打完整的：\n' +
+          `· 體重 ${weight}\n` +
+          `· 蛋白 ${weight}\n` +
+          `· 熱量 ${weight}`,
+        quickReply: {
+          items: [qr(`體重 ${weight}`, `體重 ${weight}`), qr(`蛋白 ${weight}`, `蛋白 ${weight}`), qr(`熱量 ${weight}`, `熱量 ${weight}`)],
+        },
+      }])
+      return
+    }
+  }
+
   const { error } = await supabase
     .from('body_composition')
     .upsert({ client_id: client.id, date: today, weight }, { onConflict: 'client_id,date' })
@@ -124,15 +174,6 @@ export async function handleQuickWeight(replyToken: string, client: LineClient |
     await replyMessage(replyToken, [{ type: 'text', text: '記錄失敗，請稍後再試' }])
     return
   }
-
-  const { data: prev } = await supabase
-    .from('body_composition')
-    .select('weight, date')
-    .eq('client_id', client.id)
-    .lt('date', today)
-    .order('date', { ascending: false })
-    .limit(1)
-    .maybeSingle()
 
   let msg = `✅ 已記錄體重：${weight} kg`
   if (prev?.weight) {
@@ -316,7 +357,9 @@ export async function handleQuickCalories(replyToken: string, client: LineClient
     const sign = diff >= 0 ? '+' : ''
     msg += `（目標 ${target}，${sign}${diff}）`
   }
-  msg += '\n\n順手記個蛋白質更準 👉 打「蛋白 180」'
+  // ⚠️ 範例數字會被照抄。原本寫「打『蛋白 180』」，學員只打了「180」，
+  //    被裸數字路由當成體重 180 kg。把「蛋白」兩個字的必要性寫進去。
+  msg += '\n\n順手記個蛋白質更準 👉 打「蛋白 150」（要帶「蛋白」兩個字，只打數字會被當成體重）'
 
   await replyMessage(replyToken, [{ type: 'text', text: msg, quickReply: QR_AFTER_RECORD }])
 }

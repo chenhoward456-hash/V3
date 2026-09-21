@@ -861,7 +861,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   if (bareNumberMatch && client) {
     const weight = parseFloat(bareNumberMatch[1])
     if (weight >= 30 && weight <= 200) {
-      await handleQuickWeight(event.replyToken, client, weight, supabase)
+      await handleQuickWeight(event.replyToken, client, weight, supabase, 'bare')
       return
     }
   }
