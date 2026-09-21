@@ -271,3 +271,35 @@ describe('findGaps / findImbalances', () => {
     expect(im!.why).not.toContain('胸長期壓過背')
   })
 })
+
+/**
+ * ⭐ 英文速記。2026-09-21 拿這支去解析一份教練手寫的課表，
+ *    57 組裡 30 組對不到，全敗在縮寫（SA / DB / BB / BP / SP / RDL）。
+ *    逐個加 entry 沒用——組合是乘法，展開才是解法。
+ */
+describe('英文速記展開', () => {
+  const m = (n: string) => resolveExercise(n)?.entry.muscle
+  it('器材縮寫', () => {
+    expect(m('DB BP')).toBe('chest')          // 啞鈴臥推
+    expect(m('BB RDL')).toBe('hamstrings')    // 槓鈴羅馬尼亞硬舉
+    expect(m('器 SP')).toBe('delts_front')    // 器械肩推
+  })
+  it('單邊 + 器材 + 動作的組合', () => {
+    expect(m('SA DB Row')).toBe('back')       // 單臂啞鈴划船
+    expect(m('SA DB RDL')).toBe('hamstrings')
+    expect(m('SA Lunge')).toBe('quads')
+  })
+  it('⚠️ 展開要在去空白之前——"sa db rdl" 去掉空白就切不出縮寫了', () => {
+    expect(normalizeExerciseName('SA DB RDL')).toBe('sadbrdl')
+    expect(m('SA DB RDL')).toBe('hamstrings')  // 仍然要對得到
+  })
+  it('⚠️ 詞邊界：sa/bb/dl 不能咬進別的名字裡', () => {
+    expect(m('sissy squat')).toBe('quads')     // 不能被 /\bsa\b/ 或 /\bdl\b/ 影響
+    expect(m('深蹲')).toBe('quads')
+  })
+  it('⚠️ 羅馬椅是髖伸不是脊椎伸——主部位臀，不是豎脊肌', () => {
+    const e = resolveExercise('羅馬椅')?.entry
+    expect(e?.muscle).toBe('glutes')
+    expect(e?.pattern).toBe('hinge')
+  })
+})

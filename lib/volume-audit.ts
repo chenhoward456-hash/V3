@@ -197,6 +197,16 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   'legpress': { muscle: 'quads', also: ['glutes'], pattern: 'squat' },
   'legextension': { muscle: 'quads', pattern: 'iso' },
   '分腿蹲': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
+  '弓步': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
+  '弓步蹲': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
+  // ⚠️ 羅馬椅（45 度背伸展）主部位是臀＋腿後，不是豎脊肌——
+  //    脊椎保持中立、動作發生在髖，是髖伸不是脊椎伸。
+  '羅馬椅': { muscle: 'glutes', also: ['hamstrings', 'back'], pattern: 'hinge' },
+  '背伸展': { muscle: 'glutes', also: ['hamstrings', 'back'], pattern: 'hinge' },
+  '鳥狗划船': { muscle: 'back', also: ['core'], pattern: 'h_pull', note: '四足跪姿單臂划船，抗旋轉' },
+  '水平外展划船': { muscle: 'back', also: ['delts_rear'], pattern: 'h_pull' },
+  '下拉': { muscle: 'back', also: ['biceps'], pattern: 'v_pull', overhead: true },
+  '分動下拉': { muscle: 'back', also: ['biceps'], pattern: 'v_pull', overhead: true },
   '保加利亞': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
   '保加利亞蹲': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
   '保加利亞分腿蹲（左側focus）': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
@@ -456,6 +466,41 @@ export interface Resolved { entry: ExerciseEntry; how: 'exact' | 'stripped' | 'a
  */
 const VOLUME_NEGATING = ['空槓', '徒手', 'pvc', '滾筒放鬆']
 
+
+/**
+ * 健身圈的英文速記 → 中文。
+ *
+ * ⚠️ 2026-09-21 加的。拿這支去解析一份教練手寫的課表，57 組裡 **30 組對不到**，
+ *    全部敗在縮寫：`SA DB RDL`、`BB RDL`、`DB BP`、`器 SP`、`SA DB Row`。
+ *    逐個加 entry 沒用——組合是乘法（SA × DB × RDL），展開才是解法。
+ *
+ * ⚠️ 必須在 normalizeExerciseName **之前**跑：那支會把空白去掉，
+ *    去掉之後 "sa db rdl" 變成 "sadbrdl"，就切不出縮寫了。
+ * ⚠️ 用 \b 詞邊界，不然 "sa" 會咬進別的英文動作名裡。
+ */
+const ABBREV: [RegExp, string][] = [
+  // 器材
+  [/\bbb\b/gi, '槓鈴'], [/\bdb\b/gi, '啞鈴'], [/\bkb\b/gi, '壺鈴'],
+  [/\bsmith\b/gi, '史密斯'], [/\bcable\b/gi, '纜繩'],
+  // 單邊
+  [/\bsa\b/gi, '單臂'], [/\bsl\b/gi, '單腿'], [/\bua\b/gi, '單臂'],
+  // 動作（長的先展開，免得 rdl 被 dl 吃掉）
+  [/\brdl\b/gi, '羅馬尼亞硬舉'], [/\bohp\b/gi, '肩推'],
+  [/\bbp\b/gi, '臥推'], [/\bsp\b/gi, '肩推'], [/\bdl\b/gi, '硬舉'],
+  [/\brow\b/gi, '划船'], [/\bcurl\b/gi, '彎舉'], [/\blunge\b/gi, '弓步'],
+  [/\bsquat\b/gi, '深蹲'], [/\bpress\b/gi, '推'], [/\bfly\b/gi, '飛鳥'],
+  [/\bpulldown\b/gi, '滑輪下拉'], [/\bpullup\b/gi, '引體向上'],
+  [/\bdip(?:s)?\b/gi, '雙槓撐體'], [/\bcalf\s*raise\b/gi, '提踵'],
+  [/\bhip\s*thrust\b/gi, '臀推'], [/\bleg\s*press\b/gi, '腿推'],
+  [/\bleg\s*ext(?:ension)?\b/gi, '腿伸'], [/\bleg\s*curl\b/gi, '腿彎舉'],
+]
+
+export function expandAbbrev(raw: string): string {
+  let out = raw
+  for (const [re, zh] of ABBREV) out = out.replace(re, zh)
+  return out
+}
+
 export function resolveExercise(raw: string): Resolved | null {
   const n = normalizeExerciseName(raw)
   if (NORMALIZED_INDEX[n]) return { entry: NORMALIZED_INDEX[n], how: 'exact' }
@@ -481,6 +526,14 @@ export function resolveExercise(raw: string): Resolved | null {
   // 最後：找最長的、包含在名字裡的 key
   for (const k of KEYS_BY_LEN) {
     if (k.length >= 2 && stripped.includes(k)) return { entry: NORMALIZED_INDEX[k], how: 'substring' }
+  }
+
+  // ⭐ 全部沒中 → 把英文速記展開成中文再跑一次（"SA DB RDL" → "單臂啞鈴羅馬尼亞硬舉"）。
+  //    ⚠️ 放在最後：展開會改寫字串，先讓原字串有完整的比對機會，避免誤傷。
+  const expanded = expandAbbrev(raw)
+  if (expanded !== raw) {
+    const hit = resolveExercise(expanded)
+    if (hit) return hit
   }
   return null
 }
