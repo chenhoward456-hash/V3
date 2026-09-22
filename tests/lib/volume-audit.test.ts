@@ -305,6 +305,17 @@ describe('英文速記展開', () => {
     expect(m('face pull')).toBe('delts_rear')     // 不是被 pull 相關的吃掉
     expect(m('pull up')).toBe('back')
   })
+  // ⛔ 2026-09-22 第二次同類回歸：`reverse fly` 被 /\bfly\b/ 展開成「reverse 飛鳥」，
+  //    子字串命中「飛鳥」→ 判成**肩中束**（2026-09-21 裁決飛鳥＝肩中）。實際是肩**後**束，方向相反。
+  it('⛔ reverse / rear delt fly 是肩後束，不能被 fly 先吃掉', () => {
+    expect(m('reverse fly')).toBe('delts_rear')
+    expect(m('M Reverse Fly')).toBe('delts_rear')
+    expect(m('rear delt fly')).toBe('delts_rear')
+    expect(m('rear delt')).toBe('delts_rear')
+    // 沒有方向詞的仍然是肩中（裁決不變）
+    expect(m('飛鳥')).toBe('delts_side')
+    expect(m('器械飛鳥')).toBe('delts_side')
+  })
   it('⚠️ 詞邊界：sa/bb/dl 不能咬進別的名字裡', () => {
     expect(m('sissy squat')).toBe('quads')     // 不能被 /\bsa\b/ 或 /\bdl\b/ 影響
     expect(m('深蹲')).toBe('quads')
