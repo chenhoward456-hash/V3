@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import PlanHealthCheck from '@/components/admin/PlanHealthCheck'
 import { calcRecommendedStageWeight, type RecommendedStageWeightResult, calculateInitialTargets } from '@/lib/nutrition-engine'
 import { minguoToAD, adToMinguo, ageFromBirthYear } from '@/utils/age'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
@@ -2963,6 +2964,10 @@ export default function ClientEditor() {
                     </p>
                   </div>
                 </div>
+
+                {/* ⭐ 課表健檢：設完當下就看到這份漏了什麼。
+                     放在預覽「之前」——它不用展開就該看到，而預覽是要點開的。 */}
+                {client.training_plan && <PlanHealthCheck plan={client.training_plan} />}
 
                 {/* 預覽目前的訓練計畫 */}
                 {client.training_plan && (

@@ -250,9 +250,40 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '農夫': { muscle: 'traps', also: ['forearms', 'core'], pattern: 'carry' },
   '農夫走': { muscle: 'traps', also: ['forearms', 'core'], pattern: 'carry' },
   '農夫走路': { muscle: 'traps', also: ['forearms', 'core'], pattern: 'carry' },
+  // ⚠️ 2026-09-23：林宥任的課表（籃球運動表現 · 胸椎過直）用到的功能性動作。
+  //    這些原本全進 unresolved，讓課表健檢的組數整批偏低。
+  '熊爬': { muscle: 'core', also: ['delts_front'], pattern: 'carry', note: '四足負重移動，抗旋轉＋肩胛前突' },
+  'bear crawl': { muscle: 'core', also: ['delts_front'], pattern: 'carry' },
+  '死蟲式': { muscle: 'core', pattern: 'iso', note: '抗伸展，腰貼地不拱' },
+  'dead bug': { muscle: 'core', pattern: 'iso' },
+  // ⭐ 繩索前推（serratus punch）主練前鋸肌。Muscle 型別沒有前鋸肌這一項——
+  //    它的功能是肩胛前突（軀幹與肩帶的穩定），歸 core 比歸 chest 準。
+  '繩索前推': { muscle: 'core', also: ['chest'], pattern: 'iso', note: '前鋸肌／肩胛前突' },
+  '肩胛前推': { muscle: 'core', pattern: 'prep', volume: false, note: '四足跪姿呼吸的一部分，是啟動不是訓練量' },
+  '上斜啞鈴推': { muscle: 'delts_front', also: ['chest', 'triceps'], pattern: 'v_push', note: '斜上 45-60 度，不是垂直過頭肩推' },
 
   // ── 不計入肌肥大組數 ────────────────────────────────
   '有氧': { muscle: 'core', pattern: 'cardio', volume: false },
+  // ⚠️ 2026-09-23：有氧器材原本只收了「有氧」兩個字，教練實際會寫器材名。
+  //    沒收錄的話它們會進 unresolved，讓課表健檢報一堆假警報。
+  //    全部 volume:false —— 不計入肌肥大組數，但要看得到被排除幾組。
+  '跑步機': { muscle: 'core', pattern: 'cardio', volume: false },
+  '跑步': { muscle: 'core', pattern: 'cardio', volume: false },
+  '慢跑': { muscle: 'core', pattern: 'cardio', volume: false },
+  '快走': { muscle: 'core', pattern: 'cardio', volume: false },
+  '滑步機': { muscle: 'core', pattern: 'cardio', volume: false },
+  '橢圓機': { muscle: 'core', pattern: 'cardio', volume: false },
+  '飛輪': { muscle: 'core', pattern: 'cardio', volume: false },
+  '腳踏車': { muscle: 'core', pattern: 'cardio', volume: false },
+  '划船機': { muscle: 'core', pattern: 'cardio', volume: false },
+  '樓梯機': { muscle: 'core', pattern: 'cardio', volume: false },
+  '爬坡機': { muscle: 'core', pattern: 'cardio', volume: false },
+  '登階機': { muscle: 'core', pattern: 'cardio', volume: false },
+  '游泳': { muscle: 'core', pattern: 'cardio', volume: false },
+  '跳繩': { muscle: 'core', pattern: 'cardio', volume: false },
+  'zone2': { muscle: 'core', pattern: 'cardio', volume: false },
+  'liss': { muscle: 'core', pattern: 'cardio', volume: false },
+  'hiit': { muscle: 'core', pattern: 'cardio', volume: false },
   '中強度有氧（跑步機快走/騎車/划船機）': { muscle: 'core', pattern: 'cardio', volume: false },
   '90/90呼吸+左側承重（leftaic暖身）': { muscle: 'core', pattern: 'prep', volume: false },
   '90/90呼吸+左髖內旋啟動（leftaic暖身）': { muscle: 'core', pattern: 'prep', volume: false },
@@ -551,10 +582,25 @@ export function resolveExercise(raw: string): Resolved | null {
     if (stripped.includes(mod)) return { entry: NORMALIZED_INDEX[mod], how: 'substring' }
   }
 
-  // 最後：找最長的、包含在名字裡的 key
+  // 最後：找最長的、包含在名字裡的 key。
+  //
+  // ⚠️ 2026-09-23 修：長度不是唯一的優先序，**「算不算訓練量」要先比**。
+  //    真實案例：「單腳站提踵」命中兩個 key ——
+  //      單腳站（3 字，core/prep/volume:false，某學員的徒手平衡動作）
+  //      提踵  （2 字，calves）
+  //    只比長度的話「單腳站」贏，一組小腿訓練就被吞成「不計入量」，
+  //    林宥任的課表因此報成「小腿 0 組」。
+  //
+  //    區別在於：`空槓`／`徒手` 這類**否定動作性質**的前綴已經在 VOLUME_NEGATING
+  //    先攔掉了；剩下的像「單腳站」只是**姿勢**，不該蓋過後面的實質動作。
+  //    → 先在「算得進訓練量」的命中裡取最長，都沒有才退回不計量的。
+  let fallback: string | null = null
   for (const k of KEYS_BY_LEN) {
-    if (k.length >= 2 && stripped.includes(k)) return { entry: NORMALIZED_INDEX[k], how: 'substring' }
+    if (k.length < 2 || !stripped.includes(k)) continue
+    if (countsAsVolume(NORMALIZED_INDEX[k])) return { entry: NORMALIZED_INDEX[k], how: 'substring' }
+    if (!fallback) fallback = k
   }
+  if (fallback) return { entry: NORMALIZED_INDEX[fallback], how: 'substring' }
 
   // ⭐ 全部沒中 → 把英文速記展開成中文再跑一次（"SA DB RDL" → "單臂啞鈴羅馬尼亞硬舉"）。
   //    ⚠️ 放在最後：展開會改寫字串，先讓原字串有完整的比對機會，避免誤傷。
