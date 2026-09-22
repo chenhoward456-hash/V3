@@ -153,6 +153,12 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '坐姿槓鈴肩推': { muscle: 'delts_front', also: ['triceps'], pattern: 'v_push', overhead: true },
   '側平舉': { muscle: 'delts_side', pattern: 'iso' },
   '側飛鳥': { muscle: 'delts_side', pattern: 'iso' },
+  '前平舉': { muscle: 'delts_front', pattern: 'iso' },
+  '正面平舉': { muscle: 'delts_front', pattern: 'iso' },
+  '三頭伸展': { muscle: 'triceps', pattern: 'iso' },
+  '三頭伸': { muscle: 'triceps', pattern: 'iso' },
+  '反向蝴蝶機': { muscle: 'delts_rear', pattern: 'iso' },
+  '肩後束': { muscle: 'delts_rear', pattern: 'iso' },
   '反向飛鳥': { muscle: 'delts_rear', pattern: 'iso' },
   '後飛鳥': { muscle: 'delts_rear', pattern: 'iso' },
   '上斜飛鳥': { muscle: 'chest', pattern: 'iso', note: '躺姿有角度＝胸，不吃「飛鳥＝肩」的預設' },
@@ -496,6 +502,11 @@ const ABBREV: [RegExp, string][] = [
   [/\bcalf\s*raise\b/gi, '提踵'], [/\bhip\s*thrust\b/gi, '臀推'],
   [/\bhip\s*ab(?:duction)?\b/gi, '髖外展'], [/\bhip\s*ad(?:duction)?\b/gi, '髖內收'],
   [/\bface\s*pull\b/gi, '面拉'], [/\bpull\s*over\b/gi, '臥姿屈臂上拉'],
+  // ⚠️ reverse fly / rear delt fly 一定要排在 /\bfly\b/ 之前，
+  //    不然會被展開成「reverse 飛鳥」→ 子字串命中「飛鳥」→ 判成肩中束（Howard 2026-09-21 裁決飛鳥＝肩中）。
+  //    實際上那是肩**後**束，方向完全相反。
+  [/\b(?:reverse|rear)\s*(?:delt\s*)?fly\b/gi, '反向飛鳥'],
+  [/\brear\s*delt\b/gi, '肩後束'],
   [/\bpull\s*up\b/gi, '引體向上'], [/\bchin\s*up\b/gi, '引體向上'],
   [/\blat\s*pull\s*down\b/gi, '滑輪下拉'],
   // ── 單字：器材 ──
