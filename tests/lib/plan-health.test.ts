@@ -190,3 +190,51 @@ describe('⛔ 姿勢前綴不可以吃掉實質動作', () => {
     expect(h.excludedSets).toBe(10)
   })
 })
+
+/**
+ * ⭐ 第二把尺：動作模式覆蓋。
+ *
+ * 部位覆蓋（10–20 組／12 個部位）是**肌肥大**的標準。拿它量運動表現課表
+ * 會得到一堆假警報 —— 林宥任的籃球課表 3 天、週 47 組，12 個部位全低於 10 組、
+ * 肩中束 0，用部位的尺看像是漏洞百出；但八種基本動作模式全覆蓋。
+ * 兩個判斷都對，只是在量不同的東西。
+ */
+describe('動作模式覆蓋（第二把尺）', () => {
+  it('⭐ 運動表現課表：部位有缺口，但八種模式全覆蓋', () => {
+    const h = checkPlanHealth(plan([
+      { label: 'A 膝主導', ex: [['鐘擺蹲', 4], ['胸推機', 3], ['對握滑輪下拉', 3], ['熊爬', 3]] },
+      { label: 'B 髖主導', ex: [['臀推機', 4], ['上斜啞鈴推', 3], ['坐姿划船機', 3]] },
+      { label: 'C 單邊', ex: [['後腳抬高分腿蹲', 3], ['農夫走路', 3]] },
+    ]))
+    expect(h.patternsCovered).toBe(8)
+    expect(h.patterns.every((p) => p.sets > 0)).toBe(true)
+    // 同一份課表，部位的尺會報缺口 —— 兩把尺本來就會給出不同判斷
+    expect(h.gaps.length).toBeGreaterThan(0)
+  })
+
+  it('純健美分化：部位漂亮，但缺負重行走／單邊', () => {
+    const h = checkPlanHealth(plan([
+      { label: '推', ex: [['平板臥推', 5], ['啞鈴肩推', 4], ['側平舉', 4], ['三頭下壓', 4]] },
+      { label: '拉', ex: [['引體向上', 5], ['坐姿划船', 4], ['反向飛鳥', 4], ['二頭彎舉', 4]] },
+      { label: '腿', ex: [['深蹲', 5], ['腿彎舉', 4], ['臀推', 4], ['提踵', 4], ['捲腹', 4]] },
+    ]))
+    expect(h.patterns.find((p) => p.pattern === 'carry')?.sets).toBe(0)
+    expect(h.patterns.find((p) => p.pattern === 'lunge')?.sets).toBe(0)
+    expect(h.patternsCovered).toBeLessThan(8)
+    // ⚠️ 但那不是錯 —— 健美課表缺負重行走就像籃球課表缺肩中束一樣，不該用同一把尺判
+  })
+
+  it('⚠️ 單關節不算模式，但要看得到', () => {
+    const h = checkPlanHealth(plan([
+      { label: 'x', ex: [['深蹲', 4], ['側平舉', 5], ['腿伸', 5]] },
+    ]))
+    expect(h.isoSets).toBe(10)
+    expect(h.patterns.some((p) => p.pattern === ('iso' as never))).toBe(false)
+  })
+
+  it('沒課表時模式全 0', () => {
+    const h = checkPlanHealth(null)
+    expect(h.patternsCovered).toBe(0)
+    expect(h.patterns).toHaveLength(8)
+  })
+})

@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { checkPlanHealth } from '@/lib/plan-health'
-import { VOLUME_MIN, VOLUME_MAX } from '@/lib/volume-audit'
+import { checkPlanHealth, MOVEMENT_PATTERNS } from '@/lib/plan-health'
+import { VOLUME_MIN, VOLUME_MAX, CORE_MUSCLES } from '@/lib/volume-audit'
 
 /**
  * 課表健檢 —— 設完課表當下就看到「這份漏了什麼」。
@@ -15,6 +15,7 @@ import { VOLUME_MIN, VOLUME_MAX } from '@/lib/volume-audit'
 export default function PlanHealthCheck({ plan }: { plan: unknown }) {
   const h = useMemo(() => checkPlanHealth(plan), [plan])
   const [open, setOpen] = useState(false)
+  const [openPatterns, setOpenPatterns] = useState(false)
 
   if (!h.hasPlan) return null
   const max = Math.max(VOLUME_MAX, ...h.rows.map((r) => r.sets))
@@ -119,13 +120,56 @@ export default function PlanHealthCheck({ plan }: { plan: unknown }) {
           </p>
         )}
 
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="self-start text-xs text-primary-600 hover:text-primary-700 hover:underline mt-0.5"
-        >
-          {open ? '收起各部位組數' : '看各部位組數'}
-        </button>
+        {/* ⭐ 兩把尺並列。
+             部位覆蓋是**肌肥大**的標準；拿它量運動表現課表會得到一堆假警報。
+             不猜取向 —— 兩把都給，標清楚各自在量什麼，讓教練自己看哪把適用。 */}
+        <div className="mt-1 pt-2.5 border-t border-slate-100 grid sm:grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="text-left rounded-lg border border-slate-200 px-3 py-2 hover:border-slate-300 transition-colors"
+          >
+            <span className="block text-[11px] text-slate-400">部位覆蓋 · 肌肥大取向</span>
+            <span className="block text-sm text-slate-900 mt-0.5 tabular-nums">
+              {CORE_MUSCLES.length} 項中 <span className="font-medium">{CORE_MUSCLES.length - h.gaps.filter((g) => g.severity === 'zero').length}</span> 項有排
+              {unnoted.length > 0 && <span className="text-rose-600 ml-1.5">· {unnoted.length} 項缺口</span>}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpenPatterns((v) => !v)}
+            className="text-left rounded-lg border border-slate-200 px-3 py-2 hover:border-slate-300 transition-colors"
+          >
+            <span className="block text-[11px] text-slate-400">動作模式 · 運動表現取向</span>
+            <span className="block text-sm text-slate-900 mt-0.5 tabular-nums">
+              {MOVEMENT_PATTERNS.length} 種中 <span className="font-medium">{h.patternsCovered}</span> 種有排
+              {h.patternsCovered < MOVEMENT_PATTERNS.length && (
+                <span className="text-amber-700 ml-1.5">· 缺 {MOVEMENT_PATTERNS.length - h.patternsCovered} 種</span>
+              )}
+            </span>
+          </button>
+        </div>
+
+        {openPatterns && (
+          <div className="flex flex-col gap-1.5 pt-1">
+            {h.patterns.map((p) => (
+              <div key={p.pattern} className="flex items-baseline gap-3 text-xs">
+                <span className="w-16 shrink-0 text-slate-600">{p.label}</span>
+                <span className={`w-10 shrink-0 text-right tabular-nums font-medium ${p.sets === 0 ? 'text-amber-700' : 'text-slate-700'}`}>
+                  {p.sets} 組
+                </span>
+                <span className="text-slate-400 leading-relaxed min-w-0">{p.why}</span>
+              </div>
+            ))}
+            <p className="text-xs text-slate-400 pt-1 leading-relaxed">
+              單關節（補強）另有 {h.isoSets} 組，不算模式。
+              <br />
+              ⚠️ 這八種是<span className="text-slate-500 font-medium">運動表現／功能</span>取向的檢查點。
+              純健美課表缺「負重行走」不是問題，就像籃球課表缺「肩中束」不是問題
+              —— 兩把尺量的是不同的東西。
+            </p>
+          </div>
+        )}
 
         {open && (
           <div className="flex flex-col gap-2 pt-1">
