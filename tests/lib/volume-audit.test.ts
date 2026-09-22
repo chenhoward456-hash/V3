@@ -293,6 +293,18 @@ describe('英文速記展開', () => {
     expect(normalizeExerciseName('SA DB RDL')).toBe('sadbrdl')
     expect(m('SA DB RDL')).toBe('hamstrings')  // 仍然要對得到
   })
+  // ⛔ 2026-09-22 真實回歸：`leg curl` 先被 /\bcurl\b/ 改成「leg 彎舉」，
+  //    就再也對不到 /\bleg\s*curl\b/。ABBREV 是依序套用的，多字詞組必須排在單字之前。
+  it('⛔ 多字詞組不能被單字先吃掉', () => {
+    expect(m('leg curl')).toBe('hamstrings')      // 不是被 curl 吃成二頭
+    expect(m('leg press')).toBe('quads')          // 不是被 press 吃成推
+    expect(m('leg extension')).toBe('quads')
+    expect(m('calf raise')).toBe('calves')
+    expect(m('hip thrust')).toBe('glutes')
+    expect(m('hip abduction')).toBe('abductors')
+    expect(m('face pull')).toBe('delts_rear')     // 不是被 pull 相關的吃掉
+    expect(m('pull up')).toBe('back')
+  })
   it('⚠️ 詞邊界：sa/bb/dl 不能咬進別的名字裡', () => {
     expect(m('sissy squat')).toBe('quads')     // 不能被 /\bsa\b/ 或 /\bdl\b/ 影響
     expect(m('深蹲')).toBe('quads')
