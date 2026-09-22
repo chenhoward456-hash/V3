@@ -326,3 +326,21 @@ describe('英文速記展開', () => {
     expect(e?.pattern).toBe('hinge')
   })
 })
+
+// ⛔ 2026-09-23：我在同一週內兩次加了 map 裡已經有的 key（'蝴蝶機'、'胸推'），
+//    兩次都是 tsc 的 TS1117 擋下來的，不是我自己發現的。
+//    tsc 已經會擋，但那是編譯期的錯誤訊息；這支測試讓它在測試報告裡直接點名，
+//    而且順便擋住「兩個 key 正規化之後撞在一起」這種 tsc 看不到的情況。
+describe('map 不能有撞名的 key', () => {
+  it('正規化之後不可以有兩個 key 指到同一個字串', () => {
+    const seen = new Map<string, string>()
+    const dupes: string[] = []
+    for (const k of Object.keys(EXERCISE_MUSCLE_MAP)) {
+      const n = normalizeExerciseName(k)
+      const prev = seen.get(n)
+      if (prev && prev !== k) dupes.push(`${prev} ⟷ ${k}`)
+      else seen.set(n, k)
+    }
+    expect(dupes).toEqual([])
+  })
+})

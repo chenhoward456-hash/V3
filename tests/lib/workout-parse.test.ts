@@ -120,10 +120,20 @@ describe('真課表 ④：Oreo（頓號分隔一行多動作 ＋ 行尾孤立數
 })
 
 describe('⛔ 踩過的坑：三個數字的寫法', () => {
-  it('六角槓硬舉 45×1×10 ＝ 重量×組×次，組數是 1 不是 45', () => {
-    const e = parseWorkout('六角槓硬舉 45×1×10').exercises[0]
-    expect(e.sets).toBe(1)
-    expect(e.rule).toBe('重量x組x次')
+  // ⛔ 健身圈兩種順序都有用，不能寫死取中間：
+  //      45x1x10  （Howard 的課表）→ 45kg、1 組、10 次
+  //      100x5x3  （LINE 既有教學）→ 100kg、5 次、3 組
+  //    所以後兩個數取較小的當組數 —— 組數通常個位數、次數通常更大。
+  it('三數字：重量 × (組/次)，取較小的當組數', () => {
+    expect(parseWorkout('六角槓硬舉 45×1×10').exercises[0].sets).toBe(1)
+    expect(parseWorkout('深蹲 100x5x3').exercises[0].sets).toBe(3)
+    expect(parseWorkout('臥推 80x8x4').exercises[0].sets).toBe(4)
+    expect(parseWorkout('六角槓硬舉 45×1×10').exercises[0].rule).toBe('重量x(組/次)')
+  })
+  it('⚠️ 後兩個一樣大就分不出來，標 guess', () => {
+    const e = parseWorkout('深蹲 100x8x8').exercises[0]
+    expect(e.sets).toBe(8)
+    expect(e.confidence).toBe('guess')
   })
   it('重量尾巴不算組數', () => {
     const e = parseWorkout('Swing 20kg 15下x3').exercises[0]

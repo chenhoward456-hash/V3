@@ -102,6 +102,19 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '機械上胸': { muscle: 'chest', also: ['delts_front'], pattern: 'h_push' },
   'dips': { muscle: 'chest', also: ['triceps'], pattern: 'h_push' },
   '雙槓撐體': { muscle: 'chest', also: ['triceps'], pattern: 'h_push' },
+  // ⚠️ 2026-09-23：學員在 LINE 用簡稱的機率比用全名高得多（「臥推 4組」而不是
+  //    「平板臥推 4組」）。這批裸名原本全部認不出來，等於最常見的寫法進不了系統。
+  //    ⚠️ 不能靠 substring 解決——輸入「臥推」時 key「平板臥推」不包含在它裡面，
+  //       方向是反的。必須補 exact entry。
+  '臥推': { muscle: 'chest', also: ['delts_front', 'triceps'], pattern: 'h_push' },
+  '硬舉': { muscle: 'hamstrings', also: ['glutes', 'back', 'traps'], pattern: 'hinge' },
+  '推舉': { muscle: 'delts_front', also: ['triceps'], pattern: 'v_push', overhead: true },
+  '彎舉': { muscle: 'biceps', pattern: 'iso' },
+  '二頭': { muscle: 'biceps', pattern: 'iso' },
+  '三頭': { muscle: 'triceps', pattern: 'iso' },
+  '引體': { muscle: 'back', also: ['biceps'], pattern: 'v_pull', overhead: true },
+  '抬腿': { muscle: 'core', pattern: 'iso' },
+  '弓箭步': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
   '機械夾胸': { muscle: 'chest', pattern: 'iso' },
   '機械飛鳥': { muscle: 'delts_side', pattern: 'iso', note: '同「飛鳥」裁決。⚠️「機械」「器械」是同義詞，不能一個判胸一個判肩' },
   'machinefly': { muscle: 'chest', pattern: 'iso' },
@@ -396,8 +409,11 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '反向北歐': { muscle: 'quads', pattern: 'iso', note: 'Reverse Nordic＝股直肌離心（Howard 2026-09-21 確認）。⛔ 不是膕繩，不可與腿彎舉互換' },
   '後腳抬高蹲': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
   '滾筒放鬆': { muscle: 'core', pattern: 'prep', volume: false },
+  // ⚠️ 正規化會把空白去掉，所以「90-90 呼吸」跟「90-90呼吸」是同一個 key —— 留一個就好。
+  //    （兩個都寫的話後面那個會覆蓋前面，等於有一行是死的。）
   '90-90呼吸': { muscle: 'core', pattern: 'prep', volume: false },
-  '90-90 呼吸': { muscle: 'core', pattern: 'prep', volume: false },
+  // 斜線寫法也很常見（內訓教材用的就是 90/90）
+  '90/90呼吸': { muscle: 'core', pattern: 'prep', volume: false },
 
   // 壺鈴擺盪：B 教練課表裡兩天都有，原本整個對不到
   'swing': { muscle: 'glutes', also: ['hamstrings', 'back'], pattern: 'hinge' },
