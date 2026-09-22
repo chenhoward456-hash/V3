@@ -27,9 +27,13 @@ import {
   type ProposalRow,
 } from './proposal-actions'
 import { handleNaturalLog, type LineClient } from './line-handlers'
+import { buildCoachingDrafts, sendCoachMessage, type CoachingDraft } from './coaching-drafts'
 
 export type CoachCommand =
   | { kind: 'list_proposals' }
+  | { kind: 'list_messages' }
+  | { kind: 'preview_message'; name: string }
+  | { kind: 'send_message'; name: string }
   | { kind: 'approve'; name: string }
   | { kind: 'reject'; name: string }
   | { kind: 'proxy_log'; name: string; content: string }
@@ -49,12 +53,30 @@ export function looksLikeCoachCommand(text: string): boolean {
   return /^(提案|待辦|待審|有什麼等我)$/.test(t)
     || /^(套用|採用|同意|批准|不要|退掉|退回|拒絕)\s*\S/.test(t)
     || /^(代記|幫記)\s*\S/.test(t)
+    || /^(訊息|草稿|本週訊息)$/.test(t)
+    || /^(訊息|草稿)\s*\S/.test(t)
+    || /^(發|送|發送)\s*\S/.test(t)
 }
 
 export function parseCoachCommand(text: string, knownNames: string[]): CoachCommand | null {
   const t = text.trim()
 
   if (/^(提案|待辦|待審|有什麼等我)$/.test(t)) return { kind: 'list_proposals' }
+  if (/^(訊息|草稿|本週訊息)$/.test(t)) return { kind: 'list_messages' }
+
+  // 「訊息 震宣」看全文、「發 震宣」送出。
+  // ⚠️ 名字一樣要**完全相符**，理由同下面那條：`發` 是不可逆的對外動作，
+  //    寧可認不出來交還 AI Agent，也不要把「發現震宣這週掉太快」當成發送指令。
+  const msgOne = t.match(/^(?:訊息|草稿)\s+(.+)$/)
+  if (msgOne) {
+    const name = msgOne[1].trim()
+    return knownNames.some(n => n && n === name) ? { kind: 'preview_message', name } : null
+  }
+  const sendOne = t.match(/^(?:發|送|發送)\s+(.+)$/)
+  if (sendOne) {
+    const name = sendOne[1].trim()
+    return knownNames.some(n => n && n === name) ? { kind: 'send_message', name } : null
+  }
 
   // 代記：`代記 Eddie 85.2 早餐雞胸便當`
   //
@@ -81,6 +103,18 @@ export function parseCoachCommand(text: string, knownNames: string[]): CoachComm
 
   const approve = ['套用', '採用', '同意', '批准'].includes(verb)
   return approve ? { kind: 'approve', name: target } : { kind: 'reject', name: target }
+}
+
+/** 一則草稿在 LINE 上怎麼攤開 */
+function previewText(d: CoachingDraft): string {
+  const parts = [`【${d.name}】${d.headline}`, `資料 ${d.dataDays} 天`]
+  if (d.needsCoachReview) parts.push('⚠️ 引擎標了「要你看過」，不能用「發」一個字送出')
+  if (d.bullets.length) parts.push('', '本週數據：', ...d.bullets.map((b) => `• ${b}`))
+  if (d.adjustments.length) parts.push('', '建議調整：', ...d.adjustments.map((a) => `• ${a}`))
+  if (d.flags.length) parts.push('', `旗標：${d.flags.join('、')}`)
+  parts.push('', '────── 要發給他的原文 ──────', d.studentMessage)
+  if (!d.needsCoachReview) parts.push('', `沒問題就打「發 ${d.name}」。`)
+  return parts.join('\n')
 }
 
 /** 這筆提案在 LINE 上怎麼講 */
@@ -142,6 +176,84 @@ export async function tryCoachCommand(
   }
 
   const actionable = await listActionableProposals(supabase)
+
+  // ── 本週教練訊息：列出 / 看全文 / 送出 ──────────────────────────
+  //
+  // ⚠️ 這三個指令存在的理由：2026-09 查 production ——
+  //    四個學員天天在記（震宣 30 天記了 29 天飲食），
+  //    而 coach_messages 最後一則停在 8/31，23 天沒有人回應他們。
+  //    引擎一直在算，唯一的出口是 /admin，而教練不開那一頁。
+  //    所以出口搬到他本來就在看的地方。
+  if (command.kind === 'list_messages') {
+    const drafts = await buildCoachingDrafts(supabase)
+    if (drafts.length === 0) {
+      await replyMessage(replyToken, [{ type: 'text', text: '目前沒有在籍學員。' }])
+      return true
+    }
+    const lines = drafts.map((d) => {
+      const tag = d.needsCoachReview ? '⚠️ 要你看過 ' : ''
+      return `• ${d.name}：${tag}${d.headline}（${d.dataDays} 天資料）`
+    })
+    await replyMessage(replyToken, [{
+      type: 'text',
+      text: `本週 ${drafts.length} 個人：\n\n${lines.join('\n')}\n\n`
+        + `打「訊息 ${drafts[0].name}」看全文，看過再打「發 ${drafts[0].name}」送出。`,
+    }])
+    return true
+  }
+
+  if (command.kind === 'preview_message' || command.kind === 'send_message') {
+    const cid = Object.keys(nameOf).find((id) => nameOf[id] === command.name)
+    if (!cid) {
+      await replyMessage(replyToken, [{ type: 'text', text: `找不到學員「${command.name}」` }])
+      return true
+    }
+    const [draft] = await buildCoachingDrafts(supabase, { onlyClientId: cid })
+    if (!draft) {
+      await replyMessage(replyToken, [{ type: 'text', text: `算不出 ${command.name} 的草稿。` }])
+      return true
+    }
+
+    if (command.kind === 'preview_message') {
+      await replyMessage(replyToken, [{ type: 'text', text: previewText(draft) }])
+      return true
+    }
+
+    // ⛔ 引擎自己標了「這個要人看」就不准一個字發送。
+    //    needsCoachReview 會亮的情況包含：資料不足、變化速率離譜、有新血檢。
+    //    那些正是最不該讓一句「發 X」自動送出去的。
+    if (draft.needsCoachReview) {
+      await replyMessage(replyToken, [{
+        type: 'text',
+        text: `⚠️ ${draft.name} 這則標了「要你看過」，不能一個字送出。\n\n`
+          + `${draft.headline}\n\n`
+          + `先打「訊息 ${draft.name}」看完整內容，要發的話去後台按，或改寫後再發。`,
+      }])
+      return true
+    }
+
+    const outcome = await sendCoachMessage(supabase, {
+      clientId: cid,
+      message: draft.studentMessage,
+      mode: draft.mode,
+    })
+    if (!outcome.ok) {
+      const extra = outcome.compliance?.length
+        ? `\n\n命中：${outcome.compliance.map((c) => c.term).join('、')}`
+        : ''
+      await replyMessage(replyToken, [{ type: 'text', text: `沒發出去：${outcome.error}${extra}` }])
+      return true
+    }
+    const via = outcome.delivered
+      ? (outcome.method === 'web_push' ? '推播' : 'LINE')
+      : '沒推成（他沒開推播也沒綁 LINE），但訊息已經存進他的儀表板'
+    // ⚠️ 回覆帶上**實際送出去的全文**：一個字送出的東西，他要馬上看得到自己發了什麼。
+    await replyMessage(replyToken, [{
+      type: 'text',
+      text: `已送給 ${draft.name}（${via}）\n\n────────\n${draft.studentMessage}`,
+    }])
+    return true
+  }
 
   if (command.kind === 'list_proposals') {
     if (actionable.length === 0) {
