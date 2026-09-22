@@ -268,6 +268,13 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '站姿提踵': { muscle: 'calves', pattern: 'iso' },
   '上斜槓鈴臥推': { muscle: 'chest', also: ['delts_front'], pattern: 'h_push' },
   '繩索夾胸': { muscle: 'chest', pattern: 'iso' },
+  '夾胸': { muscle: 'chest', pattern: 'iso' },
+  // ⚠️ Pullover 的主部位有爭議：背闊與胸大肌的活化都高，兩派都說得通。
+  //    這裡記 back（它走拉的軌道、慣例排在拉日），also 掛 chest 讓間接量看得到。
+  '臥姿屈臂上拉': { muscle: 'back', also: ['chest'], pattern: 'v_pull', overhead: true },
+  '屈臂上拉': { muscle: 'back', also: ['chest'], pattern: 'v_pull', overhead: true },
+  '髖外展': { muscle: 'abductors', pattern: 'iso' },
+  '髖內收': { muscle: 'adductors', pattern: 'iso' },
   '蝴蝶機': { muscle: 'chest', pattern: 'iso' },
   '反式蝴蝶機': { muscle: 'delts_rear', pattern: 'iso' },
   '坐姿啞鈴肩推': { muscle: 'delts_front', also: ['triceps'], pattern: 'v_push', overhead: true },
@@ -479,20 +486,30 @@ const VOLUME_NEGATING = ['空槓', '徒手', 'pvc', '滾筒放鬆']
  * ⚠️ 用 \b 詞邊界，不然 "sa" 會咬進別的英文動作名裡。
  */
 const ABBREV: [RegExp, string][] = [
-  // 器材
+  // ⛔ 2026-09-22 修：這個陣列是**依序**套用的，所以「多字詞組一定要排在單字之前」。
+  //    第一版把 leg press / leg curl / calf raise 放在最後，結果 `leg curl` 先被
+  //    /\bcurl\b/ 改成「leg 彎舉」，再也對不到 /\bleg\s*curl\b/ → 整組解析失敗。
+  //    （原註解已經寫著「長的先展開」，但只想到 rdl vs dl，沒想到多字詞組。）
+  // ── 多字詞組（一定放最前面）──
+  [/\bleg\s*press\b/gi, '腿推'], [/\bleg\s*curl\b/gi, '腿彎舉'],
+  [/\bleg\s*ext(?:ension)?\b/gi, '腿伸'], [/\bleg\s*raise\b/gi, '抬腿'],
+  [/\bcalf\s*raise\b/gi, '提踵'], [/\bhip\s*thrust\b/gi, '臀推'],
+  [/\bhip\s*ab(?:duction)?\b/gi, '髖外展'], [/\bhip\s*ad(?:duction)?\b/gi, '髖內收'],
+  [/\bface\s*pull\b/gi, '面拉'], [/\bpull\s*over\b/gi, '臥姿屈臂上拉'],
+  [/\bpull\s*up\b/gi, '引體向上'], [/\bchin\s*up\b/gi, '引體向上'],
+  [/\blat\s*pull\s*down\b/gi, '滑輪下拉'],
+  // ── 單字：器材 ──
   [/\bbb\b/gi, '槓鈴'], [/\bdb\b/gi, '啞鈴'], [/\bkb\b/gi, '壺鈴'],
   [/\bsmith\b/gi, '史密斯'], [/\bcable\b/gi, '纜繩'],
-  // 單邊
+  // ── 單字：單邊 ──
   [/\bsa\b/gi, '單臂'], [/\bsl\b/gi, '單腿'], [/\bua\b/gi, '單臂'],
-  // 動作（長的先展開，免得 rdl 被 dl 吃掉）
+  // ── 單字：動作（rdl 要贏過 dl）──
   [/\brdl\b/gi, '羅馬尼亞硬舉'], [/\bohp\b/gi, '肩推'],
   [/\bbp\b/gi, '臥推'], [/\bsp\b/gi, '肩推'], [/\bdl\b/gi, '硬舉'],
+  [/\bpulldown\b/gi, '滑輪下拉'], [/\bpullup\b/gi, '引體向上'],
   [/\brow\b/gi, '划船'], [/\bcurl\b/gi, '彎舉'], [/\blunge\b/gi, '弓步'],
   [/\bsquat\b/gi, '深蹲'], [/\bpress\b/gi, '推'], [/\bfly\b/gi, '飛鳥'],
-  [/\bpulldown\b/gi, '滑輪下拉'], [/\bpullup\b/gi, '引體向上'],
-  [/\bdip(?:s)?\b/gi, '雙槓撐體'], [/\bcalf\s*raise\b/gi, '提踵'],
-  [/\bhip\s*thrust\b/gi, '臀推'], [/\bleg\s*press\b/gi, '腿推'],
-  [/\bleg\s*ext(?:ension)?\b/gi, '腿伸'], [/\bleg\s*curl\b/gi, '腿彎舉'],
+  [/\bdip(?:s)?\b/gi, '雙槓撐體'],
 ]
 
 export function expandAbbrev(raw: string): string {
