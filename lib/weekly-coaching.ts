@@ -13,6 +13,9 @@
 // 兩支引擎對「什麼叫停滯」必須講同一套話，否則學員在儀表板和週訊會收到互相矛盾的判定。
 import { lastCarbIncreaseDate, carbRepletionCutoff, inCarbRepletionWindow, type MacroLogRow } from './implied-intake'
 import { BULK_TARGETS } from './nutrition-engine'
+// 課表健檢／組數判讀共用同一套 —— 後台說「肩後束 0 組」、週訊就不能說沒事
+import { checkPlanHealth, summarizePlanHealth } from './plan-health'
+import { actualVolume, findGaps } from './volume-audit'
 
 /**
  * 蛋白質下限 —— **全系統唯一真相**（紅線 6：共用常數別各定各的）。
@@ -28,6 +31,20 @@ import { BULK_TARGETS } from './nutrition-engine'
 export const FAT_FLOOR_PCT = 20
 
 export const BULK_FLOOR_PER_KG_BW = 1.6
+
+/**
+ * 要有幾天記了「做哪些動作」，才敢用組數跟學員講話。
+ * ⚠️ 2026-09-23 的 production 覆蓋率：林宥任 60%（9/15 天）、其餘三人 0%。
+ *    低於這個門檻只能說「我看不到你練了什麼」，不能說「你某某部位沒練」。
+ */
+export const SET_LOG_MIN_DAYS = 4
+
+/**
+ * 動作模式覆蓋低到幾種才值得提。
+ * ⚠️ 健美分化課表天生缺「單腳／負重行走」（那是運動表現的檢查點），
+ *    6/8 是常態。設 8 會讓每個健美學員每週都收到假警報。
+ */
+export const PATTERN_COVERAGE_ALERT = 5
 export const CUT_FLOOR_PER_KG_LBM = 2.3
 export const CUT_FLOOR_PER_KG_BW_PROXY = 1.8
 
@@ -49,6 +66,15 @@ export type WCInput = {
   weights: { date: string; weight: number | string | null; body_fat?: number | string | null }[]
   nutrition: { date: string; compliant?: boolean | null; calories?: number | string | null; protein_grams?: number | string | null; fat_grams?: number | string | null }[]
   training: { date: string; training_type: string | null }[]
+  /**
+   * 實際做的組數（training_sets，一筆＝一組）。選填。
+   * ⚠️ 2026-09-23 查 production：四個活躍學員裡三個的覆蓋率是 **0%**
+   *    （林宥任 60%）。所以用它之前一定要先看有幾天有記錄——
+   *    分不出「沒做」和「沒記」的時候，講「你少做了 X 組」會冤枉人。
+   */
+  trainingSets?: { date: string; exercise_name: string | null }[]
+  /** 教練寫的課表。用來做課表健檢——這個**不依賴學員記錄**，資料一定完整。 */
+  trainingPlan?: unknown
   wellness: { date: string; energy_level?: number | null }[]
   labs: { test_name: string; value: number | string | null; status?: string | null; date?: string | null }[]
   /**
@@ -150,6 +176,8 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
 
   // ── 調整模式（資料夠）──
   const bullets: string[] = []
+  // ⭐ 保證會出現在學員訊息裡的話（bullets 會被 slice(0,3) 截掉，這個不會）。
+  const studentExtra: string[] = []
   const adjustments: string[] = []
   const msgLines: string[] = []
   let needsReview = false
@@ -461,6 +489,58 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
     }
   }
 
+  // 4b) 訓練「內容」—— 不只出勤
+  //
+  // ⚠️ 這段的分寸是整支引擎最難拿捏的地方：
+  //    `training_logs`（打卡）說他去了，`training_sets`（組數）才說他練了什麼。
+  //    2026-09-23 查 production：四個活躍學員裡三個的組數覆蓋率是 0%。
+  //    在那個覆蓋率下講「你少做了 X 組」會冤枉人——而冤枉一次就再也拿不回來
+  //    （Sean 2026-08-31 之後一個月沒記飲食）。
+  //
+  //    所以分三種情況講，而且**給學員的話只講掛零，不講失衡、不講落差**：
+  //    失衡要知道目標才判得準，那是教練的判斷不是學員的。
+  const setRows = input.trainingSets ?? []
+  const setDays = new Set(
+    setRows.filter(r => r.date && daysAgo(now, r.date) <= 14 && r.exercise_name).map(r => r.date),
+  ).size
+
+  if (setDays >= SET_LOG_MIN_DAYS) {
+    const vol = actualVolume(
+      setRows.filter(r => r.date && daysAgo(now, r.date) <= 14 && r.exercise_name),
+    )
+    const zeros = findGaps(vol).filter(g => g.severity === 'zero')
+    bullets.push(`📊 近 14 天有記動作的 ${setDays} 天共 ${vol.total} 組`)
+    if (zeros.length > 0) {
+      const names = zeros.map(z => z.label).join('、')
+      bullets.push(`⚠️ 這幾天裡 ${names} 一組都沒練到`)
+      // ⚠️ 措辭刻意把前提講出來（「你記錄的這幾天」）——
+      //    他可能練了只是沒記，不要講成「你沒練」。
+      studentExtra.push(`🏋️ 你這兩週記錄到的訓練裡，${names}一組都沒有。下次排進去就好。`)
+    }
+  } else if (trained.length >= 2) {
+    // 有去練但沒記內容 —— 這是覆蓋率問題的源頭，直接跟他要
+    bullets.push(`📊 打卡 ${trained.length} 天，但只有 ${setDays} 天記了做哪些動作 → 看不到訓練內容`)
+    studentExtra.push(
+      `🏋️ 這兩週你練了 ${trained.length} 天，但沒記下做了哪些動作。`
+      + `記了我才看得出你哪個部位練不夠——一天花 30 秒就好。`,
+    )
+  }
+
+  // 4c) 課表健檢 —— ⭐ 這段**不依賴學員記錄**，課表是教練自己寫的
+  //     所以就算組數覆蓋率是 0，這條照樣講得出東西。
+  if (input.trainingPlan) {
+    const ph = checkPlanHealth(input.trainingPlan)
+    const summary = summarizePlanHealth(ph)
+    if (summary) flags.push(`課表：${summary}`)
+    // ⚠️ 門檻是 ≤5 不是 <8：健美分化課表缺「單腳／負重行走」是常態不是缺陷
+    //    （見 lib/plan-health.ts 兩把尺的說明）。6/8 就報等於每個健美學員每週
+    //    都收到一則假警報。只有真的缺一半以上才值得講。
+    if (ph.hasPlan && ph.patternsCovered <= PATTERN_COVERAGE_ALERT) {
+      const missing = ph.patterns.filter(p => p.sets === 0).map(p => p.label).join('、')
+      bullets.push(`📋 課表只覆蓋 ${ph.patternsCovered}/8 種動作模式，沒排到：${missing}`)
+    }
+  }
+
   // 5) 恢復（含趨勢；連續偏低或走下坡 → 旗標給教練 + 標記需介入）
   const eAvg = avg(recent(input.wellness, 7).map(x => x.energy_level ?? NaN))
   if (eAvg != null) {
@@ -500,6 +580,9 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
   // 組學員訊息
   msgLines.push(`${name}，這週我看了你的數據：`)
   msgLines.push(bullets.map(b => `・${b.replace(/^[^\s]+\s/, '')}`).slice(0, 3).join('\n'))
+  // ⚠️ 訓練那條不走 bullets 的前三名篩選——它帶著明確的下一步動作
+  //    （「下次排進去」「記一下做了什麼」），被截掉就白寫了。
+  if (studentExtra.length) { msgLines.push(''); msgLines.push(studentExtra.join('\n')) }
   msgLines.push('')
   msgLines.push(`本週調整：${adjustments.slice(0, 3).join('；')}。`)
 

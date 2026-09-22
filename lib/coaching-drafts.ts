@@ -67,7 +67,7 @@ export async function buildCoachingDrafts(
 
   let clientQ = supabase
     .from('clients')
-    .select('id, name, unique_code, line_user_id, goal_type, prep_phase, competition_date, competition_enabled, target_weight, calories_target, protein_target, fat_target')
+    .select('id, name, unique_code, line_user_id, goal_type, prep_phase, competition_date, competition_enabled, target_weight, calories_target, protein_target, fat_target, training_plan')
     .eq('is_active', true)
   if (opts.onlyClientId) clientQ = clientQ.eq('id', opts.onlyClientId)
 
@@ -78,13 +78,16 @@ export async function buildCoachingDrafts(
   if (ids.length === 0) return []
 
   // 批次撈：一次查、依 client_id 分組，避免 N 次往返
-  const [bodyR, nutR, trnR, welR, labR, pushR, macroR] = await Promise.all([
+  const [bodyR, nutR, trnR, welR, labR, pushR, setsR, macroR] = await Promise.all([
     supabase.from('body_composition').select('client_id, date, weight, body_fat').in('client_id', ids).gte('date', since),
     supabase.from('nutrition_logs').select('client_id, date, compliant, calories, protein_grams, fat_grams').in('client_id', ids).gte('date', since),
     supabase.from('training_logs').select('client_id, date, training_type').in('client_id', ids).gte('date', since),
     supabase.from('daily_wellness').select('client_id, date, energy_level').in('client_id', ids).gte('date', since),
     supabase.from('lab_results').select('client_id, test_name, value, status, date').in('client_id', ids).gte('date', since),
     supabase.from('push_subscriptions').select('client_id').in('client_id', ids),
+    // ⭐ 實際做的組數。⚠️ 覆蓋率很低（2026-09 只有林宥任 60%，其餘 0%），
+    //    引擎那邊有 SET_LOG_MIN_DAYS 門檻擋著，低於門檻只會說「看不到你練了什麼」。
+    supabase.from('training_sets').select('client_id, date, exercise_name').in('client_id', ids).gte('date', since),
     // 碳水回補期偵測：碳水被往上調之後那兩週的體重是水，不能拿來跟學員講趨勢
     supabase.from('macro_adjustment_log')
       .select('client_id, applied_at, old_macros, new_macros')
@@ -95,6 +98,7 @@ export async function buildCoachingDrafts(
   const pushSet = new Set((pushR.data || []).map((r: { client_id: string }) => r.client_id))
   const bodyByC = group(bodyR.data), nutByC = group(nutR.data), trnByC = group(trnR.data)
   const welByC = group(welR.data), labByC = group(labR.data), macroByC = group(macroR.data)
+  const setsByC = group(setsR.data)
 
   const drafts = (clients as ClientRow[]).map((c) => {
     const input: WCInput = {
@@ -105,6 +109,8 @@ export async function buildCoachingDrafts(
       wellness: (welByC.get(c.id) || []).map((r: any) => ({ date: r.date, energy_level: r.energy_level })),
       labs: (labByC.get(c.id) || []).map((r: any) => ({ test_name: r.test_name, value: r.value, status: r.status, date: r.date })),
       macroLog: (macroByC.get(c.id) || []).map((r: any) => ({ applied_at: r.applied_at, old_macros: r.old_macros, new_macros: r.new_macros })),
+      trainingSets: (setsByC.get(c.id) || []).map((r: any) => ({ date: r.date, exercise_name: r.exercise_name })),
+      trainingPlan: (c as any).training_plan ?? null,
       now,
     }
     return {
