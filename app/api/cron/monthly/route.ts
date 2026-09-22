@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
+import { getTaiwanDate } from '@/lib/date-utils'
 import { sendRoutineReminder } from '@/lib/notify'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isWeightTraining } from '@/components/client/types'
@@ -35,10 +36,17 @@ export async function GET(request: NextRequest) {
   const now = new Date()
 
   // 計算上個月的日期範圍
-  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const monthStart = lastMonth.toISOString().split('T')[0]
-  const monthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0]
-  const monthName = lastMonth.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long' })
+  // ⚠️ 2026-09-21：原本用 now.getFullYear()/getMonth()，那是**執行環境**的時區（Vercel＝UTC）。
+  //    這支是折進 daily 的 morning run、在台灣每月 1 號早上 6 點自呼叫——那一刻 UTC 還停在
+  //    上個月的最後一天，getMonth() 會少一個月 → 月報整整統計**錯一個月**（差一天的加重版）。
+  //    → 年月一律從台灣日期取。
+  const [twYear, twMonth] = getTaiwanDate().split('-').map(Number)
+  const lastYear = twMonth === 1 ? twYear - 1 : twYear
+  const lastMonthNum = twMonth === 1 ? 12 : twMonth - 1
+  const monthStart = `${lastYear}-${String(lastMonthNum).padStart(2, '0')}-01`
+  // Date.UTC 的 month 是 0-indexed，所以傳 1-indexed 的 lastMonthNum ＝ 下個月，day 0 ＝ 當月最後一天
+  const monthEnd = new Date(Date.UTC(lastYear, lastMonthNum, 0)).toISOString().split('T')[0]
+  const monthName = `${lastYear} 年 ${lastMonthNum} 月`
 
   // 取得所有已綁定 LINE 的活躍付費學員
   const { data: clients, error } = await supabase
@@ -181,7 +189,7 @@ export async function GET(request: NextRequest) {
     ]).size
 
     // 計算月份天數
-    const daysInMonth = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0).getDate()
+    const daysInMonth = new Date(Date.UTC(lastYear, lastMonthNum, 0)).getUTCDate()
     lines.push(`\n📅 活躍天數：${totalRecordDays}/${daysInMonth} 天`)
 
     // ── 小結語 ──

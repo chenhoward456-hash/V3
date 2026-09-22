@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { BodyComposition, NutritionLog, TrainingLog, DailyWellness } from '@/types'
 import { createServiceSupabase } from '@/lib/supabase'
+import { getTaiwanDate, taiwanDateAgo } from '@/lib/date-utils'
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isWeightTraining } from '@/components/client/types'
@@ -85,7 +86,9 @@ export async function GET(request: NextRequest) {
     }
 
     const today = new Date()
-    const todayStr = today.toISOString().split('T')[0]
+    // ⚠️ 這支是折進 daily 的 morning run 自呼叫的（台灣早上 6 點＝UTC 前一天 22:00），
+    //    所有日曆日一律走 getTaiwanDate / taiwanDateAgo，不能用 toISOString()（會整組偏一天）。
+    const todayStr = getTaiwanDate()
 
     // ── 2. Health Mode 90 天季度自動重置 ──
     for (const client of clients) {
@@ -110,15 +113,9 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 3. 為每位活躍學員生成本週營養分析摘要 ──
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(today.getDate() - 30)
-    const sinceDate = thirtyDaysAgo.toISOString().split('T')[0]
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(today.getDate() - 7)
-    const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
-    const fourteenDaysAgo = new Date()
-    fourteenDaysAgo.setDate(today.getDate() - 14)
-    const fourteenStr = fourteenDaysAgo.toISOString().split('T')[0]
+    const sinceDate = taiwanDateAgo(30)
+    const sevenDaysStr = taiwanDateAgo(7)
+    const fourteenStr = taiwanDateAgo(14)
 
     // 批量查詢所有數據
     const [bodyRes, nutritionRes, trainingRes, wellnessRes] = await Promise.all([
@@ -151,7 +148,7 @@ export async function GET(request: NextRequest) {
     const allWellness = wellnessRes.data || []
 
     // 逐組紀錄（近 90 天）→ 算「停滯」用（4 週沒進步）
-    const since90 = new Date(today.getTime() - 90 * 86_400_000).toISOString().split('T')[0]
+    const since90 = taiwanDateAgo(90)
     const { data: allSets } = await supabase
       .from('training_sets')
       .select('client_id, date, exercise_name, muscle_group, weight, reps, is_main_lift')
@@ -200,7 +197,7 @@ export async function GET(request: NextRequest) {
         .from('daily_wellness')
         .select('client_id, date')
         .eq('period_start', true)
-        .gte('date', sixtyDaysAgo.toISOString().split('T')[0])
+        .gte('date', taiwanDateAgo(60))
         .in('client_id', femaleIds)
         .order('date', { ascending: false })
 
@@ -237,12 +234,8 @@ export async function GET(request: NextRequest) {
       // 計算週均體重
       const weeklyWeights: { week: number; avgWeight: number }[] = []
       for (let w = 0; w < 4; w++) {
-        const weekEnd = new Date(today)
-        weekEnd.setDate(today.getDate() - w * 7)
-        const weekStart = new Date(weekEnd)
-        weekStart.setDate(weekEnd.getDate() - 6)
-        const startStr = weekStart.toISOString().split('T')[0]
-        const endStr = weekEnd.toISOString().split('T')[0]
+        const endStr = taiwanDateAgo(w * 7)
+        const startStr = taiwanDateAgo(w * 7 + 6)
         const weekWeights = clientBody
           .filter((b: { date: string; weight: number | null }) => b.date >= startStr && b.date <= endStr)
           .map((b: { weight: number | null }) => b.weight as number)
@@ -354,10 +347,8 @@ export async function GET(request: NextRequest) {
       // 週均體重（複用 summaries loop 同款算法）
       const weeklyWeights: { week: number; avgWeight: number }[] = []
       for (let wk = 0; wk < 4; wk++) {
-        const weekEnd = new Date(today); weekEnd.setDate(today.getDate() - wk * 7)
-        const weekStart = new Date(weekEnd); weekStart.setDate(weekEnd.getDate() - 6)
-        const startStr = weekStart.toISOString().split('T')[0]
-        const endStr = weekEnd.toISOString().split('T')[0]
+        const endStr = taiwanDateAgo(wk * 7)
+        const startStr = taiwanDateAgo(wk * 7 + 6)
         const ws = clientBody
           .filter((b: { date: string; weight: number | null }) => b.date >= startStr && b.date <= endStr)
           .map((b: { weight: number | null }) => b.weight)
@@ -461,7 +452,7 @@ export async function GET(request: NextRequest) {
     // wellness 要看「連 2 週」+ 各自的 30 天基線 → 需要 7+7+30 = 44 天窗（獨立查詢，
     // 不動上面共用的 30 天 wellness 查詢——那份還餵營養引擎，改窗會汙染輸入）。
     const fatigueWindowDays = FATIGUE_RECENT_WINDOW_DAYS * 2 + FATIGUE_BASELINE_WINDOW_DAYS // 44
-    const fatigueSince = new Date(today.getTime() - (fatigueWindowDays - 1) * DAY_MS).toISOString().split('T')[0]
+    const fatigueSince = taiwanDateAgo(fatigueWindowDays - 1)
     const { data: fatigueWellnessData } = await supabase
       .from('daily_wellness')
       .select('client_id, date, sleep_quality, energy_level, training_drive')
@@ -476,7 +467,7 @@ export async function GET(request: NextRequest) {
     // 14 天冷卻：沒有 per-client 提醒紀錄表（不開新表），改查近 13 天內的 weekly_digest
     // 通知內容有沒有已經帶過「某某：疲勞旗標」——有就這週不重複轟。
     // 限制：靠訊息前綴字串比對（`${name}：疲勞旗標`），前綴改字或學員同名會失效。
-    const cooldownSince = new Date(today.getTime() - 13 * DAY_MS).toISOString().split('T')[0]
+    const cooldownSince = taiwanDateAgo(13)
     const { data: recentDigests } = await supabase
       .from('coach_notifications')
       .select('date, content')
