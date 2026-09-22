@@ -15,6 +15,7 @@
  */
 import {
   planVolume,
+  PATTERN_LABEL,
   findGaps,
   findImbalances,
   pushPullRatio,
@@ -24,7 +25,51 @@ import {
   type Gap,
   type Imbalance,
   type Muscle,
+  type Pattern,
+  type VolumeResult,
 } from './volume-audit'
+
+/**
+ * ⭐ 第二把尺：動作模式覆蓋。
+ *
+ * ⚠️ 為什麼需要兩把尺：部位覆蓋（10–20 組／12 個部位）是**肌肥大**的標準。
+ *    拿它去量一份運動表現課表，會得到一堆假警報——
+ *    林宥任的籃球課表 3 天、週 47 組，12 個部位全低於 10 組、肩中束 0，
+ *    用部位的尺看像是漏洞百出；但從動作模式看：
+ *    蹲系 4／髖鉸鏈 4／單腳 3／水平推 3／垂直推 3／水平拉 6／垂直拉 3／負重行走 6
+ *    —— **八種基本模式全覆蓋，零缺口。**
+ *
+ *    兩個判斷都對，只是在量不同的東西。所以不猜取向，兩把都給，
+ *    標清楚各自在量什麼，讓教練自己看哪一把適用。
+ *
+ * ⚠️ 刻意不含 iso（單關節）：那是補強不是模式，每份課表都會有一堆。
+ */
+export const MOVEMENT_PATTERNS: Array<{ key: Pattern; why: string }> = [
+  { key: 'squat', why: '膝主導。蹲、起跳、跨步的力量來源' },
+  { key: 'hinge', why: '髖主導。衝刺、減速、落地吸收' },
+  { key: 'lunge', why: '單邊下肢。多數運動是單腳發力，不是兩腳一起' },
+  { key: 'h_push', why: '水平推。推開對手、撐地' },
+  { key: 'v_push', why: '垂直推。過頭的力量傳遞' },
+  { key: 'h_pull', why: '水平拉。拉近、控制' },
+  { key: 'v_pull', why: '垂直拉。懸吊、攀爬' },
+  { key: 'carry', why: '負重行走與抗旋。軀幹把力量從腳傳到手，靠這類動作' },
+]
+
+export interface PatternRow {
+  pattern: Pattern
+  label: string
+  sets: number
+  why: string
+}
+
+export function patternCoverage(v: VolumeResult): PatternRow[] {
+  return MOVEMENT_PATTERNS.map(({ key, why }) => ({
+    pattern: key,
+    label: PATTERN_LABEL[key] ?? key,
+    sets: v.byPattern[key] ?? 0,
+    why,
+  }))
+}
 
 export interface PlanMuscleRow {
   muscle: Muscle
@@ -92,6 +137,12 @@ export interface PlanHealth {
   imbalances: Array<Imbalance & { notedByCoach: boolean }>
   /** 課表的 phaseNote（教練寫的處方說明） */
   phaseNote: string | null
+  /** ⭐ 第二把尺：八種基本動作模式各幾組 */
+  patterns: PatternRow[]
+  /** 八種模式裡幾種有排到 */
+  patternsCovered: number
+  /** 單關節（補強）的總組數 —— 不算模式，但值得看 */
+  isoSets: number
   push: number
   pull: number
   overheadPull: number
@@ -130,6 +181,7 @@ export function checkPlanHealth(trainingPlan: unknown): PlanHealth {
     // 兩邊任一被註明就算——「後縮類砍到 6 組」講的就是肩中:肩後那一對
     notedByCoach: notedInPhaseNote(im.high, phaseNote) || notedInPhaseNote(im.low, phaseNote),
   }))
+  const patterns = patternCoverage(v)
   const { push, pull } = pushPullRatio(v)
   const unresolved = Array.from(new Set(v.unresolved))
 
@@ -141,6 +193,9 @@ export function checkPlanHealth(trainingPlan: unknown): PlanHealth {
     gaps,
     imbalances,
     phaseNote,
+    patterns,
+    patternsCovered: patterns.filter((p) => p.sets > 0).length,
+    isoSets: v.byPattern.iso ?? 0,
     push,
     pull,
     overheadPull: v.overheadPull,
