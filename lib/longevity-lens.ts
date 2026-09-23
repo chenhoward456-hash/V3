@@ -7,13 +7,14 @@
  * 純函式，不碰 DB；資料由 /api/admin/longevity 組好丟進來。
  */
 
-export type Horseman = 'cardio' | 'metabolic' | 'neuro' | 'cancer' | 'support'
+export type Horseman = 'cardio' | 'metabolic' | 'neuro' | 'cancer' | 'organ' | 'support'
 
 export const HORSEMAN_META: Record<Horseman, { label: string; why: string }> = {
   cardio: { label: '心血管', why: '動脈粥狀硬化是幾十年累積的，ApoB 越早壓低，累積的量越少' },
   metabolic: { label: '代謝', why: '胰島素阻抗是其他三騎士的共同上游，比血糖更早出現' },
   neuro: { label: '神經退化', why: '血檢能看的很少；最強的介入是運動、睡眠和代謝健康' },
   cancer: { label: '癌症', why: '血檢幾乎看不到，要靠定期篩檢；代謝健康是能做的上游' },
+  organ: { label: '肝腎與血液', why: '器官與血球的基本盤；肌酸酐受肌肉量與肌酸補充影響，要跟訓練一起看' },
   support: { label: '荷爾蒙與營養狀態', why: '不是四騎士本身，但會影響恢復、訓練和上面四項' },
 }
 
@@ -50,7 +51,7 @@ export const MARKERS: Record<string, MarkerSpec> = {
   'LDL-C': { horseman: 'cardio', cvi: 7.8, better: 'lower', retestDays: 180, optimalMax: 100 },  // mg/dL
   總膽固醇: { horseman: 'cardio', cvi: 5.3, better: 'lower', retestDays: 180 },
   'HDL-C': { horseman: 'cardio', cvi: 5.6, better: 'higher', retestDays: 180, optimalMin: 40 },  // mg/dL
-  'Lp(a)': { horseman: 'cardio', cvi: 8.5, better: 'lower', onceInLife: true, retestDays: 0, core: true },
+  'Lp(a)': { horseman: 'cardio', cvi: 8.5, better: 'lower', onceInLife: true, retestDays: 0, core: true, optimalMax: 30 },  // mg/dL；≥50 常見的偏高門檻
   hsCRP: { horseman: 'cardio', cvi: 40, better: 'lower', retestDays: 180 },
   三酸甘油酯: { horseman: 'metabolic', cvi: 19.9, better: 'lower', retestDays: 180, optimalMax: 100 },  // mg/dL
   HbA1c: { horseman: 'metabolic', cvi: 1.2, cviDoi: '10.1515/almed-2020-0029', better: 'lower', retestDays: 180, core: true, optimalMax: 5.4 },  // %
@@ -71,6 +72,16 @@ export const MARKERS: Record<string, MarkerSpec> = {
   TSH: { horseman: 'support', cvi: 17.7, better: 'range', retestDays: 365, cviDoi: '10.1515/cclm-2020-1885' },
   'Free T4': { horseman: 'support', cvi: 4.8, better: 'range', retestDays: 365, cviDoi: '10.1515/cclm-2020-1885' },
   白蛋白: { horseman: 'support', cvi: 2.5, better: 'range', retestDays: 365 },
+  // 2026-09-24 補：學員實際有測、原本沒收進透鏡的指標（CVi 為 EFLM 近似值，未附 DOI → UI 標近似）
+  CRP: { horseman: 'cardio', cvi: 40, better: 'lower', retestDays: 180 },
+  GGT: { horseman: 'metabolic', cvi: 8.9, better: 'lower', retestDays: 180 },
+  肌酸酐: { horseman: 'organ', cvi: 4.5, better: 'range', retestDays: 180 },
+  eGFR: { horseman: 'organ', cvi: 4.5, better: 'higher', retestDays: 180 },
+  BUN: { horseman: 'organ', cvi: 14, better: 'range', retestDays: 180 },
+  血紅素: { horseman: 'organ', cvi: 2.7, better: 'range', retestDays: 365 },
+  白血球: { horseman: 'organ', cvi: 11.4, better: 'range', retestDays: 365 },
+  血小板: { horseman: 'organ', cvi: 7.3, better: 'range', retestDays: 365 },
+  MCV: { horseman: 'organ', cvi: 1.0, better: 'range', retestDays: 365 },
 }
 
 /** 分析誤差近似值（%）。實驗室不同會更大，換家實驗室的比較另外標註 */
@@ -246,7 +257,7 @@ export interface HorsemanView {
 }
 
 export function buildHorsemen(labsByName: Record<string, LabPoint[]>, rows: DailyRows, today: string): HorsemanView[] {
-  const order: Horseman[] = ['cardio', 'metabolic', 'neuro', 'cancer', 'support']
+  const order: Horseman[] = ['cardio', 'metabolic', 'neuro', 'cancer', 'organ', 'support']
   return order.map(key => {
     const names = Object.keys(MARKERS).filter(n => MARKERS[n].horseman === key)
     const stories = names
@@ -396,5 +407,6 @@ export const STUDENT_GROUP_META: Partial<Record<Horseman, { label: string; why: 
   cardio: { label: '血管與血脂', why: '這些數字是幾十年慢慢累積的，越早維持在好的範圍越好' },
   metabolic: { label: '血糖與代謝', why: '身體處理醣類和脂肪的效率，會影響體力、體態和其他項目' },
   neuro: { label: '大腦與神經', why: '血檢能看的不多；運動、睡眠和穩定的代謝對它最有幫助' },
+  organ: { label: '肝腎與血液', why: '器官和血球的基本狀態；重訓和補充肌酸會讓肌酸酐偏高，要跟訓練一起看' },
   support: { label: '荷爾蒙與營養', why: '會影響恢復、訓練表現和精神狀態' },
 }

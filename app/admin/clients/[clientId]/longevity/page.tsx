@@ -98,7 +98,9 @@ const fmt = (n: number) => (Math.abs(n) >= 100 ? Math.round(n).toLocaleString() 
 function freshnessLine(s: MarkerStory): { text: string; tone: 'ok' | 'warn' | 'muted' } {
   switch (s.freshness) {
     case 'good_hold': return { text: '上次數字很好，之後體重沒大變 → 不用花錢重測', tone: 'ok' }
-    case 'once_ok': return { text: '主要由基因決定，一生測一次，已完成', tone: 'ok' }
+    case 'once_ok': return s.optimalNow
+      ? { text: '主要由基因決定，一生測一次，已完成', tone: 'ok' }
+      : { text: '偏高，主要由基因決定（改不太動）→ 重點是把能改的 ApoB 壓得更低；一生測一次，已完成', tone: 'warn' }
     case 'changed': return { text: `上次很好，但之後體重變了 ${s.weightChangeSincePct?.toFixed(1)}% → 那個數字不一定代表現在，值得補一個點`, tone: 'warn' }
     // 橘色只給核心指標；非核心太久沒測用灰色，不催（Howard：好的數字不必一直花錢買）
     case 'stale': return { text: `已 ${s.daysSinceLast} 天沒測（建議 ${s.retestBy} 前）`, tone: s.spec.core ? 'warn' : 'muted' }
