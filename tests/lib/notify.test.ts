@@ -26,6 +26,11 @@ vi.mock('@/lib/supabase', () => ({
 const mockSendPushNotification = vi.fn()
 vi.mock('@/lib/web-push', () => ({
   sendPushNotification: (...args: any[]) => mockSendPushNotification(...args),
+  // 既有測試的 false 代表「過期」；暫時失敗的新行為另測（稽核 R3）
+  sendPushNotificationDetailed: async (...args: any[]) => {
+    const r = await mockSendPushNotification(...args)
+    return r === 'transient' ? { ok: false, expired: false } : { ok: !!r, expired: !r }
+  },
 }))
 
 const mockPushMessage = vi.fn()
@@ -124,6 +129,19 @@ describe('sendRoutineReminder', () => {
       'https://push.example.com/expired2',
     ])
     expect(mockPushMessage).toHaveBeenCalled()
+  })
+
+  it('暫時失敗（5xx/逾時）不刪訂閱，改走 LINE（稽核 R3）', async () => {
+    setupSupabaseSelect([
+      { endpoint: 'https://push.example.com/flaky', p256dh: 'k1', auth: 'a1' },
+    ])
+    mockSendPushNotification.mockResolvedValue('transient')
+    mockPushMessage.mockResolvedValue({ ok: true, status: 200 })
+
+    const result = await sendRoutineReminder(clientId, lineUserId, message)
+
+    expect(result).toEqual({ method: 'line_push', success: true })
+    expect(mockIn).not.toHaveBeenCalled()
   })
 
   it('should return line_push failed when both web push and LINE fail', async () => {

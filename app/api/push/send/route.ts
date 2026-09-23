@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/auth-middleware'
-import { sendPushNotification } from '@/lib/web-push'
+import { sendPushNotificationDetailed } from '@/lib/web-push'
 import { validateBody } from '@/lib/schemas/validate'
 import { pushSendSchema } from '@/lib/schemas/api'
 
@@ -57,13 +57,14 @@ export async function POST(request: NextRequest) {
 
     await Promise.all(
       subscriptions.map(async (sub) => {
-        const success = await sendPushNotification(
+        const result = await sendPushNotificationDetailed(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payload
         )
-        if (success) {
+        if (result.ok) {
           sent++
-        } else {
+        } else if (result.expired) {
+          // 只有 404/410 才刪（稽核 R3）
           expired.push(sub.endpoint)
         }
       })
