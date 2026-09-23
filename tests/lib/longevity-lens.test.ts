@@ -113,3 +113,31 @@ describe('跟至少 7 天前的點比', () => {
     expect(summarizePeriod('2026-01-01', '2026-03-20', rows).impliedDailyBalance).toBe(-300)
   })
 })
+
+import { gradeHypothesis, type LabHypothesis } from '@/lib/longevity-lens'
+
+describe('gradeHypothesis：下次抽血自動對答案', () => {
+  const h: LabHypothesis = {
+    id: 'h1', marker: '睪固酮', baseline_date: '2026-03-20', baseline_value: 404,
+    cause: '減脂期熱量缺口', action: '賽後吃回維持熱量', expected_direction: 'up', expected_value: 550,
+    retest_by: '2026-09-26', note: null, created_at: '2026-09-23',
+  }
+  const base = { date: '2026-03-20', value: 404 }
+  it('還沒重測 → pending；過了重測日 → overdue', () => {
+    expect(gradeHypothesis(h, [base], '2026-09-23').status).toBe('pending')
+    expect(gradeHypothesis(h, [base], '2026-10-01').status).toBe('overdue')
+  })
+  it('回到 600（+49%、超過波動、達標）→ confirmed', () => {
+    expect(gradeHypothesis(h, [base, { date: '2026-09-26', value: 600 }], '2026-09-27').status).toBe('confirmed')
+  })
+  it('回到 520（真的上升但沒到 550）→ partial', () => {
+    expect(gradeHypothesis(h, [base, { date: '2026-09-26', value: 520 }], '2026-09-27').status).toBe('partial')
+  })
+  it('420（在波動內）→ no_change；330（反方向）→ refuted', () => {
+    expect(gradeHypothesis(h, [base, { date: '2026-09-26', value: 420 }], '2026-09-27').status).toBe('no_change')
+    expect(gradeHypothesis(h, [base, { date: '2026-09-26', value: 280 }], '2026-09-27').status).toBe('refuted')
+  })
+  it('基準日後 7 天內的重抽不當答案', () => {
+    expect(gradeHypothesis(h, [base, { date: '2026-03-24', value: 700 }], '2026-04-01').status).toBe('pending')
+  })
+})
