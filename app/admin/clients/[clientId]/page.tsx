@@ -1184,9 +1184,14 @@ export default function ClientEditor() {
               </h1>
             </div>
             {clientId !== 'new' && (
-              <Link href={`/admin/clients/${clientId}/overview`} className="text-primary-600 hover:text-primary-800 text-sm font-medium">
-                總覽
-              </Link>
+              <div className="flex gap-3">
+                <Link href={`/admin/clients/${clientId}/longevity`} className="text-primary-600 hover:text-primary-800 text-sm font-medium">
+                  長壽透鏡
+                </Link>
+                <Link href={`/admin/clients/${clientId}/overview`} className="text-primary-600 hover:text-primary-800 text-sm font-medium">
+                  總覽
+                </Link>
+              </div>
             )}
           </div>
         </div>
