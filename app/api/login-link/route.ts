@@ -26,7 +26,9 @@ export async function POST(request: NextRequest) {
   const { data: purchase } = await supabase
     .from('subscription_purchases')
     .select('client_id')
-    .ilike('email', email)
+    // ilike 做不分大小寫的「完全相等」：% _ \ 要跳脫，否則 `_` 會萬用比對任一字元，
+    // 攻擊者註冊 a_b@x.com 就能收到 a.b@x.com 的登入連結（2026-09-23 稽核 S-02）
+    .ilike('email', email.replace(/[\\%_]/g, (c) => `\\${c}`))
     .not('client_id', 'is', null)
     .order('completed_at', { ascending: false })
     .limit(1)

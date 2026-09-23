@@ -391,7 +391,15 @@ export async function GET(request: NextRequest) {
     if (bulkCutBlock) {
       suggestion.warnings = [...(suggestion.warnings ?? []), '⚠️ 增肌目標下，系統不會把熱量往下砍（增重停滯多半是攝取未達標或記錄不足，不是該降熱量）。系統會依體重趨勢往上推；要調降由教練手動決定。']
     }
-    const canAutoApply = !leanAutoBlock && !bulkCutBlock && wantsAutoApply && effectiveAutoApply && (isAdmin || ((!isCoachManaged) && (suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)))
+    // 2026-09-23 稽核 E1：原本是 `(isAdmin || (!isCoachManaged && ...))`。admin_session cookie 整站共用，
+    // Howard 用自己的瀏覽器開 /c/{code}，學員頁帶 autoApply=true → isAdmin 繞過 coached 閘門，
+    // 把教練設的 macros 蓋掉（震宣 8/25 2070→1853、林宥任 8/14、William 6/18 都是這條）。
+    // 後台頁面從不帶 autoApply，所以 admin 身分跟「自動套用」無關，直接拿掉。
+    // 同時補紅線 3：auto_adjust_enabled=false 的人任何自動路徑都不寫。
+    const canAutoApply = !leanAutoBlock && !bulkCutBlock && wantsAutoApply && effectiveAutoApply
+      && client.auto_adjust_enabled !== false
+      && !isCoachManaged
+      && (suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)
 
     // 教練覆寫鎖定：教練手動調整過營養目標
     // Timed Coach Override: 覆寫期間（含 autoApply）都鎖定，確保教練設定值不被覆蓋

@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       supabase.from('supplement_logs').select('id, supplement_id, client_id, date, completed').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('daily_wellness').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('training_logs').select('id, client_id, date, training_type, rpe, duration, note').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
-      supabase.from('body_composition').select('id, client_id, date, weight, height, body_fat').eq('client_id', realId).order('date', { ascending: true }).limit(365),
+      supabase.from('body_composition').select('id, client_id, date, weight, height, body_fat').eq('client_id', realId).order('date', { ascending: false }).limit(365),
       supabase.from('lab_results').select('*').eq('client_id', realId).order('date', { ascending: false }),
       supabase.from('nutrition_logs').select('*').eq('client_id', realId).gte('date', sinceDate).order('date', { ascending: true }),
       supabase.from('training_sets').select('id, client_id, date, exercise_name, muscle_group, set_number, weight, reps, rpe, is_main_lift').eq('client_id', realId).gte('date', sinceDate90).order('date', { ascending: true }),
@@ -65,7 +65,8 @@ export async function GET(request: NextRequest) {
       supplementLogs: logsRes.data || [],
       wellness: wellRes.data || [],
       trainingLogs: trainRes.data || [],
-      bodyData: bodyRes.data || [],
+      // 最新 365 筆轉回舊→新（ascending+limit 會拿到最舊的，同 cron/daily E3）
+      bodyData: [...(bodyRes.data || [])].reverse(),
       labResults: labRes.data || [],
       nutritionLogs: nutritionRes.data || [],
       trainingSets: trainingSetsRes.data || [],

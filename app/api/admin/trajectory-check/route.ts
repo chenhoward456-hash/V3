@@ -25,7 +25,7 @@ function parseSerotoninField(value: string | null): { serotonin?: 'LL' | 'SL' | 
 
 function verifyAuth(request: NextRequest): boolean {
   const cronSecret = request.headers.get('authorization')
-  if (cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true
+  if (process.env.CRON_SECRET && cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true
   const token = request.cookies.get('admin_session')?.value
   return !!token && verifyAdminSession(token)
 }
@@ -57,14 +57,15 @@ export async function GET(request: NextRequest) {
   const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
 
   const [bodyRes, wellnessRes, trainingRes, nutritionRes, labRes] = await Promise.all([
-    supabase.from('body_composition').select('date, weight, height, body_fat').eq('client_id', c.id).order('date', { ascending: true }).limit(180),
+    supabase.from('body_composition').select('date, weight, height, body_fat').eq('client_id', c.id).order('date', { ascending: false }).limit(180),
     supabase.from('daily_wellness').select('date, energy_level, training_drive, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate').eq('client_id', c.id).gte('date', fourteenStr),
     supabase.from('training_logs').select('date, training_type, rpe').eq('client_id', c.id).gte('date', fourteenStr),
     supabase.from('nutrition_logs').select('date, calories, carbs_grams, compliant').eq('client_id', c.id).gte('date', fourteenStr),
     supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', c.id).order('date', { ascending: false }).limit(50),
   ])
 
-  const bodyData = bodyRes.data ?? []
+  // 最新 180 筆轉回舊→新（同 cron/daily 的 E3 修正）
+  const bodyData = [...(bodyRes.data ?? [])].reverse()
   if (bodyData.length === 0) {
     return NextResponse.json({ ok: true, decision: 'no_body_data', message: '沒有體重紀錄，無法判斷' })
   }
