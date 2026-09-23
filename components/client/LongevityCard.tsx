@@ -49,7 +49,8 @@ function Row({ s, hyps, ctxText }: { s: MarkerStory; hyps: Data['hypotheses']; c
   const unit = s.latest?.unit ? ` ${s.latest.unit}` : ''
   const c = s.change
   let retest: string | null = null
-  if (s.freshness === 'good_hold') retest = '上次數字很好、體重也沒大變，不用急著重測'
+  if (s.freshness === 'once_ok' && !s.optimalNow) retest = '這項偏高，主要由基因決定、不太會變；教練會把其他能改變的數字一起顧好'
+  else if (s.freshness === 'good_hold') retest = '上次數字很好、體重也沒大變，不用急著重測'
   else if (s.freshness === 'changed') retest = '上次很好，但之後體重變化比較大，下次抽血可以一起看'
   else if (s.freshness === 'stale' && s.spec.core) retest = `建議 ${s.retestBy} 前再測一次`
 
@@ -109,7 +110,8 @@ export default function LongevityCard({ code }: { code: string }) {
       <p className="text-xs text-slate-500 mt-1">每個數字都跟你自己的上一次比：先分清楚是真的在變，還是正常波動。</p>
 
       {data.groups.map(g => {
-        const changed = g.stories.filter(s => isReal(s) || hypsFor(s.name).length > 0)
+        // 攤開：真的在變、有預測、或「一生一次但偏高」（例 Lp(a)）——後者收起來學員就看不到
+        const changed = g.stories.filter(s => isReal(s) || hypsFor(s.name).length > 0 || (s.freshness === 'once_ok' && !s.optimalNow))
         const steady = g.stories.filter(s => !changed.includes(s))
         return (
           <div key={g.key} className="mt-4">
@@ -124,7 +126,7 @@ export default function LongevityCard({ code }: { code: string }) {
             {steady.length > 0 && (
               <details className="mt-1">
                 <summary className="text-sm text-slate-500 cursor-pointer py-1">
-                  {changed.length === 0 ? `${steady.length} 項都沒有明顯變化` : `其他 ${steady.length} 項沒有明顯變化`}
+                  {changed.length === 0 ? `${steady.length} 項：只測過一次或沒有明顯變化` : `其他 ${steady.length} 項：只測過一次或沒有明顯變化`}
                 </summary>
                 {steady.map(s => <Row key={s.name} s={s} hyps={[]} ctxText={null} />)}
               </details>

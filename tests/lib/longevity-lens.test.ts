@@ -158,3 +158,18 @@ describe('buildFitness：只跟同一種量法比', () => {
     expect(buildFitness([]).find(f => f.kind === 'grip')!.latest).toBeNull()
   })
 })
+
+describe('肝腎與血液', () => {
+  it('肌酸酐 1.33→1.53（+15%）超過 ±13% 波動 → 真的在變；歸在 organ', () => {
+    const hs = buildHorsemen({ 肌酸酐: [{ date: '2026-01-01', value: 1.33 }, { date: '2026-06-01', value: 1.53 }] }, empty, '2026-09-24')
+    const organ = hs.find(h => h.key === 'organ')!
+    expect(organ.stories[0].change?.verdict).toBe('real_up')
+  })
+})
+
+describe('Lp(a) 偏高提示', () => {
+  it('76.84 → once_ok 但 optimalNow=false；5 → optimalNow=true', () => {
+    expect(buildMarkerStory('Lp(a)', [{ date: '2025-01-01', value: 76.84 }], empty, '2026-09-24').optimalNow).toBe(false)
+    expect(buildMarkerStory('Lp(a)', [{ date: '2025-01-01', value: 5 }], empty, '2026-09-24').optimalNow).toBe(true)
+  })
+})
