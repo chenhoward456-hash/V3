@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { verifyCoachAuth, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware'
-import { buildHorsemen, strengthByMonth, MARKERS, type LabPoint } from '@/lib/longevity-lens'
+import { buildHorsemen, strengthByMonth, gradeHypothesis, MARKERS, type LabPoint, type LabHypothesis } from '@/lib/longevity-lens'
 import { getTaiwanDate } from '@/lib/date-utils'
 
 export const dynamic = 'force-dynamic'
@@ -28,15 +28,16 @@ export async function GET(request: NextRequest) {
     .maybeSingle()
   if (!client) return createErrorResponse('找不到學員', 404)
 
-  const [labs, weights, nutrition, training, wellness, sets] = await Promise.all([
+  const [labs, weights, nutrition, training, wellness, sets, hyps] = await Promise.all([
     supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', client.id).order('date'),
     supabase.from('body_composition').select('date, weight').eq('client_id', client.id).not('weight', 'is', null).order('date'),
     supabase.from('nutrition_logs').select('date, calories').eq('client_id', client.id).order('date'),
     supabase.from('training_logs').select('date, training_type').eq('client_id', client.id).order('date'),
     supabase.from('daily_wellness').select('date, sleep_quality').eq('client_id', client.id).order('date'),
     supabase.from('training_sets').select('date, exercise_name, weight, reps, is_main_lift').eq('client_id', client.id).eq('is_main_lift', true).order('date'),
+    supabase.from('lab_hypotheses').select('*').eq('client_id', client.id).order('created_at', { ascending: false }),
   ])
-  const firstError = [labs, weights, nutrition, training, wellness, sets].find(r => r.error)?.error
+  const firstError = [labs, weights, nutrition, training, wellness, sets, hyps].find(r => r.error)?.error
   if (firstError) return createErrorResponse(`讀取失敗：${firstError.message}`, 500)
 
   const labsByName: Record<string, LabPoint[]> = {}
@@ -58,6 +59,8 @@ export async function GET(request: NextRequest) {
     today,
     horsemen: buildHorsemen(labsByName, rows, today),
     strength: strengthByMonth(sets.data ?? []),
+    clientId: client.id,
+    hypotheses: ((hyps.data ?? []) as LabHypothesis[]).map(h => ({ ...h, grade: gradeHypothesis(h, labsByName[h.marker] ?? [], today) })),
     // 有做、但還沒排進四騎士的指標（不讓資料默默消失）
     unmapped: Object.keys(labsByName).filter(n => !(n in MARKERS)),
   })

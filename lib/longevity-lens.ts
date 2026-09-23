@@ -286,3 +286,67 @@ export function strengthByMonth(
   }
   return [...best.values()].sort((a, b) => a.exercise.localeCompare(b.exercise) || a.month.localeCompare(b.month))
 }
+
+// ─────────────────────────────────────────────────────────────
+// 預測 → 驗收（lab_hypotheses）：每個真實變化記一個「推測原因＋行動＋預期」，
+// 下一次抽血自動對答案。判決不存 DB，每次用最新資料重算。
+// ─────────────────────────────────────────────────────────────
+
+export interface LabHypothesis {
+  id: string
+  marker: string
+  baseline_date: string
+  baseline_value: number
+  cause: string | null
+  action: string | null
+  expected_direction: 'up' | 'down' | 'stable'
+  expected_value: number | null
+  retest_by: string | null
+  note: string | null
+  created_at: string
+}
+
+/**
+ * pending：還沒有重測結果｜overdue：過了預計重測日還沒測
+ * confirmed：方向對、也到目標｜partial：方向對但沒到目標｜no_change：變化在正常波動內
+ * refuted：往反方向走
+ */
+export type HypothesisStatus = 'pending' | 'overdue' | 'confirmed' | 'partial' | 'no_change' | 'refuted'
+
+export interface HypothesisGrade {
+  status: HypothesisStatus
+  result: LabPoint | null
+  change: ChangeRead | null
+}
+
+export function gradeHypothesis(h: LabHypothesis, points: LabPoint[], today: string): HypothesisGrade {
+  const spec = MARKERS[h.marker]
+  const minDate = new Date(`${h.baseline_date}T00:00:00Z`)
+  minDate.setUTCDate(minDate.getUTCDate() + 7)
+  const minStr = minDate.toISOString().slice(0, 10)
+  const after = points.filter(p => p.date >= minStr && Number.isFinite(p.value)).sort((a, b) => a.date.localeCompare(b.date))
+  // 用重測日之後（或最接近的）第一筆當答案；同日多筆取平均
+  if (after.length === 0) {
+    return { status: h.retest_by && today > h.retest_by ? 'overdue' : 'pending', result: null, change: null }
+  }
+  const firstDate = after[0].date
+  const same = after.filter(p => p.date === firstDate)
+  const result: LabPoint = { date: firstDate, value: same.reduce((s, p) => s + p.value, 0) / same.length, unit: same[0].unit ?? null }
+  const change = readChange({ date: h.baseline_date, value: Number(h.baseline_value) }, result, spec?.cvi ?? 10)
+
+  let status: HypothesisStatus
+  if (h.expected_direction === 'stable') {
+    status = change.verdict === 'noise' ? 'confirmed' : 'refuted'
+  } else {
+    const wanted = h.expected_direction === 'up' ? 'real_up' : 'real_down'
+    const opposite = h.expected_direction === 'up' ? 'real_down' : 'real_up'
+    if (change.verdict === 'noise') status = 'no_change'
+    else if (change.verdict === opposite) status = 'refuted'
+    else if (change.verdict === wanted) {
+      const hit = h.expected_value == null
+        || (h.expected_direction === 'up' ? result.value >= Number(h.expected_value) : result.value <= Number(h.expected_value))
+      status = hit ? 'confirmed' : 'partial'
+    } else status = 'no_change'
+  }
+  return { status, result, change }
+}

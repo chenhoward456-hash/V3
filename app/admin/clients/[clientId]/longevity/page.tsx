@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import type { HorsemanView, MarkerStory, StrengthPoint } from '@/lib/longevity-lens'
+import type { HorsemanView, MarkerStory, StrengthPoint, LabHypothesis, HypothesisGrade } from '@/lib/longevity-lens'
 
 interface LongevityData {
   client: { name: string; gender: string | null; nextCheckupDate: string | null }
@@ -11,6 +11,84 @@ interface LongevityData {
   horsemen: HorsemanView[]
   strength: StrengthPoint[]
   unmapped: string[]
+  clientId: string
+  hypotheses: (LabHypothesis & { grade: HypothesisGrade })[]
+}
+
+type GradedHypothesis = LongevityData['hypotheses'][number]
+
+const GRADE_TEXT: Record<HypothesisGrade['status'], { text: string; cls: string }> = {
+  pending: { text: '等重測', cls: 'text-slate-500' },
+  overdue: { text: '過了重測日還沒測', cls: 'text-amber-700' },
+  confirmed: { text: '猜對了：方向對、也到目標', cls: 'text-emerald-700' },
+  partial: { text: '方向對，但還沒到目標', cls: 'text-amber-700' },
+  no_change: { text: '沒有變（在正常波動內）→ 這個行動不夠，或原因不是這個', cls: 'text-slate-700' },
+  refuted: { text: '猜錯了：往反方向走 → 換方向找原因', cls: 'text-red-700' },
+}
+
+function HypothesisRow({ h, onDelete }: { h: GradedHypothesis; onDelete: (id: string) => void }) {
+  const g = GRADE_TEXT[h.grade.status]
+  const arrow = h.expected_direction === 'up' ? '↑' : h.expected_direction === 'down' ? '↓' : '持平'
+  const target = h.expected_value != null ? `${h.expected_direction === 'down' ? '≤' : '≥'} ${h.expected_value}` : ''
+  return (
+    <div className="mt-2 rounded-xl border border-slate-200 p-3 text-sm">
+      <div className="flex justify-between gap-2">
+        <span className="font-medium text-slate-900">預測：{arrow} {target}<span className="text-slate-400 font-normal">（從 {h.baseline_date} 的 {h.baseline_value} 起算）</span></span>
+        <button onClick={() => onDelete(h.id)} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">刪除</button>
+      </div>
+      {h.cause && <p className="text-slate-600 mt-1">推測原因：{h.cause}</p>}
+      {h.action && <p className="text-slate-600 mt-0.5">行動：{h.action}</p>}
+      {h.note && <p className="text-slate-400 text-xs mt-0.5">{h.note}</p>}
+      <p className={`mt-1.5 font-medium ${g.cls}`}>
+        {g.text}
+        {h.grade.result && <span className="font-normal text-slate-600">（{h.grade.result.date}：{Math.round(h.grade.result.value * 100) / 100}，{h.grade.change!.pctChange > 0 ? '+' : ''}{h.grade.change!.pctChange.toFixed(0)}%）</span>}
+        {!h.grade.result && h.retest_by && <span className="font-normal text-slate-500">（預計 {h.retest_by}）</span>}
+      </p>
+    </div>
+  )
+}
+
+function HypothesisForm({ s, clientId, onSaved }: { s: MarkerStory; clientId: string; onSaved: () => void }) {
+  const latest = s.latest!
+  const defaultDir = s.spec.better === 'lower' ? 'down' : s.spec.better === 'higher' ? 'up'
+    : s.change?.verdict === 'real_down' ? 'up' : s.change?.verdict === 'real_up' ? 'down' : 'stable'
+  const [dir, setDir] = useState<'up' | 'down' | 'stable'>(defaultDir)
+  const [target, setTarget] = useState('')
+  const [cause, setCause] = useState('')
+  const [action, setAction] = useState('')
+  const [retestBy, setRetestBy] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const save = async () => {
+    setSaving(true); setErr(null)
+    const r = await fetch('/api/admin/longevity/hypotheses', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId, marker: s.name, baselineDate: latest.date, baselineValue: latest.value, expectedDirection: dir, expectedValue: target, cause, action, retestBy }),
+    })
+    const j = await r.json().catch(() => ({}))
+    setSaving(false)
+    if (!r.ok || !j.success) { setErr(j.error || `HTTP ${r.status}`); return }
+    onSaved()
+  }
+  const input = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm'
+  return (
+    <div className="mt-2 rounded-xl border border-slate-200 p-3 space-y-2 text-sm">
+      <p className="text-slate-600">起點：{latest.date} 的 {Math.round(latest.value * 100) / 100}</p>
+      <div className="flex gap-2">
+        {(['up', 'down', 'stable'] as const).map(d => (
+          <button key={d} onClick={() => setDir(d)} className={`px-3 py-1.5 rounded-lg border text-sm ${dir === d ? 'border-[#1E4A73] text-[#1E4A73] font-medium' : 'border-slate-200 text-slate-600'}`}>
+            {d === 'up' ? '會上升' : d === 'down' ? '會下降' : '維持'}
+          </button>
+        ))}
+      </div>
+      {dir !== 'stable' && <input className={input} inputMode="decimal" placeholder={dir === 'up' ? '目標：至少到多少（可空）' : '目標：至少降到多少（可空）'} value={target} onChange={e => setTarget(e.target.value)} />}
+      <input className={input} placeholder="推測原因（例：減脂期每天少吃 300 大卡）" value={cause} onChange={e => setCause(e.target.value)} />
+      <input className={input} placeholder="行動（例：吃回維持熱量 8 週）" value={action} onChange={e => setAction(e.target.value)} />
+      <label className="block text-slate-500 text-xs">預計重測日<input type="date" className={input} value={retestBy} onChange={e => setRetestBy(e.target.value)} /></label>
+      {err && <p className="text-red-700 text-xs">{err}</p>}
+      <button disabled={saving} onClick={save} className="w-full bg-[#1E4A73] hover:bg-[#16385A] text-white rounded-lg py-2 font-medium disabled:opacity-50">{saving ? '儲存中…' : '記下這個預測'}</button>
+    </div>
+  )
 }
 
 const fmt = (n: number) => (Math.abs(n) >= 100 ? Math.round(n).toLocaleString() : String(Math.round(n * 100) / 100))
@@ -56,7 +134,12 @@ function contextLine(s: MarkerStory): string | null {
   return `這 ${x.days} 天：${parts.join('、')}`
 }
 
-function StoryRow({ s }: { s: MarkerStory }) {
+function StoryRow({ s, hyps, clientId, onChanged }: { s: MarkerStory; hyps: GradedHypothesis[]; clientId: string; onChanged: () => void }) {
+  const [open, setOpen] = useState(false)
+  const del = async (id: string) => {
+    await fetch(`/api/admin/longevity/hypotheses?id=${id}`, { method: 'DELETE' })
+    onChanged()
+  }
   const unit = s.latest?.unit ? ` ${s.latest.unit}` : ''
   const f = freshnessLine(s)
   const change = changeLine(s)
@@ -75,6 +158,12 @@ function StoryRow({ s }: { s: MarkerStory }) {
       {ctx && real && <p className="text-sm text-slate-600 mt-1">{ctx}</p>}
       {f.text && (
         <p className={`text-xs mt-1.5 ${f.tone === 'warn' ? 'text-amber-700' : f.tone === 'ok' ? 'text-emerald-700' : 'text-slate-500'}`}>{f.text}</p>
+      )}
+      {hyps.map(h => <HypothesisRow key={h.id} h={h} onDelete={del} />)}
+      {s.latest && !s.spec.onceInLife && (
+        open
+          ? <HypothesisForm s={s} clientId={clientId} onSaved={() => { setOpen(false); onChanged() }} />
+          : <button onClick={() => setOpen(true)} className="mt-2 text-xs text-[#1E4A73] font-medium">＋ 記一個預測</button>
       )}
     </div>
   )
@@ -110,7 +199,7 @@ export default function LongevityPage() {
   const [data, setData] = useState<LongevityData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const load = useCallback(() => {
     fetch(`/api/admin/longevity?clientId=${encodeURIComponent(String(clientId))}`)
       .then(async r => {
         const j = await r.json()
@@ -119,6 +208,7 @@ export default function LongevityPage() {
       })
       .catch(e => setError(e instanceof Error ? e.message : String(e)))
   }, [clientId])
+  useEffect(() => { load() }, [load])
 
   if (error) return <main className="min-h-screen bg-slate-50 p-4"><p className="text-red-700">載入失敗：{error}</p></main>
   if (!data) return <main className="min-h-screen bg-slate-50 p-4"><p className="text-slate-500">載入中…</p></main>
@@ -145,7 +235,10 @@ export default function LongevityPage() {
             {h.stories.length === 0 && h.blindSpots.length === 0 && (
               <p className="text-sm text-slate-600 mt-3">{h.key === 'cancer' ? '血檢看不到，靠定期篩檢（不在 V3 裡）。' : '這一區還沒有資料。'}</p>
             )}
-            <div className="mt-2">{h.stories.map(s => <StoryRow key={s.name} s={s} />)}</div>
+            <div className="mt-2">{h.stories.map(s => (
+              <StoryRow key={s.name} s={s} clientId={data.clientId} onChanged={load}
+                hyps={data.hypotheses.filter(x => x.marker === s.name)} />
+            ))}</div>
           </section>
         ))}
 
