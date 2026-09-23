@@ -107,11 +107,20 @@ export async function POST(request: NextRequest) {
         const newExpiry = new Date(baseDate)
         newExpiry.setMonth(newExpiry.getMonth() + durationMonths)
 
-        await supabase.from('clients').update({
+        const { error: upgradeError } = await supabase.from('clients').update({
           subscription_tier: tier,
           expires_at: newExpiry.toISOString(),
           ...getDefaultFeatures(tier),
         }).eq('id', clientId)
+
+        // 升級寫入失敗：跟新建帳號同一套——訂單退回 pending、回 ECPay 失敗讓它重送。
+        // 原本不檢查 error，錢收了、帳號沒升級，訂單卻已標 completed，重送也會被當重複略過（稽核 R7/D6）
+        if (upgradeError) {
+          const { error: rollbackError } = await supabase.from('subscription_purchases').update({ status: 'pending', completed_at: null, ecpay_trade_no: null }).eq('merchant_trade_no', merchantTradeNo)
+          if (rollbackError) log.error('CRITICAL: Rollback failed - manual intervention required', rollbackError, { merchantTradeNo })
+          log.error('Client upgrade error, purchase rolled back', upgradeError, { merchantTradeNo, tier })
+          return new NextResponse('0|ErrorMessage', { status: 200 })
+        }
 
         log.info('Client upgraded', { uniqueCode, tier, previousTier: existingClient.subscription_tier, email: updated.email })
 

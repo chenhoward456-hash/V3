@@ -309,11 +309,14 @@ export default function AdminDashboard() {
   }
 
   const runWeeklyCron = async () => {
+    // 會推週報＋當週任務給所有學員（吃 LINE 額度）；本週已跑過後端會自動略過（稽核 R5）
+    if (!window.confirm('會把本週週報和當週任務推給所有學員。本週已經跑過的話會自動略過。確定執行？')) return
     setRunningCron(true)
     try {
       const res = await fetch('/api/cron/weekly')
       if (res.ok) {
         const data = await res.json()
+        if (data.skipped) { showToast(data.message, 'success'); return }
         showToast(`每週分析完成！季度重置：${data.results.quarterlyResets} 人，分析生成：${data.results.analysisGenerated} 人，通知：${data.results.alertsGenerated} 項`, 'success')
         fetchNotifications()
       } else {

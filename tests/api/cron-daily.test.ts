@@ -565,7 +565,7 @@ describe('GET /api/cron/daily', () => {
       return createMockQueryBuilder(result.data, result.error)
     })
 
-    mockPushMessage.mockResolvedValue(undefined)
+    mockPushMessage.mockResolvedValue({ ok: true, status: 200 })  // 真的 pushMessage 回 Response；成功才算數（稽核 R2）
 
     const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
     const res = await GET(req)
