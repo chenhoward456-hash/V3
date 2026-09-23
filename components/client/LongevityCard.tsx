@@ -150,7 +150,8 @@ export default function LongevityCard({ code }: { code: string }) {
         </div>
       )}
 
-      <p className="text-xs text-slate-400 mt-4">這是追蹤與教育用途，不是醫療診斷；數字有疑慮請與醫師討論。</p>
+      <a href={`/c/${code}/health/upload`} className="mt-4 block text-sm text-[#1E4A73] font-medium">有新的報告？拍照上傳 →</a>
+      <p className="text-xs text-slate-400 mt-3">這是追蹤與教育用途，不是醫療診斷；數字有疑慮請與醫師討論。</p>
     </section>
   )
 }

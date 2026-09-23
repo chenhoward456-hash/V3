@@ -100,9 +100,24 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
       x.days != null && x.days >= OFFLINE_MIN_DAYS && x.days <= OFFLINE_MAX_DAYS)
     .sort((a, b) => b.days - a.days)
 
+  // 超過 30 天沒動的人：每天唸會變雜訊，但完全不提就會被忘記
+  // （2026-09-24 謝佳峻：6/11 之後沒任何紀錄，晨報三個月都看不到他，Howard 其實很想顧他）。
+  // → 只在週一列一次名字。
+  const isMonday = new Date(`${today}T00:00:00Z`).getUTCDay() === 1
+  const longGone = isMonday
+    ? clients.filter(c => {
+        const la = lastActiveByClient[c.id]
+        return !la || Math.round((todayMs - Date.parse(la)) / DAY_MS) > OFFLINE_MAX_DAYS
+      }).map(c => c.name)
+    : []
+
   if (offline.length > 0) {
     lines.push(`🚨 ${offline.length} 個人掉線了：`)
     offline.forEach(o => lines.push(`  • ${o.name}：${o.days} 天沒動`))
+    lines.push('')
+  }
+  if (longGone.length > 0) {
+    lines.push(`🕳️ 超過 ${OFFLINE_MAX_DAYS} 天沒有任何紀錄（每週一提醒）：${longGone.join('、')}`)
     lines.push('')
   }
 

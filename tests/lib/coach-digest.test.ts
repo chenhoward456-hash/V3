@@ -168,3 +168,13 @@ describe('血檢預測對答案進晨報（V3 初衷的循環）', () => {
     expect(t).toContain('睪固酮：403.92 → 530，有進步，還沒到目標')
   })
 })
+
+describe('超過 30 天沒動的人：週一提醒一次', () => {
+  it('週一 → 列名字；其他天 → 不列', () => {
+    // base() 的 clients 有 a、b；只給 b 最近的活動 → a 算長期沒動
+    const mon = buildCoachDigest(base({ today: '2026-09-28', lastActiveByClient: { b: '2026-09-27' } }))
+    expect(mon.text ?? '').toContain('超過 30 天沒有任何紀錄')
+    const tue = buildCoachDigest(base({ today: '2026-09-29', lastActiveByClient: { b: '2026-09-28' } }))
+    expect(tue.text ?? '').not.toContain('超過 30 天沒有任何紀錄')
+  })
+})
