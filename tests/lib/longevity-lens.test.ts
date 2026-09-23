@@ -173,3 +173,19 @@ describe('Lp(a) 偏高提示', () => {
     expect(buildMarkerStory('Lp(a)', [{ date: '2025-01-01', value: 5 }], empty, '2026-09-24').optimalNow).toBe(true)
   })
 })
+
+import { currentForCapacity } from '@/lib/longevity-lens'
+
+describe('百歲十項全能：目標接上現在的數字', () => {
+  it('肌力 → 各主項最新月份的估計 1RM（取最重兩項）＋握力', () => {
+    const t = currentForCapacity('strength', [
+      { month: '2026-01', exercise: '深蹲', e1rm: 150 }, { month: '2026-06', exercise: '深蹲', e1rm: 160 },
+      { month: '2026-06', exercise: '臥推', e1rm: 110 }, { month: '2026-06', exercise: '划船', e1rm: 90 },
+    ], buildFitness([{ id: 'g', kind: 'grip', date: '2026-09-01', value: 52, method: '握力計', note: null }]))
+    expect(t).toBe('深蹲 估計 1RM 160 kg（2026-06）、臥推 估計 1RM 110 kg（2026-06）、握力 52 kg（2026-09-01）')
+  })
+  it('心肺沒資料、活動度 → null', () => {
+    expect(currentForCapacity('cardio', [], [])).toBeNull()
+    expect(currentForCapacity('mobility', [], [])).toBeNull()
+  })
+})

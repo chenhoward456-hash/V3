@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { HorsemanView, MarkerStory, LabHypothesis, HypothesisGrade, FitnessView } from '@/lib/longevity-lens'
-import { FITNESS_META } from '@/lib/longevity-lens'
+import type { HorsemanView, MarkerStory, LabHypothesis, HypothesisGrade, FitnessView, DecathlonGoal } from '@/lib/longevity-lens'
+import { FITNESS_META, CAPACITY_META } from '@/lib/longevity-lens'
 
 /**
  * 學員版長壽透鏡（「健康」分頁）：V3 的初衷——同一個人的血檢看得到進退。
@@ -15,6 +15,7 @@ interface Data {
   groups: (HorsemanView & { label: string; why: string })[]
   hypotheses: (LabHypothesis & { grade: HypothesisGrade })[]
   fitness: FitnessView[]
+  decathlon?: (DecathlonGoal & { current: string | null })[]
 }
 
 const fmt = (n: number) => (Math.abs(n) >= 100 ? Math.round(n).toLocaleString() : String(Math.round(n * 100) / 100))
@@ -100,7 +101,7 @@ export default function LongevityCard({ code }: { code: string }) {
 
   if (failed) return null
   if (!data) return <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 text-sm text-slate-400">血檢進退載入中…</div>
-  if (data.groups.length === 0 && data.fitness.length === 0) return null
+  if (data.groups.length === 0 && data.fitness.length === 0 && !(data.decathlon?.length)) return null
 
   const hypsFor = (name: string) => data.hypotheses.filter(h => h.marker === name)
 
@@ -108,6 +109,19 @@ export default function LongevityCard({ code }: { code: string }) {
     <section className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
       <h2 className="text-lg font-bold text-slate-900">血檢進退</h2>
       <p className="text-xs text-slate-500 mt-1">每個數字都跟你自己的上一次比：先分清楚是真的在變，還是正常波動。</p>
+
+      {/* 百歲十項全能：所有數字最上層的「所以呢」 */}
+      {(data.decathlon?.length ?? 0) > 0 && (
+        <div className="mt-4 rounded-xl bg-slate-50 p-3">
+          <h3 className="font-sans font-semibold text-slate-900 tabular-nums">你 90 歲想做到的事</h3>
+          {data.decathlon!.map(g => (
+            <div key={g.id} className="mt-2">
+              <p className="text-sm text-slate-900">・{g.event}</p>
+              <p className="text-xs text-slate-500 ml-3">靠{CAPACITY_META[g.capacity].label}｜現在：{g.current ?? '還沒有量化數字，下次評估一起量'}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {data.groups.map(g => {
         // 攤開：真的在變、有預測、或「一生一次但偏高」（例 Lp(a)）——後者收起來學員就看不到

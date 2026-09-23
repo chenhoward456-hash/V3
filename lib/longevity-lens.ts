@@ -410,3 +410,40 @@ export const STUDENT_GROUP_META: Partial<Record<Horseman, { label: string; why: 
   organ: { label: '肝腎與血液', why: '器官和血球的基本狀態；重訓和補充肌酸會讓肌酸酐偏高，要跟訓練一起看' },
   support: { label: '荷爾蒙與營養', why: '會影響恢復、訓練表現和精神狀態' },
 }
+
+// ─────────────────────────────────────────────────────────────
+// 百歲十項全能（Attia）：90 歲想做到的事 → 對到一種能力 → 接上現在的數字。
+// 這一版不自動算「現在要多強」（退化速率還沒逐項查證），只把目標跟現況接起來。
+// ─────────────────────────────────────────────────────────────
+
+export type Capacity = 'strength' | 'cardio' | 'mobility' | 'balance'
+
+export const CAPACITY_META: Record<Capacity, { label: string }> = {
+  strength: { label: '肌力' },
+  cardio: { label: '心肺' },
+  mobility: { label: '活動度' },
+  balance: { label: '平衡' },
+}
+
+export interface DecathlonGoal { id: string; event: string; capacity: Capacity; created_at: string }
+
+/** 這個目標對應的「現在的數字」；沒有可量化指標就回 null */
+export function currentForCapacity(capacity: Capacity, strength: StrengthPoint[], fitness: FitnessView[]): string | null {
+  if (capacity === 'strength') {
+    const parts: string[] = []
+    const latestByEx = new Map<string, StrengthPoint>()
+    for (const p of strength) {
+      const cur = latestByEx.get(p.exercise)
+      if (!cur || p.month > cur.month) latestByEx.set(p.exercise, p)
+    }
+    for (const p of [...latestByEx.values()].sort((a, b) => b.e1rm - a.e1rm).slice(0, 2)) parts.push(`${p.exercise} 估計 1RM ${p.e1rm} kg（${p.month}）`)
+    const grip = fitness.find(f => f.kind === 'grip')?.latest
+    if (grip) parts.push(`握力 ${grip.value} kg（${grip.date}）`)
+    return parts.length ? parts.join('、') : null
+  }
+  if (capacity === 'cardio') {
+    const v = fitness.find(f => f.kind === 'vo2max')?.latest
+    return v ? `VO2max ${v.value} ml/kg/min（${v.date}，${v.method}）` : null
+  }
+  return null
+}

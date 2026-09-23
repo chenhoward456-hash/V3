@@ -4,13 +4,13 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
-  buildHorsemen, strengthByMonth, gradeHypothesis, buildFitness, MARKERS,
-  type LabPoint, type LabHypothesis, type FitnessRow,
+  buildHorsemen, strengthByMonth, gradeHypothesis, buildFitness, currentForCapacity, MARKERS,
+  type LabPoint, type LabHypothesis, type FitnessRow, type DecathlonGoal,
 } from '@/lib/longevity-lens'
 import { getTaiwanDate } from '@/lib/date-utils'
 
 export async function loadLongevity(supabase: SupabaseClient, clientDbId: string) {
-  const [labs, weights, nutrition, training, wellness, sets, hyps, fitness] = await Promise.all([
+  const [labs, weights, nutrition, training, wellness, sets, hyps, fitness, goals] = await Promise.all([
     supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', clientDbId).order('date'),
     supabase.from('body_composition').select('date, weight').eq('client_id', clientDbId).not('weight', 'is', null).order('date'),
     supabase.from('nutrition_logs').select('date, calories').eq('client_id', clientDbId).order('date'),
@@ -19,8 +19,9 @@ export async function loadLongevity(supabase: SupabaseClient, clientDbId: string
     supabase.from('training_sets').select('date, exercise_name, weight, reps, is_main_lift').eq('client_id', clientDbId).eq('is_main_lift', true).order('date'),
     supabase.from('lab_hypotheses').select('*').eq('client_id', clientDbId).order('created_at', { ascending: false }),
     supabase.from('fitness_markers').select('id, kind, date, value, method, note').eq('client_id', clientDbId).order('date'),
+    supabase.from('decathlon_goals').select('id, event, capacity, created_at').eq('client_id', clientDbId).order('created_at'),
   ])
-  const firstError = [labs, weights, nutrition, training, wellness, sets, hyps, fitness].find(r => r.error)?.error
+  const firstError = [labs, weights, nutrition, training, wellness, sets, hyps, fitness, goals].find(r => r.error)?.error
   if (firstError) throw new Error(firstError.message)
 
   const labsByName: Record<string, LabPoint[]> = {}
@@ -36,11 +37,15 @@ export async function loadLongevity(supabase: SupabaseClient, clientDbId: string
   }
   const today = getTaiwanDate()
 
+  const strength = strengthByMonth(sets.data ?? [])
+  const fitnessViews = buildFitness((fitness.data ?? []) as FitnessRow[])
+
   return {
     today,
     horsemen: buildHorsemen(labsByName, rows, today),
-    strength: strengthByMonth(sets.data ?? []),
-    fitness: buildFitness((fitness.data ?? []) as FitnessRow[]),
+    strength,
+    fitness: fitnessViews,
+    decathlon: ((goals.data ?? []) as DecathlonGoal[]).map(g => ({ ...g, current: currentForCapacity(g.capacity, strength, fitnessViews) })),
     hypotheses: ((hyps.data ?? []) as LabHypothesis[]).map(h => ({ ...h, grade: gradeHypothesis(h, labsByName[h.marker] ?? [], today) })),
     unmapped: Object.keys(labsByName).filter(n => !(n in MARKERS)),
   }
