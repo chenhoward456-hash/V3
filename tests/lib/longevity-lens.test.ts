@@ -189,3 +189,26 @@ describe('百歲十項全能：目標接上現在的數字', () => {
     expect(currentForCapacity('mobility', [], [])).toBeNull()
   })
 })
+
+import { judgeDirection } from '@/lib/longevity-lens'
+
+describe('judgeDirection：直接講變好還是變差', () => {
+  const ch = (a: number, b: number, cvi: number) => readChange({ date: '2026-01-01', value: a }, { date: '2026-06-01', value: b }, cvi)
+  it('男性睪固酮 625→404 → 變差；女性 → 不判', () => {
+    expect(judgeDirection(MARKERS['睪固酮'], ch(625, 404, 10), '男性')).toBe('worse')
+    expect(judgeDirection(MARKERS['睪固酮'], ch(625, 404, 10), '女性')).toBeNull()
+  })
+  it('SHBG 24.4→38.4 兩個都在 20–40 → 不判；24→55 離開範圍 → 變差', () => {
+    expect(judgeDirection(MARKERS.SHBG, ch(24.4, 38.4, 9.7), '男性')).toBeNull()
+    expect(judgeDirection(MARKERS.SHBG, ch(24, 55, 9.7), '男性')).toBe('worse')
+  })
+  it('越低越好：同半胱胺酸 15→9 → 變好；三酸甘油酯 34→63 都在很好範圍 → 不判；80→150 → 變差', () => {
+    expect(judgeDirection(MARKERS['同半胱胺酸'], ch(15, 9, 8.3))).toBe('better')
+    expect(judgeDirection(MARKERS['三酸甘油酯'], ch(34, 63, 19.9))).toBeNull()
+    expect(judgeDirection(MARKERS['三酸甘油酯'], ch(80, 150, 19.9))).toBe('worse')
+  })
+  it('維生素D 34→59 往最佳範圍走 → 變好；在波動內 → null', () => {
+    expect(judgeDirection(MARKERS['維生素D'], ch(34, 59, 7.1))).toBe('better')
+    expect(judgeDirection(MARKERS['維生素D'], ch(50, 52, 7.1))).toBeNull()
+  })
+})
