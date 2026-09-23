@@ -29,6 +29,7 @@ import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib
 import { createLogger } from '@/lib/logger'
 import { getTaipeiDayOfWeek } from '@/lib/periodization'
 import { COACH_LINE_USER_ID, loadCoachDigest } from '@/lib/coach-digest'
+import { studentText } from '@/lib/hypothesis-updates'
 import { listActionableProposals, sweepExpiredProposals } from '@/lib/proposal-actions'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import {
@@ -879,6 +880,29 @@ export async function GET(request: NextRequest) {
         if (digest.text) {
           await pushMessage(coachLineId, [{ type: 'text', text: digest.text }])
           logger.info(`Coach digest sent: ${digest.offline.length} offline`)
+        }
+
+        // 血檢預測對答案 → 學員也要知道（一人一則；有 Web Push 走 Web Push、不花 LINE 額度），
+        // 通知完記 notified_status，同一個判決不會每天重推。
+        const graded = digest.hypothesisUpdates?.graded ?? []
+        const byClient = new Map<string, typeof graded>()
+        for (const u of graded) byClient.set(u.clientId, [...(byClient.get(u.clientId) ?? []), u])
+        for (const [cid, ups] of byClient) {
+          try {
+            const first = ups[0]
+            await sendRoutineReminder(cid, first.lineUserId ?? '', {  // 沒綁 LINE 就只試 Web Push
+              title: '🔬 你的血檢對答案了',
+              body: ups.map(u => u.marker).join('、') + '：打開「健康」看結果',
+              lineText: studentText(first.name, ups),
+              url: `${siteUrl}/c/${first.uniqueCode}`,
+            })
+          } catch (err) {
+            errors.push(`hypothesis notify ${cid}: ${err instanceof Error ? err.message : String(err)}`)
+          }
+          for (const u of ups) {
+            const { error: markErr } = await supabase.from('lab_hypotheses').update({ notified_status: u.status }).eq('id', u.id)
+            if (markErr) errors.push(`hypothesis mark ${u.id}: ${markErr.message}`)
+          }
         }
       } catch (err) {
         logger.error('Coach digest error:', err)

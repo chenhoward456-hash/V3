@@ -143,3 +143,28 @@ describe('血檢到期', () => {
     expect(d.text).not.toContain('🩸')
   })
 })
+
+import type { HypothesisUpdate } from '@/lib/hypothesis-updates'
+import { studentText } from '@/lib/hypothesis-updates'
+
+describe('血檢預測對答案進晨報（V3 初衷的循環）', () => {
+  const u = (o: Partial<HypothesisUpdate>): HypothesisUpdate => ({
+    id: 'h1', clientId: 'a', name: '陳胤豪', uniqueCode: 'x', lineUserId: 'U1', marker: '睪固酮', status: 'confirmed',
+    baselineValue: 403.92, expectedDirection: 'up', expectedValue: 550, retestBy: '2026-09-26',
+    resultValue: 580, resultDate: '2026-09-26', pctChange: 43.6, ...o,
+  })
+  it('有新判決 → 開頭講「N 個預測對答案了」＋列出結果', () => {
+    const d = buildCoachDigest(base({ hypotheses: { graded: [u({})], overdue: [] } }))
+    expect(d.text).toContain('1 個預測對答案了')
+    expect(d.text).toContain('睪固酮 403.92→580（預測 ≥550，+44%）：✅ 猜對')
+  })
+  it('過了重測日 → 列在「還沒結果」，不當成對答案', () => {
+    const d = buildCoachDigest(base({ hypotheses: { graded: [], overdue: [u({ status: 'overdue', resultValue: null, pctChange: null })] } }))
+    expect(d.text).toContain('預測過了重測日還沒結果')
+    expect(d.text).not.toContain('個預測對答案了')
+  })
+  it('學員訊息講結果、不寫診斷字眼', () => {
+    const t = studentText('陳胤豪', [u({ status: 'partial', resultValue: 530 })])
+    expect(t).toContain('睪固酮：403.92 → 530，有進步，還沒到目標')
+  })
+})
