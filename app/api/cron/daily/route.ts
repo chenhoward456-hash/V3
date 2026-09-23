@@ -916,14 +916,20 @@ export async function GET(request: NextRequest) {
       .not('weight', 'is', null)
       .order('date', { ascending: false })
     const lastWeightByClient: Record<string, number> = {}
+    const lastWeightDateByClient: Record<string, string> = {}
     const prevWeightByClient: Record<string, number> = {}
     for (const w of (latestWeights || []) as { client_id: string; weight: number; date: string }[]) {
       if (!lastWeightByClient[w.client_id]) {
         lastWeightByClient[w.client_id] = w.weight
+        lastWeightDateByClient[w.client_id] = w.date
       } else if (!prevWeightByClient[w.client_id]) {
         prevWeightByClient[w.client_id] = w.weight
       }
     }
+
+    const yesterdayTW = taiwanDateAgo(1)
+    const { data: pushSubRows } = await supabase.from('push_subscriptions').select('client_id')
+    const pushSubClientIds = new Set((pushSubRows || []).map((r: { client_id: string }) => r.client_id))
 
     // 4. 分兩組：Web Push 組（所有缺記錄的人）+ LINE Push 組（活躍但今天沒記體重）
     const eveningTargets: { client: typeof clients[0]; missing: string[]; missingShort: string[] }[] = []
@@ -955,10 +961,17 @@ export async function GET(request: NextRequest) {
       // 免費版 LINE 每月 200 則，6 個付費 × 30 天 = 最多 180 則
       const isPaid = client.subscription_tier === 'coached' || client.subscription_tier === 'self_managed'
       const hasAnyRecord = hasWeight.has(client.id) || hasWellness.has(client.id) || hasNutrition.has(client.id) || hasTraining.has(client.id)
+      // 2026-09-23 稽核 R1：這則一個月約 160 則，加上週報／晨報已超過每月 200 則免費額度，
+      // 用完後當月所有推播（含付款、到期通知）都送不出去。收斂成：
+      //   ① 有 Web Push 的人 5a 已經收到，不再花 LINE；
+      //   ② 昨天有量體重的人今天不追（連續兩天沒量才推）。
+      const weighedYesterday = lastWeightDateByClient[client.id] === yesterdayTW
       if (
         isPaid &&
         client.line_user_id &&
         !hasAnyRecord &&
+        !weighedYesterday &&
+        !pushSubClientIds.has(client.id) &&
         lastWeightByClient[client.id]
       ) {
         lineWeightTargets.push({ client, lastWeight: lastWeightByClient[client.id] })

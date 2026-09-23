@@ -48,22 +48,32 @@ export async function sendPushNotification(
   subscription: PushSubscription,
   payload: PushPayload
 ): Promise<boolean> {
+  return (await sendPushNotificationDetailed(subscription, payload)).ok
+}
+
+/**
+ * 同上，但分得出「真的過期」（404/410，該刪訂閱）和「暫時失敗」（5xx/逾時，訂閱要留著）。
+ * 原本兩者都回 false，呼叫端一律刪訂閱 → 推播服務抖一下就把好好的訂閱永久刪掉（稽核 R3）。
+ */
+export async function sendPushNotificationDetailed(
+  subscription: PushSubscription,
+  payload: PushPayload
+): Promise<{ ok: boolean; expired: boolean }> {
   try {
     ensureVapid()
     await webPush.sendNotification(
       subscription,
       JSON.stringify(payload)
     )
-    return true
+    return { ok: true, expired: false }
   } catch (err: unknown) {
-    // 410 = 訂閱已過期，應從資料庫移除
     const statusCode = err instanceof Error && 'statusCode' in err ? (err as { statusCode: number }).statusCode : undefined
     if (statusCode === 410 || statusCode === 404) {
       log.info('Push subscription expired', { endpoint: subscription.endpoint })
-      return false
+      return { ok: false, expired: true }
     }
     log.error('Push notification error', err)
-    return false
+    return { ok: false, expired: false }
   }
 }
 

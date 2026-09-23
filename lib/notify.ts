@@ -10,7 +10,7 @@
  */
 
 import { createServiceSupabase } from '@/lib/supabase'
-import { sendPushNotification } from '@/lib/web-push'
+import { sendPushNotificationDetailed } from '@/lib/web-push'
 import { pushMessage } from '@/lib/line'
 import { createLogger } from '@/lib/logger'
 
@@ -48,13 +48,14 @@ export async function sendRoutineReminder(
     const expired: string[] = []
 
     for (const sub of subscriptions) {
-      const success = await sendPushNotification(
+      const result = await sendPushNotificationDetailed(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         { title: message.title, body: message.body, url: message.url }
       )
-      if (success) {
+      if (result.ok) {
         anySent = true
-      } else {
+      } else if (result.expired) {
+        // 只有 404/410 才刪；5xx/逾時是暫時的，刪了就永久掉訂閱（稽核 R3）
         expired.push(sub.endpoint)
       }
     }

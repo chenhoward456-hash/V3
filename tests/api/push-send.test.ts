@@ -44,6 +44,11 @@ vi.mock('@/lib/auth-middleware', () => ({
 
 vi.mock('@/lib/web-push', () => ({
   sendPushNotification: (...args: any[]) => mockSendPushNotification(...args),
+  // 既有測試的 false 代表「過期」；暫時失敗的新行為另測（稽核 R3）
+  sendPushNotificationDetailed: async (...args: any[]) => {
+    const r = await mockSendPushNotification(...args)
+    return r === 'transient' ? { ok: false, expired: false } : { ok: !!r, expired: !r }
+  },
 }))
 
 import { POST } from '@/app/api/push/send/route'
