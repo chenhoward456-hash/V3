@@ -780,7 +780,7 @@ export default function ClientDashboard() {
           <p className="text-gray-600 mb-4">{isSuspended ? '請聯繫你的教練重新啟用' : isExpired ? '你的方案已到期，續約後即可繼續使用。' : error.message}</p>
           {isExpired && (
             <div className="space-y-3 mt-4">
-              <a href="/pay?tier=self_managed" className="block bg-[#1E4A73] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#16385A] transition-colors text-sm">
+              <a href={`/pay?tier=self_managed&code=${encodeURIComponent(String(clientId))}`} className="block bg-[#1E4A73] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#16385A] transition-colors text-sm">
                 續約自主管理版 NT$499/月
               </a>
               <a href="https://lin.ee/LP65rCc" target="_blank" rel="noopener noreferrer" className="block bg-[#06C755] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#05b04d] transition-colors text-sm">

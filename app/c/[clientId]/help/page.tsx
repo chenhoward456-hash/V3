@@ -237,7 +237,7 @@ export default function HelpPage() {
           </details>
           <details className="border border-slate-200 rounded-xl p-3">
             <summary className="font-semibold cursor-pointer">LINE 沒連到怎麼辦？</summary>
-            <p className="text-xs text-gray-500 mt-2 leading-relaxed">回首頁找「綁定 LINE」按鈕，掃 QR code 加 Howard 助手 → 跟它說「綁定」即可。綁定後可以直接傳訊息記錄當天數據。</p>
+            <p className="text-xs text-gray-500 mt-2 leading-relaxed">加 LINE 官方帳號後，傳「綁定 {String(clientId)}」（你的學員代碼）給它就完成了。綁定後可以直接傳訊息記錄當天數據。</p>
           </details>
           {tier !== 'coached' && (
             <details className="border border-slate-200 bg-slate-50 rounded-xl p-3">

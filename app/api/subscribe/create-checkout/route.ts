@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { name, email, phone, tier, registrationData } = await request.json()
+    const { name, email, phone, tier, registrationData, renewCode } = await request.json()
 
     // 驗證必填欄位
     if (!name || typeof name !== 'string' || name.trim().length < 1) {
@@ -65,6 +65,18 @@ export async function POST(request: NextRequest) {
 
     const htmlForm = buildCheckoutFormHTML(params)
 
+    // 續約：帶 code 進來的，付款後直接續在這個帳號（稽核 P-01：6/9 位學員是後台手動開的、
+    // 沒有付款紀錄，原本靠「姓名+email 付過款」比對會對不到 → 續約開出全新空帳號）
+    let renewClientId: string | null = null
+    if (typeof renewCode === 'string' && renewCode.trim()) {
+      const { data: renewClient } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('unique_code', renewCode.trim())
+        .maybeSingle()
+      renewClientId = renewClient?.id ?? null
+    }
+
     // 寫入 DB（pending 狀態）
     const { error: dbError } = await supabase.from('subscription_purchases').insert({
       email: email.trim(),
@@ -74,7 +86,11 @@ export async function POST(request: NextRequest) {
       subscription_tier: tier,
       amount: plan.amount,
       status: 'pending',
-      registration_data: registrationData || {},
+      registration_data: {
+        ...(registrationData || {}),
+        // 續約目標帳號：由 server 用 code 查出來的 id，前端傳不了別人的 id
+        ...(renewClientId ? { renew_client_id: renewClientId } : {}),
+      },
     })
 
     if (dbError) {

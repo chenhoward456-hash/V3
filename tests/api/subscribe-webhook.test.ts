@@ -149,6 +149,36 @@ describe('POST /api/subscribe/webhook', () => {
 
   // ── Successful Payment Creates Account ──
 
+  it('續約：訂單帶 renew_client_id → 直接續在該帳號、不新建、不標 upgraded_existing（稽核 P-01）', async () => {
+    mockTableCalls['subscription_purchases'] = {
+      data: {
+        id: 'purchase-1', merchant_trade_no: 'HP12345', name: '手動開的學員', email: 'x@example.com',
+        subscription_tier: 'self_managed', status: 'pending',
+        registration_data: { renew_client_id: 'renew-1' },
+        // mock 同一張表所有查詢回同一個物件；升級路徑會 for-of 舊訂單清單 → 讓它可迭代（空）
+        [Symbol.iterator]: function* () {},
+      },
+      error: null,
+    }
+    mockTableCalls['clients'] = {
+      data: { id: 'renew-1', unique_code: 'CODE1', expires_at: null, subscription_tier: 'coached' },
+      error: null,
+    }
+    const req = makeRequest({ MerchantTradeNo: 'HP12345', RtnCode: '1', TradeNo: 'T1', CheckMacValue: 'VALID_MAC' })
+    const text = await (await POST(req)).text()
+    expect(text).toBe('1|OK')
+
+    const calls = mockSupabase.from.mock.calls.map((c: any[], i: number) => ({ table: c[0], b: mockSupabase.from.mock.results[i].value }))
+    const clientInserts = calls.filter(c => c.table === 'clients' && c.b.insert.mock.calls.length > 0)
+    expect(clientInserts).toHaveLength(0)
+    const upgradeUpdate = calls.find(c => c.table === 'clients' && c.b.update.mock.calls.some((u: any[]) => u[0].subscription_tier === 'self_managed'))
+    expect(upgradeUpdate).toBeTruthy()
+    const purchaseLink = calls.flatMap(c => c.table === 'subscription_purchases' ? c.b.update.mock.calls.map((u: any[]) => u[0]) : [])
+      .find((u: any) => u.client_id === 'renew-1')
+    expect(purchaseLink).toBeTruthy()
+    expect(purchaseLink.registration_data?.upgraded_existing).toBeUndefined()
+  })
+
   it('should return 1|OK for successful payment with valid CheckMacValue', async () => {
     const req = makeRequest({
       MerchantTradeNo: 'HP12345',

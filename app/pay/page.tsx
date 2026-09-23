@@ -32,6 +32,8 @@ function PayContent() {
   const tierParam = searchParams.get('tier') || 'coached'
   const emailParam = searchParams.get('email') || ''
   const nameParam = searchParams.get('name') || ''
+  // 續約：從學員自己的頁面／LINE 進來會帶 code，付款後直接續在原帳號（不靠姓名+email 猜）
+  const renewCode = searchParams.get('code') || ''
 
   const plan = PLAN_INFO[tierParam]
 
@@ -71,6 +73,7 @@ function PayContent() {
           email: email.trim(),
           phone: phone.trim() || null,
           tier: tierParam,
+          ...(renewCode ? { renewCode } : {}),
           registrationData: {
             gender: gender || null,
             age: age ? parseInt(age) : null,
