@@ -194,7 +194,12 @@ export async function POST(request: NextRequest) {
       }
 
       // Link client to purchase record (status already updated atomically above)
-      await supabase.from('subscription_purchases').update({ client_id: clientId }).eq('merchant_trade_no', merchantTradeNo)
+      // 升級既有帳號是用「姓名＋email」比對到的，付款人不一定是帳號主人（稽核 S-01）→
+      // 標記起來，verify 就不會把舊帳號的代碼回給付款人的瀏覽器，只寄到帳號 email。
+      await supabase.from('subscription_purchases').update({
+        client_id: clientId,
+        ...(existingClient ? { registration_data: { ...regData, upgraded_existing: true } } : {}),
+      }).eq('merchant_trade_no', merchantTradeNo)
 
       // 推薦碼追蹤：如果 registration_data 中有 ref 且匹配 referral_codes，建立推薦關係
       if (regData.ref && !existingClient) {
