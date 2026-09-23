@@ -131,6 +131,8 @@ export interface TodayHeadlineProps {
   recentlyActive: boolean
   /** 引擎即時判定（可缺）：偏離軌道時覆蓋判定與「今天就一件」，比 weekly cron 新鮮 */
   engine?: EngineActionInput | null
+  /** 點「有健康指標要留意」→ 切到健康分頁（血檢進退）。原本寫「往下看血檢」但首頁往下根本沒有血檢 */
+  onOpenLab?: () => void
 }
 
 function TodayHeadlineInner({
@@ -145,6 +147,7 @@ function TodayHeadlineInner({
   carbsTarget,
   weeklyTasks,
   hasAttention,
+  onOpenLab,
   recentlyActive,
   engine,
 }: TodayHeadlineProps) {
@@ -257,7 +260,9 @@ function TodayHeadlineInner({
           {hasAttention && (
             <>
               {(engineDetail ?? verdict?.detail) ? ' · ' : ''}
-              <span className="text-amber-600">有健康指標要留意，往下看血檢</span>
+              {onOpenLab
+                ? <button type="button" onClick={onOpenLab} className="text-amber-700 underline underline-offset-2">有健康指標要留意，看血檢進退 →</button>
+                : <span className="text-amber-600">有健康指標要留意，到「健康」看血檢</span>}
             </>
           )}
         </p>

@@ -59,6 +59,7 @@ import MyPlanSection from '@/components/client/MyPlanSection'
 import MyGoalEditor from '@/components/client/MyGoalEditor'
 import BodyProfileCard from '@/components/client/BodyProfileCard'
 import LongevityCard from '@/components/client/LongevityCard'
+import LongevityTeaser from '@/components/client/LongevityTeaser'
 import BodyProfileAnchor from '@/components/client/BodyProfileAnchor'
 import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
@@ -922,6 +923,7 @@ export default function ClientDashboard() {
             carbsTarget={c.carbs_target ?? null}
             weeklyTasks={c.weekly_tasks}
             hasAttention={!!c.status && c.status !== 'normal'}
+            onOpenLab={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
             recentlyActive={overallStreak > 0}
             engine={nutritionEngineSuggestion}
           />
@@ -1000,6 +1002,11 @@ export default function ClientDashboard() {
             data={c.body_profile}
             onOpen={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
           />
+        )}
+
+        {/* 血檢進退一行摘要：V3 初衷在首頁要看得到，點了去健康分頁 */}
+        {view === 'home' && isToday && c.lab_enabled && (
+          <LongevityTeaser code={c.unique_code} onOpen={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />
         )}
 
         {/* 今日重點：**體重是唯一的必做**，其餘全是加分。

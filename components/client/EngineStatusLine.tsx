@@ -58,7 +58,8 @@ function EngineStatusLineInner({
 
   return (
     <p className="flex items-center gap-1.5 text-[11px] text-gray-500 px-1 mb-2 leading-snug">
-      <span>系統自動校正中 · 目前 {cal} · {detail}</span>
+      {/* 「目前 3000」跟營養卡休息日 2865 對不上會讓人困惑：這是每日基準，碳循環日另算 */}
+      <span>系統自動校正中 · 每日基準 {cal}（訓練日／休息日碳水另算） · {detail}</span>
     </p>
   )
 }
