@@ -7,7 +7,7 @@ import {
 const empty: DailyRows = { weights: [], nutrition: [], training: [], wellness: [] }
 
 describe('referenceChangePct / readChange', () => {
-  it('RCV 公式：CVi 9.3、CVa 3 → 約 27%', () => {
+  it('RCV 公式：CVi 9.3、CVa 3 → 約 27%（純公式檢查）', () => {
     expect(referenceChangePct(9.3)).toBeCloseTo(27.1, 0)
   })
   it('陳胤豪睪固酮 625→404（−35%）超過 RCV → 真的在變，不是誤差', () => {
@@ -130,8 +130,8 @@ describe('gradeHypothesis：下次抽血自動對答案', () => {
   it('回到 600（+49%、超過波動、達標）→ confirmed', () => {
     expect(gradeHypothesis(h, [base, { date: '2026-09-26', value: 600 }], '2026-09-27').status).toBe('confirmed')
   })
-  it('回到 520（真的上升但沒到 550）→ partial', () => {
-    expect(gradeHypothesis(h, [base, { date: '2026-09-26', value: 520 }], '2026-09-27').status).toBe('partial')
+  it('回到 530（+31%，超過 ±29% 波動但沒到 550）→ partial', () => {
+    expect(gradeHypothesis(h, [base, { date: '2026-09-26', value: 530 }], '2026-09-27').status).toBe('partial')
   })
   it('420（在波動內）→ no_change；330（反方向）→ refuted', () => {
     expect(gradeHypothesis(h, [base, { date: '2026-09-26', value: 420 }], '2026-09-27').status).toBe('no_change')
@@ -139,5 +139,22 @@ describe('gradeHypothesis：下次抽血自動對答案', () => {
   })
   it('基準日後 7 天內的重抽不當答案', () => {
     expect(gradeHypothesis(h, [base, { date: '2026-03-24', value: 700 }], '2026-04-01').status).toBe('pending')
+  })
+})
+
+import { buildFitness } from '@/lib/longevity-lens'
+
+describe('buildFitness：只跟同一種量法比', () => {
+  it('Garmin 48 → 實驗室 44 → Garmin 51：最新 Garmin 跟上一筆 Garmin 比（+6%），不跟實驗室比', () => {
+    const v = buildFitness([
+      { id: '1', kind: 'vo2max', date: '2026-01-01', value: 48, method: 'Garmin 估算', note: null },
+      { id: '2', kind: 'vo2max', date: '2026-03-01', value: 44, method: '實驗室氣體分析', note: null },
+      { id: '3', kind: 'vo2max', date: '2026-06-01', value: 51, method: 'Garmin 估算', note: null },
+    ]).find(f => f.kind === 'vo2max')!
+    expect(v.previousSameMethod?.id).toBe('1')
+    expect(v.pctChange).toBeCloseTo(6.25, 1)
+  })
+  it('沒資料 → latest null', () => {
+    expect(buildFitness([]).find(f => f.kind === 'grip')!.latest).toBeNull()
   })
 })

@@ -19,8 +19,9 @@ export const HORSEMAN_META: Record<Horseman, { label: string; why: string }> = {
 
 /**
  * 指標設定。cvi＝個人生物變異係數（同一個人重複抽血的正常波動，%）。
- * ⚠️ 取自 EFLM Biological Variation Database 的近似值（2026-09-23 整理），
- *    用來判斷「變化大到不像誤差」，不是診斷閾值；臨床使用前要逐項複核。
+ * 2026-09-24 PubMed 複核：有 cviDoi 的＝摘要裡直接看得到數字（EuBIVAS／BIVAC meta-analysis）；
+ * 沒有的＝EFLM 資料庫近似值，摘要沒寫數字、還沒拿到全文確認（ApoB、Lp(a)、LDL、TG、胰島素等），UI 標「近似」。
+ * 用來判斷「變化大到不像誤差」，不是診斷閾值。
  */
 export interface MarkerSpec {
   horseman: Horseman
@@ -40,6 +41,8 @@ export interface MarkerSpec {
    */
   optimalMax?: number
   optimalMin?: number
+  /** cvi 的出處 DOI（PubMed 摘要可直接看到數字的才填）；沒填＝近似值、UI 標「近似」 */
+  cviDoi?: string
 }
 
 export const MARKERS: Record<string, MarkerSpec> = {
@@ -50,23 +53,23 @@ export const MARKERS: Record<string, MarkerSpec> = {
   'Lp(a)': { horseman: 'cardio', cvi: 8.5, better: 'lower', onceInLife: true, retestDays: 0, core: true },
   hsCRP: { horseman: 'cardio', cvi: 40, better: 'lower', retestDays: 180 },
   三酸甘油酯: { horseman: 'metabolic', cvi: 19.9, better: 'lower', retestDays: 180, optimalMax: 100 },  // mg/dL
-  HbA1c: { horseman: 'metabolic', cvi: 1.6, better: 'lower', retestDays: 180, core: true, optimalMax: 5.4 },  // %
-  空腹血糖: { horseman: 'metabolic', cvi: 5.0, better: 'lower', retestDays: 180 },
+  HbA1c: { horseman: 'metabolic', cvi: 1.2, cviDoi: '10.1515/almed-2020-0029', better: 'lower', retestDays: 180, core: true, optimalMax: 5.4 },  // %
+  空腹血糖: { horseman: 'metabolic', cvi: 5.0, better: 'lower', retestDays: 180, cviDoi: '10.1515/almed-2020-0029' },
   空腹胰島素: { horseman: 'metabolic', cvi: 21, better: 'lower', retestDays: 180, core: true, optimalMax: 6 },  // µIU/mL
-  'HOMA-IR': { horseman: 'metabolic', cvi: 23, better: 'lower', retestDays: 180, optimalMax: 1.0 },
-  ALT: { horseman: 'metabolic', cvi: 13, better: 'lower', retestDays: 180 },
+  'HOMA-IR': { horseman: 'metabolic', cvi: 26.7, cviDoi: '10.1515/cclm-2024-0672', better: 'lower', retestDays: 180, optimalMax: 1.0 },
+  ALT: { horseman: 'metabolic', cvi: 15.4, better: 'lower', retestDays: 180, cviDoi: '10.1373/clinchem.2017.281808' },
   AST: { horseman: 'metabolic', cvi: 9.5, better: 'lower', retestDays: 180 },
   尿酸: { horseman: 'metabolic', cvi: 8.4, better: 'lower', retestDays: 180 },
   同半胱胺酸: { horseman: 'neuro', cvi: 8.3, better: 'lower', retestDays: 180, optimalMax: 10 },  // µmol/L
-  睪固酮: { horseman: 'support', cvi: 9.3, better: 'range', retestDays: 180 },
+  睪固酮: { horseman: 'support', cvi: 10, better: 'range', retestDays: 180, cviDoi: '10.1016/j.cca.2024.117806' },  // 男性
   游離睪固酮: { horseman: 'support', cvi: 11, better: 'range', retestDays: 180 },
   生物可利用睪固酮: { horseman: 'support', cvi: 11, better: 'range', retestDays: 180 },
   SHBG: { horseman: 'support', cvi: 9.7, better: 'range', retestDays: 180 },
   雌二醇: { horseman: 'support', cvi: 20, better: 'range', retestDays: 180 },
   維生素D: { horseman: 'support', cvi: 7.1, better: 'range', retestDays: 180, optimalMin: 40, optimalMax: 80 },  // ng/mL
   鐵蛋白: { horseman: 'support', cvi: 13, better: 'range', retestDays: 180 },
-  TSH: { horseman: 'support', cvi: 17.7, better: 'range', retestDays: 365 },
-  'Free T4': { horseman: 'support', cvi: 4.8, better: 'range', retestDays: 365 },
+  TSH: { horseman: 'support', cvi: 17.7, better: 'range', retestDays: 365, cviDoi: '10.1515/cclm-2020-1885' },
+  'Free T4': { horseman: 'support', cvi: 4.8, better: 'range', retestDays: 365, cviDoi: '10.1515/cclm-2020-1885' },
   白蛋白: { horseman: 'support', cvi: 2.5, better: 'range', retestDays: 365 },
 }
 
@@ -349,4 +352,38 @@ export function gradeHypothesis(h: LabHypothesis, points: LabPoint[], today: str
     } else status = 'no_change'
   }
   return { status, result, change }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 身體能力：VO2max、握力（fitness_markers）。只跟「同一種量法」比，Garmin 估算和實驗室的數字不能混。
+// ─────────────────────────────────────────────────────────────
+
+export type FitnessKind = 'vo2max' | 'grip'
+
+export const FITNESS_META: Record<FitnessKind, { label: string; unit: string; why: string }> = {
+  vo2max: { label: '心肺（VO2max）', unit: 'ml/kg/min', why: '心肺能力的上限，預測壽命最強的指標之一' },
+  grip: { label: '握力', unit: 'kg', why: '全身肌力的簡單代表，老了能不能自己提東西、撐住跌倒' },
+}
+
+export interface FitnessRow { id: string; kind: FitnessKind; date: string; value: number; method: string; note: string | null }
+
+export interface FitnessView {
+  kind: FitnessKind
+  rows: FitnessRow[]
+  latest: FitnessRow | null
+  /** 跟同一種量法的上一筆比 */
+  previousSameMethod: FitnessRow | null
+  pctChange: number | null
+}
+
+export function buildFitness(rows: FitnessRow[]): FitnessView[] {
+  return (['vo2max', 'grip'] as FitnessKind[]).map(kind => {
+    const rs = rows.filter(r => r.kind === kind).sort((a, b) => a.date.localeCompare(b.date))
+    const latest = rs.length ? rs[rs.length - 1] : null
+    const previousSameMethod = latest ? [...rs].reverse().find(r => r !== latest && r.method === latest.method) ?? null : null
+    const pctChange = latest && previousSameMethod
+      ? ((Number(latest.value) - Number(previousSameMethod.value)) / Number(previousSameMethod.value)) * 100
+      : null
+    return { kind, rows: rs, latest, previousSameMethod, pctChange }
+  })
 }

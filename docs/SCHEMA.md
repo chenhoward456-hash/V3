@@ -76,6 +76,7 @@
 幾乎所有表的 `client_id` 都 FK → `clients(id) ON DELETE CASCADE`（刪 client 會連鎖刪光該學員所有資料）。例外：`subscription_purchases.client_id` 是 SET NULL。
 
 ### 核心
+- **fitness_markers**（2026-09-24）— 身體能力指標：client_id(CASCADE)、kind(CHECK vo2max/grip)、date、value(>0)、method(NOT NULL，趨勢只比同量法)、note。RLS 開、無 policy。
 - **lab_hypotheses**（2026-09-23）— 血檢「預測→驗收」：client_id(CASCADE)、marker(=lab_results.test_name)、baseline_date/value、cause、action、expected_direction(CHECK up/down/stable)、expected_value、retest_by、note。**判決不存**，由 `lib/longevity-lens.ts` 的 `gradeHypothesis()` 每次重算。RLS 開、無 policy（走 service_role）。
 - **clients** — 學員主表，60+ 欄。重點欄位：`unique_code`(UNIQUE)、`line_user_id`(UNIQUE)、`status`、`client_mode`、各 `*_enabled` 開關、`*_target` 營養目標、`coach_macro_override`(jsonb)、`macro_bounds`(jsonb)、`auto_adjust_enabled`、`training_plan`(jsonb)、`onboarding_notes_rendered`(jsonb)、`lab_panel_recommended`(jsonb)、基因欄位 `gene_*`、`age`(int)、`birth_year`(int，西元出生年；填了之後 age 由每日 cron 重算自動長大，前端以民國年輸入)
 - **client_mode_history** — mode 變更紀錄（trigger 自動寫）
