@@ -58,6 +58,7 @@ import TodayHeadline from '@/components/client/TodayHeadline'
 import MyPlanSection from '@/components/client/MyPlanSection'
 import MyGoalEditor from '@/components/client/MyGoalEditor'
 import BodyProfileCard from '@/components/client/BodyProfileCard'
+import LongevityCard from '@/components/client/LongevityCard'
 import BodyProfileAnchor from '@/components/client/BodyProfileAnchor'
 import DayBasedCards from '@/components/client/DayBasedCards'
 import { calculateHealthScore } from '@/lib/health-score-engine'
@@ -1956,6 +1957,10 @@ export default function ClientDashboard() {
 
         {/* 身體檔案 — 放「健康」分頁的最上面（這一頁回答的問題就是「我身體怎樣」）。
             這是實測不是公式，所以擺在血檢/感受趨勢之前當這一頁的定錨。 */}
+        {/* 血檢進退（長壽透鏡學員版）：V3 初衷——同一個人的血檢看得到進退，每個變化分得清真假、接得到那段期間做了什麼。
+            放在身體檔案之前：這一頁最先回答「我的血檢在進步還是退步」 */}
+        {view === 'lab' && <SectionErrorBoundary><LongevityCard code={c.unique_code} /></SectionErrorBoundary>}
+
         {view === 'lab' && <BodyProfileCard data={c.body_profile} />}
 
         {/* 健康分數 + 健康模式進階 */}

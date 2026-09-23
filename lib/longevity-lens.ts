@@ -387,3 +387,14 @@ export function buildFitness(rows: FitnessRow[]): FitnessView[] {
     return { kind, rows: rs, latest, previousSameMethod, pctChange }
   })
 }
+
+/**
+ * 學員看的分組名稱。合規（見 project_v3_compliance）：學員可見處不寫疾病名，
+ * 四騎士改成身體系統的說法；「癌症」那格學員版不顯示（血檢本來就看不到，只會嚇人）。
+ */
+export const STUDENT_GROUP_META: Partial<Record<Horseman, { label: string; why: string }>> = {
+  cardio: { label: '血管與血脂', why: '這些數字是幾十年慢慢累積的，越早維持在好的範圍越好' },
+  metabolic: { label: '血糖與代謝', why: '身體處理醣類和脂肪的效率，會影響體力、體態和其他項目' },
+  neuro: { label: '大腦與神經', why: '血檢能看的不多；運動、睡眠和穩定的代謝對它最有幫助' },
+  support: { label: '荷爾蒙與營養', why: '會影響恢復、訓練表現和精神狀態' },
+}
