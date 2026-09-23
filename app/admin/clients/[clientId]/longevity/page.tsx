@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import type { HorsemanView, MarkerStory, StrengthPoint, LabHypothesis, HypothesisGrade } from '@/lib/longevity-lens'
+import type { HorsemanView, MarkerStory, StrengthPoint, LabHypothesis, HypothesisGrade, FitnessView, FitnessKind } from '@/lib/longevity-lens'
+import { FITNESS_META } from '@/lib/longevity-lens'
 
 interface LongevityData {
   client: { name: string; gender: string | null; nextCheckupDate: string | null }
@@ -13,6 +14,7 @@ interface LongevityData {
   unmapped: string[]
   clientId: string
   hypotheses: (LabHypothesis & { grade: HypothesisGrade })[]
+  fitness: FitnessView[]
 }
 
 type GradedHypothesis = LongevityData['hypotheses'][number]
@@ -110,7 +112,7 @@ function changeLine(s: MarkerStory): string | null {
   const c = s.change
   if (!c) return null
   const pct = `${c.pctChange > 0 ? '+' : ''}${c.pctChange.toFixed(0)}%`
-  const band = `正常波動約 ±${c.rcvPct.toFixed(0)}%`
+  const band = `正常波動約 ±${c.rcvPct.toFixed(0)}%${s.spec.cviDoi ? '' : '（近似值）'}`
   if (c.verdict === 'noise') return `${pct}，在${band}內 → 當作沒變`
   const still = s.optimalNow ? '，但仍在很好的範圍' : ''
   return `${pct}，超過${band} → 不是測量誤差，身體真的在變${still}`
@@ -169,7 +171,71 @@ function StoryRow({ s, hyps, clientId, onChanged }: { s: MarkerStory; hyps: Grad
   )
 }
 
-function StrengthCard({ points }: { points: StrengthPoint[] }) {
+function FitnessBlock({ f, clientId, today, onChanged }: { f: FitnessView; clientId: string; today: string; onChanged: () => void }) {
+  const meta = FITNESS_META[f.kind]
+  const [open, setOpen] = useState(false)
+  const [date, setDate] = useState(today)
+  const [value, setValue] = useState('')
+  const [method, setMethod] = useState(f.latest?.method ?? (f.kind === 'vo2max' ? 'Garmin 估算' : '握力計（慣用手最佳）'))
+  const [err, setErr] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const save = async () => {
+    setSaving(true); setErr(null)
+    const r = await fetch('/api/admin/longevity/fitness', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId, kind: f.kind as FitnessKind, date, value, method }),
+    })
+    const j = await r.json().catch(() => ({}))
+    setSaving(false)
+    if (!r.ok || !j.success) { setErr(j.error || `HTTP ${r.status}`); return }
+    setOpen(false); setValue(''); onChanged()
+  }
+  const del = async (id: string) => { await fetch(`/api/admin/longevity/fitness?id=${id}`, { method: 'DELETE' }); onChanged() }
+  const input = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm'
+  return (
+    <div className="py-3 border-t border-slate-100">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="font-semibold text-slate-900">{meta.label}</span>
+        <span className="text-sm text-slate-600 tabular-nums text-right">
+          {f.rows.length ? `${f.rows.map(r => r.value).join(' → ')} ${meta.unit}` : '—'}
+        </span>
+      </div>
+      <p className="text-xs text-slate-500 mt-0.5">{meta.why}</p>
+      {f.latest && (
+        <p className="text-sm text-slate-600 mt-1">
+          最新 {f.latest.date}（{f.latest.method}）
+          {f.pctChange != null && `，跟上次同量法比 ${f.pctChange > 0 ? '+' : ''}${f.pctChange.toFixed(1)}%`}
+          {f.pctChange == null && f.rows.length > 1 && '，量法不同，不直接比'}
+        </p>
+      )}
+      {!f.latest && <p className="text-xs text-amber-700 mt-1">還沒有資料</p>}
+      {f.rows.length > 0 && (
+        <details className="mt-1">
+          <summary className="text-xs text-slate-400 cursor-pointer">全部紀錄</summary>
+          {f.rows.map(r => (
+            <div key={r.id} className="flex justify-between text-xs text-slate-500 tabular-nums py-0.5">
+              <span>{r.date}　{r.value}　{r.method}</span>
+              <button onClick={() => del(r.id)} className="text-slate-400 hover:text-slate-600">刪除</button>
+            </div>
+          ))}
+        </details>
+      )}
+      {open ? (
+        <div className="mt-2 rounded-xl border border-slate-200 p-3 space-y-2 text-sm">
+          <input type="date" className={input} value={date} onChange={e => setDate(e.target.value)} />
+          <input className={input} inputMode="decimal" placeholder={`數值（${meta.unit}）`} value={value} onChange={e => setValue(e.target.value)} />
+          <input className={input} placeholder="量法（例：Garmin 估算／實驗室氣體分析／握力計）" value={method} onChange={e => setMethod(e.target.value)} />
+          {err && <p className="text-red-700 text-xs">{err}</p>}
+          <button disabled={saving} onClick={save} className="w-full bg-[#1E4A73] hover:bg-[#16385A] text-white rounded-lg py-2 font-medium disabled:opacity-50">{saving ? '儲存中…' : '儲存'}</button>
+        </div>
+      ) : (
+        <button onClick={() => setOpen(true)} className="mt-2 text-xs text-[#1E4A73] font-medium">＋ 記一筆</button>
+      )}
+    </div>
+  )
+}
+
+function StrengthCard({ points, fitness, clientId, today, onChanged }: { points: StrengthPoint[]; fitness: FitnessView[]; clientId: string; today: string; onChanged: () => void }) {
   const byEx = new Map<string, StrengthPoint[]>()
   for (const p of points) byEx.set(p.exercise, [...(byEx.get(p.exercise) ?? []), p])
   return (
@@ -189,7 +255,7 @@ function StrengthCard({ points }: { points: StrengthPoint[] }) {
           </div>
         )
       })}
-      <p className="text-xs text-amber-700 mt-3">心肺（最大攝氧量 VO2max）還沒有資料。</p>
+      {fitness.map(f => <FitnessBlock key={f.kind} f={f} clientId={clientId} today={today} onChanged={onChanged} />)}
     </section>
   )
 }
@@ -220,7 +286,7 @@ export default function LongevityPage() {
           <Link href={`/admin/clients/${clientId}`} className="text-sm text-[#1E4A73]">← 回學員頁</Link>
           <h1 className="text-2xl font-bold text-slate-900 mt-2">{data.client.name}｜長壽透鏡</h1>
           <p className="text-sm text-slate-600 mt-1">血檢照「在防哪一類病」排。每個變化先判斷是真的還是誤差，再對上那段期間做了什麼。</p>
-          <p className="text-xs text-slate-400 mt-1">教練預覽版；判斷真假用的「正常波動」是文獻近似值。</p>
+          <p className="text-xs text-slate-400 mt-1">教練預覽版。「正常波動」來自歐洲生物變異研究（EuBIVAS）；沒查到原始數字的指標標「近似值」。</p>
         </div>
 
         {data.horsemen.map(h => (
@@ -242,7 +308,7 @@ export default function LongevityPage() {
           </section>
         ))}
 
-        <StrengthCard points={data.strength} />
+        <StrengthCard points={data.strength} fitness={data.fitness} clientId={data.clientId} today={data.today} onChanged={load} />
 
         {data.unmapped.length > 0 && (
           <p className="text-xs text-slate-400">還沒分類的指標：{data.unmapped.join('、')}</p>
