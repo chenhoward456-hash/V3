@@ -1,3 +1,4 @@
+import { isInAutoAdjustCooldown } from '@/lib/auto-adjust-cooldown'
 import { NextRequest, NextResponse } from 'next/server'
 import { validateBodyComposition, validateDate } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP } from '@/lib/auth-middleware'
@@ -6,6 +7,10 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { isWeightTraining } from '@/components/client/types'
 import { isCompetitionMode } from '@/lib/client-mode'
 import { DAY_MS } from '@/lib/date-utils'
+
+// 台灣時間的「現在」：Vercel 跑 UTC，直接 new Date().toISOString() 在台灣 0–8 點會算成昨天，
+// 早上量的體重就不算進本週（稽核 E13）。把時刻 +8h 後再取 ISO 日期＝台灣日期。
+const taiwanNow = () => new Date(Date.now() + 8 * 3600_000)
 
 const supabase = createServiceSupabase()
 
@@ -41,11 +46,16 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     return { adjusted: false, debug: `skip: coach_macro_override 鎖定中` }
   }
 
+  // 紅線 3：自動調整開關關掉就不動（稽核 E1/E10）
+  if (client.auto_adjust_enabled === false) {
+    return { adjusted: false, debug: 'skip: auto_adjust_enabled=false' }
+  }
+
   // 2. 取得近 30 天所有相關數據（平行查詢）
-  const thirtyDaysAgo = new Date()
+  const thirtyDaysAgo = taiwanNow()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
   const sinceDate = thirtyDaysAgo.toISOString().split('T')[0]
-  const today = new Date()
+  const today = taiwanNow()
   const todayStr = today.toISOString().split('T')[0]
   const sevenDaysAgo = new Date(today)
   sevenDaysAgo.setDate(today.getDate() - 6)
@@ -232,6 +242,11 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
   const wouldCut = suggestion.suggestedCalories != null && client.calories_target != null && suggestion.suggestedCalories < client.calories_target
   if (veryLean && wouldCut) {
     return { adjusted: false, debug: `skip: 已很精瘦（BMI ${bmiNow?.toFixed(1) ?? '?'} / 體脂 ${latestBodyFat ?? '?'}%），不自動再降熱量，建議諮詢專業` }
+  }
+
+  // 7 天冷卻：被動式引擎是 current+delta，同一週資料每記一次體重就會再疊一次（稽核 E2）
+  if (suggestion.autoApply && isInAutoAdjustCooldown(client.last_auto_adjust_at, suggestion.status)) {
+    return { adjusted: false, debug: `skip: 冷卻中（上次自動調整 ${String(client.last_auto_adjust_at).slice(0, 10)}）` }
   }
 
   // 10. 自動套用（Goal-Driven 結果已 safety-capped，一律套用）

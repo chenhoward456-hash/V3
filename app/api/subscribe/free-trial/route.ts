@@ -27,6 +27,14 @@ export async function POST(request: NextRequest) {
   if (!allowed) {
     return createErrorResponse('請求過於頻繁，請稍後再試', 429)
   }
+  // 全站上限（稽核 S-03/S-04）：原本只有「單一 IP 每分鐘 3 次」，換 IP 就能無限開帳號，
+  // 每開一個推一則 LINE 給教練 → 一小時灌滿每月 200 則免費額度；也能拿免費帳號刷 AI 帳單。
+  // 真實量是歷來 18 個免費帳號，每小時 20 個已經很寬。
+  const { allowed: globalAllowed } = await rateLimit('free_trial_global', 20, 3_600_000)
+  if (!globalAllowed) {
+    log.error('free-trial global rate limit hit — 可能被灌註冊', { ip })
+    return createErrorResponse('目前申請人數較多，請稍後再試', 429)
+  }
 
   try {
     const { name, email, gender, age, goalType, diagnosisData, ref, weight: formWeight, consented } = await request.json()
@@ -268,7 +276,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 通知教練：新用戶註冊
-    pushMessage(COACH_LINE_ID, [{
+    // 教練 LINE 通知一天最多 10 則，超過只記 log，保住 LINE 每月額度（稽核 S-03）
+    const { allowed: notifyAllowed } = await rateLimit('free_trial_coach_line', 10, 86_400_000)
+    if (notifyAllowed) pushMessage(COACH_LINE_ID, [{
       type: 'text',
       text: `🆕 新用戶註冊！\n\n` +
         `姓名：${name.trim()}\n` +
