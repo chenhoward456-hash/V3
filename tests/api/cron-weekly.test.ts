@@ -94,6 +94,12 @@ vi.mock('@/lib/supabase', () => ({
   createServiceSupabase: vi.fn(() => mockSupabase),
 }))
 
+// 一週一次的防重（稽核 R5）另測；這裡一律當「本週還沒跑過」
+vi.mock('@/lib/cron-utils', () => ({
+  startCronRun: vi.fn().mockResolvedValue({ runId: 'test-run', alreadyRan: false }),
+  completeCronRun: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('@/lib/line', () => ({
   pushMessage: mockPushMessage,
 }))
@@ -129,6 +135,7 @@ vi.mock('@/lib/logger', () => ({
 
 // Import route handler AFTER mocks
 import { GET } from '@/app/api/cron/weekly/route'
+import { startCronRun } from '@/lib/cron-utils'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -250,6 +257,16 @@ describe('GET /api/cron/weekly', () => {
 
     expect(res.status).toBe(200)
     expect(body).toHaveProperty('success')
+  })
+
+  it('本週已跑過 → 略過、不再推播（稽核 R5）', async () => {
+    vi.mocked(startCronRun).mockResolvedValueOnce({ runId: 'x', alreadyRan: true })
+    const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
+    const res = await GET(req)
+    const body = await res.json()
+
+    expect(body.skipped).toBe(true)
+    expect(mockPushMessage).not.toHaveBeenCalled()
   })
 
   it('should authenticate via admin session cookie', async () => {

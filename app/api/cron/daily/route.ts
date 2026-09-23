@@ -1025,9 +1025,13 @@ export async function GET(request: NextRequest) {
         })
       )
       results.forEach((result, idx) => {
-        if (result.status === 'fulfilled') {
+        // pushMessage 失敗不丟例外、回的是 Response → 要看 res.ok。原本 fulfilled 就算送出，
+        // 額度爆了（429）也記成功，cron_runs 永遠沒有錯誤、警報不會響（稽核 R2）。
+        if (result.status === 'fulfilled' && result.value?.ok) {
           sent++
           linePushUsed++
+        } else if (result.status === 'fulfilled') {
+          errors.push(`LINE weight push ${batch[idx].client.name}: HTTP ${result.value?.status ?? '?'}${result.value?.status === 429 ? '（LINE 額度/頻率上限）' : ''}`)
         } else {
           errors.push(`LINE weight push ${batch[idx].client.name}: ${(result.reason as Error)?.message || 'unknown'}`)
         }

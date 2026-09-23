@@ -10,6 +10,7 @@
  * 驗證：CRON_SECRET header 或 admin session
  */
 
+import { startCronRun, completeCronRun } from '@/lib/cron-utils'
 import { NextRequest, NextResponse } from 'next/server'
 import type { BodyComposition, NutritionLog, TrainingLog, DailyWellness } from '@/types'
 import { createServiceSupabase } from '@/lib/supabase'
@@ -63,6 +64,22 @@ export async function GET(request: NextRequest) {
 
   // 當週任務唯讀預覽：跑生成器、只回 JSON，不寫入不推播（掛真推播前給教練眼過全體）
   const previewTasks = request.nextUrl.searchParams.get('previewTasks') === '1'
+
+  // 一週只跑一次（稽核 R5）：後台「手動執行每週分析」沒有防重，按一下就把週報＋當週任務
+  // 再推給所有人（約 16 則 LINE 額度）。以台灣時間「本週日」當 run_date；?force=1 可強制重跑。
+  let weeklyRunId: string | null = null
+  if (!previewTasks) {
+    const twToday = getTaiwanDate()
+    const d = new Date(`${twToday}T00:00:00Z`)
+    d.setUTCDate(d.getUTCDate() - d.getUTCDay())
+    const weekKey = d.toISOString().slice(0, 10)
+    const force = request.nextUrl.searchParams.get('force') === '1'
+    const { runId, alreadyRan } = await startCronRun('weekly', weekKey)
+    if (alreadyRan && !force) {
+      return NextResponse.json({ success: true, skipped: true, weekKey, message: `本週（${weekKey} 起）已經跑過，未重複推播` })
+    }
+    weeklyRunId = runId
+  }
 
   const results = {
     quarterlyResets: 0,
@@ -839,6 +856,8 @@ export async function GET(request: NextRequest) {
         })
       }
     }
+
+    if (weeklyRunId) await completeCronRun(weeklyRunId, { ...results, linePushCount, taskPushCount }).catch(() => {})
 
     return NextResponse.json({
       success: results.errors.length === 0,
