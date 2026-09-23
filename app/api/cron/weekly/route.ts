@@ -49,7 +49,7 @@ function parseSerotoninField(value: string | null): { serotonin?: 'LL' | 'SL' | 
 function verifyCronAuth(request: NextRequest): boolean {
   // Vercel Cron 會帶 CRON_SECRET header
   const cronSecret = request.headers.get('authorization')
-  if (cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true
+  if (process.env.CRON_SECRET && cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true
 
   // 也允許 admin session 手動觸發
   const token = request.cookies.get('admin_session')?.value

@@ -13,7 +13,7 @@ import { verifyAdminSession } from '@/lib/auth-middleware'
 
 function verifyAuth(request: NextRequest): boolean {
   const cronSecret = request.headers.get('authorization')
-  if (cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true
+  if (process.env.CRON_SECRET && cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true
   const token = request.cookies.get('admin_session')?.value
   return !!token && verifyAdminSession(token)
 }

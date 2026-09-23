@@ -60,7 +60,7 @@ const logger = createLogger('cron-daily')
 
 function verifyCronAuth(request: NextRequest): boolean {
   const cronSecret = request.headers.get('authorization')
-  if (cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true
+  if (process.env.CRON_SECRET && cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true
 
   const token = request.cookies.get('admin_session')?.value
   return !!token && verifyAdminSession(token)
@@ -220,14 +220,16 @@ export async function GET(request: NextRequest) {
 
         // 一次抓齊安全層需要的所有資料
         const [bodyRes, wellnessRes, trainingRes, nutritionRes, labRes] = await Promise.all([
-          supabase.from('body_composition').select('date, weight, height, body_fat').eq('client_id', c.id).order('date', { ascending: true }).limit(180),
+          supabase.from('body_composition').select('date, weight, height, body_fat').eq('client_id', c.id).order('date', { ascending: false }).limit(180),
           supabase.from('daily_wellness').select('date, energy_level, training_drive, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate').eq('client_id', c.id).gte('date', fourteenStr),
           supabase.from('training_logs').select('date, training_type, rpe').eq('client_id', c.id).gte('date', fourteenStr),
           supabase.from('nutrition_logs').select('date, calories, carbs_grams, compliant').eq('client_id', c.id).gte('date', fourteenStr),
           supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', c.id).order('date', { ascending: false }).limit(50),
         ])
 
-        const bodyData = bodyRes.data ?? []
+        // 抓「最新」180 筆再轉回舊→新。原本 ascending+limit 拿到的是最舊 180 筆：
+        // 每天量的人約半年後 cron 只看得到半年前的體重 → 判「很久沒量」靜默跳過（2026-09-23 稽核 E3）
+        const bodyData = [...(bodyRes.data ?? [])].reverse()
         if (bodyData.length === 0) continue
 
         const latestBf = [...(bodyData as any[])].reverse().find(b => b.body_fat != null)?.body_fat ?? null
@@ -367,6 +369,17 @@ export async function GET(request: NextRequest) {
           if (phaseLocked) blockReasons.push(`${c.prep_phase} 期 — 不自動調整（保護超補/秤重協議）`)
           if (recoveryCritical) blockReasons.push('恢復 critical / 過度訓練高風險 — 不自動加深赤字（建議休息+refeed）')
 
+          // 被 gate 擋下的紀錄也一天只寫一筆（早晚兩次 run 都會走到這，稽核 E16）
+          const { data: blockedDupe } = await supabase
+            .from('macro_adjustment_log')
+            .select('id')
+            .eq('client_id', c.id)
+            .eq('trigger_source', 'trajectory')
+            .gte('applied_at', `${today}T00:00:00+08:00`)
+            .limit(1)
+            .maybeSingle()
+          if (blockedDupe) continue
+
           await supabase.from('macro_adjustment_log').insert({
             client_id: c.id,
             applied_by: 'system',
@@ -478,7 +491,7 @@ export async function GET(request: NextRequest) {
             .select('id')
             .eq('client_id', c.id)
             .eq('trigger_source', 'trajectory')
-            .gte('applied_at', `${today}T00:00:00`)
+            .gte('applied_at', `${today}T00:00:00+08:00`)  // today 是台灣日期；不帶時區會被當 UTC 午夜(台灣 08:00)，早上那次寫的晚上看不到 → 每天兩筆（稽核 E16）
             .limit(1)
             .maybeSingle()
           if (dupe) { autoAdjustResults.skippedExecutionGap++; continue }

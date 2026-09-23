@@ -21,7 +21,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.a
 
 function verifyAuth(request: NextRequest): boolean {
   const cronSecret = request.headers.get('authorization')
-  if (cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true
+  if (process.env.CRON_SECRET && cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true
   const token = request.cookies.get('admin_session')?.value
   return !!token && verifyAdminSession(token)
 }
