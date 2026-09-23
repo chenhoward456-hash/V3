@@ -1,3 +1,4 @@
+import { isInAutoAdjustCooldown } from '@/lib/auto-adjust-cooldown'
 import { NextRequest, NextResponse } from 'next/server'
 import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
@@ -5,6 +6,10 @@ import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-eng
 import { isWeightTraining } from '@/components/client/types'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isCompetitionMode } from '@/lib/client-mode'
+
+// 台灣時間的「現在」：Vercel 跑 UTC，直接 new Date().toISOString() 在台灣 0–8 點會算成昨天，
+// 早上量的體重就不算進本週（稽核 E13）。把時刻 +8h 後再取 ISO 日期＝台灣日期。
+const taiwanNow = () => new Date(Date.now() + 8 * 3600_000)
 
 const logger = createLogger('api-nutrition-suggestions')
 
@@ -72,22 +77,22 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. 取得近 30 天體組成數據
-    const thirtyDaysAgo = new Date()
+    const thirtyDaysAgo = taiwanNow()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     const sinceDate = thirtyDaysAgo.toISOString().split('T')[0]
 
     // 近 7 天（Refeed 監控用）
-    const sevenDaysAgo = new Date()
+    const sevenDaysAgo = taiwanNow()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
 
     // 月經週期查詢（女性用戶）— 合併到主查詢批次
-    const sixtyDaysAgo = new Date()
+    const sixtyDaysAgo = taiwanNow()
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
     const sixtyDaysStr = sixtyDaysAgo.toISOString().split('T')[0]
 
     // 2.6 查詢補品依從率（近 8 週）
-    const eightWeeksAgo = new Date()
+    const eightWeeksAgo = taiwanNow()
     eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
     const eightWeeksStr = eightWeeksAgo.toISOString().split('T')[0]
 
@@ -168,7 +173,7 @@ export async function GET(request: NextRequest) {
       : 0
 
     // 3. 計算週均體重 (最多 4 週)
-    const today = new Date()
+    const today = taiwanNow()
     const weeklyWeights: { week: number; avgWeight: number }[] = []
 
     for (let w = 0; w < 4; w++) {
@@ -190,7 +195,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 4. 計算飲食合規率 (近 14 天，含今天)
-    const fourteenDayWindowStart = new Date()
+    const fourteenDayWindowStart = taiwanNow()
     fourteenDayWindowStart.setDate(fourteenDayWindowStart.getDate() - 13) // 往前推 13 天 + 今天 = 14 天
     const fourteenStr = fourteenDayWindowStart.toISOString().split('T')[0]
     const todayStr = today.toISOString().split('T')[0]
@@ -399,6 +404,8 @@ export async function GET(request: NextRequest) {
     const canAutoApply = !leanAutoBlock && !bulkCutBlock && wantsAutoApply && effectiveAutoApply
       && client.auto_adjust_enabled !== false
       && !isCoachManaged
+      // 7 天冷卻：被動式引擎 current+delta，每開一次頁就會再疊一次（稽核 E2）
+      && !isInAutoAdjustCooldown(client.last_auto_adjust_at, suggestion.status)
       && (suggestion.status === 'goal_driven' || isCompetitionClient || isSelfManaged || !!client.nutrition_enabled)
 
     // 教練覆寫鎖定：教練手動調整過營養目標
