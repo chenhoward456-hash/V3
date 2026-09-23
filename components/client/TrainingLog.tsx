@@ -380,6 +380,10 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         if (!setsRes.ok) {
           const setsErr = await setsRes.json().catch(() => ({}))
           console.warn('training-sets save failed:', setsErr.error)
+          // 主紀錄存了、逐組明細沒存 → 要讓學員知道，不然組數對帳和進步追蹤少一天沒人發現（稽核 P-03）
+          onMutate()
+          showToast('訓練已記錄，但各組重量次數沒存進去，請再按一次儲存', 'error')
+          return
         }
       }
 

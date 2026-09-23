@@ -302,7 +302,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   // 升級教練方案
   if (text === '升級' || text === '我要升級' || text === '我要升級教練方案') {
     if (client && client.subscription_tier === 'self_managed') {
-      const payUrl = `${SITE_URL}/pay?tier=coached&name=${encodeURIComponent(client.name)}`
+      const payUrl = `${SITE_URL}/pay?tier=coached&name=${encodeURIComponent(client.name)}&code=${encodeURIComponent(client.unique_code)}`
       await replyMessage(event.replyToken, [
         {
           type: 'text',
@@ -398,7 +398,8 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     return
   }
 
-  if (text === '我要綁定') {
+  // 只打「綁定」兩個字也給說明（說明頁就是這樣教的，原本 bot 不回，稽核 P-02）
+  if (text === '我要綁定' || text === '綁定') {
     await replyMessage(event.replyToken, [
       {
         type: 'text',
@@ -440,7 +441,8 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   }
 
   // Bind command
-  const bindMatch = text.match(/^綁定\s+([a-zA-Z0-9_-]+)$/i)
+  // 「綁定abc123」沒空格也認（稽核 P-02）
+  const bindMatch = text.match(/^綁定\s*([a-zA-Z0-9_-]+)$/i)
   if (bindMatch) {
     await handleBind(event.replyToken, userId, bindMatch[1], supabase)
     return

@@ -76,7 +76,17 @@ export async function POST(request: NextRequest) {
 
       // 用 subscription_purchases 的 email 比對已有帳號
       let existingClient: { id: string; unique_code: string; expires_at: string | null; subscription_tier: string } | null = null
-      if (existingClients && existingClients.length > 0) {
+      // 續約（checkout 時已用 code 驗過的帳號）優先：付款人持有 code＝本人，可以回傳代碼
+      let renewedByCode = false
+      if (regData.renew_client_id) {
+        const { data: renewTarget } = await supabase
+          .from('clients')
+          .select('id, unique_code, expires_at, subscription_tier')
+          .eq('id', regData.renew_client_id)
+          .maybeSingle()
+        if (renewTarget) { existingClient = renewTarget; renewedByCode = true }
+      }
+      if (!existingClient && existingClients && existingClients.length > 0) {
         // 查找同 email 的 purchase 關聯的 client
         const { data: prevPurchases } = await supabase
           .from('subscription_purchases')
@@ -207,7 +217,7 @@ export async function POST(request: NextRequest) {
       // 標記起來，verify 就不會把舊帳號的代碼回給付款人的瀏覽器，只寄到帳號 email。
       await supabase.from('subscription_purchases').update({
         client_id: clientId,
-        ...(existingClient ? { registration_data: { ...regData, upgraded_existing: true } } : {}),
+        ...(existingClient && !renewedByCode ? { registration_data: { ...regData, upgraded_existing: true } } : {}),
       }).eq('merchant_trade_no', merchantTradeNo)
 
       // 推薦碼追蹤：如果 registration_data 中有 ref 且匹配 referral_codes，建立推薦關係
