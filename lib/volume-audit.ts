@@ -102,6 +102,46 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '機械上胸': { muscle: 'chest', also: ['delts_front'], pattern: 'h_push' },
   'dips': { muscle: 'chest', also: ['triceps'], pattern: 'h_push' },
   '雙槓撐體': { muscle: 'chest', also: ['triceps'], pattern: 'h_push' },
+  // ⚠️ 2026-09-23：學員在 LINE 用簡稱的機率比用全名高得多（「臥推 4組」而不是
+  //    「平板臥推 4組」）。這批裸名原本全部認不出來，等於最常見的寫法進不了系統。
+  //    ⚠️ 不能靠 substring 解決——輸入「臥推」時 key「平板臥推」不包含在它裡面，
+  //       方向是反的。必須補 exact entry。
+  '臥推': { muscle: 'chest', also: ['delts_front', 'triceps'], pattern: 'h_push' },
+  '硬舉': { muscle: 'hamstrings', also: ['glutes', 'back', 'traps'], pattern: 'hinge' },
+  '推舉': { muscle: 'delts_front', also: ['triceps'], pattern: 'v_push', overhead: true },
+  '彎舉': { muscle: 'biceps', pattern: 'iso' },
+  '二頭': { muscle: 'biceps', pattern: 'iso' },
+  '三頭': { muscle: 'triceps', pattern: 'iso' },
+  '引體': { muscle: 'back', also: ['biceps'], pattern: 'v_pull', overhead: true },
+  '抬腿': { muscle: 'core', pattern: 'iso' },
+  '弓箭步': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
+
+  // ══ 地雷管（landmine）══
+  // ⚠️ 2026-09-23 補。原本一個都沒有，而且 substring 會判錯：
+  //    「地雷管深蹲推舉」命中「深蹲」跟「推舉」，兩個都 2 個字、長度平手 → 隨機
+  //    → 實測被判成**肩前束**，但那是下肢主導的動作，整個錯邊。
+  //
+  // ⚠️ 地雷管推一律**不標 overhead**：它的軌跡是斜上 45–60 度，推不到完全過頭
+  //    ——那正是它的賣點（肩活動度不夠的人能做）。標了會讓過頭位的統計灌水。
+  '地雷管推': { muscle: 'delts_front', also: ['triceps', 'chest'], pattern: 'v_push', note: '斜上推，不是垂直過頭' },
+  '地雷管肩推': { muscle: 'delts_front', also: ['triceps', 'chest'], pattern: 'v_push', note: '斜上推，不是垂直過頭' },
+  '地雷管單臂推': { muscle: 'delts_front', also: ['triceps', 'core'], pattern: 'v_push', note: '單邊＝軀幹同時在抗旋' },
+  // ⚠️ 深蹲推舉是複合兩個模式的動作，但一個 entry 只能給一個 pattern。
+  //    記 squat（下肢是發力來源、幅度也最大），推的那半只能進 also。
+  //    → 動作模式覆蓋會少算一次 v_push，看那張表時要知道。
+  '地雷管深蹲推舉': { muscle: 'quads', also: ['glutes', 'delts_front', 'triceps'], pattern: 'squat', note: '蹲＋推的複合，pattern 只記蹲' },
+  '地雷管深蹲': { muscle: 'quads', also: ['glutes'], pattern: 'squat' },
+  '地雷管前蹲': { muscle: 'quads', also: ['glutes'], pattern: 'squat' },
+  '地雷管後退弓箭步推': { muscle: 'quads', also: ['glutes', 'delts_front'], pattern: 'lunge' },
+  '地雷管弓箭步': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
+  '地雷管分腿蹲': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
+  '地雷管羅馬尼亞硬舉': { muscle: 'hamstrings', also: ['glutes', 'back'], pattern: 'hinge' },
+  '地雷管硬舉': { muscle: 'hamstrings', also: ['glutes', 'back'], pattern: 'hinge' },
+  '地雷管划船': { muscle: 'back', also: ['biceps'], pattern: 'h_pull' },
+  '地雷管單臂划船': { muscle: 'back', also: ['biceps', 'core'], pattern: 'h_pull' },
+  '地雷管彩虹': { muscle: 'core', also: ['delts_side'], pattern: 'iso', note: 'rainbow，過頭畫半圓的抗旋' },
+  '地雷管旋轉': { muscle: 'core', pattern: 'iso', note: '旋轉／抗旋' },
+  '地雷管風車': { muscle: 'core', also: ['delts_side'], pattern: 'iso' },
   '機械夾胸': { muscle: 'chest', pattern: 'iso' },
   '機械飛鳥': { muscle: 'delts_side', pattern: 'iso', note: '同「飛鳥」裁決。⚠️「機械」「器械」是同義詞，不能一個判胸一個判肩' },
   'machinefly': { muscle: 'chest', pattern: 'iso' },
@@ -396,8 +436,11 @@ export const EXERCISE_MUSCLE_MAP: Record<string, ExerciseEntry> = {
   '反向北歐': { muscle: 'quads', pattern: 'iso', note: 'Reverse Nordic＝股直肌離心（Howard 2026-09-21 確認）。⛔ 不是膕繩，不可與腿彎舉互換' },
   '後腳抬高蹲': { muscle: 'quads', also: ['glutes'], pattern: 'lunge' },
   '滾筒放鬆': { muscle: 'core', pattern: 'prep', volume: false },
+  // ⚠️ 正規化會把空白去掉，所以「90-90 呼吸」跟「90-90呼吸」是同一個 key —— 留一個就好。
+  //    （兩個都寫的話後面那個會覆蓋前面，等於有一行是死的。）
   '90-90呼吸': { muscle: 'core', pattern: 'prep', volume: false },
-  '90-90 呼吸': { muscle: 'core', pattern: 'prep', volume: false },
+  // 斜線寫法也很常見（內訓教材用的就是 90/90）
+  '90/90呼吸': { muscle: 'core', pattern: 'prep', volume: false },
 
   // 壺鈴擺盪：B 教練課表裡兩天都有，原本整個對不到
   'swing': { muscle: 'glutes', also: ['hamstrings', 'back'], pattern: 'hinge' },
@@ -558,7 +601,7 @@ const ABBREV: [RegExp, string][] = [
   [/\blat\s*pull\s*down\b/gi, '滑輪下拉'],
   // ── 單字：器材 ──
   [/\bbb\b/gi, '槓鈴'], [/\bdb\b/gi, '啞鈴'], [/\bkb\b/gi, '壺鈴'],
-  [/\bsmith\b/gi, '史密斯'], [/\bcable\b/gi, '纜繩'],
+  [/\bsmith\b/gi, '史密斯'], [/\bcable\b/gi, '纜繩'], [/\blandmine\b/gi, '地雷管'],
   // ── 單字：單邊 ──
   [/\bsa\b/gi, '單臂'], [/\bsl\b/gi, '單腿'], [/\bua\b/gi, '單臂'],
   // ── 單字：動作（rdl 要贏過 dl）──

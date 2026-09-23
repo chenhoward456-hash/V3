@@ -23,6 +23,7 @@ import {
 } from '@/lib/line-handlers'
 import { classifyCalorieInput, bareNumberIsCalories } from '@/lib/line-nl-log'
 import { tryCoachCommand } from '@/lib/line-coach-commands'
+import { tryParseTrainingLog, writeTrainingSets, confirmText, markTrainedToday } from '@/lib/line-training-log'
 import { buildDay0Messages, enrollSubscriber, unenrollSubscriber } from '@/lib/nurture-sequence'
 import { handleAdminAgentMessage, handleAgentProposalPostback, handleCoachActionPostback } from '@/lib/agent-line'
 
@@ -698,6 +699,34 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   if (foodMatch && client && text.length > foodMatch.length) {
     await handleNaturalNutrition(event.replyToken, client, text, supabase)
     return
+  }
+
+  // ── Training log：確定性路徑（排在 AI 前面）──
+  //
+  // ⚠️ 既有的 AI 路徑要求「必須有 數字x數字」，那擋掉了一半的自然寫法
+  //    （「深蹲 4組」「臥推 80公斤 8下4組」都進不來），
+  //    而 2026-09-23 的組數覆蓋率是四個活躍學員裡三個 0%。
+  //
+  //    這條用 lib/workout-parse + volume-audit 的動作辨識，不打 API：
+  //    零延遲、零成本、行為可測。守門靠「動作名認不認得出來」，
+  //    比正則準 —— 「我想問3個問題」的「問題」認不出，就交還原本的流程。
+  if (client?.training_enabled) {
+    const attempt = tryParseTrainingLog(text)
+    if (attempt.confident) {
+      const items = [...attempt.recognized, ...attempt.unknown]
+      const res = await writeTrainingSets(supabase, client.id, items)
+      if (res.ok) {
+        await markTrainedToday(supabase, client.id, attempt.recognized)
+        await replyMessage(event.replyToken, [{
+          type: 'text',
+          text: confirmText(attempt, res.rows),
+          quickReply: { items: [qr('🏋️ 再記一筆', '記訓練'), qr('📊 今日狀態', '狀態')] },
+        }])
+        return
+      }
+      log.error('[line] 確定性訓練記錄寫入失敗，退回 AI 路徑', { error: res.error })
+      // 寫入失敗就往下走 AI 那條，不要直接回錯誤 —— 學員不該因為我們的問題重打一次
+    }
   }
 
   // ── Natural language training (動作+量, AI parse) ──

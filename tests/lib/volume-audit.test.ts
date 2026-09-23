@@ -326,3 +326,62 @@ describe('英文速記展開', () => {
     expect(e?.pattern).toBe('hinge')
   })
 })
+
+// ⛔ 2026-09-23：我在同一週內兩次加了 map 裡已經有的 key（'蝴蝶機'、'胸推'），
+//    兩次都是 tsc 的 TS1117 擋下來的，不是我自己發現的。
+//    tsc 已經會擋，但那是編譯期的錯誤訊息；這支測試讓它在測試報告裡直接點名，
+//    而且順便擋住「兩個 key 正規化之後撞在一起」這種 tsc 看不到的情況。
+describe('map 不能有撞名的 key', () => {
+  it('正規化之後不可以有兩個 key 指到同一個字串', () => {
+    const seen = new Map<string, string>()
+    const dupes: string[] = []
+    for (const k of Object.keys(EXERCISE_MUSCLE_MAP)) {
+      const n = normalizeExerciseName(k)
+      const prev = seen.get(n)
+      if (prev && prev !== k) dupes.push(`${prev} ⟷ ${k}`)
+      else seen.set(n, k)
+    }
+    expect(dupes).toEqual([])
+  })
+})
+
+/**
+ * 地雷管（landmine）系列。2026-09-23 補，起因是 Eddie 的第五天要改成地雷管日。
+ *
+ * ⛔ 補之前實測：「地雷管深蹲推舉」被判成**肩前束**。
+ *    它同時命中「深蹲」跟「推舉」，兩個都 2 個字 —— 長度平手就變隨機。
+ *    那是下肢主導的動作，算成肩前束整個錯邊。
+ */
+describe('地雷管', () => {
+  const m = (n: string) => resolveExercise(n)?.entry
+
+  it('⛔ 深蹲推舉是下肢主導，不是肩', () => {
+    const e = m('地雷管深蹲推舉')!
+    expect(e.muscle).toBe('quads')
+    expect(e.pattern).toBe('squat')
+    // 推的那半進 also —— 一個 entry 只能給一個 pattern
+    expect(e.also).toContain('delts_front')
+  })
+
+  it('⚠️ 地雷管推不可以標 overhead —— 它推不到完全過頭', () => {
+    // overhead 這個旗標是為「背闊在過頭位吃不吃得夠」建的（見 ExerciseEntry 的說明）。
+    // 地雷管推的軌跡是斜上 45–60 度，那正是它對肩活動度友善的原因。
+    for (const n of ['地雷管推', '地雷管肩推', '地雷管單臂推', 'landmine press']) {
+      expect(m(n)?.overhead, n).toBeUndefined()
+    }
+  })
+
+  it('Eddie 第五天那四個都判得對', () => {
+    expect(m('地雷管深蹲推舉')?.muscle).toBe('quads')
+    expect(m('地雷管後退弓箭步推')?.pattern).toBe('lunge')
+    expect(m('地雷管 RDL')?.muscle).toBe('hamstrings')
+    expect(m('地雷管單臂推')?.muscle).toBe('delts_front')
+  })
+
+  it('英文寫法（ABBREV 展開 landmine）', () => {
+    expect(m('landmine press')?.muscle).toBe('delts_front')
+    expect(m('Landmine Row')?.muscle).toBe('back')
+    expect(m('landmine squat')?.pattern).toBe('squat')
+    expect(m('landmine rdl')?.pattern).toBe('hinge')
+  })
+})
