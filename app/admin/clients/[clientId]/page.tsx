@@ -491,7 +491,14 @@ export default function ClientEditor() {
       }
 
       // 起始身體數據 payload（有填體重才送 → 後端寫一筆 body_composition）
-      const startingBodyPayload = startBody.weight.trim() !== '' && !Number.isNaN(Number(startBody.weight))
+      // 既有學員：欄位是用「最新一筆」預填的，沒改就不送。原本每按一次儲存都把舊體重
+      // 灌成一筆「今天」的紀錄，學員今天真量的晨重會被蓋掉、趨勢被壓平（稽核 D1）。
+      const numOrNull = (v: string) => (v.trim() !== '' && !Number.isNaN(Number(v)) ? Number(v) : null)
+      const bodyUnchanged = clientId !== 'new'
+        && numOrNull(startBody.weight) === (latestBodyComp?.weight ?? null)
+        && numOrNull(startBody.height) === (latestBodyComp?.height ?? null)
+        && numOrNull(startBody.bodyFat) === (latestBodyComp?.body_fat ?? null)
+      const startingBodyPayload = !bodyUnchanged && startBody.weight.trim() !== '' && !Number.isNaN(Number(startBody.weight))
         ? {
             weight: Number(startBody.weight),
             height: startBody.height.trim() !== '' ? Number(startBody.height) : null,

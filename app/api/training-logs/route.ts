@@ -176,8 +176,10 @@ export async function POST(request: NextRequest) {
       client_id: client.id,
       date,
       training_type,
-      note: sanitizedNote,
     }
+    // 只寫 request 有帶的欄位：首頁一鍵訓練／補主項重量只送部分欄位，
+    // 原本會把當天的時長、RPE、組數、備註清成 null（稽核 D3）。rest 仍明確清空訓練欄位。
+    if (note !== undefined) upsertData.note = sanitizedNote
 
     if (training_type === 'rest') {
       upsertData.duration = null
@@ -187,12 +189,12 @@ export async function POST(request: NextRequest) {
       upsertData.compound_reps = null
       upsertData.compound_lift = null
     } else {
-      upsertData.duration = duration ?? null
-      upsertData.sets = sets ?? null
-      upsertData.rpe = rpe ?? null
-      upsertData.compound_weight = typeof compound_weight === 'number' ? compound_weight : null
-      upsertData.compound_reps = typeof compound_reps === 'number' ? compound_reps : null
-      upsertData.compound_lift = compound_lift
+      if (duration !== undefined) upsertData.duration = duration ?? null
+      if (sets !== undefined) upsertData.sets = sets ?? null
+      if (rpe !== undefined) upsertData.rpe = rpe ?? null
+      if (compound_weight !== undefined) upsertData.compound_weight = typeof compound_weight === 'number' ? compound_weight : null
+      if (compound_reps !== undefined) upsertData.compound_reps = typeof compound_reps === 'number' ? compound_reps : null
+      if (compound_lift !== undefined) upsertData.compound_lift = compound_lift
     }
 
     const { data: training, error: trainingError } = await supabaseAdmin

@@ -152,18 +152,18 @@ export async function POST(request: NextRequest) {
         sleep_quality,
         energy_level,
         mood,
-        note: sanitizedNote,
-        hunger: null,
-        digestion: null,
-        training_drive: training_drive ?? null,
-        cognitive_clarity: cognitive_clarity ?? null,
-        stress_level: stress_level ?? null,
-        period_start: period_start || false,
-        resting_hr: resting_hr ?? null,
-        hrv: hrv ?? null,
-        wearable_sleep_score: wearable_sleep_score ?? null,
-        respiratory_rate: respiratory_rate ?? null,
-        device_recovery_score: device_recovery_score ?? null,
+        // 只寫 request 有帶的欄位（稽核 D4）：原本寫死 hunger/digestion=null 每次都清掉，
+        // 首頁一鍵感受也會把同日匯入的 HRV／靜止心率清成 null、經期標記重設成 false。
+        ...(note !== undefined ? { note: sanitizedNote } : {}),
+        ...(training_drive !== undefined ? { training_drive } : {}),
+        ...(cognitive_clarity !== undefined ? { cognitive_clarity } : {}),
+        ...(stress_level !== undefined ? { stress_level } : {}),
+        ...(period_start !== undefined ? { period_start: period_start || false } : {}),
+        ...(resting_hr !== undefined ? { resting_hr } : {}),
+        ...(hrv !== undefined ? { hrv } : {}),
+        ...(wearable_sleep_score !== undefined ? { wearable_sleep_score } : {}),
+        ...(respiratory_rate !== undefined ? { respiratory_rate } : {}),
+        ...(device_recovery_score !== undefined ? { device_recovery_score } : {}),
       }, {
         onConflict: 'client_id,date'
       })
