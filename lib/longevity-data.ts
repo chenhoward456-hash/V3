@@ -9,7 +9,7 @@ import {
 } from '@/lib/longevity-lens'
 import { getTaiwanDate } from '@/lib/date-utils'
 
-export async function loadLongevity(supabase: SupabaseClient, clientDbId: string) {
+export async function loadLongevity(supabase: SupabaseClient, clientDbId: string, gender?: string | null) {
   const [labs, weights, nutrition, training, wellness, sets, hyps, fitness, goals] = await Promise.all([
     supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', clientDbId).order('date'),
     supabase.from('body_composition').select('date, weight').eq('client_id', clientDbId).not('weight', 'is', null).order('date'),
@@ -42,7 +42,7 @@ export async function loadLongevity(supabase: SupabaseClient, clientDbId: string
 
   return {
     today,
-    horsemen: buildHorsemen(labsByName, rows, today),
+    horsemen: buildHorsemen(labsByName, rows, today, gender),
     strength,
     fitness: fitnessViews,
     decathlon: ((goals.data ?? []) as DecathlonGoal[]).map(g => ({ ...g, current: currentForCapacity(g.capacity, strength, fitnessViews) })),

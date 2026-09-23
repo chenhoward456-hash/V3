@@ -23,14 +23,14 @@ export async function GET(request: NextRequest) {
 
   const { data: client } = await supabase
     .from('clients')
-    .select('id, is_active')
+    .select('id, is_active, gender')
     .eq('unique_code', code)
     .maybeSingle()
   if (!client) return createErrorResponse('找不到資料', 404)
   if (client.is_active === false) return createErrorResponse('帳號已暫停', 403)
 
   try {
-    const lens = await loadLongevity(supabase, client.id)
+    const lens = await loadLongevity(supabase, client.id, client.gender)
     const groups = lens.horsemen
       .filter(h => STUDENT_GROUP_META[h.key] && h.stories.length > 0)
       .map(h => ({ ...h, ...STUDENT_GROUP_META[h.key]! }))

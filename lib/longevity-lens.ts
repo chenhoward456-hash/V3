@@ -44,6 +44,8 @@ export interface MarkerSpec {
   optimalMin?: number
   /** cvi 的出處 DOI（PubMed 摘要可直接看到數字的才填）；沒填＝近似值、UI 標「近似」 */
   cviDoi?: string
+  /** 只對男性成立的「越高越好」（睪固酮家族）；女性不判好壞 */
+  higherBetterForMen?: boolean
 }
 
 export const MARKERS: Record<string, MarkerSpec> = {
@@ -62,10 +64,10 @@ export const MARKERS: Record<string, MarkerSpec> = {
   AST: { horseman: 'metabolic', cvi: 9.5, better: 'lower', retestDays: 180 },
   尿酸: { horseman: 'metabolic', cvi: 8.4, better: 'lower', retestDays: 180 },
   同半胱胺酸: { horseman: 'neuro', cvi: 8.3, better: 'lower', retestDays: 180, optimalMax: 10 },  // µmol/L
-  睪固酮: { horseman: 'support', cvi: 10, better: 'range', retestDays: 180, cviDoi: '10.1016/j.cca.2024.117806' },  // 男性
-  游離睪固酮: { horseman: 'support', cvi: 11, better: 'range', retestDays: 180 },
-  生物可利用睪固酮: { horseman: 'support', cvi: 11, better: 'range', retestDays: 180 },
-  SHBG: { horseman: 'support', cvi: 9.7, better: 'range', retestDays: 180 },
+  睪固酮: { horseman: 'support', cvi: 10, better: 'range', retestDays: 180, cviDoi: '10.1016/j.cca.2024.117806', higherBetterForMen: true },  // 男性
+  游離睪固酮: { horseman: 'support', cvi: 11, better: 'range', retestDays: 180, higherBetterForMen: true },
+  生物可利用睪固酮: { horseman: 'support', cvi: 11, better: 'range', retestDays: 180, higherBetterForMen: true },
+  SHBG: { horseman: 'support', cvi: 9.7, better: 'range', retestDays: 180, optimalMin: 20, optimalMax: 40 },  // 同 utils/labStatus 最佳 20–40：太高會綁走游離睪固酮
   雌二醇: { horseman: 'support', cvi: 20, better: 'range', retestDays: 180 },
   維生素D: { horseman: 'support', cvi: 7.1, better: 'range', retestDays: 180, optimalMin: 40, optimalMax: 80 },  // ng/mL
   鐵蛋白: { horseman: 'support', cvi: 13, better: 'range', retestDays: 180 },
@@ -170,6 +172,36 @@ export function summarizePeriod(fromDate: string, toDate: string, rows: DailyRow
  * never：沒測過｜once_ok：一生一次、已測｜good_hold：上次很好且情況沒變，不用花錢重測
  * changed：上次很好但之後體重變化大，值得補一個點｜single：只有一個點｜stale：太久沒測｜fresh：有趨勢且夠新
  */
+/**
+ * 這次的真實變化是變好還是變差（Howard 2026-09-24：「哪裡好，不就變差，你可以老實說」）。
+ * 只對「真的在變」的判；判不了（例：女性的睪固酮、沒定義好方向的指標）回 null，不硬講。
+ */
+export type Direction = 'better' | 'worse' | null
+
+function distanceToOptimal(spec: MarkerSpec, v: number): number {
+  if (spec.optimalMin != null && v < spec.optimalMin) return spec.optimalMin - v
+  if (spec.optimalMax != null && v > spec.optimalMax) return v - spec.optimalMax
+  return 0
+}
+
+export function judgeDirection(spec: MarkerSpec, change: ChangeRead | null, gender?: string | null): Direction {
+  if (!change || change.verdict === 'noise') return null
+  const up = change.pctChange > 0
+  if (spec.higherBetterForMen) return gender === '男性' ? (up ? 'better' : 'worse') : null
+  // 前後兩次都在很好的範圍裡 → 不分好壞（例：三酸甘油酯 34→63 都遠低於 100，標「變差」只會嚇人）
+  const hasOptimal = spec.optimalMin != null || spec.optimalMax != null
+  if (hasOptimal && isOptimal(spec, change.from.value) && isOptimal(spec, change.to.value)) return null
+  if (spec.better === 'lower') return up ? 'worse' : 'better'
+  if (spec.better === 'higher') return up ? 'better' : 'worse'
+  if (spec.optimalMin != null || spec.optimalMax != null) {
+    const before = distanceToOptimal(spec, change.from.value)
+    const after = distanceToOptimal(spec, change.to.value)
+    if (before === 0 && after === 0) return null   // 都在好的範圍裡，不分好壞
+    return after < before ? 'better' : after > before ? 'worse' : null
+  }
+  return null
+}
+
 export type Freshness = 'never' | 'once_ok' | 'good_hold' | 'changed' | 'single' | 'stale' | 'fresh'
 
 /** 體重變化超過這個比例 → 「情況變了」，好的舊數字不再代表現在 */
@@ -206,9 +238,11 @@ export interface MarkerStory {
   weightChangeSincePct: number | null
   /** 最新一次落在「很好」的範圍 */
   optimalNow: boolean
+  /** 真實變化是變好還是變差（判不了是 null） */
+  direction: Direction
 }
 
-export function buildMarkerStory(name: string, points: LabPoint[], rows: DailyRows, today: string): MarkerStory {
+export function buildMarkerStory(name: string, points: LabPoint[], rows: DailyRows, today: string, gender?: string | null): MarkerStory {
   const spec = MARKERS[name]
   // 同一天多筆（重複匯入、同報告兩種單位）合併成一點取平均，不然會算出「同一天變了 0%」
   const byDate = new Map<string, LabPoint[]>()
@@ -244,7 +278,7 @@ export function buildMarkerStory(name: string, points: LabPoint[], rows: DailyRo
     retestBy = d.toISOString().slice(0, 10)
   }
 
-  return { name, spec, points: sorted, latest, change, context, daysSinceLast, freshness, retestBy, weightChangeSincePct: wChange, optimalNow }
+  return { name, spec, points: sorted, latest, change, context, daysSinceLast, freshness, retestBy, weightChangeSincePct: wChange, optimalNow, direction: judgeDirection(spec, change, gender) }
 }
 
 export interface HorsemanView {
@@ -256,13 +290,13 @@ export interface HorsemanView {
   blindSpots: string[]
 }
 
-export function buildHorsemen(labsByName: Record<string, LabPoint[]>, rows: DailyRows, today: string): HorsemanView[] {
+export function buildHorsemen(labsByName: Record<string, LabPoint[]>, rows: DailyRows, today: string, gender?: string | null): HorsemanView[] {
   const order: Horseman[] = ['cardio', 'metabolic', 'neuro', 'cancer', 'organ', 'support']
   return order.map(key => {
     const names = Object.keys(MARKERS).filter(n => MARKERS[n].horseman === key)
     const stories = names
       .filter(n => (labsByName[n]?.length ?? 0) > 0)
-      .map(n => buildMarkerStory(n, labsByName[n], rows, today))
+      .map(n => buildMarkerStory(n, labsByName[n], rows, today, gender))
     const blindSpots: string[] = []
     for (const n of names) {
       const spec = MARKERS[n]

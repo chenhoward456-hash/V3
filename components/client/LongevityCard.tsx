@@ -57,13 +57,19 @@ function Row({ s, hyps, ctxText }: { s: MarkerStory; hyps: Data['hypotheses']; c
 
   return (
     <div className="py-3 border-t border-slate-100 first:border-t-0">
+      {/* 「是真的在變」整張卡只在最上面講一次；每行只給數字＋幅度（Howard：每行都寫一次很躁） */}
       <div className="flex items-baseline justify-between gap-3">
         <span className="font-semibold text-slate-900">{s.name}</span>
-        <span className="text-sm text-slate-600 tabular-nums text-right">{s.points.map(p => fmt(p.value)).join(' → ')}{unit}</span>
+        <span className="text-sm text-slate-600 tabular-nums text-right">
+          {s.points.map(p => fmt(p.value)).join(' → ')}{unit}
+          {c && isReal(s) && <b className="ml-2 text-slate-900">{c.pctChange > 0 ? '+' : ''}{c.pctChange.toFixed(0)}%</b>}
+        </span>
       </div>
-      {c && isReal(s) && (
-        <p className="text-sm text-slate-900 mt-1">
-          比上次 {c.pctChange > 0 ? '+' : ''}{c.pctChange.toFixed(0)}%，超過正常波動（±{c.rcvPct.toFixed(0)}%）→ 是真的在變{s.optimalNow ? '，而且在很好的範圍' : ''}
+      {/* 直接講變好還是變差（紅黃綠只用在狀態，符合 DESIGN.md） */}
+      {c && isReal(s) && (s.direction || s.optimalNow) && (
+        <p className={`text-xs font-medium mt-0.5 ${s.direction === 'worse' ? 'text-amber-700' : 'text-emerald-700'}`}>
+          {s.direction === 'worse' ? '變差' : s.direction === 'better' ? '變好' : ''}
+          {s.optimalNow ? (s.direction ? '，在很好的範圍' : '在很好的範圍') : ''}
         </p>
       )}
       {ctxText && <p className="text-sm text-slate-600 mt-1">{ctxText}</p>}
@@ -108,7 +114,7 @@ export default function LongevityCard({ code }: { code: string }) {
   return (
     <section className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
       <h2 className="text-lg font-bold text-slate-900">血檢進退</h2>
-      <p className="text-xs text-slate-500 mt-1">每個數字都跟你自己的上一次比：先分清楚是真的在變，還是正常波動。</p>
+      <p className="text-xs text-slate-500 mt-1">每個數字都跟你自己的上一次比。攤開的都是超過正常波動、真的在變的；其他收在各區下面。</p>
 
       {/* 百歲十項全能：所有數字最上層的「所以呢」 */}
       {(data.decathlon?.length ?? 0) > 0 && (

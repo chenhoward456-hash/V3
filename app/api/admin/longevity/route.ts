@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   if (!client) return createErrorResponse('找不到學員', 404)
 
   try {
-    const lens = await loadLongevity(supabase, client.id)
+    const lens = await loadLongevity(supabase, client.id, client.gender)
     return createSuccessResponse({
       client: { name: client.name, gender: client.gender, nextCheckupDate: client.next_checkup_date },
       clientId: client.id,

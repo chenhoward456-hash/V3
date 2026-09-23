@@ -118,7 +118,8 @@ function changeLine(s: MarkerStory): string | null {
   const band = `正常波動約 ±${c.rcvPct.toFixed(0)}%${s.spec.cviDoi ? '' : '（近似值）'}`
   if (c.verdict === 'noise') return `${pct}，在${band}內 → 當作沒變`
   const still = s.optimalNow ? '，但仍在很好的範圍' : ''
-  return `${pct}，超過${band} → 不是測量誤差，身體真的在變${still}`
+  const dir = s.direction === 'worse' ? '【變差】' : s.direction === 'better' ? '【變好】' : ''
+  return `${dir}${pct}，超過${band} → 不是測量誤差，身體真的在變${still}`
 }
 
 function contextLine(s: MarkerStory): string | null {
