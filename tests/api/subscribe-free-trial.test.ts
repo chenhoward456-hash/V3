@@ -435,7 +435,10 @@ describe('POST /api/subscribe/free-trial', () => {
     )
     await POST(req)
 
-    expect(mockRateLimit).toHaveBeenCalledTimes(1)
+    // 第 1 次是單一 IP 限流；之後還有全站上限與教練 LINE 通知上限（稽核 S-03）
+    const keys = mockRateLimit.mock.calls.map((c: unknown[]) => c[0])
+    expect(keys).toContain('free_trial_global')
+    expect(keys).toContain('free_trial_coach_line')
     const [key, maxRequests, windowMs] = mockRateLimit.mock.calls[0]
     expect(key).toContain('10.0.0.1')
     expect(maxRequests).toBe(3)
