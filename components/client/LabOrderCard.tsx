@@ -116,6 +116,10 @@ export default function LabOrderCard({ code, today }: { code: string; today: str
           </ul>
         </div>
       )}
+      {/* 抽完就從這裡上傳：結果進來 → 血檢進退自動更新、預測自動對答案 */}
+      <a href={`/c/${code}/health/upload`} className="mt-3 block text-center text-sm text-[#1E4A73] font-medium py-2">
+        抽完了？拍報告上傳 →
+      </a>
     </section>
   )
 }
