@@ -1,3 +1,4 @@
+import { getTaiwanDate } from '@/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     // 起始身體數據 → 寫一筆 body_composition（讓引擎拿得到 bodyWeight，建立後即可算 TDEE/營養素）
     if (startingBody && startingBody.weight != null) {
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTaiwanDate()  // 台灣日期；UTC 在台灣 0–8 點會寫到昨天（稽核 D1）
       const { error: bodyError } = await supabase.from('body_composition').upsert({
         client_id: newClient.id,
         date: today,
@@ -186,7 +187,7 @@ export async function PUT(request: NextRequest) {
 
     // 起始身體數據 → upsert 今天的 body_composition（教練在後台補/改起始體重，引擎即可算 TDEE/營養素）
     if (startingBody && startingBody.weight != null) {
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTaiwanDate()  // 台灣日期；UTC 在台灣 0–8 點會寫到昨天（稽核 D1）
       const { error: bodyError } = await supabase.from('body_composition').upsert({
         client_id: clientId,
         date: today,

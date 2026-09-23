@@ -127,17 +127,20 @@ export async function POST(request: NextRequest) {
 
     const { data: nutrition, error: nutritionError } = await supabaseAdmin
       .from('nutrition_logs')
+      // 只寫 request 有帶的欄位：首頁一鍵「達標/未達標」只送 compliant，
+      // 原本會把當天已記的蛋白、熱量、水、備註全寫成 null（稽核 D2）。
+      // 完整表單送出時欄位都在（清空＝明確送 null），行為不變。
       .upsert({
         client_id: client.id,
         date,
         compliant,
-        note: sanitizedNote,
-        protein_grams: protein_grams ?? null,
-        water_ml: water_ml ?? null,
-        carbs_grams: carbs_grams ?? null,
-        fat_grams: fat_grams ?? null,
-        calories: calories ?? null,
-        sodium_mg: sodium_mg ?? null,
+        ...(note !== undefined ? { note: sanitizedNote } : {}),
+        ...(protein_grams !== undefined ? { protein_grams } : {}),
+        ...(water_ml !== undefined ? { water_ml } : {}),
+        ...(carbs_grams !== undefined ? { carbs_grams } : {}),
+        ...(fat_grams !== undefined ? { fat_grams } : {}),
+        ...(calories !== undefined ? { calories } : {}),
+        ...(sodium_mg !== undefined ? { sodium_mg } : {}),
       }, {
         onConflict: 'client_id,date'
       })
