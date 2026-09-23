@@ -79,7 +79,7 @@ const ROUTINE_MARKERS = [
 
 export type OrderRule =
   | 'follow-up' | 'companion' | 'never-tested' | 'stale'
-  | 'genetic-once' | 'derivable' | 'recent-optimal' | 'deferred'
+  | 'genetic-once' | 'derivable' | 'recent-optimal' | 'deferred' | 'risk-linked'
 
 export type Bucket = 'must' | 'defer' | 'skip'
 
@@ -317,6 +317,22 @@ export function buildLabOrder(input: BuildLabOrderInput): LabOrderPlan {
     }
     lines.push(line)
     byId.set(id, line)
+  }
+
+  // ── 風險連動：單看一項會判成「基準線、有錢再加」，但跟另一項一起看就是必驗 ──
+  // 2026-09-24（謝佳峻）：Lp(a) 76.84 偏高、ApoB 從沒驗過 → 引擎把 ApoB 放「有錢再加」。
+  // Lp(a) 主要由基因決定、改不太動，ApoB 是唯一能改變的那條線（Attia《Outlive》的邏輯），
+  // Lp(a) 高的人不知道 ApoB 在哪＝最該顧的東西看不到。
+  const lpa = hist.get('lpa')
+  const LPA_HIGH_MG_DL = 50
+  const apobLine = byId.get('apob')
+  if (lpa && lpa.value >= LPA_HIGH_MG_DL && apobLine && apobLine.bucket !== 'must') {
+    const apob = hist.get('apob')
+    if (!apob || apob.daysAgo > RECENT_DAYS) {
+      apobLine.rule = 'risk-linked'
+      apobLine.bucket = 'must'
+      apobLine.why = `Lp(a) ${lpa.value} 偏高（主要由基因決定、改不太動），ApoB 是能改變的那一條——${apob ? `上次 ${apob.date}，太久了` : '從沒驗過'}，要知道現在在哪`
+    }
   }
 
   // ── 第三輪：上游還沒有結果的，下游先不要開 ──

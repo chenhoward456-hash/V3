@@ -245,3 +245,23 @@ describe('lab-derive：算出來的要跟實測對得上', () => {
     expect(deriveHomaIR(2.17, -1)).toBeNull()
   })
 })
+
+describe('風險連動：Lp(a) 偏高 → ApoB 升為必驗（2026-09-24 謝佳峻）', () => {
+  it('Lp(a) 76.84、ApoB 從沒驗過 → ApoB 必驗（原本會被放「有錢再加」）', () => {
+    const p = plan([{ test_name: 'Lp(a)', value: 76.84, date: daysAgo(200) }])
+    const apob = find(p, 'Apo B')!
+    expect(apob.bucket).toBe('must')
+    expect(apob.rule).toBe('risk-linked')
+  })
+  it('Lp(a) 正常（10）→ ApoB 維持基準線', () => {
+    const p = plan([{ test_name: 'Lp(a)', value: 10, date: daysAgo(200) }])
+    expect(find(p, 'Apo B')!.bucket).toBe('defer')
+  })
+  it('Lp(a) 偏高但 ApoB 最近才驗過 → 不重複升級', () => {
+    const p = plan([
+      { test_name: 'Lp(a)', value: 76.84, date: daysAgo(200) },
+      { test_name: 'ApoB', value: 55, date: daysAgo(30) },
+    ])
+    expect(find(p, 'Apo B')!.rule).not.toBe('risk-linked')
+  })
+})
