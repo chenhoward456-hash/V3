@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import type { HorsemanView, MarkerStory, StrengthPoint, LabHypothesis, HypothesisGrade, FitnessView, FitnessKind } from '@/lib/longevity-lens'
-import { FITNESS_META } from '@/lib/longevity-lens'
+import type { HorsemanView, MarkerStory, StrengthPoint, LabHypothesis, HypothesisGrade, FitnessView, FitnessKind, DecathlonGoal, Capacity } from '@/lib/longevity-lens'
+import { FITNESS_META, CAPACITY_META } from '@/lib/longevity-lens'
 
 interface LongevityData {
   client: { name: string; gender: string | null; nextCheckupDate: string | null }
@@ -15,6 +15,7 @@ interface LongevityData {
   clientId: string
   hypotheses: (LabHypothesis & { grade: HypothesisGrade })[]
   fitness: FitnessView[]
+  decathlon: (DecathlonGoal & { current: string | null })[]
 }
 
 type GradedHypothesis = LongevityData['hypotheses'][number]
@@ -237,6 +238,46 @@ function FitnessBlock({ f, clientId, today, onChanged }: { f: FitnessView; clien
   )
 }
 
+function DecathlonCard({ goals, clientId, onChanged }: { goals: LongevityData['decathlon']; clientId: string; onChanged: () => void }) {
+  const [event, setEvent] = useState('')
+  const [capacity, setCapacity] = useState<Capacity>('strength')
+  const [err, setErr] = useState<string | null>(null)
+  const add = async () => {
+    setErr(null)
+    const r = await fetch('/api/admin/longevity/decathlon', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId, event, capacity }) })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok || !j.success) { setErr(j.error || `HTTP ${r.status}`); return }
+    setEvent(''); onChanged()
+  }
+  const del = async (id: string) => { await fetch(`/api/admin/longevity/decathlon?id=${id}`, { method: 'DELETE' }); onChanged() }
+  return (
+    <section className="bg-white border border-slate-200 rounded-2xl p-5">
+      <h2 className="text-lg font-bold text-slate-900">百歲十項全能</h2>
+      <p className="text-xs text-slate-500 mt-1">跟他聊：90 歲時想做到什麼？每件事對到一種能力，下面的數字就有了「所以呢」。</p>
+      {goals.length === 0 && <p className="text-sm text-amber-700 mt-3">還沒有目標</p>}
+      {goals.map(g => (
+        <div key={g.id} className="py-3 border-t border-slate-100 first:border-t-0">
+          <div className="flex justify-between gap-2">
+            <span className="font-medium text-slate-900">{g.event}</span>
+            <button onClick={() => del(g.id)} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">刪除</button>
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">{CAPACITY_META[g.capacity].label}｜現在：{g.current ?? '還沒有量化數字'}</p>
+        </div>
+      ))}
+      <div className="mt-3 space-y-2 text-sm">
+        <input className="w-full border border-slate-200 rounded-lg px-3 py-2" placeholder="例：自己把 10 公斤行李放上飛機置物櫃" value={event} onChange={e => setEvent(e.target.value)} />
+        <div className="flex gap-2">
+          {(Object.keys(CAPACITY_META) as Capacity[]).map(k => (
+            <button key={k} onClick={() => setCapacity(k)} className={`px-3 py-1.5 rounded-lg border text-sm ${capacity === k ? 'border-[#1E4A73] text-[#1E4A73] font-medium' : 'border-slate-200 text-slate-600'}`}>{CAPACITY_META[k].label}</button>
+          ))}
+        </div>
+        {err && <p className="text-red-700 text-xs">{err}</p>}
+        <button onClick={add} className="w-full bg-[#1E4A73] hover:bg-[#16385A] text-white rounded-lg py-2 font-medium">加入</button>
+      </div>
+    </section>
+  )
+}
+
 function StrengthCard({ points, fitness, clientId, today, onChanged }: { points: StrengthPoint[]; fitness: FitnessView[]; clientId: string; today: string; onChanged: () => void }) {
   const byEx = new Map<string, StrengthPoint[]>()
   for (const p of points) byEx.set(p.exercise, [...(byEx.get(p.exercise) ?? []), p])
@@ -290,6 +331,8 @@ export default function LongevityPage() {
           <p className="text-sm text-slate-600 mt-1">血檢照「在防哪一類病」排。每個變化先判斷是真的還是誤差，再對上那段期間做了什麼。</p>
           <p className="text-xs text-slate-400 mt-1">教練預覽版。「正常波動」來自歐洲生物變異研究（EuBIVAS）；沒查到原始數字的指標標「近似值」。</p>
         </div>
+
+        <DecathlonCard goals={data.decathlon} clientId={data.clientId} onChanged={load} />
 
         {data.horsemen.map(h => (
           <section key={h.key} className="bg-white border border-slate-200 rounded-2xl p-5">
