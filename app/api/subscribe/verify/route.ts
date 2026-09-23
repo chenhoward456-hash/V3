@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
   try {
     const { data: purchase, error } = await supabase
       .from('subscription_purchases')
-      .select('status, client_id, subscription_tier, name')
+      .select('status, client_id, subscription_tier, name, registration_data')
       .eq('merchant_trade_no', orderId)
       .maybeSingle()
 
@@ -53,6 +53,17 @@ export async function GET(request: NextRequest) {
         // 沒有有效簽名 → 只回傳完成狀態，不回傳 uniqueCode
         return NextResponse.json({
           completed: true,
+          tier: purchase.subscription_tier,
+          name: purchase.name,
+        })
+      }
+
+      // 升級的是「姓名＋email 比對到的既有帳號」→ 付款人可能不是本人，不回代碼；
+      // 歡迎信已寄到帳號 email（稽核 S-01）
+      if ((purchase.registration_data as Record<string, unknown> | null)?.upgraded_existing) {
+        return NextResponse.json({
+          completed: true,
+          upgradedExisting: true,
           tier: purchase.subscription_tier,
           name: purchase.name,
         })

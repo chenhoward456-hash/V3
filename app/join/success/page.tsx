@@ -109,7 +109,7 @@ function JoinSuccessContent() {
   const directTier = searchParams.get('tier')
   const upgradeParam = searchParams.get('upgrade')
 
-  const [status, setStatus] = useState<'loading' | 'success' | 'failed' | 'timeout'>('loading')
+  const [status, setStatus] = useState<'loading' | 'success' | 'failed' | 'timeout' | 'upgraded'>('loading')
   const [uniqueCode, setUniqueCode] = useState<string | null>(directCode)
   const [tier, setTier] = useState<string | null>(directTier)
   const [name, setName] = useState<string | null>(directName)
@@ -167,6 +167,14 @@ function JoinSuccessContent() {
           setStatus('success')
           setShowConfetti(true)
           trackEvent('subscribe_success', { tier: data.tier, orderId })
+          return
+        }
+
+        if (data.completed && data.upgradedExisting) {
+          setTier(data.tier)
+          setName(data.name)
+          setStatus('upgraded')
+          trackEvent('subscribe_success', { tier: data.tier, orderId, upgraded: true })
           return
         }
 
@@ -565,6 +573,23 @@ function JoinSuccessContent() {
       )}
 
       {/* Timeout */}
+      {status === 'upgraded' && (
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-3" style={{ color: '#1e3a5f' }}>
+            付款完成，方案已升級
+          </h1>
+          <p className="text-gray-500 text-sm mb-8">
+            你原本的帳號和紀錄都保留著。登入連結已寄到你註冊時的 Email，從信裡的連結進入就好。
+          </p>
+          <a
+            href="https://lin.ee/LP65rCc"
+            className="inline-block bg-gray-100 text-gray-700 px-8 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+          >
+            沒收到信？加 LINE 問我們
+          </a>
+        </div>
+      )}
+
       {status === 'timeout' && (
         <div className="text-center">
           <div className="inline-block bg-amber-100 border border-amber-300 rounded-full px-6 py-2 mb-6">

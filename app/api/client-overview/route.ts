@@ -59,8 +59,14 @@ export async function GET(request: NextRequest) {
       supabase.from('personal_notes').select('id, category, note, weight, relevant_until').eq('client_id', realId).gte('weight', 7).or(`relevant_until.is.null,relevant_until.gte.${today}`).order('weight', { ascending: false }),
     ])
 
+    // 非教練（學員用自己的 code 看健康報告）不回教練私人筆記和 LINE userId（稽核 S-08）：
+    // 報告頁（HealthReportDocument）用不到這兩樣，但任何拿到 code 的人都讀得到。
+    const clientOut = authorized
+      ? clientRes.data
+      : (({ line_user_id: _lineId, ...rest }) => rest)(clientRes.data as Record<string, unknown>)
+
     return NextResponse.json({
-      client: clientRes.data,
+      client: clientOut,
       supplements: suppRes.data || [],
       supplementLogs: logsRes.data || [],
       wellness: wellRes.data || [],
@@ -70,7 +76,7 @@ export async function GET(request: NextRequest) {
       labResults: labRes.data || [],
       nutritionLogs: nutritionRes.data || [],
       trainingSets: trainingSetsRes.data || [],
-      personalNotes: notesRes.data || [],
+      personalNotes: authorized ? (notesRes.data || []) : [],
     })
   } catch (err) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
