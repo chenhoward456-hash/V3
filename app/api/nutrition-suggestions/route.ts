@@ -3,7 +3,7 @@ import { isInAutoAdjustCooldown } from '@/lib/auto-adjust-cooldown'
 import { NextRequest, NextResponse } from 'next/server'
 import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
-import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
+import { generateNutritionSuggestion, NutritionInput, pickPreviousBodyFat } from '@/lib/nutrition-engine'
 import { isWeightTraining } from '@/components/client/types'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isCompetitionMode } from '@/lib/client-mode'
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
 
     // 月經週期查詢（女性用戶）— 合併到主查詢批次
     const sixtyDaysAgo = taiwanNow()
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 180)  // 稽核 E18：只查 60 天，超過 60 天沒來的人拿到較輕的「尚未記錄」而不是「>90 天」警告
     const sixtyDaysStr = sixtyDaysAgo.toISOString().split('T')[0]
 
     // 2.6 查詢補品依從率（近 8 週）
@@ -264,6 +264,7 @@ export async function GET(request: NextRequest) {
       dietStartDate: client.diet_start_date || null,
       height: latestHeight,
       bodyFatPct: latestBodyFat,
+      previousBodyFatPct: pickPreviousBodyFat(bodyData),  // 稽核 E17
       targetWeight: client.target_weight ?? null,
       targetBodyFatPct: (client.target_body_fat as number) ?? null,
       targetDate: client.competition_date || client.target_date || null,
@@ -416,6 +417,7 @@ export async function GET(request: NextRequest) {
 
     // 教練覆寫鎖定：教練手動調整過營養目標
     // Timed Coach Override: 覆寫期間（含 autoApply）都鎖定，確保教練設定值不被覆蓋
+    let justRestored = false
     let coachOverride = client.coach_macro_override as {
       locked_at: string
       expires_at?: string | null
@@ -443,19 +445,28 @@ export async function GET(request: NextRequest) {
             if (v != null && Number.isFinite(Number(v))) restore[k] = Number(v)
           }
         }
+        // 稽核 E20：原本 fire-and-forget（沒 await）→ 同一個 request 接著跑自動套用，兩筆 update 互相競爭；
+        // log 的 old_macros 是 NOT NULL，override_values 缺的時候寫 null 會靜默失敗。
         const clearPatch: Record<string, unknown> = { ...restore, coach_macro_override: null }
-        supabase.from('clients').update(clearPatch).eq('id', client.id).then(() => {})
+        const { error: restoreErr } = await supabase.from('clients').update(clearPatch).eq('id', client.id)
+        if (restoreErr) {
+          logger.error('coach override expiry restore failed', restoreErr, { clientId: client.id })
+        } else {
+          Object.assign(client, restore)   // 後面的邏輯用還原後的數字
+          justRestored = true               // 這次 request 不再自動套用，避免剛還原就被蓋掉
+        }
 
-        if (Object.keys(restore).length > 0) {
+        if (!restoreErr && Object.keys(restore).length > 0) {
           // 紅線：所有 macro 變更都要寫 macro_adjustment_log（applied_by 只能 system/coach）
-          supabase.from('macro_adjustment_log').insert({
+          const { error: logErr } = await supabase.from('macro_adjustment_log').insert({
             client_id: client.id,
             applied_by: 'system',
             trigger_source: 'manual',
-            old_macros: coachOverride.override_values ?? null,
+            old_macros: coachOverride.override_values ?? {},
             new_macros: restore,
             reason: `教練覆寫到期（${coachOverride.expires_at}），自動還原覆寫前的營養目標`,
-          }).then(() => {}, () => {})
+          })
+          if (logErr) logger.error('coach override expiry log failed', logErr, { clientId: client.id })
         }
         coachOverride = null
       }
@@ -495,7 +506,7 @@ export async function GET(request: NextRequest) {
       overrideValues: coachOverride.override_values || null,
     } : null
 
-    if (canAutoApply && !coachLocked) {
+    if (canAutoApply && !coachLocked && !justRestored) {
       const updates: Record<string, number | null> = {}
       if (suggestion.suggestedCalories != null) updates.calories_target = suggestion.suggestedCalories
       if (suggestion.suggestedProtein != null) updates.protein_target = suggestion.suggestedProtein

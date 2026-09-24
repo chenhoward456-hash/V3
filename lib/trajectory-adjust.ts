@@ -374,7 +374,8 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   let finalKcalAdjustment = cappedAdjustment
 
   const projectedRate = currentRatePerWeek + (cappedAdjustment * 7 / 7700)
-  if (input.goalType === 'cut' && projectedRate < -bounds.max_loss_per_week) {
+  // 稽核 E15：原本只在 cut 檢查；recomp 目標低於現況時一樣會掉，掉太快對誰都不安全 → 全部目標都檢查
+  if (projectedRate < -bounds.max_loss_per_week) {
     const allowedRate = -bounds.max_loss_per_week
     finalKcalAdjustment = Math.round((allowedRate - currentRatePerWeek) * 7700 / 7)
     hitBoundary = true
@@ -427,6 +428,12 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   if (input.currentCarbs != null) newMacros.carbs_target = Math.max(50, input.currentCarbs + carbShift)
   if (input.currentCarbsTrainingDay != null) newMacros.carbs_training_day = Math.max(50, input.currentCarbsTrainingDay + carbShift)
   if (input.currentCarbsRestDay != null) newMacros.carbs_rest_day = Math.max(50, input.currentCarbsRestDay + carbShift)
+  // 稽核 E14：碳水被 50g 下限夾住時，熱量要跟著「實際減掉的碳水」走，不然 kcal ≠ P×4+C×4+F×9
+  //（例：碳水 80、要砍 60 → 只能砍 30g＝120 kcal，熱量卻照砍 240）
+  if (input.currentCarbs != null && newMacros.carbs_target != null && input.currentCalories != null) {
+    const realCarbDelta = newMacros.carbs_target - input.currentCarbs
+    if (realCarbDelta !== carbShift) newMacros.calories_target = Math.round(input.currentCalories + realCarbDelta * 4)
+  }
 
   const direction = actualKcalShift < 0 ? '砍' : '加'
   const reason = `週速率 ${currentRatePerWeek.toFixed(2)} kg vs 需 ${neededRatePerWeek.toFixed(2)} kg → ${direction} ${Math.abs(actualKcalShift)} kcal/天`

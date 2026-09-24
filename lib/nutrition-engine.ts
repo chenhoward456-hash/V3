@@ -1182,6 +1182,22 @@ function buildBodyFatZoneInfo(
   }
 }
 
+// ===== 髒增肌偵測用的「上一次體脂」=====
+// 稽核 E17：previousBodyFatPct 從來沒有呼叫端傳入 → 髒增肌偵測是死碼。
+// 接上時刻意取「至少 28 天前」那筆：InBody 類量測誤差大（見記憶 InBody 低估 3–5pt），
+// 拿一週前的那筆比，量測雜訊就可能被當成「體脂漲 2%」、自動砍 200 kcal。
+export function pickPreviousBodyFat(
+  entries: { date: string; body_fat: number | null }[],
+  minDaysApart = 28,
+): number | null {
+  const withBf = entries.filter(e => e.body_fat != null && Number(e.body_fat) > 0).sort((a, b) => a.date.localeCompare(b.date))
+  if (withBf.length < 2) return null
+  const latest = withBf[withBf.length - 1]
+  const cutoff = Date.parse(latest.date) - minDaysApart * 86_400_000
+  const prev = [...withBf].reverse().find(e => Date.parse(e.date) <= cutoff)
+  return prev ? Number(prev.body_fat) : null
+}
+
 // ===== 一次訓練的運動消耗（能量可用性 EA 用）=====
 // 稽核 E7：原本 `RPE × 分鐘 × 0.12` → RPE 8、60 分鐘只算 58 kcal（實際約 300–500），
 // 越認真記 RPE 的學員 EA 下限反而越低（比沒記時用的每次 450 kcal 少 224）。

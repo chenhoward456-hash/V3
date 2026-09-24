@@ -162,14 +162,14 @@ export default function ClientOverview() {
   }
 
   // ===== 快速操作：儲存學員資料更新 =====
-  const saveQuickAction = async (updates: Record<string, unknown>, successMsg: string) => {
+  const saveQuickAction = async (updates: Record<string, unknown>, successMsg: string, macroChangeReason?: string) => {
     if (!client?.id) return
     setQuickSaving(true)
     try {
       const res = await fetch('/api/admin/clients', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: client.id, clientData: updates }),
+        body: JSON.stringify({ clientId: client.id, clientData: updates, ...(macroChangeReason ? { macro_change_reason: macroChangeReason } : {}) }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       // 本地 state 同步更新（避免重新 fetch 整頁）
@@ -2088,27 +2088,9 @@ export default function ClientOverview() {
                             if (currentCarbTarget != null && newCarb != null && newCarb !== currentCarbTarget) updates.carbs_target = newCarb
                             if (currentCarbTrain != null && newCarbTrain != null && newCarbTrain !== currentCarbTrain) updates.carbs_training_day = newCarbTrain
                             if (currentCarbRest != null && newCarbRest != null && newCarbRest !== currentCarbRest) updates.carbs_rest_day = newCarbRest
-                            await saveQuickAction(updates, 'macros 已調整')
-                            // Audit log
-                            try {
-                              await fetch('/api/admin/macro-adjustment-log', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  clientId: client.id,
-                                  applied_by: 'coach',
-                                  trigger_source: 'manual',
-                                  old_macros: {
-                                    calories_target: currentCalTarget,
-                                    carbs_target: currentCarbTarget,
-                                    carbs_training_day: currentCarbTrain,
-                                    carbs_rest_day: currentCarbRest,
-                                  },
-                                  new_macros: updates,
-                                  reason: `教練手動套用建議：${currentRate?.toFixed(2)} → ${neededRate?.toFixed(2)} kg/週`,
-                                }),
-                              })
-                            } catch {/* silent */}
+                            // 稽核 E22：PUT /api/admin/clients 本來就會寫 macro_adjustment_log，原本前端又 POST 一筆 → 每次兩筆。
+                            // 原因改用 macro_change_reason 交給 PUT 一起寫。
+                            await saveQuickAction(updates, 'macros 已調整', `教練手動套用建議：${currentRate?.toFixed(2)} → ${neededRate?.toFixed(2)} kg/週`)
                           }}
                           disabled={quickSaving}
                           className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors ${client.auto_adjust_enabled ? 'bg-white border border-slate-300 text-gray-600 hover:bg-slate-50' : 'bg-primary-600 text-white hover:bg-primary-700'}`}

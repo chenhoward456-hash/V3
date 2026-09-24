@@ -45,7 +45,7 @@ import { generateBehaviorInsights, type InsightInput } from '@/lib/insight-engin
 import { startCronRun, completeCronRun, failCronRun } from '@/lib/cron-utils'
 import { computeTrajectoryAdjustment, type MacroBounds } from '@/lib/trajectory-adjust'
 import { calculateLabStatus } from '@/utils/labStatus'
-import { generateNutritionSuggestion, type NutritionInput } from '@/lib/nutrition-engine'
+import { generateNutritionSuggestion, type NutritionInput, pickPreviousBodyFat } from '@/lib/nutrition-engine'
 import { isWeightTraining } from '@/components/client/types'
 
 function parseSerotoninField(value: string | null): { serotonin?: 'LL' | 'SL' | 'SS'; depressionRisk?: 'low' | 'moderate' | 'high' } {
@@ -238,12 +238,16 @@ export async function GET(request: NextRequest) {
         if (c.coach_macro_override) continue
 
         // 一次抓齊安全層需要的所有資料
-        const [bodyRes, wellnessRes, trainingRes, nutritionRes, labRes] = await Promise.all([
+        const [bodyRes, wellnessRes, trainingRes, nutritionRes, labRes, periodRes] = await Promise.all([
           supabase.from('body_composition').select('date, weight, height, body_fat').eq('client_id', c.id).order('date', { ascending: false }).limit(180),
           supabase.from('daily_wellness').select('date, energy_level, training_drive, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate').eq('client_id', c.id).gte('date', fourteenStr),
           supabase.from('training_logs').select('date, training_type, rpe, duration').eq('client_id', c.id).gte('date', taiwanDateAgo(28)),
           supabase.from('nutrition_logs').select('date, calories, carbs_grams, compliant').eq('client_id', c.id).gte('date', fourteenStr),
           supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', c.id).order('date', { ascending: false }).limit(50),
+          // 稽核 E18：cron 原本完全沒傳經期 → 引擎的經期／RED-S 判斷在自動調整這條路徑上是瞎的
+          c.gender === '女性'
+            ? supabase.from('daily_wellness').select('date').eq('client_id', c.id).eq('period_start', true).gte('date', taiwanDateAgo(180)).order('date', { ascending: false }).limit(1)
+            : Promise.resolve({ data: [] as { date: string }[], error: null }),
         ])
 
         // 抓「最新」180 筆再轉回舊→新。原本 ascending+limit 拿到的是最舊 180 筆：
@@ -311,6 +315,8 @@ export async function GET(request: NextRequest) {
           dietStartDate: c.diet_start_date || null,
           height: latestHeight ? Number(latestHeight) : null,
           bodyFatPct: latestBf ? Number(latestBf) : null,
+          previousBodyFatPct: pickPreviousBodyFat(bodyData as { date: string; body_fat: number | null }[]),  // 稽核 E17
+          lastPeriodDate: (periodRes.data as { date: string }[] | null)?.[0]?.date ?? null,  // 稽核 E18
           targetWeight: c.target_weight ? Number(c.target_weight) : null,
           targetDate: c.competition_date || c.target_date || null,
           currentCalories: c.calories_target ? Number(c.calories_target) : null,
@@ -364,7 +370,11 @@ export async function GET(request: NextRequest) {
         const tdeeAnomaly = engineResult.tdeeAnomalyDetected === true
         const engineNoAutoApply = engineResult.autoApply === false
         // Peak/比賽/秤重/反彈期：體重劇烈波動（肝醣/水分），軌跡數學會算出離譜建議並破壞超補/秤重協議 → 一律不自動調整
-        const phaseLocked = ['peak_week', 'competition', 'weigh_in', 'rebound'].includes(c.prep_phase || '')
+        // 稽核 E23：只看 prep_phase 的話，教練沒把階段改成 peak_week，比賽前一週照樣會被肝醣／水分的體重波動牽著調熱量。
+        // 引擎本身是看日期（剩 ≤7 天自動進 Peak Week）→ 這裡跟著看日期。
+        const compDaysLeft = c.competition_date ? daysUntilDateTW(c.competition_date) : null
+        const inPeakWindow = compDaysLeft != null && compDaysLeft >= 0 && compDaysLeft <= 7
+        const phaseLocked = inPeakWindow || ['peak_week', 'competition', 'weigh_in', 'rebound'].includes(c.prep_phase || '')
         // #8: 恢復狀態 critical 或過度訓練高風險時，不自動加深赤字（與 recovery 引擎「該休息+refeed」相反指令會打架）
         const recoveryCritical = engineResult.recoveryAssessment?.state === 'critical'
           || engineResult.recoveryAssessment?.overtrainingRisk?.riskLevel === 'high'

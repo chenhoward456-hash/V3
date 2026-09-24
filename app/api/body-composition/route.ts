@@ -3,7 +3,7 @@ import { isInAutoAdjustCooldown } from '@/lib/auto-adjust-cooldown'
 import { NextRequest, NextResponse } from 'next/server'
 import { validateBodyComposition, validateDate } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP } from '@/lib/auth-middleware'
-import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
+import { generateNutritionSuggestion, NutritionInput, pickPreviousBodyFat } from '@/lib/nutrition-engine'
 import { createServiceSupabase } from '@/lib/supabase'
 import { isWeightTraining } from '@/components/client/types'
 import { isCompetitionMode } from '@/lib/client-mode'
@@ -63,7 +63,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
   const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
   const trainingWindowStr = (() => { const d = taiwanNow(); d.setDate(d.getDate() - 28); return d.toISOString().split('T')[0] })()
   const sixtyDaysAgo = new Date(today)
-  sixtyDaysAgo.setDate(today.getDate() - 60)
+  sixtyDaysAgo.setDate(today.getDate() - 180)  // 稽核 E18：只查 60 天，超過 60 天沒來的人拿到較輕的「尚未記錄」而不是「>90 天」警告
   const sixtyDaysStr = sixtyDaysAgo.toISOString().split('T')[0]
   const eightWeeksAgo = new Date(today)
   eightWeeksAgo.setDate(today.getDate() - 56)
@@ -171,6 +171,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     bodyWeight: latestWeight,
     height: latestHeight,
     bodyFatPct: latestBodyFat,
+    previousBodyFatPct: pickPreviousBodyFat(bodyData),  // 稽核 E17
     goalType: client.goal_type,
     dietStartDate: client.diet_start_date || null,
     targetWeight: client.target_weight ?? null,

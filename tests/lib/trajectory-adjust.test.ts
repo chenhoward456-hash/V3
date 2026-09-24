@@ -269,3 +269,20 @@ describe('漏量的週不能把速度放大（稽核 E5）', () => {
     expect(r.currentRatePerWeek!).toBeLessThan(-0.1)
   })
 })
+
+describe('碳水卡在 50g 下限時熱量要跟著碳水走（稽核 E14）', () => {
+  const tw = (daysAgo: number) => new Date(Date.now() + 8 * 3600_000 - daysAgo * 86400000).toISOString().slice(0, 10)
+  it('減脂中體重卻在漲 → 要砍，但碳水只剩 60g：熱量＝原熱量＋實際碳水變化×4', () => {
+    const body = Array.from({ length: 50 }, (_, i) => ({ date: tw(49 - i), weight: 80 + i * 0.04 }))
+    const r = computeTrajectoryAdjustment({
+      goalType: 'cut', targetWeight: 74, targetDate: '2027-02-13',
+      currentCalories: 1900, currentProtein: 170, currentFat: 60, currentCarbs: 60,
+      currentCarbsTrainingDay: null, currentCarbsRestDay: null, gender: 'male', bounds: { min_calories: 1500 } as never, lastAdjustAt: null,
+      bodyDataEntries: body,
+    } as TrajectoryInput)
+    // 要砍 400 kcal，但碳水只能從 60 減到 50 → 熱量只能少 40（舊版照砍 400 → 1500，kcal 跟巨量營養素對不上）
+    expect(r.shouldAdjust).toBe(true)
+    expect(r.newMacros?.carbs_target).toBe(50)
+    expect(r.newMacros?.calories_target).toBe(1860)
+  })
+})
