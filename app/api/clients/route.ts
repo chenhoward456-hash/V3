@@ -1,3 +1,4 @@
+import { getTaiwanDate } from '@/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import crypto from 'crypto'
@@ -196,7 +197,7 @@ export async function PATCH(request: NextRequest) {
     // 驗證 unique_code 存在
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('id, gender, subscription_tier, is_active, calories_target, protein_target, coach_macro_override')
+      .select('id, gender, subscription_tier, is_active, calories_target, protein_target, carbs_target, fat_target, coach_macro_override')
       .eq('unique_code', clientId)
       .single()
 
@@ -261,7 +262,7 @@ export async function PATCH(request: NextRequest) {
 
     if (goal_type && ['cut', 'bulk', 'recomp'].includes(goal_type)) {
       updates.goal_type = goal_type
-      updates.diet_start_date = new Date().toISOString().split('T')[0]
+      updates.diet_start_date = getTaiwanDate()  // 稽核 E19：UTC 在台灣早上 0–8 點會記成前一天
     }
 
     if (activity_profile && ['sedentary', 'high_energy_flux'].includes(activity_profile)) {
@@ -296,7 +297,7 @@ export async function PATCH(request: NextRequest) {
 
     if (hasBodyData) {
       // 寫入 body_composition 紀錄
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTaiwanDate()  // 稽核 E19：同上
       const bodyCompRecord: Record<string, string | number | null> = {
         client_id: client.id,
         date: today,
@@ -359,6 +360,29 @@ export async function PATCH(request: NextRequest) {
 
     if (updateError) {
       return createErrorResponse('更新失敗', 500)
+    }
+
+    // 稽核 E19／紅線 3：學員自主設定目標時系統會重算 macros，原本沒寫 macro_adjustment_log
+    if (updates.calories_target != null) {
+      const { error: logErr } = await supabase.from('macro_adjustment_log').insert({
+        client_id: client.id,
+        applied_by: 'system',
+        trigger_source: 'manual',
+        old_macros: {
+          calories_target: client.calories_target ?? null,
+          protein_target: client.protein_target ?? null,
+          carbs_target: client.carbs_target ?? null,
+          fat_target: client.fat_target ?? null,
+        },
+        new_macros: {
+          calories_target: updates.calories_target,
+          protein_target: updates.protein_target,
+          carbs_target: updates.carbs_target,
+          fat_target: updates.fat_target,
+        },
+        reason: '學員自主設定目標，系統依體重／目標重算初始營養目標',
+      })
+      if (logErr) logger.error('self-set macro log failed', logErr, { clientId: client.id })
     }
 
     // 審計日誌（非阻塞）
