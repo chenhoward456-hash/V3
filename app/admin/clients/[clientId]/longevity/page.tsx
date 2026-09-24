@@ -98,7 +98,9 @@ const fmt = (n: number) => (Math.abs(n) >= 100 ? Math.round(n).toLocaleString() 
 
 function freshnessLine(s: MarkerStory): { text: string; tone: 'ok' | 'warn' | 'muted' } {
   switch (s.freshness) {
-    case 'good_hold': return { text: '上次數字很好，之後體重沒大變 → 不用花錢重測', tone: 'ok' }
+    case 'good_hold': return s.direction === 'worse'
+      ? { text: '還在範圍內但正在變差 → 下次抽血一起看', tone: 'warn' }
+      : { text: '上次數字很好，之後體重沒大變 → 不用花錢重測', tone: 'ok' }
     case 'once_ok': return s.optimalNow
       ? { text: '主要由基因決定，一生測一次，已完成', tone: 'ok' }
       : { text: '偏高，主要由基因決定（改不太動）→ 重點是把能改的 ApoB 壓得更低；一生測一次，已完成', tone: 'warn' }

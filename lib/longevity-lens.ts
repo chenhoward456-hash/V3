@@ -46,6 +46,8 @@ export interface MarkerSpec {
   cviDoi?: string
   /** 只對男性成立的「越高越好」（睪固酮家族）；女性不判好壞 */
   higherBetterForMen?: boolean
+  /** 只對男性成立的「越低越好、但別低於 optimalMin」（SHBG：高了會綁走游離睪固酮）；女性不判 */
+  lowerBetterForMen?: boolean
 }
 
 export const MARKERS: Record<string, MarkerSpec> = {
@@ -67,7 +69,7 @@ export const MARKERS: Record<string, MarkerSpec> = {
   睪固酮: { horseman: 'support', cvi: 10, better: 'range', retestDays: 180, cviDoi: '10.1016/j.cca.2024.117806', higherBetterForMen: true },  // 男性
   游離睪固酮: { horseman: 'support', cvi: 11, better: 'range', retestDays: 180, higherBetterForMen: true },
   生物可利用睪固酮: { horseman: 'support', cvi: 11, better: 'range', retestDays: 180, higherBetterForMen: true },
-  SHBG: { horseman: 'support', cvi: 9.7, better: 'range', retestDays: 180, optimalMin: 20, optimalMax: 40 },  // 同 utils/labStatus 最佳 20–40：太高會綁走游離睪固酮
+  SHBG: { horseman: 'support', cvi: 9.7, better: 'range', retestDays: 180, optimalMin: 20, optimalMax: 40, lowerBetterForMen: true },  // 同 utils/labStatus 最佳 20–40：太高會綁走游離睪固酮
   雌二醇: { horseman: 'support', cvi: 20, better: 'range', retestDays: 180 },
   維生素D: { horseman: 'support', cvi: 7.1, better: 'range', retestDays: 180, optimalMin: 40, optimalMax: 80 },  // ng/mL
   鐵蛋白: { horseman: 'support', cvi: 13, better: 'range', retestDays: 180 },
@@ -188,6 +190,12 @@ export function judgeDirection(spec: MarkerSpec, change: ChangeRead | null, gend
   if (!change || change.verdict === 'noise') return null
   const up = change.pctChange > 0
   if (spec.higherBetterForMen) return gender === '男性' ? (up ? 'better' : 'worse') : null
+  // Howard 2026-09-24：「SHBG 也要標出來」——24.4→38.4 雖然還在 20–40，但它上升正是游離睪固酮腰斬的主因
+  if (spec.lowerBetterForMen) {
+    if (gender !== '男性') return null
+    if (spec.optimalMin != null && change.to.value < spec.optimalMin) return 'worse'
+    return up ? 'worse' : 'better'
+  }
   // 前後兩次都在很好的範圍裡 → 不分好壞（例：三酸甘油酯 34→63 都遠低於 100，標「變差」只會嚇人）
   const hasOptimal = spec.optimalMin != null || spec.optimalMax != null
   if (hasOptimal && isOptimal(spec, change.from.value) && isOptimal(spec, change.to.value)) return null

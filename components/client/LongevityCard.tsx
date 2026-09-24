@@ -51,7 +51,8 @@ function Row({ s, hyps, ctxText }: { s: MarkerStory; hyps: Data['hypotheses']; c
   const c = s.change
   let retest: string | null = null
   if (s.freshness === 'once_ok' && !s.optimalNow) retest = '這項偏高，主要由基因決定、不太會變；教練會把其他能改變的數字一起顧好'
-  else if (s.freshness === 'good_hold') retest = '上次數字很好、體重也沒大變，不用急著重測'
+  // 變差中或有預測等重測 → 不能說「不用急著重測」（SHBG 38.4 在範圍內但在變差、9/26 要重測）
+  else if (s.freshness === 'good_hold' && s.direction !== 'worse' && hyps.length === 0) retest = '上次數字很好、體重也沒大變，不用急著重測'
   else if (s.freshness === 'changed') retest = '上次很好，但之後體重變化比較大，下次抽血可以一起看'
   else if (s.freshness === 'stale' && s.spec.core) retest = `建議 ${s.retestBy} 前再測一次`
 
@@ -68,8 +69,11 @@ function Row({ s, hyps, ctxText }: { s: MarkerStory; hyps: Data['hypotheses']; c
       {/* 直接講變好還是變差（紅黃綠只用在狀態，符合 DESIGN.md） */}
       {c && isReal(s) && (s.direction || s.optimalNow) && (
         <p className={`text-xs font-medium mt-0.5 ${s.direction === 'worse' ? 'text-amber-700' : 'text-emerald-700'}`}>
-          {s.direction === 'worse' ? '變差' : s.direction === 'better' ? '變好' : ''}
-          {s.optimalNow ? (s.direction ? '，在很好的範圍' : '在很好的範圍') : ''}
+          {s.direction === 'worse'
+            ? (s.optimalNow ? '變差（還在理想範圍內）' : '變差')
+            : s.direction === 'better'
+              ? (s.optimalNow ? '變好，在很好的範圍' : '變好')
+              : '在很好的範圍'}
         </p>
       )}
       {ctxText && <p className="text-sm text-slate-600 mt-1">{ctxText}</p>}
