@@ -198,9 +198,11 @@ describe('judgeDirection：直接講變好還是變差', () => {
     expect(judgeDirection(MARKERS['睪固酮'], ch(625, 404, 10), '男性')).toBe('worse')
     expect(judgeDirection(MARKERS['睪固酮'], ch(625, 404, 10), '女性')).toBeNull()
   })
-  it('SHBG 24.4→38.4 兩個都在 20–40 → 不判；24→55 離開範圍 → 變差', () => {
-    expect(judgeDirection(MARKERS.SHBG, ch(24.4, 38.4, 9.7), '男性')).toBeNull()
-    expect(judgeDirection(MARKERS.SHBG, ch(24, 55, 9.7), '男性')).toBe('worse')
+  it('男性 SHBG：24.4→38.4 上升 → 變差（綁走游離睪固酮）；38→25 → 變好；30→15 掉到 20 以下 → 變差；女性不判', () => {
+    expect(judgeDirection(MARKERS.SHBG, ch(24.4, 38.4, 9.7), '男性')).toBe('worse')
+    expect(judgeDirection(MARKERS.SHBG, ch(38, 25, 9.7), '男性')).toBe('better')
+    expect(judgeDirection(MARKERS.SHBG, ch(30, 15, 9.7), '男性')).toBe('worse')
+    expect(judgeDirection(MARKERS.SHBG, ch(24.4, 38.4, 9.7), '女性')).toBeNull()
   })
   it('越低越好：同半胱胺酸 15→9 → 變好；三酸甘油酯 34→63 都在很好範圍 → 不判；80→150 → 變差', () => {
     expect(judgeDirection(MARKERS['同半胱胺酸'], ch(15, 9, 8.3))).toBe('better')
