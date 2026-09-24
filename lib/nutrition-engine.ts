@@ -207,7 +207,8 @@ export interface NutritionInput {
     wearable_sleep_score?: number | null  // 睡眠分數 0-100
     respiratory_rate?: number | null // 呼吸速率 次/分
   }[]
-  recentTrainingLogs?: { date: string; rpe: number | null }[]
+  /** training_type／duration 給恢復評估算訓練天數與 ACWR（稽核 E8：原本沒傳，一週練 6 天被當 0 天） */
+  recentTrainingLogs?: { date: string; rpe: number | null; training_type?: string | null; duration?: number | null }[]
   recentCarbsPerDay?: { date: string; carbs: number | null }[]
 
   // 月經週期（女性專用，用於排除黃體期體重浮動）
@@ -1180,6 +1181,16 @@ function buildBodyFatZoneInfo(
   }
 }
 
+// ===== 一次訓練的運動消耗（能量可用性 EA 用）=====
+// 稽核 E7：原本 `RPE × 分鐘 × 0.12` → RPE 8、60 分鐘只算 58 kcal（實際約 300–500），
+// 越認真記 RPE 的學員 EA 下限反而越低（比沒記時用的每次 450 kcal 少 224）。
+// 改成 MET × 體重 × 小時；RPE→MET 用 2 + 0.5×RPE、夾在 3–8
+// （重量訓練在 Compendium of Physical Activities 約 3.5–6 MET；這個對應是近似值，不是量測）。
+export function sessionKcal(rpe: number, durationMin: number, bodyWeightKg: number): number {
+  const met = Math.min(8, Math.max(3, 2 + 0.5 * rpe))
+  return met * bodyWeightKg * (durationMin / 60)
+}
+
 // ===== 月經週期判斷 =====
 // 文獻：
 // - Stachenfeld 2008: 黃體期（排卵後 ~day 14-28）孕酮↑ → 體液滯留 1-2kg
@@ -1289,14 +1300,14 @@ type WellnessWithWearable = {
  */
 function assessCurrentState(
   recentWellness: WellnessWithWearable[],
-  recentTrainingLogs: { date: string; rpe: number | null }[]
+  recentTrainingLogs: { date: string; rpe: number | null; training_type?: string | null; duration?: number | null }[]
 ): { state: 'optimal' | 'good' | 'struggling' | 'critical' | 'unknown'; readinessScore: number | null; recoveryAssessment?: RecoveryAssessment } {
   // 數據不足時直接返回
   const hasWellness = recentWellness.some(w =>
     w.energy_level != null || w.training_drive != null ||
     w.device_recovery_score != null || w.resting_hr != null || w.hrv != null || w.wearable_sleep_score != null
   )
-  const hasTraining = recentTrainingLogs.some(t => t.rpe != null)
+  const hasTraining = recentTrainingLogs.some(t => t.rpe != null || (t.training_type != null && t.training_type !== 'rest'))
   if (!hasWellness && !hasTraining) return { state: 'unknown', readinessScore: null }
 
   const assessment = generateRecoveryAssessment({
@@ -1310,7 +1321,7 @@ function assessCurrentState(
       wearable_sleep_score: w.wearable_sleep_score,
       respiratory_rate: w.respiratory_rate,
     })),
-    trainingLogs: recentTrainingLogs.map(t => ({ date: t.date, rpe: t.rpe })),
+    trainingLogs: recentTrainingLogs.map(t => ({ date: t.date, rpe: t.rpe, training_type: t.training_type ?? null, duration: t.duration ?? null })),
   })
 
   return {
@@ -2209,17 +2220,27 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
 
   // 3. 計算週均體重變化率
   let thisWeekAvg = input.weeklyWeights[0].avgWeight
-  const lastWeekAvg = input.weeklyWeights[1].avgWeight
+  let lastWeekAvg = input.weeklyWeights[1].avgWeight
+  // 兩筆之間實際隔幾週（稽核 E5：中間漏量一週時，[0] 和 [1] 其實差兩週，不能當成相鄰週）
+  const weekGap = Math.max(1, (input.weeklyWeights[1].week ?? 1) - (input.weeklyWeights[0].week ?? 0))
 
   // 黃體期體重修正：黃體期水分滯留 0.5-2kg 會汙染週均值
   // 修正策略：如果本週處於黃體期，將本週均值向下修正 1kg（保守估計）
   // 這樣可以避免：(1) 假性停滯 (2) 假性反彈 (3) 觸發不必要的赤字加深
   // 文獻：Matton et al. 2005, White et al. 2011 — 黃體期水分滯留中位數 ~1kg
-  if (cycleInfo.inLutealPhase && input.gender === '女性') {
-    thisWeekAvg = Math.round((thisWeekAvg - 1.0) * 100) / 100  // 向下修正 1kg
+  // 稽核 E6：原本只要本週在黃體期就扣 1kg，但上週多半也在黃體期（同樣被水分撐高）→
+  // 每週都憑空造出 1kg 下降，TDEE 估算跟著歪。改成只修正「兩週之中只有一週在黃體期」的情況。
+  if (input.gender === '女性' && cycleInfo.daysSincePeriod >= 0) {
+    const lastDays = cycleInfo.daysSincePeriod - weekGap * 7
+    const lastWeekLuteal = lastDays >= 14 && lastDays <= 30
+    if (cycleInfo.inLutealPhase && !lastWeekLuteal) {
+      thisWeekAvg = Math.round((thisWeekAvg - 1.0) * 100) / 100
+    } else if (!cycleInfo.inLutealPhase && lastWeekLuteal) {
+      lastWeekAvg = Math.round((lastWeekAvg - 1.0) * 100) / 100
+    }
   }
 
-  const weeklyChange = thisWeekAvg - lastWeekAvg  // kg
+  const weeklyChange = (thisWeekAvg - lastWeekAvg) / weekGap  // kg／週
   const weeklyChangeRate = lastWeekAvg > 0 ? (weeklyChange / lastWeekAvg) * 100 : 0  // %
 
   // 4. 計算飲食持續天數（提前算，TDEE 和 goal-driven 都需要）
@@ -2489,7 +2510,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     const intake = input.avgDailyCalories ?? input.currentCalories ?? 0
     // 估算運動消耗：training days × ~400-600 kcal per session / 7
     const exerciseKcal = input.recentTrainingVolume
-      ? (input.recentTrainingVolume.avgRPE ?? 6) * (input.recentTrainingVolume.avgDurationMin ?? 45) * 0.12 * input.recentTrainingVolume.sessionsPerWeek / 7
+      ? sessionKcal(input.recentTrainingVolume.avgRPE ?? 6, input.recentTrainingVolume.avgDurationMin ?? 45, input.bodyWeight) * input.recentTrainingVolume.sessionsPerWeek / 7
       : input.trainingDaysPerWeek * 450 / 7
     const eaValue = ffm > 0 ? (intake - exerciseKcal) / ffm : 0
     const eaRounded = Math.round(eaValue * 10) / 10
@@ -2614,7 +2635,7 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   if (input.bodyFatPct != null && input.bodyFatPct > 0 && result.suggestedCalories != null) {
     const ffm = input.bodyWeight * (1 - input.bodyFatPct / 100)
     const exerciseKcal = input.recentTrainingVolume
-      ? (input.recentTrainingVolume.avgRPE ?? 6) * (input.recentTrainingVolume.avgDurationMin ?? 45) * 0.12 * input.recentTrainingVolume.sessionsPerWeek / 7
+      ? sessionKcal(input.recentTrainingVolume.avgRPE ?? 6, input.recentTrainingVolume.avgDurationMin ?? 45, input.bodyWeight) * input.recentTrainingVolume.sessionsPerWeek / 7
       : input.trainingDaysPerWeek * 450 / 7
     const suggestedEA = ffm > 0 ? (result.suggestedCalories - exerciseKcal) / ffm : 0
     const suggestedEARounded = Math.round(suggestedEA * 10) / 10
@@ -3403,7 +3424,7 @@ function generateGoalDrivenCut(
   if (input.bodyFatPct != null && input.bodyFatPct > 0) {
     const ffm = bw * (1 - input.bodyFatPct / 100)
     const exerciseKcal = input.recentTrainingVolume
-      ? (input.recentTrainingVolume.avgRPE ?? 6) * (input.recentTrainingVolume.avgDurationMin ?? 45) * 0.12 * input.recentTrainingVolume.sessionsPerWeek / 7
+      ? sessionKcal(input.recentTrainingVolume.avgRPE ?? 6, input.recentTrainingVolume.avgDurationMin ?? 45, input.bodyWeight) * input.recentTrainingVolume.sessionsPerWeek / 7
       : input.trainingDaysPerWeek * 450 / 7
     const EA_THRESHOLD = 30  // kcal/kg FFM/day
     const minCalForEA = Math.round(EA_THRESHOLD * ffm + exerciseKcal)

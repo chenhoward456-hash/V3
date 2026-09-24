@@ -241,7 +241,7 @@ export async function GET(request: NextRequest) {
         const [bodyRes, wellnessRes, trainingRes, nutritionRes, labRes] = await Promise.all([
           supabase.from('body_composition').select('date, weight, height, body_fat').eq('client_id', c.id).order('date', { ascending: false }).limit(180),
           supabase.from('daily_wellness').select('date, energy_level, training_drive, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate').eq('client_id', c.id).gte('date', fourteenStr),
-          supabase.from('training_logs').select('date, training_type, rpe').eq('client_id', c.id).gte('date', fourteenStr),
+          supabase.from('training_logs').select('date, training_type, rpe, duration').eq('client_id', c.id).gte('date', fourteenStr),
           supabase.from('nutrition_logs').select('date, calories, carbs_grams, compliant').eq('client_id', c.id).gte('date', fourteenStr),
           supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', c.id).order('date', { ascending: false }).limit(50),
         ])
@@ -346,7 +346,7 @@ export async function GET(request: NextRequest) {
             wearable_sleep_score: w.wearable_sleep_score ?? null,
             respiratory_rate: w.respiratory_rate ?? null,
           })),
-          recentTrainingLogs: trainingLogs.filter((t: any) => t.date >= sevenDaysStr).map((t: any) => ({ date: t.date, rpe: t.rpe ?? null })),
+          recentTrainingLogs: trainingLogs.filter((t: any) => t.date >= sevenDaysStr).map((t: any) => ({ date: t.date, rpe: t.rpe ?? null, training_type: t.training_type ?? null, duration: t.duration ?? null })),
           recentCarbsPerDay: nutrition.filter((n: any) => n.date >= sevenDaysStr).map((n: any) => ({ date: n.date, carbs: n.carbs_grams ?? null })),
           geneticProfile: (c.gene_mthfr || c.gene_apoe || c.gene_depression_risk) ? {
             mthfr: c.gene_mthfr || undefined,
@@ -373,20 +373,25 @@ export async function GET(request: NextRequest) {
           cuttingBlocked, metabolicHighStress, tdeeAnomaly, engineNoAutoApply, phaseLocked, recoveryCritical,
         }
 
-        if (cuttingBlocked || metabolicHighStress || tdeeAnomaly || engineNoAutoApply || phaseLocked || recoveryCritical) {
-          if (cuttingBlocked) autoAdjustResults.gatedByCuttingReadiness++
-          if (metabolicHighStress) autoAdjustResults.gatedByMetabolicStress++
+        // 稽核 E9：「還沒準備好減脂／代謝壓力高／恢復很差」這三道閘門是擋「再砍」用的。
+        // 軌跡要「加熱量」時（例：掉太快）正是這些狀態最需要多吃 → 不能一起擋。
+        const wantsCut = (trajResult.kcalAdjustment ?? 0) < 0
+        const cutOnlyBlocked = wantsCut && (cuttingBlocked || metabolicHighStress || recoveryCritical)
+
+        if (cutOnlyBlocked || tdeeAnomaly || engineNoAutoApply || phaseLocked) {
+          if (wantsCut && cuttingBlocked) autoAdjustResults.gatedByCuttingReadiness++
+          if (wantsCut && metabolicHighStress) autoAdjustResults.gatedByMetabolicStress++
           if (tdeeAnomaly) autoAdjustResults.gatedByTdeeAnomaly++
           if (engineNoAutoApply) autoAdjustResults.gatedByEngineAutoApply++
 
           // 寫 audit log（安全層擋住的決策也要留紀錄）
           const blockReasons: string[] = []
-          if (cuttingBlocked) blockReasons.push(`Cutting gate blocked (score ${engineResult.cuttingReadinessGate?.readinessScore}): ${engineResult.cuttingReadinessGate?.reasons.join('；')}`)
-          if (metabolicHighStress) blockReasons.push(`Metabolic stress score ${engineResult.metabolicStress?.score} ≥ 60 — 建議 refeed/diet break`)
+          if (wantsCut && cuttingBlocked) blockReasons.push(`Cutting gate blocked (score ${engineResult.cuttingReadinessGate?.readinessScore}): ${engineResult.cuttingReadinessGate?.reasons.join('；')}`)
+          if (wantsCut && metabolicHighStress) blockReasons.push(`Metabolic stress score ${engineResult.metabolicStress?.score} ≥ 60 — 建議 refeed/diet break`)
           if (tdeeAnomaly) blockReasons.push('TDEE 校正異常，引擎已暫停自動套用')
           if (engineNoAutoApply) blockReasons.push('Engine autoApply=false')
           if (phaseLocked) blockReasons.push(`${c.prep_phase} 期 — 不自動調整（保護超補/秤重協議）`)
-          if (recoveryCritical) blockReasons.push('恢復 critical / 過度訓練高風險 — 不自動加深赤字（建議休息+refeed）')
+          if (wantsCut && recoveryCritical) blockReasons.push('恢復 critical / 過度訓練高風險 — 不自動加深赤字（建議休息+refeed）')
 
           // 被 gate 擋下的紀錄也一天只寫一筆（早晚兩次 run 都會走到這，稽核 E16）
           const { data: blockedDupe } = await supabase
@@ -424,7 +429,7 @@ export async function GET(request: NextRequest) {
             // 主訊息：人話為主，技術細節摺到下方
             const kcalAbs = Math.abs(trajResult.kcalAdjustment || 0)
             const headline = `🔴 ${c.name} 卡住了`
-            const lay = `軌跡需要砍 ${kcalAbs} kcal，但已撞安全層 → 引擎自動停手`
+            const lay = `軌跡需要${wantsCut ? '砍' : '加'} ${kcalAbs} kcal，但已撞安全層 → 引擎自動停手`
             const detail = blockReasons.map(r => `· ${r}`).join('\n')
             const alertMsg = `${headline}\n\n${lay}\n\n${labFlags ? `⚠️ 異常項目：${labFlags}\n\n` : ''}細節：\n${detail}\n\n👇 一鍵處理`
 

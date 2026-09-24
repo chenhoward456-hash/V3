@@ -159,16 +159,19 @@ function computeWeeklyAverages(
     weeks.push({ avg, count: inWeek.length })
   }
 
-  const filled = weeks.filter(w => w.avg != null)
+  // 帶著真實的週編號（0＝8 週前、7＝本週）。稽核 E5：原本只看「有資料的週」，
+  // 中間漏一週沒量就把兩週的變化當成一週 → 速度被放大一倍（減脂誤加熱量、增肌誤砍熱量）。
+  const filled = weeks.map((w, idx) => ({ ...w, idx })).filter(w => w.avg != null)
   if (filled.length === 0) return null
 
   const current = filled[filled.length - 1]
   const previous = filled.length >= 2 ? filled[filled.length - 2] : null
-  const fourWeeksAgoIdx = Math.max(0, filled.length - 5)
-  const fourWeeksAgo = filled.length >= 5 ? filled[fourWeeksAgoIdx] : null
+  // 「4 週前」＝日曆上 4 週前（或更早最近的一筆），不是「往前數第 4 筆有資料的週」
+  const fourWeeksAgo = [...filled].reverse().find(w => w.idx <= current.idx - 4) ?? null
 
-  const delta1w = previous ? current.avg! - previous.avg! : null
-  const delta4w = fourWeeksAgo ? current.avg! - fourWeeksAgo.avg! : null
+  // 都換算回「每週／每 4 週」的量
+  const delta1w = previous ? (current.avg! - previous.avg!) / (current.idx - previous.idx) : null
+  const delta4w = fourWeeksAgo ? ((current.avg! - fourWeeksAgo.avg!) / (current.idx - fourWeeksAgo.idx)) * 4 : null
 
   const slopeOf = (pts: Array<{ x: number; y: number }>): number | null => {
     if (pts.length < 3) return null
@@ -196,7 +199,8 @@ function computeWeeklyAverages(
   //   bulk/recomp → 取較大值（漲越快越危險）
   //   cut         → 取較小值（掉越快越危險）
   // 不管資料長什麼形狀，引擎都不會低估風險。
-  const slope3w = slopeOf(points.slice(-3).map((p, i) => ({ x: i, y: p.y })))
+  // 近 3 週：用真實週編號、只取最近 4 週內的點（容許漏一週），不重新編號（稽核 E5）
+  const slope3w = slopeOf(points.filter(p => p.x >= weeks.length - 4))
   let regressionSlope: number | null = slope8w
   if (slope8w != null && slope3w != null) {
     regressionSlope = goalTypeForSlope === 'cut'

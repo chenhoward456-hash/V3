@@ -297,9 +297,11 @@ export async function GET(request: NextRequest) {
       })),
       recentTrainingLogs: trainingLogs
         .filter((t: { date: string }) => t.date >= sevenDaysStr)
-        .map((t: { date: string; rpe: number | null }) => ({
+        .map((t: { date: string; rpe: number | null; training_type?: string | null; duration?: number | null }) => ({
           date: t.date,
           rpe: t.rpe ?? null,
+          training_type: t.training_type ?? null,
+          duration: t.duration ?? null,
         })),
       recentCarbsPerDay: nutritionLogs
         .filter((n: { date: string }) => n.date >= sevenDaysStr)

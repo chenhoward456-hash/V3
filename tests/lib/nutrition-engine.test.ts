@@ -2677,3 +2677,56 @@ describe('增肌：回報的 delta 必須是實際差值，不是被上限砍掉
     expect(s.proteinDelta).toBe((s.suggestedProtein ?? 0) - 150)
   })
 })
+
+describe('週與週之間的間隔與黃體期修正（稽核 E5／E6）', () => {
+  it('兩週前 80、本週 79、中間沒量 → 每週 −0.625%，不是 −1.25%', () => {
+    const r = generateNutritionSuggestion(makeCutInput({
+      gender: '男性',
+      weeklyWeights: [{ week: 0, avgWeight: 79 }, { week: 2, avgWeight: 80 }],
+      targetWeight: null, targetDate: null,
+    }))
+    expect(r.weeklyWeightChangeRate).toBeCloseTo(-0.625, 2)
+  })
+  it('本週、上週都在黃體期（第 20 天／第 13 天前一週也算 14–30）→ 不扣 1kg，持平就是持平', () => {
+    const r = generateNutritionSuggestion(makeCutInput({
+      gender: '女性',
+      lastPeriodDate: daysAgo(25),   // 本週第 25 天、上週第 18 天 → 兩週都在黃體期
+      weeklyWeights: [{ week: 0, avgWeight: 56 }, { week: 1, avgWeight: 56 }],
+      targetWeight: null, targetDate: null,
+    }))
+    expect(r.weeklyWeightChangeRate).toBeCloseTo(0, 2)
+  })
+  it('只有本週在黃體期 → 本週扣 1kg', () => {
+    const r = generateNutritionSuggestion(makeCutInput({
+      gender: '女性',
+      lastPeriodDate: daysAgo(16),   // 本週第 16 天（黃體期）、上週第 9 天（不是）
+      weeklyWeights: [{ week: 0, avgWeight: 56 }, { week: 1, avgWeight: 56 }],
+      targetWeight: null, targetDate: null,
+    }))
+    expect(r.weeklyWeightChangeRate!).toBeLessThan(-1.5)
+  })
+})
+
+import { sessionKcal } from '@/lib/nutrition-engine'
+describe('一次訓練的運動消耗（稽核 E7）', () => {
+  it('55kg、RPE 8、60 分鐘 ≈ 330 kcal（原本公式只算 58）', () => {
+    expect(Math.round(sessionKcal(8, 60, 55))).toBe(330)
+  })
+  it('MET 夾在 3–8：RPE 1 → 3 MET、RPE 20 → 8 MET', () => {
+    expect(sessionKcal(1, 60, 60)).toBe(180)
+    expect(sessionKcal(20, 60, 60)).toBe(480)
+  })
+})
+
+describe('恢復評估拿得到訓練類型（稽核 E8）', () => {
+  const wellness = Array.from({ length: 7 }, (_, i) => ({ date: daysAgo(i), sleep_quality: 3, energy_level: 3, mood: 3, training_drive: 3, cognitive_clarity: 3, stress_level: 3, device_recovery_score: null, resting_hr: null, hrv: null, wearable_sleep_score: null, respiratory_rate: null }))
+  it('一週練 6 天：帶 training_type 的恢復分數要比沒帶的低（原本兩者一樣，都被當成練 0 天）', () => {
+    const logs = (withType: boolean) => Array.from({ length: 6 }, (_, i) => ({ date: daysAgo(i), rpe: 8, ...(withType ? { training_type: 'push', duration: 70 } : {}) }))
+    const a = generateNutritionSuggestion(makeCutInput({ recentWellness: wellness as never, recentTrainingLogs: logs(true) }))
+    const b = generateNutritionSuggestion(makeCutInput({ recentWellness: wellness as never, recentTrainingLogs: logs(false) }))
+    // readinessScore 只看穿戴裝置；訓練負荷反映在綜合 score 與肌肉骨骼系統
+    expect(a.recoveryAssessment).toBeTruthy()
+    expect(a.recoveryAssessment!.systems.muscular.score).toBeLessThan(b.recoveryAssessment!.systems.muscular.score)
+    expect(a.recoveryAssessment!.score).toBeLessThan(b.recoveryAssessment!.score)
+  })
+})

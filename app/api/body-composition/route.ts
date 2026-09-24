@@ -208,7 +208,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
     })),
     recentTrainingLogs: trainingLogs
       .filter((t: { date: string }) => t.date >= sevenDaysStr)
-      .map((t: { date: string; rpe: number | null }) => ({ date: t.date, rpe: t.rpe ?? null })),
+      .map((t: { date: string; rpe: number | null; training_type?: string | null; duration?: number | null }) => ({ date: t.date, rpe: t.rpe ?? null, training_type: t.training_type ?? null, duration: t.duration ?? null })),
     recentCarbsPerDay: nutritionLogs
       .filter((n: { date: string }) => n.date >= sevenDaysStr)
       .map((n: { date: string; carbs_grams: number | null }) => ({ date: n.date, carbs: n.carbs_grams ?? null })),
