@@ -7,6 +7,7 @@
  * 前端在訓練記錄頁面上方顯示
  */
 
+import { calculateLabStatus } from '@/utils/labStatus'
 import { NextRequest, NextResponse } from 'next/server'
 import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
@@ -58,15 +59,6 @@ export async function GET(request: NextRequest) {
       .order('date', { ascending: false })
       .limit(56)
 
-    // 查最近血檢結果（非 normal 的指標 — 用於 getTrainingAdvice）
-    const { data: labResults } = await supabaseAdmin
-      .from('lab_results')
-      .select('test_name, value, unit, status')
-      .eq('client_id', client.id)
-      .in('status', ['attention', 'alert'])
-      .order('date', { ascending: false })
-      .limit(20)
-
     // 查所有血檢結果（用於荷爾蒙提取）
     const { data: allLabs } = await supabaseAdmin
       .from('lab_results')
@@ -109,11 +101,18 @@ export async function GET(request: NextRequest) {
         wearable_sleep_score: w.wearable_sleep_score,
       }))
 
-    const labDataForTraining = (labResults || []).map(l => ({
-      test_name: l.test_name,
-      value: l.value as number | null,
-      status: l.status as 'normal' | 'attention' | 'alert',
-    }))
+    // 紅線 4／稽核 E11：原本用 DB status 篩「非正常」，DB 寫 normal 但其實超標的會漏 →
+    // 改成拿全部血檢用 calculateLabStatus 重算再篩
+    const g = client.gender === '女性' ? '女性' : client.gender === '男性' ? '男性' : undefined
+    const labDataForTraining = (allLabs || [])
+      .filter(l => l.value != null && Number.isFinite(Number(l.value)))
+      .map(l => ({
+        test_name: l.test_name,
+        value: l.value as number | null,
+        status: calculateLabStatus(String(l.test_name), Number(l.value), g) as 'normal' | 'attention' | 'alert',
+      }))
+      .filter(l => l.status !== 'normal')
+      .slice(0, 20)
 
     // 原有的訓練建議（強度等級）
     const advice = getTrainingAdvice(wellnessLogs, trainingLogsFor7d, wearableData.length > 0 ? wearableData : undefined, labDataForTraining.length > 0 ? labDataForTraining : undefined)

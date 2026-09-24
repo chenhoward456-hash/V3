@@ -132,6 +132,7 @@ export async function GET(request: NextRequest) {
     // ── 3. 為每位活躍學員生成本週營養分析摘要 ──
     const sinceDate = taiwanDateAgo(30)
     const sevenDaysStr = taiwanDateAgo(7)
+    const trainingWindowStr = taiwanDateAgo(28)
     const fourteenStr = taiwanDateAgo(14)
 
     // 批量查詢所有數據
@@ -319,7 +320,8 @@ export async function GET(request: NextRequest) {
             respiratory_rate: w.respiratory_rate ?? null,
           })),
           recentTrainingLogs: clientTraining
-            .filter((t: { date: string }) => t.date >= sevenDaysStr)
+            // 28 天：恢復評估的 ACWR（急慢性訓練負荷比）需要 4 週；7 天內的訓練天數由恢復引擎自己切（稽核 E8）
+        .filter((t: { date: string }) => t.date >= trainingWindowStr)
             .map((t: { date: string; rpe: number | null; training_type?: string | null; duration?: number | null }) => ({ date: t.date, rpe: t.rpe ?? null, training_type: t.training_type ?? null, duration: t.duration ?? null })),
           recentCarbsPerDay: clientNutrition
             .filter((n: { date: string }) => n.date >= sevenDaysStr)

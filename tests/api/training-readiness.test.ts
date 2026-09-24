@@ -173,13 +173,14 @@ function setupTableMocks(opts: {
   })
 
   // Override mockLimit to return different data based on call index
+  // 稽核 E11：route 不再另外用 DB status 查「異常血檢」，改成全部血檢用 calculateLabStatus 重算 →
+  // 少了一支查詢；測試傳的 labResults 併進全部血檢裡
   const limitResults = [
     opts.wellness ?? [],     // call 2
     opts.training ?? [],     // call 3
-    opts.labResults ?? [],   // call 4
-    opts.allLabs ?? [],      // call 5
-    opts.weightHistory ?? [],// call 6
-    opts.nutritionLogs ?? [],// call 7
+    [...(opts.allLabs ?? []), ...(opts.labResults ?? [])],   // call 4：全部血檢
+    opts.weightHistory ?? [],// call 5
+    opts.nutritionLogs ?? [],// call 6
   ]
   let limitCallIdx = 0
 
@@ -561,8 +562,9 @@ describe('GET /api/training-readiness', () => {
       wellness: [],
       training: [],
       labResults: [
-        { test_name: 'Iron', value: 8, unit: 'ug/dL', status: 'alert' },
-        { test_name: 'Vitamin D', value: 18, unit: 'ng/mL', status: 'attention' },
+        // 用 canonical 中文名（route 會用 calculateLabStatus 重算，不讀這裡的 status）
+        { test_name: '鐵蛋白', value: 8, unit: 'ng/mL', status: 'normal' },
+        { test_name: '維生素D', value: 18, unit: 'ng/mL', status: 'normal' },
       ],
     })
 
@@ -575,7 +577,8 @@ describe('GET /api/training-readiness', () => {
       expect.any(Array),
       undefined, // no wearable data
       expect.arrayContaining([
-        expect.objectContaining({ test_name: 'Iron', status: 'alert' }),
+        // DB 寫 normal，重算後是 alert → 證明不再信 DB status（稽核 E11）
+        expect.objectContaining({ test_name: '鐵蛋白', status: 'alert' }),
       ]),
     )
   })

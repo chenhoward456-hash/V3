@@ -1,3 +1,4 @@
+import { calculateLabStatus } from '@/utils/labStatus'
 import { isInAutoAdjustCooldown } from '@/lib/auto-adjust-cooldown'
 import { NextRequest, NextResponse } from 'next/server'
 import { validateBodyComposition, validateDate } from '@/utils/validation'
@@ -60,6 +61,7 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
   const sevenDaysAgo = new Date(today)
   sevenDaysAgo.setDate(today.getDate() - 6)
   const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0]
+  const trainingWindowStr = (() => { const d = taiwanNow(); d.setDate(d.getDate() - 28); return d.toISOString().split('T')[0] })()
   const sixtyDaysAgo = new Date(today)
   sixtyDaysAgo.setDate(today.getDate() - 60)
   const sixtyDaysStr = sixtyDaysAgo.toISOString().split('T')[0]
@@ -207,7 +209,8 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
       respiratory_rate: w.respiratory_rate ?? null,
     })),
     recentTrainingLogs: trainingLogs
-      .filter((t: { date: string }) => t.date >= sevenDaysStr)
+      // 28 天：恢復評估的 ACWR（急慢性訓練負荷比）需要 4 週；7 天內的訓練天數由恢復引擎自己切（稽核 E8）
+        .filter((t: { date: string }) => t.date >= trainingWindowStr)
       .map((t: { date: string; rpe: number | null; training_type?: string | null; duration?: number | null }) => ({ date: t.date, rpe: t.rpe ?? null, training_type: t.training_type ?? null, duration: t.duration ?? null })),
     recentCarbsPerDay: nutritionLogs
       .filter((n: { date: string }) => n.date >= sevenDaysStr)
@@ -217,7 +220,8 @@ async function autoAdjustNutrition(clientId: string): Promise<{ adjusted: boolea
       test_name: l.test_name,
       value: l.value,
       unit: l.unit,
-      status: l.status as 'normal' | 'attention' | 'alert',
+      // 紅線 4／稽核 E11：DB 的 status 不是真相，跟 cron 一樣用 calculateLabStatus 重算，不然同一個人兩條路給出不同 macros
+      status: calculateLabStatus(String(l.test_name), Number(l.value), client.gender === '女性' ? '女性' : client.gender === '男性' ? '男性' : undefined) as 'normal' | 'attention' | 'alert',
     })),
     recentTrainingVolume: recentTrainingWithRPE.length > 0 ? {
       avgRPE,
