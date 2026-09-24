@@ -134,7 +134,9 @@ export async function POST(request: NextRequest) {
       try {
         reply = await askClaude(
           trimmedMessages,
-          clientContext,
+          // 稽核 S-04：前端傳的 systemPrompt 是使用者可控的字串，原本無上限、直接進 system。
+          // 伺服器自己組得出 snapshot 時就不用它；只有 snapshot 失敗才退回、且截在 6000 字。
+          cacheableSnapshot ? undefined : (typeof clientContext === 'string' ? clientContext.slice(0, 6000) : undefined),
           client.client_mode as string | null | undefined,
           client.subscription_tier as string | null | undefined,
           cacheableSnapshot || undefined,
