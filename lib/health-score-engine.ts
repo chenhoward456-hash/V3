@@ -1,3 +1,4 @@
+import { calculateLabStatus } from '@/utils/labStatus'
 import { DAY_MS } from '@/lib/date-utils'
 
 /**
@@ -54,7 +55,9 @@ export interface HealthScoreInput {
   nutritionLast7: Array<{ compliant: boolean | null }>
   trainingLast7: Array<{ training_type: string; rpe?: number | null }>
   supplementComplianceRate: number   // 0–1（週平均補品打卡率）
-  labResults: Array<{ status: 'normal' | 'attention' | 'alert' }>
+  /** 有 test_name／value／date 時會「每項只取最新一筆＋calculateLabStatus 重算」（稽核 E24） */
+  labResults: Array<{ status: 'normal' | 'attention' | 'alert' | string; test_name?: string; value?: number | string | null; date?: string }>
+  gender?: string | null
   hrvBaseline?: number | null          // 個人 HRV 長期平均（ms），用來跟近 7 天比
   rhrBaseline?: number | null          // 個人靜息心率長期平均（bpm），用來跟近 7 天比
   quarterlyStart?: string | null     // ISO date string
@@ -163,9 +166,23 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
   const supplementDetail = `近7天依從率 ${Math.round(supplementComplianceRate * 100)}%`
 
   // ── 6. 血液指標懲罰（最多 -20 分）──
-  const alertCount = labResults.filter(l => l.status === 'alert').length
-  const attentionCount = labResults.filter(l => l.status === 'attention').length
-  const labPenalty = labResults.length > 0
+  // 稽核 E24：原本用 DB status（紅線 4：不是真相）、而且整季每一筆都算 → 同一季抽兩次血，同一項異常扣兩次。
+  // 有名稱與數值時：每項只取最新一筆、用 calculateLabStatus 重算；舊呼叫端只給 status 的照舊。
+  const g = input.gender === '女性' ? '女性' : input.gender === '男性' ? '男性' : undefined
+  const latestByName = new Map<string, (typeof labResults)[number]>()
+  const unnamed: typeof labResults = []
+  for (const l of labResults) {
+    if (!l.test_name) { unnamed.push(l); continue }
+    const cur = latestByName.get(l.test_name)
+    if (!cur || (l.date ?? '') > (cur.date ?? '')) latestByName.set(l.test_name, l)
+  }
+  const labsForScore = [...latestByName.values(), ...unnamed].map(l =>
+    l.test_name && l.value != null && Number.isFinite(Number(l.value))
+      ? { ...l, status: calculateLabStatus(l.test_name, Number(l.value), g) }
+      : l)
+  const alertCount = labsForScore.filter(l => l.status === 'alert').length
+  const attentionCount = labsForScore.filter(l => l.status === 'attention').length
+  const labPenalty = labsForScore.length > 0
     ? Math.max(-20, -(alertCount * 10 + attentionCount * 5))
     : 0
 
@@ -174,7 +191,7 @@ export function calculateHealthScore(input: HealthScoreInput): HealthScore {
   let labBonus = 0
 
   // 7a. 血檢全正常獎勵：有做血檢且全部 normal → +5 分
-  if (labResults.length >= 3 && alertCount === 0 && attentionCount === 0) {
+  if (labsForScore.length >= 3 && alertCount === 0 && attentionCount === 0) {
     labBonus += 5
   }
 

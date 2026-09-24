@@ -4,7 +4,8 @@ import { NextRequest } from 'next/server'
 // ── Mocks ──
 
 const mockGenerateNutritionSuggestion = vi.fn()
-vi.mock('@/lib/nutrition-engine', () => ({
+vi.mock('@/lib/nutrition-engine', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/nutrition-engine')>()),
   generateNutritionSuggestion: (...args: any[]) => mockGenerateNutritionSuggestion(...args),
 }))
 

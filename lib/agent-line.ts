@@ -6,6 +6,7 @@
  * sent back to admin LINE.
  */
 
+import { actOnProposal } from '@/lib/proposal-actions'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { replyMessage, pushMessage } from '@/lib/line'
 import { runAgent } from '@/lib/agent-runner'
@@ -228,74 +229,22 @@ export async function handleAgentProposalPostback(
   const action = parts[1] as 'approve' | 'reject' | 'discuss'
   const proposalId = parts[2]
 
-  const { data: proposal, error: fetchErr } = await supabase
-    .from('pending_proposals')
-    .select('*')
-    .eq('id', proposalId)
-    .maybeSingle()
-
-  if (fetchErr || !proposal) {
-    await replyMessage(replyToken, [{ type: 'text', text: '❌ 找不到提案' }])
+  // 稽核 E21：原本 LINE 按鈕自己寫一套套用邏輯——不檢查過期（cron 12 小時才掃一次，空窗內按舊按鈕會用舊結論套用）、
+  // 也不同步 coach_macro_override（鎖定期間核准的值，到期還原時會被 previous_values 蓋掉）。
+  // 後台核准走的 actOnProposal 兩件都有做 → LINE 也走同一支，只留回覆文案在這裡。
+  const result = await actOnProposal(supabase, { proposalId, action, reviewedBy: 'coach_line' })
+  if (!result.ok) {
+    const msg = result.code === 'not_found' ? '❌ 找不到提案'
+      : result.code === 'not_pending' ? `提案已經處理過了，無法再處理（${result.reason}）`
+      : result.code === 'expired' ? '⏰ 這個提案已經過期（依舊資料算的），不會套用。要的話請重新叫 AI 算一次'
+      : '❌ 寫入失敗：' + result.reason
+    await replyMessage(replyToken, [{ type: 'text', text: msg }])
     return true
   }
-  if (proposal.status !== 'pending') {
-    await replyMessage(replyToken, [{ type: 'text', text: `提案已是 ${proposal.status} 狀態，無法再處理` }])
-    return true
-  }
-
-  const now = new Date().toISOString()
-
-  if (action === 'reject' || action === 'discuss') {
-    const newStatus = action === 'reject' ? 'rejected' : 'discussing'
-    await supabase
-      .from('pending_proposals')
-      .update({ status: newStatus, reviewed_by: 'coach_line', reviewed_at: now })
-      .eq('id', proposalId)
-    await replyMessage(replyToken, [
-      { type: 'text', text: action === 'reject' ? '✗ 已拒絕，不套用' : '💬 標記為討論中，請繼續對話' },
-    ])
-    return true
-  }
-
-  // approve
-  const changes = (proposal.proposed_changes ?? {}) as Record<string, number>
-  const clientUpdates: Record<string, any> = { last_auto_adjust_at: now }
-  const macroFields = ['calories_target', 'protein_target', 'carbs_target', 'fat_target', 'carbs_training_day', 'carbs_rest_day', 'cardio_minutes_per_day']
-  for (const f of macroFields) if (changes[f] != null) clientUpdates[f] = changes[f]
-
-  if (Object.keys(clientUpdates).length > 1) {
-    const { error: updErr } = await supabase.from('clients').update(clientUpdates).eq('id', proposal.client_id)
-    if (updErr) {
-      await replyMessage(replyToken, [{ type: 'text', text: '❌ DB 更新失敗: ' + updErr.message }])
-      return true
-    }
-  }
-
-  const { data: logRow } = await supabase
-    .from('macro_adjustment_log')
-    .insert({
-      client_id: proposal.client_id,
-      applied_by: 'coach',
-      trigger_source: 'manual',
-      old_macros: proposal.current_state,
-      new_macros: proposal.proposed_changes,
-      reason: `AI 提案教練 LINE 核准：${proposal.reasoning}`,
-      trajectory_data: { ai_proposal_id: proposal.id, source: 'line_quick_reply' },
-    })
-    .select()
-    .single()
-
-  await supabase
-    .from('pending_proposals')
-    .update({
-      status: 'approved',
-      reviewed_by: 'coach_line',
-      reviewed_at: now,
-      applied_log_id: logRow?.id ?? null,
-    })
-    .eq('id', proposalId)
-
-  await replyMessage(replyToken, [{ type: 'text', text: '✓ 已核准 + 套用到 DB' }])
+  const done = result.status === 'approved' ? '✓ 已核准 + 套用到 DB'
+    : result.status === 'rejected' ? '✗ 已拒絕，不套用'
+    : '💬 標記為討論中，請繼續對話'
+  await replyMessage(replyToken, [{ type: 'text', text: done }])
   return true
 }
 

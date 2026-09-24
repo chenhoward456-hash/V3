@@ -181,7 +181,9 @@ async function fetchQuarterData(
     nutritionLast7: last7Nutrition.map((n: { compliant: boolean | null }) => ({ compliant: n.compliant })),
     trainingLast7: last7Training.map((t: { training_type: string }) => ({ training_type: t.training_type })),
     supplementComplianceRate: suppCompliance,
-    labResults: labData.map((l: { status: string }) => ({ status: l.status as 'normal' | 'attention' | 'alert' })),
+    // 稽核 E24：帶名稱／數值／日期，讓引擎每項只取最新一筆並重算狀態
+    labResults: labData.map((l: { status: string; test_name: string; value: number; date: string }) => ({ status: l.status, test_name: l.test_name, value: l.value, date: l.date })),
+    gender,
     quarterlyStart: startDate,
   }
 

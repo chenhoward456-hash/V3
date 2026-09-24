@@ -2744,3 +2744,20 @@ describe('過重區蛋白質用調整後體重（稽核 E12）', () => {
     expect(r.suggestedProtein!).toBeGreaterThan(120)
   })
 })
+
+import { pickPreviousBodyFat } from '@/lib/nutrition-engine'
+describe('髒增肌偵測的上一次體脂（稽核 E17）', () => {
+  it('取「至少 28 天前」那筆，不拿一週前的量測雜訊來比', () => {
+    const rows = [
+      { date: '2026-06-01', body_fat: 14 },
+      { date: '2026-07-01', body_fat: 15 },
+      { date: '2026-07-24', body_fat: 16.5 },
+      { date: '2026-07-31', body_fat: 17 },
+    ]
+    expect(pickPreviousBodyFat(rows)).toBe(15)
+  })
+  it('只有一筆或都在 28 天內 → null', () => {
+    expect(pickPreviousBodyFat([{ date: '2026-07-01', body_fat: 15 }])).toBeNull()
+    expect(pickPreviousBodyFat([{ date: '2026-07-20', body_fat: 15 }, { date: '2026-07-31', body_fat: 16 }])).toBeNull()
+  })
+})

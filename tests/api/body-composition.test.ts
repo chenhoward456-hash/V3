@@ -138,7 +138,8 @@ vi.mock('@/utils/validation', () => ({
   validateDate: mockValidateDate,
 }))
 
-vi.mock('@/lib/nutrition-engine', () => ({
+vi.mock('@/lib/nutrition-engine', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/nutrition-engine')>()),
   generateNutritionSuggestion: mockGenerateNutritionSuggestion,
 }))
 

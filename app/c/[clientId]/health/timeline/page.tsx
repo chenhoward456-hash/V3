@@ -360,7 +360,9 @@ export default function HealthTimelinePage() {
         nutritionLast7: nutrition.slice(-7),
         trainingLast7: training.slice(-7),
         supplementComplianceRate: supplementRate,
-        labResults: labs.map(l => ({ status: (l.status as 'normal' | 'attention' | 'alert') ?? 'normal' })),
+        // 稽核 E24：帶名稱／數值／日期，讓引擎每項只取最新一筆並重算狀態
+        labResults: labs.map(l => ({ status: (l.status as string) ?? 'normal', test_name: l.test_name, value: l.value, date: l.date })),
+        gender: (client?.gender as string) ?? null,
         quarterlyStart: (client?.quarterly_cycle_start as string) ?? null,
       })
     } catch (err) {

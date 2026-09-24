@@ -590,6 +590,7 @@ export default function ClientDashboard() {
       trainingLast7: (clientData.trainingLogs || []).slice(-7),
       supplementComplianceRate: supplementComplianceStats.weekRate / 100,
       labResults: c.lab_results || [],
+      gender: c.gender ?? null,  // 稽核 E24：給引擎重算血檢狀態用
       hrvBaseline,
       quarterlyStart: c.quarterly_cycle_start,
     })
