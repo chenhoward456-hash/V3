@@ -184,7 +184,12 @@ vi.mock('@/lib/supabase', () => ({
   createServiceSupabase: () => mockSupabase,
 }))
 
+const { mockVerifyCoachAuth } = vi.hoisted(() => ({
+  mockVerifyCoachAuth: vi.fn(async () => ({ authorized: true } as { authorized: boolean })),
+}))
+
 vi.mock('@/lib/auth-middleware', () => ({
+  verifyCoachAuth: mockVerifyCoachAuth,
   verifyAuth: vi.fn().mockResolvedValue({ user: { id: 'coach-1', role: 'coach' }, error: null }),
   isCoach: vi.fn().mockReturnValue(true),
   createErrorResponse: vi.fn().mockImplementation((message: string, status: number) => {
@@ -1301,7 +1306,8 @@ describe('PUT /api/clients', () => {
     expect(fromCalls.some((c: any[]) => c[0] === 'clients')).toBe(true)
   })
 
-  it('looks up client by id for UUID clientId', async () => {
+  it('looks up client by id for UUID clientId (coach only)', async () => {
+    mockVerifyCoachAuth.mockResolvedValueOnce({ authorized: true })
     const uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     setupClientUpdateMocks({ id: uuid, is_active: true, client_mode: 'standard', competition_enabled: false })
 
@@ -1309,6 +1315,18 @@ describe('PUT /api/clients', () => {
     const res = await PUT(req)
 
     expect(res.status).toBe(200)
+  })
+
+  // 稽核 S-09：UUID 換碼／停用都撤銷不了，不能當學員端的鑰匙
+  it('rejects a UUID clientId without coach auth', async () => {
+    mockVerifyCoachAuth.mockResolvedValueOnce({ authorized: false })
+    const uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+    setupClientUpdateMocks({ id: uuid, is_active: true, client_mode: 'standard', competition_enabled: false })
+
+    const req = buildPutRequest({ clientId: uuid, target_weight: 50 })
+    const res = await PUT(req)
+
+    expect(res.status).toBe(403)
   })
 
   // -- Client not found --

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { sanitizeTextField, rateLimit, getClientIP } from '@/lib/auth-middleware'
+import { denyInactiveClient } from '@/lib/active-client'
 
 // 建立管理員客戶端（使用 Service Role Key）
 const supabaseAdmin = createServiceSupabase()
@@ -31,13 +32,16 @@ export async function GET(request: NextRequest) {
     // 根據 unique_code 查詢客戶 ID
     const { data: client, error: clientError } = await supabaseAdmin
       .from('clients')
-      .select('id')
+      .select('id, is_active, expires_at')
       .eq('unique_code', clientId)
       .single()
 
     if (clientError || !client) {
       return createErrorResponse('找不到客戶', 404)
     }
+    // 稽核 S-13：停用／過期帳號的碼不可再讀
+    const denied = await denyInactiveClient(client, request)
+    if (denied) return denied
 
     // 查詢當日感受
     const { data: wellness, error: wellnessError } = await supabaseAdmin

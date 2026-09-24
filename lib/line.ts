@@ -380,43 +380,9 @@ export async function unlinkRichMenuFromUser(userId: string): Promise<boolean> {
   return true
 }
 
-/** Rich Menu — 教練指導版 (coached 用戶專屬) */
-export function getCoachedRichMenuObject() {
-  return {
-    size: { width: 2500, height: 1686 },
-    selected: true,
-    name: 'Howard Protocol — 教練版',
-    chatBarText: '📋 教練專屬選單',
-    areas: [
-      // Row 1: 記錄動作
-      {
-        bounds: { x: 0, y: 0, width: 833, height: 843 },
-        action: { type: 'message', label: '記體重', text: '記體重' },
-      },
-      {
-        bounds: { x: 833, y: 0, width: 834, height: 843 },
-        action: { type: 'message', label: '記飲食', text: '記飲食' },
-      },
-      {
-        bounds: { x: 1667, y: 0, width: 833, height: 843 },
-        action: { type: 'message', label: '記訓練', text: '記訓練' },
-      },
-      // Row 2: 教練專屬功能
-      {
-        bounds: { x: 0, y: 843, width: 833, height: 843 },
-        action: { type: 'message', label: '補品打卡', text: '補品打卡' },
-      },
-      {
-        bounds: { x: 833, y: 843, width: 834, height: 843 },
-        action: { type: 'message', label: '問教練', text: '我想詢問問題' },
-      },
-      {
-        bounds: { x: 1667, y: 843, width: 833, height: 843 },
-        action: { type: 'uri', label: '我的儀表板', uri: `${SITE_URL}/dashboard` },
-      },
-    ],
-  }
-}
+// 稽核 P-09：原本這裡有 getCoachedRichMenuObject()（教練版圖文選單產生器），全站沒人呼叫，
+// 而且裡面的「補品打卡」webhook 不認、「我的儀表板」連到 /dashboard（LINE 內建瀏覽器沒 cookie 會被導回首頁）。
+// 已刪除，避免被撿回來用；coached 目前沿用學員版選單（文字指令，正確）。
 
 /**
  * 根據訂閱方案自動切換用戶的 Rich Menu

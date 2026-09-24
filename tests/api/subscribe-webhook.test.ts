@@ -58,7 +58,7 @@ vi.mock('@/lib/ecpay', () => ({
 }))
 
 vi.mock('@/lib/email', () => ({
-  sendWelcomeEmail: vi.fn().mockResolvedValue(undefined),
+  sendWelcomeEmail: vi.fn().mockResolvedValue({ success: true }),
 }))
 
 vi.mock('@/lib/line', () => ({
@@ -283,6 +283,23 @@ describe('POST /api/subscribe/webhook', () => {
       name: 'Test User',
       tier: 'self_managed',
     }))
+  })
+
+  it('alerts the coach with email + code when the welcome email fails (稽核 R8)', async () => {
+    vi.mocked(sendWelcomeEmail).mockResolvedValueOnce({ success: false, error: 'resend down' } as any)
+    const { pushMessage } = await import('@/lib/line')
+    const req = makeRequest({
+      MerchantTradeNo: 'HP12345',
+      RtnCode: '1',
+      TradeNo: 'T12345',
+      CheckMacValue: 'VALID_MAC',
+    })
+
+    const res = await POST(req)
+    expect(await res.text()).toBe('1|OK')
+    const alerted = vi.mocked(pushMessage).mock.calls.some(([, msgs]) =>
+      JSON.stringify(msgs).includes('歡迎信寄送失敗') && JSON.stringify(msgs).includes('test@example.com'))
+    expect(alerted).toBe(true)
   })
 
   // ── Client Creation Error ──

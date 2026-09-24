@@ -13,6 +13,7 @@ import {
   handleQuickTraining,
   handleQuickWellness,
   handleBind,
+  looksLikeStudentCode,
   handleStatusQuery,
   handleTrendQuery,
   handlePostback,
@@ -448,10 +449,11 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     return
   }
 
-  // Unbound user sending bare code -> auto-bind (4-20 碼英數字)
+  // Unbound user sending bare code -> auto-bind
+  // 稽核 P-05：只有「長得像學員碼」的才當綁定（8–20 碼且含數字/符號/非首字大寫），
+  // 不然 hello、thanks 這種字會收到「找不到學員代碼」；沒命中就落到下面的未綁定引導選單。
   if (!client) {
-    const bareCodeMatch = text.match(/^[a-zA-Z0-9_-]{4,20}$/)
-    if (bareCodeMatch) {
+    if (looksLikeStudentCode(text)) {
       await handleBind(event.replyToken, userId, text, supabase)
       return
     }

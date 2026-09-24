@@ -45,13 +45,17 @@ export async function POST(request: NextRequest) {
       .single()
     if (!client) return createErrorResponse('找不到客戶', 404)
     if (client.is_active === false) return createErrorResponse('帳號已停用', 403)
+    if (client.expires_at && new Date(client.expires_at) < new Date()) return createErrorResponse('帳號已過期', 403)
     if (client.lab_enabled === false) return createErrorResponse('血檢功能未啟用', 403)
 
     let enriched
     try {
       enriched = await extractLabRows(files)
     } catch (e) {
-      return createErrorResponse(e instanceof Error ? e.message : 'OCR 失敗', 500)
+      // 稽核 S-14：只把 lib/lab-ocr 自己丟的「給使用者看」訊息回前端；
+      // 其他（Anthropic SDK 錯誤、env 缺漏等）只進 log，對外回泛用訊息。
+      console.error('[lab-results/ocr] extract failed:', e)
+      return createErrorResponse(publicOcrError(e), 500)
     }
 
     return createSuccessResponse({
@@ -60,7 +64,12 @@ export async function POST(request: NextRequest) {
     })
   } catch (err) {
     console.error('[lab-results/ocr] exception:', err)
-    const msg = err instanceof Error ? err.message : 'OCR 失敗'
-    return createErrorResponse(msg, 500)
+    return createErrorResponse('OCR 失敗，請稍後再試', 500)
   }
+}
+
+const PUBLIC_OCR_ERRORS = [/^不支援的檔案類型/, /^沒有有效檔案$/, /^AI 萃取結果無法解析$/]
+function publicOcrError(e: unknown): string {
+  const msg = e instanceof Error ? e.message : ''
+  return PUBLIC_OCR_ERRORS.some(re => re.test(msg)) ? msg : 'OCR 失敗，請稍後再試或改用手動輸入'
 }

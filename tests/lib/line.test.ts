@@ -41,7 +41,6 @@ import {
   switchRichMenuForUser,
   getMarketingRichMenuObject,
   getMemberRichMenuObject,
-  getCoachedRichMenuObject,
   type QuickReplyItem,
   type LineMessage,
 } from '@/lib/line'
@@ -348,13 +347,6 @@ describe('Rich Menu objects', () => {
     expect(menu.size).toEqual({ width: 2500, height: 1686 })
     expect(menu.areas).toHaveLength(6)
     expect(menu.name).toContain('學員版')
-  })
-
-  it('getCoachedRichMenuObject returns valid structure', () => {
-    const menu = getCoachedRichMenuObject()
-    expect(menu.size).toEqual({ width: 2500, height: 1686 })
-    expect(menu.areas).toHaveLength(6)
-    expect(menu.name).toContain('教練版')
   })
 })
 

@@ -294,6 +294,25 @@ describe('POST /api/admin/clients', () => {
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
   })
+
+  it('ignores a client-supplied unique_code and generates a 12-char random one (稽核 S-12)', async () => {
+    let inserted: Record<string, unknown> | null = null
+    mockSupabase.from.mockImplementation((table: string) => {
+      const builder = createMockQueryBuilder({ id: 'x', unique_code: 'server' }, null)
+      if (table === 'clients') {
+        builder.insert = vi.fn((row: Record<string, unknown>) => { inserted = row; return builder })
+      }
+      return builder
+    })
+
+    const req = makeRequest('POST', { body: { clientData: { name: 'Sean', unique_code: 'sean1234' } } })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+    expect(inserted).not.toBeNull()
+    const code = (inserted as unknown as Record<string, unknown>).unique_code as string
+    expect(code).not.toBe('sean1234')
+    expect(code).toMatch(/^[A-Za-z0-9_-]{12}$/)
+  })
 })
 
 describe('PUT /api/admin/clients', () => {

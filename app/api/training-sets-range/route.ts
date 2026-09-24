@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { rateLimit, getClientIP } from '@/lib/auth-middleware'
+import { denyInactiveClient } from '@/lib/active-client'
 
 const supabase = createServiceSupabase()
 
@@ -27,13 +28,16 @@ export async function GET(request: NextRequest) {
 
   const { data: client, error: clientError } = await supabase
     .from('clients')
-    .select('id')
+    .select('id, is_active, expires_at')
     .eq('unique_code', clientId)
     .single()
 
   if (clientError || !client) {
     return NextResponse.json({ error: '找不到客戶' }, { status: 404 })
   }
+  // 稽核 S-13：停用／過期帳號的碼不可再讀
+  const denied = await denyInactiveClient(client, request)
+  if (denied) return denied
 
   const since = new Date()
   since.setDate(since.getDate() - days)

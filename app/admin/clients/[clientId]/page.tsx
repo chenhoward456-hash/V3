@@ -507,8 +507,7 @@ export default function ClientEditor() {
         : null
 
       if (clientId === 'new') {
-        // 新增學員
-        const uniqueCode = generateUniqueCode()
+        // 新增學員（稽核 S-12：學員碼改由伺服器產生，這裡不再送 unique_code）
         const expiresAt = new Date()
         expiresAt.setMonth(expiresAt.getMonth() + 3)
 
@@ -518,7 +517,6 @@ export default function ClientEditor() {
           body: JSON.stringify({
             clientData: {
               ...clientFields,
-              unique_code: uniqueCode,
               expires_at: expiresAt.toISOString(),
             },
             labResults: client.lab_results,
@@ -541,7 +539,7 @@ export default function ClientEditor() {
         }
 
         const result = await res.json().catch(() => ({}))
-        showToast(`學員「${client.name}」新增成功！代碼：${uniqueCode}`, 'success')
+        showToast(`學員「${client.name}」新增成功！代碼：${result.unique_code ?? '（請到列表查看）'}`, 'success')
         window.location.href = '/admin'
       } else {
         // 更新現有學員
@@ -586,13 +584,6 @@ export default function ClientEditor() {
     } finally {
       setSaving(false)
     }
-  }
-
-  const generateUniqueCode = () => {
-    const array = new Uint8Array(8)
-    crypto.getRandomValues(array)
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    return Array.from(array, (byte) => chars[byte % chars.length]).join('')
   }
 
   // macro 有沒有被改動 —— 決定要不要問教練「為什麼」（法規/多教練防護：數字要留得下判斷依據）

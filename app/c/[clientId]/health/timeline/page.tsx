@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts'
@@ -267,6 +267,28 @@ export default function HealthTimelinePage() {
   const [archivedSupps, setArchivedSupps] = useState<SupplementHistoryItem[]>([])
   const [showArchivedSupps, setShowArchivedSupps] = useState(false)
   const [pendingDraftStatus, setPendingDraftStatus] = useState<{ pendingCount: number; panelDates: string[] } | null>(null)
+  // 稽核 P-07：新手導覽頁「看補品 Protocol」連到 #supplements，但原本全站沒有這個錨點、區塊又預設收合，
+  // 點了只停在頁頂。補品清單是非同步載入的，所以等資料到了再展開並捲過去。
+  const [suppsOpen, setSuppsOpen] = useState(false)
+  const suppsAutoScrolled = useRef(false)
+  useEffect(() => {
+    if (suppsAutoScrolled.current) return
+    if (typeof window === 'undefined' || window.location.hash !== '#supplements') return
+    // 要等頁面骨架（isLoading）結束、補品資料也到了，區塊才真的畫得出來
+    if (isLoading || (activeSupps.length === 0 && archivedSupps.length === 0)) return
+    suppsAutoScrolled.current = true
+    setSuppsOpen(true)
+    // 全站 scroll-behavior: smooth，平滑捲動途中版面還在長會被打斷 → 用 instant，版面穩定後再對一次位置
+    const scrollToSupps = () => {
+      const el = document.getElementById('supplements')
+      if (!el) return
+      const top = el.getBoundingClientRect().top
+      if (top < 0 || top > 200) el.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior })
+    }
+    // 不在 cleanup 清 timer：deps 再變時 ref 已擋住重跑，清掉就永遠捲不到了（timer 找不到元素會自己略過）
+    setTimeout(scrollToSupps, 50)
+    setTimeout(scrollToSupps, 800)
+  }, [isLoading, activeSupps.length, archivedSupps.length])
 
   useEffect(() => {
     let cancelled = false
@@ -860,7 +882,12 @@ export default function HealthTimelinePage() {
 
         {/* 補品 Protocol 演進 — Longevity tier 核心交付（非血檢數據，預設收合）*/}
         {(activeSupps.length > 0 || archivedSupps.length > 0) && (
-          <details className="mb-8">
+          <details
+            id="supplements"
+            className="mb-8 scroll-mt-24"
+            open={suppsOpen}
+            onToggle={(e) => setSuppsOpen((e.currentTarget as HTMLDetailsElement).open)}
+          >
             <summary className="cursor-pointer text-base font-semibold text-gray-900 mb-3 list-none [&::-webkit-details-marker]:hidden">
               💊 補品 Protocol 演進（展開）
             </summary>

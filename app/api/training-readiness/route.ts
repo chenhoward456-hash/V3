@@ -21,6 +21,7 @@ import {
 import { calculateMetabolicStressScore } from '@/lib/nutrition-engine'
 import { getCycleState, applyDeloadToDay, getTaipeiDayOfWeek } from '@/lib/periodization'
 import { isCompetitionMode } from '@/lib/client-mode'
+import { denyInactiveClient } from '@/lib/active-client'
 
 const logger = createLogger('api-training-readiness')
 const supabaseAdmin = createServiceSupabase()
@@ -35,13 +36,16 @@ export async function GET(request: NextRequest) {
     // 查客戶資料（含基因、目標、備賽階段、減脂起始日）
     const { data: client } = await supabaseAdmin
       .from('clients')
-      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, client_mode, competition_enabled, diet_start_date, gender, competition_date, training_experience, training_plan')
+      .select('id, gene_mthfr, gene_apoe, gene_depression_risk, goal_type, prep_phase, client_mode, competition_enabled, diet_start_date, gender, competition_date, training_experience, training_plan, is_active, expires_at')
       .eq('unique_code', clientId)
       .single()
 
     if (!client) {
       return NextResponse.json({ error: '找不到客戶' }, { status: 404 })
     }
+    // 稽核 S-13：停用／過期帳號的碼不可再讀
+    const denied = await denyInactiveClient(client, request)
+    if (denied) return denied
 
     // 查最近 7 天 wellness
     const { data: wellness } = await supabaseAdmin

@@ -553,6 +553,23 @@ export async function handleQuickWellness(
 // Bind account
 // ═══════════════════════════════════════
 
+/** 只翻轉第一個字母的大小寫（手機自動大寫的補救）；第一個字不是英文字母就原樣回傳。 */
+export function flipFirstLetterCase(code: string): string {
+  const first = code.charAt(0)
+  const flipped = first === first.toUpperCase() ? first.toLowerCase() : first.toUpperCase()
+  return flipped + code.slice(1)
+}
+
+/**
+ * 沒綁定的人直接貼一串字，要多像學員碼才當成綁定嘗試（稽核 P-05）。
+ * 原本 4–20 碼英數字都算 → 潛在客戶打「hello」「thanks」「ok123」都收到「找不到學員代碼」。
+ * 真實學員碼是 8–12 碼（亂數 base64url，或舊的「名字＋數字」），幾乎一定含數字、-、_ 或非首字的大寫。
+ */
+export function looksLikeStudentCode(text: string): boolean {
+  if (!/^[a-zA-Z0-9_-]{8,20}$/.test(text)) return false
+  return /[0-9_-]/.test(text) || /[A-Z]/.test(text.slice(1))
+}
+
 export async function handleBind(replyToken: string, lineUserId: string, code: string, supabase: SupabaseClient) {
   const { data: existing } = await supabase
     .from('clients')
@@ -567,11 +584,19 @@ export async function handleBind(replyToken: string, lineUserId: string, code: s
     return
   }
 
-  const { data: client } = await supabase
+  // 稽核 P-05：代碼大小寫要完全一樣，但手機鍵盤常把第一個字母自動轉大寫（Sean9Fq2 → 打成 sean9Fq2 或反過來）。
+  // 先精確比對；找不到才試「只翻轉第一個字母大小寫」這一種變體（不做整串不分大小寫，避免撞到別人的碼）。
+  const lookup = async (c: string) => (await supabase
     .from('clients')
-    .select('id, name, line_user_id, subscription_tier')
-    .eq('unique_code', code)
-    .maybeSingle()
+    .select('id, name, line_user_id, subscription_tier, unique_code')
+    .eq('unique_code', c)
+    .maybeSingle()).data
+  let client = await lookup(code)
+  if (!client) {
+    const flipped = flipFirstLetterCase(code)
+    if (flipped !== code) client = await lookup(flipped)
+  }
+  const boundCode: string = (client?.unique_code as string | undefined) || code
 
   if (!client) {
     await replyMessage(replyToken, [
@@ -587,13 +612,26 @@ export async function handleBind(replyToken: string, lineUserId: string, code: s
     return
   }
 
-  await supabase
+  // 稽核 P-06：原本不看寫入結果，失敗也回「綁定成功」→ 學員以為綁好了，之後每則提醒都送不到。
+  // 另外加上 line_user_id 還是空的才寫，避免兩支 LINE 同時搶綁同一個碼。
+  const { data: bound, error: bindError } = await supabase
     .from('clients')
     .update({
       line_user_id: lineUserId,
       last_line_activity: new Date().toISOString(),
     })
     .eq('id', client.id)
+    .is('line_user_id', null)
+    .select('id')
+    .maybeSingle()
+
+  if (bindError || !bound) {
+    console.error('[handleBind] bind write failed', { clientId: client.id, error: bindError?.message })
+    await replyMessage(replyToken, [
+      { type: 'text', text: '綁定沒有成功，請再傳一次代碼；一直不行請直接私訊教練。' },
+    ])
+    return
+  }
 
   // Switch Rich Menu based on subscription tier
   await switchRichMenuForUser(lineUserId, client.subscription_tier || 'free')
@@ -611,7 +649,7 @@ export async function handleBind(replyToken: string, lineUserId: string, code: s
     // quickReply 要放在最後一則才會顯示。
     {
       type: 'text',
-      text: buildOnboardingGuide(client.name, client.subscription_tier || 'free', code),
+      text: buildOnboardingGuide(client.name, client.subscription_tier || 'free', boundCode),
       quickReply: QR_MAIN,
     },
   ])

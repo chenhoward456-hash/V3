@@ -9,6 +9,7 @@ import { getLocalDateStr } from '@/lib/date-utils'
 import { useToast } from '@/components/ui/Toast'
 import { getCycleState } from '@/lib/periodization'
 import { DEFAULT_COMPOUND_LIFT, compoundLiftOf, mainLiftOfPlanDay } from '@/lib/training-split'
+import { groupSetRows, expandSetRows } from '@/lib/training-set-rows'
 
 interface ModeReason {
   signal: string
@@ -156,28 +157,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
         const res = await fetch(`/api/training-sets?${params}`)
         if (!res.ok) return
         const data = await res.json()
-        // 從 DB 的多筆 rows 合併成每個動作一行 + num_sets
-        const groupSets = (rows: any[]) => {
-          const grouped: Record<string, ExerciseSet> = {}
-          for (const s of rows) {
-            const key = s.exercise_name
-            if (!grouped[key]) {
-              grouped[key] = {
-                exercise_name: s.exercise_name,
-                muscle_group: s.muscle_group || '',
-                set_number: s.set_number,
-                num_sets: 1,
-                weight: s.weight,
-                reps: s.reps,
-                rpe: s.rpe,
-                is_main_lift: s.is_main_lift || false,
-              }
-            } else {
-              grouped[key].num_sets = (grouped[key].num_sets ?? 0) + 1
-            }
-          }
-          return Object.values(grouped)
-        }
+        // 從 DB 的多筆 rows 合併成表單列：同動作「連續且重量/次數/RPE 相同」才合併（稽核 D5：不再把金字塔組壓成第一組）
+        const groupSets = (rows: any[]): ExerciseSet[] => groupSetRows(rows)
         const todaySets = groupSets(data.data?.sets || [])
         const prevSets = groupSets(data.data?.lastSameType?.sets || [])
         const byExercise: Record<string, ExerciseSet> = data.data?.lastByExercise || {}
@@ -363,18 +344,8 @@ export default function TrainingLog({ todayTraining, trainingLogs, wellness, cli
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             clientId, date: today,
-            sets: filledSets.flatMap((s) => {
-              const count = Math.max(1, s.num_sets || 1)
-              return Array.from({ length: count }, (_, j) => ({
-                exercise_name: s.exercise_name.trim(),
-                muscle_group: s.muscle_group || null,
-                set_number: j + 1,
-                weight: s.weight,
-                reps: s.reps,
-                rpe: s.rpe,
-                is_main_lift: s.is_main_lift,
-              }))
-            }),
+            // 稽核 D5：set_number 以動作為單位連續編號（同動作兩列時不再各自從 1 開始）
+            sets: expandSetRows(filledSets),
           }),
         })
         if (!setsRes.ok) {

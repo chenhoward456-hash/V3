@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     // 扣款成功 → 延長到期日
     const { data: purchase } = await supabase
       .from('subscription_purchases')
-      .select('client_id, subscription_tier, email, name')
+      .select('client_id, subscription_tier, email, name, registration_data')
       .eq('merchant_trade_no', merchantTradeNo)
       .eq('status', 'completed')
       .maybeSingle()
@@ -56,6 +56,43 @@ export async function POST(request: NextRequest) {
     if (!purchase?.client_id) {
       log.error('Purchase or client not found for period renewal', { merchantTradeNo })
       return new NextResponse('1|OK', { status: 200, headers: { 'Content-Type': 'text/plain' } })
+    }
+
+    // 稽核 S-11：續訂冪等。ECPay 對同一則通知可能重送，原本同一個 TotalSuccessTimes 送兩次
+    // 到期日就延長兩個月。把「已處理到第幾期」記在 registration_data.period_success_times
+    // （現有 jsonb 欄位，不需要 migration），處理過的期數直接跳過。
+    const regData = (purchase.registration_data as Record<string, unknown> | null) ?? {}
+    const prevTimesRaw = regData.period_success_times
+    const prevTimes = typeof prevTimesRaw === 'number' ? prevTimesRaw : null
+    if (prevTimes != null && prevTimes >= totalSuccessTimes) {
+      log.info('Period renewal already applied, skipping duplicate', { merchantTradeNo, totalSuccessTimes, prevTimes })
+      return new NextResponse('1|OK', { status: 200, headers: { 'Content-Type': 'text/plain' } })
+    }
+
+    // 先搶「這一期」：條件式更新（只在期數還是剛剛讀到的舊值時才寫），兩則重送同時到也只有一則搶得到。
+    let claimQuery = supabase
+      .from('subscription_purchases')
+      .update({ registration_data: { ...regData, period_success_times: totalSuccessTimes } })
+      .eq('merchant_trade_no', merchantTradeNo)
+      .eq('status', 'completed')
+    claimQuery = prevTimes == null
+      ? claimQuery.is('registration_data->period_success_times', null)
+      : claimQuery.eq('registration_data->period_success_times', prevTimes)
+    const { data: claimed, error: claimError } = await claimQuery.select('id').maybeSingle()
+    if (claimError) {
+      log.error('Period renewal claim failed', { merchantTradeNo, totalSuccessTimes, error: claimError })
+      return new NextResponse('0|ErrorMessage', { status: 200 })
+    }
+    if (!claimed) {
+      log.info('Period renewal claimed by a concurrent callback, skipping', { merchantTradeNo, totalSuccessTimes })
+      return new NextResponse('1|OK', { status: 200, headers: { 'Content-Type': 'text/plain' } })
+    }
+    // 延長失敗時把期數還回去，回 0 讓 ECPay 重送（否則這期會被當成已處理、錢收了沒延長）
+    const releaseClaim = async () => {
+      await supabase
+        .from('subscription_purchases')
+        .update({ registration_data: regData })
+        .eq('merchant_trade_no', merchantTradeNo)
     }
 
     const tier = purchase.subscription_tier as SubscriptionTier
@@ -80,10 +117,15 @@ export async function POST(request: NextRequest) {
     const newExpiry = new Date(baseDate)
     newExpiry.setMonth(newExpiry.getMonth() + durationMonths)
 
-    await supabase.from('clients').update({
+    const { error: extendError } = await supabase.from('clients').update({
       expires_at: newExpiry.toISOString(),
       ...getDefaultFeatures(tier),
     }).eq('id', client.id)
+    if (extendError) {
+      log.error('Period renewal expiry update failed', { clientId: client.id, error: extendError })
+      await releaseClaim()
+      return new NextResponse('0|ErrorMessage', { status: 200 })
+    }
 
     log.info('Subscription renewed via period payment', {
       clientId: client.id,
