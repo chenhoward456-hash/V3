@@ -189,8 +189,15 @@ export async function verifyCoachAuth(request: NextRequest): Promise<{ authorize
   }
 
   // 方法二：Coach PIN
-  if (verifyCoachPin(request)) {
-    return { authorized: true }
+  // 稽核 S-07：全站共用一組 PIN，原本除了 /api/coach/verify-pin 外猜錯都不擋 → 可暴力猜。
+  // 有帶 PIN 就先限流（每 IP 15 分鐘 120 次，對錯都算、在比對之前檢查）；教練模式正常用量遠低於此，
+  // 8 位數 PIN 以這個速度猜不完。
+  if (request.headers.get('x-coach-pin')) {
+    const { allowed } = await rateLimit(`coach_pin_${getClientIP(request)}`, 120, 15 * 60_000)
+    if (!allowed) return { authorized: false, error: '嘗試次數過多，請 15 分鐘後再試' }
+    if (verifyCoachPin(request)) {
+      return { authorized: true }
+    }
   }
 
   // 方法三：JWT + coach role
