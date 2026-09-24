@@ -253,3 +253,19 @@ describe('階段轉換：8 週回歸被 V 字洗掉（2026-08-16 陳胤豪真實
     expect(r.currentRatePerWeek!).toBeLessThan(0.35)
   })
 })
+
+describe('漏量的週不能把速度放大（稽核 E5）', () => {
+  // 台北日期，k 週前
+  const tw = (weeksAgo: number) => new Date(Date.now() + 8 * 3600_000 - weeksAgo * 7 * 86400000).toISOString().slice(0, 10)
+  it('6 週前 80、2 週前 79、本週 78.5 → 真實 −0.25 kg/週，不是 −0.75', () => {
+    const r = computeTrajectoryAdjustment({
+      goalType: 'cut', targetWeight: 74, targetDate: '2027-02-13',
+      currentCalories: 2200, currentProtein: 170, currentFat: 60, currentCarbs: 240,
+      currentCarbsTrainingDay: null, currentCarbsRestDay: null, gender: 'male', bounds: null, lastAdjustAt: null,
+      bodyDataEntries: [{ date: tw(6), weight: 80 }, { date: tw(2), weight: 79 }, { date: tw(0), weight: 78.5 }],
+    } as TrajectoryInput)
+    expect(r.currentRatePerWeek).not.toBeNull()
+    expect(r.currentRatePerWeek!).toBeGreaterThan(-0.4)
+    expect(r.currentRatePerWeek!).toBeLessThan(-0.1)
+  })
+})
