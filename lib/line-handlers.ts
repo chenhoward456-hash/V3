@@ -605,19 +605,16 @@ export async function handleBind(replyToken: string, lineUserId: string, code: s
     {
       type: 'text',
       text: `綁定成功！歡迎 ${client.name} 🎉\n\n先講一個重點：\n這套系統不是「算營養素」，是「連續追蹤 + 累積對照」。\n算得再準，沒連續記 4 週也沒用。\n\n所以要讓「記」這件事夠簡單 ——\n**你在這裡打一句話就記完了**，例如：\n\n「81.5 今天腿日 45分 RPE7 飲食達標」\n\n體重、訓練、飲食一次搞定，不用開 App、不用背格式。\n下一則我列給你看有哪些講法。`,
+    },
+    // 稽核 R4：教學原本 setTimeout 1 秒後 push —— serverless 回應完就可能被凍結、不保證送出，
+    // 還白花 1 則 LINE 額度。reply 一次可帶 5 則，直接當第 2 則（免費、保證送達）。
+    // quickReply 要放在最後一則才會顯示。
+    {
+      type: 'text',
+      text: buildOnboardingGuide(client.name, client.subscription_tier || 'free', code),
       quickReply: QR_MAIN,
     },
   ])
-
-  // Push onboarding guide after 1 second delay (via pushMessage to avoid reply limit)
-  setTimeout(async () => {
-    try {
-      const guide = buildOnboardingGuide(client.name, client.subscription_tier || 'free', code)
-      await pushMessage(lineUserId, [{ type: 'text', text: guide }])
-    } catch (err) {
-      log.error('Onboarding guide push failed', err)
-    }
-  }, 1000)
 }
 
 function buildOnboardingGuide(name: string, tier: string, uniqueCode: string): string {

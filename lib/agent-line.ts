@@ -127,9 +127,14 @@ export async function handleAdminAgentMessage(
     let usedReply = false
     if (elapsedSec < 50) {
       try {
-        await replyMessage(event.replyToken, toSend)
-        usedReply = true
-        await dbg('reply_ok', `messages=${toSend.length} sec=${elapsedSec.toFixed(1)}`)
+        // 稽核 R6：replyMessage 遇到 4xx（token 過期、格式錯）不丟例外，要看 res.ok，不然永遠不會改用 push
+        const res = await replyMessage(event.replyToken, toSend)
+        if (res.ok) {
+          usedReply = true
+          await dbg('reply_ok', `messages=${toSend.length} sec=${elapsedSec.toFixed(1)}`)
+        } else {
+          await dbg('reply_fail_fallback_push', `HTTP ${res.status}`)
+        }
       } catch (e) {
         await dbg('reply_fail_fallback_push', (e as Error).message)
       }

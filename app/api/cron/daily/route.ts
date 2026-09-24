@@ -241,7 +241,7 @@ export async function GET(request: NextRequest) {
         const [bodyRes, wellnessRes, trainingRes, nutritionRes, labRes] = await Promise.all([
           supabase.from('body_composition').select('date, weight, height, body_fat').eq('client_id', c.id).order('date', { ascending: false }).limit(180),
           supabase.from('daily_wellness').select('date, energy_level, training_drive, device_recovery_score, resting_hr, hrv, wearable_sleep_score, respiratory_rate').eq('client_id', c.id).gte('date', fourteenStr),
-          supabase.from('training_logs').select('date, training_type, rpe, duration').eq('client_id', c.id).gte('date', fourteenStr),
+          supabase.from('training_logs').select('date, training_type, rpe, duration').eq('client_id', c.id).gte('date', taiwanDateAgo(28)),
           supabase.from('nutrition_logs').select('date, calories, carbs_grams, compliant').eq('client_id', c.id).gte('date', fourteenStr),
           supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', c.id).order('date', { ascending: false }).limit(50),
         ])
@@ -300,7 +300,8 @@ export async function GET(request: NextRequest) {
         const nutritionCompliance = Math.round((compliantCount / 14) * 100)
         const withCal = nutrition.filter((n: any) => n.calories != null)
         const avgDailyCalories = withCal.length >= 7 ? Math.round(withCal.reduce((s: number, n: any) => s + Number(n.calories), 0) / withCal.length) : null
-        const recentTraining = trainingLogs.filter((t: any) => isWeightTraining(t.training_type))
+        // 訓練查詢改抓 28 天（給 ACWR）；這裡「÷2」是按 14 天算的每週次數，要先切回 14 天
+        const recentTraining = trainingLogs.filter((t: any) => t.date >= fourteenStr && isWeightTraining(t.training_type))
         const trainingDaysPerWeek = Math.round(recentTraining.length / 2)
 
         const engineInput: NutritionInput = {
@@ -346,7 +347,7 @@ export async function GET(request: NextRequest) {
             wearable_sleep_score: w.wearable_sleep_score ?? null,
             respiratory_rate: w.respiratory_rate ?? null,
           })),
-          recentTrainingLogs: trainingLogs.filter((t: any) => t.date >= sevenDaysStr).map((t: any) => ({ date: t.date, rpe: t.rpe ?? null, training_type: t.training_type ?? null, duration: t.duration ?? null })),
+          recentTrainingLogs: trainingLogs.map((t: any) => ({ date: t.date, rpe: t.rpe ?? null, training_type: t.training_type ?? null, duration: t.duration ?? null })),
           recentCarbsPerDay: nutrition.filter((n: any) => n.date >= sevenDaysStr).map((n: any) => ({ date: n.date, carbs: n.carbs_grams ?? null })),
           geneticProfile: (c.gene_mthfr || c.gene_apoe || c.gene_depression_risk) ? {
             mthfr: c.gene_mthfr || undefined,

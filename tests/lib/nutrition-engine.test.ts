@@ -2730,3 +2730,17 @@ describe('恢復評估拿得到訓練類型（稽核 E8）', () => {
     expect(a.recoveryAssessment!.score).toBeLessThan(b.recoveryAssessment!.score)
   })
 })
+
+describe('過重區蛋白質用調整後體重（稽核 E12）', () => {
+  it('110kg／32% 男性減脂：蛋白質不再是 2.1×110＝231g，落在區間表設計的範圍', () => {
+    const far = new Date(Date.now() + 200 * 86400000).toISOString().slice(0, 10)
+    const r = generateNutritionSuggestion(makeCutInput({
+      gender: '男性', bodyWeight: 110, bodyFatPct: 32, currentProtein: 100,
+      weeklyWeights: [{ week: 0, avgWeight: 110 }, { week: 1, avgWeight: 110.5 }],
+      targetWeight: 95, targetDate: far,
+    }))
+    expect(r.suggestedProtein).not.toBeNull()
+    expect(r.suggestedProtein!).toBeLessThan(200)
+    expect(r.suggestedProtein!).toBeGreaterThan(120)
+  })
+})

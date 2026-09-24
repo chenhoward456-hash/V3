@@ -9,7 +9,10 @@ import Anthropic from '@anthropic-ai/sdk'
 import { AGENT_TOOLS, ANALYSIS_TOOLS, executeAgentTool } from './agent-tools'
 import { HOWARD_VOICE_CORE, HOWARD_TRAINING_VOICE } from './howard-voice'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+// 稽核 R6：webhook 最多跑 60 秒。SDK 預設逾時 10 分鐘、重試 2 次 → 一卡住整支被 Vercel 砍掉，教練什麼都收不到。
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 25_000, maxRetries: 1 })
+/** 超過這個時間就不再開新的一輪（單輪最多 25 秒，要留給回覆 LINE） */
+const AGENT_TIME_BUDGET_MS = 30_000
 
 const SYSTEM_PROMPT = `你是 Howard 教練的 AI 助理，協助管理學員的訓練營養。
 
@@ -139,7 +142,15 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentRunResult> {
   let finalText = ''
   let stopReason = 'unknown'
 
+  const startedAt = Date.now()
+  let stoppedForTime = false
+
   for (let turn = 0; turn < maxTurns; turn++) {
+    if (turn > 0 && Date.now() - startedAt > AGENT_TIME_BUDGET_MS) {
+      stoppedForTime = true
+      stopReason = 'time_budget'
+      break
+    }
     const response = await client.messages.create({
       // 2026-08-26：從 claude-sonnet-4-6 升到 Sonnet 5 —— 教練端實測一輪對話 24.1 秒，
       // 而 Agent 一次要跑兩輪（初次 + 工具回傳後）。新版更快也更準。
@@ -187,6 +198,11 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentRunResult> {
     }
 
     messages.push({ role: 'user', content: toolResults })
+  }
+
+  if (stoppedForTime) {
+    const done = toolCalls.length ? `（已經查了：${[...new Set(toolCalls.map(t => t.name))].join('、')}）` : ''
+    finalText = `${finalText ? finalText + '\n\n' : ''}⏱️ 這題要跑比較久，我先停在這裡${done}。要我接著做的話再傳一次，或把問題拆小一點。`
   }
 
   return {

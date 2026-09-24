@@ -109,6 +109,7 @@
  * - high_energy_flux（高能量通量）: 主動增加活動消耗，同樣赤字下吃更多，保護代謝
  */
 
+import { getAdjustedBodyWeight } from '@/lib/body-fat-zone-table'
 import {
   getBodyFatZone,
   getZoneMacros,
@@ -3316,8 +3317,15 @@ function generateGoalDrivenCut(
     : safetyLevel === 'aggressive' ? insulinMacros.proteinAggressive
     : insulinMacros.proteinNormal
   // 有體脂區間時：取 zone 建議和 insulin-driven fallback 的較高者
+  // 稽核 E12：「過重」區的 zone 係數是 **g/kg 調整後體重**（body-fat-zone-table 明寫），原本乘總體重、
+  // 又跟給一般體重設計的 insulin 係數取最大 → 110kg/32% 開到 231g（3.1 g/kg 淨體重）。
+  // 過重區改成：照區間表係數 × 調整後體重（ideal + 0.25×超出），其他區不變。
+  const isOverweightZone = zoneInfo?.zoneId === 'overweight' && input.bodyFatPct != null
+  const proteinDoseWeight = isOverweightZone
+    ? getAdjustedBodyWeight(bw, input.bodyFatPct as number, isMale ? 'male' : 'female')
+    : bw
   const proteinPerKg = zoneInfo
-    ? Math.max(zoneInfo.proteinPerKg, fallbackProteinPerKg)
+    ? (isOverweightZone ? zoneInfo.proteinPerKg : Math.max(zoneInfo.proteinPerKg, fallbackProteinPerKg))
     : fallbackProteinPerKg
 
   // 脂肪：胰島素敏感度驅動 + 絕對底線（男 50g / 女 45g）
@@ -3326,7 +3334,7 @@ function generateGoalDrivenCut(
     ? Math.max(zoneInfo.fatPerKg, fallbackFatPerKg)
     : fallbackFatPerKg
 
-  let suggestedPro = Math.round(bw * proteinPerKg)
+  let suggestedPro = Math.round(proteinDoseWeight * proteinPerKg)
   // 減脂/備賽期間：保護現有蛋白質不被引擎降低（教練設定或先前計算的值）
   // 上限 3.3g/kg 避免異常高值永久鎖定；卡路里壓縮仍可在下方降低蛋白質
   if ((input.goalType === 'cut' || input.goalType === 'recomp') && input.currentProtein && input.currentProtein > suggestedPro) {
@@ -3382,8 +3390,8 @@ function generateGoalDrivenCut(
       suggestedPro = Math.max(minPro, Math.round(maxProCal / 4))
       proFatCal = suggestedPro * 4 + suggestedFat * 9
 
-      if (suggestedPro < Math.round(bw * proteinPerKg)) {
-        warnings.push(`⚠️ 卡路里極低，蛋白質從 ${Math.round(bw * proteinPerKg)}g 降至 ${suggestedPro}g（${(suggestedPro / bw).toFixed(1)}g/kg）`)
+      if (suggestedPro < Math.round(proteinDoseWeight * proteinPerKg)) {
+        warnings.push(`⚠️ 卡路里極低，蛋白質從 ${Math.round(proteinDoseWeight * proteinPerKg)}g 降至 ${suggestedPro}g（${(suggestedPro / bw).toFixed(1)}g/kg）`)
       }
     }
     if (suggestedFat < Math.round(bw * minFatPerKg)) {

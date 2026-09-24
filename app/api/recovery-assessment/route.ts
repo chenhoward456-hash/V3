@@ -6,6 +6,7 @@
  * 前端 RecoveryDashboard 元件消費此 API
  */
 
+import { calculateLabStatus } from '@/utils/labStatus'
 import { NextRequest, NextResponse } from 'next/server'
 import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
@@ -95,7 +96,10 @@ export async function GET(request: NextRequest) {
         test_name: l.test_name,
         value: l.value as number | null,
         unit: l.unit,
-        status: l.status as 'normal' | 'attention' | 'alert',
+        // 紅線 4／稽核 E11：用 calculateLabStatus 重算，不讀 DB status
+        status: (l.value != null && Number.isFinite(Number(l.value))
+          ? calculateLabStatus(String(l.test_name), Number(l.value), client.gender === '女性' ? '女性' : client.gender === '男性' ? '男性' : undefined)
+          : 'normal') as 'normal' | 'attention' | 'alert',
       })),
       dietDurationWeeks,
       prepPhase: client.prep_phase,
