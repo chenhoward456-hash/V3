@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware'
+import { resolveActiveClient } from '@/lib/active-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,15 +20,10 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('缺少 clientId', 400)
     }
 
-    const { data: client } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('unique_code', clientId)
-      .maybeSingle<{ id: string }>()
-
-    if (!client) {
-      return createErrorResponse('找不到客戶', 404)
-    }
+    // 稽核 S-13：停用／過期帳號的碼不可再讀（後台封存補品清單走教練 cookie 可略過）
+    const resolved = await resolveActiveClient(supabase, clientId, { request })
+    if (resolved.response) return resolved.response
+    const client = resolved.client
 
     const { data, error } = await supabase
       .from('supplements')

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { generateBehaviorInsights, type InsightInput } from '@/lib/insight-engine'
+import { denyInactiveClient } from '@/lib/active-client'
 
 const supabase = createServiceSupabase()
 
@@ -23,13 +24,16 @@ export async function GET(request: NextRequest) {
     // 1. 取得學員基本資料
     const { data: client, error: clientErr } = await supabase
       .from('clients')
-      .select('id, unique_code, gender, goal_type, subscription_tier')
+      .select('id, unique_code, gender, goal_type, subscription_tier, is_active, expires_at')
       .eq('unique_code', clientId)
       .single()
 
     if (clientErr || !client) {
       return NextResponse.json({ error: '找不到學員' }, { status: 404 })
     }
+    // 稽核 S-13：停用／過期帳號的碼不可再讀
+    const denied = await denyInactiveClient(client, request)
+    if (denied) return denied
 
     // 2. 拉 14 天數據
     const fourteenDaysAgo = new Date()

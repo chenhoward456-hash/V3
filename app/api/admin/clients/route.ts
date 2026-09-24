@@ -1,5 +1,6 @@
 import { getTaiwanDate } from '@/lib/date-utils'
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 import { pushMessage } from '@/lib/line'
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // 白名單過濾：只允許合法欄位，防止注入 id 等內部欄位
     const ALLOWED_CREATE_FIELDS = [
-      'unique_code', 'name', 'age', 'birth_year', 'gender', 'status', 'expires_at', 'is_active', 'subscription_tier',
+      'name', 'age', 'birth_year', 'gender', 'status', 'expires_at', 'is_active', 'subscription_tier',
       'nutrition_enabled', 'supplement_enabled', 'wellness_enabled', 'training_enabled',
       'body_composition_enabled', 'lab_enabled', 'ai_chat_enabled', 'competition_enabled', 'health_mode_enabled', 'simple_mode', 'client_mode',
       'target_weight', 'body_fat_target', 'target_date', 'competition_date', 'prep_phase', 'weigh_in_gap_hours',
@@ -72,6 +73,10 @@ export async function POST(request: NextRequest) {
         }
       }
     }
+
+    // 稽核 S-12：學員碼一律由伺服器產 12 位亂數（與 webhook/free-trial 同規格），不接受前端指定。
+    // 手動設的碼（名字＋4 碼之類）熵太低，知道名字就只剩千萬級組合可猜。
+    sanitizedClientData.unique_code = crypto.randomBytes(9).toString('base64url').slice(0, 12)
 
     const { data: newClient, error: clientError } = await supabase
       .from('clients')
@@ -125,7 +130,7 @@ export async function POST(request: NextRequest) {
       if (bodyError) console.error('[admin/clients POST] 起始體組成寫入失敗:', bodyError)
     }
 
-    return NextResponse.json({ success: true, id: newClient.id })
+    return NextResponse.json({ success: true, id: newClient.id, unique_code: newClient.unique_code })
   } catch (err) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }

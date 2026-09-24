@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { CURRENT_CONSENT_VERSIONS as CURRENT_VERSIONS } from '@/lib/consent-versions'
+import { verifyCoachAuth } from '@/lib/auth-middleware'
+import { createLogger } from '@/lib/logger'
+
+const logger = createLogger('api-consent')
 
 export const dynamic = 'force-dynamic'
 const supabase = createServiceSupabase()
@@ -14,7 +18,11 @@ export async function GET(request: NextRequest) {
   // Resolve unique_code → uuid
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   let id = clientId
-  if (!UUID_RE.test(clientId)) {
+  // 稽核 S-09：UUID 換碼／停用都撤銷不了，學員端只收 unique_code；UUID 路徑限教練
+  if (UUID_RE.test(clientId)) {
+    const { authorized } = await verifyCoachAuth(request)
+    if (!authorized) return NextResponse.json({ error: '請使用學員代碼' }, { status: 403 })
+  } else {
     const { data } = await supabase.from('clients').select('id').eq('unique_code', clientId).maybeSingle()
     if (!data) return NextResponse.json({ error: 'client not found' }, { status: 404 })
     id = data.id
@@ -59,7 +67,11 @@ export async function POST(request: NextRequest) {
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     let id = clientId
     let line_user_id: string | null = null
-    if (!UUID_RE.test(clientId)) {
+    // 稽核 S-09：UUID 路徑可偽造他人同意紀錄 → 限教練
+    if (UUID_RE.test(clientId)) {
+      const { authorized } = await verifyCoachAuth(request)
+      if (!authorized) return NextResponse.json({ error: '請使用學員代碼' }, { status: 403 })
+    } else {
       const { data } = await supabase.from('clients').select('id, line_user_id').eq('unique_code', clientId).maybeSingle()
       if (!data) return NextResponse.json({ error: 'client not found' }, { status: 404 })
       id = data.id
@@ -85,10 +97,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { error } = await supabase.from('user_consents').insert(inserts)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    // 稽核 S-14：不把 Postgres 錯誤原文回給前端，細節只進 log
+    if (error) {
+      logger.error('POST /api/consent insert failed', error)
+      return NextResponse.json({ error: '記錄同意失敗，請稍後再試' }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true, recorded: inserts.length, versions: CURRENT_VERSIONS })
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    logger.error('POST /api/consent unexpected error', err)
+    return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
 }

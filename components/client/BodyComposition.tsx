@@ -8,6 +8,7 @@ import { getLocalDateStr, daysUntilDateTW } from '@/lib/date-utils'
 import { projectWeightVerdict } from '@/lib/comp-projection'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useToast } from '@/components/ui/Toast'
+import { lineBindDeeplink } from '@/lib/line-links'
 
 interface BodyCompositionProps {
   latestBodyData: any
@@ -505,20 +506,42 @@ export default function BodyComposition({
               <p className="text-sm font-bold text-gray-800 mb-1">下一步：綁定 LINE</p>
               <p className="text-xs text-gray-600 mb-3">綁定後明天會自動提醒你量體重，用訊息就能記錄。</p>
               <div className="flex gap-2">
+                {/* 稽核 P-08：改用帶代碼的深連結（同 OnboardingChecklist）——沒加好友會先導加好友，已加就直接開對話框帶好「綁定 代碼」 */}
                 <a
-                  href="https://lin.ee/LP65rCc"
+                  href={lineBindDeeplink(uniqueCode)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 bg-[#06C755] text-white text-sm font-bold py-2.5 rounded-lg text-center hover:bg-[#05a84a] transition-colors"
                 >
-                  1. 加好友
+                  1. 開 LINE 綁定
                 </a>
                 <button
-                  onClick={() => {
-                    if (navigator.clipboard) {
-                      navigator.clipboard.writeText(`綁定 ${uniqueCode}`)
-                      showToast('已複製！貼到 LINE 對話送出即可', 'success')
+                  onClick={async () => {
+                    // 稽核 P-08：LINE 內建瀏覽器／非 https 可能沒有 navigator.clipboard，原本點了完全沒反應。
+                    // 依序試 clipboard API → execCommand 備援 → 都不行就把指令秀出來請他手打。
+                    const text = `綁定 ${uniqueCode}`
+                    let copied = false
+                    try {
+                      if (navigator.clipboard) {
+                        await navigator.clipboard.writeText(text)
+                        copied = true
+                      }
+                    } catch { /* 走備援 */ }
+                    if (!copied) {
+                      try {
+                        const ta = document.createElement('textarea')
+                        ta.value = text
+                        ta.setAttribute('readonly', '')
+                        ta.style.position = 'fixed'
+                        ta.style.opacity = '0'
+                        document.body.appendChild(ta)
+                        ta.select()
+                        copied = document.execCommand('copy')
+                        document.body.removeChild(ta)
+                      } catch { /* 最後手段：直接告訴他要打什麼 */ }
                     }
+                    if (copied) showToast('已複製！貼到 LINE 對話送出即可', 'success')
+                    else showToast(`這裡沒辦法自動複製，請在 LINE 輸入：${text}`, 'info')
                   }}
                   className="flex-1 bg-white border-2 border-[#06C755] text-[#06C755] text-sm font-bold py-2.5 rounded-lg text-center hover:bg-[#06C755]/5 transition-colors"
                 >

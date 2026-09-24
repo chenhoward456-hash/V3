@@ -3,6 +3,7 @@ import { verifyCheckMacValue, ECPAY_CONFIG, generateCheckMacValue, SUBSCRIPTION_
 import { createServiceSupabase } from '@/lib/supabase'
 import { sendWelcomeEmail } from '@/lib/email'
 import { pushMessage, switchRichMenuForUser } from '@/lib/line'
+import { COACH_LINE_USER_ID } from '@/lib/line-links'
 import { getDefaultFeatures } from '@/lib/tier-defaults'
 import { createLogger } from '@/lib/logger'
 import crypto from 'crypto'
@@ -257,16 +258,28 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 非同步寄送歡迎信（升級也寄，通知新代碼或確認升級）
+      // 寄送歡迎信（升級也寄，通知新代碼或確認升級）
+      // 稽核 R8：原本 fire-and-forget + .catch，但 sendWelcomeEmail 永遠不丟例外、只回 {success:false}，
+      // 寄失敗連 log 都沒有。沒綁 LINE 的新買家唯一拿到學員代碼的管道就是這封信 → 改成 await 並檢查，
+      // 失敗就推教練（附 email＋代碼）讓教練手動給。不影響回給綠界的 1|OK。
       if (updated.email) {
-        sendWelcomeEmail({
-          to: updated.email,
-          name: updated.name,
-          uniqueCode,
-          tier,
-        }).catch((err) => {
+        try {
+          const emailResult = await sendWelcomeEmail({
+            to: updated.email,
+            name: updated.name,
+            uniqueCode,
+            tier,
+          })
+          if (!emailResult.success) {
+            log.error('Welcome email failed', { merchantTradeNo, error: emailResult.error })
+            await pushMessage(COACH_LINE_USER_ID, [{
+              type: 'text',
+              text: `⚠️ 付款歡迎信寄送失敗\n\n姓名：${updated.name}\nEmail：${updated.email}\n學員代碼：${uniqueCode}\n\n請手動把代碼給他。`,
+            }]).catch((err) => log.error('Welcome email failure coach alert error', err))
+          }
+        } catch (err) {
           log.error('Welcome email error (non-blocking)', err)
-        })
+        }
       }
 
       // LINE 推播通知付款成功

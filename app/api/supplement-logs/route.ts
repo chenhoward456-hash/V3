@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { validateDate } from '@/utils/validation'
 import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP } from '@/lib/auth-middleware'
+import { denyInactiveClient } from '@/lib/active-client'
 
 const supabase = createServiceSupabase()
 
@@ -29,13 +30,16 @@ export async function GET(request: NextRequest) {
     // 獲取客戶 ID
     const { data: client } = await supabase
       .from('clients')
-      .select('id')
+      .select('id, is_active, expires_at')
       .eq('unique_code', clientId)
       .single()
 
     if (!client) {
       return NextResponse.json({ error: '找不到客戶' }, { status: 404 })
     }
+    // 稽核 S-13：停用／過期帳號的碼不可再讀
+    const denied = await denyInactiveClient(client, request)
+    if (denied) return denied
 
     // 獲取打卡記錄
     let query = supabase
@@ -92,7 +96,7 @@ export async function POST(request: NextRequest) {
     // 根據 unique_code 查詢客戶
     const { data: client } = await supabase
       .from('clients')
-      .select('id, expires_at')
+      .select('id, is_active, expires_at')
       .eq('unique_code', clientId)
       .single()
 
@@ -100,9 +104,24 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('找不到客戶', 404)
     }
 
-    // 檢查是否過期
+    // 檢查是否停用／過期
+    if (client.is_active === false) {
+      return createErrorResponse('帳號已暫停', 403)
+    }
     if (client.expires_at && new Date(client.expires_at) < new Date()) {
       return createErrorResponse('客戶已過期', 403)
+    }
+
+    // 稽核 S-10：supplementId 必須屬於這位學員。upsert 的 onConflict 是 (supplement_id, date)，
+    // 不檢查的話拿到別人補品 UUID 就能覆寫對方當天打卡、還會把那列的 client_id 改成自己。
+    const { data: ownSupplement } = await supabase
+      .from('supplements')
+      .select('id')
+      .eq('id', supplementId)
+      .eq('client_id', client.id)
+      .maybeSingle()
+    if (!ownSupplement) {
+      return createErrorResponse('找不到這個補品', 404)
     }
 
     // 創建或更新打卡記錄

@@ -12,6 +12,7 @@ import { createLogger } from '@/lib/logger'
 import { createServiceSupabase } from '@/lib/supabase'
 import { generateRecoveryAssessment, type RecoveryInput } from '@/lib/recovery-engine'
 import { deepDegrade } from '@/lib/compliance-scrub'
+import { denyInactiveClient } from '@/lib/active-client'
 
 const logger = createLogger('api-recovery-assessment')
 
@@ -28,13 +29,16 @@ export async function GET(request: NextRequest) {
 
     const { data: client } = await supabase
       .from('clients')
-      .select('id, gender, diet_start_date, prep_phase, client_mode, competition_enabled')
+      .select('id, gender, diet_start_date, prep_phase, client_mode, competition_enabled, is_active, expires_at')
       .eq('unique_code', clientId)
       .single()
 
     if (!client) {
       return NextResponse.json({ error: '找不到客戶' }, { status: 404 })
     }
+    // 稽核 S-13：停用／過期帳號的碼不可再讀
+    const denied = await denyInactiveClient(client, request)
+    if (denied) return denied
 
     // 查最近 30 天 wellness（recovery engine 用前 3 天 vs 4-30 天計算基線）
     const thirtyDaysAgo = new Date()

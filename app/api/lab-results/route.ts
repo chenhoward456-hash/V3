@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { validateLabValue, validateDate, sanitizeInput } from '@/utils/validation'
 import { verifyCoachAuth, createErrorResponse, createSuccessResponse, sanitizeTextField, rateLimit, getClientIP } from '@/lib/auth-middleware'
+import { denyInactiveClient } from '@/lib/active-client'
 
 const supabase = createServiceSupabase()
 
@@ -87,13 +88,16 @@ export async function GET(request: NextRequest) {
     // 獲取客戶 ID
     const { data: client } = await supabase
       .from('clients')
-      .select('id')
+      .select('id, is_active, expires_at')
       .eq('unique_code', clientId)
       .single()
 
     if (!client) {
       return createErrorResponse('找不到客戶', 404)
     }
+    // 稽核 S-13：停用／過期帳號的碼不可再讀血檢
+    const denied = await denyInactiveClient(client, request)
+    if (denied) return denied
 
     // 獲取血檢結果
     const { data, error } = await supabase

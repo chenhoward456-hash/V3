@@ -46,6 +46,13 @@ vi.mock('@/lib/supabase', () => ({
   createServiceSupabase: vi.fn(() => mockSupabase),
 }))
 
+const { mockVerifyCoachAuth } = vi.hoisted(() => ({
+  mockVerifyCoachAuth: vi.fn(async () => ({ authorized: true })),
+}))
+vi.mock('@/lib/auth-middleware', () => ({
+  verifyCoachAuth: mockVerifyCoachAuth,
+}))
+
 vi.mock('@/lib/logger', () => ({
   createLogger: vi.fn(() => ({
     info: vi.fn(),
@@ -208,6 +215,44 @@ describe('POST /api/referral', () => {
       delete mockTableCalls[key]
     }
     resetFromMock()
+    // 既有案例走 UUID 路徑 = 教練身份
+    mockVerifyCoachAuth.mockResolvedValue({ authorized: true })
+  })
+
+  // ── 稽核 S-15 ──
+  it('rejects the UUID path without coach auth (anyone could attach a referral to a known UUID)', async () => {
+    mockVerifyCoachAuth.mockResolvedValue({ authorized: false } as any)
+    mockTableCalls['referral_codes'] = {
+      data: { id: 'code-1', code: 'ABC123-R4K2', client_id: 'referrer-uuid', total_referrals: 0 },
+      error: null,
+    }
+    const res = await POST(makePostRequest({ referralCode: 'ABC123-R4K2', refereeClientId: 'victim-uuid' }))
+    expect(res.status).toBe(403)
+    const inserted = mockSupabase.from.mock.calls.some(([t]: [string]) => t === 'referrals')
+    expect(inserted).toBe(false)
+  })
+
+  it('accepts refereeCode (the referee\'s own unique_code) and resolves it to the referee id', async () => {
+    mockVerifyCoachAuth.mockResolvedValue({ authorized: false } as any)
+    let insertedRow: any = null
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === 'clients') return createMockQueryBuilder({ id: 'referee-uuid' }, null)
+      if (table === 'referral_codes') {
+        return createMockQueryBuilder({ id: 'code-1', code: 'ABC123-R4K2', client_id: 'referrer-uuid', total_referrals: 0 }, null)
+      }
+      const b = createMockQueryBuilder(null, null)
+      if (table === 'referrals') b.insert = vi.fn((row: any) => { insertedRow = row; return b })
+      return b
+    })
+    const res = await POST(makePostRequest({ referralCode: 'ABC123-R4K2', refereeCode: 'Abc123Def456' }))
+    expect(res.status).toBe(200)
+    expect(insertedRow?.referee_id).toBe('referee-uuid')
+  })
+
+  it('returns 404 when refereeCode does not match any client', async () => {
+    mockTableCalls['clients'] = { data: null, error: null }
+    const res = await POST(makePostRequest({ referralCode: 'ABC123-R4K2', refereeCode: 'nope' }))
+    expect(res.status).toBe(404)
   })
 
   it('applies referral code successfully', async () => {

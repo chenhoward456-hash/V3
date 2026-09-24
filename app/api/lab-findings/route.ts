@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware'
 import { analyzeLabs, type LabResultRow } from '@/lib/lab-trend-analyzer'
+import { resolveActiveClient } from '@/lib/active-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,15 +21,10 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('缺少 clientId', 400)
     }
 
-    const { data: client } = await supabase
-      .from('clients')
-      .select('id, gender')
-      .eq('unique_code', clientId)
-      .maybeSingle<{ id: string; gender: string | null }>()
-
-    if (!client) {
-      return createErrorResponse('找不到客戶', 404)
-    }
+    // 稽核 S-13：停用／過期帳號的碼不可再讀血檢分析
+    const resolved = await resolveActiveClient<{ gender: string | null }>(supabase, clientId, { select: 'gender', request })
+    if (resolved.response) return resolved.response
+    const client = resolved.client
 
     // 拉近兩年 lab_results
     const twoYearsAgo = new Date()

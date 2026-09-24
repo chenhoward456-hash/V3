@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
+import { verifyCoachAuth } from '@/lib/auth-middleware'
 import crypto from 'crypto'
 
 const log = createLogger('referral')
@@ -95,18 +96,44 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/referral
  * Apply a referral code during signup.
- * Body: { referralCode, refereeClientId }
- * - refereeClientId is the UUID (id) of the new client
+ * Body: { referralCode, refereeCode } — refereeCode 是受推薦人的 unique_code（證明「是本人」）
+ *       或 { referralCode, refereeClientId } — UUID 路徑，限教練
+ *
+ * 稽核 S-15：原本只收 refereeClientId（UUID）且不驗證，任何人知道對方 UUID 就能替他掛推薦關係，
+ * cron/daily 之後會依這些紀錄發獎勵天數。現在要嘛拿得出受推薦人的學員碼，要嘛是教練。
+ * （付款 webhook 建立推薦關係是直接寫 DB，不走這支。）
  */
 export async function POST(request: NextRequest) {
   try {
-    const { referralCode, refereeClientId } = await request.json()
+    const { referralCode, refereeCode, refereeClientId: rawRefereeId } = await request.json()
 
-    if (!referralCode || !refereeClientId) {
+    if (!referralCode || (!rawRefereeId && !refereeCode)) {
       return NextResponse.json(
         { error: 'Missing referralCode or refereeClientId' },
         { status: 400 }
       )
+    }
+
+    let refereeClientId: string
+    if (refereeCode) {
+      if (typeof refereeCode !== 'string') {
+        return NextResponse.json({ error: 'Invalid refereeCode' }, { status: 400 })
+      }
+      const { data: referee } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('unique_code', refereeCode)
+        .maybeSingle()
+      if (!referee) {
+        return NextResponse.json({ error: 'Referee not found' }, { status: 404 })
+      }
+      refereeClientId = referee.id as string
+    } else {
+      const { authorized } = await verifyCoachAuth(request)
+      if (!authorized) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      refereeClientId = rawRefereeId
     }
 
     // Validate the referral code exists

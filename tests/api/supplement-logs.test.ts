@@ -28,6 +28,14 @@ const { mockValidateDate } = vi.hoisted(() => {
   return { mockValidateDate }
 })
 
+function ownSupplementMock(data: unknown) {
+  const chain: any = {}
+  chain.select = vi.fn(() => chain)
+  chain.eq = vi.fn(() => chain)
+  chain.maybeSingle = vi.fn(() => ({ data, error: null }))
+  return chain
+}
+
 // ── Module mocks ──
 
 vi.mock('@/lib/supabase', () => ({
@@ -283,6 +291,7 @@ describe('POST /api/supplement-logs', () => {
           }),
         }
       }
+      if (fromCallCount === 2) return ownSupplementMock({ id: 's1' })
       // supplement_logs upsert
       return {
         upsert: vi.fn().mockReturnValue({
@@ -491,6 +500,35 @@ describe('POST /api/supplement-logs', () => {
     expect(json.error).toBeDefined()
   })
 
+  // 稽核 S-10：不能拿別人補品的 UUID 覆寫對方打卡
+  it('rejects a supplementId that belongs to another client (no upsert)', async () => {
+    const upsert = vi.fn()
+    let fromCallCount = 0
+    mockFrom.mockImplementation(() => {
+      fromCallCount++
+      if (fromCallCount === 1) {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockReturnValue({ data: { id: 'c1', expires_at: null }, error: null }),
+            }),
+          }),
+        }
+      }
+      if (fromCallCount === 2) return ownSupplementMock(null)
+      return { upsert }
+    })
+
+    const res = await POST(buildPostRequest({
+      clientId: 'UNIQUE123',
+      supplementId: 'someone-elses-supplement',
+      date: '2024-03-01',
+      completed: true,
+    }))
+    expect(res.status).toBe(404)
+    expect(upsert).not.toHaveBeenCalled()
+  })
+
   it('allows client with no expiry date', async () => {
     const savedRecord = {
       id: 'sl-2',
@@ -515,6 +553,7 @@ describe('POST /api/supplement-logs', () => {
           }),
         }
       }
+      if (fromCallCount === 2) return ownSupplementMock({ id: 's2' })
       return {
         upsert: vi.fn().mockReturnValue({
           select: vi.fn().mockReturnValue({

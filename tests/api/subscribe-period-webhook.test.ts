@@ -17,6 +17,7 @@ const { mockTableResults, mockTableCallCounts, mockSupabase } = vi.hoisted(() =>
       eq: vi.fn().mockReturnThis(),
       neq: vi.fn().mockReturnThis(),
       not: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
@@ -333,5 +334,77 @@ describe('POST /api/subscribe/period-webhook', () => {
 
     expect(res.status).toBe(200)
     expect(text).toBe('0|ErrorMessage')
+  })
+
+  // ── 稽核 S-11：續訂冪等 ──
+
+  it('skips a duplicate callback for a period that was already applied (no double extension)', async () => {
+    mockTableResults['subscription_purchases'] = [{
+      data: {
+        client_id: 'client-1',
+        subscription_tier: 'self_managed',
+        email: 'user@example.com',
+        name: 'Test User',
+        registration_data: { period_success_times: 2 },
+      },
+      error: null,
+    }]
+    const req = makeRequest({
+      MerchantTradeNo: 'HP12345',
+      RtnCode: '1',
+      TotalSuccessTimes: '2',
+      PeriodAmount: '499',
+      CheckMacValue: 'VALID_MAC',
+    })
+
+    const res = await POST(req)
+    expect(await res.text()).toBe('1|OK')
+    // 沒有碰 clients（不會再延長一次到期日）
+    expect(mockSupabase.from).not.toHaveBeenCalledWith('clients')
+  })
+
+  it('skips when a concurrent duplicate already claimed the period', async () => {
+    mockTableResults['subscription_purchases'] = [
+      {
+        data: {
+          client_id: 'client-1',
+          subscription_tier: 'self_managed',
+          email: 'user@example.com',
+          name: 'Test User',
+          registration_data: { period_success_times: 1 },
+        },
+        error: null,
+      },
+      // 條件式更新搶不到（另一則重送先寫了）
+      { data: null, error: null },
+    ]
+    const req = makeRequest({
+      MerchantTradeNo: 'HP12345',
+      RtnCode: '1',
+      TotalSuccessTimes: '2',
+      PeriodAmount: '499',
+      CheckMacValue: 'VALID_MAC',
+    })
+
+    const res = await POST(req)
+    expect(await res.text()).toBe('1|OK')
+    expect(mockSupabase.from).not.toHaveBeenCalledWith('clients')
+  })
+
+  it('returns 0|ErrorMessage (so ECPay retries) when extending expiry fails', async () => {
+    mockTableResults['clients'] = [
+      { data: { id: 'client-1', expires_at: new Date().toISOString(), line_user_id: null, name: 'T' }, error: null },
+      { data: null, error: { message: 'boom' } },
+    ]
+    const req = makeRequest({
+      MerchantTradeNo: 'HP12345',
+      RtnCode: '1',
+      TotalSuccessTimes: '3',
+      PeriodAmount: '499',
+      CheckMacValue: 'VALID_MAC',
+    })
+
+    const res = await POST(req)
+    expect(await res.text()).toBe('0|ErrorMessage')
   })
 })

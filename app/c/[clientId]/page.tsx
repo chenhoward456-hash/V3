@@ -1324,12 +1324,18 @@ export default function ClientDashboard() {
               try {
                 // 一鍵「全部吃了」：把今天清單每個補品標完成（細項要改再進補品分頁）
                 const sups = (c.supplements || []) as Array<{ id: string }>
-                await Promise.all(sups.map(s => fetch('/api/supplement-logs', {
+                const results = await Promise.all(sups.map(s => fetch('/api/supplement-logs', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ clientId, supplementId: s.id, date: today, completed: true }),
                 })))
                 await mutate()
+                // 稽核 P-04：原本不看 res.ok，失敗也顯示成功 → 重整後沒打勾。跟 handleMarkAllSupplementsComplete 一致
+                const failed = results.filter(r => !r.ok).length
+                if (failed > 0) {
+                  showToast(failed === results.length ? '記錄失敗，請重試' : `有 ${failed} 項沒記到，請重試`, 'error')
+                  return false
+                }
                 showToast('補品今天全部標完成', 'success')
                 return true
               } catch { showToast('記錄失敗，請重試', 'error'); return false }

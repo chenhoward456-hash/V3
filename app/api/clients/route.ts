@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
 import crypto from 'crypto'
 import { validateDate } from '@/utils/validation'
-import { verifyAuth, isCoach, createErrorResponse, createSuccessResponse, rateLimit, getClientIP, sanitizeTextField } from '@/lib/auth-middleware'
+import { verifyAuth, isCoach, verifyCoachAuth, createErrorResponse, createSuccessResponse, rateLimit, getClientIP, sanitizeTextField } from '@/lib/auth-middleware'
 import { isCompetitionMode } from '@/lib/client-mode'
 import { calculateInitialTargets } from '@/lib/nutrition-engine'
 import { createLogger } from '@/lib/logger'
@@ -400,7 +400,13 @@ export async function PUT(request: NextRequest) {
     }
 
     // 查詢客戶（用 id 或 unique_code）
+    // 稽核 S-09：UUID 不會因為換碼或停用而失效，等於一把永久鑰匙 → 學員端只收 unique_code，
+    // 用 UUID 改目標必須是教練身份。
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)
+    if (isUUID) {
+      const { authorized } = await verifyCoachAuth(request)
+      if (!authorized) return createErrorResponse('請使用學員代碼', 403)
+    }
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select('id, is_active, client_mode, competition_enabled')

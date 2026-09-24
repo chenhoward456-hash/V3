@@ -8,7 +8,11 @@ function verifyToken(clientId: string, token: string): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
   const expected = crypto.createHmac('sha256', secret).update(clientId).digest('hex')
-  return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected))
+  // 稽核 S-14：長度不同時 timingSafeEqual 會 throw → 原本變 500；先比長度，不對就當無效連結
+  const a = Buffer.from(token)
+  const b = Buffer.from(expected)
+  if (a.length !== b.length) return false
+  return crypto.timingSafeEqual(a, b)
 }
 
 export async function GET(request: NextRequest) {

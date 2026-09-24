@@ -53,7 +53,7 @@ function createSupabaseMock(
       const override = tableOverrides[table]
       const chain: any = { _table: table, _calls: [] }
       const chainMethods = [
-        'select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit',
+        'select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit',
         'update', 'upsert', 'insert',
       ]
       for (const m of chainMethods) {
@@ -116,7 +116,7 @@ function createDetailedSupabaseMock(tableMap: Record<string, { data: any; error:
       const result = tableMap[table] || { data: null, error: { message: 'not found' } }
       const chain: any = { _table: table }
       const chainMethods = [
-        'select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit',
+        'select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit',
         'update', 'upsert', 'insert',
       ]
       for (const m of chainMethods) {
@@ -621,7 +621,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -672,7 +672,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -738,7 +738,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -842,7 +842,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -882,7 +882,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1061,7 +1061,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1190,7 +1190,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1231,7 +1231,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1275,7 +1275,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1318,7 +1318,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1390,7 +1390,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1434,7 +1434,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1471,7 +1471,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1543,7 +1543,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1586,7 +1586,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1622,7 +1622,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1658,7 +1658,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1710,7 +1710,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1823,7 +1823,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1875,7 +1875,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -1928,7 +1928,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -2004,7 +2004,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -2038,7 +2038,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -2108,7 +2108,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -2149,7 +2149,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -2222,7 +2222,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -2268,7 +2268,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -2307,7 +2307,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -2397,7 +2397,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }
@@ -2429,7 +2429,7 @@ describe('POST /api/line/webhook', () => {
       mockSupabase = {
         from: vi.fn((table: string) => {
           const chain: any = {}
-          const chainMethods = ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
+          const chainMethods = ['select', 'eq', 'is', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'update', 'upsert', 'insert']
           for (const m of chainMethods) {
             chain[m] = vi.fn(() => chain)
           }

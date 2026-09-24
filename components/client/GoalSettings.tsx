@@ -25,7 +25,6 @@ const GOAL_OPTIONS = [
 ]
 
 export default function GoalSettings({
-  clientId,
   uniqueCode,
   currentGoalType,
   currentTargetWeight,
@@ -62,7 +61,8 @@ export default function GoalSettings({
 
     try {
       const body: Record<string, string | number | null> = {
-        clientId,
+        // 稽核 S-09：PUT /api/clients 學員端只收 unique_code（UUID 路徑限教練）
+        clientId: uniqueCode,
         goal_type: goalType,
       }
 

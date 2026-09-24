@@ -4,6 +4,7 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { sanitizeTextField, rateLimit, getClientIP } from '@/lib/auth-middleware'
 import { validateBody } from '@/lib/schemas/validate'
 import { trainingSetsSchema } from '@/lib/schemas/api'
+import { getClientAccessBlock } from '@/lib/active-client'
 
 const logger = createLogger('api-training-sets')
 const supabaseAdmin = createServiceSupabase()
@@ -22,17 +23,20 @@ function createSuccessResponse(data: Record<string, unknown> | unknown[] | null,
 
 /**
  * Look up a client's internal ID by their unique_code.
- * Returns the UUID or null if not found.
+ * 稽核 S-13：同時擋停用／過期帳號（原本只查碼存不存在，停用的碼照樣讀寫訓練組數）。
+ * 回傳 { id } 或已組好的錯誤 response（404 找不到 / 403 停用或過期）。
  */
-async function resolveClientId(uniqueCode: string): Promise<string | null> {
+async function resolveClientId(uniqueCode: string): Promise<{ id: string; response?: undefined } | { id?: undefined; response: NextResponse }> {
   const { data: client, error } = await supabaseAdmin
     .from('clients')
-    .select('id')
+    .select('id, is_active, expires_at')
     .eq('unique_code', uniqueCode)
     .single()
 
-  if (error || !client) return null
-  return client.id as string
+  if (error || !client) return { response: createErrorResponse('找不到客戶', 404) }
+  const block = getClientAccessBlock(client)
+  if (block) return { response: createErrorResponse(block.message, block.status) }
+  return { id: client.id as string }
 }
 
 // ─────────────────────────────────────────────
@@ -53,10 +57,9 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('缺少客戶 ID 或日期', 400)
     }
 
-    const resolvedId = await resolveClientId(clientId)
-    if (!resolvedId) {
-      return createErrorResponse('找不到客戶', 404)
-    }
+    const resolved = await resolveClientId(clientId)
+    if (resolved.response) return resolved.response
+    const resolvedId = resolved.id
 
     // 1) Fetch today's training sets
     const { data: todaySets, error: todayError } = await supabaseAdmin
@@ -190,10 +193,9 @@ export async function POST(request: NextRequest) {
 
     const { clientId, date, sets } = parsed.data
 
-    const resolvedId = await resolveClientId(clientId)
-    if (!resolvedId) {
-      return createErrorResponse('找不到客戶', 404)
-    }
+    const resolved = await resolveClientId(clientId)
+    if (resolved.response) return resolved.response
+    const resolvedId = resolved.id
 
     // Sanitize note fields
     const rows = sets.map((s) => ({
@@ -209,31 +211,52 @@ export async function POST(request: NextRequest) {
       note: sanitizeTextField(s.note ?? null),
     }))
 
-    // Upsert strategy: delete all existing rows for this client+date, then bulk insert
-    const { error: deleteError } = await supabaseAdmin
+    // Upsert strategy：整天覆蓋。
+    // 稽核 D5：原本「先刪再 insert」不在同一交易，insert 失敗就等於當天的組全被刪光。
+    // 改成：先記下舊列 id → insert 新列 → 成功後才刪舊列。insert 失敗時舊資料完整保留。
+    const { data: oldRows, error: oldError } = await supabaseAdmin
       .from('training_sets')
-      .delete()
+      .select('id')
       .eq('client_id', resolvedId)
       .eq('date', date)
 
-    if (deleteError) {
-      logger.error('POST training_sets delete failed', deleteError)
-      return createErrorResponse('儲存訓練組數失敗（清除舊資料）', 500)
+    if (oldError) {
+      logger.error('POST training_sets read-old failed', oldError)
+      return createErrorResponse('儲存訓練組數失敗（讀取舊資料）', 500)
+    }
+    const oldIds = (oldRows ?? []).map((r: { id: string }) => r.id)
+
+    let inserted: unknown[] = []
+    if (rows.length > 0) {
+      const { data: insertedRows, error: insertError } = await supabaseAdmin
+        .from('training_sets')
+        .insert(rows)
+        .select()
+
+      if (insertError) {
+        logger.error('POST training_sets insert failed', insertError)
+        return createErrorResponse('儲存訓練組數失敗', 500)
+      }
+      inserted = insertedRows ?? []
+    }
+
+    if (oldIds.length > 0) {
+      const { error: deleteError } = await supabaseAdmin
+        .from('training_sets')
+        .delete()
+        .eq('client_id', resolvedId)
+        .in('id', oldIds)
+
+      if (deleteError) {
+        // 新資料已寫入、舊的沒刪掉 → 會重複。回錯誤讓學員再按一次（再存一次會把兩批都換掉）。
+        logger.error('POST training_sets delete-old failed', deleteError)
+        return createErrorResponse('儲存訓練組數失敗（清除舊資料）', 500)
+      }
     }
 
     // If sets array is empty, the delete above is all we need (clear the day)
     if (rows.length === 0) {
       return createSuccessResponse([], '訓練組數已清除')
-    }
-
-    const { data: inserted, error: insertError } = await supabaseAdmin
-      .from('training_sets')
-      .insert(rows)
-      .select()
-
-    if (insertError) {
-      logger.error('POST training_sets insert failed', insertError)
-      return createErrorResponse('儲存訓練組數失敗', 500)
     }
 
     return createSuccessResponse(inserted as Record<string, unknown>[], '訓練組數已儲存')
@@ -261,10 +284,9 @@ export async function DELETE(request: NextRequest) {
       return createErrorResponse('缺少客戶 ID 或日期', 400)
     }
 
-    const resolvedId = await resolveClientId(clientId)
-    if (!resolvedId) {
-      return createErrorResponse('找不到客戶', 404)
-    }
+    const resolved = await resolveClientId(clientId)
+    if (resolved.response) return resolved.response
+    const resolvedId = resolved.id
 
     const { error: deleteError, count } = await supabaseAdmin
       .from('training_sets')
