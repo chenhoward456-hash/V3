@@ -17,6 +17,7 @@ const {
   mockUpdate,
   mockUpsert,
   mockFrom,
+  mockMacroLogInsert,
   mockRpc,
   mockSupabase,
 } = vi.hoisted(() => {
@@ -31,6 +32,7 @@ const {
   const mockUpdate = vi.fn()
   const mockUpsert = vi.fn()
   const mockFrom = vi.fn()
+  const mockMacroLogInsert = vi.fn()
   const mockRpc = vi.fn()
   const mockSupabase = { from: mockFrom, rpc: mockRpc }
   return {
@@ -45,6 +47,7 @@ const {
     mockUpdate,
     mockUpsert,
     mockFrom,
+    mockMacroLogInsert,
     mockRpc,
     mockSupabase,
   }
@@ -158,6 +161,10 @@ function setupClientUpdateMocks(
   mockFrom.mockImplementation((table: string) => {
     if (table === 'body_composition') {
       return { upsert: upsertFn }
+    }
+    // 稽核 E19：學員自主設定 macros 會寫 macro_adjustment_log
+    if (table === 'macro_adjustment_log') {
+      return { insert: (row: any) => { mockMacroLogInsert(row); return Promise.resolve({ data: null, error: null }) } }
     }
     // For 'clients' table, return both select and update
     return {
@@ -1735,5 +1742,17 @@ describe('PUT /api/clients', () => {
     expect(res.status).toBe(422)
     const json = await res.json()
     expect(json.suggestion?.targetDate).toBeTruthy()
+  })
+})
+
+
+describe('學員自主設定 macros 要留紀錄（稽核 E19）', () => {
+  it('重算初始營養目標時寫一筆 macro_adjustment_log（applied_by=system、trigger_source=manual）', async () => {
+    mockMacroLogInsert.mockClear()
+    setupClientUpdateMocks({ id: 'uuid-1', gender: '男性', subscription_tier: 'self_managed', is_active: true, calories_target: null, protein_target: null })
+    const req = buildPatchRequest({ clientId: 'abc123', body_weight: 80, goal_type: 'cut' })
+    const res = await PATCH(req)
+    expect(res.status).toBe(200)
+    expect(mockMacroLogInsert).toHaveBeenCalledWith(expect.objectContaining({ applied_by: 'system', trigger_source: 'manual' }))
   })
 })
