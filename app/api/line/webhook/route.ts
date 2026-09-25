@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SupabaseClient } from '@supabase/supabase-js'
-import { verifyLineSignature, replyMessage, qr, unlinkRichMenuFromUser, switchRichMenuForUser, getUserProfile, showLoadingIndicator } from '@/lib/line'
+import { verifyLineSignature, replyMessage, notifyHoward, qr, unlinkRichMenuFromUser, switchRichMenuForUser, getUserProfile, showLoadingIndicator } from '@/lib/line'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
 import {
@@ -942,5 +942,12 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     if (handled) return
   }
 
-  // 到這裡代表真的讀不懂也不是記錄 → 維持原本行為：不自動回覆，讓教練在 LINE OA 後台手動回
+  // 到這裡代表真的讀不懂也不是記錄（發問、回報狀況、閒聊）。
+  // 2026-09-25：原本完全沉默、「讓教練在 LINE OA 後台手動回」——但 Howard 不開 OA 後台，
+  // Sean 的「體重計應該壞掉了」「今天沒辦法量」「???」都石沉大海。學員講話沒人理，是最快讓人不想再記的原因。
+  // → 當下 reply 一句（不花額度）＋把原文轉給 Howard（走助手 relay，不吃 V3 額度）。
+  if (client) {
+    await replyMessage(event.replyToken, [{ type: 'text', text: '收到，我轉給 Howard 了，他看到會回你 🙏' }])
+    await notifyHoward(`💬 ${client.name} 在官方帳號說：\n「${text.slice(0, 500)}」\n\n（到 LINE 官方帳號後台回覆他）`).catch(() => {})
+  }
 }

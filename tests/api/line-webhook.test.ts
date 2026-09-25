@@ -8,6 +8,7 @@ import { NextRequest } from 'next/server'
 const mockVerifyLineSignature = vi.fn()
 const mockReplyMessage = vi.fn()
 const mockPushMessage = vi.fn()
+const mockNotifyHoward = vi.fn().mockResolvedValue(true)
 const mockLinkRichMenuToUser = vi.fn()
 const mockUnlinkRichMenuFromUser = vi.fn()
 const mockListRichMenus = vi.fn()
@@ -17,6 +18,7 @@ vi.mock('@/lib/line', () => ({
   verifyLineSignature: (...args: any[]) => mockVerifyLineSignature(...args),
   replyMessage: (...args: any[]) => mockReplyMessage(...args),
   pushMessage: (...args: any[]) => mockPushMessage(...args),
+  notifyHoward: (...args: any[]) => mockNotifyHoward(...args),
   qr: (label: string, text: string) => ({
     type: 'action',
     action: { type: 'message', label, text },
@@ -2188,8 +2190,8 @@ describe('POST /api/line/webhook', () => {
       const req = makeWebhookRequest({ events: [textEvent('25')] })
       const res = await mod.POST(req)
       expect(res.status).toBe(200)
-      // Should NOT trigger weight recording; falls through to end (no reply)
-      expect(mockReplyMessage).not.toHaveBeenCalled()
+      // 不會記成體重；落到最後 → 回「收到」並轉給 Howard（不再沉默）
+      expect(mockReplyMessage).toHaveBeenCalledWith(expect.any(String), [expect.objectContaining({ text: expect.stringContaining('轉給 Howard') })])
     })
 
     it('replies with fallback quick menu for unbound user sending bare number', async () => {
@@ -2468,7 +2470,7 @@ describe('POST /api/line/webhook', () => {
   // ═══════════════════════════════════════
 
   describe('Non-command message', () => {
-    it('does not reply to unrecognized text for bound user', async () => {
+    it('bound user unrecognized text → ack reply + forwarded to Howard', async () => {
       mockSupabase = createSupabaseMock(BOUND_CLIENT)
       vi.resetModules()
       const mod = await import('@/app/api/line/webhook/route')
@@ -2476,7 +2478,9 @@ describe('POST /api/line/webhook', () => {
       const req = makeWebhookRequest({ events: [textEvent('今天天氣好好')] })
       const res = await mod.POST(req)
       expect(res.status).toBe(200)
-      expect(mockReplyMessage).not.toHaveBeenCalled()
+      // 2026-09-25：不再沉默 —— 回一句收到（reply 不花額度）＋原文轉給 Howard
+      expect(mockReplyMessage).toHaveBeenCalledWith(expect.any(String), [expect.objectContaining({ text: expect.stringContaining('轉給 Howard') })])
+      expect(mockNotifyHoward).toHaveBeenCalledWith(expect.stringContaining('今天天氣好好'))
     })
 
     it('replies with fallback quick menu for unrecognized text from unbound user', async () => {
