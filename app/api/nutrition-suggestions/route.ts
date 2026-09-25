@@ -1,3 +1,4 @@
+import { getTaiwanDate } from '@/lib/date-utils'
 import { calculateLabStatus } from '@/utils/labStatus'
 import { isInAutoAdjustCooldown } from '@/lib/auto-adjust-cooldown'
 import { NextRequest, NextResponse } from 'next/server'
@@ -233,6 +234,28 @@ export async function GET(request: NextRequest) {
     const latestBodyFat = [...bodyData].reverse().find((b: { body_fat: number | null }) => b.body_fat != null)?.body_fat ?? null
 
     if (!latestWeight) {
+      // 分兩種：真的從沒記過 vs 以前有記、只是最近沒量。
+      // 後者原本也收到「記錄第一筆體重後…」—— William 記過 50 筆，7/20 之後沒量，看到的卻是新手歡迎詞。
+      const { data: lastRows } = await supabase
+        .from('body_composition')
+        .select('date')
+        .eq('client_id', client.id)
+        .not('weight', 'is', null)
+        .order('date', { ascending: false })
+        .limit(1)
+      const lastEver = (lastRows as { date: string }[] | null)?.[0]
+      if (lastEver?.date) {
+        const days = Math.max(1, Math.round((Date.parse(getTaiwanDate()) - Date.parse(lastEver.date)) / 86_400_000))
+        return NextResponse.json({
+          suggestion: {
+            status: 'insufficient_data',
+            statusLabel: '回來記一筆',
+            statusEmoji: '👋',
+            message: `上一次量體重是 ${days} 天前（${Number(lastEver.date.slice(5, 7))}/${Number(lastEver.date.slice(8, 10))}）。今天量一筆，系統就能用你最新的狀態重新算營養目標。`,
+            warnings: [],
+          }
+        })
+      }
       return NextResponse.json({
         suggestion: {
           status: 'insufficient_data',

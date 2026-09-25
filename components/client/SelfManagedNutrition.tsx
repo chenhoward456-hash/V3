@@ -529,7 +529,7 @@ export default function SelfManagedNutrition({
           <h2 className="text-lg font-bold text-gray-900">智能營養計算</h2>
         </div>
         <div className="bg-primary-50 border border-primary-200 rounded-xl px-4 py-3 text-sm text-primary-700">
-          需要至少 2 週的體重數據，系統才能開始自動計算你的營養目標。請每天記錄體重！
+          {data.statusLabel === '回來記一筆' && data.message ? data.message : '需要至少 2 週的體重數據，系統才能開始自動計算你的營養目標。請每天記錄體重！'}
         </div>
       </div>
     )

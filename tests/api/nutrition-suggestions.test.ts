@@ -243,6 +243,27 @@ describe('GET /api/nutrition-suggestions', () => {
     expect(json.suggestion.status).toBe('insufficient_data')
   })
 
+  it('以前有體重、最近沒量 → 「回來記一筆」＋幾天前，不是新手歡迎詞', async () => {
+    mockSupabase.from = vi.fn((table: string) => {
+      const chain: any = { _desc: false }
+      for (const m of ['select', 'eq', 'gte', 'lte', 'lt', 'not', 'limit', 'update', 'upsert']) chain[m] = vi.fn(() => chain)
+      chain.order = vi.fn((_c: string, o?: { ascending?: boolean }) => { if (o && o.ascending === false) chain._desc = true; return chain })
+      chain.single = vi.fn(() => table === 'clients'
+        ? Promise.resolve({ data: { id: 'uuid-1', unique_code: 'client001', gender: '男性', goal_type: 'cut', subscription_tier: 'coached', client_mode: 'standard', nutrition_enabled: true, coach_macro_override: null }, error: null })
+        : Promise.resolve({ data: null, error: null }))
+      // 最近窗口（升冪）查不到；「最後一次」（降冪 limit 1）查得到 7/20
+      chain.then = (resolve: any) => Promise.resolve({ data: table === 'body_composition' && chain._desc ? [{ date: '2026-07-20' }] : [], error: null }).then(resolve)
+      return chain
+    })
+    vi.resetModules()
+    const mod = await import('@/app/api/nutrition-suggestions/route')
+    const json = await (await mod.GET(makeGetRequest({ clientId: 'client001' }))).json()
+    expect(json.suggestion.status).toBe('insufficient_data')
+    expect(json.suggestion.statusLabel).toBe('回來記一筆')
+    expect(json.suggestion.message).toContain('7/20')
+    expect(json.suggestion.message).not.toContain('第一筆')
+  })
+
   it('calls generateNutritionSuggestion with correct engine input', async () => {
     const req = makeGetRequest({ clientId: 'client001' })
     await GET(req)

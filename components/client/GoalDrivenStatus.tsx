@@ -162,7 +162,7 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
           <h2 className="text-lg font-bold text-gray-900 mb-3">目標體重計畫</h2>
           <div className="bg-slate-50 rounded-xl px-4 py-3 text-sm text-gray-500">
-            需要至少 2 週的體重數據，系統才能啟動自動調整。請持續記錄體重！
+            {data.statusLabel === '回來記一筆' && data.message ? data.message : '需要至少 2 週的體重數據，系統才能啟動自動調整。請持續記錄體重！'}
           </div>
         </div>
       )
