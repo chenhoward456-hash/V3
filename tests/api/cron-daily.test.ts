@@ -507,7 +507,7 @@ describe('GET /api/cron/daily', () => {
         return createConditionalQueryBuilder(filters =>
           filters.some(([m, col]) => m === 'eq' && col === 'date')
             ? [] // todayWeights — empty
-            : [{ client_id: 'client-1', weight: 70, date: '2025-01-10' }]
+            : [{ client_id: 'client-1', weight: 70, date: '2025-01-13' }]  // 測試的「今天」是 2025-01-15 → 2 天前，落在提醒窗內（停損後只提醒斷 2–3 天的人）
         )
       }
       const result = mockFromResults[table] || { data: null, error: null }
@@ -558,7 +558,7 @@ describe('GET /api/cron/daily', () => {
         return createConditionalQueryBuilder(filters =>
           filters.some(([m, col]) => m === 'eq' && col === 'date')
             ? [] // todayWeights — empty (no weight logged today)
-            : [{ client_id: 'client-1', weight: 70, date: '2025-01-10' }]
+            : [{ client_id: 'client-1', weight: 70, date: '2025-01-13' }]  // 測試的「今天」是 2025-01-15 → 2 天前，落在提醒窗內（停損後只提醒斷 2–3 天的人）
         )
       }
       const result = mockFromResults[table] || { data: null, error: null }
@@ -573,6 +573,63 @@ describe('GET /api/cron/daily', () => {
 
     // Evening LINE push is now used only for weight reminders to active users
     expect(body.linePushUsed).toBe(1)
+    expect(body.webPushUsed).toBe(0)
+  })
+
+  // ── Smart Alerts (evening, lines 253-326) ──
+
+  // 智慧警示 2026-08-13 起改為「每週日晚上」一週一次（原本每晚都發，
+  // 學員會連兩天收到一模一樣的內容），且改走 sendRoutineReminder（web push 優先）。
+
+  it('停損：斷線 14 天的人晚上不再推 LINE（燒額度），交給教練晨報', async () => {
+    mockDateForHour(22)
+    const eveningClient = {
+      id: 'client-1',
+      name: 'Alice',
+      line_user_id: 'U001',
+      subscription_tier: 'coached',      body_composition_enabled: true,
+      nutrition_enabled: false,
+      training_enabled: false,
+      wellness_enabled: false,
+    }
+    mockFromResults['clients'] = { data: [eveningClient], error: null }
+    mockFromResults['daily_wellness'] = { data: [], error: null }
+    mockFromResults['nutrition_logs'] = { data: [], error: null }
+    mockFromResults['training_logs'] = { data: [], error: null }
+    mockFromResults['push_subscriptions'] = { data: [], error: null }
+
+    // Override from() to differentiate queries by their conditions:
+    // - clients query filtered on auto_adjust_enabled (trajectory auto-adjust block) → []
+    // - body_composition todayWeights (.eq('date', today)) → empty (no weight today)
+    // - body_composition recentRecords / latestWeights → has data (active, has previous weight)
+    // beforeEach restores the default from() implementation
+    mockSupabase.from = vi.fn((table: string) => {
+      if (table === 'clients') {
+        return createConditionalQueryBuilder(filters =>
+          filters.some(([m, col]) => m === 'eq' && col === 'auto_adjust_enabled')
+            ? []
+            : mockFromResults['clients'].data
+        )
+      }
+      if (table === 'body_composition') {
+        return createConditionalQueryBuilder(filters =>
+          filters.some(([m, col]) => m === 'eq' && col === 'date')
+            ? [] // todayWeights — empty (no weight logged today)
+            : [{ client_id: 'client-1', weight: 70, date: '2025-01-01' }]  // 14 天前：超過提醒窗
+        )
+      }
+      const result = mockFromResults[table] || { data: null, error: null }
+      return createMockQueryBuilder(result.data, result.error)
+    })
+
+    mockPushMessage.mockResolvedValue({ ok: true, status: 200 })  // 真的 pushMessage 回 Response；成功才算數（稽核 R2）
+
+    const req = makeRequest({ authHeader: 'Bearer test-cron-secret' })
+    const res = await GET(req)
+    const body = await res.json()
+
+    // Evening LINE push is now used only for weight reminders to active users
+    expect(body.linePushUsed).toBe(0)
     expect(body.webPushUsed).toBe(0)
   })
 
