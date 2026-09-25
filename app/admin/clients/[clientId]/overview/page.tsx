@@ -314,13 +314,16 @@ export default function ClientOverview() {
     // 距離目標體重 / 體脂
     const targetWeightNum = client?.target_weight ? parseFloat(client.target_weight) : null
     const targetBfNum = client?.target_body_fat || client?.body_fat_target ? parseFloat(client?.target_body_fat || client?.body_fat_target) : null
-    const latestBodyFat = recentBody.length > 0 ? recentBody[recentBody.length - 1].body_fat : null
+    // 體脂從全部列找（InBody 那天常只有體脂沒早晨體重；大部分天只有體重沒體脂）——
+    // 原本取「最後一筆有體重的列」的體脂，幾乎永遠是 null
+    const bfRows = bodyData.filter((b: any) => b.body_fat != null)
+    const latestBodyFat = bfRows.length > 0 ? bfRows[bfRows.length - 1].body_fat : null
     const weightToGo = (targetWeightNum && latestWeight) ? +(latestWeight - targetWeightNum).toFixed(1) : null
     const bfToGo = (targetBfNum && latestBodyFat != null) ? +(latestBodyFat - targetBfNum).toFixed(1) : null
 
     // 進度條：用最早一筆數據當起點
     const startingWeight = recentBody.length > 0 ? recentBody[0].weight : null
-    const startingBodyFat = recentBody.find((b: any) => b.body_fat != null)?.body_fat ?? null
+    const startingBodyFat = bfRows.length > 0 ? bfRows[0].body_fat : null
     const startingDate = recentBody.length > 0 ? recentBody[0].date : null
 
     // 體重進度（達成度 %）
