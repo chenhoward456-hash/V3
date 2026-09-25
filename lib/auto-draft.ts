@@ -14,7 +14,7 @@
 import { createServiceSupabase } from './supabase'
 import { analyzeLabs, type LabResultRow } from './lab-trend-analyzer'
 import { generatePanelNoteDraft } from './lab-draft-engine'
-import { pushMessage } from './line'
+import { notifyHoward } from './line'
 
 const supabase = createServiceSupabase()
 
@@ -52,7 +52,7 @@ async function notifyCoachOnLine(opts: {
   ].join('\n')
 
   try {
-    await pushMessage(coachLineId, [{ type: 'text', text }])
+    await notifyHoward(text)
   } catch (err) {
     console.error('[auto-draft] LINE push failed:', err)
   }

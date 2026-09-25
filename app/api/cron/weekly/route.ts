@@ -18,7 +18,7 @@ import { getTaiwanDate, taiwanDateAgo } from '@/lib/date-utils'
 import { generateNutritionSuggestion, NutritionInput } from '@/lib/nutrition-engine'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { isWeightTraining } from '@/components/client/types'
-import { pushMessage } from '@/lib/line'
+import { notifyHoward } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
 import { computeTrainingProgress } from '@/lib/training-progress'
 import { computeFatigueFlag, getCycleState, getTaipeiDateStr, FATIGUE_RECENT_WINDOW_DAYS, FATIGUE_BASELINE_WINDOW_DAYS, type PeriodizedPlan } from '@/lib/periodization'
@@ -428,6 +428,9 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 存當週任務 + 推播（web push 優先、不 gate LINE；只到上面過濾出的活躍學員）──
+    // 2026-09-25：有綁 LINE 的人，任務先暫存、接在下面「本週報告」那則一起送（原本同一早上兩則 LINE；
+    // 學員都沒開 Web Push，全吃 200 則/月額度）。沒綁 LINE 的照舊單獨送（只會走 Web Push）。
+    const pendingTasks = new Map<string, string>()
     let taskPushCount = 0
     for (const wt of weeklyTasksByClient) {
       const client = clients.find(c => c.id === wt.client_id)
@@ -443,6 +446,10 @@ export async function GET(request: NextRequest) {
         const top = wt.tasks[0]
         const lineText = `📋 ${client.name} 本週任務\n\n` +
           wt.tasks.map(t => `${t.icon} ${t.title}\n　${t.detail}`).join('\n\n')
+        if (client.line_user_id) {
+          pendingTasks.set(wt.client_id, lineText)
+          continue
+        }
         const res = await sendRoutineReminder(wt.client_id, client.line_user_id || '', {
           title: '📋 你的本週任務',
           body: top ? `${top.icon} ${top.title}` : '本週任務已更新',
@@ -650,7 +657,7 @@ export async function GET(request: NextRequest) {
           more > 0 ? `…還有 ${more} 項` : '',
           '\n草稿與一鍵關心：/admin/coaching',
         ].filter(Boolean).join('\n')
-        await pushMessage(coachLineId, [{ type: 'text', text }]).catch((err: unknown) => {
+        await notifyHoward(text).catch((err: unknown) => {
           logger.warn('教練摘要推播失敗', { error: err instanceof Error ? err.message : String(err) })
         })
       }
@@ -778,19 +785,37 @@ export async function GET(request: NextRequest) {
       }
 
       msgLines.push('\n輸入「趨勢」查看詳細分析')
+      const tasksText = pendingTasks.get(client.id)
+      if (tasksText) msgLines.push(`\n───────────────\n\n${tasksText}`)
 
       try {
-        await sendRoutineReminder(client.id, client.line_user_id, {
+        const res = await sendRoutineReminder(client.id, client.line_user_id, {
           title: '📊 你的本週數據報告出爐',
-          body: '點開看這週的體重趨勢與 AI 分析',
+          body: tasksText ? '本週數據報告＋本週任務' : '點開看這週的體重趨勢與 AI 分析',
           lineText: msgLines.join('\n'),
           url: '/dashboard',
         })
+        if (tasksText) {
+          pendingTasks.delete(client.id)
+          if (res.success) taskPushCount++
+        }
         linePushCount++
       } catch (err: unknown) {
         results.errors.push(`推播失敗 [${client.name}]: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
+
+    // 報告那段沒送到的（理論上不會發生：有綁 LINE 的都會進報告迴圈），任務單獨補送
+    for (const [clientId, lineText] of pendingTasks) {
+      const client = clients.find(c => c.id === clientId)
+      try {
+        const res = await sendRoutineReminder(clientId, client?.line_user_id || '', { title: '📋 你的本週任務', body: '本週任務已更新', lineText, url: '/dashboard' })
+        if (res.success) taskPushCount++
+      } catch (err: unknown) {
+        results.errors.push(`當週任務補送失敗 [${client?.name ?? clientId}]: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+    pendingTasks.clear()
 
     // ── Section: 每週電子報 ──
     let newsletterSent = 0
@@ -853,7 +878,7 @@ export async function GET(request: NextRequest) {
           ...results.errors.slice(0, 5).map(e => `• ${e}`),
           ...(results.errors.length > 5 ? [`...還有 ${results.errors.length - 5} 個錯誤`] : []),
         ].join('\n')
-        pushMessage(coachLineId, [{ type: 'text', text: errorSummary }]).catch(err => {
+        notifyHoward(errorSummary).catch(err => {
           logger.error('Failed to notify coach about weekly cron errors', err)
         })
       }
