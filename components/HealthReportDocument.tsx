@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+import InlineBold from '@/components/ui/InlineBold'
 import { getLabAdvice } from '@/components/client/types'
 import { generateSupplementSuggestions, type SupplementSuggestion } from '@/lib/supplement-engine'
 import { analyzeLabs } from '@/lib/lab-trend-analyzer'
@@ -463,7 +464,7 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
         {client.coach_summary && (
           <section className="report-section" style={{ borderLeft: '3px solid #1a1a1a', paddingLeft: 18 }}>
             <h2>教練重點</h2>
-            <p className="report-text" style={{ whiteSpace: 'pre-line' }}>{client.coach_summary}</p>
+            <p className="report-text" style={{ whiteSpace: 'pre-line' }}><InlineBold text={client.coach_summary} /></p>
           </section>
         )}
 
