@@ -214,3 +214,16 @@ describe('judgeDirection：直接講變好還是變差', () => {
     expect(judgeDirection(MARKERS['維生素D'], ch(50, 52, 7.1))).toBeNull()
   })
 })
+
+import { cviFor } from '@/lib/longevity-lens'
+describe('依性別取正常波動（PubMed 查證，2026-09-25）', () => {
+  it('SHBG 男性 6.6、女性沒分開存 → 用整體 7.4；尿酸男 7.7／女 9.2', () => {
+    expect(cviFor(MARKERS.SHBG, '男性')).toBe(6.6)
+    expect(cviFor(MARKERS.SHBG, '女性')).toBe(7.4)
+    expect(cviFor(MARKERS['尿酸'], '女性')).toBe(9.2)
+  })
+  it('男性 SHBG 38.4→30（−22%）超過男性的 ±20% 波動 → 算真的在變', () => {
+    const s = buildMarkerStory('SHBG', [{ date: '2026-03-20', value: 38.4 }, { date: '2026-09-26', value: 30 }], empty, '2026-09-27', '男性')
+    expect(s.change?.verdict).toBe('real_down')
+  })
+})

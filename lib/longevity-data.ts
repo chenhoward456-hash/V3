@@ -46,7 +46,7 @@ export async function loadLongevity(supabase: SupabaseClient, clientDbId: string
     strength,
     fitness: fitnessViews,
     decathlon: ((goals.data ?? []) as DecathlonGoal[]).map(g => ({ ...g, current: currentForCapacity(g.capacity, strength, fitnessViews) })),
-    hypotheses: ((hyps.data ?? []) as LabHypothesis[]).map(h => ({ ...h, grade: gradeHypothesis(h, labsByName[h.marker] ?? [], today) })),
+    hypotheses: ((hyps.data ?? []) as LabHypothesis[]).map(h => ({ ...h, grade: gradeHypothesis(h, labsByName[h.marker] ?? [], today, gender) })),
     unmapped: Object.keys(labsByName).filter(n => !(n in MARKERS)),
   }
 }
