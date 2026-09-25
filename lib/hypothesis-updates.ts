@@ -60,10 +60,10 @@ export function studentText(name: string, updates: HypothesisUpdate[]): string {
 export async function loadHypothesisUpdates(supabase: QueryLike, today: string): Promise<{ graded: HypothesisUpdate[]; overdue: HypothesisUpdate[] }> {
   const { data: hyps, error } = await supabase
     .from('lab_hypotheses')
-    .select('*, clients!inner(id, name, unique_code, line_user_id, is_active)')
+    .select('*, clients!inner(id, name, unique_code, line_user_id, is_active, gender)')
   if (error || !hyps || hyps.length === 0) return { graded: [], overdue: [] }
 
-  const active = (hyps as (LabHypothesis & { client_id: string; notified_status: string | null; clients: { id: string; name: string; unique_code: string; line_user_id: string | null; is_active: boolean | null } })[])
+  const active = (hyps as (LabHypothesis & { client_id: string; notified_status: string | null; clients: { id: string; name: string; unique_code: string; line_user_id: string | null; is_active: boolean | null; gender?: string | null } })[])
     .filter(h => h.clients.is_active !== false)
   const clientIds = [...new Set(active.map(h => h.client_id))]
   const markers = [...new Set(active.map(h => h.marker))]
@@ -82,7 +82,7 @@ export async function loadHypothesisUpdates(supabase: QueryLike, today: string):
   const graded: HypothesisUpdate[] = []
   const overdue: HypothesisUpdate[] = []
   for (const h of active) {
-    const g = gradeHypothesis(h, points[`${h.client_id}|${h.marker}`] ?? [], today)
+    const g = gradeHypothesis(h, points[`${h.client_id}|${h.marker}`] ?? [], today, h.clients.gender)
     const u: HypothesisUpdate = {
       id: h.id, clientId: h.client_id, name: h.clients.name, uniqueCode: h.clients.unique_code, lineUserId: h.clients.line_user_id,
       marker: h.marker, status: g.status, baselineValue: Number(h.baseline_value),

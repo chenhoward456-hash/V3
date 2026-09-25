@@ -20,7 +20,8 @@ export const HORSEMAN_META: Record<Horseman, { label: string; why: string }> = {
 
 /**
  * 指標設定。cvi＝個人生物變異係數（同一個人重複抽血的正常波動，%）。
- * 2026-09-24 PubMed 複核：有 cviDoi 的＝摘要裡直接看得到數字（EuBIVAS／BIVAC meta-analysis）；
+ * 2026-09-24／25 PubMed 複核：cviDoi 填 DOI＝摘要／全文看得到數字；填 'PMID:…'＝EFLM 資料庫轉錄的單篇研究紀錄
+ * （詳見 memory/audit_2026-09-23/cvi-verification.md）。
  * 沒有的＝EFLM 資料庫近似值，摘要沒寫數字、還沒拿到全文確認（ApoB、Lp(a)、LDL、TG、胰島素等），UI 標「近似」。
  * 用來判斷「變化大到不像誤差」，不是診斷閾值。
  */
@@ -44,6 +45,9 @@ export interface MarkerSpec {
   optimalMin?: number
   /** cvi 的出處 DOI（PubMed 摘要可直接看到數字的才填）；沒填＝近似值、UI 標「近似」 */
   cviDoi?: string
+  /** 有性別差異時分開存（EuBIVAS／EFLM 資料庫）；沒填就用 cvi */
+  cviMale?: number
+  cviFemale?: number
   /** 只對男性成立的「越高越好」（睪固酮家族）；女性不判好壞 */
   higherBetterForMen?: boolean
   /** 只對男性成立的「越低越好、但別低於 optimalMin」（SHBG：高了會綁走游離睪固酮）；女性不判 */
@@ -51,41 +55,48 @@ export interface MarkerSpec {
 }
 
 export const MARKERS: Record<string, MarkerSpec> = {
-  ApoB: { horseman: 'cardio', cvi: 6.5, better: 'lower', retestDays: 180, core: true, optimalMax: 60 },  // mg/dL
-  'LDL-C': { horseman: 'cardio', cvi: 7.8, better: 'lower', retestDays: 180, optimalMax: 100 },  // mg/dL
-  總膽固醇: { horseman: 'cardio', cvi: 5.3, better: 'lower', retestDays: 180 },
-  'HDL-C': { horseman: 'cardio', cvi: 5.6, better: 'higher', retestDays: 180, optimalMin: 40 },  // mg/dL
-  'Lp(a)': { horseman: 'cardio', cvi: 8.5, better: 'lower', onceInLife: true, retestDays: 0, core: true, optimalMax: 30 },  // mg/dL；≥50 常見的偏高門檻
-  hsCRP: { horseman: 'cardio', cvi: 40, better: 'lower', retestDays: 180 },
-  三酸甘油酯: { horseman: 'metabolic', cvi: 19.9, better: 'lower', retestDays: 180, optimalMax: 100 },  // mg/dL
+  ApoB: { horseman: 'cardio', cvi: 6.7, cviDoi: 'PMID:32353129', better: 'lower', retestDays: 180, core: true, optimalMax: 60 },  // mg/dL
+  'LDL-C': { horseman: 'cardio', cvi: 8.5, cviDoi: 'PMID:29941472', better: 'lower', retestDays: 180, optimalMax: 100 },  // mg/dL
+  總膽固醇: { horseman: 'cardio', cvi: 5.2, cviDoi: 'PMID:29941472', better: 'lower', retestDays: 180 },
+  'HDL-C': { horseman: 'cardio', cvi: 5.7, cviDoi: 'PMID:29941472', better: 'higher', retestDays: 180, optimalMin: 40 },  // mg/dL
+  'Lp(a)': { horseman: 'cardio', cvi: 8.9, cviDoi: 'PMID:32353129', cviMale: 6.7, cviFemale: 10.6, better: 'lower', onceInLife: true, retestDays: 0, core: true, optimalMax: 30 },  // mg/dL；≥50 常見的偏高門檻
+  hsCRP: { horseman: 'cardio', cvi: 29.4, cviDoi: 'PMID:31171528', better: 'lower', retestDays: 180 },
+  三酸甘油酯: { horseman: 'metabolic', cvi: 19.8, cviDoi: 'PMID:29941472', cviMale: 22.7, better: 'lower', retestDays: 180, optimalMax: 100 },  // mg/dL
   HbA1c: { horseman: 'metabolic', cvi: 1.2, cviDoi: '10.1515/almed-2020-0029', better: 'lower', retestDays: 180, core: true, optimalMax: 5.4 },  // %
   空腹血糖: { horseman: 'metabolic', cvi: 5.0, better: 'lower', retestDays: 180, cviDoi: '10.1515/almed-2020-0029' },
-  空腹胰島素: { horseman: 'metabolic', cvi: 21, better: 'lower', retestDays: 180, core: true, optimalMax: 6 },  // µIU/mL
+  空腹胰島素: { horseman: 'metabolic', cvi: 25.3, cviDoi: 'PMID:33554550', better: 'lower', retestDays: 180, core: true, optimalMax: 6 },  // µIU/mL
   'HOMA-IR': { horseman: 'metabolic', cvi: 26.7, cviDoi: '10.1515/cclm-2024-0672', better: 'lower', retestDays: 180, optimalMax: 1.0 },
   ALT: { horseman: 'metabolic', cvi: 15.4, better: 'lower', retestDays: 180, cviDoi: '10.1373/clinchem.2017.281808' },
-  AST: { horseman: 'metabolic', cvi: 9.5, better: 'lower', retestDays: 180 },
-  尿酸: { horseman: 'metabolic', cvi: 8.4, better: 'lower', retestDays: 180 },
-  同半胱胺酸: { horseman: 'neuro', cvi: 8.3, better: 'lower', retestDays: 180, optimalMax: 10 },  // µmol/L
+  AST: { horseman: 'metabolic', cvi: 9.5, cviDoi: 'PMID:28428356', better: 'lower', retestDays: 180 },
+  尿酸: { horseman: 'metabolic', cvi: 8.3, cviDoi: 'PMID:29941472', cviMale: 7.7, cviFemale: 9.2, better: 'lower', retestDays: 180 },
+  同半胱胺酸: { horseman: 'neuro', cvi: 7.4, cviDoi: 'PMID:30957652', better: 'lower', retestDays: 180, optimalMax: 10 },  // µmol/L
   睪固酮: { horseman: 'support', cvi: 10, better: 'range', retestDays: 180, cviDoi: '10.1016/j.cca.2024.117806', higherBetterForMen: true },  // 男性
   游離睪固酮: { horseman: 'support', cvi: 11, better: 'range', retestDays: 180, higherBetterForMen: true },
   生物可利用睪固酮: { horseman: 'support', cvi: 11, better: 'range', retestDays: 180, higherBetterForMen: true },
-  SHBG: { horseman: 'support', cvi: 9.7, better: 'range', retestDays: 180, optimalMin: 20, optimalMax: 40, lowerBetterForMen: true },  // 同 utils/labStatus 最佳 20–40：太高會綁走游離睪固酮
-  雌二醇: { horseman: 'support', cvi: 20, better: 'range', retestDays: 180 },
-  維生素D: { horseman: 'support', cvi: 7.1, better: 'range', retestDays: 180, optimalMin: 40, optimalMax: 80 },  // ng/mL
+  SHBG: { horseman: 'support', cvi: 7.4, cviDoi: 'PMID:36373220', cviMale: 6.6, better: 'range', retestDays: 180, optimalMin: 20, optimalMax: 40, lowerBetterForMen: true },  // 同 utils/labStatus 最佳 20–40：太高會綁走游離睪固酮
+  雌二醇: { horseman: 'support', cvi: 20, cviMale: 14.5, better: 'range', retestDays: 180 },
+  維生素D: { horseman: 'support', cvi: 6.3, cviDoi: 'PMID:33525653', better: 'range', retestDays: 180, optimalMin: 40, optimalMax: 80 },  // ng/mL
   鐵蛋白: { horseman: 'support', cvi: 13, better: 'range', retestDays: 180 },
   TSH: { horseman: 'support', cvi: 17.7, better: 'range', retestDays: 365, cviDoi: '10.1515/cclm-2020-1885' },
   'Free T4': { horseman: 'support', cvi: 4.8, better: 'range', retestDays: 365, cviDoi: '10.1515/cclm-2020-1885' },
-  白蛋白: { horseman: 'support', cvi: 2.5, better: 'range', retestDays: 365 },
+  白蛋白: { horseman: 'support', cvi: 2.5, cviDoi: 'PMID:31171528', better: 'range', retestDays: 365 },
   // 2026-09-24 補：學員實際有測、原本沒收進透鏡的指標（CVi 為 EFLM 近似值，未附 DOI → UI 標近似）
-  CRP: { horseman: 'cardio', cvi: 40, better: 'lower', retestDays: 180 },
-  GGT: { horseman: 'metabolic', cvi: 8.9, better: 'lower', retestDays: 180 },
-  肌酸酐: { horseman: 'organ', cvi: 4.5, better: 'range', retestDays: 180 },
+  CRP: { horseman: 'cardio', cvi: 29.4, cviDoi: 'PMID:31171528', better: 'lower', retestDays: 180 },
+  GGT: { horseman: 'metabolic', cvi: 8.9, cviDoi: 'PMID:28428356', better: 'lower', retestDays: 180 },
+  肌酸酐: { horseman: 'organ', cvi: 4.4, cviDoi: 'PMID:28720681', better: 'range', retestDays: 180 },
   eGFR: { horseman: 'organ', cvi: 4.5, better: 'higher', retestDays: 180 },
-  BUN: { horseman: 'organ', cvi: 14, better: 'range', retestDays: 180 },
-  血紅素: { horseman: 'organ', cvi: 2.7, better: 'range', retestDays: 365 },
-  白血球: { horseman: 'organ', cvi: 11.4, better: 'range', retestDays: 365 },
-  血小板: { horseman: 'organ', cvi: 7.3, better: 'range', retestDays: 365 },
-  MCV: { horseman: 'organ', cvi: 1.0, better: 'range', retestDays: 365 },
+  BUN: { horseman: 'organ', cvi: 14.1, cviDoi: 'PMID:29941472', better: 'range', retestDays: 180 },
+  血紅素: { horseman: 'organ', cvi: 2.74, cviDoi: 'PMID:29605821', better: 'range', retestDays: 365 },
+  白血球: { horseman: 'organ', cvi: 10.4, cviDoi: 'PMID:29605821', cviMale: 7.96, cviFemale: 12.82, better: 'range', retestDays: 365 },
+  血小板: { horseman: 'organ', cvi: 7.22, cviDoi: 'PMID:29605821', better: 'range', retestDays: 365 },
+  MCV: { horseman: 'organ', cvi: 0.72, cviDoi: 'PMID:29605821', better: 'range', retestDays: 365 },
+}
+
+/** 依性別取 CVi（有分開存就用分開的） */
+export function cviFor(spec: MarkerSpec, gender?: string | null): number {
+  if (gender === '男性' && spec.cviMale != null) return spec.cviMale
+  if (gender === '女性' && spec.cviFemale != null) return spec.cviFemale
+  return spec.cvi
 }
 
 /** 分析誤差近似值（%）。實驗室不同會更大，換家實驗室的比較另外標註 */
@@ -264,7 +275,7 @@ export function buildMarkerStory(name: string, points: LabPoint[], rows: DailyRo
   const prev = latest
     ? [...sorted].reverse().find(p => (Date.parse(latest.date) - Date.parse(p.date)) / 86_400_000 >= MIN_GAP_DAYS) ?? null
     : null
-  const change = prev && latest ? readChange(prev, latest, spec.cvi) : null
+  const change = prev && latest ? readChange(prev, latest, cviFor(spec, gender)) : null
   const context = prev && latest ? summarizePeriod(prev.date, latest.date, rows) : null
   const daysSinceLast = latest ? Math.round((Date.parse(today) - Date.parse(latest.date)) / 86_400_000) : null
 
@@ -375,7 +386,7 @@ export interface HypothesisGrade {
   change: ChangeRead | null
 }
 
-export function gradeHypothesis(h: LabHypothesis, points: LabPoint[], today: string): HypothesisGrade {
+export function gradeHypothesis(h: LabHypothesis, points: LabPoint[], today: string, gender?: string | null): HypothesisGrade {
   const spec = MARKERS[h.marker]
   const minDate = new Date(`${h.baseline_date}T00:00:00Z`)
   minDate.setUTCDate(minDate.getUTCDate() + 7)
@@ -388,7 +399,7 @@ export function gradeHypothesis(h: LabHypothesis, points: LabPoint[], today: str
   const firstDate = after[0].date
   const same = after.filter(p => p.date === firstDate)
   const result: LabPoint = { date: firstDate, value: same.reduce((s, p) => s + p.value, 0) / same.length, unit: same[0].unit ?? null }
-  const change = readChange({ date: h.baseline_date, value: Number(h.baseline_value) }, result, spec?.cvi ?? 10)
+  const change = readChange({ date: h.baseline_date, value: Number(h.baseline_value) }, result, spec ? cviFor(spec, gender) : 10)
 
   let status: HypothesisStatus
   if (h.expected_direction === 'stable') {
