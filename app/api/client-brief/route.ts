@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { findClientByName } from '@/lib/client-name-match'
 import { verifyCoachAuth } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
@@ -24,20 +25,18 @@ export async function GET(request: NextRequest) {
     const name = (request.nextUrl.searchParams.get('name') || '').trim()
     if (!name) return NextResponse.json({ error: '缺少 name' }, { status: 400 })
 
-    const { data: matches, error: cErr } = await supabase
-      .from('clients')
-      .select('id, name, status, goal_type, diet_start_date, subscription_tier, is_active, expires_at, target_weight')
-      .ilike('name', `%${name}%`)
-      .limit(5)
-    if (cErr) logger.warn('查 clients 失敗', { error: cErr })
+    // 字面對不到會再用同音找一次（「震軒」→ 震宣），見 lib/client-name-match.ts
+    const match = await findClientByName<{ id: string; name: string; [k: string]: any }>(supabase, name, 'id, name, status, goal_type, diet_start_date, subscription_tier, is_active, expires_at, target_weight')
 
-    if (!matches || matches.length === 0) {
-      return NextResponse.json({ found: false, note: `找不到叫「${name}」的學員` })
+    if (match.kind === 'none') {
+      return NextResponse.json({ found: false, note: `找不到叫「${name}」的學員（同音的也沒有）` })
     }
-    if (matches.length > 1) {
-      return NextResponse.json({ found: false, ambiguous: true, candidates: matches.map(m => m.name), note: '名字對到多人，請說更明確' })
+    if (match.kind === 'many') {
+      return NextResponse.json({ found: false, ambiguous: true, candidates: match.candidates, note: '名字對到多人，請說更明確' })
     }
-    const c = matches[0]
+    const c = match.client
+    // 用同音對到的要講出來，讓 Howard 當場知道「你說的是 X 嗎」
+    const heardAs = match.bySound ? `你打的是「${name}」，我用同音的「${c.name}」` : undefined
     const now = Date.now()
     const d21 = new Date(now - 21 * DAY_MS).toISOString().split('T')[0]
     const d10 = new Date(now - 10 * DAY_MS).toISOString().split('T')[0]
@@ -74,6 +73,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       found: true,
+      heard_as: heardAs,
       name: c.name,
       status: c.status,
       goal: c.goal_type,

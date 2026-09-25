@@ -1,5 +1,6 @@
 import { isCompetitionMode } from '@/lib/client-mode'
 import { NextRequest, NextResponse } from 'next/server'
+import { findClientByName } from '@/lib/client-name-match'
 import { verifyCoachAuth } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
@@ -33,26 +34,24 @@ export async function GET(request: NextRequest) {
     const name = (request.nextUrl.searchParams.get('name') || '').trim()
     if (!name) return NextResponse.json({ error: '缺少 name' }, { status: 400 })
 
-    const { data: matches, error: cErr } = await supabase
-      .from('clients')
-      .select('id, name, status, client_mode, goal_type, prep_phase, gender, age, diet_start_date, target_weight, body_fat_target, target_date, calories_target, protein_target, carbs_target, fat_target, coach_macro_override, auto_adjust_enabled, subscription_tier, is_active, gene_mthfr, gene_apoe, gene_depression_risk, gene_notes')
-      .ilike('name', `%${name}%`)
-      .limit(5)
-    if (cErr) logger.warn('查 clients 失敗', { error: cErr })
+    // 字面對不到會再用同音找一次（「震軒」→ 震宣），見 lib/client-name-match.ts
+    const match = await findClientByName<{ id: string; name: string; [k: string]: any }>(supabase, name, 'id, name, status, client_mode, goal_type, prep_phase, gender, age, diet_start_date, target_weight, body_fat_target, target_date, calories_target, protein_target, carbs_target, fat_target, coach_macro_override, auto_adjust_enabled, subscription_tier, is_active, gene_mthfr, gene_apoe, gene_depression_risk, gene_notes')
 
-    if (!matches || matches.length === 0) {
-      return NextResponse.json({ found: false, note: `找不到叫「${name}」的學員` })
+    if (match.kind === 'none') {
+      return NextResponse.json({ found: false, note: `找不到叫「${name}」的學員（同音的也沒有）` })
     }
-    if (matches.length > 1) {
+    if (match.kind === 'many') {
       return NextResponse.json({
         found: false,
         ambiguous: true,
-        candidates: matches.map((m) => m.name),
+        candidates: match.candidates,
         note: '名字對到多人，請說更明確',
       })
     }
 
-    const c = matches[0]
+    const c = match.client
+    // 用同音對到的要講出來，讓 Howard 當場知道「你說的是 X 嗎」
+    const heardAs = match.bySound ? `你打的是「${name}」，我用同音的「${c.name}」` : undefined
     const now = Date.now()
     const d90 = new Date(now - 90 * DAY_MS).toISOString().split('T')[0]
     const d14 = new Date(now - 14 * DAY_MS).toISOString().split('T')[0]
@@ -188,6 +187,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       found: true,
+      heard_as: heardAs,
       name: c.name,
       status: c.status,
       clientMode: c.client_mode, // standard/health/bodybuilding/athletic → 引擎路由
