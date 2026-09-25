@@ -696,7 +696,11 @@ export default function ClientDashboard() {
 
   // LINE 瀏覽器：顯示引導頁面，不載入完整儀表板（避免記憶體崩潰）
   if (isLineBrowser) {
-    const url = typeof window !== 'undefined' ? window.location.href : ''
+    // 帶 openExternalBrowser=1，LINE 才會真的跳外部瀏覽器（見 middleware.ts 同段說明）
+    const url = (() => {
+      if (typeof window === 'undefined') return ''
+      try { const u = new URL(window.location.href); u.searchParams.set('openExternalBrowser', '1'); return u.toString() } catch { return window.location.href }
+    })()
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
         <div className="text-center max-w-sm">

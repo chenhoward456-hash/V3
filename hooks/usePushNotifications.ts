@@ -29,6 +29,9 @@ export function usePushNotifications(clientId: string) {
   // 在那之前 supported=false，卡片若直接隱藏 → iPhone 用戶永遠不知道要加主畫面（最大開通破口）。
   // needsInstall=true 時 UI 改顯示「加入主畫面」圖解，而不是消失。
   const [needsInstall, setNeedsInstall] = useState(false)
+  // LINE／IG／FB 內建瀏覽器：不能開推播、也不能「加入主畫面」→ 要先換到 Safari/Chrome。
+  // 學員多半是從 LINE 訊息點連結進來的（2026-09-25：8 個綁 LINE 的學員 0 人開通知）。
+  const [inAppBrowser, setInAppBrowser] = useState<null | 'line' | 'other'>(null)
 
   const supported =
     typeof window !== 'undefined' &&
@@ -44,7 +47,9 @@ export function usePushNotifications(clientId: string) {
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches ||
       (navigator as unknown as { standalone?: boolean }).standalone === true
-    setNeedsInstall(!!vapidKey && isIOS && !isStandalone && !supported)
+    const inApp = /\bLine\//i.test(ua) ? 'line' : /FBAN|FBAV|Instagram/i.test(ua) ? 'other' : null
+    setInAppBrowser(vapidKey ? inApp : null)
+    setNeedsInstall(!!vapidKey && !inApp && isIOS && !isStandalone && !supported)
 
     if (!supported) { setState('unsupported'); return }
     setState(Notification.permission as PushState)
@@ -94,5 +99,5 @@ export function usePushNotifications(clientId: string) {
     }
   }, [supported, busy, vapidKey, clientId])
 
-  return { supported, state, busy, subscribed, needsInstall, subscribe }
+  return { supported, state, busy, subscribed, needsInstall, inAppBrowser, subscribe }
 }

@@ -13,7 +13,7 @@ const SNOOZE_MS = 3 * 86_400_000 // 關掉只「延後 3 天」，不再是終�
  * 不騷擾：權限為 denied、或使用者按過 ✕，就不再出現。
  */
 function PushNotificationPromptInner({ code, debug = false }: { code: string; debug?: boolean }) {
-  const { supported, state, busy, subscribed, needsInstall, subscribe } = usePushNotifications(code)
+  const { supported, state, busy, subscribed, needsInstall, inAppBrowser, subscribe } = usePushNotifications(code)
   const [dismissed, setDismissed] = useState(true) // 預設不顯示，待 effect 判定
   const [justEnabled, setJustEnabled] = useState(false)
 
@@ -71,6 +71,32 @@ function PushNotificationPromptInner({ code, debug = false }: { code: string; de
   }
 
   if (subscribed || dismissed) return null
+
+  // LINE／IG／FB 內建瀏覽器：先帶他換到手機瀏覽器（LINE 認 openExternalBrowser=1，一鍵就開），
+  // 換過去之後才會看到下面的開啟提醒／加入主畫面
+  if (inAppBrowser) {
+    const external = (() => {
+      try { const u = new URL(window.location.href); u.searchParams.set('openExternalBrowser', '1'); return u.toString() } catch { return null }
+    })()
+    return (
+      <div className="bg-primary-50 border border-primary-200 rounded-2xl p-4 shadow-sm flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-primary-900">想收到打卡提醒？先用手機瀏覽器打開這頁</p>
+          {inAppBrowser === 'line' && external ? (
+            <>
+              <p className="text-xs text-primary-800/90 mt-1">在 LINE 裡面沒辦法開通知，換到 Safari／Chrome 就可以。</p>
+              <a href={external} className="mt-3 inline-flex items-center bg-primary-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-primary-700 transition-colors">
+                用瀏覽器打開
+              </a>
+            </>
+          ) : (
+            <p className="text-xs text-primary-800/90 mt-1">點右上角「⋯」→ 選「用瀏覽器開啟」，換到 Safari／Chrome 就能開通知。</p>
+          )}
+        </div>
+        <button onClick={close} aria-label="關閉" className="text-primary-400 hover:text-primary-600 text-sm shrink-0">✕</button>
+      </div>
+    )
+  }
 
   // iPhone Safari：尚未「加入主畫面」→ 不隱藏，改教他怎麼開（否則 iOS 用戶永遠開不了通知）
   if (needsInstall) {
