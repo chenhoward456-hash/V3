@@ -232,7 +232,23 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
   }, [trainingLogs, wellness])
 
   // ── Latest body composition ──
-  const latestBody = bodyData.length ? bodyData[bodyData.length - 1] : null
+  // 每一項各取「最近一次有量的」：大部分天只量體重、InBody 那天常沒填早晨體重，
+  // 直接拿最後一列會讓體脂/肌肉量在報告上消失
+  const latestBody = useMemo(() => {
+    if (!bodyData.length) return null
+    const last = <K extends keyof BodyDataEntry>(k: K) => [...bodyData].reverse().find((b) => b[k] != null) ?? null
+    const w = last('weight'), comp = last('body_fat') ?? last('muscle_mass'), h = last('height'), v = last('visceral_fat')
+    return {
+      ...bodyData[bodyData.length - 1],
+      weight: w?.weight ?? null,
+      height: h?.height ?? null,
+      body_fat: comp?.body_fat ?? null,
+      muscle_mass: comp?.muscle_mass ?? null,
+      visceral_fat: v?.visceral_fat ?? null,
+      compDate: comp?.date ?? null,
+    }
+  }, [bodyData])
+  const shortDate = (d: string | null) => (d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}` : '')
 
   const bmi = useMemo(() => {
     if (!latestBody?.weight || !latestBody?.height) return null
@@ -464,7 +480,7 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
                     <tr><td>體重</td><td>{latestBody.weight} kg</td></tr>
                   )}
                   {latestBody.body_fat != null && (
-                    <tr><td>體脂率</td><td>{latestBody.body_fat}%</td></tr>
+                    <tr><td>體脂率</td><td>{latestBody.body_fat}%{latestBody.compDate ? `（${shortDate(latestBody.compDate)} 測）` : ''}</td></tr>
                   )}
                   {latestBody.muscle_mass != null && (
                     <tr><td>肌肉量</td><td>{latestBody.muscle_mass} kg</td></tr>

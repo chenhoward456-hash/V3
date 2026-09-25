@@ -29,7 +29,8 @@ export default function ExportAiSummary({ client, bodyData, nutritionLogs, welln
     // 基本資料
     lines.push('■ 基本資料')
     const parts = [c.age ? `${c.age}歲` : null, c.gender, bodyData[0]?.weight ? `${bodyData[0].weight}kg` : null].filter(Boolean)
-    if (bodyData[0]?.body_fat) parts.push(`體脂 ${bodyData[0].body_fat}%`)
+    const latestBf = bodyData.find((b: any) => b.body_fat != null)
+    if (latestBf) parts.push(`體脂 ${latestBf.body_fat}%`)
     if (c.target_weight) parts.push(`目標 ${c.target_weight}kg`)
     if (c.competition_date) {
       const days = Math.floor((new Date(c.competition_date).getTime() - Date.now()) / (86400000))
@@ -76,7 +77,9 @@ export default function ExportAiSummary({ client, bodyData, nutritionLogs, welln
       const pct = ((Number(change) / latest.weight) * 100).toFixed(1)
       lines.push(`  最新 ${latest.weight}kg（${latest.date}）`)
       lines.push(`  變化 ${Number(change) > 0 ? '+' : ''}${change}kg（${Number(pct) > 0 ? '+' : ''}${pct}%）`)
-      if (latest.body_fat) lines.push(`  體脂 ${latest.body_fat}%`)
+      // 體脂取最近一次有量的（量體脂那天常沒填體重，latest 那列多半沒有體脂）
+      const bfRow = bodyData.find((b: any) => b.body_fat != null)
+      if (bfRow) lines.push(`  體脂 ${bfRow.body_fat}%（${bfRow.date}）`)
       lines.push('')
     }
 
