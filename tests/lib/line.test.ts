@@ -490,3 +490,29 @@ describe('listRichMenus', () => {
     expect(result).toEqual([])
   })
 })
+
+import { notifyHoward } from '@/lib/line'
+describe('notifyHoward：先走助手 relay，不吃 V3 額度', () => {
+  it('relay 成功 → 不打 V3 push', async () => {
+    process.env.HOWARD_BOT_RELAY_URL = 'https://relay.example/x'
+    process.env.HOWARD_BOT_RELAY_SECRET = 's'
+    const f = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', f)
+    expect(await notifyHoward('hi')).toBe(true)
+    expect(f).toHaveBeenCalledTimes(1)
+    expect(String(f.mock.calls[0][0])).toContain('relay.example')
+    vi.unstubAllGlobals()
+  })
+  it('relay 失敗 → 改用 V3 push 給 admin', async () => {
+    process.env.HOWARD_BOT_RELAY_URL = 'https://relay.example/x'
+    process.env.HOWARD_BOT_RELAY_SECRET = 's'
+    process.env.ADMIN_LINE_USER_ID = 'Uadmin'
+    const f = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 500 })
+      .mockResolvedValue({ ok: true, status: 200, clone: () => ({ text: async () => '' }) })
+    vi.stubGlobal('fetch', f)
+    expect(await notifyHoward('hi')).toBe(true)
+    expect(String(f.mock.calls[1][0])).toContain('/message/push')
+    vi.unstubAllGlobals()
+  })
+})

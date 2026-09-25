@@ -158,6 +158,32 @@ export async function pushMessage(to: string, messages: LineMessage[]) {
   return res
 }
 
+/**
+ * 通知 Howard（2026-09-25）：**先走 howard-line-bot relay**（用助手 OA 的額度），
+ * 沒設定或失敗才用 V3 OA push 給 admin。V3 官方帳號每月只有 200 則推播，要留給學員。
+ */
+export async function notifyHoward(text: string): Promise<boolean> {
+  const relayUrl = process.env.HOWARD_BOT_RELAY_URL
+  const relaySecret = process.env.HOWARD_BOT_RELAY_SECRET
+  if (relayUrl && relaySecret) {
+    try {
+      const r = await fetch(`${relayUrl}?secret=${encodeURIComponent(relaySecret)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text.slice(0, 4500), source: 'V3' }),
+      })
+      if (r.ok) return true
+      logger.warn('notifyHoward relay failed, falling back to V3 push', { status: r.status })
+    } catch (err) {
+      logger.warn('notifyHoward relay error, falling back to V3 push', { error: err instanceof Error ? err.message : String(err) })
+    }
+  }
+  const admin = process.env.ADMIN_LINE_USER_ID
+  if (!admin) return false
+  const res = await pushMessage(admin, [{ type: 'text', text: text.slice(0, 4500) }])
+  return res.ok
+}
+
 /** 取得用戶 profile */
 export async function getUserProfile(userId: string): Promise<{ displayName: string; pictureUrl?: string } | null> {
   const res = await lineAPI(`/profile/${userId}`)
