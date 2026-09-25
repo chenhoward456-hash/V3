@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import InlineBold from '@/components/ui/InlineBold'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
@@ -2028,7 +2029,7 @@ export default function ClientDashboard() {
                 </button>
                 {showCoachSummary && (
                   <div className="bg-white/60 rounded-xl p-3 mt-2">
-                    <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{c.coach_summary}</p>
+                    <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed"><InlineBold text={String(c.coach_summary)} /></p>
                     {(c.next_checkup_date || c.health_goals) && (
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 pt-2 border-t border-amber-200/50">
                         {c.next_checkup_date && new Date(c.next_checkup_date + 'T00:00:00') >= new Date(new Date().setHours(0,0,0,0)) && <span className="text-xs text-primary-600">📅 下次回檢：{new Date(c.next_checkup_date).toLocaleDateString('zh-TW')}</span>}
