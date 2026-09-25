@@ -50,7 +50,9 @@ export async function middleware(request: NextRequest) {
   // 只接受代碼＋子路徑該有的字元，不符合就不攔（交給正常路由）；JS 裡用 JSON.stringify 跳脫。
   const lineRest = pathname.startsWith('/c/') ? pathname.slice(3) : ''
   if (lineRest && /^[A-Za-z0-9_\-/]{1,120}$/.test(lineRest) && /Line\//i.test(request.headers.get('user-agent') || '')) {
-    const url = `https://howard456.vercel.app/c/${lineRest}`
+    // openExternalBrowser=1：LINE 認得這個參數、會直接跳 Safari/Chrome。
+    // 沒帶的話 target=_blank 在 LINE 裡還是開在 LINE 內建瀏覽器 → 又被這頁攔 → 原地繞圈（2026-09-25 修）
+    const url = `https://howard456.vercel.app/c/${lineRest}?openExternalBrowser=1`
     return new NextResponse(
       `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Howard Protocol</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f9fafb;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}.card{text-align:center;max-width:340px}.emoji{font-size:48px;margin-bottom:16px}h1{font-size:20px;font-weight:700;color:#111;margin-bottom:8px}p{font-size:14px;color:#6b7280;line-height:1.6;margin-bottom:24px}.btn{display:block;background:#2563eb;color:#fff;font-weight:700;padding:14px 24px;border-radius:12px;text-decoration:none;font-size:15px;margin-bottom:12px}.btn:hover{background:#1d4ed8}.copy{background:none;border:none;color:#2563eb;font-size:14px;cursor:pointer}.hint{font-size:11px;color:#9ca3af;margin-top:16px}</style></head><body><div class="card"><div class="emoji">🔗</div><h1>請用 Safari 開啟</h1><p>LINE 內建瀏覽器不支援完整功能。<br>請點下方按鈕用瀏覽器開啟。</p><a class="btn" href="${url}" target="_blank" rel="noopener noreferrer">用瀏覽器開啟</a><button class="copy" onclick='navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(url)});this.textContent="已複製 ✓"'>複製網址</button><p class="hint">開啟後建議「加入主畫面」，下次一鍵進入</p></div></body></html>`,
       {
