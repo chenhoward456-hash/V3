@@ -29,6 +29,15 @@ vi.mock('@/lib/line', () => ({
   switchRichMenuForUser: (...args: any[]) => mockSwitchRichMenuForUser(...args),
 }))
 
+const mockLoadLongevity = vi.fn()
+const mockLoadStudentLabOrder = vi.fn()
+vi.mock('@/lib/longevity-data', () => ({
+  loadLongevity: (...args: any[]) => mockLoadLongevity(...args),
+}))
+vi.mock('@/lib/lab-order-data', () => ({
+  loadStudentLabOrder: (...args: any[]) => mockLoadStudentLabOrder(...args),
+}))
+
 vi.mock('@/lib/logger', () => ({
   createLogger: () => ({
     info: vi.fn(),
@@ -202,6 +211,7 @@ describe('POST /api/line/webhook', () => {
     mockVerifyLineSignature.mockReset()
     mockReplyMessage.mockReset()
     mockPushMessage.mockReset()
+    mockNotifyHoward.mockClear()
     mockLinkRichMenuToUser.mockReset()
     mockUnlinkRichMenuFromUser.mockReset()
     mockListRichMenus.mockReset()
@@ -810,7 +820,7 @@ describe('POST /api/line/webhook', () => {
   // ═══════════════════════════════════════
 
   describe('Member commands for unbound user', () => {
-    it.each(['狀態', '今天狀態', '趨勢', '週報', '記體重', '記水量', '記飲食', '記訓練', '記身心'])(
+    it.each(['狀態', '今天狀態', '趨勢', '週報', '血檢', '記體重', '記水量', '記飲食', '記訓練', '記身心'])(
       'shows bind prompt for "%s" when user is unbound',
       async (cmd) => {
         mockSupabase = createSupabaseMock(null)
@@ -837,6 +847,40 @@ describe('POST /api/line/webhook', () => {
   // ═══════════════════════════════════════
   // Interactive entry points (bound user)
   // ═══════════════════════════════════════
+
+  describe('血檢 command (bound user)', () => {
+    it('replies with the lab summary via reply (not push), never forwards to Howard', async () => {
+      mockLoadLongevity.mockResolvedValue({ today: '2026-09-25', horsemen: [], hypotheses: [] })
+      mockLoadStudentLabOrder.mockResolvedValue({ enabled: false })
+      mockSupabase = createSupabaseMock(BOUND_CLIENT)
+      vi.resetModules()
+      const mod = await import('@/app/api/line/webhook/route')
+
+      const res = await mod.POST(makeWebhookRequest({ events: [textEvent('血檢')] }))
+      expect(res.status).toBe(200)
+      expect(mockLoadLongevity).toHaveBeenCalledWith(expect.anything(), BOUND_CLIENT.id, undefined)
+      expect(mockReplyMessage).toHaveBeenCalledWith(
+        'reply-token',
+        expect.arrayContaining([expect.objectContaining({ text: expect.stringContaining('還沒有血檢紀錄') })]),
+      )
+      expect(mockPushMessage).not.toHaveBeenCalled()
+      expect(mockNotifyHoward).not.toHaveBeenCalled()
+    })
+
+    it('replies with a friendly error when loading fails', async () => {
+      mockLoadLongevity.mockRejectedValue(new Error('db down'))
+      mockLoadStudentLabOrder.mockResolvedValue({ enabled: false })
+      mockSupabase = createSupabaseMock(BOUND_CLIENT)
+      vi.resetModules()
+      const mod = await import('@/app/api/line/webhook/route')
+
+      await mod.POST(makeWebhookRequest({ events: [textEvent('血檢')] }))
+      expect(mockReplyMessage).toHaveBeenCalledWith(
+        'reply-token',
+        expect.arrayContaining([expect.objectContaining({ text: expect.stringContaining('讀取失敗') })]),
+      )
+    })
+  })
 
   describe('Interactive entry: 記體重', () => {
     it('shows last weight quick reply buttons when previous weight exists', async () => {

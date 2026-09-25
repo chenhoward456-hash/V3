@@ -24,6 +24,10 @@ import {
 } from '@/lib/line-handlers'
 import { classifyCalorieInput, bareNumberIsCalories } from '@/lib/line-nl-log'
 import { tryCoachCommand } from '@/lib/line-coach-commands'
+import { loadLongevity } from '@/lib/longevity-data'
+import { loadStudentLabOrder } from '@/lib/lab-order-data'
+import { STUDENT_GROUP_META } from '@/lib/longevity-lens'
+import { formatLabSummary } from '@/lib/line-lab-summary'
 import { tryParseTrainingLog, writeTrainingSets, confirmText, markTrainedToday } from '@/lib/line-training-log'
 import { buildDay0Messages, enrollSubscriber, unenrollSubscriber } from '@/lib/nurture-sequence'
 import { handleAdminAgentMessage, handleAgentProposalPostback, handleCoachActionPostback } from '@/lib/agent-line'
@@ -49,6 +53,7 @@ const QR_MAIN = {
   items: [
     qr('📊 今日狀態', '狀態'),
     qr('📈 7天趨勢', '趨勢'),
+    qr('🩸 血檢進退', '血檢'),
     qr('⚖️ 記體重', '記體重'),
     qr('🍽️ 記飲食', '記飲食'),
   ],
@@ -192,6 +197,28 @@ async function handleEvent(event: LineWebhookEvent) {
 // Text message command matching
 // ═══════════════════════════════════════
 
+async function handleLabQuery(replyToken: string, client: { id: string; unique_code: string; gender?: string | null }, supabase: SupabaseClient) {
+  try {
+    const [lens, order] = await Promise.all([
+      loadLongevity(supabase, client.id, client.gender),
+      loadStudentLabOrder(supabase, client.id),
+    ])
+    // 學員版分組（不含「癌症」那格，同 /api/longevity）
+    const stories = lens.horsemen.filter(h => STUDENT_GROUP_META[h.key]).flatMap(h => h.stories)
+    const text = formatLabSummary({
+      stories,
+      hypotheses: lens.hypotheses,
+      order,
+      dashboardUrl: `${SITE_URL}/c/${client.unique_code}`,
+      today: lens.today,
+    })
+    await replyMessage(replyToken, [{ type: 'text', text, quickReply: QR_MAIN }])
+  } catch (err) {
+    log.error('lab query failed', err)
+    await replyMessage(replyToken, [{ type: 'text', text: '血檢資料讀取失敗，等一下再試，或直接開儀表板看 🙏' }])
+  }
+}
+
 async function handleTextMessage(event: LineWebhookEvent, userId: string, supabase: SupabaseClient) {
   let text = (event.message?.text || '').trim()
 
@@ -241,7 +268,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
       {
         type: 'text',
         text: client
-          ? '直接打一句話就能記，例如：\n「81.5 今天腿日 45分 RPE7 飲食達標」\n\n不用背格式，記到什麼算什麼，我會把實際記進去的值念回去給你確認。\n\n想用按鈕也可以 👇'
+          ? '直接打一句話就能記，例如：\n「81.5 今天腿日 45分 RPE7 飲食達標」\n\n不用背格式，記到什麼算什麼，我會把實際記進去的值念回去給你確認。\n\n打「血檢」看你的血檢進退和下次要驗什麼。\n\n想用按鈕也可以 👇'
           : '請點選下方按鈕 👇',
         quickReply: QR_MAIN,
       },
@@ -460,7 +487,7 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   }
 
   // Member-only commands gate
-  const MEMBER_COMMANDS = ['狀態', '今天狀態', '趨勢', '週報', '記體重', '記水量', '記飲食', '記訓練', '記身心']
+  const MEMBER_COMMANDS = ['狀態', '今天狀態', '趨勢', '週報', '血檢', '抽血', '記體重', '記水量', '記飲食', '記訓練', '記身心']
   if (MEMBER_COMMANDS.includes(text) && !client) {
     await replyMessage(event.replyToken, [
       {
@@ -522,6 +549,12 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
   // Trend query
   if (text === '趨勢' || text === '週報') {
     await handleTrendQuery(event.replyToken, client!, supabase)
+    return
+  }
+
+  // Lab progress —— 血檢進退＋預測對答案＋下次驗什麼（reply，不吃推播額度）
+  if (text === '血檢' || text === '抽血') {
+    await handleLabQuery(event.replyToken, client!, supabase)
     return
   }
 
