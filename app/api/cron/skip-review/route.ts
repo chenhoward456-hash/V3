@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
-import { pushMessage } from '@/lib/line'
+import { pushMessage, notifyHoward } from '@/lib/line'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { computeTrajectoryAdjustment, type MacroBounds, type SkipCategory } from '@/lib/trajectory-adjust'
 
@@ -119,10 +119,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (problems.length === 0) {
-    await pushMessage(coachLineId, [{
-      type: 'text',
-      text: '✅ 引擎週報：全員健康，沒有需要處理的學員',
-    }]).catch(() => {})
+    await notifyHoward('✅ 引擎週報：全員健康，沒有需要處理的學員').catch(() => {})
     return NextResponse.json({ ok: true, problems: [], pushed: true })
   }
 
@@ -138,7 +135,7 @@ export async function GET(request: NextRequest) {
     lines.push(`\n🟡 ${p.name}（${daysLine}）\n原因：${CATEGORY_LABELS[p.category]}｜${lastLine}\n${link}`)
   }
   lines.push(`\n要處理就開上面連結，或在賴助手說「診斷 名字」。`)
-  await pushMessage(coachLineId, [{ type: 'text', text: lines.join('\n') }]).catch(() => {})
+  await notifyHoward(lines.join('\n')).catch(() => {})
 
   // 3. 自動 nudge 學員（no_body_data 才推；其他類別需要教練判斷不直接推）
   const clientNudged: string[] = []

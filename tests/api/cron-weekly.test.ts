@@ -100,8 +100,10 @@ vi.mock('@/lib/cron-utils', () => ({
   completeCronRun: vi.fn().mockResolvedValue(undefined),
 }))
 
+const mockNotifyHoward = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 vi.mock('@/lib/line', () => ({
   pushMessage: mockPushMessage,
+  notifyHoward: mockNotifyHoward,
 }))
 
 vi.mock('@/lib/notify', () => ({
@@ -1334,5 +1336,38 @@ describe('GET /api/cron/weekly', () => {
     expect(body.results.analysisGenerated).toBe(2)
     // c1 and c3 have line_user_id
     expect(body.results.linePushCount).toBe(2)
+  })
+})
+
+describe('週日早上：本週任務接在本週報告同一則（省 LINE 額度）', () => {
+  it('有綁 LINE 的人只收到一則，裡面同時有報告和任務', async () => {
+    const d = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10)
+    mockFromResults['clients'] = {
+      data: [{ id: 'c-1', name: 'Bob', line_user_id: 'U-bob', subscription_tier: 'coached', is_active: true, goal_type: 'cut', created_at: '2025-01-01' }],
+      error: null,
+    }
+    mockFromResults['body_composition'] = { data: [{ client_id: 'c-1', date: d(1), weight: 80 }, { client_id: 'c-1', date: d(3), weight: 80.4 }], error: null }
+    const res = await GET(makeRequest({ authHeader: 'Bearer test-cron-secret' }))
+    expect(res.status).toBe(200)
+    const toBob = mockSendRoutineReminder.mock.calls.filter((c: any[]) => c[0] === 'c-1')
+    expect(toBob).toHaveLength(1)
+    expect(toBob[0][2].lineText).toContain('本週報告')
+    expect(toBob[0][2].lineText).toContain('本週任務')
+  })
+})
+
+
+describe('推給教練的每週摘要走 notifyHoward（助手額度），不吃 V3 的 200 則', () => {
+  it('有摘要時呼叫 notifyHoward、不用 pushMessage 推給教練', async () => {
+    vi.stubEnv('COACH_LINE_USER_ID', 'U-coach')
+    const created = new Date(Date.now() - 3 * 86_400_000).toISOString()
+    mockFromResults['clients'] = {
+      data: [{ id: 'c-2', name: 'Newbie', line_user_id: null, subscription_tier: 'coached', is_active: true, created_at: created }],
+      error: null,
+    }
+    const res = await GET(makeRequest({ authHeader: 'Bearer test-cron-secret' }))
+    expect(res.status).toBe(200)
+    expect(mockNotifyHoward).toHaveBeenCalledWith(expect.stringContaining('Newbie'))
+    expect(mockPushMessage).not.toHaveBeenCalledWith('U-coach', expect.anything())
   })
 })

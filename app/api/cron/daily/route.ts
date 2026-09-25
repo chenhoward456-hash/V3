@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { BodyComposition, NutritionLog, TrainingLog, DailyWellness } from '@/types'
 import { createServiceSupabase } from '@/lib/supabase'
 import { getTaiwanDate, getTaiwanHour, taiwanDateAgo } from '@/lib/date-utils'
-import { pushMessage, unlinkRichMenuFromUser } from '@/lib/line'
+import { pushMessage, unlinkRichMenuFromUser, notifyHoward } from '@/lib/line'
 import { sendRoutineReminder } from '@/lib/notify'
 import {
   estimateActualIntake, prescriptionVerdict,
@@ -1534,6 +1534,10 @@ export async function GET(request: NextRequest) {
   // 這類警示看的本來就是 7 天窗口，一週結算一次剛好；也把 LINE 額度從
   // 每人 30 則/月壓到 4 則/月（免費額度只有 200 則/月，見 project_v3_line_quota）。
   let smartAlertsSent = 0
+  // 2026-09-25：週日晚上「智能警示」和下面的「本週分析」原本各推一則 → 同一人半分鐘內兩則 LINE。
+  // 8 個學員都沒開 Web Push，全部吃 LINE 200 則/月（9/19 就爆了）。改成先暫存警示，
+  // 到本週分析那段合成一則送；沒有分析的人最後再把警示單獨送出。
+  const sundayAlerts = new Map<string, { name: string; lineUserId: string; title: string; body: string; text: string }>()
   if (!isMorning && dayOfWeek === 7) {
     // 撈 28 天：警示要「跟他自己的前三週比」才講得出他不知道的事，
     // 只有 7 天就只能套通用門檻（見 lib/ai-insights.ts 的重寫說明）。
@@ -1601,14 +1605,14 @@ export async function GET(request: NextRequest) {
           ].join('\n\n')
 
           try {
-            // 走 sendRoutineReminder：Web Push 優先、沒訂閱才退 LINE，省免費額度
-            await sendRoutineReminder(c.id, c.line_user_id ?? '', {
+            // 先暫存，跟本週分析合成一則（見上方 sundayAlerts 說明）；送出在分析段落之後
+            sundayAlerts.set(c.id, {
+              name: c.name,
+              lineUserId: c.line_user_id ?? '',
               title: warnings.length === 1 ? `${warnings[0].icon} ${warnings[0].title}` : '📋 本週有幾項要注意',
               body: warnings[0].title,
-              lineText: alertMsg,
-              url: '/dashboard',
+              text: alertMsg,
             })
-            smartAlertsSent++
           } catch (err: unknown) {
             errors.push(`alert_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
           }
@@ -1671,7 +1675,7 @@ export async function GET(request: NextRequest) {
   // ===== Insight 驅動推播（晚上，每週一次）=====
   // 週日晚上推一條最重要的 insight，讓用戶知道「系統有在幫你看數據」
   let insightPushSent = 0
-  if (!isMorning && new Date().getDay() === 0) { // 週日
+  if (!isMorning && dayOfWeek === 7) { // 週日（台北；跟上面智能警示同一輪，才能合併）
     const { data: insightClients } = await supabase
       .from('clients')
       .select('id, unique_code, name, line_user_id, gender, goal_type, subscription_tier')
@@ -1712,14 +1716,36 @@ export async function GET(request: NextRequest) {
 
           const msg = `${topInsight.emoji} ${c.name}，本週分析：\n\n${topInsight.title}\n${topInsight.description}\n\n💡 ${topInsight.suggestion}`
 
-          await pushMessage(c.line_user_id, [{ type: 'text', text: msg }])
-          insightPushSent++
+          // 有暫存的警示就合成一則；Web Push 優先、沒訂閱才退 LINE
+          const alert = sundayAlerts.get(c.id)
+          const res = await sendRoutineReminder(c.id, c.line_user_id, {
+            title: alert ? alert.title : `${topInsight.emoji} ${topInsight.title}`,
+            body: alert ? alert.body : topInsight.title,
+            lineText: alert ? `${alert.text}\n\n───────────────\n\n${msg}` : msg,
+            url: '/dashboard',
+          })
+          if (alert) {
+            sundayAlerts.delete(c.id)
+            if (res.success) smartAlertsSent++
+          }
+          if (res.success) insightPushSent++
         } catch (err: unknown) {
           errors.push(`insight_push_${c.name}: ${err instanceof Error ? err.message : String(err)}`)
         }
       }
     }
   }
+
+  // 沒有本週分析可合併的人，把暫存的警示單獨送出
+  for (const [clientId, a] of sundayAlerts) {
+    try {
+      const res = await sendRoutineReminder(clientId, a.lineUserId, { title: a.title, body: a.body, lineText: a.text, url: '/dashboard' })
+      if (res.success) smartAlertsSent++
+    } catch (err: unknown) {
+      errors.push(`alert_${a.name}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+  sundayAlerts.clear()
 
   // ===== 早期習慣斷點（晚上執行）=====
   // 2026-08-11 補的結構性缺口：新學員記完第一筆之後，系統對他就沒有任何機制了。
@@ -1914,7 +1940,7 @@ export async function GET(request: NextRequest) {
         ...errors.slice(0, 5).map(e => `• ${e}`),
         ...(errors.length > 5 ? [`...還有 ${errors.length - 5} 個錯誤`] : []),
       ].join('\n')
-      pushMessage(coachLineId, [{ type: 'text', text: errorSummary }]).catch(err => {
+      notifyHoward(errorSummary).catch(err => {
         logger.error('Failed to notify coach about cron errors', err)
       })
     }

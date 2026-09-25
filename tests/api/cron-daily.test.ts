@@ -81,9 +81,11 @@ vi.mock('@/lib/supabase', () => ({
   createServiceSupabase: vi.fn(() => mockSupabase),
 }))
 
+const mockNotifyHoward = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 vi.mock('@/lib/line', () => ({
   pushMessage: mockPushMessage,
   unlinkRichMenuFromUser: mockUnlinkRichMenuFromUser,
+  notifyHoward: mockNotifyHoward,
 }))
 
 vi.mock('@/lib/notify', () => ({
@@ -97,6 +99,13 @@ vi.mock('@/lib/web-push', () => ({
 vi.mock('@/lib/auth-middleware', () => ({
   verifyAdminSession: vi.fn(() => false),
 }))
+
+const mockBehaviorInsights = vi.hoisted(() => ({ fn: null as null | ((...a: any[]) => any) }))
+vi.mock('@/lib/insight-engine', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('@/lib/insight-engine')>()
+  // 預設走真的；個別測試設 mockBehaviorInsights.fn 才覆寫
+  return { ...orig, generateBehaviorInsights: (...a: any[]) => (mockBehaviorInsights.fn ? mockBehaviorInsights.fn(...a) : (orig.generateBehaviorInsights as any)(...a)) }
+})
 
 vi.mock('@/lib/ai-insights', () => ({
   generateSmartAlerts: mockGenerateSmartAlerts,
@@ -759,6 +768,29 @@ describe('GET /api/cron/daily', () => {
 
     expect(body.smartAlertsSent).toBe(0)
     expect(body.errors).toContain('alert_Alice: LINE API error')
+  })
+
+  it('週日晚上同一人有警示＋本週分析 → 合成一則送（不是兩則）', async () => {
+    mockDateForHour(22, '2025-01-19') // 週日
+    mockFromResults['clients'] = {
+      data: [{ id: 'client-1', name: 'Alice', line_user_id: 'U001', subscription_tier: 'coached', gender: '女性', goal_type: 'cut' }],
+      error: null,
+    }
+    mockFromResults['daily_wellness'] = { data: Array.from({ length: 6 }, (_, i) => ({ client_id: 'client-1', date: `2025-01-1${i}` })), error: null }
+    mockGenerateSmartAlerts.mockReturnValue([{ severity: 'warning', icon: '!', title: 'Alert', message: 'Issue' }])
+    mockBehaviorInsights.fn = () => [{ id: 'sleep-x', confidence: 'high', emoji: '💡', title: '睡眠影響訓練', description: 'D', suggestion: 'S' }]
+    try {
+      const res = await GET(makeRequest({ authHeader: 'Bearer test-cron-secret' }))
+      const body = await res.json()
+      const toAlice = mockSendRoutineReminder.mock.calls.filter(c => c[0] === 'client-1')
+      expect(toAlice).toHaveLength(1)
+      expect(toAlice[0][2].lineText).toContain('Issue')
+      expect(toAlice[0][2].lineText).toContain('本週分析')
+      expect(mockPushMessage).not.toHaveBeenCalledWith('U001', expect.anything())
+      expect(body.smartAlertsSent).toBe(1)
+    } finally {
+      mockBehaviorInsights.fn = null
+    }
   })
 
   it('should filter insight data per client for smart alerts', async () => {
