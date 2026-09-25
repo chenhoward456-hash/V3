@@ -1024,11 +1024,19 @@ export async function GET(request: NextRequest) {
       //   ① 有 Web Push 的人 5a 已經收到，不再花 LINE；
       //   ② 昨天有量體重的人今天不追（連續兩天沒量才推）。
       const weighedYesterday = lastWeightDateByClient[client.id] === yesterdayTW
+      // ③ 停損（2026-09-25）：原本「昨天沒量就推」→ 斷線 1–3 個月的人每晚都收到，
+      //    9/23 把當月 200 則額度燒光（之後連「發 X」教練訊息、預測對答案通知都送不出去）。
+      //    改成只在「斷了 2–3 天」時提醒（每次斷線最多 2 則）；更久的交給教練晨報的掉線名單、由 Howard 親自聯絡。
+      //    學員重新量體重後自動恢復。
+      const lastW = lastWeightDateByClient[client.id]
+      const daysSinceWeight = lastW ? Math.round((Date.parse(today) - Date.parse(lastW)) / 86_400_000) : null
+      const inReminderWindow = daysSinceWeight != null && daysSinceWeight >= 2 && daysSinceWeight <= 3
       if (
         isPaid &&
         client.line_user_id &&
         !hasAnyRecord &&
         !weighedYesterday &&
+        inReminderWindow &&
         !pushSubClientIds.has(client.id) &&
         lastWeightByClient[client.id]
       ) {
