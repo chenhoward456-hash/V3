@@ -13,7 +13,9 @@ interface ActionItem {
 }
 
 export default function SystemActions({ suggestion, prepPhase }: SystemActionsProps) {
-  if (!suggestion) return null
+  // 資料不足時 API 回的是只有 5 個欄位的簡化版（沒有 deltas／geneticCorrections…），
+  // 這區本來就沒東西可講；直接讀會 TypeError（2026-09-26 掃 9 位學員頁，5 位這區整塊掛掉）
+  if (!suggestion || suggestion.status === 'insufficient_data') return null
 
   const actions: ActionItem[] = []
   const s = suggestion
@@ -87,7 +89,7 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
   }
 
   // 8. 基因修正
-  if (s.geneticCorrections.length > 0) {
+  if ((s.geneticCorrections ?? []).length > 0) {
     actions.push({
       text: `已套用 ${s.geneticCorrections.length} 項基因修正（${s.geneticCorrections.map(g => g.rule).join('、')}）`,
       type: 'info',
@@ -95,7 +97,7 @@ export default function SystemActions({ suggestion, prepPhase }: SystemActionsPr
   }
 
   // 9. 血檢驅動調整
-  if (s.labMacroModifiers.length > 0) {
+  if ((s.labMacroModifiers ?? []).length > 0) {
     actions.push({
       text: `已根據血檢結果調整 ${s.labMacroModifiers.length} 項營養素`,
       type: 'info',

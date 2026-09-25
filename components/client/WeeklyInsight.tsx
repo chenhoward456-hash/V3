@@ -39,7 +39,7 @@ export default function WeeklyInsight({ clientId, code, onMutate }: WeeklyInsigh
           <h2 className="text-lg font-bold text-gray-900">每週智能分析</h2>
         </div>
         <div className="bg-slate-50 rounded-xl px-4 py-3 text-sm text-gray-500">
-          需要至少 2 週的體重數據，系統才能開始分析。持續記錄，下週就能看到分析結果！
+          {data.statusLabel === '回來記一筆' && data.message ? data.message : '需要至少 2 週的體重數據，系統才能開始分析。持續記錄，下週就能看到分析結果！'}
         </div>
       </div>
     )
