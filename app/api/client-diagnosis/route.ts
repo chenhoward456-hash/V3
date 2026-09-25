@@ -85,12 +85,14 @@ export async function GET(request: NextRequest) {
     ])
 
     // --- 體重 / 體脂 軌跡 ---
-    const body = (bodyR.data || []).filter((b) => b.weight != null)
+    const allBody = bodyR.data || []
+    const body = allBody.filter((b) => b.weight != null)
     const latestWeight = body.length ? Number(body[body.length - 1].weight) : null
-    const latestBodyFat = (() => {
-      for (let i = body.length - 1; i >= 0; i--) if (body[i].body_fat != null) return Number(body[i].body_fat)
-      return null
-    })()
+    // 體脂要從「全部」列找：InBody 那天可能只有體脂、沒填早晨體重（weight=null），
+    // 先過濾體重再找會把它丟掉 —— 2026-09-02 問林宥任體脂回「沒紀錄」，其實 8/12 有 26.2%。
+    const latestFatRow = [...allBody].reverse().find((b) => b.body_fat != null) ?? null
+    const latestBodyFat = latestFatRow ? Number(latestFatRow.body_fat) : null
+    const latestBodyFatDate = latestFatRow?.date ?? null
     const w14 = body.filter((b) => new Date(b.date).getTime() >= now - 14 * DAY_MS)
     const weightChange14 =
       w14.length >= 2 ? +(Number(w14[w14.length - 1].weight) - Number(w14[0].weight)).toFixed(1) : null
@@ -200,6 +202,7 @@ export async function GET(request: NextRequest) {
       // 體組成
       latestWeight,
       latestBodyFat,
+      latestBodyFatDate,
       weightChange14d: weightChange14,
       weeklyWeights, // [{weeksAgo, avgWeight}]
       targetWeight: c.target_weight,
