@@ -23,6 +23,8 @@ import { getCycleState, applyDeloadToDay, getTaipeiDayOfWeek } from '@/lib/perio
 import { isCompetitionMode } from '@/lib/client-mode'
 import { denyInactiveClient } from '@/lib/active-client'
 
+export const dynamic = 'force-dynamic'
+
 const logger = createLogger('api-training-readiness')
 const supabaseAdmin = createServiceSupabase()
 
