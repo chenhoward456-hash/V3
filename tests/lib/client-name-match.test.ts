@@ -3,7 +3,7 @@ import { findClientByName } from '@/lib/client-name-match'
 
 const CLIENTS = [
   { id: '1', name: '震宣' }, { id: '2', name: '林宥任' }, { id: '3', name: '謝佳峻' },
-  { id: '4', name: '張承鈞' }, { id: '5', name: '張成君' }, { id: '6', name: 'Eddie' },
+  { id: '4', name: '張承鈞' }, { id: '5', name: '張成君' }, { id: '6', name: 'Eddie' }, { id: '7', name: '萬哲鴻' },
 ]
 
 // 最小 supabase 替身：ilike 包含、eq id、無條件 select 全部
@@ -47,5 +47,11 @@ describe('findClientByName', () => {
   it('英文名大小寫', async () => {
     const m = await findClientByName(fakeSupabase(), 'eddie', 'id, name')
     expect(m.kind === 'one' && m.client.name).toBe('Eddie')
+  })
+  it('暱稱：哲哥 → 萬哲鴻、小宣 → 震宣', async () => {
+    const a = await findClientByName(fakeSupabase(), '哲哥', 'id, name')
+    expect(a.kind === 'one' && a.client.name).toBe('萬哲鴻')
+    const b = await findClientByName(fakeSupabase(), '小宣', 'id, name')
+    expect(b.kind === 'one' && b.client.name).toBe('震宣')
   })
 })
