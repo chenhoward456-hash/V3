@@ -34,14 +34,14 @@ function edgeRateLimit(key: string, maxRequests: number, windowMs: number): bool
 }
 
 function getIP(request: NextRequest): string {
-  // Vercel 提供的 request.ip 最可靠，不可被 header 偽造
-  return request.ip
+  // Next 15 拿掉了 request.ip。Vercel 會自己設 x-real-ip（平台寫入、覆蓋客戶端送來的值），
+  // @vercel/functions 的 ipAddress() 讀的也是它 —— 所以優先它，x-forwarded-for 只當本地/其他平台的備援
+  return request.headers.get('x-real-ip')
     || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || request.headers.get('x-real-ip')
     || 'unknown'
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const ip = getIP(request)
 

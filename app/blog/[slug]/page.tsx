@@ -29,10 +29,11 @@ async function getSupabasePost(slug: string) {
 
 function stripFrontmatter(content: string): string {
   // 移除開頭的 YAML-like metadata（title:, date:, category:, readTime: 等）
-  return content.replace(/^(title:\s*.*\n|date:\s*.*\n|category:\s*.*\n|readTime:\s*.*\n|read_time:\s*.*\n|description:\s*.*\n|slug:\s*.*\n)+/i, '').trim()
+  return content.replace(/^(title:\s*.*\n|date:\s*.*\n|category:\s*.*\n|readTime:\s*.*\n|read_time:\s*.*\n|description:\s*.*\n|slug:\s*.*\n)+/i, '').trim();
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   // 先查硬編碼
   let post = blogContent[params.slug]
   let description = post
@@ -90,7 +91,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 
 function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function sanitizeHref(url: string): string {
@@ -164,7 +165,8 @@ function renderMarkdown(content: string) {
   return result.join('')
 }
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+export default async function BlogPostPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   // 先查硬編碼
   const hardcoded = blogContent[params.slug]
 

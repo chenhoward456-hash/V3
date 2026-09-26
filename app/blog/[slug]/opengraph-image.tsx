@@ -2,7 +2,8 @@ import { ImageResponse } from 'next/og'
 import { blogContent } from '@/data/blog-content'
 
 // Route segment config
-export const runtime = 'edge'
+// 2026-09-26 升 Next 16：拿掉 runtime='edge' —— 打包含整份 blogContent 後 1.33MB，超過 Vercel 免費方案 Edge 函式 1MB 上限，
+// preview 部署直接失敗。Node.js runtime（Vercel 預設、官方也建議取代 Edge）沒有這個上限。
 export const alt = 'Howard Protocol Blog'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
@@ -19,7 +20,8 @@ const CATEGORY_MAP: Record<string, { emoji: string; color: string }> = {
   '系統更新': { emoji: '⚙️', color: '#64748b' },
 }
 
-export default async function Image({ params }: { params: { slug: string } }) {
+export default async function Image(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params
   const post = blogContent[params.slug]
   const title = post?.title || '文章'
   const category = post?.category || ''
