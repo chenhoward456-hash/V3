@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
     const c = match.client
     // 用同音對到的要講出來，讓 Howard 當場知道「你說的是 X 嗎」
-    const heardAs = match.bySound ? `你打的是「${name}」，我用同音的「${c.name}」` : undefined
+    const heardAs = match.bySound ? `你打的是「${name}」，我找的是「${c.name}」` : undefined
     const now = Date.now()
     const d21 = new Date(now - 21 * DAY_MS).toISOString().split('T')[0]
     const d10 = new Date(now - 10 * DAY_MS).toISOString().split('T')[0]

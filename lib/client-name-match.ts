@@ -2,7 +2,7 @@
  * 用名字找學員（Howard 助手的 client_brief / client_diagnosis 用）。
  * 先照字比對（ilike 包含）；對不到再用「念起來一樣」找一次 —— 語音輸入、打字選錯同音字很常見：
  * 2026-08-29 問「震軒狀況如何」回找不到，V3 裡是「震宣」。
- * 同音只在「字面完全對不到」時才啟用，而且要剛好一人，避免亂猜到別人身上。
+ * 同音／暱稱只在「字面完全對不到」時才啟用，而且要剛好一人，避免亂猜到別人身上。
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { pinyin } from 'pinyin-pro'
@@ -24,7 +24,16 @@ export async function findClientByName<T extends { id: string; name: string }>(
   if (rows.length > 1) return { kind: 'many', candidates: rows.map(r => r.name) }
   if (rows.length === 1) return { kind: 'one', client: rows[0], bySound: false }
 
-  const q = toSound(name)
+  // 暱稱：「哲哥」→ 哲、「小宣」→ 宣（2026-06-30 問「哲哥最近怎麼樣」找不到萬哲鴻）
+  const core = name.replace(/^(小|阿)/, '').replace(/(哥|姐|姊|弟|妹|仔)$/, '')
+  if (core && core !== name) {
+    const { data: nick } = await supabase.from('clients').select(select).ilike('name', `%${core}%`).limit(5)
+    const nrows = (nick ?? []) as unknown as T[]
+    if (nrows.length === 1) return { kind: 'one', client: nrows[0], bySound: true }
+    if (nrows.length > 1) return { kind: 'many', candidates: nrows.map(r => r.name) }
+  }
+
+  const q = toSound(core || name)
   if (q.length < 2) return { kind: 'none' }
   const { data: all } = await supabase.from('clients').select('id, name')
   const hits = ((all ?? []) as { id: string; name: string }[]).filter(c => c.name && toSound(c.name).includes(q))
