@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: '營養與恢復 - The Howard Protocol',
@@ -141,13 +142,13 @@ export default function NutritionPage() {
           我在部落格分享完整的實驗數據和優化過程。
         </p>
         <div className="flex gap-4 justify-center mb-12">
-          <a
+          <Link
             href="/blog"
             className="inline-block px-8 py-3 rounded-full font-medium text-white transition-all hover:opacity-90"
             style={{backgroundColor: '#2D2D2D', letterSpacing: '0.05em'}}
           >
             閱讀數據優化文章
-          </a>
+          </Link>
           <a
             href="https://lin.ee/LP65rCc"
             target="_blank"

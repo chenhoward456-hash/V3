@@ -35,3 +35,13 @@ Key routing rules:
 動任何 UI / 視覺決策前，先讀 `DESIGN.md`（全站設計北極星）。配色、字體、間距、卡片、氣質都定義在那。
 核心紀律：**顏色只做語意**——藍=品牌/互動，紅/黃/綠=血檢/訓練狀態（嚴禁裝飾），其餘一律中性灰；字族＝內文 Noto Sans TC（Inter 拉丁 fallback）、標題 Playfair→Noto Sans TC（2026-07-04 更正：原寫「單一字族 Geist」與 code 不符，Geist 從未進 repo）；卡片統一 `bg-white border border-slate-200 rounded-2xl p-5`。
 未經 Howard 同意不要偏離。QA / review 時看到不符 DESIGN.md 的就標出來。
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

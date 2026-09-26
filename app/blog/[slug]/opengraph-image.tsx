@@ -19,7 +19,8 @@ const CATEGORY_MAP: Record<string, { emoji: string; color: string }> = {
   '系統更新': { emoji: '⚙️', color: '#64748b' },
 }
 
-export default async function Image({ params }: { params: { slug: string } }) {
+export default async function Image(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params
   const post = blogContent[params.slug]
   const title = post?.title || '文章'
   const category = post?.category || ''

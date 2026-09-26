@@ -29,14 +29,15 @@ if [ $? -ne 0 ]; then
 fi
 echo "✅ tsc pass"
 
-echo "🔍 pre-commit: 跑 npm run lint（next build 會跑這個，tsc 擋不住）..."
+echo "🔍 pre-commit: 跑 npm run lint（eslint；tsc 擋不住的規則錯誤）..."
+# 2026-09-26 升 Next 16：next lint 被拿掉、next build 也不再跑 ESLint，改用 eslint CLI。
+# eslint 只有 error 才 exit 非 0（warning 放行），直接看 exit code，不再 grep 輸出文字（新 CLI 格式不同）。
 lint_output=$(npm run lint 2>&1)
-# 只擋 Error，Warning 放行（repo 裡本來就有一批既有 warning）
-if echo "$lint_output" | grep -q "Error:"; then
+if [ $? -ne 0 ]; then
   echo ""
   echo "❌ ESLint 有 Error，commit 被擋住 —— 這種錯會讓 Vercel build 失敗"
   echo ""
-  echo "$lint_output" | grep -B2 "Error:" | head -20
+  echo "$lint_output" | grep -B1 " error " | head -20
   echo ""
   echo "修好再 commit。要強制跳過：git commit --no-verify"
   exit 1
