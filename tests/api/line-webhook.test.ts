@@ -848,6 +848,28 @@ describe('POST /api/line/webhook', () => {
   // Interactive entry points (bound user)
   // ═══════════════════════════════════════
 
+  describe('熱量差值（多吃／少吃）→ 幫他算好總數、一鍵確認，不直接寫', () => {
+    it('「多吃200」目標 2000 → 按鈕「記 2200」，不寫 nutrition_logs', async () => {
+      mockSupabase = createSupabaseMock(BOUND_CLIENT)
+      vi.resetModules()
+      const mod = await import('@/app/api/line/webhook/route')
+      await mod.POST(makeWebhookRequest({ events: [textEvent('多吃200')] }))
+      const msgs = mockReplyMessage.mock.calls[0][1]
+      expect(msgs[0].text).toContain('2000 ＋ 200 ＝ 大約 2200')
+      expect(msgs[0].quickReply.items[0].action).toEqual({ type: 'message', label: '記 2200', text: '熱量 2200' })
+      const wroteNutrition = mockSupabase.from.mock.calls.some((c: any[]) => c[0] === 'nutrition_logs')
+      expect(wroteNutrition).toBe(false)
+    })
+
+    it('「少吃了300卡」→ 記 1700', async () => {
+      mockSupabase = createSupabaseMock(BOUND_CLIENT)
+      vi.resetModules()
+      const mod = await import('@/app/api/line/webhook/route')
+      await mod.POST(makeWebhookRequest({ events: [textEvent('少吃了300卡')] }))
+      expect(mockReplyMessage.mock.calls[0][1][0].quickReply.items[0].action.text).toBe('熱量 1700')
+    })
+  })
+
   describe('血檢 command (bound user)', () => {
     it('replies with the lab summary via reply (not push), never forwards to Howard', async () => {
       mockLoadLongevity.mockResolvedValue({ today: '2026-09-25', horsemen: [], hypotheses: [] })

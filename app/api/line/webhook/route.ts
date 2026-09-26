@@ -22,7 +22,7 @@ import {
   handleNaturalLog,
   calorieQuickReplies,
 } from '@/lib/line-handlers'
-import { classifyCalorieInput, bareNumberIsCalories } from '@/lib/line-nl-log'
+import { classifyCalorieInput, bareNumberIsCalories, CALORIES_MIN, CALORIES_MAX } from '@/lib/line-nl-log'
 import { tryCoachCommand } from '@/lib/line-coach-commands'
 import { loadLongevity } from '@/lib/longevity-data'
 import { loadStudentLabOrder } from '@/lib/lab-order-data'
@@ -693,6 +693,21 @@ async function handleTextMessage(event: LineWebhookEvent, userId: string, supaba
     return
   }
   if (calorieIntent?.kind === 'delta' && client) {
+    // 知道目標就直接幫他算好總數，一鍵記（Sean 8/31「多吃啦幹你娘」＝被要求自己加總）。
+    // 仍然不自動寫入：差值是估的，要他點一下確認。
+    const target = client.calories_target
+    const amt = calorieIntent.amount
+    const total = target && amt != null ? Math.round((target + amt) / 10) * 10 : null
+    if (total != null && total >= CALORIES_MIN && total <= CALORIES_MAX) {
+      await replyMessage(event.replyToken, [
+        {
+          type: 'text',
+          text: `目標 ${target} ${amt! > 0 ? '＋' : '－'} ${Math.abs(amt!)} ＝ 大約 ${total} 大卡\n點下面直接記，或打你算的總數`,
+          quickReply: { items: [qr(`記 ${total}`, `熱量 ${total}`), ...calorieQuickReplies(target)] },
+        },
+      ])
+      return
+    }
     await replyMessage(event.replyToken, [
       {
         type: 'text',

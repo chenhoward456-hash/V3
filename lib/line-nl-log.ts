@@ -293,7 +293,7 @@ export function parseCalorieNumber(raw: string): number | null {
  */
 export type CalorieIntent =
   | { kind: 'absolute'; calories: number }
-  | { kind: 'delta' }
+  | { kind: 'delta'; amount?: number }  // amount：解得出來才有，正＝多吃、負＝少吃
   | { kind: 'skip' }
 
 const DELTA_WORDS = /(多|少|超過|超|差|不足|剩)/
@@ -305,7 +305,14 @@ export function classifyCalorieInput(text: string): CalorieIntent | null {
 
   // 差值優先判 —— 「大概多1.200大卡」如果先被絕對值規則吃掉就會寫成當日總量 1200。
   // Sean 2026-08-31 打的就是這句。
-  if (DELTA_WORDS.test(t) && CAL_UNIT.test(t)) return { kind: 'delta' }
+  // 「多吃200」「少吃300」沒寫單位也算差值（有「吃」＋數字才算，避免「多吃蛋白」誤判）
+  if (DELTA_WORDS.test(t) && (CAL_UNIT.test(t) || /(多|少)吃\s*[\d]/.test(t))) {
+    const numM = t.match(/(\d{1,2}[.,]\d{3}|\d+)/)
+    const n = numM ? parseCalorieNumber(numM[1]) : null
+    if (n == null || n <= 0 || n > 3000) return { kind: 'delta' }
+    const negative = /(少|不足|差|剩)/.test(t) && !/(多|超)/.test(t)
+    return { kind: 'delta', amount: negative ? -n : n }
+  }
 
   const m =
     t.match(/^(?:熱量|卡路里|大卡)\s*([\d,.\uFF0C]+)$/i) ||

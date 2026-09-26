@@ -131,10 +131,21 @@ describe('classifyCalorieInput：分流決定要不要寫 DB', () => {
   })
 
   it('🚨 差值一律反問，絕對不能當總量寫 —— Sean 8/31 實際打的兩句', () => {
-    expect(classifyCalorieInput('大概多1.200大卡')).toEqual({ kind: 'delta' })
-    expect(classifyCalorieInput('200大卡 多吃')).toEqual({ kind: 'delta' })
-    expect(classifyCalorieInput('少吃了300卡')).toEqual({ kind: 'delta' })
-    expect(classifyCalorieInput('超過500大卡')).toEqual({ kind: 'delta' })
+    // 仍然是 delta（不是 absolute）→ webhook 不會直接寫；amount 只拿來幫他算好總數、給一鍵確認
+    expect(classifyCalorieInput('大概多1.200大卡')).toEqual({ kind: 'delta', amount: 1200 })
+    expect(classifyCalorieInput('200大卡 多吃')).toEqual({ kind: 'delta', amount: 200 })
+    expect(classifyCalorieInput('少吃了300卡')).toEqual({ kind: 'delta', amount: -300 })
+    expect(classifyCalorieInput('超過500大卡')).toEqual({ kind: 'delta', amount: 500 })
+  })
+
+  it('沒寫單位的「多吃N／少吃N」也算差值；「多吃蛋白」不算', () => {
+    expect(classifyCalorieInput('多吃200')).toEqual({ kind: 'delta', amount: 200 })
+    expect(classifyCalorieInput('少吃300')).toEqual({ kind: 'delta', amount: -300 })
+    expect(classifyCalorieInput('多吃蛋白')).toBeNull()
+  })
+
+  it('解不出數字的差值仍是 delta（不帶 amount）→ 退回「請打總數」', () => {
+    expect(classifyCalorieInput('多吃了一點大卡')).toEqual({ kind: 'delta' })
   })
 
   it('差值判斷要排在絕對值前面 —— 順序反了「多1.200大卡」會被寫成當日 1200', () => {
