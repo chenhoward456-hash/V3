@@ -13,6 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { alreadyAlerted } from '@/lib/alert-throttle'
 import type { BodyComposition, NutritionLog, TrainingLog, DailyWellness } from '@/types'
 import { createServiceSupabase } from '@/lib/supabase'
 import { getTaiwanDate, getTaiwanHour, taiwanDateAgo } from '@/lib/date-utils'
@@ -415,6 +416,20 @@ export async function GET(request: NextRequest) {
             .maybeSingle()
           if (blockedDupe) continue
 
+          // 同一個「卡住」狀態 7 天內只推一次（紀錄照寫）。2026-09-27 Howard：「助手發很多東西」——
+          // 查到 9/13–9/26「陳胤豪 卡住了」幾乎每天推一次，內容都一樣。比對時拿掉數字（score 31→21 不算新原因）。
+          const gateReason = `軌跡建議調整但被安全層 gate：${blockReasons.join('｜')}`
+          const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString()
+          const { data: recentBlocks } = await supabase
+            .from('macro_adjustment_log')
+            .select('reason')
+            .eq('client_id', c.id)
+            .eq('trigger_source', 'trajectory')
+            .like('reason', '軌跡建議調整但被安全層 gate%')
+            .gte('applied_at', sevenDaysAgo)
+            .limit(20)
+          const skipStuckPush = alreadyAlerted((recentBlocks ?? []).map((b: { reason: string | null }) => b.reason), gateReason)
+
           await supabase.from('macro_adjustment_log').insert({
             client_id: c.id,
             applied_by: 'system',
@@ -426,7 +441,7 @@ export async function GET(request: NextRequest) {
               carbs_rest_day: c.carbs_rest_day ? Number(c.carbs_rest_day) : null,
             },
             new_macros: { _blocked: true, would_have_been: trajResult.newMacros },
-            reason: `軌跡建議調整但被安全層 gate：${blockReasons.join('｜')}`,
+            reason: gateReason,
             trajectory_data: { ...trajResult.trajectoryData, gates },
             hit_boundary: false,
             boundary_detail: null,
@@ -435,7 +450,7 @@ export async function GET(request: NextRequest) {
           // 教練 LINE alert（注意：學員不收 push，避免恐慌；只有教練收）
           // 教練 line_user_id 從 ADMIN_LINE_USER_ID 環境變數抓
           const coachLineId = process.env.ADMIN_LINE_USER_ID
-          if (coachLineId) {
+          if (coachLineId && !skipStuckPush) {
             const labFlags = engineResult.cuttingReadinessGate?.labFlags?.join('、') || ''
             // 主訊息：人話為主，技術細節摺到下方
             const kcalAbs = Math.abs(trajResult.kcalAdjustment || 0)
