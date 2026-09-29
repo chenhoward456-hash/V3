@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
       today: lens.today,
       groups,
       hypotheses,
+      experiments: lens.experiments.map(e => ({ ...e, title: safe(e.title) ?? '', action: safe(e.action), note: null })),
       fitness: lens.fitness.filter(f => f.latest),
       decathlon: lens.decathlon.map(g => ({ ...g, event: degradeToSafe(g.event, '（跟教練聊過的目標）').text })),
       strength: lens.strength,

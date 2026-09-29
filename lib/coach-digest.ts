@@ -14,6 +14,7 @@
  */
 
 import { loadHypothesisUpdates, coachLine, type HypothesisUpdate } from '@/lib/hypothesis-updates'
+import { loadExperimentUpdates, coachExperimentLine, type ExperimentUpdate } from '@/lib/body-experiments'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { daysUntilDateTW, DAY_MS } from './date-utils'
 import { COACH_LINE_USER_ID } from './line-links'
@@ -64,6 +65,8 @@ export type CoachDigestInput = {
   adminUrl: string
   /** 血檢預測對答案（lib/hypothesis-updates）：新判決＋過了重測日 */
   hypotheses?: { graded: HypothesisUpdate[]; overdue: HypothesisUpdate[] }
+  /** 身體實驗結束、有判決（lib/body-experiments） */
+  experiments?: ExperimentUpdate[]
 }
 
 export type CoachDigest = {
@@ -72,13 +75,15 @@ export type CoachDigest = {
   offline: { name: string; days: number }[]
   /** cron 用：推學員＋標記已通知 */
   hypothesisUpdates?: { graded: HypothesisUpdate[]; overdue: HypothesisUpdate[] }
+  /** cron 用：推學員＋標記已通知 */
+  experimentUpdates?: ExperimentUpdate[]
 }
 
 export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   const {
     today, clients, yesterdayWeightIds, yesterdayNutritionIds,
     yesterdayTraining, yesterdayWellness, lastActiveByClient,
-    recentWeights, competitions, labsDue, proposals, adminUrl, hypotheses,
+    recentWeights, competitions, labsDue, proposals, adminUrl, hypotheses, experiments = [],
   } = input
 
   const hadWeight = new Set(yesterdayWeightIds)
@@ -142,6 +147,12 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   if (hypotheses && hypotheses.overdue.length > 0) {
     lines.push('⏰ 預測過了重測日還沒結果：')
     for (const u of hypotheses.overdue) lines.push(coachLine(u))
+    lines.push('')
+  }
+  // 0.56 身體實驗有結果 —— 同一個循環，只是用每天的數據、兩週一輪
+  if (experiments.length > 0) {
+    lines.push('🧪 身體實驗有結果：')
+    for (const u of experiments) lines.push(coachExperimentLine(u))
     lines.push('')
   }
 
@@ -222,7 +233,7 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
     urgent.forEach(u => lines.push(`  • ${u.name}：${u.days} 天`))
   }
 
-  if (lines.length === 0) return { text: null, offline, hypothesisUpdates: hypotheses }
+  if (lines.length === 0) return { text: null, offline, hypothesisUpdates: hypotheses, experimentUpdates: experiments }
 
   // 開頭先講結論（跟 /admin 首頁「今日主線」同一句話），
   // 結尾給可點連結 —— 沒有連結的通知等於還是要他自己想起來去開後台。
@@ -233,16 +244,18 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   if (offline.length > 0) leadBits.push(`${offline.length} 個人掉線`)
   if (overdueLabs > 0) leadBits.push(`${overdueLabs} 個血檢逾期`)
   if (proposals.length > 0) leadBits.push(`${proposals.length} 個提案等你`)
+  if (experiments.length > 0) leadBits.unshift(`${experiments.length} 個實驗有結果`)
   if (hypotheses && hypotheses.graded.length > 0) leadBits.unshift(`${hypotheses.graded.length} 個預測對答案了`)
   const lead =
     leadBits.length === 0 ? '沒人掉線，其餘看下面'
-    : overdueLabs === 0 && proposals.length === 0 && !(hypotheses && hypotheses.graded.length > 0) ? `${offline.length} 個人需要你出手`
+    : overdueLabs === 0 && proposals.length === 0 && experiments.length === 0 && !(hypotheses && hypotheses.graded.length > 0) ? `${offline.length} 個人需要你出手`
     : `${leadBits.join('、')}，要你出手`
   const body = lines.join('\n').replace(/\n+$/, '')
   return {
     text: `☀️ 教練晨報 ${today}\n${lead}\n\n${body}\n\n👉 打開後台：${adminUrl}/admin`,
     offline,
     hypothesisUpdates: hypotheses,
+    experimentUpdates: experiments,
   }
 }
 
@@ -363,10 +376,12 @@ export async function loadCoachDigest(
   for (const p of actionable) (grouped[p.client_id] ||= []).push(p)
 
   const hypotheses = await loadHypothesisUpdates(supabase, today).catch(() => ({ graded: [], overdue: [] }))
+  const experiments = await loadExperimentUpdates(supabase, today).catch(() => [])
 
   return buildCoachDigest({
     today,
     hypotheses,
+    experiments,
     labsDue: findLabsDue(labDueInput, today),
     proposals: Object.entries(grouped).map(([clientId, items]) => ({
       clientId, name: proposalNames[clientId] ?? '?', items,
