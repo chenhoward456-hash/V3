@@ -31,6 +31,7 @@ import { createLogger } from '@/lib/logger'
 import { getTaipeiDayOfWeek } from '@/lib/periodization'
 import { COACH_LINE_USER_ID, loadCoachDigest } from '@/lib/coach-digest'
 import { studentText } from '@/lib/hypothesis-updates'
+import { buildLabPrepMessage, hypothesesForCheckup } from '@/lib/lab-prep'
 import { listActionableProposals, sweepExpiredProposals } from '@/lib/proposal-actions'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import {
@@ -801,6 +802,51 @@ export async function GET(request: NextRequest) {
   // 判斷早上或晚上
   const isMorning = isMorningRun
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
+
+  // ── 抽血前準備（前 3 天／前 1 天／當天早上）──
+  // 抽血前練腿、沒空腹、下午抽、換一家 → 數字髒掉，RCV 與預測對答案全部白算。詳見 lib/lab-prep.ts。
+  if (isMorning) {
+    try {
+      const { data: prepClients } = await supabase
+        .from('clients')
+        .select('id, name, unique_code, line_user_id, next_checkup_date')
+        .eq('is_active', true)
+        .gte('next_checkup_date', today)
+        .lte('next_checkup_date', new Date(new Date(`${today}T00:00:00Z`).getTime() + 3 * DAY_MS).toISOString().slice(0, 10))
+
+      for (const c of (prepClients ?? []) as Array<{ id: string; name: string; unique_code: string; line_user_id: string | null; next_checkup_date: string }>) {
+        try {
+          const [{ data: lastLab }, { data: hyps }] = await Promise.all([
+            supabase.from('lab_results').select('date').eq('client_id', c.id).lte('date', today).order('date', { ascending: false }).limit(1).maybeSingle(),
+            supabase.from('lab_hypotheses').select('marker, baseline_date, baseline_value, expected_direction, expected_value, retest_by, notified_status').eq('client_id', c.id),
+          ])
+          const msg = buildLabPrepMessage({
+            name: c.name,
+            checkupDate: c.next_checkup_date,
+            today,
+            lastLabDate: (lastLab as { date: string } | null)?.date ?? null,
+            hypotheses: hypothesesForCheckup(hyps ?? [], c.next_checkup_date),
+          })
+          if (!msg) continue
+          const r = await sendRoutineReminder(c.id, c.line_user_id ?? '', {
+            title: msg.title,
+            body: msg.body,
+            lineText: msg.lineText,
+            url: `${siteUrl}/c/${c.unique_code}`,
+          })
+          if (r.success) {
+            sent++
+            if (r.method === 'web_push') webPushUsed++
+            else if (r.method === 'line_push') linePushUsed++
+          }
+        } catch (err) {
+          errors.push(`lab prep ${c.name}: ${err instanceof Error ? err.message : String(err)}`)
+        }
+      }
+    } catch (err) {
+      errors.push(`lab prep: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
 
   // ── Peak Week 每日提醒（備賽最後 7 天，含比賽當天）──
   // Helms Ch.7：「你在賽前一晚看起來如何，決定了 80% 的碳水判斷。」
