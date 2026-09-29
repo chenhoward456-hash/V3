@@ -273,9 +273,33 @@ export async function tryCoachCommand(
   }
 
   const targetId = Object.keys(nameOf).find(id => nameOf[id] === command.name)
-  const mine = actionable.filter(p => p.client_id === targetId)
+  const mineAll = actionable.filter(p => p.client_id === targetId)
 
-  if (mine.length === 0) {
+  // 身體說明書條目彼此獨立（不同 key、不會疊加），套用＝全部一起寫；退掉同理。
+  // 熱量類提案走下面原本那套「多筆不准一個字決定」的保護。
+  const bpItems = mineAll.filter(p => p.proposal_type === 'body_profile_entry')
+  const mine = mineAll.filter(p => p.proposal_type !== 'body_profile_entry')
+  const bpDone: string[] = []
+  if (bpItems.length > 0 && (command.kind === 'approve' || command.kind === 'reject')) {
+    for (const p of bpItems) {
+      const r = await actOnProposal(supabase, {
+        proposalId: p.id, action: command.kind,
+        reviewNote: command.kind === 'approve' ? 'LINE 晨報一鍵套用' : 'LINE 晨報退掉', reviewedBy: 'coach',
+      })
+      if (r.ok) bpDone.push(describeProposal(p))
+    }
+    if (mine.length === 0) {
+      await replyMessage(replyToken, [{
+        type: 'text',
+        text: command.kind === 'approve'
+          ? `✅ ${command.name} 寫進說明書了：\n${bpDone.map(x => `・${x.replace(/^身體說明書：/, '')}`).join('\n')}`
+          : `好，${command.name} 的 ${bpDone.length} 條說明書提案退掉了（60 天內不會再提）。`,
+      }])
+      return true
+    }
+  }
+
+  if (mine.length === 0 && mineAll.length === 0) {
     await replyMessage(replyToken, [{ type: 'text', text: `${command.name} 沒有等你處理的提案。` }])
     return true
   }
