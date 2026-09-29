@@ -32,6 +32,7 @@ import { getTaipeiDayOfWeek } from '@/lib/periodization'
 import { COACH_LINE_USER_ID, loadCoachDigest } from '@/lib/coach-digest'
 import { studentText } from '@/lib/hypothesis-updates'
 import { buildLabPrepMessage, hypothesesForCheckup } from '@/lib/lab-prep'
+import { studentExperimentText } from '@/lib/body-experiments'
 import { listActionableProposals, sweepExpiredProposals } from '@/lib/proposal-actions'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import {
@@ -997,6 +998,28 @@ export async function GET(request: NextRequest) {
           for (const u of ups) {
             const { error: markErr } = await supabase.from('lab_hypotheses').update({ notified_status: u.status }).eq('id', u.id)
             if (markErr) errors.push(`hypothesis mark ${u.id}: ${markErr.message}`)
+          }
+        }
+
+        // 身體實驗有結果 → 推學員一則（同一人多個合一則），記 notified_status 去重
+        const expUps = digest.experimentUpdates ?? []
+        const expByClient = new Map<string, typeof expUps>()
+        for (const u of expUps) expByClient.set(u.clientId, [...(expByClient.get(u.clientId) ?? []), u])
+        for (const [cid, ups] of expByClient) {
+          try {
+            const first = ups[0]
+            await sendRoutineReminder(cid, first.lineUserId ?? '', {
+              title: '🧪 你的身體實驗有結果了',
+              body: ups.map(u => u.exp.title).join('、') + '：打開「健康」看結果',
+              lineText: studentExperimentText(first.name, ups),
+              url: `${siteUrl}/c/${first.uniqueCode}`,
+            })
+          } catch (err) {
+            errors.push(`experiment notify ${cid}: ${err instanceof Error ? err.message : String(err)}`)
+          }
+          for (const u of ups) {
+            const { error: markErr } = await supabase.from('body_experiments').update({ notified_status: u.grade.status }).eq('id', u.id)
+            if (markErr) errors.push(`experiment mark ${u.id}: ${markErr.message}`)
           }
         }
       } catch (err) {

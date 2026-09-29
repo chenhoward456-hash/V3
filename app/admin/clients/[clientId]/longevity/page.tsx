@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import type { HorsemanView, MarkerStory, StrengthPoint, LabHypothesis, HypothesisGrade, FitnessView, FitnessKind, DecathlonGoal, Capacity } from '@/lib/longevity-lens'
 import { FITNESS_META, CAPACITY_META } from '@/lib/longevity-lens'
+import { EXPERIMENT_METRICS, STATUS_COACH, describeChange, type BodyExperiment, type ExperimentGrade, type ExperimentMetric } from '@/lib/body-experiments'
 
 interface LongevityData {
   client: { name: string; gender: string | null; nextCheckupDate: string | null }
@@ -16,6 +17,7 @@ interface LongevityData {
   hypotheses: (LabHypothesis & { grade: HypothesisGrade })[]
   fitness: FitnessView[]
   decathlon: (DecathlonGoal & { current: string | null })[]
+  experiments: (BodyExperiment & { grade: ExperimentGrade })[]
 }
 
 type GradedHypothesis = LongevityData['hypotheses'][number]
@@ -281,6 +283,109 @@ function DecathlonCard({ goals, clientId, onChanged }: { goals: LongevityData['d
   )
 }
 
+/** 常見的實驗 —— 點一下就填好，教練只要改天數或目標。這些是「待驗證的猜測」，不是保證有效。 */
+const EXPERIMENT_PRESETS: { title: string; action: string; metric: ExperimentMetric; dir: 'up' | 'down'; delta: string }[] = [
+  { title: '睡滿 7.5 小時', action: '每晚躺床 8 小時，固定起床時間', metric: 'energy_level', dir: 'up', delta: '0.5' },
+  { title: '下午 2 點後不喝咖啡', action: '咖啡因只在早上', metric: 'sleep_quality', dir: 'up', delta: '0.5' },
+  { title: '睡前 1 小時不滑手機', action: '手機放房間外', metric: 'sleep_quality', dir: 'up', delta: '0.5' },
+  { title: '每週多排一天休息', action: '連練不超過 3 天', metric: 'training_drive', dir: 'up', delta: '0.5' },
+  { title: '每天走 8000 步', action: '訓練以外的日常走路', metric: 'resting_hr', dir: 'down', delta: '2' },
+  { title: '碳水集中在練前練後', action: '總量不變，只移時間', metric: 'energy_level', dir: 'up', delta: '0.5' },
+]
+
+const EXP_STATUS_CLS: Record<ExperimentGrade['status'], string> = {
+  running: 'text-[#1E4A73]', insufficient: 'text-slate-500', confirmed: 'text-emerald-700',
+  partial: 'text-amber-700', no_change: 'text-slate-700', refuted: 'text-red-700',
+}
+
+function addDaysStr(d: string, n: number) {
+  const t = new Date(`${d}T00:00:00Z`); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10)
+}
+
+function ExperimentsCard({ exps, clientId, today, onChanged }: { exps: LongevityData['experiments']; clientId: string; today: string; onChanged: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [title, setTitle] = useState('')
+  const [action, setAction] = useState('')
+  const [metric, setMetric] = useState<ExperimentMetric>('energy_level')
+  const [dir, setDir] = useState<'up' | 'down' | 'stable'>('up')
+  const [delta, setDelta] = useState('')
+  const [start, setStart] = useState(today)
+  const [days, setDays] = useState('14')
+  const [err, setErr] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const pick = (p: typeof EXPERIMENT_PRESETS[number]) => { setTitle(p.title); setAction(p.action); setMetric(p.metric); setDir(p.dir); setDelta(p.delta); setOpen(true) }
+  const save = async () => {
+    setErr(null); setSaving(true)
+    const n = Math.max(7, Math.min(60, Number(days) || 14))
+    const r = await fetch('/api/admin/longevity/experiments', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId, title, action, metric, expectedDirection: dir, expectedDelta: delta, startDate: start, endDate: addDaysStr(start, n - 1) }),
+    })
+    const j = await r.json().catch(() => ({}))
+    setSaving(false)
+    if (!r.ok || !j.success) { setErr(j.error || `HTTP ${r.status}`); return }
+    setOpen(false); setTitle(''); setAction(''); setDelta(''); onChanged()
+  }
+  const del = async (id: string) => { await fetch(`/api/admin/longevity/experiments?id=${id}`, { method: 'DELETE' }); onChanged() }
+
+  return (
+    <section className="bg-white border border-slate-200 rounded-2xl p-5">
+      <h2 className="text-lg font-bold text-slate-900">身體實驗</h2>
+      <p className="text-xs text-slate-500 mt-1">一個行動＋一個每天在記的指標＋一段時間。拿實驗前同樣天數當對照，時間到自動判決、推給學員。</p>
+      {exps.length === 0 && <p className="text-sm text-slate-600 mt-3">還沒有實驗。</p>}
+      {exps.map(e => (
+        <div key={e.id} className="py-3 border-t border-slate-100 first:border-t-0">
+          <div className="flex justify-between gap-2">
+            <span className="font-medium text-slate-900">{e.title}</span>
+            <button onClick={() => del(e.id)} className="text-xs text-slate-400 hover:text-slate-600 shrink-0">刪除</button>
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
+            {e.start_date} → {e.end_date}｜{EXPERIMENT_METRICS[e.metric].label} 預期{e.expected_direction === 'up' ? '上升' : e.expected_direction === 'down' ? '下降' : '持平'}{e.expected_delta != null ? ` ${e.expected_delta}` : ''}
+          </p>
+          <p className="text-sm text-slate-700 mt-1 tabular-nums">{describeChange(e, e.grade)}</p>
+          <p className={`text-sm mt-0.5 ${EXP_STATUS_CLS[e.grade.status]}`}>
+            {e.grade.status === 'running' ? `進行中：第 ${e.grade.day}/${e.grade.totalDays} 天，已記 ${e.grade.during.n} 筆（對照期 ${e.grade.baseline.n} 筆）` : STATUS_COACH[e.grade.status]}
+          </p>
+        </div>
+      ))}
+      {!open && (
+        <div className="mt-3">
+          <p className="text-xs text-slate-500 mb-2">常見的（點了再改）：</p>
+          <div className="flex flex-wrap gap-2">
+            {EXPERIMENT_PRESETS.map(p => (
+              <button key={p.title} onClick={() => pick(p)} className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-700 hover:border-[#1E4A73]">{p.title}</button>
+            ))}
+            <button onClick={() => setOpen(true)} className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-[#1E4A73]">＋自訂</button>
+          </div>
+        </div>
+      )}
+      {open && (
+        <div className="mt-3 space-y-2 text-sm">
+          <input className="w-full border border-slate-200 rounded-lg px-3 py-2" placeholder="實驗名稱（例：睡滿 7.5 小時）" value={title} onChange={e => setTitle(e.target.value)} />
+          <input className="w-full border border-slate-200 rounded-lg px-3 py-2" placeholder="具體怎麼做" value={action} onChange={e => setAction(e.target.value)} />
+          <div className="grid grid-cols-2 gap-2">
+            <select className="border border-slate-200 rounded-lg px-3 py-2" value={metric} onChange={e => setMetric(e.target.value as ExperimentMetric)}>
+              {(Object.keys(EXPERIMENT_METRICS) as ExperimentMetric[]).map(k => <option key={k} value={k}>{EXPERIMENT_METRICS[k].label}</option>)}
+            </select>
+            <select className="border border-slate-200 rounded-lg px-3 py-2" value={dir} onChange={e => setDir(e.target.value as 'up' | 'down' | 'stable')}>
+              <option value="up">預期上升</option><option value="down">預期下降</option><option value="stable">預期不變</option>
+            </select>
+            <input className="border border-slate-200 rounded-lg px-3 py-2" placeholder={`目標幅度（${EXPERIMENT_METRICS[metric].unit}，可空）`} inputMode="decimal" value={delta} onChange={e => setDelta(e.target.value)} />
+            <input className="border border-slate-200 rounded-lg px-3 py-2" placeholder="天數" inputMode="numeric" value={days} onChange={e => setDays(e.target.value)} />
+            <label className="col-span-2 text-xs text-slate-500">開始日 <input type="date" className="ml-2 border border-slate-200 rounded-lg px-2 py-1" value={start} onChange={e => setStart(e.target.value)} /></label>
+          </div>
+          {err && <p className="text-red-700 text-xs">{err}</p>}
+          <div className="flex gap-2">
+            <button onClick={() => setOpen(false)} className="flex-1 border border-slate-200 rounded-lg py-2 text-slate-600">取消</button>
+            <button onClick={save} disabled={saving || !title} className="flex-1 bg-[#1E4A73] hover:bg-[#16385A] disabled:opacity-50 text-white rounded-lg py-2 font-medium">開始實驗</button>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 function StrengthCard({ points, fitness, clientId, today, onChanged }: { points: StrengthPoint[]; fitness: FitnessView[]; clientId: string; today: string; onChanged: () => void }) {
   const byEx = new Map<string, StrengthPoint[]>()
   for (const p of points) byEx.set(p.exercise, [...(byEx.get(p.exercise) ?? []), p])
@@ -336,6 +441,8 @@ export default function LongevityPage() {
         </div>
 
         <DecathlonCard goals={data.decathlon} clientId={data.clientId} onChanged={load} />
+
+        <ExperimentsCard exps={data.experiments ?? []} clientId={data.clientId} today={data.today} onChanged={load} />
 
         {data.horsemen.map(h => (
           <section key={h.key} className="bg-white border border-slate-200 rounded-2xl p-5">

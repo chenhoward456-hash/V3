@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { HorsemanView, MarkerStory, LabHypothesis, HypothesisGrade, FitnessView, DecathlonGoal } from '@/lib/longevity-lens'
 import { FITNESS_META, CAPACITY_META } from '@/lib/longevity-lens'
+import { STATUS_STUDENT, describeChange, type BodyExperiment, type ExperimentGrade } from '@/lib/body-experiments'
 
 /**
  * 學員版長壽透鏡（「健康」分頁）：V3 的初衷——同一個人的血檢看得到進退。
@@ -16,6 +17,12 @@ interface Data {
   hypotheses: (LabHypothesis & { grade: HypothesisGrade })[]
   fitness: FitnessView[]
   decathlon?: (DecathlonGoal & { current: string | null })[]
+  experiments?: (BodyExperiment & { grade: ExperimentGrade })[]
+}
+
+const EXP_CLS: Record<ExperimentGrade['status'], string> = {
+  running: 'text-[#1E4A73]', insufficient: 'text-slate-500', confirmed: 'text-emerald-700',
+  partial: 'text-amber-700', no_change: 'text-slate-700', refuted: 'text-amber-700',
 }
 
 const fmt = (n: number) => (Math.abs(n) >= 100 ? Math.round(n).toLocaleString() : String(Math.round(n * 100) / 100))
@@ -111,7 +118,7 @@ export default function LongevityCard({ code }: { code: string }) {
 
   if (failed) return null
   if (!data) return <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 text-sm text-slate-400">血檢進退載入中…</div>
-  if (data.groups.length === 0 && data.fitness.length === 0 && !(data.decathlon?.length)) return null
+  if (data.groups.length === 0 && data.fitness.length === 0 && !(data.decathlon?.length) && !(data.experiments?.length)) return null
 
   const hypsFor = (name: string) => data.hypotheses.filter(h => h.marker === name)
 
@@ -128,6 +135,28 @@ export default function LongevityCard({ code }: { code: string }) {
             <div key={g.id} className="mt-2">
               <p className="text-sm text-slate-900">・{g.event}</p>
               <p className="text-xs text-slate-500 ml-3">靠{CAPACITY_META[g.capacity].label}｜現在：{g.current ?? '還沒有量化數字，下次評估一起量'}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 身體實驗：每天的數據兩週一輪對答案，不用等半年抽血 */}
+      {(data.experiments?.length ?? 0) > 0 && (
+        <div className="mt-4">
+          <h3 className="font-semibold text-slate-900">你的身體實驗</h3>
+          <p className="text-xs text-slate-500">拿實驗前同樣天數的你當對照。每天照常記錄，時間到系統自動對答案。</p>
+          {data.experiments!.map(e => (
+            <div key={e.id} className="py-3 border-t border-slate-100 first:border-t-0">
+              <p className="text-sm font-medium text-slate-900">{e.title}</p>
+              {e.action && <p className="text-xs text-slate-500 mt-0.5">怎麼做：{e.action}</p>}
+              {e.grade.status === 'running' ? (
+                <p className="text-sm text-[#1E4A73] mt-1 tabular-nums">第 {e.grade.day}/{e.grade.totalDays} 天｜已記 {e.grade.during.n} 天{e.grade.during.n < e.grade.day - 1 ? '（每天記才對得出答案）' : ''}</p>
+              ) : (
+                <>
+                  <p className="text-sm text-slate-700 mt-1 tabular-nums">{describeChange(e, e.grade)}</p>
+                  <p className={`text-sm mt-0.5 ${EXP_CLS[e.grade.status]}`}>{STATUS_STUDENT[e.grade.status]}</p>
+                </>
+              )}
             </div>
           ))}
         </div>
