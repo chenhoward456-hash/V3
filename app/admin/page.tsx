@@ -656,7 +656,12 @@ export default function AdminDashboard() {
       const cal = p.proposed_changes?.calories_target
       const oldCal = p.current_state?.calories_target
       const delta = cal != null && oldCal != null ? cal - oldCal : null
-      const txt = cal != null
+      const bpEntry = p.proposal_type === 'body_profile_entry'
+        ? (p.proposed_changes as unknown as { entry?: { label?: string; value?: string } } | null)?.entry
+        : null
+      const txt = bpEntry
+        ? `身體說明書新條目：${bpEntry.label ?? ''}＝${bpEntry.value ?? ''}`
+        : cal != null
         ? `引擎建議熱量 ${oldCal ?? '?'} → ${cal}${delta != null ? `（${delta > 0 ? '+' : ''}${delta}）` : ''}`
         : '引擎有調整建議'
       items.push({

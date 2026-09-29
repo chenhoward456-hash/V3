@@ -32,6 +32,7 @@
  * 引擎只看得到體重曲線。所以是**壞輸入算出來的提案**，該作廢重算，不是照單全收。
  */
 
+import { mergeEntry, type ProfileEntry } from './body-profile-miner'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type ProposalAction = 'approve' | 'reject' | 'discuss'
@@ -112,6 +113,10 @@ export async function listActionableProposals(
 
 /** 一行人話：這筆提案要改什麼。給 LINE 用，沒有 markdown。 */
 export function describeProposal(p: ProposalRow): string {
+  if (p.proposal_type === 'body_profile_entry') {
+    const e = ((p.proposed_changes ?? {}) as { entry?: { label?: string; value?: string } }).entry
+    return `身體說明書：${e?.label ?? '?'}＝${e?.value ?? '?'}`
+  }
   if (p.proposal_type === 'personal_note') {
     const ch = (p.proposed_changes ?? {}) as { note?: string }
     return `加一筆筆記：${String(ch.note ?? '').slice(0, 40)}`
@@ -178,6 +183,21 @@ export async function actOnProposal(
       .update({ status: newStatus, reviewed_by: reviewedBy, reviewed_at: now, review_note: reviewNote })
       .eq('id', proposalId)
     return { ok: true, status: newStatus }
+  }
+
+  // body_profile_entry：寫進 clients.body_profile（同 key 取代），不動 macros
+  if (proposal.proposal_type === 'body_profile_entry') {
+    const entry = ((proposal.proposed_changes ?? {}) as { entry?: ProfileEntry }).entry
+    if (!entry?.key) return { ok: false, reason: '提案內容缺條目', code: 'write_failed' }
+    const { data: cur } = await supabase.from('clients').select('body_profile').eq('id', proposal.client_id).maybeSingle<{ body_profile: { entries?: ProfileEntry[]; gaps?: unknown[] } | null }>()
+    const { error: updErr } = await supabase.from('clients')
+      .update({ body_profile: mergeEntry(cur?.body_profile ?? null, entry, now.slice(0, 10)) })
+      .eq('id', proposal.client_id)
+    if (updErr) return { ok: false, reason: 'body_profile 寫入失敗: ' + updErr.message, code: 'write_failed' }
+    await supabase.from('pending_proposals')
+      .update({ status: 'approved', reviewed_by: reviewedBy, reviewed_at: now, review_note: reviewNote })
+      .eq('id', proposalId)
+    return { ok: true, status: 'approved' }
   }
 
   // personal_note：寫進 personal_notes，不動 macros

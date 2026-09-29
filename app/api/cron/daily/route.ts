@@ -33,6 +33,7 @@ import { COACH_LINE_USER_ID, loadCoachDigest } from '@/lib/coach-digest'
 import { studentText } from '@/lib/hypothesis-updates'
 import { buildLabPrepMessage, hypothesesForCheckup } from '@/lib/lab-prep'
 import { studentExperimentText } from '@/lib/body-experiments'
+import { proposeBodyProfileEntries } from '@/lib/body-profile-miner'
 import { listActionableProposals, sweepExpiredProposals } from '@/lib/proposal-actions'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import {
@@ -846,6 +847,17 @@ export async function GET(request: NextRequest) {
       }
     } catch (err) {
       errors.push(`lab prep: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  // ── 身體說明書自動挖條目（每週一早上）→ 丟提案，同一封晨報就會列出來，回「套用 X」才寫入 ──
+  if (isMorning && getTaipeiDayOfWeek() === 1) {
+    try {
+      const r = await proposeBodyProfileEntries(supabase, today)
+      if (r.proposed > 0) logger.info(`Body profile proposals: ${r.proposed}`)
+      errors.push(...r.errors.map(e => `body profile: ${e}`))
+    } catch (err) {
+      errors.push(`body profile: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
