@@ -78,6 +78,7 @@
 ### 核心
 - **decathlon_goals**（2026-09-24）— 百歲十項全能：client_id(CASCADE)、event(2–120 字)、capacity(CHECK strength/cardio/mobility/balance)。RLS 開、無 policy。
 - **fitness_markers**（2026-09-24）— 身體能力指標：client_id(CASCADE)、kind(CHECK vo2max/grip)、date、value(>0)、method(NOT NULL，趨勢只比同量法)、note。RLS 開、無 policy。
+- **body_experiments**（2026-09-30）— 身體實驗：client_id(CASCADE)、title、action、metric(CHECK energy_level/sleep_quality/mood/training_drive/stress_level/hunger/cognitive_clarity/hrv/resting_hr/wearable_sleep_score/device_recovery_score/weight)、start_date/end_date(end>start)、baseline_days(7–60，預設 14)、expected_direction(up/down/stable)、expected_delta(>0 或 NULL)、notified_status（判決不存，`lib/body-experiments.ts` 每次重算）。RLS 開、無 policy。
 - **lab_hypotheses**（2026-09-23）— 血檢「預測→驗收」：client_id(CASCADE)、marker(=lab_results.test_name)、baseline_date/value、cause、action、expected_direction(CHECK up/down/stable)、expected_value、retest_by、note、notified_status（通知去重）。**判決不存**，由 `lib/longevity-lens.ts` 的 `gradeHypothesis()` 每次重算。RLS 開、無 policy（走 service_role）。
 - **clients** — 學員主表，60+ 欄。重點欄位：`unique_code`(UNIQUE)、`line_user_id`(UNIQUE)、`status`、`client_mode`、各 `*_enabled` 開關、`*_target` 營養目標、`coach_macro_override`(jsonb)、`macro_bounds`(jsonb)、`auto_adjust_enabled`、`training_plan`(jsonb)、`onboarding_notes_rendered`(jsonb)、`lab_panel_recommended`(jsonb)、基因欄位 `gene_*`、`age`(int)、`birth_year`(int，西元出生年；填了之後 age 由每日 cron 重算自動長大，前端以民國年輸入)
 - **client_mode_history** — mode 變更紀錄（trigger 自動寫）
