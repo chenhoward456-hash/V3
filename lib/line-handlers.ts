@@ -12,6 +12,7 @@ import { createLogger } from '@/lib/logger'
 import { DAY_MS } from '@/lib/date-utils'
 import { markConverted } from '@/lib/nurture-sequence'
 import { rateLimit } from '@/lib/auth-middleware'
+import { gapAddon } from '@/lib/gap-ask'
 import {
   NL_LOG_MODEL, NL_SYSTEM_PROMPT, extractJSON, validateNL, hasAnything, confirmText, textFromContent,
   CALORIES_MIN, CALORIES_MAX,
@@ -70,6 +71,11 @@ const QR_WELLNESS = {
     qr('😩 差 (2 2 2)', '身心 2 2 2'),
     qr('🔥 超好 (5 5 5)', '身心 5 5 5'),
   ],
+}
+
+/** 「缺哪格就問哪格」的按鈕，後面補一個看狀態（lib/gap-ask.ts） */
+function gapQuickReply(items: { label: string; text: string }[]) {
+  return { items: [...items.map(i => qr(i.label, i.text)), qr('📊 今日狀態', '狀態')] }
 }
 
 // ═══════════════════════════════════════
@@ -184,7 +190,8 @@ export async function handleQuickWeight(
     msg += `\n${diff === 0 ? '➡️' : diff > 0 ? '📈' : '📉'} 比上次 ${sign}${diff.toFixed(1)} kg（${prev.date}）`
   }
 
-  await replyMessage(replyToken, [{ type: 'text', text: msg, quickReply: QR_AFTER_RECORD }])
+  const gap = await gapAddon(supabase, client, today, 'weight')
+  await replyMessage(replyToken, [{ type: 'text', text: msg + (gap?.text ?? ''), quickReply: gap ? gapQuickReply(gap.items) : QR_AFTER_RECORD }])
 }
 
 // ═══════════════════════════════════════
@@ -488,7 +495,8 @@ export async function handleQuickTraining(
     ],
   }
 
-  await replyMessage(replyToken, [{ type: 'text', text: msg, quickReply: afterTraining }])
+  const gap = await gapAddon(supabase, client, today, 'training')
+  await replyMessage(replyToken, [{ type: 'text', text: msg + (gap?.text ?? ''), quickReply: gap ? gapQuickReply(gap.items) : afterTraining }])
 }
 
 // ═══════════════════════════════════════
@@ -540,11 +548,12 @@ export async function handleQuickWellness(
     ],
   }
 
+  const gap = await gapAddon(supabase, client, today, 'wellness')
   await replyMessage(replyToken, [
     {
       type: 'text',
-      text: `✅ 已記錄身心狀態\n😴 睡眠：${sleep}/5\n⚡ 精力：${energy}/5\n😊 心情：${mood}/5`,
-      quickReply: afterWellness,
+      text: `✅ 已記錄身心狀態\n😴 睡眠：${sleep}/5\n⚡ 精力：${energy}/5\n😊 心情：${mood}/5` + (gap?.text ?? ''),
+      quickReply: gap ? gapQuickReply(gap.items) : afterWellness,
     },
   ])
 }
