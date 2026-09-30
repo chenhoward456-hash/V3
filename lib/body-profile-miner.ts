@@ -36,7 +36,8 @@ type TrainRow = { date: string; training_type: string | null }
 
 const DAY = 86400000
 /** t 值轉人話：兩組零波動時 t 是 Infinity，不能直接印 */
-const tText = (t: number) => (Number.isFinite(t) ? `t=${t.toFixed(1)}` : '兩組分數完全沒重疊')
+// 學員在說明書上看得到 evidence —— 不印統計值（t=16.0 他看不懂），講人話
+const tText = (t: number) => (Number.isFinite(t) ? '差距遠大過你平常的上下起伏' : '兩組分數完全沒重疊')
 const addDays = (d: string, n: number) => new Date(new Date(`${d}T00:00:00Z`).getTime() + n * DAY).toISOString().slice(0, 10)
 const dayIndex = (d: string) => Math.round(new Date(`${d}T00:00:00Z`).getTime() / DAY)
 
@@ -115,7 +116,7 @@ export function mineSleepEnergy(well: WellRow[], today: string): ProfileEntry | 
     label: '睡眠對你精力的影響',
     value: `睡不好那天精力少 ${diff.toFixed(1)} 分`,
     detail: `睡得好（≥4 分）的日子精力平均 ${G.mean.toFixed(1)}/5，${poorLabel}的日子 ${P.mean.toFixed(1)}/5。精力低的那天先回頭看睡眠，不一定是吃不夠。`,
-    evidence: `近 ${PATTERN_WINDOW} 天同一天的睡眠與精力分數比較，差距大過日常波動（${tText(t)}）`,
+    evidence: `近 ${PATTERN_WINDOW} 天同一天的睡眠與精力分數比較，${tText(t)}`,
     sample: `${good.length} 天睡得好 / ${poor.length} 天睡不好`,
     confidence: good.length >= 10 && poor.length >= 10 ? 'medium' : 'low',
     caveat: '都是主觀分數，而且同一天填 —— 心情差可能兩個都填低。看的是「一起動」，不是「誰造成誰」。',
@@ -143,7 +144,7 @@ export function mineRestDayEffect(train: TrainRow[], well: WellRow[], today: str
     label: '休息日對你的效果',
     value: `休一天，隔天想練的程度多 ${diff.toFixed(1)} 分`,
     detail: `前一天有練：想練程度平均 ${T.mean.toFixed(1)}/5；前一天休息：${R.mean.toFixed(1)}/5。連練幾天開始沒勁時，排一天休息比硬撐划算。`,
-    evidence: `近 ${PATTERN_WINDOW} 天，隔天的「想練程度」依前一天有沒有練分兩組比較，差距大過日常波動（${tText(t)}）`,
+    evidence: `近 ${PATTERN_WINDOW} 天，隔天的「想練程度」依前一天有沒有練分兩組比較，${tText(t)}`,
     sample: `${afterTrain.length} 天練完隔天 / ${afterRest.length} 天休息隔天`,
     confidence: afterRest.length >= 10 && afterTrain.length >= 10 ? 'medium' : 'low',
     caveat: '「沒記訓練」會被當成休息；這條只在訓練有認真記（近 90 天 ≥24 次）的人身上才算。',
