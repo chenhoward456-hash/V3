@@ -105,6 +105,10 @@ export const PATTERN_WINDOW = 90
 export function mineSleepEnergy(well: WellRow[], today: string): ProfileEntry | null {
   const from = addDays(today, -PATTERN_WINDOW)
   const pairs = well.filter(w => w.date >= from && w.sleep_quality != null && w.energy_level != null)
+  // LINE「身心 4 4 4」一鍵按鈕把睡眠/精力/心情寫成同一個分數 → 兩者必然同步，比出來的差距是假的。
+  // 2026-09-30：陳胤豪 63/63 天、林宥任 29/29 天完全相同，差點把「睡不好精力少 1.1 分」寫進說明書。
+  const same = pairs.filter(p => p.sleep_quality === p.energy_level).length
+  if (pairs.length > 0 && same / pairs.length >= 0.8) return null
   const good = pairs.filter(p => p.sleep_quality! >= 4).map(p => Number(p.energy_level))
   let poor = pairs.filter(p => p.sleep_quality! <= 2).map(p => Number(p.energy_level))
   let poorLabel = '睡眠 ≤2 分'

@@ -25,14 +25,19 @@ describe('mineMeasuredTdee', () => {
 })
 
 describe('mineSleepEnergy', () => {
+  it('LINE 一鍵按鈕型（睡眠＝精力）→ 不提，比出來是假的', () => {
+    const well = Array.from({ length: 30 }, (_, i) => { const v = i % 3 ? 4 : 2; return { date: d(i), sleep_quality: v, energy_level: v } })
+    expect(mineSleepEnergy(well, today)).toBeNull()
+  })
   it('睡不好精力明顯低 → 提', () => {
     const well = [
-      ...Array.from({ length: 8 }, (_, i) => ({ date: d(i), sleep_quality: 5, energy_level: i % 2 ? 4 : 5 })),
-      ...Array.from({ length: 6 }, (_, i) => ({ date: d(i + 20), sleep_quality: 2, energy_level: i % 2 ? 2 : 3 })),
+      ...Array.from({ length: 8 }, (_, i) => ({ date: d(i), sleep_quality: 5, energy_level: i % 2 ? 4 : 3 })),
+      ...Array.from({ length: 6 }, (_, i) => ({ date: d(i + 20), sleep_quality: 2, energy_level: i % 2 ? 1 : 2 })),
     ]
     const e = mineSleepEnergy(well, today)!
     expect(e.key).toBe('sleep_energy')
     expect(e.value).toBe('睡不好那天精力少 2.0 分')
+    // 5 天睡好的精力≠睡眠分數，確保不是被同分過濾掉
   })
   it('沒差 → 不提', () => {
     const well = Array.from({ length: 20 }, (_, i) => ({ date: d(i), sleep_quality: i % 2 ? 5 : 2, energy_level: i % 4 < 2 ? 3 : 4 }))
