@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mineMeasuredTdee, mineSleepEnergy, mineRestDayEffect, isMaterialChange, mergeEntry, slopePerDay } from '@/lib/body-profile-miner'
+import { carbSettleDate, mineMeasuredTdee, mineSleepEnergy, mineRestDayEffect, isMaterialChange, mergeEntry, slopePerDay } from '@/lib/body-profile-miner'
 
 const today = '2026-10-01'
 const d = (n: number) => new Date(Date.UTC(2026, 9, 1) - n * 86400000).toISOString().slice(0, 10)
@@ -68,5 +68,29 @@ describe('isMaterialChange / mergeEntry', () => {
     const out = mergeEntry({ entries: [{ ...base, value: 'old' }, { ...base, key: 'other' }] }, base, today)
     expect(out.entries.map(e => [e.key, e.value])).toEqual([['measured_tdee', '≈ 2650 kcal'], ['other', '≈ 2650 kcal']])
     expect(out.updated_at).toBe(today)
+  })
+})
+
+describe('碳水回補期不採信', () => {
+  it('碳水大調（156→224）的 14 天後才開始算', () => {
+    expect(carbSettleDate([{ applied_at: '2026-08-25T16:35:00Z', old_macros: { carbs_target: 156 }, new_macros: { carbs_target: 224 } }])).toBe('2026-09-08')
+    expect(carbSettleDate([{ applied_at: '2026-08-25T16:35:00Z', old_macros: { carbs_target: 200 }, new_macros: { carbs_target: 210 } }])).toBeNull()
+  })
+  it('回補期體重持平、之後每週掉 0.3 → 只用之後那段，TDEE 不被低估', () => {
+    const nut = Array.from({ length: 40 }, (_, i) => ({ date: d(i + 1), calories: 2150 }))
+    // 前 18 天（較舊）持平 82.5，之後 22 天每週 −0.3
+    const weights = Array.from({ length: 40 }, (_, i) => {
+      const age = i + 1
+      return { date: d(age), weight: age > 22 ? 82.5 : 82.5 - ((22 - age) * 0.3) / 7 }
+    })
+    const naive = mineMeasuredTdee(nut, weights, today)!
+    const settled = mineMeasuredTdee(nut, weights, today, d(22))!
+    expect(Number(settled.value.replace(/\D/g, ''))).toBeGreaterThan(Number(naive.value.replace(/\D/g, '')))
+    expect(settled.value).toBe('≈ 2480 kcal')
+  })
+  it('穩定期太短（<21 天）→ 不提', () => {
+    const nut = Array.from({ length: 40 }, (_, i) => ({ date: d(i + 1), calories: 2150 }))
+    const weights = Array.from({ length: 40 }, (_, i) => ({ date: d(i + 1), weight: 82 }))
+    expect(mineMeasuredTdee(nut, weights, today, d(10))).toBeNull()
   })
 })
