@@ -10,6 +10,7 @@ import {
 } from '@/lib/auth-middleware'
 import { LAB_THRESHOLDS } from '@/utils/labStatus'
 import { fireAutoDraftsForDates } from '@/lib/auto-draft'
+import { autoScheduleNextCheckup } from '@/lib/lab-consult-data'
 
 export const dynamic = 'force-dynamic'
 
@@ -160,11 +161,16 @@ export async function POST(request: NextRequest) {
       fireAutoDraftsForDates(client.id, dateCountMap)
     }
 
+    // 自動排下次抽血：學員還沒排、或排的日期已在這次之前 → 設成顧問卡的建議日（有要留意 3 個月／沒有 6 個月）。
+    // 教練排在這次之後的日期不動；失敗不影響上傳（內部 try/catch）。
+    const nextCheckupSet = await autoScheduleNextCheckup(supabase, client.id)
+
     return createSuccessResponse({
       inserted: data?.length ?? 0,
       rows: data ?? [],
       skipped: errors,
       autoDraftQueued: selfEntry ? Array.from(new Set(insertRows.map(r => r.date))) : [],
+      nextCheckupSet,
     })
   } catch (err) {
     console.error('[lab-results/bulk] exception:', err)

@@ -60,6 +60,7 @@ import MyPlanSection from '@/components/client/MyPlanSection'
 import MyGoalEditor from '@/components/client/MyGoalEditor'
 import BodyProfileCard from '@/components/client/BodyProfileCard'
 import LongevityCard from '@/components/client/LongevityCard'
+import LabConsultCard from '@/components/client/LabConsultCard'
 import LongevityTeaser from '@/components/client/LongevityTeaser'
 import { getTaiwanDate } from '@/lib/date-utils'
 import LabOrderCard from '@/components/client/LabOrderCard'
@@ -1980,6 +1981,8 @@ export default function ClientDashboard() {
             這是實測不是公式，所以擺在血檢/感受趨勢之前當這一頁的定錨。 */}
         {/* 血檢進退（長壽透鏡學員版）：V3 初衷——同一個人的血檢看得到進退，每個變化分得清真假、接得到那段期間做了什麼。
             放在身體檔案之前：這一頁最先回答「我的血檢在進步還是退步」 */}
+        {/* 這次血檢顧問卡：最近一次抽血 60 天內才出現；抽完血不等教練審，先講這次重點／要留意／下次何時驗、驗什麼 */}
+        {view === 'lab' && <SectionErrorBoundary><LabConsultCard code={c.unique_code} /></SectionErrorBoundary>}
         {view === 'lab' && <SectionErrorBoundary><LongevityCard code={c.unique_code} /></SectionErrorBoundary>}
         {/* 下次抽血驗這些：學員打開自己就知道要驗什麼、多少錢、抽血前注意什麼（減法開單引擎） */}
         {view === 'lab' && c.lab_enabled && <SectionErrorBoundary><LabOrderCard code={c.unique_code} today={getTaiwanDate()} profile={{ age: c.age, gender: c.gender, goalType: c.goal_type, trainingEnabled: c.training_enabled }} /></SectionErrorBoundary>}
