@@ -1982,7 +1982,7 @@ export default function ClientDashboard() {
             放在身體檔案之前：這一頁最先回答「我的血檢在進步還是退步」 */}
         {view === 'lab' && <SectionErrorBoundary><LongevityCard code={c.unique_code} /></SectionErrorBoundary>}
         {/* 下次抽血驗這些：學員打開自己就知道要驗什麼、多少錢、抽血前注意什麼（減法開單引擎） */}
-        {view === 'lab' && c.lab_enabled && <SectionErrorBoundary><LabOrderCard code={c.unique_code} today={getTaiwanDate()} /></SectionErrorBoundary>}
+        {view === 'lab' && c.lab_enabled && <SectionErrorBoundary><LabOrderCard code={c.unique_code} today={getTaiwanDate()} profile={{ age: c.age, gender: c.gender, goalType: c.goal_type, trainingEnabled: c.training_enabled }} /></SectionErrorBoundary>}
 
         {view === 'lab' && <BodyProfileCard data={c.body_profile} />}
 
