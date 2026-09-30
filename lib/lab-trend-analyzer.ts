@@ -128,6 +128,16 @@ function severityFor(
   const improved = trend === 'improving'
   const absChange = Math.abs(changePercent ?? 0)
 
+  // ⚠️ 2026-09-30：數字本身在正常範圍內，就不可能是 critical／attention。
+  // 原本「惡化 ≥20% 就 critical」不看數值：陳胤豪 LDL 69→85（正常 <130）、ALT 30→36、AST 30→39
+  // 全被標「嚴重」，血檢旅程一片紅。單次 20% 在很多指標的正常生物波動內（見 longevity-lens RCV），
+  // 正常範圍內的漂移最多是 watch（往最佳範圍外漂、值得留意）。
+  if (status === 'normal') {
+    if (improved && absChange >= 15) return 'improving'
+    if (inOptimal && !(declined && absChange >= 10)) return 'optimal'
+    return 'watch'
+  }
+
   // 跨閾值劣化：normal → attention（attention → alert 已在上方 alert 早退）
   const statusWorsened = prevStatus === 'normal' && status === 'attention'
 
@@ -204,6 +214,10 @@ export function analyzeLabs(
     const latestIdx = history.length - 1
     const latest = history[latestIdx]
     const prev = findPreviousPoint(history, latestIdx, 14)
+
+    // 系統沒有標準的指標（CBC 細項、LDH、澱粉酶、CK…）不進清單 ——
+    // calculateLabStatus 對它們一律回 attention，會把整張正常報告灌成「需注意」。
+    if (!(resolveLookupName(testName, gender) in LAB_THRESHOLDS)) continue
 
     const latestStatus = calculateLabStatus(testName, latest.value, gender)
     const previousStatus = prev ? calculateLabStatus(testName, prev.value, gender) : null
