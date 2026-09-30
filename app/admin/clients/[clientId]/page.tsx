@@ -1182,6 +1182,11 @@ export default function ClientEditor() {
                 <Link href={`/admin/clients/${clientId}/overview`} className="text-primary-600 hover:text-primary-800 text-sm font-medium">
                   總覽
                 </Link>
+                {client.unique_code && (
+                  <a href={`/c/${client.unique_code}/journey`} target="_blank" rel="noopener" className="text-primary-600 hover:text-primary-800 text-sm font-medium" title="課程結束時把這頁網址傳給學員">
+                    結業回顧
+                  </a>
+                )}
               </div>
             )}
           </div>
