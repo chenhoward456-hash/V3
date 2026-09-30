@@ -71,8 +71,11 @@ export const TDEE_WINDOW = 42
 export const KCAL_PER_KG = 7700
 
 /** ① 實測 TDEE：近 6 週「平均吃多少」減掉「體重趨勢換算的熱量」 */
-export function mineMeasuredTdee(nut: NutRow[], weights: WeightRow[], today: string): ProfileEntry | null {
-  const from = addDays(today, -TDEE_WINDOW)
+export function mineMeasuredTdee(nut: NutRow[], weights: WeightRow[], today: string, settleFrom?: string | null): ProfileEntry | null {
+  // 碳水大調後 14 天，肝醣＋水會把體重趨勢蓋掉（[[project_v3_carb_repletion_doctrine]]）——那段不採信。
+  // 震宣 2026-09-30：42 天窗口吃到 8/25 碳水 156→224 的回補期，算出 2130，實際近三週約 2450。
+  const from = [addDays(today, -TDEE_WINDOW), settleFrom ?? ''].sort().pop()!
+  if (dayIndex(today) - dayIndex(from) < 21) return null
   const cal = nut.filter(n => n.date >= from && n.date < today && n.calories != null && n.calories > 500).map(n => Number(n.calories))
   const w = weights.filter(x => x.date >= from && x.date < today && x.weight != null).map(x => ({ date: x.date, value: Number(x.weight) }))
   if (cal.length < 21 || w.length < 14) return null
@@ -88,8 +91,8 @@ export function mineMeasuredTdee(nut: NutRow[], weights: WeightRow[], today: str
     label: '你的實測 TDEE',
     value: `≈ ${tdee} kcal`,
     detail: `照你自己的記錄口徑，每天吃 ${tdee} 左右體重會持平。設熱量時用這把尺，不要用公式。`,
-    evidence: `近 ${TDEE_WINDOW} 天日均攝取 ${Math.round(avg)} 大卡；體重趨勢 ${perWeek >= 0 ? '+' : ''}${perWeek.toFixed(2)} kg/週，換算每天約${balance < 0 ? '少' : '多'}吃 ${Math.abs(Math.round(balance))} 大卡`,
-    sample: `${TDEE_WINDOW} 天 / ${w.length} 筆體重 / ${cal.length} 筆飲食紀錄`,
+    evidence: `近 ${dayIndex(today) - dayIndex(from)} 天日均攝取 ${Math.round(avg)} 大卡；體重趨勢 ${perWeek >= 0 ? '+' : ''}${perWeek.toFixed(2)} kg/週，換算每天約${balance < 0 ? '少' : '多'}吃 ${Math.abs(Math.round(balance))} 大卡`,
+    sample: `${dayIndex(today) - dayIndex(from)} 天 / ${w.length} 筆體重 / ${cal.length} 筆飲食紀錄`,
     confidence: cal.length >= 35 && w.length >= 28 ? 'medium' : 'low',
     caveat: '建立在「你記的熱量是準的」之上；漏記或低報，實際 TDEE 會比這個低。',
     measured_on: today,
@@ -164,9 +167,21 @@ export function isMaterialChange(next: ProfileEntry, existing: { key: string; va
   ) >= 0.3
 }
 
-export function mineAll(input: { nut: NutRow[]; weights: WeightRow[]; well: WellRow[]; train: TrainRow[] }, today: string): ProfileEntry[] {
+/** 最後一次碳水目標大調（±20% 以上）的 14 天後；沒有就 null */
+export function carbSettleDate(logs: { applied_at: string; old_macros: Record<string, unknown> | null; new_macros: Record<string, unknown> | null }[]): string | null {
+  const big = logs
+    .filter(l => {
+      const o = Number(l.old_macros?.carbs_target), n = Number(l.new_macros?.carbs_target)
+      return Number.isFinite(o) && Number.isFinite(n) && o > 0 && Math.abs(n - o) / o >= 0.2
+    })
+    .map(l => l.applied_at.slice(0, 10))
+    .sort()
+  return big.length ? addDays(big[big.length - 1], 14) : null
+}
+
+export function mineAll(input: { nut: NutRow[]; weights: WeightRow[]; well: WellRow[]; train: TrainRow[]; settleFrom?: string | null }, today: string): ProfileEntry[] {
   return [
-    mineMeasuredTdee(input.nut, input.weights, today),
+    mineMeasuredTdee(input.nut, input.weights, today, input.settleFrom),
     mineSleepEnergy(input.well, today),
     mineRestDayEffect(input.train, input.well, today),
   ].filter((e): e is ProfileEntry => e != null)
@@ -201,7 +216,8 @@ export async function proposeBodyProfileEntries(supabase: QueryLike, today: stri
         supabase.from('training_logs').select('date, training_type').eq('client_id', c.id).gte('date', since),
         supabase.from('pending_proposals').select('status, proposed_at, proposed_changes').eq('client_id', c.id).eq('proposal_type', 'body_profile_entry'),
       ])
-      const found = mineAll({ nut: nut.data ?? [], weights: weights.data ?? [], well: well.data ?? [], train: train.data ?? [] }, today)
+      const { data: macroLogs } = await supabase.from('macro_adjustment_log').select('applied_at, old_macros, new_macros').eq('client_id', c.id).gte('applied_at', since)
+      const found = mineAll({ nut: nut.data ?? [], weights: weights.data ?? [], well: well.data ?? [], train: train.data ?? [], settleFrom: carbSettleDate(macroLogs ?? []) }, today)
       const blocked = new Set(
         ((props.data ?? []) as { status: string; proposed_at: string; proposed_changes: { entry?: ProfileEntry } | null }[])
           .filter(p => p.status === 'pending' || (p.status === 'rejected' && p.proposed_at.slice(0, 10) >= addDays(today, -60)))
