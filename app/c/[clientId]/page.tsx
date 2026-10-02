@@ -534,6 +534,7 @@ export default function ClientDashboard() {
         value: r.value,
         unit: r.unit,
         status: r.status,
+        date: r.date,
       })),
       {
         gender: c.gender as '男性' | '女性' | undefined,

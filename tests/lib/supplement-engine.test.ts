@@ -339,3 +339,14 @@ describe('肌酸守門改看 eGFR（B：不誤擋肌肉量大的選手）', () =
     expect(result.find(s => s.name.includes('肌酸') && !s.name.includes('肌酸酐'))).toBeUndefined()
   })
 })
+
+describe('同一項有多筆：一律取最新日期那筆（2026-10-02 學員頁傳整份歷史、未排序）', () => {
+  it('維生素 D 舊 34、新 59 → 不該給「不足」建議', () => {
+    const labs = [
+      { test_name: '維生素D', value: 34, unit: 'ng/mL', status: 'attention' as const, date: '2025-04-01' },
+      { test_name: '維生素D', value: 59, unit: 'ng/mL', status: 'normal' as const, date: '2026-03-20' },
+    ]
+    const s = generateSupplementSuggestions(labs, { gender: '男性' })
+    expect(s.some(x => /維生素 D/.test(x.name) && /不足/.test(x.reason))).toBe(false)
+  })
+})
