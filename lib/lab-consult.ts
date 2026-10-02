@@ -23,6 +23,8 @@ import { buildLabOrder, type TemplateItem, type OrderRule } from '@/lib/lab-orde
 import { getLabDirection, LAB_THRESHOLDS } from '@/utils/labStatus'
 import { sideFromReferenceRange } from '@/utils/labReferenceRange'
 import { getLabCanonicalId } from '@/utils/labMatch'
+import type { LabNutritionAdvice } from '@/lib/lab-nutrition-advisor'
+import type { SupplementSuggestion } from '@/lib/supplement-engine'
 
 /** 最近一次抽血在這個天數內才顯示卡片／才自動排下次（太舊的抽血不算「這次」） */
 export const CONSULT_FRESH_DAYS = 60
@@ -76,6 +78,25 @@ export interface ConsultAnswer {
 
 export interface ConsultNextItem { label: string; why: string }
 
+/**
+ * 「接下來怎麼做」（2026-10-02）。Howard：「它沒有說所以我要注意什麼、保健品啥的建議，不然我知道有紀錄然後呢」。
+ * 營養引擎（lab-nutrition-advisor）和補品引擎（supplement-engine）早就會算，但一個藏在「過往分析報告」摺疊裡、
+ * 一個放在「計畫」分頁，跟血檢卡斷開。這裡只把兩個引擎的結果按血檢項目接起來，再掛上下次驗收日——不自己發明建議。
+ */
+export interface ConsultAction {
+  name: string
+  value: number | null
+  unit: string | null
+  /** 引擎給的目標範圍文字 */
+  target: string | null
+  title: string
+  /** 吃的／生活上的做法（最多 3 條） */
+  doThis: string[]
+  supplements: { name: string; dosage: string; timing: string; reason: string }[]
+  /** 下次抽血日（驗收這項有沒有到目標） */
+  retestDate: string
+}
+
 export interface LabConsult {
   /** 這次抽血日（全部 lab_results 裡最新的日期） */
   drawDate: string
@@ -93,6 +114,7 @@ export interface LabConsult {
   watch: ConsultWatch[]
   good: { count: number; names: string[] }
   answered: ConsultAnswer[]
+  actions: ConsultAction[]
   next: {
     date: string
     months: number
@@ -109,6 +131,59 @@ export interface LabConsultInput {
   hypotheses?: LabHypothesis[]
   /** lab_panel_templates.add_on_items；沒有就只用「這次要留意的」當下次項目 */
   templateItems?: TemplateItem[] | null
+  /** generateLabNutritionAdvice 的結果（用最新值算）；沒給就沒有「接下來怎麼做」 */
+  advice?: LabNutritionAdvice[]
+  /** generateSupplementSuggestions 的結果（用最新值算） */
+  supplements?: SupplementSuggestion[]
+  /** 教練排定的下次抽血日；在這次抽血之後就拿它當驗收日，否則用建議日 */
+  scheduledCheckup?: string | null
+}
+
+/** 每一項血檢要做什麼：營養引擎＋補品引擎，按血檢項目合併。只收「要處理的」（正向、跟血檢無關的補品不收） */
+export function buildConsultActions(
+  advice: LabNutritionAdvice[],
+  supplements: SupplementSuggestion[],
+  retestDate: string,
+  watchNames: string[] = [],
+  latest: Map<string, { value: number; unit: string | null }> = new Map(),
+): ConsultAction[] {
+  const byKey = new Map<string, ConsultAction>()
+  const keyOf = (name: string) => getLabCanonicalId(name) ?? name
+  for (const a of advice) {
+    if (a.severity === 'positive') continue
+    const k = keyOf(a.labMarker)
+    const doThis = [...a.dietaryChanges]
+    if (a.foodsToIncrease.length) doThis.push(`多吃：${a.foodsToIncrease.slice(0, 4).join('、')}`)
+    if (a.foodsToReduce.length) doThis.push(`少吃：${a.foodsToReduce.slice(0, 4).join('、')}`)
+    const prev = byKey.get(k)
+    if (prev) { prev.doThis.push(...doThis); continue }
+    byKey.set(k, {
+      name: a.labMarker, value: round(a.currentValue), unit: a.unit || null, target: a.targetRange || null,
+      title: a.title, doThis, supplements: [], retestDate,
+    })
+  }
+  for (const sup of supplements) {
+    if (sup.category === 'performance' || sup.triggerTests.length === 0) continue
+    const k = keyOf(sup.triggerTests[0])
+    const item = { name: sup.name, dosage: sup.dosage, timing: sup.timing, reason: sup.reason }
+    const prev = byKey.get(k)
+    if (prev) { prev.supplements.push(item); continue }
+    const lv = latest.get(k)
+    byKey.set(k, {
+      name: sup.triggerTests[0], value: lv ? round(lv.value) : null, unit: lv?.unit ?? null, target: null,
+      title: sup.name, doThis: [], supplements: [item], retestDate,
+    })
+  }
+  const watchKeys = new Set(watchNames.map(keyOf))
+  return [...byKey.entries()]
+    .sort(([a], [b]) => Number(watchKeys.has(b)) - Number(watchKeys.has(a)))
+    .map(([k, v]) => {
+      // 肌酸酐／eGFR：先講「可能是肌肉量造成的」再給引擎的做法（同「要留意」那段的說法）
+      const muscle = [...MUSCLE_SENSITIVE].some(m => keyOf(m) === k)
+      const doThis = [...new Set(v.doThis)].slice(0, muscle ? 2 : 3)
+      if (muscle) doThis.unshift('先看訓練：肌肉量大或有補充肌酸時，肌酸酐會偏高、eGFR 會算得偏低')
+      return { ...v, doThis }
+    })
 }
 
 const EMPTY_ROWS = { weights: [], nutrition: [], training: [], wellness: [] }
@@ -205,6 +280,17 @@ const EXERCISE_SENSITIVE = new Set(['AST', 'ALT', 'CPK', 'LDH'])
 const MUSCLE_SENSITIVE = new Set(['肌酸酐', 'eGFR'])
 
 const round = (n: number) => (Math.abs(n) >= 100 ? Math.round(n * 10) / 10 : Math.round(n * 100) / 100)
+
+function latestByKey(labs: LabResultRow[]): Map<string, { value: number; unit: string | null }> {
+  const m = new Map<string, { value: number; unit: string | null; date: string }>()
+  for (const l of labs) {
+    const v = typeof l.value === 'string' ? parseFloat(l.value) : l.value
+    const k = getLabCanonicalId(l.test_name) ?? l.test_name
+    const prev = m.get(k)
+    if (!prev || l.date > prev.date) m.set(k, { value: v, unit: l.unit ?? null, date: l.date })
+  }
+  return m
+}
 
 export function buildLabConsult(input: LabConsultInput): LabConsult | null {
   const { labs, today, hypotheses = [], templateItems } = input
@@ -359,6 +445,12 @@ export function buildLabConsult(input: LabConsultInput): LabConsult | null {
     watch,
     good,
     answered,
+    actions: buildConsultActions(
+      input.advice ?? [], input.supplements ?? [],
+      input.scheduledCheckup && input.scheduledCheckup > drawDate ? input.scheduledCheckup : addMonths(drawDate, months),
+      watch.map(w => w.name),
+      latestByKey(valid),
+    ),
     next: { date: addMonths(drawDate, months), months, reason, items },
   }
 }
@@ -399,6 +491,13 @@ export function renderLabConsultText(c: LabConsult): string {
   for (const w of c.watch) {
     const side = w.side === 'high' ? '偏高' : w.side === 'low' ? '偏低' : ''
     out.push(`・${w.name} ${fmtN(w.value)}${u(w.unit)}${side ? ` ${side}` : ''}${w.idealText ? `（理想 ${w.idealText}）` : ''}${w.labRangeText ? `（檢驗所範圍 ${w.labRangeText}）` : ''}：${w.note}`)
+  }
+  if (c.actions.length) {
+    out.push('', '【接下來怎麼做】（做到下次抽血，那次看有沒有到目標）')
+    for (const a of c.actions) {
+      const tail = [...a.doThis, ...a.supplements.map(sp => `${sp.name.replace(/^⚠️\s*/, '')}：${sp.dosage}`)].join('；')
+      out.push(`・${a.name}：${tail}`)
+    }
   }
 
   out.push('')

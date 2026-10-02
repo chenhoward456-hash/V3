@@ -117,6 +117,40 @@ export default function LabConsultCard({ code }: { code: string }) {
         )}
       </div>
 
+      {/* 2.5 接下來怎麼做（營養引擎＋補品引擎，按血檢項目接起來＋下次驗收） */}
+      {c.actions && c.actions.length > 0 && (
+        <div className="mt-4">
+          <h3 className="font-semibold text-slate-900">接下來怎麼做</h3>
+          <p className="text-xs text-slate-500 mt-0.5">每一項做到下次抽血，那次就看有沒有到目標</p>
+          <div className="mt-1">
+            {c.actions.map(a => (
+              <div key={a.name} className="py-2.5 border-t border-slate-100 first:border-t-0">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-medium text-slate-900">{a.name}</span>
+                  {a.value != null && (
+                    <span className="text-sm text-slate-600 tabular-nums text-right">
+                      {a.value}{unit(a.unit)}{a.target && <span className="text-slate-500">　目標 {a.target.replace(/（最佳）/, '')}</span>}
+                    </span>
+                  )}
+                </div>
+                {a.doThis.length > 0 && (
+                  <ul className="mt-1 space-y-0.5">
+                    {a.doThis.map(d => <li key={d} className="text-sm text-slate-700">・{d}</li>)}
+                  </ul>
+                )}
+                {a.supplements.map(sp => (
+                  <div key={sp.name} className="mt-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5">
+                    <p className="text-sm font-medium text-slate-900">{sp.name.replace(/^⚠️\s*/, '')}</p>
+                    <p className="text-xs text-slate-600 tabular-nums">{[sp.dosage, sp.timing !== '—' ? sp.timing : ''].filter(Boolean).join('｜')}</p>
+                  </div>
+                ))}
+                <p className="text-xs text-slate-500 mt-1 tabular-nums">驗收：{a.retestDate} 抽血時看這項</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 3. 已經很好 */}
       {c.good.count > 0 && (
         <div className="mt-4">

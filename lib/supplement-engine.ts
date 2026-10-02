@@ -16,6 +16,8 @@ export interface LabResult {
   unit: string
   status: 'normal' | 'attention' | 'alert'
   reference_range?: string | null
+  /** YYYY-MM-DD；有給就保證每項取最新一筆（見 generateSupplementSuggestions 開頭） */
+  date?: string | null
 }
 
 export interface SupplementSuggestion {
@@ -93,6 +95,10 @@ export function generateSupplementSuggestions(
 ): SupplementSuggestion[] {
   const suggestions: SupplementSuggestion[] = []
   const { gender, isCompetitionPrep, hasHighRPE, goalType, isHealthMode, genetics, prepPhase } = options
+  // 2026-10-02：下面所有查值都是 labs.find(第一筆對上名字的)，順序靠呼叫端。學員頁傳的是全部歷史、
+  // 沒排序 → Howard 維生素 D 最新 59 卻用了舊的 34、雌二醇最新 39 卻用了 42.4，補品建議是照舊數字給的。
+  // 這裡先按日期新→舊排好（沒日期的放最後），所有 find 都拿到最新一筆。
+  labs = [...labs].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
 
   // ── 1. 鐵蛋白（Ferritin）──
   const ferritin = findLabValue(labs, 'ferritin')

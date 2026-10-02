@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  buildLabConsult, renderLabConsultText, shouldAutoSetNextCheckup, addMonths, plainLabel,
+  buildLabConsult, buildConsultActions, renderLabConsultText, shouldAutoSetNextCheckup, addMonths, plainLabel,
   CONSULT_FRESH_DAYS, RETEST_MONTHS_CLEAN, RETEST_MONTHS_WITH_ISSUE,
 } from '@/lib/lab-consult'
 import type { LabHypothesis } from '@/lib/longevity-lens'
@@ -235,5 +235,41 @@ describe('系統沒設判讀標準的指標：照檢驗所範圍（2026-10-02）
     const text = renderLabConsultText(c)
     expect(text).toMatch(/CPK 397.*檢驗所範圍 46-171/)
     expect(scanMedicalCompliance(text)).toEqual([])
+  })
+})
+
+describe('接下來怎麼做：營養＋補品引擎按血檢項目接起來（2026-10-02）', () => {
+  const advice = [
+    { category: 'glucose', title: '空腹血糖偏高', icon: '', severity: 'medium', dietaryChanges: ['晚餐減少精製碳水', '餐後散步 10-15 分鐘'], foodsToIncrease: [], foodsToReduce: [], labMarker: '空腹血糖', currentValue: 95, unit: 'mg/dL', targetRange: '<90 mg/dL（最佳）', references: [] },
+    { category: 'kidney', title: 'eGFR 偏低', icon: '', severity: 'medium', dietaryChanges: ['確保充足飲水', '控制血壓', '蛋白質別過量'], foodsToIncrease: [], foodsToReduce: [], labMarker: 'eGFR', currentValue: 82.57, unit: 'mL/min', targetRange: '>90', references: [] },
+    { category: 'lipid', title: 'ApoB 極低', icon: '', severity: 'positive', dietaryChanges: ['脂肪可放寬'], foodsToIncrease: [], foodsToReduce: [], labMarker: 'ApoB', currentValue: 42, unit: 'mg/dL', targetRange: '', references: [] },
+  ] as never
+  const sups = [
+    { name: '⚠️ 停止鐵劑補充', dosage: '立即停止所有含鐵補品', timing: '—', reason: '鐵蛋白 250', priority: 'medium', evidence: '', triggerTests: ['鐵蛋白'], category: 'deficiency' },
+    { name: '肌酸', dosage: '3-5g', timing: '任何時間', reason: '', priority: 'high', evidence: '', triggerTests: [], category: 'performance' },
+  ] as never
+  const latest = new Map([['ferritin', { value: 250, unit: 'ng/mL' }]])
+  const acts = buildConsultActions(advice, sups, '2027-01-16', ['eGFR'], latest)
+
+  it('正向建議、跟血檢無關的補品（肌酸）不進來', () => {
+    expect(acts.map(a => a.name)).toEqual(['eGFR', '空腹血糖', '鐵蛋白'])
+  })
+  it('要留意的排前面；每項都帶驗收日', () => {
+    expect(acts.every(a => a.retestDate === '2027-01-16')).toBe(true)
+  })
+  it('eGFR 先講肌肉量，再給引擎做法，最多 3 條', () => {
+    const e = acts.find(a => a.name === 'eGFR')!
+    expect(e.doThis[0]).toMatch(/肌肉量/)
+    expect(e.doThis).toHaveLength(3)
+  })
+  it('只有補品觸發的項目，數值從最新血檢補上', () => {
+    const f = acts.find(a => a.name === '鐵蛋白')!
+    expect(f).toMatchObject({ value: 250, unit: 'ng/mL' })
+    expect(f.supplements[0].dosage).toMatch(/停止/)
+  })
+  it('教練排的日期在這次抽血之後 → 驗收日用它', () => {
+    const c = buildLabConsult({ labs: [{ test_name: '空腹血糖', value: 95, unit: 'mg/dL', date: D1 }], gender: '男性', today: TODAY, advice, scheduledCheckup: '2027-01-16' })!
+    expect(c.actions[0].retestDate).toBe('2027-01-16')
+    expect(scanMedicalCompliance(renderLabConsultText(c))).toEqual([])
   })
 })
