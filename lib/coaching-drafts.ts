@@ -200,7 +200,7 @@ export async function sendCoachMessage(
     body: firstLine.slice(0, 80),
     lineText: cleanMsg,
     url: `/c/${client.unique_code}`, // 學員實際儀表板（/dashboard 不存在會 404）
-  })
+  }, { priority: 'normal' })
 
   // ④ 回填實際送達管道
   await supabase

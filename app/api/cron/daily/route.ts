@@ -32,6 +32,7 @@ import { getTaipeiDayOfWeek } from '@/lib/periodization'
 import { COACH_LINE_USER_ID, loadCoachDigest } from '@/lib/coach-digest'
 import { studentText } from '@/lib/hypothesis-updates'
 import { buildLabPrepMessage, hypothesesForCheckup } from '@/lib/lab-prep'
+import { lineBudgetAllows, noteLinePushed } from '@/lib/line-budget'
 import { studentExperimentText } from '@/lib/body-experiments'
 import { proposeBodyProfileEntries } from '@/lib/body-profile-miner'
 import { listActionableProposals, sweepExpiredProposals } from '@/lib/proposal-actions'
@@ -660,7 +661,10 @@ export async function GET(request: NextRequest) {
           const msg = trajResult.hitBoundary
             ? `⚠️ 系統依進度自動調整 macros\n\n熱量 ${oldMacros.calories_target} → ${trajResult.newMacros?.calories_target} kcal\n${carbLine}\n\n${trajResult.reason}\n\n${trajResult.boundaryDetail}\n\n→ LINE 諮詢教練決定下一步`
             : `🤖 系統依進度調整今日 macros\n\n熱量 ${oldMacros.calories_target} → ${trajResult.newMacros?.calories_target} kcal\n${carbLine}\n\n${trajResult.reason}`
-          await pushMessage(c.line_user_id, [{ type: 'text', text: msg }]).catch(() => {})
+          if (await lineBudgetAllows('normal')) {
+            const pr = await pushMessage(c.line_user_id, [{ type: 'text', text: msg }]).catch(() => null)
+            if (pr?.ok) noteLinePushed()
+          }
         }
       } catch (e) {
         autoAdjustResults.errors.push(`${c.name}: ${(e as Error).message}`)
@@ -835,7 +839,7 @@ export async function GET(request: NextRequest) {
             body: msg.body,
             lineText: msg.lineText,
             url: `${siteUrl}/c/${c.unique_code}`,
-          })
+          }, { priority: 'critical' })
           if (r.success) {
             sent++
             if (r.method === 'web_push') webPushUsed++
@@ -1003,7 +1007,7 @@ export async function GET(request: NextRequest) {
               body: ups.map(u => u.marker).join('、') + '：打開「健康」看結果',
               lineText: studentText(first.name, ups),
               url: `${siteUrl}/c/${first.uniqueCode}`,
-            })
+            }, { priority: 'critical' })
           } catch (err) {
             errors.push(`hypothesis notify ${cid}: ${err instanceof Error ? err.message : String(err)}`)
           }
@@ -1025,7 +1029,7 @@ export async function GET(request: NextRequest) {
               body: ups.map(u => u.exp.title).join('、') + '：打開「健康」看結果',
               lineText: studentExperimentText(first.name, ups),
               url: `${siteUrl}/c/${first.uniqueCode}`,
-            })
+            }, { priority: 'critical' })
           } catch (err) {
             errors.push(`experiment notify ${cid}: ${err instanceof Error ? err.message : String(err)}`)
           }
@@ -1164,7 +1168,9 @@ export async function GET(request: NextRequest) {
     for (let i = 0; i < lineWeightTargets.length; i += 5) {
       const batch = lineWeightTargets.slice(i, i + 5)
       const results = await Promise.allSettled(
-        batch.map(({ client, lastWeight }) => {
+        batch.map(async ({ client, lastWeight }) => {
+          // 例行提醒：LINE 額度照月份進度配，保留給抽血提醒/預測對答案（lib/line-budget.ts）
+          if (!(await lineBudgetAllows('routine'))) return { ok: false, status: 0, budgetSkipped: true } as const
           const w = lastWeight
           const quickReplyItems = [
             { type: 'action' as const, action: { type: 'message' as const, label: `${(w - 0.5).toFixed(1)}`, text: `體重 ${(w - 0.5).toFixed(1)}` } },
@@ -1179,17 +1185,21 @@ export async function GET(request: NextRequest) {
           const msgText = deltaText
             ? `🌙 ${client.name}，上次 ${w.toFixed(1)}kg（${deltaText}），今天呢？\n回覆數字即可記錄 👇`
             : `🌙 ${client.name}，上次 ${w.toFixed(1)}kg，今天呢？\n回覆數字即可記錄 👇`
-          return pushMessage(client.line_user_id, [{
+          const res = await pushMessage(client.line_user_id, [{
             type: 'text',
             text: msgText,
             quickReply: { items: quickReplyItems },
           }])
+          if (res?.ok) noteLinePushed()
+          return res
         })
       )
       results.forEach((result, idx) => {
         // pushMessage 失敗不丟例外、回的是 Response → 要看 res.ok。原本 fulfilled 就算送出，
         // 額度爆了（429）也記成功，cron_runs 永遠沒有錯誤、警報不會響（稽核 R2）。
-        if (result.status === 'fulfilled' && result.value?.ok) {
+        if (result.status === 'fulfilled' && 'budgetSkipped' in result.value) {
+          // 額度保留給重要訊息，不算錯誤
+        } else if (result.status === 'fulfilled' && result.value?.ok) {
           sent++
           linePushUsed++
         } else if (result.status === 'fulfilled') {
