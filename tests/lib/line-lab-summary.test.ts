@@ -71,21 +71,21 @@ describe('formatLabSummary', () => {
     expect(t).not.toContain('🎯')
   })
 
-  it('下次抽血：列必驗＋金額＋省下來的項數', () => {
+  it('下次抽血：白話名稱＋你的原因，不列價格、不講省錢（同網頁卡）', () => {
     const t = formatLabSummary(base({
       stories: [story('ApoB', [['2026-09-01', 80]])],
       order: {
         enabled: true, nextCheckupDate: '2026-12-01',
-        must: [{ label: 'ApoB', price: 500, why: '' }, { label: 'Lp(a)', price: null, why: '' }],
+        must: [{ label: 'Apo B (外送大安聯合)', price: 500, why: '上次 80（最佳 <60），2026-09-01 驗的，要看有沒有動' }, { label: 'Lp(a)', price: null, why: '' }],
         defer: [], skip: [{ label: '血紅素', price: 100, why: '' }],
         mustCost: 500, fullCost: 500, templateCost: 2000, unknownPriceCount: 1,
         basePackage: { price: 0, skippable: true, why: '' }, prepNotes: null,
       },
     }))
-    expect(t).toContain('下次抽血（預計 12/1）驗這些，約 $500')
-    expect(t).toContain('・ApoB $500')
+    expect(t).toContain('下次抽血（預計 12/1），請醫生幫你驗：')
+    expect(t).toContain('・ApoB\n　上次 80（目標 <60），2026-09-01 驗的，這次看有沒有往目標走')
     expect(t).toContain('・Lp(a)\n')
-    expect(t).toContain('1 項上次已經很好或不用重驗')
+    expect(t).not.toMatch(/\$|省下來|外送/)
     expect(t).toContain('https://x/c/abc?openExternalBrowser=1')
   })
 

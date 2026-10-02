@@ -147,9 +147,9 @@ describe('buildStudentLabVisit：學員端輸出不准有價格／底盤／分�
   })
 
   it('常規抽血要開時列在第一項（用白話，不叫底盤）', () => {
-    expect(v.items[0]).toEqual(ROUTINE_ITEM)
+    expect(v.items[0]).toMatchObject(ROUTINE_ITEM)
     const skippable = buildStudentLabVisit({ ...api, basePackage: { skippable: true } }, {})
-    expect(skippable.items[0]).not.toEqual(ROUTINE_ITEM)
+    expect(skippable.items[0].name).not.toBe(ROUTINE_ITEM.name)
   })
 
   it('must 全列、defer 最多帶前幾項並標成可一起驗、skip 一項都不列', () => {
@@ -191,8 +191,9 @@ describe('personalReason：引擎 why → 學員看的「你的原因」（2026-
     expect(personalReason('上次 1.67 正常，但已經 536 天，沒錢可以晚一輪')).toBe('上次 1.67 正常，但已經 536 天')
     expect(personalReason('從沒驗過，是基準線不是追蹤，沒錢可以晚一輪')).toBe('從沒驗過，先驗一次當自己的基準')
   })
-  it('含底盤／價格字眼整句不給', () => {
-    expect(personalReason('2026-09-30 驗過但有項目不正常，底盤值得再開一次')).toBe('')
+  it('含底盤／價格字眼整句不給（認得的底盤句會先翻成學員版，見下方）', () => {
+    expect(personalReason('底盤可以不開、直接開單項')).toBe('')
+    expect(personalReason('約 $3600')).toBe('')
     expect(personalReason(undefined)).toBe('')
   })
   it('buildStudentLabVisit 把原因掛到對應項目，學員輸出仍過合規、不含價格', () => {
@@ -205,5 +206,17 @@ describe('personalReason：引擎 why → 學員看的「你的原因」（2026-
     const all = v.items.map(i => i.personal ?? '').join('\n')
     expect(all).not.toMatch(/沒錢|底盤|元/)
     expect(scanMedicalCompliance(all)).toEqual([])
+  })
+})
+
+describe('一般抽血那項的原因（引擎底盤句 → 學員版）', () => {
+  it.each([
+    ['2026-09-30 驗過但有項目不正常，底盤值得再開一次', '2026-09-30 那次有幾項要追蹤，這次一起再驗一次'],
+    ['沒有常規項目紀錄，底盤該開', '還沒有一般抽血的紀錄，先建立基準'],
+    ['常規項目上次是 2025-08-01（427 天前），底盤該開', '上次是 2025-08-01（427 天前），該更新了'],
+  ])('%s', (raw, want) => expect(personalReason(raw)).toBe(want))
+  it('掛在「一般抽血」那項', () => {
+    const v = buildStudentLabVisit({ must: [], basePackage: { skippable: false, why: '沒有常規項目紀錄，底盤該開' } }, {})
+    expect(v.items[0]).toMatchObject({ name: ROUTINE_ITEM.name, personal: '還沒有一般抽血的紀錄，先建立基準' })
   })
 })
