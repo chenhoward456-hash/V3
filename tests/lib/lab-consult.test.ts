@@ -297,3 +297,25 @@ describe('2026-10-03 收尾：目標統一、重訓者 eGFR、用藥', () => {
     expect(u.next.items.some(i => /Cystatin C/.test(i.label))).toBe(false)
   })
 })
+
+describe('你在吃的保健品（2026-10-03）', () => {
+  it('同名合併劑量、要注意排最前、沒驗過的寫驗收日；文字版過合規', () => {
+    const labs = [
+      { test_name: '鐵蛋白', value: 250, unit: 'ng/mL', date: D1 },
+      { test_name: '同半胱胺酸', value: 9, unit: 'μmol/L', date: '2026-01-07' },
+    ]
+    const c = buildLabConsult({
+      labs, gender: '男性', today: TODAY, scheduledCheckup: '2027-01-16',
+      currentSupplements: [
+        { name: 'tmg', dosage: '兩顆', timing: '早餐', started_at: '2026-02-07' },
+        { name: 'ＴＭＧ', dosage: '兩顆', timing: '晚餐', started_at: '2026-02-07' },
+        { name: 'Vitaminc', dosage: '1000mg', timing: '早餐', started_at: '2026-02-07' },
+      ],
+    })!
+    expect(c.stack[0]).toMatchObject({ name: 'Vitaminc', status: 'caution' })
+    const tmg = c.stack.find(x => x.name.toLowerCase() === 'tmg')!
+    expect(tmg.dose).toBe('兩顆 早餐；兩顆 晚餐')
+    expect(tmg.effect).toMatch(/還沒驗過.*2027-01-16/)
+    expect(scanMedicalCompliance(renderLabConsultText(c))).toEqual([])
+  })
+})

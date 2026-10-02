@@ -23,7 +23,7 @@ export async function loadLabConsult(supabase: SupabaseClient, clientDbId: strin
     .maybeSingle()
   if (!c) return null
 
-  const [labs, hyps, template] = await Promise.all([
+  const [labs, hyps, template, sups] = await Promise.all([
     supabase.from('lab_results').select('test_name, value, unit, date, reference_range, status').eq('client_id', clientDbId).order('date'),
     supabase.from('lab_hypotheses').select('*').eq('client_id', clientDbId),
     // 同 lib/lab-order-data.ts：學員版下次抽血清單用「目標導向」公版
@@ -35,6 +35,7 @@ export async function loadLabConsult(supabase: SupabaseClient, clientDbId: strin
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase.from('supplements').select('name, dosage, timing, started_at').eq('client_id', clientDbId).is('archived_at', null),
   ])
   if (labs.error) throw new Error(labs.error.message)
 
@@ -56,6 +57,8 @@ export async function loadLabConsult(supabase: SupabaseClient, clientDbId: strin
     scheduledCheckup: c.next_checkup_date ?? null,
     medications: Array.isArray(c.medications) ? c.medications : [],
     resistanceTrained: !!c.training_enabled,
+    currentSupplements: sups.error ? [] : (sups.data ?? []),
+    genetics: { gene_mthfr: c.gene_mthfr ?? null, gene_apoe: c.gene_apoe ?? null },
     gender: c.gender,
     today: getTaiwanDate(),
     // 預測表讀不到（例：舊環境沒這張表）不擋整張卡
