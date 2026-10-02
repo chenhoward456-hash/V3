@@ -12,6 +12,8 @@ import { LAB_THRESHOLDS } from '@/utils/labStatus'
 import { statusFromReferenceRange } from '@/utils/labReferenceRange'
 import { fireAutoDraftsForDates } from '@/lib/auto-draft'
 import { autoScheduleNextCheckup } from '@/lib/lab-consult-data'
+import { buildStackAlertFor } from '@/lib/supplement-alerts'
+import { notifyHoward } from '@/lib/line'
 
 export const dynamic = 'force-dynamic'
 
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
     // Resolve client
     const { data: client } = await supabase
       .from('clients')
-      .select('id, is_active, expires_at, lab_enabled')
+      .select('id, name, is_active, expires_at, lab_enabled')
       .eq('unique_code', clientId)
       .single()
     if (!client) return createErrorResponse('找不到客戶', 404)
@@ -166,6 +168,10 @@ export async function POST(request: NextRequest) {
     // 自動排下次抽血：學員還沒排、或排的日期已在這次之前 → 設成顧問卡的建議日（有要留意 3 個月／沒有 6 個月）。
     // 教練排在這次之後的日期不動；失敗不影響上傳（內部 try/catch）。
     const nextCheckupSet = await autoScheduleNextCheckup(supabase, client.id)
+
+    // 新血檢進來 → 重跑保健品對帳，有要注意／沒依據的主動跟 Howard 講（失敗不影響上傳）
+    const stackAlert = await buildStackAlertFor(supabase, client.id, client.name ?? '學員', '新血檢上傳後')
+    if (stackAlert) await notifyHoward(stackAlert).catch(() => {})
 
     return createSuccessResponse({
       inserted: data?.length ?? 0,

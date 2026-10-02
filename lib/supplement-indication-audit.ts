@@ -12,6 +12,7 @@
 
 import { TOTAL_TESTOSTERONE_KEYWORDS, TOTAL_TESTOSTERONE_EXCLUDE } from '@/utils/labMatch'
 import { LAB_THRESHOLDS, LAB_OPTIMAL_RANGES } from '@/utils/labStatus'
+import { MEDICATION_EFFECTS, activeMedications, type ClientMedication } from '@/lib/medication-effects'
 
 // 判斷線一律跟標準檔（utils/labStatus.ts）走，別在這裡另寫一套數字（2026-10-03：同半胱胺酸這裡原本寫 ≥10，標準檔正常上限是 8）
 const HCY_NORMAL_MAX = (LAB_THRESHOLDS['同半胱胺酸'] as { normal: number }).normal
@@ -49,7 +50,21 @@ function makeLabFinder(labs: AuditLab[]) {
   }
 }
 
-type Ctx = { lab: ReturnType<typeof makeLabFinder>; gene_mthfr?: string | null; gene_apoe?: string | null }
+type Ctx = {
+  lab: ReturnType<typeof makeLabFinder>
+  gene_mthfr?: string | null
+  gene_apoe?: string | null
+  /** 正在吃的藥（已過濾成 today 還在吃的） */
+  meds: ClientMedication[]
+  /** 正規化後的補品名（同一條規則要分 TMG／B 群時用） */
+  name: string
+}
+
+const normalMax = (name: string): number | null => {
+  const t = (LAB_THRESHOLDS as Record<string, { normal: number | { min: number; max: number } }>)[name]
+  if (!t) return null
+  return typeof t.normal === 'object' ? t.normal.max : t.normal
+}
 
 const ok = (basis: string): IndicationVerdict => ({ status: 'indicated', basis })
 const life = (basis: string): IndicationVerdict => ({ status: 'lifestyle', basis })
@@ -58,11 +73,26 @@ const warn = (basis: string): IndicationVerdict => ({ status: 'caution', basis }
 
 const RULES: { match: string[]; evaluate: (c: Ctx) => IndicationVerdict }[] = [
   {
+    // ⚠️ 放第一條：「ashwagandha」字串裡有「dha」，排在魚油後面會被魚油規則先吃掉
+    match: ['南非醉茄', '南非', 'ashwagandha', 'withania'],
+    // 膽汁滯留型肝損傷病例系列（PMID 31991029、37756041）：正在吃會動肝的藥、或肝指數已超標 → 先暫停
+    evaluate: (c) => {
+      const liverMed = c.meds.map(m => MEDICATION_EFFECTS[m.key]).find(e => e?.liver)
+      if (liverMed) return warn(`正在吃${liverMed.label}（會動肝指數），南非醉茄有肝損傷病例報告（PMID 31991029）→ 療程中先暫停`)
+      const alt = c.lab(['alt', 'gpt']); const ast = c.lab(['ast', 'got'])
+      const altMax = normalMax('ALT'); const astMax = normalMax('AST')
+      if ((alt?.value != null && altMax != null && alt.value > altMax) || (ast?.value != null && astMax != null && ast.value > astMax)) {
+        return warn('肝指數已超出正常，南非醉茄有肝損傷病例報告（PMID 31991029）→ 先暫停，肝指數回來再說')
+      }
+      return life('壓力/睡眠（生活型）；少數有肝損傷病例，肝指數要一起追')
+    },
+  },
+  {
     match: ['肌酸', 'creatine'],
     evaluate: (c) => {
       const egfr = c.lab(['egfr', '腎絲球'])
       if (egfr?.value != null && egfr.value < 60) return warn(`eGFR ${egfr.value} <60，肌酸會墊高肌酸酐，建議先確認腎功能`)
-      return life('訓練/備賽目標導向（非血檢指徵；eGFR≥60 可用）')
+      return life('增肌證據最強的補品（非血檢指徵）；會讓肌酸酐升、eGFR 算低（RCT PMID 32670557），腎功能看 Cystatin C 才準')
     },
   },
   {
@@ -124,7 +154,12 @@ const RULES: { match: string[]; evaluate: (c: Ctx) => IndicationVerdict }[] = [
       const mthfr = c.gene_mthfr
       if (hcy?.value != null && hcy.value > HCY_NORMAL_MAX) hits.push(`同半胱胺酸 ${hcy.value} 偏高（正常 ≤${HCY_NORMAL_MAX}）`)
       if (mthfr && /hetero|homo|variant|突變|\bt\/t\b|\bc\/t\b|\+/i.test(mthfr)) hits.push(`MTHFR ${mthfr}`)
-      if (hits.length) return ok(hits.join('、') + ' → 甲基化')
+      // 甜菜鹼（TMG）≥4 g/天 LDL 平均 +10 mg/dL（統合分析 PMID 33764214）：LDL 已超標就改「要注意」
+      const isTmg = /tmg|betaine|trimethyl/.test(c.name)
+      const ldl = c.lab(['ldl', '低密度'])
+      const ldlMax = normalMax('LDL-C')
+      if (isTmg && hits.length && ldl?.value != null && ldlMax != null && ldl.value > ldlMax) return warn(`${hits.join('、')}，但 LDL ${ldl.value} 已超標；TMG ≥4 g/天會再拉高 LDL（PMID 33764214）→ 減量或改用活性 B 群`)
+      if (hits.length) return ok(hits.join('、') + ' → 甲基化' + (isTmg ? '；TMG 早晚合計每天 <4 g（≥4 g 會升 LDL，PMID 33764214）' : ''))
       if (hcy?.value != null) return none(`同半胱胺酸 ${hcy.value} 正常、無 MTHFR 變異資料 → 甲基化指徵不足`)
       return none('無同半胱胺酸/MTHFR 資料 → 無法確認甲基化指徵（劑量勿照他人複製）')
     },
@@ -166,8 +201,12 @@ const RULES: { match: string[]; evaluate: (c: Ctx) => IndicationVerdict }[] = [
     },
   },
   {
-    match: ['南非醉茄', '南非', 'ashwagandha', '茶氨酸', 'theanine', 'l-theanine', '甘胺酸', 'glycine', '褪黑'],
+    match: ['茶氨酸', 'theanine', 'l-theanine', '甘胺酸', 'glycine', '褪黑'],
     evaluate: () => life('壓力/睡眠（生活型，通常非血檢指徵）'),
+  },
+  {
+    match: ['維生素a', '維他命a', 'vitamin a', 'vitamina', 'retinol', '視黃醇', '魚肝油', 'cod liver'],
+    evaluate: () => none('血檢看不出要補維生素 A；過量有毒，別長期高劑量'),
   },
   {
     match: ['carnitine', '肉鹼', 'l-carnitine'],
@@ -177,11 +216,23 @@ const RULES: { match: string[]; evaluate: (c: Ctx) => IndicationVerdict }[] = [
 ]
 
 /** 對單一補品做指徵對帳。 */
-export function auditSupplement(name: string, labs: AuditLab[], genetics?: AuditGenetics): IndicationVerdict {
+export function auditSupplement(
+  name: string,
+  labs: AuditLab[],
+  genetics?: AuditGenetics,
+  opts: { medications?: ClientMedication[] | null; today?: string } = {},
+): IndicationVerdict {
   // NFKC：學員手打常是全形（「ＴＭＧ」「Ｌcarnitine」「活性Ｂ群」），不轉就一條規則都對不到
   const n = (name || '').normalize('NFKC').toLowerCase().trim()
   if (!n) return none('未命名')
-  const ctx: Ctx = { lab: makeLabFinder(labs || []), gene_mthfr: genetics?.gene_mthfr, gene_apoe: genetics?.gene_apoe }
+  const meds = activeMedications(opts.medications, opts.today)
+  // 服藥期間不能疊加的補品，優先於一般規則
+  for (const m of meds) {
+    for (const a of MEDICATION_EFFECTS[m.key]?.avoid ?? []) {
+      if (a.match.some(k => n.includes(k))) return warn(a.why)
+    }
+  }
+  const ctx: Ctx = { lab: makeLabFinder(labs || []), gene_mthfr: genetics?.gene_mthfr, gene_apoe: genetics?.gene_apoe, meds, name: n }
   for (const rule of RULES) {
     if (rule.match.some(m => n.includes(m.toLowerCase()))) return rule.evaluate(ctx)
   }

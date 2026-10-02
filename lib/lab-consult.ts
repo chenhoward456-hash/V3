@@ -173,6 +173,8 @@ export function buildStack(
   labs: LabResultRow[],
   genetics: LabConsultInput['genetics'],
   nextDate: string,
+  medications: ClientMedication[] | null = null,
+  today?: string,
 ): ConsultStackItem[] {
   const groups = new Map<string, { name: string; doses: string[]; started: string | null }>()
   for (const s of current) {
@@ -187,7 +189,7 @@ export function buildStack(
   const auditLabs = labs.map(l => ({ test_name: l.test_name, value: l.value, status: l.status ?? null, date: l.date }))
   const out: ConsultStackItem[] = []
   for (const g of groups.values()) {
-    const v = auditSupplement(g.name, auditLabs, genetics)
+    const v = auditSupplement(g.name, auditLabs, genetics, { medications, today })
     const e = supplementEffect(g.name, auditLabs, g.started)
     let effect: string | null = null
     if (e) {
@@ -546,6 +548,7 @@ export function buildLabConsult(input: LabConsultInput): LabConsult | null {
     stack: buildStack(
       input.currentSupplements ?? [], valid, input.genetics,
       input.scheduledCheckup && input.scheduledCheckup > drawDate ? input.scheduledCheckup : addMonths(drawDate, months),
+      input.medications ?? null, today,
     ),
     actions: buildConsultActions(
       input.advice ?? [], input.supplements ?? [],
