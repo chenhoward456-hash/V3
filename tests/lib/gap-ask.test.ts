@@ -36,6 +36,10 @@ describe('gapPrompt', () => {
     expect(p.items.map(i => i.text)).toEqual(['體重 79.5', '體重 80.0', '體重 80.5'])
     expect(p.text).toContain('3/14')
   })
+  it('身體感受按鈕接分步驟流程，不再送「身心 4 4 4」（三個同分）', () => {
+    const texts = gapPrompt('wellness', 5).items.map(i => i.text)
+    expect(texts.every(t => /^睡眠 \d$/.test(t))).toBe(true)
+  })
   it('飲食按鈕送出的文字要能被 webhook 接住', () => {
     expect(gapPrompt('nutrition', 1).items.map(i => i.text)).toEqual(['達標', '未達標'])
   })

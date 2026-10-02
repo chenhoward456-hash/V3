@@ -74,7 +74,7 @@ describe('工具註冊', () => {
     const names = ANALYSIS_TOOLS.map(t => t.name)
     expect(names).toEqual([
       'analyze_weight_trend', 'estimate_true_intake', 'check_training_frequency',
-      'build_lab_order', 'list_labs_due', 'list_pending_proposals',
+      'build_lab_order', 'list_labs_due', 'list_body_experiments', 'list_pending_proposals',
     ])
     // 沒有任何一個名字長得像會寫入的
     for (const n of names) {

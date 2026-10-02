@@ -62,10 +62,13 @@ export type QuickItem = { label: string; text: string }
 export function gapPrompt(kind: GapKind, days: number, lastWeight?: number | null): { text: string; items: QuickItem[] } {
   const m = GAP_META[kind]
   const head = `\n\n順便一格就好：你這兩週${m.label}記了 ${days}/${GAP_WINDOW} ${m.unit}，今天的還沒記 👇`
+  const wellnessHead = `\n\n順便一格就好：你這兩週身體感受記了 ${days}/${GAP_WINDOW} 天。昨晚睡得怎樣？👇`
   switch (kind) {
     case 'wellness':
-      return { text: head, items: [
-        { label: '😊 好', text: '身心 4 4 4' }, { label: '😐 普通', text: '身心 3 3 3' }, { label: '😩 差', text: '身心 2 2 2' },
+      return { text: wellnessHead, items: [
+        // 接 LINE「記身心」的分步驟流程（睡眠→精力→心情）。原本「身心 4 4 4」一鍵把三個寫成同一分數，
+        // 資料只剩一個數字、看不出睡眠的影響（2026-10-02）。
+        { label: '😴 睡不好', text: '睡眠 2' }, { label: '🙂 普通', text: '睡眠 3' }, { label: '😊 睡得好', text: '睡眠 4' },
       ] }
     case 'weight':
       return { text: head, items: lastWeight
