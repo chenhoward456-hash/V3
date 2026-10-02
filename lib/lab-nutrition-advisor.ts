@@ -82,10 +82,10 @@ function reconcileDietaryConflicts(advice: LabNutritionAdvice[]): LabNutritionAd
 
 export function generateLabNutritionAdvice(
   labs: LabInput[],
-  options: { gender?: '男性' | '女性'; goalType?: 'cut' | 'bulk' | null } = {}
+  options: { gender?: '男性' | '女性'; goalType?: 'cut' | 'bulk' | null; resistanceTrained?: boolean } = {}
 ): LabNutritionAdvice[] {
   const advice: LabNutritionAdvice[] = []
-  const { gender, goalType } = options
+  const { gender, goalType, resistanceTrained } = options
 
   // 每個指標只取最新一筆：先按 date 降序排序，再去重
   // 不依賴 API 排序（relation query 可能沒排序）
@@ -706,14 +706,23 @@ export function generateLabNutritionAdvice(
           title: 'eGFR 偏低',
           icon: '🫘',
           severity: lab.value < 60 ? 'high' : 'medium',
-          dietaryChanges: [
-            '確保充足飲水',
-            '控制血壓（限鈉 <2000mg/day）',
-            '蛋白質不需過度限制（除非 eGFR<30），但避免 >2.0g/kg',
-            '增加抗氧化食物',
-          ],
-          foodsToIncrease: ['蔬菜', '莓果', '水'],
-          foodsToReduce: ['高鈉食物', '加工食品'],
+          // 2026-10-03：有規律重訓、eGFR 60–89 → 先當成肌肉量造成的估算偏差，不給腎病飲食。
+          // 用肌酸酐算的 eGFR 會被肌肉量拉低；KDIGO 2024 建議這類情況用 Cystatin C 確認（PMID 38490803）。
+          // <60 不管有沒有訓練都照一般建議（那不是肌肉量能解釋的幅度）。
+          dietaryChanges: resistanceTrained && lab.value >= 60
+            ? [
+                '有規律重訓：肌肉量大會讓肌酸酐偏高、eGFR 算得偏低，先別當成腎功能變差',
+                '下次抽血請醫生加驗 Cystatin C（胱抑素 C，不受肌肉量影響），用它算的 eGFR 才準',
+                '水照常喝足；抽血前 48 小時別練大重量、別補肌酸',
+              ]
+            : [
+                '確保充足飲水',
+                '控制血壓（限鈉 <2000mg/day）',
+                '蛋白質不需過度限制（除非 eGFR<30），但避免 >2.0g/kg',
+                '增加抗氧化食物',
+              ],
+          foodsToIncrease: resistanceTrained && lab.value >= 60 ? [] : ['蔬菜', '莓果', '水'],
+          foodsToReduce: resistanceTrained && lab.value >= 60 ? [] : ['高鈉食物', '加工食品'],
           labMarker: lab.test_name,
           currentValue: lab.value,
           unit: lab.unit,

@@ -34,6 +34,7 @@ function ChangeRow({ x, tone, label }: { x: ConsultChange; tone: 'good' | 'bad' 
         {label}{x.outOfRange ? '，而且落在要留意的範圍' : ''}
       </p>
       {x.hint && <p className="text-sm text-slate-600 mt-0.5">{x.hint}</p>}
+      {x.medNote && <p className="text-sm text-slate-700 mt-0.5">💊 {x.medNote}</p>}
     </div>
   )
 }
@@ -133,6 +134,7 @@ export default function LabConsultCard({ code }: { code: string }) {
                     </span>
                   )}
                 </div>
+                {a.medNote && <p className="text-sm text-slate-700 mt-1">💊 {a.medNote}</p>}
                 {a.doThis.length > 0 && (
                   <ul className="mt-1 space-y-0.5">
                     {a.doThis.map(d => <li key={d} className="text-sm text-slate-700">・{d}</li>)}

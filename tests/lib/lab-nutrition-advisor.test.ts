@@ -1550,3 +1550,17 @@ describe('肌酸酐區塊改看 eGFR（B：不誤叫肌肉量大者減肌酸）'
     expect(kidney!.dietaryChanges.some(d => d.includes('減少肌酸'))).toBe(true)
   })
 })
+
+describe('eGFR：有規律重訓 60–89 不給腎病飲食（2026-10-03）', () => {
+  const lab = [{ test_name: 'eGFR', value: 82.57, unit: 'mL/min/1.73m²', status: 'attention' as const }]
+  it('重訓者：講肌肉量＋建議 Cystatin C，不叫人限鈉', () => {
+    const a = generateLabNutritionAdvice(lab, { gender: '男性', resistanceTrained: true }).find(x => x.title === 'eGFR 偏低')!
+    expect(a.dietaryChanges.join()).toMatch(/Cystatin C/)
+    expect(a.dietaryChanges.join()).not.toMatch(/限鈉/)
+  })
+  it('沒訓練、或 <60：照一般建議', () => {
+    expect(generateLabNutritionAdvice(lab, { gender: '男性' }).find(x => x.title === 'eGFR 偏低')!.dietaryChanges.join()).toMatch(/限鈉/)
+    const low = [{ ...lab[0], value: 55 }]
+    expect(generateLabNutritionAdvice(low, { gender: '男性', resistanceTrained: true }).find(x => x.title === 'eGFR 偏低')!.dietaryChanges.join()).toMatch(/限鈉/)
+  })
+})

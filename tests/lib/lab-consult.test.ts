@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  buildLabConsult, buildConsultActions, renderLabConsultText, shouldAutoSetNextCheckup, addMonths, plainLabel,
+  buildLabConsult, buildConsultActions, standardTarget, renderLabConsultText, shouldAutoSetNextCheckup, addMonths, plainLabel,
   CONSULT_FRESH_DAYS, RETEST_MONTHS_CLEAN, RETEST_MONTHS_WITH_ISSUE,
 } from '@/lib/lab-consult'
 import type { LabHypothesis } from '@/lib/longevity-lens'
@@ -271,5 +271,29 @@ describe('接下來怎麼做：營養＋補品引擎按血檢項目接起來（2
     const c = buildLabConsult({ labs: [{ test_name: '空腹血糖', value: 95, unit: 'mg/dL', date: D1 }], gender: '男性', today: TODAY, advice, scheduledCheckup: '2027-01-16' })!
     expect(c.actions[0].retestDate).toBe('2027-01-16')
     expect(scanMedicalCompliance(renderLabConsultText(c))).toEqual([])
+  })
+})
+
+describe('2026-10-03 收尾：目標統一、重訓者 eGFR、用藥', () => {
+  it('目標從標準檔讀：同半胱胺酸＝最佳 <6（正常 ≤8）、空腹血糖＝最佳 70-85（正常 ≤90）', () => {
+    expect(standardTarget('同半胱胺酸', '男性')).toBe('<6（正常 ≤8）')
+    expect(standardTarget('空腹血糖', '男性')).toBe('70-85（正常 ≤90）')
+    expect(standardTarget('CPK')).toBeNull()
+  })
+  it('A 酸會影響的項目：要留意那行與接下來怎麼做都帶用藥提醒；療程外的抽血不帶', () => {
+    const meds = [{ key: 'isotretinoin', since: '2026-08-01', until: null }]
+    const labs = [{ test_name: 'CPK', value: 397, unit: 'U/L', date: D1, reference_range: '46-171' }]
+    const c = buildLabConsult({ labs, gender: '男性', today: TODAY, medications: meds })!
+    expect(c.watch.find(w => w.name === 'CPK')!.note).toMatch(/A 酸/)
+    const before = buildLabConsult({ labs, gender: '男性', today: TODAY, medications: [{ key: 'isotretinoin', since: '2026-10-01', until: null }] })!
+    expect(before.watch.find(w => w.name === 'CPK')!.note).not.toMatch(/A 酸/)
+    expect(scanMedicalCompliance(renderLabConsultText(c))).toEqual([])
+  })
+  it('重訓者 eGFR 被標要留意 → 下次抽血加驗 Cystatin C', () => {
+    const labs = [{ test_name: 'eGFR', value: 82.57, unit: 'mL/min/1.73m²', date: D1 }]
+    const t = buildLabConsult({ labs, gender: '男性', today: TODAY, resistanceTrained: true })!
+    expect(t.next.items.some(i => /Cystatin C/.test(i.label))).toBe(true)
+    const u = buildLabConsult({ labs, gender: '男性', today: TODAY })!
+    expect(u.next.items.some(i => /Cystatin C/.test(i.label))).toBe(false)
   })
 })
