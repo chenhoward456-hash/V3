@@ -13,6 +13,7 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { sendPushNotificationDetailed } from '@/lib/web-push'
 import { pushMessage } from '@/lib/line'
 import { createLogger } from '@/lib/logger'
+import { lineBudgetAllows, noteLinePushed, type PushPriority } from '@/lib/line-budget'
 
 const log = createLogger('notify')
 
@@ -33,7 +34,9 @@ export async function sendRoutineReminder(
     body: string        // Web Push 內文
     lineText: string    // LINE 訊息文字（可含 emoji、換行）
     url?: string        // Web Push 點擊導向
-  }
+  },
+  /** LINE 額度分級（見 lib/line-budget.ts）：預設 routine＝例行提醒，額度照月份進度配 */
+  opts: { priority?: PushPriority } = {},
 ): Promise<NotifyResult> {
   const supabase = createServiceSupabase()
 
@@ -78,8 +81,13 @@ export async function sendRoutineReminder(
   if (!lineUserId) {
     return { method: 'skipped', success: false }
   }
+  if (!(await lineBudgetAllows(opts.priority ?? 'routine'))) {
+    log.warn('LINE 額度保留給重要訊息，這則例行提醒跳過', { clientId, priority: opts.priority ?? 'routine' })
+    return { method: 'skipped', success: false }
+  }
   try {
     const res = await pushMessage(lineUserId, [{ type: 'text', text: message.lineText }])
+    if (res?.ok) noteLinePushed()
     // pushMessage 對 4xx/5xx 是 return res 不 throw → 必須自己看 res.ok，否則空 id/配額爆都會被當成功
     if (!res || res.ok === false) {
       log.error('LINE push fallback 非 2xx', { clientId, status: res?.status })
