@@ -1,3 +1,4 @@
+import { getTaiwanDate } from './date-utils'
 /**
  * AI Agent tool definitions for Claude tool use
  *
@@ -20,6 +21,7 @@
  *   6. coach approval → write to macro_adjustment_log + update clients
  */
 
+import { EXPERIMENT_METRICS, STATUS_COACH, describeChange, loadClientExperiments, type ExperimentMetric } from './body-experiments'
 import { createServiceSupabase } from '@/lib/supabase'
 import { computeTrajectoryAdjustment, type MacroBounds } from '@/lib/trajectory-adjust'
 import {
@@ -91,6 +93,24 @@ export const AGENT_TOOLS = [
         relevant_until: { type: 'string', description: '限期型筆記的截止日 YYYY-MM-DD。永久型筆記留空' },
       },
       required: ['client_id', 'category', 'note', 'weight'],
+    },
+  },
+  {
+    name: 'create_body_experiment',
+    description: '幫學員開一個「身體實驗」：一個行動＋一個每天在記的指標＋一段期間，系統拿實驗前同樣天數當對照，時間到自動判決、推給學員。教練說「幫 X 開一個實驗」「讓 X 試兩週…看…」就用這個（教練明確要求才開，不要自己主動開）。⚠️ LINE 身心按鈕會把睡眠/精力/心情寫成同一分數，這三個只能代表「整體感覺」；要看睡眠效果優先用 wearable_sleep_score、hrv、resting_hr；看減脂效果用 weight。',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        client: { type: 'string', description: '學員名字或 unique_code' },
+        title: { type: 'string', description: '實驗名稱，簡短，例：每天走 8000 步' },
+        action: { type: 'string', description: '具體怎麼做（可省略）' },
+        metric: { type: 'string', enum: ['weight', 'energy_level', 'sleep_quality', 'mood', 'training_drive', 'stress_level', 'hunger', 'cognitive_clarity', 'hrv', 'resting_hr', 'wearable_sleep_score', 'device_recovery_score'] },
+        expected_direction: { type: 'string', enum: ['up', 'down', 'stable'] },
+        expected_delta: { type: 'number', description: '預期變化幅度（正數，單位同指標；可省略）' },
+        days: { type: 'number', description: '實驗天數，預設 14（7–60）' },
+        start_date: { type: 'string', description: 'YYYY-MM-DD，預設今天（台灣）' },
+      },
+      required: ['client', 'title', 'metric', 'expected_direction'],
     },
   },
 ] as const
@@ -446,11 +466,71 @@ export const ANALYSIS_TOOLS = [
     input_schema: { type: 'object' as const, properties: {}, required: [] },
   },
   {
+    name: 'list_body_experiments',
+    description: '看學員的身體實驗：進行到第幾天、記了幾筆、結束的判決（有用／幅度不夠／沒變／反效果／資料不夠）。唯讀。',
+    input_schema: {
+      type: 'object' as const,
+      properties: { client: { type: 'string', description: '學員名字或 unique_code' } },
+      required: ['client'],
+    },
+  },
+  {
     name: 'list_pending_proposals',
     description: '還等教練處理的引擎提案。⚠️ 唯讀 —— 要套用請教練自己回「套用 <名字>」、要退掉回「不要 <名字>」，agent 不直接寫入學員處方。',
     input_schema: { type: 'object' as const, properties: {}, required: [] },
   },
 ]
+
+// ========== 身體實驗（lib/body-experiments.ts）==========
+
+async function createBodyExperimentTool(input: {
+  client: string; title: string; action?: string; metric: string
+  expected_direction: 'up' | 'down' | 'stable'; expected_delta?: number; days?: number; start_date?: string
+}) {
+  const clientId = await resolveClientId(input.client)
+  if (!clientId) return { error: `找不到學員：${input.client}` }
+  if (!(input.metric in EXPERIMENT_METRICS)) return { error: `指標不在清單內：${input.metric}` }
+  const days = Math.max(7, Math.min(60, Math.round(input.days ?? 14)))
+  const start = /^\d{4}-\d{2}-\d{2}$/.test(input.start_date ?? '') ? input.start_date! : getTaiwanDate()
+  const end = new Date(new Date(`${start}T00:00:00Z`).getTime() + (days - 1) * 86400000).toISOString().slice(0, 10)
+  const delta = input.expected_delta != null && input.expected_delta > 0 ? input.expected_delta : null
+  const { data, error } = await supabase.from('body_experiments').insert({
+    client_id: clientId,
+    title: String(input.title).slice(0, 80),
+    action: input.action ? String(input.action).slice(0, 500) : null,
+    metric: input.metric,
+    start_date: start,
+    end_date: end,
+    expected_direction: input.expected_direction,
+    expected_delta: delta,
+    note: '由教練在 LINE 透過助手開立',
+  }).select('id').single()
+  if (error) return { error: 'DB 寫入失敗: ' + error.message }
+  const exps = await loadClientExperiments(supabase, clientId, getTaiwanDate())
+  const g = exps.find(e => e.id === data.id)?.grade
+  const label = EXPERIMENT_METRICS[input.metric as ExperimentMetric].label
+  return {
+    success: true,
+    message: `已開實驗「${input.title}」：${start} → ${end}（${days} 天），看${label}，預期${input.expected_direction === 'up' ? '上升' : input.expected_direction === 'down' ? '下降' : '不變'}${delta ? ` ${delta}` : ''}。時間到系統自動判決、推給學員。`,
+    baseline_points: g?.baseline.n ?? 0,
+    warning: (g?.baseline.n ?? 0) < 5 ? `對照期（實驗前 14 天）只有 ${g?.baseline.n ?? 0} 筆${label}，少於 5 筆，結束時很可能判「資料不夠」——請學員這段期間每天記。` : null,
+  }
+}
+
+async function listBodyExperimentsTool(client: string) {
+  const clientId = await resolveClientId(client)
+  if (!clientId) return { error: `找不到學員：${client}` }
+  const exps = await loadClientExperiments(supabase, clientId, getTaiwanDate())
+  if (exps.length === 0) return { experiments: [], message: '這位學員還沒有身體實驗。' }
+  return {
+    experiments: exps.map(e => ({
+      title: e.title,
+      period: `${e.start_date} → ${e.end_date}`,
+      status: e.grade.status === 'running' ? `進行中：第 ${e.grade.day}/${e.grade.totalDays} 天，記了 ${e.grade.during.n} 筆` : STATUS_COACH[e.grade.status],
+      result: describeChange(e, e.grade),
+    })),
+  }
+}
 
 // ========== Tool dispatcher ==========
 
@@ -475,6 +555,10 @@ export async function executeAgentTool(name: string, input: any) {
       return await listLabsDue(supabase)
     case 'list_pending_proposals':
       return await listProposalsForAgent(supabase)
+    case 'create_body_experiment':
+      return await createBodyExperimentTool(input)
+    case 'list_body_experiments':
+      return await listBodyExperimentsTool(input.client)
     default:
       return { error: `unknown tool: ${name}` }
   }

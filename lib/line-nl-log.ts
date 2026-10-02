@@ -225,8 +225,8 @@ export const NL_SYSTEM_PROMPT = `你是健身記錄解析器。把學員用中�
 - 讀得出一部分就回一部分，不用全部都有。
 
 範例：
-輸入「85.7 今天推日45分鐘RPE7 飲食達標 睡眠精力心情都3」
-輸出 {"weight":85.7,"training":{"training_type":"push","duration":45,"rpe":7},"nutrition":{"compliant":true,"calories":null,"protein_grams":null},"wellness":{"sleep_quality":3,"energy_level":3,"mood":3},"not_a_log":false,"ask":null}
+輸入「85.7 今天推日45分鐘RPE7 飲食達標 睡眠4 精力3」
+輸出 {"weight":85.7,"training":{"training_type":"push","duration":45,"rpe":7},"nutrition":{"compliant":true,"calories":null,"protein_grams":null},"wellness":{"sleep_quality":4,"energy_level":3,"mood":null},"not_a_log":false,"ask":null}
 
 輸入「今天好累 沒練」
 輸出 {"weight":null,"training":{"training_type":"rest","duration":null,"rpe":null},"nutrition":null,"wellness":null,"not_a_log":false,"ask":null}
