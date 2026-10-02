@@ -108,6 +108,7 @@ export default function LabConsultCard({ code }: { code: string }) {
                     </span>
                   </div>
                   {w.idealText && <p className="text-xs text-slate-500 mt-0.5 tabular-nums">理想 {w.idealText}</p>}
+                  {w.labRangeText && <p className="text-xs text-slate-500 mt-0.5 tabular-nums">檢驗所範圍 {w.labRangeText}</p>}
                   <p className="text-sm text-slate-600 mt-0.5">{w.note}</p>
                 </div>
               )

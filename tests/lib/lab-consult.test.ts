@@ -208,3 +208,32 @@ describe('新鮮度與自動排下次（不覆蓋教練的未來日期）', () =
     expect(shouldAutoSetNextCheckup(null, null)).toBeNull()
   })
 })
+
+describe('系統沒設判讀標準的指標：照檢驗所範圍（2026-10-02）', () => {
+  const labs = [
+    { test_name: 'CPK', value: 397, unit: 'U/L', date: D1, reference_range: '46-171' },
+    { test_name: 'LDH', value: 194, unit: 'U/L', date: D1, reference_range: '120-246' },
+    { test_name: 'Amylase', value: 85, unit: 'U/L', date: D1, reference_range: '' },
+    { test_name: '空腹血糖', value: 85, unit: 'mg/dL', date: D1, reference_range: '70-99' },
+  ]
+  const c = buildLabConsult({ labs, gender: '男性', today: TODAY })!
+
+  it('超出檢驗所範圍的（CPK 397／46–171）進「要留意」，標偏高、附檢驗所範圍、附訓練提醒', () => {
+    const cpk = c.watch.find(w => w.name === 'CPK')
+    expect(cpk).toBeDefined()
+    expect(cpk!.level).toBe('watch')
+    expect(cpk!.side).toBe('high')
+    expect(cpk!.labRangeText).toBe('46-171')
+    expect(cpk!.note).toMatch(/大重量/)
+  })
+  it('在檢驗所範圍內、或沒印範圍的，不進「要留意」', () => {
+    expect(c.watch.some(w => w.name === 'LDH')).toBe(false)
+    expect(c.watch.some(w => w.name === 'Amylase')).toBe(false)
+  })
+  it('有要留意 → 3 個月後回來驗；文字版帶出檢驗所範圍、不含病名', () => {
+    expect(c.next.months).toBe(RETEST_MONTHS_WITH_ISSUE)
+    const text = renderLabConsultText(c)
+    expect(text).toMatch(/CPK 397.*檢驗所範圍 46-171/)
+    expect(scanMedicalCompliance(text)).toEqual([])
+  })
+})

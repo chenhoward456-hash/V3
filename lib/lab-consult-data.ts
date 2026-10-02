@@ -22,7 +22,7 @@ export async function loadLabConsult(supabase: SupabaseClient, clientDbId: strin
   if (!c) return null
 
   const [labs, hyps, template] = await Promise.all([
-    supabase.from('lab_results').select('test_name, value, unit, date').eq('client_id', clientDbId).order('date'),
+    supabase.from('lab_results').select('test_name, value, unit, date, reference_range').eq('client_id', clientDbId).order('date'),
     supabase.from('lab_hypotheses').select('*').eq('client_id', clientDbId),
     // 同 lib/lab-order-data.ts：學員版下次抽血清單用「目標導向」公版
     supabase
