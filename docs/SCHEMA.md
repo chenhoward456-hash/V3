@@ -7,7 +7,7 @@
 
 1. **`lab_results.status` 寫了不算數**
    - 前端用 `calculateLabStatus()`（`utils/labStatus.ts`）重算顯示狀態，DB 裡的 status 不是 UI 真相來源。
-   - `lab_results` 上有 trigger `trigger_update_client_status`（AFTER INSERT/UPDATE）：會根據該 client **全部** lab_results 的 status 重算 `clients.status`（有任一 alert → alert）。直接 INSERT status='alert' 會連動改 clients.status。
+   - `lab_results` 上有 trigger `trigger_update_client_status`（AFTER INSERT/UPDATE）：會根據該 client **每個 test_name 最新一筆** lab_results 的 status 重算 `clients.status`（有任一 alert → alert）。（2026-10-02 前是算全部歷史，舊的 alert 會永遠卡住。）直接 INSERT status='alert' 會連動改 clients.status。2026-10-02 已用 `calculateLabStatus` 回填過一次 status（141 筆改 25 筆）。
    - `lab-status-calculator.ts`（根目錄）只是向後相容的 re-export，單一真相來源是 `utils/labStatus.ts`。
 
 2. **`clients` 的 mode 欄位會互相覆寫**
