@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
+  personalReason,
   plainLabItem, buildDoctorScript, buildStudentLabVisit, cleanPrepNotes, visitToText,
   DEPARTMENT, ROUTINE_ITEM, MAX_OPTIONAL, type StudentLabVisit,
 } from '@/lib/lab-order-student'
@@ -180,5 +181,29 @@ describe('學員卡原始碼本身也不准有價格／底盤字眼', () => {
     // 拿掉註解再檢查（註解裡可以解釋「為什麼不顯示價格」）
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
     expect(code).not.toMatch(/底盤|有錢再加|有預算|元|省|NT\$|price|Cost/)
+  })
+})
+
+describe('personalReason：引擎 why → 學員看的「你的原因」（2026-10-02）', () => {
+  it('留下數字、目標、日期；講錢的話拿掉', () => {
+    expect(personalReason('上次 626.72（最佳 700-900），2026-09-30 驗的，要看有沒有動'))
+      .toBe('上次 626.72（目標 700-900），2026-09-30 驗的，這次看有沒有往目標走')
+    expect(personalReason('上次 1.67 正常，但已經 536 天，沒錢可以晚一輪')).toBe('上次 1.67 正常，但已經 536 天')
+    expect(personalReason('從沒驗過，是基準線不是追蹤，沒錢可以晚一輪')).toBe('從沒驗過，先驗一次當自己的基準')
+  })
+  it('含底盤／價格字眼整句不給', () => {
+    expect(personalReason('2026-09-30 驗過但有項目不正常，底盤值得再開一次')).toBe('')
+    expect(personalReason(undefined)).toBe('')
+  })
+  it('buildStudentLabVisit 把原因掛到對應項目，學員輸出仍過合規、不含價格', () => {
+    const v = buildStudentLabVisit({
+      must: [{ label: 'Testosterone 總睪固酮', why: '上次 626.72（最佳 700-900），2026-09-30 驗的，要看有沒有動' }],
+      defer: [{ label: 'Free T3', why: '從沒驗過，是基準線不是追蹤，沒錢可以晚一輪' }],
+    }, {})
+    expect(v.items[0].personal).toMatch(/626\.72/)
+    expect(v.items[1].personal).toBe('從沒驗過，先驗一次當自己的基準')
+    const all = v.items.map(i => i.personal ?? '').join('\n')
+    expect(all).not.toMatch(/沒錢|底盤|元/)
+    expect(scanMedicalCompliance(all)).toEqual([])
   })
 })
