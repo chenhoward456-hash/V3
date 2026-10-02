@@ -37,3 +37,24 @@ describe('補品指徵對帳 2026-10-03 修正', () => {
     expect(supplementEffect('TMG', labs, null)).toBeNull()
   })
 })
+
+describe('用藥感知＋主動通知（2026-10-03）', () => {
+  const meds = [{ key: 'isotretinoin', since: '2026-05-01', until: null }]
+  it('A 酸療程中：南非醉茄要注意、維生素 A 要注意（仿單警語）', () => {
+    expect(auditSupplement('南非醉茄', labs, undefined, { medications: meds, today: '2026-10-03' }).status).toBe('caution')
+    expect(auditSupplement('維生素A', labs, undefined, { medications: meds, today: '2026-10-03' }).basis).toMatch(/維生素 A 過量/)
+  })
+  it('療程結束後就不擋', () => {
+    const done = [{ key: 'isotretinoin', since: '2026-05-01', until: '2026-11-01' }]
+    expect(auditSupplement('南非醉茄', labs, undefined, { medications: done, today: '2026-12-01' }).status).toBe('lifestyle')
+  })
+  it('肝指數超標也擋南非醉茄', () => {
+    expect(auditSupplement('ashwagandha', [{ test_name: 'ALT', value: 80, date: '2026-09-30' }]).status).toBe('caution')
+  })
+  it('TMG：有指徵時提醒每天 <4 g；LDL 超標改要注意', () => {
+    expect(auditSupplement('TMG', labs).basis).toMatch(/<4 g/)
+    const hiLdl = [...labs, { test_name: 'LDL-C', value: 180, date: '2026-09-30' }]
+    expect(auditSupplement('TMG', hiLdl).status).toBe('caution')
+    expect(auditSupplement('活性B群', hiLdl).status).toBe('indicated')
+  })
+})

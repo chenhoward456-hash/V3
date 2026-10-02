@@ -12,6 +12,10 @@ export interface ClientMedication {
 
 interface MedicationEffect {
   label: string
+  /** 會動肝指數的藥：補品對帳時，有肝毒性病例的補品（南非醉茄）要暫停 */
+  liver?: boolean
+  /** 服藥期間不能疊加的補品（關鍵字），與原因 */
+  avoid?: { match: string[]; why: string }[]
   /** 會被這個藥拉高／影響的血檢項目 */
   markers: string[]
   /** 給學員看的一句話（不寫病名、不叫人停藥） */
@@ -22,6 +26,11 @@ interface MedicationEffect {
 export const MEDICATION_EFFECTS: Record<string, MedicationEffect> = {
   isotretinoin: {
     label: '口服 A 酸',
+    liver: true,
+    avoid: [{
+      match: ['維生素a', '維他命a', 'vitamin a', 'vitamina', 'retinol', '視黃醇', '魚肝油', 'cod liver'],
+      why: 'A 酸本身就是維生素 A 衍生物，仿單警語：服藥期間不要再補維生素 A，疊加會造成維生素 A 過量',
+    }],
     markers: ['CPK', 'AST', 'ALT', 'ALP', '三酸甘油酯', 'LDL-C', '總膽固醇', '白血球'],
     note: '你在吃口服 A 酸：服藥期間這項常會偏高，加上大重量訓練 CK 會升更多。等療程結束後再驗一次，那個數字才是你真正的基準；有肌肉痠痛無力或尿色變深要回診告訴醫生',
     refs: [
@@ -29,6 +38,11 @@ export const MEDICATION_EFFECTS: Record<string, MedicationEffect> = {
       'Chroni 2010 Drug Saf（PMID 20000864）：A 酸＋激烈運動 CK 可升高，偶達正常值 100 倍',
     ],
   },
+}
+
+/** onDate 當天還在吃的藥（沒寫起訖就當還在吃） */
+export function activeMedications(meds: ClientMedication[] | null | undefined, onDate?: string): ClientMedication[] {
+  return (meds ?? []).filter(m => !(onDate && m.since && onDate < m.since) && !(onDate && m.until && onDate > m.until))
 }
 
 /** 這個人現在（today）還在吃、而且會影響這項血檢的藥；沒有回 null */

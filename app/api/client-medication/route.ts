@@ -4,6 +4,7 @@ import { createServiceSupabase } from '@/lib/supabase'
 import { createLogger } from '@/lib/logger'
 import { applyMedicationChange, resolveMedicationKey, MEDICATION_EFFECTS, type ClientMedication } from '@/lib/medication-effects'
 import { getTaiwanDate } from '@/lib/date-utils'
+import { buildStackAlertFor } from '@/lib/supplement-alerts'
 
 const logger = createLogger('client-medication')
 export const dynamic = 'force-dynamic'
@@ -39,7 +40,10 @@ export async function POST(request: NextRequest) {
     const { error } = await supabase.from('clients').update({ medications }).eq('id', c.id)
     if (error) { logger.error('update medications failed', error); return NextResponse.json({ error: '寫入失敗' }, { status: 500 }) }
     const known = MEDICATION_EFFECTS[key]
+    // 用藥一變，保健品能不能吃也可能變（例：A 酸療程中南非醉茄要停、不能補維生素 A）→ 回傳給助手一起講
+    const stackAlert = await buildStackAlertFor(supabase, c.id, c.name, action === 'start' ? `開始吃${medication}之後` : `${medication}停了之後`)
     return NextResponse.json({
+      stackAlert,
       ok: true, client: c.name, action, date, medications,
       affects: known ? known.markers : [],
       note: known ? `血檢判讀會把 ${known.markers.join('、')} 在服藥期間的偏高標成「藥造成的」` : '這個藥系統還沒有已知的血檢影響，只記錄不影響判讀',
