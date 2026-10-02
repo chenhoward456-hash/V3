@@ -22,7 +22,9 @@
    - `supplement_logs`：UNIQUE (supplement_id, date)
    - `lab_panel_notes`：UNIQUE (client_id, panel_date)（這張表存在，別忘了它）
 
-5. **教練設定優先**：`clients.coach_macro_override`（jsonb）存在時，引擎不可覆寫 macros；自動調整前檢查 `auto_adjust_enabled`。所有 macro 變更必須寫 `macro_adjustment_log`（注意它的 CHECK，見下表）。
+5. **`clients.medications`（jsonb，2026-10-03）**：目前用藥 `[{key,name,since,until}]`，key 對 `lib/medication-effects.ts`（例 isotretinoin）。血檢顧問卡用它把「藥造成的偏高」標出來；until=null＝還在吃。
+
+6. **教練設定優先**：`clients.coach_macro_override`（jsonb）存在時，引擎不可覆寫 macros；自動調整前檢查 `auto_adjust_enabled`。所有 macro 變更必須寫 `macro_adjustment_log`（注意它的 CHECK，見下表）。
 
 ## CHECK 允許值速查
 

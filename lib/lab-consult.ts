@@ -20,7 +20,8 @@
 import { MARKERS, buildMarkerStory, gradeHypothesis, type LabPoint, type LabHypothesis, type HypothesisStatus } from '@/lib/longevity-lens'
 import { analyzeLabs, type LabResultRow } from '@/lib/lab-trend-analyzer'
 import { buildLabOrder, type TemplateItem, type OrderRule } from '@/lib/lab-order'
-import { getLabDirection, LAB_THRESHOLDS } from '@/utils/labStatus'
+import { getLabDirection, LAB_THRESHOLDS, HIGHER_IS_BETTER, FEMALE_VARIANTS, getOptimalRangeText } from '@/utils/labStatus'
+import { medicationNoteFor, type ClientMedication } from '@/lib/medication-effects'
 import { sideFromReferenceRange } from '@/utils/labReferenceRange'
 import { getLabCanonicalId } from '@/utils/labMatch'
 import type { LabNutritionAdvice } from '@/lib/lab-nutrition-advisor'
@@ -50,6 +51,8 @@ export interface ConsultChange {
   outOfRange?: boolean
   /** 變差時的白話提醒（例：肝指數受訓練影響） */
   hint?: string
+  /** 正在吃的藥會影響這項 */
+  medNote?: string
 }
 
 export interface ConsultWatch {
@@ -93,6 +96,8 @@ export interface ConsultAction {
   /** 吃的／生活上的做法（最多 3 條） */
   doThis: string[]
   supplements: { name: string; dosage: string; timing: string; reason: string }[]
+  /** 正在吃的藥會影響這項（例：A 酸拉高 CK、肝指數、血脂） */
+  medNote?: string | null
   /** 下次抽血日（驗收這項有沒有到目標） */
   retestDate: string
 }
@@ -137,6 +142,26 @@ export interface LabConsultInput {
   supplements?: SupplementSuggestion[]
   /** 教練排定的下次抽血日；在這次抽血之後就拿它當驗收日，否則用建議日 */
   scheduledCheckup?: string | null
+  /** clients.medications：正在吃、會影響血檢的藥 */
+  medications?: ClientMedication[] | null
+  /** 有規律重訓（training_enabled）：eGFR 偏低時下次加驗 Cystatin C */
+  resistanceTrained?: boolean
+}
+
+/**
+ * 目標一律從唯一標準檔（utils/labStatus.ts）讀：有「最佳」就寫「最佳（正常 X）」，沒有就寫正常範圍。
+ * 2026-10-03 起因：營養引擎把「正常上限」寫成「（最佳）」——同半胱胺酸寫 <8（最佳），標準檔是正常 ≤8、最佳 <6；
+ * 空腹血糖寫 <90（最佳），標準檔是正常 ≤90、最佳 <80。同一項在兩張卡出現兩個目標。
+ */
+export function standardTarget(testName: string, gender?: '男性' | '女性'): string | null {
+  const lookup = gender === '女性' && FEMALE_VARIANTS.includes(testName) ? `${testName}_female` : testName
+  const t = (LAB_THRESHOLDS as Record<string, { normal: number | { min: number; max: number } }>)[lookup]
+  if (!t) return null
+  const normal = typeof t.normal === 'object'
+    ? `${t.normal.min}-${t.normal.max}`
+    : HIGHER_IS_BETTER.has(lookup) ? `≥${t.normal}` : `≤${t.normal}`
+  const optimal = getOptimalRangeText(testName, gender)
+  return optimal ? `${optimal}（正常 ${normal}）` : `正常 ${normal}`
 }
 
 /** 每一項血檢要做什麼：營養引擎＋補品引擎，按血檢項目合併。只收「要處理的」（正向、跟血檢無關的補品不收） */
@@ -146,6 +171,7 @@ export function buildConsultActions(
   retestDate: string,
   watchNames: string[] = [],
   latest: Map<string, { value: number; unit: string | null }> = new Map(),
+  opts: { gender?: '男性' | '女性'; medications?: ClientMedication[] | null; drawDate?: string } = {},
 ): ConsultAction[] {
   const byKey = new Map<string, ConsultAction>()
   const keyOf = (name: string) => getLabCanonicalId(name) ?? name
@@ -178,11 +204,18 @@ export function buildConsultActions(
   return [...byKey.entries()]
     .sort(([a], [b]) => Number(watchKeys.has(b)) - Number(watchKeys.has(a)))
     .map(([k, v]) => {
-      // 肌酸酐／eGFR：先講「可能是肌肉量造成的」再給引擎的做法（同「要留意」那段的說法）
+      // 肌酸酐／eGFR：引擎沒先講肌肉量時才補一句（重訓者的 eGFR 建議引擎自己會講）
       const muscle = [...MUSCLE_SENSITIVE].some(m => keyOf(m) === k)
-      const doThis = [...new Set(v.doThis)].slice(0, muscle ? 2 : 3)
-      if (muscle) doThis.unshift('先看訓練：肌肉量大或有補充肌酸時，肌酸酐會偏高、eGFR 會算得偏低')
-      return { ...v, doThis }
+      const engineSaysMuscle = v.doThis.some(d => d.includes('肌肉量'))
+      const addMuscle = muscle && !engineSaysMuscle
+      const doThis = [...new Set(v.doThis)].slice(0, addMuscle ? 2 : 3)
+      if (addMuscle) doThis.unshift('先看訓練：肌肉量大或有補充肌酸時，肌酸酐會偏高、eGFR 會算得偏低')
+      return {
+        ...v,
+        doThis,
+        target: standardTarget(v.name, opts.gender) ?? v.target,
+        medNote: medicationNoteFor(v.name, opts.medications, opts.drawDate),
+      }
     })
 }
 
@@ -378,6 +411,15 @@ export function buildLabConsult(input: LabConsultInput): LabConsult | null {
       note,
     })
   }
+  // 正在吃的藥會拉高的項目：「要留意」那行補一句（A 酸 → CK、肝指數、血脂）
+  for (const w of watch) {
+    const med = medicationNoteFor(w.name, input.medications, drawDate)
+    if (med) w.note += `；${med}`
+  }
+  for (const w of worse) {
+    const med = medicationNoteFor(w.name, input.medications, drawDate)
+    if (med) w.medNote = med
+  }
   // 同時在「變差」的，那行標出「落在要留意的範圍」；「要留意」照列（那裡才有該怎麼做）
   for (const w of worse) if (watch.some(x => x.name === w.name)) w.outOfRange = true
   for (const w of worse) {
@@ -421,6 +463,10 @@ export function buildLabConsult(input: LabConsultInput): LabConsult | null {
     seen.add(key)
     items.push({ label, why })
   }
+  // 重訓者 eGFR 被標要留意 → 下次加驗 Cystatin C（不受肌肉量影響，KDIGO 2024 PMID 38490803）
+  if (input.resistanceTrained && watch.some(w => w.name === 'eGFR' || w.name === '肌酸酐')) {
+    push('胱抑素 C（Cystatin C）', 'cystatin_c', '不受肌肉量影響，確認 eGFR 偏低是不是肌肉造成的')
+  }
   // 這次要留意的一定要追（不管公版有沒有列）
   for (const w of watch) {
     const id = getLabCanonicalId(w.name)
@@ -450,6 +496,7 @@ export function buildLabConsult(input: LabConsultInput): LabConsult | null {
       input.scheduledCheckup && input.scheduledCheckup > drawDate ? input.scheduledCheckup : addMonths(drawDate, months),
       watch.map(w => w.name),
       latestByKey(valid),
+      { gender, medications: input.medications, drawDate },
     ),
     next: { date: addMonths(drawDate, months), months, reason, items },
   }
@@ -481,7 +528,7 @@ export function renderLabConsultText(c: LabConsult): string {
     out.push('・沒有超過正常波動的變化')
   }
   for (const x of c.better) out.push(`・變好｜${x.name} ${fmtN(x.from)} → ${fmtN(x.to)}${u(x.unit)}（${x.pct > 0 ? '+' : ''}${x.pct}%）`)
-  for (const x of c.worse) out.push(`・變差｜${x.name} ${fmtN(x.from)} → ${fmtN(x.to)}${u(x.unit)}（${x.pct > 0 ? '+' : ''}${x.pct}%）${x.outOfRange ? '，而且落在要留意的範圍' : ''}${x.hint ? `——${x.hint}` : ''}`)
+  for (const x of c.worse) out.push(`・變差｜${x.name} ${fmtN(x.from)} → ${fmtN(x.to)}${u(x.unit)}（${x.pct > 0 ? '+' : ''}${x.pct}%）${x.outOfRange ? '，而且落在要留意的範圍' : ''}${x.hint ? `——${x.hint}` : ''}${x.medNote ? `；${x.medNote}` : ''}`)
   for (const x of c.shiftedInRange) out.push(`・有變動但都在很好的範圍｜${x.name} ${fmtN(x.from)} → ${fmtN(x.to)}${u(x.unit)}（${x.pct > 0 ? '+' : ''}${x.pct}%）`)
   if (c.noiseCount > 0) out.push(`・另外 ${c.noiseCount} 項有上下，但在你自己的正常波動內，不用放心上`)
 
@@ -496,7 +543,7 @@ export function renderLabConsultText(c: LabConsult): string {
     out.push('', '【接下來怎麼做】（做到下次抽血，那次看有沒有到目標）')
     for (const a of c.actions) {
       const tail = [...a.doThis, ...a.supplements.map(sp => `${sp.name.replace(/^⚠️\s*/, '')}：${sp.dosage}`)].join('；')
-      out.push(`・${a.name}：${tail}`)
+      out.push(`・${a.name}：${a.medNote ? `${a.medNote}；` : ""}${tail}`)
     }
   }
 

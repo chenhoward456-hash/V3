@@ -234,7 +234,7 @@ export const LAB_OPTIMAL_RANGES: Record<string, number | { min: number; max: num
 }
 
 // 「越高越好」的指標集合
-const HIGHER_IS_BETTER = new Set([
+export const HIGHER_IS_BETTER = new Set([
   'HDL-C', 'HDL-C_female', '白蛋白', 'eGFR',
 ]);
 

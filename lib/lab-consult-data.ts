@@ -18,7 +18,7 @@ export interface LoadedLabConsult {
 export async function loadLabConsult(supabase: SupabaseClient, clientDbId: string): Promise<LoadedLabConsult | null> {
   const { data: c } = await supabase
     .from('clients')
-    .select('id, gender, next_checkup_date, goal_type, prep_phase, health_mode_enabled, gene_mthfr, gene_apoe, gene_depression_risk')
+    .select('id, gender, next_checkup_date, goal_type, prep_phase, health_mode_enabled, gene_mthfr, gene_apoe, gene_depression_risk, training_enabled, medications')
     .eq('id', clientDbId)
     .maybeSingle()
   if (!c) return null
@@ -43,7 +43,7 @@ export async function loadLabConsult(supabase: SupabaseClient, clientDbId: strin
   const newestFirst = [...rows].sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))
   const gender = c.gender === '女性' ? '女性' as const : c.gender === '男性' ? '男性' as const : undefined
   const goalType = c.goal_type === 'cut' || c.goal_type === 'bulk' ? c.goal_type : null
-  const advice = generateLabNutritionAdvice(newestFirst as never, { gender, goalType })
+  const advice = generateLabNutritionAdvice(newestFirst as never, { gender, goalType, resistanceTrained: !!c.training_enabled })
   const supplements = generateSupplementSuggestions(newestFirst as never, {
     gender, goalType, isHealthMode: !!c.health_mode_enabled,
     genetics: { mthfr: c.gene_mthfr ?? null, apoe: c.gene_apoe ?? null, depressionRisk: c.gene_depression_risk ?? null } as never,
@@ -54,6 +54,8 @@ export async function loadLabConsult(supabase: SupabaseClient, clientDbId: strin
     advice,
     supplements,
     scheduledCheckup: c.next_checkup_date ?? null,
+    medications: Array.isArray(c.medications) ? c.medications : [],
+    resistanceTrained: !!c.training_enabled,
     gender: c.gender,
     today: getTaiwanDate(),
     // 預測表讀不到（例：舊環境沒這張表）不擋整張卡
