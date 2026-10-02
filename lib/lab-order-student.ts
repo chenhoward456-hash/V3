@@ -26,8 +26,8 @@ export interface StudentLabProfile {
 
 /** API（/api/lab-order）回來、學員卡用得到的那幾欄 */
 export interface StudentLabOrderInput {
-  must?: { label: string }[]
-  defer?: { label: string }[]
+  must?: { label: string; why?: string }[]
+  defer?: { label: string; why?: string }[]
   basePackage?: { skippable: boolean } | null
   prepNotes?: string | null
 }
@@ -37,6 +37,8 @@ export interface PlainLabItem {
   why: string
   /** true＝引擎判「可延後」的項目，學員端標「可一起驗」，不講錢 */
   optional: boolean
+  /** 這個人自己的理由（引擎算的：上次數字、目標、隔多久），沒有就不帶 */
+  personal?: string
 }
 
 export interface StudentLabVisit {
@@ -146,6 +148,25 @@ export function buildDoctorScript(p: StudentLabProfile): string {
   return `${parts.join('，')}。想了解自己的荷爾蒙、代謝和營養狀況，追蹤身體有沒有照計畫在走，想請醫生幫我安排抽血。`
 }
 
+/**
+ * 引擎寫給教練的 why → 學員看得懂的「你的原因」（2026-10-02）。
+ * Howard 看卡片問「為什麼是這些」——卡上只有通用說明（「看荷爾蒙底子」），他自己的數字、目標、
+ * 隔多久沒驗全藏在教練版。這裡把引擎的 why 拿來用，只拿掉講錢的話和內部用語。
+ */
+export function personalReason(why: string | null | undefined): string {
+  if (!why) return ''
+  const t = why
+    .replace(/[，,]?\s*沒錢可以晚一輪/g, '')
+    .replace(/公版漏了這項[。，]?/g, '')
+    .replace(/最佳\s*/g, '目標 ')
+    .replace(/[（(]\s*用來算\s*Free Testosterone\s*/g, '（用來算')
+    .replace(/，要看有沒有動$/, '，這次看有沒有往目標走')
+    .replace(/是基準線不是追蹤/g, '先驗一次當自己的基準')
+    .trim()
+  if (/底盤|價格|\$|元\b|必開|有錢|省錢/.test(t)) return ''
+  return isMedicallyCompliant(t) ? t : ''
+}
+
 /** 公版的抽血前注意事項給學員看：拿掉 ⚠️、把「MC」「panel」這種內部簡寫換成白話，過合規 */
 export function cleanPrepNotes(raw: string | null | undefined): string[] {
   if (!raw) return []
@@ -164,15 +185,16 @@ export function cleanPrepNotes(raw: string | null | undefined): string[] {
 export function buildStudentLabVisit(d: StudentLabOrderInput, profile: StudentLabProfile): StudentLabVisit {
   const items: PlainLabItem[] = []
   const seen = new Set<string>()
-  const add = (e: Entry, optional: boolean) => {
+  const add = (e: Entry, optional: boolean, engineWhy?: string) => {
     if (seen.has(e.name)) return
     seen.add(e.name)
-    items.push({ name: e.name, why: isMedicallyCompliant(e.why) ? e.why : '', optional })
+    const personal = personalReason(engineWhy)
+    items.push({ name: e.name, why: isMedicallyCompliant(e.why) ? e.why : '', optional, ...(personal ? { personal } : {}) })
   }
 
   if (d.basePackage && !d.basePackage.skippable) add(ROUTINE_ITEM, false)
-  for (const l of d.must ?? []) add(plainLabItem(l.label), false)
-  for (const l of (d.defer ?? []).slice(0, MAX_OPTIONAL)) add(plainLabItem(l.label), true)
+  for (const l of d.must ?? []) add(plainLabItem(l.label), false, l.why)
+  for (const l of (d.defer ?? []).slice(0, MAX_OPTIONAL)) add(plainLabItem(l.label), true, l.why)
 
   return {
     department: DEPARTMENT,

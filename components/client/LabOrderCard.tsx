@@ -70,6 +70,7 @@ export default function LabOrderCard({ code, today, profile }: { code: string; t
                 {i.optional && <span className="ml-1.5 text-xs font-normal text-slate-500">可一起驗</span>}
               </p>
               {i.why && <p className="text-xs text-slate-500 mt-0.5">{i.why}</p>}
+              {i.personal && <p className="text-xs text-slate-700 mt-0.5 tabular-nums">你的原因：{i.personal}</p>}
             </li>
           ))}
         </ul>
