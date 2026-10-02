@@ -48,3 +48,29 @@ export function medicationNoteFor(
   }
   return null
 }
+
+/** 口語藥名 → 已知 key（助手 LINE 指令用）；對不到回 null，呼叫端照原名存成「沒有已知影響」的用藥 */
+export function resolveMedicationKey(text: string): string | null {
+  if (/a\s*酸|isotretinoin|羅可坦|roaccutane|accutane/i.test(text)) return 'isotretinoin'
+  return null
+}
+
+/**
+ * 開始／停止一個用藥（純函式）。
+ * start：同 key 還在吃的就更新開始日，沒有就新增一筆；stop：把還在吃的那筆補上結束日（沒有就原樣回傳＋changed=false）。
+ */
+export function applyMedicationChange(
+  meds: ClientMedication[] | null | undefined,
+  change: { action: 'start' | 'stop'; key: string; name?: string; date: string },
+): { medications: ClientMedication[]; changed: boolean } {
+  const list = Array.isArray(meds) ? meds.map(m => ({ ...m })) : []
+  const active = list.find(m => m.key === change.key && !m.until)
+  if (change.action === 'start') {
+    if (active) { active.since = change.date; if (change.name) active.name = change.name }
+    else list.push({ key: change.key, name: change.name ?? MEDICATION_EFFECTS[change.key]?.label ?? change.key, since: change.date, until: null })
+    return { medications: list, changed: true }
+  }
+  if (!active) return { medications: list, changed: false }
+  active.until = change.date
+  return { medications: list, changed: true }
+}
