@@ -9,6 +9,7 @@ import {
   getClientIP,
 } from '@/lib/auth-middleware'
 import { LAB_THRESHOLDS } from '@/utils/labStatus'
+import { statusFromReferenceRange } from '@/utils/labReferenceRange'
 import { fireAutoDraftsForDates } from '@/lib/auto-draft'
 import { autoScheduleNextCheckup } from '@/lib/lab-consult-data'
 
@@ -57,7 +58,8 @@ function autoStatus(testName: string, value: number, referenceRange: string): 'n
     if (value <= a) return 'attention'
     return 'alert'
   }
-  return 'normal'
+  // 系統沒設判讀標準的指標：照檢驗所報告印的範圍判（2026-10-02 前這裡一律回 normal，CPK 397／範圍 46–171 也標正常）
+  return statusFromReferenceRange(value, referenceRange) ?? 'normal'
 }
 
 /**

@@ -28,6 +28,8 @@ export interface LabResultRow {
   unit?: string | null
   date: string  // YYYY-MM-DD
   status?: string | null
+  /** 檢驗所報告印的參考範圍（原樣）；系統沒設標準的指標靠它判斷範圍外 */
+  reference_range?: string | null
 }
 
 export type FindingSeverity =

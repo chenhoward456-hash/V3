@@ -20,7 +20,8 @@
 import { MARKERS, buildMarkerStory, gradeHypothesis, type LabPoint, type LabHypothesis, type HypothesisStatus } from '@/lib/longevity-lens'
 import { analyzeLabs, type LabResultRow } from '@/lib/lab-trend-analyzer'
 import { buildLabOrder, type TemplateItem, type OrderRule } from '@/lib/lab-order'
-import { getLabDirection } from '@/utils/labStatus'
+import { getLabDirection, LAB_THRESHOLDS } from '@/utils/labStatus'
+import { sideFromReferenceRange } from '@/utils/labReferenceRange'
 import { getLabCanonicalId } from '@/utils/labMatch'
 
 /** 最近一次抽血在這個天數內才顯示卡片／才自動排下次（太舊的抽血不算「這次」） */
@@ -59,6 +60,8 @@ export interface ConsultWatch {
   side: 'high' | 'low' | null
   /** 理想範圍文字（例：<100、40-60），沒有就 null */
   idealText: string | null
+  /** 系統沒設標準、改照檢驗所範圍判的：報告上印的範圍（例：46-171） */
+  labRangeText?: string | null
   note: string
 }
 
@@ -197,7 +200,7 @@ const ANSWER_TEXT: Record<ConsultAnswer['status'], string> = {
 }
 
 /** 常被訓練影響的指標：抽血前幾天練大重量會暫時升高（lib/lab-prep.ts 同一組依據，Pettersson 2008） */
-const EXERCISE_SENSITIVE = new Set(['AST', 'ALT'])
+const EXERCISE_SENSITIVE = new Set(['AST', 'ALT', 'CPK', 'LDH'])
 /** 肌肉量／肌酸補充會拉高肌酸酐、讓用它算的 eGFR 偏低（同 longevity-lens 學員分組說明） */
 const MUSCLE_SENSITIVE = new Set(['肌酸酐', 'eGFR'])
 
@@ -267,6 +270,28 @@ export function buildLabConsult(input: LabConsultInput): LabConsult | null {
       note,
     }
   })
+  // 系統沒設判讀標準的指標（CPK、LDH、澱粉酶、CBC 細項…）：analyzeLabs 刻意略過它們（免得整張報告被灌成黃燈），
+  // 但超出檢驗所自己印的範圍就該讓人看到（2026-10-02：Howard CPK 397／範圍 46–171 原本完全沒出現）。
+  // 不發明門檻，只照檢驗所範圍；一律 watch 等級，不說「超標」。
+  for (const l of valid) {
+    if (l.date !== drawDate || l.test_name in LAB_THRESHOLDS) continue
+    if (watch.some(w => w.name === l.test_name)) continue
+    const v = typeof l.value === 'string' ? parseFloat(l.value) : l.value
+    const side = sideFromReferenceRange(v, l.reference_range)
+    if (!side) continue
+    let note = '系統沒有這項的判讀標準，這是照檢驗所報告印的範圍；下次抽血追蹤有沒有回來'
+    if (EXERCISE_SENSITIVE.has(l.test_name)) note += '；抽血前 1–3 天練大重量會讓它暫時升高，下次抽血前 48 小時別練大重量'
+    watch.push({
+      name: l.test_name,
+      value: round(v),
+      unit: l.unit ?? null,
+      level: 'watch',
+      side,
+      idealText: null,
+      labRangeText: String(l.reference_range).trim(),
+      note,
+    })
+  }
   // 同時在「變差」的，那行標出「落在要留意的範圍」；「要留意」照列（那裡才有該怎麼做）
   for (const w of worse) if (watch.some(x => x.name === w.name)) w.outOfRange = true
   for (const w of worse) {
@@ -373,7 +398,7 @@ export function renderLabConsultText(c: LabConsult): string {
   if (c.watch.length === 0) out.push('・這次沒有')
   for (const w of c.watch) {
     const side = w.side === 'high' ? '偏高' : w.side === 'low' ? '偏低' : ''
-    out.push(`・${w.name} ${fmtN(w.value)}${u(w.unit)}${side ? ` ${side}` : ''}${w.idealText ? `（理想 ${w.idealText}）` : ''}：${w.note}`)
+    out.push(`・${w.name} ${fmtN(w.value)}${u(w.unit)}${side ? ` ${side}` : ''}${w.idealText ? `（理想 ${w.idealText}）` : ''}${w.labRangeText ? `（檢驗所範圍 ${w.labRangeText}）` : ''}：${w.note}`)
   }
 
   out.push('')
