@@ -8,6 +8,7 @@
  */
 import type { MarkerStory, HypothesisGrade, LabHypothesis } from '@/lib/longevity-lens'
 import type { StudentLabOrder } from '@/lib/lab-order-data'
+import { buildStudentLabVisit } from '@/lib/lab-order-student'
 
 export interface LabSummaryInput {
   stories: MarkerStory[]
@@ -101,13 +102,16 @@ export function formatLabSummary(input: LabSummaryInput): string {
     const when = !order.nextCheckupDate ? ''
       : order.nextCheckupDate < today ? `（原訂 ${md(order.nextCheckupDate)}，已經過了，該約了）`
       : `（預計 ${md(order.nextCheckupDate)}）`
-    if (order.must.length === 0) {
+    // 2026-10-02：跟網頁「下次抽血」卡同一套（lib/lab-order-student.ts）——白話名稱＋「你的原因」，不講價格。
+    // 原本這裡還在列 $價格、檢驗所原名（「Apo B (外送大安聯合)」）、「💰 這次省下來」，正是 #199 嫌像推銷檢驗所拿掉的東西。
+    const visit = buildStudentLabVisit(order, {})
+    if (visit.items.length === 0) {
       lines.push(`🧪 下次抽血${when}：目前沒有非驗不可的`)
     } else {
-      lines.push(`🧪 下次抽血${when}驗這些${order.mustCost > 0 ? `，約 $${order.mustCost.toLocaleString('en-US')}` : ''}`)
-      lines.push(...capped(order.must.map(l => `・${l.label}${l.price != null ? ` $${l.price}` : ''}`)))
+      lines.push(`🧪 下次抽血${when}，請醫生幫你驗：`)
+      lines.push(...capped(visit.items.map(i => `・${i.name}${i.optional ? '（可一起驗）' : ''}${i.personal ? `\n　${i.personal}` : ''}`)))
+      lines.push(`掛${visit.department}`)
     }
-    if (order.skip.length) lines.push(`💰 ${order.skip.length} 項上次已經很好或不用重驗，這次省下來`)
     parts.push(lines.join('\n'))
   }
 

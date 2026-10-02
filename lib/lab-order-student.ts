@@ -28,7 +28,7 @@ export interface StudentLabProfile {
 export interface StudentLabOrderInput {
   must?: { label: string; why?: string }[]
   defer?: { label: string; why?: string }[]
-  basePackage?: { skippable: boolean } | null
+  basePackage?: { skippable: boolean; why?: string } | null
   prepNotes?: string | null
 }
 
@@ -155,7 +155,12 @@ export function buildDoctorScript(p: StudentLabProfile): string {
  */
 export function personalReason(why: string | null | undefined): string {
   if (!why) return ''
-  const t = why
+  // 引擎「底盤套餐要不要再開」的三種句子 → 學員版（一般抽血那項）
+  const base = why
+    .replace(/^沒有常規項目紀錄，底盤該開$/, '還沒有一般抽血的紀錄，先建立基準')
+    .replace(/^(\d{4}-\d{2}-\d{2}) 驗過但有項目不正常，底盤值得再開一次$/, '$1 那次有幾項要追蹤，這次一起再驗一次')
+    .replace(/^常規項目上次是 (\d{4}-\d{2}-\d{2})（(\d+) 天前），底盤該開$/, '上次是 $1（$2 天前），該更新了')
+  const t = base
     .replace(/[，,]?\s*沒錢可以晚一輪/g, '')
     .replace(/公版漏了這項[。，]?/g, '')
     .replace(/最佳\s*/g, '目標 ')
@@ -192,7 +197,7 @@ export function buildStudentLabVisit(d: StudentLabOrderInput, profile: StudentLa
     items.push({ name: e.name, why: isMedicallyCompliant(e.why) ? e.why : '', optional, ...(personal ? { personal } : {}) })
   }
 
-  if (d.basePackage && !d.basePackage.skippable) add(ROUTINE_ITEM, false)
+  if (d.basePackage && !d.basePackage.skippable) add(ROUTINE_ITEM, false, d.basePackage.why)
   for (const l of d.must ?? []) add(plainLabItem(l.label), false, l.why)
   for (const l of (d.defer ?? []).slice(0, MAX_OPTIONAL)) add(plainLabItem(l.label), true, l.why)
 
