@@ -22,6 +22,7 @@ import { analyzeLabs, type LabResultRow } from '@/lib/lab-trend-analyzer'
 import { buildLabOrder, type TemplateItem, type OrderRule } from '@/lib/lab-order'
 import { getLabDirection, LAB_THRESHOLDS, HIGHER_IS_BETTER, FEMALE_VARIANTS, getOptimalRangeText } from '@/utils/labStatus'
 import { medicationNoteFor, type ClientMedication } from '@/lib/medication-effects'
+import { auditSupplement, supplementEffect, type IndicationStatus } from '@/lib/supplement-indication-audit'
 import { sideFromReferenceRange } from '@/utils/labReferenceRange'
 import { getLabCanonicalId } from '@/utils/labMatch'
 import type { LabNutritionAdvice } from '@/lib/lab-nutrition-advisor'
@@ -82,6 +83,19 @@ export interface ConsultAnswer {
 export interface ConsultNextItem { label: string; why: string }
 
 /**
+ * 你在吃的保健品對帳（2026-10-03）：每一項有沒有血檢依據（supplement-indication-audit）、
+ * 吃了之後對應的血檢有沒有動（開始日前最後一次 vs 之後最新一次）。原本只在教練後台編輯頁看得到。
+ */
+export interface ConsultStackItem {
+  name: string
+  /** 同名多次（早餐＋晚餐）合併成一行 */
+  dose: string
+  status: IndicationStatus
+  basis: string
+  effect: string | null
+}
+
+/**
  * 「接下來怎麼做」（2026-10-02）。Howard：「它沒有說所以我要注意什麼、保健品啥的建議，不然我知道有紀錄然後呢」。
  * 營養引擎（lab-nutrition-advisor）和補品引擎（supplement-engine）早就會算，但一個藏在「過往分析報告」摺疊裡、
  * 一個放在「計畫」分頁，跟血檢卡斷開。這裡只把兩個引擎的結果按血檢項目接起來，再掛上下次驗收日——不自己發明建議。
@@ -120,6 +134,7 @@ export interface LabConsult {
   good: { count: number; names: string[] }
   answered: ConsultAnswer[]
   actions: ConsultAction[]
+  stack: ConsultStackItem[]
   next: {
     date: string
     months: number
@@ -146,6 +161,43 @@ export interface LabConsultInput {
   medications?: ClientMedication[] | null
   /** 有規律重訓（training_enabled）：eGFR 偏低時下次加驗 Cystatin C */
   resistanceTrained?: boolean
+  /** supplements 表裡還沒封存的（學員正在吃的） */
+  currentSupplements?: { name: string; dosage?: string | null; timing?: string | null; started_at?: string | null }[]
+  genetics?: { gene_mthfr?: string | null; gene_apoe?: string | null }
+}
+
+const STACK_ORDER: Record<IndicationStatus, number> = { caution: 0, 'no-indication': 1, indicated: 2, lifestyle: 3 }
+
+export function buildStack(
+  current: NonNullable<LabConsultInput['currentSupplements']>,
+  labs: LabResultRow[],
+  genetics: LabConsultInput['genetics'],
+  nextDate: string,
+): ConsultStackItem[] {
+  const groups = new Map<string, { name: string; doses: string[]; started: string | null }>()
+  for (const s of current) {
+    const name = (s.name || '').trim()
+    if (!name) continue
+    const k = name.normalize('NFKC').toLowerCase()
+    const dose = [s.dosage, s.timing].filter(Boolean).join(' ')
+    const g = groups.get(k)
+    if (g) { if (dose) g.doses.push(dose); if (s.started_at && (!g.started || s.started_at < g.started)) g.started = s.started_at }
+    else groups.set(k, { name: name.normalize('NFKC'), doses: dose ? [dose] : [], started: s.started_at ?? null })
+  }
+  const auditLabs = labs.map(l => ({ test_name: l.test_name, value: l.value, status: l.status ?? null, date: l.date }))
+  const out: ConsultStackItem[] = []
+  for (const g of groups.values()) {
+    const v = auditSupplement(g.name, auditLabs, genetics)
+    const e = supplementEffect(g.name, auditLabs, g.started)
+    let effect: string | null = null
+    if (e) {
+      if (e.after && e.before) effect = `${e.marker}：開始吃前 ${round(e.before.value)}（${e.before.date}）→ 之後 ${round(e.after.value)}（${e.after.date}）`
+      else if (e.after) effect = `${e.marker}：吃了之後 ${round(e.after.value)}（${e.after.date}），開始前沒有數字可比`
+      else effect = `${e.marker}：${g.started} 開始吃之後還沒驗過，${nextDate} 抽血時看有沒有效`
+    }
+    out.push({ name: g.name, dose: g.doses.join('；'), status: v.status, basis: v.basis, effect })
+  }
+  return out.sort((a, b) => STACK_ORDER[a.status] - STACK_ORDER[b.status])
 }
 
 /**
@@ -491,6 +543,10 @@ export function buildLabConsult(input: LabConsultInput): LabConsult | null {
     watch,
     good,
     answered,
+    stack: buildStack(
+      input.currentSupplements ?? [], valid, input.genetics,
+      input.scheduledCheckup && input.scheduledCheckup > drawDate ? input.scheduledCheckup : addMonths(drawDate, months),
+    ),
     actions: buildConsultActions(
       input.advice ?? [], input.supplements ?? [],
       input.scheduledCheckup && input.scheduledCheckup > drawDate ? input.scheduledCheckup : addMonths(drawDate, months),
@@ -547,6 +603,11 @@ export function renderLabConsultText(c: LabConsult): string {
     }
   }
 
+  if (c.stack.length) {
+    const label: Record<string, string> = { caution: '要注意', 'no-indication': '沒有血檢依據', indicated: '有血檢依據', lifestyle: '生活型' }
+    out.push('', '【你在吃的保健品】')
+    for (const x of c.stack) out.push(`・${x.name}（${label[x.status]}）：${x.basis}${x.effect ? `｜${x.effect}` : ''}`)
+  }
   out.push('')
   out.push('【已經很好】')
   out.push(c.good.count > 0

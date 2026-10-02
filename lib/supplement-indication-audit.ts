@@ -11,6 +11,11 @@
  */
 
 import { TOTAL_TESTOSTERONE_KEYWORDS, TOTAL_TESTOSTERONE_EXCLUDE } from '@/utils/labMatch'
+import { LAB_THRESHOLDS, LAB_OPTIMAL_RANGES } from '@/utils/labStatus'
+
+// 判斷線一律跟標準檔（utils/labStatus.ts）走，別在這裡另寫一套數字（2026-10-03：同半胱胺酸這裡原本寫 ≥10，標準檔正常上限是 8）
+const HCY_NORMAL_MAX = (LAB_THRESHOLDS['同半胱胺酸'] as { normal: number }).normal
+const FERRITIN_OPTIMAL = LAB_OPTIMAL_RANGES['鐵蛋白'] as { min: number; max: number }
 
 export type IndicationStatus = 'indicated' | 'lifestyle' | 'no-indication' | 'caution'
 
@@ -86,11 +91,14 @@ const RULES: { match: string[]; evaluate: (c: Ctx) => IndicationVerdict }[] = [
     },
   },
   {
-    match: ['vitamin c', '維生素c', '維他命c', 'vitc', 'vit c', '抗壞血酸'],
+    match: ['vitamin c', 'vitaminc', '維生素c', '維他命c', 'vitc', 'vit c', '抗壞血酸'],
     evaluate: (c) => {
       const hits: string[] = []
       const ua = c.lab(['尿酸', 'uric'])
       const wbc = c.lab(['白血球', 'wbc', '白細胞'])
+      // 維生素 C 會增加非血基質鐵的吸收：鐵蛋白已經高於理想上限時，提醒跟含鐵的正餐錯開
+      const fer = c.lab(['鐵蛋白', 'ferritin'])
+      if (fer?.value != null && fer.value > FERRITIN_OPTIMAL.max) return warn(`鐵蛋白 ${fer.value} 高於理想 ${FERRITIN_OPTIMAL.min}-${FERRITIN_OPTIMAL.max}，維生素 C 會增加鐵吸收 → 跟正餐（尤其紅肉）錯開吃，或先停到下次抽血`)
       if (ua?.value != null && ua.value > 7) hits.push(`尿酸 ${ua.value} 偏高`)
       if (wbc?.value != null && wbc.value < 4000) hits.push(`白血球 ${wbc.value} 偏低`)
       return hits.length ? ok(hits.join('、')) : life('一般免疫（無特定血檢指徵）')
@@ -114,7 +122,7 @@ const RULES: { match: string[]; evaluate: (c: Ctx) => IndicationVerdict }[] = [
       const hits: string[] = []
       const hcy = c.lab(['同半胱胺酸', 'homocyst'])
       const mthfr = c.gene_mthfr
-      if (hcy?.value != null && hcy.value >= 10) hits.push(`同半胱胺酸 ${hcy.value} 偏高`)
+      if (hcy?.value != null && hcy.value > HCY_NORMAL_MAX) hits.push(`同半胱胺酸 ${hcy.value} 偏高（正常 ≤${HCY_NORMAL_MAX}）`)
       if (mthfr && /hetero|homo|variant|突變|\bt\/t\b|\bc\/t\b|\+/i.test(mthfr)) hits.push(`MTHFR ${mthfr}`)
       if (hits.length) return ok(hits.join('、') + ' → 甲基化')
       if (hcy?.value != null) return none(`同半胱胺酸 ${hcy.value} 正常、無 MTHFR 變異資料 → 甲基化指徵不足`)
@@ -158,22 +166,56 @@ const RULES: { match: string[]; evaluate: (c: Ctx) => IndicationVerdict }[] = [
     },
   },
   {
-    match: ['南非醉茄', 'ashwagandha', '茶氨酸', 'theanine', 'l-theanine', '甘胺酸', 'glycine', '褪黑'],
+    match: ['南非醉茄', '南非', 'ashwagandha', '茶氨酸', 'theanine', 'l-theanine', '甘胺酸', 'glycine', '褪黑'],
     evaluate: () => life('壓力/睡眠（生活型，通常非血檢指徵）'),
   },
   {
     match: ['carnitine', '肉鹼', 'l-carnitine'],
-    evaluate: () => life('脂肪代謝/訓練（目標導向）'),
+    // Howard 標準（memory project_v3_supplement_standards #2）：2020 後統合分析，吃肉的健康成人補充沒有額外好處
+    evaluate: () => none('有吃肉的健康成人補充沒有額外好處；主要是素食或年長的人才需要'),
   },
 ]
 
 /** 對單一補品做指徵對帳。 */
 export function auditSupplement(name: string, labs: AuditLab[], genetics?: AuditGenetics): IndicationVerdict {
-  const n = (name || '').toLowerCase().trim()
+  // NFKC：學員手打常是全形（「ＴＭＧ」「Ｌcarnitine」「活性Ｂ群」），不轉就一條規則都對不到
+  const n = (name || '').normalize('NFKC').toLowerCase().trim()
   if (!n) return none('未命名')
   const ctx: Ctx = { lab: makeLabFinder(labs || []), gene_mthfr: genetics?.gene_mthfr, gene_apoe: genetics?.gene_apoe }
   for (const rule of RULES) {
     if (rule.match.some(m => n.includes(m.toLowerCase()))) return rule.evaluate(ctx)
   }
   return none('無對應規則 → 請人工判斷指徵')
+}
+
+// ── 吃了有沒有效（2026-10-03）──
+// 補品跟它要改善的那項血檢：開始吃之前最後一次 vs 開始吃之後最新一次。
+const EFFECT_MARKERS: { match: string[]; marker: string; keywords: string[] }[] = [
+  { match: ['tmg', 'betaine', 'b群', 'b 群', 'b-complex', 'b complex', '甲基', '葉酸', 'folate', 'methyl'], marker: '同半胱胺酸', keywords: ['同半胱胺酸', 'homocyst'] },
+  { match: ['dim', '二吲哚', 'diindolyl'], marker: '雌二醇', keywords: ['雌二醇', 'estradiol'] },
+  { match: ['維生素d', 'vitamin d', 'd3', 'd3k2', 'vit d', 'vitd'], marker: '維生素D', keywords: ['維生素d', 'vitamin d', '25-oh', '25(oh)'] },
+  { match: ['魚油', 'omega', 'fish oil', 'fishoil'], marker: '三酸甘油酯', keywords: ['三酸甘油', 'triglyc'] },
+  { match: ['鐵', 'iron', 'ferrous', 'ferric'], marker: '鐵蛋白', keywords: ['鐵蛋白', 'ferritin'] },
+]
+
+export interface SupplementEffect {
+  marker: string
+  before: { value: number; date: string } | null
+  after: { value: number; date: string } | null
+}
+
+/** 這個補品對應的血檢在開始吃前後的值；沒有對應指標、或沒有開始日期就回 null */
+export function supplementEffect(name: string, labs: AuditLab[], startedAt: string | null | undefined): SupplementEffect | null {
+  if (!startedAt) return null
+  const n = (name || '').normalize('NFKC').toLowerCase().trim()
+  const def = EFFECT_MARKERS.find(d => d.match.some(m => n.includes(m)))
+  if (!def) return null
+  const points = (labs || [])
+    .filter(l => l.date && def.keywords.some(k => (l.test_name || '').toLowerCase().includes(k)))
+    .map(l => ({ value: toNum(l.value), date: String(l.date) }))
+    .filter((p): p is { value: number; date: string } => p.value != null)
+    .sort((a, b) => a.date.localeCompare(b.date))
+  const before = [...points].reverse().find(p => p.date < startedAt) ?? null
+  const after = [...points].reverse().find(p => p.date >= startedAt) ?? null
+  return { marker: def.marker, before, after }
 }

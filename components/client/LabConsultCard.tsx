@@ -153,6 +153,33 @@ export default function LabConsultCard({ code }: { code: string }) {
         </div>
       )}
 
+      {/* 2.6 你在吃的保健品：有沒有血檢依據＋吃了有沒有效 */}
+      {c.stack && c.stack.length > 0 && (
+        <div className="mt-4">
+          <h3 className="font-semibold text-slate-900">你在吃的保健品</h3>
+          <div className="mt-1">
+            {c.stack.map(x => {
+              const tag = x.status === 'caution' ? { t: '要注意', cls: 'text-rose-700 bg-rose-50' }
+                : x.status === 'no-indication' ? { t: '沒有血檢依據', cls: 'text-amber-700 bg-amber-50' }
+                : x.status === 'indicated' ? { t: '有血檢依據', cls: 'text-emerald-700 bg-emerald-50' }
+                : { t: '生活型', cls: 'text-slate-600 bg-slate-100' }
+              return (
+                <div key={x.name} className="py-2.5 border-t border-slate-100 first:border-t-0">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-medium text-slate-900">{x.name}</span>
+                    <span className={`text-xs font-medium rounded px-1.5 py-0.5 ${tag.cls}`}>{tag.t}</span>
+                  </div>
+                  {x.dose && <p className="text-xs text-slate-500 mt-0.5">{x.dose}</p>}
+                  <p className="text-sm text-slate-700 mt-0.5">{x.basis}</p>
+                  {x.effect && <p className="text-xs text-slate-600 mt-0.5 tabular-nums">{x.effect}</p>}
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-xs text-slate-500 mt-1">「沒有血檢依據」不代表有害，是這份血檢看不出你需要它；要不要繼續跟教練討論。</p>
+        </div>
+      )}
+
       {/* 3. 已經很好 */}
       {c.good.count > 0 && (
         <div className="mt-4">
