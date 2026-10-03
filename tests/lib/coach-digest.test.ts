@@ -178,3 +178,17 @@ describe('超過 30 天沒動的人：週一提醒一次', () => {
     expect(tue.text ?? '').not.toContain('超過 30 天沒有任何紀錄')
   })
 })
+
+describe('週一本週訊息（2026-10-03：30 天 coach_messages＝0）', () => {
+  it('有草稿 → 開頭與內文都提到，附可直接回的指令', () => {
+    const d = buildCoachDigest(base({ weeklyDrafts: [{ name: '震宣', headline: '體重持平、脂肪偏高', needsCoachReview: false }, { name: '林宥任', headline: '掉速剛好', needsCoachReview: true }] }))
+    expect(d.text).toContain('2 則週訊可以發')
+    expect(d.text).toContain('📝 本週訊息 2 則可以發')
+    expect(d.text).toContain('⚠️ 要你看過 掉速剛好')
+    expect(d.text).toContain('「發 震宣」送出')
+  })
+  it('沒草稿 → 不出現這段', () => {
+    const d = buildCoachDigest(base({ lastActiveByClient: { a: '2026-08-10' }, weeklyDrafts: [] }))
+    expect(d.text ?? '').not.toContain('本週訊息')
+  })
+})

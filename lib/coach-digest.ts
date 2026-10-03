@@ -15,6 +15,26 @@
 
 import { loadHypothesisUpdates, coachLine, type HypothesisUpdate } from '@/lib/hypothesis-updates'
 import { loadExperimentUpdates, coachExperimentLine, type ExperimentUpdate } from '@/lib/body-experiments'
+import { buildCoachingDrafts } from '@/lib/coaching-drafts'
+
+/** 週一（台灣）才算：本週可發的訊息草稿，排除近 6 天已發過的、與這週幾乎沒資料的（最多 5 位） */
+async function loadMondayDrafts(supabase: QueryLike, today: string): Promise<{ name: string; headline: string; needsCoachReview: boolean }[]> {
+  if (new Date(`${today}T12:00:00+08:00`).getUTCDay() !== 1) return []
+  const drafts = await buildCoachingDrafts(supabase as never)
+  const since = new Date(Date.parse(today) - 6 * DAY_MS).toISOString()
+  const { data: sent } = await supabase.from('coach_messages').select('client_id').gte('created_at', since)
+  const sentIds = new Set(((sent ?? []) as { client_id: string }[]).map(r => r.client_id))
+  // 教練自己也是學員（陳胤豪）→ 不用發訊息給自己
+  const coachIds = new Set<string>()
+  if (COACH_LINE_USER_ID) {
+    const { data: me } = await supabase.from('clients').select('id').eq('line_user_id', COACH_LINE_USER_ID)
+    for (const r of (me ?? []) as { id: string }[]) coachIds.add(r.id)
+  }
+  return drafts
+    .filter(d => !sentIds.has(d.clientId) && !coachIds.has(d.clientId) && d.dataDays >= 3)
+    .slice(0, 5)
+    .map(d => ({ name: d.name, headline: d.headline, needsCoachReview: d.needsCoachReview }))
+}
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { daysUntilDateTW, DAY_MS } from './date-utils'
 import { COACH_LINE_USER_ID } from './line-links'
@@ -67,6 +87,8 @@ export type CoachDigestInput = {
   hypotheses?: { graded: HypothesisUpdate[]; overdue: HypothesisUpdate[] }
   /** 身體實驗結束、有判決（lib/body-experiments） */
   experiments?: ExperimentUpdate[]
+  /** 週一才有：本週可以發的教練訊息草稿（lib/coaching-drafts），已排除這週發過的與沒資料的 */
+  weeklyDrafts?: { name: string; headline: string; needsCoachReview: boolean }[]
 }
 
 export type CoachDigest = {
@@ -83,7 +105,7 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   const {
     today, clients, yesterdayWeightIds, yesterdayNutritionIds,
     yesterdayTraining, yesterdayWellness, lastActiveByClient,
-    recentWeights, competitions, labsDue, proposals, adminUrl, hypotheses, experiments = [],
+    recentWeights, competitions, labsDue, proposals, adminUrl, hypotheses, experiments = [], weeklyDrafts = [],
   } = input
 
   const hadWeight = new Set(yesterdayWeightIds)
@@ -174,6 +196,15 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
     lines.push('')
   }
 
+  // 0.65 本週教練訊息（週一）—— 草稿一直都算得出來（LINE 打「訊息」），但晨報從沒提過，
+  // 2026-10-03 查：30 天 coach_messages＝0 則。不提醒＝不存在。
+  if (weeklyDrafts.length > 0) {
+    lines.push(`📝 本週訊息 ${weeklyDrafts.length} 則可以發：`)
+    for (const d of weeklyDrafts) lines.push(`  • ${d.name}：${d.needsCoachReview ? '⚠️ 要你看過 ' : ''}${d.headline}`)
+    lines.push(`     回「訊息 ${weeklyDrafts[0].name}」看全文，「發 ${weeklyDrafts[0].name}」送出`)
+    lines.push('')
+  }
+
   // 1. 昨天沒記錄
   const missedOf = (c: DigestClient) => {
     const m: string[] = []
@@ -247,11 +278,12 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   if (offline.length > 0) leadBits.push(`${offline.length} 個人掉線`)
   if (overdueLabs > 0) leadBits.push(`${overdueLabs} 個血檢逾期`)
   if (proposals.length > 0) leadBits.push(`${proposals.length} 個提案等你`)
+  if (weeklyDrafts.length > 0) leadBits.push(`${weeklyDrafts.length} 則週訊可以發`)
   if (experiments.length > 0) leadBits.unshift(`${experiments.length} 個實驗有結果`)
   if (hypotheses && hypotheses.graded.length > 0) leadBits.unshift(`${hypotheses.graded.length} 個預測對答案了`)
   const lead =
     leadBits.length === 0 ? '沒人掉線，其餘看下面'
-    : overdueLabs === 0 && proposals.length === 0 && experiments.length === 0 && !(hypotheses && hypotheses.graded.length > 0) ? `${offline.length} 個人需要你出手`
+    : overdueLabs === 0 && proposals.length === 0 && experiments.length === 0 && weeklyDrafts.length === 0 && !(hypotheses && hypotheses.graded.length > 0) ? `${offline.length} 個人需要你出手`
     : `${leadBits.join('、')}，要你出手`
   const body = lines.join('\n').replace(/\n+$/, '')
   return {
@@ -380,11 +412,13 @@ export async function loadCoachDigest(
 
   const hypotheses = await loadHypothesisUpdates(supabase, today).catch(() => ({ graded: [], overdue: [] }))
   const experiments = await loadExperimentUpdates(supabase, today).catch(() => [])
+  const weeklyDrafts = await loadMondayDrafts(supabase, today).catch(() => [])
 
   return buildCoachDigest({
     today,
     hypotheses,
     experiments,
+    weeklyDrafts,
     labsDue: findLabsDue(labDueInput, today),
     proposals: Object.entries(grouped).map(([clientId, items]) => ({
       clientId, name: proposalNames[clientId] ?? '?', items,
