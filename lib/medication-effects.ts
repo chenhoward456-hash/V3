@@ -30,6 +30,10 @@ export const MEDICATION_EFFECTS: Record<string, MedicationEffect> = {
     avoid: [{
       match: ['維生素a', '維他命a', 'vitamin a', 'vitamina', 'retinol', '視黃醇', '魚肝油', 'cod liver'],
       why: 'A 酸本身就是維生素 A 衍生物，仿單警語：服藥期間不要再補維生素 A，疊加會造成維生素 A 過量',
+    }, {
+      // 2026-10-03：南非醉茄有罕見肝損傷病例報告（NIH LiverTox 收錄），A 酸也會影響肝指數 → 療程中保守先停
+      match: ['南非', '醉茄', 'ashwagandha', 'ksm'],
+      why: '南非醉茄有罕見的肝損傷病例報告；你正在吃口服 A 酸（也會影響肝指數），兩者疊在一起沒必要冒險 → 療程中先停，結束再評估',
     }],
     markers: ['CPK', 'AST', 'ALT', 'ALP', '三酸甘油酯', 'LDL-C', '總膽固醇', '白血球'],
     note: '你在吃口服 A 酸：服藥期間這項常會偏高，加上大重量訓練 CK 會升更多。等療程結束後再驗一次，那個數字才是你真正的基準；有肌肉痠痛無力或尿色變深要回診告訴醫生',

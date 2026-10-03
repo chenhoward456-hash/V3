@@ -58,6 +58,8 @@ type Ctx = {
   meds: ClientMedication[]
   /** 正規化後的補品名（同一條規則要分 TMG／B 群時用） */
   name: string
+  /** 每日劑量數字（劑量字串裡的第一個數字；「兩顆」這種抓不到＝null） */
+  dose: number | null
 }
 
 const normalMax = (name: string): number | null => {
@@ -179,6 +181,8 @@ const RULES: { match: string[]; evaluate: (c: Ctx) => IndicationVerdict }[] = [
       if (d?.value == null) return none('無維生素D資料')
       if (d.value < 50) return ok(`維生素D ${d.value} 偏低 → 補充`)
       if (d.value > 70) return warn(`維生素D ${d.value} 已偏高，補 D 指徵不足（K2 想留可另計）`)
+      // 2026-10-03：只看血檢不看劑量 → Howard D 59 吃 5000 IU 被判「維持即可」，長期會一路往上
+      if (c.dose != null && c.dose >= 4000) return warn(`維生素D ${d.value} 已在理想範圍，每天 ${c.dose} IU 偏高，長期會一路往上 → 降到約 2000 IU 維持，下次抽血確認`)
       return life(`維生素D ${d.value} 尚可，維持即可`)
     },
   },
@@ -220,7 +224,7 @@ export function auditSupplement(
   name: string,
   labs: AuditLab[],
   genetics?: AuditGenetics,
-  opts: { medications?: ClientMedication[] | null; today?: string } = {},
+  opts: { medications?: ClientMedication[] | null; today?: string; dosage?: string | null } = {},
 ): IndicationVerdict {
   // NFKC：學員手打常是全形（「ＴＭＧ」「Ｌcarnitine」「活性Ｂ群」），不轉就一條規則都對不到
   const n = (name || '').normalize('NFKC').toLowerCase().trim()
@@ -232,7 +236,8 @@ export function auditSupplement(
       if (a.match.some(k => n.includes(k))) return warn(a.why)
     }
   }
-  const ctx: Ctx = { lab: makeLabFinder(labs || []), gene_mthfr: genetics?.gene_mthfr, gene_apoe: genetics?.gene_apoe, meds, name: n }
+  const doseMatch = (opts.dosage ?? '').normalize('NFKC').replace(/,/g, '').match(/(\d+(?:\.\d+)?)/)
+  const ctx: Ctx = { lab: makeLabFinder(labs || []), gene_mthfr: genetics?.gene_mthfr, gene_apoe: genetics?.gene_apoe, meds, name: n, dose: doseMatch ? Number(doseMatch[1]) : null }
   for (const rule of RULES) {
     if (rule.match.some(m => n.includes(m.toLowerCase()))) return rule.evaluate(ctx)
   }
