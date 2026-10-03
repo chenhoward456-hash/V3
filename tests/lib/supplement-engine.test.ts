@@ -185,9 +185,25 @@ describe('generateSupplementSuggestions', () => {
       expect(names.some(n => n.includes('Omega-3'))).toBe(true)
       expect(names.some(n => n.includes('鎂'))).toBe(true)
       expect(names.some(n => n.includes('D3'))).toBe(true)
-      expect(names.some(n => n.includes('白藜蘆醇'))).toBe(true)
-      expect(names.some(n => n.includes('CoQ10') || n.includes('Q10'))).toBe(true)
+      // 2026-10-03：沒有理由不推（indication-driven）
+      expect(names.some(n => n.includes('白藜蘆醇'))).toBe(false)
+      expect(names.some(n => n.includes('CoQ10') || n.includes('Q10'))).toBe(false)
+      expect(names.some(n => n.includes('南非醉茄'))).toBe(false)
+    })
+
+    it('訓練強度連續偏高才推南非醉茄', () => {
+      const names = generateSupplementSuggestions([], { isHealthMode: true, hasHighRPE: true }).map(s => s.name)
       expect(names.some(n => n.includes('南非醉茄'))).toBe(true)
+    })
+
+    it('維生素 D 已 ≥40 不再推 D3', () => {
+      const names = generateSupplementSuggestions([makeLab('維生素D', 59, 'ng/mL', 'normal')], { isHealthMode: true }).map(s => s.name)
+      expect(names.some(n => n.includes('D3'))).toBe(false)
+    })
+
+    it('男性鐵蛋白 250 不算偏高（多數檢驗所上限 300–400）', () => {
+      const names = generateSupplementSuggestions([makeLab('ferritin', 250, 'ng/mL', 'normal')], { gender: '男性' }).map(s => s.name)
+      expect(names.some(n => n.includes('停止鐵劑'))).toBe(false)
     })
 
     it('should not duplicate omega-3 if already triggered by CRP', () => {

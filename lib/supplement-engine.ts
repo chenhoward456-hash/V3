@@ -114,12 +114,14 @@ export function generateSupplementSuggestions(
         triggerTests: [ferritin.test_name],
         category: 'deficiency',
       })
-    } else if (ferritin.value > 200) {
+    } else if (ferritin.value > (gender === '女性' ? 200 : 300)) {
+      // 2026-10-03：原本一律 >200 就「顯著偏高、停鐵劑」，參考值寫 50-150 —— 但多數檢驗所男性上限 300–400，
+      // Howard 鐵蛋白 250（男性正常）被叫去少吃紅肉。改成男性 >300、女性 >200 才觸發。
       suggestions.push({
         name: '⚠️ 停止鐵劑補充',
         dosage: '立即停止所有含鐵補品',
         timing: '—',
-        reason: `鐵蛋白 ${ferritin.value} ng/mL，顯著偏高（參考值 50-150）。高鐵蛋白增加氧化壓力與器官鐵沉積風險。${ferritin.value > 300 ? '建議與醫師討論後續追蹤方式（高鐵蛋白者醫師可能評估捐血等）。' : '建議減少紅肉攝取、避免維生素 C 與含鐵食物同時服用。'}`,
+        reason: `鐵蛋白 ${ferritin.value} ng/mL，偏高（${gender === '女性' ? '女性一般上限約 150–200' : '男性一般上限約 300–400'}）。高鐵蛋白增加氧化壓力與器官鐵沉積風險。${ferritin.value > 300 ? '建議與醫師討論後續追蹤方式（高鐵蛋白者醫師可能評估捐血等）。' : '建議減少紅肉攝取、避免維生素 C 與含鐵食物同時服用。'}`,
         priority: ferritin.value > 300 ? 'high' : 'medium',
         // 合規：原文獻說明含「代謝症候群」（deny-list）→ 補品卡渲染前 degradeToSafe 會整段換掉，
         // 學員反而看不到這條文獻。改成描述指標關聯，不點病名。
@@ -459,7 +461,9 @@ export function generateSupplementSuggestions(
 
     // 維生素 D3+K2（未被血檢觸發時補上）
     const alreadyHasD3 = suggestions.some(s => s.name.includes('D3') || s.name.includes('維生素 D'))
-    if (!alreadyHasD3) {
+    // 已經驗過而且 ≥40 就不推（Howard 3 月 59 還被推 2000 IU，而他實際吃 5000）
+    const vitD = findLabValue(labs, 'vitd')
+    if (!alreadyHasD3 && !(vitD?.value != null && vitD.value >= 40)) {
       suggestions.push({
         name: '維生素 D3 + K2',
         dosage: 'D3 2000 IU + K2 100mcg',
@@ -472,35 +476,14 @@ export function generateSupplementSuggestions(
       })
     }
 
-    // 白藜蘆醇（Resveratrol）— 避免重複
-    const alreadyHasResveratrol = suggestions.some(s => s.name.includes('白藜蘆醇') || s.name.toLowerCase().includes('resveratrol'))
-    if (!alreadyHasResveratrol) suggestions.push({
-      name: '白藜蘆醇（Trans-Resveratrol）',
-      dosage: '250-500mg',
-      timing: '隨餐服用',
-      reason: '激活 Sirtuin 長壽蛋白通路，模擬熱量限制效果。改善胰島素敏感性、抗氧化、抗發炎。',
-      priority: 'medium',
-      evidence: 'Lagouge et al. 2006 (Cell, PMID 17112576)：Resveratrol 激活 SIRT1/PGC-1α',
-      triggerTests: [],
-      category: 'performance',
-    })
-
-    // 輔酶 Q10（CoQ10）— 避免重複
-    const alreadyHasCoQ10 = suggestions.some(s => s.name.includes('CoQ10') || s.name.includes('Q10') || s.name.includes('輔酶'))
-    if (!alreadyHasCoQ10) suggestions.push({
-      name: '輔酶 Q10（Ubiquinol 還原型）',
-      dosage: '100-200mg',
-      timing: '隨含脂肪的餐點服用',
-      reason: '粒線體能量生產的關鍵輔因子。35 歲後體內 CoQ10 逐年下降，補充有助維持細胞能量、抗氧化與心臟功能。',
-      priority: 'medium',
-      evidence: 'Mortensen et al. 2014 (JACC Heart Failure, Q-SYMBIO)：CoQ10 降低心衰竭死亡率 43%',
-      triggerTests: [],
-      category: 'performance',
-    })
+    // 2026-10-03：拿掉無條件推的白藜蘆醇與輔酶 Q10。Howard 的標準是 indication-driven（每顆要對應到
+    // 血檢／訓練狀態／症狀）：白藜蘆醇的證據多在動物與細胞、人體結果不一致；Q10 原文寫「35 歲後下降」，
+    // 卻推給 27 歲的人。真的有理由（例：吃 statin）再由教練加。
 
     // 南非醉茄（Ashwagandha）— 壓力管理，避免重複
+    // 只在有理由時推（訓練強度連續偏高＝恢復壓力），不當保健套餐
     const alreadyHasAshwagandha = suggestions.some(s => s.name.includes('南非醉茄') || s.name.toLowerCase().includes('ashwagandha'))
-    if (!alreadyHasAshwagandha) suggestions.push({
+    if (!alreadyHasAshwagandha && hasHighRPE) suggestions.push({
       name: '南非醉茄（Ashwagandha）',
       dosage: 'KSM-66 萃取 300-600mg',
       timing: '晚餐後或睡前',

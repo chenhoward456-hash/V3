@@ -189,7 +189,7 @@ export function buildStack(
   const auditLabs = labs.map(l => ({ test_name: l.test_name, value: l.value, status: l.status ?? null, date: l.date }))
   const out: ConsultStackItem[] = []
   for (const g of groups.values()) {
-    const v = auditSupplement(g.name, auditLabs, genetics, { medications, today })
+    const v = auditSupplement(g.name, auditLabs, genetics, { medications, today, dosage: g.doses[0] ?? null })
     const e = supplementEffect(g.name, auditLabs, g.started)
     let effect: string | null = null
     if (e) {

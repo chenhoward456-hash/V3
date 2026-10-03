@@ -3245,7 +3245,7 @@ export default function ClientEditor() {
                         </datalist>
                         {/* 指徵對帳：依這位學員自己的血檢/基因，標這項補品有沒有數據指徵 */}
                         {supplement.name?.trim() && (() => {
-                          const v = auditSupplement(supplement.name, client.lab_results || [], { gene_mthfr: client.gene_mthfr, gene_apoe: client.gene_apoe })
+                          const v = auditSupplement(supplement.name, client.lab_results || [], { gene_mthfr: client.gene_mthfr, gene_apoe: client.gene_apoe }, { medications: (client as { medications?: import('@/lib/medication-effects').ClientMedication[] }).medications, dosage: supplement.dosage })
                           const style = v.status === 'indicated' ? { box: 'bg-emerald-50 border-emerald-200 text-emerald-800', dot: 'bg-emerald-500', label: '有指徵' }
                             : v.status === 'caution' ? { box: 'bg-rose-50 border-rose-200 text-rose-800', dot: 'bg-rose-500', label: '注意' }
                             : v.status === 'no-indication' ? { box: 'bg-amber-50 border-amber-200 text-amber-800', dot: 'bg-amber-500', label: '無數據指徵' }
