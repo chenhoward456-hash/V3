@@ -436,7 +436,10 @@ export function computeTrajectoryAdjustment(input: TrajectoryInput): TrajectoryA
   }
 
   const direction = actualKcalShift < 0 ? '砍' : '加'
-  const reason = `週速率 ${currentRatePerWeek.toFixed(2)} kg vs 需 ${neededRatePerWeek.toFixed(2)} kg → ${direction} ${Math.abs(actualKcalShift)} kcal/天`
+  // 學員端「為你更新」會原樣顯示這句（lib/client-feed.ts），所以寫白話不寫工程語言
+  const describeRate = (r: number) =>
+    r < -0.005 ? `掉 ${Math.abs(r).toFixed(2)} 公斤` : r > 0.005 ? `增加 ${r.toFixed(2)} 公斤` : '幾乎沒變'
+  const reason = `最近平均每週${describeRate(currentRatePerWeek)}；要在 ${input.targetDate} 到 ${input.targetWeight} 公斤，每週要${describeRate(neededRatePerWeek)} → 每天${direction === '砍' ? '少吃' : '多吃'} ${Math.abs(actualKcalShift)} 大卡（從碳水${direction === '砍' ? '扣' : '加'}）`
 
   return {
     shouldAdjust: true,
