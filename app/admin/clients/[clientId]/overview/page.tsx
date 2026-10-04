@@ -1795,122 +1795,6 @@ export default function ClientOverview() {
             if (weeksNeeded > 0 && weeksNeeded < 200) projectedDays = Math.round(weeksNeeded * 7)
           }
 
-          // 熱量缺口建議
-          let kcalAdjustment: number | null = null
-          let neededRate: number | null = null
-          let currentRate: number | null = null
-          if (remaining != null && remainingDays != null && remainingDays > 0) {
-            neededRate = -remaining / (remainingDays / 7)
-            currentRate = regressionSlope ?? delta1w ?? 0
-            const gap = neededRate - currentRate
-            if (Math.abs(gap) > 0.05) {
-              kcalAdjustment = Math.round(gap * 7700 / 7)
-            }
-          }
-
-          const currentCalTarget = client?.calories_target ? Number(client.calories_target) : null
-          const currentProtein = client?.protein_target ? Number(client.protein_target) : null
-          const currentFat = client?.fat_target ? Number(client.fat_target) : null
-          const currentCarbTarget = client?.carbs_target ? Number(client.carbs_target) : null
-          const currentCarbTrain = client?.carbs_training_day ? Number(client.carbs_training_day) : null
-          const currentCarbRest = client?.carbs_rest_day ? Number(client.carbs_rest_day) : null
-
-          // 從 personal_notes 解析個人化下限（weight ≥ 8）
-          // 規則：note 含「低碳」「碳水必須 ≥」「SHBG」等關鍵字 → 提高碳水下限
-          //       note 含「脂肪不能 ≤」→ 提高脂肪下限
-          const noteFloors = (() => {
-            const floors = {
-              minCarbsTraining: 50,
-              minCarbsRest: 50,
-              minCarbsAvg: 50,
-              minFat: Math.round(0.4 * (current.avg ?? 70)),  // T 合成下限（0.4 g/kg）
-              avoidCarbCut: false,
-              triggeredNotes: [] as Array<{ note: string; weight: number; rule: string }>,
-            }
-            for (const n of personalNotes) {
-              if (n.weight < 8) continue
-              const text: string = n.note || ''
-              // 抓「訓練日 ≥ X」「非訓 ≥ Y」具體數字
-              const trainMatch = text.match(/訓練日?[^\d]{0,8}≥\s*(\d+)\s*g/)
-              if (trainMatch) {
-                floors.minCarbsTraining = Math.max(floors.minCarbsTraining, parseInt(trainMatch[1]))
-                floors.triggeredNotes.push({ note: text.slice(0, 80), weight: n.weight, rule: `訓練日碳水 ≥ ${trainMatch[1]}g` })
-              }
-              const restMatch = text.match(/非訓[練日]*[^\d]{0,8}≥\s*(\d+)\s*g/)
-              if (restMatch) {
-                floors.minCarbsRest = Math.max(floors.minCarbsRest, parseInt(restMatch[1]))
-                floors.triggeredNotes.push({ note: text.slice(0, 80), weight: n.weight, rule: `非訓碳水 ≥ ${restMatch[1]}g` })
-              }
-              // 模糊抓「低碳」「200g 失敗」「SHBG」→ 標記避開砍碳
-              if (/低碳.*失敗|SHBG.*敏感|碳水.*雷區|碳水必須維持/.test(text)) {
-                floors.avoidCarbCut = true
-                if (!floors.triggeredNotes.some(t => t.rule === '避免砍碳水')) {
-                  floors.triggeredNotes.push({ note: text.slice(0, 80), weight: n.weight, rule: '避免砍碳水（優先砍脂肪 + cardio）' })
-                }
-              }
-              // 脂肪下限
-              const fatMatch = text.match(/脂肪[^\d]{0,8}(?:不能|不可|≥|大於)[^\d]{0,4}(\d+)\s*g/)
-              if (fatMatch) {
-                floors.minFat = Math.max(floors.minFat, parseInt(fatMatch[1]))
-                floors.triggeredNotes.push({ note: text.slice(0, 80), weight: n.weight, rule: `脂肪 ≥ ${fatMatch[1]}g` })
-              }
-            }
-            return floors
-          })()
-
-          // 套用建議計算（含個人化保護）
-          const minCal = client?.gender === 'female' ? 1200 : 1500
-          let newCal = currentCalTarget != null && kcalAdjustment != null
-            ? Math.max(minCal, Math.round((currentCalTarget + kcalAdjustment) / 10) * 10)
-            : null
-          let actualKcalShift = newCal != null && currentCalTarget != null ? newCal - currentCalTarget : null
-          let newCarb: number | null = null
-          let newCarbTrain: number | null = null
-          let newCarbRest: number | null = null
-          let newFat: number | null = currentFat
-          let strategyNote = ''
-          let unfilledKcal = 0
-
-          if (actualKcalShift != null && actualKcalShift < 0) {
-            const totalCutKcal = -actualKcalShift
-            if (noteFloors.avoidCarbCut) {
-              // 路徑 B：保碳水、砍脂肪、剩餘 cardio
-              const fatRoomG = Math.max(0, (currentFat ?? 0) - noteFloors.minFat)
-              const fatCutKcalMax = fatRoomG * 9
-              const fatCutKcal = Math.min(totalCutKcal, fatCutKcalMax)
-              newFat = (currentFat ?? 0) - Math.round(fatCutKcal / 9)
-              newCarb = currentCarbTarget
-              newCarbTrain = currentCarbTrain
-              newCarbRest = currentCarbRest
-              unfilledKcal = totalCutKcal - fatCutKcal
-              strategyNote = `依個人歷史：保碳水、砍脂肪 (-${Math.round(fatCutKcal)} kcal/天)` + (unfilledKcal > 50 ? `，剩 ${Math.round(unfilledKcal)} kcal 需從 cardio 取得（約 +${Math.ceil(unfilledKcal / 6)} min Zone 2）` : '')
-              // 重算 newCal（因為實際只砍 fat 那部分）
-              newCal = currentCalTarget != null ? currentCalTarget - Math.round(fatCutKcal) : null
-              actualKcalShift = -Math.round(fatCutKcal)
-            } else {
-              // 路徑 A：原本邏輯，碳水吸收，但用個人化 floor
-              const carbShift = Math.round((actualKcalShift / 4) / 5) * 5
-              const clampedCarbTrain = currentCarbTrain != null ? Math.max(noteFloors.minCarbsTraining, currentCarbTrain + carbShift) : null
-              const clampedCarbRest = currentCarbRest != null ? Math.max(noteFloors.minCarbsRest, currentCarbRest + carbShift) : null
-              const clampedCarbAvg = currentCarbTarget != null ? Math.max(noteFloors.minCarbsAvg, currentCarbTarget + carbShift) : null
-              newCarbTrain = clampedCarbTrain
-              newCarbRest = clampedCarbRest
-              newCarb = clampedCarbAvg
-              // 計算被 floor 卡掉多少 kcal，剩下從 fat 或 cardio
-              const desiredCarbCut = -carbShift * 4
-              const actualCarbCut =
-                (currentCarbTarget != null && clampedCarbAvg != null ? (currentCarbTarget - clampedCarbAvg) * 4 : desiredCarbCut)
-              unfilledKcal = Math.max(0, desiredCarbCut - actualCarbCut)
-              if (unfilledKcal > 50) {
-                strategyNote = `撞個人碳水下限，剩 ${Math.round(unfilledKcal)} kcal 建議從 cardio 取得（約 +${Math.ceil(unfilledKcal / 6)} min Zone 2）`
-              }
-            }
-          } else {
-            newCarb = currentCarbTarget
-            newCarbTrain = currentCarbTrain
-            newCarbRest = currentCarbRest
-          }
-
           const filledWeeks = weeks.filter(w => w.avg != null)
           const maxAvg = filledWeeks.length > 0 ? Math.max(...filledWeeks.map(w => w.avg as number)) : 0
           const minAvg = filledWeeks.length > 0 ? Math.min(...filledWeeks.map(w => w.avg as number)) : 0
@@ -2024,102 +1908,9 @@ export default function ClientOverview() {
                 <span>本週</span>
               </div>
 
-              {/* 動態調整建議 + 一鍵套用 */}
-              {kcalAdjustment != null && remainingDays != null && remainingDays > 0 && remaining != null && (
-                <div className="mt-4 pt-4 border-t border-slate-200">
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900 mb-1">動態調整建議</p>
-                      {client.auto_adjust_enabled && (
-                        <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1 mb-1.5">
-                          此學員自動調整中{client.last_auto_adjust_at ? `（上次 ${String(client.last_auto_adjust_at).slice(0, 10)}）` : ''}。下方為即時參考，系統會在冷卻期後自動評估，通常不需手動套用。
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-600 leading-relaxed">
-                        距目標 <strong className="text-gray-900">{Math.abs(remaining).toFixed(1)} kg</strong>、剩 <strong className="text-gray-900">{remainingDays} 天</strong>。
-                        {currentRate != null && (
-                          <>目前速率 <strong className={currentRate < 0 ? 'text-emerald-700' : 'text-rose-700'}>{currentRate >= 0 ? '+' : ''}{currentRate.toFixed(2)} kg/週</strong>{recentSlope != null && regressionSlope != null && Math.abs(recentSlope - regressionSlope) > 0.05 ? <span className="text-gray-400">（近 4 週 {recentSlope >= 0 ? '+' : ''}{recentSlope.toFixed(2)}）</span> : null}，</>
-                        )}
-                        {neededRate != null && (
-                          <>需 <strong className="text-gray-900">{neededRate >= 0 ? '+' : ''}{neededRate.toFixed(2)} kg/週</strong> 才會準時。</>
-                        )}
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                        <span className={`text-2xl font-bold ${kcalAdjustment < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                          {kcalAdjustment > 0 ? '+' : ''}{kcalAdjustment} kcal/天
-                        </span>
-                        {currentCalTarget != null && newCal != null && (
-                          <span className="text-xs text-gray-500">
-                            熱量 {currentCalTarget} → <strong className="text-gray-700">{newCal}</strong>
-                          </span>
-                        )}
-                        {currentCarbTarget != null && newCarb != null && (
-                          <span className="text-xs text-gray-500">
-                            · 碳水 {currentCarbTarget}g → <strong className="text-gray-700">{newCarb}g</strong>
-                          </span>
-                        )}
-                      </div>
-                      {(currentCarbTrain != null || currentCarbRest != null) && (
-                        <p className="text-[11px] text-gray-500 mt-1">
-                          {currentCarbTrain != null && newCarbTrain != null && (
-                            <>訓練日：{currentCarbTrain}g → <strong>{newCarbTrain}g</strong></>
-                          )}
-                          {currentCarbTrain != null && currentCarbRest != null && '　·　'}
-                          {currentCarbRest != null && newCarbRest != null && (
-                            <>非訓練日：{currentCarbRest}g → <strong>{newCarbRest}g</strong></>
-                          )}
-                        </p>
-                      )}
-
-                      {currentCalTarget != null && newCal != null && newCal !== currentCalTarget && (
-                        <button
-                          onClick={async () => {
-                            const summary = [
-                              `熱量：${currentCalTarget} → ${newCal} kcal`,
-                              currentFat != null && newFat != null && newFat !== currentFat ? `脂肪：${currentFat}g → ${newFat}g` : null,
-                              currentCarbTarget != null && newCarb != null && newCarb !== currentCarbTarget ? `碳水：${currentCarbTarget}g → ${newCarb}g` : null,
-                              currentCarbTrain != null && newCarbTrain != null && newCarbTrain !== currentCarbTrain ? `訓練日碳水：${currentCarbTrain}g → ${newCarbTrain}g` : null,
-                              currentCarbRest != null && newCarbRest != null && newCarbRest !== currentCarbRest ? `非訓練日碳水：${currentCarbRest}g → ${newCarbRest}g` : null,
-                              strategyNote ? `\n${strategyNote}` : null,
-                            ].filter(Boolean).join('\n')
-                            if (!confirm(`確定套用？\n\n${summary}`)) return
-                            const updates: Record<string, number | string> = {
-                              calories_target: newCal!,
-                              last_auto_adjust_at: new Date().toISOString(),
-                            }
-                            if (currentFat != null && newFat != null && newFat !== currentFat) updates.fat_target = newFat
-                            if (currentCarbTarget != null && newCarb != null && newCarb !== currentCarbTarget) updates.carbs_target = newCarb
-                            if (currentCarbTrain != null && newCarbTrain != null && newCarbTrain !== currentCarbTrain) updates.carbs_training_day = newCarbTrain
-                            if (currentCarbRest != null && newCarbRest != null && newCarbRest !== currentCarbRest) updates.carbs_rest_day = newCarbRest
-                            // 稽核 E22：PUT /api/admin/clients 本來就會寫 macro_adjustment_log，原本前端又 POST 一筆 → 每次兩筆。
-                            // 原因改用 macro_change_reason 交給 PUT 一起寫。
-                            await saveQuickAction(updates, 'macros 已調整', `教練手動套用建議：${currentRate?.toFixed(2)} → ${neededRate?.toFixed(2)} kg/週`)
-                          }}
-                          disabled={quickSaving}
-                          className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors ${client.auto_adjust_enabled ? 'bg-white border border-slate-300 text-gray-600 hover:bg-slate-50' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
-                        >
-                          {quickSaving ? '套用中…' : client.auto_adjust_enabled ? '手動立即套用（通常不需）' : '一鍵套用建議'}
-                        </button>
-                      )}
-                      {/* 個人化保護觸發提示 */}
-                      {noteFloors.triggeredNotes.length > 0 && (
-                        <div className="mt-3 p-2.5 bg-emerald-50 border border-emerald-200 rounded text-xs">
-                          <p className="font-semibold text-emerald-800 mb-1">已套用個人歷史保護</p>
-                          {strategyNote && <p className="text-emerald-700 mb-1.5">{strategyNote}</p>}
-                          <ul className="text-emerald-600 space-y-0.5">
-                            {noteFloors.triggeredNotes.map((t, i) => (
-                              <li key={i}>· <span className="font-medium">{t.rule}</span> <span className="text-emerald-500">（weight {t.weight}）</span></li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      <p className="text-[11px] text-gray-400 mt-2 leading-snug">
-                        7700 kcal ≈ 1 kg 純脂肪推算（未區分肌脂、未含 NEAT 變化）。建議搭配 1-2 週體重驗證後再進一步調。
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <p className="mt-4 pt-4 border-t border-slate-200 text-[11px] text-gray-500">
+                營養要不要調，以下方「營養分析引擎」為準（後台只留這一個建議來源）。
+              </p>
             </div>
           )
         })()}
@@ -2702,7 +2493,7 @@ export default function ClientOverview() {
             )}
             {isCompetitionMode(client.client_mode) && (
               <div className="bg-white/60 border border-slate-200 rounded-lg px-3 py-2 text-xs text-gray-500 leading-snug">
-                比賽模式：實際營養素由下方「動態調整建議（比賽引擎 trajectory）」為準，此卡數字僅供對照、不提供套用。
+                比賽模式：營養素由每週自動評估（比賽引擎 trajectory）調整，理由見學員主頁「最近的調整紀錄」；此卡數字僅供對照、不提供套用。
               </div>
             )}
 
