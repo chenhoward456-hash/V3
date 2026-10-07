@@ -105,9 +105,9 @@ export default function TodayWorkout({ trainingPlan, todayTrainingType, onOverri
   }, [effectiveDow, onSelectedDayChange])
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
+    <div className="student-workout-panel bg-white border border-slate-200 rounded-2xl p-5 mb-3">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="student-workout-header flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div>
             <h3 className="text-sm font-bold text-gray-900">

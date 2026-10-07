@@ -81,7 +81,7 @@ function CompWarRoomInner({ bodyData, competitionDate, targetWeight, targetBodyF
   const weightGap = curWeight != null && targetWeight != null ? Math.abs(curWeight - targetWeight) : null
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
+    <div className="student-progress-panel bg-white border border-slate-200 rounded-2xl p-5 mb-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-base font-semibold text-gray-900">備賽作戰室</span>
