@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Activity, Brain, ChartNoAxesCombined, Users } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: '這套系統怎麼運作 — The Howard Protocol',
@@ -14,25 +15,25 @@ export const metadata: Metadata = {
 
 const PILLARS = [
   {
-    icon: '📊',
+    icon: ChartNoAxesCombined,
     title: '每日數據追蹤',
     sub: '每天 2 分鐘，餵系統真實資料',
     body: '每天記體重和飲食（付費版再加睡眠、能量、壓力等身心狀態）。不用記得很精確，初期用手掌法估份量就夠——系統看的是趨勢，不是單日數字。只需要手機和體重計，透過 LINE 和網頁運作，不用裝 App。',
   },
   {
-    icon: '🧠',
+    icon: Brain,
     title: '引擎自動調整營養',
     sub: '學你的身體，不是套公式',
     body: '追蹤 14 天後，系統用你的真實體重趨勢自動校正你實際燃燒多少熱量——比任何公式準。之後每週自動分析該維持還是該調，連 Refeed 時機都會在疲勞訊號同時亮時才提醒。女性經期前的體重浮動系統知道是正常的。還有一條：體脂太低時系統會自動收手，不為了數字把人榨乾。',
   },
   {
-    icon: '🩸',
+    icon: Activity,
     title: 'Howard 標準血檢最佳化',
     sub: '「正常」跟「最佳」是兩回事（教練指導以上方案）',
     body: '醫院的參考範圍是「沒生病」的標準，不是「狀態最好」的標準。我用一套比醫院更嚴的最佳化目標（藍標）追蹤你的血檢趨勢——例如 HOMA-IR 看的不是 <2.0 而是 <0.8。我是教練、不是醫師、不做診斷：血檢在這裡是「追蹤與優化方向」，數據往哪偏、生活方式與補充怎麼調，並建議與你的醫師討論後再決定。',
   },
   {
-    icon: '🧑‍🏫',
+    icon: Users,
     title: '教練在迴圈',
     sub: '系統算數據，人做判斷（教練指導以上方案）',
     body: '系統 24 小時分析，但最後把關的是人。我（CSCS、運動醫學系）每週 review 你的營養與進度，LINE 即時問答。原則固定：找根因不單點報數字、一次只動一個變數、荷爾蒙優先——碳水是最後才動的。系統給我看到你的全部數據，所以給的是針對你這週的判斷，不是通用建議。',
@@ -50,10 +51,10 @@ export default function HowItWorksPage() {
   return (
     <div className="bg-white">
       {/* HERO */}
-      <section className="bg-slate-900 text-white px-5 py-14 md:py-20">
-        <div className="max-w-3xl mx-auto">
-          <p className="text-xs tracking-[0.2em] text-primary-400 font-medium mb-5">THE HOWARD PROTOCOL · 系統怎麼運作</p>
-          <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-5">
+      <section className="bg-slate-950 text-white px-6 py-14 md:py-24">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-xs tracking-[0.2em] text-slate-400 font-medium mb-5">THE HOWARD PROTOCOL · 系統怎麼運作</p>
+          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.25] mb-6">
             這套系統，<br className="hidden md:block" />到底在幫你做什麼？
           </h1>
           <p className="text-slate-300 text-base md:text-lg leading-relaxed max-w-xl">
@@ -67,14 +68,14 @@ export default function HowItWorksPage() {
       </section>
 
       {/* 痛點 */}
-      <section className="px-5 py-12 md:py-16 max-w-3xl mx-auto">
+      <section className="px-5 py-12 md:py-16 max-w-4xl mx-auto">
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">為什麼一般的減脂方式會卡住</h2>
         <p className="text-slate-500 leading-relaxed mb-5">
           大部分人的減脂長這樣：網路上查一個 TDEE 公式、抓一個熱量目標，然後開始猜。
         </p>
         <ul className="space-y-2 mb-5">
           {['吃完飯不知道今天算不算合格', '練完不確定強度是對的還是太過', '停滯了，不知道該繼續撐還是該調整', '三個月後回頭，根本不知道哪一步出了問題'].map(s => (
-            <li key={s} className="text-sm text-slate-600 flex gap-2"><span className="text-rose-400">·</span>{s}</li>
+            <li key={s} className="text-sm text-slate-600 flex gap-2"><span className="text-slate-400">·</span>{s}</li>
           ))}
         </ul>
         <p className="text-slate-600 leading-relaxed">
@@ -85,15 +86,15 @@ export default function HowItWorksPage() {
 
       {/* 四支柱 */}
       <section className="px-5 py-12 md:py-16 bg-slate-50">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-8">系統怎麼運作：四根支柱</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            {PILLARS.map(p => (
-              <div key={p.title} className="rounded-2xl border border-slate-200 bg-white p-5">
-                <div className="text-2xl mb-2">{p.icon}</div>
-                <div className="font-semibold text-slate-900">{p.title}</div>
-                <div className="text-xs text-primary-600 mb-2">{p.sub}</div>
-                <div className="text-sm text-slate-600 leading-relaxed">{p.body}</div>
+            {PILLARS.map(({ icon: Icon, ...p }) => (
+              <div key={p.title} className="rounded-2xl border border-slate-200 bg-white p-6">
+                <Icon className="w-6 h-6 text-slate-500 mb-5" strokeWidth={1.5} aria-hidden="true" />
+                <div className="text-lg font-semibold text-slate-900 mb-2">{p.title}</div>
+                <div className="text-sm text-slate-500 mb-4">{p.sub}</div>
+                <div className="text-sm text-slate-600 leading-7">{p.body}</div>
               </div>
             ))}
           </div>
@@ -101,7 +102,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* 親身證據 */}
-      <section className="px-5 py-12 md:py-16 max-w-3xl mx-auto">
+      <section className="px-5 py-12 md:py-16 max-w-4xl mx-auto">
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">我自己就是第一個案例</h2>
         <p className="text-slate-600 leading-relaxed mb-4">
           我不是只賣系統，我先在自己身上跑了 6 年。2020 年我的身體崩過一次：嚴重落髮、慢性發炎、持續疲勞。
@@ -109,7 +110,7 @@ export default function HowItWorksPage() {
           包含原始檢驗單（未修圖）的完整紀錄都公開。
         </p>
         <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 mb-5">
-          <p className="text-sm text-slate-600 leading-relaxed">
+          <p className="text-sm text-slate-600 leading-7">
             也誠實說一件事：備賽減到 7.8% 那麼瘦，睪固酮確實會掉。這是激進減脂的代價，所以系統才會內建「依體脂自動收手」。看得到代價、也防得住，才是真的系統。
           </p>
         </div>
@@ -118,18 +119,18 @@ export default function HowItWorksPage() {
 
       {/* 方案 */}
       <section className="px-5 py-12 md:py-16 bg-slate-50">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">方案差在哪（快速概覽）</h2>
           <p className="text-slate-500 mb-8">全部月繳制，不綁約，隨時取消。下面是快速概覽，<Link href="/remote" className="text-primary-600 font-medium hover:underline">完整方案與定價在這裡 →</Link></p>
           <div className="grid sm:grid-cols-2 gap-3">
             {TIERS.map(t => (
-              <div key={t.name} className={`rounded-2xl border p-5 ${t.highlight ? 'border-primary-300 bg-primary-50/40' : 'border-slate-200 bg-white'}`}>
-                <div className="flex items-baseline justify-between mb-1">
+              <div key={t.name} className={`rounded-2xl border p-5 ${t.highlight ? 'border-primary-600 bg-white' : 'border-slate-200 bg-white'}`}>
+                <div className="flex flex-col items-start gap-3 mb-4">
                   <span className="font-semibold text-slate-900">{t.name}</span>
-                  <span className="text-sm"><b className="text-slate-900">{t.price}</b><span className="text-slate-400 text-xs">{t.priceNote}</span></span>
+                  <span className="text-sm"><b className="text-3xl font-semibold tracking-tight tabular-nums text-slate-900">{t.price}</b><span className="text-slate-500 text-xs">{t.priceNote}</span></span>
                 </div>
-                <div className="text-xs text-primary-600 mb-2">給{t.who}</div>
-                <div className="text-sm text-slate-600 leading-relaxed">{t.what}</div>
+                <div className="text-sm text-slate-500 mb-4">給{t.who}</div>
+                <div className="text-sm text-slate-600 leading-7">{t.what}</div>
               </div>
             ))}
           </div>
@@ -137,7 +138,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* 我是誰 */}
-      <section className="px-5 py-12 md:py-16 max-w-3xl mx-auto">
+      <section className="px-5 py-12 md:py-16 max-w-4xl mx-auto">
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
           <p className="text-sm text-slate-700 leading-relaxed">
             <b className="text-slate-900">Howard Chen</b> — 高雄醫學大學運動醫學系 / NSCA-CSCS 肌力與體能專家 / 6+ 年實務經驗，台中北屯。
@@ -150,7 +151,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* CTA */}
-      <section className="px-5 py-16 bg-slate-900 text-white text-center">
+      <section className="px-5 py-16 bg-slate-950 text-white text-center">
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold mb-3">先免費試，30 秒看到你的數字</h2>
           <p className="text-slate-300 mb-8 leading-relaxed">
@@ -159,13 +160,13 @@ export default function HowItWorksPage() {
           <Link href="/diagnosis" className="inline-block bg-primary-600 hover:bg-primary-700 transition-colors text-white font-bold px-8 py-4 rounded-xl text-lg">
             免費系統分析 →
           </Link>
-          <p className="text-xs text-slate-500 mt-4">試完覺得準，再決定要不要讓系統每天幫你追蹤。</p>
+          <p className="text-xs text-slate-400 mt-4">試完覺得準，再決定要不要讓系統每天幫你追蹤。</p>
         </div>
       </section>
 
       {/* 免責 */}
-      <section className="px-5 py-8 max-w-3xl mx-auto">
-        <p className="text-xs text-slate-400 leading-relaxed">
+      <section className="px-5 py-8 max-w-4xl mx-auto">
+        <p className="text-xs text-slate-500 leading-relaxed">
           本服務為教練基於數據趨勢的觀察與生活方式建議，非醫療行為；個人案例僅供參考，效果因人而異，健康疑慮請諮詢合格醫師。
         </p>
       </section>

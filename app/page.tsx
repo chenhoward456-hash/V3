@@ -7,6 +7,7 @@ import PwaRedirect from '@/components/PwaRedirect'
 import FaqAccordion from '@/components/FaqAccordion'
 import StickyMobileCta from '@/components/StickyMobileCta'
 import ABTest from '@/components/ABTest'
+import { Activity, Brain, ChartNoAxesCombined, Dumbbell, FlaskConical, MessageCircle, RefreshCw, ShieldCheck, Utensils, Download } from 'lucide-react'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://howard456.vercel.app'
 
@@ -260,11 +261,11 @@ export default function HomePage() {
       />
 
       {/* ===== 區塊 1: Hero ===== */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-white to-[#f5f7fa]">
-        <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
+      <section className="relative overflow-hidden bg-slate-950 text-white">
+        <div className="max-w-6xl mx-auto px-6 py-12 md:py-24">
           <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
-            <div className="flex-1 text-center md:text-left">
-              <div className="inline-block bg-primary/10 text-primary text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
+            <div className="flex-1 text-left">
+              <div className="inline-block border border-white/20 text-slate-300 text-xs font-medium tracking-wider px-3 py-2 rounded-full mb-6">
                 CSCS 認證 × 數據驅動
               </div>
               <ABTest
@@ -272,13 +273,13 @@ export default function HomePage() {
                 variants={{
                   data_focus: (
                     <>
-                      <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-navy">
+                      <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.25] tracking-tight mb-6 text-white">
                         你不是不夠努力<br />你只是每天都在<br className="md:hidden" />用感覺做決定
                       </h1>
-                      <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
+                      <p className="text-lg md:text-xl text-slate-200 mb-3 leading-relaxed">
                         每天 2 分鐘記錄，系統告訴你今天做對了沒有
                       </p>
-                      <p className="text-sm text-gray-400 mb-6 leading-relaxed max-w-lg">
+                      <p className="text-sm text-slate-400 mb-6 leading-relaxed max-w-lg">
                         系統追蹤你的體重趨勢，每週自動校正目標。<br />
                         不是給你數字就消失 — 是每天告訴你：對，繼續。
                       </p>
@@ -286,13 +287,13 @@ export default function HomePage() {
                   ),
                   coach_focus: (
                     <>
-                      <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-navy">
+                      <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.25] tracking-tight mb-6 text-white">
                         CSCS 教練 + 智能系統<br />你的專屬<br className="md:hidden" />體態管理團隊
                       </h1>
-                      <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
+                      <p className="text-lg md:text-xl text-slate-200 mb-3 leading-relaxed">
                         不只是系統分析 — 還有真人教練每週幫你把關
                       </p>
-                      <p className="text-sm text-gray-400 mb-6 leading-relaxed max-w-lg">
+                      <p className="text-sm text-slate-400 mb-6 leading-relaxed max-w-lg">
                         運動醫學背景教練 + 數據驅動系統，雙重保障。<br />
                         方向對了，結果只是時間問題。
                       </p>
@@ -301,13 +302,13 @@ export default function HomePage() {
                 }}
                 fallback={
                   <>
-                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-navy">
+                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.25] tracking-tight mb-6 text-white">
                       你不是不夠努力<br />你只是每天都在<br className="md:hidden" />用感覺做決定
                     </h1>
-                    <p className="text-lg md:text-xl text-gray-600 mb-3 leading-relaxed">
+                    <p className="text-lg md:text-xl text-slate-200 mb-3 leading-relaxed">
                       每天 2 分鐘記錄，系統告訴你今天做對了沒有
                     </p>
-                    <p className="text-sm text-gray-400 mb-6 leading-relaxed max-w-lg">
+                    <p className="text-sm text-slate-400 mb-6 leading-relaxed max-w-lg">
                       系統追蹤你的體重趨勢，每週自動校正目標。<br />
                       不是給你數字就消失 — 是每天告訴你：對，繼續。
                     </p>
@@ -315,70 +316,70 @@ export default function HomePage() {
                 }
               />
               {/* 社會證明 */}
-              <div className="flex items-center gap-4 mb-8 text-sm text-gray-500">
-                <span className="flex items-center gap-1"><span className="font-bold text-navy">6+</span> 年系統開發</span>
+              <div className="flex flex-wrap items-center gap-3 mb-8 text-sm text-slate-400">
+                <span className="flex items-center gap-1"><span className="font-semibold text-white">6+</span> 年系統開發</span>
                 <span className="w-1 h-1 rounded-full bg-gray-300" />
-                <span className="flex items-center gap-1"><span className="font-bold text-navy">CSCS</span> 認證</span>
+                <span className="flex items-center gap-1"><span className="font-semibold text-white">CSCS</span> 認證</span>
                 <span className="w-1 h-1 rounded-full bg-gray-300" />
-                <span className="flex items-center gap-1"><span className="font-bold text-navy">30 秒</span> 開通</span>
+                <span className="flex items-center gap-1"><span className="font-semibold text-white">30 秒</span> 開通</span>
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/diagnosis"
-                  className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition-all shadow-lg shadow-primary-500/25 text-center min-h-[48px]"
+                  className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-dark transition-colors text-center min-h-[48px]"
                 >
                   30 秒免費算出我的數字 →
                 </Link>
                 <LineButton
                   source="homepage_hero"
                   intent="general"
-                  className="inline-block bg-white text-navy border-2 border-navy px-8 py-4 rounded-xl font-semibold text-lg hover:bg-navy/5 transition-all text-center min-h-[48px]"
+                  className="inline-block bg-transparent text-white border border-white/30 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-all text-center min-h-[48px]"
                 >
                   加 LINE 了解更多
                 </LineButton>
               </div>
-              <p className="mt-4 text-sm text-gray-500">
-                已經是會員？<Link href="/login" className="text-primary font-medium hover:underline">用 Email 登入找回儀表板 →</Link>
+              <p className="mt-4 text-sm text-slate-400">
+                已經是會員？<Link href="/login" className="text-primary-200 font-medium hover:underline">用 Email 登入找回儀表板 →</Link>
               </p>
             </div>
 
             {/* 右側：Howard 照片 + 引擎 Demo 預覽 */}
-            <div className="flex-shrink-0 flex flex-col items-center gap-4">
+            <div className="flex-shrink-0 flex flex-col items-center gap-4 w-full md:w-auto">
               <Image
                 src="/howard-profile.jpg"
                 alt="Howard Chen - CSCS 認證體能教練 / Howard Protocol 創辦人"
                 width={240}
                 height={240}
                 sizes="(max-width: 768px) 240px, 240px"
-                className="rounded-2xl object-cover shadow-[0_8px_30px_rgba(30,58,95,0.12)]"
+                className="rounded-2xl object-cover border border-white/15"
                 priority
               />
               {/* 靜態 Engine Demo 卡片 */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 w-[260px]">
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 w-full max-w-sm md:w-[320px]">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-base">🧠</span>
+                  <Brain className="w-5 h-5 text-slate-600" aria-hidden="true" />
                   <span className="text-xs font-bold text-gray-900">每週智能分析</span>
-                  <span className="ml-auto text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">進度正常</span>
+                  <span className="ml-auto text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">進度正常</span>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 mb-3">
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <p className="text-[9px] text-gray-400">TDEE</p>
-                    <p className="text-sm font-bold text-gray-900">2,340</p>
-                    <p className="text-[9px] text-gray-400">kcal</p>
+                    <p className="text-xs text-gray-500">TDEE</p>
+                    <p className="text-2xl tabular-nums font-semibold text-slate-900">2,340</p>
+                    <p className="text-xs text-gray-500">kcal</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <p className="text-[9px] text-gray-400">體重變化</p>
-                    <p className="text-sm font-bold text-green-600">-0.6%</p>
-                    <p className="text-[9px] text-gray-400">/週</p>
+                    <p className="text-xs text-gray-500">體重變化</p>
+                    <p className="text-xl tabular-nums font-semibold text-emerald-600">-0.6%</p>
+                    <p className="text-xs text-gray-500">/週</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <p className="text-[9px] text-gray-400">每日赤字</p>
-                    <p className="text-sm font-bold text-green-600">380</p>
-                    <p className="text-[9px] text-gray-400">kcal</p>
+                    <p className="text-xs text-gray-500">每日赤字</p>
+                    <p className="text-xl tabular-nums font-semibold text-emerald-600">380</p>
+                    <p className="text-xs text-gray-500">kcal</p>
                   </div>
                 </div>
-                <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                  <p className="text-[10px] text-green-700">🟢 體重穩定下降，完美符合目標範圍。維持目前計畫。</p>
+                <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                  <p className="text-xs text-slate-700">🟢 體重穩定下降，完美符合目標範圍。維持目前計畫。</p>
                 </div>
               </div>
             </div>
@@ -394,13 +395,13 @@ export default function HomePage() {
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             {[
-              { emoji: '🍽️', text: '每天吃完飯不知道今天算不算合格' },
-              { emoji: '🏋️', text: '訓練完不確定今天的強度是對的還是太過' },
-              { emoji: '📉', text: '停滯了不知道是該繼續撐還是調整計畫' },
-              { emoji: '😶‍🌫️', text: '靠感覺過了三個月，回頭看根本不知道哪裡出了問題' },
-            ].map(({ emoji, text }) => (
-              <div key={text} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
-                <div className="text-3xl mb-3">{emoji}</div>
+              { icon: Utensils, text: '每天吃完飯不知道今天算不算合格' },
+              { icon: Dumbbell, text: '訓練完不確定今天的強度是對的還是太過' },
+              { icon: ChartNoAxesCombined, text: '停滯了不知道是該繼續撐還是調整計畫' },
+              { icon: MessageCircle, text: '靠感覺過了三個月，回頭看根本不知道哪裡出了問題' },
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="border-t border-slate-200 pt-6 text-left">
+                <Icon className="w-6 h-6 mb-4 text-slate-500" strokeWidth={1.5} aria-hidden="true" />
                 <p className="text-gray-700 font-medium leading-relaxed text-sm">{text}</p>
               </div>
             ))}
@@ -422,17 +423,17 @@ export default function HomePage() {
               用數據說話，不用嘴巴
             </h2>
             <p className="text-center text-gray-500 mb-14">Howard 本人 6 年系統追蹤的真實數據</p>
-            <div className="grid md:grid-cols-4 gap-6 mb-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
               {[
-                { label: 'HRV（心率變異）', before: '65 ms', after: '105 ms', change: '+62%', color: 'text-green-600' },
-                { label: '靜息心率', before: '58 bpm', after: '52 bpm', change: '-10%', color: 'text-green-600' },
-                { label: 'HOMA-IR（胰島素阻抗）', before: '偏高', after: '0.49', change: '正常', color: 'text-green-600' },
-                { label: 'Testosterone', before: '515', after: '625 ng/dL', change: '+21%', color: 'text-green-600' },
+                { label: 'HRV（心率變異）', before: '65 ms', after: '105 ms', change: '+62%', color: 'text-emerald-600' },
+                { label: '靜息心率', before: '58 bpm', after: '52 bpm', change: '-10%', color: 'text-emerald-600' },
+                { label: 'HOMA-IR（胰島素阻抗）', before: '偏高', after: '0.49', change: '正常', color: 'text-emerald-600' },
+                { label: 'Testosterone', before: '515', after: '625 ng/dL', change: '+21%', color: 'text-emerald-600' },
               ].map(({ label, before, after, change, color }) => (
                 <div key={label} className="bg-white rounded-2xl p-6 shadow-sm text-center">
-                  <p className="text-xs text-gray-400 mb-2">{label}</p>
-                  <p className="text-xs text-gray-400 line-through mb-1">{before}</p>
-                  <p className="text-2xl font-bold text-gray-900 mb-1">{after}</p>
+                  <p className="text-xs text-gray-500 mb-2">{label}</p>
+                  <p className="text-xs text-gray-500 line-through mb-1">{before}</p>
+                  <p className="text-3xl md:text-4xl tabular-nums font-semibold tracking-tight text-slate-900 mb-2">{after}</p>
                   <p className={`text-sm font-semibold ${color}`}>{change}</p>
                 </div>
               ))}
@@ -452,13 +453,13 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto px-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
               {[
-                { icon: '🏅', value: '6+', unit: '年', label: '教練經驗' },
-                { icon: '📊', value: '200+', unit: '位', label: '學員數據' },
-                { icon: '🔬', value: '科學化', unit: '', label: '追蹤系統' },
-                { icon: '💬', value: 'LINE', unit: '', label: '即時支援' },
-              ].map(({ icon, value, unit, label }) => (
+                { icon: ShieldCheck, value: '6+', unit: '年', label: '教練經驗' },
+                { icon: ChartNoAxesCombined, value: '200+', unit: '位', label: '學員數據' },
+                { icon: FlaskConical, value: '科學化', unit: '', label: '追蹤系統' },
+                { icon: MessageCircle, value: 'LINE', unit: '', label: '即時支援' },
+              ].map(({ icon: Icon, value, unit, label }) => (
                 <div key={label} className="flex flex-col items-center gap-1.5">
-                  <span className="text-2xl">{icon}</span>
+                  <Icon className="w-5 h-5 mb-2 text-slate-500" strokeWidth={1.5} aria-hidden="true" />
                   <p className="text-lg font-bold text-navy">
                     {value}<span className="text-sm font-normal text-gray-500">{unit ? ` ${unit}` : ''}</span>
                   </p>
@@ -477,17 +478,17 @@ export default function HomePage() {
             系統在背後幫你做什麼
           </h2>
           <p className="text-center text-gray-500 mb-14">每個功能都有運動科學文獻支撐</p>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: '📊', title: '系統學你的身體', anchor: '追蹤 14 天後自動校正', desc: '每個人代謝不一樣。系統追蹤你的體重趨勢，自動算出你實際燃燒多少 — 比任何公式都準，因為用的是你自己的數據。' },
-              { icon: '🧠', title: '系統幫你看方向', anchor: '每週一早上推送', desc: '掉太快？停滯了？方向對嗎？系統每週自動判斷，直接告訴你該怎麼調 — 不用等、不用猜。' },
-              { icon: '🔄', title: '系統告訴你該放鬆', anchor: '3 個信號同時亮才觸發', desc: '節食太久身體會反抗。系統監測你的疲勞和低碳天數，時機到了主動提醒你 Refeed — 你不需要懂原理。' },
-              { icon: '🩸', title: '系統不會誤判你', anchor: '自動排除黃體期波動', desc: '經期前體重浮動是正常的。系統知道這件事，不會因為體重上升就叫你少吃。' },
-            ].map(({ icon, title, anchor, desc }) => (
-              <div key={title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="text-3xl mb-3 text-center">{icon}</div>
-                <h3 className="font-bold mb-1 text-lg text-center text-navy">{title}</h3>
-                <p className="text-xs text-primary font-semibold text-center mb-2">{anchor}</p>
+              { icon: ChartNoAxesCombined, title: '系統學你的身體', anchor: '追蹤 14 天後自動校正', desc: '每個人代謝不一樣。系統追蹤你的體重趨勢，自動算出你實際燃燒多少 — 比任何公式都準，因為用的是你自己的數據。' },
+              { icon: Brain, title: '系統幫你看方向', anchor: '每週一早上推送', desc: '掉太快？停滯了？方向對嗎？系統每週自動判斷，直接告訴你該怎麼調 — 不用等、不用猜。' },
+              { icon: RefreshCw, title: '系統告訴你該放鬆', anchor: '3 個信號同時亮才觸發', desc: '節食太久身體會反抗。系統監測你的疲勞和低碳天數，時機到了主動提醒你 Refeed — 你不需要懂原理。' },
+              { icon: Activity, title: '系統不會誤判你', anchor: '自動排除黃體期波動', desc: '經期前體重浮動是正常的。系統知道這件事，不會因為體重上升就叫你少吃。' },
+            ].map(({ icon: Icon, title, anchor, desc }) => (
+              <div key={title} className="bg-white rounded-2xl p-6 border border-slate-200">
+                <Icon className="w-6 h-6 mb-5 text-slate-600" strokeWidth={1.5} aria-hidden="true" />
+                <h3 className="font-semibold mb-2 text-lg text-slate-900">{title}</h3>
+                <p className="text-sm text-slate-600 font-medium mb-3">{anchor}</p>
                 <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
               </div>
             ))}
@@ -518,7 +519,7 @@ export default function HomePage() {
                     {i < 3 && <div className="w-0.5 h-12 bg-gray-200" />}
                   </div>
                   <div className="pt-2 pb-8">
-                    <p className="text-xs font-bold text-gray-400 mb-1">{day}</p>
+                    <p className="text-xs font-bold text-gray-500 mb-1">{day}</p>
                     <p className="text-sm text-gray-700 font-medium">{text}</p>
                   </div>
                 </div>
@@ -536,8 +537,8 @@ export default function HomePage() {
               這套系統適合你嗎？
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-green-100">
-                <h3 className="text-lg font-bold text-green-700 mb-5">適合你</h3>
+              <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200">
+                <h3 className="text-lg font-bold text-slate-700 mb-5">適合你</h3>
                 <ul className="space-y-3">
                   {[
                     '認真想改變但一直卡住的人',
@@ -547,13 +548,13 @@ export default function HomePage() {
                     '願意每天花 2 分鐘記錄數據的人',
                   ].map(t => (
                     <li key={t} className="flex items-start gap-2 text-gray-700 text-sm">
-                      <span className="text-green-500 mt-0.5 font-bold">+</span>{t}
+                      <span className="text-slate-500 mt-0.5 font-bold">+</span>{t}
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-red-100">
-                <h3 className="text-lg font-bold text-red-600 mb-5">不適合</h3>
+              <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200">
+                <h3 className="text-lg font-bold text-slate-700 mb-5">不適合</h3>
                 <ul className="space-y-3">
                   {[
                     '只想要速效、不願意等 2-4 週看數據的人',
@@ -561,7 +562,7 @@ export default function HomePage() {
                     '純粹找人陪練、不在意數據的人',
                   ].map(t => (
                     <li key={t} className="flex items-start gap-2 text-gray-700 text-sm">
-                      <span className="text-red-400 mt-0.5 font-bold">-</span>{t}
+                      <span className="text-slate-400 mt-0.5 font-bold">-</span>{t}
                     </li>
                   ))}
                 </ul>
@@ -580,33 +581,33 @@ export default function HomePage() {
           <p className="text-center text-gray-500 mb-14">不需信用卡，30 秒建立帳號</p>
           <div className="grid md:grid-cols-2 gap-6">
             {/* 左：自己來 */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-green-200 flex flex-col">
+            <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 flex flex-col">
               <h3 className="text-xl font-bold text-navy mb-2">自己來</h3>
               <p className="text-gray-500 text-sm mb-6 leading-relaxed">
                 系統幫你記錄和分析，你自己做決定。
               </p>
 
               {/* 免費 */}
-              <div className="bg-green-50 rounded-xl p-4 mb-3">
+              <div className="bg-slate-50 rounded-xl p-5 mb-3">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-2xl font-bold text-navy">$0</span>
-                  <span className="text-xs text-gray-400">永久免費</span>
+                  <span className="text-4xl tabular-nums font-semibold tracking-tight text-slate-900">$0</span>
+                  <span className="text-xs text-gray-500">永久免費</span>
                 </div>
                 <ul className="space-y-1 text-xs text-gray-600">
-                  <li className="flex items-start gap-1.5"><span className="text-green-500">&#10003;</span>體重趨勢 + 飲食紀錄 + TDEE 計算</li>
-                  <li className="flex items-start gap-1.5"><span className="text-green-500">&#10003;</span>14 天後自動校正營養目標</li>
+                  <li className="flex items-start gap-1.5"><span className="text-slate-500">&#10003;</span>體重趨勢 + 飲食紀錄 + TDEE 計算</li>
+                  <li className="flex items-start gap-1.5"><span className="text-slate-500">&#10003;</span>14 天後自動校正營養目標</li>
                 </ul>
               </div>
 
               {/* 升級 $499 */}
-              <div className="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-6">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-2xl font-bold text-navy">$499</span>
-                  <span className="text-xs text-gray-400">/月 · 升級解鎖</span>
+                  <span className="text-4xl tabular-nums font-semibold tracking-tight text-slate-900">$499</span>
+                  <span className="text-xs text-gray-500">/月 · 升級解鎖</span>
                 </div>
                 <ul className="space-y-1 text-xs text-gray-600">
-                  <li className="flex items-start gap-1.5"><span className="text-green-500">&#10003;</span>身心狀態追蹤（睡眠、能量、壓力）</li>
-                  <li className="flex items-start gap-1.5"><span className="text-green-500">&#10003;</span>AI 私人顧問 — 根據你的數據回答，不是通用建議</li>
+                  <li className="flex items-start gap-1.5"><span className="text-slate-500">&#10003;</span>身心狀態追蹤（睡眠、能量、壓力）</li>
+                  <li className="flex items-start gap-1.5"><span className="text-slate-500">&#10003;</span>AI 私人顧問 — 根據你的數據回答，不是通用建議</li>
                 </ul>
                 <Link href="/join?tier=self_managed" className="inline-block text-sm font-semibold text-primary-600 hover:text-primary-800 mt-2">升級解鎖 →</Link>
               </div>
@@ -614,16 +615,16 @@ export default function HomePage() {
               <div className="mt-auto">
                 <Link
                   href="/join"
-                  className="block bg-green-500 text-white py-3.5 rounded-xl font-semibold hover:bg-green-600 transition-colors text-center text-lg min-h-[48px] flex items-center justify-center"
+                  className="block bg-primary-600 text-white py-3.5 rounded-xl font-semibold hover:bg-primary-700 transition-colors text-center text-lg min-h-[48px] flex items-center justify-center"
                 >
                   免費開始記錄 →
                 </Link>
-                <p className="text-xs text-gray-400 text-center mt-2">不需信用卡，30 秒開通</p>
+                <p className="text-xs text-gray-500 text-center mt-2">不需信用卡，30 秒開通</p>
               </div>
             </div>
 
             {/* 右：教練帶 */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border-2 border-primary flex flex-col relative">
+            <div className="bg-white rounded-2xl p-6 md:p-8 border border-primary-600 flex flex-col relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1 rounded-full">
                 最多人選
               </div>
@@ -633,10 +634,10 @@ export default function HomePage() {
               </p>
 
               {/* 遠端 $2,999 */}
-              <div className="bg-primary-50 rounded-xl p-4 mb-6">
+              <div className="bg-slate-50 rounded-xl p-5 mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-2xl font-bold text-navy">$2,999</span>
-                  <span className="text-xs text-gray-400">/月 · 全台遠端</span>
+                  <span className="text-4xl tabular-nums font-semibold tracking-tight text-slate-900">$2,999</span>
+                  <span className="text-xs text-gray-500">/月 · 全台遠端</span>
                 </div>
                 <ul className="space-y-1 text-xs text-gray-600">
                   <li className="flex items-start gap-1.5"><span className="text-primary">&#10003;</span>自主管理全部功能</li>
@@ -656,10 +657,10 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <p className="text-center text-xs text-gray-400 mt-8">
+          <p className="text-center text-xs text-gray-500 mt-8">
             全部月繳制，隨時可取消。免費版隨時可升級，補差額即可。
           </p>
-          <p className="text-center text-[10px] text-gray-300 mt-3">
+          <p className="text-center text-xs text-gray-500 mt-3">
             服務提供：Howard Protocol ｜ chenhoward456@gmail.com ｜ 0978-185-268
           </p>
         </section>
@@ -696,9 +697,9 @@ export default function HomePage() {
       {/* ===== 免費資源 ===== */}
       <ScrollReveal>
         <section className="max-w-4xl mx-auto px-6 py-16">
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 md:p-10 border border-green-200">
+          <div className="bg-white rounded-2xl p-6 md:p-10 border border-slate-200">
             <div className="flex flex-col md:flex-row items-start gap-6">
-              <div className="text-5xl">📥</div>
+              <Download className="w-8 h-8 text-slate-500" strokeWidth={1.5} aria-hidden="true" />
               <div className="flex-1">
                 <h3 className="text-2xl font-bold mb-2 text-navy">
                   免費文章：三層脂肪攻克戰術
@@ -708,7 +709,7 @@ export default function HomePage() {
                 </p>
                 <Link
                   href="/blog/three-layers-fat-loss-strategy"
-                  className="inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors"
+                  className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-700 transition-colors"
                 >
                   免費閱讀 →
                 </Link>
@@ -735,7 +736,7 @@ export default function HomePage() {
       </ScrollReveal>
 
       {/* ===== 區塊 8: CTA 結尾 ===== */}
-      <section className="bg-navy py-20 mt-10 rounded-t-3xl">
+      <section className="bg-slate-950 py-16 md:py-20 mt-10">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             每天 2 分鐘，讓系統幫你確認方向
@@ -745,14 +746,14 @@ export default function HomePage() {
           </p>
 
           {/* Urgency badge */}
-          <div className="inline-block bg-yellow-400/20 border border-yellow-400/40 text-yellow-300 text-sm font-semibold px-5 py-2 rounded-full mb-8">
+          <div className="inline-block bg-white/5 border border-white/20 text-slate-200 text-sm font-semibold px-5 py-2 rounded-full mb-8">
             限時優惠：自主管理版首月 NT$399（原價 NT$499）
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
             <Link
               href="/join"
-              className="inline-block bg-green-500 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-green-600 transition-colors min-h-[48px] shadow-lg shadow-green-500/25"
+              className="inline-block bg-primary-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-primary-700 transition-colors min-h-[48px]"
             >
               免費開始 →
             </Link>
@@ -765,17 +766,17 @@ export default function HomePage() {
           </div>
 
           {/* Trust signals */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-primary-300/80 text-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-slate-400 text-sm">
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
               不需要綁約，隨時取消
             </span>
-            <span className="hidden sm:block w-1 h-1 rounded-full bg-primary-300/40" />
+            <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-600" />
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               30 秒開始，不需信用卡
             </span>
-            <span className="hidden sm:block w-1 h-1 rounded-full bg-primary-300/40" />
+            <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-600" />
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
               免費版永久免費
