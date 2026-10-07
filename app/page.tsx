@@ -274,7 +274,7 @@ export default function HomePage() {
                   data_focus: (
                     <>
                       <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.25] tracking-tight mb-6 text-white">
-                        你不是不夠努力<br />你只是每天都在<br className="md:hidden" />用感覺做決定
+                        你不是不夠努力<br />你只是每天都在<br />用感覺做決定
                       </h1>
                       <p className="text-lg md:text-xl text-slate-200 mb-3 leading-relaxed">
                         每天 2 分鐘記錄，系統告訴你今天做對了沒有
@@ -288,7 +288,7 @@ export default function HomePage() {
                   coach_focus: (
                     <>
                       <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.25] tracking-tight mb-6 text-white">
-                        CSCS 教練 + 智能系統<br />你的專屬<br className="md:hidden" />體態管理團隊
+                        CSCS 教練 + 智能系統<br />你的專屬<br />體態管理團隊
                       </h1>
                       <p className="text-lg md:text-xl text-slate-200 mb-3 leading-relaxed">
                         不只是系統分析 — 還有真人教練每週幫你把關
@@ -303,7 +303,7 @@ export default function HomePage() {
                 fallback={
                   <>
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.25] tracking-tight mb-6 text-white">
-                      你不是不夠努力<br />你只是每天都在<br className="md:hidden" />用感覺做決定
+                      你不是不夠努力<br />你只是每天都在<br />用感覺做決定
                     </h1>
                     <p className="text-lg md:text-xl text-slate-200 mb-3 leading-relaxed">
                       每天 2 分鐘記錄，系統告訴你今天做對了沒有
@@ -369,12 +369,12 @@ export default function HomePage() {
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
                     <p className="text-xs text-gray-500">體重變化</p>
-                    <p className="text-xl tabular-nums font-semibold text-emerald-600">-0.6%</p>
+                    <p className="text-xl tabular-nums font-semibold text-emerald-700">-0.6%</p>
                     <p className="text-xs text-gray-500">/週</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
                     <p className="text-xs text-gray-500">每日赤字</p>
-                    <p className="text-xl tabular-nums font-semibold text-emerald-600">380</p>
+                    <p className="text-xl tabular-nums font-semibold text-emerald-700">380</p>
                     <p className="text-xs text-gray-500">kcal</p>
                   </div>
                 </div>
@@ -425,15 +425,15 @@ export default function HomePage() {
             <p className="text-center text-gray-500 mb-14">Howard 本人 6 年系統追蹤的真實數據</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
               {[
-                { label: 'HRV（心率變異）', before: '65 ms', after: '105 ms', change: '+62%', color: 'text-emerald-600' },
-                { label: '靜息心率', before: '58 bpm', after: '52 bpm', change: '-10%', color: 'text-emerald-600' },
-                { label: 'HOMA-IR（胰島素阻抗）', before: '偏高', after: '0.49', change: '正常', color: 'text-emerald-600' },
-                { label: 'Testosterone', before: '515', after: '625 ng/dL', change: '+21%', color: 'text-emerald-600' },
+                { label: 'HRV（心率變異）', before: '65 ms', after: '105 ms', change: '+62%', color: 'text-emerald-700' },
+                { label: '靜息心率', before: '58 bpm', after: '52 bpm', change: '-10%', color: 'text-emerald-700' },
+                { label: 'HOMA-IR（胰島素阻抗）', before: '偏高', after: '0.49', change: '正常', color: 'text-emerald-700' },
+                { label: 'Testosterone', before: '515', after: '625 ng/dL', change: '+21%', color: 'text-emerald-700' },
               ].map(({ label, before, after, change, color }) => (
-                <div key={label} className="bg-white rounded-2xl p-6 shadow-sm text-center">
+                <div key={label} className="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 text-center">
                   <p className="text-xs text-gray-500 mb-2">{label}</p>
                   <p className="text-xs text-gray-500 line-through mb-1">{before}</p>
-                  <p className="text-3xl md:text-4xl tabular-nums font-semibold tracking-tight text-slate-900 mb-2">{after}</p>
+                  <p className="text-[clamp(1.125rem,5.5vw,1.5rem)] md:text-4xl tabular-nums font-semibold tracking-tight whitespace-nowrap text-slate-900 mb-2">{after}</p>
                   <p className={`text-sm font-semibold ${color}`}>{change}</p>
                 </div>
               ))}
