@@ -390,9 +390,9 @@ export function prescriptionVerdict(
       adjustPrescription: false,
       cause: 'undetermined',
       reason: hasLog
-        ? `體重每週少掉約 ${(rateGapKcal * 7 / KCAL_PER_KG).toFixed(2)} kg，但他記的平均 ${logged} kcal 跟處方 ${r.targetCalories} 對得上。`
+        ? `體重每週比預期少掉約 ${(rateGapKcal * 7 / KCAL_PER_KG).toFixed(2)} kg，但他記的平均 ${logged} kcal 跟處方 ${r.targetCalories} 對得上。`
           + `可能是紀錄漏了，也可能是處方本身開在他的維持熱量上 —— 兩者處理方式相反，先不自動調，請教練看一眼。`
-        : `體重每週少掉約 ${(rateGapKcal * 7 / KCAL_PER_KG).toFixed(2)} kg，但沒有飲食紀錄可以對帳。`
+        : `體重每週比預期少掉約 ${(rateGapKcal * 7 / KCAL_PER_KG).toFixed(2)} kg，但沒有飲食紀錄可以對帳。`
           + `分不出是吃超過還是處方開太高，先不自動調。`,
     }
   }

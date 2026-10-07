@@ -11,6 +11,7 @@ import { reconcileIntake, isGapSignificant } from '@/lib/implied-intake'
 import { isCompetitionMode, PHASE_LABELS } from '@/lib/client-mode'
 import { buildWinbackMessage, type WinbackContext } from '@/lib/winback'
 import { diagnoseClient, averageNutrition } from '@/lib/client-diagnosis'
+import { readSignals, dropWaterSpikeDays } from '@/lib/coach-signals'
 import FeatureAnnounce from '@/components/admin/FeatureAnnounce'
 
 interface Client {
@@ -38,6 +39,7 @@ interface Client {
   coach_weekly_note: string | null
   target_weight: number | null
   calories_target?: number | null
+  protein_target?: number | null
   target_date: string | null
   is_active: boolean
   onboarding_notes_rendered?: { sections?: unknown[] } | null
@@ -65,7 +67,7 @@ interface ProposalItem {
 }
 
 interface NutritionRecord { client_id: string; date: string; compliant: boolean | null; calories?: number | null; protein_grams?: number | null; carbs_grams?: number | null; fat_grams?: number | null }
-interface TrainingDateRecord { client_id: string; date: string; training_type?: string | null }
+interface TrainingDateRecord { client_id: string; date: string; training_type?: string | null; note?: string | null }
 interface WellnessRecord { client_id: string; date: string; energy_level: number }
 interface RPERecord { client_id: string; date: string; rpe: number }
 
@@ -488,8 +490,12 @@ export default function AdminDashboard() {
       // 收到 30 天（原本只收 7 天 → 掉線的人整個不在畫面上，見 offlineVerdict 的說明）
       .filter(r => r.daysIdle <= 30)
       .map(r => {
-        const base = computeProgress(r.c.goal_type, r.c.prep_phase, r.c.target_weight, byClient[r.c.id] || [])
         const nutLogs = recentNutrition.filter(n => n.client_id === r.c.id)
+        const rawWeights = byClient[r.c.id] || []
+        // ⚠️ 大餐隔天的水腫跳升（震宣 10/3 的 84.0）不能進趨勢，不然整張卡判錯（見 lib/coach-signals）
+        const weights = dropWaterSpikeDays(rawWeights, nutLogs, r.c.calories_target ?? null)
+        const base = computeProgress(r.c.goal_type, r.c.prep_phase, r.c.target_weight, weights)
+        const twToday = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10)
         return {
           ...r,
           verdict: r.daysIdle >= OFFLINE_MIN_DAYS ? offlineVerdict(r.daysIdle, base) : base,
@@ -502,7 +508,7 @@ export default function AdminDashboard() {
             goalType: r.c.goal_type,
             caloriesTarget: r.c.calories_target ?? null,
             trainingEnabled: r.c.training_enabled !== false,
-            weights: byClient[r.c.id] || [],
+            weights,
             nutritionLogs: nutLogs.map(n => ({ date: n.date, calories: n.calories ?? null })),
             trainingLogs: trainingDates.filter(t => t.client_id === r.c.id).map(t => ({ date: t.date, training_type: t.training_type ?? null })),
             today: new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10),
@@ -510,9 +516,18 @@ export default function AdminDashboard() {
           }),
           nutrition7d: averageNutrition(
             nutLogs.map(n => ({ date: n.date, calories: n.calories ?? null, protein_grams: n.protein_grams ?? null, carbs_grams: n.carbs_grams ?? null, fat_grams: n.fat_grams ?? null })),
-            new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10),
+            twToday,
             7,
           ),
+          // 「我還不如問你」(2026-10-07)：把手工判讀會抓的東西直接列出來，帶日期跟數字
+          signals: readSignals({
+            caloriesTarget: r.c.calories_target ?? null,
+            proteinTarget: r.c.protein_target ?? null,
+            weights: rawWeights,
+            nutrition: nutLogs.map(n => ({ date: n.date, calories: n.calories ?? null, protein_grams: n.protein_grams ?? null, carbs_grams: n.carbs_grams ?? null })),
+            training: trainingDates.filter(t => t.client_id === r.c.id).map(t => ({ date: t.date, note: t.note ?? null })),
+            today: twToday,
+          }),
         }
       })
       .sort((a, b) => a.verdict.rank - b.verdict.rank || b.daysIdle - a.daysIdle || a.c.name.localeCompare(b.c.name))
@@ -535,8 +550,24 @@ export default function AdminDashboard() {
     const slow = progressBoard.filter(r => r.verdict.level === 'slow')
     const onTrack = progressBoard.filter(r => r.verdict.level === 'on_track')
     const thin = progressBoard.filter(r => r.verdict.level === 'insufficient')
-    // 需要出手 = 掉線 + 反向。停滯先觀察，不催教練動手。
-    const needAction = [...offline, ...reverse]
+    // 需要出手 = 掉線 + 反向 + 判讀訊號裡「該你回一句話」的人。停滯先觀察，不催教練動手。
+    // ⚠️ 2026-10-07：震宣被一個水腫的 84.0 嚇到、宥任在筆記裡問問題沒人回 —— 兩個都在軌道上，
+    // 舊版主線不列，結果是 Howard 得來問 Claude 才知道。
+    const SIGNAL_LABEL: Record<string, string> = {
+      water_spike: '體重跳是水，先跟他講',
+      student_note: '筆記裡有問題沒回',
+      binge_compensate: '爆吃→隔天補償在擺盪',
+      log_gap: '中間斷了幾天',
+    }
+    const labelOf = (r: (typeof progressBoard)[number]) => r.verdict.label
+    const bySignal = progressBoard
+      .filter(r => !offline.includes(r) && !reverse.includes(r))
+      .map(r => ({ r, top: r.signals.find(sg => sg.sev >= 2 && sg.kind === 'student_note') ?? r.signals.find(sg => sg.sev >= 2) }))  // 學員問的問題最該先回
+      .filter((x): x is { r: (typeof progressBoard)[number]; top: NonNullable<typeof x.top> } => !!x.top)
+    const needAction = [
+      ...[...offline, ...reverse].map(r => ({ ...r, label: labelOf(r) })),
+      ...bySignal.map(({ r, top }) => ({ ...r, label: SIGNAL_LABEL[top.kind] ?? r.verdict.label })),
+    ]
     const parts: string[] = []
     if (offline.length) parts.push(`掉線 ${offline.length}`)
     if (reverse.length) parts.push(`反向 ${reverse.length}`)
@@ -933,8 +964,9 @@ export default function AdminDashboard() {
 
     // 紀錄與體重對不上 —— 學員照著記，但身體顯示的不是那個數字。
     // 兩種可能都要留著：①紀錄漏了 ②熱量設定本身錯了（張承鈞就是後者）。見 lib/implied-intake。
+    const reconNut = recentNutrition.filter(n => n.client_id === c.id).map(n => ({ date: n.date, calories: n.calories ?? null }))
     const recon = reconcileIntake(
-      recentBody.filter(b => b.client_id === c.id).map(b => ({ date: b.date, weight: b.weight })),
+      dropWaterSpikeDays(recentBody.filter(b => b.client_id === c.id).map(b => ({ date: b.date, weight: b.weight })), reconNut, c.calories_target ?? null),
       recentNutrition.filter(n => n.client_id === c.id).map(n => ({ date: n.date, calories: n.calories ?? null })),
       c.calories_target ?? 0,
       c.goal_type,
@@ -1164,13 +1196,13 @@ export default function AdminDashboard() {
             {/* 需要出手的人直接列在這裡、不收合 —— 收起來就等於沒有 */}
             {todayLine.needAction.length > 0 && (
               <div className="mt-3 space-y-1.5">
-                {todayLine.needAction.map(({ c, verdict }) => (
+                {todayLine.needAction.map(({ c, verdict, label }) => (
                   <div key={c.id} className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
                     <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${verdict.dot}`} />
                     <Link href={`/admin/clients/${c.id}/overview`} className="text-sm font-semibold text-gray-900 shrink-0 hover:text-primary-700 transition-colors">
                       {c.name}
                     </Link>
-                    <span className="text-xs text-slate-500 truncate">{verdict.label}</span>
+                    <span className="text-xs text-slate-500 truncate">{label}</span>
                     <button
                       onClick={() => openFeedback(c)}
                       className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
@@ -1328,7 +1360,7 @@ export default function AdminDashboard() {
               <span className="text-xs text-gray-400 tabular-nums">{progressBoard.length} 人</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {progressBoard.map(({ c, daysIdle, verdict, streak, diagnosis, nutrition7d }) => {
+              {progressBoard.map(({ c, daysIdle, verdict, streak, diagnosis, nutrition7d, signals }) => {
                 const tier = getTierBadge(c.subscription_tier)
                 const idleText = daysIdle === 0 ? '今天' : `${daysIdle}天前`
                 return (
@@ -1348,6 +1380,20 @@ export default function AdminDashboard() {
                         <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${verdict.pill}`}><span className={`inline-block w-2 h-2 rounded-full ${verdict.dot}`} />{verdict.label}</span>
                       </div>
                       <p className="text-[11px] text-gray-500 leading-snug">{verdict.detail}</p>
+
+                      {/* 判讀訊號 —— 你問 Claude 時它會去翻的東西（水腫、爆吃補償、空窗、學員的問題）。
+                          放在診斷前面：這幾條常常就是「為什麼」的答案，而且帶日期數字可以直接拿去跟學員講。 */}
+                      {signals.length > 0 && (
+                        <ul className="mt-1.5 space-y-1">
+                          {signals.slice(0, 4).map((sg, i) => (
+                            <li key={i} className={`text-[11px] leading-snug flex gap-1.5 ${sg.sev >= 2 ? 'text-slate-800' : 'text-slate-500'}`}>
+                              <span className={`mt-[5px] inline-block w-1 h-1 rounded-full shrink-0 ${sg.sev >= 3 ? 'bg-slate-800' : 'bg-slate-400'}`} />
+                              <span className={sg.sev >= 3 ? 'font-medium' : ''}>{sg.text}</span>
+                            </li>
+                          ))}
+                          {signals.length > 4 && <li className="text-[11px] text-slate-400 pl-2.5">還有 {signals.length - 4} 條，點進去看</li>}
+                        </ul>
+                      )}
 
                       {/* 為什麼會這樣 —— 描述（上面）之後緊接著原因（這裡）。
                           Howard「我寧可用你去分析也不要自己看」：那個「所以為什麼」的推理
