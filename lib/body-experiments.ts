@@ -195,28 +195,30 @@ export function studentExperimentText(name: string, ups: ExperimentUpdate[]): st
 type QueryLike = { from: (t: string) => any }
 
 /** 每天早上：結束了、判決出來、跟上次通知的不一樣 → 要推 */
-export async function loadExperimentUpdates(supabase: QueryLike, today: string): Promise<ExperimentUpdate[]> {
+export async function loadExperimentUpdates(supabase: QueryLike, today: string, opts: { includeNotified?: boolean; throwOnReadError?: boolean } = {}): Promise<ExperimentUpdate[]> {
   const { data: exps, error } = await supabase
     .from('body_experiments')
     .select('*, clients!inner(id, name, unique_code, line_user_id, is_active)')
     .lt('end_date', today)
+  if (error && opts.throwOnReadError) throw new Error('身體實驗讀取失敗')
   if (error || !exps || exps.length === 0) return []
 
   type Row = BodyExperiment & { clients: { name: string; unique_code: string; line_user_id: string | null; is_active: boolean | null } }
   const active = (exps as Row[]).filter(e => e.clients.is_active !== false)
   const ids = [...new Set(active.map(e => e.client_id))]
   const earliest = active.map(e => addDays(e.start_date, -e.baseline_days)).sort()[0]
-  const [{ data: wellness }, { data: weights }] = await Promise.all([
+  const [{ data: wellness, error: wellnessError }, { data: weights, error: weightsError }] = await Promise.all([
     supabase.from('daily_wellness').select('*').in('client_id', ids).gte('date', earliest),
     supabase.from('body_composition').select('client_id, date, weight').in('client_id', ids).gte('date', earliest),
   ])
 
+  if ((wellnessError || weightsError) && opts.throwOnReadError) throw new Error('身體實驗結果讀取失敗')
   const out: ExperimentUpdate[] = []
   for (const e of active) {
     const w = ((wellness ?? []) as Array<Record<string, unknown> & { date: string; client_id: string }>).filter(r => r.client_id === e.client_id)
     const b = ((weights ?? []) as Array<{ client_id: string; date: string; weight: number | null }>).filter(r => r.client_id === e.client_id)
     const grade = gradeExperiment(e, pointsFor(e.metric, w, b), today)
-    if (grade.status === 'running' || grade.status === e.notified_status) continue
+    if (grade.status === 'running' || (!opts.includeNotified && grade.status === e.notified_status)) continue
     out.push({ id: e.id, clientId: e.client_id, name: e.clients.name, uniqueCode: e.clients.unique_code, lineUserId: e.clients.line_user_id, exp: e, grade })
   }
   return out

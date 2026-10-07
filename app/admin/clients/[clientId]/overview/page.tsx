@@ -16,6 +16,7 @@ import { generateSupplementSuggestions } from '@/lib/supplement-engine'
 import { isCompetitionMode, isHealthMode, PHASE_LABELS, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS } from '@/lib/client-mode'
 import TrainingProgressCard from '@/components/client/TrainingProgressCard'
 import { planVolume, actualVolume, auditVolume, pushPullRatio, findGaps, findImbalances, MUSCLE_LABEL } from '@/lib/volume-audit'
+import CoachWorkflowPanel from '@/components/admin/CoachWorkflowPanel'
 
 const LabNutritionAdviceCard = dynamic(() => import('@/components/client/LabNutritionAdviceCard'), { ssr: false })
 const LabInsightsCard = dynamic(() => import('@/components/client/LabInsightsCard'), { ssr: false })
@@ -54,6 +55,7 @@ export default function ClientOverview() {
   const [showCompose, setShowCompose] = useState(false)
   const [composeMsg, setComposeMsg] = useState('')
   const [composeBusy, setComposeBusy] = useState(false)
+  const [workflowRevision, setWorkflowRevision] = useState(0)
 
   const sendCoachMessage = async () => {
     const msg = composeMsg.trim()
@@ -68,6 +70,7 @@ export default function ClientOverview() {
       if (!res.ok) throw new Error()
       setShowCompose(false)
       setComposeMsg('')
+      setWorkflowRevision(n => n + 1)
       setQuickToast({ type: 'success', msg: '訊息已送出，學員打開就看得到' })
       setTimeout(() => setQuickToast(null), 3000)
     } catch {
@@ -174,6 +177,7 @@ export default function ClientOverview() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       // 本地 state 同步更新（避免重新 fetch 整頁）
       setClient((prev: any) => ({ ...prev, ...updates }))
+      setWorkflowRevision(n => n + 1)
       setQuickToast({ type: 'success', msg: successMsg })
       setQuickAction(null)
       setTimeout(() => setQuickToast(null), 2500)
@@ -1423,7 +1427,7 @@ export default function ClientOverview() {
       {/* Header */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex flex-wrap items-center justify-between gap-3 py-4 sm:min-h-16">
             <div className="flex items-center gap-4">
               <Link href="/admin" className="text-gray-600 hover:text-gray-900">← 返回</Link>
               <div>
@@ -1457,6 +1461,190 @@ export default function ClientOverview() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <CoachWorkflowPanel
+          clientId={client.id}
+          coachNote={client.coach_weekly_note}
+          revision={workflowRevision}
+          onCompose={() => setShowCompose(true)}
+          onNote={() => {
+            openQuickAction('note')
+            document.getElementById('coach-quick-actions')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }}
+        />
+
+        {/* ===== 教練快速操作 ===== */}
+        <div id="coach-quick-actions" className="bg-white border border-slate-200 rounded-2xl p-5 scroll-mt-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-gray-900">教練快速操作</h3>
+              {client?.calories_target && (
+                <span className="text-xs text-gray-400 ml-2">
+                  熱量 {client.calories_target} · {PHASE_LABELS[client.prep_phase || ''] || client.prep_phase || '未設階段'}
+                </span>
+              )}
+            </div>
+            {quickToast && (
+              <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                quickToast.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+              }`}>
+                {quickToast.msg}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => openQuickAction(quickAction === 'calories' ? null as any : 'calories')}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                quickAction === 'calories' ? 'bg-primary-600 text-white border-primary-600' : 'bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100'
+              }`}
+            >
+              改熱量
+            </button>
+            <button
+              onClick={() => openQuickAction(quickAction === 'phase' ? null as any : 'phase')}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                quickAction === 'phase' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              切階段
+            </button>
+            <button
+              onClick={() => openQuickAction(quickAction === 'note' ? null as any : 'note')}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                quickAction === 'note' ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+              }`}
+            >
+              加備註
+            </button>
+          </div>
+
+          {/* 改熱量 inline editor */}
+          {quickAction === 'calories' && (
+            <div className="mt-3 p-4 bg-primary-50 border border-primary-200 rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-primary-700 font-semibold">調整每日總熱量目標（kcal）</p>
+                <button onClick={() => setQuickAction(null)} className="text-xs text-gray-500 hover:text-gray-700">取消</button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCaloriesDraft(prev => Math.max(1000, (prev || 2000) - 100))}
+                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
+                >−100</button>
+                <button
+                  onClick={() => setCaloriesDraft(prev => Math.max(1000, (prev || 2000) - 50))}
+                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
+                >−50</button>
+                <input
+                  type="number"
+                  value={caloriesDraft ?? ''}
+                  onChange={e => setCaloriesDraft(e.target.value ? parseInt(e.target.value) : null)}
+                  className="flex-1 px-3 py-2 border border-primary-300 rounded-lg text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary-400"
+                  placeholder="例如 2000"
+                />
+                <button
+                  onClick={() => setCaloriesDraft(prev => Math.min(5000, (prev || 2000) + 50))}
+                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
+                >+50</button>
+                <button
+                  onClick={() => setCaloriesDraft(prev => Math.min(5000, (prev || 2000) + 100))}
+                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
+                >+100</button>
+              </div>
+              <div className="flex items-center justify-between mt-3">
+                <p className="text-[11px] text-gray-500">
+                  目前：{client?.calories_target || '—'} kcal
+                  {caloriesDraft && client?.calories_target && (
+                    <span className={`ml-2 font-semibold ${
+                      caloriesDraft - parseInt(client.calories_target) > 0 ? 'text-emerald-700' : 'text-rose-700'
+                    }`}>
+                      ({caloriesDraft - parseInt(client.calories_target) > 0 ? '+' : ''}{caloriesDraft - parseInt(client.calories_target)})
+                    </span>
+                  )}
+                </p>
+                <button
+                  disabled={quickSaving || !caloriesDraft || caloriesDraft < 1000 || caloriesDraft > 5000}
+                  onClick={() => saveQuickAction({ calories_target: String(caloriesDraft) }, `熱量改為 ${caloriesDraft} kcal`)}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {quickSaving ? '儲存中...' : '儲存'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 切 prep_phase inline editor */}
+          {quickAction === 'phase' && (
+            <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-slate-700 font-semibold">切換訓練階段（prep_phase）</p>
+                <button onClick={() => setQuickAction(null)} className="text-xs text-gray-500 hover:text-gray-700">取消</button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                {(client?.client_mode === 'athletic' ? ATHLETIC_PHASE_OPTIONS : BODYBUILDING_PHASE_OPTIONS).map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setPhaseDraft(opt.value)}
+                    className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                      phaseDraft === opt.value
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-gray-500">
+                  目前：{PHASE_LABELS[client?.prep_phase || ''] || client?.prep_phase || '—'}
+                </p>
+                <button
+                  disabled={quickSaving || !phaseDraft || phaseDraft === client?.prep_phase}
+                  onClick={() => saveQuickAction({ prep_phase: phaseDraft }, `階段改為 ${PHASE_LABELS[phaseDraft] || phaseDraft}`)}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {quickSaving ? '儲存中...' : '儲存'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 加 coach_weekly_note inline editor */}
+          {quickAction === 'note' && (
+            <div className="mt-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-amber-800 font-semibold">本週教練備註</p>
+                <button onClick={() => setQuickAction(null)} className="text-xs text-gray-500 hover:text-gray-700">取消</button>
+              </div>
+              <textarea
+                value={noteDraft}
+                onChange={e => setNoteDraft(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                placeholder="例：本週 HRV 偏低，建議降強度 20%；下週起改成減脂期收 200kcal"
+              />
+              <div className="flex items-center justify-between mt-3">
+                <p className="text-[11px] text-gray-500">
+                  {noteDraft.length} / 500 字
+                </p>
+                <button
+                  disabled={quickSaving || noteDraft.length > 500 || noteDraft === (client?.coach_weekly_note || '')}
+                  onClick={() => saveQuickAction({ coach_weekly_note: noteDraft || null }, '教練備註已更新')}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {quickSaving ? '儲存中...' : '儲存'}
+                </button>
+              </div>
+              {client?.coach_weekly_note && noteDraft !== client.coach_weekly_note && (
+                <p className="text-[11px] text-gray-500 mt-2 italic">
+                  原備註：「{client.coach_weekly_note}」
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* 日期範圍篩選 */}
         <div className="flex items-center gap-2">
@@ -1987,179 +2175,6 @@ export default function ClientOverview() {
             </div>
           )
         })()}
-
-        {/* ===== 教練快速操作 ===== */}
-        <div id="coach-quick-actions" className="bg-white border border-slate-200 rounded-2xl p-5 scroll-mt-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-gray-900">教練快速操作</h3>
-              {client?.calories_target && (
-                <span className="text-xs text-gray-400 ml-2">
-                  熱量 {client.calories_target} · {PHASE_LABELS[client.prep_phase || ''] || client.prep_phase || '未設階段'}
-                </span>
-              )}
-            </div>
-            {quickToast && (
-              <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                quickToast.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-              }`}>
-                {quickToast.msg}
-              </span>
-            )}
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => openQuickAction(quickAction === 'calories' ? null as any : 'calories')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                quickAction === 'calories' ? 'bg-primary-600 text-white border-primary-600' : 'bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100'
-              }`}
-            >
-              改熱量
-            </button>
-            <button
-              onClick={() => openQuickAction(quickAction === 'phase' ? null as any : 'phase')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                quickAction === 'phase' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              切階段
-            </button>
-            <button
-              onClick={() => openQuickAction(quickAction === 'note' ? null as any : 'note')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                quickAction === 'note' ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-              }`}
-            >
-              加備註
-            </button>
-          </div>
-
-          {/* 改熱量 inline editor */}
-          {quickAction === 'calories' && (
-            <div className="mt-3 p-4 bg-primary-50 border border-primary-200 rounded-xl">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs text-primary-700 font-semibold">調整每日總熱量目標（kcal）</p>
-                <button onClick={() => setQuickAction(null)} className="text-xs text-gray-500 hover:text-gray-700">取消</button>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCaloriesDraft(prev => Math.max(1000, (prev || 2000) - 100))}
-                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
-                >−100</button>
-                <button
-                  onClick={() => setCaloriesDraft(prev => Math.max(1000, (prev || 2000) - 50))}
-                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
-                >−50</button>
-                <input
-                  type="number"
-                  value={caloriesDraft ?? ''}
-                  onChange={e => setCaloriesDraft(e.target.value ? parseInt(e.target.value) : null)}
-                  className="flex-1 px-3 py-2 border border-primary-300 rounded-lg text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary-400"
-                  placeholder="例如 2000"
-                />
-                <button
-                  onClick={() => setCaloriesDraft(prev => Math.min(5000, (prev || 2000) + 50))}
-                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
-                >+50</button>
-                <button
-                  onClick={() => setCaloriesDraft(prev => Math.min(5000, (prev || 2000) + 100))}
-                  className="px-3 py-2 bg-white border border-primary-300 rounded-lg text-sm font-bold text-primary-700 hover:bg-primary-100"
-                >+100</button>
-              </div>
-              <div className="flex items-center justify-between mt-3">
-                <p className="text-[11px] text-gray-500">
-                  目前：{client?.calories_target || '—'} kcal
-                  {caloriesDraft && client?.calories_target && (
-                    <span className={`ml-2 font-semibold ${
-                      caloriesDraft - parseInt(client.calories_target) > 0 ? 'text-emerald-700' : 'text-rose-700'
-                    }`}>
-                      ({caloriesDraft - parseInt(client.calories_target) > 0 ? '+' : ''}{caloriesDraft - parseInt(client.calories_target)})
-                    </span>
-                  )}
-                </p>
-                <button
-                  disabled={quickSaving || !caloriesDraft || caloriesDraft < 1000 || caloriesDraft > 5000}
-                  onClick={() => saveQuickAction({ calories_target: String(caloriesDraft) }, `熱量改為 ${caloriesDraft} kcal`)}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {quickSaving ? '儲存中...' : '儲存'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* 切 prep_phase inline editor */}
-          {quickAction === 'phase' && (
-            <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs text-slate-700 font-semibold">切換訓練階段（prep_phase）</p>
-                <button onClick={() => setQuickAction(null)} className="text-xs text-gray-500 hover:text-gray-700">取消</button>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-                {(client?.client_mode === 'athletic' ? ATHLETIC_PHASE_OPTIONS : BODYBUILDING_PHASE_OPTIONS).map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setPhaseDraft(opt.value)}
-                    className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
-                      phaseDraft === opt.value
-                        ? 'bg-primary-600 text-white border-primary-600'
-                        : 'bg-white text-gray-700 border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] text-gray-500">
-                  目前：{PHASE_LABELS[client?.prep_phase || ''] || client?.prep_phase || '—'}
-                </p>
-                <button
-                  disabled={quickSaving || !phaseDraft || phaseDraft === client?.prep_phase}
-                  onClick={() => saveQuickAction({ prep_phase: phaseDraft }, `階段改為 ${PHASE_LABELS[phaseDraft] || phaseDraft}`)}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {quickSaving ? '儲存中...' : '儲存'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* 加 coach_weekly_note inline editor */}
-          {quickAction === 'note' && (
-            <div className="mt-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs text-amber-800 font-semibold">本週教練備註</p>
-                <button onClick={() => setQuickAction(null)} className="text-xs text-gray-500 hover:text-gray-700">取消</button>
-              </div>
-              <textarea
-                value={noteDraft}
-                onChange={e => setNoteDraft(e.target.value)}
-                rows={4}
-                className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                placeholder="例：本週 HRV 偏低，建議降強度 20%；下週起改成減脂期收 200kcal"
-              />
-              <div className="flex items-center justify-between mt-3">
-                <p className="text-[11px] text-gray-500">
-                  {noteDraft.length} / 500 字
-                </p>
-                <button
-                  disabled={quickSaving || noteDraft.length > 500 || noteDraft === (client?.coach_weekly_note || '')}
-                  onClick={() => saveQuickAction({ coach_weekly_note: noteDraft || null }, '教練備註已更新')}
-                  className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {quickSaving ? '儲存中...' : '儲存'}
-                </button>
-              </div>
-              {client?.coach_weekly_note && noteDraft !== client.coach_weekly_note && (
-                <p className="text-[11px] text-gray-500 mt-2 italic">
-                  原備註：「{client.coach_weekly_note}」
-                </p>
-              )}
-            </div>
-          )}
-        </div>
 
         {/* ===== AI 教練建議 ===== */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5">
