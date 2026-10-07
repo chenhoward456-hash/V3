@@ -14,7 +14,7 @@
 - LINE 晨報與 `/admin` 顯示同一份清單的前三位，一人多個理由合併；其他學員收合。
 - 點「查證與處理」進總覽，先看原因、下一步與日期，再看上次教練訊息和營養調整。
 - 「發訊息」「記處理備註」接回原有功能；「查看／設定複核」進該學員原有健康頁，並非新增通用約訪功能。
-- 待審提案連到 `/admin?proposalClientId={id}#coach-proposals-{id}`，直接展開該學員的原有待審提案，暫時收起首頁一般摘要，另有返回完整清單入口，使用原有「套用／不要」。
+- 待審提案以原生 `<a>` 連到 `/admin?proposalClientId={id}#coach-proposals-{id}`，重新載入首頁後直接展開該學員的原有待審提案，暫時收起首頁一般摘要，另有返回完整清單入口，使用原有「套用／不要」。整頁載入讓首頁依 query 初始化篩選與展開狀態；原有按鈕的處理函式不變。
 - 原有晨報預覽、管理摘要、設定檢查收進首頁「其他管理摘要」；原有圖表和操作保留，總覽快速操作移到工作區下方。
 
 ## 同一個資料出口
@@ -32,12 +32,13 @@
 `CoachWorkReason.kind` 為 `signal|offline|lab|proposal|result`。
 
 排序只是人工處理順序：不舒服100、逾期回檢／重測90、筆記疑問80、3–30天掉線70、回來前空窗65、補償擺盪60、水分跳升／蛋白質50、近期回檢45、提案40、近期結果資訊20。非緊急 sev1 訊號保留明細，不單獨製造任務。
+同一人的理由同分時，先按已有日期由早到晚（未設定排後），再按理由文字；學員清單同分時也先按已有日期，再按 `clientId`，不受資料讀取順序影響。
 
 ## 日期、通知與完成狀態
 
 - 沒有既有複核日期時顯示未設定，不杜撰明天或一週後。
 - 血檢回檢／預測重測使用已有日期；已產出結果使用 `resultDate`，身體實驗使用 `end_date`，畫面標為資料日期。
-- 結果只列近31天，priority20，顯示「可查看；系統未記錄是否已複核」。它是近期資訊，並非未完成任務；超出窗口也不代表完成。
+- 結果日期窗口為 `today - 31天` 到 `today`（兩端含，最多涵蓋32個日期；實驗仍沿用 `end_date < today` 才判結果），priority20，顯示「可查看；系統未記錄是否已複核」。它是近期資訊，並非未完成任務；超出窗口也不代表完成。
 - 通知 helper 新增向後相容選項 `includeNotified`、`throwOnReadError`。預設的通知去重保持原樣；工作清單另外讀包含已通知的結果，避免晨報發完就讓後台結果消失。
 - `coach_messages.read_at` 代表訊息卡收起，只能標「已收起」，不等於閱讀理解、照做或完成。
 - 沒有新的任務完成欄位／按鈕。備註不是自動結案，訊號仍由既有資料計算。
@@ -46,6 +47,8 @@
 ## 只讀與失敗處理
 
 新 GET 不呼叫 cron、send、sweep 或 nutrition-suggestions。主清單與結果證據讀取出錯會回500，不能把錯誤呈現為空清單。
+
+`GET /api/admin/coach-workflow` 需有效 `admin_session` cookie；未授權回401，非空且不符合 UUID 格式的 `clientId` 回400，兩者都在建立資料庫連線前返回。未帶 `clientId` 回 `{today, items}`；帶有效 `clientId` 回 `{today, items, history:{messages, adjustments, unavailable}}`，`items` 僅保留本人。成功回應使用 `Cache-Control: no-store`。指定學員仍先讀共用清單，再篩選本人，並非只查單一學員的資料。
 
 單人歷史取最近三筆 `coach_messages`（`created_at`）與 `macro_adjustment_log`（`applied_at`）。任一讀取失敗會回 `history.unavailable=true`，保留可讀資料並顯示部分紀錄載入失敗。
 
