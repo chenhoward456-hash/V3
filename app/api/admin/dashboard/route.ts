@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       // 所有學員，按建立時間倒序（只選必要欄位）
       supabase
         .from('clients')
-        .select('id, unique_code, name, age, gender, status, is_active, expires_at, subscription_tier, client_mode, competition_enabled, health_mode_enabled, body_composition_enabled, nutrition_enabled, wellness_enabled, training_enabled, supplement_enabled, lab_enabled, ai_chat_enabled, simple_mode, goal_type, calories_target, diet_start_date, prep_phase, competition_date, next_checkup_date, target_weight, target_date, coach_last_viewed_at, coach_weekly_note, created_at, line_user_id, last_line_activity, onboarding_notes_rendered, health_screening')
+        .select('id, unique_code, name, age, gender, status, is_active, expires_at, subscription_tier, client_mode, competition_enabled, health_mode_enabled, body_composition_enabled, nutrition_enabled, wellness_enabled, training_enabled, supplement_enabled, lab_enabled, ai_chat_enabled, simple_mode, goal_type, calories_target, diet_start_date, prep_phase, competition_date, next_checkup_date, target_weight, target_date, coach_last_viewed_at, coach_weekly_note, protein_target, created_at, line_user_id, last_line_activity, onboarding_notes_rendered, health_screening')
         .order('created_at', { ascending: false })
         .limit(500),
 
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
       supabase.from('nutrition_logs').select('client_id, date').gte('date', ninetyDaysAgoStr),
       supabase.from('daily_wellness').select('client_id, date').gte('date', ninetyDaysAgoStr),
       // ⚠️ 要帶 training_type：判「幾天沒練」時 rest 不能算成有練（見 lib/client-diagnosis.ts）
-      supabase.from('training_logs').select('client_id, date, training_type').gte('date', ninetyDaysAgoStr),
+      supabase.from('training_logs').select('client_id, date, training_type, note').gte('date', ninetyDaysAgoStr),
       // 已開通 Web Push 的學員（只取 client_id，用於留存/推播覆蓋率）
       supabase.from('push_subscriptions').select('client_id'),
     ])
