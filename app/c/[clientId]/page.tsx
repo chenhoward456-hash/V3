@@ -967,8 +967,13 @@ export default function ClientDashboard() {
               showWeight={!!c.body_composition_enabled}
               showCarbs={!!c.nutrition_enabled}
               streak={overallStreak}
+              weights={(clientData.bodyData ?? EMPTY_ARRAY).filter((b) => b.weight != null).map((b) => ({ date: b.date, weight: Number(b.weight) }))}
+              today={today}
+              targetWeight={c.target_weight != null && Number.isFinite(Number(c.target_weight)) ? Number(c.target_weight) : null}
             />
             <TodayHeadline
+              hideVerdictNumbers={!!c.body_composition_enabled}
+              daysSinceLastWeight={latestByField.weight?.date ? Math.round((Date.parse(today) - Date.parse(latestByField.weight.date)) / 86400000) : null}
               goalType={c.goal_type ?? null}
               prepPhase={c.prep_phase || null}
               competitionDate={c.competition_date || null}
