@@ -43,6 +43,11 @@ function isCutGoal(goalType: string | null): boolean {
   return g.includes('cut') || g.includes('減') || g.includes('fat')
 }
 
+function isBulkGoal(goalType: string | null): boolean {
+  const g = goalType ?? ''
+  return g.includes('bulk') || g.includes('增') || g.includes('gain') || g.includes('muscle')
+}
+
 /** 近 2–3 週體重是否停滯（波動 < 0.5%） */
 function isStalled(weeklyWeights: { week: number; avgWeight: number }[]): boolean {
   const recent = [...weeklyWeights].sort((a, b) => a.week - b.week).slice(0, 3)
@@ -102,8 +107,11 @@ export function generateWeeklyTasks(input: WeeklyTaskInput): WeeklyTask[] {
       key: 'stall',
       priority: 3,
       icon: '🔍',
-      title: '本週檢查飲食合規，週日回報',
-      detail: '體重卡 2 週了。先別急著砍——多半是熱量抓不準或漏記。這週據實記、週日跟我對一次。',
+      title: '體重兩週沒動，週日跟我對一次',
+      // ⚠️ 2026-10-07 改：原句「多半是熱量抓不準或漏記」掛在震宣首頁一整週 ——
+      // 他是每餐拍照給教練看的人，而且正在焦慮。沒有獨立證據不准暗示學員少報
+      // （同 project_v3_carb_repletion_doctrine：先懷疑模型，不要先懷疑人）。
+      detail: '先別急著砍。可能是水分蓋住了（碳水剛調過、大餐後會一次多 1–2kg），也可能是熱量開在接近維持——兩種我都會看。這週照常記，週日一起對。',
     })
   }
 
@@ -150,7 +158,8 @@ export function generateWeeklyTasks(input: WeeklyTaskInput): WeeklyTask[] {
       priority: 6,
       icon: '✅',
       title: numbers ? `狀態穩：${numbers}` : '狀態穩，照計畫走',
-      detail: '在軌道上，別手癢亂改——維持記錄與課表，穩穩掉就是最快的路。',
+      // ⚠️ 原本固定寫「穩穩掉」，增肌／休賽的人（陳胤豪 2026-10）看到的是反方向
+      detail: `在軌道上，別手癢亂改——維持記錄與課表，${isCut ? '穩穩掉' : isBulkGoal(input.goalType) ? '穩穩長' : '穩穩走'}就是最快的路。`,
     })
   }
 
