@@ -1182,30 +1182,30 @@ export default function AdminDashboard() {
 
         {/* ===== 今日主線：打開後第一眼要答的問題是「今天誰需要我」 ===== */}
         {!loading && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
-            <p className="text-[11px] text-slate-400 tabular-nums mb-1">
+          <div className="bg-slate-950 border border-slate-900 rounded-2xl p-5 sm:p-6 mb-5">
+            <p className="text-[11px] text-slate-400 tabular-nums mb-3">
               {new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })}
             </p>
-            <p className={`text-xl font-bold ${todayLine.allGood ? 'text-gray-900' : 'text-rose-700'}`}>
+            <p className={`text-[26px] sm:text-3xl leading-tight tracking-tight font-semibold ${todayLine.allGood ? 'text-white' : 'text-rose-300'}`}>
               {todayLine.headline}
             </p>
             {todayLine.breakdown && (
-              <p className="text-xs text-slate-500 mt-1 tabular-nums">{todayLine.breakdown}</p>
+              <p className="text-xs text-slate-400 mt-2 tabular-nums">{todayLine.breakdown}</p>
             )}
 
             {/* 需要出手的人直接列在這裡、不收合 —— 收起來就等於沒有 */}
             {todayLine.needAction.length > 0 && (
-              <div className="mt-3 space-y-1.5">
+              <div className="mt-5 space-y-2">
                 {todayLine.needAction.map(({ c, verdict, label }) => (
-                  <div key={c.id} className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
+                  <div key={c.id} className="flex items-center gap-2.5 px-3 py-3 bg-white/[0.06] border border-white/[0.06] rounded-xl">
                     <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${verdict.dot}`} />
-                    <Link href={`/admin/clients/${c.id}/overview`} className="text-sm font-semibold text-gray-900 shrink-0 hover:text-primary-700 transition-colors">
+                    <Link href={`/admin/clients/${c.id}/overview`} className="text-sm font-semibold text-white shrink-0 hover:text-primary-200 transition-colors">
                       {c.name}
                     </Link>
-                    <span className="text-xs text-slate-500 truncate">{label}</span>
+                    <span className="min-w-0 text-xs text-slate-300 truncate">{label}</span>
                     <button
                       onClick={() => openFeedback(c)}
-                      className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+                      className="ml-auto shrink-0 flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-primary-100 bg-primary-800 rounded-lg hover:bg-primary-700 transition-colors"
                     >
                       <MessageSquare size={12} /> 出手
                     </button>
@@ -1215,16 +1215,16 @@ export default function AdminDashboard() {
             )}
 
             {/* 補發晨報 + 巨量稽核 */}
-            <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center gap-x-4 gap-y-2">
               <button
                 type="button" onClick={previewDigest} disabled={digestBusy}
-                className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-primary-600 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-white transition-colors disabled:opacity-50"
               >
                 <Send size={12} /> {digestBusy ? '處理中…' : '把這些補發到我的 LINE'}
               </button>
               <button
                 type="button" onClick={runAudit} disabled={auditBusy}
-                className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-primary-600 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-white transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={12} className={auditBusy ? 'animate-spin' : ''} />
                 {auditBusy ? '掃描中…' : '檢查所有人的營養設定'}
@@ -1359,12 +1359,12 @@ export default function AdminDashboard() {
               </div>
               <span className="text-xs text-gray-400 tabular-nums">{progressBoard.length} 人</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {progressBoard.map(({ c, daysIdle, verdict, streak, diagnosis, nutrition7d, signals }) => {
                 const tier = getTierBadge(c.subscription_tier)
                 const idleText = daysIdle === 0 ? '今天' : `${daysIdle}天前`
                 return (
-                  <div key={c.id} className={`rounded-xl border p-3.5 ${verdict.level === 'reverse' ? 'border-rose-200 bg-rose-50/40' : verdict.level === 'slow' ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-white'}`}>
+                  <div key={c.id} className={`rounded-xl border p-4 ${verdict.level === 'reverse' ? 'border-rose-200 bg-white' : verdict.level === 'slow' ? 'border-amber-200 bg-white' : 'border-slate-200 bg-white'}`}>
                     <Link href={`/admin/clients/${c.id}/overview`} className="block hover:opacity-80 transition-opacity">
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -1379,7 +1379,7 @@ export default function AdminDashboard() {
                       <div className="mb-1">
                         <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${verdict.pill}`}><span className={`inline-block w-2 h-2 rounded-full ${verdict.dot}`} />{verdict.label}</span>
                       </div>
-                      <p className="text-[11px] text-gray-500 leading-snug">{verdict.detail}</p>
+                      <p className="text-xs text-slate-500 leading-relaxed">{verdict.detail}</p>
 
                       {/* 判讀訊號 —— 你問 Claude 時它會去翻的東西（水腫、爆吃補償、空窗、學員的問題）。
                           放在診斷前面：這幾條常常就是「為什麼」的答案，而且帶日期數字可以直接拿去跟學員講。 */}
@@ -1427,7 +1427,7 @@ export default function AdminDashboard() {
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700" title="沒開推播提醒＝沒人提醒他每天記，最該優先帶他開通知">沒開提醒</span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
                       <div className="flex items-center gap-1.5">
                         {c.body_composition_enabled && <span className={`text-xs ${todayBodyIds.has(c.id) ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="體重">重</span>}
                         {c.nutrition_enabled && <span className={`text-xs ${todayNutritionMap[c.id] !== undefined ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="飲食">食</span>}
@@ -1435,7 +1435,7 @@ export default function AdminDashboard() {
                         {c.wellness_enabled && <span className={`text-xs ${todayWellnessIds.has(c.id) ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="感受">感</span>}
                         {c.supplement_enabled && <span className={`text-xs ${todayLogIds.has(c.id) ? 'text-emerald-600 font-medium' : 'text-slate-300'}`} title="補品">補</span>}
                       </div>
-                      <button onClick={() => openFeedback(c)} className="flex items-center gap-1 px-2 py-1 text-[11px] text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors" title="寫回饋">
+                      <button onClick={() => openFeedback(c)} className="flex items-center gap-1 px-2 py-1 text-[11px] text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors" title="寫回饋">
                         <MessageSquare size={12} /> {c.coach_weekly_note ? '改回饋' : '回饋'}
                       </button>
                     </div>
@@ -1453,7 +1453,7 @@ export default function AdminDashboard() {
               <Trophy size={18} className="text-amber-600" />
               <h3 className="text-base font-semibold text-gray-900">備賽倒數</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {competitionClients.map(c => {
                 const stat = clientStats[c.id]
                 const urgencyColor = c.daysLeft <= 7 ? 'text-rose-600' : c.daysLeft <= 14 ? 'text-amber-600' : c.daysLeft <= 30 ? 'text-amber-600' : 'text-gray-700'
