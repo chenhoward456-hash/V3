@@ -1,0 +1,377 @@
+{
+  "normal": {
+    "checks": 34,
+    "passed": 34,
+    "checks_detail": [
+      {
+        "name": "mobile: admin no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "mobile: overview no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "mobile: first3",
+        "pass": true
+      },
+      {
+        "name": "mobile: fourth initially hidden",
+        "pass": true
+      },
+      {
+        "name": "mobile: fourth expands",
+        "pass": true
+      },
+      {
+        "name": "mobile: reason expands",
+        "pass": true
+      },
+      {
+        "name": "mobile: null review honest",
+        "pass": true
+      },
+      {
+        "name": "mobile: read not execution",
+        "pass": true
+      },
+      {
+        "name": "mobile: review link",
+        "pass": true
+      },
+      {
+        "name": "mobile: proposal anchor unique",
+        "pass": true
+      },
+      {
+        "name": "mobile: delayed proposals open",
+        "pass": true
+      },
+      {
+        "name": "mobile: correct proposal positioned",
+        "pass": true
+      },
+      {
+        "name": "mobile: real proposal controls visible",
+        "pass": true
+      },
+      {
+        "name": "mobile: compose opens",
+        "pass": true
+      },
+      {
+        "name": "mobile: compose closes",
+        "pass": true
+      },
+      {
+        "name": "mobile: note editor opens",
+        "pass": true
+      },
+      {
+        "name": "mobile: note editor in viewport",
+        "pass": true
+      },
+      {
+        "name": "desktop: admin no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop: overview no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop: first3",
+        "pass": true
+      },
+      {
+        "name": "desktop: fourth initially hidden",
+        "pass": true
+      },
+      {
+        "name": "desktop: fourth expands",
+        "pass": true
+      },
+      {
+        "name": "desktop: reason expands",
+        "pass": true
+      },
+      {
+        "name": "desktop: null review honest",
+        "pass": true
+      },
+      {
+        "name": "desktop: read not execution",
+        "pass": true
+      },
+      {
+        "name": "desktop: review link",
+        "pass": true
+      },
+      {
+        "name": "desktop: proposal anchor unique",
+        "pass": true
+      },
+      {
+        "name": "desktop: delayed proposals open",
+        "pass": true
+      },
+      {
+        "name": "desktop: correct proposal positioned",
+        "pass": true
+      },
+      {
+        "name": "desktop: real proposal controls visible",
+        "pass": true
+      },
+      {
+        "name": "desktop: compose opens",
+        "pass": true
+      },
+      {
+        "name": "desktop: compose closes",
+        "pass": true
+      },
+      {
+        "name": "desktop: note editor opens",
+        "pass": true
+      },
+      {
+        "name": "desktop: note editor in viewport",
+        "pass": true
+      }
+    ],
+    "page_errors": [],
+    "non_get_requests": [],
+    "unknown_api": [],
+    "widths": [
+      {
+        "width": 430,
+        "scrollWidth": 430
+      },
+      {
+        "width": 430,
+        "scrollWidth": 430
+      },
+      {
+        "width": 1280,
+        "scrollWidth": 1280
+      },
+      {
+        "width": 1280,
+        "scrollWidth": 1280
+      }
+    ]
+  },
+  "empty": {
+    "checks": 6,
+    "passed": 6,
+    "checks_detail": [
+      {
+        "name": "mobile: admin no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "mobile: overview no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "mobile: empty honest",
+        "pass": true
+      },
+      {
+        "name": "desktop: admin no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop: overview no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop: empty honest",
+        "pass": true
+      }
+    ],
+    "page_errors": [],
+    "non_get_requests": [],
+    "unknown_api": [],
+    "widths": [
+      {
+        "width": 430,
+        "scrollWidth": 430
+      },
+      {
+        "width": 430,
+        "scrollWidth": 430
+      },
+      {
+        "width": 1280,
+        "scrollWidth": 1280
+      },
+      {
+        "width": 1280,
+        "scrollWidth": 1280
+      }
+    ]
+  },
+  "read": {
+    "checks": 6,
+    "passed": 6,
+    "checks_detail": [
+      {
+        "name": "mobile: admin no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "mobile: read still needs confirmation",
+        "pass": true
+      },
+      {
+        "name": "mobile: overview no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop: admin no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop: read still needs confirmation",
+        "pass": true
+      },
+      {
+        "name": "desktop: overview no horizontal overflow",
+        "pass": true
+      }
+    ],
+    "page_errors": [],
+    "non_get_requests": [],
+    "unknown_api": [],
+    "widths": [
+      {
+        "width": 430,
+        "scrollWidth": 430
+      },
+      {
+        "width": 430,
+        "scrollWidth": 430
+      },
+      {
+        "width": 1280,
+        "scrollWidth": 1280
+      },
+      {
+        "width": 1280,
+        "scrollWidth": 1280
+      }
+    ]
+  },
+  "error": {
+    "checks": 8,
+    "passed": 8,
+    "checks_detail": [
+      {
+        "name": "mobile: retry button recovers",
+        "pass": true
+      },
+      {
+        "name": "mobile: admin no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "mobile: overview no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "mobile: error recovered",
+        "pass": true
+      },
+      {
+        "name": "desktop: retry button recovers",
+        "pass": true
+      },
+      {
+        "name": "desktop: admin no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop: overview no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop: error recovered",
+        "pass": true
+      }
+    ],
+    "page_errors": [],
+    "non_get_requests": [],
+    "unknown_api": [],
+    "widths": [
+      {
+        "width": 430,
+        "scrollWidth": 430
+      },
+      {
+        "width": 430,
+        "scrollWidth": 430
+      },
+      {
+        "width": 1280,
+        "scrollWidth": 1280
+      },
+      {
+        "width": 1280,
+        "scrollWidth": 1280
+      }
+    ]
+  },
+  "single": {
+    "checks": 6,
+    "passed": 6,
+    "checks_detail": [
+      {
+        "name": "mobile: admin no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "mobile: no empty reason details",
+        "pass": true
+      },
+      {
+        "name": "mobile: overview no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop: admin no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop: no empty reason details",
+        "pass": true
+      },
+      {
+        "name": "desktop: overview no horizontal overflow",
+        "pass": true
+      }
+    ],
+    "page_errors": [],
+    "non_get_requests": [],
+    "unknown_api": [],
+    "widths": [
+      {
+        "width": 430,
+        "scrollWidth": 430
+      },
+      {
+        "width": 430,
+        "scrollWidth": 430
+      },
+      {
+        "width": 1280,
+        "scrollWidth": 1280
+      },
+      {
+        "width": 1280,
+        "scrollWidth": 1280
+      }
+    ]
+  }
+}

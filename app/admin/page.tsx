@@ -13,6 +13,7 @@ import { buildWinbackMessage, type WinbackContext } from '@/lib/winback'
 import { diagnoseClient, averageNutrition } from '@/lib/client-diagnosis'
 import { readSignals, dropWaterSpikeDays } from '@/lib/coach-signals'
 import FeatureAnnounce from '@/components/admin/FeatureAnnounce'
+import CoachWorkflowPanel from '@/components/admin/CoachWorkflowPanel'
 
 interface Client {
   id: string
@@ -189,6 +190,8 @@ export default function AdminDashboard() {
   //    躺到過期沒人處理，Howard 以為「系統沒在自動調整」，其實是提案掉進黑洞。
   const [proposals, setProposals] = useState<ProposalItem[]>([])
   const [actingProposal, setActingProposal] = useState<string | null>(null)
+  const [proposalClientFilter] = useState(() => typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('proposalClientId'))
+  const [proposalQueueOpen, setProposalQueueOpen] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('proposalClientId'))
   const [allLogs, setAllLogs] = useState<SupplementLog[]>([])
   const [allSupplements, setAllSupplements] = useState<SupplementRecord[]>([])
   const [todayWellnessIds, setTodayWellnessIds] = useState<Set<string>>(new Set())
@@ -1101,6 +1104,10 @@ export default function AdminDashboard() {
     } catch { showToast('刪除失敗，請稍後再試', 'error') }
   }
 
+  const visibleActionQueue = proposalClientFilter
+    ? actionQueue.filter(item => item.proposalId && item.clientId === proposalClientFilter)
+    : actionQueue
+
   if (loading) return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-slate-200"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center"><div className="h-5 w-32 bg-gray-200 rounded animate-pulse" /></div></div>
@@ -1180,7 +1187,12 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ===== 今日主線：打開後第一眼要答的問題是「今天誰需要我」 ===== */}
+        {!proposalClientFilter && <>
+        <div className="mb-5"><CoachWorkflowPanel /></div>
+
+        {/* 原有管理摘要與工具保留；處理優先順序以上方共用晨報清單為準。 */}
+        <details className="mb-5 rounded-2xl border border-slate-200 bg-white">
+          <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-slate-700">其他管理摘要、晨報預覽與設定檢查</summary>
         {!loading && (
           <div className="bg-slate-950 border border-slate-900 rounded-2xl p-5 sm:p-6 mb-5">
             <p className="text-[11px] text-slate-400 tabular-nums mb-3">
@@ -1285,24 +1297,28 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        </details>
+        </>}
+        {proposalClientFilter && <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-600">目前只列這位學員的待審提案。</p><a href="/admin" className="inline-flex min-h-11 items-center text-sm font-medium text-primary-700">返回完整教練清單</a></div>}
+
         {/* ===== 今日行動佇列（預設收合，只留還活著、真能動的）===== */}
-        <details className="bg-white border border-slate-200 rounded-2xl mb-4">
+        <details id="coach-proposals" open={proposalQueueOpen} onToggle={event => setProposalQueueOpen(event.currentTarget.open)} className="scroll-mt-5 bg-white border border-slate-200 rounded-2xl mb-4">
           <summary className="cursor-pointer select-none px-5 py-4 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">今日行動佇列</h2>
+            <h2 className="text-lg font-bold text-gray-900">{proposalClientFilter ? '學員待審提案' : '今日行動佇列'}</h2>
             <span className="text-xs text-gray-400">
-              {actionQueue.length === 0 ? '無待辦' : (() => { const urgent = actionQueue.filter(i => i.priority === 0).length; return `${actionQueue.length} 件${urgent > 0 ? ` · ${urgent} 緊急` : ''} · 展開 ▾` })()}
+              {visibleActionQueue.length === 0 ? '無待辦' : (() => { const urgent = visibleActionQueue.filter(i => i.priority === 0).length; return `${visibleActionQueue.length} 件${urgent > 0 ? ` · ${urgent} 緊急` : ''} · 展開 ▾` })()}
             </span>
           </summary>
           <div className="px-5 pb-5">
-          {actionQueue.length === 0 ? (
-            <p className="text-sm text-gray-400 py-1">今天沒有待辦，一切正常</p>
+          {visibleActionQueue.length === 0 ? (
+            <p className="text-sm text-gray-400 py-1">{proposalClientFilter ? '這位學員目前沒有待審提案；請返回完整清單查看其他事項。' : '今天沒有待辦，一切正常'}</p>
           ) : (
             <div className="space-y-2">
-              {actionQueue.map(item => {
+              {visibleActionQueue.map(item => {
                 const toneBox = { red: 'bg-rose-50', orange: 'bg-amber-50', yellow: 'bg-amber-50', blue: 'bg-primary-50' }[item.tone]
                 const toneText = { red: 'text-rose-700', orange: 'text-amber-700', yellow: 'text-amber-800', blue: 'text-primary-700' }[item.tone]
                 return (
-                  <div key={item.key} className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl ${toneBox}`}>
+                  <div key={item.key} id={item.proposalId && visibleActionQueue.find(row => row.proposalId && row.clientId === item.clientId)?.key === item.key ? `coach-proposals-${item.clientId}` : undefined} className={`scroll-mt-5 flex items-center justify-between gap-2 px-4 py-3 rounded-xl ${toneBox}`}>
                     <div className="min-w-0 flex items-center gap-2">
                       <span className={`text-sm font-medium ${toneText} ${item.proposalId ? '' : 'truncate'}`}>
                         {item.name} — {item.text}

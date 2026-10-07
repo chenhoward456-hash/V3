@@ -140,3 +140,7 @@ npm run build
 - **LINE**: [加入好友](https://lin.ee/LP65rCc)
 - **地點**: 台中市北屯區
 - **認證**: CSCS • 運動醫學背景
+
+## 教練處理工作區
+
+`/admin` 與 LINE 晨報共用優先清單；學員總覽可接著查看原因、上次訊息、營養調整與既有處理入口。排序、狀態含義、只讀 API 和安全本地驗證見 [教練工作區交接文件](docs/COACH_WORKFLOW_HANDOFF.md)。

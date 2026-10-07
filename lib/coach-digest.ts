@@ -16,6 +16,7 @@
 import { loadHypothesisUpdates, coachLine, type HypothesisUpdate } from '@/lib/hypothesis-updates'
 import { loadExperimentUpdates, coachExperimentLine, type ExperimentUpdate } from '@/lib/body-experiments'
 import { buildCoachingDrafts } from '@/lib/coaching-drafts'
+import { buildCoachWorkflow, isActionable, type CoachWorkflowClient, type CoachWorkItem } from './coach-workflow'
 
 /** 週一（台灣）才算：本週可發的訊息草稿，排除近 6 天已發過的、與這週幾乎沒資料的（最多 5 位） */
 async function loadMondayDrafts(supabase: QueryLike, today: string): Promise<{ name: string; headline: string; needsCoachReview: boolean }[]> {
@@ -39,7 +40,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { daysUntilDateTW, DAY_MS } from './date-utils'
 import { COACH_LINE_USER_ID } from './line-links'
 import { findLabsDue, formatLabDueLines, type LabDueItem, type LabDueClientInput } from './lab-due'
-import { listActionableProposals, describeProposal, type ProposalRow } from './proposal-actions'
+import { isProposalExpired, describeProposal, type ProposalRow } from './proposal-actions'
 import type { LabResultRow } from './lab-trend-analyzer'
 import type { TemplateItem } from './lab-order'
 
@@ -89,11 +90,14 @@ export type CoachDigestInput = {
   experiments?: ExperimentUpdate[]
   /** 週一才有：本週可以發的教練訊息草稿（lib/coaching-drafts），已排除這週發過的與沒資料的 */
   weeklyDrafts?: { name: string; headline: string; needsCoachReview: boolean }[]
+  /** Same read-only queue shown in the coach backend. */
+  workflowClients?: CoachWorkflowClient[]
 }
 
 export type CoachDigest = {
   /** 沒東西好講就是 null —— 不發空信 */
   text: string | null
+  workflow: CoachWorkItem[]
   offline: { name: string; days: number }[]
   /** cron 用：推學員＋標記已通知 */
   hypothesisUpdates?: { graded: HypothesisUpdate[]; overdue: HypothesisUpdate[] }
@@ -115,6 +119,19 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   const nameOf = (id: string) => clients.find(c => c.id === id)?.name || '未知'
 
   const lines: string[] = []
+  const workflow = input.workflowClients ? buildCoachWorkflow(input.workflowClients, today) : []
+  if (workflow.length) {
+    lines.push(`今天先處理這 ${Math.min(3, workflow.length)} 位：`)
+    for (const w of workflow.slice(0, 3)) {
+      lines.push(`  • ${w.name}：${w.reason}`)
+      lines.push(`    下一步：${w.action}`)
+      // 沒有既有日期就不印這行：每人都掛一句「目前未設定」只是雜訊
+      if (w.review.date) lines.push(`    ${w.reasons[0]?.kind === 'result' ? '資料日期' : '複核'}：${w.review.date}｜${w.review.label}`)
+      lines.push(`    ${adminUrl}${w.href}`)
+    }
+    if (workflow.length > 3) lines.push(`    其餘 ${workflow.length - 3} 位在後台同一份處理清單`)
+    lines.push('')
+  }
 
   // 0. 掉線名單 —— 這才是他該開後台的理由，所以排最前面
   const todayMs = Date.parse(today)
@@ -267,7 +284,7 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
     urgent.forEach(u => lines.push(`  • ${u.name}：${u.days} 天`))
   }
 
-  if (lines.length === 0) return { text: null, offline, hypothesisUpdates: hypotheses, experimentUpdates: experiments }
+  if (lines.length === 0) return { text: null, workflow, offline, hypothesisUpdates: hypotheses, experimentUpdates: experiments }
 
   // 開頭先講結論（跟 /admin 首頁「今日主線」同一句話），
   // 結尾給可點連結 —— 沒有連結的通知等於還是要他自己想起來去開後台。
@@ -281,13 +298,17 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   if (weeklyDrafts.length > 0) leadBits.push(`${weeklyDrafts.length} 則週訊可以發`)
   if (experiments.length > 0) leadBits.unshift(`${experiments.length} 個實驗有結果`)
   if (hypotheses && hypotheses.graded.length > 0) leadBits.unshift(`${hypotheses.graded.length} 個預測對答案了`)
+  const actionableCount = workflow.filter(isActionable).length
   const lead =
-    leadBits.length === 0 ? '沒人掉線，其餘看下面'
+    actionableCount > 0 ? `${actionableCount} 位要處理，先看下面的順序`
+    : workflow.length > 0 ? '沒有要處理的人，只有近期結果可查看'
+    : leadBits.length === 0 ? '沒人掉線，其餘看下面'
     : overdueLabs === 0 && proposals.length === 0 && experiments.length === 0 && weeklyDrafts.length === 0 && !(hypotheses && hypotheses.graded.length > 0) ? `${offline.length} 個人需要你出手`
     : `${leadBits.join('、')}，要你出手`
   const body = lines.join('\n').replace(/\n+$/, '')
   return {
     text: `☀️ 教練晨報 ${today}\n${lead}\n\n${body}\n\n👉 打開後台：${adminUrl}/admin`,
+    workflow,
     offline,
     hypothesisUpdates: hypotheses,
     experimentUpdates: experiments,
@@ -325,11 +346,11 @@ export async function loadCoachDigest(
     // 晨報看的是「所有活躍學員」，不是「有綁 LINE 的」——
     // 否則沒綁 LINE 的學員（例：Eddie）等於從教練視野裡整個消失。
     supabase.from('clients')
-      .select('id, name, body_composition_enabled, nutrition_enabled, training_enabled, wellness_enabled')
+      .select('id, name, calories_target, protein_target, body_composition_enabled, nutrition_enabled, training_enabled, wellness_enabled')
       .eq('is_active', true),
-    supabase.from('body_composition').select('client_id, date').gte('date', offlineSince),
-    supabase.from('nutrition_logs').select('client_id, date').gte('date', offlineSince),
-    supabase.from('training_logs').select('client_id, date').gte('date', offlineSince),
+    supabase.from('body_composition').select('client_id, date, weight').gte('date', offlineSince),
+    supabase.from('nutrition_logs').select('client_id, date, calories, protein_grams, carbs_grams').gte('date', offlineSince),
+    supabase.from('training_logs').select('client_id, date, note').gte('date', offlineSince),
     supabase.from('daily_wellness').select('client_id, date').gte('date', offlineSince),
     supabase.from('body_composition').select('client_id, weight').gte('date', plateauSince),
     supabase.from('clients').select('name, competition_date')
@@ -347,6 +368,10 @@ export async function loadCoachDigest(
     supabase.from('lab_panel_templates').select('gender, goal_orientation, add_on_items, base_price'),
   ])
 
+  // Missing data is not evidence of no activity. Do not turn a failed query into an empty work queue.
+  for (const result of [yW, yN, yT, yWe, clientsRes, oBody, oNut, oTrain, oWell, recentW, comps, labClientsRes, panelNotesRes, templatesRes]) {
+    if (result.error) throw new Error('教練晨報資料讀取失敗')
+  }
   const lastActiveByClient: Record<string, string> = {}
   for (const rows of [oBody.data, oNut.data, oTrain.data, oWell.data]) {
     for (const r of (rows ?? []) as { client_id: string; date: string }[]) {
@@ -399,12 +424,17 @@ export async function loadCoachDigest(
     }
   })
 
-  // 提案：先掃過期（不掃的話這裡會數到屍體），再依學員分組
-  const actionable = await listActionableProposals(supabase)
+  // Read-only proposal listing with explicit failures; expiry filtering uses the existing rule.
+  const { data: proposalData, error: proposalError } = await supabase.from('pending_proposals')
+    .select('id, client_id, proposed_by, proposed_at, expires_at, status, proposal_type, current_state, proposed_changes, reasoning, trajectory_data')
+    .eq('status', 'pending').order('proposed_at', { ascending: false })
+  if (proposalError) throw new Error('教練提案讀取失敗')
+  const actionable = ((proposalData ?? []) as ProposalRow[]).filter(p => !isProposalExpired(p))
   const proposalNames: Record<string, string> = {}
   if (actionable.length > 0) {
-    const { data } = await supabase.from('clients').select('id, name')
+    const { data, error: nameError } = await supabase.from('clients').select('id, name')
       .in('id', [...new Set(actionable.map(p => p.client_id))])
+    if (nameError) throw new Error('提案學員資料讀取失敗')
     for (const c of (data ?? []) as { id: string; name: string }[]) proposalNames[c.id] = c.name
   }
   const grouped: Record<string, ProposalRow[]> = {}
@@ -414,12 +444,57 @@ export async function loadCoachDigest(
   const experiments = await loadExperimentUpdates(supabase, today).catch(() => [])
   const weeklyDrafts = await loadMondayDrafts(supabase, today).catch(() => [])
 
+  // Notification delivery is not coach completion: the work view reads all current results.
+  const [workflowHypotheses, workflowExperiments] = await Promise.all([
+    loadHypothesisUpdates(supabase, today, { includeNotified: true, throwOnReadError: true }),
+    loadExperimentUpdates(supabase, today, { includeNotified: true, throwOnReadError: true }),
+  ])
+  const labsDue = findLabsDue(labDueInput, today)
+  const latestMessages = new Map<string, { sentAt: string; readAt: string | null }>()
+  // Per-client limit avoids Supabase's global row cap hiding an older student's latest delivery.
+  await Promise.all(((clientsRes.data ?? []) as DigestClient[]).map(async c => {
+    const { data, error } = await supabase.from('coach_messages').select('created_at, read_at')
+      .eq('client_id', c.id).order('created_at', { ascending: false }).limit(1)
+    if (error) throw new Error('教練訊息紀錄讀取失敗')
+    const m = (data as { created_at: string; read_at: string | null }[] | null)?.[0]
+    if (m) latestMessages.set(c.id, { sentAt: m.created_at, readAt: m.read_at })
+  }))
+  const workflowClients: CoachWorkflowClient[] = ((clientsRes.data ?? []) as (DigestClient & { calories_target: number | null; protein_target: number | null })[]).map(c => {
+    const weights = ((oBody.data ?? []) as { client_id: string; date: string; weight: number | null }[])
+      .filter(r => r.client_id === c.id && r.weight != null).map(r => ({ date: r.date, weight: Number(r.weight) })).sort((a, b) => a.date.localeCompare(b.date))
+    const lab = labsDue.find(l => l.clientId === c.id)
+    const proposals = grouped[c.id] ?? []
+    const results = workflowHypotheses.graded.filter(h => h.clientId === c.id && h.resultDate != null && h.resultDate >= offlineSince && h.resultDate <= today)
+    const dueHypotheses = workflowHypotheses.overdue.filter(h => h.clientId === c.id)
+    const endedExperiments = workflowExperiments.filter(e => e.clientId === c.id && e.exp.end_date >= offlineSince && e.exp.end_date <= today)
+    return {
+      id: c.id, name: c.name, lastActive: lastActiveByClient[c.id] ?? null,
+      latestMessage: latestMessages.get(c.id) ?? null,
+      signalInput: { today, caloriesTarget: c.calories_target, proteinTarget: c.protein_target, weights,
+        nutrition: ((oNut.data ?? []) as { client_id: string; date: string; calories: number | null; protein_grams: number | null; carbs_grams: number | null }[]).filter(r => r.client_id === c.id),
+        training: ((oTrain.data ?? []) as { client_id: string; date: string; note: string | null }[]).filter(r => r.client_id === c.id) },
+      reasons: [
+        ...results.map(h => ({ kind: 'result' as const, priority: 20, reason: coachLine(h).trim().replace(/^•\s*/, ''),
+          action: '預測結果已產出，可查看；系統未記錄是否已複核', review: { date: h.resultDate, label: '結果日期；不是複核預約，也不代表尚未處理' } })),
+        ...endedExperiments.map(e => ({ kind: 'result' as const, priority: 20, reason: coachExperimentLine(e).trim().replace(/^•\s*/, ''),
+          action: '實驗結果已產出，可查看；系統未記錄是否已複核', review: { date: e.exp.end_date, label: '實驗結束日期；不是複核預約，也不代表尚未處理' } })),
+        ...dueHypotheses.map(h => ({ kind: 'lab' as const, priority: 90, reason: coachLine(h).trim().replace(/^•\s*/, ''),
+          action: '確認原先重測安排與最新結果', review: { date: h.retestBy, label: h.retestBy ? '既有重測日，待你確認' : '尚未設定重測日' } })),
+        ...(lab ? [{ kind: 'lab' as const, priority: lab.daysUntil != null && lab.daysUntil < 0 ? 90 : 45,
+          reason: lab.daysUntil != null && lab.daysUntil < 0 ? `血檢回檢逾期 ${-lab.daysUntil} 天` : '血檢已到回檢提醒範圍',
+          action: '確認回檢安排與要追蹤的項目', review: { date: lab.dueDate, label: lab.dueDate ? '既有回檢日，待你確認' : '未設定回檢日，請先確認' } }] : []),
+        ...(proposals.length ? [{ kind: 'proposal' as const, priority: 40, reason: `${proposals.length} 筆提案待你審核：${describeProposal(proposals[0])}${proposals[0].reasoning ? `；${proposals[0].reasoning}` : ''}`,
+          action: '打開提案檢查依據，再決定套用或退回', review: { date: null, label: '審核後約定複核日；目前未設定' } }] : []),
+      ],
+    }
+  })
   return buildCoachDigest({
     today,
+    workflowClients,
     hypotheses,
     experiments,
     weeklyDrafts,
-    labsDue: findLabsDue(labDueInput, today),
+    labsDue,
     proposals: Object.entries(grouped).map(([clientId, items]) => ({
       clientId, name: proposalNames[clientId] ?? '?', items,
     })),

@@ -57,22 +57,25 @@ export function studentText(name: string, updates: HypothesisUpdate[]): string {
   return `${name}，你的血檢對答案了 🔬\n\n${lines.join('\n')}\n\n打開「健康」分頁看細節，教練會跟你討論下一步。`
 }
 
-export async function loadHypothesisUpdates(supabase: QueryLike, today: string): Promise<{ graded: HypothesisUpdate[]; overdue: HypothesisUpdate[] }> {
+export async function loadHypothesisUpdates(supabase: QueryLike, today: string, opts: { includeNotified?: boolean; throwOnReadError?: boolean } = {}): Promise<{ graded: HypothesisUpdate[]; overdue: HypothesisUpdate[] }> {
   const { data: hyps, error } = await supabase
     .from('lab_hypotheses')
     .select('*, clients!inner(id, name, unique_code, line_user_id, is_active, gender)')
+  if (error && opts.throwOnReadError) throw new Error('血檢預測讀取失敗')
   if (error || !hyps || hyps.length === 0) return { graded: [], overdue: [] }
 
   const active = (hyps as (LabHypothesis & { client_id: string; notified_status: string | null; clients: { id: string; name: string; unique_code: string; line_user_id: string | null; is_active: boolean | null; gender?: string | null } })[])
     .filter(h => h.clients.is_active !== false)
+  if (active.length === 0) return { graded: [], overdue: [] }
   const clientIds = [...new Set(active.map(h => h.client_id))]
   const markers = [...new Set(active.map(h => h.marker))]
-  const { data: labs } = await supabase
+  const { data: labs, error: labsError } = await supabase
     .from('lab_results')
     .select('client_id, test_name, value, unit, date')
     .in('client_id', clientIds)
     .in('test_name', markers)
 
+  if (labsError && opts.throwOnReadError) throw new Error('血檢預測結果讀取失敗')
   const points: Record<string, LabPoint[]> = {}
   for (const l of (labs ?? []) as { client_id: string; test_name: string; value: number | null; unit: string | null; date: string }[]) {
     if (l.value == null) continue
@@ -91,7 +94,7 @@ export async function loadHypothesisUpdates(supabase: QueryLike, today: string):
       pctChange: g.change?.pctChange ?? null,
     }
     if (g.status === 'overdue') overdue.push(u)
-    else if (g.status !== 'pending' && g.status !== h.notified_status) graded.push(u)
+    else if (g.status !== 'pending' && (opts.includeNotified || g.status !== h.notified_status)) graded.push(u)
   }
   return { graded, overdue }
 }
